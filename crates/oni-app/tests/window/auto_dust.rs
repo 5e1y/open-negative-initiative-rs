@@ -78,6 +78,18 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     assert_eq!(canvas.get_dust_marks().row_count(), 1);
     assert_eq!((canvas.get_dust_mask().size().width, canvas.get_dust_mask().size().height), (1600, 1200));
     assert!(corrections().is_empty(), "a reading writes nothing");
+    // Along the slider and back: what a key writes is what shows at the rest it is left on.
+    d.invoke_sensitivity_press(false);
+    d.invoke_sensitivity_drag(300.0, 300.0, false);
+    d.invoke_sensitivity_release();
+    rig.pump();
+    assert_eq!(d.get_sensitivity_text().as_str(), "100 %");
+    assert!(d.get_found() >= 1, "a speck once found stays found");
+    d.invoke_sensitivity_press(false);
+    d.invoke_sensitivity_drag(-300.0, 300.0, false);
+    d.invoke_sensitivity_release();
+    rig.pump();
+    assert_eq!((d.get_sensitivity_text().as_str(), d.get_found()), ("0 %", 1), "twin: back at rest, the one speck");
     rig.settle();
     let veiled = on_screen(&rig);
     assert!(veiled.0 > bare.0, "the speck lit on the canvas: {veiled:?} against {bare:?}");

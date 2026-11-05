@@ -143,6 +143,16 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 lines.borrow_mut().push(format!("reading {} ms: {} dust, {:?}, veil {}, mask {:?}, rings {}", since.get().elapsed().as_millis(), d.get_found(), d.get_found_note().to_string(), c.get_dust_shown(), (c.get_dust_mask().size().width, c.get_dust_mask().size().height), c.get_dust_marks().row_count()));
+                if n == 1 {
+                    // The slider along its track, each step's cost on the hand's thread, then back at rest.
+                    d.invoke_sensitivity_press(false);
+                    for at in [0.25f32, 0.5, 0.75, 1.0, 0.0] {
+                        let moved = Instant::now();
+                        d.invoke_sensitivity_drag(at * 300.0, 300.0, false);
+                        lines.borrow_mut().push(format!("sensitivity {:.0} %: {} dust, {} us on the hand's thread", at * 100.0, d.get_found(), moved.elapsed().as_micros()));
+                    }
+                    d.invoke_sensitivity_release();
+                }
                 if n == 4 {
                     for _ in 0..corrections().len() {
                         d.invoke_remove(0);

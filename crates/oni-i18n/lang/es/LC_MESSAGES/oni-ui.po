@@ -1529,13 +1529,17 @@ msgstr "Conservado"
 msgid "Brush Size"
 msgstr "Tamaño del pincel"
 
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Sensitivity"
+msgstr "Sensibilidad"
+
 #: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "Automatic"
 msgstr "Automático"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Remove lays one patch on each speck ringed."
-msgstr "Detectar muestra, bajo un velo, cada píxel fuera de la ventana del rollo; el polvo entre ellos queda rodeado. Quitar coloca un parche sobre cada mota rodeada."
+msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
+msgstr "Detectar muestra, bajo un velo, cada píxel fuera de la ventana del rollo; el polvo entre ellos queda rodeado. La sensibilidad lee más adentro de la ventana y exige menos a una mota. Quitar coloca un parche sobre cada mota rodeada."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "HIDE"

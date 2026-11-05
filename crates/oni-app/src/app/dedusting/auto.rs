@@ -28,21 +28,38 @@ impl Read {
     }
 }
 
-/// A reading on the canvas: its mask, a ring per speck in fractions of the frame, y down, and the correction each one writes.
+/// A reading on the canvas, and what it shows at the sensitivity last laid: its mask, and a ring per speck
+/// in fractions of the frame, y down.
 pub(in crate::app) struct Shown {
     read: Read,
+    reading: dust::Reading,
+    laid: Option<(usize, usize)>,
     mask: Image,
     rings: Vec<[f64; 4]>,
-    corrections: Vec<Correction>,
 }
 
-/// A reading off the interface thread, before its mask is an image.
-struct Reading {
-    size: (usize, usize),
-    rgba: Vec<u8>,
-    rings: Vec<[f64; 4]>,
-    corrections: Vec<Correction>,
-    past: u64,
+impl Shown {
+    fn new(read: Read, reading: dust::Reading) -> Shown {
+        Shown { read, reading, laid: None, mask: Image::default(), rings: Vec::new() }
+    }
+
+    /// The mask and rings at `sensitivity`, laid again only where it changes what shows: most notches do not.
+    fn lay(&mut self, sensitivity: f32) {
+        let found = self.reading.at(sensitivity);
+        let at = (found.past[1].as_ptr() as usize, found.dust.iter().map(|s| *s as *const dust::Speck as usize).fold(found.dust.len(), |h, p| h.wrapping_mul(31).wrapping_add(p)));
+        if self.laid == Some(at) {
+            return;
+        }
+        let ((w, h), rgba) = mask(&found);
+        self.mask = image(&rgba, w, h);
+        self.rings = rings(&found);
+        self.laid = Some(at);
+    }
+
+    /// The corrections the rings stand for.
+    fn corrections(&self, sensitivity: f32) -> Vec<Correction> {
+        corrections(&self.reading.at(sensitivity))
+    }
 }
 
 /// The mask, each pixel the most lit its source pixels ask: a speck never fades in the reduction.
@@ -61,24 +78,25 @@ fn mask(found: &dust::Found) -> ((usize, usize), Vec<u8>) {
             *a = (*a).max(alpha);
         }
     };
-    found.past.iter().for_each(|r| lay(r, PAST_ALPHA));
+    found.past.iter().flat_map(|list| list.iter()).for_each(|r| lay(r, PAST_ALPHA));
     found.dust.iter().flat_map(|s| &s.runs).for_each(|r| lay(r, DUST_ALPHA));
     ((w, h), rgba)
 }
 
-fn reading(found: &dust::Found) -> Reading {
-    let (size, rgba) = mask(found);
+fn rings(found: &dust::Found) -> Vec<[f64; 4]> {
     let (fw, fh) = (found.width as f64, found.height as f64);
-    let rings = found.dust.iter().map(|s| [f64::from(s.bounds[0]) / fw, f64::from(s.bounds[1]) / fh, f64::from(s.bounds[2] - s.bounds[0]) / fw, f64::from(s.bounds[3] - s.bounds[1]) / fh]).collect();
-    let corrections = found
+    found.dust.iter().map(|s| [f64::from(s.bounds[0]) / fw, f64::from(s.bounds[1]) / fh, f64::from(s.bounds[2] - s.bounds[0]) / fw, f64::from(s.bounds[3] - s.bounds[1]) / fh]).collect()
+}
+
+fn corrections(found: &dust::Found) -> Vec<Correction> {
+    found
         .dust
         .iter()
         .map(|s| {
             let (points, radius) = dust::stroke(s, found.width, found.height);
             Correction { id: Id::new(), stroke: points.into_iter().map(|(x, y)| oni_settings::cg::Point { x, y }).collect(), radius }
         })
-        .collect();
-    Reading { size, rgba, rings, corrections, past: found.past.iter().map(|r| u64::from(r.end - r.start)).sum() }
+        .collect()
 }
 
 impl Ctl {
@@ -119,22 +137,24 @@ impl Ctl {
             crate::decode_gate::in_background();
             let started = Instant::now();
             let read = Read::of(&path, &settings);
-            let result = engine.lock().and_then(|mut e| e.framed_whole(&full, &settings)).map(|(width, pixels)| reading(&dust::read(&pixels, width, &read.limits)));
+            let result = engine.lock().and_then(|mut e| e.framed_whole(&full, &settings)).map(|(width, pixels)| dust::read(&pixels, width, &read.limits));
             let took = started.elapsed();
             with_shell(move |c| c.detection_landed(read, result, took));
         });
     }
 
-    fn detection_landed(self: &Rc<Self>, read: Read, result: Result<Reading, String>, took: Duration) {
+    fn detection_landed(self: &Rc<Self>, read: Read, result: Result<dust::Reading, String>, took: Duration) {
         {
             let mut s = self.state.borrow_mut();
             s.dust.detecting = false;
             let current = s.open_path().is_some_and(|p| Read::of(p, s.store.settings()) == read);
             match result {
-                Ok(r) => {
-                    timing::line(&format!("{}: {} specks of dust, {} pixels past the window, read in {:.0} ms", crate::anonymity::token(&read.path), r.rings.len(), r.past, took.as_secs_f64() * 1000.0));
+                Ok(reading) => {
+                    let found = reading.at(s.dust.sensitivity);
+                    let past: u64 = found.past.iter().flat_map(|list| list.iter()).map(|r| u64::from(r.end - r.start)).sum();
+                    timing::line(&format!("{}: {} specks of dust, {past} pixels past the window, read in {:.0} ms", crate::anonymity::token(&read.path), found.dust.len(), took.as_secs_f64() * 1000.0));
                     if current {
-                        s.dust.found = Some(Shown { mask: image(&r.rgba, r.size.0, r.size.1), read, rings: r.rings, corrections: r.corrections });
+                        s.dust.found = Some(Shown::new(read, reading));
                     }
                 }
                 Err(e) => timing::line(&format!("dust not read: {e}")),
@@ -146,16 +166,66 @@ impl Ctl {
     /// The Remove key: the corrections the rings stand for, one undo step, their patches made next as a hand's are.
     pub(in crate::app) fn remove_found(self: &Rc<Self>) {
         let Some(shown) = self.state.borrow_mut().dust.found.take() else { return };
-        let holds = {
+        let (holds, sensitivity) = {
             let s = self.state.borrow();
-            s.open_path().is_some_and(|p| Read::of(p, s.store.settings()) == shown.read)
+            (s.open_path().is_some_and(|p| Read::of(p, s.store.settings()) == shown.read), s.dust.sensitivity)
         };
-        if holds && !shown.corrections.is_empty() {
+        let written = shown.corrections(sensitivity);
+        if holds && !written.is_empty() {
             let mut next = self.state.borrow().store.settings().clone();
-            next.corrections.extend(shown.corrections);
+            next.corrections.extend(written);
             self.write(Command::Write(Box::new(next)));
         }
         self.publish_dedust();
+    }
+
+    /// The Sensitivity slider, held as the brush's is: a double press rests it, shown at once.
+    pub(in crate::app) fn sensitivity_press(&self) -> bool {
+        let double = {
+            let mut s = self.state.borrow_mut();
+            let double = s.dust.sensitivity_pressed_at.is_some_and(|t| t.elapsed() < system::double_click());
+            s.dust.sensitivity_pressed_at = Some(Instant::now());
+            s.dust.sensitivity_start = if double { None } else { Some(s.dust.sensitivity) };
+            if double {
+                s.dust.sensitivity = 0.0;
+            }
+            double
+        };
+        if double {
+            self.keep_sensitivity();
+            self.publish_dedust();
+        }
+        double
+    }
+
+    pub(in crate::app) fn sensitivity_drag(&self, translation: f32, span: f32, fine: bool) {
+        {
+            let mut s = self.state.borrow_mut();
+            let Some(start) = s.dust.sensitivity_start else { return };
+            s.dust.sensitivity = track::clamped(track::asked(start, translation, span, fine));
+        }
+        self.publish_dedust();
+    }
+
+    pub(in crate::app) fn sensitivity_release(&self) {
+        if self.state.borrow_mut().dust.sensitivity_start.take().is_some() {
+            self.keep_sensitivity();
+        }
+        self.publish_dedust();
+    }
+
+    pub(in crate::app) fn sensitivity_scroll(self: &Rc<Self>, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
+        let from = self.state.borrow().dust.sensitivity;
+        let Some(at) = self.slider_scrolled(from, dx, dy, span, fine, |c| c.keep_sensitivity()) else { return false };
+        self.state.borrow_mut().dust.sensitivity = at;
+        self.publish_dedust();
+        true
+    }
+
+    /// The sensitivity the hand left, for every photo and launch, as the brush's size is.
+    fn keep_sensitivity(&self) {
+        let at = f64::from(self.state.borrow().dust.sensitivity);
+        self.remember(preferences::DUST_SENSITIVITY, at.into());
     }
 
     /// The tab's keys and note, and the veil and rings on the picture laid by `frame`.
@@ -166,7 +236,13 @@ impl Ctl {
         if stale {
             s.dust.found = None;
         }
+        let sensitivity = s.dust.sensitivity;
+        if let Some(f) = s.dust.found.as_mut() {
+            f.lay(sensitivity);
+        }
         let d = w.global::<crate::Dedust>();
+        d.set_sensitivity(sensitivity);
+        d.set_sensitivity_text(format!("{:.0} %", sensitivity * 100.0).into());
         d.set_detecting(s.dust.detecting || s.dust.detect_asked);
         let shown = s.dust.found.as_ref();
         d.set_found_shown(shown.is_some());
@@ -203,15 +279,16 @@ mod tests {
     use super::*;
     use oni_measure::dust::{Found, Side, Speck};
 
-    fn found(width: usize, height: usize, past: Vec<Run>, dust: Vec<Speck>) -> Found {
-        Found { width, height, past, dust }
+    fn found<'a>(width: usize, height: usize, past: &'a [Run], dust: Vec<&'a Speck>) -> Found<'a> {
+        Found { width, height, past: [past, &[]], dust }
     }
 
     #[test]
     fn a_mask_lights_dust_whole_and_the_rest_past_the_window_at_its_share() {
         let run = |row, start, end| Run { row, start, end };
         let speck = Speck { side: Side::Opaque, area: 2, runs: vec![run(1, 2, 4)], bounds: [2, 1, 4, 2] };
-        let ((w, h), rgba) = mask(&found(6, 3, vec![run(1, 2, 4), run(2, 0, 1)], vec![speck]));
+        let past = [run(1, 2, 4), run(2, 0, 1)];
+        let ((w, h), rgba) = mask(&found(6, 3, &past, vec![&speck]));
         assert_eq!((w, h), (6, 3));
         let alpha = |x: usize, y: usize| rgba[(y * w + x) * 4 + 3];
         assert_eq!(alpha(2, 1), DUST_ALPHA);
@@ -222,8 +299,8 @@ mod tests {
 
     #[test]
     fn a_lone_pixel_of_a_large_frame_stays_lit_in_the_reduced_mask() {
-        let run = Run { row: 3999, start: 6047, end: 6048 };
-        let ((w, h), rgba) = mask(&found(6048, 4000, vec![run], Vec::new()));
+        let past = [Run { row: 3999, start: 6047, end: 6048 }];
+        let ((w, h), rgba) = mask(&found(6048, 4000, &past, Vec::new()));
         assert_eq!(w, MASK_SIDE);
         assert_eq!(h, 2032);
         assert_eq!(rgba.chunks_exact(4).filter(|p| p[3] > 0).count(), 1);
@@ -235,14 +312,16 @@ mod tests {
     fn a_reading_writes_one_correction_per_speck_on_the_frames_fractions() {
         let run = Run { row: 50, start: 100, end: 110 };
         let speck = Speck { side: Side::Opaque, area: 10, runs: vec![run], bounds: [100, 50, 110, 51] };
-        let r = reading(&found(1000, 500, vec![run], vec![speck]));
-        assert_eq!((r.corrections.len(), r.rings.len(), r.past), (1, 1, 10));
-        let c = &r.corrections[0];
+        let past = [run];
+        let shown = found(1000, 500, &past, vec![&speck]);
+        let written = corrections(&shown);
+        assert_eq!((written.len(), rings(&shown).len()), (1, 1));
+        let c = &written[0];
         assert!(c.stroke.len() >= 2);
         assert!(c.stroke.iter().all(|p| (0.1..0.111).contains(&p.x) && (0.1..0.102).contains(&p.y)), "{:?}", c.stroke);
-        assert!((r.rings[0][0] - 0.1).abs() < 1e-12 && (r.rings[0][1] - 0.1).abs() < 1e-12);
+        assert!((rings(&shown)[0][0] - 0.1).abs() < 1e-12 && (rings(&shown)[0][1] - 0.1).abs() < 1e-12);
         // Twin: what is past the window but no dust writes nothing.
-        assert!(reading(&found(1000, 500, vec![run], Vec::new())).corrections.is_empty());
+        assert!(corrections(&found(1000, 500, &past, Vec::new())).is_empty());
     }
 
     #[test]

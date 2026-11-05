@@ -14,6 +14,8 @@ pub const GALLERY_COLUMNS: &str = "galleryColumns";
 pub const SOUND_MUTED: &str = "soundMuted";
 /// `@AppStorage("correctionBrushRadius")`: the De-dust brush's radius, kept across photos and launches.
 pub const BRUSH_RADIUS: &str = "correctionBrushRadius";
+/// Beyond Swift: auto De-dust's Sensitivity, 0 to 1.
+pub const DUST_SENSITIVITY: &str = "autoDustSensitivity";
 /// The RAW decoded whole as a photo opens, a choice this build adds; off, LibRaw's half size, 3 to 5
 /// times faster, and the editor reads it at every zoom.
 pub const FULL_DECODE: &str = "fullDecode";

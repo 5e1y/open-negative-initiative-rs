@@ -290,7 +290,7 @@ controls. Every slider is `DSSlider` (4.4.1). The labels below are exact strings
 | | Sharpening (`SharpenPanel`) | Amount, Radius, Halo limit | `DSSlider`s | |
 | | Texture | Texture slider | `DSSlider` | |
 | De-dust (`DedustPane`, `CorrectionsPanel`) | Dust & Scratches | Brush Size (] and [), corrections list with "Remove this correction" | `DSSlider`, `ListView` rows | Brush cursor on the canvas: a custom circle drawn over the canvas, the system cursor hidden (`mouse-cursor: none`). |
-| De-dust, beyond Swift (`DedustPane`) | Automatic | DETECT or HIDE, REMOVE, the reading's note | `ButtonGroup { plate: true }`, `Label` | On the canvas: `DustVeil`, a veil over the picture and the mask's pixels lit through `DustStyle`, and a `CorrectionMark` ring per speck kept. |
+| De-dust, beyond Swift (`DedustPane`) | Automatic | Sensitivity, DETECT or HIDE, REMOVE, the reading's note | `Slider`, `ButtonGroup { plate: true }`, `Label` | On the canvas: `DustVeil`, a veil over the picture and the mask's pixels lit through `DustStyle`, and a `CorrectionMark` ring per speck kept. |
 | Scanner face (`EditorScene+Lab`, `UI/Lab`) | Machine | `LabKeyboard` keypad groups, `LabScreen` plot band, `ScannerKey` | `Keycap` grid, plot `Image` | `[draw]` |
 
 Header of a block: the title in `DS.Typo.section` (Inter 13), a "?" (`DSHelp`), and a reset that reads

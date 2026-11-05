@@ -171,6 +171,13 @@ export global Dedust {
     in property <string> found-note;
     callback detect();
     callback remove-found();
+    // How far inside the window a reading goes, held by Rust as the brush is.
+    in property <float> sensitivity;
+    in property <string> sensitivity-text;
+    callback sensitivity-press(bool) -> bool;
+    callback sensitivity-drag(length, length, bool);
+    callback sensitivity-release();
+    callback sensitivity-scroll(length, length, length, bool) -> bool;
 }
 
 // `Loupe`'s band under Details: Rust renders the region the canvas centres and says its size in points.

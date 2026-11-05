@@ -4,12 +4,15 @@ use oni_settings::ConversionMode;
 use oni_settings::frame::Correction;
 use oni_settings::levels::Levels;
 
+/// The least sensitive reading's jump.
+const STRICT: f32 = 0.2;
+
 fn grey(v: f32) -> [f32; 4] {
     [v, v, v, 1.0]
 }
 
 fn limits() -> Limits {
-    Limits { opaque_below: [0.1; 3], clear_above: [0.9; 3], gain: [1.0; 3], pedestal: 0.0, guard: 1e-6 }
+    Limits { densest: [1.0; 3], opaque_below: [0.1; 3], clear_above: [0.9; 3], gain: [1.0; 3], pedestal: 0.0, guard: 1e-6 }
 }
 
 fn frame(width: usize, height: usize, dark: &[(usize, usize)]) -> Vec<[f32; 4]> {
@@ -117,7 +120,7 @@ fn with_block(x: usize, side: usize, light: [f32; 3]) -> Vec<[f32; 4]> {
 
 #[test]
 fn a_sharp_neutral_speck_is_dust_and_noise_a_glint_or_a_highlight_are_not() {
-    let dust = |pixels: &[[f32; 4]]| read(pixels, 200, &limits()).dust.len();
+    let dust = |pixels: &[[f32; 4]]| read(pixels, 200, &limits()).at(0.0).dust.len();
     assert_eq!(dust(&with_block(100, 3, [0.01; 3])), 1, "a speck stopping every channel alike");
     assert_eq!(dust(&with_block(100, 1, [0.01; 3])), 0, "twin: a lone pixel is noise");
     // Past the window on its blue alone: the red and green do not jump.
@@ -142,9 +145,9 @@ fn a_soft_edge_measures_no_jump_where_a_sharp_one_does() {
     let sharp = with_block(100, 3, [0.09; 3]);
     let speck = |pixels: &[[f32; 4]]| gathered(&runs_of(pixels, 200, &limits())).remove(0);
     let at = |pixels: &[[f32; 4]]| jumps(&speck(pixels), pixels, 200, &limits(), JUMP_AT);
-    assert!(dust_like(at(&sharp)), "{:?}", at(&sharp));
-    assert!(!dust_like(at(&soft)), "twin: {:?}", at(&soft));
-    assert_eq!(read(&soft, 200, &limits()).dust.len(), 0);
+    assert!(dust_jump(at(&sharp)).is_some_and(|j| j >= STRICT), "{:?}", at(&sharp));
+    assert!(dust_jump(at(&soft)).is_none_or(|j| j < STRICT), "twin: {:?}", at(&soft));
+    assert_eq!(read(&soft, 200, &limits()).at(0.0).dust.len(), 0);
 }
 
 #[test]
@@ -157,17 +160,80 @@ fn a_highlights_dense_core_does_not_make_its_soft_edge_a_jump() {
             lamp[row * 200 + col] = grey(if off < 13 { 0.001 } else if off < 16 { 0.09 } else { 0.11 });
         }
     }
-    assert_eq!(read(&lamp, 200, &limits()).dust.len(), 0);
+    assert_eq!(read(&lamp, 200, &limits()).at(0.0).dust.len(), 0);
     // Twin: the core alone, with no soft rim, is what a large opaque speck looks like.
-    assert_eq!(read(&with_block(95, 30, [0.001; 3]), 200, &limits()).dust.len(), 1);
+    assert_eq!(read(&with_block(95, 30, [0.001; 3]), 200, &limits()).at(0.0).dust.len(), 1);
+}
+
+/// A speck inside the window on its ground, at light 0.05 on 0.5 where the limit stands at 0.1 less `inset`'s reach.
+fn with_speck_at(x: usize, y: usize, light: f32, pixels: &mut [[f32; 4]]) {
+    for row in y..y + 4 {
+        for col in x..x + 4 {
+            pixels[row * 200 + col] = grey(light);
+        }
+    }
+}
+
+#[test]
+fn sensitivity_reads_further_inside_the_window() {
+    // Inside the window by 0.3 density: density 0.7 on a ground at 0.3, the white at 1.0.
+    let mut pixels = vec![grey(0.5); 40_000];
+    with_speck_at(100, 100, 0.2, &mut pixels);
+    let reading = read(&pixels, 200, &limits());
+    assert_eq!(reading.at(0.0).dust.len(), 0, "twin: at rest, the window's end alone");
+    assert_eq!(reading.at(0.74).dust.len(), 1, "read at the level past its density");
+    assert_eq!(reading.at(1.0).dust.len(), 1);
+    assert!(reading.at(0.74).past[1].len() > reading.at(0.0).past[1].len(), "the pixels shown grow with it");
+}
+
+#[test]
+fn a_speck_once_found_stays_found_as_sensitivity_rises() {
+    // A speck past the window, in a band that a deeper level reads too: there the two merge into one
+    // shape far too wide to be a speck.
+    let mut pixels = vec![grey(0.5); 40_000];
+    for row in 90..110usize {
+        for col in 20..180usize {
+            pixels[row * 200 + col] = grey(0.2);
+        }
+    }
+    with_speck_at(100, 98, 0.01, &mut pixels);
+    let reading = read(&pixels, 200, &limits());
+    assert_eq!(reading.at(0.0).dust.len(), 1);
+    for s in [0.2, 0.4, 0.6, 0.8, 1.0] {
+        assert_eq!(reading.at(s).dust.len(), 1, "at {s}");
+    }
+    // Twin: read at the deep level alone, the speck is lost in the band.
+    let inside = limits().closed_in(LEVELS[2]);
+    let alone = candidates(&runs_of(&pixels, 200, &inside), &pixels, 200, &inside, 2);
+    assert!(alone.iter().all(|c| c.speck.area > 16), "{alone:?}");
+}
+
+#[test]
+fn a_speck_read_at_two_levels_counts_once_and_whole() {
+    // A core past the window, a rim read at the next level: both are shapes, nested.
+    let mut pixels = vec![grey(0.5); 40_000];
+    with_speck_at(98, 98, 0.2, &mut pixels);
+    for row in 98..108usize {
+        for col in 98..108usize {
+            pixels[row * 200 + col] = grey(0.2);
+        }
+    }
+    with_speck_at(101, 101, 0.01, &mut pixels);
+    let reading = read(&pixels, 200, &limits());
+    assert_eq!(reading.at(0.0).dust[0].area, 16, "the core alone at rest");
+    let deep = reading.at(0.74);
+    assert_eq!(deep.dust.len(), 1, "{:?}", deep.dust);
+    assert_eq!(deep.dust[0].area, 100, "twin: the whole shape, not the core");
 }
 
 #[test]
 fn every_pixel_past_the_window_is_kept_whether_dust_or_not() {
-    let found = read(&with_block(100, 100, [0.01; 3]), 200, &limits());
-    assert_eq!(found.past.len(), 100);
+    let reading = read(&with_block(100, 100, [0.01; 3]), 200, &limits());
+    let found = reading.at(0.0);
+    assert_eq!(found.past[0].len() + found.past[1].len(), 100);
     assert!(found.dust.is_empty());
-    assert!(read(&vec![grey(0.5); 40_000], 200, &limits()).past.is_empty(), "twin: inside the window, nothing");
+    let inside = read(&vec![grey(0.5); 40_000], 200, &limits());
+    assert_eq!(inside.at(0.0).past[0].len() + inside.at(0.0).past[1].len(), 0, "twin: inside the window, nothing");
 }
 
 fn pixels_of(runs: &[(u32, u32, u32)]) -> Speck {

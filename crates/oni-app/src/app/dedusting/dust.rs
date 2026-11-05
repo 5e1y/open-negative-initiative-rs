@@ -20,6 +20,10 @@ pub(in crate::app) struct Dust {
     pub detecting: bool,
     pub detect_asked: bool,
     pub found: Option<super::auto::Shown>,
+    /// The Sensitivity slider, 0 to 1, kept across photos, and its hand.
+    pub sensitivity: f32,
+    pub sensitivity_start: Option<f32>,
+    pub sensitivity_pressed_at: Option<std::time::Instant>,
 }
 
 impl Dust {
@@ -27,6 +31,6 @@ impl Dust {
     /// failed (a drive asleep) is tried again.
     pub fn next_photo(&mut self) {
         let (healing, patched) = (std::mem::take(&mut self.healing), std::mem::take(&mut self.patched));
-        *self = Dust { next_number: 1, healing, patched, ..Dust::default() };
+        *self = Dust { next_number: 1, healing, patched, sensitivity: self.sensitivity, ..Dust::default() };
     }
 }

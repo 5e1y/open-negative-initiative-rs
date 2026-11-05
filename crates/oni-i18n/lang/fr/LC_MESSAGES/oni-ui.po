@@ -1529,13 +1529,17 @@ msgstr "Conservé"
 msgid "Brush Size"
 msgstr "Taille du pinceau"
 
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Sensitivity"
+msgstr "Sensibilité"
+
 #: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "Automatic"
 msgstr "Automatique"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Remove lays one patch on each speck ringed."
-msgstr "Détecter montre, sous un voile, chaque pixel hors de la fenêtre du rouleau ; les poussières parmi eux sont cerclées. Retirer recouvre chaque poussière cerclée d’une zone semblable."
+msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
+msgstr "Détecter montre, sous un voile, chaque pixel hors de la fenêtre du rouleau ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin dans la fenêtre et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "HIDE"

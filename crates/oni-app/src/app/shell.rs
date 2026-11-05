@@ -111,7 +111,7 @@ impl Shell {
             full_failed: HashSet::new(),
             requests: rendering::Requests::default(),
             compare: rendering::Compare::default(),
-            dust: dedusting::Dust { next_number: 1, ..Default::default() },
+            dust: dedusting::Dust { next_number: 1, sensitivity: Preferences::load(&options.support).value(preferences::DUST_SENSITIVITY).and_then(serde_json::Value::as_f64).map_or(0.0, |v| v as f32), ..Default::default() },
             loupe: loupe::Held::default(),
             together: None,
             full_size: None,

@@ -14,10 +14,15 @@ pub const MAX_AREA: u32 = 8192;
 pub const EDGE: u32 = 16;
 /// Where a shape's jump is read, in pixels off it: dust lies on the film, in the scan's focus.
 pub const JUMP_AT: i64 = 2;
-/// The density the least channel must jump there: the image's glints measure 0.05 to 0.17 on rolls #8 and Lumix, dust 0.34.
-pub const MIN_JUMP: f32 = 0.2;
 /// The least channel's jump over the most's: dust stops every colour alike, where a glint's blue jumps up to five times its red.
 pub const NEUTRAL: f32 = 0.6;
+
+/// How far inside the window's dense end a reading goes, in density, by level: a shape past one level can
+/// merge with a highlight past the next, so each is read and a speck stays found once found.
+const LEVELS: [f32; 5] = [0.0, 0.2, 0.4, 0.6, 0.8];
+/// The jump the least channel must make at the least sensitive and at the most: the image's glints
+/// measure 0.05 to 0.17 on rolls #8 and Lumix, the one speck 0.34; 0.1 finds 0 to 24 on those frames.
+const JUMPS: (f32, f32) = (0.2, 0.1);
 
 mod stroke;
 pub use stroke::stroke;
@@ -35,6 +40,7 @@ pub enum Side {
 /// window leaves 0…1, with no logarithm per pixel.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Limits {
+    pub densest: [f32; 3],
     pub opaque_below: [f32; 3],
     pub clear_above: [f32; 3],
     pub gain: [f32; 3],
@@ -53,22 +59,19 @@ impl Limits {
         let windows = [on.levels.red, on.levels.green, on.levels.blue];
         let inverted = on.mode.invert_flag() > 0.5;
         let gain = on.gains.stops.map(f32::exp2);
-        let mut limits = Limits { opaque_below: [f32::NEG_INFINITY; 3], clear_above: [f32::INFINITY; 3], gain, pedestal, guard };
-        for c in 0..3 {
-            // A negative's window reads the density, a positive's its complement on the axis.
-            let (densest, clearest) = if inverted {
-                (windows[c].white, windows[c].black)
-            } else {
-                (pipeline::DMAX - windows[c].black, pipeline::DMAX - windows[c].white)
-            };
-            let light = |density: f32| 10f32.powf(-density);
-            // Under the guard the kernel reads the guard: the window's end is never passed.
-            if light(densest) > guard {
-                limits.opaque_below[c] = light(densest) / gain[c] - pedestal;
-            }
-            limits.clear_above[c] = light(clearest) / gain[c] - pedestal;
-        }
-        limits
+        let densest = [0, 1, 2].map(|c| if inverted { windows[c].white } else { pipeline::DMAX - windows[c].black });
+        let clearest = [0, 1, 2].map(|c| if inverted { windows[c].black } else { pipeline::DMAX - windows[c].white });
+        let clear_above = [0, 1, 2].map(|c| 10f32.powf(-clearest[c]) / gain[c] - pedestal);
+        Limits { densest, opaque_below: [f32::NEG_INFINITY; 3], clear_above, gain, pedestal, guard }.closed_in(0.0)
+    }
+
+    /// The dense end read `by` density inside the window; under the guard the kernel reads the guard, so that end is never passed.
+    fn closed_in(self, by: f32) -> Limits {
+        let opaque_below = [0, 1, 2].map(|c| {
+            let light = 10f32.powf(by - self.densest[c]);
+            if light > self.guard { light / self.gain[c] - self.pedestal } else { f32::NEG_INFINITY }
+        });
+        Limits { opaque_below, ..self }
     }
 
     /// A channel's density as stage 4 reads it.
@@ -106,13 +109,32 @@ pub struct Speck {
     pub bounds: [u32; 4],
 }
 
-/// What a frame holds past its window, and which of those shapes are dust; rows top first.
+/// A shape a reading could write, with the level it was read at and the jump its edge makes.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Found {
+struct Candidate {
+    speck: Speck,
+    level: usize,
+    jump: f32,
+}
+
+/// A frame read at every level, so a sensitivity is answered with no pixel read again.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Reading {
     pub width: usize,
     pub height: usize,
-    pub past: Vec<Run>,
-    pub dust: Vec<Speck>,
+    clear: Vec<Run>,
+    opaque: [Vec<Run>; LEVELS.len()],
+    /// Deepest level first, largest first: what a speck's last pixels are looked for in.
+    candidates: Vec<Candidate>,
+}
+
+/// What a reading shows at one sensitivity: the pixels past the window as it is read, and the dust among them.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Found<'a> {
+    pub width: usize,
+    pub height: usize,
+    pub past: [&'a [Run]; 2],
+    pub dust: Vec<&'a Speck>,
 }
 
 /// Every row's pixels past the window as runs, top first, read on all cores.
@@ -238,23 +260,62 @@ pub fn jumps(s: &Speck, pixels: &[[f32; 4]], width: usize, limits: &Limits, off:
     })
 }
 
-/// Whether a shape's jumps are what a speck on the film makes: sharp and alike in every channel.
-pub fn dust_like(j: [f32; 3]) -> bool {
+/// A shape's jump when it is what a speck on the film makes, sharp and alike in every channel.
+pub fn dust_jump(j: [f32; 3]) -> Option<f32> {
     let (least, most) = (j[0].min(j[1]).min(j[2]), j[0].max(j[1]).max(j[2]));
-    least >= MIN_JUMP && least >= NEUTRAL * most
+    (least >= JUMPS.1 && least >= NEUTRAL * most).then_some(least)
 }
 
-fn is_dust(s: &Speck, pixels: &[[f32; 4]], width: usize, height: usize, limits: &Limits) -> bool {
-    let inside = s.bounds[0] >= EDGE && s.bounds[1] >= EDGE && s.bounds[2] + EDGE <= width as u32 && s.bounds[3] + EDGE <= height as u32;
-    inside && (MIN_AREA..=MAX_AREA).contains(&s.area) && dust_like(jumps(s, pixels, width, limits, JUMP_AT))
-}
-
-/// What a framed frame holds past `limits`; `pixels` hold its rows top first.
-pub fn read(pixels: &[[f32; 4]], width: usize, limits: &Limits) -> Found {
+fn candidates(runs: &[(Run, Side)], pixels: &[[f32; 4]], width: usize, limits: &Limits, level: usize) -> Vec<Candidate> {
     let height = pixels.len() / width.max(1);
-    let runs = runs_of(pixels, width, limits);
-    let dust = gathered(&runs).into_iter().filter(|s| is_dust(s, pixels, width, height, limits)).collect();
-    Found { width, height, past: runs.into_iter().map(|(run, _)| run).collect(), dust }
+    let stands = |s: &Speck| s.bounds[0] >= EDGE && s.bounds[1] >= EDGE && s.bounds[2] + EDGE <= width as u32 && s.bounds[3] + EDGE <= height as u32 && (MIN_AREA..=MAX_AREA).contains(&s.area);
+    gathered(runs)
+        .into_iter()
+        .filter(stands)
+        .filter_map(|speck| dust_jump(jumps(&speck, pixels, width, limits, JUMP_AT)).map(|jump| Candidate { speck, level, jump }))
+        .collect()
+}
+
+/// A framed frame read at every level; `pixels` hold its rows top first.
+pub fn read(pixels: &[[f32; 4]], width: usize, limits: &Limits) -> Reading {
+    let height = pixels.len() / width.max(1);
+    let both = runs_of(pixels, width, limits);
+    let mut found = candidates(&both, pixels, width, limits, 0);
+    let side = |list: &[(Run, Side)], wanted: Side| list.iter().filter(|(_, s)| *s == wanted).map(|(r, _)| *r).collect::<Vec<Run>>();
+    let clear = side(&both, Side::Clear);
+    let mut opaque: [Vec<Run>; LEVELS.len()] = Default::default();
+    opaque[0] = side(&both, Side::Opaque);
+    // The clear end, where the scene's own shadows crowd, is read once: dust is opaque.
+    for level in 1..LEVELS.len() {
+        let inside = Limits { clear_above: [f32::INFINITY; 3], ..limits.closed_in(LEVELS[level]) };
+        let runs = runs_of(pixels, width, &inside);
+        found.extend(candidates(&runs, pixels, width, &inside, level));
+        opaque[level] = runs.into_iter().map(|(r, _)| r).collect();
+    }
+    found.sort_by_key(|c| (std::cmp::Reverse(c.level), std::cmp::Reverse(c.speck.area)));
+    Reading { width, height, clear, opaque, candidates: found }
+}
+
+/// Whether a shape's first pixel lies in another's, as a shape read at one level lies in what the next reads.
+fn lies_in(inner: &Speck, outer: &Speck) -> bool {
+    let (Some(first), true) = (inner.runs.first(), inner.side == outer.side) else { return false };
+    outer.runs.iter().any(|r| r.row == first.row && r.start <= first.start && first.start < r.end)
+}
+
+impl Reading {
+    /// The frame at `sensitivity`, 0 to 1: everything found below it stays, a speck read at two levels counting once, whole.
+    pub fn at(&self, sensitivity: f32) -> Found<'_> {
+        let s = sensitivity.clamp(0.0, 1.0);
+        let deepest = (s * (LEVELS.len() - 1) as f32) as usize;
+        let jump = JUMPS.0 + (JUMPS.1 - JUMPS.0) * s;
+        let mut dust: Vec<&Speck> = Vec::new();
+        for c in self.candidates.iter().filter(|c| c.level <= deepest && c.jump >= jump) {
+            if !dust.iter().any(|kept| lies_in(&c.speck, kept)) {
+                dust.push(&c.speck);
+            }
+        }
+        Found { width: self.width, height: self.height, past: [&self.clear, &self.opaque[deepest]], dust }
+    }
 }
 
 #[cfg(test)]

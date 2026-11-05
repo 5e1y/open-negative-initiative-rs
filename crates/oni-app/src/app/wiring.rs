@@ -280,6 +280,14 @@ impl Ctl {
         d.on_detect(move || p.toggle_detection());
         let p = me.clone();
         d.on_remove_found(move || p.remove_found());
+        let p = me.clone();
+        d.on_sensitivity_press(move |_| p.sensitivity_press());
+        let p = me.clone();
+        d.on_sensitivity_drag(move |t, span, fine| p.sensitivity_drag(t, span, fine));
+        let p = me.clone();
+        d.on_sensitivity_release(move || p.sensitivity_release());
+        let p = me.clone();
+        d.on_sensitivity_scroll(move |dx, dy, span, fine| p.sensitivity_scroll(dx, dy, span, fine));
         let c = window.global::<Canvas>();
         let p = me.clone();
         c.on_paint_start(move |x, y| p.paint_at(x, y, true));
