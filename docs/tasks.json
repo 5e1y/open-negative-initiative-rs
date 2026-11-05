@@ -5226,5 +5226,12 @@
     "title": "The log says what the system shows of the main window",
     "status": "done",
     "detail": "A window that stays away or keeps its old size raises no error, so a report could not tell them apart. on_screen.rs writes the screens (pixels, scale, rate) when the window is shown; three seconds later, and once settled after each resize or change of screen, AppKit's alpha, ordering and occlusion answer, the frame, the view, the Metal layer and the drawable, with the frames drawn (hz::frames); main.rs writes each turn of the occlusion state. Read on the Mac under the emulation of #1072: alpha 1.00, frames drawn, occlusion says not visible."
+  },
+  {
+    "id": 1074,
+    "type": "change",
+    "title": "Version 1.5.5",
+    "status": "done",
+    "detail": "oni-app 1.5.5, carrying a Mac window's first frame free of the occlusion state and the log of what the system shows (#1072, #1073); the 1.5 welcome and splash kept."
   }
 ]
