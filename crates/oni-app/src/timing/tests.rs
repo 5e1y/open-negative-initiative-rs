@@ -83,6 +83,7 @@ fn a_long_session_keeps_a_bounded_tail_and_its_whole_count() {
 }
 
 const CHILD: &str = "ONI_TIMING_CHILD";
+const PRIVATE: &str = "cannot read /Volumes/Archive Perso/Mariage, juin (Julie)/L'été.nef: denied (os 13)";
 
 /// This binary run again on one check, the log at `log`, `how` telling the child what to do.
 fn child(how: &str, log: &Path) -> (std::process::Output, String) {
@@ -106,6 +107,14 @@ fn the_child() {
             fatal("no adapter answered");
             std::process::exit(1);
         }
+        Some("private") => {
+            line(PRIVATE);
+            shown("status", &format!("{} connected", oni_i18n::named("Pixel de Jean")));
+            line(&format!("{}: not saved", oni_i18n::named("Noces 2025")));
+            shown("Open", &format!("Not found: {}", oni_i18n::named("/Volumes/Archive Perso/Noces")));
+            flush();
+            std::process::exit(0);
+        }
         _ => {}
     }
     panic!("the child's own panic");
@@ -124,6 +133,23 @@ fn a_panic_is_written_to_the_log_and_still_said_on_stderr() {
     let (out, log) = child("bare", &dir.join("bare.log"));
     assert!(!out.status.success());
     assert!(!log.contains("the child's own panic"), "{log}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_log_file_itself_holds_no_path_and_no_marked_name() {
+    let dir = std::env::temp_dir().join(format!("oni-timing-private-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (out, log) = child("private", &dir.join("private.log"));
+    assert_eq!(out.status.code(), Some(0));
+    for leak in ["Archive", "Mariage", "Julie", "été", "Pixel", "Noces"] {
+        assert!(!log.contains(leak), "{leak} leaked: {log}");
+    }
+    for kept in ["cannot read <path>: denied (os 13)", "<name> connected", "<name>: not saved", "Not found: <name>"] {
+        assert!(log.contains(kept), "{kept} lost: {log}");
+    }
+    // Twin: the same line left as it came would hold them all.
+    assert!(["Archive", "Mariage", "Julie", "été"].iter().all(|leak| PRIVATE.contains(leak)));
     let _ = std::fs::remove_dir_all(&dir);
 }
 

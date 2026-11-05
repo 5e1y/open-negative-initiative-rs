@@ -169,8 +169,8 @@ impl Ctl {
         crate::timing::shown(title, message);
         let Some(w) = self.window() else { return };
         let a = w.global::<Advice>();
-        a.set_title(title.into());
-        a.set_message(message.into());
+        a.set_title(oni_i18n::spoken(title).into());
+        a.set_message(oni_i18n::spoken(message).into());
         a.set_shown(true);
     }
 

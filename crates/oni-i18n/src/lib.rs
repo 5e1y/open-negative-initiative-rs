@@ -105,6 +105,19 @@ pub const fn marked(english: &'static str) -> &'static str {
     english
 }
 
+/// The marks around a name in a notice: Unicode's isolates, invisible even where one reaches the screen.
+pub const NAME_MARKS: (char, char) = ('\u{2068}', '\u{2069}');
+
+/// A person's own word for a file, a folder, a disk or a phone, inside a notice: shown, never logged.
+pub fn named(name: &str) -> String {
+    format!("{}{name}{}", NAME_MARKS.0, NAME_MARKS.1)
+}
+
+/// A notice as the screen shows it, without the marks of `named`.
+pub fn spoken(text: &str) -> String {
+    text.replace([NAME_MARKS.0, NAME_MARKS.1], "")
+}
+
 /// `tr` on a template whose `{name}` places take the values given, as `format!` would.
 #[macro_export]
 macro_rules! tr {
@@ -119,6 +132,14 @@ macro_rules! tr {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_name_marked_for_the_log_reads_as_itself_on_screen() {
+        let said = tr!("{name} connected", name = named("Pixel de Jean"));
+        assert_eq!(spoken(&said), "Pixel de Jean connected");
+        // Twin: the marked text is not what the screen must show.
+        assert_ne!(said, "Pixel de Jean connected");
+    }
 
     #[test]
     fn a_locale_is_read_by_its_language() {

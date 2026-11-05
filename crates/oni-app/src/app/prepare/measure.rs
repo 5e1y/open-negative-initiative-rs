@@ -258,8 +258,8 @@ fn left_out(asked: &[String], written: &Written, blank: &[String]) -> Option<Str
     let unread: Vec<&String> = asked.iter().filter(|p| !written.iter().any(|(w, _, _)| w == *p)).collect();
     let empty: Vec<&String> = blank.iter().filter(|p| written.iter().any(|(w, _, _)| w == *p)).collect();
     let lines: Vec<String> = [
-        (!unread.is_empty()).then(|| trn("{names} could not be read and was left as it was.", "{names} could not be read and were left as they were.", unread.len() as u64).replace("{names}", &names(unread))),
-        (!empty.is_empty()).then(|| trn("{names} holds nothing to measure: it takes the roll's settings without weighing on them.", "{names} hold nothing to measure: they take the roll's settings without weighing on them.", empty.len() as u64).replace("{names}", &names(empty))),
+        (!unread.is_empty()).then(|| trn("{names} could not be read and was left as it was.", "{names} could not be read and were left as they were.", unread.len() as u64).replace("{names}", &oni_i18n::named(&names(unread)))),
+        (!empty.is_empty()).then(|| trn("{names} holds nothing to measure: it takes the roll's settings without weighing on them.", "{names} hold nothing to measure: they take the roll's settings without weighing on them.", empty.len() as u64).replace("{names}", &oni_i18n::named(&names(empty)))),
     ]
     .into_iter()
     .flatten()
@@ -275,7 +275,7 @@ mod tests {
     fn a_measure_names_the_frames_it_could_not_read_and_those_that_held_nothing() {
         let asked: Vec<String> = ["/r/a.RW2", "/r/b.RW2", "/r/c.RW2"].map(String::from).into();
         let written: Written = asked[..2].iter().map(|p| (p.clone(), PipelineSettings::default(), PipelineSettings::default())).collect();
-        let said = left_out(&asked, &written, &asked[1..2]).expect("two frames to name");
+        let said = oni_i18n::spoken(&left_out(&asked, &written, &asked[1..2]).expect("two frames to name"));
         assert!(said.contains("c.RW2 could not be read") && said.contains("b.RW2 holds nothing to measure"), "{said}");
         assert!(!said.contains("a.RW2"));
         // Twin: every frame read and voting, nothing is said.

@@ -175,7 +175,7 @@ impl Ctl {
                     return;
                 }
                 if let Err(e) = phone::trust(&support, phone) {
-                    self.say(&tr!("{name} is paired for this session only: {error}", name = name, error = e));
+                    self.say(&tr!("{name} is paired for this session only: {error}", name = oni_i18n::named(&name), error = e));
                 }
                 self.pairing_status(&tr!("Paired with {name}.", name = name));
             }
@@ -183,7 +183,7 @@ impl Ctl {
                 timing::line("phone connected");
                 let new = self.state.borrow_mut().phone.as_mut().is_some_and(|p| p.connected(phone, connection, name.clone()));
                 if new {
-                    self.say(&tr!("{name} connected", name = name));
+                    self.say(&tr!("{name} connected", name = oni_i18n::named(&name)));
                 }
                 self.show_phones();
             }

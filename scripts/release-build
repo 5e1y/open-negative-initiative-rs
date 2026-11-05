@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
-# The shipped binary, stamped: ONI_VERSION is what the dialogs and the installation ping name,
+# The shipped Mac binaries, stamped: ONI_VERSION is what the dialogs and the installation ping name,
 # ONI_BUILD what the update feed compares. Builds only; publishing stays the owner's step.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+root=$PWD
 version="${1:?usage: scripts/release-build <version, e.g. 1.4.0>}"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "FAIL: a version reads like 1.4.0" >&2; exit 1; }
 [[ -z "$(git status --porcelain)" ]] || { echo "FAIL: commit first, so the build number names this tree" >&2; exit 1; }
 # Above every Swift build (its feed's numbers are its own commit count, 1523 at 1.3.1), so the feed
 # never offers a Swift item over a Rust build.
 build=$((10000 + $(git rev-list --count HEAD)))
-ONI_VERSION="$version" ONI_BUILD="$build" cargo build --release -p oni-app --bin oni
-echo "$version (build $build): target/release/oni"
+tools="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+# Source paths come out relative, so a published binary and a panic's backtrace name no folder or
+# account of the machine that built them. A panic's place stays readable.
+sep=$'\x1f'
+export CARGO_ENCODED_RUSTFLAGS="--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}/registry/src=cargo${sep}--remap-path-prefix=${RUSTUP_HOME:-$HOME/.rustup}/toolchains=rustup${sep}--remap-path-prefix=$root=."
+export CFLAGS="-ffile-prefix-map=$root=." CXXFLAGS="-ffile-prefix-map=$root=."
+export ONI_VERSION="$version" ONI_BUILD="$build"
+cargo build --release -p oni-app --bin oni
+MACOSX_DEPLOYMENT_TARGET=11.0 CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER="$tools/clang" \
+    cargo build --release --target x86_64-apple-darwin -p oni-app --bin oni
+# The linker's debug map names every object file by its full path; symbols stay for the backtraces.
+"$tools/strip" -S target/release/oni target/x86_64-apple-darwin/release/oni
+echo "$version (build $build): target/release/oni, target/x86_64-apple-darwin/release/oni"

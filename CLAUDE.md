@@ -17,6 +17,11 @@ wins over any note.
 4. **Zero anticipation.** A constant before a slider; a slider once use proves the constant wrong.
 5. **Every change is logged in `docs/tasks.json`** before its commit, cited as `(#id)`.
 6. **Every comment follows the comment rules**, in every file.
+7. **The log says nothing of the person using the app.** No file, folder, disk, account or phone name
+   reaches the log file, stderr or a sealed report: a photo is `anonymity::token`, a name inside a notice
+   is `oni_i18n::named` (the screen shows it, the log masks it), and every line takes `anonymity::scrubbed`
+   on its way out. A template naming something bare fails its check until it marks the name or is listed as
+   never logged. A shipped binary names no folder or account of the machine that built it (`scripts/release-build`).
 
 ## Comment rules
 

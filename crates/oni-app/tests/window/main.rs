@@ -165,6 +165,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("told::an_undo_that_cannot_put_every_photo_back_says_how_many", told::an_undo_that_cannot_put_every_photo_back_says_how_many),
     ("told::a_new_folder_refused_by_the_disk_is_said", told::a_new_folder_refused_by_the_disk_is_said),
     ("told::a_rename_with_a_slash_says_why", told::a_rename_with_a_slash_says_why),
+    ("told::a_path_refused_at_opening_is_said_whole_on_screen", told::a_path_refused_at_opening_is_said_whole_on_screen),
     ("new_roll::a_new_roll_asks_names_the_folder_and_counts_files", new_roll::a_new_roll_asks_names_the_folder_and_counts_files),
     ("submenus::a_submenu_opens_on_the_pointer_at_rest_and_closes_on_another_line", submenus::a_submenu_opens_on_the_pointer_at_rest_and_closes_on_another_line),
     ("submenus::a_pointer_heading_for_the_submenu_keeps_it_open_across_other_lines", submenus::a_pointer_heading_for_the_submenu_keeps_it_open_across_other_lines),

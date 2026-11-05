@@ -156,7 +156,7 @@ fn a_triplet_moves_whole_or_not_at_all() {
     let carried = carry(&units, &locked);
     assert!(carried.made.is_empty());
     assert_eq!(carried.stayed.len(), 1);
-    assert!(said(&carried).unwrap().contains("g.ARW: another app is using it"), "{:?}", said(&carried));
+    assert!(oni_i18n::spoken(&said(&carried).unwrap()).contains("g.ARW: another app is using it"), "{:?}", said(&carried));
     assert!(triplet.iter().all(|f| exists(f) && exists(&side(f))), "the three and their sidecars are home");
     assert_eq!(listed(&into), Vec::<String>::new(), "nothing of the frame in the roll");
     // Twin: a rename that takes every file moves the three with their sidecars.
@@ -373,7 +373,7 @@ fn a_locked_file_is_retried_then_named() {
     std::fs::create_dir(paths::join(&parent, "Roll")).unwrap();
     let held = |f: &Path, t: &Path| retried(f, t, &|_: &Path, _: &Path| Err(io::Error::from(io::ErrorKind::ResourceBusy)), &|_| {}, Windows);
     let carried = carry(&units, &held);
-    let said = said(&carried).unwrap_or_default();
+    let said = oni_i18n::spoken(&said(&carried).unwrap_or_default());
     assert!(carried.made.is_empty() && exists(&photo), "nothing moved");
     assert_eq!(said, "“DSC_0001.NEF” stayed where it was: DSC_0001.NEF: another app is using it.");
 

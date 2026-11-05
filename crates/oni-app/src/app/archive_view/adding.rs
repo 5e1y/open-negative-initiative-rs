@@ -81,10 +81,10 @@ impl Ctl {
                 let message = tr("ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it.");
                 self.ask(&tr!("Show Every Photo on “{name}”?", name = name), message, tr("Show Every Photo"), false, Pending::Run(Box::new(open)));
             }
-            Some(Added::Refused { path, state: Presence::Offline(Away::Denied) }) => self.told(tr("Open"), &tr!("Not opened: ONI has no access to {path}", path = path)),
-            Some(Added::Refused { path, .. }) => self.told(tr("Open"), &tr!("Not found: {path}", path = path)),
+            Some(Added::Refused { path, state: Presence::Offline(Away::Denied) }) => self.told(tr("Open"), &tr!("Not opened: ONI has no access to {path}", path = oni_i18n::named(&path))),
+            Some(Added::Refused { path, .. }) => self.told(tr("Open"), &tr!("Not found: {path}", path = oni_i18n::named(&path))),
             Some(Added::Wide { folder }) => {
-                self.told(tr("Open"), &tr!("Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it.", folder = folder))
+                self.told(tr("Open"), &tr!("Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it.", folder = oni_i18n::named(&folder)))
             }
             Some(Added::Package { package }) => {
                 let name = paths::name(&package);

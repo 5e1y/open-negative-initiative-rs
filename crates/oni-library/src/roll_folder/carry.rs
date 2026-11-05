@@ -91,7 +91,7 @@ pub fn carry(units: &[Unit], rename: &Rename) -> Carried {
             match rename(Path::new(&step.0), Path::new(&step.1)) {
                 Ok(()) => done.push(step),
                 Err(e) => {
-                    refused = Some(tr!("{file}: {cause}", file = paths::name(&step.0), cause = cause(&e)));
+                    refused = Some(tr!("{file}: {cause}", file = oni_i18n::named(&paths::name(&step.0)), cause = cause(&e)));
                     break;
                 }
             }
@@ -102,7 +102,7 @@ pub fn carry(units: &[Unit], rename: &Rename) -> Carried {
         };
         for (from, to) in done.into_iter().rev() {
             if let Err(e) = rename(Path::new(to), Path::new(from)) {
-                said.push_str(&tr!("; {file} could not go back to “{folder}” ({cause})", file = paths::name(to), folder = paths::name(&paths::parent(from)), cause = cause(&e)));
+                said.push_str(&tr!("; {file} could not go back to “{folder}” ({cause})", file = oni_i18n::named(&paths::name(to)), folder = paths::name(&paths::parent(from)), cause = cause(&e)));
             }
         }
         out.stayed.push((label, said));

@@ -31,8 +31,8 @@ impl Ctl {
             s.nav.unstarred = None;
         }
         let t = w.global::<Told>();
-        t.set_title(title.into());
-        t.set_message(message.into());
+        t.set_title(oni_i18n::spoken(title).into());
+        t.set_message(oni_i18n::spoken(message).into());
         t.set_action(key.into());
         t.set_serial(t.get_serial().wrapping_add(1));
         t.set_shown(true);

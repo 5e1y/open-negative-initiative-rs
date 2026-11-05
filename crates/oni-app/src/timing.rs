@@ -65,9 +65,12 @@ fn sink() -> &'static Sink {
         std::thread::Builder::new()
             .name("log".into())
             .spawn(move || {
+                let home = crate::anonymity::home();
                 for w in rx {
                     match w {
                         Written::Line(stamped) => {
+                            // Masked here, off the caller's thread: no line reaches the file with a path or a marked name.
+                            let stamped = crate::anonymity::scrubbed(&stamped, &home);
                             // A closed stderr fails the write, which `eprintln!` turns into this thread's end.
                             let _ = writeln!(std::io::stderr().lock(), "{stamped}");
                             if let Ok(mut file) = sink().file.lock()

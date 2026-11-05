@@ -84,8 +84,7 @@ pub fn fitted(text: &str, recipient: &PublicKey) -> Result<String, String> {
 /// The session's console with no path left in it, sealed; `None` when it cannot be read or sealed.
 pub fn sealed_log(log: &std::path::Path) -> Option<String> {
     let text = std::fs::read_to_string(log).ok()?;
-    let home = std::env::var(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap_or_default();
-    fitted(&crate::anonymity::scrubbed(&text, &home), &recipient(PUBLIC_KEY)?).ok()
+    fitted(&crate::anonymity::scrubbed(&text, &crate::anonymity::home()), &recipient(PUBLIC_KEY)?).ok()
 }
 
 /// `BugReport.Failure`'s words.

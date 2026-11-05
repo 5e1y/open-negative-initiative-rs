@@ -241,6 +241,22 @@ pub(crate) fn a_new_folder_refused_by_the_disk_is_said() {
     let _ = std::fs::remove_dir_all(&d.root);
 }
 
+pub(crate) fn a_path_refused_at_opening_is_said_whole_on_screen() {
+    let Some(gpu) = gpu("a path refused at opening") else { return };
+    let d = disk("refused", &["Home/Scans/A.tif"]);
+    let gone = d.root.join("Home/Mariage, juin (Julie)");
+    let rig = rig();
+    let shell = d.launch(&gpu);
+    shell.add(&gone);
+    rig.until("the path refused told", Duration::from_secs(10), || told(&shell).is_some());
+    let (title, message, _) = told(&shell).expect("the path refused is told");
+    assert_eq!(title, "Open");
+    assert_eq!(message, format!("Not found: {}", paths::canonical(&gone)), "the screen shows the path as it is, without its marks");
+    // Twin: the marked words are not what the screen must show.
+    assert_ne!(message, format!("Not found: {}", oni_i18n::named(&paths::canonical(&gone))));
+    let _ = std::fs::remove_dir_all(&d.root);
+}
+
 pub(crate) fn a_rename_with_a_slash_says_why() {
     let Some(gpu) = gpu("a refused name") else { return };
     let d = disk("rename", &["Home/Scans/Roll 1/A.tif"]);

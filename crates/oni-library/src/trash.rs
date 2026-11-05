@@ -75,7 +75,7 @@ pub fn report(outcome: &Outcome, restoring: bool) -> Option<String> {
             .take(NAMED)
             .map(|(path, cause)| {
                 let name = paths::name(&sidecar::url_for(Path::new(path)).to_string_lossy());
-                tr!("{file} could not be written ({cause})", file = name, cause = cause)
+                tr!("{file} could not be written ({cause})", file = oni_i18n::named(&name), cause = cause)
             })
             .collect();
         if outcome.failed.len() > NAMED {

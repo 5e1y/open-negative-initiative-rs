@@ -197,7 +197,7 @@ pub struct Unmeasurable(pub String);
 impl std::fmt::Display for Unmeasurable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = std::path::Path::new(&self.0).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-        f.write_str(&oni_i18n::tr!("{name}: nothing to balance. The file could not be read, or one of its channels is too flat to place points in.", name = name))
+        f.write_str(&oni_i18n::tr!("{name}: nothing to balance. The file could not be read, or one of its channels is too flat to place points in.", name = oni_i18n::named(&name)))
     }
 }
 

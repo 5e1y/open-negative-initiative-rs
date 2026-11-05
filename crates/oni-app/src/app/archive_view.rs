@@ -194,7 +194,7 @@ impl Ctl {
                 }
                 Err(e) => {
                     s.failed.insert(fingerprint.clone());
-                    (!e.is_empty()).then(|| format!("{name}: {e}"))
+                    (!e.is_empty()).then(|| format!("{}: {e}", oni_i18n::named(&name)))
                 }
             }
         };
