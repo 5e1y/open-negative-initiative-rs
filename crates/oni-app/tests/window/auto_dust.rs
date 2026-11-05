@@ -7,11 +7,24 @@ use oni_core::{Archive, EditorStore};
 use oni_settings::levels::Levels;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
-use slint::{ComponentHandle, Model};
+use slint::platform::{PointerEventButton, WindowEvent};
+use slint::{ComponentHandle, LogicalPosition, Model};
 use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
+
+/// A hand's drag at `y`, rightwards by `by`, through the window's own pointer events.
+fn dragged(rig: &common::Rig, x: f32, y: f32, by: f32) {
+    let at = |x: f32| LogicalPosition::new(x, y);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: at(x) });
+    rig.window.dispatch_event(WindowEvent::PointerPressed { position: at(x), button: PointerEventButton::Left });
+    rig.pump();
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: at(x + by) });
+    rig.pump();
+    rig.window.dispatch_event(WindowEvent::PointerReleased { position: at(x + by), button: PointerEventButton::Left });
+    rig.pump();
+}
 
 /// The window's pixels the lit colour holds, and their mean brightness, each channel at 0 to 1.
 fn on_screen(rig: &common::Rig) -> (usize, f64) {
@@ -90,6 +103,29 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     d.invoke_sensitivity_release();
     rig.pump();
     assert_eq!((d.get_sensitivity_text().as_str(), d.get_found()), ("0 %", 1), "twin: back at rest, the one speck");
+    // The same through the window's pointer: down the panel until a drag moves the slider, the tab's first control.
+    let x = 1280.0 - w.global::<oni_app::DetailLoupe>().get_band_width() / 2.0 - 30.0;
+    // Past the double click the keys above made, which would read the press as a reset.
+    let past_a_double = oni_app::system::double_click() + Duration::from_millis(50);
+    std::thread::sleep(past_a_double);
+    let mut y = 0.0;
+    while d.get_sensitivity() == 0.0 && y < 800.0 {
+        dragged(&rig, x, y, 40.0);
+        y += 4.0;
+    }
+    assert!(d.get_sensitivity() > 0.0, "a hand's drag moves the slider");
+    assert!(d.get_found_shown(), "and leaves the reading up");
+    let moved = d.get_sensitivity();
+    assert!((moved - 40.0 / 308.0).abs() < 0.02, "by the drag's share of the track: {moved}");
+    std::thread::sleep(past_a_double);
+    dragged(&rig, x, y - 4.0, -20.0);
+    let back = d.get_sensitivity();
+    assert!(back > 0.0 && back < moved, "twin: dragged back, it comes back by as much, no reset: {back} from {moved}");
+    std::thread::sleep(past_a_double);
+    d.invoke_sensitivity_press(false);
+    d.invoke_sensitivity_drag(-300.0, 300.0, false);
+    d.invoke_sensitivity_release();
+    rig.pump();
     rig.settle();
     let veiled = on_screen(&rig);
     assert!(veiled.0 > bare.0, "the speck lit on the canvas: {veiled:?} against {bare:?}");
