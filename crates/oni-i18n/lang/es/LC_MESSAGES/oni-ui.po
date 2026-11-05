@@ -1529,6 +1529,34 @@ msgstr "Conservado"
 msgid "Brush Size"
 msgstr "Tamaño del pincel"
 
+#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
+msgid "Automatic"
+msgstr "Automático"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Remove lays one patch on each speck ringed."
+msgstr "Detectar muestra, bajo un velo, cada píxel fuera de la ventana del rollo; el polvo entre ellos queda rodeado. Quitar coloca un parche sobre cada mota rodeada."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "HIDE"
+msgstr "OCULTAR"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "DETECT"
+msgstr "DETECTAR"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Reads this photo for dust past the roll's window; nothing changes until you remove it."
+msgstr "Busca en esta foto el polvo fuera de la ventana del rollo; nada cambia hasta que lo quites."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "REMOVE"
+msgstr "QUITAR"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Lays one patch on each speck of dust ringed."
+msgstr "Coloca un parche sobre cada mota de polvo rodeada."
+
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Dust & Scratches"
 msgstr "Polvo y arañazos"
@@ -2010,10 +2038,6 @@ msgid "Language"
 msgstr "Idioma"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "Automatic"
-msgstr "Automático"
-
-#: crates/oni-ui/ui/settings.slint
 msgid "Automatic follows the system's language when the app speaks it, English otherwise."
 msgstr "Automático sigue el idioma del sistema cuando la app lo habla; si no, usa el inglés."
 
@@ -2400,6 +2424,20 @@ msgid "One photo has no thumbnail: its original cannot be reached."
 msgid_plural "{n} photos have no thumbnail: their originals cannot be reached."
 msgstr[0] "Una foto no tiene miniatura: no se puede acceder a su original."
 msgstr[1] "{n} fotos no tienen miniatura: no se puede acceder a sus originales."
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "Reading the photo…"
+msgstr "Leyendo la foto…"
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "No dust past the roll's window"
+msgstr "Sin polvo fuera de la ventana del rollo"
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "{n} speck of dust ringed"
+msgid_plural "{n} specks of dust ringed"
+msgstr[0] "{n} mota de polvo rodeada"
+msgstr[1] "{n} motas de polvo rodeadas"
 
 #: crates/oni-app/src/app/dedusting.rs
 msgid "Correction"

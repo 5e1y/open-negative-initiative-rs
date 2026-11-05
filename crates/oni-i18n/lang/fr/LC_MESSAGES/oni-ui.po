@@ -1529,6 +1529,34 @@ msgstr "Conservé"
 msgid "Brush Size"
 msgstr "Taille du pinceau"
 
+#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
+msgid "Automatic"
+msgstr "Automatique"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Remove lays one patch on each speck ringed."
+msgstr "Détecter montre, sous un voile, chaque pixel hors de la fenêtre du rouleau ; les poussières parmi eux sont cerclées. Retirer recouvre chaque poussière cerclée d’une zone semblable."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "HIDE"
+msgstr "MASQUER"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "DETECT"
+msgstr "DÉTECTER"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Reads this photo for dust past the roll's window; nothing changes until you remove it."
+msgstr "Cherche sur cette photo les poussières hors de la fenêtre du rouleau ; rien ne change tant que vous ne les retirez pas."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "REMOVE"
+msgstr "RETIRER"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Lays one patch on each speck of dust ringed."
+msgstr "Recouvre chaque poussière cerclée d’une zone semblable."
+
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Dust & Scratches"
 msgstr "Poussières et rayures"
@@ -2010,10 +2038,6 @@ msgid "Language"
 msgstr "Langue"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "Automatic"
-msgstr "Automatique"
-
-#: crates/oni-ui/ui/settings.slint
 msgid "Automatic follows the system's language when the app speaks it, English otherwise."
 msgstr "Automatique suit la langue du système quand l’app la parle, l’anglais sinon."
 
@@ -2400,6 +2424,20 @@ msgid "One photo has no thumbnail: its original cannot be reached."
 msgid_plural "{n} photos have no thumbnail: their originals cannot be reached."
 msgstr[0] "Une photo n’a pas de vignette : son original est injoignable."
 msgstr[1] "{n} photos n’ont pas de vignette : leurs originaux sont injoignables."
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "Reading the photo…"
+msgstr "Lecture de la photo…"
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "No dust past the roll's window"
+msgstr "Aucune poussière hors de la fenêtre du rouleau"
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "{n} speck of dust ringed"
+msgid_plural "{n} specks of dust ringed"
+msgstr[0] "{n} poussière cerclée"
+msgstr[1] "{n} poussières cerclées"
 
 #: crates/oni-app/src/app/dedusting.rs
 msgid "Correction"

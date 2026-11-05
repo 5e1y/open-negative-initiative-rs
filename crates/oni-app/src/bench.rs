@@ -8,6 +8,7 @@
 //! `ONI_BENCH=compare` turns Compare on, drags Exposure and the split, and counts the befores;
 //! `ONI_BENCH=crop` frames through the Crop tab's keys and the canvas's handles, then undoes it all;
 //! `ONI_BENCH=dedust` paints a stroke in De-dust, waits for its patch, then removes it.
+//! `ONI_BENCH=autodust` reads the frame for dust, removes what it found, waits for the patches, reads again.
 //! `ONI_BENCH=flows` walks the owner's flow in the real window: the gallery, a click that selects in
 //! the gallery and the sidebar alike, a double click that opens, an edit, three frames over.
 //! `ONI_BENCH=presets` saves a preset, raises the deck under the pointer, previews the card by
@@ -113,6 +114,7 @@ pub enum Mode {
     Long,
     Zoom,
     Compare,
+    AutoDust,
     Crop,
     Dedust,
     Flows,
@@ -146,6 +148,7 @@ pub fn requested() -> Option<Mode> {
         "compare" => Some(Mode::Compare),
         "crop" => Some(Mode::Crop),
         "dedust" => Some(Mode::Dedust),
+        "autodust" => Some(Mode::AutoDust),
         "flows" => Some(Mode::Flows),
         "presets" => Some(Mode::Presets),
         "prepare" => Some(Mode::Prepare),
@@ -179,6 +182,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Dedust {
         return dedust(ctl, done);
+    }
+    if mode == Mode::AutoDust {
+        return autodust(ctl, done);
     }
     if mode == Mode::Flows {
         return flows(ctl, done);
@@ -297,7 +303,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on {on}"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on {on}, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on {on}, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::AutoDust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);

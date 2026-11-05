@@ -84,6 +84,10 @@ export global Canvas {
     // Each patch's source: the lines to them, and the copied strokes with their widths.
     in property <string> source-lines;
     in property <[{commands: string, width: length}]> source-shapes;
+    // Auto De-dust's reading: the picture veiled, its pixels past the roll's window lit, a ring on each speck kept.
+    in property <bool> dust-shown;
+    in property <image> dust-mask;
+    in property <[Mark]> dust-marks;
     // Space held in De-dust: the drag pans instead of painting.
     in-out property <bool> space-held;
     // The crop's size while a handle is held, above the frame.

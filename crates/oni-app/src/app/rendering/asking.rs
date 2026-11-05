@@ -253,6 +253,7 @@ impl Ctl {
                 if editing {
                     c.request_render();
                 }
+                c.detection_due();
             });
         });
     }

@@ -276,6 +276,10 @@ impl Ctl {
         });
         let p = me.clone();
         d.on_remove(move |i| p.remove_correction(usize::try_from(i).unwrap_or(usize::MAX)));
+        let p = me.clone();
+        d.on_detect(move || p.toggle_detection());
+        let p = me.clone();
+        d.on_remove_found(move || p.remove_found());
         let c = window.global::<Canvas>();
         let p = me.clone();
         c.on_paint_start(move |x, y| p.paint_at(x, y, true));

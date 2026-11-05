@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -143,6 +143,25 @@ export component CanvasCard inherits Card {
         if Canvas.painting: Rectangle {
             width: parent.width;
             height: parent.height;
+            if Canvas.dust-shown: DustVeil {
+                x: Canvas.picture-x;
+                y: Canvas.picture-y;
+                width: Canvas.picture-width;
+                height: Canvas.picture-height;
+                source: Canvas.dust-mask;
+            }
+            if Canvas.dust-shown: Rectangle {
+                width: parent.width;
+                height: parent.height;
+                for m in Canvas.dust-marks: CorrectionMark {
+                    // A ring the eye finds whatever the speck's size on the canvas.
+                    property <length> side: max(m.width, m.height, DustStyle.ring);
+                    x: m.x + (m.width - self.side) / 2;
+                    y: m.y + (m.height - self.side) / 2;
+                    width: self.side;
+                    height: self.side;
+                }
+            }
             for t in Canvas.source-shapes: Trace {
                 tone: TraceTone.source;
                 width: parent.width;

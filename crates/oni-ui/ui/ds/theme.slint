@@ -288,6 +288,13 @@ export global CropStyle {
     out property <length> dust-original: 56px;
 }
 
+// Auto De-dust's reading on the canvas: the veil over the picture, the pixels lit, a speck's least ring.
+export global DustStyle {
+    out property <color> veil: Colour.black.with-alpha(0.65);
+    out property <color> lit: Colour.edge-print;
+    out property <length> ring: 20px;
+}
+
 // Compare's split guide: a grab the width of a handle, a line that grows under the hand.
 export global SplitStyle {
     out property <length> grab: DS.control-grab-size;

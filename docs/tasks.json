@@ -5233,5 +5233,12 @@
     "title": "Version 1.5.5",
     "status": "done",
     "detail": "oni-app 1.5.5, carrying a Mac window's first frame free of the occlusion state and the log of what the system shows (#1072, #1073); the 1.5 welcome and splash kept."
+  },
+  {
+    "id": 1075,
+    "type": "feature",
+    "title": "Auto De-dust: a reading past the roll's window under a veil, then one patch per speck ringed",
+    "status": "done",
+    "detail": "Beyond Swift, owner's ask. De-dust's Automatic block holds two keys and neither runs unasked. DETECT reads the framed frame whole at full resolution (oni-measure/src/dust.rs, about 220 ms on 26 Mpx once decoded) and shows, under a veil, every pixel past the window: the roll's black and white and its gains when the frame is on one, else the frame's own. REMOVE writes one correction per speck ringed, one undo step, its patch made as a hand's. A shape stays out unless it is 3 to 8192 pixels, 16 clear of the frame's edge, and its edge jumps sharply and neutrally: 2 pixels off, the least channel's median jump is 0.2 density or more and 0.6 or more of the most's. Measured on 47 frames (roll #8, Lumix 2026-10-30): pixels past the window alone are shadow grain, lamps and glints, thousands of shapes a frame; a glint's jump is 0.05 to 0.17 with its blue up to five times its red, the one real speck's 0.34 on all three. Exactly that speck is kept on the 47 frames, and a second reading over its patch finds nothing. A stroke follows the shape's longest walk, its radius the farthest pixel plus 8: at plus 4 the speck's soft edge left a ghost, at plus 8 none. Known limit: dust inside the window is not read (the three strokes painted on P1073209 stand at density 0.66 to 1.09 under a white of 1.16 to 1.27), which the owner's next look decides. Checks: oni-measure dust tests with twins, app/dedusting/auto.rs tests, window check auto_dust, ONI_BENCH=autodust on a real frame, dust_census for the whole roll."
   }
 ]

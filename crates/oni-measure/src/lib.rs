@@ -7,6 +7,7 @@
 pub mod auto_levels;
 pub mod blocks;
 pub mod choice;
+pub mod dust;
 pub mod filter_balance;
 pub mod histogram;
 pub mod key;

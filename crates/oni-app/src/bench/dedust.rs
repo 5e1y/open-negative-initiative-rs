@@ -105,6 +105,78 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     });
 }
 
+/// Auto De-dust through the tab's two keys: a reading, its dust removed, every patch waited for, a second
+/// reading over the patches, then every correction taken back and the tool left.
+pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    let timer = Rc::new(Timer::default());
+    let step = Cell::new(0usize);
+    let done = RefCell::new(Some(done));
+    let lines = RefCell::new(Vec::<String>::new());
+    let since = Cell::new(Instant::now());
+    let me = Rc::downgrade(ctl);
+    let held = timer.clone();
+    timer.start(TimerMode::Repeated, Duration::from_millis(100), move || {
+        let timer = &held;
+        let Some(ctl) = me.upgrade() else { return timer.stop() };
+        let Some(w) = ctl.window() else { return };
+        let (d, c) = (w.global::<crate::Dedust>(), w.global::<crate::Canvas>());
+        let corrections = || ctl.state.borrow().store().settings().corrections.clone();
+        let n = step.get();
+        step.set(n + 1);
+        let waited = since.get().elapsed() > Duration::from_secs(120);
+        match n {
+            0 => {
+                if ctl.state.borrow().renders() < 1 || ctl.state.borrow().placed().is_none() {
+                    step.set(0);
+                    return;
+                }
+                ctl.act(crate::Act::Correction);
+                since.set(Instant::now());
+                d.invoke_detect();
+            }
+            1 | 4 => {
+                if waited {
+                    return finish(timer, &done, &lines, "the reading never came");
+                }
+                if !d.get_found_shown() {
+                    step.set(n);
+                    return;
+                }
+                lines.borrow_mut().push(format!("reading {} ms: {} dust, {:?}, veil {}, mask {:?}, rings {}", since.get().elapsed().as_millis(), d.get_found(), d.get_found_note().to_string(), c.get_dust_shown(), (c.get_dust_mask().size().width, c.get_dust_mask().size().height), c.get_dust_marks().row_count()));
+                if n == 4 {
+                    for _ in 0..corrections().len() {
+                        d.invoke_remove(0);
+                    }
+                    d.invoke_detect();
+                    lines.borrow_mut().push(format!("taken back: {} corrections, veil {}", corrections().len(), c.get_dust_shown()));
+                    ctl.act(crate::Act::Correction);
+                    ctl.flush();
+                    finish(timer, &done, &lines, "done");
+                }
+            }
+            2 => {
+                since.set(Instant::now());
+                d.invoke_remove_found();
+                let list = corrections();
+                lines.borrow_mut().push(format!("removed: {} corrections, radii {:?}, points {:?}, veil {}", list.len(), list.iter().map(|c| c.radius.round()).collect::<Vec<_>>(), list.iter().map(|c| c.stroke.len()).collect::<Vec<_>>(), c.get_dust_shown()));
+            }
+            3 => {
+                if waited {
+                    return finish(timer, &done, &lines, "the patches never came");
+                }
+                if !corrections().iter().all(|c| crate::patches::file(&crate::patches::caches(), c.id).exists()) {
+                    step.set(3);
+                    return;
+                }
+                lines.borrow_mut().push(format!("{} patches {} ms after the key", corrections().len(), since.get().elapsed().as_millis()));
+                since.set(Instant::now());
+                d.invoke_detect();
+            }
+            _ => {}
+        }
+    });
+}
+
 pub(super) fn finish(timer: &Timer, done: &RefCell<Option<impl FnOnce(String)>>, lines: &RefCell<Vec<String>>, last: &str) {
     timer.stop();
     if let Some(done) = done.borrow_mut().take() {

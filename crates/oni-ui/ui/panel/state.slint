@@ -164,6 +164,13 @@ export global Dedust {
     // A scroll along the track sets the size; one across it is left to the panel.
     callback scroll(length, length, length, bool) -> bool;
     callback remove(int);
+    // Auto De-dust: a reading under way or shown, the dust it keeps, what it says.
+    in property <bool> detecting;
+    in property <bool> found-shown;
+    in property <int> found;
+    in property <string> found-note;
+    callback detect();
+    callback remove-found();
 }
 
 // `Loupe`'s band under Details: Rust renders the region the canvas centres and says its size in points.

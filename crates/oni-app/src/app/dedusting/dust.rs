@@ -16,6 +16,10 @@ pub(in crate::app) struct Dust {
     pub healing: HashSet<String>,
     pub patched: HashSet<oni_settings::id::Id>,
     pub unhealable: HashSet<oni_settings::id::Id>,
+    /// Auto De-dust: a reading under way, one waiting on the full resolution, the last one shown.
+    pub detecting: bool,
+    pub detect_asked: bool,
+    pub found: Option<super::auto::Shown>,
 }
 
 impl Dust {

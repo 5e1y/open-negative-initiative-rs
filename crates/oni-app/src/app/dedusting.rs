@@ -3,6 +3,7 @@
 use super::*;
 
 pub(super) mod live;
+mod auto;
 mod dust;
 mod originals;
 
@@ -98,6 +99,7 @@ impl Ctl {
         }
         let c = w.global::<Canvas>();
         c.set_painting(painting);
+        self.publish_found(frame);
         if !painting {
             c.set_space_held(false);
             return;

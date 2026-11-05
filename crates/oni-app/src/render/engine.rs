@@ -340,6 +340,18 @@ impl Engine {
         Ok((r, size))
     }
 
+    /// `Pipeline.framed` read back whole at full resolution, the patches already made laid: what auto
+    /// De-dust reads, so a second reading no longer sees what the first healed. Rows top first.
+    pub fn framed_whole(&mut self, full: &Source, settings: &PipelineSettings) -> Result<(usize, Vec<[f32; 4]>), String> {
+        self.read_custom(settings);
+        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let framed = self.pipeline.framed(&mut self.graph, Image::new(full), settings, 1.0, &inputs).map_err(|e| e.to_string())?;
+        let e = framed.extent();
+        let pixels = self.graph.render(&framed, e, None).map_err(|e| e.to_string())?;
+        self.graph.purge();
+        Ok((e.w as usize, pixels))
+    }
+
     /// `Loupe.recipe`: the pipeline on the full-resolution frame FIRST, the region second, since
     /// the neighbourhood radii index on the incoming extent; kept on the GPU for the display kernel,
     /// `None` on an unlaid band.
