@@ -1538,8 +1538,8 @@ msgid "Automatic"
 msgstr "Automático"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Detect shows, under a veil, every pixel past the roll's window; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
-msgstr "Detectar muestra, bajo un velo, cada píxel fuera de la ventana del rollo; el polvo entre ellos queda rodeado. La sensibilidad lee más adentro de la ventana y exige menos a una mota. Quitar coloca un parche sobre cada mota rodeada."
+msgid "Detect shows, under a veil, every pixel past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
+msgstr "Detectar muestra, bajo un velo, cada píxel más allá de los blancos del rollo en un negativo, de sus negros en un positivo; el polvo entre ellos queda rodeado. La sensibilidad lee más adentro de la ventana y exige menos a una mota. Quitar coloca un parche sobre cada mota rodeada."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "HIDE"
@@ -1550,8 +1550,8 @@ msgid "DETECT"
 msgstr "DETECTAR"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Reads this photo for dust past the roll's window; nothing changes until you remove it."
-msgstr "Busca en esta foto el polvo fuera de la ventana del rollo; nada cambia hasta que lo quites."
+msgid "Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."
+msgstr "Busca en esta foto el polvo más allá de los blancos del rollo en un negativo, de sus negros en un positivo; nada cambia hasta que lo quites."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "REMOVE"
@@ -2434,8 +2434,8 @@ msgid "Reading the photo…"
 msgstr "Leyendo la foto…"
 
 #: crates/oni-app/src/app/dedusting/auto.rs
-msgid "No dust past the roll's window"
-msgstr "Sin polvo fuera de la ventana del rollo"
+msgid "No dust at this sensitivity"
+msgstr "Sin polvo con esta sensibilidad"
 
 #: crates/oni-app/src/app/dedusting/auto.rs
 msgid "{n} speck of dust ringed"

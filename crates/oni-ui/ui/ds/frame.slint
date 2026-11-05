@@ -267,16 +267,17 @@ export component CorrectionMark inherits Rectangle {
     }
 }
 
-// Auto De-dust's reading over the picture: a veil, and the mask's pixels lit through it, its alpha alone read.
+// Auto De-dust's reading over the picture: a veil, and the mask the kernel writes over it.
 export component DustVeil inherits Rectangle {
     in property <image> source;
+    // `Picture.revision`: a notch rewrites the texture behind `source`, which changes no property.
+    in property <int> revision;
     background: DustStyle.veil;
     Image {
         width: parent.width;
         height: parent.height;
         source: root.source;
-        colorize: DustStyle.lit;
-        image-fit: fill;
+        image-fit: root.revision < 0 ? ImageFit.contain : ImageFit.fill;
         image-rendering: pixelated;
     }
 }

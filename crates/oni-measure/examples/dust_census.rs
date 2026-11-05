@@ -20,7 +20,7 @@ fn main() {
         let e = framed.extent();
         let pixels = graph.render(&framed, e, None).unwrap();
         let started = std::time::Instant::now();
-        let reading = read(&pixels, e.w as usize, &Limits::of(&settings));
+        let reading = read(&pixels, e.w as usize, &Limits::of(&settings), 3072);
         let took = started.elapsed();
         let cells: Vec<String> = [0.0, 0.25, 0.5, 0.75, 1.0]
             .iter()
@@ -28,12 +28,12 @@ fn main() {
                 let found = reading.at(s);
                 let on_stroke = |c: &oni_settings::frame::Correction| {
                     let (cx, cy) = (c.stroke.iter().map(|p| p.x).sum::<f64>() / c.stroke.len() as f64 * f64::from(e.w), c.stroke.iter().map(|p| p.y).sum::<f64>() / c.stroke.len() as f64 * f64::from(e.h));
-                    found.dust.iter().any(|d| f64::from(d.bounds[0]) < cx + c.radius + 30.0 && f64::from(d.bounds[2]) > cx - c.radius - 30.0 && f64::from(d.bounds[1]) < cy + c.radius + 30.0 && f64::from(d.bounds[3]) > cy - c.radius - 30.0)
+                    found.iter().any(|d| f64::from(d.bounds[0]) < cx + c.radius + 30.0 && f64::from(d.bounds[2]) > cx - c.radius - 30.0 && f64::from(d.bounds[1]) < cy + c.radius + 30.0 && f64::from(d.bounds[3]) > cy - c.radius - 30.0)
                 };
-                format!("{:.0}%: {} ({}/{} strokes)", s * 100.0, found.dust.len(), painted.iter().filter(|c| on_stroke(c)).count(), painted.len())
+                format!("{:.0}%: {} ({}/{} strokes)", s * 100.0, found.len(), painted.iter().filter(|c| on_stroke(c)).count(), painted.len())
             })
             .collect();
-        println!("{}: read {:.0} ms; {}", path.file_stem().unwrap().to_str().unwrap(), took.as_secs_f64() * 1e3, cells.join("  "));
+        println!("{}: read {:.0} ms, {} px past the white; {}", path.file_stem().unwrap().to_str().unwrap(), took.as_secs_f64() * 1e3, reading.past, cells.join("  "));
         graph.purge();
     }
 }

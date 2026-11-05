@@ -3,11 +3,13 @@
 
 use bytemuck::{Pod, Zeroable};
 
+mod dust;
 mod gpu;
 mod params;
 mod reference;
 mod screen;
 
+pub use dust::*;
 pub use gpu::*;
 pub use params::*;
 pub use reference::*;

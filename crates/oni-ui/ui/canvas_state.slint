@@ -1,6 +1,6 @@
 // The canvas's state: the photo the display kernel wrote, its overlays' places and the facts the
 // status bar carries, which Rust sets.
-import { SheetBox, EdgeNumber, SheetInks, Colour, Type } from "ds/ds.slint";
+import { SheetBox, EdgeNumber, SheetInks, Colour, Type, DustStyle } from "ds/ds.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 // A correction's marker on the canvas: its ring's rectangle in points and its number.
@@ -87,7 +87,11 @@ export global Canvas {
     // Auto De-dust's reading: the picture veiled, its pixels past the roll's window lit, a ring on each speck kept.
     in property <bool> dust-shown;
     in property <image> dust-mask;
+    // `Picture.revision` for `dust-mask`, a texture each notch rewrites in place.
+    in property <int> dust-revision;
     in property <[Mark]> dust-marks;
+    // The colour the mask's kernel writes.
+    out property <color> dust-lit: DustStyle.lit;
     // Space held in De-dust: the drag pans instead of painting.
     in-out property <bool> space-held;
     // The crop's size while a handle is held, above the frame.
