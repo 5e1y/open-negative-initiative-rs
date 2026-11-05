@@ -5275,5 +5275,12 @@
     "title": "Two real-roll checks state the roll and the rule as they are",
     "status": "done",
     "detail": "Both fail only with ONI_RAW_DIR set. Reset to Default drops every crop (owner's call of 2026-10-31); its check still asked for the crop kept, and passed on any roll without a crop. It now asks for the crop gone, undo bringing the bytes back being its twin. The sidecar round trip accepts a frame the app has rewritten at the current format, as a working copy holds some."
+  },
+  {
+    "id": 1081,
+    "type": "change",
+    "title": "CLAUDE.md's hard rules: the log says nothing of the user, and never a patch",
+    "status": "done",
+    "detail": "Owner's philosophy: nothing is patched; a problem is rectified at its source, simplifying rather than adding. Rule 8 states it for every agent."
   }
 ]

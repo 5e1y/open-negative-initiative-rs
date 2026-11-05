@@ -22,6 +22,10 @@ wins over any note.
    is `oni_i18n::named` (the screen shows it, the log masks it), and every line takes `anonymity::scrubbed`
    on its way out. A template naming something bare fails its check until it marks the name or is listed as
    never logged. A shipped binary names no folder or account of the machine that built it (`scripts/release-build`).
+8. **Never a patch.** A problem is rectified at its source, never at its symptom: find what produces the
+   wrong state and change that, even far from where it shows. Simplify and improve rather than add: no timeout,
+   retry, clamp, flag or special case laid over a cause. A cause outside the app (a driver, a system quirk) is
+   named where the code answers it.
 
 ## Comment rules
 
