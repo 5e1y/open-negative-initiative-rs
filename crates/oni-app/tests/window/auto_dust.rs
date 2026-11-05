@@ -35,6 +35,64 @@ fn on_screen(rig: &common::Rig) -> (usize, f64) {
     (lit, sum / 3.0 / pixels.len().max(1) as f64)
 }
 
+/// A key pressed while the frame decodes, its thumbnail kept: the opening itself brings the full resolution, as
+/// the Settings' whole decode does for a RAW, so no later build announces it.
+pub(crate) fn a_detect_pressed_before_the_frame_landed_reads_once_it_lands() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: auto De-dust is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-auto-dust-early-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (folder, support) = (root.join("Scans"), root.join("Support"));
+    common::pixels_tiff(&folder.join("A.tif"), 1600, 1200, |x, y| {
+        let speck = (800..806).contains(&x) && (600..606).contains(&y);
+        let v = if speck { 0.0 } else { 0.8 + 0.1 * ((x as f32 * 0.13).sin() * (y as f32 * 0.17).cos()) };
+        [v, v, v]
+    });
+    let mut settings = PipelineSettings::rest(ConversionMode::Negative, false);
+    let window = Levels::with_ends(-0.5, 1.0);
+    (settings.levels.red, settings.levels.green, settings.levels.blue) = (window, window, window);
+    sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = Options { support, caches: oni_app::patches::caches(), picker: Box::new(|| None), ..Options::default() };
+    let engine = oni_app::render::Engine::shared(&gpu);
+    engine.lock().unwrap().caches = Some(oni_app::patches::caches());
+    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    let w = &shell.window;
+    let (lib, d) = (w.global::<oni_app::Library>(), w.global::<Dedust>());
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    // As a second launch finds a roll: its thumbnail drawn, no preview in memory, so the opening reads the frame.
+    rig.until("the thumbnail drawn", Duration::from_secs(60), || {
+        rig.pump();
+        lib.get_tiles().row_data(0).is_some_and(|t| t.picture.size().width > 0)
+    });
+    ctl.state.borrow().forget_previews();
+    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_tile_clicked(0, false, false);
+    // Before anything landed: the decode is still on its thread and no event has been pumped.
+    assert_eq!(ctl.state.borrow().renders(), 0, "twin: the frame has not landed");
+    ctl.act(Act::Correction);
+    d.invoke_detect();
+    assert!(d.get_detecting(), "the key is taken");
+    rig.until("the reading asked early", Duration::from_secs(15), || {
+        rig.pump();
+        d.get_found_shown()
+    });
+    assert!(!d.get_detecting(), "the note says it no longer reads");
+    assert_eq!(d.get_found(), 1, "and it reads what a press after the landing reads");
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,

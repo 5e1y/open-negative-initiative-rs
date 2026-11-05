@@ -14,6 +14,7 @@ impl Ctl {
         // A tab opened or a full frame landed reaches the loupe and De-dust at this pace when no render asks.
         self.request_loupe();
         self.ready_full();
+        self.detection_due();
         self.ask_originals();
         self.publish_histogram();
         self.watch_frontier_look();

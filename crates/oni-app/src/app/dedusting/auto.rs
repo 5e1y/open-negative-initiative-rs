@@ -109,7 +109,8 @@ impl Ctl {
         self.publish_dedust();
     }
 
-    /// The reading asked, on the frame's full resolution, which a patch reads too and the build's landing brings.
+    /// The reading asked, once the frame's full resolution is there, which an opening or a build may bring: looked for at
+    /// the pulse's pace, since an opening that brings it announces nothing. A frame left or that cannot be read drops the ask.
     pub(in crate::app) fn detection_due(self: &Rc<Self>) {
         {
             let s = self.state.borrow();
@@ -117,10 +118,16 @@ impl Ctl {
                 return;
             }
         }
-        let Some(full) = self.ensure_full() else {
-            let mut s = self.state.borrow_mut();
-            if s.open_path().is_none_or(|p| s.full_failed.contains(p)) {
-                s.dust.detect_asked = false;
+        let failed = self.window().is_none_or(|w| !w.global::<Canvas>().get_failure().is_empty());
+        let full = if failed || !self.painting() { None } else { self.ensure_full() };
+        let Some(full) = full else {
+            let gone = {
+                let s = self.state.borrow();
+                failed || !self.painting() || s.open_path().is_none_or(|p| s.full_failed.contains(p))
+            };
+            if gone {
+                self.state.borrow_mut().dust.detect_asked = false;
+                self.publish_dedust();
             }
             return;
         };

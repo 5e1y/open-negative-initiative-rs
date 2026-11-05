@@ -33,6 +33,11 @@ impl State {
         self.requests.requested_live.as_ref()
     }
 
+    /// Every preview kept in memory let go, as a launch finds them: the next opening decodes.
+    pub fn forget_previews(&self) {
+        self.previews.lock().expect("previews").clear();
+    }
+
     pub fn renders(&self) -> usize {
         self.renders
     }

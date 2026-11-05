@@ -113,6 +113,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),
     ("editor_leftovers::the_editors_last_gestures_behave_as_swifts", editor_leftovers::the_editors_last_gestures_behave_as_swifts),
     ("editor_leftovers::every_block_says_swifts_own_help", editor_leftovers::every_block_says_swifts_own_help),
+    ("auto_dust::a_detect_pressed_before_the_frame_landed_reads_once_it_lands", auto_dust::a_detect_pressed_before_the_frame_landed_reads_once_it_lands),
     ("auto_dust::a_reading_writes_nothing_and_its_removal_one_patch_per_speck", auto_dust::a_reading_writes_nothing_and_its_removal_one_patch_per_speck),
     ("editor_routes::the_panels_routes_and_the_measuring_window_behave_as_swifts", editor_routes::the_panels_routes_and_the_measuring_window_behave_as_swifts),
     ("editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step", editors::curves::a_point_dragged_on_the_curves_reaches_the_store_as_one_step),

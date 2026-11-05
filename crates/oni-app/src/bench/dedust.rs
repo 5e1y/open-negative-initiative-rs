@@ -126,11 +126,18 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let waited = since.get().elapsed() > Duration::from_secs(120);
         match n {
             0 => {
-                if ctl.state.borrow().renders() < 1 || ctl.state.borrow().placed().is_none() {
+                // `ONI_DUST_EARLY`: the key pressed as soon as the tool opens, the frame still decoding.
+                let early = std::env::var_os("ONI_DUST_EARLY").is_some();
+                if !early && (ctl.state.borrow().renders() < 1 || ctl.state.borrow().placed().is_none()) {
                     step.set(0);
                     return;
                 }
                 ctl.act(crate::Act::Correction);
+                if !c.get_painting() {
+                    step.set(0);
+                    return;
+                }
+                lines.borrow_mut().push(format!("key pressed after {} renders", ctl.state.borrow().renders()));
                 since.set(Instant::now());
                 d.invoke_detect();
             }
