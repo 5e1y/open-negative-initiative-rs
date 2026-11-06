@@ -1,11 +1,12 @@
 //! The sidebars' keys where Swift lays them, read off the pointer's notes: beside a photo the
-//! column's keys sit on one mini plate left of the folder's pill, a filling plate spans its block,
-//! and a black and white photo has no Color block.
+//! column's keys sit on one mini plate left of the folder's pill, a filling plate spans its block with
+//! its words evenly apart, and a black and white photo has no Color block.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, Navigator, PanelState, Tip};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
+use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, LogicalPosition};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -48,11 +49,40 @@ fn keys_then_pill(met: &[(String, f32, f32)], target: &str, layout: &str, pill: 
     names == [target, layout, pill]
 }
 
-/// A plate filling its block: its last key reaches the block's edge and outgrows the ones hugging their word.
-fn fills_block(met: &[(String, f32, f32)], edge: f32) -> bool {
-    let Some(last) = met.last() else { return false };
-    let first = &met[0];
-    met.len() == 3 && edge - last.2 <= 4.0 && last.2 - last.1 > 2.0 * (first.2 - first.1)
+/// A plate filling its block: its three keys from the block's one edge to the other.
+fn fills_block(met: &[(String, f32, f32)], start: f32, edge: f32) -> bool {
+    met.len() == 3 && met[0].1 - start <= 4.0 && edge - met[2].2 <= 4.0
+}
+
+/// The sum of a 565 pixel's three channels, each scaled to 8 bits.
+fn light(p: Rgb565Pixel) -> u32 {
+    let v = p.0 as u32;
+    ((v >> 11) & 0x1f) * 255 / 31 + ((v >> 5) & 0x3f) * 255 / 63 + (v & 0x1f) * 255 / 31
+}
+
+/// The words a row of keys shows between `from` and `to`, as spans of inked columns across its legend's
+/// band; a key's face is read at `from`, and letters closer than a key's padding join one word.
+fn words_along(rig: &common::Rig, from: f32, to: f32, top: f32, height: f32) -> Vec<(f32, f32)> {
+    let (w, px) = rig.drawn();
+    let rows = (top + height / 4.0) as usize..(top + 3.0 * height / 4.0) as usize;
+    let face = light(px[(top + height / 2.0) as usize * w + from as usize]);
+    let inked = |x: usize| rows.clone().any(|y| light(px[y * w + x]) > face + 120);
+    let mut words: Vec<(f32, f32)> = Vec::new();
+    for x in from as usize..to as usize {
+        if !inked(x) {
+            continue;
+        }
+        match words.last_mut() {
+            Some(last) if x as f32 - last.1 <= 8.0 => last.1 = x as f32,
+            _ => words.push((x as f32, x as f32)),
+        }
+    }
+    words
+}
+
+/// Three words as far from one another, to within a few points.
+fn evenly_apart(words: &[(f32, f32)]) -> bool {
+    words.len() == 3 && ((words[1].0 - words[0].1) - (words[2].0 - words[1].1)).abs() <= 3.0
 }
 
 pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
@@ -109,7 +139,7 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     let apart = [(layout.clone(), 200.0, 224.0), (target.to_string(), 228.0, 252.0)];
     assert!(!keys_then_pill(&apart, target, &layout, &pill));
 
-    // The Crop tab's first plate spans its block: COPY and PASTE hug, PASTE TO ROLL takes the rest.
+    // The Crop tab's first plate spans its block, its three keys sharing the room alike.
     panel.set_tab(1);
     panel.invoke_tab_picked(1);
     w.global::<Framing>().invoke_act(oni_app::Act::CopyFraming);
@@ -119,12 +149,17 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     let copy = "Copies this photo's crop.";
     let y = row_of(&rig, &tip, left + 20.0, copy).expect("COPY at the block's left");
     let met = notes_along(&rig, &tip, left, right, y);
-    // The block's edge: the panel's, less the section's inset (`Space.md`).
-    let edge = right - 16.0;
-    assert!(fills_block(&met, edge), "PASTE TO ROLL takes the plate to the block's edge: {met:?}");
+    // The block's edges: the panel's, less the section's inset (`Space.md`).
+    let (start, edge) = (left + 16.0, right - 16.0);
+    assert!(fills_block(&met, start, edge), "the plate spans the block: {met:?}");
     // Twin: three keys hugging their words at the block's left is no filling plate.
     let hugging = [(copy.to_string(), 956.0, 990.0), ("p".to_string(), 992.0, 1030.0), ("r".to_string(), 1032.0, 1100.0)];
-    assert!(!fills_block(&hugging, edge));
+    assert!(!fills_block(&hugging, start, edge));
+    tip.set_shown(false);
+    let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
+    assert!(evenly_apart(&words), "COPY, PASTE and PASTE TO ROLL evenly apart: {words:?}");
+    // Twin: COPY and PASTE hugging their words, PASTE TO ROLL centred in the rest of the plate.
+    assert!(!evenly_apart(&[(968.0, 1000.0), (1024.0, 1059.0), (1124.0, 1210.0)]));
 
     // `ColorPane`: a colour photo offers Auto White Balance; a black and white one has no Color block.
     let balance = "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";

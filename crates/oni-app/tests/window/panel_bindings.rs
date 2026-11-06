@@ -78,8 +78,14 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     // Vertical by the pointer, undone from Rust: the next click asks for vertical again, not for
     // the state the hand last left the switch in.
     tab(1);
+    // Free and 1:1 have no orientation: no switch shows; 3:2 has one.
+    assert!(!framing.get_orientable(), "no Vertical switch under Free");
+    framing.invoke_ratio_picked(3);
+    rig.settle();
+    assert!(!framing.get_orientable(), "no Vertical switch under 1:1");
     framing.invoke_ratio_picked(1);
     rig.settle();
+    assert!(framing.get_orientable(), "twin: 3:2 shows the Vertical switch");
     // `DSToggle`: the switch at the block's left, before its word.
     let vertical = || at(30.0, 244.0);
     vertical();

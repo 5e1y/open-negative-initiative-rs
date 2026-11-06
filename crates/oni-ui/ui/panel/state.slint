@@ -131,7 +131,8 @@ export global Lab {
 export global Framing {
     in-out property <int> ratio;
     in property <bool> portrait;
-    in property <bool> portrait-enabled;
+    // The ratio has an orientation to turn: neither Free nor 1:1.
+    in property <bool> orientable;
     in property <string> kept;
     in property <bool> modified;
     in property <bool> mirrored;
