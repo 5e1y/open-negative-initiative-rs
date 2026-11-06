@@ -5310,5 +5310,12 @@
     "title": "The unified bar is back: the title bar transparent over the content, the traffic lights in the app's bar",
     "status": "done",
     "detail": "Owner's call after seeing #1084: the system's solid title bar spoils the look, and no report found ties a transparent, full-size title bar to a window that never shows (searches on winit, Slint, AppKit forums: only looks, a bar drawn anyway on macOS 26, transparency lost on refocus). #1084 is reverted whole: the attributes hook, the lights laid in the bar, its empty room dragging the window, the parity row and the canvas_layout check."
+  },
+  {
+    "id": 1086,
+    "type": "change",
+    "title": "Version 1.5.6",
+    "status": "done",
+    "detail": "oni-app 1.5.6, carrying the logs without the user's names (#1079), the starter in the app's own window with each step of the launch (#1082, #1083) and the unified bar kept (#1085); the 1.5 welcome and splash picture kept."
   }
 ]

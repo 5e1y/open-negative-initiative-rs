@@ -4227,7 +4227,7 @@ dependencies = [
 
 [[package]]
 name = "oni-app"
-version = "1.5.5"
+version = "1.5.6"
 dependencies = [
  "arboard",
  "base64 0.22.1",
