@@ -57,9 +57,9 @@ impl Route {
         leaving(self.last_panel)
     }
 
-    /// `toggleCorrecting`: into the dust tool, or out of it to the last panel.
-    pub fn correcting(&self) -> i32 {
-        if self.shown == DEDUST { self.way_out() } else { DEDUST }
+    /// `toggleFraming` and `toggleCorrecting`: into the crop or the dust tool, or out of it to the last panel.
+    pub fn toggled(&self, tool: i32) -> i32 {
+        if self.shown == tool { self.way_out() } else { tool }
     }
 
     /// `validate(with:)`: the window first where both are armed, so a second Return leaves the crop.
@@ -88,10 +88,12 @@ mod tests {
         r.moved(DETAILS);
         r.moved(CROP);
         assert_eq!(r.way_out(), DETAILS, "the tab bar's route is recorded");
+        assert_eq!(r.toggled(CROP), DETAILS, "the crop's key leaves it as De-dust's does");
         r.moved(DEDUST);
-        assert_eq!((r.last_panel, r.correcting()), (DETAILS, DETAILS), "the crop is never recorded");
+        assert_eq!((r.last_panel, r.toggled(DEDUST)), (DETAILS, DETAILS), "the crop is never recorded");
+        assert_eq!(r.toggled(CROP), CROP, "another tool's key opens its own");
         // Twin: recording every tab left would hold the crop, and De-dust would lead to Color.
-        assert_ne!(leaving(CROP), r.correcting());
+        assert_ne!(leaving(CROP), r.toggled(DEDUST));
         r.moved(COLOR);
         r.moved(COLOR);
         assert_eq!(r.last_panel, DETAILS, "a tab picked again records nothing");

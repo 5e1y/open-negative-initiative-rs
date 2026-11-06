@@ -1,12 +1,18 @@
-//! The keys no menu item carries: Escape and Return on a sheet, the Lab's, the rows', the grid's and the walk keys.
+//! The keys no menu item carries: Escape out of the innermost card, sheet or mode, Return on a sheet,
+//! the Lab's, the rows', the grid's and the walk keys.
 
 use super::*;
 
 impl Ctl {
-    /// The keys no menu item carries: Escape and Return on a sheet, the Lab's and the walk keys, and
-    /// ⌘=, which types apart from the menu's ⌘+; every other shortcut is the menu bar's.
+    /// The keys no menu item carries, ⌘= apart from the menu's ⌘+ included: Escape leaves the innermost
+    /// help card, sheet, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
     pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         let Some(w) = self.window() else { return false };
+        let tip = w.global::<crate::Tip>();
+        if text == "\u{1b}" && tip.get_card() && tip.get_shown() {
+            tip.set_shown(false);
+            return true;
+        }
         let confirm = w.global::<Confirm>();
         if confirm.get_shown() {
             // Quitting's default is Cancel, so Return never discards unsaved work; a destructive key
@@ -77,6 +83,9 @@ impl Ctl {
         }
         if self.state.borrow().prepare.shown {
             return self.prepare_key(text, command, shift, bare);
+        }
+        if text == "\u{1b}" && self.leave_mode() {
+            return true;
         }
         if self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
             return true;

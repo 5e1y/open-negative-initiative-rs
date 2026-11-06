@@ -5324,5 +5324,12 @@
     "title": "The UX and UI benches' criteria",
     "status": "done",
     "detail": "Owner's ask: the twelve criteria proposed for an in-depth review become the UX bench (docs/ux-bench.md), the owner's eight categories the UI bench (docs/ui-bench.md). The UX bench rates the app in use (tasks, counts, timings, behaviour, words), the UI bench one still screen in one of its states; a criterion bordering on the other bench names it, so nothing is rated twice. Each gives what it judges, what to look at and the two ends of its scale; how a bench runs and scores comes with the owner's procedure."
+  },
+  {
+    "id": 1111,
+    "type": "fix",
+    "title": "Every mode is left alike: its key, Escape, and every photo opened",
+    "status": "done",
+    "detail": "UX evaluation, problems 15 to 18: the crop's key and ⌘K only ever opened the crop, Escape left neither the crop, Compare, De-dust nor a help card, and the crop and De-dust stayed on from one photo to the next, the gallery's included. One model now. A tool's key, menu item or shortcut opens it and leaves it for the last panel: Route::toggled and one toggle_tool serve the crop and De-dust, Swift's openCrop departing (owner's call). Escape leaves the innermost thing open: a help card, then the sheets, Export and Prepare as before, then Compare over the canvas before the crop or De-dust. Every photo opens with no mode, at the one place a photo opens (open_photo), as the one still open shown again from the gallery (open_in_editor, which ⌘G and the EDITOR key now go through too), and leaving for the gallery. Leaving De-dust no longer disarms the measuring window: only leaving the crop does, as the route always said."
   }
 ]

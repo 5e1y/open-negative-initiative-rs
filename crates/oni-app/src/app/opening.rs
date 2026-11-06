@@ -5,9 +5,10 @@ use super::*;
 mod missing;
 
 impl Ctl {
-    /// Opens a photo in the store; the canvas renders once its negative is decoded.
+    /// Opens a photo in the store, with no mode; the canvas renders once its negative is decoded.
     pub(super) fn open_photo(self: &Rc<Self>, path: &str) {
         self.leave_together();
+        self.leave_modes();
         let remembered = self.remembered_flat_field();
         let (failure, stranded) = {
             let mut s = self.state.borrow_mut();

@@ -1,5 +1,6 @@
-//! The panel's routes: ⌘K opens the crop, the crop and De-dust are left for the last panel the
-//! hand was in, Return validates the measuring window then the crop, and a balance disarms.
+//! The panel's routes and the editor's modes: the crop's and De-dust's keys open their tool and leave
+//! it for the last panel the hand was in, Escape leaves the innermost mode, every photo opens with
+//! none, Return validates the measuring window then the crop, and a balance disarms.
 
 use super::*;
 use crate::tabs::{self, Validated};
@@ -22,46 +23,52 @@ impl Ctl {
         }
     }
 
-    /// `openCrop()`: ⌘K and the bar's key open the crop and never leave it.
-    pub(super) fn open_crop(self: &Rc<Self>) {
-        self.route_to(tabs::CROP);
-    }
-
-    /// `toggleFraming()`, which Return reaches from the crop: out to the last panel, disarmed.
-    fn leave_crop(self: &Rc<Self>) {
-        let out = {
-            let mut s = self.state.borrow_mut();
-            s.route.armed = false;
-            s.route.way_out()
-        };
-        self.route_to(out);
-    }
-
-    /// Frames shown together leave the crop and De-dust, each frame's own, for the last panel.
-    pub(super) fn leave_frame_tools(self: &Rc<Self>) {
+    /// `toggleFraming()` and `toggleCorrecting()`: a tool's key, menu item or shortcut opens it, or
+    /// leaves it for the last panel; De-dust, a tool of Pro's face, leaves the Lab first.
+    pub(super) fn toggle_tool(self: &Rc<Self>, tool: i32) {
         let Some(w) = self.window() else { return };
-        let tab = w.global::<PanelState>().get_tab();
-        if tab != tabs::CROP && tab != tabs::DEDUST {
-            return;
+        if tool == tabs::DEDUST {
+            self.leave_lab();
         }
-        self.sync_route(tab);
-        let out = {
-            let mut s = self.state.borrow_mut();
-            s.route.armed = false;
-            s.route.way_out()
-        };
-        self.route_to(out);
-        self.publish_dedust();
-    }
-
-    /// `toggleCorrecting()`: the Lab left first, then into the dust tool or out to the last panel.
-    pub(super) fn toggle_correcting(self: &Rc<Self>) {
-        let Some(w) = self.window() else { return };
-        self.leave_lab();
         self.sync_route(w.global::<PanelState>().get_tab());
-        let next = self.state.borrow().route.correcting();
+        let next = self.state.borrow().route.toggled(tool);
         self.route_to(next);
         self.publish_dedust();
+    }
+
+    /// The crop or De-dust, each frame's own, left for the last panel; `false` on any other tab.
+    pub(super) fn leave_frame_tools(self: &Rc<Self>) -> bool {
+        let Some(w) = self.window() else { return false };
+        let tab = w.global::<PanelState>().get_tab();
+        if tab != tabs::CROP && tab != tabs::DEDUST {
+            return false;
+        }
+        self.sync_route(tab);
+        let out = self.state.borrow().route.way_out();
+        self.route_to(out);
+        self.publish_dedust();
+        true
+    }
+
+    /// Every photo opens with no mode: Compare closed, the crop and De-dust left for the last panel.
+    pub(super) fn leave_modes(self: &Rc<Self>) {
+        if self.state.borrow().compare.split.is_some() {
+            self.toggle_compare();
+        }
+        self.leave_frame_tools();
+    }
+
+    /// Escape in the editor: the innermost mode left, Compare over the canvas before the panel's
+    /// tool; `false` with none open.
+    pub(super) fn leave_mode(self: &Rc<Self>) -> bool {
+        if self.window().is_none_or(|w| w.global::<App>().get_gallery()) {
+            return false;
+        }
+        if self.state.borrow().compare.split.is_some() {
+            self.toggle_compare();
+            return true;
+        }
+        self.leave_frame_tools()
     }
 
     /// `validate(with:)`: Return or Enter, bare and once, on Pro's editor; the Lab takes none.
@@ -74,7 +81,9 @@ impl Ctl {
         let validated = self.state.borrow_mut().route.validate();
         match validated {
             Validated::Disarmed => self.publish_framing(),
-            Validated::LeaveCrop => self.leave_crop(),
+            Validated::LeaveCrop => {
+                self.leave_frame_tools();
+            }
             Validated::Nothing => return false,
         }
         true

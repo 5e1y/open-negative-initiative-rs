@@ -134,13 +134,6 @@ impl Ctl {
         self.gesture(&targets, |store| store.reset_frames(&targets));
     }
 
-    /// A mode change drops the split, as Swift's does.
-    pub(super) fn drop_split(self: &Rc<Self>) {
-        if self.state.borrow().compare.split.is_some() {
-            self.toggle_compare();
-        }
-    }
-
     /// Back in the gallery, the editor's full-resolution frame and its copies are let go: up to 1.6 GB
     /// on a 24 MP frame; the view builds it again once it asks.
     fn leave_editor_memory(&self) {
@@ -155,13 +148,13 @@ impl Ctl {
         }
     }
 
-    /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery.
+    /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery, its modes left.
     pub(super) fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
         // Leaving the editor takes the deck away with no exit event: the preview goes with it.
         self.clear_hover();
         if !w.global::<App>().get_gallery() {
-            self.drop_split();
+            self.leave_modes();
             w.global::<App>().set_gallery(true);
             self.leave_editor_memory();
             self.publish_tiles();
@@ -172,18 +165,7 @@ impl Ctl {
             let s = self.state.borrow();
             s.picks.anchor.clone().filter(|_| !s.trash_shown())
         };
-        let Some(path) = ringed else { return };
-        self.drop_split();
-        if self.state.borrow().open.as_deref() == Some(path.as_str()) {
-            // As `open_in_editor`: no edit lands on a frame whose file a gesture may be moving.
-            if self.busy_said(tr("Edit")) {
-                return;
-            }
-            w.global::<App>().set_gallery(false);
-            self.land_tree_request();
-            // A selection of several made in the gallery shows together as the editor comes back.
-            self.follow_selection();
-        } else {
+        if let Some(path) = ringed {
             self.open_in_editor(&path);
         }
     }

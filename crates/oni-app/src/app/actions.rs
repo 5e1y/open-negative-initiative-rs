@@ -53,8 +53,8 @@ impl Ctl {
                 self.publish_dedust();
             }
             Act::BiggerBrush | Act::SmallerBrush => {}
-            Act::Correction if self.state.borrow().open.is_some() && !self.together_shown() => self.toggle_correcting(),
-            Act::Framing if self.state.borrow().open.is_some() && !self.together_shown() => self.open_crop(),
+            Act::Correction if self.state.borrow().open.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::DEDUST),
+            Act::Framing if self.state.borrow().open.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::CROP),
             Act::Mirror => self.framing_act(action),
             Act::ToggleSound => {
                 let muted = !self.state.borrow().muted;
