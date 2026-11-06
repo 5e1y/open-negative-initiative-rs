@@ -5324,5 +5324,12 @@
     "title": "The UX and UI benches' criteria",
     "status": "done",
     "detail": "Owner's ask: the twelve criteria proposed for an in-depth review become the UX bench (docs/ux-bench.md), the owner's eight categories the UI bench (docs/ui-bench.md). The UX bench rates the app in use (tasks, counts, timings, behaviour, words), the UI bench one still screen in one of its states; a criterion bordering on the other bench names it, so nothing is rated twice. Each gives what it judges, what to look at and the two ends of its scale; how a bench runs and scores comes with the owner's procedure."
+  },
+  {
+    "id": 1151,
+    "type": "tooling",
+    "title": "ONI_WINDOW=<width>x<height> opens the window at that size in points",
+    "status": "done",
+    "detail": "The interface evaluations look at the app in the window a 16-inch MacBook Pro gives it when zoomed (1728 x 1017 points), whatever screen it opens on; their driver reaches the window through Slint's MCP server, which cannot size it. The starter grows the window to the asked size instead of the app's default, centred as before."
   }
 ]

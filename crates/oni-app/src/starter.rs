@@ -202,7 +202,8 @@ impl Launch {
         if let Some(w) = self.window.upgrade() {
             let band = w.global::<Starter>();
             band.set_shown(false);
-            sized(&w, band.get_app_width(), band.get_app_height());
+            let (width, height) = asked_size().unwrap_or((band.get_app_width(), band.get_app_height()));
+            sized(&w, width, height);
         }
         crate::timing::line(&format!("boot: the app ready {:.0} ms after the launch", ms(self.began.elapsed())));
         let ready = self.ready.borrow_mut().take();
@@ -211,6 +212,13 @@ impl Launch {
         }
         LAUNCH.with(|l| l.borrow_mut().take());
     }
+}
+
+/// `ONI_WINDOW=<width>x<height>`: the window's size in points, the one the interface evaluations look at.
+fn asked_size() -> Option<(f32, f32)> {
+    let value = std::env::var("ONI_WINDOW").ok()?;
+    let (width, height) = value.split_once('x')?;
+    Some((width.parse().ok()?, height.parse().ok()?))
 }
 
 /// The window at `width` × `height` points, centred on its screen.
