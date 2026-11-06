@@ -1,8 +1,8 @@
 //! Where the shell lays its pieces, as Swift does: the card flush, a hidden Library back by its key or
-//! edge, roll headers' trail and pin, the editor's medals, an undecodable file.
+//! edge, the bar's empty room, roll headers' trail and pin, the editor's medals, an undecodable file.
 
 use oni_app::app::{self, Options, Shell};
-use oni_app::{App, Canvas, Library};
+use oni_app::{App, Bar, Canvas, Library};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
@@ -61,7 +61,10 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    let (lib, app, canvas) = (w.global::<Library>(), w.global::<App>(), w.global::<Canvas>());
+    let (lib, app, canvas, bar) = (w.global::<Library>(), w.global::<App>(), w.global::<Canvas>(), w.global::<Bar>());
+    let room = std::rc::Rc::new(std::cell::Cell::new(0));
+    let pressed = room.clone();
+    bar.on_room_pressed(move || pressed.set(pressed.get() + 1));
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     rig.settle();
@@ -84,12 +87,17 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     rig.pump();
     assert!(!lib.get_pinned_shown(), "twin: back at the top, nothing is held");
 
+    // The bar's empty room stands for the title bar; a key takes its own press.
+    click(&rig, 200.0, MENU + 20.0);
+    assert_eq!(room.get(), 1, "a press between the keys reaches the room");
+
     open(&rig, w, "A00");
     rig.until("A00 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.settle();
     assert!(!app.get_gallery());
     click(&rig, 40.0, MENU + 20.0);
     assert!(app.get_gallery(), "the GALLERY key took its press");
+    assert_eq!(room.get(), 1, "twin: a key's press never reaches the room");
     open(&rig, w, "A00");
     rig.settle();
 

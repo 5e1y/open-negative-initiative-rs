@@ -5303,5 +5303,12 @@
     "title": "The window keeps the system's own title bar, its traffic lights in it",
     "status": "done",
     "detail": "Owner's call: no unified bar on macOS. Of the window's attributes, the transparent, hidden and full-size title bar is the one the main window carried and the splash did not, on the Intel Mac where only the splash ever showed (releases issue 13); the window now takes the system's defaults. Gone with it: the attributes hook, the lights laid back in the app's bar on every resize, the bar's room for them and its empty room dragging the window, which the system's bar does. chrome.rs keeps the Dock's icon. Checks: canvas_layout (the GALLERY key still takes its press) and the launch check; the parity row says the change."
+  },
+  {
+    "id": 1085,
+    "type": "change",
+    "title": "The unified bar is back: the title bar transparent over the content, the traffic lights in the app's bar",
+    "status": "done",
+    "detail": "Owner's call after seeing #1084: the system's solid title bar spoils the look, and no report found ties a transparent, full-size title bar to a window that never shows (searches on winit, Slint, AppKit forums: only looks, a bar drawn anyway on macOS 26, transparency lost on refocus). #1084 is reverted whole: the attributes hook, the lights laid in the bar, its empty room dragging the window, the parity row and the canvas_layout check."
   }
 ]

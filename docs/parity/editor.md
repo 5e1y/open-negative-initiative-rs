@@ -154,7 +154,7 @@ Statuses are defined in [README.md](README.md).
 | FEEDBACKS key | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app/help.rs` `open_report` | done | | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
 | EXPORT / ADD FOLDER key | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `Bar.export-title` from `oni-app/src/export.rs` `label::key` | done | | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` |
 | UPDATE key when an update waits | `Scene/EditorScene+Bar.swift`, `Pipeline/Updates.swift` | `toolbar.slint`, `app/updates.rs` | done | Outranks export and import; the tooltip says Download, as nothing installs | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
-| Traffic lights inset | `Scene/EditorScene+Bar.swift` | `oni-app/src/chrome.rs` | done | Owner's call (2026-11-06), beyond Swift: the system's own title bar with its traffic lights, the app's bar under it; no unified bar | no check |
+| Traffic lights inset | `Scene/EditorScene+Bar.swift` | `oni-app/src/chrome.rs` | done | One unified bar on macOS: the title bar transparent and hidden, the lights laid back in the bar on every resize, the bar's empty room dragging the window | no check |
 
 ## Menus and shortcuts
 

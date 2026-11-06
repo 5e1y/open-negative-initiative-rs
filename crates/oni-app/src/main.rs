@@ -86,7 +86,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             device: gpu.device.clone(),
             queue: gpu.queue.clone(),
         })
-        .with_winit_custom_application_handler(Quitting);
+        .with_winit_custom_application_handler(Quitting)
+        .with_winit_window_attributes_hook(oni_app::chrome::attributes);
     let wgpu = behind(selector).select();
     let canvas = match wgpu {
         Ok(()) => {
@@ -112,9 +113,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         warming.prewarm_counted(&counted);
         timing::line(&format!("kernels compiled in {:.0} ms", started.elapsed().as_secs_f64() * 1000.0));
     });
+    // The window's adapter is made here, while the hook still knows the main window is the one built.
     let building = Instant::now();
-    let window = MainWindow::new()?;
-    oni_app::chrome::dock_icon();
+    let window = oni_app::chrome::unified(|| {
+        MainWindow::new().inspect(|w| {
+            w.window();
+        })
+    })?;
     let built = building.elapsed();
     let shell: Standing = Rc::default();
     let failed: Rc<RefCell<Option<slint::PlatformError>>> = Rc::default();
@@ -191,10 +196,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 shell.offer_wrapped();
                 *hz.borrow_mut() = oni_app::hz::watch(&shell.window);
             }
+            lights(&shell.window);
         }
     };
     let before = vec![(marked("Starting the graphics card"), graphics), (marked("Starting the interface"), interface), (marked("Building the window"), built)];
     starter::launch(&window, began, before, steps, kernels, ready)?;
+    lights(&window);
     oni_app::on_screen::shown(window.as_weak());
     slint::run_event_loop()?;
     if let Some(e) = failed.borrow_mut().take() {
@@ -223,6 +230,12 @@ fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer
         oni_app::watchdog::beat(Instant::now(), witness.unwrap_or_else(|| "the starter".into()));
     });
     oni_app::watchdog::start();
+    let room = window.as_weak();
+    window.global::<oni_app::Bar>().on_room_pressed(move || {
+        if let Some(w) = room.upgrade() {
+            oni_app::chrome::room_pressed(w.window());
+        }
+    });
     let ctl = {
         let shell = shell.clone();
         move || shell.try_borrow().ok().and_then(|s| s.as_ref().map(|s| s.ctl.clone()))
@@ -279,6 +292,9 @@ fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer
             timing::line(if *occluded { "window occluded" } else { "window visible" });
         }
         if matches!(event, WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. }) {
+            if let Some(w) = lit.upgrade() {
+                lights(&w);
+            }
             oni_app::on_screen::settling(lit.clone());
             gate.hold();
             let open = gate.clone();
@@ -287,6 +303,12 @@ fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer
         EventResult::Propagate
     });
     beat
+}
+
+/// The bar makes room for the traffic lights wherever they show: none in full screen.
+fn lights(w: &oni_app::MainWindow) {
+    let bar = w.global::<oni_app::Bar>();
+    bar.set_traffic_lights(oni_app::chrome::traffic_lights(w.window(), bar.get_height()));
 }
 
 thread_local! {
@@ -308,7 +330,7 @@ fn behind(selector: slint::BackendSelector) -> slint::BackendSelector {
         builder.with_activate_ignoring_other_apps(false);
         return selector
             .with_winit_event_loop_builder(builder)
-            .with_winit_window_attributes_hook(|a| a.with_active(false));
+            .with_winit_window_attributes_hook(|a| oni_app::chrome::attributes(a).with_active(false));
     }
     let _ = background;
     selector

@@ -43,7 +43,13 @@ export global Bar {
     in property <string> redo-title: @tr("Redo");
     // The face the open photo is edited on: 0 Pro, 1 Scanner.
     in-out property <int> face;
+    // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
+    in property <length> traffic-lights;
+    // The bar's height, which the traffic lights are centred in.
+    out property <length> height: ShellStyle.bar-height;
     callback act(Act);
+    // A press on the bar's empty room: on macOS it stands for the title bar.
+    callback room-pressed();
 }
 
 // `AppBar.item`: a glyph key that names its gesture.
@@ -158,12 +164,18 @@ export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
     // The bar's width with every word, read off hidden copies: the layout's widths never depend on
     // which face shows, or the window's width would loop through it.
-    property <length> sides: 2 * ShellStyle.bar-padding + mode.preferred-width + 2 * glyphs.preferred-width + 4 * ShellStyle.bar-gap
+    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + 2 * glyphs.preferred-width + 4 * ShellStyle.bar-gap
         + (Preparing.shown ? 0px : ShellStyle.export-width + ShellStyle.bar-gap) + (Preparing.shown || Bar.targets < 2 ? 0px : sheet-sizing.preferred-width);
     property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
     property <bool> compact: root.width < root.full;
+    // Under the keys, so only the room between them reaches it.
+    TouchArea {
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { Bar.room-pressed(); }
+        }
+    }
     HorizontalLayout {
-        padding-left: ShellStyle.bar-padding;
+        padding-left: ShellStyle.bar-padding + Bar.traffic-lights;
         padding-right: ShellStyle.bar-padding;
         padding-top: ShellStyle.bar-padding;
         padding-bottom: ShellStyle.bar-padding;
