@@ -265,9 +265,6 @@ msgstr "Ce que fait ce bloc"
 msgid "Reset"
 msgstr "Réinitialiser"
 
-msgid "RESET"
-msgstr "RÉINITIALISER"
-
 #: crates/oni-ui/ui/ds/containers.slint
 msgid "Show {}"
 msgstr "Afficher {}"
@@ -516,14 +513,6 @@ msgstr "© 2026 Votre nom"
 msgid "Quality"
 msgstr "Qualité"
 
-#: crates/oni-ui/ui/export.slint
-msgid "Space"
-msgstr "Espace"
-
-#: crates/oni-ui/ui/export.slint
-msgid "The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation."
-msgstr "L’image est éditée dans cet espace et exportée dans celui-ci. Chacun garde le nom que vous demandera un labo ou un imprimeur. Profil convertit vers un profil ICC installé, en colorimétrie relative avec compensation du point noir."
-
 #: crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "sRGB"
 msgstr "sRGB"
@@ -611,6 +600,14 @@ msgstr "TIFF 16 bits"
 #: crates/oni-ui/ui/export.slint
 msgid "JPEG"
 msgstr "JPEG"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Space"
+msgstr "Espace"
+
+#: crates/oni-ui/ui/export.slint
+msgid "The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation."
+msgstr "L’image est éditée dans cet espace et exportée dans celui-ci. Chacun garde le nom que vous demandera un labo ou un imprimeur. Profil convertit vers un profil ICC installé, en colorimétrie relative avec compensation du point noir."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Compression"
@@ -900,9 +897,7 @@ msgstr "1 bloc enregistré"
 msgid "{} blocks recorded"
 msgstr "{} blocs enregistrés"
 
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint
-
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copier"
 
@@ -921,10 +916,6 @@ msgstr "Pas encore préparée"
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Prepare Roll"
 msgstr "Préparer la pellicule"
-
-#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/toolbar.slint
-msgid "PREPARE ROLL"
-msgstr "PRÉPARER LA PELLICULE"
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -1038,9 +1029,7 @@ msgstr "Restaurer"
 msgid "Paste Settings"
 msgstr "Coller les réglages"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/crop_tab.slint
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
 
@@ -1127,10 +1116,6 @@ msgstr "Aucun favori"
 #: crates/oni-ui/ui/navigator.slint
 msgid "Star a folder to keep it here, ready to open."
 msgstr "Ajoutez une étoile à un dossier pour le garder ici, prêt à ouvrir."
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "RESTORE"
-msgstr "RESTAURER"
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "Folders"
@@ -1465,18 +1450,12 @@ msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole 
 msgstr "Faites glisser les coins sur la photo pour la recadrer. Copier et Coller reportent tout le cadrage sur d’autres photos, Coller sur la pellicule sur chaque vue de la pellicule ; le collage des réglages ne le fait jamais."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "COPY"
-msgstr "COPIER"
-#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copies this photo's crop."
 msgstr "Copie le recadrage de cette photo."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Paste"
 msgstr "Coller"
-
-msgid "PASTE"
-msgstr "COLLER"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on the {} selected photos."
@@ -1486,9 +1465,6 @@ msgstr "Colle le recadrage copié sur les {} photos sélectionnées."
 msgid "Pastes the copied crop on this photo."
 msgstr "Colle le recadrage copié sur cette photo."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "PASTE TO ROLL"
-msgstr "COLLER SUR LA PELLICULE"
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on every photo measured with this roll."
 msgstr "Colle le recadrage copié sur chaque photo mesurée avec cette pellicule."
@@ -1574,12 +1550,6 @@ msgid "Apply window"
 msgstr "Appliquer la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Apply Window"
-msgstr "Appliquer la fenêtre"
-
-#: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Set Window"
-
 msgid "Set window"
 msgstr "Régler la fenêtre"
 
@@ -1590,10 +1560,6 @@ msgstr "Affiche un cadre sur la photo ; les touches de balance et l’histogram
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copy Measuring Window"
 msgstr "Copier la fenêtre de mesure"
-
-#: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Paste"
-msgstr "Coller"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Paste Measuring Window"
@@ -2280,10 +2246,6 @@ msgid "Select the Whole Roll ({})"
 msgstr "Sélectionner toute la pellicule ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "RESET"
-msgstr "RÉINITIALISER"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Reset Settings ({})"
 msgstr "Réinitialiser les réglages ({})"
 
@@ -2292,9 +2254,6 @@ msgid "Crop and Straighten ({})"
 msgstr "Recadrer et redresser ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "COMPARE"
-msgstr "COMPARER"
-
 msgid "Compare"
 msgstr "Comparer"
 
@@ -2311,19 +2270,8 @@ msgid "Scanner: a lab scanner's keypad, density and colour in steps on its machi
 msgstr "Scanner : le clavier d’un scanner de labo, densité et couleur par pas sur le rendu de sa machine"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "COPY"
-msgstr "COPIER"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"
 msgstr "Copier les réglages ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "PASTE"
-msgstr "COLLER"
-
-msgid "Paste"
-msgstr "Coller"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings to {} photos ({})"
@@ -2333,21 +2281,10 @@ msgstr "Coller les réglages sur {} photos ({})"
 msgid "Paste settings ({})"
 msgstr "Coller les réglages ({})"
 
-#: crates/oni-ui/ui/toolbar.slint
-msgid "PASTE TO ROLL"
-msgstr "COLLER SUR LA PELLICULE"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Paste to the Roll"
-msgstr "Coller sur la pellicule"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "DE-DUST"
-msgstr "DÉPOUSSIÉRER"
-
-#: crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
 msgstr "PRÉPARER LA PELLICULE"
+
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
 msgstr "Préparer la pellicule"
