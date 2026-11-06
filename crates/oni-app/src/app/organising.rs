@@ -185,8 +185,9 @@ pub struct Organising {
     pub(in crate::app) restore_told: Option<(String, Vec<String>)>,
     /// The gesture whose writes or moves run off this thread, named; the others wait for it.
     pub(in crate::app) disk_busy: Option<String>,
-    /// The roll shown, by key, and whether a frame of it is measured, `None` while it reads.
-    pub(in crate::app) measured: Option<(String, Option<bool>)>,
+    /// The roll shown, by key, and the open photo's bearing it was read on, with what its frames
+    /// say, `None` while they read.
+    pub(in crate::app) frames: Option<((String, String), Option<roll_card::Frames>)>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.

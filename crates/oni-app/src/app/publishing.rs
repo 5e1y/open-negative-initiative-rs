@@ -53,7 +53,8 @@ impl Ctl {
         }
         let modified = {
             let s = self.state.borrow();
-            Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b)))
+            let dyes = s.open_dyes();
+            Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b, dyes)))
         };
         for (b, on) in modified {
             set_modified(&g, b, on);

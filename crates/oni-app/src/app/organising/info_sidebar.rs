@@ -55,7 +55,6 @@ impl Ctl {
         };
         let film = &roll.film;
         lib.set_info_kind(1);
-        lib.set_stock_dyes(roll_card::dyes_note(film.stock.as_deref()).into());
         lib.set_info_title(film.name.clone().into());
         // `heroStock`: the stock a hand picked, else the first photo's mode's default, said so.
         let mode = roll.first.as_ref().and_then(|e| e.mode);
@@ -83,10 +82,11 @@ impl Ctl {
             lib.set_camera_body(film.camera_body.clone().unwrap_or_default().into());
             s.org.info_loaded = Some(key);
         }
-        let measure_key = format!("{} {}", roll.key(), roll.paths.join("\n"));
+        let frames_key = format!("{} {}", roll.key(), roll.paths.join("\n"));
         drop(s);
-        let unmeasured = self.roll_measured(measure_key, &roll.paths) == Some(false);
-        lib.set_roll_unmeasured(unmeasured);
+        let read = self.roll_frames(&frames_key, &roll.paths);
+        lib.set_roll_unmeasured(read.as_ref().is_some_and(|r| !r.measured));
+        lib.set_stock_dyes(roll_card::dyes_note(roll.film.stock.as_deref(), read.as_ref().map(|r| r.dyes.as_slice())).into());
     }
 
     /// `updateRoll`, one gallery step whatever the field: a folder's marker, made by its first field

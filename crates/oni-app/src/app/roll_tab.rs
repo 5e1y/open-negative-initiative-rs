@@ -7,14 +7,35 @@ use crate::{MenuLine, PanelState};
 use oni_i18n::tr;
 use oni_core::Command;
 use oni_settings::blocks::SeparationFamily;
+use oni_settings::film::{FilmStockKind, dye_family};
 use oni_settings::frame::{FlatField, FlatFieldMask};
 use oni_settings::{PipelineSettings, SourceEncoding};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
 /// `Separation.Family.allCases`, in the bar's order.
-const FAMILIES: [SeparationFamily; 5] =
+pub(super) const FAMILIES: [SeparationFamily; 5] =
     [SeparationFamily::KodakC41, SeparationFamily::FujiC41, SeparationFamily::GenericC41, SeparationFamily::Ecn2, SeparationFamily::E6];
+
+/// The name the Dyes tabs give a family.
+pub(super) fn family_name(family: SeparationFamily) -> &'static str {
+    match family {
+        SeparationFamily::KodakC41 => tr("Kodak"),
+        SeparationFamily::FujiC41 => tr("Fuji"),
+        SeparationFamily::GenericC41 => tr("Generic"),
+        SeparationFamily::Ecn2 => tr("ECN-2"),
+        SeparationFamily::E6 => tr("E-6"),
+    }
+}
+
+/// Where the Dyes tabs' family comes from: the roll's stock, or another than the one it names.
+pub(super) fn dye_source(family: SeparationFamily, stock: Option<&FilmStockKind>) -> String {
+    match stock.and_then(|k| dye_family(k.id).map(|named| (k, named))) {
+        Some((k, named)) if named == family => tr!("From the film stock, {stock}", stock = k.display_name),
+        Some((k, named)) => tr!("Not the film stock's: {stock} names {family}", stock = k.display_name, family = family_name(named)),
+        None => tr("No film stock names these dyes").to_string(),
+    }
+}
 
 /// `SourceEncoding.allCases`; a grey file offers the first two.
 const ENCODINGS: [SourceEncoding; 3] = [SourceEncoding::Srgb, SourceEncoding::Linear, SourceEncoding::DisplayP3];
@@ -128,6 +149,25 @@ impl Ctl {
         self.write_settings(|s| s.flat_field = chose(&s.flat_field, line));
     }
 
+    /// The Dyes tabs on the family the open frame unmixes, and where that family comes from.
+    pub(super) fn publish_dyes(&self) {
+        let Some(w) = self.window() else { return };
+        let (family, stock, stale) = {
+            let s = self.state.borrow();
+            let settings = s.store.settings();
+            let family = settings.separation_family.or_else(|| SeparationFamily::resting(settings.mode)).unwrap_or(SeparationFamily::GenericC41);
+            // The roll card read its frames on another state of the open photo: it reads them again.
+            let stale = s.org.frames.as_ref().is_some_and(|((_, bearing), _)| *bearing != s.open_bearing());
+            (family, s.open_stock(), stale)
+        };
+        let panel = w.global::<PanelState>();
+        panel.set_dye_family(FAMILIES.iter().position(|f| *f == family).unwrap_or(2) as i32);
+        panel.set_dye_source(dye_source(family, stock).into());
+        if stale {
+            self.publish_info();
+        }
+    }
+
     /// The Roll tab's settings blocks, from the open frame's settings and decode.
     pub(super) fn publish_roll_tab(&self) {
         let Some(w) = self.window() else { return };
@@ -138,8 +178,7 @@ impl Ctl {
             (s.store.settings().clone(), undeclared, s.masks.clone(), picked)
         };
         let panel = w.global::<PanelState>();
-        let family = settings.separation_family.or_else(|| SeparationFamily::resting(settings.mode)).unwrap_or(SeparationFamily::GenericC41);
-        panel.set_dye_family(FAMILIES.iter().position(|f| *f == family).unwrap_or(2) as i32);
+        self.publish_dyes();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
         panel.set_sheet(settings.sheet.is_some());
@@ -165,6 +204,17 @@ impl Ctl {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_dyes_say_whether_they_are_the_film_stocks() {
+        let fujicolor = oni_settings::film::film_stock(Some("fujifilm-fujicolor"));
+        assert_eq!(dye_source(SeparationFamily::FujiC41, fujicolor), "From the film stock, Fujifilm Fujicolor");
+        // Twin: another family than the stock's is flagged with the one the stock names.
+        assert_eq!(dye_source(SeparationFamily::KodakC41, fujicolor), "Not the film stock's: Fujifilm Fujicolor names Fuji");
+        assert_eq!(dye_source(SeparationFamily::GenericC41, None), "No film stock names these dyes");
+        let hp5 = oni_settings::film::film_stock(Some("ilford-hp5"));
+        assert_eq!(dye_source(SeparationFamily::KodakC41, hp5), "No film stock names these dyes", "black and white names none");
+    }
 
     #[test]
     fn the_toggle_takes_a_mask_to_choose_at_the_whole_amount_and_off_keeps_the_rest() {

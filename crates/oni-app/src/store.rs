@@ -3,6 +3,7 @@
 
 use crate::fields::{Block, Field};
 use oni_core::{Command, EditorStore};
+use oni_settings::blocks::SeparationFamily;
 use oni_settings::{Face, PipelineSettings};
 
 pub trait Store {
@@ -149,8 +150,9 @@ pub fn rest(settings: &PipelineSettings) -> PipelineSettings {
     PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic)
 }
 
-/// Whether the block's reset key shows: its value differs from what its reset writes.
-pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
+/// Whether the block's reset key shows: its value differs from what its reset writes. `dyes` is
+/// the family the roll's stock names, which the dyes rest on; none rests on the mode's own.
+pub fn is_modified(settings: &PipelineSettings, block: Block, dyes: Option<SeparationFamily>) -> bool {
     match block {
         // `FlatField()`: the block's value is the whole flat-field, its mask included.
         Block::FlatField => return settings.flat_field != Default::default(),
@@ -161,11 +163,12 @@ pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
     let rest = rest(settings);
     let off = block.fields().iter().any(|f| (f.knob().get(settings) - f.knob().get(&rest)).abs() > 1e-6);
     // `SettingsPane.dyes`: the block's value is the dose, the family and the hand's mark together.
-    off || (block == Block::DyeSeparation && (settings.separation_family.is_some() || settings.separation_by_hand))
+    off || (block == Block::DyeSeparation && (settings.separation_family != dyes || settings.separation_by_hand))
 }
 
-/// The block's sliders at their rest, as one write so the reset is one undo step.
-pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
+/// The block's sliders at their rest, as one write so the reset is one undo step; the dyes land
+/// on the family the roll's stock names.
+pub fn reset(settings: &PipelineSettings, block: Block, dyes: Option<SeparationFamily>) -> Command {
     let rest = rest(settings);
     let mut next = settings.clone();
     match block {
@@ -185,9 +188,9 @@ pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
         next = f.knob().set(&next, f.knob().get(&rest));
     }
     if block == Block::DyeSeparation {
-        // `Dyes(dose: Separation.base, family: nil, byHand: false)`, which the dose's knob alone would mark by hand.
+        // The dose at its base and the stock's dyes, which the dose's knob alone would mark by hand.
         next.separation = rest.separation;
-        next.separation_family = None;
+        next.separation_family = dyes;
         next.separation_by_hand = false;
     }
     Command::Write(Box::new(next))
@@ -198,7 +201,7 @@ pub(crate) mod tests {
     use super::*;
     use oni_core::Archive;
     use oni_settings::ConversionMode;
-    use oni_settings::blocks::{SeparationFamily, separation};
+    use oni_settings::blocks::separation;
     use std::path::{Path, PathBuf};
 
     /// A store opened on a frame with no sidecar in a fresh folder, read as a RAW mosaic.
@@ -239,12 +242,12 @@ pub(crate) mod tests {
         let (mut s, dir) = fresh("reset");
         s.apply(Command::Set { knob: Field::Contrast.knob(), value: 0.5 });
         s.apply(Command::Set { knob: Field::Vignette.knob(), value: -1.0 });
-        assert!(is_modified(s.settings(), Block::Effects) && !is_modified(s.settings(), Block::Lighting));
+        assert!(is_modified(s.settings(), Block::Effects, None) && !is_modified(s.settings(), Block::Lighting, None));
         let revision = s.revision();
-        let command = reset(s.settings(), Block::Effects);
+        let command = reset(s.settings(), Block::Effects, None);
         s.apply(command);
         assert_eq!(s.revision(), revision + 1);
-        assert!(!is_modified(s.settings(), Block::Effects));
+        assert!(!is_modified(s.settings(), Block::Effects, None));
         s.apply(Command::Undo);
         assert_eq!(s.get(Field::Contrast), 0.5, "the reset is one step, undone whole");
         assert_eq!(s.get(Field::Vignette), -1.0);
@@ -257,19 +260,19 @@ pub(crate) mod tests {
         s.apply(Command::Mode(ConversionMode::Positive));
         s.apply(Command::Set { knob: Field::Exposure.knob(), value: 0.7 });
         s.apply(Command::Set { knob: Field::DensityCeiling.knob(), value: 2.9 });
-        let command = reset(s.settings(), Block::Lighting);
+        let command = reset(s.settings(), Block::Lighting, None);
         s.apply(command);
-        let command = reset(s.settings(), Block::DensityCeiling);
+        let command = reset(s.settings(), Block::DensityCeiling, None);
         s.apply(command);
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
         assert_eq!(s.get(Field::Exposure), Field::Exposure.knob().get(&slide));
         assert_eq!(s.get(Field::DensityCeiling), Field::DensityCeiling.knob().get(&slide));
-        assert!(!is_modified(s.settings(), Block::Lighting) && !is_modified(s.settings(), Block::DensityCeiling));
+        assert!(!is_modified(s.settings(), Block::Lighting, None) && !is_modified(s.settings(), Block::DensityCeiling, None));
         // Twin: a negative's rest sits elsewhere on both, so a reset to it would fail above.
         let negative = PipelineSettings::rest(ConversionMode::Negative, true);
         assert_ne!(Field::Exposure.knob().get(&negative), Field::Exposure.knob().get(&slide));
         assert_ne!(Field::DensityCeiling.knob().get(&negative), Field::DensityCeiling.knob().get(&slide));
-        assert!(is_modified(&negative_on(s.settings()), Block::Lighting), "a negative's rest reads as moved on a slide");
+        assert!(is_modified(&negative_on(s.settings()), Block::Lighting, None), "a negative's rest reads as moved on a slide");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -280,25 +283,33 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn the_dye_separation_reset_clears_the_dose_the_family_and_the_hand() {
+    fn the_dye_separation_reset_lands_on_the_stocks_dyes_and_clears_the_dose_and_the_hand() {
         let (mut s, dir) = fresh("dyes");
+        let fuji = Some(SeparationFamily::FujiC41);
         let mut picked = s.settings().clone();
         picked.separation_family = Some(SeparationFamily::KodakC41);
         s.apply(Command::Write(Box::new(picked)));
         // The family alone, the dose at its base, still shows the block's reset key.
         assert_eq!(s.get(Field::DyeSeparation), separation::BASE);
-        assert!(is_modified(s.settings(), Block::DyeSeparation));
+        assert!(is_modified(s.settings(), Block::DyeSeparation, None) && is_modified(s.settings(), Block::DyeSeparation, fuji));
         s.apply(Command::Set { knob: Field::DyeSeparation.knob(), value: 1.1 });
         assert!(s.settings().separation_by_hand);
-        let command = reset(s.settings(), Block::DyeSeparation);
+        let command = reset(s.settings(), Block::DyeSeparation, fuji);
         s.apply(command);
-        let after = s.settings();
-        assert_eq!((after.separation, after.separation_family, after.separation_by_hand), (separation::BASE, None, false));
-        assert!(!is_modified(after, Block::DyeSeparation));
+        let after = s.settings().clone();
+        assert_eq!((after.separation, after.separation_family, after.separation_by_hand), (separation::BASE, fuji, false));
+        assert!(!is_modified(&after, Block::DyeSeparation, fuji), "the stock's dyes are the block's rest");
+        assert!(is_modified(&after, Block::DyeSeparation, None), "twin: with no stock they are a pick");
+        // With no stock naming dyes, the reset clears the family to the mode's own.
+        let command = reset(&after, Block::DyeSeparation, None);
+        s.apply(command);
+        assert_eq!(s.settings().separation_family, None);
+        assert!(!is_modified(s.settings(), Block::DyeSeparation, None));
+        assert!(is_modified(s.settings(), Block::DyeSeparation, fuji), "twin: off the stock's dyes is a pick");
         // Twin: the dose's knob alone lands on the base yet marks it by hand and keeps the family.
-        let by_knob = Field::DyeSeparation.knob().set(&PipelineSettings { separation_family: Some(SeparationFamily::KodakC41), ..after.clone() }, separation::BASE);
+        let by_knob = Field::DyeSeparation.knob().set(&PipelineSettings { separation_family: fuji, ..after.clone() }, separation::BASE);
         assert!(by_knob.separation_by_hand && by_knob.separation_family.is_some());
-        assert!(is_modified(&by_knob, Block::DyeSeparation));
+        assert!(is_modified(&by_knob, Block::DyeSeparation, fuji));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

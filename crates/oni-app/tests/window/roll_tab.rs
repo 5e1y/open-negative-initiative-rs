@@ -64,15 +64,25 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     rig.pump();
     assert_eq!(settings().source_encoding, None, "twin: sRGB is no encoding written");
 
-    // The dye family names its make; the block's reset clears it with the dose.
+    // The dye family names its make; the block's reset clears it with the dose. The tabs read the
+    // frame's family after every write, an undo and a reset included, and say no stock names it.
     assert_eq!(panel.get_dye_family(), 2, "a negative rests on Generic");
+    assert_eq!(panel.get_dye_source().as_str(), "No film stock names these dyes");
     panel.invoke_dye_family_picked(0);
     rig.pump();
     assert_eq!(settings().separation_family, Some(SeparationFamily::KodakC41));
     assert!(g.get_dye_separation_modified());
+    assert_eq!(panel.get_dye_family(), 0, "the tabs read the family written");
+    ctl.act(oni_app::Act::Undo);
+    rig.pump();
+    assert_eq!((settings().separation_family, panel.get_dye_family()), (None, 2), "an undo takes the tabs back to Generic");
+    ctl.act(oni_app::Act::Redo);
+    rig.pump();
+    assert_eq!(panel.get_dye_family(), 0);
     g.invoke_reset(5);
     rig.pump();
     assert_eq!((settings().separation_family, g.get_dye_separation_modified()), (None, false));
+    assert_eq!(panel.get_dye_family(), 2, "the reset takes the tabs back to Generic");
 
     // Source Balance: a negative names each row hue first; a drag moves the gain; the reset lands home.
     assert!(panel.get_gains_inverted());

@@ -144,7 +144,7 @@ impl Ctl {
         let p = me.clone();
         g.on_reset(move |block| {
             let Some(b) = Block::from_index(block) else { return };
-            let command = store::reset(p.state.borrow().store.settings(), b);
+            let command = { let s = p.state.borrow(); store::reset(s.store.settings(), b, s.open_dyes()) };
             p.write(command);
         });
 
