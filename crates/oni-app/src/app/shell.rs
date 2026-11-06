@@ -90,7 +90,7 @@ impl Shell {
             // A stored count off the ladder lands on its nearest rung.
             columns: Preferences::load(&options.support)
                 .int(preferences::GALLERY_COLUMNS)
-                .map_or(gallery::COLUMN_STEPS[1], |n| gallery::column_step(n.max(1) as usize, 0)),
+                .map_or(gallery::COLUMN_STEPS[2], |n| gallery::column_step(n.max(1) as usize, 0)),
             scroll: 0.0,
             grid: (0.0, 0.0),
             layout: Layout::new(&[], 6, 0.0, Metrics::GALLERY),

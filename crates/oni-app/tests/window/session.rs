@@ -38,7 +38,8 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
 
     let first = shell(&support);
     assert!(first.window.global::<App>().get_gallery());
-    assert!(first.window.global::<Menus>().get_live().smaller, "the film rung has a denser one");
+    assert!(first.window.global::<Menus>().get_live().smaller, "the largest rung has a denser one");
+    first.ctl.act(oni_app::Act::Smaller);
     first.ctl.act(oni_app::Act::Smaller);
     // The header's gear opens the sheet; its switches are the menu's own preferences.
     first.window.global::<Bar>().invoke_act(oni_app::Act::Settings);
