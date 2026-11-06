@@ -62,10 +62,10 @@ pub fn rows(s: &PipelineSettings, face: Face, on_paper: bool) -> Vec<Row> {
     let sheet = s.sheet.is_some();
     let blocks: [(Tab, &str, bool, &[Param]); 12] = [
         (Tab::Roll, "Flat-Field", masked, if mono { &[FlatAmount] } else { &[FlatAmount, FlatTemperature, FlatTint] }),
-        (Tab::Roll, "Source Balance", true, &[GainRed, GainGreen, GainBlue]),
-        (Tab::Roll, "Density Ceiling", true, &[DensityCeiling]),
+        (Tab::Roll, "Filtration", true, &[GainRed, GainGreen, GainBlue]),
+        (Tab::Roll, "Highlight Detail", true, &[DensityCeiling]),
         (Tab::Roll, "Dye Separation", separation, &[DyeSeparation]),
-        (Tab::Roll, "Balance Strength", separation, &[BalanceStrength]),
+        (Tab::Roll, "Auto White Balance", separation, &[BalanceStrength]),
         (Tab::Color, "Color", pro && !mono, &[Temperature, Tint, ColorDensity]),
         (Tab::Color, "Paper Correction", on_paper, &[PaperRed, PaperGreen, PaperBlue]),
         (Tab::Color, "Lighting", pro, &[Exposure, Highlights, Shadows, WhitePoint, BlackPoint]),

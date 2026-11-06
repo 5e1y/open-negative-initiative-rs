@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, WarningBand, Field, Label, TextRole, Tone, ButtonGroup, GroupAlign, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, Field, Label, TextRole, Tone, ButtonGroup, GroupAlign, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -10,38 +10,36 @@ export component RollPane inherits Pane {
     Block {
         title: @tr("Measured Roll");
         demo: "measured-roll";
-        help: @tr("Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.");
+        help: @tr("Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own.");
         separated: false;
-        // `rollBlock`: the rows a small gap apart, as Swift stacks them.
+        // `rollBlock`: the rows a small gap apart, as Swift stacks them; its state a line of words, so
+        // nothing beside the photo outweighs it, and its keys one a row, whatever the language's length.
         VerticalLayout {
             spacing: Space.s;
-            if PanelState.roll-state == 0 && !PanelState.slide: WarningBand { text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
+            if PanelState.roll-state == 0 && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
             if PanelState.roll-state == 0: Button {
                 size: ButtonSize.plate;
                 text: @tr("PREPARE THE ROLL…");
                 enabled: PanelState.can-prepare;
                 clicked => { PanelState.prepare-roll(); }
             }
-            if PanelState.roll-state == 1: Label { role: TextRole.note;
-                text: PanelState.roll-measured == 1 ? @tr("Acts on this photo, the only one measured with its roll.") : @tr("Acts on the {} photos measured with this roll.", PanelState.roll-measured);
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured == 0: Label { role: TextRole.note;
+                text: PanelState.roll-measured == 1 ? @tr("Acts on this photo, the only one of its roll.") : @tr("Acts on the {} photos of this roll.", PanelState.roll-measured);
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: WarningBand {
-                text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this folder was not measured with the roll.") : @tr("{} photos of this folder were not measured with the roll.", PanelState.roll-unmeasured);
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Label { role: TextRole.note; tone: Tone.warning;
+                text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this roll was left out of its measurement, so these settings do not reach it.") : @tr("{} photos of this roll were left out of its measurement, so these settings do not reach them.", PanelState.roll-unmeasured);
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: ButtonGroup { plate: true;
-                align: GroupAlign.fill;
-                Button {
-                    size: ButtonSize.plate;
-                    text: @tr("ADD THEM TO THE ROLL");
-                    help: @tr("Gives the photos left out this roll's measurement and settings, their own look kept.");
-                    clicked => { PanelState.join-roll(); }
-                }
-                Button {
-                    size: ButtonSize.plate;
-                    text: @tr("Move into a New Roll…");
-                    help: @tr("Moves the photos measured with this roll into a roll folder of their own.");
-                    clicked => { PanelState.make-roll(); }
-                }
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
+                size: ButtonSize.plate;
+                text: PanelState.roll-unmeasured == 1 ? @tr("INCLUDE IT") : @tr("INCLUDE THEM");
+                help: @tr("Gives the photos left out this roll's measurement and settings, their own look kept.");
+                clicked => { PanelState.join-roll(); }
+            }
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
+                size: ButtonSize.plate;
+                text: @tr("Move into a New Roll…");
+                help: @tr("Moves the photos measured with this roll into a roll folder of their own.");
+                clicked => { PanelState.make-roll(); }
             }
             if PanelState.roll-state == 2: Label { role: TextRole.note; text: @tr("Finding the photos measured with this roll…"); }
         }
@@ -133,7 +131,8 @@ export component RollPane inherits Pane {
         }
     }
     Block {
-        title: @tr("Source Balance");
+        title: @tr("Filtration");
+        help: @tr("The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own.");
         block: 10;
         modified: Store.source-balance-modified;
         folded-by-default: true;
@@ -160,11 +159,11 @@ export component RollPane inherits Pane {
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow; high: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue;
         }
     }
-    // Between the balance that feeds it and the windows placed on it, where it acts.
+    // Between the filtration that feeds it and the windows placed on it, where it acts.
     if !PanelState.slide: Block {
-        title: @tr("Density Ceiling");
+        title: @tr("Highlight Detail");
         demo: "density-ceiling";
-        help: @tr("Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.");
+        help: @tr("Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there.");
         block: 4;
         modified: Store.density-ceiling-modified;
         folded-by-default: true;
@@ -201,7 +200,7 @@ export component RollPane inherits Pane {
         StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }
     if PanelState.separation-shown: Block {
-        title: @tr("Balance Strength");
+        title: @tr("Auto White Balance");
         demo: "balance-strength";
         help: @tr("The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.");
         block: 3;

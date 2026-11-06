@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use crate::common;
 
 const FILM_TYPE: &str = "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K.";
-const MEASURED_ROLL: &str = "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.";
+const MEASURED_ROLL: &str = "Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own.";
 
 /// Sweeps the panel under its tab bar until the card saying `note` opens.
 fn hover(rig: &common::Rig, tip: &Tip, left: f32, from: f32, note: &str) -> bool {

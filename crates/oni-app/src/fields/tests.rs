@@ -162,7 +162,14 @@ fn the_roll_tab_lays_its_blocks_in_the_swift_order() {
             .map(String::from)
             .to_vec(),
     };
-    let shown = pane_titles(&panel_source(), "RollPane");
+    // Three blocks are named for a photographer, each read under Swift's title.
+    let swift_title = |t: String| match t.as_str() {
+        "Filtration" => "Source Balance".to_string(),
+        "Highlight Detail" => "Density Ceiling".to_string(),
+        "Auto White Balance" => "Balance Strength".to_string(),
+        _ => t,
+    };
+    let shown: Vec<String> = pane_titles(&panel_source(), "RollPane").into_iter().map(swift_title).collect();
     assert!(shown.len() >= 6, "{shown:?}");
     assert!(follows(&shown, &swift), "the Roll tab shows {shown:?}, Swift lays {swift:?}");
     // Twin: Dye Separation and Balance Strength ahead of the ceiling break the order.

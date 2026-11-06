@@ -44,7 +44,7 @@ pub const BLOCKS: [Block; 4] = [
             entry("secretSauce", marked("Chrome"), &["secretSauce"]),
             entry("paperCorrection", marked("Paper Correction"), &["paperCorrection"]),
             entry("manualCurves", marked("Curves"), &["manualCurves", "manualContrast"]),
-            entry("densityCeiling", marked("Density Ceiling"), &["densityCeiling"]),
+            entry("densityCeiling", marked("Highlight Detail"), &["densityCeiling"]),
             entry("spectrogram", marked("Spectrogram Finishing"), &["spectrogram"]),
             entry("saturation", marked("Saturation Curve"), &["saturation"]),
         ],

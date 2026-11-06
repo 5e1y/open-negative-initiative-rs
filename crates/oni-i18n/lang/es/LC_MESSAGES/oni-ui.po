@@ -1622,32 +1622,36 @@ msgid "Measured Roll"
 msgstr "Rollo medido"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own."
-msgstr "Todos los ajustes de aquí son del rollo: si se cambian en esta foto, llegan a todas las fotos medidas con él, y cada una conserva su propio aspecto. Una foto de la carpeta que quedó fuera de esa medición puede unirse a ella, o las fotos medidas pueden formar un rollo propio."
+msgid "Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own."
+msgstr "Todos los ajustes de aquí son del rollo: si se cambian en esta foto, llegan a todas las fotos medidas con él, y cada una conserva su propio aspecto. Una foto que quedó fuera de esa medición puede incluirse, o las fotos medidas pueden moverse a un rollo propio."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "This photo was never measured with its roll, so these settings act on it alone."
 msgstr "Esta foto nunca se midió con su rollo, así que estos ajustes solo actúan sobre ella."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Acts on this photo, the only one measured with its roll."
-msgstr "Actúa sobre esta foto, la única medida con su rollo."
+msgid "Acts on this photo, the only one of its roll."
+msgstr "Actúa sobre esta foto, la única de su rollo."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Acts on the {} photos measured with this roll."
-msgstr "Actúa sobre las {} fotos medidas con este rollo."
+msgid "Acts on the {} photos of this roll."
+msgstr "Actúa sobre las {} fotos de este rollo."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "1 photo of this folder was not measured with the roll."
-msgstr "1 foto de esta carpeta no se midió con el rollo."
+msgid "1 photo of this roll was left out of its measurement, so these settings do not reach it."
+msgstr "1 foto de este rollo quedó fuera de su medición, así que estos ajustes no le llegan."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "{} photos of this folder were not measured with the roll."
-msgstr "{} fotos de esta carpeta no se midieron con el rollo."
+msgid "{} photos of this roll were left out of its measurement, so these settings do not reach them."
+msgstr "{} fotos de este rollo quedaron fuera de su medición, así que estos ajustes no les llegan."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "ADD THEM TO THE ROLL"
-msgstr "AÑADIRLAS AL ROLLO"
+msgid "INCLUDE IT"
+msgstr "INCLUIRLA"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "INCLUDE THEM"
+msgstr "INCLUIRLAS"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Gives the photos left out this roll's measurement and settings, their own look kept."
@@ -1758,8 +1762,12 @@ msgid "Display P3"
 msgstr "Display P3"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Source Balance"
-msgstr "Balance de origen"
+msgid "Filtration"
+msgstr "Filtrado"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own."
+msgstr "El filtrado de color del rollo, como se ajustan los filtros de una ampliadora para una película: llega a todas las fotos del rollo, mientras que Temperatura y Matiz siguen siendo propios de cada foto."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Amber ↔ Blue"
@@ -1794,12 +1802,12 @@ msgid "Yellow ↔ Blue"
 msgstr "Amarillo ↔ Azul"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Density Ceiling"
-msgstr "Techo de densidad"
+msgid "Highlight Detail"
+msgstr "Detalle en las luces"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there."
-msgstr "Revela más detalle en las partes más densas del negativo, a costa de más ruido visible en ellas."
+msgid "Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there."
+msgstr "Revela más detalle en las partes más claras de la foto, las más densas del negativo, a costa de más ruido visible en ellas."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Ceiling"
@@ -1850,8 +1858,8 @@ msgid "Dye separation"
 msgstr "Separación de tintes"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Balance Strength"
-msgstr "Intensidad del balance"
+msgid "Auto White Balance"
+msgstr "Balance de blancos automático"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's."

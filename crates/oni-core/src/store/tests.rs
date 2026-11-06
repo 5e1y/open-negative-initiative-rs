@@ -322,21 +322,51 @@ fn a_flush_taken_on_switch_stays_silent() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// The library's paths laid again keep a roll's frames found while every one is still there, so a
-/// lay reads no sidecar; a frame gone has its roll scanned again on the next ask.
+/// The library's paths laid again keep every roll found, so a lay reads no sidecar; a path come or
+/// gone has every roll scanned again on the next ask.
 #[test]
-fn a_roll_s_frames_found_outlive_a_lay_that_keeps_them() {
+fn a_roll_s_frames_found_outlive_a_lay_of_the_same_paths_alone() {
     let paths: Vec<String> = ["/r/a.tif", "/r/b.tif", "/r/c.tif"].iter().map(|p| p.to_string()).collect();
     let mut store = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
-    let (kept, lost) = (oni_settings::Id::new(), oni_settings::Id::new());
-    store.measured.insert(kept.into(), ["/r/a.tif".to_string()].into());
-    store.measured.insert(lost.into(), ["/r/c.tif".to_string()].into());
+    let roll = oni_settings::Id::new();
+    let found = |store: &mut EditorStore| _ = store.measured.insert(roll.into(), ["/r/a.tif".to_string()].into());
+    found(&mut store);
+    store.set_archive_paths(paths.iter().rev().cloned().collect());
+    assert!(store.measured_group(roll).is_some(), "the same paths in another order keep the roll found");
+    // Twins: a path come, or one gone, has the roll scanned again.
     let mut more = paths.clone();
     more.push("/r/d.tif".into());
-    store.set_archive_paths(more.clone());
-    assert_eq!((store.measured_group(kept).map(|m| m.len()), store.measured_group(lost).map(|m| m.len())), (Some(1), Some(1)));
-    // Twin: a frame gone takes its roll's found frames with it.
-    more.retain(|p| p != "/r/c.tif");
     store.set_archive_paths(more);
-    assert!(store.measured_group(kept).is_some() && store.measured_group(lost).is_none());
+    assert!(store.measured_group(roll).is_none());
+    found(&mut store);
+    store.set_archive_paths(paths[..2].to_vec());
+    assert!(store.measured_group(roll).is_none());
+}
+
+/// A roll asked for while another folder is laid finds none of its frames there; laid again, its
+/// own folder gives them all, not what the other folder gave.
+#[test]
+fn a_roll_asked_for_beside_another_folder_is_found_whole_back_in_its_own() {
+    let dir = std::env::temp_dir().join(format!("oni-core-store-beside-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let id = Id::new();
+    let reference = oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
+    let on_roll = PipelineSettings { roll_reference: Some(reference), ..PipelineSettings::default() };
+    let laid = |name: &str, settings: &PipelineSettings| {
+        let path = dir.join(name);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, b"").unwrap();
+        sidecar::write(settings, &path, WriteOptions::default()).unwrap();
+        path.to_string_lossy().into_owned()
+    };
+    let eight: Vec<String> = ["Roll 8/a.tif", "Roll 8/b.tif", "Roll 8/c.tif"].iter().map(|n| laid(n, &on_roll)).collect();
+    let nine: Vec<String> = ["Roll 9/d.tif", "Roll 9/e.tif"].iter().map(|n| laid(n, &PipelineSettings::default())).collect();
+    let mut store = EditorStore::new(Archive::new(eight.clone(), |_: &Path| false));
+    store.open(&eight[0]).unwrap();
+    assert_eq!(store.measured_with(id).len(), 3);
+    store.set_archive_paths(nine);
+    assert_eq!(store.measured_with(id).len(), 1, "beside Roll 9, the open frame alone is found");
+    store.set_archive_paths(eight);
+    assert_eq!(store.measured_with(id).len(), 3, "back in Roll 8, the roll is found whole");
+    let _ = std::fs::remove_dir_all(&dir);
 }

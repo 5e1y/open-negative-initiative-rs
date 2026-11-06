@@ -5709,5 +5709,26 @@
     "title": "The face switch says what each face is",
     "status": "done",
     "detail": "Evaluation s-db78d310 (Obvious without a tutorial): Pro and Scanner sat side by side with no hint of how they differ. Each tab of the face switch carries a tooltip, Pro every setting by hand and the place to start, Scanner a lab scanner's keypad of density and colour steps; `Tabs` takes a tooltip per tab, a swatch with none still showing its name."
+  },
+  {
+    "id": 1171,
+    "type": "fix",
+    "title": "A roll asked for while the gallery shows another folder is found whole once its own folder is back",
+    "status": "done",
+    "detail": "UX evaluation: after a walk through Roll #9, Roll #8's Roll tab read 'Acts on this photo, the only one measured with its roll' and '24 photos of this folder were not measured with the roll', its sidecars unchanged. The open frame stays in the store behind the gallery, so each bar publish asked its roll among Roll #9's paths, found none and kept that empty answer: EditorStore::set_archive_paths kept every roll whose found frames were all still laid, which an empty roll always is. A roll's frames are found among the library's paths, so the same paths keep every roll found (a lay still reads no sidecar) and any path come or gone has every roll scanned again. Checks: a_roll_asked_for_beside_another_folder_is_found_whole_back_in_its_own (1 beside Roll 9, 3 back in Roll 8; it read 1 before), a_roll_s_frames_found_outlive_a_lay_of_the_same_paths_alone (twins: a path come, a path gone)."
+  },
+  {
+    "id": 1172,
+    "type": "change",
+    "title": "The Measured Roll speaks of the roll the photographer sees, in a line of words, its keys one a row",
+    "status": "done",
+    "detail": "UX evaluation: the Roll tab set the folder apart from the roll ('24 photos of this folder were not measured with the roll', ADD THEM TO THE ROLL), large orange bands topped the panel on every frame, and MOVE INTO A NEW ROLL… ran past the panel's edge. The roll is the folder the photographer sees: 'Acts on the 25 photos of this roll.', else, in the warning ink of Prepare's notes, '24 photos of this roll were left out of its measurement, so these settings do not reach them.' over INCLUDE THEM and MOVE INTO A NEW ROLL…, each key a row of its own so no language runs it past the panel; the never-measured line is a plain note over PREPARE THE ROLL…. The Roll tab no longer draws a WarningBand. Checks: the catalogue check; the Roll tab's help card test reads the new note."
+  },
+  {
+    "id": 1173,
+    "type": "change",
+    "title": "The Roll tab names its blocks for a photographer: Filtration, Highlight Detail, Auto White Balance",
+    "status": "done",
+    "detail": "UX evaluation: Source Balance, Density Ceiling and Balance Strength read as engine concepts beside the film type. They are now Filtration (the roll's colour, as an enlarger's filters are dialled for a film, with a help note it lacked), Highlight Detail (the photo's brightest parts, the negative's densest) and Auto White Balance (the share of the key's correction the roll takes); fields, sidecars and presets' ids keep Swift's names. The phone's panel and the presets' list name them alike. Spectrogram Finishing, Kept and Flags stand on other tabs. Checks: the catalogue check; the_roll_tab_lays_its_blocks_in_the_swift_order reads each renamed block under Swift's title."
   }
 ]
