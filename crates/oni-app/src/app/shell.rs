@@ -22,6 +22,7 @@ impl Shell {
     pub fn standing(window: MainWindow, store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let mut laps = crate::starter::Laps::new("Building the app");
         crate::keycaps::serve(&window);
+        crate::slider_track::serve(&window);
         let caches = engine.lock().ok().and_then(|e| e.caches.clone());
         crate::measuring::set_folders(&options.support, caches);
         let worker = Worker::new(Box::new(engine.clone()), |done| with_shell(move |c| c.deliver(done)));

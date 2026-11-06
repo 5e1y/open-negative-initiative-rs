@@ -22,6 +22,7 @@ export component LabSlider inherits Slider {
     highest: Lab.highs[root.index];
     readout: Lab.readouts[root.index];
     value-text: self.readout;
+    step-reads: Lab.step-reads[root.index];
     minus-help: root.helps[0];
     help: root.helps[1];
     plus-help: root.helps[2];
