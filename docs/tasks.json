@@ -6066,5 +6066,19 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1268,
+    "type": "design",
+    "title": "The crop's thirds read on a shadow as on a sky",
+    "status": "done",
+    "detail": "The evaluators found the crop grid mid-grey with no halo, nearly lost over the dark shed and the mid-tones. Its source: the thirds drew half a point at the faint guide's 35 % white, which a 1x screen halves into one grey pixel, a horizontal third losing its light core entirely between two rows. The thirds are now a whole point in the crop edge bars' rest ink (55 % white), edged a point either side by the contrast shade as every guide over a photo is, so the core reads over the shed as over the sky and stays quieter than the frame's own 90 % line. GuideLine gives its breadth (band), which the thirds take instead of repeating it. Seen on a 1x window check: a 139-164 core between 24-57 edges on dark green, deep red and magenta."
+  },
+  {
+    "id": 1269,
+    "type": "design",
+    "title": "Compare's divider carries a slider's knob",
+    "status": "done",
+    "detail": "The evaluators found Compare's divider a bare 1 pt white line with no handle, faint over a light sky. The split is a slider laid over the photo, so it now wears the panel sliders' own knob (the small level keycap with its two grip lines) on its middle, growing under the hand as theirs does, over the line and its contrast edges; the whole height still grabs and a press anywhere on it still moves the split. Nothing new to tune: the knob is the sliders'."
   }
 ]

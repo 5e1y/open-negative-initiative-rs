@@ -5,6 +5,7 @@ import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, CardStyle, SplitStyle, ScannerStyle } from "theme.slint";
 import { Outward, Inward } from "depth.slint";
+import { Knob } from "knob.slint";
 
 // `note` is a block's wrapped line in the secondary ink, a label's size, its lines opened; `section` a
 // block's title, a step larger and heavier than the words under it.
@@ -165,7 +166,8 @@ export component GuideLine inherits Rectangle {
     in property <length> line: Stroke.line;
     in property <color> ink: Colour.guide;
     in property <color> edge: Colour.contrast-edge;
-    property <length> band: root.line + 2 * Stroke.line;
+    // Its breadth across, the line and its two edges, which a guide laid by hand takes.
+    out property <length> band: root.line + 2 * Stroke.line;
     Rectangle {
         x: root.vertical ? (parent.width - self.width) / 2 : 0px;
         y: root.vertical ? 0px : (parent.height - self.height) / 2;
@@ -182,15 +184,21 @@ export component GuideLine inherits Rectangle {
     }
 }
 
-// `NegativeView.splitDivider`: the compare split's guide, its before and after labels, a grab the
-// width of a handle; moving it only recomposites.
+// The compare split: its guide, a slider's knob on its middle that the eye finds on any photo, its before
+// and after labels, a grab the width of a handle down its whole height; moving it only recomposites.
 export component SplitGuide inherits Rectangle {
     callback dragged(length);
+    property <bool> held: grab.has-hover || grab.pressed;
     width: SplitStyle.grab;
     GuideLine {
         vertical: true;
-        line: grab.has-hover || grab.pressed ? Stroke.line + SplitStyle.grow : Stroke.line;
-        ink: grab.has-hover || grab.pressed ? Colour.handle-active : Colour.guide;
+        line: root.held ? Stroke.line + SplitStyle.grow : Stroke.line;
+        ink: root.held ? Colour.handle-active : Colour.guide;
+    }
+    Knob {
+        centre: parent.width / 2;
+        across: parent.height;
+        grown: root.held;
     }
     Label {
         text: @tr("Before");
