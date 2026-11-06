@@ -231,10 +231,7 @@ impl Card {
             _ => (Image::default(), crate::PreviewState::Rendering),
         };
         let size = self.sizes.get(i).copied().flatten();
-        let caption = size.map(|(w, h)| {
-            let (ow, oh) = self.settings.resize.output_size(w, h);
-            format!("{} × {}", ow as i64, oh as i64)
-        });
+        let caption = size.map(|(w, h)| oni_settings::geometry::pixel_label(self.settings.resize.output_size(w, h)));
         ExportLine {
             name: row.as_ref().map_or_else(|| oni_export::stem(&target.path), |r| r.name.clone()).into(),
             camera: m.camera.into(),

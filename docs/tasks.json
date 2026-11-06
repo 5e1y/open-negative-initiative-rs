@@ -6080,5 +6080,12 @@
     "title": "Every title is engraved, in its own case",
     "status": "done",
     "detail": "Owner's art direction: capitals belong to the keycap CTAs alone; and the UI evaluation s-0abd2d65 found the Pro panel, Settings and Export short of the analogue nods the Scanner face and the gallery carry. A block's title drops the capitals and the seal's tracking #1220 gave it and keeps its engraving, now one DS piece (Engraved, a Label whose three copies draw the groove's shade a line above, the lit edge a line below, then the ink, the root laying the words out unseen); every sheet's title (Settings among them, a question's too) and the export's heading take it, so the three screens bear the same camera's marking at their head. The screen reader hears each title once, as written."
+  },
+  {
+    "id": 1286,
+    "type": "design",
+    "title": "The figures the app reports read on the glass",
+    "status": "done",
+    "detail": "UI evaluation s-0abd2d65: Export read as generic software, its summary a well of type smaller than the panel's; the crop's kept size sat alone on its LCD pill. What the export writes now reads as Kept does: each figure on the LcdReadout beside its label (the bit depth's line its size, Estimated size its weight), the well gone and the notes under them, so the column's one textured piece is small. The size reads in pixels, '6048 × 4031 px', from the formatter Kept uses (geometry::pixel_label), under each preview too. Settings > About shows the version on the same glass. The weight's labels are in sentence case, Estimated size and Estimated total size, French and Spanish with them. Checks: export_sheet's sizes read in pixels; export_window's caption still equals the summary's size."
   }
 ]

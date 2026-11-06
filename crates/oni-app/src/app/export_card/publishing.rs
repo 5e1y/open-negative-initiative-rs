@@ -95,12 +95,9 @@ impl Ctl {
         e.set_hdr(c.settings.hdr);
         e.set_sheet(c.sheet);
         e.set_bits(export::bits(c.settings.format()).into());
-        let dims = c.full().map(|(fw, fh)| {
-            let (ow, oh) = c.settings.resize.output_size(fw, fh);
-            format!("{} × {}", ow as i64, oh as i64)
-        });
+        let dims = c.full().map(|(fw, fh)| oni_settings::geometry::pixel_label(c.settings.resize.output_size(fw, fh)));
         e.set_dims(dims.unwrap_or_else(|| "—".into()).into());
-        e.set_weight_label(if batch { tr("estimated total size") } else { tr("estimated size") }.into());
+        e.set_weight_label(if batch { tr("Estimated total size") } else { tr("Estimated size") }.into());
         e.set_weight(export::weight(c.estimate, if sheet { 1 } else { count }).into());
         e.set_low_precision(export::low_precision(c.low_precision, count).into());
         e.set_exporting(c.exporting);

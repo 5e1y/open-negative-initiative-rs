@@ -70,13 +70,13 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let targets = all[..3].to_vec();
     ctl.enter_export(targets.clone());
     rig.until("the lines and sizes", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some) && e.get_dims().as_str() != "—");
-    assert_eq!(e.get_dims(), "1500 × 1000", "a batch's size is its first photo's");
+    assert_eq!(e.get_dims(), "1500 × 1000 px", "a batch's size is its first photo's");
 
     // One sheet: three frames a tile wide, 30 px apart, as tall as B, a 60 px margin around them, and
     // under the row the band of their numbers and the margin; no logo under less than a row.
     assert_eq!(e.get_sheet_tiles().row_count(), 0, "twin: separate photos show their lines");
     e.invoke_sheet_set(true);
-    rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 948");
+    rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 948 px");
     assert_eq!(e.get_key_title(), "EXPORT CONTACT SHEET");
     // The column shows the sheet as the file lays it, fitted to its room: three tiles in a row,
     // numbered, on the sheet's proportions, no logo under them.
@@ -119,7 +119,7 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     };
     ctl.enter_export(targets.into_iter().map(positive).collect());
     e.invoke_sheet_set(true);
-    rig.until("the positives' sheet", LONG, || e.get_dims().as_str() == "3252 × 948");
+    rig.until("the positives' sheet", LONG, || e.get_dims().as_str() == "3252 × 948 px");
     e.invoke_export();
     rig.until("the positives written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert_eq!(export_card::job::job(&ctl), Some((1, 1, Some(End::Written))));
@@ -135,7 +135,7 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     *file.borrow_mut() = out.join("Five.jpg");
     ctl.enter_export(all.clone());
     e.invoke_sheet_set(true);
-    rig.until("the five's sheet", LONG, || e.get_dims().as_str() == "5360 × 1398");
+    rig.until("the five's sheet", LONG, || e.get_dims().as_str() == "5360 × 1398 px");
     let _ = rig.drawn();
     rig.until("the five's logo in the column", LONG, || e.get_sheet_logo().size().width > 0);
     e.invoke_export();
