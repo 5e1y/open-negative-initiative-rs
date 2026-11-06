@@ -346,7 +346,7 @@ export component MainWindow inherits AppWindow {
     if Told.shown: ToldNotice { room: root.width; room-height: root.height; }
     // A press hides a tooltip, as AppKit's: the key may change its help or vanish under the hand.
     property <int> presses: Outside.presses;
-    changed presses => { if (!Tip.card) { Tip.shown = false; } }
+    changed presses => { Tip.shown = false; }
     tips := TipLayer { room: root.width; room-height: root.height; }
     // Last, over everything: the app beneath stands up while the starter says each step.
     if Starter.shown: StarterView { x: 0; y: 0; width: root.width; height: root.height; }

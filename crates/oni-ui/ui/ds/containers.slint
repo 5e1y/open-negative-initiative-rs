@@ -1,7 +1,8 @@
 // The containers: a block's section, the help mark, the sheet, the question a sheet asks, the
 // notice that passes and the banner that stays.
 import { Colour, Space, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
-import { Label, Engraved, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
+import { Label, Engraved, Icon, Divider, TextRole, Tone, Tip, Tips, Raised, Lift, Gap, Tones } from "base.slint";
+import { HelpCard } from "tip.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
 import { Scroller } from "collections.slint";
@@ -9,14 +10,15 @@ import { Icons } from "icons.slint";
 import { Reach, Reaches } from "reach.slint";
 import { Keyboard } from "keyboard.slint";
 
-// The "?" beside a block's title: a ghost key whose note shows as a card. It lays out at its glyph's size
-// and catches the hand over a small key's square around it, so a line keeps its height.
+// The "?" beside a title: a ghost key, lit while its note stands open as a card in the flow under it,
+// named with what it explains. It lays out at its glyph's size, the hand caught over a small key's square.
 export component HelpMark inherits Rectangle {
     in property <string> note;
+    // The help topic whose demo the card plays, none for a note alone.
     in property <string> demo;
-    // The column the card covers, in window points: the block it explains, so no word of it peeks out.
-    in property <length> column-x;
-    in property <length> column-width;
+    // What the note explains, as its title says it.
+    in property <string> subject;
+    property <bool> open: Tip.open == root.note;
     width: SectionStyle.help-mark;
     height: self.width;
     Button {
@@ -28,16 +30,16 @@ export component HelpMark inherits Rectangle {
         has-icon: true;
         icon: Icons.question;
         glyph-size: SectionStyle.help-mark;
-        note: root.note;
-        demo: root.demo;
-        note-x: root.column-x;
-        note-width: root.column-width;
-        accessible-label: @tr("What this block does");
+        glyph-ink: root.open ? Colour.ink : transparent;
+        help: @tr("Help on {}", root.subject);
+        accessible-expandable: true;
+        accessible-expanded: root.open;
+        clicked => { Tips.help(root.note, root.demo); }
     }
 }
 
-// `DSSection`: a rule above every block, then a title row with its note, reset and fold keys. Every
-// block of the editor's panel has a note, so each title wears its "?".
+// `DSSection`: a rule above every block, then a title row with its "?", reset and fold keys, the "?"'s
+// card under it, then the block. Every block of the editor's panel has a note, so each title wears its "?".
 export component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> help;
@@ -80,26 +82,24 @@ export component Section inherits VerticalLayout {
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
-                HelpMark {
-                    note: root.help;
-                    demo: root.demo;
-                    column-x: root.absolute-position.x + root.inset;
-                    column-width: root.width - 2 * root.inset;
-                }
+                HelpMark { note: root.help; demo: root.demo; subject: root.title; }
             }
             if root.news != "": VerticalLayout {
                 alignment: center;
                 Badge { tone: BadgeTone.seal; text: root.news; note: root.news-note; read => { root.news-read(); } }
             }
             Rectangle { horizontal-stretch: 1; }
-            // Always laid out, only invisible, so the row keeps its height on a slider's first touch.
-            if root.block >= 0: Button {
-                size: ButtonSize.mini;
+            // Always in its place, dimmed while nothing moved, and a step apart from the fold key.
+            if root.block >= 0: HorizontalLayout {
                 horizontal-stretch: 0;
-                text: @tr("Reset");
-                visible: root.modified;
-                enabled: root.modified;
-                clicked => { root.reset(root.block); }
+                padding-right: root.foldable ? Space.m : 0px;
+                Button {
+                    size: ButtonSize.mini;
+                    horizontal-stretch: 0;
+                    text: @tr("Reset");
+                    enabled: root.modified;
+                    clicked => { root.reset(root.block); }
+                }
             }
             if root.foldable: Button {
                 size: ButtonSize.mini;
@@ -110,6 +110,11 @@ export component Section inherits VerticalLayout {
                 help: root.folded ? @tr("Show {}", root.title) : @tr("Hide {}", root.title);
                 clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); }
             }
+        }
+        // Open or folded, the card follows its "?": it pushes the block down rather than lie over it.
+        if root.help != "" && Tip.open == root.help: VerticalLayout {
+            padding-top: SectionStyle.gap;
+            HelpCard { note: root.help; subject: root.title; }
         }
         // Folded, the content keeps its place in the tree at zero height, so its state survives. Clipped
         // only then: a well's lit lip and a raised face's shadow lie past the last child's bounds.

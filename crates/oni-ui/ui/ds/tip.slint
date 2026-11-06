@@ -1,58 +1,22 @@
-// The note a hovered control shows: a tooltip's line, a help mark's card and the layer that holds it.
+// The notes a control gives: a hovered control's tooltip, the layer that holds it, and a help mark's card.
 import { Colour, Space, Motion, TipStyle } from "theme.slint";
 import { Outward } from "depth.slint";
-import { Tip, Tips, TipBox, Label, TextRole, Tone, Picture, Ground } from "base.slint";
+import { Tip, Tips, TipBox, Label, TextRole, Tone, Picture, Ground, Inset, Gap } from "base.slint";
 
-// What a hovered control says: a line of text; as a help mark's note a card, its demo above when it
-// has one, square, then the note, as `DSHelpBubble`. `natural-width` and `-height`: its unheld size.
+// What a hovered control says: a line of text. `natural-width` and `-height`: its unheld size.
 export component TipCard inherits Outward {
-    in property <bool> card;
     in property <string> text;
-    in property <image> picture;
-    in property <bool> has-picture;
-    // A card's width, the column it covers.
-    in property <length> card-width: TipStyle.card-width;
-    // The demo's side, the card's width inside its padding unless a short room asks for less.
-    in property <length> demo: root.card-width - 2 * TipStyle.padding;
-    // The card's height without its demo, which a short room's demo is measured against.
-    out property <length> bare-height: note.preferred-height + 2 * TipStyle.padding;
-    out property <length> natural-width: root.card ? root.card-width : tip-text.width + 2 * TipStyle.padding;
-    out property <length> natural-height: root.card ? column.preferred-height : tip-text.preferred-height + 2 * TipStyle.padding-y;
+    out property <length> natural-width: tip-text.width + 2 * TipStyle.padding;
+    out property <length> natural-height: tip-text.preferred-height + 2 * TipStyle.padding-y;
     width: root.natural-width;
     height: root.natural-height;
-    fill: root.card ? Colour.canvas : Colour.tip;
-    radius: root.card ? TipStyle.card-radius : TipStyle.radius;
-    clip: root.card;
+    fill: Colour.tip;
+    radius: TipStyle.radius;
     tip-text := Label {
-        visible: !root.card;
         role: TextRole.caption;
         text: root.text;
         wrap: word-wrap;
         width: min(self.preferred-width, TipStyle.max-width);
-    }
-    column := VerticalLayout {
-        visible: root.card;
-        width: root.card-width;
-        padding: TipStyle.padding;
-        // The demo's place, its ground shown until the first frame lands; laid always, at no height
-        // without a demo, so the card's height follows `has-picture` at once.
-        HorizontalLayout {
-            alignment: center;
-            Picture {
-                visible: root.has-picture;
-                width: root.has-picture ? root.demo : 0px;
-                height: root.has-picture ? root.demo : 0px;
-                ground: Ground.skeleton;
-                rounded: true;
-                source: root.picture;
-            }
-        }
-        Rectangle { height: root.has-picture ? TipStyle.padding : 0px; }
-        note := Label {
-            role: TextRole.note;
-            tone: Tone.primary;
-            text: root.card ? root.text : "";
-        }
     }
 }
 
@@ -60,23 +24,8 @@ export component TipCard inherits Outward {
 export component TipLayer inherits TipCard {
     in property <length> room;
     in property <length> room-height;
-    card: Tip.card;
-    card-width: Tip.card-width;
     text: Tip.text;
-    picture: Tip.clip;
-    has-picture: Tip.has-clip;
-    // The topic playing: the card open on a mark that names one, else none.
-    property <string> playing: Tip.card && Tip.shown ? Tip.demo : "";
-    changed playing => { Tip.play(self.playing); }
-    // A help mark's card opens under its mark, or over it where more room stands, beside the control
-    // it explains and never over the photo; its demo shortens so the card keeps to that room.
-    property <length> under: root.room-height - Space.s - Tip.y;
-    property <length> over: Tip.above - Space.s;
-    property <length> full: root.card-width - 2 * TipStyle.padding;
-    property <length> whole: root.bare-height + (root.has-picture ? TipStyle.padding + root.full : 0px);
-    property <bool> below: !Tip.card || root.under >= root.whole || root.under >= root.over;
-    demo: max(0px, min(root.full, (root.below ? root.under : root.over) - root.bare-height - TipStyle.padding));
-    out property <TipBox> box: Tips.place(Tip.x, root.below ? Tip.y : Tip.above - root.natural-height, root.natural-width, root.natural-height, root.room, root.room-height);
+    out property <TipBox> box: Tips.place(Tip.x, Tip.y, root.natural-width, root.natural-height, root.room, root.room-height);
     x: root.box.x;
     y: root.box.y;
     width: root.box.width;
@@ -85,10 +34,39 @@ export component TipLayer inherits TipCard {
     property <bool> shown: Tip.shown;
     property <bool> ready;
     changed shown => { root.ready = false; }
-    visible: Tip.text != "" && Tip.shown && (Tip.at-once || root.ready);
+    visible: Tip.text != "" && Tip.shown && root.ready;
     Timer {
         interval: Motion.tip-delay;
-        running: Tip.shown && !Tip.at-once && !root.ready;
+        running: Tip.shown && !root.ready;
         triggered => { root.ready = true; }
+    }
+}
+
+// A help mark's card, laid in its block's flow under the mark: the topic's demo, square, over the note,
+// one padding all round. It asks the demo for its frames while it stands, so a closed card costs nothing.
+export component HelpCard inherits Inset {
+    in property <string> note;
+    // Named as its mark, for assistive tools: the region the mark opened.
+    in property <string> subject;
+    gap: Gap.m;
+    accessible-role: groupbox;
+    accessible-label: @tr("Help on {}", root.subject);
+    init => { Tip.play(Tip.demo); }
+    Timer {
+        interval: Tip.delay;
+        running: Tip.has-clip;
+        triggered => { Tip.advance(); }
+    }
+    // Its ground shows until the first frame lands.
+    if Tip.has-clip: Picture {
+        height: self.width;
+        ground: Ground.skeleton;
+        rounded: true;
+        source: Tip.clip;
+    }
+    Label {
+        role: TextRole.note;
+        tone: Tone.primary;
+        text: root.note;
     }
 }

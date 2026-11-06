@@ -249,9 +249,9 @@ msgstr "Marquée"
 msgid "Roll name"
 msgstr "Nom de la pellicule"
 
-#: crates/oni-ui/ui/ds/containers.slint
-msgid "What this block does"
-msgstr "Ce que fait ce bloc"
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/tip.slint
+msgid "Help on {}"
+msgstr "Aide : {}"
 
 #: crates/oni-ui/ui/ds/containers.slint
 msgid "Reset"

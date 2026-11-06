@@ -3,7 +3,7 @@
 import { Slider, ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
 import { SurfaceStyle } from "../ui/ds/theme_surfaces.slint";
-import { Label, TextRole, Tone, Gap, Raised, Lift, Inset, Divider, TipCard, Badge, BadgeTone, Metal, LcdReadout,
+import { Label, TextRole, Tone, Gap, Raised, Lift, Inset, Divider, TipCard, HelpCard, Badge, BadgeTone, Metal, LcdReadout,
     Progress, StatusBar, Lamp, Popover, PopupPanel, PresetFace, PresetStyle, WrappedCard, Section, AskSheet, AskRole,
     SheetStyle, Button } from "../ui/ds/ds.slint";
 import { Keycap, Outward, Inward, Depth } from "depth.slint";
@@ -436,7 +436,7 @@ export component MiscPage inherits Rectangle {
                     }
                 }
                 Cell { caption: "menu (no tail)"; Popover { width: 180px; menu: true; tail: false; pad: Gap.xs; Label { text: "Reveal in Finder"; } } }
-                Cell { caption: "TipCard, help bubble"; TipCard { card: true; text: "A block's own note, shown only on hover instead of printed underneath."; } }
+                Cell { caption: "HelpCard, a help mark's note"; HelpCard { width: 300px; subject: "Lighting"; note: "A block's own note, opened by its \"?\" in the block's flow."; } }
                 Cell { caption: "TipCard, tooltip"; TipCard { text: "Reset the balance"; } }
             }
 

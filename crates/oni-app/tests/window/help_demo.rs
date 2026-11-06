@@ -1,35 +1,26 @@
-//! A help mark naming a demo plays it on its card, frame after frame, while the card is open;
-//! leaving the mark stops the clip, and the next mark plays its own.
+//! A help mark naming a demo plays it on its card, frame after frame, while the card stands; its mark
+//! pressed again stops the clip, the next mark plays its own, and a card gone with its panel asks no frame.
 
-use oni_app::app::{Options, Shell};
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{PanelState, Tip};
-use oni_core::{Archive, EditorStore};
-use slint::platform::WindowEvent;
-use slint::{ComponentHandle, LogicalPosition};
-use std::path::PathBuf;
+use slint::ComponentHandle;
 use std::time::{Duration, Instant};
 
 use crate::common;
+use crate::panel_bindings::opened;
 
 const SHARPENING: &str = "Sharpens edges without adding colour fringing.\n\nHalo suppression keeps a sharpened edge within the light of its neighbours, clamping the overshoot that draws a bright or dark rim along it.";
 const CHROMA: &str = "Smooths colour noise from the scan without touching the film grain.";
+/// The help mark of the block titled `subject`, named as assistive tools read it; a check's build
+/// keeps the interface's words English.
+pub(crate) fn mark(w: &oni_app::MainWindow, subject: &str) -> common::Placed {
+    common::the(w, Role::Button, &format!("Help on {subject}"))
+}
 
-/// Sweeps the panel under its tab bar until the card saying `note` opens.
-pub(crate) fn hover_note(rig: &common::Rig, tip: &Tip, left: f32, from: f32, note: &str) -> bool {
-    let mut y = from;
-    while y < 790.0 {
-        let mut x = left;
-        while x < left + 280.0 {
-            rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
-            rig.pump();
-            if tip.get_shown() && tip.get_card() && tip.get_text() == note {
-                return true;
-            }
-            x += 3.0;
-        }
-        y += 3.0;
-    }
-    false
+/// Presses the help mark of the block titled `subject`.
+pub(crate) fn press_help(rig: &common::Rig, w: &oni_app::MainWindow, subject: &str) {
+    common::click(rig, w, mark(w, subject).middle());
+    rig.settle();
 }
 
 pub(crate) fn clip_pixels(tip: &Tip) -> Option<Vec<u8>> {
@@ -46,38 +37,14 @@ pub(crate) fn watch(rig: &common::Rig, span: Duration) {
 }
 
 pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the help demo is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-help-demo-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
-    common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
-    let w = &shell.window;
-    let (lib, tip) = (w.global::<oni_app::Library>(), w.global::<Tip>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    let Some((rig, shell, root)) = opened("help-demo") else { return };
+    let (ctl, w) = (shell.ctl.clone(), &shell.window);
+    let tip = w.global::<Tip>();
     w.global::<PanelState>().set_tab(3);
     w.global::<PanelState>().invoke_tab_picked(3);
     rig.settle();
-    let (left, foot) = (w.get_panel_x() + 4.0, w.get_tabs_foot() + 2.0);
 
-    assert!(hover_note(&rig, &tip, left, foot, SHARPENING), "the Sharpening mark opens its card");
+    press_help(&rig, w, "Sharpening");
     assert_eq!(tip.get_demo(), "sharpening", "the mark names its topic");
     assert!(tip.get_has_clip(), "the card holds a clip box");
     rig.until("the demo's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
@@ -85,17 +52,27 @@ pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
     // The hand rests half a second before it moves: past that, the picture must have changed.
     watch(&rig, Duration::from_millis(1500));
     let later = clip_pixels(&tip).expect("still playing");
-    assert_ne!(first, later, "the demo's frame advances while the card is open");
-    let with_clip = w.get_tip_box();
-    assert!(with_clip.height > with_clip.width, "the square clip stands above the note: {with_clip:?}");
+    assert_ne!(first, later, "the demo's frame advances while the card stands");
     rig.shot("help-demo-sharpening");
 
-    // Twin: the clip stopped with the card it left, and another mark plays its own demo.
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(10.0, 10.0) });
-    rig.pump();
-    assert!(!tip.get_has_clip() && clip_pixels(&tip).is_none(), "leaving the mark stops the clip");
-    assert!(hover_note(&rig, &tip, left, foot, CHROMA), "the Chroma Denoise mark opens its card");
-    rig.pump();
+    // Gone with the panel, in the gallery, the card asks no frame; back, it plays on. A frame drawn
+    // lays each view out, as the window does after each change.
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.settle();
+    let _ = rig.drawn();
+    let held = clip_pixels(&tip);
+    watch(&rig, Duration::from_millis(600));
+    assert_eq!(held, clip_pixels(&tip), "no card stands: the clip waits");
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.settle();
+    let _ = rig.drawn();
+    watch(&rig, Duration::from_millis(600));
+    assert_ne!(held, clip_pixels(&tip), "twin: the card back, its frames advance again");
+
+    // Pressed again, the mark stops the clip, and another mark plays its own demo.
+    press_help(&rig, w, "Sharpening");
+    assert!(tip.get_open().is_empty() && !tip.get_has_clip() && clip_pixels(&tip).is_none(), "its mark again stops the clip");
+    press_help(&rig, w, "Chroma Denoise");
     assert_eq!(tip.get_demo(), "chroma-denoise", "the next mark names its own topic");
     rig.until("its own demo", Duration::from_secs(5), || clip_pixels(&tip).is_some_and(|p| p != later));
     let _ = std::fs::remove_dir_all(&root);

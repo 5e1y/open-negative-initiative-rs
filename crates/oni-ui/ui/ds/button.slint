@@ -1,7 +1,7 @@
 // The key every screen presses: flat, or a `Keycap` of the Swift app where `keycap` asks for one; its
 // kinds and sizes, a glyph, a word or both, a swatch.
 import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle } from "theme.slint";
-import { Label, Icon, Tone, Tones, Tip, Tips, Clicks } from "base.slint";
+import { Label, Icon, Tone, Tones, Tips, Clicks } from "base.slint";
 
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
@@ -89,13 +89,6 @@ export component Button inherits Rectangle {
     in property <bool> on;
     in property <bool> enabled: true;
     in property <string> help;
-    // A help mark's note, shown at once as a card where `help` waits the tooltip's delay, and the
-    // help topic whose demo the card plays above it.
-    in property <string> note;
-    in property <string> demo;
-    // The column the card covers, in window points; no width, and it opens at the key, at its own.
-    in property <length> note-x;
-    in property <length> note-width;
     // The widest word the key ever shows, so it keeps that width as its word changes.
     in property <string> widest;
     in property <length> fixed-width: 0px;
@@ -265,20 +258,15 @@ export component Button inherits Rectangle {
             accept
         }
     }
-    // The help shown under the hand or while the key holds the keyboard, a mark's note as a card;
-    // hidden once it no longer says what the key does.
+    // The help shown under the hand or while the key holds the keyboard; hidden once it no longer says
+    // what the key does.
     property <string> told;
     changed help => { if (touch.has-hover || keys.has-focus) { Tips.hover(false, root.told, 0px, 0px); } }
     function tell() {
         let shown = touch.has-hover || keys.has-focus;
-        if (root.note != "") {
-            if (shown) { Tip.demo = root.demo; }
-            Tips.note(shown, root.note, root.note-width > 0 ? root.note-x : root.absolute-position.x, root.absolute-position.y + root.height, root.absolute-position.y, root.note-width);
-        } else {
-            // Left, it hides the tooltip it showed, whatever its help says since.
-            if (shown) { root.told = root.help; }
-            Tips.hover(shown, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
-        }
+        // Left, it hides the tooltip it showed, whatever its help says since.
+        if (shown) { root.told = root.help; }
+        Tips.hover(shown, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
     }
     function sink() {
         root.down = true;

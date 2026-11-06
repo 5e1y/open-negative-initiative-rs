@@ -249,9 +249,9 @@ msgstr "Marcado"
 msgid "Roll name"
 msgstr "Nombre del rollo"
 
-#: crates/oni-ui/ui/ds/containers.slint
-msgid "What this block does"
-msgstr "Qué hace este bloque"
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/tip.slint
+msgid "Help on {}"
+msgstr "Ayuda sobre {}"
 
 #: crates/oni-ui/ui/ds/containers.slint
 msgid "Reset"
