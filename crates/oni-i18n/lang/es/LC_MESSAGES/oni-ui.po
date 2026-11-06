@@ -130,6 +130,10 @@ msgid "View"
 msgstr "Visualización"
 
 #: crates/oni-ui/ui/app.slint
+msgid "Zoom to Fit"
+msgstr "Ajustar al lienzo"
+
+#: crates/oni-ui/ui/app.slint
 msgid "Crop and Straighten"
 msgstr "Recortar y enderezar"
 

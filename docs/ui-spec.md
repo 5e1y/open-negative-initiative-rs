@@ -378,6 +378,7 @@ Roll…, Save as Preset…, …) are not listed.
 | ⌘⌫ | Move to ONI Trash |
 | ⇧⌘⌫ | Restore |
 | ⌘− / ⌘+ | Zoom Out / Zoom In |
+| ⌘0 | Zoom to Fit (beyond Swift) |
 | ⌥⌘[ / ⌥⌘] | Hide Library / Hide Panel |
 | ⌘K | Crop and Straighten |
 | ] / [ (bare) | Brush size |

@@ -54,7 +54,7 @@ impl Ctl {
         let rung = {
             let s = self.state.borrow();
             let (Some(full), Some(size)) = (s.full_size, self.canvas_size()) else { return };
-            Viewport::rung(s.viewport.effective_scale(full, size), s.viewport.is_fitted(), by)
+            s.viewport.rung(by, full, size)
         };
         if let Some(rung) = rung {
             self.navigate(|v, full, size| v.step(rung, full, size));

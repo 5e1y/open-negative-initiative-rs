@@ -6,7 +6,7 @@ pub type Size = (f64, f64);
 
 /// Past pixel-exact, since dialling in a denoise can call for more than 100 %.
 pub const RANGE: (f64, f64) = (0.02, 4.0);
-/// The ladder the bar's − / + walk, ascending; the top rung is the range's ceiling.
+/// The ladder the bar's − / + walk above fit, ascending; the top rung is the range's ceiling.
 pub const ZOOM_STEPS: [f64; 5] = [0.25, 0.5, 1.0, 2.0, RANGE.1];
 /// Debounce after the last resize before the canvas renders at its new size.
 pub const SETTLE: std::time::Duration = std::time::Duration::from_millis(150);
@@ -31,23 +31,26 @@ fn clamped(v: f64) -> f64 {
     v.clamp(RANGE.0, RANGE.1)
 }
 
+/// Fit at the fitted scale, then each rung above it: a rung below fit would leap over it. Strictly
+/// above or below `current`, so a free zoom cannot skip its neighbour.
+fn next_rung(current: f64, fit: f64, delta: i32) -> Option<Rung> {
+    let mut ladder = std::iter::once((fit, Rung::Fit)).chain(ZOOM_STEPS.iter().filter(|&&s| s > fit).map(|&s| (s, Rung::Scale(s))));
+    match delta.signum() {
+        1 => ladder.find(|&(s, _)| s > current),
+        -1 => ladder.filter(|&(s, _)| s < current).last(),
+        _ => None,
+    }
+    .map(|(_, rung)| rung)
+}
+
 impl Viewport {
     pub fn is_fitted(&self) -> bool {
         self.scale.is_none()
     }
 
-    /// Strictly above or below, so a free zoom cannot skip its neighbour; fit is the floor below the smallest rung.
-    pub fn rung(current: f64, fitted: bool, delta: i32) -> Option<Rung> {
-        if delta == 0 {
-            return None;
-        }
-        if delta > 0 {
-            return ZOOM_STEPS.iter().find(|&&s| s > current).map(|&s| Rung::Scale(s));
-        }
-        if fitted {
-            return None;
-        }
-        Some(ZOOM_STEPS.iter().rev().find(|&&s| s < current).map_or(Rung::Fit, |&s| Rung::Scale(s)))
+    /// The ladder's next rung from the scale shown, as − / + walk it.
+    pub fn rung(&self, delta: i32, full: Size, view: Size) -> Option<Rung> {
+        next_rung(self.effective_scale(full, view), Viewport::default().effective_scale(full, view), delta)
     }
 
     pub fn step(&mut self, rung: Rung, full: Size, view: Size) {
@@ -297,14 +300,21 @@ mod tests {
 
     #[test]
     fn the_ladder_steps_strictly_and_fit_is_its_floor() {
-        assert_eq!(Viewport::rung(0.3, false, 1), Some(Rung::Scale(0.5)));
-        assert_eq!(Viewport::rung(0.5, false, 1), Some(Rung::Scale(1.0)), "strictly above");
-        assert_eq!(Viewport::rung(0.3, false, -1), Some(Rung::Scale(0.25)));
-        assert_eq!(Viewport::rung(0.2, false, -1), Some(Rung::Fit), "below the smallest rung is fit");
-        assert_eq!(Viewport::rung(0.2, true, -1), None, "nothing below fit");
-        assert_eq!(Viewport::rung(4.0, false, 1), None, "nothing above the ceiling");
+        assert_eq!(next_rung(0.18, 0.18, 1), Some(Rung::Scale(0.25)));
+        assert_eq!(next_rung(0.3, 0.18, -1), Some(Rung::Scale(0.25)));
+        assert_eq!(next_rung(0.25, 0.18, -1), Some(Rung::Fit));
+        assert_eq!(next_rung(0.5, 0.18, 1), Some(Rung::Scale(1.0)), "strictly above");
+        assert_eq!(next_rung(0.18, 0.18, -1), None, "nothing below fit");
+        assert_eq!(next_rung(4.0, 0.18, 1), None, "nothing above the ceiling");
+        // Fitted at 35 %, between two rungs: fit takes 25 %'s place both ways.
+        assert_eq!(next_rung(0.35, 0.35, 1), Some(Rung::Scale(0.5)));
+        assert_eq!(next_rung(0.5, 0.35, -1), Some(Rung::Fit), "50 % steps down to fit");
+        // Pinched under fit, + climbs back to it and − has nowhere lower.
+        assert_eq!((next_rung(0.3, 0.35, 1), next_rung(0.3, 0.35, -1)), (Some(Rung::Fit), None));
         // Twin: a non-strict step would stay on 0.5.
-        assert_ne!(Viewport::rung(0.5, false, 1), Some(Rung::Scale(0.5)));
+        assert_ne!(next_rung(0.5, 0.18, 1), Some(Rung::Scale(0.5)));
+        // Twin: a ladder blind to the fitted 35 % leaps from 50 % under it, to 25 %.
+        assert_eq!(next_rung(0.5, RANGE.0, -1), Some(Rung::Scale(0.25)));
     }
 
     #[test]

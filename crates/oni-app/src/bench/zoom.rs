@@ -135,10 +135,10 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
             }
             Zoomed::Out { from, full_after } => {
-                // A pinch back to the fitted scale is not the fit itself: the ladder's last rung is.
+                // A pinch back to the fitted scale is not the fit itself: ⌘0 is.
                 if !s.viewport().is_fitted() {
                     drop(s);
-                    ctl.act(crate::Act::Smaller);
+                    ctl.act(crate::Act::Fit);
                     return;
                 }
                 if !s.placed().is_some_and(|p| p.whole) {

@@ -34,6 +34,7 @@ impl Ctl {
                 self.relayout();
             }
             Act::Smaller | Act::Larger => self.step_zoom(if action == Act::Larger { 1 } else { -1 }),
+            Act::Fit => self.navigate(|v, _, _| v.fit()),
             Act::Compare if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
             Act::ScreenGamut => {
                 self.toggle_screen_gamut();

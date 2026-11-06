@@ -1,6 +1,6 @@
 //! The menus and the gestures on several photos, on the headless window: Swift's titles and live
 //! rules, copy and paste across rolls with its confirm, the ONI Trash, the filter, the gallery's
-//! own undo naming its step, the film type, the framing's copy and paste, mirror and ⌘K.
+//! own undo naming its step, the film type, the framing's copy and paste, mirror, ⌘K and ⌘0.
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
@@ -80,6 +80,16 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert!(menus.get_live().copy_settings && menus.get_live().framing && !menus.get_live().paste_settings);
     // The framing keys act on a decoded frame only.
     rig.until("the frame decoded", Duration::from_secs(60), || ctl.state.borrow().renders() >= 1);
+
+    // Fitted, this small frame stands at the ceiling: ⌘+ has nothing above, ⌘0 is always there.
+    assert!(ctl.state.borrow().viewport().is_fitted() && !menus.get_live().larger && menus.get_live().fit);
+    // A double click shows 100 %, which no menu item asked: ⌘+ follows it up to fit, and ⌘0 fits.
+    w.global::<oni_app::Canvas>().invoke_double_clicked();
+    rig.pump();
+    assert_eq!(ctl.state.borrow().viewport().scale, Some(1.0));
+    assert!(menus.get_live().larger, "twin of the fitted frame's dark ⌘+");
+    rig.chord(Key::Control, "0");
+    assert!(ctl.state.borrow().viewport().is_fitted(), "⌘0 fits the frame again");
 
     // ⌥⌘] hides the panel and the title says how to bring it back; ⌘K opens the Crop tab.
     // Windows reads a bare Ctrl+Alt as AltGr when the event names no unmodified text, as this rig's do.
