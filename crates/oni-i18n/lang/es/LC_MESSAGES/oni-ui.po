@@ -413,7 +413,7 @@ msgstr "Naranja"
 msgid "Yellow"
 msgstr "Amarillo"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-app/src/fields/readout.rs crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
 msgid "Green"
 msgstr "Verde"
 
@@ -429,7 +429,7 @@ msgstr "Azul"
 msgid "Purple"
 msgstr "Morado"
 
-#: crates/oni-ui/ui/editors.slint
+#: crates/oni-app/src/fields/readout.rs crates/oni-ui/ui/editors.slint
 msgid "Magenta"
 msgstr "Magenta"
 
@@ -4150,6 +4150,14 @@ msgid "{n} Profile Installed"
 msgid_plural "{n} Profiles Installed"
 msgstr[0] "{n} perfil instalado"
 msgstr[1] "{n} perfiles instalados"
+
+#: crates/oni-app/src/fields/readout.rs
+msgid "Cool"
+msgstr "Frío"
+
+#: crates/oni-app/src/fields/readout.rs
+msgid "Warm"
+msgstr "Cálido"
 
 #: crates/oni-app/src/flat_fields.rs
 msgid "This file could not be decoded as a picture."

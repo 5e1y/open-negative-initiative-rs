@@ -82,7 +82,7 @@ impl Ctl {
         let fractions: Vec<f32> = (0..5).map(|i| Self::slider_fraction(r, radius, i)).collect();
         let readouts: Vec<SharedString> = (0..5)
             .map(|i| match i {
-                AMOUNT | TEMPERATURE | TINT => flat_field(i).spec().readout.format(Self::slider_value(r, radius, i)),
+                AMOUNT | TEMPERATURE | TINT => flat_field(i).readout(Self::slider_value(r, radius, i)),
                 PICKER => crate::fields::number(f64::from(radius), 0, false, crate::fields::Unit::Pixels),
                 _ => format!("{} / {}", r.at.min(last) + 1, m.len()),
             })

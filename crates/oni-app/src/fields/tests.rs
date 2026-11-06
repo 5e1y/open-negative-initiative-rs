@@ -4,8 +4,8 @@ use super::*;
 fn every_readout_writes_its_number_one_way() {
     assert_eq!(Field::Exposure.spec().readout.format(1.5), "+1.50 EV");
     assert_eq!(Field::ColorDensity.spec().readout.format(-0.25), "\u{2212}25%");
-    assert_eq!(Field::Temperature.spec().readout.format(1.0), "+1.00 EV");
-    assert_eq!(Field::Tint.spec().readout.format(-1.5), "\u{2212}1.50 EV");
+    assert_eq!(Field::Temperature.readout(1.0), "Warm +1.00 EV");
+    assert_eq!(Field::Tint.readout(-1.5), "Green \u{2212}1.50 EV");
     assert_eq!((Field::Highlights.readout(0.25), Field::Shadows.readout(-0.5)), ("+25%".to_string(), "\u{2212}50%".to_string()));
     assert_eq!(Field::Contrast.readout(0.15), "+15%");
     assert_eq!(Field::Chrome.spec().readout.format(0.5), "50%");
@@ -25,6 +25,18 @@ fn every_readout_writes_its_number_one_way() {
     assert!(Field::BlackPoint.readout(-0.1).starts_with('+'), "{}", Field::BlackPoint.readout(-0.1));
     // Twin: the stored value's own sign is what the slider never shows.
     assert!(Field::BlackPoint.spec().readout.format(-0.1).starts_with('\u{2212}'));
+}
+
+#[test]
+fn a_colour_readout_names_the_end_it_leans_to_beside_its_true_unit() {
+    assert_eq!((Field::Temperature.readout(-0.3), Field::Tint.readout(0.12)), ("Cool \u{2212}0.30 EV".into(), "Magenta +0.12 EV".into()));
+    assert_eq!((Field::FlatTemperature.readout(0.2), Field::FlatTint.readout(-0.05)), ("Warm +20%".into(), "Green \u{2212}5%".into()));
+    // At rest, or rounding to it, the readout leans nowhere and names no end.
+    assert_eq!((Field::Temperature.readout(0.0), Field::Tint.readout(-0.004)), ("0.00 EV".into(), "0.00 EV".into()));
+    // Only a colour axis names an end: Exposure's stops lean toward no hue.
+    assert_eq!(Field::Exposure.readout(0.3), "+0.30 EV");
+    // Twin: the stops alone, as the formatter writes them, leave the side to the reader.
+    assert_eq!(Field::Temperature.spec().readout.format(-0.3), "\u{2212}0.30 EV");
 }
 
 #[test]

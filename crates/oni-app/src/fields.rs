@@ -8,7 +8,7 @@ use oni_settings::tone::{Print, color_density};
 
 mod readout;
 
-pub use readout::{Readout, Unit, number};
+pub use readout::{Axis, Readout, Unit, number};
 
 /// One slider's value, its index the `field` the Slint `Store` passes back.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -112,6 +112,8 @@ pub struct Spec {
     /// `DSSlider.centre`: the value at the middle of a bent track.
     pub centre: Option<f32>,
     pub readout: Readout,
+    /// The colour axis its track runs along, whose end the readout names before its number.
+    pub axis: Option<Axis>,
     /// The track runs the other way: right lifts the black, the stored value falls.
     pub inverted: bool,
 }
@@ -204,11 +206,13 @@ impl Field {
 
     /// The panel's spec for this value on a mosaic colour negative, the only mode the shell opens.
     pub fn spec(self) -> Spec {
-        let s = |label, range, base, readout| Spec { label, range, base, centre: None, readout, inverted: false };
+        let s = |label, range, base, readout| Spec { label, range, base, centre: None, readout, axis: None, inverted: false };
+        let warmth = |spec: Spec| Spec { axis: Some(Axis::Warmth), ..spec };
+        let tint = |spec: Spec| Spec { axis: Some(Axis::Tint), ..spec };
         match self {
             // The print filters' gap in stops: red against blue, then magenta against green.
-            Field::Temperature => s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::Stops),
-            Field::Tint => s("Tint", Print::TINT_RANGE, 0.0, Readout::Stops),
+            Field::Temperature => warmth(s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::Stops)),
+            Field::Tint => tint(s("Tint", Print::TINT_RANGE, 0.0, Readout::Stops)),
             Field::ColorDensity => s("Saturation", color_density::RANGE, color_density::BASE, Readout::SignedPercent),
             Field::Exposure => s("Exposure", Print::EXPOSURE_RANGE, 0.0, Readout::Stops),
             Field::Highlights => s("Highlights", Print::QUARTER_RANGE, 0.0, Readout::SignedPercent),
@@ -258,8 +262,8 @@ impl Field {
             Field::GainTemperature => s("Temperature", Gains::RANGE, 0.0, Readout::Stops),
             Field::GainTint => s("Tint", Gains::RANGE, 0.0, Readout::Stops),
             Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, 1.0, Readout::Percent),
-            Field::FlatTemperature => s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent),
-            Field::FlatTint => s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent),
+            Field::FlatTemperature => warmth(s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent)),
+            Field::FlatTint => tint(s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent)),
         }
     }
 
@@ -331,9 +335,11 @@ impl Field {
         if self.spec().inverted { -stored } else { stored }
     }
 
-    /// The readout of a stored value, in the sense the slider shows it (`DSSlider.format(shown)`).
+    /// The readout of a stored value, in the sense the slider shows it, after the end of its colour
+    /// axis it leans to.
     pub fn readout(self, stored: f32) -> String {
-        self.spec().readout.format(self.shown(stored))
+        let spec = self.spec();
+        spec.readout.along(spec.axis, self.shown(stored))
     }
 
     /// The range the track spans, in the shown sense.
