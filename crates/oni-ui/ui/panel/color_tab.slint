@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Section, Tabs, Button, ButtonSize, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, ButtonSize, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -8,6 +8,16 @@ import { Plots, PanelState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane } from "parts.slint";
 
 export component ColorPane inherits Pane {
+    // What the face holds, in the words of the switch's tooltip, so its name needs no hover to read.
+    VerticalLayout {
+        padding-left: SectionStyle.inset;
+        padding-right: SectionStyle.inset;
+        padding-top: SectionStyle.before;
+        Label {
+            role: TextRole.note;
+            text: Lab.shown ? @tr("Scanner: a minilab's density and colour, in steps") : @tr("Pro: every setting by hand, the place to start");
+        }
+    }
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");

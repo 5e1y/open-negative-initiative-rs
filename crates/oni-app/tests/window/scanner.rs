@@ -70,10 +70,16 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
 
     rig.settle();
     println!("shot {}", rig.shot("pro-face").display());
+    // Each face says what it holds at the Colour tab's head, in the same place on both.
+    let (pro_caption, scanner_caption) = ("Pro: every setting by hand, the place to start", "Scanner: a minilab's density and colour, in steps");
+    let caption = common::the(w, i_slint_backend_testing::AccessibleRole::Text, pro_caption);
     // The bar's Scanner tab: the face, one undo step, remembered.
     bar.invoke_act(oni_app::Act::FaceScanner);
     rig.pump();
     assert!(lab.get_shown() && bar.get_face() == 1);
+    assert_eq!(common::the(w, i_slint_backend_testing::AccessibleRole::Text, scanner_caption).y, caption.y);
+    // Twin: Pro's words leave with its face.
+    assert!(common::placed(w, i_slint_backend_testing::AccessibleRole::Text, pro_caption).is_empty());
     assert_eq!(settings().face, Face::Scanner);
     assert_eq!(std::fs::read_to_string(support.join("lastFaceScanner")).unwrap(), "1");
     // Dye Separation and Auto White Balance act on this face's render too: its Roll tab holds them.

@@ -1217,6 +1217,14 @@ msgstr "Olvidar teléfonos"
 msgid "Every paired phone is cut and pairs again from a new code."
 msgstr "Todos los teléfonos vinculados se desconectan y vuelven a vincularse con un código nuevo."
 
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "Scanner: a minilab's density and colour, in steps"
+msgstr "Escáner: densidad y color de un minilab, por pasos"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "Pro: every setting by hand, the place to start"
+msgstr "Pro: cada ajuste a mano, por donde empezar"
+
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Machine"
 msgstr "Máquina"
@@ -2200,14 +2208,6 @@ msgstr "Comparar"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
 msgstr "Pro"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Pro: every setting by hand, the place to start"
-msgstr "Pro: cada ajuste a mano, por donde empezar"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Scanner: a lab scanner's keypad, density and colour in steps on its machine's look"
-msgstr "Escáner: el teclado de un escáner de laboratorio, densidad y color por pasos sobre el aspecto de su máquina"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"
