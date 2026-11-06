@@ -5674,5 +5674,12 @@
     "title": "The zoom ladder steps through fit, ⌘0 fits, and ⌘− / ⌘+ follow every zoom",
     "status": "done",
     "detail": "Evaluation: fitted at 35 %, ⌘+ went to 50 % and ⌘− from there to 25 %, then up to fit; ⌘0 did nothing. The ladder now holds fit at the fitted scale and only the rungs above it, so − never leaps under fit nor zooms in (beyond Swift, whose ladder ignores the fitted scale). View > Zoom to Fit (⌘0) fits the open frame. The zoom items were published only after a menu or key gesture, so a wheel, a pinch or a double click left ⌘− dark: they are published again whenever the zoom bubble's reach changes. The zoom bench fits by ⌘0 after its pinch."
+  },
+  {
+    "id": 1212,
+    "type": "fix",
+    "title": "The zoom keys draw the icon set's minus and plus",
+    "status": "done",
+    "detail": "Evaluation: the zoom keys were text glyphs, the minus tiny and dim beside a bold plus. They now draw Trinil's minus and plus, the stroke of every other glyph, as square mini keys like the column keys beside them."
   }
 ]
