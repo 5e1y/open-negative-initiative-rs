@@ -211,6 +211,8 @@ component StateDisc inherits Rectangle {
 export component TileView inherits Rectangle {
     in property <image> picture;
     in property <string> caption;
+    // Before the caption in the tertiary ink, as a row's: a frame's number on its roll.
+    in property <string> trail;
     in property <bool> selected;
     in property <int> medal;
     // A missing original: its picture alone greyed (by the caller) and faded, its ground and
@@ -316,15 +318,19 @@ export component TileView inherits Rectangle {
         placement: RingPlacement.outset;
         tone: !root.outset ? SelectionTone.hovered : root.flagged ? SelectionTone.destructive : root.selected ? SelectionTone.selected : SelectionTone.hovered;
     }
-    if root.caption != "": Label {
+    if root.caption != "": HorizontalLayout {
         y: root.picture-height + TileStyle.caption-gap;
         height: TileStyle.caption;
         width: parent.width;
-        role: TextRole.caption;
-        tone: root.selected ? Tone.primary : Tone.secondary;
-        text: root.caption;
-        centred: true;
-        overflow: elide;
+        alignment: center;
+        spacing: RowStyle.gap;
+        if root.trail != "": Label { role: TextRole.caption; tone: Tone.tertiary; text: root.trail; }
+        Label {
+            role: TextRole.caption;
+            tone: root.selected ? Tone.primary : Tone.secondary;
+            text: root.caption;
+            overflow: elide;
+        }
     }
     if root.focused: FocusRing { y: 0; height: root.picture-height; radius: Radius.card; }
     if root.frame: TouchArea { clicked => { root.clicked(); } }

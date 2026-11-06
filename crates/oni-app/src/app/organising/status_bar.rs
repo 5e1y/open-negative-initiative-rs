@@ -41,6 +41,14 @@ impl Ctl {
         lib.set_editor_medal_current(editor_target.and_then(|t| t.0).map_or(-1, library::medal_index));
     }
 
+    /// `Settings saved` after the editor's line: the open frame's sidecar holds what it shows, so an
+    /// edit hides it until its write.
+    pub(in crate::app) fn publish_saved(&self) {
+        let Some(w) = self.window() else { return };
+        let kept = self.state.borrow().store.editor_ref().is_some_and(|e| e.kept());
+        w.global::<crate::Canvas>().set_saved(kept);
+    }
+
     /// `DSMedalPicker`'s tap: one photo toggles its own medal off, several all take it.
     pub(in crate::app) fn medal_picked(self: &Rc<Self>, medal: i32) {
         let editing = self.window().is_some_and(|w| !w.global::<App>().get_gallery());

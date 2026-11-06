@@ -103,6 +103,7 @@ impl Ctl {
                 s.store.flush()
             };
             me.journal_settled();
+            me.publish_saved();
             match failure {
                 Some(message) => me.say(&message),
                 None => me.schedule_redraw(),

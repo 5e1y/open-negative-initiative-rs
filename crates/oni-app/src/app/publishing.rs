@@ -68,6 +68,7 @@ impl Ctl {
         if edited || !moved.is_empty() || jump {
             self.state.borrow_mut().last_change = Some(Instant::now());
             self.schedule_write();
+            self.publish_saved();
         }
         self.refresh_phone();
         self.publish_bar();

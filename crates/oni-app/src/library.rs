@@ -27,6 +27,8 @@ pub struct Row {
     pub depth: usize,
     pub title: String,
     pub caption: String,
+    /// A photo's place on its roll from 1, as the contact sheet numbers it.
+    pub number: Option<usize>,
     /// 0 a folder, 1 a roll, 2 a photo.
     pub kind: i32,
     pub expandable: bool,
@@ -191,28 +193,25 @@ impl Archive {
     /// A folder's photos in shooting order, whatever medal the gallery keeps: the roll its frames
     /// are numbered on.
     pub fn folder_photos(&self, folder: &str) -> Vec<String> {
-        match archive_tree::find(&self.nodes, &NodeId::Folder(folder.to_owned())) {
-            Some(Node::Folder { group: Some(g), .. }) => g.entries.iter().map(|e| e.path.clone()).collect(),
-            _ => Vec::new(),
-        }
+        own(&self.nodes, folder).map(|g| g.entries.iter().map(|e| e.path.clone()).collect()).unwrap_or_default()
     }
 
     /// `folder`'s own photos as a band of the whole tree, whatever medal the gallery keeps: the
     /// roll a folder is, which a filter never cuts; the root's own are the photos loose in it.
     pub fn band(&self, folder: &str) -> Option<Group> {
-        fn own<'a>(nodes: &'a [Node], folder: &str) -> Option<&'a FilmGroup> {
-            nodes.iter().find_map(|node| match node {
-                Node::Folder { path, group, .. } if paths::same(path, folder) => group.as_ref(),
-                Node::Folder { children, .. } => own(children, folder),
-                Node::Photo(_) => None,
-            })
-        }
         if !paths::same(folder, &self.root) {
             return own(&self.nodes, folder).cloned().map(band);
         }
         let loose: Vec<Entry> = self.nodes.iter().filter_map(|n| if let Node::Photo(e) = n { Some(e.clone()) } else { None }).collect();
         let roll = self.basis.survey.rolls.get(&self.root).cloned();
         (!loose.is_empty()).then(|| band(folders::group(&self.root, &self.root, loose, roll)))
+    }
+
+    /// `path`'s place on its roll from 1 and the roll's count of frames, as the tree and the contact
+    /// sheet number it; a photo loose beside the folders has none.
+    pub fn place(&self, path: &str) -> Option<(usize, usize)> {
+        let roll = own(&self.nodes, &paths::parent(path))?;
+        roll.entries.iter().position(|e| e.path == path).map(|i| (i + 1, roll.entries.len()))
     }
 
     /// Every photo in gallery order.
@@ -240,9 +239,17 @@ impl Archive {
         archive_tree::walk(&self.nodes, &self.expanded, 0, &mut |laid, depth| {
             // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
             rows.push(match laid {
-                archive_tree::Laid::Photo(e) => {
-                    Row { id: NodeId::Photo(e.path.clone()), depth, title: paths::name(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded: false, stock: None }
-                }
+                archive_tree::Laid::Photo(e, number) => Row {
+                    id: NodeId::Photo(e.path.clone()),
+                    depth,
+                    title: paths::name(&e.path),
+                    caption: medal(e.label),
+                    number,
+                    kind: 2,
+                    expandable: false,
+                    expanded: false,
+                    stock: None,
+                },
                 archive_tree::Laid::Folder(node) => {
                     let id = node.id();
                     let Node::Folder { path, group, .. } = node else { unreachable!("a folder's row lends its folder") };
@@ -250,7 +257,7 @@ impl Archive {
                     let roll = group.as_ref().filter(|g| g.film.is_some());
                     let title = roll.and_then(|g| g.film.as_ref()).map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
                     let expanded = self.expanded.contains(&id);
-                    Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded, stock: roll.map(default_stock) }
+                    Row { id, depth, title, caption: count.to_string(), number: None, kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded, stock: roll.map(default_stock) }
                 }
             });
         });
@@ -269,6 +276,15 @@ impl Archive {
         None
     }
 
+}
+
+/// `folder`'s own photos, found at any depth: the roll a folder is.
+fn own<'a>(nodes: &'a [Node], folder: &str) -> Option<&'a FilmGroup> {
+    nodes.iter().find_map(|node| match node {
+        Node::Folder { path, group, .. } if paths::same(path, folder) => group.as_ref(),
+        Node::Folder { children, .. } => own(children, folder),
+        Node::Photo(_) => None,
+    })
 }
 
 fn roll_stocks(nodes: &[Node], out: &mut HashMap<String, &'static str>) {

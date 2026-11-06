@@ -24,6 +24,8 @@ export global Canvas {
     in property <bool> busy;
     // The open frame's sidecar cannot be written, and what a frame that failed to decode says.
     in property <bool> read-only;
+    // The open frame's settings are those its sidecar holds, as the write after an edit leaves them.
+    in property <bool> saved;
     in property <string> failure;
     // The failed frame is Nikon's High Efficiency RAW, which a DNG of it reads.
     in property <bool> convertible;

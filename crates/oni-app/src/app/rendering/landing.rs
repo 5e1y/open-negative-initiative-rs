@@ -56,10 +56,14 @@ impl Ctl {
         w.window().request_redraw();
         let status = {
             let s = self.state.borrow();
-            let name = s.open_path().map(stem).unwrap_or_default();
+            let path = s.open_path();
+            let name = path.map(stem).unwrap_or_default();
+            // Its place on the roll, which a name alone loses on a long one.
+            let place = path.and_then(|p| s.archive.as_ref()?.place(p));
+            let place = place.map(|(number, count)| format!(" · {}", tr!("Frame {number} of {count}", number = number, count = count))).unwrap_or_default();
             match s.placed {
-                Some(p) => format!("{name} · {:.0} × {:.0}", p.full.0, p.full.1),
-                None => format!("{name} · {width} × {height}"),
+                Some(p) => format!("{name}{place} · {:.0} × {:.0}", p.full.0, p.full.1),
+                None => format!("{name}{place} · {width} × {height}"),
             }
         };
         w.global::<Canvas>().set_busy(false);

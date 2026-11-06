@@ -6437,5 +6437,19 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1370,
+    "type": "interface",
+    "title": "The filmstrip numbers each frame on its roll, and the status bar says its place",
+    "status": "done",
+    "detail": "Evaluation, UX Robustness: the editor's filmstrip named frames by file alone, so on a long roll a frame's number was lost. The tree's walk lends each photo its rank among its folder's own photos, the number the contact sheet prints; a thumbnail's caption and a name row show it before the name in the tertiary ink. The status bar's line reads the open frame's name, then Frame 7 of 24, then its size. The archive finds a folder's roll in one place for the tree, the contact sheet and the line."
+  },
+  {
+    "id": 1371,
+    "type": "interface",
+    "title": "The status bar says Settings saved once the sidecar holds what the frame shows",
+    "status": "done",
+    "detail": "Evaluation, UX Trust: nothing showed that an edit was kept. The editor's status line ends with Settings saved while the open frame's sidecar holds its settings, written since or read as it opened; an edit hides it until its write lands 400 ms after the hand rests, and a read-only frame never shows it. No timer: the words follow the store's own state, set after each change and each deferred write."
   }
 ]

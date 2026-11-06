@@ -10,6 +10,8 @@ export struct TreeRow {
     head: string,
     tail: string,
     caption: string,
+    // A photo's place on its roll, as the contact sheet numbers it; empty for none.
+    number: string,
     // 0 a folder, 1 a roll, 2 a photo.
     kind: int,
     // A roll's stock artwork, `TreeRowChrome`'s mini canister in place of its glyph.

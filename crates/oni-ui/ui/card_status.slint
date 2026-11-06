@@ -2,6 +2,7 @@
 import { StatusBar, MedalPicker, Space } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { Preparing } from "prepare.slint";
+import { Canvas } from "canvas_state.slint";
 
 export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
@@ -9,13 +10,15 @@ export component CardStatus inherits HorizontalLayout {
     padding-bottom: Space.s;
     // The medal's own inset in its cell makes up the rest, so both ends sit `s` from the card.
     padding-right: Space.s - Space.xxs;
-    // The editor's line, the open frame and its size.
+    // The editor's line, the open frame, its place on the roll and its size, then whether its sidecar
+    // holds its settings.
     in property <string> editor-line;
+    property <string> saved: Canvas.saved ? " · " + @tr("Settings saved") : "";
     property <bool> loading: Library.loading != "" && !Preparing.shown;
     StatusBar {
         horizontal-stretch: 1;
         busy: root.loading;
-        text: root.loading ? Library.loading : Preparing.shown ? Preparing.status : root.gallery ? Library.status : root.editor-line;
+        text: root.loading ? Library.loading : Preparing.shown ? Preparing.status : root.gallery ? Library.status : root.editor-line + root.saved;
         count: Library.loading-count;
         fraction: Library.loading-fraction;
         seal: Preparing.shown ? "" : root.gallery ? Library.status-seal : Library.editor-seal;

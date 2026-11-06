@@ -70,22 +70,24 @@ pub fn first_path(node: &Node) -> Option<&str> {
 #[derive(Debug, Clone, Copy)]
 pub enum Laid<'a> {
     Folder(&'a Node),
-    Photo(&'a Entry),
+    /// A photo and its place on its roll from 1, its rank among its folder's own photos; one loose
+    /// beside the folders has none.
+    Photo(&'a Entry, Option<usize>),
 }
 
 /// `flatten`'s rows in its order, each lent to `row` with its depth rather than copied with its subtree.
 pub fn walk<'a>(nodes: &'a [Node], expanded: &HashSet<NodeId>, depth: usize, row: &mut dyn FnMut(Laid<'a>, usize)) {
     for node in nodes {
         match node {
-            Node::Photo(entry) => row(Laid::Photo(entry), depth),
+            Node::Photo(entry) => row(Laid::Photo(entry, None), depth),
             Node::Folder { path, group, children } => {
                 row(Laid::Folder(node), depth);
                 if !expanded.contains(&NodeId::Folder(path.clone())) {
                     continue;
                 }
                 walk(children, expanded, depth + 1, row);
-                for entry in group.iter().flat_map(|g| &g.entries) {
-                    row(Laid::Photo(entry), depth + 1);
+                for (i, entry) in group.iter().flat_map(|g| &g.entries).enumerate() {
+                    row(Laid::Photo(entry, Some(i + 1)), depth + 1);
                 }
             }
         }
@@ -175,7 +177,7 @@ mod tests {
         let lent = |expanded: &HashSet<NodeId>| {
             let mut lent = Vec::new();
             walk(&nodes, expanded, 0, &mut |row, depth| {
-                lent.push((match row { Laid::Folder(n) => n.id(), Laid::Photo(e) => NodeId::Photo(e.path.clone()) }, depth))
+                lent.push((match row { Laid::Folder(n) => n.id(), Laid::Photo(e, _) => NodeId::Photo(e.path.clone()) }, depth))
             });
             lent
         };
@@ -186,6 +188,26 @@ mod tests {
         }
         // Twin: the walk sees a fold, so the comparison above is not of two empty lists.
         assert_ne!(lent(&HashSet::new()), lent(&open));
+    }
+
+    #[test]
+    fn a_photo_is_numbered_on_its_own_folder_s_roll() {
+        let inner = Node::Folder { path: "/r/trip/day2".into(), group: Some(group("/r/trip/day2", &["/r/trip/day2/c"])), children: vec![] };
+        let outer = Node::Folder { path: "/r/trip".into(), group: Some(group("/r/trip", &["/r/trip/a", "/r/trip/b"])), children: vec![inner] };
+        let loose = Node::Photo(group("/r", &["/r/loose"]).entries.remove(0));
+        let open = HashSet::from([NodeId::Folder("/r/trip".into()), NodeId::Folder("/r/trip/day2".into())]);
+        let mut numbers = Vec::new();
+        walk(&[loose, outer], &open, 0, &mut |row, _| {
+            if let Laid::Photo(e, n) = row {
+                numbers.push((e.path.clone(), n));
+            }
+        });
+        let numbered = |p: &str| numbers.iter().find(|(path, _)| path == p).and_then(|(_, n)| *n);
+        assert_eq!([numbered("/r/trip/day2/c"), numbered("/r/trip/a"), numbered("/r/trip/b")], [Some(1), Some(1), Some(2)]);
+        assert_eq!(numbered("/r/loose"), None, "a photo loose beside the folders has no roll");
+        // Twin: a count running across the rows is not the one lent.
+        let across: Vec<Option<usize>> = (1..=numbers.len()).map(Some).collect();
+        assert_ne!(numbers.iter().map(|(_, n)| *n).collect::<Vec<_>>(), across);
     }
 
     #[test]

@@ -201,6 +201,10 @@ msgstr "Mostrar el panel ({})"
 msgid "Hide the Panel ({})"
 msgstr "Ocultar el panel ({})"
 
+#: crates/oni-ui/ui/card_status.slint
+msgid "Settings saved"
+msgstr "Ajustes guardados"
+
 #: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Cancelar"
@@ -3854,6 +3858,10 @@ msgstr "{name}: no se pudo decodificar"
 #: crates/oni-app/src/app/rendering/landing.rs
 msgid "Not rendered: {e}"
 msgstr "No se pudo mostrar: {e}"
+
+#: crates/oni-app/src/app/rendering/landing.rs
+msgid "Frame {number} of {count}"
+msgstr "Fotograma {number} de {count}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
