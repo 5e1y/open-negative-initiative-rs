@@ -104,11 +104,12 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!(phone.settings().scanner, settings().scanner, "the phone's presses and the desktop's keys are one command");
     assert_eq!(cells(w), ["+1.5", "+1.5", "−1", "0", "+2"], "the Lab screen reads every letter back, a step half a unit");
     let readout = |i: usize| lab.get_readouts().row_data(i).unwrap().to_string();
-    assert_eq!((readout(0), lab.get_lows().row_data(0), lab.get_highs().row_data(4)), ("+1.5".into(), Some(-48), Some(20)));
+    // The screen counts the keypad's points; each slider reads what its key moves, light in stops, TEMP's look in percent.
+    assert_eq!((readout(0), readout(4), lab.get_lows().row_data(0), lab.get_highs().row_data(4)), ("+0.17 EV".into(), "Warm +20%".into(), Some(-48), Some(20)));
     // A key moves half a unit, ⇧ one and a half; twin: whole steps would read +1 and +3.
     lab.invoke_press(3, 1);
     rig.pump();
-    assert_eq!((cells(w)[3].as_str(), readout(3).as_str()), ("+0.5", "+0.5"));
+    assert_eq!((cells(w)[3].as_str(), readout(3).as_str()), ("+0.5", "+0.04 EV"));
     lab.invoke_press(3, 3);
     rig.pump();
     assert_eq!(cells(w)[3], "+2");
@@ -155,7 +156,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     w.global::<oni_app::Notice>().invoke_close();
     rig.pump();
     // D's rail slid by the hand, a pixel a move: it lands on every step, half a unit apart, and never
-    // jumps a whole unit; the readout follows on halves.
+    // jumps a whole unit; the readout follows each step in stops.
     let (y, pressed) = (491.0, slint::LogicalPosition::new(1110.0, 491.0));
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: pressed });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: pressed, button: PointerEventButton::Left });
@@ -171,7 +172,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!((steps[0], *steps.last().unwrap()), (-48, 48), "the rail's ends are ±24 units");
     assert!(steps.windows(2).all(|p| p[1] - p[0] == 0 || p[1] - p[0] == 1), "every move lands on the next step at most");
     assert_eq!(steps.iter().collect::<std::collections::BTreeSet<_>>().len(), 97, "97 places, half a unit apart");
-    assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.5") && landed.iter().any(|(d, r)| *d == -3 && r == "−1.5"));
+    assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.06 EV") && landed.iter().any(|(d, r)| *d == -3 && r == "−0.17 EV"));
     // Twin: a rail on whole units would skip the odd steps.
     assert!(steps.iter().any(|d| d % 2 != 0));
     lab.invoke_clear(0);
