@@ -1,5 +1,5 @@
-//! The panel's routes and the editor's modes: a tool's key or DONE leaves it for the last panel, Escape
-//! steps out of the innermost thing open, every photo opens with no mode, and Return validates then leaves.
+//! The panel's routes and the editor's modes: a tool's key, DONE or Return keeps its work and leaves it
+//! for the last panel, its Cancel or Escape puts its work back first, and every photo opens with no mode.
 
 use super::*;
 use crate::tabs::{self, Validated};
@@ -16,9 +16,19 @@ impl Ctl {
 
     /// A tab set where no route sees it, as the benches do, is read back before any route reads.
     fn sync_route(&self, tab: i32) {
+        if self.state.borrow().route.shown != tab {
+            self.route_moved(tab);
+        }
+    }
+
+    /// The route moved: a canvas tool entered keeps its frame's settings as found, for its Cancel.
+    pub(super) fn route_moved(&self, tab: i32) {
         let mut s = self.state.borrow_mut();
-        if s.route.shown != tab {
-            s.route.moved(tab);
+        let left = s.route.shown;
+        s.route.moved(tab);
+        if tab != left {
+            let found = (tab == tabs::CROP || tab == tabs::DEDUST).then(|| s.open_path().map(str::to_string)).flatten();
+            s.tool_entry = found.map(|path| (path, s.store.settings().clone()));
         }
     }
 
@@ -57,8 +67,32 @@ impl Ctl {
         self.leave_frame_tools();
     }
 
-    /// Escape the photos hear beside a photo: Compare left, else the crop or De-dust, else the Lab,
-    /// else the editor for the gallery; `false` in the gallery, where nothing stands open.
+    /// Escape or a tool's Cancel: what the crop or De-dust changed on its frame put back as the tool
+    /// found it, one undo step, then the tool left; `false` on any other tab.
+    pub(super) fn cancel_frame_tools(self: &Rc<Self>) -> bool {
+        let Some(w) = self.window() else { return false };
+        let tab = w.global::<PanelState>().get_tab();
+        if tab != tabs::CROP && tab != tabs::DEDUST {
+            return false;
+        }
+        self.sync_route(tab);
+        let found = {
+            let s = self.state.borrow();
+            let now = s.store.settings();
+            match s.tool_entry.as_ref().filter(|(path, _)| s.open_path() == Some(path.as_str())) {
+                Some((_, was)) if tab == tabs::CROP && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry.clone(), ..now.clone() }),
+                Some((_, was)) if tab == tabs::DEDUST && was.corrections != now.corrections => Some(oni_settings::PipelineSettings { corrections: was.corrections.clone(), ..now.clone() }),
+                _ => None,
+            }
+        };
+        if let Some(found) = found {
+            self.write(Command::Write(Box::new(found)));
+        }
+        self.leave_frame_tools()
+    }
+
+    /// Escape the photos hear beside a photo: Compare left, else the crop or De-dust cancelled, else
+    /// the Lab, else the editor for the gallery; `false` in the gallery, where nothing stands open.
     pub(super) fn escape(self: &Rc<Self>) -> bool {
         if self.window().is_none_or(|w| w.global::<App>().get_gallery()) {
             return false;
@@ -66,7 +100,7 @@ impl Ctl {
         let compare = self.state.borrow().compare.split.is_some();
         if compare {
             self.toggle_compare();
-        } else if !self.leave_frame_tools() {
+        } else if !self.cancel_frame_tools() {
             if self.in_lab() {
                 self.leave_lab();
             } else {

@@ -152,6 +152,7 @@ impl Shell {
             scrolling: false,
             straightening: None,
             route: crate::tabs::Route::default(),
+            tool_entry: None,
             painting_stroke: Default::default(),
             brush_start: None,
             brush_pressed_at: None,

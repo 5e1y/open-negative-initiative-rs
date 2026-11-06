@@ -54,11 +54,11 @@ impl Ctl {
         }
         self.encode(done.picture, shown, None);
         w.window().request_redraw();
+        // The photo's kept size, the crop's own figure, never the render's reduced extent scaled back up.
         let status = {
-            let s = self.state.borrow();
-            let name = s.open_path().map(stem).unwrap_or_default();
-            match s.placed {
-                Some(p) => format!("{name} · {:.0} × {:.0}", p.full.0, p.full.1),
+            let name = self.state.borrow().open_path().map(stem).unwrap_or_default();
+            match self.kept_size() {
+                Some((w, h)) => format!("{name} · {w:.0} × {h:.0}"),
                 None => format!("{name} · {width} × {height}"),
             }
         };

@@ -2,6 +2,10 @@
 
 use super::*;
 
+/// An arrow's step on the canvas in points, a visible move at any zoom; Shift's goes ten times as far.
+const NUDGE: f64 = 1.0;
+const NUDGE_FAR: f64 = 10.0;
+
 impl Ctl {
     // MARK: - Framing
 
@@ -17,6 +21,13 @@ impl Ctl {
         let (_, n) = s.negative.as_ref()?;
         let (w, h) = n.size();
         Some((n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1))))
+    }
+
+    /// The open frame's kept size in whole pixels, which the crop's readout, its badge and the status
+    /// bar all say.
+    pub(super) fn kept_size(&self) -> Option<(f64, f64)> {
+        let image = self.image_size()?;
+        Some(self.state.borrow().store.settings().geometry.kept_pixels(image))
     }
 
     pub(super) fn write_geometry(self: &Rc<Self>, g: Geometry) {
@@ -67,7 +78,6 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         self.board_in();
         let cropping = self.cropping();
-        let image = self.image_size();
         let crop_frame = self.image_frame(true);
         let picture_frame = self.image_frame(cropping);
         let (g, armed, board, window_board) = {
@@ -81,7 +91,8 @@ impl Ctl {
         f.set_ratio(g.ratio.and_then(|r| ratios.iter().position(|x| *x == r)).map_or(0, |i| i as i32 + 1));
         f.set_portrait(g.portrait);
         f.set_orientable(g.ratio.is_some_and(|r| r != oni_settings::frame::AspectRatio::Square));
-        f.set_kept(image.map(|i| geom::pixel_label(g.cropped_pixel_size(i))).unwrap_or_default().into());
+        let kept = self.kept_size().map(geom::pixel_label).unwrap_or_default();
+        f.set_kept(kept.as_str().into());
         let (low, high) = Geometry::ANGLE_RANGE;
         f.set_angle_lowest(low.round() as i32);
         f.set_angle_highest(high.round() as i32);
@@ -103,8 +114,7 @@ impl Ctl {
             // `liveSize`: the kept pixels above the frame while a handle is held, inside the view.
             let held = self.state.borrow().frame_gesture.is_some_and(|(window, ..)| !window);
             let view = (f64::from(c.get_width()), f64::from(c.get_height()));
-            let label = if held { image.map(|i| geom::pixel_label(g.cropped_pixel_size(i))).unwrap_or_default() } else { String::new() };
-            c.set_crop_badge(label.into());
+            c.set_crop_badge(if held { kept.as_str() } else { "" }.into());
             c.set_crop_badge_x((x + wd / 2.0).clamp(BADGE_MARGIN, (view.0 - BADGE_MARGIN).max(BADGE_MARGIN)) as f32);
             c.set_crop_badge_y((y - BADGE_RISE).clamp(BADGE_MARGIN / 2.0, (view.1 - BADGE_MARGIN / 2.0).max(BADGE_MARGIN / 2.0)) as f32);
         }
@@ -119,6 +129,38 @@ impl Ctl {
             c.set_window_width(wd as f32);
             c.set_window_height(ht as f32);
         }
+    }
+
+    /// An arrow beside the crop moves the frame drawn innermost, the measuring window while it is set,
+    /// else the crop; the steps that follow each other are one undo step, as a slider's are.
+    pub(super) fn nudge_frame(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool) -> bool {
+        if !(bare || (shift && !command)) || !self.cropping() {
+            return false;
+        }
+        let (dx, dy) = match text {
+            "\u{F702}" => (-1.0, 0.0),
+            "\u{F703}" => (1.0, 0.0),
+            "\u{F700}" => (0.0, -1.0),
+            "\u{F701}" => (0.0, 1.0),
+            _ => return false,
+        };
+        let (Some(image), Some(frame)) = (self.image_size(), self.image_frame(true)) else { return true };
+        let step = if shift { NUDGE_FAR } else { NUDGE };
+        let (g, armed) = {
+            let s = self.state.borrow();
+            (s.store.settings().geometry.clone(), s.route.armed)
+        };
+        let moved = |from| frames::apply(Handle::Body, from, (frame.2, frame.3), (dx * step, dy * step));
+        let next = if armed {
+            let window = frames::window_stored(&g, frames::bounded(moved(frames::window_shown(&g, true))), true);
+            Geometry { measure_window: Some(window), ..g }
+        } else {
+            frames::constrained_crop(&g, Handle::Body, moved(g.crop), image)
+        };
+        self.state.borrow_mut().store.defer();
+        self.write_geometry(next);
+        self.publish_framing();
+        true
     }
 
     /// A ratio or an orientation chosen: the frame cut to it in place and remembered for the next.
@@ -194,7 +236,7 @@ impl Ctl {
     /// A tab opened: on Crop the framing the hand last chose is handed to this frame if chosen on another.
     pub(super) fn tab_opened(self: &Rc<Self>, tab: i32) {
         let left = self.state.borrow().route.shown;
-        self.state.borrow_mut().route.moved(tab);
+        self.route_moved(tab);
         self.balance_on_leaving(left, tab);
         if tab == 1 {
             // Crop's handles take the deck's edge, and the deck with its preview.

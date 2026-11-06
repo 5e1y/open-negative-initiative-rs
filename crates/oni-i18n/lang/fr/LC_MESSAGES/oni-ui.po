@@ -201,7 +201,7 @@ msgstr "Afficher le panneau ({})"
 msgid "Hide the Panel ({})"
 msgstr "Masquer le panneau ({})"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -253,7 +253,7 @@ msgstr "Nom de la pellicule"
 msgid "What this block does"
 msgstr "Ce que fait ce bloc"
 
-#: crates/oni-ui/ui/ds/containers.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -897,7 +897,7 @@ msgstr "1 bloc enregistré"
 msgid "{} blocks recorded"
 msgstr "{} blocs enregistrés"
 
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copier"
 
@@ -1029,7 +1029,7 @@ msgstr "Restaurer"
 msgid "Paste Settings"
 msgstr "Coller les réglages"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
 
@@ -1441,21 +1441,25 @@ msgstr "Courbe de saturation"
 msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral."
 msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. La luminosité ne bouge jamais.\n\nFaites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre."
 
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "Crop"
-msgstr "Recadrage"
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Kept"
+msgstr "Conservé"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does."
-msgstr "Faites glisser les coins sur la photo pour la recadrer. Copier et Coller reportent tout le cadrage sur d’autres photos, Coller sur la pellicule sur chaque vue de la pellicule ; le collage des réglages ne le fait jamais."
+msgid "Puts the crop at rest: the whole photo, upright, unmirrored and level; the measuring window stays."
+msgstr "Remet le recadrage au repos : la photo entière, droite, sans miroir et de niveau ; la fenêtre de mesure reste."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Copies this photo's crop."
-msgstr "Copie le recadrage de cette photo."
+msgid "Copy Crop"
+msgstr "Copier le recadrage"
 
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "Paste"
-msgstr "Coller"
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Copies this photo's crop: its frame, ratio, angle, turns, mirrors and measuring window."
+msgstr "Copie le recadrage de cette photo : son cadre, son format, son angle, ses rotations, ses miroirs et sa fenêtre de mesure."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Paste Crop"
+msgstr "Coller le recadrage"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on the {} selected photos."
@@ -1464,6 +1468,10 @@ msgstr "Colle le recadrage copié sur les {} photos sélectionnées."
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on this photo."
 msgstr "Colle le recadrage copié sur cette photo."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Paste Crop to Roll"
+msgstr "Coller le recadrage sur la pellicule"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on every photo measured with this roll."
@@ -1546,6 +1554,10 @@ msgid "The part of the photo the balance keys and the histogram read, drawn on t
 msgstr "La partie de la photo que lisent les touches de balance et l’histogramme, tracée sur la photo tant que sa touche est allumée ; tant qu’on n’y touche pas, elle suit le recadrage. Réinitialiser la retire, Copier et Coller la portent d’une photo à l’autre."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Acts on this photo alone: the balance keys and the histogram read only what it frames."
+msgstr "N’agit que sur cette photo : les touches de balance et l’histogramme ne lisent que ce qu’elle cadre."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Apply window"
 msgstr "Appliquer la fenêtre"
 
@@ -1558,16 +1570,20 @@ msgid "Shows a frame on the photo; the balance keys and the histogram read only 
 msgstr "Affiche un cadre sur la photo ; les touches de balance et l’histogramme ne lisent que ce qu’il contient. Tant qu’on n’y touche pas, il suit le recadrage ; le recadrage ne le déplace jamais."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Copy Window"
+msgstr "Copier la fenêtre"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copy Measuring Window"
 msgstr "Copier la fenêtre de mesure"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Paste Measuring Window"
-msgstr "Coller la fenêtre de mesure"
+msgid "Paste Window"
+msgstr "Coller la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Kept"
-msgstr "Conservé"
+msgid "Paste Measuring Window"
+msgstr "Coller la fenêtre de mesure"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Brush size"
@@ -1930,8 +1946,20 @@ msgid "Details"
 msgstr "Détails"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Crop"
+msgstr "Recadrage"
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop."
+msgstr "Faites glisser les coins ou les bords du cadre sur la photo pour la recadrer, ou déplacez-le avec les flèches, dix fois plus loin avec Maj. Échap ou Annuler rend la photo telle que le recadrage l’a trouvée ; Retour ou TERMINÉ garde le recadrage."
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
 msgstr "Quitter le recadrage"
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Puts back the crop this photo had when Crop opened, and leaves."
+msgstr "Rend à cette photo le recadrage qu’elle avait à l’ouverture du recadrage, puis le quitte."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "De-dust"
@@ -1940,6 +1968,10 @@ msgstr "Dépoussiérage"
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
 msgstr "Quitter le dépoussiérage"
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Puts back the corrections this photo had when De-dust opened, and leaves."
+msgstr "Rend à cette photo les corrections qu’elle avait à l’ouverture du dépoussiérage, puis le quitte."
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Use This Frame as Flat-Field"
@@ -2272,6 +2304,10 @@ msgstr "Scanner : le clavier d’un scanner de labo, densité et couleur par pas
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"
 msgstr "Copier les réglages ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Paste"
+msgstr "Coller"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings to {} photos ({})"

@@ -79,9 +79,7 @@ pub fn opening_row(path: &Path, roll: Option<&Film>, artist: &str, copyright: &s
 
 /// `Geometry.croppedPixelSize`: the frame's size with its quarter turns and crop applied, rounded.
 pub fn cropped_size(full: (f64, f64), settings: &PipelineSettings) -> (f64, f64) {
-    let g = &settings.geometry;
-    let (w, h) = if g.quarter_turns.rem_euclid(2) == 1 { (full.1, full.0) } else { full };
-    ((g.crop.width as f64 * w).round(), (g.crop.height as f64 * h).round())
+    settings.geometry.kept_pixels(full)
 }
 
 /// The panel's first summary line.
