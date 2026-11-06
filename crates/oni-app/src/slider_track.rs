@@ -74,7 +74,7 @@ mod tests {
         assert_eq!(stepped(Field::Temperature, top, 5, &track), top);
         let black = track_range(Field::BlackPoint);
         let lifted = stepped(Field::BlackPoint, 0.0, 1, &black);
-        assert!(lifted < 0.0 && Field::BlackPoint.readout(lifted) == "+1 %", "{}", Field::BlackPoint.readout(lifted));
+        assert!(lifted < 0.0 && Field::BlackPoint.readout(lifted) == "+1%", "{}", Field::BlackPoint.readout(lifted));
         assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 1, &track_range(Field::Exposure))), "+0.51 EV");
     }
 

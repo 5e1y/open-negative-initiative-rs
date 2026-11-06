@@ -174,7 +174,11 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     assert!(d.get_sensitivity() > 0.0, "a hand's drag moves the slider");
     assert!(d.get_found_shown(), "and leaves the reading up");
     let moved = d.get_sensitivity();
-    assert!((moved - 40.0 / 308.0).abs() < 0.02, "by the drag's share of the track: {moved}");
+    // A press off the knob lands it under the pointer; the drag then carries it by its share of the track.
+    std::thread::sleep(past_a_double);
+    dragged(&rig, x, y - 4.0, 0.0);
+    let landed = d.get_sensitivity();
+    assert!((moved - landed - 40.0 / 308.0).abs() < 0.02, "by the drag's share of the track: {moved} from {landed}");
     std::thread::sleep(past_a_double);
     dragged(&rig, x, y - 4.0, -20.0);
     let back = d.get_sensitivity();

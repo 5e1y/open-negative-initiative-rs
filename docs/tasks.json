@@ -5653,5 +5653,12 @@
     "title": "A slider's arrow step follows the one readout formatter",
     "status": "done",
     "detail": "Merging #1131 (arrow steps on the readout's last digit) with #1149 (one formatter, its readout kinds merged): the step's unit now reads the kinds left, a percent one unit of a percent, every other two-place kind a hundredth, a ceiling a thousandth, pixels a tenth."
+  },
+  {
+    "id": 1157,
+    "type": "test",
+    "title": "Two checks read the merged slider and readout as they now behave",
+    "status": "done",
+    "detail": "After the merge of #1131 and #1149: the arrow-step check expects the one formatter's percent, '+1%'; the auto De-dust check lands the Sensitivity knob with a press off it, then measures the drag's share from there, as a press on a track now lands the knob under the pointer."
   }
 ]
