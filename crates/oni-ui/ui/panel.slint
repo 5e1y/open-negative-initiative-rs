@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { Editors } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
@@ -13,6 +13,7 @@ export { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
 
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
+    property <string> crop-note: @tr("Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop.");
     // The header down to the tab bar's rule, which the window's checks aim under.
     property <length> header: rule.y + rule.height;
     changed header => { PanelState.header = self.header; }
@@ -94,7 +95,7 @@ export component Panel inherits Surface {
                 if PanelState.tab == 1: ModeHeader {
                     title: @tr("Crop");
                     demo: "crop";
-                    note: @tr("Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop.");
+                    note: root.crop-note;
                     help: @tr("Leave Crop");
                     cancel-help: @tr("Puts back the crop this photo had when Crop opened, and leaves.");
                     done => { Framing.act(Act.framing); }
@@ -111,6 +112,11 @@ export component Panel inherits Surface {
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.
         rule := Divider { }
+        // A mode's help opens under its header, pushing the pane down, as a block's opens in its own flow.
+        if PanelState.tab == 1 && Tip.open == root.crop-note: VerticalLayout {
+            padding: SectionStyle.inset;
+            HelpCard { note: root.crop-note; subject: @tr("Crop"); }
+        }
         Rectangle {
             vertical-stretch: 1;
             RollPane { shown: PanelState.tab == 0; }

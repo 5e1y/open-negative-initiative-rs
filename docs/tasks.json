@@ -6787,5 +6787,12 @@
     "title": "The fifth wave's merges: one rest, one reset carrying the stock's dyes, one copy sheet, one footer",
     "status": "done",
     "detail": "Correctors met in five places. A double click's rest is one function that lands the same value on every frame shown. A block's reset carries the stock's dyes and gives each frame shown its own rest. Copy Settings opens its carries sheet from the bar, the menu bar and a cell's menu, the gallery's one photo picked included. Prepare's footer is the shared sheet footer. The status line names the frame's place and the crop's kept size. The medal probes moved clear of the switches."
+  },
+  {
+    "id": 1380,
+    "type": "fix",
+    "title": "Crop mode's help opens under its header, in the panel's flow",
+    "status": "done",
+    "detail": "The block help card moved into each block's flow while the Crop mode's header still placed its card by column: the header's mark now names its subject, and its card opens under the header, pushing the pane down as a block's does."
   }
 ]

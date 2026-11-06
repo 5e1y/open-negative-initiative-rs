@@ -94,7 +94,7 @@ export component ModeHeader inherits HorizontalLayout {
     spacing: Space.s;
     cross-axis-alignment: center;
     Label { text: root.title; role: TextRole.title; overflow: elide; min-width: 0; horizontal-stretch: 0; }
-    if root.note != "": HelpMark { note: root.note; demo: root.demo; column-x: root.absolute-position.x; column-width: root.width; }
+    if root.note != "": HelpMark { note: root.note; demo: root.demo; subject: root.title; }
     Rectangle { horizontal-stretch: 1; }
     Button { text: @tr("Cancel"); help: root.cancel-help; clicked => { root.cancel(); } }
     Button { text: @tr("DONE"); keycap: true; help: root.help; clicked => { root.done(); } }
