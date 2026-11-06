@@ -6794,5 +6794,12 @@
     "title": "Crop mode's help opens under its header, in the panel's flow",
     "status": "done",
     "detail": "The block help card moved into each block's flow while the Crop mode's header still placed its card by column: the header's mark now names its subject, and its card opens under the header, pushing the pane down as a block's does."
+  },
+  {
+    "id": 1389,
+    "type": "fix",
+    "title": "The checks follow the merged fifth wave; the dialog answer is emptied, never removed",
+    "status": "done",
+    "detail": "Eight checks still read the app as one corrector left it: the Pro face now lays Lighting first, so a slider check opens taller and the help card's twin reads the light above the colour; a block's Reset stays in place dimmed; Copy Settings ends on its ellipsis; Prepare's footer sets Back beside the step's key with Cancel apart; the dye block's reset index follows the panel; the medal probes sit on the tiles' ground. The dialog seam empties its answer file rather than removing it, as no crate removes a file."
   }
 ]

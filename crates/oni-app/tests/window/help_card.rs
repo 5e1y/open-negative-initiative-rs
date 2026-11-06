@@ -10,7 +10,7 @@ use crate::common::{self, Placed};
 use crate::help_demo::{mark, press_help};
 use crate::panel_bindings::opened;
 
-const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider brightens to the right. Black point and White point move the ends of the scan itself.";
+const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.";
 /// The card's padding, `Gap.m`, and the step under the title row, `SectionStyle.gap`.
 const PAD: f32 = 16.0;
 const GAP: f32 = 8.0;
@@ -54,7 +54,7 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     // Each mark is named with its block, none with what any block does.
     assert!(common::placed(w, Role::Button, "What this block does").is_empty(), "no mark is named for every block");
     let (lighting, colour) = (mark(w, "Lighting"), mark(w, "Colour"));
-    assert!(lighting.y > colour.y, "twin: two marks, two names");
+    assert!(lighting.y < colour.y, "twin: two marks, two names, the light's first");
     let expanded = || {
         let found: Vec<_> = ElementHandle::find_by_accessible_label(w, "Help on Lighting").filter(|e| e.accessible_role() == Some(Role::Button)).collect();
         found[0].accessible_expanded()
@@ -85,7 +85,7 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
 
     // One padding round what it holds: the demo's picture on top, the note at the foot.
     let note = common::the(w, Role::Text, LIGHTING);
-    let picture = common::placed_all(w, Role::Image).into_iter().find(|i| i.width > card.width / 2.0 && i.y >= card.y && i.y < note.y);
+    let picture = common::placed_all(w, Role::Image).into_iter().find(|i| i.width > card.width / 2.0 && i.x >= card.x && i.y >= card.y && i.y < note.y);
     let picture = picture.expect("the demo's picture on the card");
     let round = insets(&card, &picture, &note);
     assert!(even(round), "padded alike on four sides: {round:?}");

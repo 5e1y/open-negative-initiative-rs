@@ -352,7 +352,7 @@ pub(crate) fn the_keys_that_reset_or_remove_stand_last_and_apart() {
     let k = oni_app::platform::keys(oni_app::platform::Platform::THIS);
     let keys = |text: &str| lines.iter().find(|l| l.text == text).map(|l| l.keys.to_string()).unwrap_or_else(|| panic!("{text}"));
     assert_eq!((keys("Reset Settings"), keys("Move to ONI Trash")), (format!("{}R", k.command_shift), format!("{}{}", k.command, k.delete)));
-    assert_eq!(keys("Copy Settings"), format!("{}C", k.command_shift));
+    assert_eq!(keys("Copy Settings\u{2026}"), format!("{}C", k.command_shift));
     assert!(keys(oni_app::platform::reveal(oni_app::platform::Platform::THIS)).is_empty(), "twin: a line with no chord prints none");
     rig.key("\u{1b}");
 

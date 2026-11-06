@@ -92,7 +92,11 @@ pub(crate) fn a_frontier_look_file_is_read_again_on_each_save() {
     assert_eq!(generation(), None);
     assert_eq!(Preferences::load(&support).string(preferences::FRONTIER_LOOK), None);
     assert!(shown("Measured") && !shown("My Frontier.cube"), "the measured table named as the one in use");
-    assert!(reset().is_empty(), "nothing left to reset");
+    // The block's Reset keeps its place, out of reach while the measured table is the one in use.
+    let live = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "Reset")
+        .filter(|e| e.accessible_role() == Some(Role::Button) && e.accessible_enabled() == Some(true))
+        .count();
+    assert_eq!((reset().len(), live), (1, 0), "nothing left to reset");
     rig.shot("settings-frontier-measured");
     drop(sheet);
     drop(shell);

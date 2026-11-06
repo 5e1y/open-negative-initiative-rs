@@ -208,7 +208,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
         rig.pump();
         lib.get_stock_dyes().as_str() == "Dyes: Kodak, Fuji; the stock names Fuji"
     });
-    g.invoke_reset(5);
+    g.invoke_reset(4);
     rig.pump();
     assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
     assert_eq!((panel.get_dye_family(), g.get_dye_separation_modified()), (1, false));

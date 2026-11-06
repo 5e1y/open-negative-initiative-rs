@@ -37,7 +37,7 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
+    rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 1100));
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
     let options = Options { support: root.join("Support"), ..Options::default() };
     let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();

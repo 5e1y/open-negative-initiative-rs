@@ -8,11 +8,11 @@ pub(super) fn folder() -> Option<PathBuf> {
     std::env::var_os("ONI_ANSWERS").map(PathBuf::from)
 }
 
-/// The path laid in `folder`, taken once: a dialog that finds none answers as a cancelled one.
+/// The path laid in `folder`, taken once by emptying its file: a dialog that finds none answers as cancelled.
 pub(super) fn taken(folder: &Path) -> Option<PathBuf> {
     let file = folder.join("answer");
     let text = std::fs::read_to_string(&file).ok()?;
-    std::fs::remove_file(&file).ok()?;
+    std::fs::write(&file, "").ok()?;
     let path = PathBuf::from(text.trim_end());
     (!path.as_os_str().is_empty()).then_some(path)
 }

@@ -136,11 +136,11 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_skips()), ("No base picked yet.", "Skip", true));
     let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
     assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
-    // Cancel stands on a plate of its own, apart from Back, which shares the step key's.
+    // Cancel stands apart at the footer's left; Back stands beside the step's key, nearer to it than Cancel.
     rig.settle();
     let (cancel, back, skip) = (common::the(w, Role::Button, "Cancel"), common::the(w, Role::Button, "Back"), common::the(w, Role::Button, "Skip"));
     assert!(back.x - (cancel.x + cancel.width) >= 8.0, "Cancel apart: {cancel:?} {back:?}");
-    assert!((skip.x - (back.x + back.width)).abs() < 1.0, "twin: Back and the step's key share one plate: {back:?} {skip:?}");
+    assert!(skip.x - (back.x + back.width) < back.x - (cancel.x + cancel.width), "twin: Back nearer the step's key than Cancel: {back:?} {skip:?}");
 
     // The base's demo waits for Show How, nothing moving beside the scan unasked; pressed again, it goes.
     let demo = || p.get_tutorial().size().width;

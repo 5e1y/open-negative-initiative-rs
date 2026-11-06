@@ -161,7 +161,7 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     // A medal's middle inside its ruled ring, its colour dropped: the pixels under half its face's light.
     let m = width(probe.get_medal());
     let shape = |i: usize| -> Vec<bool> {
-        let (x0, y0) = (240 + i * m * 3 / 2 + m / 4, 440 + m / 4);
+        let (x0, y0) = (300 + i * m * 3 / 2 + m / 4, 260 + m / 4);
         let light: Vec<f64> = (y0..y0 + m / 2).flat_map(|y| (x0..x0 + m / 2).map(move |x| luminance(at(x, y)))).collect();
         let mut sorted = light.clone();
         sorted.sort_by(f64::total_cmp);
