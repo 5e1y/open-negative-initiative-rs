@@ -47,13 +47,13 @@ impl Ctl {
         }
     }
 
-    /// The notice saying a gallery step landed, its key walking that step back while it is the last.
+    /// The notice saying a gesture's step landed, its key walking that step back while it is the last.
     pub(in crate::app) fn told_step(&self, title: &str, message: &str) {
         self.told(title, message);
         let step = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
-            let history = store.gallery_history();
+            let history = store.history();
             history.undo_label().map(|label| (label.to_owned(), history.undo_paths()))
         };
         self.state.borrow_mut().org.told_step = step;
@@ -79,12 +79,12 @@ impl Ctl {
             let last = {
                 let mut s = self.state.borrow_mut();
                 s.store.editor().is_some_and(|store| {
-                    let history = store.gallery_history();
+                    let history = store.history();
                     history.undo_label() == Some(label.as_str()) && history.undo_paths() == paths
                 })
             };
             if last {
-                self.gallery_step(true);
+                self.history_step(true);
             }
         }
     }

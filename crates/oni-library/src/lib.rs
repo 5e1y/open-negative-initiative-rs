@@ -10,7 +10,7 @@ pub mod favourites;
 pub mod file_names;
 pub mod film_group;
 pub mod folders;
-pub mod gallery_history;
+pub mod history;
 pub mod info;
 pub mod index;
 pub mod journal;

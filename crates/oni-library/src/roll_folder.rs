@@ -2,7 +2,7 @@
 //! with its sidecars and companions, and the same moves walked back. The disk is the truth.
 
 use crate::folders;
-use crate::gallery_history::{Disk, Move};
+use crate::history::{Disk, Move};
 use crate::paths;
 use chrono::{DateTime, Local};
 use oni_i18n::{tr, trn};

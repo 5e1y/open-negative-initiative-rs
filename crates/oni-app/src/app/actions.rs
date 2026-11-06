@@ -14,12 +14,10 @@ impl Ctl {
             self.commit_info_drafts();
         }
         match action {
-            Act::Undo | Act::Redo if app.get_gallery() => self.gallery_step(action == Act::Undo),
+            Act::Undo | Act::Redo => self.history_step(action == Act::Undo),
             Act::PrepareRoll => self.prepare_roll(),
             Act::LeaveRoll => self.leave_roll(),
             Act::ToggleMode if self.state.borrow().prepare.shown => {}
-            Act::Undo => self.write(Command::Undo),
-            Act::Redo => self.write(Command::Redo),
             Act::Reset => self.reset_all(),
             Act::ToggleMode if self.export.borrow().shown => {}
             Act::Export => self.export_act(),

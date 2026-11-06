@@ -1,5 +1,5 @@
 use super::*;
-use oni_library::gallery_history::Move;
+use oni_library::history::Move;
 
 /// A folder of empty frames, each with the settings given, and a store over them, none open.
 fn frames(label: &str, sidecars: &[(&str, Option<PipelineSettings>)]) -> (EditorStore, std::path::PathBuf, Vec<String>) {
@@ -26,8 +26,8 @@ fn vignetted(stops: f32) -> PipelineSettings {
     s
 }
 
-/// A paste on the open frame from the gallery, a gallery undo when `undone`, then an edit and its
-/// undo in the editor; the vignette the frame is left with.
+/// A paste on the open frame from the gallery, its undo when `undone`, then an edit and its undo in
+/// the editor; the vignette the frame is left with.
 fn pasted_then_edited(label: &str, undone: bool) -> f32 {
     let (mut store, dir) = fresh(label);
     let frame = dir.join("frame.tif").to_string_lossy().into_owned();
@@ -36,25 +36,25 @@ fn pasted_then_edited(label: &str, undone: bool) -> f32 {
     assert_eq!(store.paste_settings(std::slice::from_ref(&frame)), 1);
     assert_eq!(Knob::Vignette.get(store.settings()), -0.7);
     if undone {
-        store.undo(Surface::Gallery);
-        assert_eq!(Knob::Vignette.get(store.settings()), rest, "the gallery undo lays the frame back");
+        store.undo();
+        assert_eq!(Knob::Vignette.get(store.settings()), rest, "the undo lays the frame back");
     }
     store.apply_at(Command::Set { knob: Knob::Texture, value: 0.3 }, 10.0);
-    store.undo(Surface::Editor);
+    store.undo();
     assert_eq!(Knob::Texture.get(store.settings()), Knob::Texture.get(&PipelineSettings::default()));
     let _ = std::fs::remove_dir_all(&dir);
     Knob::Vignette.get(store.settings()) - rest
 }
 
 #[test]
-fn a_paste_undone_in_the_gallery_never_comes_back_with_an_editor_undo() {
+fn a_paste_undone_never_comes_back_with_the_next_undo() {
     assert_eq!(pasted_then_edited("paste-undone", true), 0.0, "the frame stays at its rest");
-    // Twin: the paste left standing is where the editor undo of the edit lands.
+    // Twin: the paste left standing is where the undo of the edit lands.
     assert_ne!(pasted_then_edited("paste-kept", false), 0.0);
 }
 
 #[test]
-fn ungroup_takes_the_open_frame_in_its_gallery_step_and_its_editor_step() {
+fn ungroup_takes_the_open_frame_in_its_one_step() {
     let film = oni_settings::Film::new("Roll 3");
     let grouped = PipelineSettings { film: Some(film.clone()), ..PipelineSettings::default() };
     let (mut store, dir, paths) = frames("ungroup", &[("a.tif", Some(grouped.clone())), ("b.tif", Some(grouped.clone()))]);
@@ -62,17 +62,17 @@ fn ungroup_takes_the_open_frame_in_its_gallery_step_and_its_editor_step() {
     store.open(&a).unwrap();
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
     assert_eq!(store.apply_film(&paths, None, "Ungroup"), 2);
-    assert_eq!(store.gallery_history().undo_label(), Some("Ungroup · 2 photos"));
+    assert_eq!(store.history().undo_label(), Some("Ungroup · 2 photos"));
     assert!(store.settings().film.is_none() && read(&b).film.is_none());
-    store.undo(Surface::Gallery);
+    store.undo();
     assert_eq!(store.settings().film.as_ref(), Some(&film), "the open frame is regrouped");
     assert_eq!(read(&b).film.as_ref(), Some(&film));
-    // Twin: an editor undo takes a film change back alone, the edit before it kept.
-    store.redo(Surface::Gallery);
+    // Twin: an undo takes a film change back alone, the edit before it kept.
+    store.redo();
     assert!(store.settings().film.is_none());
     store.set_film(std::slice::from_ref(&a), Some(film.clone()), "Set Film Stock");
-    store.undo(Surface::Editor);
-    assert!(store.settings().film.is_none(), "one editor undo takes the film back");
+    store.undo();
+    assert!(store.settings().film.is_none(), "one undo takes the film back");
     assert_eq!(Knob::Vignette.get(store.settings()), 0.5, "and nothing before it");
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -136,11 +136,11 @@ fn an_undo_within_the_settle_delay_takes_back_the_step_still_waiting() {
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
     store.defer_at(1.0);
     store.apply_at(Command::Set { knob: Knob::Texture, value: 0.3 }, 1.0);
-    store.undo(Surface::Editor);
+    store.undo();
     assert_eq!(Knob::Vignette.get(store.settings()), 0.5, "the step before stays");
     assert_eq!(Knob::Texture.get(store.settings()), Knob::Texture.get(&PipelineSettings::default()));
     // Twin: the redo brings the waiting edit back, never lost.
-    store.redo(Surface::Editor);
+    store.redo();
     assert_eq!(Knob::Texture.get(store.settings()), 0.3);
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -163,7 +163,7 @@ fn a_gesture_on_several_leaves_an_open_frame_out_of_sight_alone() {
     store.set_film(std::slice::from_ref(&gone), Some(oni_settings::Film::new("Roll 3")), "Set Film Stock");
     assert_eq!(Knob::Vignette.get(store.settings()), rest, "a paste never shows on a frame it cannot save");
     assert!(store.settings().film.is_none());
-    assert_eq!(store.gallery_history().undo_paths(), BTreeSet::from([present.clone()]), "only the frame in sight is in the step");
+    assert_eq!(store.history().undo_paths(), BTreeSet::from([present.clone()]), "only the frame in sight is in the step");
     // Twin: the frame in sight, open, takes the paste.
     store.open(&present).unwrap();
     store.paste_settings(std::slice::from_ref(&present));

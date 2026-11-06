@@ -92,29 +92,31 @@ impl Ctl {
         }
     }
 
-    /// `undo()`/`redo()` in the gallery: the gallery's own stack, whichever photos it touched; a
-    /// roll's moves walk off this thread, and one walked back in part says how many items stayed.
-    pub(super) fn gallery_step(self: &Rc<Self>, undo: bool) {
+    /// `undo()`/`redo()`, from the gallery or the editor alike: the one history's step, whichever
+    /// photos it touched; a roll's moves walk off this thread, and one walked back in part says how
+    /// many items stayed.
+    pub(super) fn history_step(self: &Rc<Self>, undo: bool) {
         let title = if undo { tr("Undo") } else { tr("Redo") };
         if self.busy_said(title) {
             return;
         }
-        let (touched, moves): (Vec<String>, Vec<Move>) = {
-            let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
-            let history = store.gallery_history();
-            let paths = if undo { history.undo_paths() } else { history.redo_paths() };
-            let moves = if undo { history.undo_moves() } else { history.redo_moves() };
-            (paths.into_iter().collect(), moves)
-        };
-        if !moves.is_empty() && self.unsaved_among(title, &moves) {
-            return;
+        if let Some(store) = self.state.borrow_mut().store.editor() {
+            if undo { store.undo() } else { store.redo() };
         }
-        let (failure, walk, marked) = {
+        self.stepped(undo);
+    }
+
+    /// An undo or a redo the store has taken, from the keys or the phone: its walk run off this
+    /// thread, its failure said, and the photos its step touched read again.
+    pub(super) fn stepped(self: &Rc<Self>, undo: bool) {
+        let title = if undo { tr("Undo") } else { tr("Redo") };
+        let (touched, failure, walk, marked) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
-            if undo { store.undo(Surface::Gallery) } else { store.redo(Surface::Gallery) };
-            (store.failure.take(), store.walking.take(), store.marked.take())
+            // The step just taken stands at the other end of the history now.
+            let history = store.history();
+            let touched: Vec<String> = if undo { history.redo_paths() } else { history.undo_paths() }.into_iter().collect();
+            (touched, store.failure.take(), store.walking.take(), store.marked.take())
         };
         if let Some(walk) = walk {
             return self.walk_off_thread(title, walk, touched);

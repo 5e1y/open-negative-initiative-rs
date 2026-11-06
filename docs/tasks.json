@@ -5856,5 +5856,12 @@
     "title": "The status bar's medals at an icon's size, a medal not given an empty place",
     "status": "done",
     "detail": "Evaluation s-db78d310: the status bar's medals were 12 pt and told given from not given by opacity alone, the dimmed ones at 2.67:1. The picker's medals are now 16 pt, the icon's size, inside the bar's 18 pt row; a medal not given is its empty place, its edge and rank in the secondary ink (5.5:1 on the panel), and the hand over it shows the medal it would lay."
+  },
+  {
+    "id": 1167,
+    "type": "fix",
+    "title": "One undo history for the session, the same in the gallery and the editor",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: moving to another frame emptied the editor's undo, the gallery kept a history of its own the editor could not reach, and the two reached differently. The editor's per-frame stack (oni-core history.rs) and the gallery's (oni-library gallery_history.rs) are one, oni-library history.rs: every step names each frame it wrote, an edit of the open frame as much as a gesture on several; an edit joins the step on top within 0.4 s on the same frame and setting, as Swift's coalescing; 200 steps under the 256 MB ceiling. Opening a frame resets nothing and the face it opens on is no step; undoing an edit of a frame left writes its sidecar. Every gesture and undo first records the step still waiting, so the steps keep the order they were taken in. The menus and the bar name the one history's step in both modes, ⌘Z and the phone's undo land through one host path (history_step, stepped), and a step that moves files writes the open frame first, its walk refused when that write is. Surface, the editor's companions attached by serial and the gallery undo's extra editor step are gone; parity: the gallery's own 100-step history departed."
   }
 ]

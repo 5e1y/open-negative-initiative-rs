@@ -1,9 +1,12 @@
-//! Undo for gestures that act on several photographs at once, from the gallery. Kept apart from
-//! the open photo's history, so ⌘Z answers for the right stack.
+//! The session's one undo history, the same in the gallery and the editor: every gesture is one step
+//! naming each photo it wrote, an edit of the open frame as much as a gesture on several.
 
 use crate::paths;
 use oni_settings::{Film, Medal, PipelineSettings};
 use std::collections::{BTreeMap, BTreeSet};
+
+mod class;
+pub use class::Class;
 
 pub type Settings = BTreeMap<String, PipelineSettings>;
 
@@ -67,23 +70,27 @@ impl Step {
     }
 }
 
-pub const LIMIT: usize = 100;
+/// Below this interval, two edits of the same setting on the same frame are one step.
+pub const COALESCE_WINDOW: f64 = 0.4;
+pub const LIMIT: usize = 200;
 /// The settings the steps hold, at most: a gesture on thousands of photos keeps two whole settings
-/// each, and a hundred of them would hold gigabytes. The newest step stays whatever its size.
+/// each, and a stack of them would hold gigabytes. The newest step stays whatever its size.
 pub const BYTES: usize = 256 * 1024 * 1024;
 
 #[derive(Debug, Clone)]
-pub struct GalleryHistory {
+pub struct History {
     steps: Vec<Step>,
     /// Each step's settings in bytes, as their JSON spells them.
     sizes: Vec<usize>,
     cursor: usize,
     ceiling: usize,
+    /// The frame, the setting and the time of the edit on top, which an edit continuing it joins.
+    last: Option<(String, Class, f64)>,
 }
 
-impl Default for GalleryHistory {
+impl Default for History {
     fn default() -> Self {
-        GalleryHistory::bounded(BYTES)
+        History::bounded(BYTES)
     }
 }
 
@@ -93,10 +100,10 @@ fn weight(step: &Step) -> usize {
     step.before.values().chain(step.after.values()).map(one).sum()
 }
 
-impl GalleryHistory {
+impl History {
     /// A history holding at most `ceiling` bytes of settings.
-    pub fn bounded(ceiling: usize) -> GalleryHistory {
-        GalleryHistory { steps: Vec::new(), sizes: Vec::new(), cursor: 0, ceiling }
+    pub fn bounded(ceiling: usize) -> History {
+        History { steps: Vec::new(), sizes: Vec::new(), cursor: 0, ceiling, last: None }
     }
 
     /// The bytes of settings the steps hold now.
@@ -112,12 +119,13 @@ impl GalleryHistory {
         self.cursor < self.steps.len()
     }
 
+    /// The name of the next undo's gesture; an edit of the open frame has none.
     pub fn undo_label(&self) -> Option<&str> {
-        self.can_undo().then(|| self.steps[self.cursor - 1].label.as_str())
+        self.can_undo().then(|| self.steps[self.cursor - 1].label.as_str()).filter(|l| !l.is_empty())
     }
 
     pub fn redo_label(&self) -> Option<&str> {
-        self.can_redo().then(|| self.steps[self.cursor].label.as_str())
+        self.can_redo().then(|| self.steps[self.cursor].label.as_str()).filter(|l| !l.is_empty())
     }
 
     /// The photos the next undo would touch, so a host reads their rows and thumbnails again.
@@ -129,21 +137,10 @@ impl GalleryHistory {
         self.can_redo().then(|| self.steps[self.cursor].paths()).unwrap_or_default()
     }
 
-    /// The files the next undo would move, each as the undo moves it, so a host follows them.
-    pub fn undo_moves(&self) -> Vec<Move> {
-        let step = self.can_undo().then(|| &self.steps[self.cursor - 1]);
-        let moves = step.and_then(|s| s.disk.as_ref()).map(|d| d.moves.clone()).unwrap_or_default();
-        moves.into_iter().rev().map(|m| Move { from: m.to, to: m.from }).collect()
-    }
-
-    pub fn redo_moves(&self) -> Vec<Move> {
-        let step = self.can_redo().then(|| &self.steps[self.cursor]);
-        step.and_then(|s| s.disk.as_ref()).map(|d| d.moves.clone()).unwrap_or_default()
-    }
-
     /// A new gesture drops the branch that was undone, and the oldest steps past the limit or the
     /// ceiling.
     fn push(&mut self, step: Step) {
+        self.last = None;
         self.steps.truncate(self.cursor);
         self.sizes.truncate(self.cursor);
         self.sizes.push(weight(&step));
@@ -170,7 +167,32 @@ impl GalleryHistory {
         self.record_with(before, after, label, None, marker);
     }
 
-    fn record_with(&mut self, before: &Settings, after: &Settings, label: &str, trash: Option<Trash>, marker: Option<Marker>) {
+    /// Records an edit of the open frame `path`, with the other frames it wrote; it joins the step on
+    /// top while the same gesture goes on there, never one an undo left, so the past is never rewritten.
+    pub fn record_edit(&mut self, path: &str, before: Settings, after: Settings, now: f64) {
+        let class = match (before.get(path), after.get(path)) {
+            (Some(was), Some(is)) => Class::between(was, is),
+            _ => Class::Several,
+        };
+        let joins = self.cursor == self.steps.len()
+            && class != Class::Several
+            && self.last.as_ref().is_some_and(|(p, c, t)| p == path && *c == class && now - t < COALESCE_WINDOW);
+        if joins {
+            let top = self.steps.last_mut().expect("the edit on top");
+            for (p, was) in before {
+                top.before.entry(p).or_insert(was);
+            }
+            top.after.extend(after);
+            let at = self.sizes.len() - 1;
+            self.sizes[at] = weight(&self.steps[at]);
+        } else if !self.record_with(&before, &after, "", None, None) {
+            return;
+        }
+        self.last = Some((path.to_owned(), class, now));
+    }
+
+    /// Whether a step was laid.
+    fn record_with(&mut self, before: &Settings, after: &Settings, label: &str, trash: Option<Trash>, marker: Option<Marker>) -> bool {
         let changed: Settings = before
             .iter()
             .filter(|(path, was)| after.get(*path).is_some_and(|now| now != *was))
@@ -179,11 +201,12 @@ impl GalleryHistory {
         let trash = trash.filter(|t| !t.paths.is_empty());
         let marker = marker.filter(|m| m.before != m.after);
         if changed.is_empty() && trash.is_none() && marker.is_none() {
-            return;
+            return false;
         }
         let kept: Settings =
             after.iter().filter(|(p, _)| changed.contains_key(*p)).map(|(p, s)| (p.clone(), s.clone())).collect();
         self.push(Step { before: changed, after: kept, label: label.to_owned(), disk: None, trash, marker, medals: None });
+        true
     }
 
     /// Records a gesture on the disk, already applied; one that moved nothing opens no step.
@@ -238,6 +261,7 @@ impl GalleryHistory {
 
     /// A walk refused before anything moved gives its step back, so the same key offers it again.
     pub fn give_back(&mut self, undoing: bool) {
+        self.last = None;
         if undoing && self.can_redo() {
             self.cursor += 1;
         } else if !undoing && self.can_undo() {
@@ -273,10 +297,12 @@ impl GalleryHistory {
         }
     }
 
+    /// The step on top, taken back; the next edit never joins the state just left.
     pub fn undo_step(&mut self) -> Option<Step> {
         if !self.can_undo() {
             return None;
         }
+        self.last = None;
         self.cursor -= 1;
         Some(self.steps[self.cursor].clone())
     }
@@ -285,6 +311,7 @@ impl GalleryHistory {
         if !self.can_redo() {
             return None;
         }
+        self.last = None;
         self.cursor += 1;
         Some(self.steps[self.cursor - 1].clone())
     }

@@ -2,7 +2,7 @@
 //! the screen, the scanner's and the panel's, is published after every change, from whatever hand.
 
 use oni_core::command::{Command, Scan};
-use oni_core::store::{EditorStore, Surface, channel, machine_for};
+use oni_core::store::{EditorStore, channel, machine_for};
 use oni_link::{Face, Host, HostEvent, HostEvents, Panel, Param, PublicKey, Receipt, Row, State};
 use oni_settings::Face as SettingsFace;
 use std::sync::Mutex;
@@ -57,8 +57,8 @@ pub fn screen(store: &EditorStore, frame: Option<(u16, u16)>) -> State {
         vignette: s.scanner_finish.vignette.stops,
         chrome: (!s.mode.is_monochrome()).then_some(s.scanner_finish.secret_sauce),
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
-        can_undo: store.can_undo(Surface::Editor),
-        can_redo: store.can_redo(Surface::Editor),
+        can_undo: store.can_undo(),
+        can_redo: store.can_redo(),
         panel: Panel { face: face_for(store.face()), rows: Vec::new() },
     }
 }

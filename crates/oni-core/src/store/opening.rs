@@ -31,14 +31,14 @@ pub struct Unsaved {
 }
 
 impl EditorStore {
-    /// Opens a frame on its sidecar, writing the previous one first; its history starts here, so
-    /// an undo never climbs into another photo's.
+    /// Opens a frame on its sidecar, writing the previous one first; the one history goes on, so an
+    /// edit of the frame left stays within reach of undo.
     pub fn open(&mut self, path: &str) -> Result<(), sidecar::Error> {
         self.open_adjusted(path, |_| {})
     }
 
-    /// `open`, the settings read handed to `adjust` before the history starts on them, as Swift
-    /// lays the remembered flat-field sliders (`EditorScene+Actions.swift:71-72`).
+    /// `open`, the settings read handed to `adjust` before its steps start on them, as Swift lays the
+    /// remembered flat-field sliders (`EditorScene+Actions.swift:71-72`).
     pub fn open_adjusted(&mut self, path: &str, adjust: impl FnOnce(&mut PipelineSettings)) -> Result<(), sidecar::Error> {
         self.leave();
         // A sidecar is absent for a new photo, or when its disk is gone: the original's absence says
@@ -67,11 +67,10 @@ impl EditorStore {
             None => adjust(&mut settings),
         }
         self.open = Some(Open { path: path.to_string(), writable, persisted, absent, stamp: original });
-        // `adopt` starts the history on the stored settings, then `adoptFace` changes the face, which
-        // the deferred `record` keeps as the first undo step (`EditorScene+Actions.swift:91-95`).
-        self.history = History::new(settings.clone());
+        // The frame opens on the face in use, which is its opening and no step: an undo takes back what
+        // a hand did, never a frame being looked at.
         let adopted = PipelineSettings { face: self.face(), ..settings };
-        self.history.record(adopted.clone(), f64::NEG_INFINITY);
+        self.recorded = adopted.clone();
         self.replace(adopted);
         self.pending = FieldSet::all();
         self.roll_touched = false;
@@ -82,7 +81,7 @@ impl EditorStore {
     pub fn close(&mut self) {
         self.leave();
         self.open = None;
-        self.history = History::default();
+        self.recorded = PipelineSettings::default();
         self.replace(PipelineSettings::default());
         self.pending = FieldSet::all();
     }
@@ -99,8 +98,8 @@ impl EditorStore {
     }
 
     /// Every path the store holds goes where the disk moved it: the open frame, the edits kept for
-    /// a refused write, the frames together and the editor's steps; the files are the same ones.
-    pub fn follow(&mut self, moves: &[gallery_history::Move]) {
+    /// a refused write and the frames together; the files are the same ones.
+    pub fn follow(&mut self, moves: &[history::Move]) {
         let moved = |path: &str| {
             moves.iter().find(|m| oni_library::paths::holds(&m.from, path)).map(|m| oni_library::paths::moved(path, &m.from, &m.to))
         };
@@ -117,14 +116,13 @@ impl EditorStore {
             }
         }
         self.together.follow(&moved);
-        self.history.follow(&moved);
         self.measured.clear();
     }
 
-    /// The gallery's steps follow a move made outside them, a folder renamed or found elsewhere; a
-    /// step's own moves never do, or its undo would walk from where it already stands.
-    pub fn follow_gallery(&mut self, moves: &[gallery_history::Move]) {
-        self.gallery.follow(moves);
+    /// The steps follow a move made outside them, a folder renamed or found elsewhere; a step's own
+    /// moves never do, or its undo would walk from where it already stands.
+    pub fn follow_history(&mut self, moves: &[history::Move]) {
+        self.history.follow(moves);
     }
 
     /// The frames left with edits no write took yet, oldest first.

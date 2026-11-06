@@ -4,6 +4,7 @@ use crate::knob::Knob;
 
 /// What a gesture leaves with the open frame: its undo steps, its kept edits, its moves.
 mod kept;
+mod one_history;
 mod slides;
 
 fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {
@@ -30,8 +31,8 @@ fn a_notch_reports_its_field_once_and_an_unmoved_value_reports_nothing() {
     let applied = store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 5.0);
     assert!(applied.changed.is_empty() && store.take_changes().is_empty());
     assert_eq!(store.revision(), revision + 1);
-    store.undo(Surface::Editor);
-    assert!(!store.can_undo(Surface::Editor));
+    store.undo();
+    assert!(!store.can_undo());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -54,15 +55,15 @@ fn a_press_within_the_settle_delay_joins_the_step_before_it() {
     let (mut store, dir) = fresh("settle");
     let rest = (Knob::Vignette.get(store.settings()), Knob::Texture.get(store.settings()));
     two_presses(&mut store, 0.1);
-    store.undo(Surface::Editor);
+    store.undo();
     assert_eq!((Knob::Vignette.get(store.settings()), Knob::Texture.get(store.settings())), rest, "one step for both presses");
-    assert!(!store.can_undo(Surface::Editor));
+    assert!(!store.can_undo());
     // Twin: the second press after the delay makes a step of its own.
     let (mut apart, dir2) = fresh("settle-apart");
     two_presses(&mut apart, SETTLE_DELAY + 0.05);
-    apart.undo(Surface::Editor);
+    apart.undo();
     assert_eq!((Knob::Vignette.get(apart.settings()), Knob::Texture.get(apart.settings())), (0.5, rest.1));
-    assert!(apart.can_undo(Surface::Editor));
+    assert!(apart.can_undo());
     let _ = std::fs::remove_dir_all(&dir);
     let _ = std::fs::remove_dir_all(&dir2);
 }
@@ -75,26 +76,26 @@ fn an_unheld_change_moves_the_waiting_step_on_and_a_plain_release_records_it() {
     store.release_deferred_at(0.0);
     store.apply_at(Command::Set { knob: Knob::Texture, value: 0.3 }, 0.1);
     assert!(store.settle_if_due_at(0.2).is_some(), "the key's change restarted the delay");
-    assert!(!store.can_undo(Surface::Editor), "twin: nothing recorded before the delay");
+    assert!(!store.can_undo(), "twin: nothing recorded before the delay");
     // An open or a slider's release records what waits, so it never reaches the next frame.
     store.release_at(0.2);
-    assert!(store.can_undo(Surface::Editor));
+    assert!(store.can_undo());
     assert_eq!(store.settle_if_due_at(1.0), None);
-    store.undo(Surface::Editor);
-    assert!(!store.can_undo(Surface::Editor), "both edits are one step");
+    store.undo();
+    assert!(!store.can_undo(), "both edits are one step");
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// The remembered flat-field sliders are where the history starts, as `History(opened)` does.
+/// The remembered flat-field sliders are where the frame's steps start, as `History(opened)` does.
 #[test]
 fn an_adjusted_opening_starts_the_history_on_the_adjusted_settings() {
     let (mut store, dir) = fresh("adjusted");
     let frame = dir.join("frame.tif").to_string_lossy().into_owned();
     store.open_adjusted(&frame, |s| s.flat_field.temperature = 0.4).unwrap();
     assert_eq!(store.settings().flat_field.temperature, 0.4);
-    assert!(!store.can_undo(Surface::Editor), "the adjustment is no step of its own");
+    assert!(!store.can_undo(), "the adjustment is no step of its own");
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
-    store.undo(Surface::Editor);
+    store.undo();
     assert_eq!(store.settings().flat_field.temperature, 0.4, "an undo lands on the adjusted opening");
     // Twin: a plain opening of another frame reads its sidecar as it stands.
     std::fs::write(dir.join("other.tif"), b"").unwrap();
@@ -141,9 +142,9 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
     let kept = std::fs::metadata(sidecar::url_for(Path::new(&b))).unwrap().modified().unwrap();
     assert_eq!(kept, stamp, "the revision holds, so the thumbnail key does");
     assert_eq!(read(&c), None, "twin: a frame not named keeps its roll");
-    assert_eq!(store.gallery_history().undo_label(), Some("Rename Roll"));
+    assert_eq!(store.history().undo_label(), Some("Rename Roll"));
     assert_eq!(store.set_film(&[b.clone()], Some(film.clone()), "Rename Roll"), 0, "an unchanged roll writes nothing");
-    store.undo(Surface::Gallery);
+    store.undo();
     assert_eq!(read(&b), None, "one undo takes the others back");
     // Twin: `None` ungroups.
     store.set_film(&[b.clone()], Some(film.clone()), "Set Film Stock");
@@ -181,13 +182,13 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_o
     assert_eq!(family(&outside), Some(SeparationFamily::FujiC41), "twin: a frame outside the roll keeps its family");
     assert_eq!(oni_library::folders::roll(&folder), Some(film.clone()));
     assert_eq!(store.marked.take(), Some((folder.clone(), Some(film.clone()))));
-    assert_eq!(store.gallery_history().undo_label(), Some("Make a Roll"));
-    store.undo(Surface::Gallery);
+    assert_eq!(store.history().undo_label(), Some("Make a Roll"));
+    store.undo();
     assert!(frames.iter().all(|p| family(p) == Some(SeparationFamily::FujiC41)), "one undo gives every family back");
     assert_eq!(oni_library::folders::roll(&folder), None, "and takes the marker away");
     assert_eq!(store.marked.take(), Some((folder.clone(), None)));
-    assert!(!store.gallery_history().can_undo(), "one step");
-    store.redo(Surface::Gallery);
+    assert!(!store.history().can_undo(), "one step");
+    store.redo();
     assert_eq!(oni_library::folders::roll(&folder), Some(film.clone()));
 
     // A black-and-white stock writes the marker alone, every family kept.
@@ -198,7 +199,7 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_o
     assert_eq!(store.lay_roll(&frames, Some(marker), |s| s.separation_family = dyes.or(s.separation_family), "Set Film Stock"), 0);
     assert!(frames.iter().all(|p| family(p) == Some(SeparationFamily::KodakC41)));
     assert_eq!(oni_library::folders::roll(&folder), Some(hp5));
-    store.undo(Surface::Gallery);
+    store.undo();
     assert_eq!(oni_library::folders::roll(&folder), Some(film), "the marker alone is a step too");
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -219,16 +220,16 @@ fn a_medal_laid_on_several_photos_undoes_as_one_step_to_each_one_s_own() {
     let written = store.lay_medal(&[a.clone(), b.clone()], Medal::Gold);
     assert!(written.iter().all(|(_, w)| w.is_ok()));
     assert_eq!((medal(&a), medal(&b)), (Medal::Gold, Medal::Gold));
-    assert_eq!(store.gallery_history().undo_label(), Some("Medal on 2 photos"));
-    store.undo(Surface::Gallery);
+    assert_eq!(store.history().undo_label(), Some("Medal on 2 photos"));
+    store.undo();
     assert_eq!((medal(&a), medal(&b)), (Medal::None, Medal::Bronze), "each photo gets its own medal back");
-    store.redo(Surface::Gallery);
+    store.redo();
     assert_eq!((medal(&a), medal(&b)), (Medal::Gold, Medal::Gold));
     // Twin: the medal both already wear opens no step, so undo reaches the one before.
     store.lay_medal(&[a.clone(), b.clone()], Medal::Gold);
-    assert_eq!(store.gallery_history().undo_label(), Some("Medal on 2 photos"));
-    store.undo(Surface::Gallery);
-    store.undo(Surface::Gallery);
+    assert_eq!(store.history().undo_label(), Some("Medal on 2 photos"));
+    store.undo();
+    store.undo();
     assert_eq!(medal(&b), Medal::None);
     let _ = std::fs::remove_dir_all(&dir);
 }

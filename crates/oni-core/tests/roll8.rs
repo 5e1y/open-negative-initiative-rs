@@ -2,7 +2,7 @@
 //! roll is read, never written.
 
 use oni_core::balance::{Outcome, Strategy};
-use oni_core::{Archive, Channel, Command, EditorStore, Family, FieldSet, Knob, PasteCheck, Scan, Surface};
+use oni_core::{Archive, Channel, Command, EditorStore, Family, FieldSet, Knob, PasteCheck, Scan};
 use oni_settings::{PipelineSettings, sidecar};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -120,18 +120,18 @@ fn a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes
         assert_eq!(roll.settings(frame).gains.stops[0], value, "{frame}");
     }
 
-    assert!(store.can_undo(Surface::Editor));
-    store.undo(Surface::Editor);
-    assert!(!store.can_undo(Surface::Editor), "one gesture, one step");
+    assert!(store.can_undo());
+    store.undo();
+    assert!(!store.can_undo(), "one gesture, one step");
     store.flush();
     assert_eq!(moved(&original, &roll.bytes()), Vec::<String>::new());
 
-    store.redo(Surface::Editor);
+    store.redo();
     store.flush();
     assert_eq!(moved(&gestured, &roll.bytes()), Vec::<String>::new());
 
     // Twin: a look field on the same frame writes the open frame alone.
-    store.undo(Surface::Editor);
+    store.undo();
     store.flush();
     store.apply_at(Command::Step { knob: Knob::Exposure, by: 0.3 }, 10.0);
     store.flush();
@@ -156,15 +156,15 @@ fn a_drag_is_one_step_and_one_roll_write() {
     let end = store.settings().density_ceiling;
     assert!((end - start - 0.12).abs() < 1e-4, "{start} {end}");
     assert_eq!(roll.settings(&roll.frames[5]).density_ceiling, end);
-    store.undo(Surface::Editor);
-    assert!(!store.can_undo(Surface::Editor));
+    store.undo();
+    assert!(!store.can_undo());
     assert_eq!(roll.bytes()[&roll.frames[5]], original[&roll.frames[5]]);
 
     // Twin: the same notches spaced past the coalescing window are steps of their own.
     store.apply_at(Command::Step { knob: Knob::DensityCeiling, by: 0.01 }, 5.0);
     store.apply_at(Command::Step { knob: Knob::DensityCeiling, by: 0.01 }, 6.0);
-    store.undo(Surface::Editor);
-    assert!(store.can_undo(Surface::Editor));
+    store.undo();
+    assert!(store.can_undo());
 }
 
 #[test]
@@ -193,9 +193,9 @@ fn a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte() {
         // Twin: the donor's framing differs, and stays behind.
         assert_ne!(after.geometry, donor.geometry);
     }
-    store.undo(Surface::Gallery);
+    store.undo();
     assert_eq!(moved(&snapshot, &roll.bytes()), Vec::<String>::new());
-    store.redo(Surface::Gallery);
+    store.redo();
     let mut expected = targets.clone();
     expected.sort();
     assert_eq!(moved(&snapshot, &roll.bytes()), expected);
@@ -217,7 +217,7 @@ fn paste_to_roll_is_one_editor_step_over_the_whole_roll() {
     for frame in &roll.frames {
         assert_eq!(roll.settings(frame).texture.amount, 0.6, "{frame}");
     }
-    store.undo(Surface::Editor);
+    store.undo();
     store.flush();
     let mut back = moved(&snapshot, &roll.bytes());
     back.retain(|f| *f != roll.frames[1]);
@@ -251,7 +251,7 @@ fn the_balance_key_writes_only_on_a_press_and_one_undo_takes_it_back() {
     assert_eq!(reads.load(std::sync::atomic::Ordering::Relaxed), 3);
     assert_eq!(store.settings().balance_filters, Some([0.3, 0.0, -0.3]));
     assert_eq!(roll.settings(&roll.frames[2]).balance_filters, Some([0.3, 0.0, -0.3]));
-    store.undo(Surface::Editor);
+    store.undo();
     assert_eq!(roll.bytes()[&roll.frames[2]], snapshot[&roll.frames[2]]);
     assert_ne!(store.settings().balance_filters, Some([0.3, 0.0, -0.3]));
     // Twin: an unreadable frame stops the run there, and what read before it stays written.
@@ -276,7 +276,7 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_some());
     assert_eq!(moved(&before, &roll.bytes()), [frame.clone()], "the marked frame's sidecar alone is written");
     assert_eq!(roll.originals(), files, "no original moves, vanishes or changes, nor any other member's");
-    store.undo(Surface::Gallery);
+    store.undo();
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_none());
     assert_eq!(roll.settings(&frame), settings, "the mark and its removal leave the settings untouched");
     // Twin: a member's original moved away is seen, so a trash that moved a file would fail above.
@@ -301,7 +301,7 @@ fn the_bars_reset_keeps_framing_flat_field_and_roll() {
     assert_eq!(blank.scanner, edited.scanner, "the Pro face's reset leaves the scanner's clicks");
     assert_ne!(blank.sharpen, edited.sharpen);
     // Twin: on the Scanner face the clicks are the edit, and go.
-    store.undo(Surface::Editor);
+    store.undo();
     store.scanner_face = true;
     store.apply_at(Command::Reset, 10.0);
     assert_eq!(store.settings().scanner.d, 0);

@@ -3,7 +3,7 @@
 
 use super::units::{Unit, steps};
 use super::there;
-use crate::gallery_history::Move;
+use crate::history::Move;
 use crate::names::Platform;
 use crate::{paths, refusal};
 use oni_i18n::tr;

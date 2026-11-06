@@ -1,5 +1,5 @@
 use super::*;
-use crate::gallery_history::GalleryHistory;
+use crate::history::History;
 use crate::rgb_passes;
 use crate::scratch::Scratch;
 use oni_settings::PipelineSettings;
@@ -250,7 +250,7 @@ fn redo_into_a_folder_made_meanwhile_is_refused() {
     touch(&photo, b"a");
     let planned = plan(std::slice::from_ref(&photo), crate::relink::date("2026:01:14 12:00:00").unwrap(), &parent);
     let made = carry_out(&planned, &rename_new).unwrap();
-    let mut history = GalleryHistory::default();
+    let mut history = History::default();
     history.record_disk(made.disk.clone(), "New Roll");
     let step = history.undo_step().unwrap();
     assert!(take_back(step.disk.as_ref().unwrap(), &rename_new).said.is_none());

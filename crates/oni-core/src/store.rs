@@ -4,10 +4,9 @@
 use crate::balance::{self, Measure, Strategy};
 use crate::command::{Command, Scan};
 use crate::fields::{Family, FieldSet};
-use crate::history::{Companion, History};
 use crate::parameters;
 use crate::presets::Preset;
-use oni_library::gallery_history::{self, GalleryHistory, Marker, Step, Trash};
+use oni_library::history::{self, History, Marker, Step, Trash};
 use oni_library::roll_membership::{self, RollKey};
 use oni_library::{refusal, trash};
 use oni_i18n::{tr, trn};
@@ -30,6 +29,8 @@ mod several;
 mod oni_trash;
 mod scanner;
 mod together;
+
+use writes::{Written, gather};
 
 pub use opening::Unsaved;
 pub use oni_library::roll_folder::{Walk, Walked};
@@ -55,13 +56,6 @@ impl Archive {
     pub fn new(paths: Vec<String>, mosaic: impl Fn(&Path) -> bool + Send + Sync + 'static) -> Archive {
         Archive { paths, mosaic: std::sync::Arc::new(mosaic) }
     }
-}
-
-/// Which undo stack answers: the open frame's in the editor, the gestures on several in the gallery.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Surface {
-    Editor,
-    Gallery,
 }
 
 /// What one command did.
@@ -102,8 +96,10 @@ struct Open {
 pub struct EditorStore {
     open: Option<Open>,
     settings: PipelineSettings,
+    /// The open frame as its last step left it, where its next step starts.
+    recorded: PipelineSettings,
+    /// The session's one undo history, every frame's steps, in the gallery as in the editor.
     history: History,
-    gallery: GalleryHistory,
     archive: Archive,
     pub board: Board,
     /// Open on the Scanner face: the frame adopts it, its Color tab edits `ScannerFinish`, its reset
@@ -138,8 +134,8 @@ impl EditorStore {
         EditorStore {
             open: None,
             settings: PipelineSettings::default(),
+            recorded: PipelineSettings::default(),
             history: History::default(),
-            gallery: GalleryHistory::default(),
             archive,
             board: Board::default(),
             scanner_face: false,
@@ -192,22 +188,16 @@ impl EditorStore {
         self.revision
     }
 
-    pub fn can_undo(&self, surface: Surface) -> bool {
-        match surface {
-            Surface::Editor => self.history.can_undo(),
-            Surface::Gallery => self.gallery.can_undo(),
-        }
+    pub fn can_undo(&self) -> bool {
+        self.history.can_undo()
     }
 
-    pub fn can_redo(&self, surface: Surface) -> bool {
-        match surface {
-            Surface::Editor => self.history.can_redo(),
-            Surface::Gallery => self.gallery.can_redo(),
-        }
+    pub fn can_redo(&self) -> bool {
+        self.history.can_redo()
     }
 
-    pub fn gallery_history(&self) -> &GalleryHistory {
-        &self.gallery
+    pub fn history(&self) -> &History {
+        &self.history
     }
 
     /// `measuredGroups = [:]`: every roll's frames found again on the next ask.
@@ -240,12 +230,13 @@ impl EditorStore {
     }
 
     pub fn record_disk(&mut self, disk: Disk, label: &str) {
-        self.gallery.record_disk(disk, label);
+        self.release();
+        self.history.record_disk(disk, label);
     }
 }
 
-/// Re-exported for the host, which records disk gestures on the same gallery stack.
-pub use gallery_history::Disk;
+/// Re-exported for the host, which records disk gestures on the same history.
+pub use history::Disk;
 
 #[cfg(test)]
 mod tests;

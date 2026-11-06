@@ -1,7 +1,7 @@
 //! The Scanner face on the store: the keypad's commands, which the desktop keys and the phone send
 //! alike, the face switch, and the rule that a gesture on one face never moves the other.
 
-use oni_core::{Archive, Command, EditorStore, Knob, Scan, Surface};
+use oni_core::{Archive, Command, EditorStore, Knob, Scan};
 use oni_keys::{Effect, Letter, Machine};
 use oni_settings::cg::Point;
 use oni_settings::scanner::ScannerClicks;
@@ -118,34 +118,33 @@ fn a_gesture_on_one_face_never_moves_the_other() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// `toggleLab` and `adoptFace`: the switch is one undo step on the open frame; a frame opens on the
-/// face it is opened in, a face changed on opening its first undo step.
+/// `toggleLab`: the switch is one undo step on the open frame; a frame opens on the face it is opened
+/// in, which is its opening and no step, so an undo reaches past it to what a hand did.
 #[test]
 fn the_face_is_one_step_and_a_frame_opens_on_the_face_it_is_opened_in() {
     let (mut store, paths, dir) = fresh("face", 2);
     assert_eq!(store.settings().face, Face::Pro);
     let applied = store.apply(Command::Face(Face::Scanner));
     assert!(!applied.changed.is_empty() && store.settings().face == Face::Scanner && store.scanner_face);
-    assert!(store.can_undo(Surface::Editor));
+    assert!(store.can_undo());
     store.apply(Command::Scan(Scan::Machine(Machine::Frontier)));
     assert_eq!(store.settings().scanner_machine, ScannerMachine::Frontier);
     store.flush();
 
-    // The next frame, stored on Pro, opens on the Scanner face: the adoption is one undo step, which
-    // undoes the face alone and leaves the face in use where it is.
+    // The next frame, stored on Pro, opens on the Scanner face; the undo takes back the machine set
+    // on the frame left, and leaves the face this one opened on.
+    let machine = |p: &str| oni_settings::sidecar::read(Path::new(p), false, true).unwrap().settings.scanner_machine;
     store.open(&paths[1]).unwrap();
     assert_eq!(store.settings().face, Face::Scanner);
-    assert!(store.can_undo(Surface::Editor), "the adopted face is a step");
     store.apply(Command::Undo);
-    assert_eq!(store.settings().face, Face::Pro);
-    assert!(!store.can_undo(Surface::Editor) && store.scanner_face);
+    assert_eq!(store.settings().face, Face::Scanner, "the opening is no step");
+    assert_ne!(machine(&paths[0]), ScannerMachine::Frontier, "the frame left takes its machine back");
     store.apply(Command::Redo);
-    assert_eq!(store.settings().face, Face::Scanner);
+    assert_eq!(machine(&paths[0]), ScannerMachine::Frontier);
     store.flush();
-    // Twin: a frame stored on the face in use opens with nothing to undo.
+    // Twin: a frame stored on the face in use opens on it too.
     store.open(&paths[0]).unwrap();
     assert_eq!(store.settings().face, Face::Scanner);
-    assert!(!store.can_undo(Surface::Editor), "no face changed, no step");
     // On Pro, the frame its sidecar stores on the Scanner face opens on Pro.
     store.apply(Command::Face(Face::Pro));
     store.flush();

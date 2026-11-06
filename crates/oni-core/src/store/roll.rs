@@ -1,10 +1,10 @@
 //! The two gestures that make and unmake a roll: a measure landing on every frame Prepare the Roll
 //! read, and Reset the Roll, its inverse, reaching whole rolls and their contact sheets.
 
-use super::{EditorStore, Settings};
+use super::{EditorStore, Settings, Written, gather};
 use crate::parameters;
 use oni_i18n::trn;
-use oni_library::gallery_history::Trash;
+use oni_library::history::Trash;
 use oni_library::roll_membership::ResetReach;
 use oni_library::{rgb_passes, trash};
 use oni_settings::frame::Geometry;
@@ -46,24 +46,23 @@ pub fn reset_label(frames: usize) -> String {
 
 impl EditorStore {
     /// `landRoll`: the open frame in memory, the others written with their draft cleared, a triplet's
-    /// passes joined to their lead, every frame read but not written losing its draft; one gallery step.
+    /// passes joined to their lead, every frame read but not written losing its draft; one step.
     pub fn land_roll(&mut self, written: &[WrittenFrame], prepared: &[String]) -> usize {
+        self.release();
         self.measured.clear();
         let open = self.path().map(str::to_string);
         let mut before = Settings::new();
         let mut after = Settings::new();
         let handled: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
+        let mut beside = Written::default();
+        // The frames landed, never counting the passes riding with them.
+        let mut frames = 0;
         for (path, was, now) in written {
             if Some(path) == open.as_ref() {
-                if !self.takes_hands() {
-                    continue;
+                if self.takes_hands() {
+                    beside = self.lay_open(now.clone(), &handled);
+                    frames += usize::from(now.pass_of.is_none());
                 }
-                before.insert(path.clone(), self.settings.clone());
-                after.insert(path.clone(), now.clone());
-                let at = self.now();
-                self.replace(now.clone());
-                self.last_change = Some(at);
-                self.settle_beside(at, &handled);
                 continue;
             }
             let options = WriteOptions { roll_draft: Some(None), ..WriteOptions::default() };
@@ -71,6 +70,7 @@ impl EditorStore {
                 Ok(()) => {
                     before.insert(path.clone(), was.clone());
                     after.insert(path.clone(), now.clone());
+                    frames += usize::from(now.pass_of.is_none());
                 }
                 Err(e) => self.failure = Some(oni_library::refusal::said(&e)),
             }
@@ -100,19 +100,20 @@ impl EditorStore {
         for path in prepared.iter().filter(|p| !measured.contains(p)) {
             let _ = sidecar::set_roll_draft(None, Path::new(path), self.mosaic(path));
         }
-        let frames = before.keys().filter(|p| after.get(*p).is_some_and(|s| s.pass_of.is_none())).count();
-        self.gallery.record(&before, &after, &measure_label(frames), None);
+        let mut step = (before, after);
+        gather(&mut step, beside);
+        self.history.record(&step.0, &step.1, &measure_label(frames), None);
         frames
     }
 
     /// `resetToDefault`: every frame reached back to unconverted, a triplet split into its three
-    /// shots on the crop drawn, the rolls' sheets to the ONI Trash, all as one gallery step.
+    /// shots on the crop drawn, the rolls' sheets to the ONI Trash, all as one step.
     pub fn reset_to_default(&mut self, reach: &ResetReach) -> usize {
+        self.release();
         let open = self.path().map(str::to_string);
         let frames: Vec<String> = reach.frames.iter().cloned().collect();
         let files: BTreeSet<String> = rgb_passes::expanded(&frames).into_iter().collect();
-        let mut before = Settings::new();
-        let mut after = Settings::new();
+        let mut step = Written::default();
         // The open frame's passes are read before it is blanked.
         let mut framings: HashMap<String, Geometry> = HashMap::new();
         if let Some(current) = open.as_ref().filter(|p| files.contains(*p)) {
@@ -123,24 +124,16 @@ impl EditorStore {
                     }
                 }
             }
-            let blank = defaulted(&self.settings, None);
-            if blank != self.settings && self.takes_hands() {
-                before.insert(current.clone(), self.settings.clone());
-                after.insert(current.clone(), blank.clone());
-                let at = self.now();
-                self.replace(blank);
-                self.last_change = Some(at);
+            if self.takes_hands() {
                 let handled: Vec<String> = files.iter().cloned().collect();
-                self.settle_beside(at, &handled);
+                step = self.lay_open(defaulted(&self.settings, None), &handled);
             }
         }
         let others: Vec<String> = files.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         for (pass, framing) in rgb_passes::framings(&others) {
             framings.entry(pass).or_insert(framing);
         }
-        let (was, now) = self.modify(&others, |path, loaded| Some(defaulted(loaded, framings.get(path).copied())));
-        before.extend(was);
-        after.extend(now);
+        gather(&mut step, self.modify(&others, |path, loaded| Some(defaulted(loaded, framings.get(path).copied()))));
         for id in &reach.references {
             self.measured.remove(&oni_library::roll_membership::RollKey::Measured(*id));
         }
@@ -152,7 +145,7 @@ impl EditorStore {
             self.took(&binned, true);
         }
         let marks = Trash { paths: binned.done.iter().cloned().collect(), marked: true };
-        self.gallery.record(&before, &after, &reset_label(reach.frames.len()), Some(marks));
+        self.history.record(&step.0, &step.1, &reset_label(reach.frames.len()), Some(marks));
         reach.frames.len()
     }
 }

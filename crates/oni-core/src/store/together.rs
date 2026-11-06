@@ -88,7 +88,7 @@ impl EditorStore {
 
     /// Each frame together as it shows now: as written, with the step still under the hand laid on it.
     pub fn together_live(&self) -> Vec<(String, PipelineSettings)> {
-        let fields = shared(self.history.current(), &self.settings);
+        let fields = shared(&self.recorded, &self.settings);
         let paths = self.together.paths.iter().zip(&self.together.held);
         paths
             .map(|(path, held)| {
@@ -99,21 +99,19 @@ impl EditorStore {
             .collect()
     }
 
-    /// The fields this step moved, but each frame's own, laid on the frames edited together.
-    pub(super) fn propagate_together(&mut self, before: &PipelineSettings, after: &PipelineSettings, serial: u64, handled: &[String]) {
+    /// The fields this step moved, but each frame's own, laid on the frames edited together but those
+    /// of `handled`; what it wrote.
+    pub(super) fn propagate_together(&mut self, before: &PipelineSettings, after: &PipelineSettings, handled: &[String]) -> Written {
         let fields = shared(before, after);
         let others: Vec<String> = self.together.paths.iter().filter(|p| !handled.contains(p)).cloned().collect();
         if others.is_empty() || fields.is_empty() {
-            return;
+            return Written::default();
         }
-        let (was, now) = self.modify(&others, |_, loaded| {
+        self.modify(&others, |_, loaded| {
             let mut out = loaded.clone();
             laid(&fields, after, loaded).iter().for_each(|f| f.carry(after, &mut out));
             (out != *loaded).then_some(out)
-        });
-        if !was.is_empty() {
-            self.history.attach(Companion { before: was, after: now }, serial);
-        }
+        })
     }
 }
 
@@ -151,7 +149,7 @@ mod tests {
         assert_eq!(read(&b).face, store.settings().face, "on the face the step was taken on, or it would show none of it");
         assert_eq!(read(&c).vignette.stops, -0.7, "twin: a frame left out keeps its value");
         assert_eq!(read(&c).face, oni_settings::Face::Scanner, "and its face");
-        store.undo(Surface::Editor);
+        store.undo();
         assert_eq!(read(&b).vignette.stops, -0.7, "one undo takes the others back");
         assert_eq!(store.together_live()[0].1.vignette.stops, -0.7, "and shows them back");
         let _ = std::fs::remove_dir_all(&dir);
@@ -179,17 +177,17 @@ mod tests {
     }
 
     #[test]
-    fn a_paste_on_frames_together_is_undone_from_the_gallery_to_their_own_settings() {
+    fn a_paste_on_frames_together_is_one_step_undone_to_each_one_s_own_settings() {
         let own = |stops| PipelineSettings { vignette: oni_settings::blocks::Vignette { stops, ..Default::default() }, ..PipelineSettings::default() };
         let (mut store, dir, [a, b, c]) = three("together-paste", own(-0.7), own(-0.4));
         store.set_together(vec![b.clone(), c.clone()]);
         store.board.settings = Some(codec::encode_settings(&own(0.2)).unwrap());
         store.paste_settings(&[a.clone(), b.clone()]);
         assert_eq!((read(&b).vignette.stops, read(&c).vignette.stops), (0.2, 0.2), "a frame together left out of the targets takes the step");
-        store.undo(Surface::Gallery);
-        assert_eq!(read(&b).vignette.stops, -0.7, "the gallery undo lays its own settings back, not a mix");
-        // Twin: the frame no target named is the editor's step, which takes it back.
-        assert_eq!(read(&c).vignette.stops, 0.2);
+        store.undo();
+        assert_eq!(read(&b).vignette.stops, -0.7, "the undo lays its own settings back, not a mix");
+        assert_eq!(read(&c).vignette.stops, -0.4, "and the frame no target named, in the same step");
+        assert!(!store.can_undo(), "one step");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -228,7 +226,7 @@ mod tests {
         let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
         assert_eq!([read(&b).face, read(&c).face], [oni_settings::Face::Scanner; 2], "another roll's frame takes the face too");
         assert_eq!(live, [oni_settings::Face::Scanner; 2], "and shows it");
-        store.undo(Surface::Editor);
+        store.undo();
         assert_eq!(read(&b).face, oni_settings::Face::Pro, "one undo takes it back");
         // Twin: a roll field moved on the Scanner face leaves another roll's frame on its own face.
         let mut next = store.settings().clone();

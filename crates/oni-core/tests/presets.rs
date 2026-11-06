@@ -1,8 +1,8 @@
-//! Applying a preset through the store: its rows on every target, the framing kept, one gallery
-//! step for the gesture and one editor step for the open frame, and no write beyond the targets.
+//! Applying a preset through the store: its rows on every target, the framing kept, one step for
+//! the gesture, the open frame in it, and no write beyond the targets.
 
 use oni_core::presets::{Preset, Tint};
-use oni_core::{Archive, Command, EditorStore, Surface};
+use oni_core::{Archive, Command, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{Id, PipelineSettings};
@@ -56,30 +56,30 @@ fn a_preset_lays_its_rows_on_every_target_as_one_step() {
     }
     let open = store.settings();
     assert_eq!((open.sharpen.amount, open.geometry.angle), (2.0, -2.0), "the framing is never carried");
-    assert_eq!(store.gallery_history().undo_label(), Some("Apply \u{201c}Soft\u{201d} to 3 photos"));
+    assert_eq!(store.history().undo_label(), Some("Apply \u{201c}Soft\u{201d} to 3 photos"));
     // Twin: a frame outside the targets is never written.
     assert_eq!(on_disk(&frames[3]).sharpen, framed.sharpen);
 
-    // One gallery undo takes the whole gesture back, on disk and on the open frame.
-    store.undo(Surface::Gallery);
+    // One undo takes the whole gesture back, on disk and on the open frame.
+    store.undo();
     assert_eq!(store.settings().sharpen, framed.sharpen);
     for f in &targets[1..] {
         assert_eq!(on_disk(f).sharpen, framed.sharpen, "{f}");
     }
-    store.redo(Surface::Gallery);
+    store.redo();
     assert_eq!(on_disk(&targets[1]).sharpen.amount, 2.0);
-    // The open frame alone: one editor step, one gallery step named after the photo count.
-    let _ = store.undo(Surface::Gallery);
+    // The open frame alone: one step, named after the photo count.
+    let _ = store.undo();
     assert_eq!(store.apply_preset(&preset, &targets[..1], None), 1);
-    assert_eq!(store.gallery_history().undo_label(), Some("Apply \u{201c}Soft\u{201d}"));
-    store.undo(Surface::Editor);
-    assert_eq!(store.settings().sharpen, framed.sharpen, "one editor undo takes the preset off");
+    assert_eq!(store.history().undo_label(), Some("Apply \u{201c}Soft\u{201d}"));
+    store.undo();
+    assert_eq!(store.settings().sharpen, framed.sharpen, "one undo takes the preset off");
 
     // Twin: a preset carrying nothing writes nothing and opens no step.
     let empty = Preset { parameters: BTreeSet::new(), ..preset };
-    let label = store.gallery_history().undo_label().map(str::to_string);
+    let label = store.history().undo_label().map(str::to_string);
     assert_eq!(store.apply_preset(&empty, &targets, None), 0);
-    assert_eq!(store.gallery_history().undo_label().map(str::to_string), label);
+    assert_eq!(store.history().undo_label().map(str::to_string), label);
     let _ = std::fs::remove_dir_all(&dir);
 }
 

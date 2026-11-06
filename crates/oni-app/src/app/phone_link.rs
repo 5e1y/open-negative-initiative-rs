@@ -144,6 +144,12 @@ impl Ctl {
     pub(super) fn phone_event(self: &Rc<Self>, event: HostEvent, receipt: Receipt) {
         use oni_link::Command as Key;
         let slider = matches!(&event, HostEvent::Command { command: Key::StepParam { .. } | Key::ResetParam { .. } | Key::SetParam { .. }, .. });
+        // The phone's undo takes the one history's step, which lands here as the keys' own does.
+        let stepped = match &event {
+            HostEvent::Command { command: Key::Undo, .. } => Some(true),
+            HostEvent::Command { command: Key::Redo, .. } => Some(false),
+            _ => None,
+        };
         let sliders = self.phone_sliders();
         let was = self.state.borrow().store.settings().flat_field.clone();
         let (out, changed) = {
@@ -166,6 +172,9 @@ impl Ctl {
         } else {
             // A drag's release records its step without a change: the bar's undo follows it.
             self.publish_bar();
+        }
+        if let Some(undo) = stepped {
+            self.stepped(undo);
         }
         match out {
             Some(Outward::Paired { phone, name }) => {

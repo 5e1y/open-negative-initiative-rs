@@ -143,7 +143,7 @@ impl Ctl {
     /// follow it too, so an undo reaches the files under their new names.
     pub(in crate::app) fn followed_outside(self: &Rc<Self>, moves: &[Move]) {
         if let Some(store) = self.state.borrow_mut().store.editor() {
-            store.follow_gallery(moves);
+            store.follow_history(moves);
         }
         self.followed(moves);
     }

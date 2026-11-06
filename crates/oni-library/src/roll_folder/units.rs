@@ -2,7 +2,7 @@
 //! pair, each with ONI's sidecar and the sidecars other apps keep beside it. It moves as one.
 
 use super::there;
-use crate::gallery_history::Move;
+use crate::history::Move;
 use crate::{paths, rgb_passes};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;

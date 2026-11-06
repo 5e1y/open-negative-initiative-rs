@@ -1,9 +1,9 @@
 //! The Swift app's self-checks on the editing model, each on its own adversarial values and with its
 //! twin, a variant built to fail when the property it guards is broken.
 
-use oni_core::history::History;
 use oni_core::parameters::{self, EXCLUDED};
 use oni_core::presets::{self, Preset, Tint};
+use oni_library::history::History;
 use oni_settings::axis::density_axis;
 use oni_settings::cg::{Point, Rect};
 use oni_settings::curves::SaturationCurve;
@@ -12,7 +12,7 @@ use oni_settings::levels::LevelsSet;
 use oni_settings::settings::look_settings;
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use serde_json::Value;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 fn scratch(name: &str) -> PathBuf {
@@ -50,23 +50,27 @@ fn a_stroke_is_one_step_and_never_travels_with_a_look() {
     assert!(EXCLUDED.iter().any(|(field, _)| *field == "corrections"));
     let id = Id::parse("11111111-2222-3333-4444-555555555555").unwrap();
     let stroke = [Point::new(0.12, 0.34), Point::new(0.56, 0.78)];
-    let mut history = History::default();
-    for count in 1..=3 {
-        let mut next = history.current().clone();
-        let points = stroke.iter().cycle().take(count).copied().collect();
-        next.corrections = vec![Correction { id, stroke: points, radius: 9.5 }];
-        history.record(next, 1000.0 + count as f64 * 0.05);
-    }
-    assert_eq!(history.len(), 2, "a stroke of several points is one step");
-    assert!(history.undo().is_some_and(|s| s.corrections.is_empty()));
+    // The stroke drawn point by point, `gap` seconds apart; the steps it leaves.
+    let drawn = |gap: f64| {
+        let mut history = History::default();
+        let mut current = PipelineSettings::default();
+        for count in 1..=3 {
+            let mut next = current.clone();
+            next.corrections = vec![Correction { id, stroke: stroke.iter().cycle().take(count).copied().collect(), radius: 9.5 }];
+            let one = |s: &PipelineSettings| BTreeMap::from([("/a".to_string(), s.clone())]);
+            history.record_edit("/a", one(&current), one(&next), 1000.0 + count as f64 * gap);
+            current = next;
+        }
+        let first = history.undo().expect("a step");
+        let mut steps = 1;
+        while history.undo().is_some() {
+            steps += 1;
+        }
+        (steps, first["/a"].corrections.is_empty())
+    };
+    assert_eq!(drawn(0.05), (1, true), "a stroke of several points is one step, undone whole");
     // Twin: the same points drawn past the coalescing window are three steps.
-    let mut slow = History::default();
-    for count in 1..=3 {
-        let mut next = slow.current().clone();
-        next.corrections = vec![Correction { id, stroke: stroke.iter().cycle().take(count).copied().collect(), radius: 9.5 }];
-        slow.record(next, 1000.0 + count as f64);
-    }
-    assert_eq!(slow.len(), 4);
+    assert_eq!(drawn(1.0).0, 3);
 }
 
 // MARK: - PresetTint.selfCheck
