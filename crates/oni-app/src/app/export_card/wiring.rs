@@ -176,7 +176,7 @@ impl Ctl {
                 "camera" => r.metadata.camera = text,
                 "lens" => r.metadata.lens = text,
                 "iso" => r.metadata.iso = text,
-                "date" => r.metadata.date = text,
+                "date" => r.metadata.date = super::dated::exif(&text),
                 "artist" => r.metadata.artist = text,
                 "copyright" => r.metadata.copyright = text,
                 _ => {}

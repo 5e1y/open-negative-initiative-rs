@@ -6213,5 +6213,33 @@
     "title": "The Scanner face's sliders read what each key moves, in a true unit",
     "status": "done",
     "detail": "Evaluation s-0abd2d65 (UI Clarity): the Scanner face's D, C, M, Y and TEMP read bare counts with no unit or step size. The Lab's screen still counts the keypad's points, as a minilab's does; each slider under it now reads what its key moves. D, C, M and Y read the light in stops, from the measured Frontier click on the key's own channel (D the mean of the three): a press moves D 0.06 EV, C 0.03, M 0.03, Y 0.04, so +1.5 on D reads +0.17 EV. TEMP reads its share of the machine's warm or cool look, 5% a press, after the side it leans to: Warm +20%. A number typed over a letter's readout finds its steps through the exact size of one step (`Readout::scaled`). Checks: lab::sliders::a_letter_reads_what_it_moves_in_a_true_unit (twins: the screen's count says no unit; C read on green reads nothing), lab::sliders::a_number_typed_over_a_scanner_readout_finds_its_steps, window scanner."
+  },
+  {
+    "id": 1260,
+    "type": "fix",
+    "title": "The export summary at the panel's text size",
+    "status": "done",
+    "detail": "Evaluation (UI Typography): the export summary's four facts (bits, size, estimated weight) were set in the value face, 11 pt, a step smaller than every other line of the panel. They now take the label size, as the note under them. The export_panel window check measures them as tall as a field's label; its twin, the summary set back in the value face, fails, and the subtitle's smaller face measures smaller."
+  },
+  {
+    "id": 1261,
+    "type": "fix",
+    "title": "The space's note stands in no conditional block, so Quality keeps one step under the profile keys",
+    "status": "done",
+    "detail": "Evaluation (UI Spacing): Quality stood 3 pt under Load a Profile…, where other groups keep 16 pt. Measured on the headless window: the Space field and its two-line note sat in SpaceField's `if !compact` block, and Slint 1.18.1 sizes a block shown on a condition with the wrapped words inside it on one line, so the field was given 16 pt less than it drew and the keys ran onto Quality; the same field shown on no condition is sized right. The panel now lays the Space field on no condition, its tabs shared with the chip as SpaceTabs; the profile's trouble and the choice still to make, which wrapped in conditional blocks of their own, are the one note under the tabs, written by Rust (space-note replaces purpose, profile-note and pending-note), so a pending Custom no longer shows P3's purpose; the news badge leaves no empty row and gap when there is none; the chip's popover shows the tabs, their note and both profile keys in every space. The export_panel check asserts one step from the two-line note to the keys and from the keys to Quality, on P3 and on Custom; its twin, the field put back in a conditional block of SpaceField, fails."
+  },
+  {
+    "id": 1262,
+    "type": "fix",
+    "title": "The export's EXIF fields lie on the panel's ground, where their faces show",
+    "status": "done",
+    "detail": "Evaluation (UI Clarity): under the picture the placeholder 'Your name' read as a value. The fields stood on the canvas card, whose ground is the fields' own face colour, so no face showed and a placeholder sat like a fact in a table. Each line's eight fields now lie on a flat rounded block of the panel's ground (Surface gains `rounded`, Radius.card), as every other field of the app does, so each face shows dark and a placeholder reads as the hint inside it. The export_panel check reads the drawn pixels: the Artist field's face differs from the ground beside it; twin: the canvas has the face's colour, and the block set on it fails the check."
+  },
+  {
+    "id": 1263,
+    "type": "fix",
+    "title": "The export's date reads 2026-09-14 16:46:19, the file keeps EXIF's colons",
+    "status": "done",
+    "detail": "Evaluation (UI Clarity): the Date field showed EXIF's raw 2026:09:14 16:46:19. The field now shows and takes the date dashed, as the app names its contact sheets, while the sidecar and the file keep EXIF's form (export_card::dated): a date typed dashed is written with colons, one pasted in EXIF's form is kept, anything else is left as typed. A unit test with its twins (half a date, a day-first date, words, the time's colons untouched), and the export_panel check types a dashed date through the field's callback, reads EXIF's form in the row and the dashed one back in the line."
   }
 ]

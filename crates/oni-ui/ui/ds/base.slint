@@ -232,10 +232,13 @@ export component VStack inherits VerticalLayout {
     padding: Tones.gap(root.inset);
 }
 
-// A plain surface: the window's ground, the canvas's dark or a photo's well.
+// A plain surface: the window's ground, the canvas's dark or a photo's well; `rounded` as a card, a
+// flat block of the panel's ground set on the canvas.
 export component Surface inherits Rectangle {
     in property <Ground> ground: Ground.ground;
+    in property <bool> rounded;
     background: Tones.ground(root.ground);
+    border-radius: root.rounded ? Radius.card : 0px;
 }
 
 // The canvas card: rounded, darker while a frame is cropped. Its content is not clipped to the round:

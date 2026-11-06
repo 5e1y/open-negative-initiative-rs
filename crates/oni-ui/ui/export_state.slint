@@ -52,13 +52,13 @@ export global Exporting {
     in property <int> lit-preset: -1;
     // 0 to 3 the built-in spaces, 4 Custom.
     in-out property <int> space-tab: 1;
-    in property <string> purpose;
+    // The one note under the space's tabs: a profile's trouble, the choice still to make, else what
+    // the space is for.
+    in property <string> space-note;
     in property <bool> on-profile;
     in property <bool> pending;
     in property <[string]> profiles;
     in property <int> profile;
-    in property <string> profile-note;
-    in property <string> pending-note;
     in property <bool> colour-only;
     in property <string> edited-in;
     in property <bool> compress: true;

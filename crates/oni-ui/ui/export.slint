@@ -7,59 +7,67 @@ import { Canvas } from "canvas_state.slint";
 export { ExportLine, PaperRow, SheetTile, Exporting }
 
 // `FrameFields`: the file name with its extension, then the EXIF the file will carry, in two columns
-// of four under the picture.
-component FrameFields inherits HorizontalLayout {
+// of four under the picture, on the panel's ground: on the canvas's, no field's face would show.
+component FrameFields inherits VerticalLayout {
     in property <ExportLine> line;
     in property <int> at;
     in property <length> column;
-    spacing: Space.l;
-    VerticalLayout {
-        width: root.column;
-        spacing: FormStyle.row-gap;
-        Field { layout: FieldLayout.column;
-            label: @tr("Name");
-            TextField {
-                name: @tr("Name");
-                value: root.line.name;
-                suffix: Exporting.extension;
-                enabled: root.line.ready;
-                edited(t) => { Exporting.edited(root.at, "name", t); }
+    padding-top: Space.s;
+    Surface {
+        rounded: true;
+        HorizontalLayout {
+            padding: Space.m;
+            spacing: Space.l;
+            VerticalLayout {
+                width: root.column;
+                spacing: FormStyle.row-gap;
+                Field { layout: FieldLayout.column;
+                    label: @tr("Name");
+                    TextField {
+                        name: @tr("Name");
+                        value: root.line.name;
+                        suffix: Exporting.extension;
+                        enabled: root.line.ready;
+                        edited(t) => { Exporting.edited(root.at, "name", t); }
+                    }
+                }
+                Field { layout: FieldLayout.column;
+                    label: @tr("Camera");
+                    TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+                }
+                Field { layout: FieldLayout.column;
+                    label: @tr("Lens");
+                    TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
+                }
+                Field { layout: FieldLayout.column;
+                    label: @tr("Film stock");
+                    Picker {
+                        value: root.line.film == "" ? @tr("Choose…") : root.line.film;
+                        open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
+                    }
+                }
             }
-        }
-        Field { layout: FieldLayout.column;
-            label: @tr("Camera");
-            TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
-        }
-        Field { layout: FieldLayout.column;
-            label: @tr("Lens");
-            TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
-        }
-        Field { layout: FieldLayout.column;
-            label: @tr("Film stock");
-            Picker {
-                value: root.line.film == "" ? @tr("Choose…") : root.line.film;
-                open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
+            VerticalLayout {
+                width: root.column;
+                spacing: FormStyle.row-gap;
+                Field { layout: FieldLayout.column;
+                    label: @tr("ISO");
+                    TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+                }
+                // Shown and typed as a person writes a date; Rust keeps EXIF's colons in the file.
+                Field { layout: FieldLayout.column;
+                    label: @tr("Date");
+                    TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026-09-05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+                }
+                Field { layout: FieldLayout.column;
+                    label: @tr("Artist");
+                    TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+                }
+                Field { layout: FieldLayout.column;
+                    label: @tr("Copyright");
+                    TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
+                }
             }
-        }
-    }
-    VerticalLayout {
-        width: root.column;
-        spacing: FormStyle.row-gap;
-        Field { layout: FieldLayout.column;
-            label: @tr("ISO");
-            TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
-        }
-        Field { layout: FieldLayout.column;
-            label: @tr("Date");
-            TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
-        }
-        Field { layout: FieldLayout.column;
-            label: @tr("Artist");
-            TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
-        }
-        Field { layout: FieldLayout.column;
-            label: @tr("Copyright");
-            TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
         }
     }
 }
@@ -101,8 +109,8 @@ component SheetPreview inherits Rectangle {
 export component ExportColumn inherits Scroller {
     property <length> room-width: self.width - 2 * Space.l;
     property <length> room-height: self.height - 2 * Space.l;
-    // `FrameFields`' four rows, after a gap under the caption.
-    property <length> fields-height: Space.s + 4 * FieldStyle.height + 3 * FormStyle.row-gap;
+    // `FrameFields`' four rows inside their ground's padding, after a gap under the caption.
+    property <length> fields-height: Space.s + 2 * Space.m + 4 * FieldStyle.height + 3 * FormStyle.row-gap;
     // A lone photo fills the room: what its caption and its fields leave of the height.
     property <length> picture-height: self.room-height - FormStyle.caption - self.fields-height;
     // Several photos on one sheet: the sheet itself in place of their lines.
@@ -132,7 +140,7 @@ export component ExportColumn inherits Scroller {
                 }
                 // As tall before the size lands as after.
                 Label { height: FormStyle.caption; text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
-                FrameFields { line: line; at: i; column: (root.room-width - Space.l) / 2; padding-top: Space.s; }
+                FrameFields { line: line; at: i; column: (root.room-width - 2 * Space.m - Space.l) / 2; }
             }
         }
     }
@@ -152,31 +160,20 @@ component QualitySlider inherits Slider {
     step(f, d) => { Exporting.quality-step(d); }
 }
 
-// `ExportSpaceField`: four matrix spaces or an installed ICC profile; the chip shows it compact.
-export component SpaceField inherits VerticalLayout {
-    in property <bool> compact;
+// The four matrix spaces and Custom, an installed ICC profile, as the panel and the chip offer them.
+component SpaceTabs inherits Tabs {
+    tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
+    selected: Exporting.space-tab;
+    picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
+}
+
+// `ExportSpaceField`'s profile: the one Custom converts into or the choice still to make, then the keys
+// that load or fetch one; the chip's adds the colour-only switch.
+component SpaceField inherits VerticalLayout {
+    in property <bool> chip;
     // Asked before a key opens a window of its own, so a popover holding the field closes first.
     callback dismiss();
     spacing: FormStyle.gap;
-    if !root.compact: HorizontalLayout {
-        alignment: start;
-        if News.space != "": Badge { tone: BadgeTone.seal; text: News.space; note: News.space-note; read => { News.read("space.1.3.1"); } }
-    }
-    if !root.compact: Field {
-        label: @tr("Space");
-        help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
-        Tabs {
-            tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-            selected: Exporting.space-tab;
-            picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
-        }
-        Label { role: TextRole.note; text: Exporting.purpose; }
-    }
-    if root.compact: Tabs {
-        tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-        selected: Exporting.space-tab;
-        picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
-    }
     if Exporting.on-profile: Field {
         label: @tr("Profile");
         Picker {
@@ -185,9 +182,8 @@ export component SpaceField inherits VerticalLayout {
             current: Exporting.profile;
             chosen(i) => { Exporting.profile-picked(i); }
         }
-        if Exporting.profile-note != "": Label { role: TextRole.note; text: Exporting.profile-note; }
     }
-    if Exporting.on-profile && root.compact: Toggle {
+    if Exporting.on-profile && root.chip: Toggle {
         label: @tr("Show only colour variation (not recommended)");
         wrap: true;
         on: Exporting.colour-only;
@@ -204,9 +200,8 @@ export component SpaceField inherits VerticalLayout {
                 Exporting.pending-picked(i);
             }
         }
-        Label { role: TextRole.note; text: Exporting.pending-note; }
     }
-    if !root.compact || Exporting.on-profile || Exporting.pending: ButtonGroup {
+    ButtonGroup {
         plate: true;
         align: GroupAlign.fill;
         Button { size: ButtonSize.plate; text: @tr("Load a Profile…"); fills: true; clicked => { root.dismiss(); Exporting.load-profile(); } }
@@ -263,6 +258,18 @@ export component ExportPanel inherits Surface {
                         picked(i) => { Exporting.format = i; Exporting.format-picked(i); }
                     }
                 }
+                if News.space != "": HorizontalLayout {
+                    alignment: start;
+                    Badge { tone: BadgeTone.seal; text: News.space; note: News.space-note; read => { News.read("space.1.3.1"); } }
+                }
+                // No note stands in a block shown on a condition: Slint 1.18 sizes such a block with its
+                // wrapped words on one line, and what it draws past that runs over the next group.
+                Field {
+                    label: @tr("Space");
+                    help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
+                    SpaceTabs { }
+                    Label { role: TextRole.note; text: Exporting.space-note; }
+                }
                 SpaceField { }
                 if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
                 if Exporting.format == 0: Field {
@@ -292,14 +299,15 @@ export component ExportPanel inherits Surface {
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
                     Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
+                // At the panel's text size: a smaller one would be a step of its own in the type scale.
                 Inset {
                     HorizontalLayout {
-                        Label { text: Exporting.bits; role: TextRole.value; horizontal-stretch: 1; }
-                        Label { text: Exporting.dims; role: TextRole.value; }
+                        Label { text: Exporting.bits; horizontal-stretch: 1; }
+                        Label { text: Exporting.dims; }
                     }
                     HorizontalLayout {
-                        Label { text: Exporting.weight-label; role: TextRole.value; horizontal-stretch: 1; }
-                        Label { text: Exporting.weight; role: TextRole.value; }
+                        Label { text: Exporting.weight-label; horizontal-stretch: 1; }
+                        Label { text: Exporting.weight; }
                     }
                     if Exporting.low-precision != "": Label { role: TextRole.note; tone: Tone.warning; text: Exporting.low-precision; }
                     Label { role: TextRole.note; text: @tr("EXIF as set beside each photo; nothing of the scanner unless left there"); }
@@ -324,7 +332,7 @@ export component ExportPanel inherits Surface {
     }
 }
 
-// The Working Space chip at the canvas's top edge, opening the compact space field.
+// The Working Space chip at the canvas's top edge, opening the space's tabs, its note and its profile.
 export component SpaceChip inherits Picker {
     face: PickerFace.chip;
     prefix: Exporting.chip-title;
@@ -336,7 +344,12 @@ export component SpaceChip inherits Picker {
         x: (root.width - FormStyle.panel-width) / 2;
         y: root.height;
         Label { text: @tr("Working Space"); role: TextRole.section; }
-        SpaceField { compact: true; dismiss => { chooser.close(); } }
+        VerticalLayout {
+            spacing: FormStyle.row-gap;
+            SpaceTabs { }
+            Label { role: TextRole.note; text: Exporting.space-note; }
+        }
+        SpaceField { chip: true; dismiss => { chooser.close(); } }
     }
 }
 
