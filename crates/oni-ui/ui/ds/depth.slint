@@ -25,10 +25,10 @@ export enum KeycapVariant { small, mini }
 
 // Swift's `KeycapStyle`, the physical subset: a lit frustum (four flat walls, a dished face) over a socket.
 export global Depth {
-    // The light: azimuth from +x counter-clockwise, elevation above the plane, in degrees; high, so the
-    // walls stay near the face's shade and a cap reads as a step up rather than a gloss.
+    // The light: azimuth from +x counter-clockwise, elevation above the plane, in degrees; higher than
+    // Swift's 33, so the walls stay near the face's shade, yet low enough to light the top wall at a glance.
     in-out property <float> azimuth: 100;
-    in-out property <float> elevation: 50;
+    in-out property <float> elevation: 40;
     in-out property <float> ambient: 0.25;
     in-out property <float> diffuse: 1;
     // 1 divides every shade by the flat face's, so the face keeps the albedo and the walls move around it.
@@ -38,7 +38,7 @@ export global Depth {
     in-out property <float> wall-bottom: 12;
     in-out property <float> wall-side: 8;
     in-out property <float> rise: 6;
-    in-out property <float> dish: 2;
+    in-out property <float> dish: 3;
     in-out property <length> corner: 16px;
     in-out property <length> face-corner: 14px;
     // The cap's cast shadow at rest, none where Swift's is 0.2 at 10 pt; a press flattens it.
@@ -46,7 +46,7 @@ export global Depth {
     in-out property <length> shadow-blur: 8px;
     in-out property <length> shadow-y: 10px;
     // The bottom wall's shade moved toward the face's: 0 is Swift's darker foot.
-    in-out property <float> bottom-lift: 0.6;
+    in-out property <float> bottom-lift: 0.5;
     // How far a press sinks the cap, how much of a press a hover shows; the reference's two curves,
     // 0.1 s down and 0.02 s up, and the 0.14 s a tap is held down for.
     in-out property <length> travel: 1px;
@@ -57,7 +57,7 @@ export global Depth {
     in-out property <float> scale-pressed: 0.95;
     // The walls' seam blur, and the socket's rim at rest and pressed with its softness.
     in-out property <float> seam-blur: 3;
-    in-out property <float> socket-rest: 1.5;
+    in-out property <float> socket-rest: 2;
     in-out property <float> socket-pressed: 6;
     in-out property <float> socket-softness: 0.5;
     // `Outward`, Swift's `dsFloating` (DSPopover.swift:89) at half its strength (owner's call): a lit rim along
@@ -85,8 +85,8 @@ export global Depth {
     // How far the lip reaches under a well's bounds: what a clipping container leaves below its last child.
     out property <length> lip-reach: well-lip-y + 1px;
     // A scale on every wall run and on the rise, so the whole relief turns up or down at once: the walls
-    // at 0.6 of Swift's, a quieter cap kept for the few keys that wear one.
-    in-out property <float> relief: 0.6;
+    // at 0.8 of Swift's, quieter than its cap yet read on the dark ground at a glance.
+    in-out property <float> relief: 0.8;
 
     // The light's direction, a unit vector; y grows downwards as the screen does.
     public pure function lx() -> float { cos(elevation * 1deg) * cos(azimuth * 1deg) }

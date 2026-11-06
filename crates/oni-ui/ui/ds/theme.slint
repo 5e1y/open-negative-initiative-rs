@@ -162,8 +162,9 @@ export global ButtonStyle {
     out property <length> lamp: DS.control-lamp-size;
     // A flat key's face, the keycap's grey laid flat; a plate of flat keys is one such face.
     out property <color> face: Colour.raised;
-    // The lit face of a key that is on, the accent sunk into the ground, on a flat key and a cap alike.
-    out property <color> on: Colour.accent.mix(Colour.ground, 0.4);
+    // The lit face of a key that is on, a flat key's or a cap's: lit as a selected row is, never tinted,
+    // so the accent stays the view's one primary.
+    out property <color> on: Colour.raised.mix(Colour.white, 1 - Colour.row-selected.alpha / 255);
     // The hand's light over a face, and its press, a step brighter.
     out property <color> veil: Colour.hover;
     out property <color> veil-pressed: #ffffff26;

@@ -5667,5 +5667,33 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1191,
+    "type": "interface",
+    "title": "The keycap rule read alike on every screen: GOT IT, GET STARTED and SEND wear the cap",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Consistency): keycap depth seemed to follow no rule. The rule is the owner's list (the mode switch, each screen's or sheet's commit, the automatic actions); every DONE wore its cap, but three commits did not: the notice's GOT IT, the welcome's GET STARTED and the report's SEND, now keycaps as their sheets' DONE. CHECK FOR UPDATES and SELECT FILM STOCK stay flat by that rule; a question's answers and a passing notice's OK stay flat. The design system's README names the list."
+  },
+  {
+    "id": 1192,
+    "type": "interface",
+    "title": "Keycaps read at a glance on the dark ground, still quieter than Swift's",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Art direction): at 0.6 of Swift's relief under a light at 50°, the cap's top wall stood 7 levels over its face and its foot sank into the ground, so a cap read as an outlined flat key. The walls now at 0.8 of Swift's, the light at 40° (Swift's 33), the dish at 3 (Swift's 4), the foot lifted 0.5 (0.4 before the quiet pass) and the socket's rim back to Swift's 2: on #313131 the top wall reaches about 65 against a face of 40 to 56 and a foot of 38 on the 40 ground, where Swift's reached 72 over 34 to 61. The slider's knob, a level keycap, follows. The bar's layout check finds a cap's middle from its last row, as the dished face's top now matches the ground."
+  },
+  {
+    "id": 1193,
+    "type": "interface",
+    "title": "The accent spent on one primary: the bar's commit slot always, a lit key never",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Hierarchy): the gallery bar raised EDITOR, PREPARE ROLL and ADD FOLDER… at equal weight, and its loudest colour was the navy of the ALL filter, lit by default. The commit slot at the bar's right end is the screen's one primary in every face (ADD FOLDER…, EXPORT, the update), so it is always the accent; `ButtonStyle.on` no longer tints a lit key with the sunk accent but lights the flat face as a selected row is lit (white at the track's 15 %), so the rating filter, the prepare steps and the crop, compare and De-dust keys say on without competing with the primary or the photo."
+  },
+  {
+    "id": 1194,
+    "type": "interface",
+    "title": "The bar's centre keys named by their words while the room holds them",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Obvious without a tutorial): crop, compare, whole roll, copy, paste and De-dust were bare glyphs explained by their tooltips alone. One `Tool` key now serves the whole centre: its word (CROP, COMPARE, WHOLE ROLL, COPY, PASTE, PASTE TO ROLL, DE-DUST, RESET) while the bar holds every word, its glyph alone once it is narrower, the rule RESET and PASTE TO ROLL already followed. In English the words add about 250 pt, so they show from about 1520 pt with the traffic lights and the phone key, the 1728 pt bar keeping some 200 pt to spare; French and Spanish filled in. Glyphs every app shares (undo, redo, trash, feedback, settings) stay glyphs. The bar's width check compares 1728 with 1990 pt, two bars that both hold every word."
   }
 ]

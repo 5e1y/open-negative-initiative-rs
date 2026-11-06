@@ -1425,7 +1425,7 @@ msgstr "Recadrage"
 msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does."
 msgstr "Faites glisser les coins sur la photo pour la recadrer. Copier et Coller reportent tout le cadrage sur d’autres photos, Coller sur la pellicule sur chaque vue de la pellicule ; le collage des réglages ne le fait jamais."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "COPY"
 msgstr "COPIER"
 
@@ -1433,7 +1433,7 @@ msgstr "COPIER"
 msgid "Copies this photo's crop."
 msgstr "Copie le recadrage de cette photo."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "PASTE"
 msgstr "COLLER"
 
@@ -2226,6 +2226,10 @@ msgid "Place the Measuring Frame"
 msgstr "Placer le cadre de mesure"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "WHOLE ROLL"
+msgstr "TOUTE LA PELLICULE"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Select the Whole Roll ({})"
 msgstr "Sélectionner toute la pellicule ({})"
 
@@ -2234,8 +2238,16 @@ msgid "Reset Settings ({})"
 msgstr "Réinitialiser les réglages ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "CROP"
+msgstr "RECADRER"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
 msgstr "Recadrer et redresser ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "COMPARE"
+msgstr "COMPARER"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Compare"
@@ -2260,6 +2272,10 @@ msgstr "Coller les réglages ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste to the Roll"
 msgstr "Coller sur la pellicule"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "DE-DUST"
+msgstr "DÉPOUSSIÉRER"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"

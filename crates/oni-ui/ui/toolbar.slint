@@ -66,21 +66,27 @@ component Word inherits Button {
     clicked => { Bar.act(root.action); }
 }
 
+// A key of the centre, named by its word; short of room the word gives way to its glyph, a square key.
+component Tool inherits Word {
+    in property <bool> compact;
+    in property <string> word;
+    text: root.compact ? "" : root.word;
+    has-icon: root.compact;
+}
+
 // ⌘A from the bar: the whole roll selected where the hand is, shown together beside a photo; pressed
 // on a roll picked whole, the photo it came from alone again.
-component SelectAll inherits Item {
+component SelectAll inherits Tool {
     action: Act.select-all;
+    word: @tr("WHOLE ROLL");
     icon: Icons.contact-sheet;
     help: @tr("Select the Whole Roll ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
 }
 
-// Short of room the word gives way to its glyph, a square key.
-component ResetScan inherits Word {
-    in property <bool> compact;
+component ResetScan inherits Tool {
     action: Act.reset;
-    text: root.compact ? "" : @tr("RESET");
-    has-icon: root.compact;
+    word: @tr("RESET");
     icon: Icons.reset;
     help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
     enabled: Bar.can-reset;
@@ -99,9 +105,17 @@ component EditorKeys inherits HorizontalLayout {
     cross-axis-alignment: center;
     // `centreKeys`: each family on its own plate, De-dust alone and never plated; a mode's key is on while it is.
     ButtonGroup { plate: true;
-        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); on: PanelState.tab == 1; enabled: Bar.has-photo && Bar.single; }
-        Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); on: Canvas.split >= 0; enabled: Bar.has-photo; }
-        SelectAll { }
+        Tool {
+            compact: root.compact;
+            action: Act.framing;
+            word: @tr("CROP");
+            icon: Icons.framing;
+            help: @tr("Crop and Straighten ({})", KeyWords.command + "K");
+            on: PanelState.tab == 1;
+            enabled: Bar.has-photo && Bar.single;
+        }
+        Tool { compact: root.compact; action: Act.compare; word: @tr("COMPARE"); icon: Icons.compare; help: @tr("Compare"); on: Canvas.split >= 0; enabled: Bar.has-photo; }
+        SelectAll { compact: root.compact; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
     Tabs {
@@ -113,24 +127,21 @@ component EditorKeys inherits HorizontalLayout {
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup { plate: true;
-        Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
-        Item {
+        Tool { compact: root.compact; action: Act.copy; word: @tr("COPY"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
+        Tool {
+            compact: root.compact;
             action: Act.paste;
+            word: @tr("PASTE");
             icon: Icons.paste;
             help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, KeyWords.command-shift + "V") : @tr("Paste settings ({})", KeyWords.command-shift + "V");
             enabled: Bar.can-paste;
         }
-        Word {
-            action: Act.paste-to-roll;
-            text: root.compact ? "" : @tr("PASTE TO ROLL");
-            has-icon: root.compact;
-            icon: Icons.film-roll;
-            help: @tr("Paste to the Roll");
-            enabled: Bar.can-paste;
-        }
+        Tool { compact: root.compact; action: Act.paste-to-roll; word: @tr("PASTE TO ROLL"); icon: Icons.film-roll; help: @tr("Paste to the Roll"); enabled: Bar.can-paste; }
     }
-    Item {
+    Tool {
+        compact: root.compact;
         action: Act.correction;
+        word: @tr("DE-DUST");
         icon: Icons.correction;
         on: PanelState.tab == 4;
         help: self.on ? @tr("Leave De-dust") : @tr("De-dust");
@@ -147,7 +158,7 @@ component GalleryKeys inherits HorizontalLayout {
     cross-axis-alignment: center;
     // The editor's first plate holds the select-all key alone here, as in Swift's `centreKeys`.
     ButtonGroup { plate: true;
-        SelectAll { }
+        SelectAll { compact: root.compact; }
     }
     RatingFilter { }
     Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); keycap: true; help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
@@ -221,14 +232,14 @@ export component Toolbar inherits Surface {
         if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
         // `ExportButton`: one slot, three faces (import in the gallery, export in the editor, an update over
-        // both), the count of photos in its help; hidden while a roll is prepared, its room kept.
+        // both), each the screen's one primary; the count of photos in its help; hidden while a roll is prepared.
         Word {
             property <bool> update: Bar.update-title != "";
             visible: !Preparing.shown;
             action: self.update ? Act.update : Bar.editing ? Act.export : Act.add-folder;
             text: self.update ? (Bar.updating ? @tr("UPDATING") : Bar.update-title) : Bar.editing ? @tr("EXPORT") : @tr("ADD FOLDER…");
             keycap: true;
-            kind: self.update || Bar.editing ? ButtonKind.accent : ButtonKind.plain;
+            kind: ButtonKind.accent;
             fixed-width: ShellStyle.export-width;
             help: self.update ? Bar.update-help
                 : !Bar.editing ? @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E")
