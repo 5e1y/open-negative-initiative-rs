@@ -37,6 +37,8 @@ export global Tip {
     in-out property <bool> card;
     // A card's foot when it opens over its mark: the mark's top, less the gap.
     in-out property <length> above;
+    // A card's width, the column it covers.
+    in-out property <length> card-width: TipStyle.card-width;
     // The help topic the card shows, Rust's key to its demo; `play` says it opened or closed ("").
     in-out property <string> demo;
     callback play(string);
@@ -394,11 +396,13 @@ export global Tips {
             Tip.shown = false;
         }
     }
-    // `dsHelpBubble`: the note under its mark at once, `top` the mark's own, for a card opening over it.
-    public function note(over: bool, text: string, x: length, y: length, top: length) {
+    // `dsHelpBubble`: the note under its mark at once, `top` the mark's own, for a card opening over it;
+    // `width` the column it covers from `x`, none for the card's own width.
+    public function note(over: bool, text: string, x: length, y: length, top: length, width: length) {
         self.hover(over, text, x, y);
         Tip.at-once = over;
         Tip.card = over;
         Tip.above = top - TipStyle.offset;
+        if (over) { Tip.card-width = width > 0 ? width : TipStyle.card-width; }
     }
 }

@@ -245,6 +245,7 @@ impl Ctl {
                 p.relayout();
             }
         });
+        me.state.borrow_mut().grid = (lib.get_grid_width(), lib.get_grid_height());
 
         let p = Rc::downgrade(me);
         me.pulse.start(TimerMode::Repeated, PULSE, move || {

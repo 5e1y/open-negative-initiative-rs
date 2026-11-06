@@ -6388,5 +6388,33 @@
     "title": "Every figure the app reports reads on the glass, the crop's kept size with them",
     "status": "done",
     "detail": "Two correctors went opposite ways: the kept size left the LCD for a slider's readout while the export's figures and the version moved onto it, citing the kept size. One rule now: a figure the app reports, never typed, reads on the LcdReadout beside its label, the crop's kept size, the export's size and weight, the version, the status bar's count; a value the hand sets reads in its slider's header."
+  },
+  {
+    "id": 1276,
+    "type": "fix",
+    "title": "The gallery's right column is the editor's panel wide, so the card's edge holds between them",
+    "status": "done",
+    "detail": "UI evaluation (Spacing): the gallery's Info column was 280 points, the editor's panel 340, so the canvas card's right edge jumped 60 points at each switch. The Info column takes ShellStyle.panel-width and ShellStyle.info-width is gone: one right column, the width Prepare's panel already had. That exposed a grid that told Rust its size only on a change: in a window built at its final size, the old narrow column's reflow had been the change, and without it gallery_cell and visible laid no tile. The grid now keeps its size in Library.grid-width and grid-height from its making, and Rust reads them once its handler listens. Window check panel_frame finds the gallery's Film Stock title and the editor's Colour title at the same point, a panel's width plus its inset from the window's edge; twin: a column 60 points narrower puts its blocks elsewhere."
+  },
+  {
+    "id": 1277,
+    "type": "fix",
+    "title": "A block's title row keeps its keys at the column's edge; titles in their own case",
+    "status": "done",
+    "detail": "UI evaluation (Consistency, Spacing): Spectrogram Finishing showed no fold key and the Roll tab's chevrons drifted right as titles lengthened. The title had its whole width whatever the row held, and in spaced capitals the longest pushed the always-laid RESET and the fold key past the column, 33 points out for Spectrogram Finishing. The title now yields on a short row (elided, never the keys), and is set in its own case, capitals being the keycaps' alone (owner's art direction), which also keeps every English title whole. Window check panel_frame finds the six fold keys of the Colour tab with one right edge on the column's inset; the old row fails it (Spectrogram Finishing's key at 1273 points for 1240 in a 1280-point window); twin: a key pushed three points is refused."
+  },
+  {
+    "id": 1278,
+    "type": "fix",
+    "title": "A help mark's card covers the column of the block it explains",
+    "status": "done",
+    "detail": "UI evaluation (Consistency): the Colour card opened 300 points wide from its mark, held a margin from the window's edge, so the block's first letters (Te, Tir, Sa) peeked out at its left. A Section's mark now names its block's column, the section's inset edges, and Tips.note takes that width: the card lies edge to edge with the inset, its demo as wide; a mark naming no column keeps its own width at the mark. Window check help_card asserts each panel card over its block's column; twin: the card at its own width from its mark leaves 16 points of the block out."
+  },
+  {
+    "id": 1279,
+    "type": "fix",
+    "title": "The Colour tab's help notes in short parts, each about its own block",
+    "status": "done",
+    "detail": "UI and UX evaluation (Typography, Language): the Colour card ran a thirteen-line paragraph and mixed the Roll tab's Balance strength and the roll's levels into the white balance. A note now comes in short parts a blank line apart, one per key or slider group, and says only what its block holds: Colour (Auto White Balance, Temperature and Tint by the colours their tracks show, Saturation), Paper Correction, Lighting, Effects (the Scanner's too), Spectrogram Finishing and Saturation Curve, in English, French and Spanish. The white balance key's own tooltip still names Balance strength. Window check help_demo_color reads the Lighting and Effects cards by their new words."
   }
 ]

@@ -1318,8 +1318,8 @@ msgid "Temperature +: toward warm"
 msgstr "Température + : plus chaud"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is: Temperature reads the stops between red and blue, Tint between magenta and green. Saturation makes every colour stronger or greyer at once."
-msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant davantage qu’un grand sujet chaud, et la corrige avec Température et Teinte ; les niveaux restent là où la mesure de la pellicule les a placés, et l’onglet Pellicule contient Intensité de la balance, la part de cette correction que prennent les deux curseurs. Température et Teinte ne déplacent que la couleur, jamais la luminosité de la photo : Température se lit en EV entre le rouge et le bleu, Teinte entre le magenta et le vert. Saturation rend toutes les couleurs plus fortes ou plus grises à la fois."
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
+msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant le plus, et la ramène vers le gris avec Température et Teinte.\n\nTempérature déplace la couleur entre le bleu et le jaune, Teinte entre le vert et le magenta ; aucune ne change la luminosité de la photo.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Crop before using the automatic balance"
@@ -1342,8 +1342,8 @@ msgid "Paper Correction"
 msgstr "Correction papier"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Gains laid last, on a colour or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips."
-msgstr "Des gains appliqués en dernier, sur un tirage couleur comme noir et blanc, selon le papier sur lequel l’image est épreuvée, et sur ce papier seulement : dans tout autre espace de travail, ils n’ont aucun effet. Correction papier auto lit le blanc propre du papier dans son profil, jamais dans l’image, et règle les gains qui impriment un gris en gris ; le plus fort reste à 0 pour que rien ne soit écrêté."
+msgid "Red, Green and Blue are gains laid last, on a colour or a black and white print alike, for the paper the picture is proofed on; in any other working space they do nothing.\n\nAuto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey. The strongest stays at 0, so nothing clips."
+msgstr "Rouge, Vert et Bleu sont des gains appliqués en dernier, sur un tirage couleur comme noir et blanc, pour le papier sur lequel l’image est épreuvée ; dans tout autre espace de travail, ils n’ont aucun effet.\n\nCorrection papier auto lit le blanc propre du papier dans son profil, jamais dans l’image, et règle les gains qui impriment un gris en gris. Le plus fort reste à 0, pour que rien ne soit écrêté."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "AUTO PAPER CORRECTION"
@@ -1358,8 +1358,8 @@ msgid "Lighting"
 msgstr "Lumière"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself."
-msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur. Chaque curseur éclaircit vers la droite ; Point noir et Point blanc déplacent les extrémités du scan lui-même."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider brightens to the right. Black point and White point move the ends of the scan itself."
+msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur éclaircit vers la droite. Point noir et Point blanc déplacent les extrémités du scan lui-même."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Exposure"
@@ -1378,8 +1378,8 @@ msgid "Effects"
 msgstr "Effets"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
-msgstr "Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Vignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit. Chrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
+msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
+msgstr "Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues.\n\nVignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit.\n\nChrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
 
 #: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
@@ -1430,16 +1430,16 @@ msgid "Spectrogram Finishing"
 msgstr "Finition spectrale"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shifts one colour range at a time without touching the others: turn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
-msgstr "Déplace une plage de couleurs à la fois sans toucher aux autres : tournez un point autour de la roue pour changer la teinte de cette couleur, vers l’extérieur ou l’intérieur pour la renforcer ou la griser. Cliquez sur un point, puis utilisez les touches fléchées."
+msgid "Shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
+msgstr "Déplace une plage de couleurs à la fois sans toucher aux autres.\n\nTournez un point autour de la roue pour changer la teinte de cette couleur, vers l’extérieur ou l’intérieur pour la renforcer ou la griser. Cliquez sur un point, puis utilisez les touches fléchées."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Saturation Curve"
 msgstr "Courbe de saturation"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves."
-msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. Faites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre. La luminosité ne bouge jamais."
+msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral."
+msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. La luminosité ne bouge jamais.\n\nFaites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Crop"

@@ -131,9 +131,9 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     // A key's tooltip waits the system's delay; a help mark's note shows at once.
     assert!(!tip.get_at_once(), "twin: a tooltip is not shown at once");
     let tips = w.global::<oni_app::Tips>();
-    tips.invoke_note(true, "a note".into(), 10.0, 10.0, 0.0);
+    tips.invoke_note(true, "a note".into(), 10.0, 10.0, 0.0, 0.0);
     assert!(tip.get_shown() && tip.get_at_once(), "a help mark's note shows at once");
-    tips.invoke_note(false, "a note".into(), 10.0, 10.0, 0.0);
+    tips.invoke_note(false, "a note".into(), 10.0, 10.0, 0.0, 0.0);
     assert!(!tip.get_shown());
 
     // The Crop tab's first plate spans its block, its three keys sharing the room alike.

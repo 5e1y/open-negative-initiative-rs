@@ -14,6 +14,9 @@ import { Keyboard } from "keyboard.slint";
 export component HelpMark inherits Rectangle {
     in property <string> note;
     in property <string> demo;
+    // The column the card covers, in window points: the block it explains, so no word of it peeks out.
+    in property <length> column-x;
+    in property <length> column-width;
     width: SectionStyle.help-mark;
     height: self.width;
     Button {
@@ -27,6 +30,8 @@ export component HelpMark inherits Rectangle {
         glyph-size: SectionStyle.help-mark;
         note: root.note;
         demo: root.demo;
+        note-x: root.column-x;
+        note-width: root.column-width;
         accessible-label: @tr("What this block does");
     }
 }
@@ -64,15 +69,23 @@ export component Section inherits VerticalLayout {
         spacing: 0;
         if root.title != "": HorizontalLayout {
             spacing: Space.s;
+            // On a short row the title yields, so the reset and fold keys keep to the column's edge.
             Engraved {
                 horizontal-stretch: 0;
+                min-width: 0;
                 role: TextRole.section;
                 text: root.title;
+                overflow: elide;
                 if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
-                HelpMark { note: root.help; demo: root.demo; }
+                HelpMark {
+                    note: root.help;
+                    demo: root.demo;
+                    column-x: root.absolute-position.x + root.inset;
+                    column-width: root.width - 2 * root.inset;
+                }
             }
             if root.news != "": VerticalLayout {
                 alignment: center;

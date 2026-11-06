@@ -208,9 +208,12 @@ export global Library {
     callback scrolled(length);
     callback resized(length, length);
     callback gallery-shown();
-    // Where the grid sits in the window, which a pointer a check dispatches is placed from.
+    // Where the grid sits in the window, which a pointer a check dispatches is placed from, and its
+    // size, which Rust reads once it listens: a grid laid at its final size before then tells no change.
     in-out property <length> grid-x;
     in-out property <length> grid-y;
+    in-out property <length> grid-width;
+    in-out property <length> grid-height;
     callback medal-picked(int);
     callback title-committed(string);
     // The roll's or project's name as it is typed, empty once the field ends.
@@ -227,8 +230,16 @@ export component Grid inherits Surface {
     clip: true;
     property <length> menu-x;
     property <length> menu-y;
-    changed width => { Library.grid-x = self.absolute-position.x; Library.grid-y = self.absolute-position.y; Library.resized(self.width, self.height); }
-    changed height => { Library.grid-x = self.absolute-position.x; Library.grid-y = self.absolute-position.y; Library.resized(self.width, self.height); }
+    function placed() {
+        Library.grid-x = self.absolute-position.x;
+        Library.grid-y = self.absolute-position.y;
+        Library.grid-width = self.width;
+        Library.grid-height = self.height;
+        Library.resized(self.width, self.height);
+    }
+    init => { root.placed(); }
+    changed width => { root.placed(); }
+    changed height => { root.placed(); }
     // One pointer for the whole document, as the cells keep no gesture of their own: Rust resolves
     // a cell or the ground from the point.
     pointer := TouchArea {

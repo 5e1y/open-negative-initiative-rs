@@ -4,7 +4,7 @@ import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, E
 import { Library } from "library.slint";
 
 export component Info inherits Surface {
-    width: ShellStyle.info-width;
+    width: ShellStyle.panel-width;
     // `InfoSidebar`'s ScrollView: a tall roll scrolls under the column instead of clipping.
     Scroller {
         content-height: body.preferred-height;

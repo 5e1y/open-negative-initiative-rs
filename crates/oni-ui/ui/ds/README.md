@@ -187,7 +187,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
   (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
   alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line
-  below. Capitals belong to the keycaps alone.
+  below. Capitals belong to the keycaps alone. On a short row a `Section`'s title yields, so the reset and
+  fold keys keep to the column's edge. A help mark's card covers the column of the block it explains, edge to
+  edge with its inset, its note in short parts a blank line apart.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no

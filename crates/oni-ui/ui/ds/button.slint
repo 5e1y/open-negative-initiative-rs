@@ -93,6 +93,9 @@ export component Button inherits Rectangle {
     // help topic whose demo the card plays above it.
     in property <string> note;
     in property <string> demo;
+    // The column the card covers, in window points; no width, and it opens at the key, at its own.
+    in property <length> note-x;
+    in property <length> note-width;
     // The widest word the key ever shows, so it keeps that width as its word changes.
     in property <string> widest;
     in property <length> fixed-width: 0px;
@@ -269,7 +272,7 @@ export component Button inherits Rectangle {
         let shown = touch.has-hover || keys.has-focus;
         if (root.note != "") {
             if (shown) { Tip.demo = root.demo; }
-            Tips.note(shown, root.note, root.absolute-position.x, root.absolute-position.y + root.height, root.absolute-position.y);
+            Tips.note(shown, root.note, root.note-width > 0 ? root.note-x : root.absolute-position.x, root.absolute-position.y + root.height, root.absolute-position.y, root.note-width);
         } else {
             // Left, it hides the tooltip it showed, whatever its help says since.
             if (shown) { root.told = root.help; }
