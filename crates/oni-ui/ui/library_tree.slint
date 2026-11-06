@@ -30,7 +30,7 @@ export component Tree inherits Surface {
             beside-photo: root.beside-photo;
             trash-rows: Library.trash-rows;
             trash-clicked(i) => { Library.trash-row-clicked(i); }
-            trash-double-clicked(i) => { Library.trash-row-double-clicked(i); }
+            trash-folded(i) => { Library.trash-row-folded(i); }
             trash-restore(i) => { Library.trash-row-restore(i); }
             trash-menu(i, x, y) => {
                 root.menu-x = x - root.absolute-position.x;

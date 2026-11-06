@@ -2,7 +2,7 @@
 //! the open photo's history, so ⌘Z answers for the right stack.
 
 use crate::paths;
-use oni_settings::{Film, PipelineSettings};
+use oni_settings::{Film, Medal, PipelineSettings};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub type Settings = BTreeMap<String, PipelineSettings>;
@@ -15,6 +15,7 @@ pub struct Step {
     pub disk: Option<Disk>,
     pub trash: Option<Trash>,
     pub marker: Option<Marker>,
+    pub medals: Option<Medals>,
 }
 
 /// A folder's roll marker as the step found it and as it left it; `None` is a plain folder.
@@ -23,6 +24,13 @@ pub struct Marker {
     pub folder: String,
     pub before: Option<Film>,
     pub after: Option<Film>,
+}
+
+/// Medals a gesture laid: the one each photo wore before it, and the one they all took.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Medals {
+    pub before: BTreeMap<String, Medal>,
+    pub after: Medal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +61,7 @@ impl Step {
     pub fn paths(&self) -> BTreeSet<String> {
         let mut out: BTreeSet<String> = self.before.keys().chain(self.after.keys()).cloned().collect();
         out.extend(self.trash.iter().flat_map(|t| t.paths.iter().cloned()));
+        out.extend(self.medals.iter().flat_map(|m| m.before.keys().cloned()));
         out.extend(self.disk.iter().flat_map(|d| d.moves.iter().flat_map(|m| [m.from.clone(), m.to.clone()])));
         out
     }
@@ -174,7 +183,7 @@ impl GalleryHistory {
         }
         let kept: Settings =
             after.iter().filter(|(p, _)| changed.contains_key(*p)).map(|(p, s)| (p.clone(), s.clone())).collect();
-        self.push(Step { before: changed, after: kept, label: label.to_owned(), disk: None, trash, marker });
+        self.push(Step { before: changed, after: kept, label: label.to_owned(), disk: None, trash, marker, medals: None });
     }
 
     /// Records a gesture on the disk, already applied; one that moved nothing opens no step.
@@ -189,6 +198,7 @@ impl GalleryHistory {
             disk: Some(disk),
             trash: None,
             marker: None,
+            medals: None,
         });
     }
 
@@ -204,6 +214,25 @@ impl GalleryHistory {
             disk: None,
             trash: Some(trash),
             marker: None,
+            medals: None,
+        });
+    }
+
+    /// Records medals laid, already written; a photo that wore the medal already is left out, and
+    /// a gesture that changed none opens no step.
+    pub fn record_medals(&mut self, mut medals: Medals, label: &str) {
+        medals.before.retain(|_, worn| *worn != medals.after);
+        if medals.before.is_empty() {
+            return;
+        }
+        self.push(Step {
+            before: Settings::new(),
+            after: Settings::new(),
+            label: label.to_owned(),
+            disk: None,
+            trash: None,
+            marker: None,
+            medals: Some(medals),
         });
     }
 
@@ -231,6 +260,9 @@ impl GalleryHistory {
             }
             if let Some(marker) = &mut step.marker {
                 marker.folder = moved(&marker.folder);
+            }
+            if let Some(medals) = &mut step.medals {
+                medals.before = std::mem::take(&mut medals.before).into_iter().map(|(p, m)| (moved(&p), m)).collect();
             }
             if let Some(disk) = &mut step.disk {
                 disk.folder = disk.folder.as_deref().map(moved);

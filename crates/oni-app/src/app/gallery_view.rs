@@ -190,21 +190,30 @@ impl Ctl {
         self.publish_tiles();
     }
 
+    /// A key of the rating filter: every photo, or those wearing that one medal, never a tier above.
+    pub(super) fn filter_picked(self: &Rc<Self>, medal: i32) {
+        self.state.borrow_mut().filter = Some(library::medal_of(medal)).filter(|m| *m != Medal::None);
+        self.lay_archive();
+        self.publish_bar();
+    }
+
     /// `applyMedal`: the selection's sidecars and index rows, in the gallery and the editor alike.
     pub(super) fn label(self: &Rc<Self>, medal: i32) {
         let targets = self.state.borrow().selected();
         self.label_paths(&targets, library::medal_of(medal));
     }
 
+    /// One gallery step, as every gesture on photos: Undo takes the medals back.
     pub(super) fn label_paths(self: &Rc<Self>, targets: &[String], label: Medal) {
         if self.busy_said(tr("Something Went Wrong")) {
             return;
         }
+        let laid = self.state.borrow_mut().store.editor().map(|store| store.lay_medal(targets, label)).unwrap_or_default();
         let mut written = Vec::new();
         let (mut gone, mut said) = (0, Vec::new());
-        for path in targets {
-            match oni_settings::sidecar::set_label(label, Path::new(path), oni_decode::decodes_via_mosaic(Path::new(path))) {
-                Ok(()) => written.push(path.clone()),
+        for (path, done) in laid {
+            match done {
+                Ok(()) => written.push(path),
                 Err(oni_settings::sidecar::Error::Unreachable) => gone += 1,
                 Err(e) => said.push(oni_library::refusal::said(&e)),
             }
@@ -229,7 +238,7 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             // A sidecar written may measure the roll shown: its banner is read again.
-            s.org.guide.measured = None;
+            s.org.measured = None;
             let Some(index) = &s.index else { return };
             library::refresh(index, paths);
             // With no folder open, a photo restored from the ONI Trash leaves it all the same.

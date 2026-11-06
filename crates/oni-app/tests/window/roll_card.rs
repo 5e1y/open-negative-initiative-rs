@@ -1,9 +1,9 @@
-//! The info sidebar's roll guide on the headless window: photos outside any roll guided into one,
-//! the whole folder made a roll in place, part of it moved into a new one, and the stock's dyes
-//! written on every frame of the roll as one step.
+//! The info sidebar's roll card on the headless window: the folder shown is a roll with nothing
+//! picked, its first field written makes its marker as one undoable step, a focus passing through
+//! the date writes nothing, and the stock's dyes land on every frame of the roll as one step.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Confirm, Library, RollGuide, Stocks};
+use oni_app::{Library, Menus, Stocks};
 use oni_core::{Archive, EditorStore};
 use oni_library::paths;
 use oni_settings::blocks::SeparationFamily;
@@ -31,12 +31,12 @@ fn stock(id: &str) -> i32 {
     FILM_STOCKS.iter().position(|k| k.id == id).unwrap() as i32
 }
 
-pub(crate) fn photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_their_dyes() {
+pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the roll guide is not exercised"),
+        Err(e) => return eprintln!("{e}: the roll card is not exercised"),
     };
-    let root = std::env::temp_dir().join(format!("oni-app-roll-guide-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("oni-app-roll-card-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     for file in ["Scans/A.tif", "Scans/B.tif", "Scans/C.tif", "Scans/Other/D.tif", "Scans/Other/E.tif"] {
         common::linear_tiff(&root.join(file), 48, 32, 0.5);
@@ -59,8 +59,7 @@ pub(crate) fn photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_the
     let w = &shell.window;
     shell.open_folder(&scans);
     rig.until("the photos read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().order().len() == 5);
-    let (lib, stocks, confirm) = (w.global::<Library>(), w.global::<Stocks>(), w.global::<Confirm>());
-    let guide = w.global::<RollGuide>();
+    let (lib, stocks, menus) = (w.global::<Library>(), w.global::<Stocks>(), w.global::<Menus>());
     let at = |name: &str| ctl.state.borrow().order().iter().position(|p| p.ends_with(&format!("/{name}"))).unwrap() as i32;
     let pick = |names: &[&str]| {
         std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
@@ -72,109 +71,97 @@ pub(crate) fn photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_the
     };
     let frames = ["A.tif", "B.tif", "C.tif"].map(|n| scans.join(n));
     let families = || frames.iter().map(|p| family(p)).collect::<Vec<_>>();
+    let marker = || oni_library::folders::roll(&scans.to_string_lossy());
 
-    // Photos of two folders: the guide shows, its key refused with the reason.
-    pick(&["A.tif", "D.tif"]);
-    assert_eq!(lib.get_info_kind(), 0);
-    assert!(guide.get_shown(), "a selection outside any roll shows the guide");
-    assert_eq!(guide.get_count().as_str(), "2 selected · 2 folders");
-    assert!(!guide.get_enabled() && guide.get_note().contains("2 folders"), "{}", guide.get_note());
-
-    // Part of a folder: New Roll's key; the whole folder: the folder made a roll in place.
-    pick(&["A.tif"]);
-    assert!(guide.get_enabled() && guide.get_note().is_empty());
-    assert_eq!(guide.get_key().as_str(), "Move into a new roll");
-    pick(&["A.tif", "B.tif", "C.tif"]);
-    assert_eq!(guide.get_key().as_str(), "Make this folder a roll");
-    assert_eq!(guide.get_name(), guide.get_proposed(), "prefilled with the date New Roll would give");
-    guide.set_name("Portra Trip".into());
-    guide.invoke_name_edited("Portra Trip".into());
-    guide.invoke_pick_stock();
+    // Nothing picked, the folder opened is the roll shown: its card, the editor and Prepare are live.
     rig.pump();
-    assert!(stocks.get_shown());
-    stocks.invoke_chosen(stock("kodak-portra"));
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "{}", lib.get_info_empty());
+    let live = menus.get_live();
+    assert!(live.toggle_mode && live.measure_roll && live.reset_to_default, "the open roll stands for a pick");
+    assert!(w.global::<oni_app::Bar>().get_can_toggle_mode(), "the bar's mode key reads the menu's rule");
+    lib.invoke_surface_picked(1);
     rig.pump();
-    assert_eq!(guide.get_stock().as_str(), "Kodak Portra");
-    assert_eq!(guide.get_name().as_str(), "Portra Trip", "the name typed stays");
-    let before = listed(&scans);
-    guide.invoke_create();
+    let live = menus.get_live();
+    assert!(!live.toggle_mode && !live.measure_roll, "twin: the projects, empty, stand on no roll");
+    lib.invoke_surface_picked(0);
     rig.pump();
-    let film = oni_library::folders::roll(&scans.to_string_lossy()).expect("the folder made a roll");
-    assert_eq!((film.name.as_str(), film.stock.as_deref()), ("Portra Trip", Some("kodak-portra")));
-    let mut after = before.clone();
-    after.push(".oni-roll.json".into());
-    after.sort();
-    let originals: Vec<String> = listed(&scans).into_iter().filter(|n| !n.ends_with(".tif.json")).collect();
-    assert_eq!(originals, after, "no file moves, the sidecars written beside their photos");
-    assert!(scans.join("Portra Trip").symlink_metadata().is_err(), "the folder keeps its name");
-    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "Portra writes Kodak's dyes on every frame");
-    assert_eq!(family(&other.join("D.tif")), Some(SeparationFamily::E6), "twin: a frame outside the roll keeps its family");
-    assert_eq!((lib.get_info_kind(), guide.get_shown()), (1, false), "twin: inside a roll, the roll card shows");
-    assert_eq!(lib.get_info_title().as_str(), "Portra Trip");
-    assert_eq!(lib.get_stock_dyes().as_str(), "Dyes: Kodak");
-    rig.until("the fresh roll told unmeasured", Duration::from_secs(10), || {
+    rig.until("the folder told unmeasured", Duration::from_secs(10), || {
         rig.pump();
         lib.get_roll_unmeasured()
     });
-    rig.settle();
-    println!("shot {}", rig.shot("roll-guide-made").display());
 
-    // One undo takes the marker and the dyes back, and the guide returns; redo makes it again.
+    // A focus passing through the date writes nothing; a date typed writes the marker, one step.
+    let shown = (lib.get_month(), lib.get_day(), lib.get_year());
+    lib.invoke_shot_date_committed(shown.0.clone(), shown.1.clone(), shown.2.clone());
+    rig.pump();
+    assert_eq!(marker(), None, "the date as shown is no date of the roll's own");
+    assert!(!menus.get_live().undo && !lib.get_shot_date_set());
+    let before = listed(&scans);
+    lib.invoke_shot_date_committed("4".into(), "30".into(), "2026".into());
+    rig.landed(&ctl);
+    assert_eq!(marker().and_then(|f| f.shot_date).map(oni_library::info::ymd), Some((2026, 4, 30)), "twin: a date typed is written");
+    assert_eq!(marker().map(|f| f.name), Some("Scans".to_string()), "named after its folder");
+    assert!(menus.get_live().undo && lib.get_shot_date_set());
+    assert_eq!(menus.get_titles().undo.as_str(), "Undo Set Shot Date");
+    let mut after = before.clone();
+    after.push(".oni-roll.json".into());
+    after.sort();
+    assert_eq!(listed(&scans), after, "no file moves");
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
-    assert_eq!(oni_library::folders::roll(&scans.to_string_lossy()), None);
-    assert_eq!(families(), vec![None; 3]);
-    assert!(lib.get_info_kind() == 0 && guide.get_shown());
+    assert_eq!(marker(), None, "one undo takes the marker away");
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "the folder stays the roll shown");
+
+    // A name typed over the title makes the roll under it, the folder keeping its own name.
+    lib.invoke_title_committed("Portra Trip".into());
+    rig.landed(&ctl);
+    assert_eq!(marker().map(|f| f.name), Some("Portra Trip".to_string()));
+    assert_eq!(lib.get_info_title().as_str(), "Portra Trip");
+    assert!(scans.join("Portra Trip").symlink_metadata().is_err(), "the folder keeps its name");
+
+    // Portra picked: Kodak's dyes on its three frames in one step with the marker, undone as one.
+    lib.invoke_select_roll_type();
+    rig.pump();
+    assert!(stocks.get_shown());
+    stocks.invoke_chosen(stock("kodak-portra"));
+    rig.landed(&ctl);
+    assert_eq!(marker().and_then(|f| f.stock), Some("kodak-portra".to_string()));
+    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "Portra writes Kodak's dyes on every frame");
+    assert_eq!(family(&other.join("D.tif")), Some(SeparationFamily::E6), "twin: a frame outside the roll keeps its family");
+    assert_eq!(lib.get_stock_dyes().as_str(), "Dyes: Kodak");
+    rig.settle();
+    println!("shot {}", rig.shot("roll-card-made").display());
+    ctl.act(oni_app::Act::Undo);
+    rig.landed(&ctl);
+    assert_eq!(families(), vec![None; 3], "one undo gives the families back");
+    assert_eq!(marker().map(|f| (f.name, f.stock)), Some(("Portra Trip".to_string(), None)), "and the stock");
     ctl.act(oni_app::Act::Redo);
     rig.landed(&ctl);
     assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3]);
-    assert_eq!(lib.get_info_kind(), 1);
 
-    // Superia picked on the roll card: Fuji's dyes on its three frames in one step, undone as one.
+    // A black-and-white stock leaves every family alone.
     lib.invoke_select_roll_type();
-    stocks.invoke_chosen(stock("fujifilm-superia"));
-    rig.pump();
-    assert_eq!(families(), vec![Some(SeparationFamily::FujiC41); 3]);
-    assert_eq!(family(&other.join("D.tif")), Some(SeparationFamily::E6));
-    assert_eq!(lib.get_stock().as_str(), "Fujifilm Superia");
-    ctl.act(oni_app::Act::Undo);
+    stocks.invoke_chosen(stock("ilford-hp5"));
     rig.landed(&ctl);
-    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "one undo gives the families back");
-    assert_eq!(lib.get_stock().as_str(), "Kodak Portra", "and the stock");
+    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "black and white writes no dyes");
+    assert_eq!(lib.get_stock_dyes().as_str(), "");
 
-    // A black-and-white stock leaves every family alone; a measured frame takes the banner away.
+    // A measured frame takes the banner away once the roll's frames are read again.
     let measured = frames[1].clone();
     let mut b = sidecar::read(&measured, false, true).unwrap().settings;
     b.roll_reference = Some(oni_settings::frame::RollReference { id: oni_settings::Id::new(), stops: [0.0; 3], black: [0.1; 3], white: [0.6; 3], base: None, median: None });
     sidecar::write(&b, &measured, WriteOptions::default()).unwrap();
     lib.invoke_select_roll_type();
-    stocks.invoke_chosen(stock("ilford-hp5"));
-    rig.pump();
-    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "black and white writes no dyes");
-    assert_eq!(lib.get_stock_dyes().as_str(), "");
+    stocks.invoke_chosen(stock("kodak-gold"));
+    rig.landed(&ctl);
     rig.until("the measured roll's banner gone", Duration::from_secs(10), || {
         rig.pump();
         !lib.get_roll_unmeasured()
     });
 
-    // Part of a folder moved into a new roll under the name and stock typed, its dyes following.
+    // A photo of another folder picked: that folder is the roll shown, its card and no guide.
     pick(&["D.tif"]);
-    assert_eq!(guide.get_key().as_str(), "Move into a new roll");
-    guide.set_name("Split".into());
-    guide.invoke_name_edited("Split".into());
-    guide.invoke_pick_stock();
-    stocks.invoke_chosen(stock("cinestill-800t"));
-    rig.pump();
-    guide.invoke_create();
-    rig.roll_confirmed(&ctl, w);
-    assert!(!confirm.get_shown());
-    let split = other.join("Split");
-    rig.until("the frame moved in", Duration::from_secs(30), || split.join("D.tif").exists());
-    assert!(other.join("E.tif").exists(), "the frame left unpicked stays");
-    let film = oni_library::folders::roll(&split.to_string_lossy()).expect("the new roll's marker");
-    assert_eq!((film.name.as_str(), film.stock.as_deref()), ("Split", Some("cinestill-800t")));
-    assert_eq!(family(&split.join("D.tif")), Some(SeparationFamily::Ecn2));
-    assert_eq!(family(&other.join("E.tif")), None, "twin: the frame left out keeps its family");
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Other"));
 
     // The frame open in the editor takes the roll's new dyes at once, its Roll tab with it.
     let renders = ctl.state.borrow().renders();
@@ -185,7 +172,7 @@ pub(crate) fn photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_the
     pick(&["A.tif"]);
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("fujifilm-superia"));
-    rig.pump();
+    rig.landed(&ctl);
     assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
     assert_eq!(w.global::<oni_app::PanelState>().get_dye_family(), 1, "the Dyes tabs read Fuji");
     drop(shell);

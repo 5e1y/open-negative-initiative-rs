@@ -148,7 +148,7 @@ impl Ctl {
         }
     }
 
-    /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery, its modes left.
+    /// `toggleMode()`: the editor on the photo the gallery stands on, or back to the gallery, its modes left.
     pub(super) fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
         // Leaving the editor takes the deck away with no exit event: the preview goes with it.
@@ -161,13 +161,8 @@ impl Ctl {
             return;
         }
         self.commit_info_drafts();
-        let ringed = {
-            let s = self.state.borrow();
-            s.picks.anchor.clone().filter(|_| !s.trash_shown())
-        };
-        if let Some(path) = ringed {
-            self.open_in_editor(&path);
-        }
+        let Some(path) = self.state.borrow().editor_subject() else { return };
+        self.open_in_editor(&path);
     }
 
     /// nil, bronze, silver, gold, then nil again: exactly one medal, never a tier above.

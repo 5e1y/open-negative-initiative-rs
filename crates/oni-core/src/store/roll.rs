@@ -1,5 +1,5 @@
 //! The two gestures that make and unmake a roll: a measure landing on every frame Prepare the Roll
-//! read, and Reset to Default, its inverse, reaching whole rolls and their contact sheets.
+//! read, and Reset the Roll, its inverse, reaching whole rolls and their contact sheets.
 
 use super::{EditorStore, Settings};
 use crate::parameters;
@@ -30,7 +30,7 @@ pub fn split(pass: &PipelineSettings, framing: Option<Geometry>) -> PipelineSett
     out
 }
 
-/// Reset to Default: back to unconverted, a pass split from its lead, every crop gone (owner's call).
+/// Reset the Roll: back to unconverted, a pass split from its lead, every crop gone (owner's call).
 fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> PipelineSettings {
     PipelineSettings { geometry: Geometry::default(), ..split(settings, framing) }
 }
@@ -41,7 +41,7 @@ pub fn measure_label(frames: usize) -> String {
 }
 
 pub fn reset_label(frames: usize) -> String {
-    trn("Reset to Default · {n} photo", "Reset to Default · {n} photos", frames as u64)
+    trn("Reset the Roll · {n} photo", "Reset the Roll · {n} photos", frames as u64)
 }
 
 impl EditorStore {

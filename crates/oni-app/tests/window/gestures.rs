@@ -64,11 +64,11 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     shell.open_folder(&folder);
     rig.until("the library read", Duration::from_secs(30), || ctl.state.borrow().read_done());
 
-    // The gallery's face of every dynamic title, and nothing to take into the editor yet.
+    // The gallery's face of every dynamic title; nothing picked, the editor opens on the first photo.
     let t = menus.get_titles();
     assert_eq!((t.mode.as_str(), t.smaller.as_str(), t.larger.as_str()), ("Editor", "Smaller Thumbnails", "Larger Thumbnails"));
     assert_eq!((t.undo.as_str(), t.filter.as_str(), t.paste.as_str()), ("Undo", "Filter: All", "Paste Settings"));
-    assert!(!menus.get_live().toggle_mode && !menus.get_live().medal && !menus.get_live().copy_settings);
+    assert!(menus.get_live().toggle_mode && !menus.get_live().medal && !menus.get_live().copy_settings);
     // ⌘G takes the ringed photo into the editor, where the titles change face.
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
@@ -205,6 +205,17 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!(filtered("Silver"), vec!["B".to_string()]);
     assert!(filtered("Gold").is_empty(), "twin: a silver photo is not a gold one");
     assert_eq!(filtered("All").len(), 3);
+    // The bar's rating filter reaches each medal in one press, lit on the one it keeps.
+    let picked = |medal: i32| {
+        lib.invoke_filter_picked(medal);
+        rig.pump();
+        assert_eq!(lib.get_filter_medal(), medal);
+        app::tiles(w).iter().map(|t| t.caption.to_string()).collect::<Vec<_>>()
+    };
+    assert_eq!(picked(2), vec!["B".to_string()]);
+    assert_eq!(menus.get_titles().filter.as_str(), "Filter: Silver", "the menu's title follows the bar");
+    assert!(picked(3).is_empty(), "twin: gold keeps no silver photo");
+    assert_eq!(picked(0).len(), 3);
 
     // ⇧⌘G moves the selection into a dated roll folder beside it, one gallery step ⌘Z walks back.
     // The double-click interval first: a second click on B within it would open B.

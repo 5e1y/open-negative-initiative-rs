@@ -5,9 +5,10 @@ use super::*;
 impl Ctl {
     // MARK: - Entering and leaving
 
-    /// `prepareRoll(propagationTargets)`: one frame brings its folder's own roll, several come as they are.
+    /// `prepareRoll(propagationTargets)`: one frame brings its folder's own roll, several come as
+    /// they are; none picked in the gallery, the roll it shows.
     pub(in crate::app) fn prepare_roll(self: &Rc<Self>) {
-        let targets = self.targets();
+        let targets = self.roll_targets();
         self.roll_of(targets, |c, paths, left| c.enter_roll(&paths, left));
     }
 

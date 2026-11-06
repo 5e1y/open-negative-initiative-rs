@@ -12,14 +12,17 @@ impl Ctl {
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
         let dedust = w.global::<PanelState>().get_tab() == 4;
         let (painting, canvas) = (self.painting(), self.canvas_size());
-        let (titles, live, film_type, targets, filter_word, select_all) = {
+        let (titles, live, film_type, targets, filter, select_all) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.is_some();
             let selected = s.picks.selection.len();
             let trash = s.trash_shown() && gallery;
             let restoring = s.trash_picks.selection.len();
             let count = s.target_count(gallery);
-            let anchor = s.picks.anchor.is_some();
+            // In the gallery with nothing picked, the editor opens on the photo it stands on and
+            // the roll gestures act on the roll shown.
+            let subject = s.editor_subject().is_some();
+            let roll = s.roll_targets(gallery).len();
             // `modalOpen`: the export surface or any sheet, Report a Bug and the year's deck included.
             let sheet = w.get_sheet_shown() || s.shelf_form_open();
             let modal = self.export.borrow().shown || sheet;
@@ -96,7 +99,7 @@ impl Ctl {
             // A gesture this build lacks stays dark, whatever Swift's rule would say.
             let live = MenuLive {
                 open: true,
-                toggle_mode: !gallery || anchor,
+                toggle_mode: !gallery || subject,
                 // On the surface ⌘E confirms; elsewhere it opens on the selection, else the open photo.
                 export: exporting.map_or(count > 0, |n| n > 0 && !writing),
                 // A read under way is the refresh already.
@@ -123,8 +126,8 @@ impl Ctl {
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
                 ungroup: members > 0,
-                measure_roll: !preparing && count > 0,
-                reset_to_default: gallery && count > 0,
+                measure_roll: !preparing && roll > 0,
+                reset_to_default: gallery && roll > 0,
                 copy_settings: open,
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
@@ -155,8 +158,7 @@ impl Ctl {
             // A sheet is modal: nothing behind it moves until it closes.
             let live = if sheet { MenuLive::default() } else { live };
             let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
-            let filter_word = filter.map_or(tr("ALL").to_string(), |m| library::medal(m).to_uppercase());
-            (titles, live, film_type, count, filter_word, select_all)
+            (titles, live, film_type, count, filter, select_all)
         };
         let menus = w.global::<Menus>();
         menus.set_titles(titles);
@@ -168,10 +170,11 @@ impl Ctl {
         bar.set_can_paste(live.paste_settings);
         bar.set_can_select_all(select_all);
         bar.set_can_prepare(live.measure_roll);
+        bar.set_can_toggle_mode(live.toggle_mode);
         panel.set_can_prepare(true);
         self.publish_presets();
         self.publish_rolls();
         self.publish_roll_tab();
-        bar.set_filter(filter_word.into());
+        w.global::<Library>().set_filter_medal(filter.map_or(0, library::medal_index));
     }
 }

@@ -152,7 +152,7 @@ pub(crate) fn a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it(
     // T7 goes away: its photo tiles as offline in the trash, A's as present.
     std::fs::rename(d.root.join("Volumes/T7"), d.root.join("T7 away")).unwrap();
     let lib = shell.window.global::<Library>();
-    lib.invoke_trash_row_double_clicked(0);
+    lib.invoke_trash_row_clicked(0);
     let ctl = shell.ctl.clone();
     rig.until("C1 marked offline", Duration::from_secs(10), || shown(&shell).contains(&("C1".to_string(), true)));
     assert!(!ctl.state.borrow().presence(&c1).is_present());

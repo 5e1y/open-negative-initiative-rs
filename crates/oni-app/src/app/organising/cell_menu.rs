@@ -202,8 +202,6 @@ impl Ctl {
         match line.action {
             CellAction::Paste => self.paste(),
             CellAction::Reset => self.reset_all(),
-            CellAction::ResetToDefault => self.act(crate::Act::ResetToDefault),
-            CellAction::Medal(m) => self.label_paths(&line.scope, m),
             CellAction::NewRoll => self.new_roll(),
             CellAction::Ungroup => {
                 let paths = line.scope.clone();

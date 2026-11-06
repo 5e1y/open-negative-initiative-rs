@@ -26,7 +26,8 @@ impl Ctl {
                 unfolded,
                 picked: s.org.trash_picked.as_deref() == Some(""),
                 opened: s.org.trash_open,
-                present: count > 0,
+                // Empty, the ONI Trash is still there to open, never greyed as a folder away.
+                present: true,
                 restore_help: if count > 0 { tr("Restore every photo in the ONI Trash") } else { "" }.into(),
             }];
             let mut shown = vec![String::new()];
@@ -66,31 +67,31 @@ impl Ctl {
         shown_folder(&s.org.trash_lines, &s.org.trashed, i)
     }
 
-    /// `onClick(1)`: the trash row folds, a folder row is picked.
+    /// A click opens the ONI Trash, as a folder's opens the folder, and picks the row: the trash
+    /// itself, or one of its folders; its empty grid says so.
     pub(in crate::app) fn trash_row_clicked(self: &Rc<Self>, i: usize) {
         if self.state.borrow_mut().second_click(Column::Trash, i) {
             return;
         }
-        {
-            let folder = self.trash_folder(i);
-            let mut s = self.state.borrow_mut();
-            match folder {
-                None if i == 0 => {
-                    s.org.trash_picked = Some(String::new());
-                    if !s.org.trashed.is_empty() {
-                        s.org.trash_unfolded = !s.org.trash_unfolded;
-                    }
-                }
-                Some((path, _)) => s.org.trash_picked = Some(path),
-                None => {}
-            }
-        }
-        self.publish_trash_rows();
+        let picked = match self.trash_folder(i) {
+            Some((path, _)) => path,
+            None if i == 0 => String::new(),
+            None => return,
+        };
+        self.state.borrow_mut().org.trash_picked = Some(picked);
+        self.open_trash();
     }
 
-    /// `onClick(2)`: the second click opens the ONI Trash, the fold the first click turned kept.
-    pub(in crate::app) fn trash_row_double_clicked(self: &Rc<Self>, _: usize) {
-        self.open_trash();
+    /// The chevron alone: the trash's folders fold or unfold, and nothing opens.
+    pub(in crate::app) fn trash_row_folded(self: &Rc<Self>, i: usize) {
+        {
+            let mut s = self.state.borrow_mut();
+            if i != 0 || s.org.trashed.is_empty() {
+                return;
+            }
+            s.org.trash_unfolded = !s.org.trash_unfolded;
+        }
+        self.publish_trash_rows();
     }
 
     pub(in crate::app) fn trash_row_restore(self: &Rc<Self>, i: usize) {

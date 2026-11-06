@@ -1,0 +1,25 @@
+// The gallery's rating filter: every photo, or the photos wearing one medal, each a press away and
+// shown by the medal itself, as the tiles and the status bar show it.
+import { Button, ButtonGroup, Medal } from "ds/ds.slint";
+import { Library } from "library.slint";
+
+export component RatingFilter inherits ButtonGroup {
+    plate: true;
+    Button {
+        text: @tr("ALL");
+        on: Library.filter-medal == 0;
+        help: @tr("Show every photo, whatever its medal");
+        clicked => { Library.filter-picked(0); }
+    }
+    for medal in [1, 2, 3]: Button {
+        square: true;
+        on: Library.filter-medal == medal;
+        help: [@tr("Show the Bronze photos alone"), @tr("Show the Silver photos alone"), @tr("Show the Gold photos alone")][medal - 1];
+        clicked => { Library.filter-picked(medal); }
+        Medal {
+            rank: medal;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+        }
+    }
+}

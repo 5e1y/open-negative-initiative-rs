@@ -204,6 +204,36 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_o
 }
 
 #[test]
+fn a_medal_laid_on_several_photos_undoes_as_one_step_to_each_one_s_own() {
+    use oni_settings::Medal;
+    let dir = std::env::temp_dir().join(format!("oni-core-store-medals-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let [a, b] = ["a.tif", "b.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
+    for p in [&a, &b] {
+        std::fs::write(p, b"").unwrap();
+    }
+    let medal = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().label;
+    let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));
+    store.lay_medal(std::slice::from_ref(&b), Medal::Bronze);
+    let written = store.lay_medal(&[a.clone(), b.clone()], Medal::Gold);
+    assert!(written.iter().all(|(_, w)| w.is_ok()));
+    assert_eq!((medal(&a), medal(&b)), (Medal::Gold, Medal::Gold));
+    assert_eq!(store.gallery_history().undo_label(), Some("Medal on 2 photos"));
+    store.undo(Surface::Gallery);
+    assert_eq!((medal(&a), medal(&b)), (Medal::None, Medal::Bronze), "each photo gets its own medal back");
+    store.redo(Surface::Gallery);
+    assert_eq!((medal(&a), medal(&b)), (Medal::Gold, Medal::Gold));
+    // Twin: the medal both already wear opens no step, so undo reaches the one before.
+    store.lay_medal(&[a.clone(), b.clone()], Medal::Gold);
+    assert_eq!(store.gallery_history().undo_label(), Some("Medal on 2 photos"));
+    store.undo(Surface::Gallery);
+    store.undo(Surface::Gallery);
+    assert_eq!(medal(&b), Medal::None);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn a_frame_whose_original_is_gone_opens_read_only_and_writes_nothing() {
     let dir = std::env::temp_dir().join(format!("oni-core-store-gone-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
