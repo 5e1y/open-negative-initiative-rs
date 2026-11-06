@@ -6458,5 +6458,12 @@
     "title": "The favourites' view is a funnel key lit while on, and an empty list speaks at its top on the rows' inset",
     "status": "done",
     "detail": "Evaluation, UI Iconography and Spacing: the star marked a favourite folder and also toggled the favourites-only view; the view is now a funnel (filter.svg, drawn in Trinil's stroke) on a flat key lit while on, the star kept for the mark alone. 'No Projects' floated mid-column, laid over the whole column; it, No Favourites and an unreachable base now share RowsEmpty, at the list's top on the rows' text inset with the hint beneath, the projects' saying how one is made. Check: column_edges' empty lists, the grid's centred state as twin, and the key's checked state off then on."
+  },
+  {
+    "id": 1333,
+    "type": "design",
+    "title": "A rounded row selected is the tab bar's raised pill",
+    "status": "done",
+    "detail": "Evaluation, UI Art direction: the gallery, the sidebar and Settings read as bare beside the editor's panel. One discreet touch within the art direction: the selection of the navigator, of Settings' and of the presets' side lists is the raised pill the tab bar slides under its tab (Outward on TabsStyle.pill), so a column's selection and its tab bar speak alike. A tree's list rows keep their flat band, which joins several selected; the tiles stay flat, being the photos, their medals and seals already the metal."
   }
 ]

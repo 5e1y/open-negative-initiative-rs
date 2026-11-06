@@ -1,7 +1,7 @@
 // Every line of a list or a tree: a title, its kind's glyph and chevron, a caption, a path before it,
 // a second line, a tint's badge, a star, a key on hover, its state when out of reach or unprepared,
 // and the title typed over while renamed; and what an empty list says in place of its lines.
-import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle, TabsStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tips, Divider } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Icons } from "icons.slint";
@@ -11,6 +11,7 @@ import { FormStyle } from "forms.slint";
 import { StockIcon } from "stocks.slint";
 import { Reach, Reaches } from "reach.slint";
 import { KeyScope, FocusRing } from "keyboard.slint";
+import { Outward } from "depth.slint";
 
 // `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders;
 // `heading` names the lines under it, in the tertiary ink, out of reach.
@@ -107,7 +108,10 @@ export component Row inherits Rectangle {
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
     height: root.choice ? ButtonStyle.small-height : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
     border-radius: root.form != RowForm.list ? Radius.badge : 0px;
-    property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
+    // A rounded row selected is the tab bar's raised pill; a list's lines keep a flat band, which
+    // several selected side by side join into one.
+    property <bool> raised: root.selected && root.form != RowForm.list;
+    property <brush> band: root.heading || root.raised ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
     property <bool> away: root.reach != Reach.here;
@@ -120,6 +124,7 @@ export component Row inherits Rectangle {
     // Under the pointer, an unprepared roll's state before the row's own words, as its path.
     property <string> tip: root.unprepared && root.help != "" ? @tr("Not prepared yet") + "\n" + root.help : root.unprepared ? @tr("Not prepared yet") : root.help;
     if root.pinned: Rectangle { background: root.band; }
+    if root.raised: Outward { fill: TabsStyle.pill; radius: Radius.badge; }
     area := TouchArea {
         property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
         enabled: !root.renaming && !root.heading;
