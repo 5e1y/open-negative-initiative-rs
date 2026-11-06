@@ -92,6 +92,7 @@ export struct MenuLive {
     reset: bool,
     smaller: bool,
     larger: bool,
+    fit: bool,
     compare: bool,
     hide-library: bool,
     hide-panel: bool,
@@ -201,6 +202,7 @@ export component MainWindow inherits AppWindow {
             title: @tr("View");
             MenuItem { title: Menus.titles.smaller; shortcut: @keys(Control + "-"); enabled: Menus.live.smaller; activated => { App.menu(Act.smaller); } }
             MenuItem { title: Menus.titles.larger; shortcut: @keys(Control + Shift? + "+"); enabled: Menus.live.larger; activated => { App.menu(Act.larger); } }
+            MenuItem { title: @tr("Zoom to Fit"); shortcut: @keys(Control + "0"); enabled: Menus.live.fit; activated => { App.menu(Act.fit); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.compare; enabled: Menus.live.compare; activated => { App.menu(Act.compare); } }
             MenuItem { title: Menus.titles.library; shortcut: @keys(Control + Alt + "["); enabled: Menus.live.hide-library; activated => { App.menu(Act.hide-library); } }

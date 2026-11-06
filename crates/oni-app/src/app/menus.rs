@@ -37,7 +37,7 @@ impl Ctl {
             let single = s.together.is_none();
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
             let rung = |by: i32| match (s.full_size, canvas) {
-                (Some(full), Some(view)) if !gallery && decoded => Viewport::rung(s.viewport.effective_scale(full, view), s.viewport.is_fitted(), by).is_some(),
+                (Some(full), Some(view)) if !gallery && decoded => s.viewport.rung(by, full, view).is_some(),
                 _ => false,
             };
             let (zoom_out, zoom_in) = (rung(-1), rung(1));
@@ -111,6 +111,7 @@ impl Ctl {
                 reset: can_reset,
                 smaller: if gallery { gallery::column_step(columns, -1) != columns } else { zoom_out },
                 larger: if gallery { gallery::column_step(columns, 1) != columns } else { zoom_in },
+                fit: !gallery && decoded,
                 compare: !gallery && decoded,
                 hide_library: !gallery,
                 hide_panel: !gallery,

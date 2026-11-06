@@ -138,21 +138,25 @@ impl Ctl {
             match (placed, self.canvas_size()) {
                 (Some(p), Some(size)) => {
                     let current = s.viewport.effective_scale(p.full, size);
-                    let fitted = s.viewport.is_fitted();
                     let ratio = s.negative.as_ref().filter(|(_, n)| n.full_width > 0.0).map_or(1.0, |(_, n)| f64::from(n.size().0) / n.full_width);
                     let enlarged = viewport::enlarged(current, ratio, p.at_full_resolution);
-                    Some((viewport::zoom_label(current), enlarged, Viewport::rung(current, fitted, -1).is_some(), Viewport::rung(current, fitted, 1).is_some()))
+                    Some((viewport::zoom_label(current), enlarged, s.viewport.rung(-1, p.full, size).is_some(), s.viewport.rung(1, p.full, size).is_some()))
                 }
                 _ => None,
             }
         };
         let (label, enlarged, out, inward) = bubble.unwrap_or_default();
+        // A wheel, a pinch or a double click moves the view outside any menu item: ⌘− and ⌘+ follow it.
+        let reach = (c.get_can_zoom_out(), c.get_can_zoom_in()) != (out, inward);
         c.set_zoom_label(label.into());
         c.set_enlarged(enlarged);
         c.set_can_zoom_out(out);
         c.set_can_zoom_in(inward);
         self.publish_framing();
         self.publish_dedust();
+        if reach {
+            self.publish_menus();
+        }
     }
 
     /// The display kernel writes the canvas texture, which the next frame draws, or which is read back

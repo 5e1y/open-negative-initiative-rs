@@ -29,36 +29,49 @@ fn the_hundred_rung_lands_on_its_number_at_every_window_width() {
     assert!(misses > count / 20, "{misses} misses");
 }
 
+/// The rungs − or + reach from `from`, one a press, until the ladder ends, with the scale each shows.
+fn walked(view: Size, delta: i32, from: Viewport) -> (Viewport, Vec<(Rung, f64)>) {
+    let (mut port, mut path) = (from, Vec::new());
+    while let Some(rung) = port.rung(delta, RAW, view) {
+        port.step(rung, RAW, view);
+        path.push((rung, port.effective_scale(RAW, view)));
+    }
+    (port, path)
+}
+
 #[test]
 fn plus_climbs_rung_by_rung_and_minus_descends_through_the_same_values_to_fit() {
     assert!(ZOOM_STEPS.windows(2).all(|w| w[0] < w[1]), "ascending and distinct");
     assert!(ZOOM_STEPS.iter().all(|s| (RANGE.0..=RANGE.1).contains(s)) && ZOOM_STEPS.last() == Some(&RANGE.1));
-    let (mut climb, mut fitted, mut current) = (Vec::new(), true, 1800.0 / 8368.0);
-    while let Some(next) = Viewport::rung(current, fitted, 1) {
-        climb.push(next);
-        fitted = false;
-        if let Rung::Scale(s) = next {
-            current = s;
-        }
+    // Fitted at 21 %, under every rung, and at 35 %, between 25 % and 50 %.
+    for (view, above) in [((1800.0, 1200.0), &ZOOM_STEPS[..]), ((8368.0 * 0.35, 5584.0 * 0.35), &ZOOM_STEPS[1..])] {
+        let (top, climb) = walked(view, 1, Viewport::default());
+        assert_eq!(climb.iter().map(|&(r, _)| r).collect::<Vec<_>>(), above.iter().map(|&s| Rung::Scale(s)).collect::<Vec<_>>());
+        let (bottom, descent) = walked(view, -1, top);
+        let mut expected: Vec<Rung> = above[..above.len() - 1].iter().rev().map(|&s| Rung::Scale(s)).collect();
+        expected.push(Rung::Fit);
+        assert_eq!(descent.iter().map(|&(r, _)| r).collect::<Vec<_>>(), expected);
+        assert!(bottom.is_fitted());
+        // Each − shows the photo smaller than the last, down to fit.
+        assert!(descent.windows(2).all(|w| w[1].1 < w[0].1), "{descent:?}");
     }
-    assert_eq!(climb, ZOOM_STEPS.map(Rung::Scale).to_vec());
-    let (mut descent, mut fitted) = (Vec::new(), false);
-    while let Some(previous) = Viewport::rung(current, fitted, -1) {
-        descent.push(previous);
-        match previous {
-            Rung::Scale(s) => current = s,
-            Rung::Fit => fitted = true,
-        }
-    }
-    let mut expected: Vec<Rung> = ZOOM_STEPS[..ZOOM_STEPS.len() - 1].iter().rev().map(|&s| Rung::Scale(s)).collect();
-    expected.push(Rung::Fit);
-    assert_eq!(descent, expected);
     // From a free 62 %: + gives 100 %, − gives 50 %.
-    assert_eq!(Viewport::rung(0.62, false, 1), Some(Rung::Scale(1.0)));
-    assert_eq!(Viewport::rung(0.62, false, -1), Some(Rung::Scale(0.5)));
+    let free = Viewport { scale: Some(0.62), offset: (0.0, 0.0) };
+    let view = (1800.0, 1200.0);
+    assert_eq!((free.rung(1, RAW, view), free.rung(-1, RAW, view)), (Some(Rung::Scale(1.0)), Some(Rung::Scale(0.5))));
     // Twin: "the nearest rung, then one step" would skip 50 % for 25 %.
     let nearest = (0..ZOOM_STEPS.len()).min_by(|&a, &b| (ZOOM_STEPS[a] - 0.62).abs().total_cmp(&(ZOOM_STEPS[b] - 0.62).abs())).unwrap();
-    assert_ne!(Viewport::rung(0.62, false, -1), Some(Rung::Scale(ZOOM_STEPS[nearest.saturating_sub(1)])));
+    assert_ne!(free.rung(-1, RAW, view), Some(Rung::Scale(ZOOM_STEPS[nearest.saturating_sub(1)])));
+    // Twin: a ladder blind to the fitted 35 % steps from 50 % under it, and its next − zooms in to fit.
+    let (view, mut port) = ((8368.0 * 0.35, 5584.0 * 0.35), Viewport { scale: Some(0.5), offset: (0.0, 0.0) });
+    let mut scales = vec![0.5];
+    for _ in 0..2 {
+        if let Some(rung) = next_rung(port.effective_scale(RAW, view), RANGE.0, -1) {
+            port.step(rung, RAW, view);
+            scales.push(port.effective_scale(RAW, view));
+        }
+    }
+    assert!(!scales.windows(2).all(|w| w[1] < w[0]), "{scales:?}");
 }
 
 #[test]
