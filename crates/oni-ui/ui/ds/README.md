@@ -11,7 +11,7 @@ and every screen picks it up.
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `theme_type.slint` | `Type`, the type scale, re-exported by `theme.slint` | By hand |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
-| `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
+| `theme_sliders.slint` | `SliderStyle`, `DialStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
 | `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
@@ -138,6 +138,11 @@ fade and the chrome stays. The picker's field wears the same face.
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field
   tall, shows the field's face and a text cursor under the hand, and a click types a number over it
   (`Typing`, answered by Rust), reached by the steps an arrow takes.
+- **Dial** (`Slider { dial }`, `Dial`): a value that is truly a turn, the straighten's angle, as a camera's command
+  dial seen edge on: a black-anodised ring in an `Inward` slot, its scale in the value's unit (`lowest` to `highest`)
+  foreshortened and shaded toward the ends, a fixed index at its middle. The scale moves with the hand, so a drag
+  right brings the lower figures under the index, and a press never jumps it; the ring turns `DialStyle.turn` a
+  unit. Every other behaviour is the slider's.
 - **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
   `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
 
@@ -170,7 +175,8 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   cast shade; `sheet` lengthens the shadow (`Outward.lift` 1). The sheets, the notices, the banners, the
   slid columns and the popups stand on it. **Popover** hangs a `Raised` under its tail (`DSPopoverShape`),
   `tail-x` below zero centring it; `PopupPanel` draws one, a menu without a tail.
-- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (a count in the words' own ink) and
+- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (a figure the app reports: the crop's and the
+  export's sizes, the export's weight, the version, a count; in the words' own ink) and
   the passes' reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
   gallery's many tiles keep their flat well.
 - **Past the bounds**: an `Inward`'s lit lip reaches `Depth.lip-reach` under it and an `Outward`'s shadow
@@ -179,9 +185,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
   `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
-  (a menu's rule) keeps a flat line. `SectionTitle`, the one header of every column (a `Section`'s, Export's,
-  Prepare's, De-dust's), is engraved alike under it, the groove's shade along its letters' top and the lit
-  edge along their foot, its words as written: capitals are the keycap's alone.
+  (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
+  alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line
+  below. Capitals belong to the keycaps alone.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no

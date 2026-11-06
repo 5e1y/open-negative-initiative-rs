@@ -2646,12 +2646,12 @@ msgstr[0] "{n} profil installé — l’export utilise désormais « {name} »
 msgstr[1] "{n} profils installés — l’export utilise désormais « {name} »."
 
 #: crates/oni-app/src/app/export_card/publishing.rs
-msgid "estimated total size"
-msgstr "taille totale estimée"
+msgid "Estimated total size"
+msgstr "Taille totale estimée"
 
 #: crates/oni-app/src/app/export_card/publishing.rs
-msgid "estimated size"
-msgstr "taille estimée"
+msgid "Estimated size"
+msgstr "Taille estimée"
 
 #: crates/oni-app/src/app/export_card/publishing.rs
 msgid "EXPORT CONTACT SHEET"

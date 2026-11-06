@@ -16,6 +16,7 @@ mod canvas_switch;
 mod column_edges;
 mod column_menu;
 mod density;
+mod dial;
 mod depth_lip;
 mod design_system;
 mod editor_leftovers;
@@ -192,6 +193,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed", tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
+    ("dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it", dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),

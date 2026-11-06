@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
 // the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, SectionTitle, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize } from "ds/ds.slint";
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
 import { Converting } from "dng.slint";
@@ -77,7 +77,7 @@ export component RollPanel inherits Surface {
         VerticalLayout {
             spacing: Space.s;
             padding-bottom: Space.s;
-            SectionTitle { text: Preparing.heading; }
+            Engraved { role: TextRole.section; text: Preparing.heading; wrap: word-wrap; }
             if Preparing.detail != "": Label { role: TextRole.note; text: Preparing.detail; }
         }
         // In a box of its own, so the body's width never feeds the layout it sits in.

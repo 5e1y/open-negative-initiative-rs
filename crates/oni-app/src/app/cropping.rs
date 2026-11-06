@@ -82,6 +82,9 @@ impl Ctl {
         f.set_portrait(g.portrait);
         f.set_orientable(g.ratio.is_some_and(|r| r != oni_settings::frame::AspectRatio::Square));
         f.set_kept(image.map(|i| geom::pixel_label(g.cropped_pixel_size(i))).unwrap_or_default().into());
+        let (low, high) = Geometry::ANGLE_RANGE;
+        f.set_angle_lowest(low.round() as i32);
+        f.set_angle_highest(high.round() as i32);
         f.set_modified(g != Geometry::reset_keeping(&g));
         f.set_mirrored(g.mirrored);
         f.set_mirrored_vertically(g.mirrored_vertically);

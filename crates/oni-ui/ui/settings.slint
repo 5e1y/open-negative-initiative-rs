@@ -2,7 +2,7 @@
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
 import { Pairing } from "pairing.slint";
-import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, Label, Tone, TextRole, Row, Toggle, Divider, RowForm } from "ds/ds.slint";
+import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -155,7 +155,11 @@ component AboutPage inherits Page {
         before: SectionStyle.flush;
         separated: false;
         title: @tr("Open Negative Initiative");
-        Label { text: AppSettings.version; role: TextRole.value; tone: Tone.secondary; }
+        // The figure the app reports of itself, on the glass every reported figure reads on.
+        HorizontalLayout {
+            alignment: start;
+            LcdReadout { text: AppSettings.version; }
+        }
         ButtonGroup {
             SheetKey { text: @tr("Check for Updates"); act: Act.check-updates; }
             SheetKey { text: @tr("What's New"); act: Act.whats-new; }

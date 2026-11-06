@@ -1,8 +1,7 @@
 // The containers: a block's section, the help mark, the sheet, the question a sheet asks, the
 // notice that passes and the banner that stays.
-import { DS } from "tokens.slint";
-import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
-import { Label, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
+import { Colour, Space, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
+import { Label, Engraved, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
 import { Scroller } from "collections.slint";
@@ -29,41 +28,6 @@ export component HelpMark inherits Rectangle {
         note: root.note;
         demo: root.demo;
         accessible-label: @tr("What this block does");
-    }
-}
-
-// The one header of every column, a block's or a panel's: its words as written, a step over the labels
-// under it, engraved as the rule above it, the groove's shade along their top and its lit edge at their foot.
-export component SectionTitle inherits Rectangle {
-    in property <string> text;
-    preferred-width: word.preferred-width;
-    min-height: word.preferred-height;
-    Label {
-        y: -Stroke.line;
-        width: parent.width;
-        height: parent.height;
-        role: TextRole.section;
-        text: root.text;
-        wrap: word-wrap;
-        ink: DS.palette-groove;
-        accessible-role: none;
-    }
-    Label {
-        y: Stroke.line;
-        width: parent.width;
-        height: parent.height;
-        role: TextRole.section;
-        text: root.text;
-        wrap: word-wrap;
-        ink: DS.palette-groove-light;
-        accessible-role: none;
-    }
-    word := Label {
-        width: parent.width;
-        height: parent.height;
-        role: TextRole.section;
-        text: root.text;
-        wrap: word-wrap;
     }
 }
 
@@ -100,9 +64,10 @@ export component Section inherits VerticalLayout {
         spacing: 0;
         if root.title != "": HorizontalLayout {
             spacing: Space.s;
-            SectionTitle {
+            Engraved {
+                horizontal-stretch: 0;
+                role: TextRole.section;
                 text: root.title;
-                width: self.preferred-width;
                 if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
@@ -209,7 +174,7 @@ export component Sheet inherits Rectangle {
                     height: root.fixed ? card.height : self.preferred-height;
                     padding: root.edge ? 0px : SheetStyle.padding;
                     spacing: root.edge ? 0px : Tones.gap(root.gap);
-                    if root.header == SheetHeader.leading && root.title != "": Label {
+                    if root.header == SheetHeader.leading && root.title != "": Engraved {
                         role: root.question ? TextRole.section : TextRole.title;
                         text: root.title;
                         wrap: word-wrap;
@@ -218,7 +183,7 @@ export component Sheet inherits Rectangle {
                         padding: Space.m;
                         padding-left: SheetStyle.padding;
                         padding-right: SheetStyle.padding;
-                        Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
+                        Engraved { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
                         Button { text: root.exit; keycap: true; clicked => { root.dismissed(); } }
                     }
                     if root.header == SheetHeader.bar: Divider { }

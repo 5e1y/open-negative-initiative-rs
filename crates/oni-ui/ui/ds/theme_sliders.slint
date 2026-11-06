@@ -54,6 +54,27 @@ export global SliderStyle {
     in-out property <length> step-legend: 15px;
 }
 
+// A dial: the edge of a black-anodised ring turning in a slot milled into the panel, its scale engraved.
+export global DialStyle {
+    out property <length> height: 28px;
+    out property <length> radius: DS.radius-track;
+    // The ring turns this far for each unit of its value: a degree's mark stands about 24 pt apart at
+    // the index, and the straighten's 16 degrees span 144 degrees of the ring, its ends still in sight.
+    out property <angle> turn: 9deg;
+    // A mark each half unit, the whole ones longer, a figure every two units.
+    out property <int> marks: 2;
+    out property <int> figure: 2;
+    // A figure shows within this turn of the index, so none is cut at the ring's ends, either side alike.
+    out property <angle> figures: 66deg;
+    out property <length> mark: 4px;
+    out property <length> whole-mark: 8px;
+    out property <length> foot: 3px;
+    out property <length> index: DS.stroke-emphasis;
+    // The ring where it faces the eye and where it turns away, no Swift token: metal, darker than a key.
+    out property <color> face: #3c3c3e;
+    out property <color> edge: #0b0b0c;
+}
+
 // The plots: the panel's main histogram and an editor's screen, its round and engraved quarters, then
 // the handles' and bands' inks Swift's views write as literals, which no token holds.
 export global PlotStyle {

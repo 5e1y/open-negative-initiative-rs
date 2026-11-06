@@ -132,6 +132,9 @@ export global Framing {
     // The ratio has an orientation to turn: neither Free nor 1:1.
     in property <bool> orientable;
     in property <string> kept;
+    // The straighten's ends in degrees, its dial's scale.
+    in property <int> angle-lowest;
+    in property <int> angle-highest;
     in property <bool> modified;
     in property <bool> mirrored;
     in property <bool> mirrored-vertically;
