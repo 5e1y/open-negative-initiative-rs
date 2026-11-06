@@ -131,3 +131,13 @@ The finish from one step to the next.
 - Not here: the polish of one still screen (UI · Spacing and density, Consistency and polish).
 - **Excels:** nothing ever jumps. **Fails:** a panel that jumps when its content lands, a flash of
   an empty state.
+
+## 13. Play
+
+Handling the app is a pleasure of its own, like a camera's mechanics in the hand.
+
+- Press and release, travel, springs, detents and clicks on keys, sliders and levers; small rewards for
+  touching things, an invitation to fiddle.
+- The play never slows the work nor hides a state.
+- **Excels:** the controls are fun to touch and make the work quicker. **Fails:** dead controls with no
+  feedback, or gimmicks that delay the hand.

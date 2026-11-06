@@ -72,7 +72,17 @@ Each category says what it judges, what to look at, and the two ends of its scal
 - **Excels:** someone looking over a shoulder can say what is going on. **Fails:** a value with no
   unit, a control whose purpose takes a click to learn.
 
-## 8. Overall
+## 8. Art direction
+
+- ONI is a digital tool and owns it, while its look nods to the analogue medium it serves: keys, levers and
+  dials, metal, film canisters, playful like a film camera.
+- Large surfaces stay flat; texture belongs to small pieces only, such as labels and medals.
+- One analogue vocabulary, held with the same care everywhere; the nods never compete with the photo, never
+  tint it and never blur what a control says.
+- **Excels:** handling it feels like holding a well-made film camera. **Fails:** generic flat software, or
+  kitsch that clutters the screen or biases the photo.
+
+## 9. Overall
 
 - The screen as a whole: one coherent visual language, a professional tool made for photographers,
   a screen a demanding designer would ship.
