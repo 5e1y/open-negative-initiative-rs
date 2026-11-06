@@ -231,7 +231,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("prepare_loupe::an_unreadable_scan_says_why_on_the_base_step", prepare_loupe::an_unreadable_scan_says_why_on_the_base_step),
     ("dng::high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up", dng::high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up),
     ("slides::a_slide_roll_takes_the_gains_of_the_white_picked_through_one_window", slides::a_slide_roll_takes_the_gains_of_the_white_picked_through_one_window),
-    ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
+    ("preset_deck::the_deck_opens_on_its_tab_and_answers_the_pointer", preset_deck::the_deck_opens_on_its_tab_and_answers_the_pointer),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),

@@ -101,9 +101,9 @@ msgstr "Réinitialiser la pellicule…"
 msgid "Settings"
 msgstr "Réglages"
 
-#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
-msgid "Copy Settings"
-msgstr "Copier les réglages"
+#: crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
+msgid "Copy Settings…"
+msgstr "Copier les réglages…"
 
 #: crates/oni-ui/ui/app.slint
 msgid "Save as Preset…"
@@ -908,6 +908,8 @@ msgid "{} blocks recorded"
 msgstr "{} blocs enregistrés"
 
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
+
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copier"
 
@@ -2087,6 +2089,10 @@ msgstr "À quoi sert ce look"
 #: crates/oni-ui/ui/presets.slint
 msgid "Carries"
 msgstr "Contient"
+
+#: crates/oni-app/src/app/presets/sheets.rs crates/oni-ui/ui/presets.slint
+msgid "Copy Settings"
+msgstr "Copier les réglages"
 
 #: crates/oni-ui/ui/presets.slint
 msgid "Save a Preset"
@@ -3852,6 +3858,10 @@ msgstr[0] "Un fichier a été écarté : il figure déjà dans vos préréglage
 msgstr[1] "{n} fichiers ont été écartés : ils figurent déjà dans vos préréglages, ou ce ne sont pas des préréglages."
 
 #: crates/oni-app/src/app/presets/shelf.rs
+msgid "No presets yet · + saves this photo’s settings as one"
+msgstr "Aucun préréglage · + enregistre les réglages de cette photo comme préréglage"
+
+#: crates/oni-app/src/app/presets/shelf.rs
 msgid "Hover to preview · click applies"
 msgstr "Survolez pour prévisualiser · cliquez pour appliquer"
 
@@ -4544,6 +4554,10 @@ msgstr "Non incluse laisse à chaque photo sa propre balance. Balance copiée co
 #: crates/oni-core/src/preset_parameters.rs
 msgid "A preset never carries crop, straightening, rotation or the conversion mode."
 msgstr "Un préréglage ne contient jamais le recadrage, le redressement, la rotation ni le mode de conversion."
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "A copy never carries the roll's settings, crop, straightening, rotation or the conversion mode."
+msgstr "Une copie ne contient jamais les réglages de la pellicule, le recadrage, le redressement, la rotation ni le mode de conversion."
 
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Carries nothing — applying it would change no setting."

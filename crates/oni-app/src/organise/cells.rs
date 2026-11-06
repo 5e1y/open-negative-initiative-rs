@@ -97,7 +97,7 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     }
     lines.extend([
         // One photo's settings at a time, as the editor's Copy takes the open frame's.
-        line(tr("Copy Settings").into(), n == 1 && gone == 0, gone > 0, CellAction::Copy, &here, 0),
+        line(tr("Copy Settings\u{2026}").into(), n == 1 && gone == 0, gone > 0, CellAction::Copy, &here, 0),
         line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste && any, false, CellAction::Paste, &here, gone),
     ]);
     lines.push(line(counted(n, "Move into a New Roll…", tr!("Move into a New Roll… ({count} photos)", count = n)), any, true, CellAction::NewRoll, &here, gone));
@@ -168,7 +168,7 @@ mod tests {
         assert_eq!(
             texts,
             [
-                "1 photo missing", "Copy Settings", "Paste Settings", "Move into a New Roll\u{2026}", "Ungroup",
+                "1 photo missing", "Copy Settings\u{2026}", "Paste Settings", "Move into a New Roll\u{2026}", "Ungroup",
                 "New Project from 2 Photos", "Add to Project", "Export\u{2026}", platform::reveal(Platform::THIS),
                 "Reset Settings", "Move to ONI Trash"
             ]

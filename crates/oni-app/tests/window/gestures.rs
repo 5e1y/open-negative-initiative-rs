@@ -141,7 +141,9 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.pump();
     let donor = ctl.state.borrow().store().get(Field::Exposure);
     rig.chord_with(&[Key::Control, Key::Shift], "c");
-    assert!(menus.get_live().paste_to_roll);
+    assert!(w.global::<oni_app::Presets>().get_copying() && !menus.get_live().paste_to_roll, "the copy sheet asks what it carries first");
+    rig.key("\r");
+    assert!(menus.get_live().paste_to_roll, "twin: Return copies");
     rig.chord(Key::Control, "g");
     assert!(w.global::<App>().get_gallery());
     lib.invoke_tile_clicked(1, false, false);

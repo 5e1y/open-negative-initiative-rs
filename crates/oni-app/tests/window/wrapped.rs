@@ -78,6 +78,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     // A medal, a paste, the balance key, a preset: one record each, as Swift notes them.
     ctl.act(oni_app::Act::MedalGold);
     ctl.act(oni_app::Act::Copy);
+    w.global::<oni_app::Presets>().invoke_save_confirmed();
     ctl.act(oni_app::Act::Paste);
     w.global::<PanelState>().invoke_auto_balance();
     w.global::<Menus>().invoke_apply_preset(0);

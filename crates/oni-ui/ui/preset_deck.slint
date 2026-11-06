@@ -1,70 +1,61 @@
 // The presets' deck on the canvas's bottom edge.
-import { Space, State, Colour, PresetStyle, PresetFace, Badge, Scroller, Tips, Menu, Label, TextRole } from "ds/ds.slint";
+import { Space, State, PresetStyle, PresetFace, PresetTab, Badge, Scroller, Tips, Menu } from "ds/ds.slint";
 import { Presets } from "presets.slint";
 
-// `PresetCarousel`: down to a strip at rest, up while the pointer is on it; a card previews under
-// the pointer and applies on a click; the rest sits on its right click.
+// `PresetCarousel`: its tab on the canvas's bottom edge opens the deck, which closes on the tab or
+// once the pointer leaves it; a card previews under the pointer and applies on a click.
 export component PresetDeck inherits Rectangle {
     accessible-role: list;
     accessible-label: @tr("Presets");
-    property <length> full: PresetStyle.lift + PresetStyle.card-height + Space.s;
-    property <bool> up: zone.has-hover;
+    // The cards' band over the tab: the lift a card rises by, the card, the gap down to the tab.
+    property <length> band: PresetStyle.lift + PresetStyle.card-height + Space.s;
+    property <bool> open;
     property <length> menu-x;
     property <length> menu-y;
-    // The deck's top, and the top of what answers the pointer: at rest the strip shown alone, so
-    // the lift's band above it stays the photo's.
-    property <length> top: root.up ? root.height - root.full : root.height - PresetStyle.peek - PresetStyle.lift;
-    property <length> reach: root.up ? 0px : root.height - PresetStyle.peek;
-    animate top, reach { duration: PresetStyle.rise; }
-    height: self.full + Space.l + Space.m;
+    height: root.band + PresetStyle.peek + Space.l + Space.m;
     clip: true;
-    if root.up && Presets.cards.length > 0: Badge {
+    if root.open: Badge {
         x: (root.width - self.width) / 2;
-        y: root.top - Space.l;
+        y: zone.y - Space.l;
         text: Presets.hint;
     }
-    Rectangle {
-        y: root.reach;
-        height: root.height - root.reach;
-        clip: true;
-        zone := TouchArea {
-            y: root.top - root.reach;
-            height: root.full;
-            // Every wheel is the deck's, or it would drop it.
-            scroll-event(event) => {
-                root.roll-by(abs(event.delta-y) > abs(event.delta-x) ? event.delta-y : event.delta-x);
-                accept
+    // Deaf while closed, so the canvas's edge beside the tab stays the photo's.
+    zone := TouchArea {
+        y: root.height - self.height;
+        height: root.band + PresetStyle.peek;
+        enabled: root.open;
+        changed has-hover => {
+            if (!self.has-hover) {
+                root.open = false;
             }
+        }
+        // Every wheel is the deck's, or the canvas under it would take it.
+        scroll-event(event) => {
+            root.roll-by(abs(event.delta-y) > abs(event.delta-x) ? event.delta-y : event.delta-x);
+            accept
+        }
+        // The cards rise out of the tab's top edge and sink back behind it.
+        Rectangle {
+            height: root.band;
+            clip: true;
             HorizontalLayout {
+                y: root.open ? 0 : root.band;
+                height: root.band;
+                animate y { duration: PresetStyle.rise; }
                 padding-left: Space.l;
                 padding-right: Space.l;
                 spacing: Space.s;
                 alignment: start;
                 Rectangle {
                     width: PresetStyle.card-width;
-                    height: root.full;
-                    new-card := PresetFace { new: true;
-                        y: PresetStyle.lift - (plus.has-hover && Presets.can-update ? PresetStyle.lift : 0px);
+                    PresetFace { new: true;
+                        y: PresetStyle.lift - (self.lit ? PresetStyle.lift : 0px);
                         lit: plus.has-hover && Presets.can-update;
                         enabled: Presets.can-update;
                         animate y { duration: PresetStyle.rise; }
                     }
-                    // The deck's name along the new card's top, all the strip shows of the deck at rest.
-                    Label {
-                        x: Space.xs;
-                        y: new-card.y;
-                        width: parent.width - 2 * Space.xs;
-                        height: PresetStyle.peek;
-                        text: @tr("Presets");
-                        role: TextRole.caption;
-                        centred: true;
-                        overflow: elide;
-                        ink: new-card.lit ? Colour.ink : Colour.handle-idle;
-                        opacity: new-card.opacity;
-                    }
                     // On the cell, not the face: the face rises off the pointer it lifts under.
                     plus := TouchArea {
-                        y: 0;
                         height: PresetStyle.lift + PresetStyle.card-height;
                         enabled: Presets.can-update;
                         accessible-role: button;
@@ -77,7 +68,6 @@ export component PresetDeck inherits Rectangle {
                 roll-view := Scroller {
                     horizontal: true;
                     knob: false;
-                    height: root.full;
                     horizontal-stretch: 1;
                     content-width: roll.preferred-width;
                     roll := HorizontalLayout {
@@ -85,7 +75,6 @@ export component PresetDeck inherits Rectangle {
                         alignment: start;
                         for card[i] in Presets.cards: Rectangle {
                             width: PresetStyle.card-width;
-                            height: root.full;
                             if i == 0: Rectangle {
                                 changed absolute-position => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
                                 init => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
@@ -101,7 +90,6 @@ export component PresetDeck inherits Rectangle {
                                 animate y { duration: PresetStyle.rise; }
                             }
                             TouchArea {
-                                y: 0;
                                 height: PresetStyle.lift + PresetStyle.card-height;
                                 accessible-role: button;
                                 accessible-label: card.name;
@@ -135,6 +123,20 @@ export component PresetDeck inherits Rectangle {
                         }
                     }
                 }
+            }
+        }
+        PresetTab {
+            x: Space.l;
+            y: root.band;
+            text: @tr("Presets");
+            lit: tab.has-hover || root.open;
+            tab := TouchArea {
+                accessible-role: button;
+                accessible-label: @tr("Presets");
+                accessible-expandable: true;
+                accessible-expanded: root.open;
+                accessible-action-default => { root.open = !root.open; }
+                clicked => { root.open = !root.open; }
             }
         }
     }

@@ -4,6 +4,7 @@
 use crate::parameters::{self, AUTO_BALANCE_NAME, WHITE_BALANCE_ROWS};
 use oni_i18n::{marked, tr};
 use oni_settings::PipelineSettings;
+use oni_settings::settings::look_settings;
 use std::collections::BTreeSet;
 
 pub struct Entry {
@@ -68,11 +69,24 @@ pub const WHITE_BALANCE_HELP: &str = marked("Not carried leaves every photo its 
 /// What both sheets say about framing, absent from the rows rather than unticked.
 pub const CARRIES_HELP: &str = marked("A preset never carries crop, straightening, rotation or the conversion mode.");
 
+/// What the copy sheet says of the rows it does not offer, which each photo keeps.
+pub const COPY_CARRIES_HELP: &str = marked("A copy never carries the roll's settings, crop, straightening, rotation or the conversion mode.");
+
 /// Shown under the boxes when none is ticked.
 pub const CARRIES_NOTHING: &str = marked("Carries nothing \u{2014} applying it would change no setting.");
 
 pub fn entries() -> impl Iterator<Item = &'static Entry> {
     BLOCKS.iter().flat_map(|b| b.entries.iter())
+}
+
+/// Whether a settings copy offers the box: its rows reach the Colour and Details tabs a paste lays.
+pub fn pasted(entry: &Entry) -> bool {
+    parameters::all().iter().filter(|r| entry.rows.contains(&r.id)).any(|r| r.covers.iter().any(|f| look_settings::FIELDS.contains(f)))
+}
+
+/// Every row of the boxes a copy offers: what a copy carrying the look whole names.
+pub fn pasted_rows() -> BTreeSet<String> {
+    entries().filter(|e| pasted(e)).flat_map(|e| e.rows.iter().map(|r| r.to_string())).collect()
 }
 
 /// A choice and not a box: manual and automatic write the same two rows, so two ticks could name
@@ -234,6 +248,23 @@ mod tests {
         // Twin: what the frame moved alone would carry the balance.
         let moved: BTreeSet<String> = parameters::changed(&balanced).into_iter().map(str::to_string).collect();
         assert_eq!(white_balance(&moved), WhiteBalance::Manual);
+    }
+
+    #[test]
+    fn a_copy_offers_every_box_of_the_look_and_none_of_the_roll() {
+        let offered: Vec<&str> = entries().filter(|e| pasted(e)).map(|e| e.id).collect();
+        let reached: BTreeSet<&str> = parameters::all()
+            .iter()
+            .filter(|r| pasted_rows().contains(r.id))
+            .flat_map(|r| r.covers.iter().copied())
+            .filter(|f| look_settings::FIELDS.contains(f))
+            .collect();
+        assert_eq!(reached, look_settings::FIELDS.into_iter().collect(), "every field a paste lays has its box");
+        assert!(offered.contains(&"colour") && offered.contains(&"sharpen") && offered.contains(&"scanner"));
+        // Twin: the roll's own boxes, which a paste never lays, are not offered.
+        for roll in ["densityCeiling", "chromaDecompression", "sourceEncoding", "flatField", "separation"] {
+            assert!(!offered.contains(&roll), "{roll} offered");
+        }
     }
 
     #[test]

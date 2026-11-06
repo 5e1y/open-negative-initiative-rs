@@ -4,6 +4,7 @@ use crate::knob::Knob;
 
 /// What a gesture leaves with the open frame: its undo steps, its kept edits, its moves.
 mod kept;
+mod narrowed;
 mod one_history;
 mod slides;
 mod together;

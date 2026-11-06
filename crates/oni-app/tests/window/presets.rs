@@ -7,6 +7,7 @@ use oni_app::fields::Field;
 use oni_app::{Advice, App, Confirm, Library, Menus, Presets, Store as StoreGlobal};
 use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
+use i_slint_backend_testing::AccessibleRole;
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
@@ -101,8 +102,8 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert_eq!(presets.get_cards().row_data(0).unwrap().abbreviation.as_str(), "BRI");
     assert_eq!(menus.get_presets().row_data(0).unwrap().as_str(), "Bright \u{b7} Lighting");
 
-    // The deck rises under the pointer on its strip, and the card lifts under it. The window's
-    // first move only enters it, so the pointer comes in over the picture first.
+    // The deck opens on its tab, and the card lifts under the pointer. The window's first move
+    // only enters it, so the pointer comes in over the picture first.
     rig.settle();
     // A frame drawn first: the card's place is known once it has been laid out.
     rig.shot("presets-deck-rest");
@@ -113,11 +114,13 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
         rig.settle();
     };
     move_to(x, rest_y - 200.0);
-    move_to(x, rest_y - 40.0);
-    assert_eq!(first().1, rest_y, "twin: the pointer just over the strip leaves the deck down");
-    move_to(x, rest_y + 8.0);
+    let tab = common::the(w, AccessibleRole::Button, "Presets").middle();
+    move_to(tab.0, tab.1);
+    assert_eq!(first().1, rest_y, "twin: the pointer on the tab leaves the deck closed");
+    common::click(&rig, w, tab);
+    rig.settle();
     let (_, up_y) = first();
-    assert!(up_y < rest_y - 80.0, "the strip raises the deck: {up_y} against {rest_y}");
+    assert!(up_y < rest_y - 80.0, "the tab opens the deck: {up_y} against {rest_y}");
     move_to(x, up_y + 52.0);
     assert_eq!(presets.get_hovered(), 0, "the pointer on the card hovers it");
     println!("shot {}", rig.shot("presets-deck").display());
@@ -141,6 +144,33 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
         ctl.state.borrow().shown_settings().is_some_and(|s| (Field::Exposure.knob().get(s) - rest).abs() < 1e-6)
     });
 
+    // Copy Settings asks what it carries, the look's boxes all ticked at first and none of the roll's;
+    // Lighting unticked, Return copies, and the next copy opens on that choice.
+    g.invoke_step(Field::Exposure.index(), 5);
+    g.invoke_step(Field::Vignette.index(), -5);
+    rig.pump();
+    let vignetted = ctl.state.borrow().store().get(Field::Vignette);
+    ctl.act(oni_app::Act::Copy);
+    rig.pump();
+    assert!(presets.get_copying() && presets.get_saving(), "Copy opens its sheet");
+    let boxes = || {
+        let lines = presets.get_form_carries();
+        (0..lines.row_count()).filter_map(|i| lines.row_data(i).map(|l| (i, l))).filter(|(_, l)| l.kind == 2).map(|(i, l)| (i, l.text.to_string(), l.on)).collect::<Vec<_>>()
+    };
+    assert!(boxes().iter().all(|b| b.2), "the look whole at first");
+    assert!(!boxes().iter().any(|b| b.1 == "Flat-Field") && !presets.get_form_carries().iter().any(|l| l.kind == 1), "no roll box, no balance choice");
+    let lighting = boxes().iter().find(|b| b.1 == "Lighting").unwrap().0;
+    presets.invoke_form_ticked(lighting as i32, false);
+    rig.settle();
+    println!("shot {}", rig.shot("presets-copy-sheet").display());
+    rig.key("\r");
+    assert!(!presets.get_saving(), "Return copies");
+    ctl.act(oni_app::Act::Copy);
+    rig.pump();
+    assert_eq!(boxes().iter().filter(|b| !b.2).map(|b| b.1.as_str()).collect::<Vec<_>>(), ["Lighting"], "the next copy opens on the last one's choice");
+    rig.key("\u{1b}");
+    assert!(!presets.get_saving());
+
     // To the gallery, B and C picked, a click on the card applies to both as one gallery step.
     rig.chord(Key::Control, "g");
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
@@ -161,6 +191,16 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     for (name, was) in [("B.tif", own[1]), ("C.tif", own[2])] {
         assert!((exposure_of(&canonical(name)) - was).abs() < 1e-6, "{name}: one undo takes the apply back on both");
     }
+    // The paste lays the vignette the copy carried, and leaves each photo its own Lighting.
+    ctl.act(oni_app::Act::Paste);
+    rig.pump();
+    for (name, was) in [("B.tif", own[1]), ("C.tif", own[2])] {
+        let pasted = sidecar::read(&canonical(name), false, true).unwrap().settings;
+        assert!((Field::Vignette.knob().get(&pasted) - vignetted).abs() < 1e-5, "{name}: the vignette pasted");
+        assert!((exposure_of(&canonical(name)) - was).abs() < 1e-6, "{name}: twin, the Lighting left out stays");
+    }
+    ctl.act(oni_app::Act::Undo);
+    rig.pump();
 
     // The editor: a rename is written once the hand rests, its file following the new name.
     ctl.act(oni_app::Act::EditPresets);

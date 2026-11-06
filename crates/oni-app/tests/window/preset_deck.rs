@@ -1,6 +1,6 @@
-//! The preset deck by the pointer, as Swift's `PresetCarousel`: the strip at rest answers alone,
-//! the "+" card keeps its hit while it lifts, a wheel keeps the deck up and scrolls it, two
-//! automatic cards each preview their balance, and the preview leaves with the deck or under a sheet.
+//! The preset deck by the pointer: its tab opens it and the pointer leaving closes it, the "+" card
+//! keeps its hit while it lifts, a wheel keeps the deck up and scrolls it, two automatic cards each
+//! preview their balance, and the preview leaves with the deck or under a sheet.
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
@@ -9,6 +9,7 @@ use oni_core::preset_parameters::{self as carries, WhiteBalance};
 use oni_core::presets::{self, Preset, Tint};
 use oni_core::{Archive, EditorStore};
 use oni_settings::PipelineSettings;
+use i_slint_backend_testing::AccessibleRole as Role;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::collections::BTreeSet;
@@ -42,7 +43,7 @@ fn wheel(rig: &common::Rig, x: f32, y: f32, dx: f32, dy: f32) {
     rig.settle();
 }
 
-pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
+pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the deck is not exercised"),
@@ -104,16 +105,32 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     let (x0, rest_y) = first();
     let x = x0 + CARD_W / 2.0;
     let plus = x0 - GAP - CARD_W / 2.0;
+    let tab = common::the(w, Role::Button, "Presets").middle();
 
-    // At rest only the strip answers: the cell's lift above the cards is the photo's.
+    // The tab alone answers while the deck is closed: neither the canvas's edge nor the tab's hover opens it.
     move_to(&rig, x, rest_y - 200.0);
-    move_to(&rig, x, rest_y + LIFT / 2.0);
-    assert_eq!(first().1, rest_y, "the lift's band over the strip leaves the deck down");
-    move_to(&rig, x, rest_y + LIFT + 4.0);
+    move_to(&rig, x, tab.1);
+    move_to(&rig, tab.0, tab.1);
+    assert_eq!(first().1, rest_y, "a hover on the tab leaves the deck closed");
+    click(&rig, tab.0, tab.1);
+    rig.settle();
     let up_y = first().1;
-    assert!(up_y < rest_y - 80.0, "twin: the strip itself raises the deck: {up_y} against {rest_y}");
+    assert!(up_y < rest_y - 80.0, "twin: a click on the tab opens it: {up_y} against {rest_y}");
+    assert_eq!(common::the(w, Role::Button, "Presets").middle(), tab, "the tab stays under the pointer");
+    assert!(!deck.get_saving(), "the tab saves nothing");
+    click(&rig, tab.0, tab.1);
+    rig.settle();
+    assert_eq!(first().1, rest_y, "a second click on the tab closes it");
+    click(&rig, tab.0, tab.1);
+    rig.settle();
+    move_to(&rig, x, up_y + 52.0);
+    assert_eq!(first().1, up_y, "the pointer onto the cards keeps it open");
+    move_to(&rig, x, up_y - 200.0);
+    assert_eq!(first().1, rest_y, "the pointer off the deck closes it");
 
     // The "+" card lifts under the pointer in its bottom band and still takes the click there.
+    click(&rig, tab.0, tab.1);
+    rig.settle();
     let bottom = up_y + LIFT + CARD_H - 3.0;
     move_to(&rig, plus, bottom);
     rig.shot("preset-deck-plus");
@@ -121,9 +138,10 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     rig.settle();
     assert!(deck.get_saving(), "the \"+\" card's bottom band opens the save sheet");
     deck.invoke_save_cancelled();
-    // The sheet took the pointer and dropped the deck: the strip raises it again.
+    // The sheet took the pointer and closed the deck: the tab opens it again.
     move_to(&rig, x, rest_y - 200.0);
-    move_to(&rig, x, rest_y + LIFT + 4.0);
+    click(&rig, tab.0, tab.1);
+    rig.settle();
     move_to(&rig, x0 - GAP / 2.0, up_y + 52.0);
     click(&rig, x0 - GAP / 2.0, up_y + 52.0);
     rig.settle();

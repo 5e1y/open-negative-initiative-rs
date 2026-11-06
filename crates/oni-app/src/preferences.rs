@@ -25,6 +25,8 @@ pub const KEEP_ZOOM: &str = "keepZoom";
 pub const FRONTIER_LOOK: &str = "frontierLook";
 /// The language the app speaks, `en`, `fr` or `es`, a choice this build adds; the system's without it.
 pub const LANGUAGE: &str = "language";
+/// The look's rows the last Copy Settings carried, which the next one opens on; the look whole without it.
+pub const COPY_CARRIES: &str = "copyCarries";
 
 enum Read {
     Absent,

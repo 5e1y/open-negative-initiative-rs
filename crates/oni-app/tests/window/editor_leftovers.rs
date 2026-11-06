@@ -140,6 +140,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     rig.pump();
     let donor = ctl.state.borrow().store().get(Field::Exposure);
     ctl.act(oni_app::Act::Copy);
+    w.global::<oni_app::Presets>().invoke_save_confirmed();
     let seen = board();
     let text = String::from_utf8(seen.data(pasteboard::SETTINGS).expect("the settings on the board")).unwrap();
     let decoded = oni_settings::codec::decode(text.as_bytes()).unwrap().settings;

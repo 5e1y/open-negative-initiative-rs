@@ -21,8 +21,59 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// One preset, one file, one write, laid on the settings the photo has now.
+    /// Copy Settings: the sheet opens on the boxes the last copy carried, the look's all at first,
+    /// for the photo `from` or the open one; never over an open sheet.
+    pub(in crate::app) fn ask_copy(self: &Rc<Self>, from: Option<String>) {
+        if (from.is_none() && self.state.borrow().open.is_none()) || self.state.borrow().shelf_form_open() {
+            return;
+        }
+        self.clear_hover();
+        {
+            let mut s = self.state.borrow_mut();
+            let whole = carries::pasted_rows();
+            let rows = s.preferences.value(crate::preferences::COPY_CARRIES).and_then(serde_json::Value::as_array);
+            let remembered: BTreeSet<String> =
+                rows.into_iter().flatten().filter_map(serde_json::Value::as_str).filter(|r| whole.contains(*r)).map(str::to_string).collect();
+            let draft = Preset::new("", if remembered.is_empty() { whole } else { remembered }, Tint::default(), PipelineSettings::default());
+            s.shelf.form = Some(Form::Copying { draft, from });
+        }
+        self.publish_form(true);
+        self.publish_bar();
+    }
+
+    /// The copy laid on the board with the boxes ticked, which the next copy opens on.
+    fn copy_confirmed(self: &Rc<Self>, rows: BTreeSet<String>, from: Option<String>) {
+        if rows.is_empty() {
+            return;
+        }
+        self.state.borrow_mut().shelf.form = None;
+        self.publish_form(false);
+        self.refocus();
+        self.remember(crate::preferences::COPY_CARRIES, rows.iter().cloned().collect::<Vec<_>>().into());
+        let failure = {
+            let mut s = self.state.borrow_mut();
+            s.store.editor().and_then(|store| {
+                store.copy_settings(from.as_deref(), &rows);
+                store.failure.take()
+            })
+        };
+        match failure {
+            Some(message) => self.told(tr("Copy Settings"), &message),
+            None => self.board_out(crate::pasteboard::SETTINGS),
+        }
+        self.publish_bar();
+    }
+
+    /// The sheet's commit: one preset, one file, one write, laid on the settings the photo has now;
+    /// or the copy.
     pub(super) fn save_preset_confirmed(self: &Rc<Self>) {
+        let copy = match self.state.borrow().shelf.form.as_ref() {
+            Some(Form::Copying { draft, from }) => Some((draft.parameters.clone(), from.clone())),
+            _ => None,
+        };
+        if let Some((rows, from)) = copy {
+            return self.copy_confirmed(rows, from);
+        }
         let draft = match self.state.borrow().shelf.form.as_ref() {
             Some(Form::Saving(d)) => d.clone(),
             _ => return,
@@ -167,7 +218,7 @@ impl Ctl {
     pub(in crate::app) fn preset_form_key(self: &Rc<Self>, text: &str) -> bool {
         let saving = match self.state.borrow().shelf.form {
             None => return false,
-            Some(Form::Saving(_)) => true,
+            Some(Form::Saving(_) | Form::Copying { .. }) => true,
             Some(Form::Editing { .. }) => false,
         };
         match text {
@@ -185,12 +236,15 @@ impl Ctl {
         let g = w.global::<Presets>();
         let mut s = self.state.borrow_mut();
         let (saving, editing) = match s.shelf.form {
-            Some(Form::Saving(_)) => (true, false),
+            Some(Form::Saving(_) | Form::Copying { .. }) => (true, false),
             Some(Form::Editing { .. }) => (false, true),
             None => (false, false),
         };
+        let copying = s.shelf.form.as_ref().is_some_and(Form::copying);
         g.set_saving(saving);
         g.set_editing(editing);
+        g.set_copying(copying);
+        g.set_carries_help(tr(if copying { carries::COPY_CARRIES_HELP } else { carries::CARRIES_HELP }).into());
         if let Some(Form::Editing { working, selected }) = s.shelf.form.as_ref() {
             if let Some(fresh) = refreshed(&g.get_rows(), working.iter().map(card).collect()) {
                 g.set_rows(fresh);
@@ -208,10 +262,11 @@ impl Ctl {
             return;
         };
         g.set_form_name(p.name.clone().into());
-        g.set_form_valid(!p.name.trim().is_empty());
+        // A copy takes no name: it is ready while it carries something.
+        g.set_form_valid(if copying { !p.parameters.is_empty() } else { !p.name.trim().is_empty() });
         g.set_form_note(p.note.clone().into());
         g.set_form_tint(Tint::ALL.iter().position(|t| *t == p.tint).unwrap_or(0) as i32);
-        if let Some(fresh) = refreshed(&g.get_form_carries(), carries_lines(&p.parameters)) {
+        if let Some(fresh) = refreshed(&g.get_form_carries(), carries_lines(&p.parameters, copying)) {
             g.set_form_carries(fresh);
         }
         g.set_form_balance(WhiteBalance::ALL.iter().position(|b| *b == carries::white_balance(&p.parameters)).unwrap_or(0) as i32);

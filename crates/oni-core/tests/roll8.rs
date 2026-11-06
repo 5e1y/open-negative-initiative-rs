@@ -177,7 +177,7 @@ fn a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte() {
     store.apply_at(Command::Set { knob: Knob::SharpenAmount, value: 2.2 }, 1.0);
     store.apply_at(Command::Set { knob: Knob::Angle, value: 1.5 }, 2.0);
     store.flush();
-    store.copy_settings();
+    store.copy_settings(None, &oni_core::preset_parameters::pasted_rows());
     let donor = store.settings().clone();
     let snapshot = roll.bytes();
     let targets: Vec<String> = roll.frames[10..14].to_vec();
@@ -208,7 +208,7 @@ fn paste_to_roll_is_one_editor_step_over_the_whole_roll() {
     let mut store = roll.store();
     roll.open(&mut store, &roll.frames[1]);
     store.apply_at(Command::Set { knob: Knob::Texture, value: 0.6 }, 0.0);
-    store.copy_settings();
+    store.copy_settings(None, &oni_core::preset_parameters::pasted_rows());
     store.close();
     let snapshot = roll.bytes();
     roll.open(&mut store, &roll.frames[20]);

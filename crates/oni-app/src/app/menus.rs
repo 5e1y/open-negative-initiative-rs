@@ -132,7 +132,7 @@ impl Ctl {
                 measure_roll: !preparing && roll > 0,
                 reset_to_default: gallery && roll > 0,
                 // In the gallery, the one photo picked, as its menu's Copy Settings.
-                copy_settings: if gallery { count == 1 } else { open },
+                copy_settings: !modal && if gallery { count == 1 } else { open },
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
                 save_preset: open && !modal,

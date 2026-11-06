@@ -173,30 +173,14 @@ impl Ctl {
         false
     }
 
-    /// Copy Settings from the bar and the menu bar: the open frame's beside it; in the gallery, the one
-    /// photo picked, as its cell menu's line copies it, so the chord that line prints means one thing.
+    /// Copy Settings from the bar and the menu bar: the open frame's; in the gallery, the one photo
+    /// picked, as its cell menu's line copies it, so the chord that line prints means one thing.
     pub(in crate::app) fn copy_settings(self: &Rc<Self>) {
-        if self.window().is_some_and(|w| w.global::<App>().get_gallery()) {
-            return self.copy_settings_of(&self.targets());
+        if !self.window().is_some_and(|w| w.global::<App>().get_gallery()) {
+            return self.ask_copy(None);
         }
-        if let Some(store) = self.state.borrow_mut().store.editor() {
-            store.copy_settings();
-        }
-        self.board_out(crate::pasteboard::SETTINGS);
-    }
-
-    /// Copy Settings on the cell menu's one photo, onto the board the bar's Paste and the system's share.
-    fn copy_settings_of(self: &Rc<Self>, scope: &[String]) {
-        let [path] = scope else { return };
-        let failure = {
-            let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
-            store.copy_settings_of(path);
-            store.failure.take()
-        };
-        match failure {
-            Some(message) => self.told(tr("Copy Settings"), &message),
-            None => self.board_out(crate::pasteboard::SETTINGS),
+        if let [path] = self.targets().as_slice() {
+            self.ask_copy(Some(path.clone()));
         }
     }
 
@@ -252,7 +236,11 @@ impl Ctl {
             s.picks.cursor = path;
         }
         match line.action {
-            CellAction::Copy => self.copy_settings_of(&line.scope),
+            CellAction::Copy => {
+                if let [path] = line.scope.as_slice() {
+                    self.ask_copy(Some(path.clone()));
+                }
+            }
             CellAction::Paste => self.paste(),
             CellAction::Reset => self.reset_all(),
             CellAction::NewRoll => self.new_roll(),

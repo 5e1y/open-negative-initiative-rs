@@ -6661,5 +6661,19 @@
     "title": "The straighten dial prints every figure whole, and the arrows move the crop's frame",
     "status": "done",
     "detail": "UX/UI evaluation s-9011e109 (Typography, Accessibility): the dial faded and narrowed its outer figures with the ring's turn until −6° and 6° were barely legible; the marks keep their shading, the figures shown are printed whole and at full ink. The crop's frame existed only as a drawing for the pointer: beside the crop a bare arrow now moves the frame drawn innermost, the measuring window while it is set, else the crop, a point on the canvas, ten with Shift, its steps that follow each other one undo step as a slider's; beside a pane the arrows still walk the photos. Checks: window crop_session (the window first, then the crop moved by a point and ten, the left arrow back; twin: on Colour the arrow leaves the frame); editor_routes (beside the crop the arrow walks nowhere, B opened from the column ending both modes); dial."
+  },
+  {
+    "id": 1346,
+    "type": "ui",
+    "title": "The presets deck opens on its tab, the + card one entry inside it",
+    "status": "done",
+    "detail": "The strip on the canvas's bottom edge was the top of the + card, so a click on Presets opened Save a Preset, and the deck rose only under a hovering pointer. The tab is now the deck's own (PresetTab in the design system): it stays on the canvas's edge, a click opens the deck and a second closes it, the cards rising out of its top edge with the + card first among them; the pointer leaving the deck closes it, and the canvas's edge beside the tab stays the photo's. An empty deck's badge says how to make the first preset. The deck check, the presets check and the presets bench open it on its tab."
+  },
+  {
+    "id": 1347,
+    "type": "feature",
+    "title": "Copy Settings asks what it carries, with the preset sheet's boxes, and remembers the choice",
+    "status": "done",
+    "detail": "Copy and Paste to Roll carried the Colour and Details tabs whole; choosing what to carry existed only in a preset. Copy Settings (the bar's Copy, the menu, a photo's menu) now opens the save sheet as Copy Settings: the boxes of the look a paste lays, all ticked at first, no roll box and no balance choice, Return copying. The board's text names the rows when the copy carries fewer than all, and Paste and Paste to Roll give every row left out back to the photo they land on; a whole copy writes the codec's text alone, so a paste of the whole look is unchanged (parity check 78 holds on roll #8). The next copy opens on the last one's boxes (copyCarries), so the colour alone across a roll stays one copy and one paste."
   }
 ]

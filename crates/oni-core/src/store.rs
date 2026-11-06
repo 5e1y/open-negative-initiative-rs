@@ -111,7 +111,7 @@ pub struct EditorStore {
     /// A hand edit of a Roll Settings field waiting for its step, to write the roll with it.
     roll_touched: bool,
     /// A look laid on the open frame waiting for its step, to lay it on the rest of the roll.
-    roll_look: Option<(PipelineSettings, RollKey)>,
+    roll_look: Option<(paste::Copied, RollKey)>,
     /// Frames edited together with the open one, every step laid on them too.
     together: together::Together,
     measured: HashMap<RollKey, BTreeSet<String>>,

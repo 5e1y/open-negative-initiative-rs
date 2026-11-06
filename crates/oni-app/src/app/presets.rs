@@ -11,6 +11,7 @@ use oni_core::presets::{self, Preset, Tint};
 use oni_settings::{Id, PipelineSettings};
 use oni_i18n::{marked, tr, trn};
 use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -37,15 +38,21 @@ pub(super) struct Shelf {
 
 enum Form {
     Saving(Preset),
+    /// Copy Settings: the boxes of the look the copy carries, of the photo `from` or the open one.
+    Copying { draft: Preset, from: Option<String> },
     Editing { working: Vec<Preset>, selected: Option<usize> },
 }
 
 impl Form {
     fn current(&mut self) -> Option<&mut Preset> {
         match self {
-            Form::Saving(draft) => Some(draft),
+            Form::Saving(draft) | Form::Copying { draft, .. } => Some(draft),
             Form::Editing { working, selected } => selected.and_then(|i| working.get_mut(i)),
         }
+    }
+
+    fn copying(&self) -> bool {
+        matches!(self, Form::Copying { .. })
     }
 }
 
@@ -90,34 +97,48 @@ fn card(p: &Preset) -> PresetCard {
     }
 }
 
-/// The Carries picker's lines: each block's title, the balance choice under Color, then its boxes.
-fn carries_lines(parameters: &std::collections::BTreeSet<String>) -> Vec<CarriesLine> {
+/// One line of the Carries picker.
+enum Line {
+    Title(&'static str),
+    Balance,
+    Box(&'static carries::Entry),
+}
+
+/// Each block's title, the balance choice under Colour, then its boxes; a copy shows the boxes of
+/// the look alone, which hold no balance.
+fn layout(copying: bool) -> Vec<Line> {
     let mut lines = Vec::new();
     for block in &carries::BLOCKS {
-        lines.push(CarriesLine { kind: 0, text: tr(block.title).into(), on: false });
-        if block.id == "Colour" {
-            lines.push(CarriesLine { kind: 1, text: carries::white_balance(parameters).label().into(), on: false });
+        let boxes: Vec<Line> = block.entries.iter().filter(|e| !copying || carries::pasted(e)).map(Line::Box).collect();
+        if boxes.is_empty() {
+            continue;
         }
-        for entry in block.entries {
-            lines.push(CarriesLine { kind: 2, text: tr(entry.label).into(), on: carries::is_on(entry, parameters) });
+        lines.push(Line::Title(block.title));
+        if block.id == "Colour" && !copying {
+            lines.push(Line::Balance);
         }
+        lines.extend(boxes);
     }
     lines
 }
 
+fn carries_lines(parameters: &BTreeSet<String>, copying: bool) -> Vec<CarriesLine> {
+    layout(copying)
+        .into_iter()
+        .map(|line| match line {
+            Line::Title(title) => CarriesLine { kind: 0, text: tr(title).into(), on: false },
+            Line::Balance => CarriesLine { kind: 1, text: carries::white_balance(parameters).label().into(), on: false },
+            Line::Box(entry) => CarriesLine { kind: 2, text: tr(entry.label).into(), on: carries::is_on(entry, parameters) },
+        })
+        .collect()
+}
+
 /// The box a Carries line stands for, `None` for a title or the balance choice.
-fn entry_at(line: usize) -> Option<&'static carries::Entry> {
-    let mut at = 0;
-    for block in &carries::BLOCKS {
-        at += 1 + usize::from(block.id == "Colour");
-        for entry in block.entries {
-            if at == line {
-                return Some(entry);
-            }
-            at += 1;
-        }
+fn entry_at(line: usize, copying: bool) -> Option<&'static carries::Entry> {
+    match layout(copying).into_iter().nth(line)? {
+        Line::Box(entry) => Some(entry),
+        _ => None,
     }
-    None
 }
 
 fn line(text: &str, enabled: bool, rule: bool) -> MenuLine {
@@ -161,14 +182,19 @@ mod tests {
     #[test]
     fn every_carries_box_is_found_at_its_own_line() {
         let parameters = carries::proposed(&PipelineSettings::default());
-        let lines = carries_lines(&parameters);
-        let boxes: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.kind == 2).map(|(i, _)| i).collect();
-        assert_eq!(boxes.len(), carries::entries().count());
-        for (i, entry) in boxes.iter().zip(carries::entries()) {
-            assert_eq!(entry_at(*i).map(|e| e.id), Some(entry.id));
-            assert_eq!(lines[*i].text.as_str(), entry.label);
+        for copying in [false, true] {
+            let lines = carries_lines(&parameters, copying);
+            let boxes: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.kind == 2).map(|(i, _)| i).collect();
+            let offered: Vec<&carries::Entry> = carries::entries().filter(|e| !copying || carries::pasted(e)).collect();
+            assert_eq!(boxes.len(), offered.len());
+            for (i, entry) in boxes.iter().zip(offered) {
+                assert_eq!(entry_at(*i, copying).map(|e| e.id), Some(entry.id));
+                assert_eq!(lines[*i].text.as_str(), entry.label);
+            }
+            // Twin: a title or the balance choice is no box.
+            assert!(lines.iter().enumerate().filter(|(_, l)| l.kind != 2).all(|(i, _)| entry_at(i, copying).is_none()));
+            assert_eq!(lines.iter().any(|l| l.kind == 1), !copying, "a copy holds no balance choice");
         }
-        // Twin: a title or the balance choice is no box.
-        assert!(lines.iter().enumerate().filter(|(_, l)| l.kind != 2).all(|(i, _)| entry_at(i).is_none()));
+        assert!(carries_lines(&parameters, true).len() < carries_lines(&parameters, false).len(), "a copy offers fewer boxes");
     }
 }

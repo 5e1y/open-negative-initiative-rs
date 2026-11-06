@@ -1,5 +1,5 @@
-// The presets' pieces: a card on its tint, the card that makes one, a swatch, the editor's row and
-// the sheet's panel.
+// The presets' pieces: a card on its tint, the card that makes one, the deck's tab, a swatch, the
+// editor's row and the sheet's panel.
 import { Colour, Space, Radius, Stroke, State, SheetStyle } from "theme.slint";
 import { PresetStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
@@ -13,7 +13,7 @@ export component PresetFace inherits Rectangle {
     in property <string> name;
     in property <color> fill;
     in property <color> ink;
-    // The deck's last card, a "+" in an outline, lit under the pointer, that saves a new preset.
+    // The deck's first card, a "+" in an outline, lit under the pointer, that saves a new preset.
     in property <bool> new;
     in property <bool> lit;
     in property <bool> enabled: true;
@@ -55,5 +55,30 @@ export component PresetFace inherits Rectangle {
                 vertical-alignment: top;
             }
         }
+    }
+}
+
+// The deck's tab on the canvas's bottom edge: an outline the edge cuts open, the deck's name inside,
+// lit under the pointer and while the deck is open.
+export component PresetTab inherits Rectangle {
+    in property <string> text;
+    in property <bool> lit;
+    width: PresetStyle.card-width;
+    height: PresetStyle.peek;
+    Rectangle {
+        y: 0;
+        height: parent.height + Radius.card;
+        border-radius: Radius.card;
+        border-width: root.lit ? Stroke.line : Stroke.hairline;
+        border-color: root.lit ? Colour.ink : Colour.handle-idle;
+    }
+    Label {
+        x: Space.xs;
+        width: parent.width - 2 * Space.xs;
+        text: root.text;
+        role: TextRole.caption;
+        centred: true;
+        overflow: elide;
+        ink: root.lit ? Colour.ink : Colour.handle-idle;
     }
 }

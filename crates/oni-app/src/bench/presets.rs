@@ -1,4 +1,4 @@
-//! `ONI_BENCH=presets`: a preset saved, the deck raised under the pointer, a card previewed and applied.
+//! `ONI_BENCH=presets`: a preset saved, the deck opened on its tab, a card previewed and applied.
 
 use super::*;
 
@@ -13,6 +13,13 @@ pub(super) enum Deck {
 
 pub(super) fn pointer_to(w: &crate::MainWindow, at: slint::LogicalPosition) {
     w.window().dispatch_event(slint::platform::WindowEvent::PointerMoved { position: at });
+}
+
+fn click_at(w: &crate::MainWindow, at: slint::LogicalPosition) {
+    use slint::platform::{PointerEventButton, WindowEvent};
+    pointer_to(w, at);
+    w.window().dispatch_event(WindowEvent::PointerPressed { position: at, button: PointerEventButton::Left });
+    w.window().dispatch_event(WindowEvent::PointerReleased { position: at, button: PointerEventButton::Left });
 }
 
 pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -63,9 +70,9 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if at.elapsed() < Duration::from_millis(300) {
                     return;
                 }
-                // Onto the strip the deck leaves at rest, under the lift's band the photo keeps.
-                let bottom = presets.get_first_y() + w.global::<crate::DS>().get_control_card_lift() + 8.0;
-                pointer_to(&w, slint::LogicalPosition::new(presets.get_first_x() + 36.0, bottom));
+                // The tab under the "+" card's column, whose top the closed deck's first card stands on.
+                let ds = w.global::<crate::DS>();
+                click_at(&w, slint::LogicalPosition::new(presets.get_first_x() - ds.get_space_sm() - 36.0, presets.get_first_y() + ds.get_space_md() / 2.0));
                 phase.set(Deck::Raised { at: Instant::now() });
             }
             Deck::Raised { at } => {
@@ -78,10 +85,7 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             Deck::Hovered { at } => {
                 let previewing = presets.get_hovered() == 0 && shown().is_some_and(|e| (e - saved.get()).abs() < 1e-4);
                 if previewing && (exposure() - saved.get()).abs() > 1e-3 {
-                    let at = card();
-                    let window = w.window();
-                    window.dispatch_event(slint::platform::WindowEvent::PointerPressed { position: at, button: slint::platform::PointerEventButton::Left });
-                    window.dispatch_event(slint::platform::WindowEvent::PointerReleased { position: at, button: slint::platform::PointerEventButton::Left });
+                    click_at(&w, card());
                     phase.set(Deck::Applied);
                 } else if at.elapsed() > Duration::from_secs(20) {
                     finish(format!(
