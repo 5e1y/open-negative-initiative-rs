@@ -1,6 +1,7 @@
 // The sliders' and plots' gauges and relief: a rail milled into the panel (`dsRecessed`), a knob that
 // is a small level keycap, the plot screen sunk at a card's corner. The 2.5D lab tunes the in-out ones live.
 import { DS } from "tokens.slint";
+import { Type } from "theme_type.slint";
 
 export global SliderStyle {
     // A thin rail, round at its ends, so a bipolar rail keeps its full hues and stays calm beside the photo.
@@ -53,6 +54,9 @@ export global SliderStyle {
     out property <length> grab: DS.control-grab-size;
     // The hand's travel a drag holds at rest: felt under a slow hand, a third of the knob.
     in-out property <length> detent: 6px;
+    // A stepped slider's − and + keycaps as tall as its knob, their sign larger than a word.
+    in-out property <length> step-key: SliderStyle.knob-height;
+    in-out property <length> step-legend: Type.section;
 }
 
 // A dial: the edge of a black-anodised ring turning in a slot milled into the panel, its scale engraved.

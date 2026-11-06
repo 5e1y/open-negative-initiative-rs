@@ -1,7 +1,8 @@
 //! The Scanner face in the window, headless: the face tab, the keypad's keys as the phone's own
-//! commands, the Lab screen reading them back, the group resets, Esc, the walk keys and the
-//! face remembered across launches.
+//! commands, the Lab screen reading them back, the step keycaps, the group resets, Esc, the walk
+//! keys and the face remembered across launches.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{App, Bar, Lab, Library, MainWindow, PanelState};
 use oni_core::{Archive, EditorStore};
@@ -31,6 +32,33 @@ fn open_first(rig: &common::Rig, shell: &Shell) {
     shell.window.global::<Library>().invoke_tile_opened(0);
     rig.pump();
     assert!(!shell.window.global::<App>().get_gallery(), "the first tile opens in the editor");
+}
+
+/// A click on `key` as winit hands it over, ⇧ held around it when `shift`.
+fn press(rig: &common::Rig, w: &MainWindow, key: common::Placed, shift: bool) {
+    let held: slint::SharedString = slint::platform::Key::Shift.into();
+    if shift {
+        rig.window.dispatch_event(WindowEvent::KeyPressed { text: held.clone() });
+    }
+    common::click(rig, w, key.middle());
+    if shift {
+        rig.window.dispatch_event(WindowEvent::KeyReleased { text: held });
+    }
+    rig.pump();
+}
+
+/// The keycaps drawn anew while `act` runs and over the 40 frames after it, 8 ms apart: a cap's sink
+/// and rise are drawn frame by frame, a flat key never asks one.
+fn caps_drawn(rig: &common::Rig, act: impl FnOnce()) -> u64 {
+    rig.drawn();
+    let before = oni_app::keycaps::stats().renders;
+    act();
+    for _ in 0..40 {
+        rig.pump();
+        rig.drawn();
+        std::thread::sleep(Duration::from_millis(8));
+    }
+    oni_app::keycaps::stats().renders - before
 }
 
 fn shell(gpu: &oni_app::render::Device, support: &Path) -> Shell {
@@ -194,6 +222,22 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.key("\u{1b}");
     lab.invoke_clear(0);
     rig.pump();
+    // D's keys stand at its rail's ends, keycaps in their ends' colours: a press steps once, ⇧ three times.
+    let (minus, plus) = (common::the(w, Role::Button, "D −: toward dark"), common::the(w, Role::Button, "D +: toward light"));
+    let row = |k: &common::Placed| (k.middle().1 - y).abs() < 1.0;
+    assert!(row(&minus) && row(&plus) && (minus.x - d.x).abs() < 1.0 && (plus.x + plus.width - d.x - d.width).abs() < 1.0, "{minus:?} {plus:?} {d:?}");
+    let sunk = caps_drawn(&rig, || press(&rig, w, minus, false));
+    assert_eq!(settings().scanner.d, -1, "a press is one step");
+    press(&rig, w, plus, true);
+    assert_eq!(settings().scanner.d, 2, "⇧ makes a press three steps");
+    // Twin: a press deaf to ⇧ would stand back at zero.
+    assert_ne!(settings().scanner.d, -1 + 1);
+    assert!(sunk > 2, "the key is a keycap, its cap drawn as it sinks: {sunk} renders");
+    // Twin: the Density block's flat Reset, the hand resting on it first, clears D and draws no cap.
+    let reset = common::placed(w, Role::Button, "Reset").into_iter().filter(|r| r.y < d.y).max_by(|a, b| a.y.total_cmp(&b.y)).expect("Density's Reset");
+    caps_drawn(&rig, || rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(reset.middle().0, reset.middle().1) }));
+    let flat = caps_drawn(&rig, || press(&rig, w, reset, false));
+    assert_eq!((flat, settings().scanner.d), (0, 0), "a flat key's press draws no cap");
     // A bare arrow walks the group on the Scanner face, which the next frame opens on.
     rig.key("\u{F703}");
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("B.NEF"));

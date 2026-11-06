@@ -1,6 +1,6 @@
 // `DSSlider`, continuous or in whole steps: the readout above a rail and its knob.
-import { Motion, SliderStyle, DialStyle } from "theme.slint";
-import { Look } from "button.slint";
+import { Space, Motion, SliderStyle, DialStyle } from "theme.slint";
+import { Look, Button } from "button.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 import { Knob } from "knob.slint";
 import { SliderFill, Rail } from "rail.slint";
@@ -14,8 +14,20 @@ export global Typing {
     pure callback steps(readout: string, typed: string, per: float) -> int;
 }
 
+// A stepped slider's keycap beside its rail, in its end's colour: one step a press, three with ⇧. Its
+// sign names no slider, so assistive tools read its help, which names the slider and the way.
+component StepKey inherits Button {
+    keycap: true;
+    square: true;
+    height: SliderStyle.step-key;
+    width: self.height;
+    legend-size: SliderStyle.step-legend;
+    horizontal-stretch: 0;
+    accessible-label: self.help;
+}
+
 // `DSSlider`: the readout, then a track whose row grabs and, pressed, takes the keyboard; Rust holds the
-// value and its timing. `stepped`: whole steps from `lowest` to `highest`, under the same hand.
+// value and its timing. `stepped`: whole steps from `lowest` to `highest`, a keycap either side.
 export component Slider inherits VerticalLayout {
     in property <int> field;
     in property <string> label;
@@ -46,6 +58,9 @@ export component Slider inherits VerticalLayout {
     // click on the rail or on the name, whose tooltip `help` is, brings the slider back to it.
     in property <float> rest: -1;
     in property <string> help: @tr("Double-click to bring it back to rest");
+    // A stepped slider's minus and plus keys' tooltips.
+    in property <string> minus-help;
+    in property <string> plus-help;
     // Rust answers whether this press is the second of a double click.
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
@@ -60,7 +75,7 @@ export component Slider inherits VerticalLayout {
     callback held(bool);
     // The step under the hand while it slides, ahead of the value the store answers.
     property <int> hand;
-    // ⇧'s step with an arrow: three on a stepped slider, ten on a continuous one.
+    // ⇧'s step with an arrow: three on a stepped slider, as its keys take, ten on a continuous one.
     property <int> big: root.stepped ? 3 : 10;
     property <int> span: max(1, root.highest - root.lowest);
     // The travel a drag or a scroll measures against, and its sense: the ring's scale moves one for one
@@ -130,136 +145,153 @@ export component Slider inherits VerticalLayout {
         typed(t) => { root.type-in(t); }
     }
     HorizontalLayout {
-        padding-left: SliderStyle.knob-width / 2;
-        padding-right: SliderStyle.knob-width / 2;
-        horizontal-stretch: 1;
-        // Off limits, the words fade and the rail stays opaque, as `DSSlider`'s.
-        track := Rectangle {
-            height: root.dial ? DialStyle.height : SliderStyle.row;
-            if root.dial: Dial {
-                x: -SliderStyle.knob-width / 2;
-                width: parent.width + SliderStyle.knob-width;
-                value: root.lowest + root.shown * (root.highest - root.lowest);
-                lowest: root.lowest;
-                highest: root.highest;
-                lit: root.enabled && (area.has-hover || area.held);
-            }
-            if !root.dial: Rail {
-                x: -SliderStyle.knob-width / 2;
-                width: parent.width + SliderStyle.knob-width;
-                y: (parent.height - self.height) / 2;
-                overhang: SliderStyle.knob-width / 2;
-                fill: root.fill;
-                at: root.shown;
-                tint: root.tint;
-                low: root.low;
-                high: root.high;
-                rest: root.rest;
-            }
-            if !root.dial: Knob {
-                centre: parent.width * root.shown;
-                fill: root.knob;
-                grown: root.enabled && (area.has-hover || area.held || root.look != Look.live);
-            }
-            area := TouchArea {
-                enabled: root.enabled;
-                in-out property <bool> held;
-                property <bool> fine;
-                // AppKit's press, continuous or stepped: the knob grabbed where it stands, the rail landing it
-                // under the pointer, ⌥ keeping it put; the drag measures from `origin`, the value was at `start`.
-                property <length> start;
-                property <float> start-at;
-                property <length> origin;
-                // A scroll's events, and `settle` after the last, which the knob follows unsprung.
-                in-out property <bool> scrolling;
-                out property <bool> over-knob: self.has-hover && (root.dial || abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2);
-                mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                changed has-hover => { Tips.hover(self.has-hover, root.help, track.absolute-position.x, track.absolute-position.y + track.height); }
-                double-clicked => {
-                    if (root.stepped) { root.reset(); }
+        spacing: Space.s;
+        if root.stepped: StepKey {
+            text: "−";
+            fill: root.low;
+            help: root.minus-help;
+            enabled: root.enabled;
+            clicked => { root.step(root.field, self.shift ? -3 : -1); }
+        }
+        HorizontalLayout {
+            padding-left: SliderStyle.knob-width / 2;
+            padding-right: SliderStyle.knob-width / 2;
+            horizontal-stretch: 1;
+            // Off limits, the words fade and the rail stays opaque, as `DSSlider`'s.
+            track := Rectangle {
+                height: root.dial ? DialStyle.height : SliderStyle.row;
+                if root.dial: Dial {
+                    x: -SliderStyle.knob-width / 2;
+                    width: parent.width + SliderStyle.knob-width;
+                    value: root.lowest + root.shown * (root.highest - root.lowest);
+                    lowest: root.lowest;
+                    highest: root.highest;
+                    lit: root.enabled && (area.has-hover || area.held);
                 }
-                pointer-event(event) => {
-                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                        keys.pressed = true;
-                        keys.focus();
-                        self.fine = event.modifiers.alt;
-                        self.start = parent.width * root.at;
-                        self.start-at = root.at;
-                        self.origin = self.fine || self.over-knob ? self.mouse-x : self.start;
-                        if (root.stepped) {
-                            root.hand = root.step-held(self.mouse-x - self.origin);
-                            self.held = true;
-                            root.held(true);
-                            if (root.hand != root.value) {
-                                root.step(root.field, root.hand - root.value);
+                if !root.dial: Rail {
+                    x: -SliderStyle.knob-width / 2;
+                    width: parent.width + SliderStyle.knob-width;
+                    y: (parent.height - self.height) / 2;
+                    overhang: SliderStyle.knob-width / 2;
+                    fill: root.fill;
+                    at: root.shown;
+                    tint: root.tint;
+                    low: root.low;
+                    high: root.high;
+                    rest: root.rest;
+                }
+                if !root.dial: Knob {
+                    centre: parent.width * root.shown;
+                    fill: root.knob;
+                    grown: root.enabled && (area.has-hover || area.held || root.look != Look.live);
+                }
+                area := TouchArea {
+                    enabled: root.enabled;
+                    in-out property <bool> held;
+                    property <bool> fine;
+                    // AppKit's press, continuous or stepped: the knob grabbed where it stands, the rail landing it
+                    // under the pointer, ⌥ keeping it put; the drag measures from `origin`, the value was at `start`.
+                    property <length> start;
+                    property <float> start-at;
+                    property <length> origin;
+                    // A scroll's events, and `settle` after the last, which the knob follows unsprung.
+                    in-out property <bool> scrolling;
+                    out property <bool> over-knob: self.has-hover && (root.dial || abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2);
+                    mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
+                    changed has-hover => { Tips.hover(self.has-hover, root.help, track.absolute-position.x, track.absolute-position.y + track.height); }
+                    double-clicked => {
+                        if (root.stepped) { root.reset(); }
+                    }
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            keys.pressed = true;
+                            keys.focus();
+                            self.fine = event.modifiers.alt;
+                            self.start = parent.width * root.at;
+                            self.start-at = root.at;
+                            self.origin = self.fine || self.over-knob ? self.mouse-x : self.start;
+                            if (root.stepped) {
+                                root.hand = root.step-held(self.mouse-x - self.origin);
+                                self.held = true;
+                                root.held(true);
+                                if (root.hand != root.value) {
+                                    root.step(root.field, root.hand - root.value);
+                                }
+                            } else {
+                                self.held = !root.press(root.field, self.fine);
+                                if (self.held && self.origin != self.mouse-x) {
+                                    root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
+                                }
                             }
-                        } else {
-                            self.held = !root.press(root.field, self.fine);
-                            if (self.held && self.origin != self.mouse-x) {
-                                root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
-                            }
-                        }
-                    } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
-                        if (root.stepped) {
-                            if (self.held) {
+                        } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                            if (root.stepped) {
+                                if (self.held) {
+                                    self.held = false;
+                                    root.held(false);
+                                }
+                            } else if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
                                 self.held = false;
-                                root.held(false);
+                                root.release(root.field);
                             }
-                        } else if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
-                            self.held = false;
-                            root.release(root.field);
+                        } else if (event.kind == PointerEventKind.move) {
+                            self.fine = event.modifiers.alt;
                         }
-                    } else if (event.kind == PointerEventKind.move) {
-                        self.fine = event.modifiers.alt;
                     }
-                }
-                moved => {
-                    if (self.held && root.stepped) {
-                        let next = root.step-held(self.mouse-x - self.origin);
-                        if (next != root.hand) {
-                            root.step(root.field, next - root.hand);
-                            root.hand = next;
+                    moved => {
+                        if (self.held && root.stepped) {
+                            let next = root.step-held(self.mouse-x - self.origin);
+                            if (next != root.hand) {
+                                root.step(root.field, next - root.hand);
+                                root.hand = next;
+                            }
+                        } else if (self.held) {
+                            root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
                         }
-                    } else if (self.held) {
-                        root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
+                    }
+                    scroll-event(event) => {
+                        if (!root.stepped && root.scroll(root.field, event.delta-x * root.sense, event.delta-y, root.reach, event.modifiers.alt)) {
+                            self.scrolling = true;
+                            still.restart();
+                            return EventResult.accept;
+                        }
+                        EventResult.reject
                     }
                 }
-                scroll-event(event) => {
-                    if (!root.stepped && root.scroll(root.field, event.delta-x * root.sense, event.delta-y, root.reach, event.modifiers.alt)) {
-                        self.scrolling = true;
-                        still.restart();
-                        return EventResult.accept;
+                still := Timer {
+                    interval: Motion.settle;
+                    running: area.scrolling;
+                    triggered => { area.scrolling = false; }
+                }
+                // Over the rail's whole length, past the knob's travel as the rail runs. A hand's press gives it
+                // the keyboard with no ring beside the photo; Tab, or an arrow acting here, rings it.
+                keys := KeyScope {
+                    in-out property <bool> pressed;
+                    x: -SliderStyle.knob-width / 2;
+                    width: parent.width + SliderStyle.knob-width;
+                    enabled: root.enabled;
+                    radius: root.dial ? DialStyle.radius : self.height / 2;
+                    ring: !self.pressed;
+                    changed has-focus => {
+                        if (!self.has-focus) { self.pressed = false; }
                     }
-                    EventResult.reject
-                }
-            }
-            still := Timer {
-                interval: Motion.settle;
-                running: area.scrolling;
-                triggered => { area.scrolling = false; }
-            }
-            // Over the rail's whole length, past the knob's travel as the rail runs. A hand's press gives it
-            // the keyboard with no ring beside the photo; Tab, or an arrow acting here, rings it.
-            keys := KeyScope {
-                in-out property <bool> pressed;
-                x: -SliderStyle.knob-width / 2;
-                width: parent.width + SliderStyle.knob-width;
-                enabled: root.enabled;
-                radius: root.dial ? DialStyle.radius : self.height / 2;
-                ring: !self.pressed;
-                changed has-focus => {
-                    if (!self.has-focus) { self.pressed = false; }
-                }
-                key-pressed(event) => {
-                    let by = event.text == Key.RightArrow || event.text == Key.UpArrow ? 1 : event.text == Key.LeftArrow || event.text == Key.DownArrow ? -1 : 0;
-                    if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
-                        return reject;
+                    key-pressed(event) => {
+                        let by = event.text == Key.RightArrow || event.text == Key.UpArrow ? 1 : event.text == Key.LeftArrow || event.text == Key.DownArrow ? -1 : 0;
+                        if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
+                            return reject;
+                        }
+                        self.pressed = false;
+                        root.step(root.field, event.modifiers.shift ? by * root.big : by);
+                        accept
                     }
-                    self.pressed = false;
-                    root.step(root.field, event.modifiers.shift ? by * root.big : by);
-                    accept
                 }
             }
+        }
+        if root.stepped: StepKey {
+            text: "+";
+            fill: root.high;
+            help: root.plus-help;
+            enabled: root.enabled;
+            clicked => { root.step(root.field, self.shift ? 3 : 1); }
         }
     }
 }

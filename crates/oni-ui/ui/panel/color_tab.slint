@@ -40,21 +40,21 @@ export component ColorPane inherits Pane {
         news: News.keypad;
         news-note: News.keypad-note;
         news-read => { News.read("keypad.1.3.1"); }
-        LabSlider { index: 0; label: @tr("D"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; }
+        LabSlider { index: 0; label: @tr("D"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("D −: toward dark"); plus-help: @tr("D +: toward light"); }
     }
     if Lab.shown: LabBlock {
         title: @tr("Colour");
         help: @tr("C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points.");
         block: 1;
-        LabSlider { index: 1; label: @tr("C"); low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; }
-        LabSlider { index: 2; label: @tr("M"); low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; }
-        LabSlider { index: 3; label: @tr("Y"); low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; }
+        LabSlider { index: 1; label: @tr("C"); low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; minus-help: @tr("C −: toward red"); plus-help: @tr("C +: toward cyan"); }
+        LabSlider { index: 2; label: @tr("M"); low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; minus-help: @tr("M −: toward green"); plus-help: @tr("M +: toward magenta"); }
+        LabSlider { index: 3; label: @tr("Y"); low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; minus-help: @tr("Y −: toward blue"); plus-help: @tr("Y +: toward yellow"); }
     }
     if Lab.shown: LabBlock {
         title: @tr("Look");
         help: @tr("TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it.");
         block: 2;
-        LabSlider { index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; }
+        LabSlider { index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; minus-help: @tr("Temperature −: toward cool"); plus-help: @tr("Temperature +: toward warm"); }
     }
     // A photographer's order: the light and its contrast first, then the colour, then the effects.
     if !Lab.shown: Block {
@@ -167,7 +167,7 @@ export component ColorPane inherits Pane {
         StoreSlider { field: 9; label: @tr("Vignette"); fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
         if !PanelState.monochrome: StoreSlider { field: 10; label: @tr("Chrome"); fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
     }
-    // On the Scanner face its own finishing, in steps.
+    // On the Scanner face its own finishing, a press a step.
     if Lab.shown: LabBlock {
         title: @tr("Effects");
         news: News.effects-scanner;
@@ -175,9 +175,9 @@ export component ColorPane inherits Pane {
         news-read => { News.read("effects.scanner.1.3.1"); }
         block: 3;
         help: @tr("Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
-        LabSlider { index: 5; label: @tr("Contrast"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; }
-        LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; }
-        if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; }
+        LabSlider { index: 5; label: @tr("Contrast"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Contrast −: toward softer, 5% a step"); plus-help: @tr("Contrast +: toward harder, 5% a step"); }
+        LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
+        if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
     }
     EditorBlock {
         title: @tr("Curves");

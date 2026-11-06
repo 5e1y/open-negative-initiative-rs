@@ -6801,5 +6801,12 @@
     "title": "The checks follow the merged fifth wave; the dialog answer is emptied, never removed",
     "status": "done",
     "detail": "Eight checks still read the app as one corrector left it: the Pro face now lays Lighting first, so a slider check opens taller and the help card's twin reads the light above the colour; a block's Reset stays in place dimmed; Copy Settings ends on its ellipsis; Prepare's footer sets Back beside the step's key with Cancel apart; the dye block's reset index follows the panel; the medal probes sit on the tiles' ground. The dialog seam empties its answer file rather than removing it, as no crate removes a file."
+  },
+  {
+    "id": 1390,
+    "type": "fix",
+    "title": "The Scanner face's − and + step keys come back, as keycaps beside each rail",
+    "status": "done",
+    "detail": "Owner's call: the step keys are what makes the Scanner experience, so they stay, and as keycaps. Each of the Scanner face's stepped sliders sets a − and a + keycap at its rail's ends, as tall as the knob (SliderStyle.step-key, its sign at SliderStyle.step-legend), each in the colour of the rail's end beside it: a press is one step, three with ⇧. The keys' tooltips name the slider and the way, and assistive tools read them as the keys' names; the name's tooltip tells ⇧ makes three. What #1316 gave both faces stays: the tick and the detent at rest, the double click on the name, the arrows and the typed value; Pro's sliders keep no keys. The 2.5D lab tunes the keys again. Window check scanner: a press on D's − steps once, ⇧ on + three times (twin: deaf to ⇧ it would stand at zero), the press draws the cap sinking (twin: the block's flat Reset draws none)."
   }
 ]
