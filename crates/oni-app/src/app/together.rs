@@ -23,10 +23,13 @@ mod logo;
 mod sources;
 #[path = "together/spans.rs"]
 mod spans;
+#[path = "together/beside.rs"]
+mod beside;
 use drawing::{draw_grids, tile_source};
 use sheet::{Sheet, Window, laid, reduced, scale_for, source_side};
 pub(in crate::app) use numbers::ranks;
 pub(in crate::app) use print::{Captions, printed};
+pub(crate) use beside::Beside;
 
 /// Where frames of these sizes lie on their contact sheet, one still unmeasured on 3:2, the logo's
 /// band from a full row on and the sheet's size, in the full sheet's pixels.
@@ -86,6 +89,8 @@ pub(in crate::app) struct Group {
     latencies: Vec<Duration>,
     /// Each slider's span over the frames, lowest and highest, as offsets from the open frame's value.
     spans: Vec<(f32, f32)>,
+    /// The reset keys a frame beside the open one stands off rest for, and what they were read on.
+    beside: std::cell::RefCell<Option<(beside::Read, Beside)>>,
 }
 
 static GROUPS: AtomicU64 = AtomicU64::new(0);
@@ -161,14 +166,15 @@ impl Ctl {
         let (stand_ins, numbers, sheet) = (vec![None; paths.len()], vec![None; paths.len()], laid(&vec![UNKNOWN; paths.len()]));
         // A full row's band is as wide whatever the frames' proportions: its logo is drawn once.
         let band = sheet.band.map(|b| b.2 as usize);
-        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new(), spans: Vec::new() };
+        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new(), spans: Vec::new(), beside: Default::default() };
         self.state.borrow_mut().together = Some(group);
         self.publish_spans();
         if fresh {
             self.state.borrow_mut().viewport.fit();
         }
         self.leave_frame_tools();
-        self.publish_bar();
+        // The reset keys read the frames beside the open one too.
+        self.publish(false);
         self.stand_in(id, &lacking);
         self.decode_together(id, lacking);
         self.number_frames(id);
@@ -187,7 +193,7 @@ impl Ctl {
         if selected.len() < 2 {
             if self.together_shown() {
                 self.leave_together();
-                self.request_render();
+                self.publish(false);
             }
             return;
         }

@@ -33,15 +33,18 @@ fn the_screen_spells_every_count_and_the_balance_as_the_lab_does() {
 fn a_group_s_reset_clears_its_own_letters_alone() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.scanner = ScannerClicks::new(3, -2, 1, 4, 5);
-    let Command::Write(next) = Group::Colour.reset(&s, &s) else { panic!("a letter group writes the clicks") };
+    let next = Group::Colour.rest(true).on(&s);
     assert_eq!(next.scanner, ScannerClicks::new(3, 0, 0, 0, 5));
     assert!(Group::Colour.modified(&s) && !Group::Colour.modified(&next));
     // Twin: Density's reset leaves the colour letters where they are.
-    let Command::Write(next) = Group::Density.reset(&s, &s) else { panic!() };
+    let next = Group::Density.rest(true).on(&s);
     assert_eq!(next.scanner, ScannerClicks::new(0, -2, 1, 4, 5));
     assert!(!Group::Effects.modified(&s));
     s.scanner_finish.vignette.stops = 0.3;
+    s.vignette.stops = -0.4;
     assert!(Group::Effects.modified(&s));
+    let rested = Group::Effects.rest(true).on(&s);
+    assert_eq!((rested.scanner_finish.vignette.stops, rested.vignette.stops), (0.0, -0.4), "the Scanner's finishing, Pro's kept");
 }
 
 #[test]

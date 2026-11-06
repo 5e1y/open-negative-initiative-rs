@@ -39,6 +39,10 @@ pub enum Handle {
     White,
 }
 
+impl Handle {
+    pub const ALL: [Handle; 5] = [Handle::Black, Handle::Shadows, Handle::Mid, Handle::Highlights, Handle::White];
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Knob {
     Gain(Channel),

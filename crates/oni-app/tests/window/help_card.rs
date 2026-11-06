@@ -27,7 +27,7 @@ fn even(insets: [f32; 4]) -> bool {
 }
 
 /// The block's Reset, on the row of its "?", and whether it can be pressed.
-fn reset_of(w: &oni_app::MainWindow, subject: &str) -> (Placed, bool) {
+pub(crate) fn reset_of(w: &oni_app::MainWindow, subject: &str) -> (Placed, bool) {
     let row = mark(w, subject);
     let found: Vec<_> = ElementHandle::find_by_accessible_label(w, "Reset")
         .filter(|e| e.accessible_role() == Some(Role::Button))

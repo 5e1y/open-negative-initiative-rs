@@ -86,8 +86,15 @@ impl EditorStore {
             .flatten()
             .collect();
         moved.iter().for_each(|k| _ = self.measured.remove(k));
-        self.together.landed(&after);
+        self.shown_together(&after);
         (before, after)
+    }
+
+    /// Sidecars just written, kept for the frames together: one that moved changes what the editor shows.
+    pub(super) fn shown_together(&mut self, written: &Settings) {
+        if self.together.landed(written) {
+            self.revision += 1;
+        }
     }
 }
 

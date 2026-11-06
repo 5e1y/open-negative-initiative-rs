@@ -6,6 +6,7 @@ use crate::knob::Knob;
 mod kept;
 mod narrowed;
 mod one_history;
+mod one_path;
 mod slides;
 mod together;
 

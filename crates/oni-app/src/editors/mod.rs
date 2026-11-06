@@ -9,6 +9,7 @@ pub mod saturation;
 pub mod shell;
 pub mod spectrogram;
 pub mod sprung;
+mod stored;
 
 use crate::store::Store;
 use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
@@ -21,6 +22,7 @@ use oni_settings::spectrogram::{Band, Spectrogram};
 use std::time::Instant;
 
 pub use shell::{Shell, origin, pressed_anywhere, publish, size, wire, writes};
+pub use stored::{RESETS, face, lay, rest_of, rested_levels, resting_levels};
 
 /// The plots, as the interface numbers them in every callback.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -57,41 +59,6 @@ pub enum Edit {
     Levels(LevelsSet),
     Spectrogram(Spectrogram),
     Saturation(SaturationCurve),
-}
-
-/// The settings as the open face edits them: the Scanner face reads its own finishing.
-pub fn face(settings: &PipelineSettings, scanner: bool) -> PipelineSettings {
-    if scanner { settings.as_scanner() } else { settings.clone() }
-}
-
-/// The stored settings with `edit` laid on the face, the other face's finishing kept.
-pub fn lay(settings: &PipelineSettings, scanner: bool, edit: &Edit) -> PipelineSettings {
-    let mut f = face(settings, scanner);
-    match edit {
-        Edit::Curves(c) => f.manual_curves = c.clone(),
-        Edit::Levels(l) => f.levels = *l,
-        Edit::Spectrogram(s) => f.spectrogram = *s,
-        Edit::Saturation(s) => f.saturation = s.clone(),
-    }
-    if scanner { settings.storing_scanner_edit(&f) } else { f }
-}
-
-/// `restingLevels`: a measured roll's window when the frame stands on one, else the bare axis.
-pub fn resting_levels(settings: &PipelineSettings) -> LevelsSet {
-    match &settings.roll_reference {
-        Some(reference) => oni_core::balance::written(reference, settings).levels,
-        None => LevelsSet::neutral(settings.mode, settings.density_ceiling),
-    }
-}
-
-/// The Per-Channel Levels block's three windows at their rest, the linked and luma ones kept.
-pub fn rested_levels(settings: &PipelineSettings) -> LevelsSet {
-    let rest = resting_levels(settings);
-    let mut out = settings.levels;
-    for c in LevelsChannel::PER_CHANNEL {
-        out.set(c, rest.get(c));
-    }
-    out
 }
 
 /// The band slider's three axes, in their order on screen.
@@ -233,8 +200,11 @@ impl Gestures {
 
     fn write(&mut self, store: &mut dyn Store, edit: &Edit) {
         let scanner = Self::scanner(store);
-        let next = lay(store.settings(), scanner, edit);
-        store.apply(Command::Write(Box::new(next)));
+        match edit {
+            // Each handle is a knob, which frames together move by its distance from their own window.
+            Edit::Levels(set) => levels::steps(store.settings(), set).into_iter().for_each(|c| store.apply(c)),
+            _ => store.apply(Command::Write(Box::new(lay(store.settings(), scanner, edit)))),
+        }
         self.writes += 1;
     }
 
@@ -304,10 +274,10 @@ impl Gestures {
                 let window = view.levels.get(channel);
                 let Some(grip) = levels::caught(at.0, at.1, size.w, &window, channel, view.mode) else { return Then::Nothing };
                 if self.double(1, now) {
-                    let rested = levels::reset(grip, &window, channel, view.mode, view.density_ceiling);
-                    let mut set = view.levels;
-                    set.set(channel, rested);
-                    return self.once(store, Edit::Levels(set));
+                    store.defer();
+                    store.apply(levels::rested(grip, channel, &view));
+                    self.writes += 1;
+                    return Then::Publish;
                 }
                 let start = levels::place(grip, &window, channel, view.mode);
                 self.begin(store, Held::Level { grip, start, from: at.0 }, Edit::Levels(view.levels));
@@ -475,15 +445,13 @@ impl Gestures {
         Then::Draw
     }
 
+    /// A reset key: the block at each frame's own rest, every frame shown with the open one.
     pub fn reset(&mut self, store: &mut dyn Store, block: Reset) -> Then {
-        let view = self.view(store);
-        let edit = match block {
-            Reset::Curves => Edit::Curves(CurveSet::default()),
-            Reset::Levels => Edit::Levels(rested_levels(&view)),
-            Reset::Spectrogram => Edit::Spectrogram(Spectrogram::default()),
-            Reset::Saturation => Edit::Saturation(SaturationCurve::default()),
-        };
-        self.once(store, edit)
+        let scanner = Self::scanner(store);
+        store.defer();
+        store.apply(Command::Each(rest_of(block, scanner)));
+        self.writes += 1;
+        Then::Publish
     }
 
     // MARK: - The band sliders

@@ -8,6 +8,8 @@ use serde::Serialize;
 use serde_json::Value;
 use std::fmt;
 
+mod ordered;
+
 macro_rules! fields {
     ($($variant:ident => $name:literal, $member:ident;)*) => {
         /// One field of `PipelineSettings`, in declaration order.
@@ -32,8 +34,7 @@ macro_rules! fields {
                 match self { $(Field::$variant => to.$member = from.$member.clone(),)* }
             }
 
-            /// Lays on `on` this field's values that moved from `before` to `after`, and no other.
-            pub fn patch(self, before: &PipelineSettings, after: &PipelineSettings, on: &mut PipelineSettings) {
+            fn patched_leaves(self, before: &PipelineSettings, after: &PipelineSettings, on: &mut PipelineSettings) {
                 match self { $(Field::$variant => patched(&before.$member, &after.$member, &mut on.$member),)* }
             }
         }
@@ -85,6 +86,18 @@ fields! {
     ScannerFinish => "scannerFinish", scanner_finish;
     Texture => "texture", texture;
     Sharpen => "sharpen", sharpen;
+}
+
+impl Field {
+    /// Lays on `on` this field's values that moved from `before` to `after`, and no other; a curve's
+    /// point moved lands through the curve's own move, held between that frame's neighbours.
+    pub fn patch(self, before: &PipelineSettings, after: &PipelineSettings, on: &mut PipelineSettings) {
+        let own = ordered::bends(self).then(|| on.clone());
+        self.patched_leaves(before, after, on);
+        if let Some(own) = own {
+            ordered::ordered(self, &own, on);
+        }
+    }
 }
 
 /// `on` takes what moved from `before` to `after`, value by value: a list that changed its length, or

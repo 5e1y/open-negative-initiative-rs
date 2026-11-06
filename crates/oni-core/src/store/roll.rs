@@ -101,6 +101,7 @@ impl EditorStore {
         }
         let mut step = (before, after);
         gather(&mut step, beside);
+        self.shown_together(&step.1);
         self.history.record(&step.0, &step.1, &measure_label(frames), None);
         frames
     }
