@@ -42,7 +42,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     // None picked: the first photo's mode's default, said so.
-    assert_eq!(lib.get_stock().as_str(), "Generic Color Negative");
+    assert_eq!(lib.get_stock().as_str(), "Generic Colour Negative");
     assert!(lib.get_stock_note().starts_with("Default, from this roll's"), "{}", lib.get_stock_note());
 
     // The sheet: the brands in the catalogue's order, nothing marked.

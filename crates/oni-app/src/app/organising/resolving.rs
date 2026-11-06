@@ -20,17 +20,15 @@ impl State {
         self.roll().and_then(|r| r.film.stock)
     }
 
-    /// The archive's band the gallery stands on: the anchor's, else the opened folder's own photos.
-    fn shown_band(&self) -> Option<&library::Group> {
+    /// The archive's band the gallery stands on: the folder of the anchor shown, else the opened
+    /// folder; the whole roll, as the medal filter keeps the gallery and never the roll.
+    fn shown_band(&self) -> Option<library::Group> {
         if self.org.projects_surface || self.trash_shown() {
             return None;
         }
-        let groups = &self.archive.as_ref()?.groups;
-        let anchored = self.picks.anchor.as_deref().and_then(|a| groups.iter().find(|g| g.entries.iter().any(|e| e.path == a)));
-        anchored.or_else(|| {
-            let opened = self.opened.as_deref()?;
-            groups.iter().find(|g| g.folder.as_deref().is_some_and(|f| oni_library::paths::same(f, opened)))
-        })
+        let archive = self.archive.as_ref()?;
+        let anchored = self.picks.anchor.as_deref().filter(|a| self.order.iter().any(|p| p == a));
+        anchored.and_then(|a| archive.band(&oni_library::paths::parent(a))).or_else(|| archive.band(self.opened.as_deref()?))
     }
 
     /// The roll the gallery stands on. A folder is one: its marker, else the roll every member's
@@ -40,8 +38,8 @@ impl State {
         let paths: Vec<String> = group.entries.iter().map(|e| e.path.clone()).collect();
         let first = group.entries.first().cloned();
         let folder = group.folder.clone();
-        if let Some(film) = &group.film {
-            return Some(Roll { film: film.clone(), marker: folder, paths, first });
+        if let Some(film) = group.film {
+            return Some(Roll { film, marker: folder, paths, first });
         }
         let named = group.entries.first().and_then(|e| e.film.clone()).filter(|film| group.entries.iter().all(|e| e.film.as_ref().is_some_and(|f| f.id == film.id)));
         if let Some(film) = named {
