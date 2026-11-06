@@ -6437,5 +6437,33 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1350,
+    "type": "fix",
+    "title": "Leaving Prepare the Roll asks first while it holds a choice; Cancel stands on a plate of its own",
+    "status": "done",
+    "detail": "UX evaluation s-9011e109, Trust: Escape or Cancel dropped every step done without asking, and Cancel shared a plate with Back and the step's key. Every way out (Cancel, Escape, GALLERY, a sidebar frame) now goes through take_off_roll: a roll holding a base picked, a frame flagged or a window drawn away from the one its first frame brought asks 'Discard This Roll's Preparation?' with a red Discard, the sheet's Cancel keeping the roll and its steps; a roll holding none leaves at once, keeping nothing as before (#1112). A sidebar frame opens once the roll is left. The DNG conversion's leave stays silent (drop_roll). The footer lays Cancel, or Stop while measuring, on a plate apart from Back and the step's key."
+  },
+  {
+    "id": 1351,
+    "type": "fix",
+    "title": "Prepare the Roll shows each frame as its scan on every step",
+    "status": "done",
+    "detail": "UX evaluation s-9011e109, Craft in use: the steps alternated a cyan-veiled preview, the negative complemented without its base, and the base step's raw negative, so the frame changed look at each step. The roll's tiles and card are now its frames framed (flat-field, mask, dust) on screen values, uninverted as the base's scan and the gallery's unprepared roll, so every step shows the one look; `RollPreviews.inverted` and its check are gone. Nothing measured changes: the measure and the base pick read the files themselves."
+  },
+  {
+    "id": 1352,
+    "type": "feature",
+    "title": "The base pick lands its ring with a click and waits for NEXT; the window clicks as it is taken and set down",
+    "status": "done",
+    "detail": "UX evaluation s-9011e109, Play: the base pick and the window gave no response under the hand; the pick even left its step at once, so its ring was never seen. A click on bare film now stays on the base step: the ring lands from 1.6 times its size onto the pick on the settle spring (`RollStyle.landing`) with a key's click, the key rises to the NEXT keycap and the loupe shows the pick, so the hand checks it and may pick again before going on. The measuring window clicks as a key goes down when taken up and as one comes up when set down. Both sounds follow Settings' key clicks."
+  },
+  {
+    "id": 1353,
+    "type": "fix",
+    "title": "Prepare's step bar spaces its steps evenly; an unprepared roll shows one Prepare Roll",
+    "status": "done",
+    "detail": "UI evaluation s-9011e109, Spacing and Hierarchy: the step bar's equal cells left uneven gaps between the five steps' words; an ordered Tabs now sizes each step to its words and shares the room left equally, so the gaps are even and a check replacing a number still moves nothing. Roll #9 showed two Prepare Roll actions, the bar's keycap and a flat key under the info column's notice; the notice now points to the bar's key in words, and the column's key and its callback are gone."
   }
 ]

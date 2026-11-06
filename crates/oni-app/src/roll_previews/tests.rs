@@ -1,21 +1,5 @@
 use super::*;
 
-/// `RollPreviews.selfCheck`'s bytes: a colour pixel's complement, a grey film's luma complement.
-#[test]
-fn a_negative_reads_as_its_complement_and_a_grey_film_on_its_luma() {
-    let mut colour = vec![13, 201, 67, 255];
-    inverted(&mut colour, false);
-    assert_eq!(colour, [242, 54, 188, 255]);
-    let mut grey = vec![13, 201, 67, 255];
-    inverted(&mut grey, true);
-    assert_eq!(grey, [104, 104, 104, 255]);
-    // Twin: under a half alpha the complement is taken under the alpha, never under 255.
-    let mut half = vec![13, 201, 67, 128];
-    inverted(&mut half, false);
-    assert_eq!(half, [115, 0, 61, 128]);
-    assert_ne!(half[..3], [242, 54, 188]);
-}
-
 #[test]
 fn a_tile_shows_the_frame_at_rest_on_the_rolls_film_and_flat_field() {
     let mut base = PipelineSettings::rest(ConversionMode::Negative, true);
