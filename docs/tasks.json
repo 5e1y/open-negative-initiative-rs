@@ -5345,5 +5345,12 @@
     "title": "Prepare the Roll's panel: the step's controls first, its demo played once under them, the settings note once",
     "status": "done",
     "detail": "UX and UI evaluation, problems 8, 8b, 44 and 45: the Window step said to use a slider that stood below the fold, under a looping demo and a five-line warning the footer cut mid-sentence; the demo looped without end beside the frame measured; the orange Settings differ note stood on all five steps over each step's own choice. Each step now shows its controls first, then its demo, square at RollStyle.demo so it stands whole under the Window step's controls in a window 680 points tall, then the frames to pick from, the part that scrolls. A clip plays once and rests on its last frame (tutorial::Frames ends; a help card's demo, open while a hand rests on its mark, starts it again). The Settings differ note shows once, on the Flat-Field step, over the grid whose marks it names and whose light it concerns."
+  },
+  {
+    "id": 1114,
+    "type": "fix",
+    "title": "Prepare the Roll's step keys show a check on each step done",
+    "status": "done",
+    "detail": "UX and UI evaluation, problem 32: a step's progress was told by a lamp alone, green when done, black when not, the black one about 1.5:1 on its key. A step behind the current one carries the done glyph before its word; the current key stays lit, the others plain; the lamp is no longer laid on a key of the app (owner's call)."
   }
 ]
