@@ -1210,6 +1210,10 @@ msgid "Machine"
 msgstr "Máquina"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The machine the Scanner face prints with: ONI, Pro's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either."
+msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión de Pro con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
 msgstr "ONI"
 
@@ -1220,6 +1224,10 @@ msgstr "Frontier"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Density"
 msgstr "Densidad"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point at each press, the screen above counting the points."
+msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto con cada pulsación, y la pantalla de arriba cuenta los puntos."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "D"
@@ -1240,6 +1248,10 @@ msgstr "D +: hacia claro"
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
 msgstr "Color"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point at each press, the screen above counting the points."
+msgstr "C, M e Y, las teclas de color de un minilab: + lleva la copia hacia el cian, el magenta o el amarillo y − hacia el rojo, el verde o el azul, medio punto con cada pulsación, y la pantalla de arriba cuenta los puntos."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C"
@@ -1284,6 +1296,14 @@ msgstr "Aspecto"
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Temperature"
 msgstr "Temperatura"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP lays the machine's warm or cool look over the print, a little more at each press; at zero the print stays as the keys above set it."
+msgstr "TEMP aplica el aspecto cálido o frío de la máquina sobre la copia, un poco más con cada pulsación; en cero, la copia queda como la fijaron las teclas de arriba."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP"
+msgstr "TEMP"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Temperature −: toward cool"
@@ -1458,6 +1478,10 @@ msgid "Aspect Ratio"
 msgstr "Proporción"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Holds the crop to a ratio while its corners are dragged; Free leaves it loose, and Vertical stands it upright, 2:3 for 3:2. The ratio last chosen follows to the next photo opened on this tab."
+msgstr "Mantiene el recorte en una proporción mientras se arrastran sus esquinas; Libre no impone ninguna y Vertical la pone en pie, 2:3 por 3:2. La última proporción elegida pasa a la siguiente foto abierta en esta pestaña."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Free"
 msgstr "Libre"
 
@@ -1470,12 +1494,20 @@ msgid "Straighten"
 msgstr "Enderezar"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Turns the photo a few degrees either way to level a horizon or a frame's edge; the crop shrinks to stay inside the turned picture."
+msgstr "Gira la foto unos grados en un sentido u otro para nivelar un horizonte o el borde de un marco; el recorte se reduce para quedar dentro de la imagen girada."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Angle"
 msgstr "Ángulo"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Rotate & Mirror"
 msgstr "Girar y reflejar"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs."
+msgstr "Gira la foto un cuarto de vuelta en sentido horario con cada pulsación, o la invierte de izquierda a derecha o de arriba abajo, como pide un negativo escaneado del revés."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Rotate 90° Clockwise"
@@ -1500,6 +1532,10 @@ msgstr "Reflejar verticalmente"
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Measuring Window"
 msgstr "Ventana de medición"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "The part of the photo the balance keys and the histogram read, drawn on the photo while its key is lit; untouched, it follows the crop. The side keys reset it, copy it and paste it on other photos."
+msgstr "La parte de la foto que leen las teclas de balance y el histograma, trazada sobre la foto mientras su tecla está encendida; si no se toca, sigue al recorte. Las teclas laterales la restablecen, la copian y la pegan en otras fotos."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Reset Measuring Window"
@@ -1789,6 +1825,10 @@ msgid "The roll's colour filtration, as an enlarger's filters are dialled for a 
 msgstr "El filtrado de color del rollo, como se ajustan los filtros de una ampliadora para una película: llega a todas las fotos del rollo, mientras que Temperatura y Matiz siguen siendo propios de cada foto."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Raises or lowers each channel of the scan before the conversion, on every photo of the roll: each row trades one colour for its opposite. Prepare the Roll sets them and the reset brings them back there; a slide shows them as a warmth and a tint."
+msgstr "Sube o baja cada canal del escaneo antes de la conversión, en todas las fotos del rollo: cada fila cambia un color por su opuesto. Preparar el rollo los fija y el restablecimiento los devuelve allí; una diapositiva los muestra como calidez y matiz."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Amber ↔ Blue"
 msgstr "Ámbar ↔ Azul"
 
@@ -1835,6 +1875,10 @@ msgstr "Techo"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Per-Channel Levels"
 msgstr "Niveles por canal"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Each channel's own window on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone."
+msgstr "La ventana propia de cada canal del escaneo, elegido con R, G o B: sus extremos negro y blanco, que coloca Preparar el rollo, y sus sombras, punto medio y luces entre ellos. Doble clic en un tirador para devolverlo solo."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"

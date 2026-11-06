@@ -5982,5 +5982,19 @@
     "title": "De-dust names itself in the tab bar's place, beside a DONE key",
     "status": "done",
     "detail": "Evaluation s-db78d310: with De-dust on, the tab bar showed Roll, Crop, Colour and Details with none selected and nothing named the mode but the bar's lit key. De-dust is a pane the tab bar does not list, and its five labels cannot share the panel's width in French or Spanish; so while it is on, the bar gives way to a header at the bar's height, the mode's name in the title face and a DONE keycap that asks the same gesture as the bar's key and the menu's Done Correcting, landing on the last panel. The panel's rule does not move."
+  },
+  {
+    "id": 1219,
+    "type": "fix",
+    "title": "Every block of the panel has a note, so every header wears its help mark",
+    "status": "done",
+    "detail": "UI evaluation (Consistency): the help mark sat on some block headers and not on others, as the port copied Swift's notes and Swift left ten blocks bare. Aspect Ratio, Straighten, Rotate & Mirror, Measuring Window, Source Balance, Per-Channel Levels, Machine, Density and the Scanner's Colour and Look now say what they do, in English, French and Spanish. Window check every_titled_block_has_a_note reads each Section and Block of the panel at its own depth and finds none without a note; twin: Measuring Window's note taken away is caught, its keys' own notes never standing for it."
+  },
+  {
+    "id": 1220,
+    "type": "design",
+    "title": "A block's title is engraved as the rule above it",
+    "status": "done",
+    "detail": "UI evaluation (Art direction): the analogue nods clustered on the Scanner face, the medals and the contact sheet while the Pro face read as generic flat software. Section's title is now a camera's marking, small and on labels alone: in capitals set apart by the seal's tracking, the Divider's groove shade one line above its letters and its lit edge one line below, at the section's size, no new type size. Every block of every screen takes it, the Pro face's first; the screen reader still hears the title as written. The Pro sliders keep no −/+ keys: the Scanner face is the detented one, and two keys on each of a dozen Pro rows would narrow every track and double the panel's controls."
   }
 ]

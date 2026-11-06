@@ -25,6 +25,7 @@ export component CropPane inherits Pane {
     }
     Section {
         title: @tr("Aspect Ratio");
+        help: @tr("Holds the crop to a ratio while its corners are dragged; Free leaves it loose, and Vertical stands it upright, 2:3 for 3:2. The ratio last chosen follows to the next photo opened on this tab.");
         Tabs {
             tabs: [@tr("Free"), "3:2", "4:3", "1:1", "6:7", "5:4"];
             marked: [false, false, false, false, false, false];
@@ -36,10 +37,12 @@ export component CropPane inherits Pane {
     }
     Block {
         title: @tr("Straighten");
+        help: @tr("Turns the photo a few degrees either way to level a horizon or a frame's edge; the crop shrinks to stay inside the turned picture.");
         StoreSlider { field: 14; label: @tr("Angle"); fraction: Store.angle-fraction; readout: Store.angle-readout; value-text: Store.angle-value; }
     }
     Section {
         title: @tr("Rotate & Mirror");
+        help: @tr("Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs.");
         // The rotate key alone, then the two mirrors on one plate; none of them ever lights.
         HorizontalLayout {
             spacing: Space.s;
@@ -57,6 +60,7 @@ export component CropPane inherits Pane {
     }
     Section {
         title: @tr("Measuring Window");
+        help: @tr("The part of the photo the balance keys and the histogram read, drawn on the photo while its key is lit; untouched, it follows the crop. The side keys reset it, copy it and paste it on other photos.");
         // `MeasureWindowKeys`: the long sentence is the middle key's, lit while armed.
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
