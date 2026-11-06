@@ -28,6 +28,8 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
     let Some(w) = ctl.window() else { return };
     let g = w.global::<Global>();
     let now = Instant::now();
+    // A reset key also shows while a frame beside the open one stands off the rest it would take.
+    let beside = ctl.beside().editors;
     let (view, gestures, path, scrolled) = {
         let mut s = ctl.state.borrow_mut();
         let mut gestures = ctl.editors.gestures.borrow_mut();
@@ -58,7 +60,6 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         g.set_curve_dots(dots(&d));
         g.set_curve_marked(model(key.3.clone()));
         g.set_curve_channel(channel as i32);
-        g.set_curves_modified(!view.manual_curves.is_neutral());
         drawn.curves = Some(key);
     }
 
@@ -111,7 +112,6 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         g.set_levels_readouts(model(readouts));
         g.set_levels_marked(model(key.7.clone()));
         g.set_levels_channel(gestures.levels_channel as i32);
-        g.set_levels_modified(modified);
         drawn.levels = Some(key);
     }
 
@@ -125,7 +125,6 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         g.set_wheel_dots(dots(&d));
         g.set_band_marked(model(spectrogram::marked(&view.spectrogram)));
         g.set_band(band.index() as i32);
-        g.set_spectrogram_modified(view.spectrogram != Spectrogram::default());
         let mut readouts: Vec<SharedString> = Vec::new();
         for field in 0..crate::editors::BAND_FIELDS {
             let v = crate::editors::band_value(&view.spectrogram, band, field);
@@ -169,9 +168,13 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         let d = saturation::drawing(&key.0, key.2, key.1);
         g.set_saturation_lines(lines(&d));
         g.set_saturation_dots(dots(&d));
-        g.set_saturation_modified(!view.saturation.is_neutral());
         drawn.saturation = Some(key);
     }
+
+    g.set_curves_modified(!view.manual_curves.is_neutral() || beside[0]);
+    g.set_levels_modified(modified || beside[1]);
+    g.set_spectrogram_modified(view.spectrogram != Spectrogram::default() || beside[2]);
+    g.set_saturation_modified(!view.saturation.is_neutral() || beside[3]);
 
     let key = (view.print, monochrome, sizes[Plot::Print as usize]);
     if drawn.print.as_ref() != Some(&key) {

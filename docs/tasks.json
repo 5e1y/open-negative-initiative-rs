@@ -6829,5 +6829,61 @@
     "title": "The Scanner face's − and + step keys come back, as keycaps beside each rail",
     "status": "done",
     "detail": "Owner's call: the step keys are what makes the Scanner experience, so they stay, and as keycaps. Each of the Scanner face's stepped sliders sets a − and a + keycap at its rail's ends, as tall as the knob (SliderStyle.step-key, its sign at SliderStyle.step-legend), each in the colour of the rail's end beside it: a press is one step, three with ⇧. The keys' tooltips name the slider and the way, and assistive tools read them as the keys' names; the name's tooltip tells ⇧ makes three. What #1316 gave both faces stays: the tick and the detent at rest, the double click on the name, the arrows and the typed value; Pro's sliders keep no keys. The 2.5D lab tunes the keys again. Window check scanner: a press on D's − steps once, ⇧ on + three times (twin: deaf to ⇧ it would stand at zero), the press draws the cap sinking (twin: the block's flat Reset draws none)."
+  },
+  {
+    "id": 1394,
+    "type": "fix",
+    "title": "Every input of frames together takes the store's one path: a reset lands as each frame's own rest",
+    "status": "done",
+    "detail": "Adversarial review of the writes while several frames are edited together. A block's reset, an editor's reset (curves, levels, colour mixer, saturation) and a Scanner group's reset were values written from the open frame, so another frame reset only what the open one had moved, and with frames together a block's reset left through a gesture that never reached the roll. They are now one command, Command::Each, an edit read off each frame's own settings, applied through EditorStore::apply like a slider, laid on the open frame and on each frame together; the single-frame write and the together gesture are gone. An action the open frame stands still for (a double click at its rest, Reset C at 0, a key at its click limit, a reset on curves already at rest) still lands on the frames together: apply takes the command whenever frames are together, and only what changed is written. Checks: store one_path an action the open frame stands still for (twin: each command left the open frame unchanged), app store a block reset together, editors stored a reset reaching a frame the open one left at rest."
+  },
+  {
+    "id": 1395,
+    "type": "fix",
+    "title": "What a roll shares reaches every frame of the open frame's roll by the roll's rule, and never another roll",
+    "status": "done",
+    "detail": "The together patch laid roll fields on frames it judged of the same roll by reference and decode, None counting as a roll: slides took the open slide's Auto levels, a frame of the roll on another decode took no roll step, frames on no roll shared roll settings, a contact sheet took a flat-field, and a reset of a roll block with part of the roll selected split it. The step's roll fields now go through one rule only: the open frame's roll, every frame of it, together or not, through roll_settings::copied with each slide's own measured gains and its own levels and film type, a contact sheet refusing the flat-field; the together patch never lays a field a roll shares, so frames on no roll and frames of another roll keep theirs, as a slider move always left them. A reset of a roll block behaves as a slider move on it; the dyes laid are the open roll's stock's, and a frame of another stock keeps its own. Settle writes the frames together and the roll's frames in one pass, each sidecar once. Checks: store one_path the roll block reset reaching the frame left out (twin: the selection's gesture splits the roll), dyes across rolls (twin: Kodak laid on the Fuji frame), mixed decodes, no roll and the contact sheet, slides together."
+  },
+  {
+    "id": 1396,
+    "type": "fix",
+    "title": "The phone's steps and drags move each frame together by their distance",
+    "status": "done",
+    "detail": "The phone panel turned a step and a drag into the open frame's value plus the move, which the frames together took as a value, wiping their own offsets. A step is now Command::Step by its hundredth of the track and a place on the track a step from the open face's value to it, as the desktop slider moves; a reset stays the double click's rest. Check: panel the phone moves each frame together by its distance (twin: the open frame's value laid whole)."
+  },
+  {
+    "id": 1397,
+    "type": "fix",
+    "title": "A levels handle is a knob: a drag moves each slide together from its own window",
+    "status": "done",
+    "detail": "The Per-Channel Levels editor wrote whole windows, which the frames together took as values, so on a slide roll every slide lost its own Auto levels. A drag and a scroll now send each moved handle as a step of its Knob::Level, held by the window's own order; a double click on a handle sets its rest as a value. Checks: store one_path a levels handle moves each slide from its own window (twin: the window written as a value), editors stored a handle's drag through the editor (twin, run: the former write path fails it)."
+  },
+  {
+    "id": 1398,
+    "type": "fix",
+    "title": "A move together lands on the face it was made on",
+    "status": "done",
+    "detail": "A knob's move was measured on the face of its moment but laid with the face read when the step was recorded, so a face switched mid-step laid Pro's move on the Scanner's finishing. Each move and value set now carries its face. Check: store one_path a move lands on the face it was made on (twin: both moves on the release's face)."
+  },
+  {
+    "id": 1399,
+    "type": "fix",
+    "title": "A patched curve point stays between the frame's own neighbours",
+    "status": "done",
+    "detail": "A curve or saturation point moved on the open frame was patched index by index on another frame's curve, where it could cross a neighbour, and the render reads points in x order. A patched point is now laid through the curve's own move, Curve::move_point and SaturationCurve::move_point, held between that frame's neighbours. Check: fields ordered a patched point stays between the frame's own neighbours (twin: the leaves alone cross)."
+  },
+  {
+    "id": 1400,
+    "type": "fix",
+    "title": "A reset key shows while a frame shown beside the open one stands off its rest",
+    "status": "done",
+    "detail": "Hard rule 1: every reset key read the open frame alone, so with the open frame at rest a frame beside it could not be reset. A block's, an editor's and a Scanner group's key now also show while a frame together that the reset reaches stands off rest by the open frame's own rule (EditorStore::together_where), read again only when what those frames hold, or the open frame's roll, stock or face, changes; the keys are published as a group opens and closes. Check: window together_moves the Colour key live for the frames beside the open one at rest, dimmed once every frame is reset (twin)."
+  },
+  {
+    "id": 1401,
+    "type": "fix",
+    "title": "A selection changed under the hand keeps the drag held; a measure's writes refresh the frames shown together",
+    "status": "done",
+    "detail": "Changing the frames together recorded the step under way by releasing the hand, after which the drag recorded and wrote every sidecar at each notch; it now records the step and keeps the hold. A measure's sidecars, written directly, refresh the frames shown together, and a frame together that moves bumps the store's revision so the sheet draws it. Check: store one_path a selection changed under the hand writes nothing per notch (twin: the joined frame takes its notch at release)."
   }
 ]

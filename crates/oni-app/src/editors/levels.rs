@@ -4,8 +4,9 @@
 use super::geometry::{Drawing, Ink, Line, Size, dashed, ds};
 use crate::track;
 use oni_i18n::tr;
-use oni_settings::ConversionMode;
+use oni_core::{Channel, Command, Handle, Knob};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
+use oni_settings::{ConversionMode, PipelineSettings};
 
 /// The handles in drawing order: the ends are drawn last, so they sit in front.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -114,6 +115,38 @@ pub fn reset(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Conversi
         Grip::Highlights => out.highlights = rest.highlights,
     }
     out
+}
+
+/// The store's knob for `grip` on `channel`, one of the three windows.
+fn knob(grip: Grip, channel: LevelsChannel) -> Knob {
+    let c = match channel {
+        LevelsChannel::Green => Channel::Green,
+        LevelsChannel::Blue => Channel::Blue,
+        _ => Channel::Red,
+    };
+    let h = match grip {
+        Grip::Black => Handle::Black,
+        Grip::Shadows => Handle::Shadows,
+        Grip::Mid => Handle::Mid,
+        Grip::Highlights => Handle::Highlights,
+        Grip::White => Handle::White,
+    };
+    Knob::Level(c, h)
+}
+
+/// Each handle `set` moved off `settings`' windows as one step of its knob.
+pub fn steps(settings: &PipelineSettings, set: &LevelsSet) -> Vec<Command> {
+    let next = PipelineSettings { levels: *set, ..settings.clone() };
+    let knobs = CHANNELS.iter().flat_map(|c| Grip::ALL.map(|g| knob(g, *c)));
+    knobs.filter_map(|knob| Some(knob.get(&next) - knob.get(settings)).filter(|by| *by != 0.0).map(|by| Command::Step { knob, by })).collect()
+}
+
+/// A double click's rest of one handle, the value set on every frame shown.
+pub fn rested(grip: Grip, channel: LevelsChannel, view: &PipelineSettings) -> Command {
+    let mut at = view.clone();
+    at.levels.set(channel, reset(grip, &view.levels.get(channel), channel, view.mode, view.density_ceiling));
+    let knob = knob(grip, channel);
+    Command::Set { knob, value: knob.get(&at) }
 }
 
 /// The handle a press catches: its knob's grab area, the front one first.

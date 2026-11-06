@@ -4,7 +4,7 @@
 use super::Ctl;
 use crate::fields::Field;
 use crate::{Bar, Lab, LabCell, MainWindow, PanelState};
-use oni_core::Command;
+use oni_core::{Command, Each};
 use oni_i18n::tr;
 use oni_link::Command as Link;
 use oni_link::scanner::{Effect, Letter, Machine};
@@ -124,24 +124,27 @@ impl Group {
         }
     }
 
-    /// The block back to rest as one write: its letters alone, or the face's Effects through its view.
-    pub fn reset(self, settings: &PipelineSettings, view: &PipelineSettings) -> Command {
-        if self == Group::Effects {
-            let mut next = view.clone();
-            (next.print.contrast, next.vignette, next.secret_sauce) = (0.0, Vignette::default(), 0.0);
-            return Command::Finish(Box::new(next));
-        }
-        let mut next = settings.clone();
-        for letter in self.letters() {
-            match letter {
-                Letter::D => next.scanner.d = 0,
-                Letter::C => next.scanner.c = 0,
-                Letter::M => next.scanner.m = 0,
-                Letter::Y => next.scanner.y = 0,
-                Letter::W => next.scanner.w = 0,
+    /// The block back to rest on each frame it lands on: its letters alone, or the face's Effects
+    /// through the view of the face edited, the Scanner's when `scanner`.
+    pub fn rest(self, scanner: bool) -> Each {
+        Each::new(move |s| {
+            if self == Group::Effects {
+                let mut view = if scanner { s.as_scanner() } else { s.clone() };
+                (view.print.contrast, view.vignette, view.secret_sauce) = (0.0, Vignette::default(), 0.0);
+                return if scanner { s.storing_scanner_edit(&view) } else { view };
             }
-        }
-        Command::Write(Box::new(next))
+            let mut next = s.clone();
+            for letter in self.letters() {
+                match letter {
+                    Letter::D => next.scanner.d = 0,
+                    Letter::C => next.scanner.c = 0,
+                    Letter::M => next.scanner.m = 0,
+                    Letter::Y => next.scanner.y = 0,
+                    Letter::W => next.scanner.w = 0,
+                }
+            }
+            next
+        })
     }
 }
 
@@ -248,7 +251,9 @@ impl Ctl {
         };
         let shown = face == Face::Scanner && !gallery;
         let screen = screen(&settings, view_place);
-        let modified: Vec<bool> = Group::ALL.iter().map(|g| g.modified(&settings)).collect();
+        // A group's reset key shows while a frame shown stands off the rest it would take, the open one or one beside it.
+        let beside = self.beside().groups;
+        let modified: Vec<bool> = Group::ALL.iter().zip(beside).map(|(g, beside)| beside || g.modified(&settings)).collect();
         let lab = w.global::<Lab>();
         w.global::<Bar>().set_face(i32::from(face == Face::Scanner));
         lab.set_shown(shown);
@@ -316,11 +321,8 @@ impl Ctl {
         let p = me.clone();
         lab.on_reset_group(move |group| {
             let Some(group) = at(&Group::ALL, group) else { return };
-            let command = {
-                let s = p.state.borrow();
-                group.reset(s.store.settings(), &s.store.face_view())
-            };
-            p.write(command);
+            let scanner = p.state.borrow().store.face() == Face::Scanner;
+            p.write(Command::Each(group.rest(scanner)));
         });
     }
 }

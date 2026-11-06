@@ -69,6 +69,10 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     assert_eq!(g.get_tint_readout().as_str(), Field::Tint.span_readout(-0.3, 0.2));
     assert_eq!(g.get_vignette_readout().as_str(), Field::Vignette.readout(open(Knob::Vignette)), "twin: one value where the frames agree");
 
+    // B at rest beside A and C balanced each its own way: Colour's Reset is live for them alone.
+    let live = |block: &str| crate::help_card::reset_of(w, block).1;
+    assert!(open(Knob::Temperature) == 0.0 && live("Colour"), "the open frame at rest, the others not");
+
     let field = Field::Temperature.index();
     g.invoke_press(field, false);
     for k in 1..=8 {
@@ -88,6 +92,14 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     assert_eq!(g.get_temperature_readout().as_str(), Field::Temperature.span_readout(-0.4 + moved, 0.6 + moved), "the span moved whole");
     println!("shot {}", rig.shot("together-moves").display());
 
+    // Colour's Reset lays each frame's own rest on all three, then dims.
+    common::click(&rig, w, crate::help_card::reset_of(w, "Colour").0.middle());
+    rig.until("the others at rest", Duration::from_secs(10), || near(Knob::Temperature.get(&read(&path("A"))), 0.0));
+    let (a, c) = (read(&path("A")), read(&path("C")));
+    assert!(near(Knob::Tint.get(&a), 0.0) && near(Knob::Temperature.get(&c), 0.0) && near(Knob::Tint.get(&c), 0.0));
+    rig.settle();
+    assert!(!live("Colour"), "twin: every frame at rest, the key dims");
+
     // The crop and De-dust, each frame's own, say under the hand why they wait.
     let hover = |label: &str| {
         let key = common::placed(w, AccessibleRole::Button, label).into_iter().find(|p| p.y >= 0.0 && p.width > 0.0).unwrap_or_else(|| panic!("the {label} key"));
@@ -106,6 +118,6 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     lib.invoke_row_clicked(row("B"), false, false);
     rig.until("B alone", Duration::from_secs(60), || canvas.get_status().contains(" \u{d7} "));
     assert!(hover("Crop").starts_with("Crop and Straighten"));
-    assert_eq!(g.get_temperature_readout().as_str(), Field::Temperature.readout(moved), "alone, one value again");
+    assert_eq!(g.get_temperature_readout().as_str(), Field::Temperature.readout(open(Knob::Temperature)), "alone, one value again");
     let _ = std::fs::remove_dir_all(&root);
 }

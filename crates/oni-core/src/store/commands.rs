@@ -86,20 +86,22 @@ impl EditorStore {
             return Applied::default();
         }
         let by_hand = !matches!(command, Command::Reset);
-        // The frames together take what the command did, read once the open frame has taken it.
+        // The frames together take what the command did, read once the open frame has taken it, even
+        // where the open frame stood already.
         let taking = (!self.together().is_empty()).then(|| (command.clone(), self.settings.clone()));
         let next = self.commanded(command);
         let changed = self.replace(next);
-        if changed.is_empty() {
-            return Applied::default();
-        }
-        if let Some((command, was)) = taking {
-            self.take_together(&command, &was);
+        match taking {
+            Some((command, was)) => self.take_together(&command, &was),
+            None if changed.is_empty() => return Applied::default(),
+            None => {}
         }
         if by_hand && changed.intersects(FieldSet::of_family(Family::Roll)) {
             self.roll_touched = true;
         }
-        self.last_change = Some(now);
+        if !changed.is_empty() {
+            self.last_change = Some(now);
+        }
         if !self.held {
             match self.deferred {
                 Some(_) => self.deferred = Some(now + SETTLE_DELAY),
@@ -135,6 +137,7 @@ impl EditorStore {
             }
             Command::Write(next) => *next,
             Command::Finish(next) => self.stored_by_face(*next),
+            Command::Each(each) => each.on(s),
             Command::Face(face) => PipelineSettings { face, ..s.clone() },
             Command::Mode(mode) => adapted(s, mode),
             Command::Reset => parameters::reset_blank(s, self.scanner_face),
@@ -143,8 +146,8 @@ impl EditorStore {
         }
     }
 
-    /// Records the open frame's step, then lays a Roll Settings gesture or a look pasted on the roll
-    /// on every other frame of the same roll, and the step on the frames together, as that one step.
+    /// Records the open frame's step, then lays a look pasted on the roll on every other frame of it,
+    /// and the step on the frames together and a Roll Settings gesture on the roll, as that one step.
     pub(super) fn settle(&mut self, now: f64) {
         self.deferred = None;
         let touched = std::mem::take(&mut self.roll_touched);
@@ -152,21 +155,15 @@ impl EditorStore {
         let took = self.step_taken();
         let Some(path) = self.path().map(str::to_string) else { return };
         let (before, after) = (self.recorded.clone(), self.settings.clone());
-        let moved = before != after;
         let mut step = Written::default();
-        if moved {
+        if before != after {
             step.0.insert(path.clone(), before.clone());
             step.1.insert(path.clone(), after.clone());
-            if touched {
-                gather(&mut step, self.propagate_roll(&before, &after));
-            }
         }
         if let Some((copied, key)) = look {
             gather(&mut step, self.paste_on_roll(&copied, key));
         }
-        if moved {
-            gather(&mut step, self.propagate_together(&before, &after, &took, &[]));
-        }
+        gather(&mut step, self.lay_step(&before, &after, &took, touched, &[]));
         self.recorded = after;
         self.history.record_edit(&path, step.0, step.1, now);
     }
@@ -184,38 +181,9 @@ impl EditorStore {
         self.last_change = Some(now);
         let mut step = (Settings::from([(path.clone(), before.clone())]), Settings::from([(path, next.clone())]));
         let took = [together::Took::Wrote(Box::new(before.clone()), Box::new(next.clone()))];
-        gather(&mut step, self.propagate_together(&before, &next, &took, handled));
+        gather(&mut step, self.lay_step(&before, &next, &took, false, handled));
         self.recorded = next;
         step
-    }
-
-    /// A Roll Settings step on the roll's frames but those together, which take it themselves; a slide
-    /// keeps its own levels and film type, those its Auto levels placed and that make it a slide.
-    pub(super) fn propagate_roll(&mut self, before: &PipelineSettings, after: &PipelineSettings) -> Written {
-        let Some(path) = self.path().map(str::to_string) else { return Written::default() };
-        let Some(key) = RollKey::of(&path, after).or_else(|| RollKey::of(&path, before)) else { return Written::default() };
-        let mut fields = roll_settings::changed(before, after);
-        if matches!(key, RollKey::Slides(_)) {
-            fields.remove(&roll_settings::Field::Levels);
-            fields.remove(&roll_settings::Field::Mode);
-        }
-        if fields.is_empty() {
-            return Written::default();
-        }
-        let together = self.together().to_vec();
-        let others: Vec<String> = self.others_on_roll(&key).into_iter().filter(|p| !together.contains(p)).collect();
-        let offset = matches!(key, RollKey::Slides(_)) && fields.contains(&roll_settings::Field::Gains);
-        let base = |s: &PipelineSettings| s.measured_gains.unwrap_or_default();
-        self.modify(&others, |p, loaded| {
-            (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| {
-                let mut out = roll_settings::copied(&fields, after, loaded);
-                // Each slide keeps its own measured balance: the hand's move lands on it as an offset.
-                if offset {
-                    out.gains.stops = std::array::from_fn(|c| base(loaded)[c] + after.gains.stops[c] - base(after)[c]);
-                }
-                out
-            })
-        })
     }
 
     pub(super) fn paste_on_roll(&mut self, copied: &paste::Copied, key: RollKey) -> Written {

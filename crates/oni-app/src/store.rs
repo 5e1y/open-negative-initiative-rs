@@ -2,7 +2,7 @@
 //! `Store`, which `oni_core::EditorStore` answers; a notch is one `apply`, a drag one undo step.
 
 use crate::fields::{Block, Field};
-use oni_core::{Command, EditorStore};
+use oni_core::{Command, Each, EditorStore};
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::{Face, PipelineSettings};
 
@@ -173,9 +173,15 @@ pub fn is_modified(settings: &PipelineSettings, block: Block, dyes: Option<Separ
     off || (block == Block::DyeSeparation && (settings.separation_family != dyes || settings.separation_by_hand))
 }
 
-/// The block's sliders at their rest, as one write so the reset is one undo step.
-pub fn reset(settings: &PipelineSettings, block: Block, dyes: Option<SeparationFamily>) -> Command {
-    Command::Write(Box::new(rested(settings, block, dyes)))
+/// The block's sliders at their rest, one step: each frame shown with the open one at its own, and the
+/// open frame's roll with it where the block is the roll's.
+pub fn reset(block: Block, dyes: Option<SeparationFamily>) -> Command {
+    Command::Each(rest_of(block, dyes))
+}
+
+/// The block's rest, read off each frame it lands on.
+pub fn rest_of(block: Block, dyes: Option<SeparationFamily>) -> Each {
+    Each::new(move |s| rested(s, block, dyes))
 }
 
 /// The settings with the block's sliders at the rest of the frame's own mode, decode and measure; the
@@ -256,7 +262,7 @@ pub(crate) mod tests {
         s.apply(Command::Set { knob: Field::Vignette.knob(), value: -1.0 });
         assert!(is_modified(s.settings(), Block::Effects, None) && !is_modified(s.settings(), Block::Lighting, None));
         let revision = s.revision();
-        let command = reset(s.settings(), Block::Effects, None);
+        let command = reset(Block::Effects, None);
         s.apply(command);
         assert_eq!(s.revision(), revision + 1);
         assert!(!is_modified(s.settings(), Block::Effects, None));
@@ -272,9 +278,9 @@ pub(crate) mod tests {
         s.apply(Command::Mode(ConversionMode::Positive));
         s.apply(Command::Set { knob: Field::Exposure.knob(), value: 0.7 });
         s.apply(Command::Set { knob: Field::DensityCeiling.knob(), value: 2.9 });
-        let command = reset(s.settings(), Block::Lighting, None);
+        let command = reset(Block::Lighting, None);
         s.apply(command);
-        let command = reset(s.settings(), Block::DensityCeiling, None);
+        let command = reset(Block::DensityCeiling, None);
         s.apply(command);
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
         assert_eq!(s.get(Field::Exposure), Field::Exposure.knob().get(&slide));
@@ -285,6 +291,40 @@ pub(crate) mod tests {
         assert_ne!(Field::Exposure.knob().get(&negative), Field::Exposure.knob().get(&slide));
         assert_ne!(Field::DensityCeiling.knob().get(&negative), Field::DensityCeiling.knob().get(&slide));
         assert!(is_modified(&negative_on(s.settings()), Block::Lighting, None), "a negative's rest reads as moved on a slide");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_block_reset_together_reaches_the_open_roll_whole_and_shows_while_a_frame_beside_is_off_rest() {
+        let dir = std::env::temp_dir().join(format!("oni-app-store-together-reset-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let reference = |id| Some(oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
+        let (portra, fuji) = (oni_settings::Id::new(), oni_settings::Id::new());
+        let dyed = |id, family| PipelineSettings { separation: 1.1, separation_family: Some(family), separation_by_hand: true, roll_reference: reference(id), ..PipelineSettings::rest(ConversionMode::Negative, false) };
+        let kodak = SeparationFamily::KodakC41;
+        let mut beside = dyed(fuji, SeparationFamily::FujiC41);
+        beside.print.exposure = 0.4;
+        let laid = [("a.tif", dyed(portra, kodak)), ("b.tif", beside), ("c.tif", dyed(portra, kodak))];
+        let paths: Vec<String> = laid.iter().map(|(n, _)| dir.join(n).to_string_lossy().into_owned()).collect();
+        for (p, (_, s)) in paths.iter().zip(&laid) {
+            std::fs::write(p, b"").unwrap();
+            oni_settings::sidecar::write(s, Path::new(p), Default::default()).unwrap();
+        }
+        let read = |p: &str| oni_settings::sidecar::read(Path::new(p), false, true).unwrap().settings;
+        let mut s = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
+        s.open(&paths[0]).unwrap();
+        s.set_together(vec![paths[1].clone()]);
+        let beside = |s: &EditorStore| s.together_where(oni_core::Field::Print, |b| is_modified(b, Block::Lighting, Some(kodak)));
+        assert!(!is_modified(s.settings(), Block::Lighting, Some(kodak)) && beside(&s), "the key shows for the frame beside");
+        s.apply(reset(Block::DyeSeparation, Some(kodak)));
+        s.apply(reset(Block::Lighting, Some(kodak)));
+        let dyes = |s: PipelineSettings| (s.separation, s.separation_family, s.separation_by_hand);
+        assert_eq!(dyes(read(&paths[2])), (separation::BASE, Some(kodak), false), "the roll's frame left out takes its stock's dyes");
+        assert_eq!(dyes(read(&paths[1])), (1.1, Some(SeparationFamily::FujiC41), true), "the Fuji frame keeps its own");
+        assert_eq!(read(&paths[1]).print.exposure, Field::Exposure.knob().get(&rest(&read(&paths[1]))), "and its Lighting at its own rest");
+        // Twin: once every frame stands at rest, the key no longer shows.
+        assert!(!beside(&s));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -306,14 +346,14 @@ pub(crate) mod tests {
         assert!(is_modified(s.settings(), Block::DyeSeparation, None) && is_modified(s.settings(), Block::DyeSeparation, fuji));
         s.apply(Command::Set { knob: Field::DyeSeparation.knob(), value: 1.1 });
         assert!(s.settings().separation_by_hand);
-        let command = reset(s.settings(), Block::DyeSeparation, fuji);
+        let command = reset(Block::DyeSeparation, fuji);
         s.apply(command);
         let after = s.settings().clone();
         assert_eq!((after.separation, after.separation_family, after.separation_by_hand), (separation::BASE, fuji, false));
         assert!(!is_modified(&after, Block::DyeSeparation, fuji), "the stock's dyes are the block's rest");
         assert!(is_modified(&after, Block::DyeSeparation, None), "twin: with no stock they are a pick");
         // With no stock naming dyes, the reset clears the family to the mode's own.
-        let command = reset(&after, Block::DyeSeparation, None);
+        let command = reset(Block::DyeSeparation, None);
         s.apply(command);
         assert_eq!(s.settings().separation_family, None);
         assert!(!is_modified(s.settings(), Block::DyeSeparation, None));
