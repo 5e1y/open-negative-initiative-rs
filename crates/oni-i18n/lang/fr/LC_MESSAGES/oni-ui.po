@@ -165,7 +165,7 @@ msgstr "Afficher mon année en argentique"
 msgid "Read-only: settings will not be saved"
 msgstr "Lecture seule : les réglages ne seront pas enregistrés"
 
-#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/prepare_floor.slint
 msgid "Convert to DNG"
 msgstr "Convertir en DNG"
 
@@ -1101,7 +1101,7 @@ msgstr "Afficher le dossier"
 msgid "Back to the Gallery"
 msgstr "Retour à la galerie"
 
-#: crates/oni-ui/ui/missing.slint
+#: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
 msgid "Discard"
 msgstr "Abandonner"
 
@@ -2021,15 +2021,15 @@ msgstr "Retour"
 msgid "Measuring…"
 msgstr "Mesure en cours…"
 
-#: crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/prepare_floor.slint
 msgid "Reading the Scan"
 msgstr "Lecture du scan"
 
-#: crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/prepare_floor.slint
 msgid "This Scan Cannot Be Read"
 msgstr "Ce scan est illisible"
 
-#: crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/prepare_floor.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Le scan entier, bord du film compris, s’affiche ici."
 
@@ -3584,6 +3584,14 @@ msgid "One phone paired, none connected."
 msgid_plural "{n} phones paired, none connected."
 msgstr[0] "Un téléphone jumelé, aucun connecté."
 msgstr[1] "{n} téléphones jumelés, aucun connecté."
+
+#: crates/oni-app/src/app/prepare/entering.rs
+msgid "The base picked, the frames flagged and the window drawn are dropped, and the roll opens again on its first step."
+msgstr "La base prélevée, les vues marquées et la fenêtre tracée sont abandonnées, et la pellicule rouvre sur sa première étape."
+
+#: crates/oni-app/src/app/prepare/entering.rs
+msgid "Discard This Roll's Preparation?"
+msgstr "Abandonner la préparation de cette pellicule ?"
 
 #: crates/oni-app/src/app/prepare/measure.rs
 msgid "No frame of this roll could be measured: the files could not be read, or the measuring window holds nothing to balance."

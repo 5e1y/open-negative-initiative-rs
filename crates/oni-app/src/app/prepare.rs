@@ -71,6 +71,8 @@ pub(crate) struct Roll {
     read: HashMap<String, PipelineSettings>,
     left_out: usize,
     window: Rect,
+    /// The window the roll's first frame brought, before any draft or hand moved it.
+    laid_window: Rect,
     aspect: f64,
     flat: FlatField,
     film: ConversionMode,
@@ -138,6 +140,7 @@ impl Default for Roll {
             read: HashMap::new(),
             left_out: 0,
             window: oni_measure::window::proposal(&Rect::UNIT, false),
+            laid_window: oni_measure::window::proposal(&Rect::UNIT, false),
             aspect: 1.5,
             flat: FlatField::default(),
             film: ConversionMode::Negative,
@@ -272,6 +275,11 @@ impl Roll {
 
     fn flagged(&self) -> usize {
         self.frames.iter().filter(|f| f.ticked && f.flagged).count()
+    }
+
+    /// A choice that leaving would drop: a base picked, a frame flagged or the window drawn.
+    fn holds_choices(&self) -> bool {
+        self.base.is_some() || self.flagged() > 0 || self.window != self.laid_window
     }
 
     fn post(&self, job: Job) {

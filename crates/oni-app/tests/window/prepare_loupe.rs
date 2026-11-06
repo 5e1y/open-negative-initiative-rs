@@ -155,6 +155,9 @@ pub(crate) fn the_base_loupe_shows_the_full_resolution_first_never_the_scan() {
     // Past the base step, every full resolution is let go.
     let pick = (p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
     click(&rig, pick.0, pick.1);
+    assert_eq!(p.get_step(), 2, "a pick stays on its step");
+    p.invoke_advance();
+    rig.pump();
     assert_eq!(p.get_step(), 3);
     assert!(held().is_empty(), "the flags step holds no full resolution: {:?}", held());
     drop(shell);

@@ -2,20 +2,33 @@
 //! quit's draft, measured as one gallery step, asked for by a bare frame opened again, from the Roll tab.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{App, Bar, Canvas, Library, Menus, Preparing};
+use i_slint_backend_testing::AccessibleRole as Role;
+use oni_app::{App, Bar, Canvas, Clicks, Confirm, Library, Menus, Preparing};
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
+use std::cell::Cell;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::time::Duration;
 
 use crate::common;
 
 fn loaded(path: &Path) -> sidecar::Loaded {
     sidecar::read(path, false, true).unwrap()
+}
+
+/// Whether a picture of a graded scan reads as the scan does: darker at its top left than at its
+/// bottom right, as the gradient was written; an inverted picture reads the other way.
+fn as_scanned(rgba: &[u8], width: usize, height: usize) -> bool {
+    let luma = |fx: f32, fy: f32| {
+        let at = ((fy * height as f32) as usize * width + (fx * width as f32) as usize) * 4;
+        rgba[at..at + 3].iter().map(|v| f32::from(*v)).sum::<f32>()
+    };
+    luma(0.1, 0.1) + 6.0 < luma(0.9, 0.9)
 }
 
 fn click(rig: &common::Rig, x: f32, y: f32) {
@@ -89,6 +102,31 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.settle();
     println!("shot {}", rig.shot("prepare-film").display());
 
+    // The card shows the frame as its scan, as the base step will: one look across the steps.
+    rig.until("the previews", Duration::from_secs(60), || ctl.state.borrow().roll_previewed() == 3);
+    let card = p.get_card_picture().to_rgba8().expect("the card holds pixels");
+    let (cw, ch) = (card.width() as usize, card.height() as usize);
+    assert!(as_scanned(card.as_bytes(), cw, ch), "the card reads as the scan, never inverted");
+    let inverted: Vec<u8> = card.as_bytes().chunks(4).flat_map(|p| [255 - p[0], 255 - p[1], 255 - p[2], p[3]]).collect();
+    assert!(!as_scanned(&inverted, cw, ch), "twin: its complement reads the other way");
+
+    // The step bar: each step's words as wide as they are, the room left shared, so the gaps between them are even.
+    let steps = ["Film Type", "Flat-Field", "Base", "Flags", "Window"];
+    let words: Vec<common::Placed> = steps
+        .iter()
+        .map(|n| {
+            let found = common::placed(w, Role::Text, n).into_iter().filter(|t| t.y < w.global::<Bar>().get_height() && t.width > 0.0);
+            found.min_by(|a, b| a.width.total_cmp(&b.width)).unwrap_or_else(|| panic!("the step {n:?} in the bar"))
+        })
+        .collect();
+    let gaps: Vec<f32> = words.windows(2).map(|w| w[1].x - (w[0].x + w[0].width)).collect();
+    let spread = |g: &[f32]| g.iter().copied().fold(f32::MIN, f32::max) - g.iter().copied().fold(f32::MAX, f32::min);
+    assert!(spread(&gaps) < 1.0, "even gaps between the steps: {gaps:?}");
+    let tabs: Vec<common::Placed> = steps.iter().map(|n| common::the(w, Role::Tab, n)).collect();
+    let cell = (tabs[4].x + tabs[4].width - tabs[0].x) / 5.0;
+    let centred: Vec<f32> = words.windows(2).map(|w| cell - (w[0].width + w[1].width) / 2.0).collect();
+    assert!(spread(&centred) > 4.0, "twin: the words centred in equal cells leave uneven gaps: {centred:?}");
+
     // NEXT walks past the skipped flat-field to the base; the step reached rides in every sidecar.
     let (x, y) = action();
     click(&rig, x, y);
@@ -98,6 +136,11 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_skips()), ("No base picked yet.", "Skip", true));
     let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
     assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
+    // Cancel stands on a plate of its own, apart from Back, which shares the step key's.
+    rig.settle();
+    let (cancel, back, skip) = (common::the(w, Role::Button, "Cancel"), common::the(w, Role::Button, "Back"), common::the(w, Role::Button, "Skip"));
+    assert!(back.x - (cancel.x + cancel.width) >= 8.0, "Cancel apart: {cancel:?} {back:?}");
+    assert!((skip.x - (back.x + back.width)).abs() < 1.0, "twin: Back and the step's key share one plate: {back:?} {skip:?}");
 
     // The base's demo waits for Show How, nothing moving beside the scan unasked; pressed again, it goes.
     let demo = || p.get_tutorial().size().width;
@@ -131,13 +174,33 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.pump();
     assert!(radius().is_some_and(|r| Some(r) != dragged), "the rest writes the size: {:?}", radius());
 
-    // A click on the scan picks the bare film there and moves on to the flags.
+    // The base step's scan reads as the card did: the same look on every step.
     rig.until("the scan read", Duration::from_secs(60), || p.get_scan_ready());
+    let scan = p.get_scan().to_rgba8().expect("the scan holds pixels");
+    assert!(as_scanned(scan.as_bytes(), scan.width() as usize, scan.height() as usize), "the base's scan reads as the card");
     rig.settle();
     println!("shot {}", rig.shot("prepare-base").display());
-    click(&rig, p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
-    assert_eq!(p.get_step(), 3, "a pick goes on to the flags");
-    assert_eq!(p.get_base_note().as_str(), "On A.tif");
+
+    // A click on the scan picks the bare film there: its ring lands with a key's click, and the step
+    // stays, the key risen to NEXT, so the hand sees its pick before it goes on.
+    let (pressed, released) = (Rc::new(Cell::new(0)), Rc::new(Cell::new(0)));
+    let (pc, rc) = (pressed.clone(), released.clone());
+    w.global::<Clicks>().on_press(move || pc.set(pc.get() + 1));
+    w.global::<Clicks>().on_release(move || rc.set(rc.get() + 1));
+    let on_scan = (p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(on_scan.0, on_scan.1) });
+    rig.pump();
+    assert_eq!(pressed.get(), 0, "twin: the pointer over the scan picks nothing and clicks nothing");
+    click(&rig, on_scan.0, on_scan.1);
+    assert_eq!((p.get_step(), p.get_base_picks(), pressed.get()), (2, 1, 1), "a pick stays on its step, its ring landing with a click");
+    assert!(p.get_ring_shown());
+    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_skips()), ("On A.tif", "NEXT", false));
+    println!("shot {}", rig.shot("prepare-base-landing").display());
+    rig.settle();
+    println!("shot {}", rig.shot("prepare-base-picked").display());
+    let (x, y) = action();
+    click(&rig, x, y);
+    assert_eq!(p.get_step(), 3, "NEXT goes on to the flags");
     assert!(demo() == 0 && p.get_has_tutorial(), "the base's demo goes with its step; the flags' waits to be asked");
     assert_eq!(done(), [true, false, true, false, false], "the base behind is done once it holds its pick");
 
@@ -179,11 +242,15 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.settle();
     let (wx, wy) = (p.get_window_x(), p.get_window_y());
     let (cx, cy) = (p.get_card_origin_x() + wx + p.get_window_width() / 2.0, p.get_card_origin_y() + wy + p.get_window_height() / 2.0);
+    let clicks = (pressed.get(), released.get());
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(cx, cy) });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: LogicalPosition::new(cx, cy), button: PointerEventButton::Left });
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(cx - 10.0, cy - 6.0) });
+    rig.pump();
+    assert_eq!((pressed.get(), released.get()), (clicks.0 + 1, clicks.1), "the window taken up clicks as a key goes down");
     rig.window.dispatch_event(WindowEvent::PointerReleased { position: LogicalPosition::new(cx - 10.0, cy - 6.0), button: PointerEventButton::Left });
     rig.pump();
+    assert_eq!((pressed.get(), released.get()), (clicks.0 + 1, clicks.1 + 1), "set down, it clicks as a key comes up");
     assert!((p.get_window_x() - (wx - 10.0)).abs() < 1.0 && (p.get_window_y() - (wy - 6.0)).abs() < 1.0, "the body moves the window");
     println!("shot {}", rig.shot("prepare-window").display());
 
@@ -193,8 +260,19 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let drafts: Vec<_> = roll.iter().map(|n| loaded(&canonical(n)).roll_draft.unwrap()).collect();
     assert!(drafts[2].flagged && drafts[2].ticked && drafts[2].base.as_ref().is_some_and(|b| b.path.ends_with("A.tif")));
 
-    // Escape leaves for the gallery and keeps nothing: every frame's draft dropped.
+    // Escape asks before it drops a roll holding a pick, a flag and a drawn window; the sheet's Cancel keeps it.
+    let confirm = w.global::<Confirm>();
     rig.key("\u{1b}");
+    assert!(confirm.get_shown() && p.get_shown(), "a roll holding choices asks before it is left");
+    assert_eq!((confirm.get_title().as_str(), confirm.get_key().as_str()), ("Discard This Roll's Preparation?", "Discard"));
+    rig.key("\u{1b}");
+    assert!(!confirm.get_shown() && p.get_shown(), "twin: answered Cancel, the roll stays with its steps");
+    // The footer's Cancel asks the same; Discard leaves for the gallery and keeps nothing: every frame's draft dropped.
+    rig.settle();
+    common::click(&rig, w, common::the(w, Role::Button, "Cancel").middle());
+    assert!(confirm.get_shown() && p.get_shown());
+    confirm.invoke_answered(true);
+    rig.pump();
     assert!(!p.get_shown() && app.get_gallery());
     rig.until("the drafts dropped", Duration::from_secs(10), || roll.iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()));
     // The roll as a quit leaves it, its drafts on disk.

@@ -109,6 +109,9 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     rig.pump();
     p.invoke_base_clicked(p.get_scan_x() + p.get_scan_width() * 0.5, p.get_scan_y() + p.get_scan_height() * 0.5);
     rig.pump();
+    assert_eq!((p.get_step(), p.get_action_title().as_str()), (2, "NEXT"), "the white picked stays shown until NEXT");
+    p.invoke_advance();
+    rig.pump();
     assert_eq!(p.get_step(), 4, "the white leads to the window");
     assert_eq!(p.get_readouts().row_data(4).unwrap().as_str(), "1 / 3", "every slide measured");
     assert!(p.get_window_shown());

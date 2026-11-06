@@ -287,6 +287,23 @@ mod tests {
     }
 
     #[test]
+    fn a_roll_holds_a_choice_once_a_base_is_picked_a_frame_flagged_or_its_window_drawn() {
+        let mut r = Roll { frames: vec![frame("a"), frame("b")], ..Roll::default() };
+        assert!(!r.holds_choices(), "a roll walked by Skip and NEXT alone holds nothing to lose");
+        r.base = Some(BasePick { path: "a".into(), unit: (0.1, 0.1), radius: 2.0 });
+        assert!(r.holds_choices());
+        r.base = None;
+        flagging(&mut r.frames, 1);
+        assert!(r.holds_choices());
+        flagging(&mut r.frames, 1);
+        r.window.x += 0.05;
+        assert!(r.holds_choices(), "a window drawn away from the one the roll brought");
+        // Twin: drawn back where it was laid, the window holds no choice.
+        r.window = r.laid_window;
+        assert!(!r.holds_choices());
+    }
+
+    #[test]
     fn the_loupe_holds_the_pointers_pixel_at_its_centre_past_an_edge() {
         // A 1400 px display copy drawn 700 points wide; the pointer at its very left edge.
         let laid = loupe((10.0, 60.0), (10.0, 10.0, 700.0, 466.0), 1400, (1400, 932), false, 4.0, None);

@@ -40,22 +40,25 @@ impl Ctl {
         Some((rect, *size))
     }
 
-    /// A click inside the scan picks the bare film there, then the roll goes on to its next step: a
-    /// negative's flags, a slide's window.
+    /// A click inside the scan picks the bare film there; the step stays, its ring landing on the
+    /// pick, so the hand sees and checks it before NEXT.
     pub(in crate::app) fn base_clicked(self: &Rc<Self>, x: f64, y: f64) {
         let Some((rect, _)) = self.scan_rect() else { return };
         // A scan not laid yet has no size: a click there would pick a point of none.
         if !(rect.2 > 0.0 && rect.3 > 0.0) || x < rect.0 || y < rect.1 || x > rect.0 + rect.2 || y > rect.1 + rect.3 {
             return;
         }
-        let next = {
+        {
             let mut s = self.state.borrow_mut();
             let radius = base_radius(&s);
             let r = &mut s.prepare;
             let Some(path) = r.base_shown().map(|f| f.path.clone()) else { return };
             r.base = Some(BasePick { path, unit: ((x - rect.0) / rect.2, (y - rect.1) / rect.3), radius });
-            neighbour(Step::Base, 1, r.capture, r.film)
-        };
-        self.step_to(next);
+        }
+        if let Some(w) = self.window() {
+            let p = w.global::<Preparing>();
+            p.set_base_picks(p.get_base_picks() + 1);
+        }
+        self.publish_prepare();
     }
 }

@@ -321,7 +321,7 @@ impl Ctl {
             Origin::Roll(paths) => Origin::Roll(paths.iter().map(|p| dng(p)).collect()),
         };
         if matches!(origin, Origin::Roll(_)) {
-            self.leave_roll();
+            self.drop_roll();
         }
         self.refresh();
         let started = Instant::now();
