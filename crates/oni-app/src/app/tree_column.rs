@@ -57,7 +57,6 @@ impl Ctl {
         Metrics {
             row: ds.get_control_film_sidebar_row_height(),
             small: ds.get_space_sm(),
-            medium: ds.get_space_md(),
             tiny: ds.get_space_xxs(),
             caption: ds.get_control_caption_height(),
         }

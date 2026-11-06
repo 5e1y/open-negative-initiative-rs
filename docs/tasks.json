@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1240,
+    "type": "design",
+    "title": "The library column's tab bar, headers and rows share one inset, edge to edge",
+    "status": "done",
+    "detail": "Owner's review: the tab bar (Archive / Projects) and the header rows stood at Space.md from the column's edges while the navigator's rows lit a band from Space.sm and the tree's from CardStyle.inset, 8 pt wider on each side, and the tree's thumbnails sat Space.md inside their band again. One token, ShellStyle.column-inset (Space.md), now pads the tab bar, the navigator's header and rows and the tree's header and column; a line of thumbnails spans the band as a row does (sidebar::frames lays no inner inset, Metrics.medium removed), so every edge of the column lines up with the tab bar's. Checks: the frames' unit test asserts a pair of photos flush with the folder's band, its twin a pair inset by 16 pt off it; tree_leftovers reads the column's inset where it read the card's."
   }
 ]

@@ -54,9 +54,8 @@ impl Layout {
 pub struct Metrics {
     /// `filmSidebarRowHeight`.
     pub row: f32,
-    /// `Space.sm`, `Space.md`, `Space.xxs`.
+    /// `Space.sm`, `Space.xxs`.
     pub small: f32,
-    pub medium: f32,
     pub tiny: f32,
     /// `captionHeight`.
     pub caption: f32,
@@ -74,11 +73,11 @@ pub struct Frame {
 /// `TreeEngineLayout.photoRatio`.
 const PHOTO_RATIO: f32 = 3.0 / 2.0;
 
-/// `TreeEngineLayout.frames`: a photo shares its line with its neighbours at the same depth, up to
-/// `columns`; any other row takes the width. The frames, and the column's whole height.
+/// `TreeEngineLayout.frames`: a photo shares its line with its neighbours at the same depth, up to `columns`,
+/// the line spanning the width as any other row does, so their edges line up; the frames and the whole height.
 pub fn frames(photo: &[bool], depth: &[usize], width: f32, columns: usize, m: Metrics) -> (Vec<Frame>, f32) {
     let across = columns.max(1);
-    let cell = ((width - 2.0 * m.medium - (across - 1) as f32 * m.small) / across as f32).max(1.0);
+    let cell = ((width - (across - 1) as f32 * m.small) / across as f32).max(1.0);
     let line = cell / PHOTO_RATIO + m.tiny + m.caption + m.small;
     let mut frames = vec![Frame { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }; photo.len()];
     let mut y = m.small;
@@ -87,7 +86,7 @@ pub fn frames(photo: &[bool], depth: &[usize], width: f32, columns: usize, m: Me
         if photo[i] && columns > 0 {
             let mut slot = 0;
             while slot < across && i < photo.len() && photo[i] && (slot == 0 || depth[i] == depth[i - 1]) {
-                frames[i] = Frame { x: m.medium + slot as f32 * (cell + m.small), y, width: cell, height: line };
+                frames[i] = Frame { x: slot as f32 * (cell + m.small), y, width: cell, height: line };
                 slot += 1;
                 i += 1;
             }
@@ -232,23 +231,29 @@ mod tests {
         assert_eq!(pinned(mid(laid[2]), &laid, total, &depths, &closed, h), None);
     }
 
-    const M: Metrics = Metrics { row: 32.0, small: 8.0, medium: 16.0, tiny: 2.0, caption: 14.0 };
+    const M: Metrics = Metrics { row: 32.0, small: 8.0, tiny: 2.0, caption: 14.0 };
 
     #[test]
     fn photos_pair_up_beside_their_folder_and_a_folder_takes_the_width() {
-        // A folder, three photos inside it, a second folder.
+        // A folder, three photos inside it, a second folder, in a column whose thumbnails are 64 pt tall.
         let photo = [false, true, true, true, false];
         let depth = [0, 1, 1, 1, 0];
-        let (f, total) = frames(&photo, &depth, 228.0, 2, M);
-        assert_eq!(f[0], Frame { x: 0.0, y: 8.0, width: 228.0, height: 32.0 });
-        let cell = (228.0 - 32.0 - 8.0) / 2.0;
+        let (f, total) = frames(&photo, &depth, 200.0, 2, M);
+        assert_eq!(f[0], Frame { x: 0.0, y: 8.0, width: 200.0, height: 32.0 });
+        let cell = (200.0 - 8.0) / 2.0;
         let line = cell / 1.5 + 2.0 + 14.0 + 8.0;
-        assert_eq!((f[1].y, f[2].y, f[2].x), (40.0, 40.0, 16.0 + cell + 8.0), "two a line");
-        assert_eq!((f[3].y, f[3].x), (40.0 + line, 16.0), "the third starts the next line");
+        assert_eq!((f[1].y, f[2].y, f[2].x), (40.0, 40.0, cell + 8.0), "two a line");
+        assert_eq!((f[3].y, f[3].x), (40.0 + line, 0.0), "the third starts the next line");
+        // A line of photos spans the folder's band, edge to edge.
+        let flush = |f: &[Frame]| f[1].x == f[0].x && f[2].x + f[2].width == f[0].x + f[0].width;
+        assert!(flush(&f));
+        // Twin: photos inset within the band leave their edges off the rows'.
+        let inset: Vec<Frame> = f.iter().zip(photo).map(|(r, p)| if p { Frame { x: r.x + 16.0, width: r.width - 16.0, ..*r } } else { *r }).collect();
+        assert!(!flush(&inset));
         assert_eq!(f[4].y, 40.0 + 2.0 * line);
         assert_eq!(total, 40.0 + 2.0 * line + 32.0 + 8.0);
         // Twin: names only lays every photo as a row.
-        let (rows, _) = frames(&photo, &depth, 228.0, Layout::List.columns(), M);
+        let (rows, _) = frames(&photo, &depth, 200.0, Layout::List.columns(), M);
         assert_eq!((rows[2].y, rows[2].height), (8.0 + 2.0 * 32.0, 32.0));
     }
 

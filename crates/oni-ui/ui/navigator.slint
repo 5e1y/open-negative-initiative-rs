@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
-import { Space, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
+import { Space, ShellStyle, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -119,8 +119,8 @@ component Rows inherits Scroller {
     column := VerticalLayout {
         width: parent.width;
         alignment: start;
-        padding-left: Space.s;
-        padding-right: Space.s;
+        padding-left: ShellStyle.column-inset;
+        padding-right: ShellStyle.column-inset;
         for row[i] in Navigator.rows: VerticalLayout {
             if !row.renaming: Row {
                 form: RowForm.navigator;
@@ -226,8 +226,8 @@ export component NavigatorSection inherits Rectangle {
     VerticalLayout {
         if Navigator.welcome-shown && !root.beside-photo: Welcome { }
         HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
             padding-bottom: Space.s;
             spacing: Space.s;
             // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.

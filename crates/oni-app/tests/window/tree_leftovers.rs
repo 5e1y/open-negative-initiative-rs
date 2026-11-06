@@ -85,7 +85,8 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     let w = &shell.window;
     let lib = w.global::<Library>();
     let ds = w.global::<oni_app::DS>();
-    let (h, left) = (ds.get_control_film_sidebar_row_height(), ds.get_control_card_inset());
+    // The column's one inset, `ShellStyle.column-inset`, is `Space.md`.
+    let (h, left) = (ds.get_control_film_sidebar_row_height(), ds.get_space_md());
     shell.open_folder(&scans);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     lib.invoke_tile_clicked(0, false, false);

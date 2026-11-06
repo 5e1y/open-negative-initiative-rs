@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { Picker, PickerFace, Icons, Surface, Space, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
+import { Picker, PickerFace, Icons, Surface, Space, ShellStyle, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 
@@ -12,11 +12,11 @@ export component Tree inherits Surface {
     property <length> menu-y;
     // `sidebarLayout` follows the mode: the projects' tree is laid again by the other one.
     changed beside-photo => { Library.tree-moded(); }
-    // Each part pads itself, as Swift's column does: the tab bar, the navigator's header, the tree.
+    // Each part pads itself by the column's one inset: the tab bar, the headers, the rows.
     VerticalLayout {
         HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
             padding-top: Space.s;
             padding-bottom: Space.s;
             Tabs {
@@ -41,8 +41,8 @@ export component Tree inherits Surface {
         // `SidebarKeys` on a mini plate, then the pill naming what the column lists; on the projects
         // in both modes, beside a photo alone on the archive. Under the tab bar its padding stands above.
         if Library.surface == 1 || root.beside-photo: HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
             padding-top: Library.surface == 1 ? 0 : Space.s;
             padding-bottom: Space.s;
             spacing: Space.s;
