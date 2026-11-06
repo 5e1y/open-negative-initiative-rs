@@ -38,6 +38,7 @@ mod full_release;
 mod frontier_look;
 mod gallery;
 mod gallery_cell;
+mod gallery_keys;
 mod gallery_leftovers;
 mod gestures;
 mod headless;
@@ -156,6 +157,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("frontier_look::a_frontier_look_file_is_read_again_on_each_save", frontier_look::a_frontier_look_file_is_read_again_on_each_save),
     ("gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand", gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand),
     ("gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop", gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop),
+    ("gallery_keys::a_photo_clicked_hands_the_grid_its_keys_and_a_ring_follows_the_keys_alone", gallery_keys::a_photo_clicked_hands_the_grid_its_keys_and_a_ring_follows_the_keys_alone),
     ("gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target", gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target),
     ("headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas", headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas),
     ("help::the_help_menus_surfaces_behave_as_swifts", help::the_help_menus_surfaces_behave_as_swifts),

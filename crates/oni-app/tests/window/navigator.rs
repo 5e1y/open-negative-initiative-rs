@@ -273,8 +273,8 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert!(home.join("Scans/New Folder 2").is_dir(), "twin: a taken name is numbered");
     n.invoke_rename_cancelled();
     rig.pump();
-    // A double click renames nothing; the click gives the rows the keyboard, named and ringed, their
-    // arrows walk them and Return renames the picked one, as in the Finder's sidebar.
+    // A double click renames nothing; the click gives the rows the keyboard, named, their arrows walk
+    // them and Return renames the picked one, as in the Finder's sidebar.
     rest(&rig);
     let roll2 = common::the(w, i_slint_backend_testing::AccessibleRole::ListItem, "Roll 2").middle();
     common::click(&rig, w, roll2);

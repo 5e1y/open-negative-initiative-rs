@@ -138,12 +138,12 @@ component Rows inherits Scroller {
                 stock: row.stock;
                 has-stock: row.has-stock;
                 picked: row.picked;
-                focused: keys.has-focus && row.picked;
+                focused: keys.has-focus && !keys.pressed && row.picked;
                 selected: row.opened;
                 favourite: row.favourite;
                 present: row.present;
-                clicked => { keys.focus(); Navigator.row-clicked(i); }
-                folded => { keys.focus(); Navigator.row-folded(i); }
+                clicked => { keys.take(); Navigator.row-clicked(i); }
+                folded => { keys.take(); Navigator.row-folded(i); }
                 starred => { Navigator.star-clicked(i); }
                 menu(x, y) => { root.folder-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
@@ -185,17 +185,27 @@ component Rows inherits Scroller {
             }
         }
     }
-    // A click on a row or Tab gives the rows the keyboard, ringed on the picked row, which a press
-    // elsewhere takes back as from a slider; assistive tools name its holder by the list round it.
+    // A click on a row or Tab gives the rows the keyboard, named by the list round it, until a press
+    // elsewhere; as on a slider, Tab or a key acting here rings the picked row, a click alone does not.
     Rectangle {
         accessible-role: list;
         accessible-label: @tr("Folders");
         keys := KeyScope {
+            property <bool> pressed;
             enabled: root.keyed;
             ring: false;
-            changed has-focus => { if (self.has-focus) { Navigator.keys-taken(); } }
+            function take() {
+                self.pressed = true;
+                self.focus();
+            }
+            changed has-focus => {
+                if (self.has-focus) { Navigator.keys-taken(); } else { self.pressed = false; }
+            }
             key-pressed(event) => {
-                if (Navigator.key(event.text, event.modifiers.control)) { return accept; }
+                if (Navigator.key(event.text, event.modifiers.control)) {
+                    self.pressed = false;
+                    return accept;
+                }
                 reject
             }
         }
