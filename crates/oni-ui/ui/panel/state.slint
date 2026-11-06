@@ -168,6 +168,8 @@ export global Dedust {
     callback scroll(length, length, length, bool) -> bool;
     callback step(int);
     callback remove(int);
+    // The header's DONE, the gesture the bar's key and the menu ask.
+    callback act(Act);
     // Auto De-dust: a reading under way or shown, the dust it keeps, what it says.
     in property <bool> detecting;
     in property <bool> found-shown;

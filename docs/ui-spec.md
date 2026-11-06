@@ -289,7 +289,7 @@ controls. Every slider is `DSSlider` (4.4.1). The labels below are exact strings
 | Details (`DetailsPane`) | Chroma Denoise (`ChromaPanel`) | Radius, Amount | Twin `DSSlider`s | |
 | | Sharpening (`SharpenPanel`) | Amount, Radius, Halo limit | `DSSlider`s | |
 | | Texture | Texture slider | `DSSlider` | |
-| De-dust (`DedustPane`, `CorrectionsPanel`) | Dust & Scratches | Brush Size (] and [), corrections list with "Remove this correction" | `DSSlider`, `ListView` rows | Brush cursor on the canvas: a custom circle drawn over the canvas, the system cursor hidden (`mouse-cursor: none`). |
+| De-dust (`DedustPane`, `CorrectionsPanel`) | Dust & Scratches | Brush Size (] and [), corrections list with "Remove this correction"; in the tab bar's place, the mode's name and DONE (`DedustHeader`) | `DSSlider`, `ListView` rows | Brush cursor on the canvas: a custom circle drawn over the canvas, the system cursor hidden (`mouse-cursor: none`). |
 | De-dust, beyond Swift (`DedustPane`) | Automatic | Sensitivity, DETECT or HIDE, REMOVE, the reading's note | `Slider`, `ButtonGroup { plate: true }`, `Label` | On the canvas: `DustVeil`, a veil over the picture and the mask's pixels lit through `DustStyle`, and a `CorrectionMark` ring per speck kept. |
 | Scanner face (`EditorScene+Lab`, `UI/Lab`) | Machine | `LabKeyboard` keypad groups, `LabScreen` plot band, `ScannerKey` | `Keycap` grid, plot `Image` | `[draw]` |
 

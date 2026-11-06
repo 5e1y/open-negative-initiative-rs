@@ -39,7 +39,7 @@ pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
     rig.pump();
     assert_eq!(probe.get_shown(), 2);
 
-    // A selection beyond the tabs, as De-dust's, shows no pill, which waits where it stood.
+    // A selection beyond the tabs shows no pill, which waits where it stood.
     let at = probe.get_pill_x();
     assert!(probe.get_pill_shown());
     probe.set_choice(3);

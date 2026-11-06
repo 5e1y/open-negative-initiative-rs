@@ -5975,5 +5975,12 @@
     "title": "The zoom keys draw the icon set's minus and plus",
     "status": "done",
     "detail": "Evaluation: the zoom keys were text glyphs, the minus tiny and dim beside a bold plus. They now draw Trinil's minus and plus, the stroke of every other glyph, as square mini keys like the column keys beside them."
+  },
+  {
+    "id": 1215,
+    "type": "interface",
+    "title": "De-dust names itself in the tab bar's place, beside a DONE key",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: with De-dust on, the tab bar showed Roll, Crop, Colour and Details with none selected and nothing named the mode but the bar's lit key. De-dust is a pane the tab bar does not list, and its five labels cannot share the panel's width in French or Spanish; so while it is on, the bar gives way to a header at the bar's height, the mode's name in the title face and a DONE keycap that asks the same gesture as the bar's key and the menu's Done Correcting, landing on the last panel. The panel's rule does not move."
   }
 ]

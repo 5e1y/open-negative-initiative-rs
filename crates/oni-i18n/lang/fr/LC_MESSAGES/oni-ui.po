@@ -1169,7 +1169,7 @@ msgstr "Trop large, ONI lit tout ; trop étroit, des photos restent à l’éca
 msgid "ADD"
 msgstr "AJOUTER"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "DONE"
 msgstr "TERMINÉ"
 
@@ -1536,6 +1536,14 @@ msgstr "Taille du pinceau"
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Sensitivity"
 msgstr "Sensibilité"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Dépoussiérage"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "Leave De-dust"
+msgstr "Quitter le dépoussiérage"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "Automatic"
@@ -2275,6 +2283,9 @@ msgstr "Quitter le dépoussiérage"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "De-dust"
 msgstr "Dépoussiérage"
+
+msgid "PREPARE ROLL"
+msgstr "PRÉPARER LA PELLICULE"
 
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
