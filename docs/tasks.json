@@ -6087,5 +6087,12 @@
     "title": "The crop's kept size reads as every other value",
     "status": "done",
     "detail": "The evaluators found the kept dimensions in a one-off black bold pill. The crop tab set them on the scanner's LCD glass, which belongs to the scanner and the status bar's count. Kept is now a ValueHeader, the readout every slider uses: its name in the label ink, the size right in the secondary value ink, its real unit (px) kept."
+  },
+  {
+    "id": 1271,
+    "type": "design",
+    "title": "The canvas header names the space first and glosses it after",
+    "status": "done",
+    "detail": "The evaluators found the canvas header dimming the working space's name (Display P3) and brightening its gloss (phones & screens), which inverts value and description. The Picker's secondary words came before its value, and the chip passed the name as those words and the gloss as the value. The secondary words now follow the value (note, replacing prefix, which only the chip used): the chip shows the name in the primary ink, then the gloss in the secondary, and short of room the gloss elides first. Its accessible name reads the same, name then gloss."
   }
 ]

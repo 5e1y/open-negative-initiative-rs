@@ -19,8 +19,8 @@ export enum PickerFace { field, pill, chip }
 export component Picker inherits HorizontalLayout {
     in property <PickerFace> face: PickerFace.field;
     in property <string> label;
-    // Words in the secondary ink before the value, a middle dot between, as the chip's space.
-    in property <string> prefix;
+    // Words in the secondary ink after the value, a middle dot between: the chip's gloss on its space.
+    in property <string> note;
     in property <string> value;
     in property <[string]> entries;
     in property <int> current: -1;
@@ -66,9 +66,9 @@ export component Picker inherits HorizontalLayout {
         background: root.as-field || (root.chip && !root.hovered) ? Colour.hover.transparentize(1) : root.hovered ? Colour.hover : Colour.canvas;
         opacity: root.enabled ? 1 : State.disabled;
         accessible-role: button;
-        accessible-label: root.prefix != "" ? root.prefix + " · " + root.value : root.value;
+        accessible-label: root.note != "" ? root.value + " · " + root.note : root.value;
         accessible-enabled: root.enabled;
-        // As wide as its words on a chip, eliding the value once its room is short.
+        // As wide as its words on a chip, eliding them once its room is short.
         preferred-width: row.preferred-width;
         if root.as-field: FieldFace { }
         if root.as-field && root.hovered: Rectangle {
@@ -79,9 +79,10 @@ export component Picker inherits HorizontalLayout {
             padding-left: root.as-field ? FieldStyle.across : Space.s;
             padding-right: root.as-field ? FieldStyle.across : Space.s;
             spacing: root.chip ? Space.xs : Space.s;
-            if root.prefix != "": Label { text: root.prefix; tone: Tone.secondary; }
-            if root.prefix != "": Label { text: "·"; tone: Tone.secondary; }
-            Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
+            // Short of room, the gloss gives way before the value.
+            Label { text: root.value; horizontal-stretch: root.note != "" ? 0 : 1; overflow: elide; }
+            if root.note != "": Label { text: "·"; tone: Tone.secondary; }
+            if root.note != "": Label { text: root.note; tone: Tone.secondary; horizontal-stretch: 1; overflow: elide; }
             if root.chip || root.as-field: VerticalLayout {
                 alignment: center;
                 Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: self.width; }

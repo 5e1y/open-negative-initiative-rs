@@ -329,8 +329,8 @@ export component ExportPanel inherits Surface {
 // The Working Space chip at the canvas's top edge, opening the compact space field.
 export component SpaceChip inherits Picker {
     face: PickerFace.chip;
-    prefix: Exporting.chip-title;
-    value: Exporting.chip-hint;
+    value: Exporting.chip-title;
+    note: Exporting.chip-hint;
     help: @tr("The colour space the picture is edited and exported in");
     own-popup: chooser.is-open;
     open => { chooser.show(); }
