@@ -1,5 +1,6 @@
 // The containers: a block's section, the help mark, the sheet, the question a sheet asks, the
 // notice that passes and the banner that stays.
+import { DS } from "tokens.slint";
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
@@ -31,7 +32,8 @@ export component HelpMark inherits Rectangle {
     }
 }
 
-// `DSSection`: a rule above every block, then a title row with its note, reset and fold keys.
+// `DSSection`: a rule above every block, then a title row with its note, reset and fold keys. Every
+// block of the editor's panel has a note, so each title wears its "?".
 export component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> help;
@@ -63,9 +65,36 @@ export component Section inherits VerticalLayout {
         spacing: 0;
         if root.title != "": HorizontalLayout {
             spacing: Space.s;
-            Label {
-                role: TextRole.section;
-                text: root.title;
+            // The title engraved as the rule above it, in capitals set apart as a camera's markings:
+            // the groove's shade along the letters' top, its lit edge along their foot.
+            Rectangle {
+                width: word.preferred-width;
+                min-height: word.preferred-height;
+                Label {
+                    y: -Stroke.line;
+                    height: parent.height;
+                    role: TextRole.section;
+                    text: word.text;
+                    spaced: true;
+                    ink: DS.palette-groove;
+                    accessible-role: none;
+                }
+                Label {
+                    y: Stroke.line;
+                    height: parent.height;
+                    role: TextRole.section;
+                    text: word.text;
+                    spaced: true;
+                    ink: DS.palette-groove-light;
+                    accessible-role: none;
+                }
+                word := Label {
+                    height: parent.height;
+                    role: TextRole.section;
+                    text: root.title.to-uppercase();
+                    spaced: true;
+                    accessible-label: root.title;
+                }
                 if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
