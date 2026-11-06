@@ -54,7 +54,8 @@ impl Ctl {
         }
         let (modified, rests) = {
             let s = self.state.borrow();
-            (Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b))), crate::slider_track::rests(s.store.settings()))
+            let dyes = s.open_dyes();
+            (Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b, dyes))), crate::slider_track::rests(s.store.settings()))
         };
         for (b, on) in modified {
             set_modified(&g, b, on);
@@ -177,11 +178,12 @@ impl Ctl {
 
     /// A block's reset key: the open frame back to its rest, and each frame shown with it to its own.
     pub(super) fn reset_block(self: &Rc<Self>, b: Block) {
+        let dyes = self.state.borrow().open_dyes();
         let Some(paths) = self.together_paths() else {
-            let command = store::reset(self.state.borrow().store.settings(), b);
+            let command = store::reset(self.state.borrow().store.settings(), b, dyes);
             return self.write(command);
         };
-        self.gesture(&paths, |editor| editor.reset_each(&paths, |s| store::rested(s, b)));
+        self.gesture(&paths, |editor| editor.reset_each(&paths, |s| store::rested(s, b, dyes)));
     }
 
     /// `f` back to its rest on every frame shown, as a double click on its rail or on its name asks.

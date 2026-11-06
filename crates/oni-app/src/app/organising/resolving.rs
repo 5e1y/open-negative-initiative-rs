@@ -2,6 +2,8 @@
 //! or sidecar film, and the ringed project.
 
 use super::*;
+use oni_settings::blocks::SeparationFamily;
+use oni_settings::film::{FilmStockKind, dye_family};
 
 impl Roll {
     /// The roll as the sidebar keys its fields: its folder, else its film, as a folder's film is
@@ -18,6 +20,19 @@ impl State {
     /// The stock the info sidebar's roll carries, picked by a hand or none.
     pub(in crate::app) fn roll_stock(&self) -> Option<String> {
         self.roll().and_then(|r| r.film.stock)
+    }
+
+    /// The stock of the open photo's roll: its folder's marker, else the roll its sidecar names.
+    pub(in crate::app) fn open_stock(&self) -> Option<&'static FilmStockKind> {
+        let folder = oni_library::paths::parent(self.open.as_deref()?);
+        let rolls = &self.survey.rolls;
+        let marker = rolls.get(&folder).or_else(|| rolls.iter().find(|(f, _)| oni_library::paths::same(f, &folder)).map(|(_, film)| film));
+        film_stock(marker.or(self.store.settings().film.as_ref())?.stock.as_deref())
+    }
+
+    /// The dyes the open photo's roll stock names, which its Dye Separation rests on.
+    pub(in crate::app) fn open_dyes(&self) -> Option<SeparationFamily> {
+        self.open_stock().and_then(|k| dye_family(k.id))
     }
 
     /// The archive's band the gallery stands on: the folder of the anchor shown, else the opened

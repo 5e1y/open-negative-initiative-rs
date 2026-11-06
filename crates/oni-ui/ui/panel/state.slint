@@ -41,6 +41,8 @@ export global PanelState {
     in property <bool> flat-field-on;
     // `SettingsPane.separationFamily`: the family the kernel runs, an index of `Separation.Family`.
     in-out property <int> dye-family: 2;
+    // Where that family comes from: the roll's film stock, or another than the one it names.
+    in property <string> dye-source;
     callback dye-family-picked(int);
     // `GainPanel`: the inversion swaps each row's ends, the hue then low.
     in property <bool> gains-inverted: true;

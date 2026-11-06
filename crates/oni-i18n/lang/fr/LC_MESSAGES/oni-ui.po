@@ -1911,23 +1911,23 @@ msgstr "Soustrait le débordement de chaque colorant dans les deux autres canaux
 msgid "Dyes"
 msgstr "Colorants"
 
-#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Kodak"
 msgstr "Kodak"
 
-#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Fuji"
 msgstr "Fuji"
 
-#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Generic"
 msgstr "Générique"
 
-#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "ECN-2"
 msgstr "ECN-2"
 
-#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "E-6"
 msgstr "E-6"
 
@@ -3593,6 +3593,10 @@ msgid "Set Film Stock"
 msgstr "Définir l’émulsion"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
+msgid "Dyes: {family}; the stock names {named}"
+msgstr "Colorants : {family} ; ceux de l’émulsion : {named}"
+
+#: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Dyes: {family}"
 msgstr "Colorants : {family}"
 
@@ -3937,8 +3941,20 @@ msgid "Not rendered: {e}"
 msgstr "Rendu impossible : {e}"
 
 #: crates/oni-app/src/app/roll_tab.rs
+msgid "No film stock names these dyes"
+msgstr "Aucune émulsion ne désigne ces colorants"
+
+#: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
 msgstr "Masque manquant"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "From the film stock, {stock}"
+msgstr "D’après l’émulsion, {stock}"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "Not the film stock's: {stock} names {family}"
+msgstr "Pas ceux de l’émulsion : {stock} désigne {family}"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on the selected photo, not the one on screen."

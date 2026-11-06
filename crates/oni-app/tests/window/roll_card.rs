@@ -137,7 +137,10 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert_eq!(marker().and_then(|f| f.stock), Some("kodak-portra".to_string()));
     assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "Portra writes Kodak's dyes on every frame");
     assert_eq!(family(&other.join("D.tif")), Some(SeparationFamily::E6), "twin: a frame outside the roll keeps its family");
-    assert_eq!(lib.get_stock_dyes().as_str(), "Dyes: Kodak");
+    rig.until("the card reads Kodak's dyes off the frames", Duration::from_secs(10), || {
+        rig.pump();
+        lib.get_stock_dyes().as_str() == "Dyes: Kodak"
+    });
     rig.settle();
     println!("shot {}", rig.shot("roll-card-made").display());
     ctl.act(oni_app::Act::Undo);
@@ -148,12 +151,14 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     rig.landed(&ctl);
     assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3]);
 
-    // A black-and-white stock leaves every family alone.
+    // A black-and-white stock leaves every family alone, and the card says the dyes the frames
+    // still unmix under a stock naming none.
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("ilford-hp5"));
     rig.landed(&ctl);
     assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "black and white writes no dyes");
-    assert_eq!(lib.get_stock_dyes().as_str(), "");
+    rig.pump();
+    assert_eq!(lib.get_stock_dyes().as_str(), "Dyes: Kodak");
 
     // A measured frame takes the banner away once the roll's frames are read again.
     let measured = frames[1].clone();
@@ -183,7 +188,35 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     stocks.invoke_chosen(stock("fujifilm-superia"));
     rig.landed(&ctl);
     assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
-    assert_eq!(w.global::<oni_app::PanelState>().get_dye_family(), 1, "the Dyes tabs read Fuji");
+    let (panel, g) = (w.global::<oni_app::PanelState>(), w.global::<oni_app::Store>());
+    assert_eq!(panel.get_dye_family(), 1, "the Dyes tabs read Fuji");
+    assert_eq!(panel.get_dye_source().as_str(), "From the film stock, Fujifilm Superia");
+    assert!(!g.get_dye_separation_modified(), "the stock's dyes are the block's rest: no reset key");
+    rig.until("the card reads Fuji's dyes", Duration::from_secs(10), || {
+        rig.pump();
+        lib.get_stock_dyes().as_str() == "Dyes: Fuji"
+    });
+
+    // Kodak picked on the photo open: the block flags it against the stock, the card says both, and
+    // the block's reset lands back on the stock's dyes.
+    panel.invoke_dye_family_picked(0);
+    rig.pump();
+    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::KodakC41));
+    assert_eq!(panel.get_dye_source().as_str(), "Not the film stock's: Fujifilm Superia names Fuji");
+    assert!(g.get_dye_separation_modified(), "twin: off the stock's dyes, the reset key shows");
+    rig.until("the card reads the frame's Kodak beside the stock's Fuji", Duration::from_secs(10), || {
+        rig.pump();
+        lib.get_stock_dyes().as_str() == "Dyes: Kodak, Fuji; the stock names Fuji"
+    });
+    g.invoke_reset(5);
+    rig.pump();
+    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
+    assert_eq!((panel.get_dye_family(), g.get_dye_separation_modified()), (1, false));
+    assert_eq!(panel.get_dye_source().as_str(), "From the film stock, Fujifilm Superia");
+    rig.until("the card back on Fuji alone", Duration::from_secs(10), || {
+        rig.pump();
+        lib.get_stock_dyes().as_str() == "Dyes: Fuji"
+    });
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -241,8 +241,8 @@ impl Ctl {
         self.navigator_wrote(paths);
         {
             let mut s = self.state.borrow_mut();
-            // A sidecar written may measure the roll shown: its banner is read again.
-            s.org.measured = None;
+            // A sidecar written may measure the roll shown or change its dyes: its card is read again.
+            s.org.frames = None;
             let Some(index) = &s.index else { return };
             library::refresh(index, paths);
             // With no folder open, a photo restored from the ONI Trash leaves it all the same.

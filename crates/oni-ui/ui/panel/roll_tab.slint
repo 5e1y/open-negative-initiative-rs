@@ -196,6 +196,7 @@ export component RollPane inherits Pane {
                 selected: PanelState.dye-family;
                 picked(i) => { PanelState.dye-family = i; PanelState.dye-family-picked(i); }
             }
+            Label { text: PanelState.dye-source; role: TextRole.note; }
         }
         StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }
