@@ -146,11 +146,11 @@ export component FrameOverlay inherits Rectangle {
         height: root.frame-height;
         background: Colour.scrim;
     }
+    // The thirds: a faint line on the guide's full edge, 3:1 at least against a light sky.
     for i in (root.crop ? 2 : 0): GuideLine {
         vertical: true;
         line: Stroke.hairline;
         ink: Colour.guide-faint;
-        edge: Colour.contrast-edge-idle;
         x: root.frame-x + root.frame-width * (i + 1) / 3 - self.width / 2;
         y: root.frame-y;
         width: Stroke.hairline + 2 * Stroke.line;
@@ -159,7 +159,6 @@ export component FrameOverlay inherits Rectangle {
     for i in (root.crop ? 2 : 0): GuideLine {
         line: Stroke.hairline;
         ink: Colour.guide-faint;
-        edge: Colour.contrast-edge-idle;
         x: root.frame-x;
         y: root.frame-y + root.frame-height * (i + 1) / 3 - self.height / 2;
         width: root.frame-width;

@@ -5667,5 +5667,33 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1179,
+    "type": "interface",
+    "title": "The Crop tab's plate spaces its words evenly and the Vertical switch shows only where it can turn",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: COPY and PASTE hugged their words while PASTE TO ROLL took the rest of the plate, so the three words stood unevenly apart. None of the three fills now: the plate shares its room out alike, each key growing by the same amount, so the words stand evenly apart. The Vertical switch was disabled under Free and 1:1 yet looked live, a click doing nothing: it now shows only with a ratio that has an orientation (`Framing.orientable`, formerly `portrait-enabled`). Checks: sidebars reads the three words' gaps off the drawn plate, its twin the former layout; panel_bindings finds no switch under Free and 1:1, its twin 3:2."
+  },
+  {
+    "id": 1180,
+    "type": "interface",
+    "title": "The measuring window's key says what it does: SET WINDOW, then APPLY WINDOW",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the key read MEASURING WINDOW, a noun repeating its block's title. It reads SET WINDOW until armed and APPLY WINDOW while armed; French RÉGLER LA FENÊTRE, Spanish AJUSTAR VENTANA."
+  },
+  {
+    "id": 1181,
+    "type": "interface",
+    "title": "The rotate key draws a photo under a clockwise arrow",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: Trinil's rotate-90, a diamond under an arc, did not read as a rotation. Icons.rotate is drawn for this build in the Trinil stroke: a landscape frame under a clockwise arc whose head points down past its corner, as the key turns the photo 90 degrees clockwise. Left as it was: the evaluation found Rotate, Mirror and the Measuring Window's keys missing from the element tree, an artefact of its tool: Slint's MCP server caps get_element_tree at 1000 elements in depth-first order and the panel's lower blocks fall past the cut. Each icon key carries its help as its accessible label (Rotate 90° Clockwise, Mirror left for right, Reset, Copy and Paste Measuring Window); their glyphs without words are the app's icon keys, named by their block and their tooltip."
+  },
+  {
+    "id": 1182,
+    "type": "fix",
+    "title": "The crop's thirds read on a light sky",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: over roll #8's sky (sRGB 192) the thirds' edges, at the idle contrast shade (30 % black), stood at about 2:1. The thirds now take GuideLine's own edge, the full contrast shade (55 % black), as the compare split does: 86 against 192, about 4.2:1; their faint light line still carries them over a dark picture."
   }
 ]

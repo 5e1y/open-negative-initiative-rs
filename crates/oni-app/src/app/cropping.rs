@@ -80,7 +80,7 @@ impl Ctl {
         let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];
         f.set_ratio(g.ratio.and_then(|r| ratios.iter().position(|x| *x == r)).map_or(0, |i| i as i32 + 1));
         f.set_portrait(g.portrait);
-        f.set_portrait_enabled(g.ratio.is_some_and(|r| r != oni_settings::frame::AspectRatio::Square));
+        f.set_orientable(g.ratio.is_some_and(|r| r != oni_settings::frame::AspectRatio::Square));
         f.set_kept(image.map(|i| geom::pixel_label(g.cropped_pixel_size(i))).unwrap_or_default().into());
         f.set_modified(g != Geometry::reset_keeping(&g));
         f.set_mirrored(g.mirrored);

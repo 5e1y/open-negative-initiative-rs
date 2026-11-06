@@ -1510,8 +1510,8 @@ msgid "APPLY WINDOW"
 msgstr "APLICAR VENTANA"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "MEASURING WINDOW"
-msgstr "VENTANA DE MEDICIÓN"
+msgid "SET WINDOW"
+msgstr "AJUSTAR VENTANA"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it."
