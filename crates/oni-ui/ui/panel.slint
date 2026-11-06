@@ -21,43 +21,56 @@ export component Panel inherits Surface {
     property <int> inward: Keyboard.inward;
     changed inward => { if tabs.visible { tabs.take-keyboard(); } }
     VerticalLayout {
-        // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
-        // `DSHistogram` on the scanner screen's black glass; Lighting's curves over it on the Color tab.
-        if !Lab.shown && PanelState.tab != 3: Plot {
-            plot: 5;
-            height: PlotStyle.main;
-            screen: false;
-            glass: true;
-            grid: false;
-            interactive: false;
-            histogram: Plots.output;
-            histogram-revision: Plots.output-revision;
-            lines: PanelState.tab == 2 ? Editors.print-lines : [];
-            // The trace's size, set by the plot itself so it is known before any histogram lands.
-            resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
-            property <int> epoch: Editors.epoch;
-            changed epoch => { Editors.resized(self.plot, self.width, self.height); }
-        }
-        // Under Details the output histogram cannot move, so the band holds the loupe.
-        if PanelState.tab == 3: LoupeBand {
-            height: DetailLoupe.band-height;
-            source: DetailLoupe.source;
-            revision: DetailLoupe.revision;
-            shown-width: DetailLoupe.shown-width;
-            shown-height: DetailLoupe.shown-height;
-            ratio: DetailLoupe.ratio;
-            ratio-shown: DetailLoupe.ratio-shown;
-            toggled => { DetailLoupe.toggled(); }
-        }
-        if Lab.shown && PanelState.tab != 3: LabScreen {
-            height: PlotStyle.main;
-            frame: Lab.frame;
-            machine: Lab.machine-line;
-            remeasure: Lab.remeasure;
-            remeasure-help: @tr("This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess.");
-            cells: Lab.cells;
-            balance: Lab.balance;
-            balance-help: @tr("Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab.");
+        // The readout, one glass inset as the panel's rows, alike on both faces: Pro's histogram, Lighting's
+        // curves over it on the Colour tab; the scanner's screen on the Scanner face; the loupe under Details.
+        HorizontalLayout {
+            padding-left: Space.m;
+            padding-right: Space.m;
+            padding-top: Space.m;
+            Rectangle {
+                height: PlotStyle.main;
+                if !Lab.shown && PanelState.tab != 3: Plot {
+                    width: parent.width;
+                    height: parent.height;
+                    border-radius: PlotStyle.radius;
+                    plot: 5;
+                    screen: false;
+                    glass: true;
+                    grid: false;
+                    interactive: false;
+                    histogram: Plots.output;
+                    histogram-revision: Plots.output-revision;
+                    lines: PanelState.tab == 2 ? Editors.print-lines : [];
+                    // The trace's size, set by the plot itself so it is known before any histogram lands.
+                    resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
+                    property <int> epoch: Editors.epoch;
+                    changed epoch => { Editors.resized(self.plot, self.width, self.height); }
+                }
+                // Under Details the output histogram cannot move, so the readout holds the loupe.
+                if PanelState.tab == 3: LoupeBand {
+                    width: parent.width;
+                    height: parent.height;
+                    border-radius: PlotStyle.radius;
+                    source: DetailLoupe.source;
+                    revision: DetailLoupe.revision;
+                    shown-width: DetailLoupe.shown-width;
+                    shown-height: DetailLoupe.shown-height;
+                    ratio: DetailLoupe.ratio;
+                    ratio-shown: DetailLoupe.ratio-shown;
+                    toggled => { DetailLoupe.toggled(); }
+                }
+                if Lab.shown && PanelState.tab != 3: LabScreen {
+                    width: parent.width;
+                    height: parent.height;
+                    frame: Lab.frame;
+                    machine: Lab.machine-line;
+                    remeasure: Lab.remeasure;
+                    remeasure-help: @tr("This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess.");
+                    cells: Lab.cells;
+                    balance: Lab.balance;
+                    balance-help: @tr("Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab.");
+                }
+            }
         }
         HorizontalLayout {
             padding-left: Space.m;

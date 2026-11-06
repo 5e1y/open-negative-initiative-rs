@@ -68,6 +68,8 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(!lab.get_shown() && bar.get_face() == 0, "the editor opens on Pro, never asked otherwise");
     assert!(panel.get_separation_shown(), "Pro's Roll tab holds Dye Separation");
 
+    rig.settle();
+    println!("shot {}", rig.shot("pro-face").display());
     // The bar's Scanner tab: the face, one undo step, remembered.
     bar.invoke_act(oni_app::Act::FaceScanner);
     rig.pump();
@@ -154,11 +156,14 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.pump();
     // D's rail slid by the hand, a pixel a move: it lands on every step, half a unit apart, and never
     // jumps a whole unit; the readout follows each step in stops.
-    let (y, pressed) = (491.0, slint::LogicalPosition::new(1110.0, 491.0));
+    // The rail is the slider's lowest row, its knob's height; the hand runs past both its ends.
+    let d = common::the(w, i_slint_backend_testing::AccessibleRole::Slider, "D");
+    let y = d.y + d.height - 13.0;
+    let pressed = slint::LogicalPosition::new(d.x + d.width / 2.0, y);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: pressed });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: pressed, button: PointerEventButton::Left });
     let mut landed = Vec::new();
-    for x in 990..=1222 {
+    for x in (d.x - 20.0) as i32..=(d.x + d.width + 20.0) as i32 {
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x as f32, y) });
         rig.pump();
         landed.push((settings().scanner.d, readout(0)));

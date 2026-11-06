@@ -6444,5 +6444,12 @@
     "title": "The Scanner face shows every value acting on its frame",
     "status": "done",
     "detail": "UX evaluation (Trust): the Scanner face read D, C, M and Y at zero while the frame carried Pro's values. Read in the pipeline, the Scanner render takes the roll's conversion (Film Type, Filtration, Highlight Detail, Per-Channel Levels, Dye Separation) and Auto White Balance's correction at the roll's strength, and none of Pro's Lighting, Colour or Effects sliders. Per-Channel Levels, Dye Separation and Auto White Balance, which the face hid though they act, now stand on its Roll tab as on Pro's. The scanner's screen reads, in place of the finishing its own sliders already show, the balance its render prints with, taken from that render's own filters in Pro's Temperature and Tint readouts. The Machine help says what both faces share and that Pro's sliders stay Pro's own. No render changes; the Frontier's rest held in the gains still reads zero. Unit check the_screen_spells_every_count_and_the_balance_as_the_lab_does, twin: Pro's Temperature moved by hand never reaches the screen; window checks scanner and the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have read the blocks on the Scanner face."
+  },
+  {
+    "id": 1315,
+    "type": "fix",
+    "title": "One readout at the panel's top, inset as its rows, alike on both faces",
+    "status": "done",
+    "detail": "UI and UX evaluation (Spacing, Craft in use): the histogram and the scanner's screen ran flush to the panel's edges and the canvas while every row kept the panel's inset, and switching faces swapped one for the other. The panel's top is now one readout, inset by the rows' 16 points at the sides and the top, its corner the plots' and the canvas card's: Pro's histogram, the Scanner face's screen and the loupe under Details each fill it, so a face or a tab changes only what it shows. The loupe's band is the readout's width; the screen's counts take equal columns with no gap, so the inset costs them no room. The scanner window check finds D's rail by its role and name, no longer at a fixed point."
   }
 ]
