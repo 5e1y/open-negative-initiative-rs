@@ -91,12 +91,11 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     rig.until("B's patches", Duration::from_secs(60), || healed(w));
     assert_eq!(labels(w), ["Correction 1", "Correction 2"], "B's corrections number from one, as A's did");
 
-    // The De-dust key is on while the tab it opens shows, and goes dark when the tab bar leaves it.
+    // The De-dust key is on while the tab it opens shows, and goes dark when the header's DONE leaves it.
     ctl.act(oni_app::Act::Correction);
     assert_eq!(w.global::<PanelState>().get_tab(), 4, "the key lights on De-dust");
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
-    assert_ne!(w.global::<PanelState>().get_tab(), 4, "twin: the tab bar leaving De-dust darkens it");
+    d.invoke_act(oni_app::Act::Correction);
+    assert_ne!(w.global::<PanelState>().get_tab(), 4, "twin: DONE leaving De-dust darkens it");
     ctl.act(oni_app::Act::Correction);
 
     // A double press on the brush resets its size at once, before the release.

@@ -278,6 +278,8 @@ impl Ctl {
         let p = me.clone();
         d.on_remove(move |i| p.remove_correction(usize::try_from(i).unwrap_or(usize::MAX)));
         let p = me.clone();
+        d.on_act(move |action| p.act(action));
+        let p = me.clone();
         d.on_detect(move || p.toggle_detection());
         let p = me.clone();
         d.on_remove_found(move || p.remove_found());

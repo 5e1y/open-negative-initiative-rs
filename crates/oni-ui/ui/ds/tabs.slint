@@ -21,7 +21,7 @@ export component Tabs inherits Rectangle {
     // The tab a check or the lab shows hovered; -1 follows the pointer alone.
     in property <int> hover-tab: -1;
     callback picked(int);
-    // A selection outside the tabs, as De-dust's, shows no pill; it waits where it stood, so it never slides out.
+    // A selection outside the tabs shows no pill; it waits where it stood, so it never slides out.
     out property <bool> pill-shown: root.selected >= 0 && root.selected < root.tabs.length;
     // The held tab's place, written by that tab once laid: tabs share the bar evenly unless a label needs more.
     out property <length> pill-x;

@@ -1161,7 +1161,7 @@ msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fu
 msgid "ADD"
 msgstr "AÑADIR"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "DONE"
 msgstr "OK"
 
@@ -1536,6 +1536,14 @@ msgstr "Tamaño del pincel"
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Sensitivity"
 msgstr "Sensibilidad"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Eliminar polvo"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "Leave De-dust"
+msgstr "Salir de Eliminar polvo"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "Automatic"
@@ -2260,14 +2268,6 @@ msgstr "Pegar ajustes ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste to the Roll"
 msgstr "Pegar en el rollo"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Leave De-dust"
-msgstr "Salir de Eliminar polvo"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Eliminar polvo"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"

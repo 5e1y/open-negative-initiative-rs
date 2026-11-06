@@ -5667,5 +5667,12 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1215,
+    "type": "interface",
+    "title": "De-dust names itself in the tab bar's place, beside a DONE key",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: with De-dust on, the tab bar showed Roll, Crop, Colour and Details with none selected and nothing named the mode but the bar's lit key. De-dust is a pane the tab bar does not list, and its five labels cannot share the panel's width in French or Spanish; so while it is on, the bar gives way to a header at the bar's height, the mode's name in the title face and a DONE keycap that asks the same gesture as the bar's key and the menu's Done Correcting, landing on the last panel. The panel's rule does not move."
   }
 ]
