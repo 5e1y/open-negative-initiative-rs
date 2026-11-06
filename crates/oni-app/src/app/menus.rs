@@ -92,6 +92,7 @@ impl Ctl {
                 filter: filter.map_or(tr("Filter: All").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
                 roll: if count > 1 { tr!("Move {count} Photos into a New Roll…", count = count) } else { tr("Move into a New Roll…").into() }.into(),
                 ungroup: if members > 1 { tr!("Ungroup {count} Photos", count = members) } else { tr("Ungroup").into() }.into(),
+                project: crate::organise::new_project(count).into(),
                 screen_gamut: if screen_gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into(),
             };
             // A gesture this build lacks stays dark, whatever Swift's rule would say.
@@ -123,6 +124,7 @@ impl Ctl {
                 medal: selected > 0 && !modal,
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
+                new_project: count > 0 && !trash,
                 ungroup: members > 0,
                 measure_roll: !preparing && roll > 0,
                 reset_to_default: gallery && roll > 0,

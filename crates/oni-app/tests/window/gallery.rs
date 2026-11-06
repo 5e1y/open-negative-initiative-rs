@@ -132,22 +132,26 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.pump();
     assert_eq!((row(&canonical("A.tif")).label, row(&canonical("B.tif")).label), (Medal::Silver, Medal::Silver));
 
-    // The cell menu counts its scope, and New Project from takes the two photos.
+    // The cell menu counts its scope, and New Project takes the two photos.
     hand.right_click("B");
+    assert_eq!(hand.selected(), ["A", "B"], "a right click inside the selection keeps it whole");
     let menu = hand.menu();
-    assert_eq!(menu[0], "Paste Settings (2 photos)");
-    assert!(menu.contains(&"New Project from (2 photos)".to_string()) && menu.contains(&"Move 2 Photos to ONI Trash".to_string()), "{menu:?}");
+    let live = |text: &str| lib.get_menu_lines().iter().find(|l| l.text == text).is_some_and(|l| l.enabled);
+    assert_eq!(menu[..2], ["Copy Settings", "Paste Settings (2 photos)"]);
+    assert!(!live("Copy Settings") && !live("Paste Settings (2 photos)"), "Copy takes one photo, and nothing is copied yet");
+    assert!(menu.contains(&"New Project from 2 Photos".to_string()) && menu.contains(&"Move 2 Photos to ONI Trash".to_string()), "{menu:?}");
     assert!(!menu.contains(&"Add to Project".to_string()), "no project yet, so no submenu");
-    hand.choose("New Project from (2 photos)");
+    hand.choose("New Project from 2 Photos");
     let file = oni_library::project::load(&support);
     assert_eq!(file.projects.len(), 1);
     assert_eq!(file.projects[0].name, "Project 1");
     assert_eq!(file.projects[0].members.len(), 2);
-    // A right click outside the selection acts on that cell alone.
+    // A right click outside the selection selects that cell alone, the one the menu acts on.
     // The submenu opens beside the menu as the pointer rests on its line, no click; a plain line's rest opens none.
     hand.right_click("D");
+    assert_eq!(hand.selected(), ["D"], "the menu's photo is the one marked");
     assert!(hand.menu().contains(&"Add to Project".to_string()));
-    hand.rest_on(hand.centre("D"), "New Project from");
+    hand.rest_on(hand.centre("D"), "New Project from This Photo");
     assert!(hand.sub_menu().is_empty(), "twin: resting on a plain line opens no submenu");
     hand.rest_on(hand.centre("D"), "Add to Project");
     assert_eq!(hand.sub_menu(), ["Project 1"], "resting on Add to Project opens its submenu");
@@ -155,6 +159,13 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.choose_sub("Project 1");
     assert_eq!(hand.selected(), ["D"], "a verb selects its scope");
     assert_eq!(oni_library::project::load(&support).projects[0].members.len(), 3);
+    // Copy Settings on the menu's one photo fills the board the next menu's Paste reads.
+    hand.right_click("D");
+    assert!(live("Copy Settings"));
+    hand.choose("Copy Settings");
+    hand.right_click("A");
+    assert!(live("Paste Settings"), "{:?}", hand.menu());
+    hand.choose("Copy Settings");
 
     // The archive moves nothing by hand: a tile dragged onto another lands nowhere.
     let names = std::fs::read_dir(&folder).unwrap().count();
@@ -211,6 +222,14 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     lib.invoke_surface_picked(0);
     rig.pump();
     assert_eq!(hand.shown().len(), 4, "the photos are untouched");
+    // File > New Project makes one from the selection, as the cell menu's line does.
+    hand.rest();
+    hand.click("B", &[]);
+    let titled = || (w.global::<Menus>().get_titles().project.to_string(), w.global::<Menus>().get_live().new_project);
+    assert_eq!(titled(), ("New Project from This Photo".to_string(), true));
+    ctl.act(oni_app::Act::NewProject);
+    rig.pump();
+    assert_eq!(oni_library::project::load(&support).projects[0].members.len(), 1);
 
     // The ONI Trash: ⌘⌫ marks C, the trash row counts it, a click lays it as a grid as a folder's does.
     hand.rest();
@@ -236,6 +255,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(hand.status(), "1 selected");
     let menus = w.global::<Menus>();
     assert!(menus.get_live().restore);
+    assert!(!titled().1, "twin: the ONI Trash makes no project");
     assert_eq!(menus.get_titles().restore.as_str(), "Restore");
     hand.right_click("C");
     assert_eq!(hand.menu(), ["Restore", "Show in Finder"]);

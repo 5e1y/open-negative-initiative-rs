@@ -56,7 +56,7 @@ impl Ctl {
         let (title, detail, action) = if !s.order.is_empty() {
             (String::new(), String::new(), String::new())
         } else if s.org.projects_surface {
-            (tr("No Photos in a Project").into(), tr("Right-click photos in the library and choose New Project from them.").into(), String::new())
+            (tr("No Photos in a Project").into(), tr("Select photos in the Archive, then choose New Project in the File menu or their right-click menu.").into(), String::new())
         } else if s.org.trash_open {
             (tr("ONI Trash Is Empty").into(), tr("A photo deleted in ONI waits here, its file untouched, until it is restored.").into(), String::new())
         } else if let Some(m) = s.filter {

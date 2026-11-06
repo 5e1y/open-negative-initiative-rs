@@ -10,6 +10,7 @@ use std::collections::HashSet;
 pub enum CellAction {
     /// The greyed count of the photos out of reach, which does nothing.
     Missing,
+    Copy,
     Paste,
     Reset,
     NewRoll,
@@ -77,14 +78,16 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
         lines.push(line(trn("{n} photo missing", "{n} photos missing", gone as u64), false, false, CellAction::Missing, &missing, 0));
     }
     lines.extend([
-        line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste && any, gone > 0, CellAction::Paste, &here, gone),
+        // One photo's settings at a time, as the editor's Copy takes the open frame's.
+        line(tr("Copy Settings").into(), n == 1 && gone == 0, gone > 0, CellAction::Copy, &here, 0),
+        line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste && any, false, CellAction::Paste, &here, gone),
         line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), any, false, CellAction::Reset, &here, gone),
     ]);
     lines.push(line(counted(n, "Move into a New Roll…", tr!("Move into a New Roll… ({count} photos)", count = n)), any, true, CellAction::NewRoll, &here, gone));
     let j = joined.len();
     lines.push(line(counted(j, "Ungroup", tr!("Ungroup ({count} photos)", count = j)), !joined.is_empty(), false, CellAction::Ungroup, &joined, gone));
     let all = scope.len();
-    lines.push(line(counted(all, "New Project from", tr!("New Project from ({count} photos)", count = all)), true, false, CellAction::NewProject, scope, 0));
+    lines.push(line(new_project(all), true, false, CellAction::NewProject, scope, 0));
     if !facts.projects.is_empty() {
         lines.push(line(tr("Add to Project").into(), true, false, CellAction::AddTo, scope, 0));
     }
@@ -97,6 +100,11 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     let trash = if n > 1 { tr!("Move {count} Photos to ONI Trash", count = n) } else { tr("Move to ONI Trash").into() };
     lines.push(line(trash, any, true, CellAction::Trash, &here, gone));
     lines
+}
+
+/// New Project's words, in the cell menu and the menu bar alike: the photos it is made from.
+pub fn new_project(count: usize) -> String {
+    if count > 1 { tr!("New Project from {count} Photos", count = count) } else { tr("New Project from This Photo").into() }
 }
 
 /// The submenu a line opens: the projects to add to, or those to leave.
@@ -142,31 +150,37 @@ mod tests {
         assert_eq!(
             texts,
             [
-                "1 photo missing", "Paste Settings", "Reset Settings",
-                "Move into a New Roll\u{2026}", "Ungroup", "New Project from (2 photos)", "Add to Project",
+                "1 photo missing", "Copy Settings", "Paste Settings", "Reset Settings",
+                "Move into a New Roll\u{2026}", "Ungroup", "New Project from 2 Photos", "Add to Project",
                 "Export\u{2026}", platform::reveal(Platform::THIS), "Move to ONI Trash"
             ]
         );
         assert!(!lines[0].enabled && lines[0].action == CellAction::Missing, "the count first, greyed");
-        assert!(!lines[1].enabled, "Paste waits for copied settings");
-        assert_eq!(lines[4].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
+        assert!(!lines[1].enabled, "Copy takes one photo whole, never one with a photo away beside it");
+        assert!(!lines[2].enabled, "Paste waits for copied settings");
+        assert_eq!(lines[5].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
         // Each verb that writes or moves acts on the photo there and says the one left out.
-        for at in [2, 3, 9] {
+        for at in [3, 4, 10] {
             assert_eq!((lines[at].scope.clone(), lines[at].left, lines[at].enabled), (paths(&["a"]), 1, true), "{}", lines[at].text);
         }
-        assert_eq!(lines[5].scope, paths(&["a", "b"]), "a project names a photo away too");
-        assert_eq!((lines[7].scope.clone(), lines[7].left), (paths(&["a"]), 0), "a missing original is not exported");
+        assert_eq!(lines[6].scope, paths(&["a", "b"]), "a project names a photo away too");
+        assert_eq!((lines[8].scope.clone(), lines[8].left), (paths(&["a"]), 0), "a missing original is not exported");
         let rules: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.rule).map(|(i, _)| i).collect();
-        assert_eq!(rules, [1, 3, 7, 9]);
-        let sub = submenu(&lines[6], &facts);
+        assert_eq!(rules, [1, 4, 8, 10]);
+        let sub = submenu(&lines[7], &facts);
         assert_eq!((sub[0].text.as_str(), sub[0].action.clone()), ("Trip", CellAction::AddToProject(trip)));
         // Twins: a scope all away writes nothing; one all there has no count and leaves none out.
         let away = cell_menu(&set(&["b"]), &order, &facts);
         assert!(away.iter().filter(|l| l.left > 0).all(|l| !l.enabled), "every write greyed on photos all away");
         assert!(away.iter().any(|l| l.action == CellAction::NewProject && l.enabled));
         let there = cell_menu(&set(&["a", "c"]), &order, &facts);
-        assert_eq!(there[0].text, "Paste Settings (2 photos)");
+        assert_eq!((there[1].text.as_str(), there[0].enabled), ("Paste Settings (2 photos)", false), "Copy greyed on two photos");
+        assert_eq!(there[5].text, "New Project from 2 Photos");
         assert!(there.iter().all(|l| l.left == 0) && there.iter().all(|l| l.action != CellAction::Missing));
+        // Twin: one photo there copies its settings, and New Project names it alone.
+        let one = cell_menu(&set(&["c"]), &order, &facts);
+        assert_eq!((one[0].action.clone(), one[0].enabled, one[0].scope.clone()), (CellAction::Copy, true, paths(&["c"])));
+        assert_eq!(one[5].text, "New Project from This Photo");
         // Twin: no project at all offers no Add to Project, and a scope in none no Remove.
         let bare = CellFacts { projects: vec![], ..facts };
         assert!(!cell_menu(&set(&["c"]), &order, &bare).iter().any(|l| matches!(l.action, CellAction::AddTo | CellAction::RemoveFrom)));
