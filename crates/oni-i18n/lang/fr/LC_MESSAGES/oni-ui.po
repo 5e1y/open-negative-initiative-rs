@@ -465,17 +465,17 @@ msgstr "Désaturé"
 msgid "Camera"
 msgstr "Appareil"
 
-#: crates/oni-ui/ui/export.slint
-msgid "Leica M6"
-msgstr "Leica M6"
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint
+msgid "e.g. Leica M6"
+msgstr "p. ex. Leica M6"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Lens"
 msgstr "Objectif"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Summicron 50 mm"
-msgstr "Summicron 50 mm"
+msgid "e.g. Summicron 50 mm"
+msgstr "p. ex. Summicron 50 mm"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Film stock"
@@ -490,24 +490,32 @@ msgid "ISO"
 msgstr "ISO"
 
 #: crates/oni-ui/ui/export.slint
+msgid "e.g. 400"
+msgstr "p. ex. 400"
+
+#: crates/oni-ui/ui/export.slint
 msgid "Date"
 msgstr "Date"
+
+#: crates/oni-ui/ui/export.slint
+msgid "e.g. 2026-09-05 10:00:00"
+msgstr "p. ex. 2026-09-05 10:00:00"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Artist"
 msgstr "Auteur"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Your name"
-msgstr "Votre nom"
+msgid "e.g. Jane Doe"
+msgstr "p. ex. Camille Martin"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Copyright"
 msgstr "Copyright"
 
 #: crates/oni-ui/ui/export.slint
-msgid "© 2026 Your name"
-msgstr "© 2026 Votre nom"
+msgid "e.g. © 2026 Jane Doe"
+msgstr "p. ex. © 2026 Camille Martin"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Quality"
@@ -602,12 +610,12 @@ msgid "JPEG"
 msgstr "JPEG"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Space"
-msgstr "Espace"
+msgid "Colour space"
+msgstr "Espace colorimétrique"
 
 #: crates/oni-ui/ui/export.slint
-msgid "The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation."
-msgstr "L’image est éditée dans cet espace et exportée dans celui-ci. Chacun garde le nom que vous demandera un labo ou un imprimeur. Profil convertit vers un profil ICC installé, en colorimétrie relative avec compensation du point noir."
+msgid "Shared by the canvas and the export: the canvas shows the picture in this space and the export writes it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation."
+msgstr "Commun au canevas et à l’export : le canevas montre l’image dans cet espace et l’export l’y écrit. Chacun garde le nom que vous demandera un labo ou un imprimeur. Profil convertit vers un profil ICC installé, en colorimétrie relative avec compensation du point noir."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Compression"
@@ -654,12 +662,12 @@ msgid "Exporting…"
 msgstr "Export en cours…"
 
 #: crates/oni-ui/ui/export.slint
-msgid "The colour space the picture is edited and exported in"
-msgstr "L’espace colorimétrique dans lequel l’image est éditée et exportée"
+msgid "Colour space, shared by the canvas and the export"
+msgstr "Espace colorimétrique, commun au canevas et à l’export"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Working Space"
-msgstr "Espace de travail"
+msgid "Shared by the canvas and the export."
+msgstr "Commun au canevas et à l’export."
 
 #: crates/oni-app/src/app/presets/gestures.rs crates/oni-ui/ui/export.slint
 msgid "Replace"
@@ -956,10 +964,6 @@ msgstr "Boîtier"
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "The body this roll was shot on, hand-entered — never read off a scan's own EXIF."
 msgstr "Le boîtier avec lequel cette pellicule a été prise, saisi à la main : jamais lu dans les EXIF d’un scan."
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "e.g. Leica M6"
-msgstr "p. ex. Leica M6"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Project"
