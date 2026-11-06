@@ -42,7 +42,7 @@ pub mod phone;
 pub mod picking;
 pub mod platform;
 pub mod preferences;
-pub mod splash;
+pub mod starter;
 pub mod proof;
 pub mod report;
 pub mod retired_matrices;

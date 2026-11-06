@@ -4,14 +4,18 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 use oni_app::app::{Options, Shell};
-use oni_app::render::{Device, Engine};
-use oni_app::{bench, timing};
+use oni_app::render::{Device, Engine, Kernels, Shared};
+use oni_app::{MainWindow, bench, starter, timing};
 use oni_core::{Archive, EditorStore};
+use oni_i18n::marked;
 use slint::ComponentHandle;
 use oni_app::viewport::{self, Wheel};
 use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::MouseScrollDelta, winit::event::WindowEvent};
 use slint::winit_030::winit::event::{ElementState, MouseButton};
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
+use std::time::Instant;
 
 #[cfg(target_os = "macos")]
 #[global_allocator]
@@ -41,9 +45,13 @@ fn main() {
     }
 }
 
+/// The shell once its step of the launch has built it.
+type Standing = Rc<RefCell<Option<Shell>>>;
+
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "macos")]
     more_descriptors();
+    let began = Instant::now();
     let support = timing::support();
     // Before any write, the log included: a second launch on the same folder leaves it as it is.
     let _instance = match oni_app::instance::hold(&support) {
@@ -64,8 +72,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     timing::keep_panics();
     oni_app::system::verify_held_keys();
+    timing::line(&format!("system: {}, ONI {}", oni_app::system::described(), env!("CARGO_PKG_VERSION")));
     // One device for the pipeline, the display kernel and the window, so the canvas texture is shared.
     let gpu = Device::open()?;
+    let graphics = began.elapsed();
     let info = gpu.adapter.get_info();
     timing::line(&format!("GPU: {} ({:?}, {:?}, driver {} {})", info.name, info.backend, info.device_type, info.driver, info.driver_info));
     let selector = slint::BackendSelector::new()
@@ -89,56 +99,152 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             false
         }
     };
+    let interface = began.elapsed() - graphics;
     let engine = Engine::shared(&gpu);
     {
         let mut e = engine.lock()?;
         e.support = Some(support.clone());
         e.caches = Some(oni_app::patches::caches());
     }
-    let warming = engine.clone();
+    let kernels = std::sync::Arc::new(Kernels::default());
+    let (warming, counted) = (engine.clone(), kernels.clone());
     std::thread::spawn(move || {
-        let started = std::time::Instant::now();
-        warming.prewarm();
+        let started = Instant::now();
+        warming.prewarm_counted(&counted);
         timing::line(&format!("kernels compiled in {:.0} ms", started.elapsed().as_secs_f64() * 1000.0));
     });
-    let gate = engine.clone();
-    let meter = engine.clone();
-    // Whole decodes kept for the next opening, about 145 MB a 24 Mpx frame.
-    oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    // Frames edited while camera matrices shaped the decode keep their look through their gains.
-    oni_app::retired_matrices::install(&support);
-    oni_app::retired_matrices::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
-    // The folded bench pairs a phone, so it offers the link whatever the switch says.
-    let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
     // The window's adapter is made here, while the hook still knows the main window is the one built.
-    let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, ..Options::default() }).inspect(|s| {
-        s.window.window();
-    }))?;
+    let building = Instant::now();
+    let window = oni_app::chrome::unified(|| {
+        MainWindow::new().inspect(|w| {
+            w.window();
+        })
+    })?;
+    let built = building.elapsed();
+    let shell: Standing = Rc::default();
+    let failed: Rc<RefCell<Option<slint::PlatformError>>> = Rc::default();
+    let hz: Rc<RefCell<Option<slint::Timer>>> = Rc::default();
+    let _watching = watch(&window, &shell, &engine);
+    let steps = vec![
+        starter::step(marked("Reading the library"), {
+            let support = support.clone();
+            move || {
+                // Whole decodes kept for the next opening, about 145 MB a 24 Mpx frame.
+                oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
+                // Frames edited while camera matrices shaped the decode keep their look through their gains.
+                oni_app::retired_matrices::install(&support);
+                oni_app::retired_matrices::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
+            }
+        }),
+        starter::step(marked("Building the app"), {
+            let (built, shell, failed, engine) = (window.clone_strong(), shell.clone(), failed.clone(), engine.clone());
+            move || {
+                let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+                // The folded bench pairs a phone, so it offers the link whatever the switch says.
+                let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
+                let options = Options { support, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, ..Options::default() };
+                match Shell::with_window(built, Box::new(store), engine, options) {
+                    Ok(standing) => {
+                        let quitting = standing.ctl.clone();
+                        ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));
+                        *shell.borrow_mut() = Some(standing);
+                    }
+                    Err(e) => {
+                        *failed.borrow_mut() = Some(e);
+                        let _ = slint::quit_event_loop();
+                    }
+                }
+            }
+        }),
+        starter::step(marked("Opening the last folder"), {
+            let shell = shell.clone();
+            move || {
+                let standing = shell.borrow();
+                let Some(shell) = standing.as_ref() else { return };
+                // A path named opens it or nothing; the reference roll opens only where a check or a bench names it.
+                match std::env::args_os().nth(1).map(PathBuf::from) {
+                    Some(path) => shell.add(&path),
+                    None if shell.open_remembered() => {}
+                    None if std::env::var_os(oni_fixtures::RAW_DIR.0).is_some() || bench::requested().is_some() => {
+                        shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR))
+                    }
+                    None => {}
+                }
+                if bench::requested().is_some() {
+                    shell.open_first_when_read();
+                }
+            }
+        }),
+    ];
+    let ready = {
+        let (shell, hz, meter) = (shell.clone(), hz.clone(), engine.clone());
+        move || {
+            let standing = shell.borrow();
+            let Some(shell) = standing.as_ref() else { return };
+            if let Some(mode) = bench::requested() {
+                bench::start(&shell.ctl, mode, move |report| {
+                    timing::line(&report);
+                    if let Ok(e) = meter.lock() {
+                        let s = e.stats();
+                        timing::line(&format!("graph textures: peak {} MB, {} MB at the end", s.peak_bytes >> 20, s.live_bytes >> 20));
+                    }
+                    let _ = slint::quit_event_loop();
+                });
+            } else {
+                shell.welcome_if_due();
+                shell.offer_wrapped();
+                *hz.borrow_mut() = oni_app::hz::watch(&shell.window);
+            }
+            lights(&shell.window);
+        }
+    };
+    let before = vec![(marked("Starting the graphics card"), graphics), (marked("Starting the interface"), interface), (marked("Building the window"), built)];
+    starter::launch(&window, began, before, steps, kernels, ready)?;
+    lights(&window);
+    oni_app::on_screen::shown(window.as_weak());
+    slint::run_event_loop()?;
+    if let Some(e) = failed.borrow_mut().take() {
+        return Err(e.into());
+    }
+    let standing = shell.borrow_mut().take();
+    if let Some(shell) = standing {
+        // A quit that never asked the window to close still writes the open frame's last settings.
+        if let Some(failure) = shell.last_writes() {
+            timing::line(&format!("the open frame's settings could not be saved: {failure}"));
+        }
+        oni_app::patches::purge(&oni_app::patches::caches());
+        timing::line(&shell.summary());
+    }
+    timing::flush();
+    Ok(())
+}
+
+/// The window's events and the watchdog, from the starter on; what needs the shell waits for it.
+fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer {
     // `Diagnostics.startWatchdog`: the interface thread beats, a thread of its own watches it.
     let beat = slint::Timer::default();
-    let watched = shell.ctl.clone();
+    let watched = shell.clone();
     beat.start(slint::TimerMode::Repeated, oni_app::watchdog::BEAT, move || {
-        let witness = watched.state.borrow().witness();
-        oni_app::watchdog::beat(std::time::Instant::now(), witness);
+        let witness = watched.try_borrow().ok().and_then(|s| s.as_ref().map(|s| s.ctl.state.borrow().witness()));
+        oni_app::watchdog::beat(Instant::now(), witness.unwrap_or_else(|| "the starter".into()));
     });
     oni_app::watchdog::start();
-    let room = shell.window.as_weak();
-    shell.window.global::<oni_app::Bar>().on_room_pressed(move || {
+    let room = window.as_weak();
+    window.global::<oni_app::Bar>().on_room_pressed(move || {
         if let Some(w) = room.upgrade() {
             oni_app::chrome::room_pressed(w.window());
         }
     });
-    let quitting = shell.ctl.clone();
-    ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));
-    let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
-    let lit = shell.window.as_weak();
-    let focus = shell.ctl.clone();
-    let told = shell.window.as_weak();
+    let ctl = {
+        let shell = shell.clone();
+        move || shell.try_borrow().ok().and_then(|s| s.as_ref().map(|s| s.ctl.clone()))
+    };
+    let cursor = std::cell::Cell::new((0.0, 0.0));
+    let (lit, told, gate) = (window.as_weak(), window.as_weak(), engine.clone());
     // winit names each file of one drop in turn: the drop is taken whole once every name is in.
-    let (dropping, drops) = (shell.ctl.clone(), std::rc::Rc::new(std::cell::RefCell::new(Vec::<PathBuf>::new())));
+    let drops = Rc::new(RefCell::new(Vec::<PathBuf>::new()));
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
-    shell.window.window().on_winit_window_event(move |window, event| {
+    window.window().on_winit_window_event(move |window, event| {
         if let WindowEvent::CursorMoved { position, .. } = event {
             cursor.set((position.x, position.y));
         }
@@ -146,19 +252,25 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(w) = told.upgrade() {
                 oni_app::outside::pressed(&w);
             }
-            if *button == MouseButton::Left {
+            if *button == MouseButton::Left
+                && let Some(pressed) = ctl()
+            {
                 let (scale, (x, y)) = (f64::from(window.scale_factor()), cursor.get());
                 oni_app::editors::pressed_anywhere(&pressed, (x / scale, y / scale));
             }
         }
-        if let WindowEvent::Focused(focused) = event {
+        if let WindowEvent::Focused(focused) = event
+            && let Some(focus) = ctl()
+        {
             focus.focus_changed(*focused);
         }
-        if let WindowEvent::DroppedFile(path) = event {
+        if let WindowEvent::DroppedFile(path) = event
+            && let Some(dropping) = ctl()
+        {
             let first = drops.borrow().is_empty();
             drops.borrow_mut().push(path.clone());
             if first {
-                let (drops, dropping) = (drops.clone(), dropping.clone());
+                let drops = drops.clone();
                 slint::Timer::single_shot(std::time::Duration::ZERO, move || {
                     let paths = std::mem::take(&mut *drops.borrow_mut());
                     dropping.dropped(&paths);
@@ -189,52 +301,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         EventResult::Propagate
     });
-    // A path named opens it or nothing; the reference roll opens only where a check or a bench names it.
-    match std::env::args_os().nth(1).map(PathBuf::from) {
-        Some(path) => shell.add(&path),
-        None if shell.open_remembered() => {}
-        None if std::env::var_os(oni_fixtures::RAW_DIR.0).is_some() || bench::requested().is_some() => {
-            shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR))
-        }
-        None => {}
-    }
-    if let Some(mode) = bench::requested() {
-        shell.open_first_when_read();
-        bench::start(&shell.ctl, mode, move |report| {
-            timing::line(&report);
-            if let Ok(e) = meter.lock() {
-                let s = e.stats();
-                timing::line(&format!("graph textures: peak {} MB, {} MB at the end", s.peak_bytes >> 20, s.live_bytes >> 20));
-            }
-            let _ = slint::quit_event_loop();
-        });
-    }
-    // Probes and benches drive the window at once, as Swift skips its splash under a probe.
-    if bench::requested().is_none() {
-        shell.welcome_if_due();
-        shell.offer_wrapped();
-        let main = shell.window.as_weak();
-        oni_app::splash::show(move || {
-            if let Some(w) = main.upgrade() {
-                let _ = w.show();
-                lights(&w);
-                oni_app::on_screen::shown(w.as_weak());
-            }
-        })?;
-    } else {
-        shell.window.show()?;
-        lights(&shell.window);
-    }
-    let _hz = if bench::requested().is_none() { oni_app::hz::watch(&shell.window) } else { None };
-    slint::run_event_loop()?;
-    // A quit that never asked the window to close still writes the open frame's last settings.
-    if let Some(failure) = shell.last_writes() {
-        timing::line(&format!("the open frame's settings could not be saved: {failure}"));
-    }
-    oni_app::patches::purge(&oni_app::patches::caches());
-    timing::line(&shell.summary());
-    timing::flush();
-    Ok(())
+    beat
 }
 
 /// The bar makes room for the traffic lights wherever they show: none in full screen.

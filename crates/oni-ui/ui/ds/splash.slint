@@ -1,8 +1,10 @@
-// `Splash`: a picture per version over the window's corners, the logo, the version line and the
-// photo's credit along its foot, held while the gallery loads underneath.
+// `Splash`: a picture per version, the logo, the version line and the photo's credit along its
+// foot; the app's window opens on it, and the welcome sheet shows it.
 import { DS } from "tokens.slint";
-
+import { Colour, Space, Type } from "theme.slint";
 import { Picture, Ground, Fit } from "base.slint";
+import { Progress } from "forms.slint";
+import { Starter } from "starting.slint";
 
 export global SplashStyle {
     out property <length> width: DS.control-splash-width;
@@ -85,24 +87,53 @@ export component WelcomePhoto inherits Picture {
     }
 }
 
-export component SplashWindow inherits Window {
-    // The version's picture, oldest first: the newest unless the version names one.
-    in property <int> picture;
-    in property <string> line;
-    in property <string> credit;
-    no-frame: true;
-    always-on-top: true;
-    background: transparent;
-    width: SplashStyle.width;
-    height: SplashStyle.height;
-    default-font-family: DS.typo-splash-line-family;
+// The app's window while it starts: the version's picture over a band in the app's grey that says
+// the step under way, the launch's time, its bar and the steps done; the app beneath takes no press.
+// The band keeps its height; the picture takes what a menu bar drawn in the window leaves.
+export component StarterView inherits Rectangle {
+    background: Colour.ground;
+    TouchArea { }
     WelcomePhoto {
-        height: parent.height;
-        rounded: true;
-        radius: SplashStyle.radius;
-        picture: root.picture;
-        line: root.line;
-        credit: root.credit;
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height - Starter.band-height;
+        picture: Starter.picture;
+        line: Starter.line;
+        credit: Starter.credit;
         scale: 1;
+    }
+    VerticalLayout {
+        x: 0;
+        y: parent.height - Starter.band-height;
+        width: parent.width;
+        height: Starter.band-height;
+        padding-left: Space.m;
+        padding-right: Space.m;
+        alignment: center;
+        spacing: Space.s;
+        HorizontalLayout {
+            spacing: Space.s;
+            Text {
+                text: Starter.stage;
+                color: Colour.ink;
+                font-size: Type.label;
+                font-weight: Type.medium;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: Starter.elapsed;
+                color: Colour.ink-secondary;
+                font-size: Type.label;
+            }
+        }
+        Progress { fraction: Starter.fraction; }
+        Text {
+            text: Starter.done;
+            color: Colour.ink-tertiary;
+            font-size: Type.chip;
+            overflow: elide;
+        }
     }
 }

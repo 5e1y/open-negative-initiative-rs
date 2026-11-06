@@ -150,7 +150,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("button_group::a_plate_s_keys_touch_and_a_spaced_row_s_keep_swift_s_gap", button_group::a_plate_s_keys_touch_and_a_spaced_row_s_keep_swift_s_gap),
     ("keycap_cost::a_screen_s_keys_are_drawn_once_and_never_again_while_still", keycap_cost::a_screen_s_keys_are_drawn_once_and_never_again_while_still),
     ("keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests", keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests),
-    ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
+    ("launch::the_starter_says_each_step_then_grows_into_the_app_and_the_notice_covers_the_window", launch::the_starter_says_each_step_then_grows_into_the_app_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
     ("library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches", library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches),
     ("library_column::a_long_tree_makes_only_the_rows_near_its_view", library_column::a_long_tree_makes_only_the_rows_near_its_view),

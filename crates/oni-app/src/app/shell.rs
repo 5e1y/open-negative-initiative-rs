@@ -5,7 +5,11 @@ use super::*;
 impl Shell {
     /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
     pub fn new(store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
-        let window = MainWindow::new()?;
+        Self::with_window(MainWindow::new()?, store, engine, options)
+    }
+
+    /// `new` on a window already built, which the starter has shown while the rest stands up.
+    pub fn with_window(window: MainWindow, store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         crate::keycaps::serve(&window);
         let caches = engine.lock().ok().and_then(|e| e.caches.clone());
         crate::measuring::set_folders(&options.support, caches);

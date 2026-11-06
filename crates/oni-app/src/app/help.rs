@@ -207,9 +207,9 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let version = env!("CARGO_PKG_VERSION");
         let h = w.global::<Help>();
-        h.set_welcome_picture(crate::splash::picture(version) as i32);
+        h.set_welcome_picture(crate::starter::picture(version) as i32);
         h.set_welcome_line(format!("V{version}").into());
-        h.set_welcome_credit(crate::splash::credit(version).into());
+        h.set_welcome_credit(crate::starter::credit(version).into());
         h.set_welcome_shown(true);
     }
 

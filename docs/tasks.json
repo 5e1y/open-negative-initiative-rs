@@ -5282,5 +5282,12 @@
     "title": "CLAUDE.md's hard rules: the log says nothing of the user, and never a patch",
     "status": "done",
     "detail": "Owner's philosophy: nothing is patched; a problem is rectified at its source, simplifying rather than adding. Rule 8 states it for every agent."
+  },
+  {
+    "id": 1082,
+    "type": "change",
+    "title": "The app's own window opens as the starter, naming each step of the launch, then grows into the app",
+    "status": "done",
+    "detail": "Owner's call after releases issue 13 (an Intel MacBook Pro whose interface never appeared behind the splash): no floating splash window, no 3.33 s minimum. The main window opens at once at the starter's size (the version's picture over a band in the app's grey), runs each step of the launch one event-loop turn apart, a frame of the band drawn between two, says the step under way, the launch's time, the steps done with their times and a bar, then waits on the kernels' compilation (counted, n of 27) and takes the app's size in the same turn. Each step is written to the log ('boot: <step> in N ms'), with the macOS version and whether an Intel build runs under Rosetta, so the next report from that Mac says where a launch stops. The two-window hand-over, the cause class the issue pointed at, is gone. The kernels read finished however their thread ends, a panic included. Checks: launch::the_starter_says_each_step_then_grows_into_the_app_and_the_notice_covers_the_window (each step on the band while it runs, the window at the starter's size then the app's, the app opened once; twin: kernels under way hold the starter past its last step); the bar's fraction (twin: counts past their totals never pass full); the kernels' finishing (twin: a compilation under way is not finished). Real app on the M2: starter at 1.9 s, app at 2.3 s, visible. Not run on an Intel Mac."
   }
 ]

@@ -1,0 +1,24 @@
+// The launch as the starter shows it: the version's picture, then a band saying each step and the
+// whole launch's bar; the window's floor follows it while it stands.
+import { DS } from "tokens.slint";
+import { Space, ShellStyle } from "theme.slint";
+
+export global Starter {
+    in property <bool> shown;
+    // The version's picture, oldest first, with its version line and credit.
+    in property <int> picture;
+    in property <string> line;
+    in property <string> credit;
+    // The step under way, how long the launch has run, the steps done with their times.
+    in property <string> stage;
+    in property <string> elapsed;
+    in property <string> done;
+    in property <float> fraction;
+    out property <length> width: DS.control-splash-width;
+    out property <length> picture-height: DS.control-splash-height;
+    out property <length> band-height: DS.control-splash-logo-height + Space.l;
+    out property <length> height: self.picture-height + self.band-height;
+    // The app's own size, which the window takes once the launch is done.
+    out property <length> app-width: ShellStyle.min-width;
+    out property <length> app-height: ShellStyle.min-height;
+}

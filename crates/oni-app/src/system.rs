@@ -13,6 +13,9 @@ pub fn double_click() -> Duration {
     platform::double_click().filter(|d| !d.is_zero()).unwrap_or(DEFAULT_DOUBLE_CLICK)
 }
 
+mod about;
+pub use about::described;
+
 static VERIFIED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// The app's own window asks the system which keys are down; a check's synthetic clicks carry keys

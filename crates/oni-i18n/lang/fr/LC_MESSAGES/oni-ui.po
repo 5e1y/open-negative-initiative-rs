@@ -2491,7 +2491,7 @@ msgstr "Adobe DNG Converter n’a pas pu être téléchargé : {error}"
 msgid "Adobe DNG Converter could not be installed: {error}"
 msgstr "Adobe DNG Converter n’a pas pu être installé : {error}"
 
-#: crates/oni-app/src/app/dng.rs crates/oni-app/src/app/export_card/job.rs
+#: crates/oni-app/src/app/dng.rs crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/starter.rs
 msgid "{done} of {total}"
 msgstr "{done} sur {total}"
 
@@ -3885,7 +3885,7 @@ msgstr "Version {version}"
 msgid "Creating thumbnails"
 msgstr "Création des vignettes"
 
-#: crates/oni-app/src/app/state_read.rs
+#: crates/oni-app/src/app/state_read.rs crates/oni-app/src/main.rs
 msgid "Reading the library"
 msgstr "Lecture de la photothèque"
 
@@ -4103,6 +4103,26 @@ msgstr "Open Negative Initiative n’a pas pu démarrer"
 msgid "{cause}\n\nThe log holds the details: {log}"
 msgstr "{cause}\n\nLe journal en donne le détail : {log}"
 
+#: crates/oni-app/src/main.rs
+msgid "Building the app"
+msgstr "Construction de l'app"
+
+#: crates/oni-app/src/main.rs
+msgid "Opening the last folder"
+msgstr "Ouverture du dernier dossier"
+
+#: crates/oni-app/src/main.rs
+msgid "Starting the graphics card"
+msgstr "Démarrage de la carte graphique"
+
+#: crates/oni-app/src/main.rs
+msgid "Starting the interface"
+msgstr "Démarrage de l'interface"
+
+#: crates/oni-app/src/main.rs
+msgid "Building the window"
+msgstr "Construction de la fenêtre"
+
 #: crates/oni-app/src/organise/cells.rs
 msgid "Add to Project"
 msgstr "Ajouter au projet"
@@ -4247,9 +4267,25 @@ msgstr "Deux vignettes par ligne"
 msgid "One thumbnail a line"
 msgstr "Une vignette par ligne"
 
-#: crates/oni-app/src/splash.rs
+#: crates/oni-app/src/starter.rs
 msgid "V{version} Loading"
 msgstr "Chargement de la V{version}"
+
+#: crates/oni-app/src/starter.rs
+msgid "{step} · {count}"
+msgstr "{step} · {count}"
+
+#: crates/oni-app/src/starter.rs
+msgid "{step} {seconds}"
+msgstr "{step} {seconds}"
+
+#: crates/oni-app/src/starter.rs
+msgid "{seconds} s"
+msgstr "{seconds} s"
+
+#: crates/oni-app/src/starter.rs
+msgid "Compiling the image kernels"
+msgstr "Compilation des noyaux d'image"
 
 #: crates/oni-app/src/updates.rs
 msgid "You’re up-to-date!"

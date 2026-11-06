@@ -8,6 +8,7 @@ mod kept;
 pub(crate) use kept::{INPUTS_KEPT, custom_for, patches_for};
 use kept::Kept;
 pub(crate) mod prewarm;
+pub use prewarm::Kernels;
 mod originals;
 mod tiles;
 pub use tiles::Laid;

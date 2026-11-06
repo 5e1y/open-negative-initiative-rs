@@ -43,22 +43,86 @@ fn variants() -> Vec<PipelineSettings> {
     variants
 }
 
+/// How far the kernels' compilation has come, which the starter shows and waits on.
+#[derive(Default)]
+pub struct Kernels {
+    done: std::sync::atomic::AtomicUsize,
+    finished: std::sync::atomic::AtomicBool,
+}
+
+impl Kernels {
+    /// The variants compiled in all, one step of the count each.
+    pub fn total() -> usize {
+        SIZES.len() * variants().len()
+    }
+
+    pub fn done(&self) -> usize {
+        self.done.load(std::sync::atomic::Ordering::Acquire).min(Self::total())
+    }
+
+    pub fn finished(&self) -> bool {
+        self.finished.load(std::sync::atomic::Ordering::Acquire)
+    }
+}
+
+/// Marks the compilation finished however it ends, a panic included: the launch never waits on a
+/// thread that is gone.
+struct Finishing<'a>(&'a Kernels);
+
+impl Drop for Finishing<'_> {
+    fn drop(&mut self) {
+        self.0.finished.store(true, std::sync::atomic::Ordering::Release);
+    }
+}
+
 impl Shared {
     /// `Engine::prewarm`, the engine taken for one variant at a time: the window and the first render
     /// wait one variant at most, never the whole compilation.
     pub fn prewarm(&self) {
+        self.prewarm_counted(&Kernels::default());
+    }
+
+    /// `prewarm`, each variant counted in `kernels` as it lands.
+    pub fn prewarm_counted(&self, kernels: &Kernels) {
+        let _finishing = Finishing(kernels);
+        let variants = variants();
         for (width, height) in SIZES {
-            let Some(negative) = self.lock().ok().and_then(|mut e| e.prewarm_frame(width, height)) else { continue };
-            for s in &variants() {
+            let Some(negative) = self.lock().ok().and_then(|mut e| e.prewarm_frame(width, height)) else {
+                kernels.done.fetch_add(variants.len(), std::sync::atomic::Ordering::AcqRel);
+                continue;
+            };
+            for s in &variants {
                 self.give_way();
                 if let Ok(mut e) = self.lock() {
                     e.prewarm_variant(&negative, s);
                 }
+                kernels.done.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
             }
         }
         if let Ok(mut e) = self.lock() {
             e.graph.purge();
         }
+    }
+}
+
+#[cfg(test)]
+mod kernels_tests {
+    use super::*;
+
+    #[test]
+    fn the_kernels_read_finished_however_their_thread_ends() {
+        let kernels = std::sync::Arc::new(Kernels::default());
+        let held = kernels.clone();
+        let ended = std::thread::spawn(move || {
+            let _finishing = Finishing(&held);
+            held.done.fetch_add(Kernels::total() + 5, std::sync::atomic::Ordering::AcqRel);
+            panic!("a variant that fails");
+        })
+        .join();
+        assert!(ended.is_err() && kernels.finished());
+        assert_eq!(kernels.done(), Kernels::total(), "the count never reads past the whole");
+        // Twin: a compilation under way is not finished.
+        assert!(!Kernels::default().finished());
     }
 }
 
