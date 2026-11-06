@@ -1,6 +1,7 @@
 // The states a check reads off the drawn window, each at a fixed place: a key out of reach and an idle tab,
-// a destructive glyph, a latching key, a tile under the hand; the check gives the one word they show.
-import { Colour, State, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons } from "ds.slint";
+// a destructive glyph, a latching key, a tile under the hand, the medals; the check gives the one word they show.
+import { Colour, State, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Medal } from "ds.slint";
+import { MedalStyle } from "theme.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
@@ -9,6 +10,7 @@ export component StateProbe inherits AppWindow {
     out property <length> was-width: was.width;
     out property <length> dark-width: dark.width;
     out property <length> lit-width: lit.width;
+    out property <length> medal: MedalStyle.size;
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;
@@ -29,6 +31,8 @@ export component StateProbe inherits AppWindow {
     Button { width: self.preferred-width; x: 112px; y: 120px; has-icon: true; square: true; icon: Icons.remove; kind: ButtonKind.destructive; enabled: false; }
     // Twin: the red worn at rest.
     Button { width: self.preferred-width; x: 160px; y: 120px; has-icon: true; square: true; icon: Icons.remove; glyph-ink: Colour.destructive-ink; }
+    // Bronze, silver and gold a medal and a half apart, then a second gold: the twin of a rank.
+    for rank[i] in [1, 2, 3, 3]: Medal { x: 240px + i * 1.5 * MedalStyle.size; y: 24px; rank: rank; }
     dark := Button { width: self.preferred-width; x: 16px; y: 168px; text: root.word; latch: true; }
     lit := Button { width: self.preferred-width; x: 200px; y: 168px; text: root.word; latch: true; on: true; }
     Rectangle {

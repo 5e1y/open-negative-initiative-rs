@@ -13,12 +13,24 @@ export component Dot inherits Rectangle {
     background: root.ink;
 }
 
-// `DSMedal`: bronze, silver or gold spun in foil, 0 being none; its grain lit along the lamp's radius
-// (DSFoil's softbox, upper left) and its opposite, a ruled ring inside the edge, two cast shadows.
-// Its rank is struck in the middle, so no medal is told by its colour alone.
+// A figure struck in a medal: Inter's line box centred on the disc centres its digits on it.
+component Figure inherits Text {
+    width: 100%;
+    height: 100%;
+    font-family: Type.family;
+    font-weight: Type.bold;
+    horizontal-alignment: center;
+    vertical-alignment: center;
+    accessible-role: none;
+}
+
+// `DSMedal`: bronze, silver or gold spun in foil (0 none), lit along the lamp's radius, a ruled ring
+// inside the edge, two cast shadows; its rank struck in the middle tells it without its colour.
 export component Medal inherits Rectangle {
     in property <int> rank;
     in property <length> size: MedalStyle.size;
+    // The ruled ring's line, 0.4 pt at the 12 pt size.
+    property <length> rule: root.size * 0.4 / 12;
     property <color> deep: MedalStyle.deeps[root.rank];
     property <color> body: MedalStyle.bodies[root.rank];
     property <color> bright: MedalStyle.brights[root.rank];
@@ -71,9 +83,12 @@ export component Medal inherits Rectangle {
             width: parent.width - 2 * self.x;
             height: self.width;
             border-radius: self.width / 2;
-            border-width: parent.width * 0.4 / 12;
-            border-color: MedalStyle.rule-ink;
+            border-width: root.rule;
+            border-color: MedalStyle.struck;
         }
+        // The rank sunk as the key that lays it: its foot's wall catches the lamp a rule below.
+        Figure { y: root.rule; text: root.rank; font-size: root.size * MedalStyle.figure; color: root.tone(1.5); }
+        Figure { text: root.rank; font-size: root.size * MedalStyle.figure; color: MedalStyle.struck; }
     }
 }
 
