@@ -57,13 +57,14 @@ Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face
 dividers' line (`ButtonStyle.edge`), its glyph and word on it, so every key shows its extent at rest and two
 keys side by side read apart before the hand reaches either. A `Keycap` stands only where the use site sets
 `keycap: true`: the mode switch (EDITOR, GALLERY), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
-PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE, GOT IT, GET STARTED, SEND) and the
-automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE). A question's
-answers and a passing notice's OK stay flat. The cap is a raster of Swift's `KeycapStyle` that Rust draws
-when the window asks `Raster.keycap(KeycapLook)`; `oni_app::keycaps::serve` answers it on a window (the
-`Shell` does it for the main window and the console; a check building a window alone calls it); an
-unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache by the look's numbers
-(oni-keycap's `look::Cache`, shared with oni-lab) draws a still key once and a pressed one once a frame.
+PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE, GOT IT, GET STARTED, SEND), the
+automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the Scanner
+face's step keys, − and + beside each of its rails. A question's answers and a passing notice's OK stay
+flat. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
+`Raster.keycap(KeycapLook)`; `oni_app::keycaps::serve` answers it on a window (the `Shell` does it for the
+main window and the console; a check building a window alone calls it); an unserved window, as slint-viewer's,
+shows each cap's flat stand-in. One cache by the look's numbers (oni-keycap's `look::Cache`, shared with
+oni-lab) draws a still key once and a pressed one once a frame.
 
 - **Sizes** (`ButtonSize`): `regular` the 32 pt flat key (40 pt as a keycap), `mini` the 24 pt key of a
   section's header, a row or the canvas's header. A worded key is never narrower than tall.
@@ -145,8 +146,9 @@ fade and the chrome stays. The picker's field wears the same face.
   black, two grip lines centred on its face, white, or the on-light ink on a light cap (`grip-turn`). It grows by
   a scale on the rise spring, so its raster is drawn once.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
-  the hand; the stepped slider's knob carries its grip too, its − and + flat keys as tall as the knob, the
-  rail beside them showing each end's colour. AppKit's press, continuous or stepped: the knob pressed is
+  the hand; the stepped slider's knob carries its grip too, its − and + keycaps as tall as the knob
+  (`SliderStyle.step-key`), each in the colour of the rail's end beside it, a step a press and three with ⇧;
+  a continuous slider has none. AppKit's press, continuous or stepped: the knob pressed is
   grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put; a press gives it
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field

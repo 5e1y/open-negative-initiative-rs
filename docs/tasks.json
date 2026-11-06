@@ -6822,5 +6822,12 @@
     "title": "On the Scanner face the Curves editor's histogram reads what enters its curves",
     "status": "done",
     "detail": "Every reading took the frame through Pro's print, so on the Scanner face the Curves editor's histogram showed Pro's picture with no look, not what enters the curves being edited. `truncated` now keeps the frame's face past the print and lays the Scanner's own finishing at rest as Pro's, its contrast kept; in front of the print a reading still takes Pro's windows. Auto White Balance's pixels read Pro's render by their own door, the print its filters are written in, so the balance and the roll's measures read as before and no render moves. Checks: the Scanner curves' input differs from Pro's on a frame the look moves, a keypad step moves it and the face's own curve does not, twin the levels' input is the same on both faces; both renders identical after the readings, twin a curve moves one; the press finds the same filters and levels on both faces, twin the Scanner face's own picture parts from Pro's."
+  },
+  {
+    "id": 1390,
+    "type": "fix",
+    "title": "The Scanner face's − and + step keys come back, as keycaps beside each rail",
+    "status": "done",
+    "detail": "Owner's call: the step keys are what makes the Scanner experience, so they stay, and as keycaps. Each of the Scanner face's stepped sliders sets a − and a + keycap at its rail's ends, as tall as the knob (SliderStyle.step-key, its sign at SliderStyle.step-legend), each in the colour of the rail's end beside it: a press is one step, three with ⇧. The keys' tooltips name the slider and the way, and assistive tools read them as the keys' names; the name's tooltip tells ⇧ makes three. What #1316 gave both faces stays: the tick and the detent at rest, the double click on the name, the arrows and the typed value; Pro's sliders keep no keys. The 2.5D lab tunes the keys again. Window check scanner: a press on D's − steps once, ⇧ on + three times (twin: deaf to ⇧ it would stand at zero), the press draws the cap sinking (twin: the block's flat Reset draws none)."
   }
 ]

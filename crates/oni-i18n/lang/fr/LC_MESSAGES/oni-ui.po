@@ -1265,6 +1265,14 @@ msgstr "D, la touche de densité d’un minilab : + tire la photo plus claire et
 msgid "D"
 msgstr "D"
 
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D −: toward dark"
+msgstr "D − : plus sombre"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D +: toward light"
+msgstr "D + : plus clair"
+
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
 msgstr "Couleur"
@@ -1278,12 +1286,36 @@ msgid "C"
 msgstr "C"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C −: toward red"
+msgstr "C − : vers le rouge"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C +: toward cyan"
+msgstr "C + : vers le cyan"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "M"
 msgstr "M"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M −: toward green"
+msgstr "M − : vers le vert"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M +: toward magenta"
+msgstr "M + : vers le magenta"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Y"
 msgstr "Y"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y −: toward blue"
+msgstr "Y − : vers le bleu"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y +: toward yellow"
+msgstr "Y + : vers le jaune"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Look"
@@ -1296,6 +1328,14 @@ msgstr "TEMP pose le look chaud ou froid de la machine sur le tirage, un peu plu
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Temperature"
 msgstr "Température"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Temperature −: toward cool"
+msgstr "Température − : plus froid"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Temperature +: toward warm"
+msgstr "Température + : plus chaud"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Lighting"
@@ -1384,6 +1424,30 @@ msgstr "Chrome"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues.\n\nVignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit.\n\nChrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast −: toward softer, 5% a step"
+msgstr "Contraste − : plus doux, 5 % par pas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast +: toward harder, 5% a step"
+msgstr "Contraste + : plus dur, 5 % par pas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette −: toward lighter corners, 0.1 EV a step"
+msgstr "Vignetage − : coins plus clairs, 0,1 EV par pas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette +: toward darker corners, 0.1 EV a step"
+msgstr "Vignetage + : coins plus sombres, 0,1 EV par pas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome −: toward less, 5% a step"
+msgstr "Chrome − : moins, 5 % par pas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome +: toward more, 5% a step"
+msgstr "Chrome + : plus, 5 % par pas"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
@@ -1645,6 +1709,10 @@ msgstr "Texture"
 msgid "Contrast at the scale of hair and fabric — leaves grain and overall tone alone."
 msgstr "Du contraste à l’échelle des cheveux et des tissus ; laisse intacts le grain et la tonalité générale."
 
+#: crates/oni-ui/ui/panel/parts.slint
+msgid "Double-click to bring it back to rest; {} with − or + moves three steps."
+msgstr "Double-cliquez pour revenir au repos ; {} avec − ou + avance de trois crans."
+
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Measured Roll"
 msgstr "Pellicule mesurée"
@@ -1894,6 +1962,10 @@ msgid "FRAME --/--"
 msgstr "VUE --/--"
 
 #: crates/oni-ui/ui/panel.slint
+msgid "Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop."
+msgstr "Faites glisser les coins ou les bords du cadre sur la photo pour la recadrer, ou déplacez-le avec les flèches, dix fois plus loin avec Maj. Échap ou Annuler rend la photo telle que le recadrage l’a trouvée ; Retour ou TERMINÉ garde le recadrage."
+
+#: crates/oni-ui/ui/panel.slint
 msgid "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess."
 msgstr "Cette pellicule a été mesurée avant que le scanner ne conserve sa médiane : mesurez-la de nouveau dans Préparer la pellicule, sinon le scanner se centre sur une estimation."
 
@@ -1908,10 +1980,6 @@ msgstr "Détails"
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Crop"
 msgstr "Recadrage"
-
-#: crates/oni-ui/ui/panel.slint
-msgid "Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop."
-msgstr "Faites glisser les coins ou les bords du cadre sur la photo pour la recadrer, ou déplacez-le avec les flèches, dix fois plus loin avec Maj. Échap ou Annuler rend la photo telle que le recadrage l’a trouvée ; Retour ou TERMINÉ garde le recadrage."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
