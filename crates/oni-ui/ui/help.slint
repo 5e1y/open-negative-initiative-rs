@@ -70,8 +70,8 @@ export component WelcomeSheet inherits Sheet {
             Label { text: @tr("Contact sheets, slides, and the whole roll at a glance."); tone: Tone.secondary; wrap: word-wrap; }
         }
         Point { title: @tr("The whole roll, once measured"); text: @tr("After Prepare the Roll, every frame shows together, numbered by its place on the film."); }
-        Point { title: @tr("Contact sheets"); text: @tr("Select a few frames, or press the orange key for the whole roll: they lie together on one sheet."); }
-        Point { title: @tr("Export a contact sheet"); text: @tr("The export panel exports the selection as one sheet, with a preview; the orange EXP. CONTACT SHEET key opens it."); }
+        Point { title: @tr("Contact sheets"); text: @tr("Select a few frames, or press the key for the whole roll: they lie together on one sheet."); }
+        Point { title: @tr("Export a contact sheet"); text: @tr("The export panel exports the selection as one sheet, with a preview; the EXP. CONTACT SHEET key opens it."); }
         Point { title: @tr("Slide films"); text: @tr("Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."); }
         Point { title: @tr("Slides on white"); text: @tr("A contact sheet of slides lies on white, numbered in red under a black logo."); }
         Point { title: @tr("The whole scan in Prepare"); text: @tr("Prepare the Roll shows and measures every scan uncropped."); }
@@ -116,12 +116,12 @@ export component ReportSheet inherits Sheet {
         spacing: Space.s;
         Button { text: @tr("See Community Feedbacks"); clicked => { Help.community(); } }
         Rectangle { horizontal-stretch: 1; }
-        if Help.report-sent: Button { text: @tr("Done"); clicked => { Help.report-closed(); } }
+        if Help.report-sent: Button { text: @tr("Done"); keycap: true; clicked => { Help.report-closed(); } }
         if !Help.report-sent: ButtonGroup { plate: true;
             Button { text: @tr("Cancel"); clicked => { Help.report-closed(); } }
             Button {
                 text: Help.report-sending ? @tr("Sending…") : @tr("Send");
-                kind: ButtonKind.confirm;
+                kind: ButtonKind.accent;
                 enabled: !Help.report-sending && Help.report-message != "";
                 clicked => { Help.report-send(); }
             }

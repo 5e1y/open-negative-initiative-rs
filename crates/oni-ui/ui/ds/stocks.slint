@@ -5,15 +5,22 @@ import { StockStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Icon } from "base.slint";
 import { Icons } from "icons.slint";
 
-// `FilmStockIcon`: never tinted, the artwork's colours being the point; the fallback glyph is.
+// `FilmStockIcon`: the artwork in its own colours where the stock itself is shown, a picker's cell or a
+// roll's hero; at a row's size, among the line glyphs, the film-roll glyph, as for a stock without any.
 export component StockIcon inherits Rectangle {
     in property <image> artwork;
     in property <bool> has-artwork;
     in property <length> side: StockStyle.icon;
+    property <bool> shown: root.has-artwork && root.side >= StockStyle.icon;
     width: root.side;
     height: root.side;
-    if root.has-artwork: Image { width: root.side; height: root.side; source: root.artwork; }
-    if !root.has-artwork: Icon { width: root.side; height: root.side; source: Icons.film-roll; tone: Tone.secondary; }
+    if root.shown: Image { width: root.side; height: root.side; source: root.artwork; }
+    if !root.shown: Icon {
+        width: root.side >= StockStyle.icon ? root.side : StockStyle.row;
+        height: self.width;
+        source: Icons.film-roll;
+        tone: Tone.secondary;
+    }
 }
 
 export component StockCellView inherits Rectangle {

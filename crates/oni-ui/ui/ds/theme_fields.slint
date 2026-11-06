@@ -12,10 +12,8 @@ export global FieldStyle {
     out property <color> ground: DS.palette-canvas;
     // A multiline field's lines unless told, a report's message.
     out property <length> lines: DS.control-report-message-height;
-    // AppKit's dark label, placeholder and disabled-control text alphas: 0.85, then 0.25 for both.
+    // AppKit's dark label alpha, 0.85; the placeholder and a disabled field's words take the tertiary ink.
     out property <color> ink: DS.system-primary;
-    out property <color> placeholder: DS.system-tertiary;
-    out property <color> faded: DS.system-tertiary;
     // AppKit's selected-text background in the dark appearance, which no Swift token names.
     out property <color> selection: #3f638bff;
     // The boxes that share one hollow (`SizeFields`, `DateFields`): a keycap tall, their digits titles.

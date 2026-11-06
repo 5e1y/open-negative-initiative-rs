@@ -20,8 +20,9 @@ impl Metrics {
     pub const GALLERY: Metrics = Metrics { margin: 24.0, gutter: 8.0, padding: 24.0, header: 37.0, caption: 0.0, caption_gap: 0.0 };
 }
 
-/// `DS.Control.columnSteps`, dense first: zooming in steps right, to fewer and larger tiles.
-pub const COLUMN_STEPS: [usize; 2] = [12, 6];
+/// `DS.Control.columnSteps`, dense first, and a rung of four past the film's six: zooming in steps
+/// right, to fewer and larger tiles; the gallery opens on the largest, where a 1100 pt window fills its card.
+pub const COLUMN_STEPS: [usize; 3] = [12, 6, 4];
 
 /// `GalleryView.columnStep`: one rung away, clamped, a count off a rung first snapping to the nearest.
 pub fn column_step(count: usize, by: i32) -> usize {

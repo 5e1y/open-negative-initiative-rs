@@ -1,6 +1,6 @@
 // Pieces at fixed places for the window checks that click or read them: fields and a tab bar, a scrolled
 // page, a step keycap, a field's lip three ways, a plate, fields and pickers to press beside, a submenu.
-import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle } from "ds.slint";
+import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -118,7 +118,7 @@ export component ScrollProbe inherits AppWindow {
     }
 }
 
-// A step slider's keycap alone, where a check presses it and reads whether its cap is down.
+// A keycap alone, where a check presses it and reads whether its cap is down.
 export component KeyProbe inherits AppWindow {
     title: "ONI Key Probe";
     out property <length> key-x: key.absolute-position.x + key.width / 2;
@@ -133,7 +133,7 @@ export component KeyProbe inherits AppWindow {
         alignment: start;
         HorizontalLayout {
             alignment: start;
-            key := Button { size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
+            key := Button { keycap: true; text: "−"; }
         }
     }
 }
@@ -206,7 +206,7 @@ export component OutsideProbe inherits AppWindow {
     out property <length> pickers-y: first.absolute-position.y + first.height / 2;
     // The second line of the first picker's menu, dropped under its field.
     out property <length> line-x: first.absolute-position.x + Space.l;
-    out property <length> line-y: first.absolute-position.y + first.height + Space.xs + 1.5 * ButtonStyle.height;
+    out property <length> line-y: first.absolute-position.y + first.height + Space.xs + 1.5 * ButtonStyle.small-height;
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;
@@ -267,7 +267,7 @@ export component SubmenuProbe inherits AppWindow {
     // Where the lines and the submenu lie in the window, so the check aims its pointer.
     out property <length> line-x: root.at-x + Space.l;
     out property <length> line-top: root.at-y + Space.xs;
-    out property <length> line-height: ButtonStyle.height;
+    out property <length> line-height: ButtonStyle.small-height;
     out property <length> span: MenuStyle.width;
     out property <length> sub-left: root.at-x - root.state.lead-x + root.state.sub-x;
     out property <length> sub-top: root.at-y + root.state.sub-y;

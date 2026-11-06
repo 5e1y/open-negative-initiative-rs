@@ -194,7 +194,7 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     click(&rig, 640.0, 541.0);
     rig.settle();
     println!("shot {}", rig.shot("preset-balance-menu").display());
-    click(&rig, 600.0, 641.0);
+    click(&rig, 600.0, 629.0);
     rig.settle();
     assert_eq!(deck.get_form_balance(), 2, "Automatic picked under the field");
     deck.invoke_save_cancelled();

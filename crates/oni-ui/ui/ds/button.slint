@@ -1,16 +1,17 @@
-// The key every screen presses, a `Keycap` of the Swift app: its kinds and sizes, a glyph, a word or
-// both, a keycap's band or a swatch.
+// The key every screen presses: flat, or a `Keycap` of the Swift app where `keycap` asks for one; its
+// kinds and sizes, a glyph, a word or both, a swatch.
 import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tone, Tones, Tip, Tips, Clicks } from "base.slint";
+import { Label, Icon, Tone, Tones, Tip, Tips, Clicks } from "base.slint";
 
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
 
-// `ghost` is a glyph alone on no cap, its tone lifting under the hand, as a help mark or a star.
-export enum ButtonKind { plain, accent, caution, destructive, update, confirm, ghost, sheet }
-// `regular` is `DSPanelButton`'s standard 40 pt key, `plate` its 52 pt `.plate` key, `small` the same
-// variant at 24, `mini` the 26 pt mini key of the headers, `key` the scanner's 46 pt key (`LabKeyboard`).
-export enum ButtonSize { regular, plate, small, mini, key }
+// `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
+// glyph alone on no face, its tone lifting under the hand, as a help mark or a star.
+export enum ButtonKind { plain, accent, destructive, ghost }
+// `regular` the standard key, `plate` a panel's or a footer's at the same height, `mini` the small key
+// of a section's header, a row or the canvas's header.
+export enum ButtonSize { regular, plate, mini }
 // What a check forces a control to look like; `live` follows the pointer.
 export enum Look { live, hover, pressed }
 
@@ -21,20 +22,7 @@ export global KeyInk {
     }
 }
 
-export global ButtonInk {
-    // `DSActionButton(tint:)`: the colour a kind lays on its key; none for the plain grey and the ghost.
-    public pure function tint(kind: ButtonKind) -> color {
-        if (kind == ButtonKind.accent) { return Colour.accent; }
-        if (kind == ButtonKind.caution) { return Colour.caution; }
-        if (kind == ButtonKind.destructive) { return Colour.destructive; }
-        if (kind == ButtonKind.update) { return Colour.update; }
-        if (kind == ButtonKind.confirm) { return Colour.confirm; }
-        if (kind == ButtonKind.sheet) { return Colour.edge-print; }
-        transparent
-    }
-}
-
-// The legend and the glyph, centred, the lamp at the right: on the cap's face, or alone for a ghost.
+// The legend and the glyph, centred, the lamp at the right: on the key's face, or alone for a ghost.
 component Face inherits Rectangle {
     in property <string> word;
     in property <bool> worded;
@@ -42,10 +30,8 @@ component Face inherits Rectangle {
     in property <bool> has-icon;
     in property <bool> turned;
     in property <length> glyph;
-    in property <Tone> ink;
-    in property <color> glyph-ink;
+    in property <color> ink;
     in property <length> legend;
-    in property <bool> ghost;
     in property <length> word-room;
     in property <bool> lamp-shown;
     in property <bool> lamp-lit;
@@ -62,8 +48,7 @@ component Face inherits Rectangle {
                 width: root.glyph;
                 height: root.glyph;
                 transform-rotation: root.turned ? 90deg : 0deg;
-                tone: root.ink;
-                ink: root.glyph-ink.alpha > 0 ? root.glyph-ink : Tones.ink(root.ink);
+                ink: root.ink;
             }
         }
         legend := Label {
@@ -71,7 +56,7 @@ component Face inherits Rectangle {
             // A fixed key elides a word longer than its room rather than spill past its edge.
             width: !root.worded ? 0px : root.word-room > 0 ? min(self.preferred-width, root.word-room) : self.preferred-width;
             overflow: elide;
-            tone: root.ink;
+            ink: root.ink;
             text: root.word;
             font-size: root.legend;
             font-weight: ButtonStyle.legend-weight;
@@ -86,14 +71,16 @@ component Face inherits Rectangle {
     }
 }
 
-// A keycap: a word, a glyph, or both. The hand sinks it a quarter, a press the whole way, held down
-// `Depth.min-hold` however short the tap; `on` makes it pale as a toggled key, or rings a tinted one.
+// A key: a word, a glyph, or both. Flat unless `keycap`, which the few keys that switch the mode, commit
+// a screen or run an automatic action ask for: the hand sinks that cap a quarter, a press the whole way.
+// A press holds the key down `Depth.min-hold` however short the tap; `on` lights its face.
 export component Button inherits Rectangle {
     in property <string> text;
     in property <image> icon;
     in property <bool> has-icon;
     in property <ButtonKind> kind: ButtonKind.plain;
     in property <ButtonSize> size: ButtonSize.regular;
+    in property <bool> keycap;
     in property <bool> on;
     in property <bool> enabled: true;
     in property <string> help;
@@ -110,15 +97,15 @@ export component Button inherits Rectangle {
     in property <bool> lamp-lit;
     in property <Look> look: Look.live;
     // `DSPanelButton.fills`: the key takes its share of the room; else it keeps its own width, though
-    // a row of keys none of which fills still shares its room out, as a filling `KeycapPlate` does.
+    // a row of keys none of which fills still shares its room out, as a filling plate does.
     in property <bool> fills;
     // `DSPanelButton.rotated`: the glyph turned a quarter for a gesture whose twin the icon bank lacks.
     in property <bool> turned;
-    // A cap of its own colour instead of its kind's: a keycap's band, a tint's swatch, which `on` rings.
+    // A face of its own colour instead of its kind's, as a tint's swatch, which `on` rings.
     in property <color> fill: transparent;
     // As wide as tall, a glyph alone.
     in property <bool> square;
-    // The glyph's own ink in place of the kind's, as the favourite star's, and a swatch's ring.
+    // The glyph's own ink in place of the kind's, as the favourite star's.
     in property <color> glyph-ink: transparent;
     // A glyph drawn at this size instead of the key's, as a help mark's or a row's star.
     in property <length> glyph-size: 0px;
@@ -126,49 +113,51 @@ export component Button inherits Rectangle {
     in property <length> legend-size: 0px;
     // Whether ⇧ held the last press, which a stepper reads as three steps.
     out property <bool> shift;
-    // `KeycapPress`: the cap is down from the press until the release, and `Depth.min-hold` at least.
+    // `KeycapPress`: the key is down from the press until the release, and `Depth.min-hold` at least.
     out property <bool> down;
     callback clicked();
     property <bool> mini: root.size == ButtonSize.mini;
-    property <bool> keycap: root.size == ButtonSize.key;
     property <bool> ghost: root.kind == ButtonKind.ghost;
-    property <float> factor: root.mini ? ButtonStyle.mini-factor : ButtonStyle.small-factor;
-    property <color> tint: root.fill.alpha > 0 ? root.fill : ButtonInk.tint(root.kind);
-    property <bool> tinted: root.tint.alpha > 0;
-    property <color> albedo: root.tinted ? root.tint : root.on ? ButtonStyle.pale : ButtonStyle.cap;
+    property <bool> swatch: root.fill.alpha > 0;
+    property <color> tint: root.swatch ? root.fill : root.kind == ButtonKind.accent ? Colour.accent : transparent;
+    // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
+    property <color> face: root.tint.alpha > 0 ? root.tint : root.on ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
     property <bool> waiting;
     // Lifted while still hovered: going back up to the hover depth is a release, not a press.
     property <bool> lifted;
     property <bool> hovered: root.enabled && (touch.has-hover || root.look == Look.hover);
-    property <float> target: !root.enabled ? 0 : root.look == Look.pressed || root.down ? 1 : root.hovered ? Depth.hover-press : 0;
+    property <bool> pressed: root.enabled && (root.look == Look.pressed || root.down);
+    property <float> target: root.pressed ? 1 : root.hovered ? Depth.hover-press : 0;
     property <bool> sinking: root.down || (touch.has-hover && !root.lifted);
-    property <float> depth: root.ghost ? 0 : root.target;
+    property <float> depth: root.keycap ? root.target : 0;
     animate depth {
         duration: root.sinking ? Depth.press-time : Depth.release-time;
         easing: root.sinking ? cubic-bezier(0, 0, 0, 1) : cubic-bezier(0.79, 0.03, 0.43, 1);
     }
-    property <length> pad: root.keycap ? ScannerStyle.key-padding : root.mini ? ButtonStyle.mini-padding : ButtonStyle.cap-padding;
-    property <length> glyph: root.glyph-size > 0 ? root.glyph-size : root.mini ? ButtonStyle.mini-glyph : root.ghost ? ButtonStyle.icon : ButtonStyle.cap-glyph;
-    property <length> legend: root.legend-size > 0 ? root.legend-size : root.keycap ? ScannerStyle.legend : root.mini ? ButtonStyle.mini-legend : ButtonStyle.legend;
+    property <length> radius: root.mini ? ButtonStyle.small-radius : ButtonStyle.radius;
+    property <length> pad: root.mini ? ButtonStyle.small-padding : ButtonStyle.padding;
+    property <length> glyph: root.glyph-size > 0 ? root.glyph-size : root.mini ? ButtonStyle.mini-glyph : ButtonStyle.icon;
+    property <length> legend: root.legend-size > 0 ? root.legend-size : root.mini ? ButtonStyle.mini-legend : ButtonStyle.legend;
     property <bool> worded: root.text != "";
-    property <string> word: root.capitals && !root.keycap ? root.text.to-uppercase() : root.text;
+    property <string> word: root.capitals ? root.text.to-uppercase() : root.text;
     property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
-    // A glyph's ink when its key's colour gives none: dark on a light cap, light on a dark one.
-    property <Tone> ink: root.ghost ? (root.hovered || touch.pressed ? Tone.secondary : Tone.tertiary)
-        : KeyInk.light(root.albedo) ? Tone.on-light : Tone.on-fill;
-    height: root.keycap ? ScannerStyle.key-height
-        : root.mini ? ButtonStyle.mini-height
-        : root.size == ButtonSize.small ? ButtonStyle.small-height
-        : root.size == ButtonSize.plate ? ButtonStyle.plate-height
-        : root.ghost ? ButtonStyle.height : ButtonStyle.cap-height;
-    min-width: root.square || root.keycap ? self.height
+    // The glyph's ink: its own, the danger's red on a destructive key, else dark on a light face and
+    // light on a dark one; a ghost's lifts under the hand.
+    property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
+        : root.ghost ? Tones.ink(root.hovered || touch.pressed ? Tone.primary : Tone.tertiary)
+        : root.kind == ButtonKind.destructive ? Colour.destructive-ink
+        : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
+    height: root.mini ? ButtonStyle.small-height : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
+    // Never narrower than tall, so a sign's key stays a square the hand can find.
+    min-width: root.square ? self.height
         : root.fixed-width > 0 ? root.fixed-width
-        : root.worded ? max(word-measure.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room
+        : root.worded ? max(self.height, max(word-measure.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room)
         : self.height;
     preferred-width: self.min-width;
     horizontal-stretch: root.fills ? 1 : 0;
-    opacity: root.ghost && !root.enabled ? State.disabled : 1;
+    // Out of reach, the whole key fades, its face with its glyph.
+    opacity: root.enabled ? 1 : State.disabled;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
     accessible-enabled: root.enabled;
@@ -189,16 +178,25 @@ export component Button inherits Rectangle {
         font-weight: ButtonStyle.legend-weight;
         letter-spacing: ButtonStyle.legend-tracking;
     }
-    // A ghost's glyph lies on the bare key, where no cap is drawn.
+    if !root.keycap && !root.ghost: Rectangle {
+        border-radius: root.radius;
+        background: root.face;
+    }
+    // A flat key and a ghost lie bare, their glyph on the whole key, unmoved.
     Keycap {
-        bare: root.ghost;
-        albedo: root.albedo;
+        bare: !root.keycap;
+        albedo: root.face;
         variant: root.mini ? KeycapVariant.mini : KeycapVariant.small;
+        radius: root.keycap ? Depth.corner * self.factor : root.radius;
         depth: root.depth;
-        edge-width: root.tinted && root.on && !root.ghost ? Stroke.emphasis : 0px;
-        edge-color: root.glyph-ink.alpha > 0 ? root.glyph-ink : Colour.ink;
+        edge-width: root.swatch && root.on ? Stroke.emphasis : 0px;
+        edge-color: Colour.accent;
+        // The hand's light on the face, the same on a flat key as on a cap, stronger while it presses.
+        if !root.ghost: Rectangle {
+            border-radius: root.keycap ? Depth.face-corner * parent.factor : root.radius;
+            background: root.pressed ? ButtonStyle.veil-pressed : root.hovered ? ButtonStyle.veil : transparent;
+        }
         Face {
-            opacity: root.enabled || root.ghost ? 1 : ButtonStyle.legend-disabled;
             word: root.word;
             worded: root.worded;
             icon: root.icon;
@@ -206,7 +204,6 @@ export component Button inherits Rectangle {
             turned: root.turned;
             glyph: root.glyph;
             ink: root.ink;
-            glyph-ink: root.glyph-ink;
             legend: root.legend;
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px) : 0px;
             lamp-shown: root.lamp-shown;
@@ -220,7 +217,7 @@ export component Button inherits Rectangle {
             if (event.kind == PointerEventKind.down) {
                 root.shift = event.modifiers.shift;
             }
-            // A ghost is a mark, not a key: it neither sinks nor sounds.
+            // A ghost is a mark, not a key: it neither presses nor sounds.
             if (root.ghost || event.button != PointerEventButton.left) { return; }
             if (event.kind == PointerEventKind.down) {
                 root.down = true;

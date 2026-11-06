@@ -100,14 +100,15 @@ export component Row inherits Rectangle {
     property <bool> badged: root.badge != "";
     property <length> indent: root.depth * RowStyle.indent;
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
-    height: root.choice ? ButtonStyle.height : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
+    height: root.choice ? ButtonStyle.small-height : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
     border-radius: root.form != RowForm.list ? Radius.badge : 0px;
     property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
     property <bool> away: root.reach != Reach.here;
-    property <Tone> ink: root.heading ? Tone.tertiary : root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
-    opacity: root.present || root.away ? 1 : State.disabled;
+    // A folder not on the disk yet, as an empty ONI Trash, reads in the quietest ink, still legible.
+    property <bool> faint: !root.present && !root.away;
+    property <Tone> ink: root.heading || root.faint ? Tone.tertiary : root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
     accessible-role: list-item;
     accessible-label: root.title;
     if root.pinned: Rectangle { background: root.band; }
@@ -157,10 +158,12 @@ export component Row inherits Rectangle {
         }
         if root.tree && !root.renaming && !root.choice: Rectangle {
             width: RowStyle.chevron-zone;
+            // In the primary ink: its line is a single pixel, which a quieter ink leaves under 3:1.
             if root.expandable: Icon {
                 source: root.expanded ? Icons.chevron-down : Icons.chevron-right;
                 width: RowStyle.chevron;
                 height: RowStyle.chevron;
+                tone: root.faint ? Tone.tertiary : Tone.primary;
             }
         }
         // A menu holds no stock, so its glyph takes only its own width.
@@ -178,6 +181,7 @@ export component Row inherits Rectangle {
                     : root.kind == RowKind.opened || (root.kind == RowKind.folder && root.open) ? Icons.folder-open : Icons.folder;
                 width: RowStyle.icon;
                 height: RowStyle.icon;
+                tone: root.faint ? Tone.tertiary : Tone.secondary;
             }
         }
         if !root.tree && root.has-glyph: VerticalLayout {
@@ -222,8 +226,8 @@ export component Row inherits Rectangle {
                 has-icon: true;
                 square: true;
                 icon: Icons.favourite;
-                width: NavigatorStyle.star;
-                height: NavigatorStyle.star;
+                width: ButtonStyle.small-height;
+                height: ButtonStyle.small-height;
                 glyph-size: NavigatorStyle.star;
                 glyph-ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
                 help: root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites");
@@ -236,7 +240,7 @@ export component Row inherits Rectangle {
             padding-left: root.caption != "" ? Space.xs : 0px;
             Button {
                 text: root.action;
-                size: ButtonSize.small;
+                size: ButtonSize.mini;
                 help: root.action-help;
                 clicked => { root.acted(); }
             }

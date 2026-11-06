@@ -64,11 +64,10 @@ component Word inherits Button {
     clicked => { Bar.act(root.action); }
 }
 
-// ⌘A from the bar, orange as the sheet it shows: the whole roll selected where the hand is, shown
-// together beside a photo; pressed on a roll picked whole, the photo it came from alone again.
+// ⌘A from the bar: the whole roll selected where the hand is, shown together beside a photo; pressed
+// on a roll picked whole, the photo it came from alone again.
 component SelectAll inherits Item {
     action: Act.select-all;
-    kind: ButtonKind.sheet;
     icon: Icons.contact-sheet;
     help: @tr("Select the Whole Roll ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
@@ -82,13 +81,13 @@ component ResetScan inherits Word {
     has-icon: root.compact;
     icon: Icons.reset;
     help: @tr("Reset to Imported State");
-    kind: ButtonKind.caution;
     enabled: Bar.can-reset;
 }
 
 component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
+    cross-axis-alignment: center;
     // `centreKeys`: each family on its own plate, De-dust alone and never plated.
     ButtonGroup { plate: true;
         Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); enabled: Bar.has-photo && Bar.single; }
@@ -126,7 +125,7 @@ component EditorKeys inherits HorizontalLayout {
     }
     Item {
         action: Act.correction;
-        icon: Bar.dedust ? Icons.done : Icons.correction;
+        icon: Icons.correction;
         help: Bar.dedust ? @tr("Leave De-dust") : @tr("De-dust");
         on: Bar.dedust;
         enabled: Bar.has-photo && Bar.single;
@@ -139,6 +138,7 @@ component EditorKeys inherits HorizontalLayout {
 component GalleryKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
+    cross-axis-alignment: center;
     // The editor's first plate holds the select-all key alone here, as in Swift's `centreKeys`.
     ButtonGroup { plate: true;
         SelectAll { }
@@ -153,7 +153,7 @@ component GalleryKeys inherits HorizontalLayout {
         fixed-width: ShellStyle.filter-width;
         help: Bar.filter == @tr("ALL") ? @tr("Filter: All") : @tr("Filter: {}", Bar.filter);
     }
-    Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
+    Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); keycap: true; help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
     ButtonGroup { plate: true;
         ResetScan { compact: root.compact; }
         Item { action: Act.remove; icon: Icons.remove; help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash", Bar.targets) : @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
@@ -180,8 +180,10 @@ export component Toolbar inherits Surface {
         padding-top: ShellStyle.bar-padding;
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;
+        cross-axis-alignment: center;
         // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
         mode := Word {
+            keycap: true;
             action: Preparing.shown ? Act.leave-roll : Act.toggle-mode;
             text: Bar.editing || Preparing.shown ? @tr("GALLERY") : @tr("EDITOR");
             widest: @tr("GALLERY");
@@ -224,7 +226,7 @@ export component Toolbar inherits Surface {
         }
         if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
-        // Several photos picked: their contact sheet's key, orange as its numbers, on one plate with export.
+        // Several photos picked: their contact sheet's key, on one plate with export.
         if !Preparing.shown: ButtonGroup {
             plate: Bar.targets > 1;
             // As FEEDBACKS: the zone's widths come from hidden copies, so the face shown never loops the window's width.
@@ -240,14 +242,14 @@ export component Toolbar inherits Surface {
                     text: root.compact ? "" : @tr("EXP. CONTACT SHEET");
                     has-icon: root.compact;
                     icon: Icons.contact-sheet;
-                    kind: ButtonKind.sheet;
                     help: @tr("Export the photos picked as one contact sheet");
                 }
             }
             if Bar.update-title == "": Word {
                 action: Bar.editing ? Act.export : Act.add-folder;
                 text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER…");
-                kind: ButtonKind.accent;
+                keycap: true;
+                kind: Bar.editing ? ButtonKind.accent : ButtonKind.plain;
                 fixed-width: ShellStyle.export-width;
                 help: Bar.editing ? "" : @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E");
                 enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
@@ -255,7 +257,8 @@ export component Toolbar inherits Surface {
             if Bar.update-title != "": Word {
                 action: Act.update;
                 text: Bar.updating ? @tr("UPDATING") : Bar.update-title;
-                kind: ButtonKind.update;
+                keycap: true;
+                kind: ButtonKind.accent;
                 fixed-width: ShellStyle.export-width;
                 help: Bar.update-help;
                 enabled: !Bar.updating;

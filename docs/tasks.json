@@ -5331,5 +5331,61 @@
     "title": "ONI_WINDOW=<width>x<height> opens the window at that size in points",
     "status": "done",
     "detail": "The interface evaluations look at the app in the window a 16-inch MacBook Pro gives it when zoomed (1728 x 1017 points), whatever screen it opens on; their driver reaches the window through Slint's MCP server, which cannot size it. The starter grows the window to the asked size instead of the app's default, centred as before."
+  },
+  {
+    "id": 1088,
+    "type": "design",
+    "title": "One flat key for every action, a keycap for the mode, a screen's commit and the automatic actions",
+    "status": "done",
+    "detail": "Evaluation R0 (UI): the same heavy keycap on every key, colour marking which key it is rather than a meaning, disabled keys at full colour, Crop and Compare with no lit state while De-dust turned white and swapped its glyph. `Button` is flat by default: the keycap's grey laid flat, the hand's veil over it, a stronger one pressed. `keycap: true` at the use site keeps a cap for EDITOR/GALLERY, EXPORT in the bar and the sheet, ADD FOLDER… (plain, the accent left to export), PREPARE ROLL, the prepare footer's NEXT, every DONE, AUTO WHITE BALANCE (40 pt, at its own width), AUTO PAPER CORRECTION, DETECT and REMOVE. The kinds are plain, accent, destructive (a light red, 4.5:1, on a plain key's glyph or word) and ghost: caution, update, confirm and sheet go with their tints, ButtonSize.key and small with them. `on` lights the face with the accent sunk into the ground on every key and keeps its glyph; out of reach the whole key fades, face and glyph. A plate is one flat face whose key under the hand or on lights alone, a flat key on the middle of a row of keycaps. The picker's chevron and the stepped slider's keys are flat; the keycaps' relief is 0.6 of Swift's, the light higher, the dish and the socket quieter; the wells, the rails and the tab bar's hollow lighter."
+  },
+  {
+    "id": 1089,
+    "type": "design",
+    "title": "Block titles a step heavier, the quiet words legible, tabular figures",
+    "status": "done",
+    "detail": "Evaluation R0: section titles shared size, weight and colour with the labels under them; helper text at 2.07:1, placeholders, captions and the empty ONI Trash under AA; readouts changed width as they moved. A section title is semibold; a note takes the secondary ink; the tertiary ink is white at 53 %, 4.5:1 on the panel's ground with small type's edges, and placeholders and a disabled field's words take it; a ghost key's glyph lifts to the primary ink under the hand, and a row's chevron, a single pixel's line, takes it too; a folder not on the disk reads in it instead of fading to 40 %. fonts/Inter.ttf maps 0 to 9 and + − × to Inter's own tabular glyphs (zero.tf and its kin, the cmap edited once with fontTools), so every value keeps its width, on screen and in a contact sheet's numbers."
+  },
+  {
+    "id": 1090,
+    "type": "design",
+    "title": "One visual language: flat medals, the stock's glyph among the rows, a plain readout",
+    "status": "done",
+    "detail": "Evaluation R0: metallic coins, a coloured canister among line glyphs and an LCD readout beside flat icons. A medal is a flat disc of its metal's colour, lit under the hand; a stock's artwork shows where the stock itself is shown (the picker's cells, the roll's hero), the film-roll glyph in rows and in the inspector's lines; LcdReadout is a count in a field's well, in the words' own ink. The foil's tunables, the readout's glow and the picker's key gauges go."
+  },
+  {
+    "id": 1091,
+    "type": "design",
+    "title": "Guides that read on a light sky",
+    "status": "done",
+    "detail": "Evaluation R0: the crop's thirds and the compare split were bare white lines lost on a bright sky. `GuideLine` lays the light line on a dark band a line wider each side; the thirds and the split draw it."
+  },
+  {
+    "id": 1092,
+    "type": "design",
+    "title": "A denser panel and menu",
+    "status": "done",
+    "detail": "Evaluation R0: 62 pt between sliders, 76 pt per folded block, 32 pt context-menu rows. A section's room before and after is Space.m; a slider's knob is 20 by 26 pt (Swift's 24 by 34) and the stepped slider's keys as tall; a menu line and a folder pill's choice are 24 pt."
+  },
+  {
+    "id": 1093,
+    "type": "design",
+    "title": "The hand seen on keys and tiles",
+    "status": "done",
+    "detail": "Evaluation R0: no hover on photo tiles, barely any on keys. A gallery tile under the pointer rings in the marker's white, every tile reporting the hand, not only those with a note; a key lights under the veil (#1088), a medal under the hand (#1090)."
+  },
+  {
+    "id": 1094,
+    "type": "design",
+    "title": "24 pt catches for the small marks",
+    "status": "done",
+    "detail": "Evaluation R0: the rating marks 12 pt, the favourite star 13, the help marks 18, the zoom keys 23 wide, the switch 20 tall. A help mark lays out at its glyph's size and catches the hand over a 24 pt square; the star is a 24 pt ghost key; each medal and the switch catch over 24 pt, overhanging their line so it keeps its height; a worded key is never narrower than tall."
+  },
+  {
+    "id": 1095,
+    "type": "change",
+    "title": "The gallery opens on four columns",
+    "status": "done",
+    "detail": "Evaluation R0: at the 1100 pt window the six-column rung left tiles of 78 pt and 40 % of the card empty. The ladder gains a rung of four past Swift's twelve and six and the gallery opens on it; ⌘− steps to six then twelve, and a stored count keeps its own rung."
   }
 ]

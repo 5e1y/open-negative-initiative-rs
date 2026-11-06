@@ -4,38 +4,40 @@ import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, ToggleStyle, F
 import { Label, TextRole, Tone, Clicks } from "base.slint";
 
 import { Dot } from "marks.slint";
-import { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button } from "button.slint";
+import { ButtonKind, ButtonSize, Look, KeyInk, Button } from "button.slint";
 import { SliderFill, Knob, Slider } from "slider.slint";
-export { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button, SliderFill, Knob, Slider }
+export { ButtonKind, ButtonSize, Look, KeyInk, Button, SliderFill, Knob, Slider }
 import { TextField, RenameField } from "fields.slint";
 export { TextField, RenameField }
 
 // Where a group of keys sits in its row; `fill` spans it, its worded keys sharing the width.
 export enum GroupAlign { start, end, center, fill }
 
-// Keys side by side as one family: `plate` sets them flush on their socket, as `KeycapPlate`, else a
-// spaced row `Space.s` apart, as Swift's `HStack(spacing: DS.Space.sm)` of keys.
+// Keys side by side as one family: `plate` sets them flush on one face, a segmented row whose key under
+// the hand or on lights alone, else a spaced row `Space.s` apart, as Swift's `HStack(spacing: DS.Space.sm)`.
 export component ButtonGroup inherits HorizontalLayout {
     in property <bool> plate;
     in property <GroupAlign> align: GroupAlign.start;
-    // A plate of mini keys (`KeycapPlate(variant: .mini)`): its radius is the mini cap's.
+    // A plate of mini keys, rounded as they are.
     in property <bool> mini;
-    // The socket's corner, the cap's outer one at the plate's variant (`contourWidth` 0).
-    out property <length> radius: root.plate ? Depth.corner * (root.mini ? ButtonStyle.mini-factor : ButtonStyle.small-factor) : 0px;
+    out property <length> radius: !root.plate ? 0px : root.mini ? ButtonStyle.small-radius : ButtonStyle.radius;
     out property <length> gap: root.plate ? 0px : ButtonStyle.group-gap;
     property <bool> fills: root.align == GroupAlign.fill;
     alignment: root.align == GroupAlign.end ? end : root.align == GroupAlign.center ? center : root.fills ? stretch : start;
+    // A flat key beside a keycap stands on the plate's middle.
+    cross-axis-alignment: center;
     socket := Rectangle {
         horizontal-stretch: root.fills ? 1 : 0;
         min-width: row.min-width;
         preferred-width: row.preferred-width;
         min-height: row.min-height;
         max-height: row.max-height;
-        background: root.plate ? ButtonStyle.bezel : transparent;
+        background: root.plate ? ButtonStyle.face : transparent;
         border-radius: root.radius;
         row := HorizontalLayout {
             spacing: root.gap;
             alignment: root.fills ? stretch : start;
+            cross-axis-alignment: center;
             @children
         }
     }
@@ -87,8 +89,9 @@ export component Toggle inherits HorizontalLayout {
     }
     VerticalLayout {
         alignment: root.wrap ? start : center;
+        // A small key's height, the hollow on its middle: the hand finds the switch as it finds a key.
         Rectangle {
-            height: ToggleStyle.height;
+            height: ButtonStyle.small-height;
             width: ToggleStyle.width;
             opacity: root.enabled ? 1 : State.disabled;
             accessible-role: checkbox;
@@ -96,9 +99,10 @@ export component Toggle inherits HorizontalLayout {
             accessible-label: root.label;
             // `DSToggle`'s hollow, its pill sliding on the grab spring as a tab's.
             Inward {
+                height: ToggleStyle.height;
                 hollow: true;
                 ground: Colour.canvas;
-                radius: parent.height / 2;
+                radius: self.height / 2;
                 Outward {
                     x: ToggleStyle.inset + (root.on ? ToggleStyle.cell : 0px);
                     y: ToggleStyle.inset;

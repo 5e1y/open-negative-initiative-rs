@@ -56,7 +56,7 @@ export component CropPane inherits Pane {
     }
     Section {
         title: @tr("Measuring Window");
-        // `MeasureWindowKeys`: the long sentence is the middle key's, armed it wears the confirm green.
+        // `MeasureWindowKeys`: the long sentence is the middle key's, lit while armed.
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
             Button { size: ButtonSize.plate; has-icon: true; square: true; icon: Icons.reset; enabled: Framing.has-window; help: @tr("Reset measure window"); clicked => { Framing.act(Act.window-reset); } }
@@ -64,7 +64,7 @@ export component CropPane inherits Pane {
                 size: ButtonSize.plate;
                 fills: true;
                 text: Framing.armed ? @tr("APPLY WINDOW") : @tr("MEASURING WINDOW");
-                kind: Framing.armed ? ButtonKind.confirm : ButtonKind.plain;
+                on: Framing.armed;
                 help: @tr("Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it.");
                 clicked => { Framing.act(Act.window-arm); }
             }

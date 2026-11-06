@@ -108,8 +108,8 @@ impl Hand<'_> {
         let lines = self.w.global::<Library>().get_menu_lines();
         let i = (0..lines.row_count()).position(|i| lines.row_data(i).unwrap().text == text).unwrap_or_else(|| panic!("{text} in {:?}", self.menu()));
         let rules = (0..=i).filter(|&k| lines.row_data(k).unwrap().rule).count() as f32;
-        // `Gap.xs` above the lines, `ButtonStyle.height` a line, `Stroke.line` a rule.
-        let y = at.1 + 4.0 + rules + 32.0 * (i as f32 + 0.5);
+        // `Gap.xs` above the lines, `ButtonStyle.small-height` a line, `Stroke.line` a rule.
+        let y = at.1 + 4.0 + rules + 24.0 * (i as f32 + 0.5);
         self.event(WindowEvent::PointerMoved { position: LogicalPosition::new(at.0 + 20.0, y) });
         let start = Instant::now();
         while start.elapsed() < Duration::from_millis(400) {

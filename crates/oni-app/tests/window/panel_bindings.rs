@@ -81,7 +81,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     framing.invoke_ratio_picked(1);
     rig.settle();
     // `DSToggle`: the switch at the block's left, before its word.
-    let vertical = || at(30.0, 292.0);
+    let vertical = || at(30.0, 244.0);
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
@@ -98,7 +98,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
-    at(261.0, 77.0);
+    at(261.0, 68.0);
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.ratio, g.portrait, g.measure_window), (None, false, window), "the window outlives the reset");
@@ -111,15 +111,15 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     panel.invoke_encoding_picked(1);
     rig.settle();
     // Flat-Field's chevron: the block unfolds above Source Encoding, its switch then in reach.
-    at(311.0, 413.0);
+    at(311.0, 348.0);
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
-    at(261.0, 583.0);
+    at(261.0, 478.0);
     rig.settle();
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 
     // The flat-field's switch follows an undo too; its mask menu drops under the picker.
-    let flat = || at(30.0, 447.0);
+    let flat = || at(30.0, 380.0);
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
@@ -129,10 +129,10 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom, "the switch followed the undo");
-    at(160.0, 504.0);
+    at(160.0, 436.0);
     rig.settle();
     rig.shot("bindings-mask-menu");
-    at(100.0, 572.0);
+    at(100.0, 492.0);
     rig.settle();
     assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's second line, under the picker");
     let _ = std::fs::remove_dir_all(&root);
@@ -154,7 +154,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     ctl.act(oni_app::Act::Export);
     rig.settle();
     // The field's click selects its value, so the digits typed replace it.
-    let width_box = || click(&rig, 952.0, 584.0);
+    let width_box = || click(&rig, 952.0, 532.0);
     width_box();
     rig.key(&named(Key::Delete));
     rig.key(&named(Key::Delete));
@@ -164,7 +164,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("48", true));
     rig.shot("bindings-export-typed");
     // Full resolution, the key beside the box once it is resized.
-    click(&rig, 1112.0, 584.0);
+    click(&rig, 1112.0, 532.0);
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false));
     width_box();
@@ -179,14 +179,14 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.key(&named(Key::Return));
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false), "8000 is refused");
-    let height_box = || click(&rig, 1034.0, 584.0);
+    let height_box = || click(&rig, 1034.0, 532.0);
     height_box();
     rig.key("32");
     rig.key(&named(Key::Return));
     rig.settle();
     assert_eq!((e.get_height_text().as_str(), e.get_resized()), ("32", true), "the height typed after a refused width resizes");
     // Twin: a width the photo holds still decides, the height following its ratio.
-    click(&rig, 1112.0, 584.0);
+    click(&rig, 1112.0, 532.0);
     rig.settle();
     width_box();
     rig.key("48");
@@ -196,7 +196,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
 
     // Load a Profile… in the chip's popover closes it before the file window opens.
     // CANCEL, then the space chip over the canvas, then its popover's Custom tab.
-    click(&rig, 943.0, 749.0);
+    click(&rig, 943.0, 755.0);
     rig.settle();
     click(&rig, 600.0, 116.0);
     rig.settle();
@@ -208,7 +208,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
         return;
     }
     let title = e.get_chip_title();
-    click(&rig, 504.0, 352.0);
+    click(&rig, 504.0, 371.0);
     rig.settle();
     assert_eq!(asked.get(), 1, "the key asked for files");
     click(&rig, 460.0, 200.0);

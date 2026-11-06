@@ -37,8 +37,8 @@ export component DedustPane inherits Pane {
         SensitivitySlider { }
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: Dedust.found-shown ? @tr("HIDE") : @tr("DETECT"); fills: true; enabled: !Dedust.detecting; help: @tr("Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."); clicked => { Dedust.detect(); } }
-            Button { size: ButtonSize.plate; text: @tr("REMOVE"); fills: true; enabled: Dedust.found > 0; help: @tr("Lays one patch on each speck of dust ringed."); clicked => { Dedust.remove-found(); } }
+            Button { size: ButtonSize.plate; text: Dedust.found-shown ? @tr("HIDE") : @tr("DETECT"); keycap: true; fills: true; enabled: !Dedust.detecting; help: @tr("Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."); clicked => { Dedust.detect(); } }
+            Button { size: ButtonSize.plate; text: @tr("REMOVE"); keycap: true; fills: true; enabled: Dedust.found > 0; help: @tr("Lays one patch on each speck of dust ringed."); clicked => { Dedust.remove-found(); } }
         }
         if Dedust.found-note != "": Label { text: Dedust.found-note; role: TextRole.note; }
     }

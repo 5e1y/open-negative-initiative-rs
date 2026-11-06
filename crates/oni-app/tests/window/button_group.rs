@@ -1,5 +1,5 @@
-//! `KeycapPlate` against a spaced row of keys: on a plate the keys touch, wall to wall, on a socket as
-//! tall as they are and rounded as their outer corner; off it they stand Swift's `DS.Space.sm` apart.
+//! A plate against a spaced row of keys: on a plate the keys touch on one face as tall as they are,
+//! rounded as a key is; off it they stand Swift's `DS.Space.sm` apart.
 
 use oni_app::GroupProbe;
 use slint::platform::WindowEvent;
@@ -10,11 +10,11 @@ use crate::common;
 
 /// Swift's `DS.Space.sm` between the keys of a spaced row.
 const ROW_GAP: f32 = 8.0;
-/// `KeycapStyle.cornerRadius` 16 at the small and mini variants' factors, `contourWidth` 0.
-const PLATE_RADIUS: f32 = 16.0 * 0.525;
-const MINI_RADIUS: f32 = 16.0 * 0.38;
-/// `DS.Control.keycapPlateHeight`.
-const PLATE_KEY: f32 = 52.0;
+/// A key's corner, `DS.Radius.badge`, and a mini key's, `DS.Radius.track`.
+const PLATE_RADIUS: f32 = 8.0;
+const MINI_RADIUS: f32 = 6.0;
+/// A flat key's height, `DS.Control.fieldHeight`.
+const PLATE_KEY: f32 = 32.0;
 
 pub(crate) fn a_plate_s_keys_touch_and_a_spaced_row_s_keep_swift_s_gap() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
@@ -37,8 +37,8 @@ pub(crate) fn a_plate_s_keys_touch_and_a_spaced_row_s_keep_swift_s_gap() {
 
     assert!(near(probe.get_plate_key_height(), PLATE_KEY), "the .plate key is {PLATE_KEY} tall: {}", probe.get_plate_key_height());
     assert!(near(probe.get_plate_height(), probe.get_plate_key_height()), "the socket is as tall as its keys, no inset");
-    assert!(near(probe.get_plate_radius(), PLATE_RADIUS), "the socket follows the small cap's corner: {}", probe.get_plate_radius());
-    assert!(near(probe.get_mini_radius(), MINI_RADIUS), "the mini socket follows the mini cap's corner: {}", probe.get_mini_radius());
+    assert!(near(probe.get_plate_radius(), PLATE_RADIUS), "the plate follows a key's corner: {}", probe.get_plate_radius());
+    assert!(near(probe.get_mini_radius(), MINI_RADIUS), "the mini plate follows a mini key's corner: {}", probe.get_mini_radius());
     assert!(near(probe.get_row_radius(), 0.0), "a spaced row draws no socket");
     // Twins: each variant's radius tells the other's apart.
     assert!(!near(probe.get_mini_radius(), PLATE_RADIUS), "a mini plate is not rounded as a small one");

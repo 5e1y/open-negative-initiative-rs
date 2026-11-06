@@ -42,7 +42,7 @@ component Entry inherits Rectangle {
         height: parent.height;
         text: root.placeholder;
         role: root.role;
-        ink: FieldStyle.placeholder;
+        ink: Colour.ink-tertiary;
         centred: root.centred;
         vertical-alignment: root.multiline ? top : center;
         overflow: elide;
@@ -62,7 +62,7 @@ component Entry inherits Rectangle {
             horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
             font-family: Type.family;
             font-size: root.role == TextRole.title ? Type.title : Type.label;
-            color: root.enabled ? FieldStyle.ink : FieldStyle.faded;
+            color: root.enabled ? FieldStyle.ink : Colour.ink-tertiary;
             selection-background-color: FieldStyle.selection;
             enabled: root.enabled;
             edited => { root.edited(self.text); }

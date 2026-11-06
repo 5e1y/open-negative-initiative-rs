@@ -71,6 +71,7 @@ export component Info inherits Surface {
                     Button {
                         size: ButtonSize.plate;
                         text: @tr("PREPARE THE ROLL…");
+                        keycap: true;
                         clicked => { Library.prepare-shown-roll(); }
                     }
                 }

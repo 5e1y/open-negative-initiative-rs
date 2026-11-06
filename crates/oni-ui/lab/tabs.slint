@@ -150,12 +150,6 @@ export component TabsPage inherits Rectangle {
                     Tune { label: "track shade"; value <=> TabsStyle.track-shade; }
                     Tune { label: "idle label"; value <=> TabsStyle.idle; }
                 }
-                VerticalLayout {
-                    width: 300px;
-                    spacing: 2px;
-                    Heading { text: "FOIL"; }
-                    Tune { label: "foil spin"; maximum: 1.5; value <=> MedalStyle.foil-spin; }
-                }
             }
 
             Row {

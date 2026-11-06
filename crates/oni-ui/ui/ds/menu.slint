@@ -31,7 +31,8 @@ export component MenuEntry inherits Rectangle {
     callback pointed(length, length);
     callback activated();
     property <bool> hovered: root.enabled && ((root.by-hand && area.has-hover) || root.held || root.look != Look.live);
-    height: ButtonStyle.height;
+    // A small key's height, AppKit's rhythm for a menu of a dozen lines.
+    height: ButtonStyle.small-height;
     border-radius: ButtonStyle.small-radius;
     background: root.hovered ? Colour.accent : Colour.raised.transparentize(1);
     opacity: root.enabled ? 1 : State.disabled;

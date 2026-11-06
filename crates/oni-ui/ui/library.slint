@@ -274,7 +274,7 @@ export component Grid inherits Surface {
                 rgb: t.rgb;
                 gone-pass: t.gone-pass;
                 companion: t.companion;
-                hovered: t.note != "" && pointer.has-hover && pointer.mouse-x >= t.x && pointer.mouse-x < t.x + t.width
+                hovered: pointer.has-hover && pointer.mouse-x >= t.x && pointer.mouse-x < t.x + t.width
                     && pointer.mouse-y + Library.scroll >= t.y && pointer.mouse-y + Library.scroll < t.y + t.height;
             }
             if Library.drop-shown: DropLine {

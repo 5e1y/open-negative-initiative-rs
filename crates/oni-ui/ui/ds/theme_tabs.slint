@@ -21,7 +21,7 @@ export global TabsStyle {
     in-out property <float> pill-tone: 0.153;
     out property <color> pill: DS.palette-canvas.mix(#ffffff, 1 - TabsStyle.pill-tone);
     // The bar's hollow, lighter at its rim than a field's.
-    in-out property <float> track-shade: 0.2;
+    in-out property <float> track-shade: 0.14;
     // `DS.State.idleLabel`: an unselected tab's label, a dimmed tab, a medal not chosen.
     in-out property <float> idle: DS.state-idle-label;
 }
@@ -39,33 +39,14 @@ export global ToggleStyle {
     out property <color> glyph-idle: DS.palette-text-secondary;
 }
 
-// `DSPicker`'s field face: the value in a hollow, a mini keycap holding the chevron at its end.
+// `DSPicker`'s field face: the value in a hollow, a chevron at its end.
 export global PickerStyle {
     out property <length> radius: DS.radius-card;
     out property <length> padding: DS.space-md;
-    out property <length> key: DS.control-keycap-mini-height;
-    out property <length> chevron: DS.control-icon-size;
-    // `Keycap.Variant.mini`: `KeycapStyle` scaled by 0.38; the chevron shrinks to 0.95 when pressed.
-    out property <float> mini: 0.38;
-    out property <float> chevron-pressed: 0.95;
-    out property <color> chevron-ink: DS.palette-text-on-fill;
 }
 
-// `DSMedal` on `DSFoil.medal`: a spun metal disc; index 0 is no medal, then bronze, silver and gold.
+// `DSMedal`: a flat disc; `press` is the scale a pressed one shrinks to.
 export global MedalStyle {
     out property <length> size: DS.control-medal-size;
     in-out property <float> press: DS.control-medal-press;
-    // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.
-    in-out property <float> foil-spin: 0.7;
-    // `DSFoil.Metal.ramp`: deep, body and bright.
-    out property <[color]> deeps: [#000000, rgb(69, 31, 10), rgb(61, 64, 69), rgb(92, 56, 13)];
-    out property <[color]> bodies: [#000000, rgb(179, 102, 48), rgb(179, 184, 191), rgb(219, 166, 64)];
-    out property <[color]> brights: [#000000, rgb(255, 194, 133), rgb(247, 250, 255), rgb(255, 230, 153)];
-    // The ruled ring in DSFoil's ink, and `DSMedal`'s two shadows (0.5 at 0.5 pt, 0.25 at 1.5 pt).
-    out property <color> rule-ink: #1a1206cc;
-    out property <color> near-shadow: #00000080;
-    out property <color> far-shadow: #00000040;
-    out property <length> near-blur: 0.5px;
-    out property <length> far-blur: 1.5px;
-    out property <length> far-y: 1px;
 }

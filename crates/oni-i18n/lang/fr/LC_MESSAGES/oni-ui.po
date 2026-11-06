@@ -770,16 +770,16 @@ msgid "Contact sheets"
 msgstr "Planches contact"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Select a few frames, or press the orange key for the whole roll: they lie together on one sheet."
-msgstr "Sélectionnez quelques vues, ou appuyez sur la touche orange pour toute la pellicule : elles se rangent ensemble sur une planche."
+msgid "Select a few frames, or press the key for the whole roll: they lie together on one sheet."
+msgstr "Sélectionnez quelques vues, ou appuyez sur la touche pour toute la pellicule : elles se rangent ensemble sur une planche."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Export a contact sheet"
 msgstr "Exporter une planche contact"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The export panel exports the selection as one sheet, with a preview; the orange EXP. CONTACT SHEET key opens it."
-msgstr "Le panneau d'export exporte la sélection en une seule planche, avec un aperçu ; la touche orange EXP. PLANCHE CONTACT l'ouvre."
+msgid "The export panel exports the selection as one sheet, with a preview; the EXP. CONTACT SHEET key opens it."
+msgstr "Le panneau d'export exporte la sélection en une seule planche, avec un aperçu ; la touche EXP. PLANCHE CONTACT l'ouvre."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Slide films"
