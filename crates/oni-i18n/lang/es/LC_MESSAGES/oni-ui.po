@@ -113,7 +113,7 @@ msgstr "Ajustes…"
 msgid "Refresh"
 msgstr "Actualizar"
 
-#: crates/oni-ui/ui/app.slint
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/library_tree.slint
 msgid "Show the Selected Photo"
 msgstr "Mostrar la foto seleccionada"
 
@@ -206,7 +206,7 @@ msgid "Show Presets Folder"
 msgstr "Mostrar carpeta de preajustes"
 
 #: crates/oni-ui/ui/app.slint
-msgid "No presets"
+msgid "No Presets"
 msgstr "Sin preajustes"
 
 #: crates/oni-ui/ui/app.slint
@@ -222,8 +222,8 @@ msgid "Check for Updates…"
 msgstr "Buscar actualizaciones…"
 
 #: crates/oni-ui/ui/app.slint
-msgid "Show Console"
-msgstr "Mostrar consola"
+msgid "Show Diagnostic Log"
+msgstr "Mostrar el registro de diagnóstico"
 
 #: crates/oni-ui/ui/app.slint
 msgid "What's New in ONI {}"
@@ -266,11 +266,11 @@ msgid "Enlarged from its preview: the grain and sharpness are not the file’s o
 msgstr "Ampliada desde su vista previa: el grano y la nitidez no son los del archivo"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Zoom out ({})"
+msgid "Zoom Out ({})"
 msgstr "Alejar ({})"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Zoom in ({})"
+msgid "Zoom In ({})"
 msgstr "Acercar ({})"
 
 #: crates/oni-ui/ui/canvas.slint
@@ -517,13 +517,13 @@ msgstr "Objetivo"
 msgid "Summicron 50 mm"
 msgstr "Summicron 50 mm"
 
-#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/prepare.slint
-msgid "Film"
-msgstr "Película"
+#: crates/oni-ui/ui/export.slint
+msgid "Film stock"
+msgstr "Emulsión"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Pick a film…"
-msgstr "Elige una película…"
+msgid "Choose…"
+msgstr "Elegir…"
 
 #: crates/oni-ui/ui/export.slint
 msgid "ISO"
@@ -559,15 +559,15 @@ msgstr "Espacio"
 
 #: crates/oni-ui/ui/export.slint
 msgid "The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation."
-msgstr "La imagen se edita en este espacio y se exporta en él. Cada uno conserva el nombre que pedirá un laboratorio o una imprenta. Personalizado convierte a un perfil ICC instalado, colorimétrico relativo con compensación del punto negro."
+msgstr "La imagen se edita en este espacio y se exporta en él. Cada uno conserva el nombre que pedirá un laboratorio o una imprenta. Perfil convierte a un perfil ICC instalado, colorimétrico relativo con compensación del punto negro."
 
 #: crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "sRGB"
 msgstr "sRGB"
 
 #: crates/oni-ui/ui/export.slint
-msgid "DP3"
-msgstr "DP3"
+msgid "P3"
+msgstr "P3"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Adobe RGB"
@@ -579,7 +579,7 @@ msgstr "ProPhoto"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Custom"
-msgstr "Personalizado"
+msgstr "Perfil"
 
 #: crates/oni-ui/ui/export.slint
 msgid "TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."
@@ -590,7 +590,7 @@ msgid "Profile"
 msgstr "Perfil"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Show only color variation (not recommended)"
+msgid "Show only colour variation (not recommended)"
 msgstr "Mostrar solo la variación de color (no recomendado)"
 
 #: crates/oni-ui/ui/export.slint
@@ -610,7 +610,7 @@ msgid "Export"
 msgstr "Exportar"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Export As"
+msgid "Export as"
 msgstr "Exportar como"
 
 #: crates/oni-ui/ui/export.slint
@@ -670,12 +670,12 @@ msgid "Pixels of the first photo. The edge you type is the one the ceiling rides
 msgstr "Píxeles de la primera foto. El lado que escribes es el que limita cada foto del lote: el ancho de una horizontal es su lado largo. Nunca se amplía; vacío significa resolución completa."
 
 #: crates/oni-ui/ui/export.slint
-msgid "Full resolution"
+msgid "Full Resolution"
 msgstr "Resolución completa"
 
 #: crates/oni-ui/ui/export.slint
-msgid "HDR hack"
-msgstr "Truco HDR"
+msgid "HDR"
+msgstr "HDR"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map."
@@ -694,7 +694,7 @@ msgid "Exporting…"
 msgstr "Exportando…"
 
 #: crates/oni-ui/ui/export.slint
-msgid "The color space the picture is edited and exported in"
+msgid "The colour space the picture is edited and exported in"
 msgstr "El espacio de color en el que se edita y se exporta la imagen"
 
 #: crates/oni-ui/ui/export.slint
@@ -898,8 +898,8 @@ msgid "Your message and the app's version become a public issue on GitHub, so le
 msgstr "Tu mensaje y la versión de la app se convierten en una incidencia pública en GitHub, así que no incluyas nada personal. El registro se cifra en este Mac antes de enviarse."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Encrypted console log, readable by ONI's maintainers only"
-msgstr "Registro de consola cifrado, legible solo por los responsables de ONI"
+msgid "Encrypted diagnostic log, readable by ONI's maintainers only"
+msgstr "Registro de diagnóstico cifrado, legible solo por los responsables de ONI"
 
 #: crates/oni-ui/ui/help.slint
 msgid "See Community Feedbacks"
@@ -914,8 +914,8 @@ msgid "Send"
 msgstr "Enviar"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Console"
-msgstr "Consola"
+msgid "Diagnostic Log"
+msgstr "Registro de diagnóstico"
 
 #: crates/oni-ui/ui/help.slint
 msgid "No block recorded"
@@ -955,15 +955,15 @@ msgstr "Rollo"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Film Stock"
-msgstr "Tipo de película"
+msgstr "Emulsión"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "What this roll was shot on — never guessed, only ever what a hand picks."
 msgstr "En qué se fotografió este rollo: nunca se adivina, solo lo que elige una mano."
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/stocks.slint
-msgid "Select Roll Type"
-msgstr "Seleccionar tipo de rollo"
+msgid "Select Film Stock"
+msgstr "Seleccionar emulsión"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Shot Date"
@@ -974,7 +974,7 @@ msgid "When the roll was actually shot. Organisational only — never a photo's 
 msgstr "Cuándo se fotografió realmente el rollo. Solo sirve para organizar: nunca es la fecha de captura de una foto."
 
 #: crates/oni-ui/ui/info_sidebar.slint
-msgid "Clear shot date"
+msgid "Clear Shot Date"
 msgstr "Borrar fecha de toma"
 
 #: crates/oni-ui/ui/info_sidebar.slint
@@ -1003,15 +1003,15 @@ msgstr "Nombre del proyecto"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Film Stocks"
-msgstr "Tipos de película"
+msgstr "Emulsiones"
 
 #: crates/oni-ui/ui/info_sidebar.slint
-msgid "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll."
-msgstr "Cada película presente en las fotos de este proyecto, contada por foto, ya que un proyecto rara vez contiene un rollo entero."
+msgid "Every film stock among this project's own photos — counted by photo, since a project rarely holds a whole roll."
+msgstr "Cada emulsión presente en las fotos de este proyecto, contada por foto, ya que un proyecto rara vez contiene un rollo entero."
 
 #: crates/oni-ui/ui/info_sidebar.slint
-msgid "No stock set yet"
-msgstr "Aún no hay película definida"
+msgid "No film stock set yet"
+msgstr "Aún no hay emulsión definida"
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/presets.slint
 msgid "Description"
@@ -1024,10 +1024,6 @@ msgstr "Archivo"
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Projects"
 msgstr "Proyectos"
-
-#: crates/oni-ui/ui/library_tree.slint
-msgid "Show the selected photo"
-msgstr "Mostrar la foto seleccionada"
 
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Fold every folder"
@@ -1086,7 +1082,7 @@ msgid "ADD FOLDER…"
 msgstr "AÑADIR CARPETA…"
 
 #: crates/oni-ui/ui/navigator.slint
-msgid "Parent folder"
+msgid "Parent Folder"
 msgstr "Carpeta superior"
 
 #: crates/oni-ui/ui/navigator.slint
@@ -1134,12 +1130,12 @@ msgid "DONE"
 msgstr "OK"
 
 #: crates/oni-ui/ui/notice.slint
-msgid "RAW Color, Recalibrated"
+msgid "RAW Colour, Recalibrated"
 msgstr "Color RAW recalibrado"
 
 #: crates/oni-ui/ui/notice.slint
-msgid "Camera RAW files now render truer color, especially on unusual film stocks."
-msgstr "Los archivos RAW de cámara muestran ahora un color más fiel, sobre todo con películas poco habituales."
+msgid "Camera RAW files now render truer colour, especially on unusual film stocks."
+msgstr "Los archivos RAW de cámara muestran ahora un color más fiel, sobre todo con emulsiones poco habituales."
 
 #: crates/oni-ui/ui/notice.slint
 msgid "Your existing photos have already been nudged to compensate automatically."
@@ -1198,7 +1194,7 @@ msgid "D +: toward light"
 msgstr "D +: hacia claro"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
-msgid "Color"
+msgid "Colour"
 msgstr "Color"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
@@ -1254,8 +1250,8 @@ msgid "TEMP +: toward warm"
 msgstr "TEMP +: hacia cálido"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation."
-msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras que para un sujeto cálido grande, y la corrige con Temperatura y Matiz; los niveles quedan donde los puso la medición del rollo, y la pestaña Rollo contiene la intensidad del balance, la parte de esa corrección que asumen los dos reguladores. Temperatura y Matiz solo mueven el color, nunca la luminosidad de la fotografía. La densidad de color es el mismo control que la saturación."
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Colour density makes every colour stronger or greyer at once, what other apps call saturation."
+msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras que para un sujeto cálido grande, y la corrige con Temperatura y Matiz; los niveles quedan donde los puso la medición del rollo, y la pestaña Rollo contiene la intensidad del balance, la parte de esa corrección que asumen los dos reguladores. Temperatura y Matiz solo mueven el color, nunca la luminosidad de la fotografía. La densidad de color hace todos los colores más intensos o más grises a la vez, lo que otras apps llaman saturación."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Crop before using the automatic balance"
@@ -1278,15 +1274,15 @@ msgid "Tint"
 msgstr "Matiz"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Color density (same as saturation)"
-msgstr "Densidad de color (igual que la saturación)"
+msgid "Colour density"
+msgstr "Densidad de color"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper Correction"
 msgstr "Corrección de papel"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips."
+msgid "Gains laid last, on a colour or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips."
 msgstr "Ganancias aplicadas al final, tanto en una copia en color como en blanco y negro, según el papel con el que se hace la prueba de la imagen, y solo en ese papel: en cualquier otro espacio de trabajo no hacen nada. La corrección de papel automática lee el blanco propio del papel en su perfil, nunca en la imagen, y define las ganancias que imprimen un gris como gris; la más fuerte se queda en 0 para que nada se recorte."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
@@ -1322,44 +1318,44 @@ msgid "Effects"
 msgstr "Efectos"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle."
+msgid "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Viñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara. Chrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 
-#: crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
 msgstr "Contraste"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette"
 msgstr "Viñeta"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome"
 msgstr "Chrome"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast −: toward softer, +5 %"
-msgstr "Contraste −: hacia más suave, +5 %"
+msgid "Contrast −: toward softer, 5% a step"
+msgstr "Contraste −: hacia más suave, 5 % por paso"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast +: toward harder, +5 %"
-msgstr "Contraste +: hacia más duro, +5 %"
+msgid "Contrast +: toward harder, 5% a step"
+msgstr "Contraste +: hacia más duro, 5 % por paso"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette −: toward lighter corners, +0.1 EV"
-msgstr "Viñeta −: hacia esquinas más claras, +0.1 EV"
+msgid "Vignette −: toward lighter corners, 0.1 EV a step"
+msgstr "Viñeta −: hacia esquinas más claras, 0,1 EV por paso"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette +: toward darker corners, +0.1 EV"
-msgstr "Viñeta +: hacia esquinas más oscuras, +0.1 EV"
+msgid "Vignette +: toward darker corners, 0.1 EV a step"
+msgstr "Viñeta +: hacia esquinas más oscuras, 0,1 EV por paso"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome −: toward less, +5 %"
-msgstr "Chrome −: hacia menos, +5 %"
+msgid "Chrome −: toward less, 5% a step"
+msgstr "Chrome −: hacia menos, 5 % por paso"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome +: toward more, +5 %"
-msgstr "Chrome +: hacia más, +5 %"
+msgid "Chrome +: toward more, 5% a step"
+msgstr "Chrome +: hacia más, 5 % por paso"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
@@ -1374,7 +1370,7 @@ msgid "Spectrogram Finishing"
 msgstr "Acabado espectrográfico"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shifts one color range at a time without touching the others: turn a point around the wheel to move that color's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
+msgid "Shifts one colour range at a time without touching the others: turn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
 msgstr "Desplaza una gama de color cada vez sin tocar las demás: gira un punto alrededor de la rueda para mover el tono de ese color, y hacia fuera o hacia dentro para intensificarlo o agrisarlo. Haz clic en un punto y usa las flechas del teclado."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
@@ -1382,7 +1378,7 @@ msgid "Saturation Curve"
 msgstr "Curva de saturación"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves."
+msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves."
 msgstr "Saturación según la luz, del punto negro al blanco: sube un punto para intensificar el color en sus tonos y bájalo para llevarlo hacia el gris. Arrastra un punto a lo largo de la luz para elegir sus tonos; haz doble clic para devolverlo a neutro. La luminosidad nunca se mueve."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint
@@ -1446,7 +1442,7 @@ msgid "Rotate & Mirror"
 msgstr "Girar y reflejar"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Rotate 90° clockwise"
+msgid "Rotate 90° Clockwise"
 msgstr "Girar 90° a la derecha"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
@@ -1470,7 +1466,7 @@ msgid "Measuring Window"
 msgstr "Ventana de medición"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Reset measure window"
+msgid "Reset Measuring Window"
 msgstr "Restablecer la ventana de medición"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
@@ -1486,11 +1482,11 @@ msgid "Shows a frame on the photo; the balance keys and the histogram read only 
 msgstr "Muestra un marco sobre la foto; las teclas de balance y el histograma solo leen lo que contiene. Si no se toca, sigue al recorte; el recorte nunca la mueve."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Copy measure window"
+msgid "Copy Measuring Window"
 msgstr "Copiar ventana de medición"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Paste measure window"
+msgid "Paste Measuring Window"
 msgstr "Pegar ventana de medición"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
@@ -1498,7 +1494,7 @@ msgid "Kept"
 msgstr "Conservado"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Brush Size"
+msgid "Brush size"
 msgstr "Tamaño del pincel"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
@@ -1550,7 +1546,7 @@ msgid "Generating…"
 msgstr "Generando…"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Remove this correction"
+msgid "Remove This Correction"
 msgstr "Eliminar esta corrección"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
@@ -1558,7 +1554,7 @@ msgid "Sharpening"
 msgstr "Enfoque"
 
 #: crates/oni-ui/ui/panel/details_tab.slint
-msgid "Sharpens edges without adding color fringing."
+msgid "Sharpens edges without adding colour fringing."
 msgstr "Enfoca los bordes sin añadir halos de color."
 
 #: crates/oni-ui/ui/panel/details_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
@@ -1578,7 +1574,7 @@ msgid "Chroma Denoise"
 msgstr "Reducción de ruido cromático"
 
 #: crates/oni-ui/ui/panel/details_tab.slint
-msgid "Smooths color noise from the scan without touching the film grain."
+msgid "Smooths colour noise from the scan without touching the film grain."
 msgstr "Suaviza el ruido de color del escaneo sin tocar el grano de la película."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
@@ -1641,15 +1637,15 @@ msgstr "Tipo de película"
 msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
 msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara."
 
-#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
 msgstr "Negativo"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Positive"
 msgstr "Positivo"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "B&W"
 msgstr "B/N"
 
@@ -1666,11 +1662,11 @@ msgid "Flat-field"
 msgstr "Flat-field"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Hide Amount and Color"
+msgid "Hide Amount and Colour"
 msgstr "Ocultar cantidad y color"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Show Amount and Color"
+msgid "Show Amount and Colour"
 msgstr "Mostrar cantidad y color"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
@@ -1714,7 +1710,7 @@ msgid "Source Encoding"
 msgstr "Codificación de origen"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again."
+msgid "This file names no colour profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again."
 msgstr "Este archivo no indica ningún perfil de color, así que se lee como sRGB. La salida bruta de un escáner suele ser lineal: elige lo que escribió el software de escaneo y la fotografía se vuelve a leer."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
@@ -1790,7 +1786,7 @@ msgid "Dye Separation"
 msgstr "Separación de tintes"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with."
+msgid "Subtracts each dye's spill into the other two channels, so colours separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with."
 msgstr "Resta lo que cada tinte filtra a los otros dos canales, para que los colores se separen mientras los grises no se mueven. La familia indica el juego de tintes de la película; la dosis depende de la luz y del sensor con que se capturó."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
@@ -1866,6 +1862,10 @@ msgid "Load…"
 msgstr "Cargar…"
 
 #: crates/oni-ui/ui/prepare.slint
+msgid "Film type"
+msgstr "Tipo de película"
+
+#: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
 msgstr "Digitalizado con"
 
@@ -1882,7 +1882,7 @@ msgid "RGB Passes"
 msgstr "Pasadas RGB"
 
 #: crates/oni-ui/ui/prepare.slint
-msgid "Pass Order"
+msgid "Pass order"
 msgstr "Orden de pasadas"
 
 #: crates/oni-ui/ui/prepare.slint
@@ -1906,7 +1906,7 @@ msgid "Clear"
 msgstr "Borrar"
 
 #: crates/oni-ui/ui/prepare.slint
-msgid "Picker Size"
+msgid "Picker size"
 msgstr "Tamaño del selector"
 
 #: crates/oni-ui/ui/prepare.slint
@@ -2070,7 +2070,7 @@ msgid "Stripes over the colours this screen cannot show."
 msgstr "Rayas sobre los colores que esta pantalla no puede mostrar."
 
 #: crates/oni-ui/ui/settings.slint
-msgid "RAW files"
+msgid "RAW Files"
 msgstr "Archivos RAW"
 
 #: crates/oni-ui/ui/settings.slint
@@ -2078,16 +2078,16 @@ msgid "Decode RAW files at full resolution"
 msgstr "Decodificar los archivos RAW a resolución completa"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."
+msgid "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50%. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."
 msgstr "Desactivado, un RAW se lee a la mitad de su tamaño, de 3 a 5 veces más rápido, y se ve así con cualquier zoom. Activado, se lee entero, para el grano más fino por encima del 50 %. Detalles, Eliminar polvo y todas las exportaciones leen siempre el RAW completo. Se aplica a la siguiente foto que se abra."
 
 #: crates/oni-ui/ui/settings.slint
-msgid "Frontier look"
+msgid "Frontier Look"
 msgstr "Aspecto Frontier"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."
-msgstr "Un LUT sobre la inversión de ONI, con sRGB de pantalla a la entrada y a la salida. Expórtalo, edítalo con cualquier herramienta de LUT y usa el archivo: cada vez que lo guardas, el cambio se ve al instante."
+msgid "A colour table laid over ONI's conversion, in sRGB. Export it as a .cube file, edit it in any app that opens one, then use the file: each save shows at once."
+msgstr "Una tabla de colores sobre la conversión de ONI, en sRGB. Expórtala como archivo .cube, edítala en cualquier app que lo abra y usa el archivo: cada vez que lo guardas, el cambio se ve al instante."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "EXPORT…"
@@ -2101,8 +2101,8 @@ msgstr "USAR UN ARCHIVO…"
 msgid "MEASURED"
 msgstr "MEDIDO"
 
-#: crates/oni-ui/ui/settings.slint
-msgid "Phone remote"
+#: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
+msgid "Phone Remote"
 msgstr "Control desde el teléfono"
 
 #: crates/oni-ui/ui/settings.slint
@@ -2130,8 +2130,8 @@ msgid "REPORT A PROBLEM…"
 msgstr "INFORMAR DE UN PROBLEMA…"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "CONSOLE"
-msgstr "CONSOLA"
+msgid "DIAGNOSTIC LOG"
+msgstr "REGISTRO DE DIAGNÓSTICO"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "General"
@@ -2150,8 +2150,8 @@ msgid "About"
 msgstr "Acerca de"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "FILM"
-msgstr "PELÍCULA"
+msgid "FILM TYPE"
+msgstr "TIPO DE PELÍCULA"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "FLAT-FIELD"
@@ -2210,7 +2210,7 @@ msgid "Pro"
 msgstr "Pro"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Copy settings ({})"
+msgid "Copy Settings ({})"
 msgstr "Copiar ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
@@ -2260,10 +2260,6 @@ msgstr "Galería ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Editor ({})"
 msgstr "Editor ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Phone Remote"
-msgstr "Control desde el teléfono"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "UPDATING"
@@ -2718,8 +2714,8 @@ msgid "“{name}” cannot be shown: {cause}."
 msgstr "No se puede mostrar «{name}»: {cause}."
 
 #: crates/oni-app/src/app/help.rs
-msgid "The console cannot open."
-msgstr "No se puede abrir la consola."
+msgid "The diagnostic log cannot open."
+msgstr "No se puede abrir el registro de diagnóstico."
 
 #: crates/oni-app/src/app/help.rs
 msgid "The note cannot be marked read: {error}"
@@ -2764,6 +2760,10 @@ msgstr "Sombras y Luces llegan a ±0.50, con la curva aún subiendo en los extre
 #: crates/oni-app/src/app/help.rs
 msgid "ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips."
 msgstr "ProPhoto RGB, el espacio más amplio, en TIFF de 16 bits: conserva los colores que Adobe RGB recorta."
+
+#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/prepare/trace.rs
+msgid "FRAME {at}/{count}"
+msgstr "FOTOGRAMA {at}/{count}"
 
 #: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/prepare/flat_masks.rs
 msgid "No Mask Set"
@@ -3280,8 +3280,8 @@ msgid "Select a roll"
 msgstr "Selecciona un rollo"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "No stock set"
-msgstr "Sin película definida"
+msgid "No film stock set"
+msgstr "Sin emulsión definida"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Rename Roll"
@@ -3469,7 +3469,7 @@ msgstr[1] "{n} originales no encontrados"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Set Film Stock"
-msgstr "Definir tipo de película"
+msgstr "Definir emulsión"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Dyes: {family}"
@@ -3568,8 +3568,8 @@ msgid "Choose a scan, then click on something white or grey: a cloud, a wall, a 
 msgstr "Elija un escaneo y haga clic en algo blanco o gris: una nube, una pared, una carretera gris o la luz desnuda a través de una perforación. Las ganancias del rollo neutralizan su color y conservan su brillo; sin clic, las diapositivas conservan los 5500 K de la cámara. Evite los negros: los de una diapositiva rara vez son neutros."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."
-msgstr "Elige la película y con qué la digitalizaste. Con un tipo de película equivocado, todos los fotogramas del rollo se convierten mal."
+msgid "Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."
+msgstr "Elige el tipo de película y con qué se digitalizó el rollo. Con un tipo de película equivocado, todos los fotogramas del rollo se convierten mal."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."
@@ -3672,10 +3672,6 @@ msgid "ROLL"
 msgstr "ROLLO"
 
 #: crates/oni-app/src/app/prepare/trace.rs
-msgid "FRAME {at}/{count}"
-msgstr "FOTOGRAMA {at}/{count}"
-
-#: crates/oni-app/src/app/prepare/trace.rs
 msgid "ROLL · {n} FRAME"
 msgid_plural "ROLL · {n} FRAMES"
 msgstr[0] "ROLLO · {n} FOTOGRAMA"
@@ -3706,7 +3702,7 @@ msgid "No Preset Imported"
 msgstr "No se ha importado ningún preajuste"
 
 #: crates/oni-app/src/app/presets/gestures.rs
-msgid "The settings it stored are replaced. Its name, color, description and the rows it carries stay as they are."
+msgid "The settings it stored are replaced. Its name, colour, description and the rows it carries stay as they are."
 msgstr "Los ajustes que guardaba se reemplazan. Su nombre, color, descripción y las filas que incluye se mantienen."
 
 #: crates/oni-app/src/app/presets/gestures.rs
@@ -4039,7 +4035,7 @@ msgstr "{count} de {of} originales son de 8 bits: sus sombras pueden mostrar ban
 
 #: crates/oni-app/src/export.rs
 msgid "{refused} left out: Custom takes RGB printer and paper profiles. CMYK profiles are not supported, and sRGB, Display P3, Adobe RGB and ProPhoto have their own tabs."
-msgstr "{refused} omitidos: Personalizado admite perfiles RGB de impresora y de papel. Los perfiles CMYK no son compatibles, y sRGB, Display P3, Adobe RGB y ProPhoto tienen sus propias pestañas."
+msgstr "{refused} omitidos: Perfil admite perfiles RGB de impresora y de papel. Los perfiles CMYK no son compatibles, y sRGB, Display P3, Adobe RGB y ProPhoto tienen sus propias pestañas."
 
 #: crates/oni-app/src/export.rs
 msgid "These images were edited in {edited}. The previews show them in {space}."
@@ -4426,11 +4422,11 @@ msgid "{list} and {last}"
 msgstr "{list} y {last}"
 
 #: crates/oni-core/src/preset_parameters.rs
-msgid "Color (Temperature, Tint)"
+msgid "Colour (Temperature, Tint)"
 msgstr "Color (Temperatura, Matiz)"
 
 #: crates/oni-core/src/preset_parameters.rs
-msgid "Color Density"
+msgid "Colour Density"
 msgstr "Densidad de color"
 
 #: crates/oni-core/src/preset_parameters.rs

@@ -30,9 +30,9 @@ component FrameFields inherits VerticalLayout {
         TextField { value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
     }
     Field { layout: FieldLayout.column;
-        label: @tr("Film");
+        label: @tr("Film stock");
         Picker {
-            value: root.line.film == "" ? @tr("Pick a film…") : root.line.film;
+            value: root.line.film == "" ? @tr("Choose…") : root.line.film;
             open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
         }
     }
@@ -95,20 +95,19 @@ export component ExportColumn inherits Scroller {
     property <length> picture-width: self.room-width - FormStyle.fields-width - Space.l;
     // Several photos on one sheet: the sheet itself in place of their lines.
     property <bool> sheet: Exporting.sheet && Exporting.count > 1;
-    content-height: max(column.preferred-height, self.height);
+    content-height: column.preferred-height;
     init => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
     changed picture-width => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
     changed room-height => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
+    // From the top, level with the panel's title, however few photos the column holds.
     column := VerticalLayout {
         width: root.width;
-        height: max(self.preferred-height, root.height);
+        alignment: start;
         padding-top: Space.l;
         padding-bottom: Space.l;
         padding-left: Space.l;
         padding-right: Space.l;
         spacing: Space.l;
-        // Centres a single frame under one screenful; above that the floor does nothing.
-        alignment: center;
         if root.sheet: SheetPreview { height: root.room-height; }
         if !root.sheet: VerticalLayout {
             spacing: Space.l;
@@ -158,7 +157,7 @@ export component SpaceField inherits VerticalLayout {
         label: @tr("Space");
         help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
         Tabs {
-            tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
+            tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
             dimmed: [false, false, false, Exporting.jpeg, false];
             selected: Exporting.space-tab;
             picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
@@ -167,7 +166,7 @@ export component SpaceField inherits VerticalLayout {
         Label { role: TextRole.note; text: Exporting.purpose; }
     }
     if root.compact: Tabs {
-        tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
+        tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
         dimmed: [false, false, false, Exporting.jpeg, false];
         selected: Exporting.space-tab;
         picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
@@ -183,7 +182,7 @@ export component SpaceField inherits VerticalLayout {
         if Exporting.profile-note != "": Label { role: TextRole.note; text: Exporting.profile-note; }
     }
     if Exporting.on-profile && root.compact: Toggle {
-        label: @tr("Show only color variation (not recommended)");
+        label: @tr("Show only colour variation (not recommended)");
         wrap: true;
         on: Exporting.colour-only;
         toggled(on) => { Exporting.colour-only-set(on); }
@@ -231,7 +230,7 @@ export component ExportPanel inherits Surface {
                 }
                 // First, the one place the choice is made: every photo its own file, or all on one sheet.
                 if Exporting.count > 1: Field {
-                    label: @tr("Export As");
+                    label: @tr("Export as");
                     help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row on black, numbered in orange by their place on their roll, the logo under them from five photos.");
                     Tabs {
                         tabs: [@tr("Separate Photos"), @tr("Contact Sheet")];
@@ -278,11 +277,11 @@ export component ExportPanel inherits Surface {
                             enabled: Exporting.size-enabled;
                             typed(w, h) => { Exporting.size-typed(w, h); }
                         }
-                        if Exporting.resized: Button { has-icon: true; square: true; icon: Icons.reset; help: @tr("Full resolution"); clicked => { Exporting.full-size(); } }
+                        if Exporting.resized: Button { has-icon: true; square: true; icon: Icons.reset; help: @tr("Full Resolution"); clicked => { Exporting.full-size(); } }
                     }
                 }
                 Field {
-                    label: @tr("HDR hack");
+                    label: @tr("HDR");
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
                     Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
@@ -325,7 +324,7 @@ export component SpaceChip inherits Picker {
     face: PickerFace.chip;
     prefix: Exporting.chip-title;
     value: Exporting.chip-hint;
-    help: @tr("The color space the picture is edited and exported in");
+    help: @tr("The colour space the picture is edited and exported in");
     own-popup: chooser.is-open;
     open => { chooser.show(); }
     chooser := PopupPanel {

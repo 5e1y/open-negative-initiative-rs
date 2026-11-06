@@ -34,10 +34,10 @@ pub const BLOCKS: [Block; 4] = [
     },
     Block {
         id: "Colour",
-        title: marked("Color"),
+        title: marked("Colour"),
         entries: &[
-            entry("colour", marked("Color (Temperature, Tint)"), &["curves"]),
-            entry("density", marked("Color Density"), &["density"]),
+            entry("colour", marked("Colour (Temperature, Tint)"), &["curves"]),
+            entry("density", marked("Colour Density"), &["density"]),
             entry("chromaDecompression", marked("Chroma Decompression"), &["chromaDecompression"]),
             entry("lighting", marked("Lighting"), &["levelsGlobal"]),
             entry("vignette", marked("Vignette"), &["vignette"]),
@@ -62,7 +62,7 @@ pub const BLOCKS: [Block; 4] = [
     Block { id: "Scanner", title: marked("Scanner"), entries: &[entry("scanner", marked("Scanner Keypad"), &["scanner", "face"])] },
 ];
 
-/// The Color block's note on the white balance choice.
+/// The Colour block's note on the white balance choice.
 pub const WHITE_BALANCE_HELP: &str = marked("Not carried leaves every photo its own balance. Copied WB pastes this photo's gains and per-channel levels as numbers. Automatic WB re-measures each photo it lands on.");
 
 /// What both sheets say about framing, absent from the rows rather than unticked.
@@ -216,7 +216,7 @@ mod tests {
         assert_eq!(label(&rows(&["gains", "levelsPerChannel"])), "Copied WB (gains + per-channel levels)");
         assert_eq!(label(&rows(&["gains"])), "gains", "a row without its partner is named raw");
         assert_eq!(label(&set(WhiteBalance::Automatic.names())), "Automatic WB (Temperature, Tint)");
-        assert_eq!(label(&rows(&["sharpen", "texture", "density"])), "Color Density, Sharpening and Texture");
+        assert_eq!(label(&rows(&["sharpen", "texture", "density"])), "Colour Density, Sharpening and Texture");
         assert_eq!(label(&rows(&[])), "empty");
         // Curves names two rows: one alone is named raw, never as the box.
         assert_eq!(label(&rows(&["manualCurves"])), "manualCurves");

@@ -85,7 +85,7 @@ impl Ctl {
         e.set_edited_in(export::edited_in_note(c.edited_in.as_ref(), &space, batch).into());
         e.set_compress(c.settings.compress_tiff);
         e.set_quality_fraction(Ctl::quality_fraction(c.settings.jpeg_quality));
-        e.set_quality_readout(format!("{:.0}%", c.settings.jpeg_quality * 100.0).into());
+        e.set_quality_readout(crate::fields::number(c.settings.jpeg_quality * 100.0, 0, false, crate::fields::Unit::Percent).into());
         let (wt, ht) = export::size_texts(c.full(), c.settings.resize);
         e.set_width_text(wt.into());
         e.set_height_text(ht.into());

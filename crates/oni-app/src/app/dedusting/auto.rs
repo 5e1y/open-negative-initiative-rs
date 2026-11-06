@@ -258,7 +258,7 @@ impl Ctl {
         let s = &mut *s;
         let sensitivity = s.dust.sensitivity;
         d.set_sensitivity(sensitivity);
-        d.set_sensitivity_text(format!("{:.0} %", sensitivity * 100.0).into());
+        d.set_sensitivity_text(crate::fields::Readout::Percent.format(sensitivity).into());
         let lit = c.get_dust_lit();
         let lit = [lit.red(), lit.green(), lit.blue()].map(|v| f32::from(v) / 255.0);
         let mut ringed = whole;

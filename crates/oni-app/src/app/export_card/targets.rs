@@ -18,9 +18,13 @@ impl Ctl {
     fn row_sources(&self) -> (Vec<Target>, Vec<Option<oni_settings::Film>>, String, String) {
         let c = self.export.borrow();
         let s = self.state.borrow();
-        // One map for the whole batch, the first entry of a path winning as a search would.
-        let films: std::collections::HashMap<String, Option<oni_settings::Film>> =
-            s.archive.as_ref().map(|a| a.entries().iter().rev().map(|e| (e.path.clone(), e.film.clone())).collect()).unwrap_or_default();
+        // A photo's roll as its band shows it: its folder's, else the one its sidecar names; one map
+        // for the whole batch, the first band holding a path winning as a search would.
+        let films: std::collections::HashMap<String, Option<oni_settings::Film>> = s
+            .archive
+            .as_ref()
+            .map(|a| a.groups.iter().rev().flat_map(|g| g.entries.iter().rev().map(move |e| (e.path.clone(), g.film.clone().or_else(|| e.film.clone())))).collect())
+            .unwrap_or_default();
         let rolls = c.targets.iter().map(|t| films.get(oni_library::paths::normal(&t.path.to_string_lossy()).as_ref()).cloned().flatten()).collect();
         (c.targets.clone(), rolls, c.artist.clone(), c.copyright.clone())
     }

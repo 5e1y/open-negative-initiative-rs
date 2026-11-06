@@ -88,7 +88,7 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     rig.shot("sidebars-column");
 
     // Beside a photo: the target and layout keys on one plate at the left, the pill after them.
-    let target = "Show the selected photo";
+    let target = "Show the Selected Photo";
     let layout = lib.get_tree_layout_help().to_string();
     let pill = w.global::<Navigator>().get_opened_help().to_string();
     assert!(!pill.is_empty(), "the opened folder names its path");

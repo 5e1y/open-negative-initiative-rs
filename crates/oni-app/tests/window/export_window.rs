@@ -237,6 +237,13 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     });
     let line = &export_card::lines(w)[0];
     let line_camera = line.camera.to_string();
+    // The line opens on the stock its roll's folder names, the one the roll's panel shows.
+    let marked = oni_library::folders::roll(&folder.to_string_lossy()).and_then(|f| f.stock);
+    let stock = oni_settings::film::film_stock(marked.as_deref()).map(|k| k.display_name).expect("the roll names its stock");
+    assert_eq!(line.film.as_str(), stock);
+    // Twin: the photo's own sidecar names no roll, so a line read off it alone would ask for a stock.
+    let sidecar: serde_json::Value = serde_json::from_slice(&std::fs::read(folder.join("DSC_6432.NEF.json")).unwrap()).unwrap();
+    assert!(sidecar["film"].is_null(), "{}", sidecar["film"]);
     assert_eq!(line.caption, e.get_dims(), "the cell and the summary name one size");
     assert!(e.get_dims().contains(" × ") && e.get_weight().starts_with("≈ "), "{} {}", e.get_dims(), e.get_weight());
     assert!(!line.camera.is_empty(), "the line opens on the sidecar's box or the scan's camera");
@@ -254,7 +261,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     e.invoke_edited(0, "name".into(), "proofed".into());
     e.invoke_pick_film(0);
     let stocks = w.global::<oni_app::Stocks>();
-    assert!(stocks.get_shown(), "the film field opens Select Roll Type");
+    assert!(stocks.get_shown(), "the film stock field opens Select Film Stock");
     let gold = oni_settings::film::FILM_STOCKS.iter().position(|k| k.display_name == "Kodak Gold").expect("Kodak Gold listed");
     stocks.invoke_chosen(gold as i32);
     assert!(!stocks.get_shown());

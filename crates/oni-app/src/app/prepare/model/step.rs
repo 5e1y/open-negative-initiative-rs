@@ -35,7 +35,7 @@ impl Step {
         match self {
             Step::Window if film == ConversionMode::Positive => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Every slide keeps it as its measuring frame."),
             Step::Base if film == ConversionMode::Positive => tr("Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; skipped, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."),
-            Step::Film => tr("Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."),
+            Step::Film => tr("Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."),
             Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
             Step::Flags => tr("Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."),

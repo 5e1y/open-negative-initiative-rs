@@ -6,6 +6,10 @@ use oni_settings::blocks::{ChromaDenoise, Gains, PaperCorrection, Sharpen, Textu
 use oni_settings::frame::FlatField;
 use oni_settings::tone::{Print, color_density};
 
+mod readout;
+
+pub use readout::{Readout, Unit, number};
+
 /// One slider's value, its index the `field` the Slint `Store` passes back.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Field {
@@ -95,55 +99,6 @@ impl Block {
             Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
             Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
-        }
-    }
-}
-
-/// How a slider writes its value: as `String(format:)` does in each Swift pane.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Readout {
-    /// `%+.2f EV`
-    Stops,
-    /// `%+.2f`
-    Signed,
-    /// `%+.0f %%` of the value times 100.
-    SignedPercentSpaced,
-    /// `%.0f %%` of the value times 100.
-    PercentSpaced,
-    /// `%.0f%%` of the value times 100.
-    Percent,
-    /// `%+.0f` of the value over the range's top, times 100.
-    OfRange(f32),
-    /// `%.3f`
-    Ceiling,
-    /// `%.2f`
-    Plain,
-    /// `%+.2f°`
-    Degrees,
-    /// `%.2f×`
-    Times,
-    /// `%+.2f×`
-    SignedTimes,
-    /// `%.1f px`
-    Pixels,
-}
-
-impl Readout {
-    pub fn format(self, v: f32) -> String {
-        // `String(format:)` prints −0 for a negative zero, and so would `{:+}`; Swift's `%+.2f` of −0.0 is "-0.00".
-        match self {
-            Readout::Stops => format!("{v:+.2} EV"),
-            Readout::Signed => format!("{v:+.2}"),
-            Readout::SignedPercentSpaced => format!("{:+.0} %", v * 100.0),
-            Readout::PercentSpaced => format!("{:.0} %", v * 100.0),
-            Readout::Percent => format!("{:.0}%", v * 100.0),
-            Readout::OfRange(top) => format!("{:+.0}", v / top * 100.0),
-            Readout::Ceiling => format!("{v:.3}"),
-            Readout::Plain => format!("{v:.2}"),
-            Readout::Degrees => format!("{v:+.2}°"),
-            Readout::Times => format!("{v:.2}×"),
-            Readout::SignedTimes => format!("{v:+.2}×"),
-            Readout::Pixels => format!("{v:.1} px"),
         }
     }
 }
@@ -254,17 +209,17 @@ impl Field {
             Field::Temperature => s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::OfRange(Print::TEMPERATURE_RANGE.1)),
             Field::Tint => s("Tint", Print::TINT_RANGE, 0.0, Readout::OfRange(Print::TINT_RANGE.1)),
             Field::ColorDensity => s(
-                "Color density (same as saturation)",
+                "Colour density",
                 color_density::RANGE,
                 color_density::BASE,
-                Readout::SignedPercentSpaced),
+                Readout::SignedPercent),
             Field::Exposure => s("Exposure", Print::EXPOSURE_RANGE, 0.0, Readout::Stops),
             Field::Highlights => s("Highlights", Print::QUARTER_RANGE, 0.0, Readout::Signed),
             Field::Shadows => s("Shadows", Print::QUARTER_RANGE, 0.0, Readout::Signed),
-            Field::WhitePoint => s("White point", Print::POINT_RANGE, 0.0, Readout::SignedPercentSpaced),
+            Field::WhitePoint => s("White point", Print::POINT_RANGE, 0.0, Readout::SignedPercent),
             Field::BlackPoint => Spec {
                 inverted: true,
-                ..s("Black point", Print::BLACK_POINT_RANGE, Print::RESTING_BLACK_POINT, Readout::SignedPercentSpaced)
+                ..s("Black point", Print::BLACK_POINT_RANGE, Print::RESTING_BLACK_POINT, Readout::SignedPercent)
             },
             Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, 0.0, Readout::Signed),
             Field::Vignette => s("Vignette", Vignette::RANGE, 0.0, Readout::Stops),
@@ -273,7 +228,7 @@ impl Field {
                 "Strength",
                 oni_settings::blocks::filter_balance::STRENGTH_RANGE,
                 oni_settings::blocks::filter_balance::RESTING_STRENGTH,
-                Readout::PercentSpaced),
+                Readout::Percent),
             Field::DensityCeiling => {
                 let range = oni_settings::axis::density_axis::mosaic_range();
                 s(
@@ -282,7 +237,7 @@ impl Field {
                     oni_settings::axis::density_axis::MOSAIC_REST,
                     Readout::Ceiling)
             }
-            Field::DyeSeparation => s("Dye separation", separation::RANGE, separation::BASE, Readout::PercentSpaced),
+            Field::DyeSeparation => s("Dye separation", separation::RANGE, separation::BASE, Readout::Percent),
             Field::Angle => s("Angle", oni_settings::frame::Geometry::ANGLE_RANGE, 0.0, Readout::Degrees),
             Field::SharpenAmount => s("Amount", Sharpen::AMOUNT_RANGE, 0.0, Readout::Times),
             Field::SharpenRadius => Spec {

@@ -59,7 +59,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.settle();
     assert_eq!(presets.get_cards().row_count(), 0);
     assert!(!menus.get_live().save_preset, "nothing to save with no photo open");
-    assert_eq!(menus.get_presets().row_count(), 0, "the menu says No presets");
+    assert_eq!(menus.get_presets().row_count(), 0, "the menu says No Presets");
 
     // A open, its Exposure moved: the save sheet proposes the moved rows under the first free name.
     let lib = w.global::<Library>();

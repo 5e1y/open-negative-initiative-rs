@@ -230,6 +230,11 @@ fn swift_help(source: &str, title: &str) -> String {
     literals(source[from..to].split("separated:").next().unwrap())
 }
 
+/// Swift's words in the app's one spelling (#1148), which writes colour where Swift wrote color.
+fn british(text: &str) -> String {
+    text.replace("color", "colour").replace("Color", "Colour")
+}
+
 /// A Slint block's help: the last literal on the `help:` line under its title.
 fn slint_help(source: &str, title: &str) -> String {
     let at = source.find(&format!("title: @tr(\"{title}\");")).unwrap_or_else(|| panic!("{title} in Slint"));
@@ -256,7 +261,7 @@ pub(crate) fn every_block_says_swifts_own_help() {
         ("UI/DetailsPane.swift", "Texture"),
     ] {
         let source = std::fs::read_to_string(swift.join(file)).unwrap();
-        let want = swift_help(&source, title);
+        let want = british(&swift_help(&source, title));
         assert!(want.len() > 20, "{title}: {want}");
         assert_eq!(slint_help(&panel, title), want, "{title}");
         // Twin: one word changed in the port is caught.

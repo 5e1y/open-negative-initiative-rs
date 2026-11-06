@@ -50,7 +50,7 @@ component FlatFieldBlock inherits VerticalLayout {
         spacing: Space.s;
         Toggle { label: @tr("Flat-field"); on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } }
         Rectangle { horizontal-stretch: 1; }
-        Button { has-icon: true; square: true; icon: Icons.settings; help: root.settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.settings = !root.settings; } }
+        Button { has-icon: true; square: true; icon: Icons.settings; help: root.settings ? @tr("Hide Amount and Colour") : @tr("Show Amount and Colour"); clicked => { root.settings = !root.settings; } }
     }
     if Preparing.flat-on: Picker { label: @tr("Mask"); value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
     if Preparing.flat-on && Preparing.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
@@ -98,7 +98,7 @@ export component RollPanel inherits Surface {
                         spacing: Space.m;
                         if Preparing.left-out != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.left-out; wrap: word-wrap; }
                         Field {
-                            label: @tr("Film");
+                            label: @tr("Film type");
                             Tabs {
                                 tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
                                 marked: [false, false, false];
@@ -116,7 +116,7 @@ export component RollPanel inherits Surface {
                             }
                         }
                         if Preparing.grouped: Field {
-                            label: @tr("Pass Order");
+                            label: @tr("Pass order");
                             help: @tr("The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll.");
                             PassReorder {
                                 letters: Preparing.pass-letters;
@@ -156,7 +156,7 @@ export component RollPanel inherits Surface {
                             Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-note; horizontal-stretch: 1; overflow: elide; }
                             if Preparing.has-base: Button { text: @tr("Clear"); enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
                         }
-                        RollSlider { field: 3; label: @tr("Picker Size"); enabled: !Preparing.measuring; }
+                        RollSlider { field: 3; label: @tr("Picker size"); enabled: !Preparing.measuring; }
                     }
                     if Preparing.step == 3: HorizontalLayout {
                         spacing: Space.s;

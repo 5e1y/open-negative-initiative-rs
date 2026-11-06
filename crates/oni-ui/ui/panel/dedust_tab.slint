@@ -6,7 +6,7 @@ import { Pane } from "parts.slint";
 // The brush's size, its hand held by Rust as every slider's.
 component BrushSlider inherits Slider {
     field: -1;
-    label: @tr("Brush Size");
+    label: @tr("Brush size");
     fraction: Dedust.fraction;
     readout: Dedust.readout;
     value-text: Dedust.value-text;
@@ -66,7 +66,7 @@ export component DedustPane inherits Pane {
                 if row.pending: Label { text: @tr("Generating…"); tone: Tone.secondary; }
                 VerticalLayout {
                     alignment: center;
-                    Button { has-icon: true; square: true; icon: Icons.remove; help: @tr("Remove this correction"); clicked => { Dedust.remove(i); } }
+                    Button { has-icon: true; square: true; icon: Icons.remove; help: @tr("Remove This Correction"); clicked => { Dedust.remove(i); } }
                 }
             }
         }

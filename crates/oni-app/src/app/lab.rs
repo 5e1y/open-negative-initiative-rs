@@ -4,6 +4,7 @@
 use super::Ctl;
 use crate::{Bar, Lab, LabCell, MainWindow, PanelState};
 use oni_core::Command;
+use oni_i18n::tr;
 use oni_link::Command as Link;
 use oni_link::scanner::{Effect, Letter, Machine};
 use oni_settings::blocks::Vignette;
@@ -52,22 +53,14 @@ pub fn legend(step: i32) -> String {
 
 pub use oni_link::scanner::spelled;
 
-/// `LabStepKeys.percent`: whole percent, signed, zero bare.
+/// `LabStepKeys.percent`: whole percent, signed.
 pub fn percent(value: f32) -> String {
-    let shown = (value * 100.0).round() as i64;
-    match shown {
-        0 => "0 %".to_string(),
-        s if s < 0 => format!("−{} %", s.abs()),
-        s => format!("+{s} %"),
-    }
+    crate::fields::Readout::SignedPercent.format(value)
 }
 
-/// `LabStepKeys.stops`: tenths of a stop, signed, under half a hundredth bare.
+/// `LabStepKeys.stops`: tenths of a stop, signed.
 pub fn stops(value: f32) -> String {
-    if value.abs() < 0.005 {
-        return "0 EV".to_string();
-    }
-    format!("{}{:.1} EV", if value < 0.0 { "−" } else { "+" }, value.abs())
+    crate::fields::number(f64::from(value), 1, true, crate::fields::Unit::Stops)
 }
 
 /// What the scanner's screen shows, every line as `LabScreen` writes it.
@@ -80,21 +73,25 @@ pub struct Screen {
     pub finish: Vec<String>,
 }
 
+/// The screen's words are the panel's own, in the machine's capitals.
 pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
     let channel = match s.mode {
-        ConversionMode::Negative => "NEGA",
-        ConversionMode::Positive => "POSI",
-        ConversionMode::Monochrome => "B&W",
+        ConversionMode::Negative => tr("Negative"),
+        ConversionMode::Positive => tr("Positive"),
+        ConversionMode::Monochrome => tr("B&W"),
     };
     let clicks = &s.scanner;
     let counts = [clicks.d, clicks.c, clicks.m, clicks.y, clicks.w];
-    let mut finish = vec![format!("CT {}", percent(s.scanner_finish.contrast)), format!("VIG {}", stops(s.scanner_finish.vignette.stops))];
+    let named = |name: &str, value: String| format!("{} {value}", name.to_uppercase());
+    let f = &s.scanner_finish;
+    let mut finish = vec![named(tr("Contrast"), percent(f.contrast)), named(tr("Vignette"), stops(f.vignette.stops))];
     if !s.mode.is_monochrome() {
-        finish.push(format!("CHR {}", percent(s.scanner_finish.secret_sauce)));
+        finish.push(named(tr("Chrome"), percent(f.secret_sauce)));
     }
+    let (at, count) = place.map_or(("--".to_string(), "--".to_string()), |(at, count)| (format!("{at:02}"), format!("{count:02}")));
     Screen {
-        frame: place.map_or("FRAME --/--".to_string(), |(at, count)| format!("FRAME {at:02}/{count:02}")),
-        machine: format!("{} · {channel}", s.scanner_machine.title().to_uppercase()),
+        frame: tr!("FRAME {at}/{count}", at = at, count = count),
+        machine: format!("{} · {}", s.scanner_machine.title().to_uppercase(), channel.to_uppercase()),
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
         cells: Letter::ALL.iter().zip(counts).map(|(l, n)| (l.title().to_string(), spelled(n))).collect(),
         finish,

@@ -382,7 +382,7 @@ fn a_band_slider_writes_its_axis_and_a_double_click_zeroes_it() {
     let expected = track::value(asked, &(low..=high), None);
     assert_eq!(store.settings().spectrogram.band(Band::Green), (0.0, expected, 0.0));
     assert_eq!(band_readout(1, expected), "+50%");
-    assert_eq!(band_readout(0, -12.4), "-12°");
+    assert_eq!(band_readout(0, -12.4), "−12°");
     // Twin: a double click puts the axis back on zero instead of starting a drag.
     let t1 = t0 + Duration::from_secs(2);
     g.band_press(&mut store, 1, t1);

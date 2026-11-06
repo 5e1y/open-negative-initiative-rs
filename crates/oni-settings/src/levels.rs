@@ -61,11 +61,6 @@ impl LevelsChannel {
         let (low, high) = self.domain(mode);
         low + position * (high - low)
     }
-
-    /// Three decimals of density where values are densities, a share of the output otherwise.
-    pub fn readout(self, value: f32) -> String {
-        if self.is_density() { format!("{value:.3}") } else { format!("{:.1}%", value * 100.0) }
-    }
 }
 
 /// One set of levels. The two added points are stored normalised between black and white.

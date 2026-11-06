@@ -154,13 +154,13 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     d.invoke_sensitivity_drag(300.0, 300.0, false);
     d.invoke_sensitivity_release();
     rig.pump();
-    assert_eq!(d.get_sensitivity_text().as_str(), "100 %");
+    assert_eq!(d.get_sensitivity_text().as_str(), "100%");
     assert!(d.get_found() >= 1, "a speck once found stays found");
     d.invoke_sensitivity_press(false);
     d.invoke_sensitivity_drag(-300.0, 300.0, false);
     d.invoke_sensitivity_release();
     rig.pump();
-    assert_eq!((d.get_sensitivity_text().as_str(), d.get_found()), ("0 %", 1), "twin: back at rest, the one speck");
+    assert_eq!((d.get_sensitivity_text().as_str(), d.get_found()), ("0%", 1), "twin: back at rest, the one speck");
     // The same through the window's pointer: down the panel until a drag moves the slider, the tab's first control.
     let x = 1280.0 - w.global::<oni_app::DetailLoupe>().get_band_width() / 2.0 - 30.0;
     // Past the double click the keys above made, which would read the press as a reset.

@@ -1,22 +1,45 @@
 use super::*;
 
 #[test]
-fn the_readouts_print_as_the_swift_formats_do() {
+fn every_readout_writes_its_number_one_way() {
     assert_eq!(Field::Exposure.spec().readout.format(1.5), "+1.50 EV");
-    assert_eq!(Field::ColorDensity.spec().readout.format(-0.25), "-25 %");
+    assert_eq!(Field::ColorDensity.spec().readout.format(-0.25), "\u{2212}25%");
     assert_eq!(Field::Temperature.spec().readout.format(1.0), "+50");
-    assert_eq!(Field::Tint.spec().readout.format(-1.5), "-100");
+    assert_eq!(Field::Tint.spec().readout.format(-1.5), "\u{2212}100");
     assert_eq!(Field::Chrome.spec().readout.format(0.5), "50%");
-    assert_eq!(Field::BalanceStrength.spec().readout.format(0.67), "67 %");
+    assert_eq!(Field::BalanceStrength.spec().readout.format(0.67), "67%");
     assert_eq!(Field::SharpenRadius.spec().readout.format(2.092), "2.1 px");
-    assert_eq!(Field::Angle.spec().readout.format(-1.0), "-1.00°");
+    assert_eq!(Field::Angle.spec().readout.format(-1.0), "\u{2212}1.00°");
+    assert_eq!(Field::DyeSeparation.readout(0.6), "60%");
     // Twin: Temperature's readout is a share of its top, not the stored stops.
     assert_ne!(Field::Temperature.spec().readout.format(1.0), Readout::Signed.format(1.0));
     // The black point reads in the sense its slider moves: stored negative, shown positive.
     assert!(Field::BlackPoint.readout(-0.1).starts_with('+'), "{}", Field::BlackPoint.readout(-0.1));
-    // Twin: the stored value's own sign is what Swift never shows.
-    assert!(Field::BlackPoint.spec().readout.format(-0.1).starts_with('-'));
-    assert_eq!(Field::DyeSeparation.readout(0.6), "60 %");
+    // Twin: the stored value's own sign is what the slider never shows.
+    assert!(Field::BlackPoint.spec().readout.format(-0.1).starts_with('\u{2212}'));
+}
+
+#[test]
+fn a_value_at_rest_reads_without_a_sign() {
+    // The black point rests a hair off zero: it reads 0%, never a signed zero.
+    assert_eq!(Field::BlackPoint.readout(Print::RESTING_BLACK_POINT), "0%");
+    assert_eq!((Field::Exposure.readout(0.0), Field::Exposure.readout(-0.0)), ("0.00 EV".to_string(), "0.00 EV".to_string()));
+    assert_eq!(number(-0.004, 2, true, Unit::Bare), "0.00");
+    assert_eq!(number(-0.006, 2, true, Unit::Bare), "\u{2212}0.01");
+    // Twin: shown, the rest is a negative zero, which Rust's own signed format writes with a hyphen.
+    let shown = Field::BlackPoint.shown(Print::RESTING_BLACK_POINT) * 100.0;
+    assert_eq!(format!("{shown:+.0}%"), "-0%");
+}
+
+#[test]
+fn every_unit_sits_where_the_others_do() {
+    assert_eq!(number(85.0, 0, false, Unit::Percent), "85%");
+    assert_eq!(number(-4.0, 0, true, Unit::Degrees), "\u{2212}4°");
+    assert_eq!(number(2.0, 2, false, Unit::Times), "2.00×");
+    assert_eq!(number(12.0, 0, false, Unit::Pixels), "12 px");
+    assert_eq!(number(0.3, 1, true, Unit::Stops), "+0.3 EV");
+    // Twin: the percent spaced from its number is the old way, no longer written.
+    assert_ne!(Readout::Percent.format(0.85), "85 %");
 }
 
 #[test]

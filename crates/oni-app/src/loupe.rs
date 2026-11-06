@@ -11,7 +11,7 @@ pub const CLOSE: f64 = 2.0;
 
 /// A named ratio, not a zoom percentage: what is judged is a radius in source pixels.
 pub fn label(magnification: f64) -> String {
-    format!("{}%", (magnification * 100.0).round() as i64)
+    crate::fields::number(magnification * 100.0, 0, false, crate::fields::Unit::Percent)
 }
 
 /// The badge's click: rest and close, one for the other.
