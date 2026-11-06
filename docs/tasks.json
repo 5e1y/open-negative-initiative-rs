@@ -6073,5 +6073,12 @@
     "title": "The Settings sheet keeps one height whichever section is open",
     "status": "done",
     "detail": "Evaluation s-0abd2d65 (Spacing and density): the sheet grew between General and Editor, so the dialog and its DONE key jumped. The body laid only the page shown under a guessed 320 pt floor, which Editor passed. Every page now shares one grid cell and only the chosen one shows, so the cell is the tallest page's height in the language spoken; a page takes the card's width, so a hidden page's widest row never widens the one shown. SheetStyle.settings-height goes. Check: window sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections, DONE at one place on General, Editor, Frontier Look and About (the former layout moved it 11.5 px); twin: General's last line ends more than 60 px above DONE, room a sheet fit to the page shown would close."
+  },
+  {
+    "id": 1265,
+    "type": "fix",
+    "title": "The switch reads on or off at a glance, never as a slider at its minimum",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (Clarity): off, the slide lever showed the slider's grey rail with the knob at its start, a slider at its minimum; on and off differed by a rail 9 % whiter. The lever keeps the slider's knob and its travel, but now runs in a slot of its own (ToggleStyle.slot, so a slider's rail made thinner never thins it): an Inward hollow cut to the canvas as the tab bar's, dark while off, lit up to the knob (the slider's lit) while on, never tinted, the accent staying the view's one primary. The knob uncovers the state's mark, an O ring on the hollow while off and an I on the lit stretch while on, as a power switch's. The design system's README and the ui-spec say so."
   }
 ]
