@@ -292,14 +292,15 @@ export component ExportPanel inherits Surface {
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
                     Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
+                // At the panel's text size: a smaller one would be a step of its own in the type scale.
                 Inset {
                     HorizontalLayout {
-                        Label { text: Exporting.bits; role: TextRole.value; horizontal-stretch: 1; }
-                        Label { text: Exporting.dims; role: TextRole.value; }
+                        Label { text: Exporting.bits; horizontal-stretch: 1; }
+                        Label { text: Exporting.dims; }
                     }
                     HorizontalLayout {
-                        Label { text: Exporting.weight-label; role: TextRole.value; horizontal-stretch: 1; }
-                        Label { text: Exporting.weight; role: TextRole.value; }
+                        Label { text: Exporting.weight-label; horizontal-stretch: 1; }
+                        Label { text: Exporting.weight; }
                     }
                     if Exporting.low-precision != "": Label { role: TextRole.note; tone: Tone.warning; text: Exporting.low-precision; }
                     Label { role: TextRole.note; text: @tr("EXIF as set beside each photo; nothing of the scanner unless left there"); }

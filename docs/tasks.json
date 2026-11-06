@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1260,
+    "type": "fix",
+    "title": "The export summary at the panel's text size",
+    "status": "done",
+    "detail": "Evaluation (UI Typography): the export summary's four facts (bits, size, estimated weight) were set in the value face, 11 pt, a step smaller than every other line of the panel. They now take the label size, as the note under them. The export_panel window check measures them as tall as a field's label; its twin, the summary set back in the value face, fails, and the subtitle's smaller face measures smaller."
   }
 ]
