@@ -6003,5 +6003,12 @@
     "title": "The second round's sixteen corrections, merged",
     "status": "done",
     "detail": "Merging #1159-#1222: De-dust's header now lies over the tab bar, which stays laid out, hidden, so Tab's way into the panel keeps its target (the bar takes the keyboard only while it shows). The fields keep the flat face with the type scale's field-sized digits; Prepare keeps its new steps with the type scale's notes; the Roll tab keeps 'Filtration'. scripts/i18n dropped the texts no source shows any more."
+  },
+  {
+    "id": 1223,
+    "type": "fix",
+    "title": "The Temperature and Tint check reads the Pro face's tracks",
+    "status": "done",
+    "detail": "The Scanner's TEMP slider reads Temperature since #1164, so the check, which took the first Temperature label and the line under it, landed on the Scanner's key and read no end. It now reads the `high:` inside the Pro face's StoreSlider of that name, whatever its line layout; the Rail's softened ends keep the hue it names. Twin: the Temperature track's ends swapped on the panel fail it."
   }
 ]
