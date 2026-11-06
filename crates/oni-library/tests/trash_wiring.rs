@@ -32,7 +32,7 @@ fn move_to_oni_trash_lays_its_step_with_no_dialog_in_front_of_it() {
     let landing = block(&busy, "fn marks_landed(");
     assert!(moving.len() > 6 && !asks_first(&moving), "the gesture asks nothing: {moving:#?}");
     assert!(moving.iter().any(|l| l.contains("mark_off_thread(")) && landing.iter().any(|l| l.contains("store.mark_landed(")));
-    assert!(block(&store, "fn mark_landed(").iter().any(|l| l.contains("self.gallery.record_trash(")), "and lays one gallery step");
+    assert!(block(&store, "fn mark_landed(").iter().any(|l| l.contains("self.history.record_trash(")), "and lays one step");
     // Twin: a confirmation in its body is named.
     let asking = [moving, vec!["        self.confirm(tr(\"Move\"), Pending::QuitAnyway);".into()]].concat();
     assert!(asks_first(&asking));
