@@ -6437,5 +6437,12 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1307,
+    "type": "docs",
+    "title": "UI Clarity: each control shows its own extent at rest",
+    "status": "done",
+    "detail": "Owner's catch: flat keys sharing one plate could be told apart only under the hand. A shared plate was a socket of keycaps; the bench now asks that every control show its own extent at rest, whatever groups it."
   }
 ]

@@ -71,6 +71,7 @@ Each category says what it judges, what to look at, and the two ends of its scal
 - At a glance: what the screen is for, what is selected, what can be done, what state it is in.
 - Every label, icon and value unambiguous, each value with its unit; nothing decorative competes
   with the meaning.
+- Each control shows its own extent at rest: telling two controls apart never takes a hover.
 - Not here: the wording itself (UX · Language).
 - **Excels:** someone looking over a shoulder can say what is going on. **Fails:** a value with no
   unit, a control whose purpose takes a click to learn.
