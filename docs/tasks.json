@@ -5317,5 +5317,12 @@
     "title": "Version 1.5.6",
     "status": "done",
     "detail": "oni-app 1.5.6, carrying the logs without the user's names (#1079), the starter in the app's own window with each step of the launch (#1082, #1083) and the unified bar kept (#1085); the 1.5 welcome and splash picture kept."
+  },
+  {
+    "id": 1087,
+    "type": "docs",
+    "title": "The UX and UI benches' criteria",
+    "status": "done",
+    "detail": "Owner's ask: the twelve criteria proposed for an in-depth review become the UX bench (docs/ux-bench.md), the owner's eight categories the UI bench (docs/ui-bench.md). The UX bench rates the app in use (tasks, counts, timings, behaviour, words), the UI bench one still screen in one of its states; a criterion bordering on the other bench names it, so nothing is rated twice. Each gives what it judges, what to look at and the two ends of its scale; how a bench runs and scores comes with the owner's procedure."
   }
 ]
