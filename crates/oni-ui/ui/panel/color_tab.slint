@@ -41,7 +41,7 @@ export component ColorPane inherits Pane {
     if Lab.shown: LabBlock {
         title: @tr("Look");
         block: 2;
-        LabSlider { index: 4; label: @tr("TEMP"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; helps: [@tr("TEMP −: toward cool"), @tr("Double-click to bring it back to rest; {} with − or + moves three steps.", KeyWords.shift), @tr("TEMP +: toward warm")]; }
+        LabSlider { index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; helps: [@tr("Temperature −: toward cool"), @tr("Double-click to bring it back to rest; {} with − or + moves three steps.", KeyWords.shift), @tr("Temperature +: toward warm")]; }
     }
     // `ColorPane`: a black and white film has no colour for this block to move.
     if !Lab.shown && !PanelState.monochrome: Block {
@@ -50,7 +50,7 @@ export component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         demo: "white-balance";
-        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Colour density makes every colour stronger or greyer at once, what other apps call saturation.");
+        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is: Temperature reads the stops between red and blue, Tint between magenta and green. Saturation makes every colour stronger or greyer at once.");
         // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key. A run keeps the
         // key in place, idle, and counts in the status bar, so the panel never jumps.
         ButtonGroup { plate: true;
@@ -84,7 +84,7 @@ export component ColorPane inherits Pane {
             field: 1; label: @tr("Tint"); fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
-        StoreSlider { field: 2; label: @tr("Colour density"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
+        StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
     }
     // Only on a paper: in any other working space the gains do nothing.
     if Exporting.on-paper: Block {

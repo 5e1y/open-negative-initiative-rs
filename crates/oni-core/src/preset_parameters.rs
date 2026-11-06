@@ -37,7 +37,7 @@ pub const BLOCKS: [Block; 4] = [
         title: marked("Colour"),
         entries: &[
             entry("colour", marked("Colour (Temperature, Tint)"), &["curves"]),
-            entry("density", marked("Colour Density"), &["density"]),
+            entry("density", marked("Saturation"), &["density"]),
             entry("chromaDecompression", marked("Chroma Decompression"), &["chromaDecompression"]),
             entry("lighting", marked("Lighting"), &["levelsGlobal"]),
             entry("vignette", marked("Vignette"), &["vignette"]),
@@ -216,7 +216,7 @@ mod tests {
         assert_eq!(label(&rows(&["gains", "levelsPerChannel"])), "Copied WB (gains + per-channel levels)");
         assert_eq!(label(&rows(&["gains"])), "gains", "a row without its partner is named raw");
         assert_eq!(label(&set(WhiteBalance::Automatic.names())), "Automatic WB (Temperature, Tint)");
-        assert_eq!(label(&rows(&["sharpen", "texture", "density"])), "Colour Density, Sharpening and Texture");
+        assert_eq!(label(&rows(&["sharpen", "texture", "density"])), "Saturation, Sharpening and Texture");
         assert_eq!(label(&rows(&[])), "empty");
         // Curves names two rows: one alone is named raw, never as the box.
         assert_eq!(label(&rows(&["manualCurves"])), "manualCurves");

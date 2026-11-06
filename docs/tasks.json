@@ -5688,5 +5688,26 @@
     "title": "The rail in soft hues, its ground at 3:1, and a hover the eye reads",
     "status": "done",
     "detail": "Evaluation s-db78d310 (UI and UX, major, owner's decision): Temperature, Tint and the Scanner's C, M, Y and TEMP ran full-chroma gradients beside the photo; the unfilled rail measured 1.83:1 against the panel; the hover grew the knob about a point. Every bipolar rail now runs between soft hues, its ends at 0.4 of their saturation and 0.85 of their value (`SliderStyle.hue-chroma`, `hue-light`), in the Rail itself, so the Roll tab's, Prepare's, the paper's and the bands' alike: the ends of Temperature, Tint, C, M, Y and TEMP keep 3.8:1 or more against the panel. The rail's bare ground is `SliderStyle.ground` (white at 36 %, about 3.2:1 on the panel) and its lit stretch `SliderStyle.lit` over it (white at 45 %, about 2.2:1 on the ground). The hand anywhere on the row, which a press answers, grows the knob by 1.15, three points across, and lights the value in the primary ink."
+  },
+  {
+    "id": 1163,
+    "type": "fix",
+    "title": "Every readout in its unit, one format on both faces",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Clarity and Consistency, major): Temperature, Tint, Highlights, Shadows and Contrast read bare numbers; Contrast read 0.00 on Pro and 0% on Scanner, Vignette 0.00 EV against 0.0 EV. Temperature and Tint are the print filters' gap in stops (red against blue, magenta against green) and read in EV, as the Colour help now says; Highlights, Shadows, Contrast and the flat-field's colour read in percent. The Scanner face's effects, on its sliders and its screen, read through the Pro slider moving the same quantity (`lab::field`), its own percent and stops formatters gone, so Chrome no longer reads +15% there and 15% on Pro. The bare and share-of-range readout kinds are gone; the density ceiling alone reads a bare density."
+  },
+  {
+    "id": 1164,
+    "type": "fix",
+    "title": "One name per control, one case per role",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Language and Typography): the Scanner's TEMP slider reads Temperature in sentence case like every slider label, its screen keeping TEMP among the machine's capitals; Pro's Colour density, which is saturation, reads Saturation on the panel and in the preset sheet's rows, so Density names a density alone (the Scanner's D, the Roll tab's ceiling); the compare split's labels read Before and After."
+  },
+  {
+    "id": 1165,
+    "type": "fix",
+    "title": "The face switch says what each face is",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (Obvious without a tutorial): Pro and Scanner sat side by side with no hint of how they differ. Each tab of the face switch carries a tooltip, Pro every setting by hand and the place to start, Scanner a lab scanner's keypad of density and colour steps; `Tabs` takes a tooltip per tab, a swatch with none still showing its name."
   }
 ]

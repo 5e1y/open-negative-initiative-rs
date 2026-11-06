@@ -46,14 +46,10 @@ pub fn number(value: f64, places: usize, signed: bool, unit: Unit) -> String {
 pub enum Readout {
     /// Stops, signed, two places.
     Stops,
-    /// Signed, two places.
-    Signed,
     /// The value times 100, in percent, signed.
     SignedPercent,
     /// The value times 100, in percent.
     Percent,
-    /// The value over the range's top, times 100, signed.
-    OfRange(f32),
     /// Three places.
     Ceiling,
     /// Degrees, signed, two places.
@@ -71,10 +67,8 @@ impl Readout {
         let v = f64::from(v);
         match self {
             Readout::Stops => number(v, 2, true, Unit::Stops),
-            Readout::Signed => number(v, 2, true, Unit::Bare),
             Readout::SignedPercent => number(v * 100.0, 0, true, Unit::Percent),
             Readout::Percent => number(v * 100.0, 0, false, Unit::Percent),
-            Readout::OfRange(top) => number(v / f64::from(top) * 100.0, 0, true, Unit::Bare),
             Readout::Ceiling => number(v, 3, false, Unit::Bare),
             Readout::Degrees => number(v, 2, true, Unit::Degrees),
             Readout::Times => number(v, 2, false, Unit::Times),

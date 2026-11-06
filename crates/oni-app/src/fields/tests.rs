@@ -4,15 +4,23 @@ use super::*;
 fn every_readout_writes_its_number_one_way() {
     assert_eq!(Field::Exposure.spec().readout.format(1.5), "+1.50 EV");
     assert_eq!(Field::ColorDensity.spec().readout.format(-0.25), "\u{2212}25%");
-    assert_eq!(Field::Temperature.spec().readout.format(1.0), "+50");
-    assert_eq!(Field::Tint.spec().readout.format(-1.5), "\u{2212}100");
+    assert_eq!(Field::Temperature.spec().readout.format(1.0), "+1.00 EV");
+    assert_eq!(Field::Tint.spec().readout.format(-1.5), "\u{2212}1.50 EV");
+    assert_eq!((Field::Highlights.readout(0.25), Field::Shadows.readout(-0.5)), ("+25%".to_string(), "\u{2212}50%".to_string()));
+    assert_eq!(Field::Contrast.readout(0.15), "+15%");
     assert_eq!(Field::Chrome.spec().readout.format(0.5), "50%");
     assert_eq!(Field::BalanceStrength.spec().readout.format(0.67), "67%");
     assert_eq!(Field::SharpenRadius.spec().readout.format(2.092), "2.1 px");
     assert_eq!(Field::Angle.spec().readout.format(-1.0), "\u{2212}1.00°");
     assert_eq!(Field::DyeSeparation.readout(0.6), "60%");
-    // Twin: Temperature's readout is a share of its top, not the stored stops.
-    assert_ne!(Field::Temperature.spec().readout.format(1.0), Readout::Signed.format(1.0));
+    // Every slider names what its number counts, the ceiling's bare density aside.
+    let bare = |text: &str| text.ends_with(|c: char| c.is_ascii_digit());
+    for f in Field::ALL {
+        let shown = f.readout(f.spec().range.1);
+        assert_eq!(bare(&shown), f == Field::DensityCeiling, "{f:?} reads {shown}");
+    }
+    // Twin: a number written without its unit is caught.
+    assert!(bare(&number(0.25, 2, true, Unit::Bare)));
     // The black point reads in the sense its slider moves: stored negative, shown positive.
     assert!(Field::BlackPoint.readout(-0.1).starts_with('+'), "{}", Field::BlackPoint.readout(-0.1));
     // Twin: the stored value's own sign is what the slider never shows.

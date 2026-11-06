@@ -2,6 +2,7 @@
 //! the phone's own commands, the Lab screen, and the keys the face answers.
 
 use super::Ctl;
+use crate::fields::Field;
 use crate::{Bar, Lab, LabCell, MainWindow, PanelState};
 use oni_core::Command;
 use oni_i18n::tr;
@@ -53,14 +54,13 @@ pub fn legend(step: i32) -> String {
 
 pub use oni_link::scanner::spelled;
 
-/// `LabStepKeys.percent`: whole percent, signed.
-pub fn percent(value: f32) -> String {
-    crate::fields::Readout::SignedPercent.format(value)
-}
-
-/// `LabStepKeys.stops`: tenths of a stop, signed.
-pub fn stops(value: f32) -> String {
-    crate::fields::number(f64::from(value), 1, true, crate::fields::Unit::Stops)
+/// The Pro slider moving the same quantity, whose readout an effect shares on both faces.
+pub fn field(effect: Effect) -> Field {
+    match effect {
+        Effect::Contrast => Field::Contrast,
+        Effect::Vignette => Field::Vignette,
+        Effect::Chrome => Field::Chrome,
+    }
 }
 
 /// What the scanner's screen shows, every line as `LabScreen` writes it.
@@ -84,9 +84,10 @@ pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
     let counts = [clicks.d, clicks.c, clicks.m, clicks.y, clicks.w];
     let named = |name: &str, value: String| format!("{} {value}", name.to_uppercase());
     let f = &s.scanner_finish;
-    let mut finish = vec![named(tr("Contrast"), percent(f.contrast)), named(tr("Vignette"), stops(f.vignette.stops))];
+    let effect = |name: &str, e: Effect, value: f32| named(name, field(e).readout(value));
+    let mut finish = vec![effect(tr("Contrast"), Effect::Contrast, f.contrast), effect(tr("Vignette"), Effect::Vignette, f.vignette.stops)];
     if !s.mode.is_monochrome() {
-        finish.push(named(tr("Chrome"), percent(f.secret_sauce)));
+        finish.push(effect(tr("Chrome"), Effect::Chrome, f.secret_sauce));
     }
     let (at, count) = place.map_or(("--".to_string(), "--".to_string()), |(at, count)| (format!("{at:02}"), format!("{count:02}")));
     Screen {

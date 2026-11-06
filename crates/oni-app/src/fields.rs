@@ -206,22 +206,19 @@ impl Field {
     pub fn spec(self) -> Spec {
         let s = |label, range, base, readout| Spec { label, range, base, centre: None, readout, inverted: false };
         match self {
-            Field::Temperature => s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::OfRange(Print::TEMPERATURE_RANGE.1)),
-            Field::Tint => s("Tint", Print::TINT_RANGE, 0.0, Readout::OfRange(Print::TINT_RANGE.1)),
-            Field::ColorDensity => s(
-                "Colour density",
-                color_density::RANGE,
-                color_density::BASE,
-                Readout::SignedPercent),
+            // The print filters' gap in stops: red against blue, then magenta against green.
+            Field::Temperature => s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::Stops),
+            Field::Tint => s("Tint", Print::TINT_RANGE, 0.0, Readout::Stops),
+            Field::ColorDensity => s("Saturation", color_density::RANGE, color_density::BASE, Readout::SignedPercent),
             Field::Exposure => s("Exposure", Print::EXPOSURE_RANGE, 0.0, Readout::Stops),
-            Field::Highlights => s("Highlights", Print::QUARTER_RANGE, 0.0, Readout::Signed),
-            Field::Shadows => s("Shadows", Print::QUARTER_RANGE, 0.0, Readout::Signed),
+            Field::Highlights => s("Highlights", Print::QUARTER_RANGE, 0.0, Readout::SignedPercent),
+            Field::Shadows => s("Shadows", Print::QUARTER_RANGE, 0.0, Readout::SignedPercent),
             Field::WhitePoint => s("White point", Print::POINT_RANGE, 0.0, Readout::SignedPercent),
             Field::BlackPoint => Spec {
                 inverted: true,
                 ..s("Black point", Print::BLACK_POINT_RANGE, Print::RESTING_BLACK_POINT, Readout::SignedPercent)
             },
-            Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, 0.0, Readout::Signed),
+            Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, 0.0, Readout::SignedPercent),
             Field::Vignette => s("Vignette", Vignette::RANGE, 0.0, Readout::Stops),
             Field::Chrome => s("Chrome", SAUCE_RANGE, 0.0, Readout::Percent),
             Field::BalanceStrength => s(
@@ -261,8 +258,8 @@ impl Field {
             Field::GainTemperature => s("Temperature", Gains::RANGE, 0.0, Readout::Stops),
             Field::GainTint => s("Tint", Gains::RANGE, 0.0, Readout::Stops),
             Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, 1.0, Readout::Percent),
-            Field::FlatTemperature => s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::Signed),
-            Field::FlatTint => s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::Signed),
+            Field::FlatTemperature => s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent),
+            Field::FlatTint => s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent),
         }
     }
 
