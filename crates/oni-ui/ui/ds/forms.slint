@@ -59,20 +59,16 @@ export component Field inherits VerticalLayout {
     }
 }
 
-// `DSWarning`: a triangle, then the sentence under it, on a pale orange band.
-export component WarningBand inherits Rectangle {
+// `DSWarning`: the warning's triangle, then its sentence, on the panel's own ground: the orange stays
+// in the glyph, as a band of it beside the photo would tint how its colours are judged.
+export component WarningBand inherits HorizontalLayout {
     in property <string> text;
-    background: Colour.warning-soft;
-    border-radius: Radius.badge;
+    spacing: Space.s;
     VerticalLayout {
-        padding: Space.s;
-        spacing: Space.xs;
-        HorizontalLayout {
-            alignment: start;
-            Icon { source: Icons.warning; width: ButtonStyle.icon; height: ButtonStyle.icon; tone: Tone.on-warning; }
-        }
-        Label { text: root.text; wrap: word-wrap; tone: Tone.on-warning; }
+        alignment: start;
+        Icon { source: Icons.warning; width: ButtonStyle.icon; height: ButtonStyle.icon; tone: Tone.warning; }
     }
+    Label { text: root.text; wrap: word-wrap; horizontal-stretch: 1; }
 }
 
 // `DSProgress`: a track's recess lit up to the fraction done, glowing; below zero, no total, a lit

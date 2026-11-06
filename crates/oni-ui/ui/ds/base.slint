@@ -9,8 +9,8 @@ import { Outward, Inward } from "depth.slint";
 // `note` is a block's wrapped line in the secondary ink, the size of a value; `section` a block's title,
 // a step heavier than the words under it.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
-// `on-warning` reads on the warning's band, `lcd` on the scanner's glass.
-export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution, on-warning, lcd }
+// `lcd` reads on the scanner's glass.
+export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution, lcd }
 export enum Gap { none, xxs, xs, s, m, l }
 export enum Ground { ground, canvas, canvas-cropping, sheet, well, paper, skeleton }
 // How a picture meets its box: whole inside it, filling it cropped, or stretched to it.
@@ -52,7 +52,6 @@ export global Tones {
         if (tone == Tone.on-light) { return Colour.ink-on-light; }
         if (tone == Tone.warning) { return Colour.warning; }
         if (tone == Tone.caution) { return Colour.caution; }
-        if (tone == Tone.on-warning) { return Colour.ink-on-warning; }
         if (tone == Tone.lcd) { return ScannerStyle.lcd-ink; }
         Colour.ink
     }

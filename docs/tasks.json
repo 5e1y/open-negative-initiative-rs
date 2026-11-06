@@ -5681,5 +5681,12 @@
     "title": "The generic colour stocks spelt as the rest of the app",
     "status": "done",
     "detail": "Evaluation s-db78d310: Generic Color Negative broke the British spelling every other text of the app uses (the Colour tab, Colour density). The catalogue two generic colour stocks read Generic Colour Negative and Generic Colour Positive, in the inspector, the stock picker, a project stocks and the export Film field alike; their ids, which sidecars and markers hold, are unchanged, and brand names (Kodak ColorPlus, Lucky Color 200, Mira Color) keep their makers spelling."
+  },
+  {
+    "id": 1209,
+    "type": "interface",
+    "title": "A warning keeps its orange in its glyph",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: a large amber band (Not measured yet) sat beside the gallery thumbnails, as the Roll tab one beside the photo. `WarningBand` is now the warning triangle in the warning orange, then its sentence in the primary ink, on the panel own ground, in the inspector and the Roll tab alike: nothing beside a photo tints how its colours are judged. `Colour.warning-soft` and `Tone.on-warning`, which only the band read, are gone; the lab keeps Swift DSWarning as its reference."
   }
 ]
