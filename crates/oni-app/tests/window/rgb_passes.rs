@@ -143,7 +143,7 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     // Measured: each triplet registered, its passes joined to their lead, as one gallery step.
     p.invoke_step_picked(4);
     rig.pump();
-    assert_eq!(p.get_action_title().as_str(), "MEASURE 2 FRAMES");
+    assert_eq!(p.get_readouts().row_data(4).unwrap().as_str(), "1 / 2");
     p.invoke_advance();
     let advice = w.global::<oni_app::Advice>();
     rig.until("the measure landed", Duration::from_secs(300), || !p.get_shown() || advice.get_shown());

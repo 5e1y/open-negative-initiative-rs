@@ -13,7 +13,7 @@ impl Ctl {
         p.set_shown(shown);
         if !shown {
             p.set_measuring(false);
-            self.play_tutorial(None);
+            self.keep_tutorial(None);
             return;
         }
         let mut s = self.state.borrow_mut();
@@ -93,7 +93,7 @@ impl Ctl {
         let base_note = r.base.as_ref().map_or(unpicked.to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
         // A slide roll walks no flags step: every slide ticked is measured.
         let measured = if r.film == ConversionMode::Positive { ticked } else { ticked - flagged };
-        let action = if step == Step::Window { measure_title(measured) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
+        let (action, skips) = key(step, filled(step, &r.flat, r.base.is_some()));
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title(r.film).to_string(),
@@ -130,7 +130,9 @@ impl Ctl {
         drop(s);
         p.set_measuring(measuring.is_some());
         p.set_step(step.index() as i32);
-        self.play_tutorial(measuring.is_none().then_some(step.index()));
+        let demo = measuring.is_none().then_some(step.index()).filter(|s| crate::tutorial::clip(*s).is_some());
+        self.keep_tutorial(demo);
+        p.set_has_tutorial(demo.is_some());
         p.set_skipped(ModelRc::new(VecModel::from(skipped)));
         p.set_done(ModelRc::new(VecModel::from(done)));
         p.set_heading(heading.into());
@@ -162,6 +164,7 @@ impl Ctl {
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
         p.set_action_title(action.into());
+        p.set_action_skips(skips);
         p.set_action_enabled(step != Step::Window || measured > 0);
         p.set_card_picture(card);
         self.publish_passes(&p);

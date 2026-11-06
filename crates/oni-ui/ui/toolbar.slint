@@ -9,10 +9,11 @@ import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
 import { RatingFilter } from "rating_filter.slint";
 
-// `rollStepKeys`, the faces' bar for the steps: the current one held, a mark on each done, a step the
-// roll does not walk out of reach, and all of them while it measures. A tab's width never follows its mark.
+// `rollStepKeys`, the faces' bar for the steps, numbered in their order: the current one held, a check on
+// each done, a step the roll does not walk out of reach, and all of them while it measures.
 export component RollStepKeys inherits Tabs {
     tabs: [@tr("Film Type"), @tr("Flat-Field"), @tr("Base"), @tr("Flags"), @tr("Window")];
+    ordered: true;
     preferred-width: self.tabs.length * RollStyle.step-tab;
     selected: Preparing.step;
     marked: Preparing.done;

@@ -99,11 +99,6 @@ pub fn fitted_image(image: (f64, f64), size: (f64, f64)) -> (f64, f64, f64, f64)
     ((size.0 - w) / 2.0, (size.1 - h) / 2.0, w, h)
 }
 
-/// The key's title on the window step.
-pub fn measure_title(n: usize) -> String {
-    trn("MEASURE {n} FRAME", "MEASURE {n} FRAMES", n as u64)
-}
-
 pub fn left_out_text(n: usize) -> String {
     match n {
         0 => String::new(),
@@ -230,7 +225,10 @@ mod tests {
         assert!(!done(Step::Base, Step::Flags, Capture::Camera, n, &flat, false) && done(Step::Base, Step::Flags, Capture::Camera, n, &flat, true));
         assert!(!done(Step::FlatField, Step::Base, Capture::Scanner, n, &flat, false), "a step the roll does not walk is not done");
         assert!(!done(Step::Base, Step::Base, Capture::Camera, n, &flat, true), "twin: the current step is not behind");
-        assert_eq!((measure_title(1), measure_title(3)), ("MEASURE 1 FRAME".to_string(), "MEASURE 3 FRAMES".to_string()));
+        // The key names the walk's end as the bar's key does; before a step holds its value it only passes it, flat.
+        assert_eq!((key(Step::Window, false), key(Step::Flags, true)), (("PREPARE ROLL", false), ("NEXT", false)));
+        assert_eq!(key(Step::Base, false), ("Skip", true), "no base picked: the key passes the step, flat");
+        assert_ne!(key(Step::Base, true), ("Skip", true), "twin: a base picked raises NEXT");
         assert_eq!(left_out_text(1), "1 frame of this folder, measured on another roll, is left out.");
         assert_eq!(left_out_text(2), "2 frames of this folder, measured on another roll, are left out.");
     }

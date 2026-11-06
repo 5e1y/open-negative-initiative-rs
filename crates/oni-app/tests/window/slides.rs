@@ -101,7 +101,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     p.invoke_advance();
     rig.pump();
     assert_eq!(p.get_step(), 2, "the film leads to the white");
-    assert_eq!(p.get_action_title().as_str(), "SKIP");
+    assert_eq!(p.get_action_title().as_str(), "Skip");
     // A white picked on a slide's warm ramp: its colour alone goes to grey on every slide.
     rig.until("the scan read", Duration::from_secs(60), || p.get_scan_ready());
     // Drawn first, so the base step's area has its size and the scan its place in it.
@@ -110,7 +110,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     p.invoke_base_clicked(p.get_scan_x() + p.get_scan_width() * 0.5, p.get_scan_y() + p.get_scan_height() * 0.5);
     rig.pump();
     assert_eq!(p.get_step(), 4, "the white leads to the window");
-    assert_eq!(p.get_action_title().as_str(), "MEASURE 3 FRAMES");
+    assert_eq!(p.get_readouts().row_data(4).unwrap().as_str(), "1 / 3", "every slide measured");
     assert!(p.get_window_shown());
     let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
     let rest = disk(1);
@@ -164,7 +164,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
         p.invoke_clear_base();
         rig.pump();
     }
-    assert_eq!(p.get_action_title().as_str(), "SKIP");
+    assert_eq!(p.get_action_title().as_str(), "Skip");
     p.invoke_advance();
     rig.pump();
     p.invoke_advance();

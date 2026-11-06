@@ -102,6 +102,8 @@ impl Ctl {
         let c = me.clone();
         p.on_advance(move || c.roll_advance());
         let c = me.clone();
+        p.on_tutorial_toggled(move || c.toggle_tutorial());
+        let c = me.clone();
         p.on_card_resized(move || c.publish_prepare());
         let c = me.clone();
         p.on_window_grabbed(move |h| c.window_grabbed(h));

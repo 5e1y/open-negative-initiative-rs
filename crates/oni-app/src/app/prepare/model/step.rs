@@ -27,19 +27,19 @@ impl Step {
             Step::Base if film == ConversionMode::Positive => tr("Pick a White or Grey"),
             Step::Base => tr("Pick the Film Base"),
             Step::Flags => tr("Flag the Frames Left Out"),
-            Step::Window => tr("Place the Measuring Frame"),
+            Step::Window => tr("Place the Measuring Window"),
         }
     }
 
     pub fn detail(self, film: ConversionMode) -> &'static str {
         match self {
-            Step::Window if film == ConversionMode::Positive => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Every slide keeps it as its measuring frame."),
+            Step::Window if film == ConversionMode::Positive => tr("Draw the window inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Every slide keeps it as its measuring window."),
             Step::Base if film == ConversionMode::Positive => tr("Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; skipped, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."),
             Step::Film => tr("Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."),
             Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
             Step::Flags => tr("Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."),
-            Step::Window => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."),
+            Step::Window => tr("Draw the window inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."),
         }
     }
 
@@ -81,7 +81,7 @@ pub fn neighbour(step: Step, way: i32, capture: Capture, film: ConversionMode) -
     if next.skipped(capture, film) { step } else { next }
 }
 
-/// `RollPanel.stepFilled`: NEXT once the step holds its value, SKIP before.
+/// `RollPanel.stepFilled`: the step holds its value, a flat-field set or a base picked.
 pub fn filled(step: Step, flat: &FlatField, base: bool) -> bool {
     match step {
         Step::FlatField => !flat.is_neutral(),
@@ -93,4 +93,14 @@ pub fn filled(step: Step, flat: &FlatField, base: bool) -> bool {
 /// A step behind the current one that holds its value; one passed by SKIP, or not walked, holds none.
 pub fn done(step: Step, current: Step, capture: Capture, film: ConversionMode, flat: &FlatField, base: bool) -> bool {
     step.index() < current.index() && !step.skipped(capture, film) && filled(step, flat, base)
+}
+
+/// The step's key and whether it only passes the step: PREPARE ROLL ends the walk, NEXT rises once
+/// the step holds its value; before, a flat Skip, so the pick the step asks for stays its call to act.
+pub fn key(step: Step, filled: bool) -> (&'static str, bool) {
+    match step {
+        Step::Window => (tr("PREPARE ROLL"), false),
+        _ if filled => (tr("NEXT"), false),
+        _ => (tr("Skip"), true),
+    }
 }

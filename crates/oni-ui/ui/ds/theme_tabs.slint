@@ -16,6 +16,11 @@ export global TabsStyle {
     out property <length> reach: 100000px;
     out property <length> mark: DS.space-xs;
     out property <length> mark-inset: DS.space-xxs;
+    // An ordered bar's step disc, an icon's size, lighter than both the hollow and the pill it sits on.
+    out property <length> step: DS.control-icon-size;
+    out property <length> step-gap: DS.space-xs;
+    out property <length> step-check: DS.space-sm + DS.space-xs;
+    out property <color> step-disc: DS.palette-track;
     out property <length> swatch: DS.control-handle-size;
     // The pill: `DS.Palette.track` (white 15 %) laid on the canvas, opaque so its shadow stays under it.
     in-out property <float> pill-tone: 0.153;

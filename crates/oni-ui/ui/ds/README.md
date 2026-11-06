@@ -53,7 +53,7 @@ width as it changes, on screen and on a contact sheet's numbers.
 
 Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`), its glyph and word on
 it. A `Keycap` stands only where the use site sets `keycap: true`: the mode switch (EDITOR, GALLERY), a
-screen's or a sheet's commit (EXPORT, ADD FOLDER…, PREPARE ROLL, the prepare footer's NEXT, every DONE,
+screen's or a sheet's commit (EXPORT, ADD FOLDER…, PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE,
 GOT IT, GET STARTED, SEND) and the automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER
 CORRECTION, DETECT, REMOVE). A question's answers and a passing notice's OK stay flat. The cap
 is a raster of Swift's `KeycapStyle` that Rust draws when the window asks `Raster.keycap(KeycapLook)`;
@@ -138,7 +138,8 @@ field lies flat, as a text field.
 
 - **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a plot's, and one
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
-  adds the accent dot, `swatches` draws colours for words.
+  adds the accent dot, `swatches` draws colours for words; `ordered` leads each of a walk's steps with its
+  number in a disc, the accent check there once `marked` says it is done.
 - **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` on a `Rail` of its own; on, the knob
   stands one `ToggleStyle.travel` along on the grab spring and the rail is lit up to it. The knob grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
