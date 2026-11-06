@@ -121,7 +121,7 @@ fn entry_at(line: usize) -> Option<&'static carries::Entry> {
 }
 
 fn line(text: &str, enabled: bool, rule: bool) -> MenuLine {
-    MenuLine { text: text.into(), enabled, rule, opens: false }
+    MenuLine { text: text.into(), enabled, rule, ..MenuLine::default() }
 }
 
 

@@ -32,14 +32,25 @@ pub struct Keys {
     pub command: &'static str,
     pub command_shift: &'static str,
     pub option_command: &'static str,
+    pub option_command_shift: &'static str,
     /// The Shift key named alone, as in "⇧ with − or +".
     pub shift: &'static str,
+    /// The key that deletes backwards, named alone.
+    pub delete: &'static str,
 }
 
 pub fn keys(platform: Platform) -> Keys {
     match platform {
-        Platform::Mac => Keys { command: "⌘", command_shift: "⌘⇧", option_command: "⌥⌘", shift: "⇧" },
-        Platform::Windows => Keys { command: "Ctrl+", command_shift: "Ctrl+Shift+", option_command: "Ctrl+Alt+", shift: "Shift" },
+        // AppKit's order: Option, Shift, then Command, last before the key.
+        Platform::Mac => Keys { command: "⌘", command_shift: "⇧⌘", option_command: "⌥⌘", option_command_shift: "⌥⇧⌘", shift: "⇧", delete: "⌫" },
+        Platform::Windows => Keys {
+            command: "Ctrl+",
+            command_shift: "Ctrl+Shift+",
+            option_command: "Ctrl+Alt+",
+            option_command_shift: "Ctrl+Alt+Shift+",
+            shift: "Shift",
+            delete: "Backspace",
+        },
     }
 }
 
@@ -52,6 +63,7 @@ pub fn publish_keys(window: &crate::MainWindow) {
     words.set_command_shift(k.command_shift.into());
     words.set_option_command(k.option_command.into());
     words.set_shift(k.shift.into());
+    words.set_delete(k.delete.into());
 }
 
 #[cfg(test)]
@@ -59,7 +71,7 @@ mod tests {
     use super::*;
     use std::path::{Path, PathBuf};
 
-    const MAC_WORDS: [&str; 4] = ["Finder", "⌘", "⌥", "⇧"];
+    const MAC_WORDS: [&str; 5] = ["Finder", "⌘", "⌥", "⇧", "⌫"];
 
     /// The string literals of a label source that write a Mac word, comments and checks aside.
     fn mac_words(source: &str) -> Vec<String> {
@@ -118,7 +130,17 @@ mod tests {
     #[test]
     fn windows_labels_say_explorer_and_ctrl() {
         let k = keys(Platform::Windows);
-        let windows = [reveal(Platform::Windows).to_owned(), reveal_photos(Platform::Windows, 3), reveal_log(Platform::Windows).to_owned(), k.command.into(), k.command_shift.into(), k.option_command.into(), k.shift.into()];
+        let windows = [
+            reveal(Platform::Windows).to_owned(),
+            reveal_photos(Platform::Windows, 3),
+            reveal_log(Platform::Windows).to_owned(),
+            k.command.into(),
+            k.command_shift.into(),
+            k.option_command.into(),
+            k.option_command_shift.into(),
+            k.shift.into(),
+            k.delete.into(),
+        ];
         for word in &windows {
             assert!(!MAC_WORDS.iter().any(|w| word.contains(w)), "{word}");
         }

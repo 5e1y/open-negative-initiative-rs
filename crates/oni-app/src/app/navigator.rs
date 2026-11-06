@@ -174,7 +174,7 @@ impl Nav {
 }
 
 fn line(text: &str, enabled: bool, rule: bool) -> MenuLine {
-    MenuLine { text: text.into(), enabled, rule, opens: false }
+    MenuLine { text: text.into(), enabled, rule, ..MenuLine::default() }
 }
 
 /// `.whitespaces`: spaces and tabs, never a line's end.

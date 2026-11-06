@@ -6584,5 +6584,33 @@
     "title": "A rounded row selected is the tab bar's raised pill",
     "status": "done",
     "detail": "Evaluation, UI Art direction: the gallery, the sidebar and Settings read as bare beside the editor's panel. One discreet touch within the art direction: the selection of the navigator, of Settings' and of the presets' side lists is the raised pill the tab bar slides under its tab (Outward on TabsStyle.pill), so a column's selection and its tab bar speak alike. A tree's list rows keep their flat band, which joins several selected; the tiles stay flat, being the photos, their medals and seals already the metal."
+  },
+  {
+    "id": 1334,
+    "type": "fix",
+    "title": "The bar's keys that reset or remove stand last and apart, and say their word",
+    "status": "done",
+    "detail": "UI and UX evaluation (UI Hierarchy, UI Overall, UX Obvious, UI Iconography): the gallery set Reset and Move to Trash right after PREPARE ROLL at the bar's rhythm, as two bare glyphs, Reset's circular arrow reading as rotation and as undo. Both modes now end their centre keys with one plate of their own, Reset and Trash, set apart by ShellStyle.bar-apart (twice Space.l, the bar's own gap when compact), each a word that gives way to its glyph only short of room, red under the hand; the editor gains the Trash its ⌘⌫ already reached. Reset's glyph is an arrow back to its stop, drawn in the Trinil stroke, so circular arrows stay rotation's and the history's; the unused circular one is removed. The report key stays where it is."
+  },
+  {
+    "id": 1335,
+    "type": "fix",
+    "title": "The photo's menu ends on Reset and the ONI Trash, and prints the menu bar's chords",
+    "status": "done",
+    "detail": "UI and UX evaluation (UI Hierarchy, UX Expert efficiency): the right-click menu grouped Reset Settings with Copy and Paste Settings and printed no shortcut. Reset Settings now opens a section of its own at the menu's foot, beside Move to ONI Trash, ruled off from every verb that keeps; each line prints the chord the menu bar answers for its gesture, right-aligned as AppKit's menus do (MenuLine.keys), and the menu widens to its widest line, word and chord, rather than elide it. platform::keys writes the Mac's modifiers in AppKit's order (⇧⌘, ⌥⇧⌘), as the native menu bar shows them, in every tooltip too, and gains the delete key. In the gallery ⇧⌘C copies the one photo picked, as the menu's Copy Settings does, rather than a frame open earlier. Unit checks: the menu's order and rules with Reset at the foot, and each printed chord equal to the one app.slint declares for the same act; twin: the menu bar's Reset moved to another chord is caught. Window check toolbar::the_keys_that_reset_or_remove_stand_last_and_apart opens the menu by a right click and reads its foot, its chords and its width on two photos against one."
+  },
+  {
+    "id": 1336,
+    "type": "fix",
+    "title": "Paste to Roll on a plate of its own, counting the frames it rewrites, on ⌥⌘V",
+    "status": "done",
+    "detail": "UX evaluation (Trust, Expert efficiency): Paste to Roll, which rewrites a whole roll at once, shared Copy and Paste's plate and had no shortcut. It now stands on its own plate; its tooltip and its menu bar title count the photos it reaches (Paste to 24 Photos of the Roll) and give its chord, ⌥⌘V, which the menu bar declares; the toast with its Undo stays."
+  },
+  {
+    "id": 1337,
+    "type": "fix",
+    "title": "One lamp for every latching key, and Undo names the slider it takes back",
+    "status": "done",
+    "detail": "UI and UX evaluation (UI Clarity, UI Consistency, UX Trust): the contact-sheet key read Whole Roll in both modes, meaning select all in the gallery and the roll together in the editor, and was the one latching key with no lamp; Undo's tooltip named no edit while Redo's named gestures. The key now says Select All in the gallery and Whole Roll beside a photo, and wears a lamp lit while every photo it picks is picked (Bar.whole, from the same rule its press reads). A step with no label of its own, an edit, is named by the one slider it moved, read on the open frame (Undo Exposure, Redo Exposure); an edit that moved several values keeps the bare word. Unit check menus::an_edit_is_named_by_the_one_slider_it_moved, with twins on two values and none; window check gestures reads Undo Exposure and Redo Exposure."
   }
 ]

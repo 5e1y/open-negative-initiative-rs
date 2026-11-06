@@ -1,5 +1,6 @@
 // The top bar, one layout in every mode: the mode key and the history at the left, the mode's own keys
-// centred, feedback, settings and the screen's commit at the right; every key there is a menu's gesture.
+// centred, the keys that reset or remove last and apart, feedback, settings and the screen's commit at the
+// right; every key there is a menu's gesture.
 import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
@@ -36,6 +37,8 @@ export global Bar {
     in property <int> targets: 1;
     // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
     in property <bool> can-select-all;
+    // Every photo ⌘A picks is picked: the select-all key's lamp.
+    in property <bool> whole;
     in property <bool> can-prepare;
     in property <bool> can-toggle-mode;
     // The gallery on the archive's folders, where scans come in: neither the projects nor the ONI Trash.
@@ -79,22 +82,43 @@ component Tool inherits Word {
     has-icon: root.compact;
 }
 
-// ⌘A from the bar: the whole roll selected where the hand is, shown together beside a photo; pressed
-// on a roll picked whole, the photo it came from alone again.
+// ⌘A from the bar, a latch lit while it holds: every photo the gallery shows picked, or beside a photo
+// the whole roll shown together, each named for what it does there; pressed lit, one photo again.
 component SelectAll inherits Tool {
     action: Act.select-all;
-    word: @tr("Whole Roll");
+    word: Bar.editing ? @tr("Whole Roll") : @tr("Select All");
     icon: Icons.contact-sheet;
-    help: @tr("Select the Whole Roll ({})", KeyWords.command + "A");
+    latch: true;
+    on: Bar.whole;
+    help: self.on ? @tr("Back to One Photo")
+        : Bar.editing ? @tr("Show the Whole Roll Together ({})", KeyWords.command + "A") : @tr("Select All ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
 }
 
-// A glyph on its own plate, apart from the words that keep the work and lighter than them.
-component ResetScan inherits Item {
-    action: Act.reset;
-    icon: Icons.reset;
-    help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
-    enabled: Bar.can-reset;
+// The keys that reset or remove, last on the bar and on a plate of their own, never beside one that keeps;
+// each says its word, as the keys that keep do, and shows its danger under the hand.
+component Removing inherits ButtonGroup {
+    in property <bool> compact;
+    plate: true;
+    Tool {
+        compact: root.compact;
+        action: Act.reset;
+        word: @tr("Reset");
+        icon: Icons.reset;
+        kind: ButtonKind.destructive;
+        help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
+        enabled: Bar.can-reset;
+    }
+    Tool {
+        compact: root.compact;
+        action: Act.remove;
+        word: @tr("Trash");
+        icon: Icons.remove;
+        kind: ButtonKind.destructive;
+        help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash ({})", Bar.targets, KeyWords.command + KeyWords.delete)
+            : @tr("Move to ONI Trash ({})", KeyWords.command + KeyWords.delete);
+        enabled: Bar.targets > 0;
+    }
 }
 
 // Undo and Redo beside the mode key, in every mode: the history is the app's, never one screen's.
@@ -104,11 +128,22 @@ component History inherits ButtonGroup {
     Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
 }
 
-component EditorKeys inherits HorizontalLayout {
+// A mode's own keys, then the keys that reset or remove, set apart by a gap wider than the keys' own.
+component Apart inherits HorizontalLayout {
     in property <bool> compact;
-    spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
+    spacing: root.compact ? ShellStyle.bar-gap : ShellStyle.bar-apart;
     cross-axis-alignment: center;
-    // `centreKeys`: each family on its own plate, De-dust alone and never plated; a mode's key latches, lit while it is on.
+    HorizontalLayout {
+        spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
+        cross-axis-alignment: center;
+        @children
+    }
+    Removing { compact: root.compact; }
+}
+
+component EditorKeys inherits Apart {
+    // `centreKeys`: each family on its own plate, De-dust alone and never plated; every key that latches
+    // wears a lamp, lit while it is on.
     ButtonGroup { plate: true;
         Tool {
             compact: root.compact;
@@ -143,8 +178,17 @@ component EditorKeys inherits HorizontalLayout {
             help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, KeyWords.command-shift + "V") : @tr("Paste settings ({})", KeyWords.command-shift + "V");
             enabled: Bar.can-paste;
         }
-        // The menu's title, which counts the photos the paste rewrites.
-        Tool { compact: root.compact; action: Act.paste-to-roll; word: @tr("Paste to Roll"); icon: Icons.film-roll; help: Menus.titles.paste-to-roll; enabled: Bar.can-paste; }
+    }
+    // A plate of its own: it rewrites every frame of the roll at once, as the menu's title counts them.
+    ButtonGroup { plate: true;
+        Tool {
+            compact: root.compact;
+            action: Act.paste-to-roll;
+            word: @tr("Paste to Roll");
+            icon: Icons.film-roll;
+            help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
+            enabled: Bar.can-paste;
+        }
     }
     Tool {
         compact: root.compact;
@@ -156,15 +200,9 @@ component EditorKeys inherits HorizontalLayout {
         help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
         enabled: Bar.has-photo && Bar.single;
     }
-    ButtonGroup { plate: true;
-        ResetScan { }
-    }
 }
 
-component GalleryKeys inherits HorizontalLayout {
-    in property <bool> compact;
-    spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
-    cross-axis-alignment: center;
+component GalleryKeys inherits Apart {
     // The editor's first plate holds the select-all key alone here, as in Swift's `centreKeys`.
     ButtonGroup { plate: true;
         SelectAll { compact: root.compact; }
@@ -177,13 +215,6 @@ component GalleryKeys inherits HorizontalLayout {
         kind: Bar.prepare-first ? ButtonKind.accent : ButtonKind.plain;
         help: @tr("Prepare the Roll");
         enabled: Bar.can-prepare;
-    }
-    ButtonGroup { plate: true;
-        ResetScan { }
-    }
-    // The trash stands on a plate of its own, never beside a key that keeps the photo.
-    ButtonGroup { plate: true;
-        Item { action: Act.remove; icon: Icons.remove; help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash", Bar.targets) : @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
     }
 }
 

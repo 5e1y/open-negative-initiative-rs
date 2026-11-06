@@ -253,7 +253,7 @@ msgstr "Nombre del rollo"
 msgid "Help on {}"
 msgstr "Ayuda sobre {}"
 
-#: crates/oni-ui/ui/ds/containers.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/toolbar.slint
 msgid "Reset"
 msgstr "Restablecer"
 
@@ -1025,7 +1025,7 @@ msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
 msgid "Gallery"
 msgstr "Galería"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/menus.slint
 msgid "Move to ONI Trash"
 msgstr "Mover a la Papelera de ONI"
 
@@ -2235,8 +2235,20 @@ msgid "Whole Roll"
 msgstr "Todo el rollo"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Select the Whole Roll ({})"
-msgstr "Seleccionar todo el rollo ({})"
+msgid "Select All"
+msgstr "Seleccionar todo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Back to One Photo"
+msgstr "Volver a una sola foto"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Show the Whole Roll Together ({})"
+msgstr "Mostrar todo el rollo junto ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Select All ({})"
+msgstr "Seleccionar todo ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Reset Settings ({})"
@@ -2245,6 +2257,17 @@ msgstr "Restablecer ajustes ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select one photo to crop it"
 msgstr "Selecciona una sola foto para recortarla"
+
+msgid "Trash"
+msgstr "Papelera"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Move {} Photos to ONI Trash ({})"
+msgstr "Mover {} fotos a la Papelera de ONI ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Move to ONI Trash ({})"
+msgstr "Mover a la Papelera de ONI ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
@@ -2281,10 +2304,6 @@ msgstr "PREPARAR ROLLO"
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
 msgstr "Preparar el rollo"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Move {} Photos to ONI Trash"
-msgstr "Mover {} fotos a la Papelera de ONI"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "GALLERY"
@@ -2911,8 +2930,8 @@ msgid "Paste Settings to {count} Photos"
 msgstr "Pegar ajustes en {count} fotos"
 
 #: crates/oni-app/src/app/menus.rs
-msgid "Paste to Roll ({count} Photos)"
-msgstr "Pegar en el rollo ({count} fotos)"
+msgid "Paste to {count} Photos of the Roll"
+msgstr "Pegar en las {count} fotos del rollo"
 
 #: crates/oni-app/src/app/menus.rs
 msgid "Filter: {medal}"
@@ -4171,16 +4190,16 @@ msgid "Paste Settings ({count} photos)"
 msgstr "Pegar ajustes ({count} fotos)"
 
 #: crates/oni-app/src/organise/cells.rs
-msgid "Reset Settings ({count} photos)"
-msgstr "Restablecer ajustes ({count} fotos)"
-
-#: crates/oni-app/src/organise/cells.rs
 msgid "Move into a New Roll… ({count} photos)"
 msgstr "Mover a un rollo nuevo… ({count} fotos)"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "Ungroup ({count} photos)"
 msgstr "Desagrupar ({count} fotos)"
+
+#: crates/oni-app/src/organise/cells.rs
+msgid "Reset Settings ({count} photos)"
+msgstr "Restablecer ajustes ({count} fotos)"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "New Project from {count} Photos"

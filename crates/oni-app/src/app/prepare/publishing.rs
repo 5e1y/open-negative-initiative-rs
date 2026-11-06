@@ -78,7 +78,7 @@ impl Ctl {
         let options = crate::app::roll_tab::mask_options(&r.flat, &masks);
         let current = crate::app::roll_tab::chosen(&r.flat);
         let mask_title = options.iter().find(|(l, _)| *l == current).map_or(tr("None selected").to_string(), |(_, t)| t.clone());
-        let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, rule: false, opens: false }).collect();
+        let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, ..MenuLine::default() }).collect();
         let fractions: Vec<f32> = (0..5).map(|i| Self::slider_fraction(r, radius, i)).collect();
         let readouts: Vec<SharedString> = (0..5)
             .map(|i| match i {

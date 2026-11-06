@@ -155,7 +155,7 @@ export component MainWindow inherits AppWindow {
             title: @tr("Settings");
             MenuItem { title: @tr("Copy Settings"); shortcut: @keys(Control + Shift + "c"); enabled: Menus.live.copy-settings; activated => { App.menu(Act.copy); } }
             MenuItem { title: Menus.titles.paste; shortcut: @keys(Control + Shift + "v"); enabled: Menus.live.paste-settings; activated => { App.menu(Act.paste); } }
-            MenuItem { title: Menus.titles.paste-to-roll; enabled: Menus.live.paste-to-roll; activated => { App.menu(Act.paste-to-roll); } }
+            MenuItem { title: Menus.titles.paste-to-roll; shortcut: @keys(Control + Alt + "v"); enabled: Menus.live.paste-to-roll; activated => { App.menu(Act.paste-to-roll); } }
             MenuSeparator { }
             MenuItem { title: @tr("Save as Preset…"); enabled: Menus.live.save-preset; activated => { App.menu(Act.save-preset); } }
             MenuItem { title: @tr("Edit Presets…"); enabled: Menus.live.edit-presets; activated => { App.menu(Act.edit-presets); } }

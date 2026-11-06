@@ -119,22 +119,31 @@ impl History {
         self.cursor < self.steps.len()
     }
 
+    /// The step the next undo takes back, left in place, which a host names when it carries no label.
+    pub fn next_undo(&self) -> Option<&Step> {
+        self.cursor.checked_sub(1).and_then(|at| self.steps.get(at))
+    }
+
+    pub fn next_redo(&self) -> Option<&Step> {
+        self.steps.get(self.cursor)
+    }
+
     /// The name of the next undo's gesture; an edit of the open frame has none.
     pub fn undo_label(&self) -> Option<&str> {
-        self.can_undo().then(|| self.steps[self.cursor - 1].label.as_str()).filter(|l| !l.is_empty())
+        self.next_undo().map(|s| s.label.as_str()).filter(|l| !l.is_empty())
     }
 
     pub fn redo_label(&self) -> Option<&str> {
-        self.can_redo().then(|| self.steps[self.cursor].label.as_str()).filter(|l| !l.is_empty())
+        self.next_redo().map(|s| s.label.as_str()).filter(|l| !l.is_empty())
     }
 
     /// The photos the next undo would touch, so a host reads their rows and thumbnails again.
     pub fn undo_paths(&self) -> BTreeSet<String> {
-        self.can_undo().then(|| self.steps[self.cursor - 1].paths()).unwrap_or_default()
+        self.next_undo().map(Step::paths).unwrap_or_default()
     }
 
     pub fn redo_paths(&self) -> BTreeSet<String> {
-        self.can_redo().then(|| self.steps[self.cursor].paths()).unwrap_or_default()
+        self.next_redo().map(Step::paths).unwrap_or_default()
     }
 
     /// A new gesture drops the branch that was undone, and the oldest steps past the limit or the

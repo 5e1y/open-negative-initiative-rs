@@ -149,7 +149,7 @@ impl Ctl {
         let options = mask_options(flat, &entries);
         let current = chosen(flat);
         panel.set_mask_title(options.iter().find(|(l, _)| *l == current).map_or(tr("None selected").to_string(), |(_, t)| t.clone()).into());
-        let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, rule: false, opens: false }).collect();
+        let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, ..MenuLine::default() }).collect();
         panel.set_mask_lines(ModelRc::new(VecModel::from(lines)));
         panel.set_masks_empty(entries.is_empty());
         self.publish_masks(&panel, flat);

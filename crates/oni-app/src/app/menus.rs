@@ -12,6 +12,7 @@ impl Ctl {
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
         let dedust = w.global::<PanelState>().get_tab() == 4;
         let (painting, canvas) = (self.painting(), self.canvas_size());
+        let whole = self.roll_whole(gallery);
         let (titles, live, film_type, targets, filter, select_all) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.is_some();
@@ -56,8 +57,9 @@ impl Ctl {
                 || (false, false, tr("Undo").to_string(), tr("Redo").to_string()),
                 |e| {
                     let h = e.history();
-                    let undo = h.undo_label().map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l));
-                    let redo = h.redo_label().map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l));
+                    let name = |step| step_name(step, open_path.as_deref());
+                    let undo = h.next_undo().and_then(name).map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l));
+                    let redo = h.next_redo().and_then(name).map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l));
                     (h.can_undo(), h.can_redo(), undo, redo)
                 },
             );
@@ -78,7 +80,7 @@ impl Ctl {
                 remove: if count > 1 { tr!("Move {count} Photos to ONI Trash", count = count) } else { tr("Move to ONI Trash").into() }.into(),
                 restore: if restoring > 1 { tr!("Restore {count} Photos", count = restoring) } else { tr("Restore").into() }.into(),
                 paste: if count > 1 { tr!("Paste Settings to {count} Photos", count = count) } else { tr("Paste Settings").into() }.into(),
-                paste_to_roll: if reach > 0 { tr!("Paste to Roll ({count} Photos)", count = reach + 1) } else { tr("Paste to Roll").into() }.into(),
+                paste_to_roll: if reach > 0 { tr!("Paste to {count} Photos of the Roll", count = reach + 1) } else { tr("Paste to Roll").into() }.into(),
                 undo: undo_title.into(),
                 redo: redo_title.into(),
                 smaller: if gallery { tr("Smaller Thumbnails") } else { tr("Zoom Out") }.into(),
@@ -129,7 +131,8 @@ impl Ctl {
                 ungroup: members > 0,
                 measure_roll: !preparing && roll > 0,
                 reset_to_default: gallery && roll > 0,
-                copy_settings: open,
+                // In the gallery, the one photo picked, as its menu's Copy Settings.
+                copy_settings: if gallery { count == 1 } else { open },
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
                 save_preset: open && !modal,
@@ -170,6 +173,7 @@ impl Ctl {
         let bar = w.global::<Bar>();
         bar.set_can_paste(live.paste_settings);
         bar.set_can_select_all(select_all);
+        bar.set_whole(whole);
         bar.set_can_prepare(live.measure_roll);
         bar.set_can_toggle_mode(live.toggle_mode);
         panel.set_can_prepare(true);
@@ -177,5 +181,44 @@ impl Ctl {
         self.publish_rolls();
         self.publish_roll_tab();
         w.global::<Library>().set_filter_medal(filter.map_or(0, library::medal_index));
+    }
+}
+
+/// A step's name: its gesture's own, else the one slider an edit moved, as the panel names it, read on
+/// the open frame when the step wrote it; an edit that moved several values keeps none.
+fn step_name(step: &oni_library::history::Step, open: Option<&str>) -> Option<String> {
+    if !step.label.is_empty() {
+        return Some(step.label.clone());
+    }
+    let ends = |p: &str| Some((step.before.get(p)?, step.after.get(p)?));
+    let (before, after) = open.and_then(ends).or_else(|| step.before.keys().find_map(|p| ends(p)))?;
+    let mut moved = Field::ALL.into_iter().filter(|f| f.knob().get(before) != f.knob().get(after));
+    match (moved.next(), moved.next()) {
+        (Some(one), None) => Some(tr(one.spec().label).to_owned()),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_library::history::{Settings, Step};
+    use oni_settings::PipelineSettings;
+
+    fn step(label: &str, moved: &[(Field, f32)]) -> Step {
+        let before = PipelineSettings::default();
+        let after = moved.iter().fold(before.clone(), |s, (f, by)| f.knob().set(&s, f.knob().get(&s) + by));
+        let one = |s: PipelineSettings| Settings::from([("a".to_owned(), s)]);
+        Step { before: one(before), after: one(after), label: label.into(), disk: None, trash: None, marker: None, medals: None }
+    }
+
+    #[test]
+    fn an_edit_is_named_by_the_one_slider_it_moved() {
+        assert_eq!(step_name(&step("", &[(Field::Exposure, 0.5)]), Some("a")).as_deref(), Some("Exposure"));
+        assert_eq!(step_name(&step("", &[(Field::Temperature, 0.3)]), None).as_deref(), Some("Temperature"), "read off its one frame");
+        assert_eq!(step_name(&step("Reset 2 photos", &[(Field::Exposure, 0.5)]), Some("a")).as_deref(), Some("Reset 2 photos"));
+        // Twins: an edit that moved two values, or none, keeps no name.
+        assert_eq!(step_name(&step("", &[(Field::Exposure, 0.5), (Field::Contrast, 0.2)]), Some("a")), None);
+        assert_eq!(step_name(&step("", &[]), Some("a")), None);
     }
 }
