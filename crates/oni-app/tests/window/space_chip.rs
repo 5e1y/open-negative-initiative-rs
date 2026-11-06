@@ -1,6 +1,7 @@
-//! The canvas's working-space chip by the pointer: its popover opens, and each tab inside it takes
-//! the click, Custom and sRGB from Display P3 included.
+//! The canvas's colour-space chip by the pointer: its popover opens named as the export's field and
+//! shared with it, and each tab inside it takes the click, Custom and sRGB from Display P3 included.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Exporting, Library};
 use oni_core::{Archive, EditorStore};
@@ -51,22 +52,30 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
     // The chip's title opens the popover, which stays open while its tabs are picked.
     click(&rig, 600.0, 108.0);
     rig.settle();
-    let tab = |rig: &common::Rig, x: f32| {
-        click(rig, x, 200.0);
+    // The export panel's name, and the choice said to be the export's; twin: the former name is gone.
+    common::in_popup(w, Role::Text, "Colour space");
+    common::in_popup(w, Role::Text, "Shared by the canvas and the export.");
+    assert!(common::placed(w, Role::Text, "Working Space").is_empty());
+    rig.shot("space-chip");
+    // Each tab where the popover lays it, found anew: a press on one leaves the popover open.
+    let tab = |rig: &common::Rig, name: &str| {
+        let (x, y) = common::in_popup(w, Role::Tab, name).middle();
+        click(rig, x, y);
         rig.settle();
     };
-    tab(&rig, 460.0);
+    tab(&rig, "sRGB");
     assert_eq!(e.get_chip_title(), "sRGB", "sRGB from Display P3");
-    tab(&rig, 530.0);
+    tab(&rig, "P3");
     assert_eq!(e.get_chip_title(), "Display P3");
     // Last: a longer title widens the chip into its room, which the popover under it follows.
-    tab(&rig, 739.0);
+    tab(&rig, "Custom");
     assert_eq!(e.get_space_tab(), 4, "Custom from Display P3");
     // Twin: a click beside the popover closes it and picks nothing.
+    let (x, y) = common::in_popup(w, Role::Tab, "sRGB").middle();
     click(&rig, 600.0, 108.0);
     rig.settle();
     click(&rig, 600.0, 600.0);
     rig.settle();
-    click(&rig, 460.0, 200.0);
+    click(&rig, x, y);
     assert_eq!(e.get_space_tab(), 4, "the popover closed, the tabs under it gone");
 }

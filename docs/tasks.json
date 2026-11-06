@@ -6703,5 +6703,19 @@
     "title": "Prepare's step bar spaces its steps evenly; an unprepared roll shows one Prepare Roll",
     "status": "done",
     "detail": "UI evaluation s-9011e109, Spacing and Hierarchy: the step bar's equal cells left uneven gaps between the five steps' words; an ordered Tabs now sizes each step to its words and shares the room left equally, so the gaps are even and a check replacing a number still moves nothing. Roll #9 showed two Prepare Roll actions, the bar's keycap and a flat key under the info column's notice; the notice now points to the bar's key in words, and the column's key and its callback are gone."
+  },
+  {
+    "id": 1354,
+    "type": "fix",
+    "title": "One name for the colour space on the canvas and in the export, said to be shared",
+    "status": "done",
+    "detail": "UI and UX evaluation (Clarity, Language): the canvas's chip opened a popover titled Working Space while the export called the same choice Space, and neither said they were one. Both now read Colour space; the popover says under its title that the choice is shared by the canvas and the export, the chip's tooltip and the export field's help say the same, in English, French and Spanish. Window check space_chip finds the popover's name and its tabs by role and name, the former name gone; export_panel finds the field's name."
+  },
+  {
+    "id": 1355,
+    "type": "fix",
+    "title": "The export's empty EXIF fields read as examples, never as values",
+    "status": "done",
+    "detail": "UI evaluation (Clarity): Artist read 'Your name' and Copyright '© 2026 Your name' in the placeholder's ink, already the quietest the panel keeps for AA, so they passed for typed values, as did ISO's 400 and the Date's date. Every placeholder of the export's fields now opens on 'e.g.', as Camera Body's in the roll's info does: e.g. Leica M6, e.g. Summicron 50 mm, e.g. 400, e.g. 2026-09-05 10:00:00, e.g. Jane Doe, e.g. © 2026 Jane Doe, in English, French and Spanish. Window check export_panel finds the empty Artist field's example, and its twin types a name through the field and finds it gone."
   }
 ]

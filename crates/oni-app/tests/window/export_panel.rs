@@ -1,6 +1,6 @@
 //! The export surface as the window lays and draws it: one step between the panel's groups whatever
-//! the space's note wraps to, the summary in the panel's words, each field's face showing under the
-//! picture, and the date shown dashed while the file keeps EXIF's colons.
+//! the space's note wraps to, the summary in the panel's words, each field's face and example under
+//! the picture, and the date shown dashed while the file keeps EXIF's colons.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::Exporting;
@@ -26,6 +26,8 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     ctl.act(oni_app::Act::Export);
     rig.settle();
     let label = common::the(w, Role::Text, "Presets");
+    // The space under the one name the canvas's chip opens on.
+    common::the(w, Role::Text, "Colour space");
 
     // Display P3's note runs on two lines, the case that ran the keys under it over Quality.
     let note = common::the(w, Role::Text, &e.get_space_note());
@@ -59,6 +61,14 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     assert_ne!(face, at(artist.x - 20.0, middle), "the Artist field's face shows beside its label");
     let caption = common::the(w, Role::Text, &export_card::lines(w)[0].caption);
     assert_eq!(at(caption.x - 20.0, caption.y + caption.height / 2.0), face, "the canvas is the face's own ground");
+
+    // An empty field shows an example, never what reads as a value; twin: a name typed hides it.
+    let example = "e.g. Jane Doe";
+    assert_eq!(common::placed(w, Role::Text, example).len(), 1, "the empty Artist field shows its example");
+    common::click(&rig, w, artist.middle());
+    rig.key("Ansel Adams");
+    rig.settle();
+    assert!(common::placed(w, Role::Text, example).is_empty(), "the typed name stands alone");
 
     // A date typed as shown reaches the file in EXIF's form and comes back dashed.
     e.invoke_edited(0, "date".into(), "2026-09-14 16:46:19".into());

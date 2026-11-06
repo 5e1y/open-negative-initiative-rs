@@ -1,5 +1,5 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
-// the space field shared with the Working Space chip, and the dialogs the export raises.
+// the colour space shared with the canvas's chip, and the dialogs the export raises.
 import { News } from "help.slint";
 import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, ButtonSize, Picture, Ground, Fit, EdgePrint, FieldStyle, SheetFooter } from "ds/ds.slint";
 import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
@@ -13,6 +13,7 @@ component FrameFields inherits VerticalLayout {
     in property <int> at;
     in property <length> column;
     padding-top: Space.s;
+    // Every placeholder opens on "e.g.", as Camera Body's, so an empty field never reads as filled.
     Surface {
         rounded: true;
         HorizontalLayout {
@@ -33,11 +34,11 @@ component FrameFields inherits VerticalLayout {
                 }
                 Field { layout: FieldLayout.column;
                     label: @tr("Camera");
-                    TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+                    TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("e.g. Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
                 }
                 Field { layout: FieldLayout.column;
                     label: @tr("Lens");
-                    TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
+                    TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("e.g. Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
                 }
                 Field { layout: FieldLayout.column;
                     label: @tr("Film stock");
@@ -52,20 +53,20 @@ component FrameFields inherits VerticalLayout {
                 spacing: FormStyle.row-gap;
                 Field { layout: FieldLayout.column;
                     label: @tr("ISO");
-                    TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+                    TextField { name: @tr("ISO"); value: root.line.iso; placeholder: @tr("e.g. 400"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
                 }
                 // Shown and typed as a person writes a date; Rust keeps EXIF's colons in the file.
                 Field { layout: FieldLayout.column;
                     label: @tr("Date");
-                    TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026-09-05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+                    TextField { name: @tr("Date"); value: root.line.date; placeholder: @tr("e.g. 2026-09-05 10:00:00"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
                 }
                 Field { layout: FieldLayout.column;
                     label: @tr("Artist");
-                    TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+                    TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("e.g. Jane Doe"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
                 }
                 Field { layout: FieldLayout.column;
                     label: @tr("Copyright");
-                    TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
+                    TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("e.g. © 2026 Jane Doe"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
                 }
             }
         }
@@ -263,8 +264,8 @@ export component ExportPanel inherits Surface {
                 // No note stands in a block shown on a condition: Slint 1.18 sizes such a block with its
                 // wrapped words on one line, and what it draws past that runs over the next group.
                 Field {
-                    label: @tr("Space");
-                    help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
+                    label: @tr("Colour space");
+                    help: @tr("Shared by the canvas and the export: the canvas shows the picture in this space and the export writes it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
                     SpaceTabs { }
                     Label { role: TextRole.note; text: Exporting.space-note; }
                 }
@@ -318,18 +319,23 @@ export component ExportPanel inherits Surface {
     }
 }
 
-// The Working Space chip at the canvas's top edge, opening the space's tabs, its note and its profile.
+// The colour space's chip at the canvas's top edge: its popover, named as the panel's field and saying
+// the export shares the choice, holds the space's tabs, its note and its profile.
 export component SpaceChip inherits Picker {
     face: PickerFace.chip;
     value: Exporting.chip-title;
     note: Exporting.chip-hint;
-    help: @tr("The colour space the picture is edited and exported in");
+    help: @tr("Colour space, shared by the canvas and the export");
     own-popup: chooser.is-open;
     open => { chooser.show(); }
     chooser := PopupPanel {
         x: (root.width - FormStyle.panel-width) / 2;
         y: root.height;
-        Label { text: @tr("Working Space"); role: TextRole.section; }
+        VerticalLayout {
+            spacing: Space.xs;
+            Label { text: @tr("Colour space"); role: TextRole.section; }
+            Label { text: @tr("Shared by the canvas and the export."); role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
+        }
         VerticalLayout {
             spacing: FormStyle.row-gap;
             SpaceTabs { }
