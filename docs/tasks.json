@@ -5863,5 +5863,33 @@
     "title": "One undo history for the session, the same in the gallery and the editor",
     "status": "done",
     "detail": "Evaluation s-db78d310: moving to another frame emptied the editor's undo, the gallery kept a history of its own the editor could not reach, and the two reached differently. The editor's per-frame stack (oni-core history.rs) and the gallery's (oni-library gallery_history.rs) are one, oni-library history.rs: every step names each frame it wrote, an edit of the open frame as much as a gesture on several; an edit joins the step on top within 0.4 s on the same frame and setting, as Swift's coalescing; 200 steps under the 256 MB ceiling. Opening a frame resets nothing and the face it opens on is no step; undoing an edit of a frame left writes its sidecar. Every gesture and undo first records the step still waiting, so the steps keep the order they were taken in. The menus and the bar name the one history's step in both modes, ⌘Z and the phone's undo land through one host path (history_step, stepped), and a step that moves files writes the open frame first, its walk refused when that write is. Surface, the editor's companions attached by serial and the gallery undo's extra editor step are gone; parity: the gallery's own 100-step history departed."
+  },
+  {
+    "id": 1175,
+    "type": "interface",
+    "title": "Prepare's step bar is the faces' tab bar: a mark only on a step done, no key moving",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the step keys lit the current step in the accent beside NEXT's blue, gave a skipped step the check of one completed, and widened as each check appeared, shifting every key. `RollStepKeys` is now the design system's `Tabs`, as the editor's Pro/Scanner bar in the same place: the current step on the neutral pill, each tab an even share of a fixed bar (`RollStyle.step-tab`, 96 pt) so no mark moves one, a step the roll does not walk out of reach, all of them while it measures. A tab is marked (`Preparing.done`, `step::done`) only behind the current step and holding its value: a flat-field or base passed by SKIP, or not walked, carries none. The step titles leave the tooltips; the panel's heading names the step. Checks: prepare model test (a skipped flat-field, a base without its pick, a step not walked and the current one are not done, with twins), window prepare (film done, base done once picked). Left as designed: five screens with Flat-field and Base skipped, since any tab reaches its step in one click and nothing skips a step unasked (hard rule 1); 'RGB Passes' near its bar's round end, as the tab bar's even shares (Swift's DSTabBar) keep a label its 8 pt margin; the 'Prepare the Roll' tooltip under the bar, an artefact of the evaluation's clicks, since a real press hides every tooltip (Outside.presses)."
+  },
+  {
+    "id": 1176,
+    "type": "fix",
+    "title": "The flat-field step's note on frames shot apart is measured whole, the grid below it",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (major): the 'Settings differ across the roll' advice was laid at one or two lines and the thumbnail grid covered the rest. Under the plain `controls` layout that grouped the step blocks, Slint 1.18 measured a wrapped note inside a step's block at the wrong width; the wrapper added nothing (the column has the same spacing), so each step's block now sits in the panel's column itself and every note of a step (left out, passes, grouping, mask) is measured at the panel's width. Seen on the headless window with the 245-character note: five lines, the grid under them, where it covered three."
+  },
+  {
+    "id": 1177,
+    "type": "interface",
+    "title": "A frame shot apart or flagged is told by a glyph or a word, not by colour alone",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: Prepare marked the frames digitised with other settings by an amber dot and flagged frames in the panel's grid by a red ring alone. A frame shot apart carries the warning glyph on the tile's state disc, the disc a missing original already shows (`StateDisc`, one component for both), in the corner the gallery gives its medal, so it never meets the flag; a flagged frame carries its FLAGGED seal on every Prepare tile, the panel's grid as the flags' sheet. `TileStyle.apart` goes with the dot."
+  },
+  {
+    "id": 1178,
+    "type": "interface",
+    "title": "The inspector's Prepare key reads as the toolbar's, flat",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the gallery showed 'PREPARE ROLL' as a keycap in the toolbar and 'PREPARE THE ROLL…' as a second keycap under the inspector's warning, one action under two names and depths. The inspector's key says PREPARE ROLL and lies flat: the keycap stays on the toolbar's, the gallery's commit. The Roll tab's key, in the editor, keeps its wording."
   }
 ]

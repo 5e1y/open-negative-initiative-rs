@@ -4,7 +4,7 @@ import { Label, Icon, Picture, CardCorners, Ground, Tones, TextRole, Tone, Tips 
 import { Badge, BadgeTone, Metal, BadgeStyle } from "badge.slint";
 import { Look, RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
-import { Dot, Medal, RingPlacement, SelectionTone, SelectionRing } from "marks.slint";
+import { Medal, RingPlacement, SelectionTone, SelectionRing } from "marks.slint";
 import { Reach, Reaches } from "reach.slint";
 import { FocusRing } from "keyboard.slint";
 
@@ -187,8 +187,24 @@ export component Scroller {
 export component ListView inherits Scroller { }
 
 // `medal` lays the gallery's marks, its medal bottom-left and its seal a `Space.s` in; `apart` Prepare
-// the Roll's, the apart dot top-right and every seal an `xs` in.
+// the Roll's, the flag top-left, the apart disc where the medal stands and every seal an `xs` in.
 export enum TileMarks { medal, apart }
+
+// A state's disc in a tile's corner, told by its glyph as much as by its ink: an original away, a frame shot apart.
+component StateDisc inherits Rectangle {
+    in property <image> glyph;
+    in property <color> ink;
+    width: TileStyle.away;
+    height: TileStyle.away;
+    border-radius: self.width / 2;
+    background: Colour.overlay;
+    Icon {
+        width: TileStyle.away-glyph;
+        height: TileStyle.away-glyph;
+        source: root.glyph;
+        ink: root.ink;
+    }
+}
 
 // A gallery cell, or a frame of Prepare the Roll (`RollFrameCell` is built on `GalleryView.tile`):
 // the picture in its well, its marks, the RGB seal, the selection's ring, a caption when given.
@@ -212,9 +228,9 @@ export component TileView inherits Rectangle {
     in property <string> companion;
     in property <length> picture-height;
     in property <TileMarks> marks: TileMarks.medal;
-    // A frame kept out of the measure, its dot in the corner.
+    // A frame digitised with other settings than its roll's, its disc in the corner.
     in property <bool> apart;
-    // A frame the measure flags: its ring destructive; ringed outside, it rings unselected under its seal.
+    // A frame the measure flags, its seal top-left: its ring destructive, outside it ringed unselected too.
     in property <bool> flagged;
     in property <RingPlacement> ring: RingPlacement.inset;
     // A frame's corners round by a clip; the gallery's are painted in `behind`, a rounded clip drawing
@@ -251,10 +267,10 @@ export component TileView inherits Rectangle {
             y: parent.height - root.inset - (BadgeStyle.seal-height + self.height) / 2;
             rank: root.medal;
         }
-        if root.frame && root.apart: Dot {
-            x: parent.width - root.inset - self.width;
-            y: root.inset;
-            size: TileStyle.apart;
+        if root.frame && root.apart: StateDisc {
+            x: root.inset;
+            y: parent.height - root.inset - self.height;
+            glyph: Icons.warning;
             ink: Colour.caution;
         }
         if root.rgb || root.gone-pass != "": Badge {
@@ -269,21 +285,13 @@ export component TileView inherits Rectangle {
             y: parent.height - self.height - root.inset;
             text: root.companion;
         }
-        if root.missing: Rectangle {
+        if root.missing: StateDisc {
             x: parent.width - self.width - root.inset;
             y: root.inset;
-            width: TileStyle.away;
-            height: TileStyle.away;
-            border-radius: self.width / 2;
-            background: Colour.overlay;
-            Icon {
-                width: TileStyle.away-glyph;
-                height: TileStyle.away-glyph;
-                source: Reaches.glyph(root.away);
-                tone: Tone.on-fill;
-            }
+            glyph: Reaches.glyph(root.away);
+            ink: Tones.ink(Tone.on-fill);
         }
-        if root.outset && root.flagged: Badge {
+        if root.frame && root.flagged: Badge {
             x: root.inset;
             y: root.inset;
             tone: BadgeTone.seal;

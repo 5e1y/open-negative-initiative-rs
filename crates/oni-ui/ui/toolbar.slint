@@ -1,7 +1,7 @@
 // The top bar, one layout in every mode: the mode key and the history at the left, the mode's own keys
 // centred, feedback, settings and the screen's commit at the right; every key there is a menu's gesture.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -9,18 +9,15 @@ import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
 import { RatingFilter } from "rating_filter.slint";
 
-// `rollStepKeys`: one key per step on one plate, the current one lit, a check on each step behind it.
-export component RollStepKeys inherits ButtonGroup {
-    plate: true;
-    for name[i] in [@tr("FILM TYPE"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
-        text: name;
-        help: [@tr("Select the Film Type"), @tr("Set Up the Flat-Field"), @tr("Pick the Film Base"), @tr("Flag the Frames Left Out"), @tr("Place the Measuring Frame")][i];
-        on: Preparing.step == i;
-        enabled: !Preparing.measuring && !Preparing.skipped[i];
-        has-icon: i < Preparing.step && !Preparing.skipped[i];
-        icon: Icons.done;
-        clicked => { Preparing.step-picked(i); }
-    }
+// `rollStepKeys`, the faces' bar for the steps: the current one held, a mark on each done, a step the
+// roll does not walk out of reach, and all of them while it measures. A tab's width never follows its mark.
+export component RollStepKeys inherits Tabs {
+    tabs: [@tr("Film Type"), @tr("Flat-Field"), @tr("Base"), @tr("Flags"), @tr("Window")];
+    preferred-width: self.tabs.length * RollStyle.step-tab;
+    selected: Preparing.step;
+    marked: Preparing.done;
+    disabled: Preparing.measuring ? [true, true, true, true, true] : Preparing.skipped;
+    picked(i) => { Preparing.step-picked(i); }
 }
 
 export global Bar {

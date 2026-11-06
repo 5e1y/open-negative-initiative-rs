@@ -224,6 +224,12 @@ mod tests {
         let flat = FlatField { mask: oni_settings::frame::FlatFieldMask::ValoiEasy35V1, ..FlatField::default() };
         assert!(filled(Step::FlatField, &flat, false) && !filled(Step::FlatField, &FlatField::default(), false));
         assert!(!filled(Step::Base, &flat, false) && filled(Step::Base, &flat, true) && filled(Step::Flags, &FlatField::default(), false));
+        // A step behind is done once it holds its value; a skipped one or one not walked never is.
+        assert!(done(Step::FlatField, Step::Base, Capture::Camera, n, &flat, false) && done(Step::Film, Step::Base, Capture::Camera, n, &flat, false));
+        assert!(!done(Step::FlatField, Step::Base, Capture::Camera, n, &FlatField::default(), false), "twin: a flat-field skipped is not done");
+        assert!(!done(Step::Base, Step::Flags, Capture::Camera, n, &flat, false) && done(Step::Base, Step::Flags, Capture::Camera, n, &flat, true));
+        assert!(!done(Step::FlatField, Step::Base, Capture::Scanner, n, &flat, false), "a step the roll does not walk is not done");
+        assert!(!done(Step::Base, Step::Base, Capture::Camera, n, &flat, true), "twin: the current step is not behind");
         assert_eq!((measure_title(1), measure_title(3)), ("MEASURE 1 FRAME".to_string(), "MEASURE 3 FRAMES".to_string()));
         assert_eq!(left_out_text(1), "1 frame of this folder, measured on another roll, is left out.");
         assert_eq!(left_out_text(2), "2 frames of this folder, measured on another roll, are left out.");
