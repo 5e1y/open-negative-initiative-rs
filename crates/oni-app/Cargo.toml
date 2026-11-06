@@ -90,6 +90,10 @@ oni-link-ffi = { path = "../oni-link-ffi" }
 jpeg-decoder = "0.3"
 kamadak-exif = "0.6"
 png = "0.18"
+# The window checks aim at an element where the layout put it, found by its accessible label, and
+# read where the window shows a popup.
+i-slint-backend-testing = { version = "=1.18.1", default-features = false }
+i-slint-core = { version = "=1.18.1", default-features = false }
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
 
 

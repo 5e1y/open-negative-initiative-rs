@@ -241,6 +241,59 @@ fn write_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32, linear_raw:
     std::fs::write(path, out).unwrap();
 }
 
+/// Where the layout put an element, in window points.
+#[derive(Clone, Copy, Debug)]
+pub struct Placed {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+impl Placed {
+    pub fn middle(&self) -> (f32, f32) {
+        (self.x + self.width / 2.0, self.y + self.height / 2.0)
+    }
+
+    /// Whether `other`'s middle lies within this element's height, as a key on a block's title row.
+    pub fn level_with(&self, other: &Placed) -> bool {
+        let y = other.y + other.height / 2.0;
+        self.y <= y && y <= self.y + self.height
+    }
+}
+
+/// Every element shown in the window whose role and accessible label are these, where the layout
+/// put it: a check aims there, so a layout changed on purpose never leaves its press beside the target.
+pub fn placed(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::AccessibleRole, label: &str) -> Vec<Placed> {
+    i_slint_backend_testing::ElementHandle::find_by_accessible_label(window, label)
+        .filter(|e| e.accessible_role() == Some(role))
+        .map(|e| {
+            let (at, size) = (e.absolute_position(), e.size());
+            Placed { x: at.x, y: at.y, width: size.width, height: size.height }
+        })
+        .collect()
+}
+
+/// The one element shown with this role and label; the live preview's interpreter carries the
+/// element names the search reads, so a compiled interface finds none.
+pub fn the(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::AccessibleRole, label: &str) -> Placed {
+    let found = placed(window, role, label);
+    assert_eq!(found.len(), 1, "one {role:?} named {label:?} shown, found {found:?}");
+    found[0]
+}
+
+/// The one element so named in the popup open on top: the search places it in the popup's own
+/// points, so it moves by the corner the window shows the popup at.
+pub fn in_popup(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::AccessibleRole, label: &str) -> Placed {
+    let inner = i_slint_core::window::WindowInner::from_pub(window.window());
+    let corner = match inner.active_popups().last().map(|p| &p.location) {
+        Some(i_slint_core::window::PopupWindowLocation::ChildWindow(at)) => *at,
+        _ => panic!("no popup shown in the window, so no {label:?} in one"),
+    };
+    let found = the(window, role, label);
+    Placed { x: corner.x + found.x, y: corner.y + found.y, ..found }
+}
+
 /// The archive column asked to stand at `y`, as Rust asks it: its scroller moves and says so back.
 pub fn scroll_tree(lib: &oni_app::Library, y: f32) {
     lib.set_tree_viewport_y(y);

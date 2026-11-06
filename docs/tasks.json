@@ -6052,5 +6052,12 @@
     "title": "The benches ask that a destructive key stand apart",
     "status": "done",
     "detail": "Two evaluation rounds missed the trash sharing RESET's plate, which the owner spotted at once. UI Hierarchy now says a key that removes, resets or empties never shares a plate with one that keeps; UX Trust says a destructive action stands apart from the harmless ones around it."
+  },
+  {
+    "id": 1227,
+    "type": "test",
+    "title": "The panel bindings' checks find each control by its accessible name where the layout puts it",
+    "status": "done",
+    "detail": "After #1221 the two panel_bindings window checks pressed fixed points the corrected interface no longer holds: in the Roll tab re-laid on purpose (the block titles a step larger, #1199; the roll's state a line of words, #1172), Flat-Field's chevron stood 32 px above the press, so Source Encoding's RESET was never reached; in the export column re-laid by the same merge, the Width box stood 29 px below its press, which typed nowhere. No binding was lost: aimed at the controls, every assertion holds. Each press now finds its control by accessible role and label through Slint's ElementHandle (i-slint-backend-testing, a dev-dependency) and lands on its middle; a block's RESET is the one on its title's row, and a control in a popup moves by the corner i-slint-core says the window shows it at, so the mask menu is asserted under its picker and the chip's popover is reached, its Custom tab's press asserted taken. Twins: the stale aims fail on ('96', false) against ('48', true) and on Some(Linear) against None; a size box no longer following its owner, a flat-field switch bound to a constant and a Load a Profile… key that leaves the popover open each fail their check."
   }
 ]
