@@ -35,8 +35,7 @@ export component Dial inherits Rectangle {
         }
         for k in root.highest - root.lowest + 1: Rectangle {
             property <int> unit: root.lowest + k;
-            // Whole on the ring or not drawn, so no figure is cut at its ends.
-            visible: Math.mod(self.unit, DialStyle.figure) == 0 && abs(root.turned(self.unit)) < 90deg && self.x >= 0 && self.x + self.width <= parent.width;
+            visible: Math.mod(self.unit, DialStyle.figure) == 0 && abs(root.turned(self.unit)) < DialStyle.figures;
             x: root.at(self.unit) - self.width / 2;
             y: DialStyle.foot;
             width: figure.preferred-width;

@@ -63,6 +63,8 @@ export global DialStyle {
     // A mark each half unit, the whole ones longer, a figure every two units.
     out property <int> marks: 2;
     out property <int> figure: 2;
+    // A figure shows within this turn of the index, so none is cut at the ring's ends, either side alike.
+    out property <angle> figures: 66deg;
     out property <length> mark: 4px;
     out property <length> whole-mark: 8px;
     out property <length> foot: 3px;
