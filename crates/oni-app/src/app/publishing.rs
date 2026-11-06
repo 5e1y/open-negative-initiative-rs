@@ -92,7 +92,6 @@ impl Ctl {
         let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);
         bar.set_single(single);
-        w.global::<PanelState>().set_crop_closed(!single);
         bar.set_can_undo(live.undo);
         bar.set_can_redo(live.redo);
         bar.set_undo_title(titles.undo);

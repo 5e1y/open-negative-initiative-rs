@@ -98,9 +98,12 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert_eq!(panel.get_tab(), 2, "a second ⌘K leaves it");
     rig.chord(Key::Control, "k");
     rig.key("\u{1b}");
-    assert_eq!(panel.get_tab(), 2, "Escape leaves the crop");
+    assert!(panel.get_tab() == 2 && !w.global::<App>().get_gallery(), "Escape leaves the crop");
+    // With nothing open the photos' Escape leaves the editor, and Return on the grid comes back to A.
     rig.key("\u{1b}");
-    assert_eq!(panel.get_tab(), 2, "twin: Escape on Color leaves nothing");
+    assert!(w.global::<App>().get_gallery(), "twin: Escape on Color leaves the editor");
+    rig.key("\r");
+    assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path() == Some(names[0].as_str()));
     // Return applies the window first, then leaves for the last panel.
     rig.chord(Key::Control, "k");
     framing.invoke_act(oni_app::Act::WindowArm);

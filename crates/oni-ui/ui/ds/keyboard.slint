@@ -67,6 +67,15 @@ export component KeyMonitor inherits KeyScope {
     out property <bool> held: Keyboard.held;
     property <int> released: Outside.released;
     changed released => { self.focus(); }
+    // Escape from a control gives the photos the keyboard back before the control hears it, its hold
+    // the innermost thing open; a field keeps its Escape.
+    capture-key-pressed(event) => {
+        if (event.text == Key.Escape && !self.has-focus && Keyboard.held) {
+            self.focus();
+            return accept;
+        }
+        reject
+    }
     Wall { }
     @children
     Wall { back: true; }

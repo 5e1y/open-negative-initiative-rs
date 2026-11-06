@@ -37,8 +37,6 @@ export global PanelState {
     in-out property <int> film-type;
     // How many photos a paste reaches.
     in property <int> targets: 1;
-    // Frames shown together: the crop, each frame's own, is out of reach.
-    in property <bool> crop-closed;
     callback film-type-picked(int);
     in property <bool> flat-field-on;
     // `SettingsPane.separationFamily`: the family the kernel runs, an index of `Separation.Family`.

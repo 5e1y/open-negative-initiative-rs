@@ -6136,5 +6136,33 @@
     "title": "The column's header is one select naming the tree's layout in words, its menu the column's view",
     "status": "done",
     "detail": "Evaluation (UI Iconography): the filmstrip's and the Projects header's keys were small glyphs (a target, a grid, fold-all) read only through their tooltips, and the layout key cycled while naming the next layout. The plate of glyph keys and the pill beside it (the opened folder's name, or ONI Projects, both already on screen in the tree's pinned row and the tab bar) give way to one flat select across the column: it names the layout in words (Names only, Two thumbnails a line, One thumbnail a line) and its menu offers the three layouts, then Show the Selected Photo and, on the projects, Open or Fold every folder. Library.tree-layout-picked(int) replaces tree-layout-next and its help string; Layout::name and next go, and Navigator.opened-title and opened-help with the pill. A pill picker with a menu to drop now wears the chevron, so the navigator's ancestors pill shows it opens too. Checks: column_edges opens the select, finds the menu's lines, picks One thumbnail a line and reads the tree laid so and the select renamed (twin: the former name gone), and asserts the select spans the column's inset; sidebars asserts no control on the header needs its note to be read (twin: the former glyph keys are refused); tree_leftovers, tree_hand and library_column pick layouts by index."
+  },
+  {
+    "id": 1244,
+    "type": "fix",
+    "title": "Escape steps out of one thing at a time, the editor last",
+    "status": "done",
+    "detail": "UX evaluation s-0abd2d65 (Consistency of behaviour, major): Escape left Prepare the Roll but not the crop, Compare, De-dust or the editor. Measured first: the evaluation tool sends its keys and clicks into Slint, past the window's key and pointer hooks (`outside::keyed`, `outside::pressed`); once the Temperature slider it had dragged hid with the Colour pane, Slint dropped the keyboard and every later key went nowhere, which the key hook answers in the app. What the merges since #1111 did break: the pressed slider (#1132) spent Escape on itself while every other control holding the keyboard let it through, so one press left the crop or not by the control touched last, and a field's Escape left the mode behind it. One rule now, one thing a press: a help card, a sheet, a field's typing (ended as a press elsewhere ends it), a control's hold of the keyboard (the key monitor takes Escape from any control before it hears it, the slider's own branch gone), the export surface, Prepare, Compare, the crop or De-dust, the Lab (its Escape moved into the rule), then the editor for the gallery; a held Escape acts once. Checks: window escape::escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_done (the field's typing ends alone; the pressed Angle slider first, the crop second; Compare before the crop); editor_routes and scanner, a second Escape on Colour or Pro leaving the editor; the keyboard probe, Escape still handing a pressed slider's keyboard back."
+  },
+  {
+    "id": 1245,
+    "type": "interface",
+    "title": "The crop and De-dust are the canvas's two tools, each left by its DONE",
+    "status": "done",
+    "detail": "UX evaluation s-0abd2d65 (Trust, Consistency of behaviour): De-dust ended on a DONE key, the crop only by its bar key, ⌘K, Return or Escape, and it was a tab besides. The route already held both as modal tools left for the last panel; now they look alike. The tab bar lists the panes, Roll, Colour and Details; either tool, opened by its bar key or menu (⌘K for the crop), names itself in the bar's place beside a DONE keycap (`ModeHeader`, shared, `DedustHeader` gone). Return is either tool's DONE (`Validated::Leave`), the measuring window applied first as before; the bar's CROP key says Leave Crop while on, as De-dust's says Leave De-dust, and COMPARE shows the menu's Close Comparison. `PanelState.crop-closed`, which only greyed the Crop tab, goes with it; the bar's key and the menu stay out of reach while frames show together. French and Spanish filled in. Checks: tabs::return_disarms_the_window_first_then_leaves_either_tool (twin: Details takes no Return); window escape (DONE leaves the crop, no DONE beside a pane), together_tools, editor_routes (Tab enters the bar, its arrow reaching Details)."
+  },
+  {
+    "id": 1246,
+    "type": "fix",
+    "title": "Return on the grid opens what Space opens",
+    "status": "done",
+    "detail": "UX evaluation s-0abd2d65 (Expert efficiency, Consistency of behaviour): Return on a selected tile opened nothing, as Swift's Return opened the keyboard's cursor alone where Space fell back on the selection. One key now (`GridKey::Open`): Return or Space opens the cursor, else the first photo picked, else the first shown; ⌘ or ⇧ held leaves it to the menus, a held key opens once. With #1244's last step, Escape and Return or Space carry the photo between gallery and editor; the mode key's tooltip says Gallery (Esc, Space or ⌘G), and Prepare's Gallery (Esc or ⌘G). Checks: organise::return_or_space_opens_and_command_a_completes_the_rolls_touched (a selection with no cursor opens its first photo; twin: the cursor first), window escape and editor_routes (Return on the grid opens the photo again)."
+  },
+  {
+    "id": 1247,
+    "type": "fix",
+    "title": "Paste to Roll says how many photos it rewrote, its UNDO beside",
+    "status": "done",
+    "detail": "UX evaluation s-0abd2d65 (Trust): Paste to Roll rewrote 25 photos in one click with no count or notice of the change. The bar's PASTE TO ROLL key now shows the menu's title, Paste to Roll (25 Photos), before the click; after it, the notice over every surface says Settings pasted on 25 photos of the roll, its UNDO walking that step back while it is the last, and the crop's Paste to Roll says Crop pasted on … alike. The count is the photos of the step the paste laid; a paste that rewrote nothing, or failed (its own notice then standing), says nothing. `told_step` binds its UNDO to a step with no name too, an edit of the open frame as a roll's paste is. No confirmation added: the count before and the undo after keep the gesture one click. French and Spanish filled in. Checks: window escape (a paste rewriting nothing is silent; one photo rewritten says so, and UNDO takes it back)."
   }
 ]

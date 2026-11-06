@@ -21,8 +21,7 @@ impl Ctl {
             "\u{F703}" if !command => GridKey::Right,
             "\u{F700}" if !command => GridKey::Up,
             "\u{F701}" if !command => GridKey::Down,
-            "\r" | "\n" if !command => GridKey::Return,
-            " " => GridKey::Space { repeat, modified: !bare },
+            "\r" | "\n" | " " => GridKey::Open { repeat, modified: !bare },
             "a" | "A" if command && !shift => GridKey::SelectAll,
             _ => return false,
         };

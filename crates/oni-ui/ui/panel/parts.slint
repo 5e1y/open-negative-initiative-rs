@@ -1,6 +1,6 @@
 // The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
-// store, the scrolled pane, and the Scanner's sliders.
-import { Slider, SliderFill, Section, Scroller } from "../ds/ds.slint";
+// store, the scrolled pane, the Scanner's sliders, and a tool's header.
+import { Slider, SliderFill, Section, Scroller, Label, Button, TextRole, TabsStyle, Space } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
 import { PanelState, Lab } from "state.slint";
@@ -78,4 +78,16 @@ export component Pane inherits Scroller {
 // `DetailsPane.offOnSheet`: greyed and out of reach on a sheet, the values kept.
 export component DetailSlider inherits StoreSlider {
     enabled: !PanelState.sheet;
+}
+
+// A tool of the canvas, the crop or De-dust, named where the tab bar stands beside the DONE that leaves it.
+export component ModeHeader inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> help;
+    callback done();
+    height: TabsStyle.height;
+    spacing: Space.s;
+    cross-axis-alignment: center;
+    Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
+    Button { text: @tr("DONE"); keycap: true; help: root.help; clicked => { root.done(); } }
 }

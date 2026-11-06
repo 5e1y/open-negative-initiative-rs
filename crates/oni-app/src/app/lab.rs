@@ -18,7 +18,6 @@ mod sliders;
 
 /// `@AppStorage("lastFaceScanner")`: the face the editor opens on, kept across launches.
 const REMEMBERED: &str = "lastFaceScanner";
-const ESCAPE: &str = "\u{1b}";
 const SPACE: &str = " ";
 const UP: &str = "\u{F700}";
 const DOWN: &str = "\u{F701}";
@@ -224,8 +223,8 @@ impl Ctl {
         }
     }
 
-    /// `labEscape` and `walkKeys`: Esc leaves the Lab, a bare arrow walks the open frame's group,
-    /// a bare Space goes to the gallery; a held Esc or Space acts once.
+    /// `walkKeys`: a bare arrow walks the open frame's group, a bare Space goes to the gallery, once
+    /// while held; Escape leaves the Lab by the editor's one rule.
     pub(super) fn lab_key(self: &Rc<Self>, text: &str, bare: bool, repeat: bool) -> bool {
         let gallery = self.window().is_some_and(|w| w.global::<crate::App>().get_gallery());
         if gallery {
@@ -233,7 +232,6 @@ impl Ctl {
         }
         let dedust = self.window().is_some_and(|w| w.global::<PanelState>().get_tab() == 4);
         match text {
-            ESCAPE if self.in_lab() && !repeat => self.set_face(Face::Pro),
             UP | LEFT if bare => self.walk(-1),
             DOWN | RIGHT if bare => self.walk(1),
             // `walkKeys` and `columnKeys`: Space reaches the gallery from the Lab, and from Pro outside De-dust.

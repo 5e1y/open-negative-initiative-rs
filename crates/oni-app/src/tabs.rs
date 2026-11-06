@@ -1,5 +1,5 @@
 //! `PanelTab`'s routes: the crop and De-dust are left for the last panel the hand was in, recorded
-//! on every route, and Return validates the frames a hand draws, the measuring window first.
+//! on every route, and Return validates the frames a hand draws, the measuring window first, then DONE.
 
 pub const ROLL: i32 = 0;
 pub const CROP: i32 = 1;
@@ -21,7 +21,7 @@ pub fn window_shown(armed: bool, tab: i32) -> bool {
 pub enum Validated {
     Nothing,
     Disarmed,
-    LeaveCrop,
+    Leave,
 }
 
 /// The tab on screen, `lastPanel` and `measureFraming`, the measuring window armed.
@@ -62,13 +62,14 @@ impl Route {
         if self.shown == tool { self.way_out() } else { tool }
     }
 
-    /// `validate(with:)`: the window first where both are armed, so a second Return leaves the crop.
+    /// `validate(with:)`: the window first where both are armed, so a second Return leaves the crop;
+    /// on either tool Return is its DONE.
     pub fn validate(&mut self) -> Validated {
         if self.window_shown() {
             self.armed = false;
             return Validated::Disarmed;
         }
-        if self.shown == CROP { Validated::LeaveCrop } else { Validated::Nothing }
+        if self.shown == CROP || self.shown == DEDUST { Validated::Leave } else { Validated::Nothing }
     }
 
     pub fn window_shown(&self) -> bool {
@@ -102,10 +103,13 @@ mod tests {
     }
 
     #[test]
-    fn return_disarms_the_window_first_then_leaves_the_crop() {
+    fn return_disarms_the_window_first_then_leaves_either_tool() {
         let mut r = Route { shown: CROP, last_panel: DETAILS, armed: true };
         assert_eq!(r.validate(), Validated::Disarmed);
-        assert_eq!(r.validate(), Validated::LeaveCrop, "a second Return leaves framing");
+        assert_eq!(r.validate(), Validated::Leave, "a second Return leaves framing");
+        let mut dust = Route { shown: DEDUST, last_panel: COLOR, armed: true };
+        assert!(!dust.window_shown());
+        assert_eq!(dust.validate(), Validated::Leave, "Return is De-dust's DONE too");
         let mut colour = Route { shown: COLOR, last_panel: COLOR, armed: true };
         assert!(colour.window_shown());
         assert_eq!((colour.validate(), colour.validate()), (Validated::Disarmed, Validated::Nothing));

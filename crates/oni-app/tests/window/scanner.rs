@@ -192,12 +192,14 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.chord(slint::platform::Key::Control, "\u{F703}");
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("A.NEF"));
 
-    // Esc leaves the Lab; a second Esc on Pro does nothing more.
+    // Esc leaves the Lab; a second Esc on Pro leaves the editor, the face kept.
     rig.key("\u{1b}");
     assert!(!lab.get_shown() && settings().face == Face::Pro && bar.get_face() == 0);
     assert_eq!(std::fs::read_to_string(support.join("lastFaceScanner")).unwrap(), "0");
     rig.key("\u{1b}");
-    assert_eq!(settings().face, Face::Pro);
+    assert!(w.global::<App>().get_gallery() && settings().face == Face::Pro);
+    w.global::<App>().invoke_menu(oni_app::Act::ToggleMode);
+    rig.pump();
     // On Pro the same Effects gesture moves Pro's, the Scanner's finishing left where the keys put it.
     w.global::<oni_app::Store>().invoke_step(oni_app::fields::Field::Contrast.index(), 1);
     rig.pump();
