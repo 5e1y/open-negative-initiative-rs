@@ -1,5 +1,5 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
-import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField } from "ds/ds.slint";
+import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField, SheetFooter } from "ds/ds.slint";
 import { KeyWords } from "key_words.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
@@ -82,12 +82,11 @@ export component WelcomeSheet inherits Sheet {
         Point { title: @tr("Large 16-bit TIFFs"); text: @tr("A 16-bit TIFF of 45 Mpx and more opens, in the editor and in Prepare the Roll."); }
         Point { title: @tr("A scan that cannot be read says why"); text: @tr("Prepare the Roll no longer waits on it."); }
         Point { title: @tr("Nikon High Efficiency RAW"); text: @tr("A click converts a folder’s HE and HE* NEF files to lossless DNGs through Adobe DNG Converter, which ONI downloads and installs when it is missing."); }
-        HorizontalLayout {
-            spacing: Space.s;
+        SheetFooter {
+            commit: @tr("GET STARTED");
+            committed => { Help.welcome-closed(); }
             Button { text: @tr("Website"); clicked => { Help.website(); } }
             Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
-            Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("GET STARTED"); kind: ButtonKind.accent; keycap: true; clicked => { Help.welcome-closed(); } }
         }
     }
 }
@@ -113,21 +112,15 @@ export component ReportSheet inherits Sheet {
         toggled(on) => { Help.report-log = on; }
     }
     if !Help.report-sent && Help.report-failure != "": Label { role: TextRole.note; tone: Tone.warning; text: Help.report-failure; }
-    HorizontalLayout {
-        spacing: Space.s;
-        Button { text: @tr("See Community Feedbacks"); clicked => { Help.community(); } }
-        Rectangle { horizontal-stretch: 1; }
-        if Help.report-sent: Button { text: @tr("Done"); keycap: true; clicked => { Help.report-closed(); } }
-        if !Help.report-sent: ButtonGroup { plate: true;
-            Button { text: @tr("Cancel"); clicked => { Help.report-closed(); } }
-            Button {
-                text: Help.report-sending ? @tr("Sending…") : @tr("Send");
-                kind: ButtonKind.accent;
-                keycap: true;
-                enabled: !Help.report-sending && Help.report-message != "";
-                clicked => { Help.report-send(); }
-            }
+    SheetFooter {
+        cancel: Help.report-sent ? "" : @tr("Cancel");
+        commit: Help.report-sent ? @tr("Done") : Help.report-sending ? @tr("Sending…") : @tr("Send");
+        commit-enabled: Help.report-sent || (!Help.report-sending && Help.report-message != "");
+        cancelled => { Help.report-closed(); }
+        committed => {
+            if (Help.report-sent) { Help.report-closed(); } else { Help.report-send(); }
         }
+        Button { text: @tr("See Community Feedbacks"); clicked => { Help.community(); } }
     }
 }
 

@@ -85,6 +85,10 @@ draws a still key once and a pressed one once a frame.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
   under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
   `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
+- **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the flat key that
+  leaves (Cancel) at the left with what the sheet adds beside it, then apart at the right a step back and
+  the commit alone, the accent keycap, a flat key while it writes nothing (Skip, a failure's OK). A
+  question's answers (`AskSheet`) keep their own row.
 
 ## Keyboard
 

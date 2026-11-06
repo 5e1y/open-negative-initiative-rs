@@ -2,7 +2,7 @@
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
 import { Pairing } from "pairing.slint";
-import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout } from "ds/ds.slint";
+import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, SheetFooter } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -211,11 +211,8 @@ export component SettingsSheet inherits Sheet {
             AboutPage { row: 0; col: 0; }
         }
     }
-    ButtonGroup { plate: true; align: GroupAlign.end;
-        Button {
-            text: @tr("DONE");
-            keycap: true;
-            clicked => { AppSettings.close(); }
-        }
+    SheetFooter {
+        commit: @tr("DONE");
+        committed => { AppSettings.close(); }
     }
 }

@@ -1,7 +1,7 @@
 //! Where a sheet's pieces sit, read by the pointer as a hand finds them: the welcome as tall as its
 //! content in a tall window and scrolled to reach GET STARTED in a short one, a notice's key on the
-//! right of its message, no sheet closed by a click beside it, every sheet centred in the window, and
-//! the Settings sheet one height whichever section is open.
+//! right of its message, no sheet closed by a click beside it, every sheet centred in the window, the
+//! Settings sheet one height whichever section is open, and Cancel set apart from a sheet's commit.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Advice, AppSettings, Confirm, Help, MainWindow, OutsideProbe, Stocks};
@@ -243,5 +243,42 @@ pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
     settings.set_keep_zoom(true);
     shown(1);
     rig.shot("settings-editor-height");
+    window.hide().unwrap();
+}
+
+/// The clear gap between what leaves and what commits, the proposal's 12 pt at the least.
+const FOOTER_GAP: f32 = 12.0;
+
+/// A sheet's footer: Cancel flat at its left, the commit a keycap alone at its right, a clear gap between.
+/// Twin: a question's Cancel and its key share one plate, flush.
+pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    let window = MainWindow::new().unwrap();
+    oni_app::keycaps::serve(&window);
+    rig.window.set_size(PhysicalSize::new(1400, 1000));
+    window.show().unwrap();
+    let help = window.global::<Help>();
+    help.set_report_message("The export stops at the second photo.".into());
+    help.set_report_shown(true);
+    rig.settle();
+    rig.shot("footer-report");
+    let (cancel, send) = (common::the(&window, Role::Button, "Cancel"), common::the(&window, Role::Button, "Send"));
+    let gap = send.x - (cancel.x + cancel.width);
+    assert!(gap >= FOOTER_GAP, "Cancel stands apart from Send: {gap} pt");
+    assert!(send.height > cancel.height && send.level_with(&cancel), "Send is the keycap, taller than the flat Cancel on its row: {send:?} {cancel:?}");
+    help.set_report_shown(false);
+
+    let confirm = window.global::<Confirm>();
+    confirm.set_title("Delete the Preset?".into());
+    confirm.set_message("It is removed from the presets folder.".into());
+    confirm.set_key("Delete".into());
+    confirm.set_shown(true);
+    rig.settle();
+    let (cancel, delete) = (common::the(&window, Role::Button, "Cancel"), common::the(&window, Role::Button, "Delete"));
+    let gap = delete.x - (cancel.x + cancel.width);
+    assert!(gap < FOOTER_GAP, "twin: the measure sees a plate's keys flush: {gap} pt");
     window.hide().unwrap();
 }

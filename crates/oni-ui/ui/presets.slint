@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, Depth, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm } from "ds/ds.slint";
+import { Space, Depth, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm, SheetFooter } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -198,11 +198,12 @@ export component PresetSaveSheet inherits Sheet {
         }
     }
     Divider { }
-    HorizontalLayout {
-        alignment: end;
-        spacing: Space.s;
-        Button { text: @tr("Cancel"); clicked => { Presets.save-cancelled(); } }
-        Button { text: @tr("Save"); enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
+    SheetFooter {
+        cancel: @tr("Cancel");
+        commit: @tr("Save");
+        commit-enabled: Presets.form-valid;
+        cancelled => { Presets.save-cancelled(); }
+        committed => { Presets.save-confirmed(); }
     }
     init => { form.take-focus(); }
 }
@@ -256,14 +257,13 @@ export component PresetEditorSheet inherits Sheet {
         }
     }
     Divider { }
-    HorizontalLayout {
+    SheetFooter {
         padding: Space.m;
-        spacing: Space.s;
+        commit: @tr("Done");
+        committed => { Presets.done(); }
         Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
         Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
         Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
         Button { text: @tr("Delete"); kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
-        Rectangle { horizontal-stretch: 1; }
-        Button { text: @tr("Done"); keycap: true; clicked => { Presets.done(); } }
     }
 }

@@ -6451,5 +6451,12 @@
     "title": "The primary keycap is calm, and a keycap out of reach keeps its relief",
     "status": "done",
     "detail": "Evaluation R3: the saturated system-blue EXPORT keycap was the brightest thing beside the photo on every editor screen. The accent key's face is now the accent sunk into the keycap's grey (ButtonStyle.primary), one accent still, calm beside the photo. De-dust's REMOVE, a keycap out of reach, faded whole and read as a flat key beside DETECT: a keycap out of reach now keeps its relief, its legend alone fading and the primary's tint going, while a flat key still fades whole; DETECT and REMOVE stand a gap apart rather than on one flat plate. The states check measures the relief kept, with a cap faded whole as its twin; the bar's width check picks its row by the four keys alone, a disabled cap across the bar now drawn whole."
+  },
+  {
+    "id": 1340,
+    "type": "ui",
+    "title": "One footer for every sheet: Cancel at the left, the commit keycap alone at the right",
+    "status": "done",
+    "detail": "Evaluation R3: the sheets' footers followed three patterns, and Cancel butted against NEXT or EXPORT on one plate. SheetFooter lays the flat key that leaves at the left with what the sheet adds beside it, then apart at the right a step back and the commit alone, the accent keycap, flat while it writes nothing (the prepare's Skip, a failure's OK). Prepare the Roll, Export, Save a Preset, the preset editor, Settings, Pair Phone, Report a Bug, the welcome, the RAW notice, the catch-up and the DNG converter all end on it: the preset's Save becomes its keycap, Back stands beside the step's key far from Cancel, and Forget Phones leaves DONE's plate. A question's answers keep their own row. A window check measures Cancel apart from SEND on Report a Bug, a question's flush plate its twin."
   }
 ]

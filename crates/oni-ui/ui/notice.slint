@@ -1,5 +1,5 @@
 // `neutralDecodeNotice`: shown once the library holds a RAW, its bullets what the change means for a photo.
-import { Sheet, SheetStyle, Space, Gap, Label, TextRole, Button, BulletLine } from "ds/ds.slint";
+import { Sheet, SheetStyle, Space, Gap, Label, TextRole, Button, BulletLine, SheetFooter } from "ds/ds.slint";
 
 export global Notice {
     in property <bool> shown;
@@ -20,8 +20,8 @@ export component NoticeSheet inherits Sheet {
             @tr("Still looks a touch off? One press of your usual balance button settles it."),
         ]: BulletLine { text: line; }
     }
-    HorizontalLayout {
-        alignment: end;
-        Button { text: @tr("GOT IT"); keycap: true; clicked => { Notice.close(); } }
+    SheetFooter {
+        commit: @tr("GOT IT");
+        committed => { Notice.close(); }
     }
 }

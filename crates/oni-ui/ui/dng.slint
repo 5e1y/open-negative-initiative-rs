@@ -1,6 +1,6 @@
 // Nikon's High Efficiency RAW through Adobe DNG Converter: its install offered, fetched and run,
 // the folder's frames converted beside them, then which files stay.
-import { Sheet, Label, Button, ButtonGroup, GroupAlign, ButtonKind, Progress, TextRole, Tone, Space } from "ds/ds.slint";
+import { Sheet, Label, Button, ButtonGroup, GroupAlign, ButtonKind, Progress, TextRole, Tone, Space, SheetFooter } from "ds/ds.slint";
 
 export enum DngStage { offer, fetching, installing, converting, choice, failed }
 
@@ -56,13 +56,15 @@ export component DngSheet inherits Sheet {
             chosen => { Converting.kept(false); }
         }
     }
-    if Converting.stage != DngStage.choice: ButtonGroup { plate: true; align: GroupAlign.end;
-        if Converting.stage != DngStage.failed: Button { text: @tr("Cancel"); clicked => { Converting.cancelled(); } }
-        if Converting.stage == DngStage.offer: Button {
-            text: Converting.ready ? @tr("Convert to DNG") : @tr("Download and Install");
-            kind: ButtonKind.accent;
-            clicked => { Converting.install(); }
+    if Converting.stage != DngStage.choice: SheetFooter {
+        cancel: Converting.stage == DngStage.failed ? "" : @tr("Cancel");
+        commit: Converting.stage == DngStage.failed ? @tr("OK")
+            : Converting.stage != DngStage.offer ? ""
+            : Converting.ready ? @tr("Convert to DNG") : @tr("Download and Install");
+        passes: Converting.stage == DngStage.failed;
+        cancelled => { Converting.cancelled(); }
+        committed => {
+            if (Converting.stage == DngStage.failed) { Converting.closed(); } else { Converting.install(); }
         }
-        if Converting.stage == DngStage.failed: Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Converting.closed(); } }
     }
 }

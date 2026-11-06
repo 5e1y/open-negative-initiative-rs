@@ -1,5 +1,5 @@
 // The Pair Phone sheet: the one-time QR code the phone scans, laid as every ONI sheet.
-import { Sheet, Picture, Ground, Label, Tone, Button, ButtonKind, SheetStyle, ButtonGroup, GroupAlign } from "ds/ds.slint";
+import { Sheet, Picture, Ground, Label, Tone, Button, ButtonKind, SheetStyle, ButtonGroup, GroupAlign, SheetFooter } from "ds/ds.slint";
 
 export global Pairing {
     // The phone link offered at all, Rust's `phone::READY`: off hides every entry to it.
@@ -39,17 +39,15 @@ export component PairingSheet inherits Sheet {
         text: Pairing.phones;
         wrap: word-wrap;
     }
-    ButtonGroup { plate: true; align: GroupAlign.end;
+    // Forget at the left, apart from DONE, which keeps the phones paired.
+    SheetFooter {
+        commit: @tr("DONE");
+        committed => { Pairing.close(); }
         if Pairing.can-forget: Button {
             text: @tr("Forget Phones");
             kind: ButtonKind.destructive;
             help: @tr("Every paired phone is cut and pairs again from a new code.");
             clicked => { Pairing.forget(); }
-        }
-        Button {
-            text: @tr("DONE");
-            keycap: true;
-            clicked => { Pairing.close(); }
         }
     }
 }

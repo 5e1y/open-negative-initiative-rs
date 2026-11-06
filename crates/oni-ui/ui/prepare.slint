@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
 // the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize } from "ds/ds.slint";
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize, SheetFooter } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
 import { Converting } from "dng.slint";
@@ -194,8 +194,8 @@ export component RollPanel inherits Surface {
             }
           }
         }
-        // `RollReferenceSurface.footer`: Cancel and Back at their own width on one plate, the step's key taking the rest.
-        footer := ButtonGroup { plate: true; align: GroupAlign.fill;
+        // Cancel alone at the left, far from the step's key, which Back stands beside.
+        footer := SheetFooter {
             function laid() {
                 Preparing.footer-x = self.absolute-position.x;
                 Preparing.footer-y = self.absolute-position.y;
@@ -205,18 +205,14 @@ export component RollPanel inherits Surface {
             changed width => { self.laid(); }
             changed y => { self.laid(); }
             init => { self.laid(); }
-            Button { size: ButtonSize.plate; text: Preparing.measuring ? @tr("Stop") : @tr("Cancel"); clicked => { Preparing.cancel(); } }
-            if Preparing.back-shown: Button { size: ButtonSize.plate; text: @tr("Back"); clicked => { Preparing.back(); } }
-            // The step's key: its commit a keycap, a flat key while it only passes a step that holds nothing yet.
-            Button {
-                size: ButtonSize.plate;
-                text: Preparing.measuring ? @tr("Measuring…") : Preparing.action-title;
-                keycap: !Preparing.action-skips;
-                kind: Preparing.action-skips ? ButtonKind.plain : ButtonKind.accent;
-                fills: true;
-                enabled: Preparing.action-enabled && !Preparing.measuring;
-                clicked => { Preparing.advance(); }
-            }
+            cancel: Preparing.measuring ? @tr("Stop") : @tr("Cancel");
+            back: Preparing.back-shown ? @tr("Back") : "";
+            commit: Preparing.measuring ? @tr("Measuring…") : Preparing.action-title;
+            passes: Preparing.action-skips;
+            commit-enabled: Preparing.action-enabled && !Preparing.measuring;
+            cancelled => { Preparing.cancel(); }
+            backed => { Preparing.back(); }
+            committed => { Preparing.advance(); }
         }
     }
 }

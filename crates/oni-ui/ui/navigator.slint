@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
-import { Space, ShellStyle, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
+import { Space, ShellStyle, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach, SheetFooter } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -352,12 +352,8 @@ export component RootsCatchUpSheet inherits Sheet {
         if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
     }
     if Navigator.catch-up-all-in != "": Label { text: Navigator.catch-up-all-in; tone: Tone.secondary; }
-    HorizontalLayout {
-        alignment: end;
-        Button {
-            text: @tr("DONE");
-            keycap: true;
-            clicked => { Navigator.catch-up-done(); }
-        }
+    SheetFooter {
+        commit: @tr("DONE");
+        committed => { Navigator.catch-up-done(); }
     }
 }

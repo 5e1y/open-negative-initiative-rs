@@ -1,5 +1,5 @@
-// The containers: a block's section, the help mark, the sheet, the question a sheet asks, the
-// notice that passes and the banner that stays.
+// The containers: a block's section, the help mark, the sheet and its footer, the question a sheet
+// asks, the notice that passes and the banner that stays.
 import { Colour, Space, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Engraved, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
@@ -205,6 +205,34 @@ export component Sheet inherits Rectangle {
             }
         }
         back := FocusScope { focus-on-click: false; focus-on-tab-navigation: false; }
+    }
+}
+
+// Every sheet's last row: the flat key that leaves at the left, what the sheet adds beside it, then
+// apart at the right a step back and the commit alone, the accent keycap unless it writes nothing.
+export component SheetFooter inherits HorizontalLayout {
+    in property <string> cancel;
+    in property <string> back;
+    in property <string> commit;
+    in property <bool> commit-enabled: true;
+    // A commit that writes nothing, as the prepare's Skip past an empty step or a failure's OK: a flat key.
+    in property <bool> passes;
+    callback cancelled();
+    callback backed();
+    callback committed();
+    spacing: ButtonStyle.group-gap;
+    cross-axis-alignment: center;
+    if root.cancel != "": Button { text: root.cancel; clicked => { root.cancelled(); } }
+    @children
+    // Two gaps at the least, so what leaves never reads as one plate with what commits.
+    Rectangle { horizontal-stretch: 1; }
+    if root.back != "": Button { text: root.back; clicked => { root.backed(); } }
+    if root.commit != "": Button {
+        text: root.commit;
+        keycap: !root.passes;
+        kind: root.passes ? ButtonKind.plain : ButtonKind.accent;
+        enabled: root.commit-enabled;
+        clicked => { root.committed(); }
     }
 }
 
