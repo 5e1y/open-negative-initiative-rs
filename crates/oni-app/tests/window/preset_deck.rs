@@ -190,11 +190,11 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     assert!(Tint::ALL.iter().any(|t| t.wants_dark_ink()) && Tint::ALL.iter().any(|t| !t.wants_dark_ink()), "twin: one ink for all would miss a tint");
     assert_eq!(deck.get_form_balance(), 0, "the photo's own balance proposes Not carried");
     // The menu drops under its field: its third line, Automatic, is where the pointer finds it.
-    // The sheet is centred in the window, 86 px lower than a margin under its top.
-    click(&rig, 640.0, 541.0);
+    // The sheet is centred in the window, the field under Settings' three switches and Colour's title.
+    click(&rig, 640.0, 561.0);
     rig.settle();
     println!("shot {}", rig.shot("preset-balance-menu").display());
-    click(&rig, 600.0, 629.0);
+    click(&rig, 600.0, 649.0);
     rig.settle();
     assert_eq!(deck.get_form_balance(), 2, "Automatic picked under the field");
     deck.invoke_save_cancelled();

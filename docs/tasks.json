@@ -6003,5 +6003,12 @@
     "title": "The second round's sixteen corrections, merged",
     "status": "done",
     "detail": "Merging #1159-#1222: De-dust's header now lies over the tab bar, which stays laid out, hidden, so Tab's way into the panel keeps its target (the bar takes the keyboard only while it shows). The fields keep the flat face with the type scale's field-sized digits; Prepare keeps its new steps with the type scale's notes; the Roll tab keeps 'Filtration'. scripts/i18n dropped the texts no source shows any more."
+  },
+  {
+    "id": 1226,
+    "type": "test",
+    "title": "The preset deck's check aims at the balance field where the sheet now lays it",
+    "status": "done",
+    "detail": "After #1221 the window check preset_deck clicked 20 px above the save sheet's White balance field, in the gap under its label, so its menu never opened and the balance stayed Not carried. The field moved on purpose: the switches above it are slide levers a knob tall (#1188) and the block titles a step larger (#1199). The check now aims at the field's middle and at Automatic, the menu's third line, where they stand; the stale aim, which failed on 0 against 2, is its twin."
   }
 ]
