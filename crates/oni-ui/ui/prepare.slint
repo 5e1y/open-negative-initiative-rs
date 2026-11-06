@@ -93,86 +93,85 @@ export component RollPanel inherits Surface {
                 spacing: Space.m;
                 // A tab bar may end the step: its well's lip keeps its room at the scroll's end.
                 padding-bottom: Depth.lip-reach;
-                controls := VerticalLayout {
+                // Each step's block in the column itself: under a layout between, Slint 1.18 measured a
+                // wrapped note at the wrong width, and the grid below ran over its last lines.
+                if Preparing.step == 0: VerticalLayout {
                     spacing: Space.m;
-                    if Preparing.step == 0: VerticalLayout {
-                        spacing: Space.m;
-                        if Preparing.left-out != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.left-out; wrap: word-wrap; }
-                        Field {
-                            label: @tr("Film type");
-                            Tabs {
-                                tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
-                                marked: [false, false, false];
-                                selected: Preparing.film;
-                                picked(i) => { Preparing.film = i; Preparing.film-picked(i); }
-                            }
-                        }
-                        Field {
-                            label: @tr("Digitised with");
-                            Tabs {
-                                tabs: [@tr("Scanner"), @tr("DSLR Scan"), @tr("RGB Passes")];
-                                marked: [false, false, false];
-                                selected: Preparing.capture;
-                                picked(i) => { Preparing.capture = i; Preparing.capture-picked(i); }
-                            }
-                        }
-                        if Preparing.grouped: Field {
-                            label: @tr("Pass order");
-                            help: @tr("The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll.");
-                            PassReorder {
-                                letters: Preparing.pass-letters;
-                                bands: Preparing.pass-bands;
-                                pictures: Preparing.pass-pictures;
-                                names: Preparing.pass-names;
-                                moved(from, to) => { Preparing.pass-moved(from, to); }
-                            }
-                        }
-                        if Preparing.grouped: HorizontalLayout {
-                            spacing: Space.s;
-                            Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
-                            Button { text: @tr("Shift by One File"); enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
-                        }
-                        if Preparing.grouped && Preparing.grouping-remark != "": VerticalLayout {
-                            spacing: Space.xs;
-                            Label { text: @tr("Check the grouping"); }
-                            Label { role: TextRole.note; tone: Tone.warning; text: Preparing.grouping-remark; }
-                        }
-                        if Preparing.passes-note != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.passes-note; wrap: word-wrap; }
-                    }
-                    if Preparing.step == 1: VerticalLayout {
-                        spacing: Space.m;
-                        FlatFieldBlock { }
-                        // Told once, over the grid that marks the frames shot apart, on the step whose light they change.
-                        if Preparing.differ != "": VerticalLayout {
-                            spacing: Space.xs;
-                            Label { text: @tr("Settings differ across the roll"); }
-                            Label { role: TextRole.note; tone: Tone.warning; text: Preparing.differ; }
+                    if Preparing.left-out != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.left-out; wrap: word-wrap; }
+                    Field {
+                        label: @tr("Film type");
+                        Tabs {
+                            tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
+                            marked: [false, false, false];
+                            selected: Preparing.film;
+                            picked(i) => { Preparing.film = i; Preparing.film-picked(i); }
                         }
                     }
-                    if Preparing.step == 2: VerticalLayout {
-                        spacing: Space.m;
-                        // As tall with its Clear key as without, so the slider below never jumps.
-                        HorizontalLayout {
-                            spacing: Space.s; min-height: ButtonStyle.height;
-                            Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-note; horizontal-stretch: 1; overflow: elide; }
-                            if Preparing.has-base: Button { text: @tr("Clear"); enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
+                    Field {
+                        label: @tr("Digitised with");
+                        Tabs {
+                            tabs: [@tr("Scanner"), @tr("DSLR Scan"), @tr("RGB Passes")];
+                            marked: [false, false, false];
+                            selected: Preparing.capture;
+                            picked(i) => { Preparing.capture = i; Preparing.capture-picked(i); }
                         }
-                        RollSlider { field: 3; label: @tr("Picker size"); enabled: !Preparing.measuring; }
                     }
-                    if Preparing.step == 3: HorizontalLayout {
+                    if Preparing.grouped: Field {
+                        label: @tr("Pass order");
+                        help: @tr("The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll.");
+                        PassReorder {
+                            letters: Preparing.pass-letters;
+                            bands: Preparing.pass-bands;
+                            pictures: Preparing.pass-pictures;
+                            names: Preparing.pass-names;
+                            moved(from, to) => { Preparing.pass-moved(from, to); }
+                        }
+                    }
+                    if Preparing.grouped: HorizontalLayout {
                         spacing: Space.s;
-                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.flags-note; horizontal-stretch: 1; }
-                        Button { text: @tr("Clear Flags"); enabled: Preparing.can-clear-flags && !Preparing.measuring; clicked => { Preparing.clear-flags(); } }
+                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
+                        Button { text: @tr("Shift by One File"); enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
                     }
-                    if Preparing.step == 4: VerticalLayout {
-                        spacing: Space.m;
-                        RollSlider { field: 4; label: @tr("Frame"); enabled: !Preparing.measuring; }
-                        Pager {
-                            name: Preparing.frame-name; can-previous: Preparing.can-previous && !Preparing.measuring; can-next: Preparing.can-next && !Preparing.measuring;
-                            previous => { Preparing.previous(); } next => { Preparing.next(); }
-                        }
-                        Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: @tr("EPILEPSY WARNING: scrubbing flashes the frames quickly."); }
+                    if Preparing.grouped && Preparing.grouping-remark != "": VerticalLayout {
+                        spacing: Space.xs;
+                        Label { text: @tr("Check the grouping"); }
+                        Label { role: TextRole.note; tone: Tone.warning; text: Preparing.grouping-remark; }
                     }
+                    if Preparing.passes-note != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.passes-note; wrap: word-wrap; }
+                }
+                if Preparing.step == 1: VerticalLayout {
+                    spacing: Space.m;
+                    FlatFieldBlock { }
+                    // Told once, over the grid that marks the frames shot apart, on the step whose light they change.
+                    if Preparing.differ != "": VerticalLayout {
+                        spacing: Space.xs;
+                        Label { text: @tr("Settings differ across the roll"); }
+                        Label { role: TextRole.note; tone: Tone.warning; text: Preparing.differ; }
+                    }
+                }
+                if Preparing.step == 2: VerticalLayout {
+                    spacing: Space.m;
+                    // As tall with its Clear key as without, so the slider below never jumps.
+                    HorizontalLayout {
+                        spacing: Space.s; min-height: ButtonStyle.height;
+                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-note; horizontal-stretch: 1; overflow: elide; }
+                        if Preparing.has-base: Button { text: @tr("Clear"); enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
+                    }
+                    RollSlider { field: 3; label: @tr("Picker size"); enabled: !Preparing.measuring; }
+                }
+                if Preparing.step == 3: HorizontalLayout {
+                    spacing: Space.s;
+                    Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.flags-note; horizontal-stretch: 1; }
+                    Button { text: @tr("Clear Flags"); enabled: Preparing.can-clear-flags && !Preparing.measuring; clicked => { Preparing.clear-flags(); } }
+                }
+                if Preparing.step == 4: VerticalLayout {
+                    spacing: Space.m;
+                    RollSlider { field: 4; label: @tr("Frame"); enabled: !Preparing.measuring; }
+                    Pager {
+                        name: Preparing.frame-name; can-previous: Preparing.can-previous && !Preparing.measuring; can-next: Preparing.can-next && !Preparing.measuring;
+                        previous => { Preparing.previous(); } next => { Preparing.next(); }
+                    }
+                    Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: @tr("EPILEPSY WARNING: scrubbing flashes the frames quickly."); }
                 }
                 // Under the controls the step's text names, played once.
                 if Preparing.tutorial.width > 0: HorizontalLayout {
