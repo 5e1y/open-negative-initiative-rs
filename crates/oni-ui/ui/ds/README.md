@@ -11,7 +11,7 @@ and every screen picks it up.
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `theme_type.slint` | `Type`, the type scale, re-exported by `theme.slint` | By hand |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
-| `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
+| `theme_sliders.slint` | `SliderStyle`, `DialStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
 | `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
@@ -128,6 +128,11 @@ fade and the chrome stays. The picker's field wears the same face.
   grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put. The hand on the
   row grows the knob and lights the value; a double click on the value types a number over it (`Typing`,
   answered by Rust), reached by the steps an arrow takes.
+- **Dial** (`Slider { dial }`, `Dial`): a value that is truly a turn, the straighten's angle, as a camera's command
+  dial seen edge on: a black-anodised ring in an `Inward` slot, its scale in the value's unit (`lowest` to `highest`)
+  foreshortened and shaded toward the ends, a fixed index at its middle. The scale moves with the hand, so a drag
+  right brings the lower figures under the index, and a press never jumps it; the ring turns `DialStyle.turn` a
+  unit. Every other behaviour is the slider's: the readout above, the keys, the scroll, the double click.
 - **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
   `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
 

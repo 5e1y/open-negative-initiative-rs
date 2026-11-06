@@ -38,7 +38,16 @@ export component CropPane inherits Pane {
     Block {
         title: @tr("Straighten");
         help: @tr("Turns the photo a few degrees either way to level a horizon or a frame's edge; the crop shrinks to stay inside the turned picture.");
-        StoreSlider { field: 14; label: @tr("Angle"); fraction: Store.angle-fraction; readout: Store.angle-readout; value-text: Store.angle-value; }
+        StoreSlider {
+            field: 14;
+            label: @tr("Angle");
+            dial: true;
+            lowest: Framing.angle-lowest;
+            highest: Framing.angle-highest;
+            fraction: Store.angle-fraction;
+            readout: Store.angle-readout;
+            value-text: Store.angle-value;
+        }
     }
     Section {
         title: @tr("Rotate & Mirror");

@@ -1,0 +1,65 @@
+// `Dial`, a value turned rather than slid: a camera's command dial seen edge on through its slot.
+import { Colour, Stroke, DialStyle } from "theme.slint";
+import { Label, TextRole } from "base.slint";
+import { Inward } from "depth.slint";
+
+// The ring's scale, in the value's own unit, slides under a fixed index; each mark is foreshortened and
+// shaded as the ring turns it away. `lowest` and `highest` are the scale's ends.
+export component Dial inherits Rectangle {
+    in property <float> value;
+    in property <int> lowest;
+    in property <int> highest;
+    // The hand on it: the scale in the primary ink.
+    in property <bool> lit;
+    property <length> radius: self.width / 2;
+    property <color> ink: root.lit ? Colour.ink : Colour.ink-secondary;
+    // Where a unit's mark stands and how far the ring has turned it from the index.
+    pure function turned(unit: float) -> angle { (unit - root.value) * DialStyle.turn }
+    pure function at(unit: float) -> length { root.radius * (1 + sin(root.turned(unit))) }
+    height: DialStyle.height;
+    Inward {
+        radius: DialStyle.radius;
+        ground: DialStyle.edge;
+        Rectangle {
+            background: @linear-gradient(90deg, DialStyle.edge 0%, DialStyle.face 35%, DialStyle.face 65%, DialStyle.edge 100%);
+        }
+        for i in (root.highest - root.lowest) * DialStyle.marks + 1: Rectangle {
+            property <float> unit: root.lowest + i / DialStyle.marks;
+            visible: abs(root.turned(self.unit)) < 90deg;
+            x: root.at(self.unit) - self.width / 2;
+            y: parent.height - DialStyle.foot - self.height;
+            width: Stroke.line;
+            height: Math.mod(i, DialStyle.marks) == 0 ? DialStyle.whole-mark : DialStyle.mark;
+            background: root.ink;
+            opacity: cos(root.turned(self.unit));
+        }
+        for k in root.highest - root.lowest + 1: Rectangle {
+            property <int> unit: root.lowest + k;
+            // Whole on the ring or not drawn, so no figure is cut at its ends.
+            visible: Math.mod(self.unit, DialStyle.figure) == 0 && abs(root.turned(self.unit)) < 90deg && self.x >= 0 && self.x + self.width <= parent.width;
+            x: root.at(self.unit) - self.width / 2;
+            y: DialStyle.foot;
+            width: figure.preferred-width;
+            height: parent.height - 2 * DialStyle.foot - DialStyle.whole-mark;
+            opacity: cos(root.turned(self.unit));
+            transform-scale-x: cos(root.turned(self.unit));
+            transform-origin: { x: self.width / 2, y: self.height / 2 };
+            figure := Label {
+                width: parent.width;
+                height: parent.height;
+                text: (parent.unit < 0 ? "−" : "") + abs(parent.unit) + "°";
+                role: TextRole.caption;
+                ink: root.ink;
+                accessible-role: none;
+            }
+        }
+        // The index, fixed where the ring's figure reads.
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: parent.height - self.height;
+            width: DialStyle.index;
+            height: DialStyle.whole-mark + 2 * DialStyle.foot;
+            background: Colour.ink;
+        }
+    }
+}

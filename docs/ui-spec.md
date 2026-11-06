@@ -277,7 +277,7 @@ controls. Every slider is `DSSlider` (4.4.1). The labels below are exact strings
 | | Dye Separation | Dyes picker, Dye separation slider | `DSPicker`, `DSSlider` | |
 | | Flat-Field (`FlatFieldControls`) | Switch then its word at the left, gear at the far right; Mask label above its picker; USE THIS PHOTO AS FLAT-FIELD; the gear reveals Amount, Temperature, Tint, then LOAD / RENAME / FOLDER on one filling plate | `ToggleRow`, `GlyphKey`, `Field` over `LinesPicker`, sliders, `KeyPlate { fills }` | |
 | Crop (`FramePane`, `GeometryPanel`) | Crop / Aspect Ratio | COPY, PASTE and PASTE TO ROLL sharing one plate alike, their words evenly apart; ratio chips (Free, 3:2, …), then, for a ratio with an orientation, the Vertical switch before its word | `KeyPlate { fills }`, `DSTabBar`, `ToggleRow` | |
-| | Straighten | Angle slider | `DSSlider` (bipolar) | |
+| | Straighten | Angle slider | `Slider { dial }`: a ring's edge in a slot, its degree scale moving with the hand under a fixed index | Departs from Swift (evaluation, Art direction): the one true turn is a dial. |
 | | Rotate & Mirror | The rotate key (a photo under a clockwise arrow), then both mirrors on one plate, the second glyph turned 90°; none ever lit | `IconButton`, `KeyPlate` with `turned` | |
 | | Measuring Window | One filling plate: reset glyph, SET WINDOW / APPLY WINDOW (confirm green, the section's note as its tooltip), copy, paste; block grid (`MeasureGridOverlay`) | `KeyPlate { fills }`, overlay `Path` grid | `[draw]` |
 | Color (`ColorPane`) | Lighting (`PrintPanel`) | Exposure, Contrast, Shadows, Highlights, Black point, White point; the RGB curve plot | `DSSlider` ×6; plot as `Image` | `[draw]` The `Canvas` plot. |

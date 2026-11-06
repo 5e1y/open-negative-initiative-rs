@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1284,
+    "type": "design",
+    "title": "The straighten turns on a dial",
+    "status": "done",
+    "detail": "UI evaluation s-0abd2d65 (Art direction): no dial anywhere, metal only in the medals, and the Pro panel read as generic software. The straighten's angle, the panel's one true turn, is now a camera's command dial seen edge on (Slider { dial }, ds/dial.slint, DialStyle in theme_sliders.slint): a black-anodised ring in an Inward slot, its degree scale (a mark each half degree, a figure every two) foreshortened and shaded toward the ends under a fixed index, a figure cut by the ring's ends not drawn. The scale moves with the hand, so a drag right brings the lower degrees under the index, and a press anywhere never jumps it; the ring turns DialStyle.turn (9°) a degree, a degree standing about 24 pt apart at the index against the rail's 18. The readout, the typed value, the keys, the scroll, the double click's reset and accessibility stay the slider's; Rust publishes the scale's ends (Framing.angle-lowest and angle-highest, from Geometry::ANGLE_RANGE). Window check dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it: a press on the ring leaves 0°, a 48 pt drag right lowers the angle by 48 pt over a degree's spacing within 0.05° (twin: the rail's sense, raising it as much, fails)."
   }
 ]
