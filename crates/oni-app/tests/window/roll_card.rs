@@ -85,6 +85,15 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert!(!live.toggle_mode && !live.measure_roll, "twin: the projects, empty, stand on no roll");
     lib.invoke_surface_picked(0);
     rig.pump();
+    // The medal filter keeps the gallery, never the roll: no photo gold, the card and Prepare stay
+    // on the folder opened.
+    lib.invoke_filter_picked(3);
+    rig.pump();
+    assert!(ctl.state.borrow().order().is_empty(), "no photo is gold");
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "{}", lib.get_info_empty());
+    assert!(menus.get_live().measure_roll, "Prepare stands on the roll the filter hides");
+    lib.invoke_filter_picked(0);
+    rig.pump();
     rig.until("the folder told unmeasured", Duration::from_secs(10), || {
         rig.pump();
         lib.get_roll_unmeasured()

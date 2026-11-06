@@ -197,6 +197,24 @@ impl Archive {
         }
     }
 
+    /// `folder`'s own photos as a band of the whole tree, whatever medal the gallery keeps: the
+    /// roll a folder is, which a filter never cuts; the root's own are the photos loose in it.
+    pub fn band(&self, folder: &str) -> Option<Group> {
+        fn own<'a>(nodes: &'a [Node], folder: &str) -> Option<&'a FilmGroup> {
+            nodes.iter().find_map(|node| match node {
+                Node::Folder { path, group, .. } if paths::same(path, folder) => group.as_ref(),
+                Node::Folder { children, .. } => own(children, folder),
+                Node::Photo(_) => None,
+            })
+        }
+        if !paths::same(folder, &self.root) {
+            return own(&self.nodes, folder).cloned().map(band);
+        }
+        let loose: Vec<Entry> = self.nodes.iter().filter_map(|n| if let Node::Photo(e) = n { Some(e.clone()) } else { None }).collect();
+        let roll = self.basis.survey.rolls.get(&self.root).cloned();
+        (!loose.is_empty()).then(|| band(folders::group(&self.root, &self.root, loose, roll)))
+    }
+
     /// Every photo in gallery order.
     pub fn entries(&self) -> Vec<&Entry> {
         self.groups.iter().flat_map(|g| g.entries.iter()).collect()

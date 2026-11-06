@@ -366,9 +366,10 @@ fn a_lay_on_the_same_rows_keeps_the_tree_and_a_medal_moves_its_row_alone() {
     let b2 = archive.rows().iter().position(|r| r.id == NodeId::Photo(rows[4].path.clone())).unwrap();
     assert_eq!((changed, archive.rows()[b2].caption.clone()), (vec![b2], medal(Medal::Gold)));
     assert_eq!(archive.entries().iter().find(|e| e.path == rows[4].path).map(|e| e.label), Some(Medal::Gold));
-    // Under a filter the medal cuts the gallery again, the tree kept.
+    // Under a filter the medal cuts the gallery again, the tree and Roll A's band, no gold in it, kept.
     let (filtered, how) = Archive::relaid(Some(archive), None, folder, &medalled, &survey, Some(Medal::Gold));
-    assert_eq!((how, filtered.entries().len(), filtered.rows().len()), (Relaid::Regrouped, 1, laid.len()));
+    let roll_a = filtered.band("/R/Scans/Roll A").map(|g| g.entries.len());
+    assert_eq!((how, filtered.entries().len(), filtered.rows().len(), roll_a), (Relaid::Regrouped, 1, laid.len(), Some(3)));
     // Twin: a row that moved otherwise, its print here, cuts the tree whole.
     let mut moved = medalled.clone();
     moved[1].fingerprint = "print-new".into();
