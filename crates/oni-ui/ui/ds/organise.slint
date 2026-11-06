@@ -10,8 +10,8 @@ import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 import { MedalStyle, TabsStyle } from "theme.slint";
 
-// `DSMedalPicker`: the current medal (-1 none) or the one under the hand lit, a pressed one shrunk on the
-// spring; each catches the hand over a small key's square, overhanging so the status bar keeps its height.
+// `DSMedalPicker`: the current medal (-1 none) and the one under the hand given, each other one its empty place, a
+// pressed one shrunk on the spring; each catches the hand over a small key's square, overhanging the status bar.
 export component MedalPicker inherits HorizontalLayout {
     in property <int> current: -1;
     // The medal the lab shows pressed; -1 follows the hand alone.
@@ -20,9 +20,9 @@ export component MedalPicker inherits HorizontalLayout {
     alignment: center;
     for medal[i] in [1, 2, 3]: Rectangle {
         width: ButtonStyle.small-height;
-        height: MedalStyle.size;
+        height: MedalStyle.key;
         property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;
-        // The medal and the key that lays it; the lit one's, the key that takes it off.
+        // The medal and the key that lays it; the given one's, the key that takes it off.
         property <string> help: medal == root.current ? @tr("No Medal (0)") : medal == 1 ? @tr("Bronze (1)") : medal == 2 ? @tr("Silver (2)") : @tr("Gold (3)");
         // The help it shows, hidden by that text once it leaves, whatever its help says since.
         property <bool> telling: touch.has-hover || keys.has-focus;
@@ -36,8 +36,8 @@ export component MedalPicker inherits HorizontalLayout {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             rank: medal;
-            size: MedalStyle.size * parent.scale;
-            opacity: root.current == medal || touch.has-hover ? 1 : TabsStyle.idle;
+            size: MedalStyle.key * parent.scale;
+            given: root.current == medal || touch.has-hover;
         }
         touch := TouchArea {
             y: (parent.height - self.height) / 2;
@@ -52,7 +52,7 @@ export component MedalPicker inherits HorizontalLayout {
         // Space or Return lays it while it holds the keyboard.
         keys := KeyScope {
             x: (parent.width - self.width) / 2;
-            width: MedalStyle.size;
+            width: MedalStyle.key;
             radius: self.width / 2;
             key-pressed(event) => {
                 if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {

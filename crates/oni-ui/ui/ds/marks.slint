@@ -1,7 +1,7 @@
 // The marks laid over a picture, a control or the canvas: a disc, a medal, a selection's ring, a
 // guide's ring and a stroke's trace.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, TileStyle, MedalStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, TileStyle, MedalStyle } from "theme.slint";
 
 // A disc of one ink: a medal, a lamp, a switch's thumb, a tab's swatch or mark, a bullet.
 export component Dot inherits Rectangle {
@@ -15,9 +15,12 @@ export component Dot inherits Rectangle {
 
 // `DSMedal`: bronze, silver or gold spun in foil, 0 being none; its grain lit along the lamp's radius
 // (DSFoil's softbox, upper left) and its opposite, a ruled ring inside the edge, two cast shadows.
+// Its rank is struck in the middle, so no medal is told by its colour alone.
 export component Medal inherits Rectangle {
     in property <int> rank;
     in property <length> size: MedalStyle.size;
+    // False leaves the place of a medal not given: its edge and its rank in the secondary ink.
+    in property <bool> given: true;
     property <color> deep: MedalStyle.deeps[root.rank];
     property <color> body: MedalStyle.bodies[root.rank];
     property <color> bright: MedalStyle.brights[root.rank];
@@ -38,10 +41,15 @@ export component Medal inherits Rectangle {
     height: root.size;
     visible: root.rank > 0;
     border-radius: self.width / 2;
-    drop-shadow-color: MedalStyle.far-shadow;
+    drop-shadow-color: root.given ? MedalStyle.far-shadow : MedalStyle.far-shadow.transparentize(1);
     drop-shadow-blur: MedalStyle.far-blur;
     drop-shadow-offset-y: MedalStyle.far-y;
-    Rectangle {
+    if !root.given: Rectangle {
+        border-radius: self.width / 2;
+        border-width: Stroke.line;
+        border-color: Colour.ink-secondary;
+    }
+    if root.given: Rectangle {
         border-radius: self.width / 2;
         drop-shadow-color: MedalStyle.near-shadow;
         drop-shadow-blur: MedalStyle.near-blur;
@@ -73,6 +81,17 @@ export component Medal inherits Rectangle {
             border-width: parent.width * 0.4 / 12;
             border-color: MedalStyle.rule-ink;
         }
+    }
+    Text {
+        width: 100%;
+        height: 100%;
+        text: root.rank;
+        font-family: Type.family;
+        font-weight: Type.strong;
+        font-size: root.size * MedalStyle.figure;
+        color: root.given ? MedalStyle.rule-ink : Colour.ink-secondary;
+        horizontal-alignment: center;
+        vertical-alignment: center;
     }
 }
 

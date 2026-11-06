@@ -130,8 +130,9 @@ The tabs, the switch, the picker and the medals stand on the depths as the lab's
   on the middle of a small key's height so the hand finds it as a key.
 - **`Picker`**, field face (`DSPicker`): the value in a hollow, a chevron at its end, the hollow lit under the
   hand as a flat key's face; the pill and chip faces keep the hover ground.
-- **`Medal`**: a flat disc of its metal's colour; `MedalPicker` lights the medal under the hand, shrinks a
-  pressed one on the spring and catches the hand over a small key's square round each.
+- **`Medal`**: a foil disc of its metal with its rank struck in the middle; `given: false` leaves its empty
+  place, edge and rank in the secondary ink. `MedalPicker` gives the medal under the hand, shrinks a pressed
+  one on the spring and catches the hand over a small key's square round each.
 
 ## Surfaces
 
