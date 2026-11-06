@@ -71,16 +71,26 @@ impl Ctl {
         e.set_lit_preset(lit.map_or(-1, |i| i as i32));
         let on_profile = matches!(space, Space::Profile(_));
         e.set_space_tab(if on_profile || c.pending { 4 } else { Space::BUILT_IN.iter().position(|s| *s == space).unwrap_or(1) as i32 });
-        e.set_purpose(space.purpose().into());
+        let pending = c.pending && !on_profile;
         e.set_on_profile(on_profile);
-        e.set_pending(c.pending && !on_profile);
-        e.set_pending_note(tr!("Until a profile is chosen, the picture stays in {space}.", space = space.title()).into());
+        e.set_pending(pending);
+        let trouble = match &space {
+            Space::Profile(chosen) => export::profile_note(chosen, &c.installed),
+            _ => "",
+        };
+        let note = if !trouble.is_empty() {
+            trouble.to_owned()
+        } else if pending {
+            tr!("Until a profile is chosen, the picture stays in {space}.", space = space.title())
+        } else {
+            space.purpose().to_owned()
+        };
+        e.set_space_note(note.into());
         if let Space::Profile(chosen) = &space {
             let (listed, titles) = c.profile_titles(chosen);
             let at = listed.iter().position(|p| p == chosen).unwrap_or(0);
             e.set_profiles(ModelRc::new(VecModel::from(titles.into_iter().map(SharedString::from).collect::<Vec<_>>())));
             e.set_profile(at as i32);
-            e.set_profile_note(export::profile_note(chosen, &c.installed).into());
         }
         e.set_colour_only(c.colour_only);
         e.set_edited_in(export::edited_in_note(c.edited_in.as_ref(), &space, batch).into());

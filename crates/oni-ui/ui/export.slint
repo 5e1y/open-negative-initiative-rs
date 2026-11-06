@@ -152,31 +152,20 @@ component QualitySlider inherits Slider {
     step(f, d) => { Exporting.quality-step(d); }
 }
 
-// `ExportSpaceField`: four matrix spaces or an installed ICC profile; the chip shows it compact.
-export component SpaceField inherits VerticalLayout {
-    in property <bool> compact;
+// The four matrix spaces and Custom, an installed ICC profile, as the panel and the chip offer them.
+component SpaceTabs inherits Tabs {
+    tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
+    selected: Exporting.space-tab;
+    picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
+}
+
+// `ExportSpaceField`'s profile: the one Custom converts into or the choice still to make, then the keys
+// that load or fetch one; the chip's adds the colour-only switch.
+component SpaceField inherits VerticalLayout {
+    in property <bool> chip;
     // Asked before a key opens a window of its own, so a popover holding the field closes first.
     callback dismiss();
     spacing: FormStyle.gap;
-    if !root.compact: HorizontalLayout {
-        alignment: start;
-        if News.space != "": Badge { tone: BadgeTone.seal; text: News.space; note: News.space-note; read => { News.read("space.1.3.1"); } }
-    }
-    if !root.compact: Field {
-        label: @tr("Space");
-        help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
-        Tabs {
-            tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-            selected: Exporting.space-tab;
-            picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
-        }
-        Label { role: TextRole.note; text: Exporting.purpose; }
-    }
-    if root.compact: Tabs {
-        tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-        selected: Exporting.space-tab;
-        picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
-    }
     if Exporting.on-profile: Field {
         label: @tr("Profile");
         Picker {
@@ -185,9 +174,8 @@ export component SpaceField inherits VerticalLayout {
             current: Exporting.profile;
             chosen(i) => { Exporting.profile-picked(i); }
         }
-        if Exporting.profile-note != "": Label { role: TextRole.note; text: Exporting.profile-note; }
     }
-    if Exporting.on-profile && root.compact: Toggle {
+    if Exporting.on-profile && root.chip: Toggle {
         label: @tr("Show only colour variation (not recommended)");
         wrap: true;
         on: Exporting.colour-only;
@@ -204,9 +192,8 @@ export component SpaceField inherits VerticalLayout {
                 Exporting.pending-picked(i);
             }
         }
-        Label { role: TextRole.note; text: Exporting.pending-note; }
     }
-    if !root.compact || Exporting.on-profile || Exporting.pending: ButtonGroup {
+    ButtonGroup {
         plate: true;
         align: GroupAlign.fill;
         Button { size: ButtonSize.plate; text: @tr("Load a Profile…"); fills: true; clicked => { root.dismiss(); Exporting.load-profile(); } }
@@ -262,6 +249,18 @@ export component ExportPanel inherits Surface {
                         selected: Exporting.format;
                         picked(i) => { Exporting.format = i; Exporting.format-picked(i); }
                     }
+                }
+                if News.space != "": HorizontalLayout {
+                    alignment: start;
+                    Badge { tone: BadgeTone.seal; text: News.space; note: News.space-note; read => { News.read("space.1.3.1"); } }
+                }
+                // No note stands in a block shown on a condition: Slint 1.18 sizes such a block with its
+                // wrapped words on one line, and what it draws past that runs over the next group.
+                Field {
+                    label: @tr("Space");
+                    help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
+                    SpaceTabs { }
+                    Label { role: TextRole.note; text: Exporting.space-note; }
                 }
                 SpaceField { }
                 if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
@@ -327,7 +326,7 @@ export component ExportPanel inherits Surface {
     }
 }
 
-// The Working Space chip at the canvas's top edge, opening the compact space field.
+// The Working Space chip at the canvas's top edge, opening the space's tabs, its note and its profile.
 export component SpaceChip inherits Picker {
     face: PickerFace.chip;
     prefix: Exporting.chip-title;
@@ -339,7 +338,12 @@ export component SpaceChip inherits Picker {
         x: (root.width - FormStyle.panel-width) / 2;
         y: root.height;
         Label { text: @tr("Working Space"); role: TextRole.section; }
-        SpaceField { compact: true; dismiss => { chooser.close(); } }
+        VerticalLayout {
+            spacing: FormStyle.row-gap;
+            SpaceTabs { }
+            Label { role: TextRole.note; text: Exporting.space-note; }
+        }
+        SpaceField { chip: true; dismiss => { chooser.close(); } }
     }
 }
 
