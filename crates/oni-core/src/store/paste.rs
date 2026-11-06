@@ -32,7 +32,7 @@ impl EditorStore {
         if targets.iter().any(|t| self.reference_of(t) != roll) { PasteCheck::AnotherRoll } else { PasteCheck::Ready }
     }
 
-    /// Lays the copied Color and Details tabs, whole, on every target, one gallery step.
+    /// Lays the copied Color and Details tabs, whole, on every target, one step.
     pub fn paste_settings(&mut self, targets: &[String]) -> usize {
         let Some(donor) = self.paste_source() else { return 0 };
         // `before.count`: Swift counts the open frame among the targets whether or not the paste moved it.
@@ -46,6 +46,7 @@ impl EditorStore {
     /// The open frame in memory, then every other frame of its roll as part of that one step; a
     /// frame on no roll takes the paste alone.
     pub fn paste_to_roll(&mut self) {
+        self.release();
         if !self.takes_hands() {
             return;
         }
@@ -57,7 +58,8 @@ impl EditorStore {
         };
         let pasted = look_settings::copied(&donor, &self.settings);
         if pasted == self.settings {
-            self.paste_on_roll(&donor, key, None);
+            let (was, now) = self.paste_on_roll(&donor, key);
+            self.history.record(&was, &now, "", None);
             return;
         }
         self.roll_look = Some((donor, key));
@@ -71,7 +73,7 @@ impl EditorStore {
         self.board.framing = Some(self.settings.geometry);
     }
 
-    /// The copied framing on every target, one gallery step; fitting it inside each image is the
+    /// The copied framing on every target, one step; fitting it inside each image is the
     /// host's, which knows the sizes.
     /// `pasteFraming(to:)`: only the open frame is fitted, to `open_size`, its own full size.
     pub fn paste_framing(&mut self, targets: &[String], open_size: Option<(f64, f64)>) -> usize {
@@ -90,33 +92,25 @@ impl EditorStore {
         )
     }
 
-    /// One gallery step for a gesture on several frames: the open one in memory, the others on disk.
+    /// One step for a gesture on several frames: the open one in memory, the frames together with it,
+    /// the others on disk; the targets it changed.
     pub(super) fn lay_on(
         &mut self,
         targets: &[String],
         transform: impl Fn(&str, &PipelineSettings) -> PipelineSettings,
         label: impl Fn(usize) -> String,
     ) -> usize {
-        let mut before = Settings::new();
-        let mut after = Settings::new();
+        self.release();
+        let mut step = Written::default();
         let open = self.path().map(str::to_string);
         if let Some(open) = open.as_ref().filter(|p| targets.contains(p) && self.takes_hands()) {
             let next = transform(open, &self.settings);
-            if next != self.settings {
-                before.insert(open.clone(), self.settings.clone());
-                after.insert(open.clone(), next.clone());
-                let now = self.now();
-                self.replace(next);
-                self.last_change = Some(now);
-                self.settle_beside(now, targets);
-            }
+            step = self.lay_open(next, targets);
         }
         let others: Vec<String> = targets.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
-        let (was, now) = self.modify(&others, |p, s| Some(transform(p, s)));
-        before.extend(was);
-        after.extend(now);
-        let count = before.len();
-        self.gallery.record(&before, &after, &label(count), None);
+        gather(&mut step, self.modify(&others, |p, s| Some(transform(p, s))));
+        let count = step.0.keys().filter(|p| targets.contains(p)).count();
+        self.history.record(&step.0, &step.1, &label(count), None);
         count
     }
 }

@@ -2705,7 +2705,7 @@ msgstr "ONI crée le dossier « {folder} » dans « {parent} » et y déplace {f
 msgid "The roll's folder could not be made: {e}"
 msgstr "Le dossier de la pellicule n’a pas pu être créé : {e}"
 
-#: crates/oni-app/src/app/gestures/disk.rs
+#: crates/oni-app/src/app/gestures/disk.rs crates/oni-core/src/store/undo.rs
 msgid "Nothing was moved, as the open photo's settings could not be saved: {error}"
 msgstr "Rien n’a été déplacé, car les réglages de la photo ouverte n’ont pas pu être enregistrés : {error}"
 

@@ -1,7 +1,7 @@
-//! Gestures on several frames at once, each one gallery step.
+//! Gestures on several frames at once, each one step.
 
 use super::*;
-use oni_library::gallery_history::Medals;
+use oni_library::history::Medals;
 use oni_settings::Medal;
 
 impl EditorStore {
@@ -37,9 +37,10 @@ impl EditorStore {
         count
     }
 
-    /// The balance key on every target, read from each frame's own sidecar, never the screen; the
-    /// open frame's step carries the others, so one undo takes the press back.
+    /// The balance key on every target, read from each frame's own sidecar, never the screen; one
+    /// step, so one undo takes the press back.
     pub fn auto_balance(&mut self, targets: &[String], strategy: Strategy, measure: &dyn Measure) -> Option<String> {
+        self.release();
         let open = self.path().map(str::to_string);
         let frames: Vec<(String, PipelineSettings)> = targets
             .iter()
@@ -54,28 +55,18 @@ impl EditorStore {
             .collect();
         let (landed, failure) = balance::run(&frames, strategy, measure);
         let outcomes: HashMap<String, balance::Outcome> = landed.into_iter().collect();
-        let mut serial = None;
+        let mut step = Written::default();
         if let Some(outcome) = open.as_ref().and_then(|p| outcomes.get(p))
             && self.writable()
         {
-            let now = self.now();
             let next = balance::applied_outcome(outcome, &self.settings);
-            self.replace(next);
-            self.last_change = Some(now);
-            serial = self.history.record(self.settings.clone(), now);
+            step = self.lay_open(next, targets);
         }
         let others: Vec<String> = outcomes.keys().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
-        let (was, now) = self.modify(&others, |p, s| outcomes.get(p).map(|o| balance::applied_outcome(o, s)));
-        if !was.is_empty() {
-            match serial {
-                Some(serial) => self.history.attach(Companion { before: was, after: now }, serial),
-                None => {
-                    let n = was.len();
-                    let label = trn("Balance {n} photo", "Balance {n} photos", n as u64);
-                    self.gallery.record(&was, &now, &label, None);
-                }
-            }
-        }
+        gather(&mut step, self.modify(&others, |p, s| outcomes.get(p).map(|o| balance::applied_outcome(o, s))));
+        let n = step.0.keys().filter(|p| outcomes.contains_key(*p)).count();
+        let label = trn("Balance {n} photo", "Balance {n} photos", n as u64);
+        self.history.record(&step.0, &step.1, &label, None);
         let message = failure.map(|f| f.to_string());
         if message.is_some() {
             self.failure = message.clone();
@@ -84,8 +75,9 @@ impl EditorStore {
     }
 
     /// The roll's settings and reference on the frames of its folder never measured with it.
-    /// `applyFlatField(to:)`: the open frame's flat-field written on others, one gallery step.
+    /// `applyFlatField(to:)`: the open frame's flat-field written on others, one step.
     pub fn apply_flat_field(&mut self, paths: &[String]) -> usize {
+        self.release();
         let wanted = self.settings.flat_field.clone();
         let open = self.path().map(str::to_string);
         let others: Vec<String> = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
@@ -97,12 +89,13 @@ impl EditorStore {
         let n = was.len();
         if n > 0 {
             let label = trn("Flat-field on {n} photo", "Flat-field on {n} photos", n as u64);
-            self.gallery.record(&was, &now, &label, None);
+            self.history.record(&was, &now, &label, None);
         }
         n
     }
 
     pub fn join_roll(&mut self, paths: &[String]) -> usize {
+        self.release();
         let Some(reference) = self.settings.roll_reference.clone() else { return 0 };
         let donor = self.settings.clone();
         let all: BTreeSet<roll_settings::Field> = roll_settings::Field::ALL.into_iter().collect();
@@ -121,13 +114,13 @@ impl EditorStore {
                 group.extend(now.keys().cloned());
             }
             let label = trn("Join the roll", "Join the roll with {n} photos", n as u64);
-            self.gallery.record(&was, &now, &label, None);
+            self.history.record(&was, &now, &label, None);
         }
         n
     }
 
     /// `updateRoll`: the roll on every target, the open frame's in memory and written at rest, the
-    /// others' sidecars at once as one gallery step, the open frame in it too.
+    /// others' sidecars at once as one step, the open frame in it too.
     pub fn set_film(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: &str) -> usize {
         self.film_on(paths, film, |_| label.to_string())
     }
@@ -141,9 +134,10 @@ impl EditorStore {
         self.roll_on(paths, None, |s| s.film = film.clone(), label)
     }
 
-    /// The medal on each target's sidecar, its settings untouched, one gallery step; answers each
+    /// The medal on each target's sidecar, its settings untouched, one step; answers each
     /// target's write, a refusal for the host to say.
     pub fn lay_medal(&mut self, targets: &[String], medal: Medal) -> Vec<(String, Result<(), sidecar::Error>)> {
+        self.release();
         let mut worn = BTreeMap::new();
         let written: Vec<(String, Result<(), sidecar::Error>)> = targets
             .iter()
@@ -159,7 +153,7 @@ impl EditorStore {
             .collect();
         let changed = worn.values().filter(|m| **m != medal).count();
         let label = trn("Medal on {n} photo", "Medal on {n} photos", changed as u64);
-        self.gallery.record_medals(Medals { before: worn, after: medal }, &label);
+        self.history.record_medals(Medals { before: worn, after: medal }, &label);
         written
     }
 
@@ -173,13 +167,14 @@ impl EditorStore {
         }
     }
 
-    /// A roll's marker and what it writes on its frames, one gallery step: the marker first, so a
+    /// A roll's marker and what it writes on its frames, one step: the marker first, so a
     /// marker the disk refuses leaves every frame as it was.
     pub fn lay_roll(&mut self, paths: &[String], marker: Option<Marker>, edit: impl Fn(&mut PipelineSettings), label: &str) -> usize {
         self.roll_on(paths, marker, edit, |_| label.to_string())
     }
 
     fn roll_on(&mut self, paths: &[String], marker: Option<Marker>, edit: impl Fn(&mut PipelineSettings), label: impl Fn(usize) -> String) -> usize {
+        self.release();
         if let Some(m) = marker.as_ref().filter(|m| m.before != m.after) {
             if let Err(e) = oni_library::folders::set_roll(m.after.as_ref(), &m.folder) {
                 self.failure = Some(oni_i18n::tr!("The roll could not be written in its folder: {error}", error = refusal::cause(&e)));
@@ -188,31 +183,21 @@ impl EditorStore {
             self.marked = Some((m.folder.clone(), m.after.clone()));
         }
         let open = self.path().map(str::to_string);
-        let mut before = Settings::new();
-        let mut after = Settings::new();
-        let mut next = self.settings.clone();
-        edit(&mut next);
-        // The open frame joins the gallery step, as `applyFilm`'s, and records its own editor step.
-        if let Some(open) = open.as_ref().filter(|p| paths.contains(p) && self.takes_hands())
-            && self.settings != next
-        {
-            before.insert(open.clone(), self.settings.clone());
-            after.insert(open.clone(), next.clone());
-            let now = self.now();
-            self.replace(next);
-            self.last_change = Some(now);
-            self.settle_beside(now, paths);
+        let mut step = Written::default();
+        // The open frame joins the step, as `applyFilm`'s.
+        if open.as_ref().is_some_and(|p| paths.contains(p)) && self.takes_hands() {
+            let mut next = self.settings.clone();
+            edit(&mut next);
+            step = self.lay_open(next, paths);
         }
         let others: Vec<String> = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
-        let (was, now) = self.modify_with(&others, true, |_, s| {
+        gather(&mut step, self.modify_with(&others, true, |_, s| {
             let mut next = s.clone();
             edit(&mut next);
             Some(next)
-        });
-        before.extend(was);
-        after.extend(now);
-        let count = before.len();
-        self.gallery.record_marked(&before, &after, &label(count), marker);
+        }));
+        let count = step.0.keys().filter(|p| paths.contains(p)).count();
+        self.history.record_marked(&step.0, &step.1, &label(count), marker);
         count
     }
 }

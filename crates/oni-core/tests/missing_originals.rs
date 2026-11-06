@@ -2,7 +2,7 @@
 //! is recorded for them, and the gesture says which were left out.
 
 use oni_core::knob::Knob;
-use oni_core::{Archive, Command, EditorStore, Surface};
+use oni_core::{Archive, Command, EditorStore};
 use oni_settings::sidecar::{self, url_for};
 use oni_settings::{Medal, PipelineSettings};
 use std::path::{Path, PathBuf};
@@ -83,23 +83,23 @@ fn a_restore_on_a_disk_away_changes_nothing_and_says_so() {
     let mut store = EditorStore::new(Archive::new(frames.clone(), |_: &Path| true));
     assert_eq!(store.move_to_trash(&frames), 2);
     let trashed: Vec<Option<Vec<u8>>> = frames.iter().map(|f| side(f)).collect();
-    let label = store.gallery_history().undo_label().map(str::to_owned);
+    let label = store.history().undo_label().map(str::to_owned);
 
     std::fs::rename(&disk, dir.join("T7 away")).unwrap();
     assert_eq!(store.restore_from_trash(&frames), 0);
     let said = store.failure.take().unwrap_or_default();
     assert!(said.starts_with("2 photos were not restored") && said.contains("cannot be found"), "{said}");
-    assert_eq!(store.gallery_history().undo_label().map(str::to_owned), label, "no Restore step is recorded");
+    assert_eq!(store.history().undo_label().map(str::to_owned), label, "no Restore step is recorded");
     assert!(!disk.exists(), "nothing is made where the disk was");
     // Undoing the trash while the disk is away writes nothing either.
-    store.undo(Surface::Gallery);
+    store.undo();
     assert!(store.failure.take().is_some_and(|s| s.contains("cannot be found")));
     std::fs::rename(dir.join("T7 away"), &disk).unwrap();
     assert_eq!(frames.iter().map(|f| side(f)).collect::<Vec<_>>(), trashed, "the marks wait on the disk as they were");
 
     // Twin: the disk back, the same restore lands and opens its step.
     assert_eq!(store.restore_from_trash(&frames), 2);
-    assert_eq!((store.failure.take(), store.gallery_history().undo_label()), (None, Some("Restore 2 Photos")));
+    assert_eq!((store.failure.take(), store.history().undo_label()), (None, Some("Restore 2 Photos")));
     assert!(frames.iter().all(|f| sidecar::read(Path::new(f), true, true).unwrap().trashed_at.is_none()));
     let _ = std::fs::remove_dir_all(&dir);
 }

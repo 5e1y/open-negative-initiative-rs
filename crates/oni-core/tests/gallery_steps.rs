@@ -1,10 +1,10 @@
 //! `GalleryHistory.selfCheck`'s scan: every gesture of the store that writes several photos at once
-//! lays one gallery step, directly or through a helper that does, so ⌘Z always answers for it.
+//! lays one named step, directly or through a helper that does, so ⌘Z always answers for it.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-/// The gestures on the selection or the roll, each owing ⌘Z one gallery step.
+/// The gestures on the selection or the roll, each owing ⌘Z one named step.
 const BATCH: [&str; 14] = [
     "reset_frames",
     "apply_mode",
@@ -51,11 +51,15 @@ fn methods(texts: &[String]) -> BTreeMap<String, String> {
     out
 }
 
-/// The batch gestures whose body never reaches a gallery record, through any chain of the store's own.
+/// Whether a body records a named step: any record but an edit's, which names none.
+fn names_a_step(body: &str) -> bool {
+    body.match_indices("self.history.record").any(|(i, m)| !body[i + m.len()..].starts_with("_edit"))
+}
+
+/// The batch gestures whose body never reaches a named record, through any chain of the store's own.
 fn unrecorded(texts: &[String]) -> Vec<&'static str> {
     let methods = methods(texts);
-    let mut recording: BTreeSet<&str> =
-        methods.iter().filter(|(_, b)| b.contains("self.gallery.record")).map(|(n, _)| n.as_str()).collect();
+    let mut recording: BTreeSet<&str> = methods.iter().filter(|(_, b)| names_a_step(b)).map(|(n, _)| n.as_str()).collect();
     loop {
         let more: Vec<&str> = methods
             .iter()
@@ -82,7 +86,7 @@ fn store_sources() -> Vec<String> {
 }
 
 #[test]
-fn every_batch_gesture_of_the_store_lays_a_gallery_step() {
+fn every_batch_gesture_of_the_store_lays_a_named_step() {
     let texts = store_sources();
     let names = methods(&texts);
     let absent: Vec<&str> = BATCH.iter().copied().filter(|g| !names.contains_key(*g)).collect();
@@ -90,6 +94,6 @@ fn every_batch_gesture_of_the_store_lays_a_gallery_step() {
     assert_eq!(unrecorded(&texts), Vec::<&str>::new());
     // Twin: the same sources with every record call taken out name every gesture.
     let stripped: Vec<String> =
-        texts.iter().map(|t| t.lines().filter(|l| !l.contains("gallery.record")).collect::<Vec<_>>().join("\n")).collect();
+        texts.iter().map(|t| t.lines().filter(|l| !names_a_step(l)).collect::<Vec<_>>().join("\n")).collect();
     assert_eq!(unrecorded(&stripped), BATCH.to_vec());
 }

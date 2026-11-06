@@ -2,7 +2,7 @@
 //! `Store`, which `oni_core::EditorStore` answers; a notch is one `apply`, a drag one undo step.
 
 use crate::fields::{Block, Field};
-use oni_core::{Command, EditorStore, Surface};
+use oni_core::{Command, EditorStore};
 use oni_settings::{Face, PipelineSettings};
 
 pub trait Store {
@@ -116,11 +116,11 @@ impl Store for EditorStore {
     }
 
     fn can_undo(&self) -> bool {
-        EditorStore::can_undo(self, Surface::Editor)
+        EditorStore::can_undo(self)
     }
 
     fn can_redo(&self) -> bool {
-        EditorStore::can_redo(self, Surface::Editor)
+        EditorStore::can_redo(self)
     }
 
     fn revision(&self) -> u64 {

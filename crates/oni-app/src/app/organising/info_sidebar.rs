@@ -1,7 +1,7 @@
 //! The info sidebar: the roll's or the project's name, stock, date, body and description.
 
 use super::*;
-use oni_library::gallery_history::Marker;
+use oni_library::history::Marker;
 use oni_settings::film::dye_family;
 
 impl Ctl {

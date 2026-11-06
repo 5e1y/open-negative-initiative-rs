@@ -2,7 +2,7 @@
 //! the test's own: what lands on every frame, as one gallery step that undoes to the same bytes.
 
 use oni_core::store::roll::{WrittenFrame, measure_label, reset_label};
-use oni_core::{Archive, EditorStore, Surface};
+use oni_core::{Archive, EditorStore};
 use oni_library::roll_membership;
 use oni_settings::{ConversionMode, PipelineSettings, sidecar};
 use std::collections::BTreeMap;
@@ -131,7 +131,7 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
     let measured: Vec<WrittenFrame> = written.iter().filter(|(f, _, _)| *f != kept).cloned().collect();
     let frames = store.land_roll(&measured, &roll.frames);
     assert_eq!(frames, roll.frames.len() - 1);
-    assert_eq!(store.gallery_history().undo_label(), Some(measure_label(frames).as_str()));
+    assert_eq!(store.history().undo_label(), Some(measure_label(frames).as_str()));
     store.flush();
     let landed = roll.bytes();
     for (f, _, after) in &measured {
@@ -148,15 +148,15 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
     assert_eq!(moved(&original, &landed), expected);
     assert_eq!(roll.settings(&kept), written.iter().find(|(f, _, _)| *f == kept).unwrap().1);
 
-    assert!(store.can_undo(Surface::Gallery));
-    store.undo(Surface::Gallery);
-    assert!(!store.can_undo(Surface::Gallery), "one measure, one step");
+    assert!(store.can_undo());
+    store.undo();
+    assert!(!store.can_undo(), "one measure, one step");
     store.flush();
     // The undo writes back settings, never a draft: only the frame left out stays without its own.
     assert_eq!(moved(&original, &roll.bytes()), vec![kept.clone()]);
     assert!(roll.draft(&kept).is_none());
     // Redo lands the same bytes again.
-    store.redo(Surface::Gallery);
+    store.redo();
     store.flush();
     assert_eq!(moved(&landed, &roll.bytes()), Vec::<String>::new());
 }
@@ -176,7 +176,7 @@ fn reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_by
     assert!(reach.sheets.is_empty());
     let count = store.reset_to_default(&reach);
     assert_eq!(count, roll.frames.len());
-    assert_eq!(store.gallery_history().undo_label(), Some(reset_label(count).as_str()));
+    assert_eq!(store.history().undo_label(), Some(reset_label(count).as_str()));
     store.flush();
     let reset = roll.bytes();
     assert_eq!(moved(&original, &reset).len(), roll.frames.len());
@@ -186,8 +186,8 @@ fn reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_by
         assert_eq!(s.geometry.crop, PipelineSettings::default().geometry.crop, "{f} loses its crop");
     }
     assert!(store.measured_with(id).is_empty(), "the roll's measure is forgotten");
-    store.undo(Surface::Gallery);
-    assert!(!store.can_undo(Surface::Gallery), "one reset, one step");
+    store.undo();
+    assert!(!store.can_undo(), "one reset, one step");
     store.flush();
     assert_eq!(moved(&original, &roll.bytes()), Vec::<String>::new());
     // Twin: a neighbour on another roll is never reached.

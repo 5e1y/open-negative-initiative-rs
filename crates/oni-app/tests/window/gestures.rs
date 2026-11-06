@@ -161,7 +161,13 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.chord(Key::Control, "z");
     assert_eq!((exposure(&b), exposure(&c)), (b0, c0), "one undo takes both frames back");
     assert_eq!(menus.get_titles().redo.as_str(), "Redo Paste settings to 2 photos");
-    assert_eq!(menus.get_titles().undo.as_str(), "Undo", "nothing else on the gallery's stack");
+    assert_eq!(menus.get_titles().undo.as_str(), "Undo", "under it, the exposure moved in the editor, an edit with no name");
+    // One history: the gallery's ⌘Z reaches that edit of the open frame too, and its redo lays it again.
+    let open_exposure = || ctl.state.borrow().store().get(Field::Exposure);
+    rig.chord(Key::Control, "z");
+    assert!((open_exposure() - donor).abs() > 1e-4, "the editor's edit taken back from the gallery");
+    rig.chord_with(&[Key::Control, Key::Shift], "z");
+    assert!((open_exposure() - donor).abs() < 1e-5);
     rig.chord_with(&[Key::Control, Key::Shift], "z");
     assert!((exposure(&b) - donor).abs() < 1e-5, "the redo lays it again");
 

@@ -8,7 +8,8 @@ impl EditorStore {
         self.held = true;
     }
 
-    /// The hand lifts and the step is recorded at once, with any step still waiting.
+    /// The hand lifts and the step is recorded at once, with any step still waiting; every gesture and
+    /// undo starts here, so the one history keeps the steps in the order they were taken.
     pub fn release(&mut self) {
         let now = self.now();
         self.release_at(now);
@@ -69,17 +70,17 @@ impl EditorStore {
 
     /// Applies a command as at `now`, seconds on the store's own clock.
     pub fn apply_at(&mut self, command: Command, now: f64) -> Applied {
-        if let Command::Face(face) = command {
-            self.scanner_face = face == Face::Scanner;
+        match command {
+            Command::Face(face) => self.scanner_face = face == Face::Scanner,
+            Command::Undo => return Applied { changed: self.undo(), walk: None },
+            Command::Redo => return Applied { changed: self.redo(), walk: None },
+            _ => {}
         }
         if self.open.is_none() {
             return Applied::default();
         }
-        match command {
-            Command::Undo => return Applied { changed: self.undo(Surface::Editor), walk: None },
-            Command::Redo => return Applied { changed: self.redo(Surface::Editor), walk: None },
-            Command::Scan(Scan::Walk { by }) => return Applied { changed: FieldSet::EMPTY, walk: Some(by) },
-            _ => {}
+        if let Command::Scan(Scan::Walk { by }) = command {
+            return Applied { changed: FieldSet::EMPTY, walk: Some(by) };
         }
         if self.inert() {
             return Applied::default();
@@ -138,49 +139,66 @@ impl EditorStore {
     }
 
     /// Records the open frame's step, then lays a Roll Settings gesture or a look pasted on the roll
-    /// on every other frame of the same roll, as part of that one step.
+    /// on every other frame of the same roll, and the step on the frames together, as that one step.
     pub(super) fn settle(&mut self, now: f64) {
-        self.settle_beside(now, &[]);
-    }
-
-    /// `settle`, the frames of `handled` left to the gesture writing them itself: a frame together
-    /// among them is written once, and the gesture's gallery step reads its true before.
-    pub(super) fn settle_beside(&mut self, now: f64, handled: &[String]) {
         self.deferred = None;
-        let before = self.history.current().clone();
         let touched = std::mem::take(&mut self.roll_touched);
         let look = self.roll_look.take();
-        let serial = self.history.record(self.settings.clone(), now);
-        if let (true, Some(serial)) = (touched, serial) {
-            let after = self.settings.clone();
-            self.propagate_roll(&before, &after, serial);
+        let Some(path) = self.path().map(str::to_string) else { return };
+        let (before, after) = (self.recorded.clone(), self.settings.clone());
+        let moved = before != after;
+        let mut step = Written::default();
+        if moved {
+            step.0.insert(path.clone(), before.clone());
+            step.1.insert(path.clone(), after.clone());
+            if touched {
+                gather(&mut step, self.propagate_roll(&before, &after));
+            }
         }
         if let Some((donor, key)) = look {
-            self.paste_on_roll(&donor, key, serial);
+            gather(&mut step, self.paste_on_roll(&donor, key));
         }
-        if let Some(serial) = serial {
-            let after = self.settings.clone();
-            self.propagate_together(&before, &after, serial, handled);
+        if moved {
+            gather(&mut step, self.propagate_together(&before, &after, &[]));
         }
+        self.recorded = after;
+        self.history.record_edit(&path, step.0, step.1, now);
+    }
+
+    /// The open frame laid as part of a gesture's own step, after the gesture's `release`; the frames
+    /// together take it too, but those of `handled`, which the gesture writes itself.
+    pub(super) fn lay_open(&mut self, next: PipelineSettings, handled: &[String]) -> Written {
+        let now = self.now();
+        let Some(path) = self.path().map(str::to_string) else { return Written::default() };
+        let before = self.settings.clone();
+        if next == before {
+            return Written::default();
+        }
+        self.replace(next.clone());
+        self.last_change = Some(now);
+        let mut step = (Settings::from([(path.clone(), before.clone())]), Settings::from([(path, next.clone())]));
+        gather(&mut step, self.propagate_together(&before, &next, handled));
+        self.recorded = next;
+        step
     }
 
     /// A Roll Settings step on the open frame's roll; a slide roll keeps each slide's own levels and
     /// film type, the one a slide's own Auto levels placed and the one that makes it a slide.
-    pub(super) fn propagate_roll(&mut self, before: &PipelineSettings, after: &PipelineSettings, serial: u64) {
-        let Some(path) = self.path().map(str::to_string) else { return };
-        let Some(key) = RollKey::of(&path, after).or_else(|| RollKey::of(&path, before)) else { return };
+    pub(super) fn propagate_roll(&mut self, before: &PipelineSettings, after: &PipelineSettings) -> Written {
+        let Some(path) = self.path().map(str::to_string) else { return Written::default() };
+        let Some(key) = RollKey::of(&path, after).or_else(|| RollKey::of(&path, before)) else { return Written::default() };
         let mut fields = roll_settings::changed(before, after);
         if matches!(key, RollKey::Slides(_)) {
             fields.remove(&roll_settings::Field::Levels);
             fields.remove(&roll_settings::Field::Mode);
         }
         if fields.is_empty() {
-            return;
+            return Written::default();
         }
         let others = self.others_on_roll(&key);
         let offset = matches!(key, RollKey::Slides(_)) && fields.contains(&roll_settings::Field::Gains);
         let base = |s: &PipelineSettings| s.measured_gains.unwrap_or_default();
-        let (was, now) = self.modify(&others, |p, loaded| {
+        self.modify(&others, |p, loaded| {
             (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| {
                 let mut out = roll_settings::copied(&fields, after, loaded);
                 // Each slide keeps its own measured balance: the hand's move lands on it as an offset.
@@ -189,25 +207,14 @@ impl EditorStore {
                 }
                 out
             })
-        });
-        if !was.is_empty() {
-            self.history.attach(Companion { before: was, after: now }, serial);
-        }
+        })
     }
 
-    pub(super) fn paste_on_roll(&mut self, donor: &PipelineSettings, key: RollKey, serial: Option<u64>) {
+    pub(super) fn paste_on_roll(&mut self, donor: &PipelineSettings, key: RollKey) -> Written {
         let others = self.others_on_roll(&key);
-        let (was, now) = self.modify(&others, |p, loaded| {
+        self.modify(&others, |p, loaded| {
             (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| look_settings::copied(donor, loaded))
-        });
-        if was.is_empty() {
-            return;
-        }
-        let companion = Companion { before: was, after: now };
-        match serial {
-            Some(serial) => self.history.attach(companion, serial),
-            None => self.history.lay(companion),
-        }
+        })
     }
 
     /// The roll the open frame stands on, as its settings in memory say.

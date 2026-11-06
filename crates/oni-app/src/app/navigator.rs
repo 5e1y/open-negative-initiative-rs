@@ -6,7 +6,7 @@ use super::organising::reach;
 use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
 use oni_i18n::tr;
 use oni_library::favourites::{self, Favourites};
-use oni_library::gallery_history::Move;
+use oni_library::history::Move;
 use oni_library::navigator::{self as walk, Computer, Landed, Navigation, TRASH_ROW};
 use oni_library::paths::{self, holds};
 use oni_library::presence::{self, Away, Presence};

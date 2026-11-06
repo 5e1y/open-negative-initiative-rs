@@ -2,7 +2,7 @@
 //! screen the phone draws is the store's.
 
 use oni_app::link::{Link, Move, Outward, drive};
-use oni_core::{Archive, EditorStore, Surface};
+use oni_core::{Archive, EditorStore};
 use oni_link::{Command, Display, Effect, Face, Host, Identity, Letter, Machine, PairingCode, Param, Remote, Tab};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -90,7 +90,7 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     assert_eq!((back.state.clicks.d, back.state.clicks.c), (d, c));
     let store = store.lock().unwrap();
     assert_eq!(store.settings(), &start);
-    assert!(!store.can_undo(Surface::Editor));
+    assert!(!store.can_undo());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -212,7 +212,7 @@ async fn the_old_link_of_a_phone_back_on_a_new_one_leaves_its_drag_held() {
     until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
     new.slide(Param::Exposure, 0.75);
     until(&mut display, |d| d.state.applied == 1).await;
-    let held = || !store.lock().unwrap().can_undo(Surface::Editor);
+    let held = || !store.lock().unwrap().can_undo();
     assert!(held(), "held, the drag is not a step yet");
     drop(old);
     tokio::time::sleep(Duration::from_millis(500)).await;
@@ -288,7 +288,7 @@ async fn a_drag_cut_by_another_key_or_a_lost_phone_still_records_its_step() {
     remote.slide(Param::Exposure, 0.25);
     until(&mut display, |d| d.state.applied == 5).await;
     drop(remote);
-    let released = || store.lock().unwrap().can_undo(Surface::Editor);
+    let released = || store.lock().unwrap().can_undo();
     timeout(Duration::from_secs(15), async {
         while !released() {
             tokio::time::sleep(Duration::from_millis(20)).await;

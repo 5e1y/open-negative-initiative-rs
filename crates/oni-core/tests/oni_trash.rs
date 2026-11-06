@@ -1,7 +1,7 @@
 //! `OniTrash.selfCheck` through the store, on files of the test's own: a triplet goes to the ONI
 //! Trash on its three sidecars and comes back from any of its files; one step, which ⌘Z hands back.
 
-use oni_core::{Archive, EditorStore, Surface};
+use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RgbPasses;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::PipelineSettings;
@@ -64,19 +64,19 @@ fn a_triplet_goes_whole_in_one_step_and_undo_and_redo_hand_it_back() {
     assert!(store.path().is_none(), "the open frame closes");
     assert_eq!(trashed(&all), [true, true, true, false], "the triplet on its three files, the neighbour left alone");
     assert_eq!(files(&dir.0, false), originals, "no original moves, vanishes or changes");
-    assert_eq!(store.gallery_history().undo_label(), Some("Move to ONI Trash"));
+    assert_eq!(store.history().undo_label(), Some("Move to ONI Trash"));
 
-    store.undo(Surface::Gallery);
+    store.undo();
     assert_eq!(trashed(&all), [false; 4], "one undo restores the three files");
     assert_eq!(sidecar::read(Path::new(&lead), false, true).unwrap().settings, led, "the settings untouched");
-    store.redo(Surface::Gallery);
+    store.redo();
     assert_eq!(trashed(&all), [true, true, true, false], "redo marks them again");
 
     // Restored from a pass, the three come back; twin: a restore that moved nothing opens no step.
     assert_eq!(store.restore_from_trash(std::slice::from_ref(&blue)), 1);
     assert_eq!(trashed(&all), [false; 4]);
-    let label = store.gallery_history().undo_label().map(str::to_owned);
+    let label = store.history().undo_label().map(str::to_owned);
     assert_eq!(store.restore_from_trash(&[]), 0);
-    assert_eq!(store.gallery_history().undo_label().map(str::to_owned), label);
+    assert_eq!(store.history().undo_label().map(str::to_owned), label);
     assert_eq!(files(&dir.0, false), originals);
 }

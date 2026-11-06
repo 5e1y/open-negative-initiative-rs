@@ -42,7 +42,6 @@ impl Ctl {
             };
             let (zoom_out, zoom_in) = (rung(-1), rung(1));
             let settings = s.store.settings().clone();
-            let editor_undo = (s.store.can_undo(), s.store.can_redo());
             let open_path = s.open.clone();
             let mut store = s.store.editor();
             // A slide roll is scanned once for the title's count, then kept until a frame joins or leaves it.
@@ -52,23 +51,22 @@ impl Ctl {
             {
                 e.measured_with(key);
             }
-            let gallery_history = store.as_ref().map(|e| {
-                let h = e.gallery_history();
-                (h.can_undo(), h.can_redo(), h.undo_label().map(str::to_string), h.redo_label().map(str::to_string))
-            });
+            // One history in every mode: the same step answers ⌘Z in the gallery and the editor.
+            let (can_undo, can_redo, undo_title, redo_title) = store.as_ref().map_or_else(
+                || (false, false, tr("Undo").to_string(), tr("Redo").to_string()),
+                |e| {
+                    let h = e.history();
+                    let undo = h.undo_label().map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l));
+                    let redo = h.redo_label().map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l));
+                    (h.can_undo(), h.can_redo(), undo, redo)
+                },
+            );
             let (has_settings, scanner_face) =
                 store.as_ref().map_or((false, false), |e| (e.has_copied_settings(), e.scanner_face));
             let reach = store
                 .as_ref()
                 .and_then(|e| e.roll_key().and_then(|k| e.measured_group(k)))
                 .map_or(0, |m| m.len() - usize::from(open_path.as_ref().is_some_and(|p| m.contains(p))));
-            let (can_undo, can_redo, undo_title, redo_title) = match (gallery, gallery_history) {
-                (true, Some((u, r, ul, rl))) => {
-                    (u, r, ul.map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l)), rl.map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l)))
-                }
-                (true, None) => (false, false, tr("Undo").to_string(), tr("Redo").to_string()),
-                (false, _) => (editor_undo.0, editor_undo.1, tr("Undo").to_string(), tr("Redo").to_string()),
-            };
             let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
             let (exporting, writing) = {
                 let c = self.export.borrow();

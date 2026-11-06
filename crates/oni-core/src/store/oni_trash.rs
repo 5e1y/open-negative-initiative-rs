@@ -34,8 +34,9 @@ impl EditorStore {
         }
     }
 
-    /// Once the mark has run: its failures said and one gallery step recorded; the frames marked.
+    /// Once the mark has run: its failures said and one step recorded; the frames marked.
     pub fn mark_landed(&mut self, paths: &[String], outcome: &trash::Outcome, date: Option<Date>) -> usize {
+        self.release();
         self.took(outcome, date.is_some());
         let frames = paths.iter().filter(|p| outcome.done.contains(p)).count();
         let label = if date.is_some() {
@@ -44,7 +45,7 @@ impl EditorStore {
             trn("Restore {n} Photo", "Restore {n} Photos", frames as u64)
         };
         let marks = Trash { paths: outcome.done.iter().cloned().collect(), marked: date.is_some() };
-        self.gallery.record_trash(marks, &label);
+        self.history.record_trash(marks, &label);
         frames
     }
 

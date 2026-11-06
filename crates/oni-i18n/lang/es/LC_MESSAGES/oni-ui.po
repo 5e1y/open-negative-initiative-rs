@@ -2705,7 +2705,7 @@ msgstr "ONI crea la carpeta «{folder}» en «{parent}» y mueve a ella {files}:
 msgid "The roll's folder could not be made: {e}"
 msgstr "No se pudo crear la carpeta del rollo: {e}"
 
-#: crates/oni-app/src/app/gestures/disk.rs
+#: crates/oni-app/src/app/gestures/disk.rs crates/oni-core/src/store/undo.rs
 msgid "Nothing was moved, as the open photo's settings could not be saved: {error}"
 msgstr "No se ha movido nada porque no se pudieron guardar los ajustes de la foto abierta: {error}"
 

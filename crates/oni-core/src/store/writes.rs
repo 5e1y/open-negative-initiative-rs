@@ -2,6 +2,17 @@
 
 use super::*;
 
+/// What a gesture wrote: each frame's settings before it, and after.
+pub(super) type Written = (Settings, Settings);
+
+/// `part` laid into `step`: a frame written twice keeps its first before and takes its last after.
+pub(super) fn gather(step: &mut Written, part: Written) {
+    for (path, was) in part.0 {
+        step.0.entry(path).or_insert(was);
+    }
+    step.1.extend(part.1);
+}
+
 impl EditorStore {
     /// Reads each frame's sidecar, lays `transform` and writes what moved; a sidecar from a newer
     /// version is left alone. The before and after of every frame written.
@@ -9,7 +20,7 @@ impl EditorStore {
         &mut self,
         paths: &[String],
         transform: impl Fn(&str, &PipelineSettings) -> Option<PipelineSettings>,
-    ) -> (Settings, Settings) {
+    ) -> Written {
         self.modify_with(paths, false, transform)
     }
 
@@ -19,7 +30,7 @@ impl EditorStore {
         paths: &[String],
         preserving: bool,
         transform: impl Fn(&str, &PipelineSettings) -> Option<PipelineSettings>,
-    ) -> (Settings, Settings) {
+    ) -> Written {
         // One thread per file: a path twice would have two threads write one sidecar.
         let mut seen = std::collections::HashSet::new();
         let paths: Vec<String> = paths.iter().filter(|p| seen.insert(p.as_str())).cloned().collect();
