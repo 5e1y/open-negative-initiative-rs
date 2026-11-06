@@ -129,7 +129,7 @@ impl Ctl {
                 ungroup: members > 0,
                 measure_roll: !preparing && roll > 0,
                 reset_to_default: gallery && roll > 0,
-                copy_settings: open,
+                copy_settings: open && !modal,
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
                 save_preset: open && !modal,

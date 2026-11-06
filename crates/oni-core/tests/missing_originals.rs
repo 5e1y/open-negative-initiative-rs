@@ -2,6 +2,7 @@
 //! is recorded for them, and the gesture says which were left out.
 
 use oni_core::knob::Knob;
+use oni_core::preset_parameters::pasted_rows;
 use oni_core::{Archive, Command, EditorStore};
 use oni_settings::sidecar::{self, url_for};
 use oni_settings::{Medal, PipelineSettings};
@@ -55,7 +56,7 @@ fn a_gesture_on_a_missing_original_writes_no_sidecar() {
     untouched(&mut store, "reset");
     assert_ne!(sidecar::read(Path::new(&present), false, true).unwrap().settings.print.exposure, 0.7, "reset");
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
-    store.copy_settings();
+    store.copy_settings(None, &pasted_rows());
     assert_eq!(store.paste_settings(&targets), 1);
     untouched(&mut store, "paste");
     assert_eq!(store.move_to_trash(&targets), 1);
@@ -121,17 +122,17 @@ fn copy_settings_reads_a_photo_not_open_off_its_sidecar_and_never_a_missing_one(
         store.settings().print.exposure
     };
 
-    store.copy_settings_of(&other);
+    store.copy_settings(Some(&other), &pasted_rows());
     assert_eq!((store.failure.take(), pasted(&mut store)), (None, 0.7), "the photo not open lends its sidecar");
     // The open frame lends what it shows, unsaved edits included.
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
-    store.copy_settings_of(&open);
+    store.copy_settings(Some(&open), &pasted_rows());
     store.paste_settings(std::slice::from_ref(&other));
     assert_eq!(sidecar::read(Path::new(&other), false, true).unwrap().settings.vignette.stops, 0.5);
     let board = store.board.settings.clone();
 
     // Twin: an original moved away lends nothing, its orphan sidecar unread, and says why.
-    store.copy_settings_of(&moved);
+    store.copy_settings(Some(&moved), &pasted_rows());
     assert!(store.failure.take().is_some_and(|s| s.contains("cannot be found")));
     assert_eq!(store.board.settings, board, "the board keeps what it held");
     let _ = std::fs::remove_dir_all(&dir);

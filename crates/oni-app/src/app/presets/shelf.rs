@@ -10,7 +10,6 @@ impl Ctl {
         g.set_tints(ModelRc::new(VecModel::from(Tint::ALL.iter().map(|t| colour(t.components())).collect::<Vec<_>>())));
         g.set_tint_inks(ModelRc::new(VecModel::from(Tint::ALL.iter().map(|t| ink(*t)).collect::<Vec<_>>())));
         g.set_tint_names(ModelRc::new(VecModel::from(Tint::ALL.iter().map(|t| SharedString::from(t.label())).collect::<Vec<_>>())));
-        g.set_carries_help(tr(carries::CARRIES_HELP).into());
         g.set_balance_help(tr(carries::WHITE_BALANCE_HELP).into());
         g.set_carries_nothing(tr(carries::CARRIES_NOTHING).into());
         g.set_balance_names(ModelRc::new(VecModel::from(WhiteBalance::ALL.iter().map(|b| SharedString::from(b.label())).collect::<Vec<_>>())));
@@ -33,7 +32,8 @@ impl Ctl {
         g.on_form_tinted(move |i| p.edit_form(|f| f.tint = index(i).and_then(|i| Tint::ALL.get(i).copied()).unwrap_or_default()));
         let p = me.clone();
         g.on_form_ticked(move |i, on| {
-            if let Some(entry) = index(i).and_then(entry_at) {
+            let copying = p.state.borrow().shelf.form.as_ref().is_some_and(Form::copying);
+            if let Some(entry) = index(i).and_then(|i| entry_at(i, copying)) {
                 p.edit_form(|f| f.parameters = carries::with_entry(entry, on, &f.parameters));
             }
         });

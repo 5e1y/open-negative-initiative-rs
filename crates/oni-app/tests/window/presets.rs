@@ -144,6 +144,33 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
         ctl.state.borrow().shown_settings().is_some_and(|s| (Field::Exposure.knob().get(s) - rest).abs() < 1e-6)
     });
 
+    // Copy Settings asks what it carries, the look's boxes all ticked at first and none of the roll's;
+    // Lighting unticked, Return copies, and the next copy opens on that choice.
+    g.invoke_step(Field::Exposure.index(), 5);
+    g.invoke_step(Field::Vignette.index(), -5);
+    rig.pump();
+    let vignetted = ctl.state.borrow().store().get(Field::Vignette);
+    ctl.act(oni_app::Act::Copy);
+    rig.pump();
+    assert!(presets.get_copying() && presets.get_saving(), "Copy opens its sheet");
+    let boxes = || {
+        let lines = presets.get_form_carries();
+        (0..lines.row_count()).filter_map(|i| lines.row_data(i).map(|l| (i, l))).filter(|(_, l)| l.kind == 2).map(|(i, l)| (i, l.text.to_string(), l.on)).collect::<Vec<_>>()
+    };
+    assert!(boxes().iter().all(|b| b.2), "the look whole at first");
+    assert!(!boxes().iter().any(|b| b.1 == "Flat-Field") && !presets.get_form_carries().iter().any(|l| l.kind == 1), "no roll box, no balance choice");
+    let lighting = boxes().iter().find(|b| b.1 == "Lighting").unwrap().0;
+    presets.invoke_form_ticked(lighting as i32, false);
+    rig.settle();
+    println!("shot {}", rig.shot("presets-copy-sheet").display());
+    rig.key("\r");
+    assert!(!presets.get_saving(), "Return copies");
+    ctl.act(oni_app::Act::Copy);
+    rig.pump();
+    assert_eq!(boxes().iter().filter(|b| !b.2).map(|b| b.1.as_str()).collect::<Vec<_>>(), ["Lighting"], "the next copy opens on the last one's choice");
+    rig.key("\u{1b}");
+    assert!(!presets.get_saving());
+
     // To the gallery, B and C picked, a click on the card applies to both as one gallery step.
     rig.chord(Key::Control, "g");
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
@@ -164,6 +191,16 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     for (name, was) in [("B.tif", own[1]), ("C.tif", own[2])] {
         assert!((exposure_of(&canonical(name)) - was).abs() < 1e-6, "{name}: one undo takes the apply back on both");
     }
+    // The paste lays the vignette the copy carried, and leaves each photo its own Lighting.
+    ctl.act(oni_app::Act::Paste);
+    rig.pump();
+    for (name, was) in [("B.tif", own[1]), ("C.tif", own[2])] {
+        let pasted = sidecar::read(&canonical(name), false, true).unwrap().settings;
+        assert!((Field::Vignette.knob().get(&pasted) - vignetted).abs() < 1e-5, "{name}: the vignette pasted");
+        assert!((exposure_of(&canonical(name)) - was).abs() < 1e-6, "{name}: twin, the Lighting left out stays");
+    }
+    ctl.act(oni_app::Act::Undo);
+    rig.pump();
 
     // The editor: a rename is written once the hand rests, its file following the new name.
     ctl.act(oni_app::Act::EditPresets);

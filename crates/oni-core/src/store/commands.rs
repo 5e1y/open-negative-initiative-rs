@@ -155,8 +155,8 @@ impl EditorStore {
                 gather(&mut step, self.propagate_roll(&before, &after));
             }
         }
-        if let Some((donor, key)) = look {
-            gather(&mut step, self.paste_on_roll(&donor, key));
+        if let Some((copied, key)) = look {
+            gather(&mut step, self.paste_on_roll(&copied, key));
         }
         if moved {
             gather(&mut step, self.propagate_together(&before, &after, &[]));
@@ -210,11 +210,9 @@ impl EditorStore {
         })
     }
 
-    pub(super) fn paste_on_roll(&mut self, donor: &PipelineSettings, key: RollKey) -> Written {
+    pub(super) fn paste_on_roll(&mut self, copied: &paste::Copied, key: RollKey) -> Written {
         let others = self.others_on_roll(&key);
-        self.modify(&others, |p, loaded| {
-            (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| look_settings::copied(donor, loaded))
-        })
+        self.modify(&others, |p, loaded| (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| copied.laid(loaded)))
     }
 
     /// The roll the open frame stands on, as its settings in memory say.

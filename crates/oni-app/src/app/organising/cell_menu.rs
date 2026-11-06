@@ -172,21 +172,6 @@ impl Ctl {
         false
     }
 
-    /// Copy Settings on the cell menu's one photo, onto the board the bar's Paste and the system's share.
-    fn copy_settings_of(self: &Rc<Self>, scope: &[String]) {
-        let [path] = scope else { return };
-        let failure = {
-            let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
-            store.copy_settings_of(path);
-            store.failure.take()
-        };
-        match failure {
-            Some(message) => self.told(tr("Copy Settings"), &message),
-            None => self.board_out(crate::pasteboard::SETTINGS),
-        }
-    }
-
     /// File > New Project: the photos the gestures reach now, as the cell menu's line on them.
     pub(in crate::app) fn new_project_from_targets(self: &Rc<Self>) {
         let targets: HashSet<String> = self.targets().into_iter().collect();
@@ -239,7 +224,11 @@ impl Ctl {
             s.picks.cursor = path;
         }
         match line.action {
-            CellAction::Copy => self.copy_settings_of(&line.scope),
+            CellAction::Copy => {
+                if let [path] = line.scope.as_slice() {
+                    self.ask_copy(Some(path.clone()));
+                }
+            }
             CellAction::Paste => self.paste(),
             CellAction::Reset => self.reset_all(),
             CellAction::NewRoll => self.new_roll(),

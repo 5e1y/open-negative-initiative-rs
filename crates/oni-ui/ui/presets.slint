@@ -26,6 +26,8 @@ export global Presets {
 
     // The form both sheets show: the draft being saved, or the preset selected in the editor.
     in property <bool> saving;
+    // The save sheet as Copy Settings: the boxes a copy carries, no name and no colour.
+    in property <bool> copying;
     in property <bool> editing;
     in property <bool> form-shown;
     in property <[int]> form-instance;
@@ -142,18 +144,26 @@ component CarriesPicker inherits VerticalLayout {
     if Presets.form-empty: Label { role: TextRole.note; text: Presets.carries-nothing; }
 }
 
-// The fields of both sheets; the description is the editor's alone.
+// The fields of both sheets; the description is the editor's alone, the boxes a copy's alone.
 component PresetForm inherits VerticalLayout {
     in property <bool> noted;
+    in property <bool> copying;
+    // The name takes the keyboard as the form opens, the proposed one selected so typing replaces it.
+    in property <bool> focused;
     callback named(string);
     spacing: Space.l;
-    Field {
+    if !root.copying: Field {
         label: @tr("Name");
-        name := TextField {
+        TextField {
             text: Presets.form-name;
             placeholder: @tr("Preset name");
             edited(t) => { Presets.form-named(t); }
             accepted(t) => { root.named(t); }
+            init => {
+                if (root.focused) {
+                    self.take-focus-selecting();
+                }
+            }
         }
     }
     // Three lines, wrapped, as `lineLimit(3, reservesSpace: true)`.
@@ -168,7 +178,7 @@ component PresetForm inherits VerticalLayout {
             edited(t) => { Presets.form-noted(t); }
         }
     }
-    Field {
+    if !root.copying: Field {
         label: @tr("Colour");
         TintPicker { }
     }
@@ -177,13 +187,12 @@ component PresetForm inherits VerticalLayout {
         help: Presets.carries-help;
         CarriesPicker { }
     }
-    // The proposed name selected, so typing replaces it.
-    public function take-focus() { name.take-focus-selecting(); }
 }
 
-// `PresetSaveSheet`: a name, a colour, the rows it carries; Save stays dark on a blank name.
+// `PresetSaveSheet`: a name, a colour, the rows it carries; Save stays dark on a blank name. As
+// Copy Settings, the boxes alone, Copy dark while none is ticked.
 export component PresetSaveSheet inherits Sheet {
-    title: @tr("Save a Preset");
+    title: Presets.copying ? @tr("Copy Settings") : @tr("Save a Preset");
     card-width: PresetStyle.save-width;
     card-height: PresetStyle.save-height;
     dismissed => { Presets.save-cancelled(); }
@@ -192,6 +201,8 @@ export component PresetSaveSheet inherits Sheet {
         content-height: form.preferred-height;
         form := PresetForm {
             width: parent.width;
+            copying: Presets.copying;
+            focused: true;
             // A toggle's or a picker's lip ends the form, kept at the scroll's end.
             padding-bottom: Depth.lip-reach;
             named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
@@ -202,9 +213,8 @@ export component PresetSaveSheet inherits Sheet {
         alignment: end;
         spacing: Space.s;
         Button { text: @tr("Cancel"); clicked => { Presets.save-cancelled(); } }
-        Button { text: @tr("Save"); enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
+        Button { text: Presets.copying ? @tr("Copy") : @tr("Save"); enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
     }
-    init => { form.take-focus(); }
 }
 
 // `PresetEditor`: the presets in a list, the selected one's form, and the footer's keys; an edit

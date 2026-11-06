@@ -101,9 +101,9 @@ msgstr "Restablecer el rollo…"
 msgid "Settings"
 msgstr "Ajustes"
 
-#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
-msgid "Copy Settings"
-msgstr "Copiar ajustes"
+#: crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
+msgid "Copy Settings…"
+msgstr "Copiar ajustes…"
 
 #: crates/oni-ui/ui/app.slint
 msgid "Save as Preset…"
@@ -897,7 +897,7 @@ msgstr "1 bloque registrado"
 msgid "{} blocks recorded"
 msgstr "{} bloques registrados"
 
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copiar"
 
@@ -2060,6 +2060,10 @@ msgstr "Para qué sirve este aspecto"
 #: crates/oni-ui/ui/presets.slint
 msgid "Carries"
 msgstr "Incluye"
+
+#: crates/oni-app/src/app/presets/sheets.rs crates/oni-ui/ui/presets.slint
+msgid "Copy Settings"
+msgstr "Copiar ajustes"
 
 #: crates/oni-ui/ui/presets.slint
 msgid "Save a Preset"
@@ -4498,6 +4502,10 @@ msgstr "No incluido deja a cada foto su propio balance. Balance de blancos copia
 #: crates/oni-core/src/preset_parameters.rs
 msgid "A preset never carries crop, straightening, rotation or the conversion mode."
 msgstr "Un preajuste nunca incluye el recorte, el enderezado, la rotación ni el modo de conversión."
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "A copy never carries the roll's settings, crop, straightening, rotation or the conversion mode."
+msgstr "Una copia nunca incluye los ajustes del rollo, el recorte, el enderezado, la rotación ni el modo de conversión."
 
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Carries nothing — applying it would change no setting."

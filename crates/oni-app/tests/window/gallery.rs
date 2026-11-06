@@ -2,7 +2,7 @@
 //! medal picker, the cell menu, projects, the archive that moves nothing, the ONI Trash, the sidebar.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{App, Confirm, Library, Menus};
+use oni_app::{App, Confirm, Library, Menus, Presets};
 use oni_core::{Archive, EditorStore};
 use oni_library::index::LibraryIndex;
 use oni_settings::{Film, Medal};
@@ -137,8 +137,8 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(hand.selected(), ["A", "B"], "a right click inside the selection keeps it whole");
     let menu = hand.menu();
     let live = |text: &str| lib.get_menu_lines().iter().find(|l| l.text == text).is_some_and(|l| l.enabled);
-    assert_eq!(menu[..2], ["Copy Settings", "Paste Settings (2 photos)"]);
-    assert!(!live("Copy Settings") && !live("Paste Settings (2 photos)"), "Copy takes one photo, and nothing is copied yet");
+    assert_eq!(menu[..2], ["Copy Settings\u{2026}", "Paste Settings (2 photos)"]);
+    assert!(!live("Copy Settings\u{2026}") && !live("Paste Settings (2 photos)"), "Copy takes one photo, and nothing is copied yet");
     assert!(menu.contains(&"New Project from 2 Photos".to_string()) && menu.contains(&"Move 2 Photos to ONI Trash".to_string()), "{menu:?}");
     assert!(!menu.contains(&"Add to Project".to_string()), "no project yet, so no submenu");
     hand.choose("New Project from 2 Photos");
@@ -159,13 +159,17 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.choose_sub("Project 1");
     assert_eq!(hand.selected(), ["D"], "a verb selects its scope");
     assert_eq!(oni_library::project::load(&support).projects[0].members.len(), 3);
-    // Copy Settings on the menu's one photo fills the board the next menu's Paste reads.
+    // Copy Settings on the menu's one photo asks what it carries, then fills the board the next menu's Paste reads.
     hand.right_click("D");
-    assert!(live("Copy Settings"));
-    hand.choose("Copy Settings");
+    assert!(live("Copy Settings\u{2026}"));
+    hand.choose("Copy Settings\u{2026}");
+    assert!(w.global::<Presets>().get_copying(), "the copy sheet asks first");
+    rig.key("\r");
+    assert!(!w.global::<Presets>().get_saving(), "Return copies");
     hand.right_click("A");
     assert!(live("Paste Settings"), "{:?}", hand.menu());
-    hand.choose("Copy Settings");
+    hand.choose("Copy Settings\u{2026}");
+    w.global::<Presets>().invoke_save_cancelled();
 
     // The archive moves nothing by hand: a tile dragged onto another lands nowhere.
     let names = std::fs::read_dir(&folder).unwrap().count();

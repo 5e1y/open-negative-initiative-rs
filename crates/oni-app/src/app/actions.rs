@@ -74,12 +74,7 @@ impl Ctl {
             }
             Act::CycleFilter => self.cycle_filter(),
             Act::ShowSelected => self.show_selected(),
-            Act::Copy => {
-                if let Some(store) = self.state.borrow_mut().store.editor() {
-                    store.copy_settings();
-                }
-                self.board_out(crate::pasteboard::SETTINGS);
-            }
+            Act::Copy => self.ask_copy(None),
             Act::Paste => self.paste(),
             Act::PasteToRoll => self.paste_to_roll(),
             Act::CopyFraming => {
