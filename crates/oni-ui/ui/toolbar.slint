@@ -26,7 +26,8 @@ export component RollStepKeys inherits Tabs {
 export global Bar {
     in property <bool> editing;
     in property <bool> has-photo;
-    // A photo shown alone: the crop and De-dust, each frame's own, wait while frames show together.
+    // A photo shown alone: the crop and De-dust, each frame's own, wait while frames show together,
+    // and their keys say so under the hand.
     in property <bool> single;
     in property <bool> can-undo;
     in property <bool> can-redo;
@@ -115,7 +116,7 @@ component EditorKeys inherits HorizontalLayout {
             word: @tr("Crop");
             icon: Icons.framing;
             on: PanelState.tab == 1;
-            help: self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
+            help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
             latch: true;
             enabled: Bar.has-photo && Bar.single;
         }
@@ -152,7 +153,7 @@ component EditorKeys inherits HorizontalLayout {
         icon: Icons.correction;
         on: PanelState.tab == 4;
         latch: true;
-        help: self.on ? @tr("Leave De-dust") : @tr("De-dust");
+        help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
         enabled: Bar.has-photo && Bar.single;
     }
     ButtonGroup { plate: true;

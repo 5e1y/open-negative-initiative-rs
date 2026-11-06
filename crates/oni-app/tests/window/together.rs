@@ -1,5 +1,5 @@
-//! Edit Together on the headless window: three frames selected open six to a row, a drag on one sets
-//! the same value on all three as one step, a frame left out keeps its own.
+//! Edit Together on the headless window: three frames selected open six to a row, a drag on one moves
+//! all three alike as one step, a frame left out keeps its own.
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;

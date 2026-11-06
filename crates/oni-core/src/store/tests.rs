@@ -6,6 +6,7 @@ use crate::knob::Knob;
 mod kept;
 mod one_history;
 mod slides;
+mod together;
 
 fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {
     let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));

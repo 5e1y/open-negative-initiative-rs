@@ -8,9 +8,13 @@ impl EditorStore {
     /// Each target back to its imported state, one step for the gesture.
     pub fn reset_frames(&mut self, targets: &[String]) -> usize {
         let scanner = self.scanner_face;
-        self.lay_on(targets, |_, s| parameters::reset_blank(s, scanner), |n| {
-            trn("Reset {n} photo", "Reset {n} photos", n as u64)
-        })
+        self.reset_each(targets, |s| parameters::reset_blank(s, scanner))
+    }
+
+    /// Each target back to its own rest, `rested` read off its own settings, one step: a rest depends
+    /// on the frame's mode, decode and measure, so no frame takes another's.
+    pub fn reset_each(&mut self, targets: &[String], rested: impl Fn(&PipelineSettings) -> PipelineSettings) -> usize {
+        self.lay_on(targets, |_, s| rested(s), |n| trn("Reset {n} photo", "Reset {n} photos", n as u64))
     }
 
     /// The conversion mode on every target; the open frame alone takes it as its own edit.

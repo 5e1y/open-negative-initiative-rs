@@ -3,7 +3,9 @@
 
 use oni_settings::PipelineSettings;
 use oni_settings::settings::{look_settings, roll_settings};
-use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::de::{self, Deserialize, DeserializeOwned, Deserializer, Visitor};
+use serde::Serialize;
+use serde_json::Value;
 use std::fmt;
 
 macro_rules! fields {
@@ -28,6 +30,11 @@ macro_rules! fields {
             /// Carries this field's value from `from` onto `to`.
             pub fn carry(self, from: &PipelineSettings, to: &mut PipelineSettings) {
                 match self { $(Field::$variant => to.$member = from.$member.clone(),)* }
+            }
+
+            /// Lays on `on` this field's values that moved from `before` to `after`, and no other.
+            pub fn patch(self, before: &PipelineSettings, after: &PipelineSettings, on: &mut PipelineSettings) {
+                match self { $(Field::$variant => patched(&before.$member, &after.$member, &mut on.$member),)* }
             }
         }
     };
@@ -78,6 +85,40 @@ fields! {
     ScannerFinish => "scannerFinish", scanner_finish;
     Texture => "texture", texture;
     Sharpen => "sharpen", sharpen;
+}
+
+/// `on` takes what moved from `before` to `after`, value by value: a list that changed its length, or
+/// is another length on `on`, whole; one JSON cannot hold, as NaN, whole too.
+fn patched<T: Serialize + DeserializeOwned + Clone>(before: &T, after: &T, on: &mut T) {
+    let (Ok(b), Ok(a), Ok(mut o)) = (serde_json::to_value(before), serde_json::to_value(after), serde_json::to_value(&*on)) else {
+        *on = after.clone();
+        return;
+    };
+    leaves(&b, &a, &mut o);
+    *on = serde_json::from_value(o).unwrap_or_else(|_| after.clone());
+}
+
+fn leaves(before: &Value, after: &Value, on: &mut Value) {
+    match (before, after, on) {
+        (Value::Object(b), Value::Object(a), Value::Object(o)) => {
+            for (key, value) in a {
+                match (b.get(key), o.get_mut(key)) {
+                    (Some(was), _) if was == value => {}
+                    (Some(was), Some(own)) => leaves(was, value, own),
+                    _ => _ = o.insert(key.clone(), value.clone()),
+                }
+            }
+            for key in b.keys().filter(|k| !a.contains_key(*k)) {
+                o.remove(key);
+            }
+        }
+        (Value::Array(b), Value::Array(a), Value::Array(o)) if b.len() == a.len() && a.len() == o.len() => {
+            for ((was, value), own) in b.iter().zip(a).zip(o.iter_mut()).filter(|((was, value), _)| was != value) {
+                leaves(was, value, own);
+            }
+        }
+        (_, a, o) => *o = a.clone(),
+    }
 }
 
 /// Who owns a field: the roll's pane, the look a paste carries, or the frame itself.
@@ -265,6 +306,29 @@ mod tests {
         // Twin: a name the struct does not declare finds no field.
         assert_eq!(Field::from_name("phantom"), None);
         assert_eq!(Field::from_name("sharpen"), Some(Field::Sharpen));
+    }
+
+    #[test]
+    fn a_patch_lays_the_values_moved_and_leaves_the_frame_s_own() {
+        let a = PipelineSettings::default();
+        let mut b = a.clone();
+        b.print.exposure = 0.5;
+        b.gains.stops[2] = 0.4;
+        let mut own = a.clone();
+        own.print.contrast = 0.3;
+        own.print.exposure = -0.2;
+        own.gains.stops = [0.1, 0.2, 0.3];
+        let mut patched = own.clone();
+        Field::Print.patch(&a, &b, &mut patched);
+        Field::Gains.patch(&a, &b, &mut patched);
+        assert_eq!((patched.print.exposure, patched.print.contrast), (0.5, 0.3));
+        assert_eq!(patched.gains.stops, [0.1, 0.2, 0.4]);
+        // Twin: carrying the field whole takes the contrast and the other gains too.
+        let mut carried = own.clone();
+        Field::Print.carry(&b, &mut carried);
+        Field::Gains.carry(&b, &mut carried);
+        assert_ne!(carried.print.contrast, 0.3);
+        assert_ne!(carried.gains.stops, [0.1, 0.2, 0.4]);
     }
 
     #[test]

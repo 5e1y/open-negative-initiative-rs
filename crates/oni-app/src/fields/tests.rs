@@ -196,3 +196,17 @@ fn the_black_point_runs_the_other_way() {
     assert_eq!(f.shown(0.1), -0.1);
     assert_eq!(Field::WhitePoint.shown(0.1), 0.1);
 }
+
+#[test]
+fn frames_together_read_as_their_span_in_the_slider_s_sense() {
+    assert_eq!(Field::Temperature.span_readout(0.37, 1.21), "Warm +0.37 \u{2026} +1.21 EV");
+    assert_eq!(Field::Tint.span_readout(-0.4, -0.1), "Green \u{2212}0.40 \u{2026} \u{2212}0.10 EV");
+    // Across rest the signs tell the ends apart, and no end is named.
+    assert_eq!(Field::Temperature.span_readout(-0.2, 0.4), "\u{2212}0.20 \u{2026} +0.40 EV");
+    // Frames reading the same show one value.
+    assert_eq!(Field::Exposure.span_readout(0.5, 0.501), "+0.50 EV");
+    // The black point runs the other way: its lowest shown is its highest stored.
+    assert_eq!(Field::BlackPoint.span_readout(-0.1, 0.2), "\u{2212}20 \u{2026} +10%");
+    // Twin: read in the stored sense, the black point's span would run the wrong way.
+    assert_ne!(Field::BlackPoint.span_readout(-0.1, 0.2), Field::WhitePoint.span_readout(-0.1, 0.2));
+}

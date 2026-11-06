@@ -38,8 +38,9 @@ impl Ctl {
             }
             (out, edited)
         };
+        self.publish_spans();
         for (f, v, held) in &moved {
-            let text: SharedString = f.readout(*v).into();
+            let text: SharedString = self.readout_at(*f, *v).into();
             set_value(&g, *f, text.clone());
             if !held {
                 set_readout(&g, *f, text);
@@ -161,7 +162,26 @@ impl Ctl {
         self.publish(false);
     }
 
+    /// The hand's value for `f`: a move, which frames shown together make by the same distance.
     pub(crate) fn set(self: &Rc<Self>, f: Field, stored: f32) {
+        if f == Field::Angle {
+            return self.straighten(stored);
+        }
+        let command = store::moved(&*self.state.borrow().store, f, stored);
+        self.write(command);
+    }
+
+    /// A block's reset key: the open frame back to its rest, and each frame shown with it to its own.
+    pub(super) fn reset_block(self: &Rc<Self>, b: Block) {
+        let Some(paths) = self.together_paths() else {
+            let command = store::reset(self.state.borrow().store.settings(), b);
+            return self.write(command);
+        };
+        self.gesture(&paths, |editor| editor.reset_each(&paths, |s| store::rested(s, b)));
+    }
+
+    /// `f` at `stored` on every frame shown, as a double click brings it back to rest.
+    pub(crate) fn rest(self: &Rc<Self>, f: Field, stored: f32) {
         if f == Field::Angle {
             return self.straighten(stored);
         }

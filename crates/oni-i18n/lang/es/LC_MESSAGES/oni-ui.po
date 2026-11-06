@@ -2250,6 +2250,10 @@ msgid "Reset Settings ({})"
 msgstr "Restablecer ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Select one photo to crop it"
+msgstr "Selecciona una sola foto para recortarla"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
 msgstr "Recortar y enderezar ({})"
 
@@ -2280,6 +2284,10 @@ msgstr "Pegar ajustes en {} fotos ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings ({})"
 msgstr "Pegar ajustes ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Select one photo to de-dust it"
+msgstr "Selecciona una sola foto para quitarle el polvo"
 
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
