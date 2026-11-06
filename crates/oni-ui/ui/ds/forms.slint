@@ -2,9 +2,10 @@
 // a job's card, the status bar and a title typed over.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, SurfaceStyle, SheetStyle, ScannerStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone, Raised, Lift, Gap } from "base.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone, Raised, Lift, Gap, Tip } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
+import { HelpCard } from "tip.slint";
 import { RenameField, Button, ButtonKind, ButtonGroup, GroupAlign } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Inward } from "depth.slint";
@@ -28,7 +29,7 @@ export global FormStyle {
 // width before it as an EXIF line, `spread` in the primary ink taking the room before it.
 export enum FieldLayout { stacked, column, spread }
 
-// `DSField`: a label, its "?" when it has a note, then the control.
+// `DSField`: a label, its "?" when it has a note and the note's card while open, then the control.
 export component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> help;
@@ -43,9 +44,10 @@ export component Field inherits VerticalLayout {
         Label { text: root.label; tone: Tone.secondary; }
         if root.help != "": VerticalLayout {
             alignment: center;
-            HelpMark { note: root.help; }
+            HelpMark { note: root.help; subject: root.label; }
         }
     }
+    if root.stacked && root.help != "" && Tip.open == root.help: HelpCard { note: root.help; subject: root.label; }
     HorizontalLayout {
         spacing: Space.s;
         if root.layout == FieldLayout.column: Label { text: root.label; tone: Tone.secondary; width: FormStyle.label-width; }

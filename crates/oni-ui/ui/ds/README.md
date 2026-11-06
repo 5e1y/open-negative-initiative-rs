@@ -118,8 +118,9 @@ fade and the chrome stays. The picker's field wears the same face.
   the face led out by its padding so the name typed stays where the title stood.
 - **`SizeFields`, `DateFields`**: two or three centred entries on one face a field tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
-- **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it. A help
-  mark lays out at its glyph's size and catches the hand over a small key's square, so a line keeps its height.
+- **`Field`** lays a label above (`stacked`, with its help mark and the mark's card), beside (`column`) or spread
+  before it. A help mark lays out at its glyph's size and catches the hand over a small key's square, so a line
+  keeps its height.
 
 ## Sliders and plots
 
@@ -183,13 +184,14 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   falls around it, as Swift's. A `Section` clips only while folded; a scrolled column ending on a well
   leaves `Depth.lip-reach` under it.
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
-  `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
+  `TipCard` (a tooltip) are `Outward`s; `HelpCard` is an `Inset`; the canvas card stays flat, as Swift's.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
   (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
   alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line
   below. Capitals belong to the keycaps alone. On a short row a `Section`'s title yields, so the reset and
-  fold keys keep to the column's edge. A help mark's card covers the column of the block it explains, edge to
-  edge with its inset, its note in short parts a blank line apart.
+  fold keys keep to the column's edge; the reset stands there always, dimmed at rest, a step apart from the
+  fold key. A help mark, named with its block, opens its card in the block's flow under the title, pushing the
+  block down, one card at a time; its note comes in short parts a blank line apart.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no

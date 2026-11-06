@@ -128,13 +128,6 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     assert!(worded(&met), "{met:?}");
     // Twin: a row of glyph keys, each read off its note, is refused.
     assert!(!worded(&[("Show the Selected Photo".to_string(), 16.0, 40.0), ("Names only".to_string(), 40.0, 64.0)]));
-    // A key's tooltip waits the system's delay; a help mark's note shows at once.
-    assert!(!tip.get_at_once(), "twin: a tooltip is not shown at once");
-    let tips = w.global::<oni_app::Tips>();
-    tips.invoke_note(true, "a note".into(), 10.0, 10.0, 0.0, 0.0);
-    assert!(tip.get_shown() && tip.get_at_once(), "a help mark's note shows at once");
-    tips.invoke_note(false, "a note".into(), 10.0, 10.0, 0.0, 0.0);
-    assert!(!tip.get_shown());
 
     // The Crop tab's first plate spans its block, its three keys sharing the room alike.
     panel.set_tab(1);

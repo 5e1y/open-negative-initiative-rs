@@ -232,7 +232,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
     ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
-    ("help_card::a_help_card_opens_by_its_mark_never_over_the_photo", help_card::a_help_card_opens_by_its_mark_never_over_the_photo),
+    ("help_card::a_help_card_opens_in_its_block_and_pushes_it_down", help_card::a_help_card_opens_in_its_block_and_pushes_it_down),
     ("panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys", panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys),
     ("help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo", help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo),
     ("help_demo_color::the_color_tabs_marks_play_their_own_demos", help_demo_color::the_color_tabs_marks_play_their_own_demos),

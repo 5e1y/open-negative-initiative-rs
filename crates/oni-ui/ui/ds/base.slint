@@ -24,25 +24,22 @@ export struct TipBox {
     height: length,
 }
 
-// What a hovered control says after the system's tooltip delay, drawn by `TipLayer`.
+// What a hovered control says after the system's tooltip delay, drawn by `TipLayer`; and the help card
+// open in its block, one at a time.
 export global Tip {
     in-out property <string> text;
     in-out property <length> x;
     in-out property <length> y;
     in-out property <bool> shown;
-    // A help mark's note shows at once, as `dsHelpBubble` does; a tooltip waits the system's delay.
-    in-out property <bool> at-once;
-    // A help mark's note is a card: its demo above, square, then the note; a tooltip is a line of text.
-    in-out property <bool> card;
-    // A card's foot when it opens over its mark: the mark's top, less the gap.
-    in-out property <length> above;
-    // A card's width, the column it covers.
-    in-out property <length> card-width: TipStyle.card-width;
-    // The help topic the card shows, Rust's key to its demo; `play` says it opened or closed ("").
+    // The note of the help card open, none for no card; `demo` its help topic, Rust's key to its clip.
+    in-out property <string> open;
     in-out property <string> demo;
+    // Starts the topic's clip, a topic without one or none stopping it; `advance` lays its next frame.
     callback play(string);
-    // The demo's frame, and whether the topic has one: none, and the card shows no box.
+    callback advance();
+    // The clip's frame, how long until the next, and whether the topic has one: none, no picture.
     in-out property <image> clip;
+    in-out property <duration> delay;
     in-out property <bool> has-clip;
 }
 
@@ -307,7 +304,7 @@ export global Clicks {
     callback release();
 }
 
-// Shows `text` under `anchor` while it is hovered, and hides it when the pointer leaves.
+// Shows `text` under `anchor` while it is hovered, and hides it when the pointer leaves; opens a help card.
 export global Tips {
     // `DSHelpPlacement.place`: the note at its anchor, held a margin in from each of the room's four
     // edges; larger than that room it is cut down to it rather than allowed to leave.
@@ -321,8 +318,6 @@ export global Tips {
     }
     public function hover(over: bool, text: string, x: length, y: length) {
         if (over && text != "") {
-            Tip.at-once = false;
-            Tip.card = false;
             Tip.text = text;
             Tip.x = x;
             Tip.y = y + TipStyle.offset;
@@ -331,13 +326,11 @@ export global Tips {
             Tip.shown = false;
         }
     }
-    // `dsHelpBubble`: the note under its mark at once, `top` the mark's own, for a card opening over it;
-    // `width` the column it covers from `x`, none for the card's own width.
-    public function note(over: bool, text: string, x: length, y: length, top: length, width: length) {
-        self.hover(over, text, x, y);
-        Tip.at-once = over;
-        Tip.card = over;
-        Tip.above = top - TipStyle.offset;
-        if (over) { Tip.card-width = width > 0 ? width : TipStyle.card-width; }
+    // A help mark's press: its note opens in its block, closing the one open; its own again closes it.
+    public function help(note: string, demo: string) {
+        let opening = note != Tip.open;
+        Tip.open = opening ? note : "";
+        Tip.demo = opening ? demo : "";
+        if (!opening) { Tip.play(""); }
     }
 }

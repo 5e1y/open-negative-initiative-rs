@@ -6437,5 +6437,26 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1322,
+    "type": "fix",
+    "title": "A block's help card opens in its flow, pushing the block down",
+    "status": "done",
+    "detail": "UI and UX evaluation (Consistency, Hierarchy in use, Spacing): the help card floated over its block's column, ended just under its text, half-covered the Black point label and played its demo over the very sliders it explains. A help mark is now a ghost toggle: pressed, its note opens as a card (an Inset, one padding on all four sides) in the block's flow under the title, the sliders pushed down and still in reach; pressed again it closes, and another mark's card takes its place, one at a time. A stacked Field opens its note the same way; the De-dust row's fallback mark, one note for many rows, is a plain tooltip. The hover card's mechanism goes: the tooltip layer's card mode, Tips.note, a key's note and column, Escape's help card branch. The demo's frames are asked by the card while it stands, so a card gone with its panel costs nothing, and a card standing again in another language plays that language's clip. Window checks help_card and help_demo*."
+  },
+  {
+    "id": 1323,
+    "type": "fix",
+    "title": "Each help mark is named with its block",
+    "status": "done",
+    "detail": "UX evaluation (Accessibility): every help key was announced 'What this block does'. A mark is now named and tipped 'Help on <title>' (Help on Lighting), its card the same region, in English, French and Spanish; the mark tells assistive tools whether its card is expanded. Window check help_card."
+  },
+  {
+    "id": 1324,
+    "type": "fix",
+    "title": "A block's Reset keeps one place, dimmed at rest, apart from its fold key",
+    "status": "done",
+    "detail": "UI and UX evaluation (Hierarchy, Craft in use): a block's Reset sat 8 pt from its fold chevron and appeared only once a value moved. It now always stands at the row's end, out of reach and dimmed while nothing moved, 24 pt from the fold key so the two read as two. Window check help_card."
   }
 ]
