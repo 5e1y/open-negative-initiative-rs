@@ -3,8 +3,9 @@
 import { DS } from "tokens.slint";
 
 export global SliderStyle {
-    in-out property <length> track: DS.control-track-height;
-    in-out property <length> track-radius: DS.radius-track;
+    // A thin rail, round at its ends, so a bipolar rail keeps its full hues and stays calm beside the photo.
+    in-out property <length> track: 8px;
+    in-out property <length> track-radius: SliderStyle.track / 2;
     // Along the travel and across it, smaller than Swift's handle so the panel's sliders sit close; the
     // row is the knob's height.
     in-out property <length> knob-width: 20px;
@@ -18,8 +19,11 @@ export global SliderStyle {
     in-out property <length> grip-gap: DS.control-knob-line-gap * 1px;
     out property <color> knob: DS.palette-keycap;
     out property <color> knob-edge: DS.palette-track-line;
-    // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
+    // `DSBarHandle.gripLine`: the text-on-fill white, the on-light ink on a cap past `grip-turn` in OKLab
+    // lightness, where the two inks' contrasts cross (a white cap's lines would vanish).
     out property <color> grip-ink: DS.palette-text-on-fill;
+    out property <color> grip-ink-on-light: DS.palette-text-on-light;
+    out property <float> grip-turn: 0.6;
     // The 1 pt `trackLine` edge round the knob, and round the rail and a plot screen as every well
     // (`Depth.well-edge`), as opacities.
     in-out property <float> edge: 1;
@@ -39,11 +43,8 @@ export global SliderStyle {
     // laid over it, a step further toward white.
     out property <color> ground: #ffffff5d;
     out property <color> lit: #ffffff73;
-    // A bipolar rail's ends at these shares of their saturation and value: soft hues, never full
-    // chroma beside the photo.
-    in-out property <float> hue-chroma: 0.4;
-    in-out property <float> hue-light: 0.85;
-    // The number typed over a readout, wide enough for the longest, "−0.000 EV".
+    // The number typed over a readout, wide enough for the longest, "−0.000 EV"; the value's target is
+    // that field's box, a field tall, past the 24 pt a target asks.
     out property <length> entry: 88px;
     out property <length> label-gap: DS.space-xs;
     // `DS.Control.grabSize`: a handle's catch on a track several handles share.

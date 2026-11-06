@@ -178,6 +178,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window", keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window),
     ("keyboard::a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere", keyboard::a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere),
     ("keyboard::a_number_typed_over_a_slider_readout_steps_it_there", keyboard::a_number_typed_over_a_slider_readout_steps_it_there),
+    ("keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand", keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
     ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),

@@ -117,17 +117,21 @@ fade and the chrome stays. The picker's field wears the same face.
 
 ## Sliders and plots
 
-- **Rail** (`DSRail` in `dsRecessed`): `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient
-  between soft hues (`hue-chroma`, `hue-light`), the fill (`SliderStyle.lit`) on its own round, then
-  `Inward`'s shade, the black edge and the lit rim (`SliderStyle.rim`) over an opaque `under`; `vertical` runs low to high upwards.
+- **Rail** (`DSRail` in `dsRecessed`): 8 pt, round at its ends, thin so a bipolar rail keeps its full hues
+  beside the photo; `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient, the fill
+  (`SliderStyle.lit`) on its own round, then `Inward`'s shade, the black edge and the lit rim (`SliderStyle.rim`)
+  over an opaque `under`; `vertical` runs low to high upwards.
 - **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls, no shadow, edged in
-  black, two white grip lines centred on its face. It grows by a scale on the rise spring, so its raster is drawn once.
+  black, two grip lines centred on its face, white, or the on-light ink on a light cap (`grip-turn`). It grows by
+  a scale on the rise spring, so its raster is drawn once.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
   the hand; the stepped slider's knob carries its grip too, its − and + flat keys as tall as the knob, the
   rail beside them showing each end's colour. AppKit's press, continuous or stepped: the knob pressed is
-  grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put. The hand on the
-  row grows the knob and lights the value; a double click on the value types a number over it (`Typing`,
-  answered by Rust), reached by the steps an arrow takes.
+  grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put; a press gives it
+  the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
+  the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field
+  tall, shows the field's face and a text cursor under the hand, and a click types a number over it
+  (`Typing`, answered by Rust), reached by the steps an arrow takes.
 - **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
   `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
 

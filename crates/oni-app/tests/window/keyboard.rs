@@ -45,10 +45,9 @@ fn press(rig: &common::Rig, p: &KeyboardProbe, x: f32, y: f32, hooked: bool) {
     rig.pump();
 }
 
-/// Two presses at one spot, as quick as a hand's double click, each through the window's pointer hook.
-fn double_click(rig: &common::Rig, p: &KeyboardProbe, x: f32, y: f32) {
-    press(rig, p, x, y, true);
-    press(rig, p, x, y, true);
+/// Whether a focus ring is drawn anywhere in the probe.
+fn ringed(p: &KeyboardProbe) -> bool {
+    i_slint_backend_testing::ElementHandle::find_by_element_type_name(p, "FocusRing").next().is_some()
 }
 
 pub(crate) fn tab_walks_every_control_in_reading_order_each_answering_its_own_keys() {
@@ -77,6 +76,7 @@ pub(crate) fn tab_walks_every_control_in_reading_order_each_answering_its_own_ke
     assert_eq!(p.get_clicks(), 1, "the key no longer holds the keyboard");
 
     key(&rig, &p, "\t");
+    assert!(ringed(&p), "Tab rings the slider it gives the keyboard to");
     key(&rig, &p, &right);
     key(&rig, &p, &up);
     rig.chord(Key::Shift, &right);
@@ -168,7 +168,10 @@ pub(crate) fn a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewher
     // The knob pressed is grabbed where it stands, the slider holding the keyboard: its arrows step it.
     press(&rig, &p, x, y, true);
     assert_eq!(p.get_steps(), 0, "a press on the knob moves nothing");
+    // The hand's press rings nothing beside the photo; an arrow acting on the slider rings it.
+    assert!(!ringed(&p), "a pressed slider draws no ring");
     key(&rig, &p, &right);
+    assert!(ringed(&p), "twin: the arrow acting on it rings it");
     key(&rig, &p, &right);
     assert!(!p.get_monitor_focused() && p.get_held(), "the pressed slider holds the keyboard");
     assert_eq!(p.get_steps(), 2, "its arrows step it");
@@ -192,8 +195,8 @@ pub(crate) fn a_number_typed_over_a_slider_readout_steps_it_there() {
     let (rig, p) = probe();
     let right: SharedString = Key::RightArrow.into();
     let (x, y) = (p.get_value_x(), p.get_value_y());
-    // A double click on the value opens it selected: the number typed replaces it, Return takes it.
-    double_click(&rig, &p, x, y);
+    // A click on the value opens it selected: the number typed replaces it, Return takes it.
+    press(&rig, &p, x, y, true);
     assert!(p.get_entering(), "the value opens to a number typed over it");
     rig.key("2");
     rig.key("0");
@@ -205,20 +208,42 @@ pub(crate) fn a_number_typed_over_a_slider_readout_steps_it_there() {
     key(&rig, &p, &right);
     assert_eq!(p.get_steps(), 21);
     // Escape hands the value back unchanged; then the next Escape gives the photos the keyboard.
-    double_click(&rig, &p, x, y);
+    press(&rig, &p, x, y, true);
     rig.key("5");
     rig.key(&SharedString::from(Key::Escape));
     assert_eq!(p.get_steps(), 21, "Escape leaves the value as it was");
     // A press elsewhere takes the number typed, the photos holding the keyboard after it.
-    double_click(&rig, &p, x, y);
+    press(&rig, &p, x, y, true);
     rig.key("\u{2212}");
     rig.key("3");
     press(&rig, &p, x, p.get_bare_y(), true);
     assert_eq!(p.get_steps(), -3, "a press elsewhere takes the number typed");
     assert!(p.get_monitor_focused(), "the press gave the photos the keyboard");
     // Twin: words where a number goes move nothing.
-    double_click(&rig, &p, x, y);
+    press(&rig, &p, x, y, true);
     rig.key("x");
     rig.key("\n");
     assert_eq!(p.get_steps(), -3);
+    // The target is the typed number's box, a field tall: a click above the number's line opens it.
+    press(&rig, &p, x, y - 20.0, true);
+    assert!(!p.get_entering(), "twin: a click past the box opens nothing");
+    press(&rig, &p, x, y - 12.0, true);
+    assert!(p.get_entering(), "a click above the number, within its box, opens it");
+}
+
+pub(crate) fn a_slider_tells_its_double_click_and_its_typed_value_under_the_hand() {
+    let (rig, p) = probe();
+    let tip = p.global::<oni_app::Tip>();
+    let hover = |x: f32, y: f32| {
+        rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
+        rig.pump();
+    };
+    // The rail tells the double click that brings it back to rest, the value the click that types it.
+    hover(p.get_knob_x(), p.get_knob_y());
+    assert!(tip.get_shown() && tip.get_text() == "Double-click to bring it back to rest", "rail: {}", tip.get_text());
+    hover(p.get_value_x(), p.get_value_y());
+    assert!(tip.get_shown() && tip.get_text() == "Click to type a value", "value: {}", tip.get_text());
+    // Twin: beside the slider, nothing is told.
+    hover(p.get_value_x(), p.get_bare_y());
+    assert!(!tip.get_shown(), "beside: {}", tip.get_text());
 }

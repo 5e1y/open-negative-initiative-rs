@@ -28,9 +28,6 @@ export component Rail inherits Rectangle {
     property <length> travel: root.along - 2 * root.overhang;
     property <length> lit: root.overhang + root.at * root.travel;
     property <length> start: root.from > 0 ? root.overhang + root.from * root.travel : 0;
-    pure function soft(c: color) -> color {
-        hsv(c.to-hsv().hue, c.to-hsv().saturation * SliderStyle.hue-chroma, c.to-hsv().value * SliderStyle.hue-light, c.to-hsv().alpha)
-    }
     height: SliderStyle.track;
     Rectangle {
         border-radius: SliderStyle.track-radius;
@@ -42,8 +39,8 @@ export component Rail inherits Rectangle {
     Rectangle {
         border-radius: SliderStyle.track-radius;
         background: root.fill != SliderFill.bipolar ? SliderStyle.ground
-            : root.vertical ? @linear-gradient(0deg, root.soft(root.low) 0%, root.soft(root.high) 100%)
-            : @linear-gradient(90deg, root.soft(root.low) 0%, root.soft(root.high) 100%);
+            : root.vertical ? @linear-gradient(0deg, root.low 0%, root.high 100%)
+            : @linear-gradient(90deg, root.low 0%, root.high 100%);
     }
     // Its own round, no clip: a clipping rail renders each slider apart.
     if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {

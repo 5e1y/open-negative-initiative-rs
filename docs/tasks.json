@@ -6087,5 +6087,33 @@
     "title": "Capitals are the keycap's alone; every column opens on one header",
     "status": "done",
     "detail": "Owner's call: ALL CAPS only on the keycap CTAs. The Button upper-cased every key unless told not to, and the block's Section upper-cased its title and spaced it, so flat keys (Copy, Paste, Select Film Stock, Cancel, a block's Reset) and every section title (Colour, Film Stock, Shot Date, Language) shouted. The key now writes its word in capitals, bold and spaced only as a keycap, a flat key's word as written and semibold; the capitals switch is gone. The texts that carried capitals in their source or were upper-cased in Rust (Settings', Missing's, the roll tab's and crop tab's keys, the confirm's and the mask dialog's keys, the banner's, the catch-up's, the seals FLAGGED and R MISSING, the news seals, the stock picker's brands, the Wrapped eyebrows and title, the empty filter's hint naming All) are in Title Case for keys and titles, sentence case for labels, French and Spanish to match. Section headers took three faces (letterspaced capitals in the editor, a large light heading in Export, Prepare and De-dust): SectionTitle, the engraved title a step over the labels, is now the one header of every column. De-dust's Detect no longer turns into HIDE: it stays lit while what it found shows, and a second press hides it. Seals lose the tracking that only capitals wanted. The LCD's legends, the date placeholders and the toolbar's keys stay for their own owners. Check: button_group::capitals_are_the_keycap_s_alone reads the drawn words (flat keys and a block's title as written, a keycap in capitals); its twin finds no text 'Done' where the keycap so named shows DONE."
+  },
+  {
+    "id": 1236,
+    "type": "interface",
+    "title": "The coloured rails keep their full hues on a thinner rail",
+    "status": "done",
+    "detail": "Owner's call: #1161 had softened every bipolar rail to 0.4 of its saturation and 0.85 of its value, so Temperature, Tint, the paper's gains, the Spectrogram's bands and the Scanner face's D, C, M, Y and TEMP read washed out. The rail now runs between its two hues as given (`soft`, `hue-chroma` and `hue-light` are gone) and is calm through its breadth instead: `SliderStyle.track` is 8 pt, round at its ends (`track-radius` half of it), where it was the 14 pt token, so every rail, the levels' and the switch's alike, is thinner under the same 26 pt row and knob. The hand's catch is the row, unchanged."
+  },
+  {
+    "id": 1237,
+    "type": "interface",
+    "title": "A slider pressed by the hand holds the keyboard without a ring",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (UX Hierarchy in use and UI Colour, minor): a touched slider kept the bright blue focus ring after release, an accent beside the photo. A hand's press still gives the slider the keyboard (#1159) but marks its `KeyScope` pressed, which hides the ring; Tab, or an arrow acting on the slider, rings it, as the keyboard then works it, and the focus leaving clears the mark. Checks: window keyboard::tab_walks_every_control_in_reading_order_each_answering_its_own_keys (Tab rings the slider) and keyboard::a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere (the press draws no ring, the arrow then rings it; with the ring always on, the press assertion fails)."
+  },
+  {
+    "id": 1238,
+    "type": "interface",
+    "title": "A slider's value is a field a click opens, and its rail tells its double click",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (UX Micro-interactions and Obvious without a tutorial, minor): the typed value opened only on a double click of its 49 by 16 pt number, which nothing said was editable, and a double click reset a slider with no hint. The value is now a field: its box, the typed number's own (88 pt by a field's 32, run a padding past the number), is the target, shows the flat field's face and a text cursor under the hand, and a single click opens it there, its tooltip 'Click to type a value'. The rail tells its double click on hover, 'Double-click to bring it back to rest', the Slider's `help` by default; a stepped slider's own help, on its name and now its rail too, already said so. French and Spanish filled in. Checks: window keyboard::a_number_typed_over_a_slider_readout_steps_it_there (a click 12 pt above the number's middle opens it, one 20 pt above nothing; the label-sized target fails the first), keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand (twin: beside the slider nothing is told)."
+  },
+  {
+    "id": 1239,
+    "type": "fix",
+    "title": "A light knob's grip lines in the dark ink",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (UI Consistency, minor): White point's knob was a plain white disc, its white grip lines on a white cap. The ink that once followed a white cap was lost when the knob moved into the design system; the knob now picks its grip ink from its cap: the text-on-fill white, or the on-light ink past an OKLab lightness of 0.6 (`SliderStyle.grip-turn`), where the two inks' contrasts cross. White point and the levels' white and light-grey handles carry dark lines; every darker cap keeps white ones."
   }
 ]

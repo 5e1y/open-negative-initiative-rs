@@ -6,6 +6,7 @@ import { Outside } from "outside.slint";
 import { Knob } from "knob.slint";
 import { SliderFill, Rail } from "rail.slint";
 import { ValueHeader } from "readout.slint";
+import { Tips } from "base.slint";
 
 // A number typed over a slider's readout, which Rust reads: the steps that reach it from the readout,
 // `per` readout units a step or, at 0, one unit of its last digit; 0 when either holds no number.
@@ -47,9 +48,10 @@ export component Slider inherits VerticalLayout {
     in property <int> highest;
     // What one whole step reads in the readout's unit, so a number typed over it finds its steps.
     in property <float> step-reads;
-    // The tooltips of the minus key, the name and the plus key.
+    // The tooltips of the minus key, the rail and its name, and the plus key: a double click on the rail,
+    // or on a stepped slider's name, brings it back to rest.
     in property <string> minus-help;
-    in property <string> help;
+    in property <string> help: @tr("Double-click to bring it back to rest");
     in property <string> plus-help;
     // Rust answers whether this press is the second of a double click.
     callback press(int, bool) -> bool;
@@ -150,11 +152,13 @@ export component Slider inherits VerticalLayout {
                     in-out property <bool> scrolling;
                     out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2;
                     mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
+                    changed has-hover => { Tips.hover(self.has-hover, root.help, track.absolute-position.x, track.absolute-position.y + track.height); }
                     double-clicked => {
                         if (root.stepped) { root.reset(); }
                     }
                     pointer-event(event) => {
                         if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            keys.pressed = true;
                             keys.focus();
                             self.fine = event.modifiers.alt;
                             self.start = parent.width * root.at;
@@ -211,12 +215,18 @@ export component Slider inherits VerticalLayout {
                     running: area.scrolling;
                     triggered => { area.scrolling = false; }
                 }
-                // Over the rail's whole length, past the knob's travel as the rail runs.
+                // Over the rail's whole length, past the knob's travel as the rail runs. A hand's press gives it
+                // the keyboard with no ring beside the photo; Tab, or an arrow acting here, rings it.
                 keys := KeyScope {
+                    in-out property <bool> pressed;
                     x: -SliderStyle.knob-width / 2;
                     width: parent.width + SliderStyle.knob-width;
                     enabled: root.enabled;
                     radius: self.height / 2;
+                    ring: !self.pressed;
+                    changed has-focus => {
+                        if (!self.has-focus) { self.pressed = false; }
+                    }
                     key-pressed(event) => {
                         if (event.text == Key.Escape) {
                             Outside.released += 1;
@@ -226,6 +236,7 @@ export component Slider inherits VerticalLayout {
                         if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
                             return reject;
                         }
+                        self.pressed = false;
                         root.step(root.field, event.modifiers.shift ? by * root.big : by);
                         accept
                     }
