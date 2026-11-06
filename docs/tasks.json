@@ -5996,5 +5996,12 @@
     "title": "A block's title is engraved as the rule above it",
     "status": "done",
     "detail": "UI evaluation (Art direction): the analogue nods clustered on the Scanner face, the medals and the contact sheet while the Pro face read as generic flat software. Section's title is now a camera's marking, small and on labels alone: in capitals set apart by the seal's tracking, the Divider's groove shade one line above its letters and its lit edge one line below, at the section's size, no new type size. Every block of every screen takes it, the Pro face's first; the screen reader still hears the title as written. The Pro sliders keep no −/+ keys: the Scanner face is the detented one, and two keys on each of a dozen Pro rows would narrow every track and double the panel's controls."
+  },
+  {
+    "id": 1221,
+    "type": "chore",
+    "title": "The second round's sixteen corrections, merged",
+    "status": "done",
+    "detail": "Merging #1159-#1222: De-dust's header now lies over the tab bar, which stays laid out, hidden, so Tab's way into the panel keeps its target (the bar takes the keyboard only while it shows). The fields keep the flat face with the type scale's field-sized digits; Prepare keeps its new steps with the type scale's notes; the Roll tab keeps 'Filtration'. scripts/i18n dropped the texts no source shows any more."
   }
 ]

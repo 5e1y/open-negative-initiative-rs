@@ -1293,17 +1293,13 @@ msgstr "Y +: hacia amarillo"
 msgid "Look"
 msgstr "Aspecto"
 
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Temperature"
-msgstr "Temperatura"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "TEMP lays the machine's warm or cool look over the print, a little more at each press; at zero the print stays as the keys above set it."
 msgstr "TEMP aplica el aspecto cálido o frío de la máquina sobre la copia, un poco más con cada pulsación; en cero, la copia queda como la fijaron las teclas de arriba."
 
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP"
-msgstr "TEMP"
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Temperature"
+msgstr "Temperatura"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Temperature −: toward cool"
@@ -1678,15 +1674,12 @@ msgid "This photo was never measured with its roll, so these settings act on it 
 msgstr "Esta foto nunca se midió con su rollo, así que estos ajustes solo actúan sobre ella."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Acts on this photo, the only one of its roll."
-msgstr "Actúa sobre esta foto, la única de su rollo."
-
 msgid "PREPARE THE ROLL…"
 msgstr "PREPARAR EL ROLLO…"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Acts on this photo, the only one measured with its roll."
-msgstr "Actúa sobre esta foto, la única medida con su rollo."
+msgid "Acts on this photo, the only one of its roll."
+msgstr "Actúa sobre esta foto, la única de su rollo."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Acts on the {} photos of this roll."
@@ -1823,10 +1816,6 @@ msgstr "Filtrado"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own."
 msgstr "El filtrado de color del rollo, como se ajustan los filtros de una ampliadora para una película: llega a todas las fotos del rollo, mientras que Temperatura y Matiz siguen siendo propios de cada foto."
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Raises or lowers each channel of the scan before the conversion, on every photo of the roll: each row trades one colour for its opposite. Prepare the Roll sets them and the reset brings them back there; a slide shows them as a warmth and a tint."
-msgstr "Sube o baja cada canal del escaneo antes de la conversión, en todas las fotos del rollo: cada fila cambia un color por su opuesto. Preparar el rollo los fija y el restablecimiento los devuelve allí; una diapositiva los muestra como calidez y matiz."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Amber ↔ Blue"
@@ -2319,17 +2308,6 @@ msgstr "Pegar en el rollo"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "DE-DUST"
 msgstr "ELIMINAR POLVO"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Leave De-dust"
-msgstr "Salir de Eliminar polvo"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Eliminar polvo"
-
-msgid "PREPARE ROLL"
-msgstr "PREPARAR ROLLO"
 
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
