@@ -39,10 +39,21 @@ component Entry inherits Rectangle {
         if (input.has-focus && !hover.has-hover && !root.rim) { Outside.released += 1; }
     }
     horizontal-stretch: 1;
-    // Its owner's width whatever it holds: longer words slide under its edge, as in AppKit's field.
-    // Slint's TextInput takes no focus below 1 px wide, hence the floor.
+    // Its owner's width whatever it holds: longer words slide under its edge while edited, as in AppKit's
+    // field, and at rest end on an ellipsis. Slint's TextInput takes no focus below 1 px wide, hence the floor.
     min-width: 1px;
     clip: true;
+    property <bool> resting: !input.has-focus && !root.multiline;
+    property <color> ink: root.enabled ? FieldStyle.ink : Colour.ink-tertiary;
+    if root.resting && input.text != "": Label {
+        width: parent.width - input.text-cursor-width;
+        height: parent.height;
+        text: input.text;
+        role: root.role;
+        ink: root.ink;
+        centred: root.centred;
+        overflow: elide;
+    }
     if input.text == "": Label {
         width: parent.width;
         height: parent.height;
@@ -71,7 +82,7 @@ component Entry inherits Rectangle {
             horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
             font-family: Type.family;
             font-size: root.role == TextRole.title ? Type.title : Type.label;
-            color: root.enabled ? FieldStyle.ink : Colour.ink-tertiary;
+            color: root.resting ? transparent : root.ink;
             selection-background-color: FieldStyle.selection;
             enabled: root.enabled;
             accessible-label: root.name != "" ? root.name : root.placeholder;
