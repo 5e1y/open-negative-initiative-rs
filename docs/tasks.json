@@ -6458,5 +6458,12 @@
     "title": "A block's Reset keeps one place, dimmed at rest, apart from its fold key",
     "status": "done",
     "detail": "UI and UX evaluation (Hierarchy, Craft in use): a block's Reset sat 8 pt from its fold chevron and appeared only once a value moved. It now always stands at the row's end, out of reach and dimmed while nothing moved, 24 pt from the fold key so the two read as two. Window check help_card."
+  },
+  {
+    "id": 1325,
+    "type": "check",
+    "title": "A slider's tooltip stays down through its drag",
+    "status": "done",
+    "detail": "UI and UX evaluation (Consistency, Hierarchy in use): tooltips seemed to stay up after a press and during a slider's drag. Through the real event path the window's pointer hook takes a tooltip down on the press and no step of a drag, along the rail or off it, brings it back: the evaluation tool's clicks skip that hook. Window check tooltip::a_slider_s_tooltip_stays_down_through_its_drag, its twin a hookless press that leaves the tooltip standing."
   }
 ]

@@ -192,6 +192,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
     ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),
     ("tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed", tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed),
+    ("tooltip::a_slider_s_tooltip_stays_down_through_its_drag", tooltip::a_slider_s_tooltip_stays_down_through_its_drag),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it", dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it),
