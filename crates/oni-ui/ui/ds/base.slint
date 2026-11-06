@@ -32,6 +32,8 @@ export global Tip {
     in-out property <bool> at-once;
     // A help mark's note is a card: its demo above, square, then the note; a tooltip is a line of text.
     in-out property <bool> card;
+    // A card's foot when it opens over its mark: the mark's top, less the gap.
+    in-out property <length> above;
     // The help topic the card shows, Rust's key to its demo; `play` says it opened or closed ("").
     in-out property <string> demo;
     callback play(string);
@@ -321,10 +323,11 @@ export global Tips {
             Tip.shown = false;
         }
     }
-    // `dsHelpBubble`: the note under its mark at once.
-    public function note(over: bool, text: string, x: length, y: length) {
+    // `dsHelpBubble`: the note under its mark at once, `top` the mark's own, for a card opening over it.
+    public function note(over: bool, text: string, x: length, y: length, top: length) {
         self.hover(over, text, x, y);
         Tip.at-once = over;
         Tip.card = over;
+        Tip.above = top - TipStyle.offset;
     }
 }

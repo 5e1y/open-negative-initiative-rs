@@ -5352,5 +5352,12 @@
     "title": "Prepare the Roll's step keys show a check on each step done",
     "status": "done",
     "detail": "UX and UI evaluation, problem 32: a step's progress was told by a lamp alone, green when done, black when not, the black one about 1.5:1 on its key. A step behind the current one carries the done glyph before its word; the current key stays lit, the others plain; the lamp is no longer laid on a key of the app (owner's call)."
+  },
+  {
+    "id": 1115,
+    "type": "fix",
+    "title": "A help card opens by its mark, never over the photo",
+    "status": "done",
+    "detail": "UX and UI evaluation, problem 46: in the editor panel every card opened left of the panel under its tab bar, over half the photo and far from the mark that opened it. A card now opens under its mark, or over it where more room stands, its demo shortening so the card keeps to the window, the mark's top reaching the layer through Tips.note; the panel's anchor, its four inputs and TipStyle.card-gap are gone. Escape closes a card first (#1111)."
   }
 ]

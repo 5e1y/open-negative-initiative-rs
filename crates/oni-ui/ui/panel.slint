@@ -11,7 +11,7 @@ export { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
 
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
-    // Every help mark in the panel opens its card under the tab bar's rule.
+    // The header down to the tab bar's rule, which the window's checks aim under.
     property <length> header: rule.y + rule.height;
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
