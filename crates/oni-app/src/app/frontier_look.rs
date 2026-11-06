@@ -97,11 +97,8 @@ impl Ctl {
         self.publish_settings();
     }
 
-    /// What the sheet says of the look in use.
-    pub(super) fn frontier_look_line(&self) -> String {
-        WATCHED.with(|w| match w.borrow().as_ref() {
-            Some(w) => tr!("From \u{201c}{file}\u{201d}, read again each time it is saved.", file = w.path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default()),
-            None => tr("The measured Frontier table.").into(),
-        })
+    /// The name of the file in use, empty while the measured table is.
+    pub(super) fn frontier_file(&self) -> String {
+        WATCHED.with(|w| w.borrow().as_ref().and_then(|w| w.path.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())
     }
 }

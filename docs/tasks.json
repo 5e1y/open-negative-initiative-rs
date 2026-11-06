@@ -6437,5 +6437,12 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1374,
+    "type": "fix",
+    "title": "Frontier Look names the table in use; its way back to the measured table is the section's Reset",
+    "status": "done",
+    "detail": "UI evaluation (Hierarchy): Settings > Frontier Look set its way back, a Measured key that looked disabled while the measured table was in use, in one row with Export\u2026 and Use a File\u2026, and named the table in use in a note that read as a description. A Table in use row now reads Measured or the file's name, and the way back is the title row's Reset every block shares, shown while a file is in use, apart from the keys that keep one; the note says Reset returns to the measured table. One property, the file's name or empty, replaces the look's sentence and its flag. Window check frontier_look reaches the section and the Reset by the pointer, reads the file then Measured as the table in use; twin: the Reset is not on Export\u2026's row."
   }
 ]

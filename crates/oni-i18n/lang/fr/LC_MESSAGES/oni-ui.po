@@ -2174,16 +2174,20 @@ msgid "Frontier Look"
 msgstr "Look Frontier"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "A colour table laid over ONI's conversion, in sRGB. Export it as a .cube file, edit it in any app that opens one, then use the file: each save shows at once."
-msgstr "Une table de couleurs posée sur la conversion d’ONI, en sRGB. Exportez-la en fichier .cube, modifiez-la dans toute app qui l’ouvre, puis utilisez le fichier : chaque enregistrement s’affiche aussitôt."
+msgid "Table in use"
+msgstr "Table utilisée"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Measured"
+msgstr "Mesurée"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "A colour table laid over ONI's conversion, in sRGB. Export it as a .cube file, edit it in any app that opens one, then use the file: each save shows at once, until Reset returns to the measured table."
+msgstr "Une table de couleurs posée sur la conversion d’ONI, en sRGB. Exportez-la en fichier .cube, modifiez-la dans toute app qui l’ouvre, puis utilisez le fichier : chaque enregistrement s’affiche aussitôt, jusqu’à ce que Réinitialiser revienne à la table mesurée."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Use a File…"
 msgstr "Utiliser un fichier…"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "Measured"
-msgstr "Mesuré"
 
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone Remote"
@@ -2644,10 +2648,6 @@ msgid "Use a Frontier look"
 msgstr "Utiliser un look Frontier"
 
 #: crates/oni-app/src/app/frontier_look.rs
-msgid "The measured Frontier table."
-msgstr "La table Frontier mesurée."
-
-#: crates/oni-app/src/app/frontier_look.rs
 msgid "The Frontier look could not be read again: {e}. The measured table is used."
 msgstr "Le look Frontier n’a pas pu être relu : {e}. La table mesurée est utilisée."
 
@@ -2662,10 +2662,6 @@ msgstr "Ce fichier ne peut pas servir de look Frontier : {e}"
 #: crates/oni-app/src/app/frontier_look.rs
 msgid "The Frontier look's last save cannot be read: {e}"
 msgstr "Le dernier enregistrement du look Frontier est illisible : {e}"
-
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "From “{file}”, read again each time it is saved."
-msgstr "Depuis « {file} », relu à chaque enregistrement."
 
 #: crates/oni-app/src/app/gestures/busy.rs
 msgid "It stopped halfway: read the folder again to see where each file is."

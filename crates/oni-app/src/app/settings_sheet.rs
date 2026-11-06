@@ -77,8 +77,7 @@ impl Ctl {
         s.set_clicks(!self.state.borrow().muted);
         s.set_keep_zoom(crate::viewport::KEEP_ZOOM.load(Ordering::Relaxed));
         s.set_full_decode(crate::render::FULL_DECODE.load(Ordering::Relaxed));
-        s.set_frontier_look(self.frontier_look_line().into());
-        s.set_frontier_hand(oni_pipeline::frontier_table::current().is_some());
+        s.set_frontier_file(self.frontier_file().into());
         s.set_screen_gamut(self.state.borrow().screen_gamut);
         s.set_version(oni_i18n::tr!("Version {version}", version = crate::updates::version()).into());
         let pairing = w.global::<crate::Pairing>();

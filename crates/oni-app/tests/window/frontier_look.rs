@@ -1,6 +1,7 @@
 //! The hand's Frontier look from a file: read at launch, read again on each save, a broken save
-//! keeping the last, and MEASURED returning to the measured table.
+//! keeping the last, and the section's Reset, apart from the file keys, returning to the measured table.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::AppSettings;
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
@@ -43,12 +44,30 @@ pub(crate) fn a_frontier_look_file_is_read_again_on_each_save() {
     let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
 
     let first = generation().expect("the file's look stands in at launch");
     shell.ctl.act(oni_app::Act::Settings);
-    let sheet = shell.window.global::<AppSettings>();
-    assert!(sheet.get_frontier_look().contains("My Frontier.cube") && sheet.get_frontier_hand());
+    rig.settle();
+    let w = &shell.window;
+    common::click(&rig, w, common::the(w, Role::ListItem, "Frontier Look").middle());
+    rig.settle();
+    let sheet = w.global::<AppSettings>();
+    assert_eq!(sheet.get_frontier_file(), "My Frontier.cube");
+    let shown = |text: &str| !common::placed(w, Role::Text, text).is_empty();
+    assert!(shown("Table in use") && shown("My Frontier.cube") && !shown("Measured"), "the file named as the table in use");
+    // The Reset shown on the section's title row, never on the row of the keys that keep a file.
+    let reset = || {
+        let titles = common::placed(w, Role::Text, "Frontier Look");
+        common::placed(w, Role::Button, "Reset").into_iter().filter(|k| titles.iter().any(|t| t.level_with(k))).collect::<Vec<_>>()
+    };
+    let keys = reset();
+    assert_eq!(keys.len(), 1, "one Reset on the title's row, found {keys:?}");
+    let export = common::the(w, Role::Button, "Export…");
+    assert!(!export.level_with(&keys[0]), "twin: the Reset stands apart from Export… and Use a File…");
+    assert!(common::placed(w, Role::Button, "Measured").is_empty(), "no Measured key beside the file keys");
+    rig.shot("settings-frontier-file");
 
     let mut halved = frontier_table::starting();
     halved.cube_data.iter_mut().for_each(|n| n[..3].iter_mut().for_each(|v| *v *= 0.5));
@@ -68,10 +87,13 @@ pub(crate) fn a_frontier_look_file_is_read_again_on_each_save() {
     rig.settle();
     assert_eq!(generation(), saved, "a broken file never stands in");
 
-    shell.ctl.act(oni_app::Act::FrontierMeasured);
+    common::click(&rig, w, keys[0].middle());
+    rig.settle();
     assert_eq!(generation(), None);
-    assert!(!sheet.get_frontier_hand() && sheet.get_frontier_look().contains("measured"));
     assert_eq!(Preferences::load(&support).string(preferences::FRONTIER_LOOK), None);
+    assert!(shown("Measured") && !shown("My Frontier.cube"), "the measured table named as the one in use");
+    assert!(reset().is_empty(), "nothing left to reset");
+    rig.shot("settings-frontier-measured");
     drop(sheet);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
