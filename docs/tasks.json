@@ -6745,5 +6745,12 @@
     "title": "Readouts end their digits at one edge; the status line starts at the card's inset",
     "status": "done",
     "detail": "A readout's unit (EV, %, °, ×, px) now stands in a column of its own, as wide as EV, so the tabular digits of every row end at one edge; Rust names the unit, what follows the last digit. The status line sat 8 pt in while the grid, the title and the presets' deck sit 24 pt, and hugged the window in full canvas: it now starts at the card's content inset in every layout, and the medals end there."
+  },
+  {
+    "id": 1362,
+    "type": "fix",
+    "title": "Each medal carries its rank sunk in the metal, at an icon's size",
+    "status": "done",
+    "detail": "Evaluation s-9011e109 (UX Accessibility, UI Iconography): bronze, silver and gold were 12 pt discs on the tiles and in the rating filter, told apart by colour alone. The art direction now allows a figure struck in a medal: each carries its rank, 1, 2 or 3, the key that lays it, sunk in the middle in bold Inter at 0.6 of its side, in the ruled ring's ink over a lip in the foil's light a rule below, so it reads as struck in the metal rather than printed on it. That ink is now opaque, for both ring and figure, so a figure holds 3:1 on bronze. Every medal, on a tile, in the filter and in the status bar, is one size, an icon's 16 pt: MedalStyle.key and the unused TileStyle.medal go. Window check states::every_state_reads_apart_from_its_neighbour reads the three medals' middles without their colour, their figures at least 6 of 64 pixels apart; twin: two golds read alike."
   }
 ]

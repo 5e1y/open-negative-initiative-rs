@@ -20,7 +20,7 @@ export component MedalPicker inherits HorizontalLayout {
     alignment: center;
     for medal[i] in [1, 2, 3]: Rectangle {
         width: ButtonStyle.small-height;
-        height: MedalStyle.key;
+        height: MedalStyle.size;
         property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;
         // The medal and the key that lays it; the given one's, the key that takes it off.
         property <string> help: medal == root.current ? @tr("No Medal (0)") : medal == 1 ? @tr("Bronze (1)") : medal == 2 ? @tr("Silver (2)") : @tr("Gold (3)");
@@ -36,7 +36,7 @@ export component MedalPicker inherits HorizontalLayout {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             rank: medal;
-            size: MedalStyle.key * parent.scale;
+            size: MedalStyle.size * parent.scale;
             opacity: root.current == medal || touch.has-hover ? 1 : TabsStyle.idle;
         }
         touch := TouchArea {
@@ -52,7 +52,7 @@ export component MedalPicker inherits HorizontalLayout {
         // Space or Return lays it while it holds the keyboard.
         keys := KeyScope {
             x: (parent.width - self.width) / 2;
-            width: MedalStyle.key;
+            width: MedalStyle.size;
             radius: self.width / 2;
             key-pressed(event) => {
                 if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {

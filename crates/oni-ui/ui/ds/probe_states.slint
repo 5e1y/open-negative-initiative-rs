@@ -1,6 +1,7 @@
 // The states a check reads off the drawn window, each at a fixed place: a key and a keycap out of reach, an
-// idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts in three units.
-import { DS, Colour, State, Stroke, ButtonStyle, SliderStyle, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider } from "ds.slint";
+// idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals.
+import { DS, Colour, State, Stroke, ButtonStyle, SliderStyle, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal } from "ds.slint";
+import { MedalStyle } from "theme.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
@@ -10,6 +11,7 @@ export component StateProbe inherits AppWindow {
     out property <length> was-width: was.width;
     out property <length> dark-width: dark.width;
     out property <length> lit-width: lit.width;
+    out property <length> medal: MedalStyle.size;
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;
@@ -34,6 +36,8 @@ export component StateProbe inherits AppWindow {
     Button { width: self.preferred-width; x: 220px; y: 120px; keycap: true; has-icon: true; square: true; icon: Icons.remove; }
     Button { width: self.preferred-width; x: 270px; y: 120px; keycap: true; has-icon: true; square: true; icon: Icons.remove; enabled: false; }
     Button { width: self.preferred-width; x: 320px; y: 120px; keycap: true; has-icon: true; square: true; icon: Icons.remove; opacity: State.disabled; }
+    // Bronze, silver and gold a medal and a half apart, then a second gold: the twin of a rank.
+    for rank[i] in [1, 2, 3, 3]: Medal { x: 240px + i * 1.5 * MedalStyle.size; y: 440px; rank: rank; }
     dark := Button { width: self.preferred-width; x: 16px; y: 168px; text: root.word; latch: true; }
     lit := Button { width: self.preferred-width; x: 200px; y: 168px; text: root.word; latch: true; on: true; }
     // Twin: the lamp at rest as dark glass in a dark groove, alone on a key's face.

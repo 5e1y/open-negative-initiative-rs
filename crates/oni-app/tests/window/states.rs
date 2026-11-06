@@ -1,6 +1,7 @@
 //! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
 //! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit
-//! only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the photo.
+//! only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the photo, each
+//! medal told by its figure without its colour.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -28,6 +29,8 @@ const KNOB: usize = 20;
 const TRAVEL: usize = 24;
 /// AA's 4.5:1 for small text, with the margin a quiet label keeps.
 const TEXT: f64 = 5.0;
+/// The pixels two figures must differ by, of the 64 inside a 16 pt medal's ring at one pixel a point.
+const FIGURES_APART: usize = 6;
 
 /// An sRGB channel of 0 to 255, linearised.
 fn linear(c: f64) -> f64 {
@@ -154,6 +157,24 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     assert!(contrast(hand, ground) >= NON_TEXT, "the hand's ring reads on the ground: {:.2}:1", contrast(hand, ground));
     // Twin: at rest nothing rings the tile.
     assert!(contrast(still, ground) < NON_TEXT, "the measure sees the bare ground: {:.2}:1", contrast(still, ground));
+
+    // A medal's middle inside its ruled ring, its colour dropped: the pixels under half its face's light.
+    let m = width(probe.get_medal());
+    let shape = |i: usize| -> Vec<bool> {
+        let (x0, y0) = (240 + i * m * 3 / 2 + m / 4, 440 + m / 4);
+        let light: Vec<f64> = (y0..y0 + m / 2).flat_map(|y| (x0..x0 + m / 2).map(move |x| luminance(at(x, y)))).collect();
+        let mut sorted = light.clone();
+        sorted.sort_by(f64::total_cmp);
+        let face = sorted[sorted.len() / 2];
+        light.iter().map(|l| *l < face / 2.0).collect()
+    };
+    let apart = |a: &[bool], b: &[bool]| a.iter().zip(b).filter(|(a, b)| a != b).count();
+    let (bronze, silver, gold, twin) = (shape(0), shape(1), shape(2), shape(3));
+    let least = apart(&bronze, &silver).min(apart(&bronze, &gold)).min(apart(&silver, &gold));
+    eprintln!("medals' figures at least {least} pixels apart, two golds {}", apart(&gold, &twin));
+    assert!(least >= FIGURES_APART, "bronze, silver and gold differ by their figures alone: {least} pixels");
+    // Twin: two golds read alike, so the measure counts the figure, never where it stands.
+    assert!(apart(&gold, &twin) < FIGURES_APART, "the measure sees two like medals alike: {}", apart(&gold, &twin));
 }
 
 /// A readout's unit stands in a column of its own: one number bare, in percent and in stops ends its
