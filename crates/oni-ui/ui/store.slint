@@ -109,10 +109,15 @@ export global Store {
     in property <bool> source-balance-modified;
     in property <bool> flat-field-modified;
     in property <bool> paper-correction-modified;
+    // Each field's rest as a fraction of its track, by its index: the double click's value, which a
+    // slider ticks and holds a drag on; it moves only with the frame.
+    in property <[float]> rests;
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
     callback release(int);
     callback scroll(int, length, length, length, bool) -> bool;
     callback step(int, int);
+    // A block back to rest, then one field, by their indices.
     callback reset(int);
+    callback rest(int);
 }

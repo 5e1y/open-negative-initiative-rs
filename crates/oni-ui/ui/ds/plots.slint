@@ -58,7 +58,7 @@ export component Plot inherits Rectangle {
     in property <int> histogram-revision;
     in property <bool> grid: true;
     in property <bool> screen: true;
-    // Out of its hollow, on the scanner screen's black glass rather than the ground beneath.
+    // Out of its hollow, on the scanner screen's black glass rather than the ground beneath, at its corner.
     in property <bool> glass;
     in property <bool> interactive: true;
     in property <bool> focusable;
@@ -76,7 +76,7 @@ export component Plot inherits Rectangle {
     callback key(int, string, bool, bool) -> bool;
     callback focus-changed(int, bool);
     background: root.screen ? Colour.canvas : root.glass ? ScannerStyle.glass : transparent;
-    border-radius: root.screen ? PlotStyle.radius : 0px;
+    border-radius: root.screen || root.glass ? PlotStyle.radius : 0px;
     clip: true;
     drop-shadow-color: root.screen ? Colour.white.with-alpha(SliderStyle.rim) : transparent;
     drop-shadow-blur: SliderStyle.rim-blur;

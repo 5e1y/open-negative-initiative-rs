@@ -49,9 +49,8 @@ export global SliderStyle {
     out property <length> label-gap: DS.space-xs;
     // `DS.Control.grabSize`: a handle's catch on a track several handles share.
     out property <length> grab: DS.control-grab-size;
-    // A stepped slider's − and + keys as tall as its knob, their sign larger than a word.
-    in-out property <length> step-key: SliderStyle.knob-height;
-    in-out property <length> step-legend: 15px;
+    // The hand's travel a drag holds at rest: felt under a slow hand, a third of the knob.
+    in-out property <length> detent: 6px;
 }
 
 // A dial: the edge of a black-anodised ring turning in a slot milled into the panel, its scale engraved.

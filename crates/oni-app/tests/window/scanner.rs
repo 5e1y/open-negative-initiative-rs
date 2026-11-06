@@ -20,11 +20,6 @@ fn cells(w: &MainWindow) -> Vec<String> {
     (0..model.row_count()).map(|i| model.row_data(i).unwrap().value.to_string()).collect()
 }
 
-fn finish(w: &MainWindow) -> Vec<String> {
-    let model = w.global::<Lab>().get_finish();
-    (0..model.row_count()).map(|i| model.row_data(i).unwrap().to_string()).collect()
-}
-
 fn modified(w: &MainWindow) -> Vec<bool> {
     let model = w.global::<Lab>().get_modified();
     (0..model.row_count()).map(|i| model.row_data(i).unwrap()).collect()
@@ -73,17 +68,25 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(!lab.get_shown() && bar.get_face() == 0, "the editor opens on Pro, never asked otherwise");
     assert!(panel.get_separation_shown(), "Pro's Roll tab holds Dye Separation");
 
+    rig.settle();
+    println!("shot {}", rig.shot("pro-face").display());
+    // Each face says what it holds at the Colour tab's head, in the same place on both.
+    let (pro_caption, scanner_caption) = ("Pro: every setting by hand, the place to start", "Scanner: a minilab's density and colour, in steps");
+    let caption = common::the(w, i_slint_backend_testing::AccessibleRole::Text, pro_caption);
     // The bar's Scanner tab: the face, one undo step, remembered.
     bar.invoke_act(oni_app::Act::FaceScanner);
     rig.pump();
     assert!(lab.get_shown() && bar.get_face() == 1);
+    assert_eq!(common::the(w, i_slint_backend_testing::AccessibleRole::Text, scanner_caption).y, caption.y);
+    // Twin: Pro's words leave with its face.
+    assert!(common::placed(w, i_slint_backend_testing::AccessibleRole::Text, pro_caption).is_empty());
     assert_eq!(settings().face, Face::Scanner);
     assert_eq!(std::fs::read_to_string(support.join("lastFaceScanner")).unwrap(), "1");
-    assert!(!panel.get_separation_shown(), "the Scanner face's Roll tab has no Dye Separation");
+    // Dye Separation and Auto White Balance act on this face's render too: its Roll tab holds them.
+    assert!(panel.get_separation_shown(), "the Scanner face's Roll tab hides Dye Separation");
+    assert_eq!(lab.get_balance(), "0.00 EV · 0.00 EV", "no Auto White Balance ran on this frame");
     assert_eq!(lab.get_frame(), "FRAME 01/02");
     assert_eq!(lab.get_machine_line(), "ONI · NEGATIVE");
-    let legends: Vec<String> = (0..4).map(|i| lab.get_legends().row_data(i).unwrap().to_string()).collect();
-    assert_eq!(legends, ["−3", "−", "+", "+3"]);
 
     // The keypad's keys, the same commands the phone sends: replayed on a second store, they land alike.
     let pro_contrast = settings().print.contrast;
@@ -136,7 +139,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     let s = settings();
     assert!((s.scanner_finish.contrast - 0.05).abs() < 1e-6 && (s.scanner_finish.vignette.stops + 0.3).abs() < 1e-6);
     assert_eq!(s.print.contrast, pro_contrast, "a Scanner key never moves Pro's Contrast");
-    assert_eq!(finish(w), ["CONTRAST +5%", "VIGNETTE −0.30 EV", "CHROME 0%"]);
+    assert_eq!((readout(5), readout(6)), ("+5%".to_string(), "−0.30 EV".to_string()));
     assert!(modified(w)[3]);
     lab.invoke_clear_effect(1);
     lab.invoke_reset_group(3);
@@ -157,11 +160,14 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.pump();
     // D's rail slid by the hand, a pixel a move: it lands on every step, half a unit apart, and never
     // jumps a whole unit; the readout follows each step in stops.
-    let (y, pressed) = (491.0, slint::LogicalPosition::new(1110.0, 491.0));
+    // The rail is the slider's lowest row, its knob's height; the hand runs past both its ends.
+    let d = common::the(w, i_slint_backend_testing::AccessibleRole::Slider, "D");
+    let y = d.y + d.height - 13.0;
+    let pressed = slint::LogicalPosition::new(d.x + d.width / 2.0, y);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: pressed });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: pressed, button: PointerEventButton::Left });
     let mut landed = Vec::new();
-    for x in 990..=1222 {
+    for x in (d.x - 20.0) as i32..=(d.x + d.width + 20.0) as i32 {
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x as f32, y) });
         rig.pump();
         landed.push((settings().scanner.d, readout(0)));
@@ -175,6 +181,11 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.06 EV") && landed.iter().any(|(d, r)| *d == -3 && r == "−0.17 EV"));
     // Twin: a rail on whole units would skip the odd steps.
     assert!(steps.iter().any(|d| d % 2 != 0));
+    // The rail holds at rest as Pro's do: twelve points of the hand more than a step beside it.
+    let at = |v: i64| steps.iter().filter(|d| **d == v).count();
+    assert!(at(0) >= at(1) + 10, "the drag holds at zero: {} moves there, {} at +1", at(0), at(1));
+    // Twin: the steps beside rest take their own width alone.
+    assert!(at(1) < 8 && at(-1) < 8, "{} and {}", at(-1), at(1));
     lab.invoke_clear(0);
     rig.pump();
     // The rail pressed holds the keyboard, its arrows stepping D: Escape gives it back to the photos.

@@ -8,9 +8,10 @@ use oni_core::Command;
 use oni_i18n::tr;
 use oni_link::Command as Link;
 use oni_link::scanner::{Effect, Letter, Machine};
+use oni_pipeline::scanner::on_oni_machine;
 use oni_settings::blocks::Vignette;
 use oni_settings::{ConversionMode, Face, PipelineSettings, ScannerMachine};
-use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -45,12 +46,6 @@ pub(super) fn remember(support: &Path, face: Face) {
     let _ = std::fs::write(remembered_at(support), if face == Face::Scanner { "1" } else { "0" });
 }
 
-/// `LabKeyboard.legend`: the outer keys their count, the inner ones their sign.
-pub fn legend(step: i32) -> String {
-    let sign = if step < 0 { "−" } else { "+" };
-    if step.abs() == 1 { sign.to_string() } else { format!("{sign}{}", step.abs()) }
-}
-
 pub use oni_link::scanner::spelled;
 
 /// The Pro slider moving the same quantity, whose readout an effect shares on both faces.
@@ -69,7 +64,15 @@ pub struct Screen {
     pub machine: String,
     pub remeasure: bool,
     pub cells: Vec<(String, String)>,
-    pub finish: Vec<String>,
+    pub balance: String,
+}
+
+/// The balance the face prints with, read off its own render's filters: Auto White Balance's
+/// correction at the roll's strength, the one Pro value its keys leave acting, in Pro's readouts.
+pub fn balance(s: &PipelineSettings) -> String {
+    let machine = on_oni_machine(&PipelineSettings { face: Face::Scanner, ..s.clone() }).unwrap_or_default();
+    let read = |f: Field| f.readout(f.knob().get(&machine));
+    format!("{} · {}", read(Field::Temperature), read(Field::Tint))
 }
 
 /// The screen's words are the panel's own, in the machine's capitals.
@@ -81,20 +84,13 @@ pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
     };
     let clicks = &s.scanner;
     let counts = [clicks.d, clicks.c, clicks.m, clicks.y, clicks.w];
-    let named = |name: &str, value: String| format!("{} {value}", name.to_uppercase());
-    let f = &s.scanner_finish;
-    let effect = |name: &str, e: Effect, value: f32| named(name, field(e).readout(value));
-    let mut finish = vec![effect(tr("Contrast"), Effect::Contrast, f.contrast), effect(tr("Vignette"), Effect::Vignette, f.vignette.stops)];
-    if !s.mode.is_monochrome() {
-        finish.push(effect(tr("Chrome"), Effect::Chrome, f.secret_sauce));
-    }
     let (at, count) = place.map_or(("--".to_string(), "--".to_string()), |(at, count)| (format!("{at:02}"), format!("{count:02}")));
     Screen {
         frame: tr!("FRAME {at}/{count}", at = at, count = count),
         machine: format!("{} · {}", s.scanner_machine.title().to_uppercase(), channel.to_uppercase()),
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
         cells: Letter::ALL.iter().zip(counts).map(|(l, n)| (l.title().to_string(), spelled(n))).collect(),
-        finish,
+        balance: balance(s).to_uppercase(),
     }
 }
 
@@ -265,15 +261,12 @@ impl Ctl {
         if !same(&lab.get_cells(), &cells) {
             lab.set_cells(ModelRc::new(VecModel::from(cells)));
         }
-        let finish: Vec<SharedString> = screen.finish.into_iter().map(SharedString::from).collect();
-        if !same(&lab.get_finish(), &finish) {
-            lab.set_finish(ModelRc::new(VecModel::from(finish)));
-        }
+        lab.set_balance(screen.balance.into());
         sliders::publish(&lab, &settings);
         if !same(&lab.get_modified(), &modified) {
             lab.set_modified(ModelRc::new(VecModel::from(modified)));
         }
-        let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source && !shown;
+        let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source;
         let panel = w.global::<PanelState>();
         panel.set_separation_shown(separation);
         panel.set_slide(settings.mode == oni_settings::ConversionMode::Positive);
@@ -281,8 +274,6 @@ impl Ctl {
 
     pub(super) fn wire_lab(me: &Rc<Ctl>, window: &MainWindow) {
         let lab = window.global::<Lab>();
-        let legends: Vec<SharedString> = [-3, -1, 1, 3].map(|s| legend(s).into()).to_vec();
-        lab.set_legends(ModelRc::new(VecModel::from(legends)));
         let p = me.clone();
         lab.on_press(move |letter, by| {
             if let (Some(letter), Ok(by)) = (at(&Letter::ALL, letter), i8::try_from(by)) {

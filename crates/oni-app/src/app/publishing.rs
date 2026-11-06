@@ -52,12 +52,16 @@ impl Ctl {
                 }
             }
         }
-        let modified = {
+        let (modified, rests) = {
             let s = self.state.borrow();
-            Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b)))
+            (Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b))), crate::slider_track::rests(s.store.settings()))
         };
         for (b, on) in modified {
             set_modified(&g, b, on);
+        }
+        let shown = g.get_rests();
+        if shown.row_count() != rests.len() || rests.iter().enumerate().any(|(i, r)| shown.row_data(i) != Some(*r)) {
+            g.set_rests(ModelRc::new(VecModel::from(rests)));
         }
         let reread = edited && {
             let s = self.state.borrow();
@@ -180,8 +184,9 @@ impl Ctl {
         self.gesture(&paths, |editor| editor.reset_each(&paths, |s| store::rested(s, b)));
     }
 
-    /// `f` at `stored` on every frame shown, as a double click brings it back to rest.
-    pub(crate) fn rest(self: &Rc<Self>, f: Field, stored: f32) {
+    /// `f` back to its rest on every frame shown, as a double click on its rail or on its name asks.
+    pub(crate) fn rest(self: &Rc<Self>, f: Field) {
+        let stored = f.double_click_base(self.state.borrow().store.settings());
         if f == Field::Angle {
             return self.straighten(stored);
         }

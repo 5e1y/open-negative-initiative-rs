@@ -169,7 +169,7 @@ export component RollPane inherits Pane {
         folded-by-default: true;
         StoreSlider { field: 12; label: @tr("Ceiling"); fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
-    if !Editors.scanner-face: EditorBlock {
+    EditorBlock {
         title: @tr("Per-Channel Levels");
         help: @tr("Each channel's own window on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone.");
         block: 1;
@@ -181,8 +181,7 @@ export component RollPane inherits Pane {
             Badge { tone: BadgeTone.warning; text: @tr("8-bit source — 256 levels per channel"); }
         }
     }
-    // After the per-channel windows: a balanced grey is its fixed point. Monochrome, RGB passes and
-    // the Scanner face run none.
+    // After the per-channel windows: a balanced grey is its fixed point. Monochrome and RGB passes run none.
     if PanelState.separation-shown && !PanelState.slide: Block {
         title: @tr("Dye Separation");
         demo: "dye-separation";

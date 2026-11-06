@@ -329,6 +329,10 @@ msgstr "Después"
 msgid "REMEASURE ROLL"
 msgstr "VOLVER A MEDIR"
 
+#: crates/oni-ui/ui/ds/keypad.slint
+msgid "BALANCE"
+msgstr "BALANCE"
+
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Sin medalla (0)"
@@ -1213,13 +1217,21 @@ msgstr "Olvidar teléfonos"
 msgid "Every paired phone is cut and pairs again from a new code."
 msgstr "Todos los teléfonos vinculados se desconectan y vuelven a vincularse con un código nuevo."
 
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "Scanner: a minilab's density and colour, in steps"
+msgstr "Escáner: densidad y color de un minilab, por pasos"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "Pro: every setting by hand, the place to start"
+msgstr "Pro: cada ajuste a mano, por donde empezar"
+
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Machine"
 msgstr "Máquina"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, Pro's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either."
-msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión de Pro con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas."
+msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own."
+msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión del rollo con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Rollo y la corrección del Balance de blancos automático actúan en ambas caras; los deslizadores Luz, Color y Efectos de Pro siguen siendo solo de Pro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
@@ -1234,88 +1246,44 @@ msgid "Density"
 msgstr "Densidad"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point at each press, the screen above counting the points."
-msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto con cada pulsación, y la pantalla de arriba cuenta los puntos."
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
+msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto por paso, y la pantalla de arriba cuenta los puntos."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "D"
 msgstr "D"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −: toward dark"
-msgstr "D −: hacia oscuro"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Double-click to bring it back to rest; {} with − or + moves three steps."
-msgstr "Haz doble clic para volver al reposo; {} con − o + avanza tres pasos."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light"
-msgstr "D +: hacia claro"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
 msgstr "Color"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point at each press, the screen above counting the points."
-msgstr "C, M e Y, las teclas de color de un minilab: + lleva la copia hacia el cian, el magenta o el amarillo y − hacia el rojo, el verde o el azul, medio punto con cada pulsación, y la pantalla de arriba cuenta los puntos."
+msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points."
+msgstr "C, M e Y, las teclas de color de un minilab: + lleva la copia hacia el cian, el magenta o el amarillo y − hacia el rojo, el verde o el azul, medio punto por paso, y la pantalla de arriba cuenta los puntos."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C"
 msgstr "C"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C −: toward red"
-msgstr "C −: hacia rojo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C +: toward cyan"
-msgstr "C +: hacia cian"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "M"
 msgstr "M"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M −: toward green"
-msgstr "M −: hacia verde"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M +: toward magenta"
-msgstr "M +: hacia magenta"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Y"
 msgstr "Y"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y −: toward blue"
-msgstr "Y −: hacia azul"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y +: toward yellow"
-msgstr "Y +: hacia amarillo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Look"
 msgstr "Aspecto"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP lays the machine's warm or cool look over the print, a little more at each press; at zero the print stays as the keys above set it."
-msgstr "TEMP aplica el aspecto cálido o frío de la máquina sobre la copia, un poco más con cada pulsación; en cero, la copia queda como la fijaron las teclas de arriba."
+msgid "TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it."
+msgstr "TEMP aplica el aspecto cálido o frío de la máquina sobre la copia, un poco más con cada paso; en cero, la copia queda como la fijaron las teclas de arriba."
 
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Temperature"
 msgstr "Temperatura"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature −: toward cool"
-msgstr "Temperatura −: hacia frío"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature +: toward warm"
-msgstr "Temperatura +: hacia cálido"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
@@ -1381,41 +1349,17 @@ msgstr "Efectos"
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
 msgstr "Contraste"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette"
 msgstr "Viñeta"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome"
 msgstr "Chrome"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast −: toward softer, 5% a step"
-msgstr "Contraste −: hacia más suave, 5 % por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast +: toward harder, 5% a step"
-msgstr "Contraste +: hacia más duro, 5 % por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette −: toward lighter corners, 0.1 EV a step"
-msgstr "Viñeta −: hacia esquinas más claras, 0,1 EV por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette +: toward darker corners, 0.1 EV a step"
-msgstr "Viñeta +: hacia esquinas más oscuras, 0,1 EV por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome −: toward less, 5% a step"
-msgstr "Chrome −: hacia menos, 5 % por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome +: toward more, 5% a step"
-msgstr "Chrome +: hacia más, 5 % por paso"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
@@ -1925,6 +1869,10 @@ msgstr "FOTOGRAMA --/--"
 msgid "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess."
 msgstr "Este rollo se midió antes de que el escáner guardara su mediana: vuelve a medirlo en Preparar el rollo, o el escáner se centrará en una estimación."
 
+#: crates/oni-ui/ui/panel.slint
+msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab."
+msgstr "La corrección del Balance de blancos automático a la intensidad del rollo, que se imprime en ambas caras; Intensidad está en la pestaña Rollo."
+
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint
 msgid "Details"
 msgstr "Detalles"
@@ -2264,14 +2212,6 @@ msgstr "Comparar"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
 msgstr "Pro"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Pro: every setting by hand, the place to start"
-msgstr "Pro: cada ajuste a mano, por donde empezar"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Scanner: a lab scanner's keypad, density and colour in steps on its machine's look"
-msgstr "Escáner: el teclado de un escáner de laboratorio, densidad y color por pasos sobre el aspecto de su máquina"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"

@@ -141,12 +141,13 @@ component LiveSlider inherits Slider {
     step(f, by) => { root.move-to(root.fraction + by / 100); }
 }
 
-// The DS stepped `Slider` (the Scanner face's letters): whole steps, a key either side, ⇧ for three.
+// The DS stepped `Slider` (the Scanner face's letters): whole steps, held at rest, ⇧ for three.
 component LiveStepped inherits Slider {
     in-out property <int> amount;
     stepped: true;
     lowest: -10;
     highest: 10;
+    rest: 0.5;
     value: root.amount;
     readout: (root.amount > 0 ? "+" : "") + root.amount;
     value-text: self.readout;
@@ -509,8 +510,7 @@ export component SlidersPage inherits Rectangle {
                     Tune { label: "grow"; minimum: 1; maximum: 1.4; value <=> SliderStyle.knob-grow; }
                     LengthTune { label: "grip line"; maximum: 24; value <=> SliderStyle.grip; }
                     LengthTune { label: "grip gap"; maximum: 12; value <=> SliderStyle.grip-gap; }
-                    LengthTune { label: "step key"; minimum: 20; maximum: 56; value <=> SliderStyle.step-key; }
-                    LengthTune { label: "step legend"; minimum: 9; maximum: 28; value <=> SliderStyle.step-legend; }
+                    LengthTune { label: "detent"; maximum: 16; value <=> SliderStyle.detent; }
                 }
                 VerticalLayout {
                     width: 300px;

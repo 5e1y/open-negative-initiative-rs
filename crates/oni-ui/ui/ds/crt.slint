@@ -10,7 +10,7 @@ export struct CrtEcho { channel: int, edge: string, fade: float }
 
 // The glass: what it holds, then `LabScreen`'s scanlines, laid once per size in a layer of their own.
 export component CrtScreen inherits Rectangle {
-    // Rounded as a track in the measure's bank; square in the plot band, as `LabScreen` is.
+    // Rounded as a track in the measure's bank; `LabScreen` gives it the readout's corner.
     in property <bool> rounded;
     background: ScannerStyle.glass;
     border-radius: root.rounded ? CrtStyle.radius : 0px;

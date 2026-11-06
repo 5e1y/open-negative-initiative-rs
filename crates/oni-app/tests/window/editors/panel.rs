@@ -145,7 +145,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     assert!(g3.get_low_precision(), "an 8-bit scan carries no badge");
     assert!(editors::size(&third.ctl, Plot::Levels).w > 200.0, "the Pro face lays out Per-Channel Levels");
 
-    // The Scanner face has no Per-Channel Levels: the block is never laid out.
+    // The Scanner face lays out Per-Channel Levels too, as they act on its render.
     // The face switch takes a frame opened from the archive, as a hand opens one.
     let faces = o.dir.join("faces");
     std::fs::create_dir_all(&faces).unwrap();
@@ -167,7 +167,8 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     g4.set_levels_folded(false);
     rig.shot("editors-scanner-face");
     rig.settle();
-    assert!(g4.get_scanner_face());
-    assert_eq!(editors::size(&fourth.ctl, Plot::Levels).w, 0.0, "the Scanner face laid out Per-Channel Levels");
+    // Twin: off the Scanner face this would only repeat the Pro face's check above.
+    assert!(fourth.window.global::<oni_app::Lab>().get_shown(), "the Scanner face is on screen");
+    assert!(editors::size(&fourth.ctl, Plot::Levels).w > 200.0, "the Scanner face hides Per-Channel Levels");
     let _ = std::fs::remove_dir_all(&o.dir);
 }

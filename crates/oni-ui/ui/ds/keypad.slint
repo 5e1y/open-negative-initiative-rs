@@ -1,20 +1,23 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Space } from "theme.slint";
+import { Space, PlotStyle } from "theme.slint";
 import { Tips } from "base.slint";
 import { CrtScreen, CrtLine as Lcd } from "crt.slint";
 
 export struct LabCell { title: string, value: string }
 
-// `LabScreen`: the scanner's screen in the plot band, its frame, its machine, every letter's count
-// and the finishing's values, glowing behind scanlines.
+// `LabScreen`: the scanner's screen in the readout, its frame, its machine, every letter's count and
+// the balance it prints with, glowing behind scanlines.
 export component LabScreen inherits Rectangle {
     in property <string> frame;
     in property <string> machine;
     in property <bool> remeasure;
     in property <string> remeasure-help;
     in property <[LabCell]> cells;
-    in property <[string]> finish;
+    in property <string> balance;
+    in property <string> balance-help;
+    // The readout's corner, the plots' own.
     CrtScreen {
+        border-radius: PlotStyle.radius;
         VerticalLayout {
             padding: Space.m;
             HorizontalLayout {
@@ -31,10 +34,9 @@ export component LabScreen inherits Rectangle {
             }
             Rectangle { min-height: Space.xs; vertical-stretch: 1; }
             HorizontalLayout {
-                spacing: Space.s;
-                // Equal columns, so a value growing a digit never moves the others.
+                // Equal columns, so a value growing a digit never moves the others; centred, they need no gap.
                 for cell in root.cells: VerticalLayout {
-                    width: (parent.width - (root.cells.length - 1) * Space.s) / max(1, root.cells.length);
+                    width: parent.width / max(1, root.cells.length);
                     spacing: Space.xxs;
                     Lcd { text: cell.title; horizontal-alignment: center; }
                     Lcd { text: cell.value; large: true; horizontal-alignment: center; }
@@ -42,8 +44,14 @@ export component LabScreen inherits Rectangle {
             }
             Rectangle { min-height: Space.xs; vertical-stretch: 1; }
             HorizontalLayout {
-                alignment: space-between;
-                for line in root.finish: Lcd { text: line; }
+                Lcd {
+                    text: @tr("BALANCE");
+                    TouchArea {
+                        changed has-hover => { Tips.hover(self.has-hover, root.balance-help, self.absolute-position.x, self.absolute-position.y + self.height); }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Lcd { text: root.balance; }
             }
         }
     }

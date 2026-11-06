@@ -6472,5 +6472,33 @@
     "title": "Crop and De-dust out of reach say why under the hand",
     "status": "done",
     "detail": "UX evaluation (Robustness): on frames together Crop and De-dust greyed out with no word. A key out of reach now still tells its help under the hand and takes no press (the design system's Button), and the two keys say Select one photo to crop it / to de-dust it while frames show together, in English, French and Spanish. Window check together_moves hovers both, and its twin hovers Crop on one frame alone."
+  },
+  {
+    "id": 1314,
+    "type": "fix",
+    "title": "The Scanner face shows every value acting on its frame",
+    "status": "done",
+    "detail": "UX evaluation (Trust): the Scanner face read D, C, M and Y at zero while the frame carried Pro's values. Read in the pipeline, the Scanner render takes the roll's conversion (Film Type, Filtration, Highlight Detail, Per-Channel Levels, Dye Separation) and Auto White Balance's correction at the roll's strength, and none of Pro's Lighting, Colour or Effects sliders. Per-Channel Levels, Dye Separation and Auto White Balance, which the face hid though they act, now stand on its Roll tab as on Pro's. The scanner's screen reads, in place of the finishing its own sliders already show, the balance its render prints with, taken from that render's own filters in Pro's Temperature and Tint readouts. The Machine help says what both faces share and that Pro's sliders stay Pro's own. No render changes; the Frontier's rest held in the gains still reads zero. Unit check the_screen_spells_every_count_and_the_balance_as_the_lab_does, twin: Pro's Temperature moved by hand never reaches the screen; window checks scanner and the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have read the blocks on the Scanner face."
+  },
+  {
+    "id": 1315,
+    "type": "fix",
+    "title": "One readout at the panel's top, inset as its rows, alike on both faces",
+    "status": "done",
+    "detail": "UI and UX evaluation (Spacing, Craft in use): the histogram and the scanner's screen ran flush to the panel's edges and the canvas while every row kept the panel's inset, and switching faces swapped one for the other. The panel's top is now one readout, inset by the rows' 16 points at the sides and the top, its corner the plots' and the canvas card's: Pro's histogram, the Scanner face's screen and the loupe under Details each fill it, so a face or a tab changes only what it shows. The loupe's band is the readout's width; the screen's counts take equal columns with no gap, so the inset costs them no room. The scanner window check finds D's rail by its role and name, no longer at a fixed point."
+  },
+  {
+    "id": 1316,
+    "type": "fix",
+    "title": "One slider on both faces: no step keys, a tick and a detent at rest, the name's double click",
+    "status": "done",
+    "detail": "UX evaluation (Consistency, Play): the Scanner face's sliders carried − and + keys that Pro's had not, and neither held at rest. The step keys go: a Scanner slider is Pro's rail, its steps taken by the hand, the arrows (⇧ for three) or a number typed over the readout. Every slider with a rest, both faces alike, ticks it on its rail, holds a drag there for six points of the hand's travel (SliderStyle.detent) and then goes on from there without a jump, ⌥ passing through it for the finest move; a dial keeps its scale under the hand. A double click on the name now brings a Pro slider back to rest as on the rail and on the Scanner face, through the rail's one rest (Store.rests, Store.rest). A drag held on rest lands on its exact value. The keypad's dead legends and the keys' tooltips leave; the Scanner helps count half a point a step. Unit check a_drag_held_on_rest_lands_on_it_exactly; window checks slider_rest (twin: a knob left under the hand stands twenty points past rest) and scanner (zero holds ten moves more than +1; twin: the steps beside it take their own width), both failing with the detent at zero."
+  },
+  {
+    "id": 1317,
+    "type": "fix",
+    "title": "Each face says what it holds at the head of its Colour tab",
+    "status": "done",
+    "detail": "UX evaluation (Obvious without a tutorial): the faces were explained only in the switch's tooltip, and 'Pro' said nothing of what it holds. Both names stay; the Colour tab opens on one line in the switch's own words, Pro: every setting by hand, the place to start, or Scanner: a minilab's density and colour, in steps, at the same place on both faces. The Scanner's tooltip leaves its keypad with the keys. Window check scanner reads each caption at one height; twin: Pro's words leave with its face."
   }
 ]

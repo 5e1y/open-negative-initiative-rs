@@ -10,22 +10,19 @@ export component LabBlock inherits Section {
     reset(b) => { Lab.reset-group(b); }
 }
 
-// A Scanner slider by its index in `Lab.steps`: the letters D, C, M, Y and TEMP, then the effects.
-// `helps` holds the minus key's, the name's and the plus key's tooltips.
+// A Scanner slider by its index in `Lab.steps`: the letters D, C, M, Y and TEMP, then the effects,
+// each resting at its zero step.
 export component LabSlider inherits Slider {
     in property <int> index;
-    in property <[string]> helps;
     stepped: true;
     fill: SliderFill.bipolar;
     value: Lab.steps[root.index];
     lowest: Lab.lows[root.index];
     highest: Lab.highs[root.index];
+    rest: (0 - self.lowest) / max(1, self.highest - self.lowest);
     readout: Lab.readouts[root.index];
     value-text: self.readout;
     step-reads: Lab.step-reads[root.index];
-    minus-help: root.helps[0];
-    help: root.helps[1];
-    plus-help: root.helps[2];
     held(on) => { Lab.hold(on); }
     step(f, by) => {
         if (root.index < 5) {
@@ -44,6 +41,8 @@ export component LabSlider inherits Slider {
 }
 
 export component StoreSlider inherits Slider {
+    rest: Store.rests[self.field];
+    reset => { Store.rest(self.field); }
     press(f, fine) => { return Store.press(f, fine); }
     drag(f, t, s, fine) => { Store.drag(f, t, s, fine); }
     release(f) => { Store.release(f); }

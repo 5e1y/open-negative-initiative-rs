@@ -1,6 +1,6 @@
 // The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
 import { Act } from "../act.slint";
-import { PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
+import { Space, PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
@@ -103,8 +103,8 @@ export global Lab {
     in property <string> machine-line;
     in property <bool> remeasure;
     in property <[LabCell]> cells;
-    in property <[string]> finish;
-    in property <[string]> legends: ["−3", "−", "+", "+3"];
+    // The balance Pro's Auto White Balance left acting on this face, as its Temperature and Tint read.
+    in property <string> balance;
     // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
     in property <[bool]> modified: [false, false, false, false];
     // The sliders, letters (D, C, M, Y, TEMP) then effects (Contrast, Vignette, Chrome): each one's
@@ -197,8 +197,8 @@ export global DetailLoupe {
     in property <length> shown-height;
     in property <string> ratio;
     in property <bool> ratio-shown;
-    // The band edge to edge across the panel, at the main plot's height.
-    out property <length> band-width: ShellStyle.panel-width;
+    // The panel's readout, inset by its rows' inset either side, at the main plot's height.
+    out property <length> band-width: ShellStyle.panel-width - 2 * Space.m;
     out property <length> band-height: PlotStyle.main;
     callback toggled();
 }
