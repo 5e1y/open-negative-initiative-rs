@@ -270,7 +270,7 @@ controls. Every slider is `DSSlider` (4.4.1). The labels below are exact strings
 |---|---|---|---|---|
 | Roll (`SettingsPane`) | Film Type | Mode picker | `DSPicker` | `[menu]` |
 | | Source Encoding | "Read as" picker | `DSPicker` | `[menu]` |
-| | Measured Roll | `DSWarning` bands, PREPARE THE ROLL…, JOIN / ROLL OF on one filling plate, roll previews (`RollPreviews`) | `WarningBand`, `KeyPlate { fills }`, `Image` row | Previews render through oni-render. |
+| | Measured Roll | `DSWarning` bands, PREPARE THE ROLL…, JOIN / ROLL OF on one filling plate, roll previews (`RollPreviews`) | note `Label`s, a plate `Button` a row, `Image` row | Previews render through oni-render. The state reads as a line of words, never a band beside the photo. |
 | | Source Balance / Balance Strength | Strength slider | `DSSlider` | |
 | | Density Ceiling | Ceiling slider | `DSSlider` | |
 | | Per-Channel Levels | `LevelsView`: histogram, five handles, RGB/R/G/B tabs | `DSTabBar` + histogram `Image` + `DSHandle`s | `[draw]` The histogram is a `Canvas` path in Swift: render it as an RGBA buffer in Rust or as a Slint `Path` from `commands` built in Rust. Path rebuilds cost on the software renderer only. |

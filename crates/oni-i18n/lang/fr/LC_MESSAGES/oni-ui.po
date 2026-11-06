@@ -1626,32 +1626,36 @@ msgid "Measured Roll"
 msgstr "Pellicule mesurée"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own."
-msgstr "Chaque réglage ici appartient à la pellicule : modifié sur cette photo, il s’applique à toutes les photos mesurées avec elle, chacune gardant son propre look. Une photo du dossier restée hors de cette mesure peut la rejoindre, ou les photos mesurées peuvent former une pellicule à part."
+msgid "Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own."
+msgstr "Chaque réglage ici appartient à la pellicule : modifié sur cette photo, il s’applique à toutes les photos mesurées avec elle, chacune gardant son propre look. Une photo restée hors de cette mesure peut y être incluse, ou les photos mesurées déplacées dans une pellicule à part."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "This photo was never measured with its roll, so these settings act on it alone."
 msgstr "Cette photo n’a jamais été mesurée avec sa pellicule : ces réglages n’agissent que sur elle."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Acts on this photo, the only one measured with its roll."
-msgstr "Agit sur cette photo, la seule mesurée avec sa pellicule."
+msgid "Acts on this photo, the only one of its roll."
+msgstr "Agit sur cette photo, la seule de sa pellicule."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Acts on the {} photos measured with this roll."
-msgstr "Agit sur les {} photos mesurées avec cette pellicule."
+msgid "Acts on the {} photos of this roll."
+msgstr "Agit sur les {} photos de cette pellicule."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "1 photo of this folder was not measured with the roll."
-msgstr "1 photo de ce dossier n’a pas été mesurée avec la pellicule."
+msgid "1 photo of this roll was left out of its measurement, so these settings do not reach it."
+msgstr "1 photo de cette pellicule est restée hors de sa mesure : ces réglages ne l’atteignent pas."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "{} photos of this folder were not measured with the roll."
-msgstr "{} photos de ce dossier n’ont pas été mesurées avec la pellicule."
+msgid "{} photos of this roll were left out of its measurement, so these settings do not reach them."
+msgstr "{} photos de cette pellicule sont restées hors de sa mesure : ces réglages ne les atteignent pas."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "ADD THEM TO THE ROLL"
-msgstr "LES AJOUTER À LA PELLICULE"
+msgid "INCLUDE IT"
+msgstr "L’INCLURE"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "INCLUDE THEM"
+msgstr "LES INCLURE"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Gives the photos left out this roll's measurement and settings, their own look kept."
