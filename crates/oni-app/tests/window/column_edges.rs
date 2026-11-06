@@ -1,5 +1,5 @@
 //! The library column: its tab bar, header and rows on one inset; a row clicked holds the keyboard until a
-//! press or the editor hands it to the photos, the gallery listing no editor control.
+//! press or the editor hands it to the photos, the gallery listing no editor control; the select in words.
 
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::app::{Options, Shell};
@@ -120,19 +120,33 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     rig.settle();
     rig.shot("column-edges-beside-photo");
 
-    // Beside a photo every row and thumbnail meets the column's edges.
+    // Beside a photo the tree's select spans the column, and every row and thumbnail meets its edges.
     let edges = bar(w);
+    let select = common::the(w, AccessibleRole::Button, "Two thumbnails a line");
+    assert!((select.x - edges.0).abs() < 0.5 && (select.x + select.width - edges.1).abs() < 0.5, "the select {select:?} across {edges:?}");
     let items = listed(w);
     assert!(items.iter().all(|e| lines_up(e, edges)), "rows and thumbnails on the edges: {items:?} {edges:?}");
     assert!(items.iter().any(|e| (e.x - edges.0).abs() < 0.5 && e.width < span / 2.0), "a thumbnail on the left edge: {items:?}");
     // Twin: beside a photo the editor's sliders are in the tree.
     assert!(!common::placed_all(w, AccessibleRole::Slider).is_empty(), "the panel's sliders are listed beside a photo");
 
+    // The select's menu says each layout in words; a line picked lays the tree so and names it.
+    common::click(&rig, w, select.middle());
+    rig.settle();
+    common::in_popup(w, AccessibleRole::Button, "Show the Selected Photo");
+    common::click(&rig, w, common::in_popup(w, AccessibleRole::Button, "One thumbnail a line").middle());
+    rig.settle();
+    assert_eq!(lib.get_tree_layout(), 2, "one thumbnail a line picked");
+    assert_eq!(common::placed(w, AccessibleRole::Button, "One thumbnail a line").len(), 1, "the select names the layout picked");
+    // Twin: the layout left is no longer named.
+    assert!(common::placed(w, AccessibleRole::Button, "Two thumbnails a line").is_empty());
+
     // Back in the gallery the editor's controls are out of the tree, and the arrows walk the photos.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     let kept = folds(w);
     assert!(common::placed_all(w, AccessibleRole::Slider).is_empty(), "no slider of the editor is listed in the gallery");
+    assert!(common::placed(w, AccessibleRole::Button, "One thumbnail a line").is_empty(), "nor the tree's select");
     assert_ne!(common::focused_label(w), "Folders", "the screen changed, the photos hold the keyboard");
     let before = selected(&lib);
     rig.key(&right);

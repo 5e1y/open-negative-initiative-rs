@@ -69,9 +69,10 @@ impl Ctl {
             c.fill_tree_thumbnails(None);
         });
         let me = Rc::downgrade(self);
-        lib.on_tree_layout_next(move || {
+        lib.on_tree_layout_picked(move |i| {
             let Some(c) = me.upgrade() else { return };
-            c.next_layout();
+            let Some(layout) = usize::try_from(i).ok().and_then(|i| crate::sidebar::Layout::ALL.get(i).copied()) else { return };
+            c.pick_layout(layout);
             c.publish_tree();
             c.publish_projects();
             // A new layout moves every row: the selection comes back to the middle.

@@ -1,8 +1,6 @@
 //! `SidebarLayout` and `TreeEngineLayout`: the library column's photos as names, two thumbnails a
 //! line or one, folders and rolls keeping their rows; and where the column scrolls to show a row.
 
-use oni_i18n::tr;
-
 /// How the column shows its photos, stored per mode under `sidebarLayout.<mode>`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Layout {
@@ -23,14 +21,6 @@ impl Layout {
         }
     }
 
-    pub fn name(self) -> &'static str {
-        match self {
-            Layout::List => tr("Names only"),
-            Layout::Pairs => tr("Two thumbnails a line"),
-            Layout::Singles => tr("One thumbnail a line"),
-        }
-    }
-
     /// The stored word, `SidebarLayout.rawValue`.
     pub fn key(self) -> &'static str {
         match self {
@@ -42,10 +32,6 @@ impl Layout {
 
     pub fn of_key(key: &str) -> Option<Layout> {
         Layout::ALL.into_iter().find(|l| l.key() == key)
-    }
-
-    pub fn next(self) -> Layout {
-        Layout::ALL[(Layout::ALL.iter().position(|l| *l == self).unwrap_or(0) + 1) % Layout::ALL.len()]
     }
 }
 
@@ -264,7 +250,6 @@ mod tests {
         assert_eq!(centred(Frame { y: 20.0, ..row }, 300.0, 2000.0), 0.0, "the top holds");
         // Twin: a row near the end scrolls no further than the column's end.
         assert_eq!(centred(Frame { y: 1990.0, ..row }, 300.0, 2000.0), 1700.0);
-        assert_eq!(Layout::Singles.next(), Layout::List);
         assert_eq!(Layout::of_key("pairs"), Some(Layout::Pairs));
     }
 }

@@ -338,7 +338,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rig.pump();
     assert!(row(w, "Roll 1").picked && row(w, "Scans 2026").unfolded);
     assert_eq!(n.get_reveal_row() as usize, at(w, "Roll 1"));
-    assert_eq!((n.get_opened_title().as_str(), n.get_height()), ("Roll 1", 200.0));
+    assert_eq!(n.get_height(), 200.0);
     n.set_height(320.0);
     n.invoke_height_stored(320.0);
     rig.settle();

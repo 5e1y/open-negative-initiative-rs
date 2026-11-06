@@ -96,16 +96,15 @@ impl Ctl {
                 })
                 .collect();
             let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
-            let opened_pill = (s.opened.as_deref().map(|o| s.nav.computer.name(o)).unwrap_or_default(), s.opened.clone().unwrap_or_default());
             s.nav.rows = rows.into_iter().map(|(p, _)| p).collect();
             let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
             refused.extend(s.opened.clone().filter(|o| s.survey.unreadable.contains(o)));
             *s.nav.refused.lock().expect("refused") = refused;
             s.remember();
-            (lines, choices, header, welcome, welcome_shown, opened_pill, blank)
+            (lines, choices, header, welcome, welcome_shown, blank)
         };
         self.list_wanted();
-        let (lines, choices, header, welcome, welcome_shown, opened_pill, blank) = published;
+        let (lines, choices, header, welcome, welcome_shown, blank) = published;
         let n = w.global::<crate::Navigator>();
         n.set_rows(ModelRc::new(VecModel::from(lines)));
         n.set_ancestors(ModelRc::new(VecModel::from(choices)));
@@ -119,8 +118,6 @@ impl Ctl {
         n.set_blank_detail(blank.1.into());
         n.set_welcome(ModelRc::new(VecModel::from(welcome)));
         n.set_welcome_shown(welcome_shown);
-        n.set_opened_title(opened_pill.0.into());
-        n.set_opened_help(opened_pill.1.into());
         self.publish_catch_up();
         // A volume mounted under another name moves no tile, so the banner's lead is looked for here too.
         self.look_for_lead();

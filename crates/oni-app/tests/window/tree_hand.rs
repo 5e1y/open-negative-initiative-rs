@@ -121,8 +121,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
 
     // `FilmRow.title`: a name row shows the whole file name; a thumbnail its stem.
     assert!(rows(&lib).iter().any(|r| r.thumb && r.title == "A01"), "a thumbnail is captioned by its stem");
-    lib.invoke_tree_layout_next();
-    lib.invoke_tree_layout_next();
+    lib.invoke_tree_layout_picked(0);
     rig.pump();
     assert!(rows(&lib).iter().any(|r| !r.thumb && r.title == "A01.tif"), "twin: a name row keeps the extension");
 
