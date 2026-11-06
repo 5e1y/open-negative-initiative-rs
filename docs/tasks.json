@@ -6423,5 +6423,12 @@
     "title": "The merged wave's checks: one name per key, the guides in their own file, words as shown",
     "status": "done",
     "detail": "Crop and its measuring window both had a key named Copy and one named Paste, so a screen reader heard each twice: the window's keys now carry their tooltip as their name. The guides over a photo leave base.slint, past its 400 lines, for guides.slint. A spread field's name keeps its own height, centred on its row, so the export's figures measure as a label beside the glass. The straighten is wired on one line as every slider. The checks read Restore and Undo as shown, capitals being the keycaps' alone."
+  },
+  {
+    "id": 1305,
+    "type": "docs",
+    "title": "The art direction's model is the lab scanner's console",
+    "status": "done",
+    "detail": "Owner's call: ONI's analogue nods come above all from the old lab film scanners' consoles, their mechanical keyboards and physical faders, hence the keycaps and the slider tracks; a film camera is a lesser nod. UI Art direction and UX Play say so."
   }
 ]

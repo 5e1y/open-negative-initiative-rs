@@ -140,7 +140,7 @@ The finish from one step to the next.
 
 ## 13. Play
 
-Handling the app is a pleasure of its own, like a camera's mechanics in the hand.
+Handling the app is a pleasure of its own, like a lab scanner's mechanical keys and faders under the hand.
 
 - Press and release, travel, springs, detents and clicks on keys, sliders and levers; small rewards for
   touching things, an invitation to fiddle.
