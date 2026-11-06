@@ -6080,5 +6080,12 @@
     "title": "The space's note stands in no conditional block, so Quality keeps one step under the profile keys",
     "status": "done",
     "detail": "Evaluation (UI Spacing): Quality stood 3 pt under Load a Profile…, where other groups keep 16 pt. Measured on the headless window: the Space field and its two-line note sat in SpaceField's `if !compact` block, and Slint 1.18.1 sizes a block shown on a condition with the wrapped words inside it on one line, so the field was given 16 pt less than it drew and the keys ran onto Quality; the same field shown on no condition is sized right. The panel now lays the Space field on no condition, its tabs shared with the chip as SpaceTabs; the profile's trouble and the choice still to make, which wrapped in conditional blocks of their own, are the one note under the tabs, written by Rust (space-note replaces purpose, profile-note and pending-note), so a pending Custom no longer shows P3's purpose; the news badge leaves no empty row and gap when there is none; the chip's popover shows the tabs, their note and both profile keys in every space. The export_panel check asserts one step from the two-line note to the keys and from the keys to Quality, on P3 and on Custom; its twin, the field put back in a conditional block of SpaceField, fails."
+  },
+  {
+    "id": 1262,
+    "type": "fix",
+    "title": "The export's EXIF fields lie on the panel's ground, where their faces show",
+    "status": "done",
+    "detail": "Evaluation (UI Clarity): under the picture the placeholder 'Your name' read as a value. The fields stood on the canvas card, whose ground is the fields' own face colour, so no face showed and a placeholder sat like a fact in a table. Each line's eight fields now lie on a flat rounded block of the panel's ground (Surface gains `rounded`, Radius.card), as every other field of the app does, so each face shows dark and a placeholder reads as the hint inside it. The export_panel check reads the drawn pixels: the Artist field's face differs from the ground beside it; twin: the canvas has the face's colour, and the block set on it fails the check."
   }
 ]
