@@ -172,6 +172,11 @@ impl EditorStore {
         self.open.as_ref().is_some_and(|o| o.writable)
     }
 
+    /// The open frame's settings are those its sidecar holds, written since or read as it opened.
+    pub fn kept(&self) -> bool {
+        self.open.as_ref().is_some_and(|o| o.writable && o.persisted.as_ref() == Some(&self.settings))
+    }
+
     /// The open frame's original cannot be seen, so no hand moves its settings.
     pub fn inert(&self) -> bool {
         self.open.as_ref().is_some_and(|o| o.absent)

@@ -6759,5 +6759,19 @@
     "title": "The dyes say where they come from: the editor names the film stock or flags another family, the roll card reads its frames",
     "status": "done",
     "detail": "UI evaluation (Clarity): on roll #8 the editor's Dye Separation showed Kodak while the gallery's card said Dyes: Fuji. The render uses each frame's separationFamily (Kodak C-41 on all 25 sidecars of the test copy); the card printed the family its stock, Fujifilm Fujicolor, names, from a marker written before the stock wrote its dyes (#831), so it claimed what no frame held. Render untouched; whether roll #8 should run on Fuji's dyes is the owner's call. Now the card reads the dyes its frames unmix off their sidecars, in the read that already finds the roll's measure, the open photo by its settings in memory and read again when they move: Dyes: Fuji, or Dyes: Kodak; the stock names Fuji. Under the Dyes tabs a note says From the film stock, <stock>, Not the film stock's: <stock> names <family>, or No film stock names these dyes. The block rests on the stock's family: its reset key shows only off it and lands back on it, the mode's own when no stock names one. Checks: store the_dye_separation_reset_lands_on_the_stocks_dyes_and_clears_the_dose_and_the_hand, roll_tab the_dyes_say_whether_they_are_the_film_stocks, roll_card the_card_reads_the_dyes_the_frames_unmix_in_the_tabs_order and the_card_names_the_frames_dyes_and_the_stocks_when_they_differ, each with its twin; window roll_card (Kodak picked under Superia flagged in the block and on the card, the reset back on Fuji) and roll_tab (the tabs follow a pick, an undo and a reset). English, French and Spanish."
+  },
+  {
+    "id": 1370,
+    "type": "interface",
+    "title": "The filmstrip numbers each frame on its roll, and the status bar says its place",
+    "status": "done",
+    "detail": "Evaluation, UX Robustness: the editor's filmstrip named frames by file alone, so on a long roll a frame's number was lost. The tree's walk lends each photo its rank among its folder's own photos, the number the contact sheet prints; a thumbnail's caption and a name row show it before the name in the tertiary ink. The status bar's line reads the open frame's name, then Frame 7 of 24, then its size. The archive finds a folder's roll in one place for the tree, the contact sheet and the line."
+  },
+  {
+    "id": 1371,
+    "type": "interface",
+    "title": "The status bar says Settings saved once the sidecar holds what the frame shows",
+    "status": "done",
+    "detail": "Evaluation, UX Trust: nothing showed that an edit was kept. The editor's status line ends with Settings saved while the open frame's sidecar holds its settings, written since or read as it opened; an edit hides it until its write lands 400 ms after the hand rests, and a read-only frame never shows it. No timer: the words follow the store's own state, set after each change and each deferred write."
   }
 ]

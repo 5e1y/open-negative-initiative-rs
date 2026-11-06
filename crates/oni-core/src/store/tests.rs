@@ -112,11 +112,17 @@ fn an_untouched_frame_gains_no_sidecar_and_a_rested_edit_writes_one() {
     let written = sidecar::url_for(&dir.join("frame.tif"));
     store.flush();
     assert!(!written.exists());
+    assert!(!store.kept(), "an untouched frame has no sidecar holding its settings");
     store.apply_at(Command::Step { knob: Knob::Texture, by: 0.4 }, 0.0);
     assert_eq!(store.flush_if_due(0.1), None);
     assert!(!written.exists(), "a hand still moving writes nothing");
+    assert!(!store.kept(), "an edit not written yet is not kept");
     store.flush_if_due(1.0);
     assert!(written.exists());
+    assert!(store.kept());
+    // Twin: the next edit is not kept until its own write.
+    store.apply_at(Command::Step { knob: Knob::Texture, by: 0.4 }, 2.0);
+    assert!(!store.kept());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -252,6 +258,7 @@ fn a_frame_whose_original_is_gone_opens_read_only_and_writes_nothing() {
     std::fs::create_dir_all(dir.join("Unplugged")).unwrap();
     store.flush();
     assert!(!sidecar::url_for(Path::new(&gone)).exists(), "the disk come back takes no sidecar from it");
+    assert!(!store.kept(), "a read-only frame never says its settings are kept");
     // Twin: an original present without a sidecar is a new photo, open to edits.
     let present = dir.join("P2.RW2").to_string_lossy().into_owned();
     std::fs::write(&present, b"").unwrap();

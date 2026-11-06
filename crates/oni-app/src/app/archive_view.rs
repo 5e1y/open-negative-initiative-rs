@@ -278,6 +278,7 @@ impl Ctl {
                     head: head.into(),
                     tail: tail.into(),
                     caption: r.caption.into(),
+                    number: r.number.map(|n| n.to_string()).unwrap_or_default().into(),
                     kind: r.kind,
                     stock: stock.clone().unwrap_or_default(),
                     has_stock: stock.is_some(),

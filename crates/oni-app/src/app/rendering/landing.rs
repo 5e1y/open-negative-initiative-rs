@@ -56,10 +56,17 @@ impl Ctl {
         w.window().request_redraw();
         // The photo's kept size, the crop's own figure, never the render's reduced extent scaled back up.
         let status = {
-            let name = self.state.borrow().open_path().map(stem).unwrap_or_default();
+            let (name, place) = {
+                let s = self.state.borrow();
+                let path = s.open_path();
+                // Its place on the roll, which a name alone loses on a long one.
+                let place = path.and_then(|p| s.archive.as_ref()?.place(p));
+                let place = place.map(|(number, count)| format!(" · {}", tr!("Frame {number} of {count}", number = number, count = count)));
+                (path.map(stem).unwrap_or_default(), place.unwrap_or_default())
+            };
             match self.kept_size() {
-                Some((w, h)) => format!("{name} · {w:.0} × {h:.0}"),
-                None => format!("{name} · {width} × {height}"),
+                Some((w, h)) => format!("{name}{place} · {w:.0} × {h:.0}"),
+                None => format!("{name}{place} · {width} × {height}"),
             }
         };
         w.global::<Canvas>().set_busy(false);
