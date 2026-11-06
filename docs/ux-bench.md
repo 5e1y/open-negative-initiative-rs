@@ -140,10 +140,9 @@ The finish from one step to the next.
 
 ## 13. Play
 
-Handling the app is a pleasure of its own, like a lab scanner's mechanical keys and faders under the hand.
+Handling the app is a pleasure of its own: a few controls answer the hand in a deeply satisfying way.
 
-- Press and release, travel, springs, detents and clicks on keys, sliders and levers; small rewards for
-  touching things, an invitation to fiddle.
+- Small rewards for touching things, a press that gives and a release that answers, kept discreet.
 - The play never slows the work nor hides a state.
 - **Excels:** the controls are fun to touch and make the work quicker. **Fails:** dead controls with no
   feedback, or gimmicks that delay the hand.

@@ -77,16 +77,14 @@ Each category says what it judges, what to look at, and the two ends of its scal
 
 ## 8. Art direction
 
-- ONI is a digital tool and owns it, while its look nods to the analogue medium it serves, above all to the
-  consoles of the lab's film scanners: mechanical keys, physical faders, levers, metal, film canisters, playful.
-  A film camera is a lesser nod.
-- Large surfaces stay flat; texture belongs to small pieces only, such as labels and medals.
-- The mix is mastered and balanced: each analogue piece earns its place, with the same care and weight on
-  every screen, never clustered in one corner while another reads as generic software.
-- One analogue vocabulary, held with the same care everywhere; the nods never compete with the photo, never
-  tint it and never blur what a control says.
-- **Excels:** handling it feels like working a well-made scanner console. **Fails:** generic flat software, or
-  kitsch that clutters the screen or biases the photo.
+- Using ONI feels like using ordinary digital software, perfectly designed, with a few deeply satisfying
+  reminders of the real world.
+- A fair balance between pure, minimal flat 2D and those reminders, such as a discreet reflection, a shadow or
+  a key that presses; the reminders stay few, small and light.
+- The same balance on every screen, never gathered in one corner while another reads as bare software.
+- The reminders never compete with the photo, never tint it and never blur what a control says.
+- **Excels:** a clean modern tool whose few tactile touches delight. **Fails:** characterless flat software, or
+  an imitation of hardware worn as a costume.
 
 ## 9. Overall
 

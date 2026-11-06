@@ -6430,5 +6430,12 @@
     "title": "The art direction's model is the lab scanner's console",
     "status": "done",
     "detail": "Owner's call: ONI's analogue nods come above all from the old lab film scanners' consoles, their mechanical keyboards and physical faders, hence the keycaps and the slider tracks; a film camera is a lesser nod. UI Art direction and UX Play say so."
+  },
+  {
+    "id": 1306,
+    "type": "docs",
+    "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
+    "status": "done",
+    "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
   }
 ]
