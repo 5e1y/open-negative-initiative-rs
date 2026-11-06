@@ -215,11 +215,13 @@ impl EditorStore {
         self.measured.clear();
     }
 
-    /// The library's paths: a roll whose frames are all still there stays found, as Swift keeps it;
-    /// one that lost a frame, moved or gone, is scanned again on the next ask.
+    /// The library's paths, which a roll's frames are found among: the same paths keep every roll
+    /// found, so a lay reads no sidecar; any path come or gone, another folder's, scans them again.
     pub fn set_archive_paths(&mut self, paths: Vec<String>) {
-        let held: std::collections::HashSet<&String> = paths.iter().collect();
-        self.measured.retain(|_, members| members.iter().all(|p| held.contains(p)));
+        let held = |p: &[String]| p.iter().cloned().collect::<std::collections::HashSet<String>>();
+        if held(&paths) != held(&self.archive.paths) {
+            self.measured.clear();
+        }
         self.archive.paths = paths;
     }
 
