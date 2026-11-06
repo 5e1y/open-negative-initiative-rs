@@ -23,23 +23,27 @@ fn drawn(rig: &common::Rig, w: u32) -> (usize, Vec<u16>) {
     (w, buffer.into_iter().map(|p| p.0).collect())
 }
 
-/// Along the row just under the top edge of the bar's last key, from the window's right edge
-/// leftwards, the runs of key and of ground: four keys with their gaps, then the room before them.
+/// Along the first row under the top edges of the bar's last four keys, a keycap and the flat keys
+/// standing on its middle, from the window's right edge leftwards, the runs of key and of ground: four
+/// keys with their gaps, then the room before them.
 fn runs(w: usize, px: &[u16]) -> Vec<usize> {
     let at = |x: usize, y: usize| px[y * w + x];
     let x = w - 30;
     let ground = at(x, 44);
     let top = (44..120).find(|&y| at(x, y) != ground).expect("a key at the bar's end") + 2;
-    let key = |i: usize| at(i, top) != ground;
-    let mut out = Vec::new();
-    let mut i = (x..w).find(|&i| !key(i)).unwrap_or(w);
-    while out.len() < 8 && i > 0 {
-        let kind = key(i - 1);
-        let start = (0..i).rev().find(|&j| key(j) != kind).map_or(0, |j| j + 1);
-        out.push(i - start);
-        i = start;
-    }
-    out
+    let along = |y: usize| {
+        let key = |i: usize| at(i, y) != ground;
+        let mut out = Vec::new();
+        let mut i = (x..w).find(|&i| !key(i)).unwrap_or(w);
+        while out.len() < 8 && i > 0 {
+            let kind = key(i - 1);
+            let start = (0..i).rev().find(|&j| key(j) != kind).map_or(0, |j| j + 1);
+            out.push(i - start);
+            i = start;
+        }
+        out
+    };
+    (top..top + 12).map(along).find(|r| r.len() == 8).expect("a row crossing the four keys")
 }
 
 pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {

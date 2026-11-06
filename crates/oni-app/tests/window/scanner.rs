@@ -156,7 +156,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.pump();
     // D's rail slid by the hand, a pixel a move: it lands on every step, half a unit apart, and never
     // jumps a whole unit; the readout follows on halves.
-    let (y, pressed) = (525.0, slint::LogicalPosition::new(1110.0, 525.0));
+    let (y, pressed) = (491.0, slint::LogicalPosition::new(1110.0, 491.0));
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: pressed });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: pressed, button: PointerEventButton::Left });
     let mut landed = Vec::new();

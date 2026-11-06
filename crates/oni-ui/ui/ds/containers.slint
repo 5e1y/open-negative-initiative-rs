@@ -8,15 +8,26 @@ import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
 import { Reach, Reaches } from "reach.slint";
 
-// The "?" beside a block's title: a ghost key whose note shows as a card.
-export component HelpMark inherits Button {
-    kind: ButtonKind.ghost;
-    has-icon: true;
-    icon: Icons.question;
-    glyph-size: SectionStyle.help-mark;
-    width: SectionStyle.help-mark + 2 * Space.xxs;
+// The "?" beside a block's title: a ghost key whose note shows as a card. It lays out at its glyph's size
+// and catches the hand over a small key's square around it, so a line keeps its height.
+export component HelpMark inherits Rectangle {
+    in property <string> note;
+    in property <string> demo;
+    width: SectionStyle.help-mark;
     height: self.width;
-    accessible-label: @tr("What this block does");
+    Button {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: self.height;
+        size: ButtonSize.mini;
+        kind: ButtonKind.ghost;
+        has-icon: true;
+        icon: Icons.question;
+        glyph-size: SectionStyle.help-mark;
+        note: root.note;
+        demo: root.demo;
+        accessible-label: @tr("What this block does");
+    }
 }
 
 // `DSSection`: a rule above every block, then a title row with its note, reset and fold keys.
@@ -162,7 +173,7 @@ export component Sheet inherits Rectangle {
                         padding-left: SheetStyle.padding;
                         padding-right: SheetStyle.padding;
                         Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
-                        Button { text: root.exit; clicked => { root.dismissed(); } }
+                        Button { text: root.exit; keycap: true; clicked => { root.dismissed(); } }
                     }
                     if root.header == SheetHeader.bar: Divider { }
                     @children

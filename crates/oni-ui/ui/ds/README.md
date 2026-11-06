@@ -37,26 +37,39 @@ states, reloads on each save and tunes `Depth` live; `scripts/ds-lab --shot FILE
 The app holds no showcase of its own, so its interface compiles without one. `probes.slint` holds the
 pieces the window checks click at fixed places (fields, a scrolled page, a keycap).
 
-## Keycaps
+## Words
 
-Every `Button` but the ghost is a `Keycap`: a raster of Swift's `KeycapStyle` that Rust draws when the
-window asks `Raster.keycap(KeycapLook)`. `oni_app::keycaps::serve` answers it on a window (the `Shell`
-does it for the main window and the console; a check building a window alone calls it);
-an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache by the look's numbers
-(oni-keycap's `look::Cache`, shared with oni-lab) draws a still key once and a pressed one once a frame.
+`Label` sets every word in Inter: a block's title (`section`) a step heavier than the words under it, a
+note in the secondary ink, the tertiary ink at AA's 4.5:1 on the panel's ground. `fonts/Inter.ttf` maps
+its digits and its + − × to their tabular forms (the cmap edited once, offline), so a value keeps its
+width as it changes, on screen and on a contact sheet's numbers.
 
-- **Sizes** (`ButtonSize`): `regular` is `DSPanelButton`'s standard 40 pt key, `plate` its 52 pt `.plate`
-  key (the panels' and footers' plates), `small` the same small
-  variant at 24, `mini` the 26 pt mini key of the sections and the header plates, `key` the scanner's
-  46 pt key; a stepped slider's keys are `key`s at `SliderStyle.step-key` with a larger `legend-size`.
-- **Colour**: a kind's tint or `fill` is the cap's albedo, else the keycap grey; `on` makes a plain key
-  pale (`DSPanelButton(pale:)`) and rings a tinted one. The legend inks dark on a light cap, light on a
-  dark one (`KeyInk.light`); a disabled key fades its legend alone.
-- **Press** (`KeycapPress`): the hand sinks the cap `Depth.hover-press`, a press sinks it whole in
-  `Depth.press-time`, held down `Depth.min-hold` however short the tap, risen in `Depth.release-time`.
-- **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`), as
-  tall as they are, its corner the cap's outer one (`Depth.corner` × the variant's factor), `mini` for a
-  plate of mini keys; without `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
+## Keys
+
+Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`), its glyph and word on
+it. A `Keycap` stands only where the use site sets `keycap: true`: the mode switch (EDITOR, GALLERY), a
+screen's commit (EXPORT, ADD FOLDER…, PREPARE ROLL, the prepare footer's NEXT, every DONE) and the
+automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE). The cap
+is a raster of Swift's `KeycapStyle` that Rust draws when the window asks `Raster.keycap(KeycapLook)`;
+`oni_app::keycaps::serve` answers it on a window (the `Shell` does it for the main window and the
+console; a check building a window alone calls it); an unserved window, as slint-viewer's, shows each
+cap's flat stand-in. One cache by the look's numbers (oni-keycap's `look::Cache`, shared with oni-lab)
+draws a still key once and a pressed one once a frame.
+
+- **Sizes** (`ButtonSize`): `regular` the 32 pt flat key (40 pt as a keycap), `plate` a panel's or a
+  footer's at the same height, `mini` the 24 pt key of a section's header, a row or the canvas's header.
+  A worded key is never narrower than tall.
+- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent; `destructive`,
+  a plain key whose glyph or word takes a light red (`Colour.destructive-ink`); `ghost`, a glyph alone on no face. Colour says a
+  meaning, never which key it is: no other tint.
+- **States**: the hand lights the face (`ButtonStyle.veil`), a press a step more and, on a keycap, sinks
+  the cap (`KeycapPress`: `Depth.hover-press` under the hand, the whole way in `Depth.press-time`, held
+  `Depth.min-hold`, risen in `Depth.release-time`); `on` lights the face with the accent sunk into the
+  ground (`ButtonStyle.on`) and keeps the key's glyph, or rings a swatch (`fill`); out of reach, the whole
+  key fades, face and glyph.
+- **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
+  under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
+  `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
 
 ## Fields
 
@@ -71,16 +84,18 @@ holds the focus (`focused-look` forces it). Disabled, the words fade and the chr
   the hollow led out by its padding so the name typed stays where the title stood.
 - **`SizeFields`, `DateFields`**: two or three centred entries in one hollow a keycap tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
-- **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it.
+- **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it. A help
+  mark lays out at its glyph's size and catches the hand over a small key's square, so a line keeps its height.
 
 ## Sliders and plots
 
 - **Rail** (`DSRail` in `dsRecessed`): the track grey or the bipolar gradient, the fill on its own round, then
   `Inward`'s shade, the black edge and the lit rim (`SliderStyle.rim`) over an opaque `under`; `vertical` runs low to high upwards.
-- **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, level walls, no shadow, edged in black, two
-  white grip lines centred on its face. It grows by a scale on the rise spring, so its raster is drawn once.
+- **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls, no shadow, edged in
+  black, two white grip lines centred on its face. It grows by a scale on the rise spring, so its raster is drawn once.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
-  the hand; the stepped slider's knob carries its grip too.
+  the hand; the stepped slider's knob carries its grip too, its − and + flat keys as tall as the knob, the
+  rail beside them showing each end's colour.
 - **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
   `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
 
@@ -91,10 +106,12 @@ The tabs, the switch, the picker and the medals stand on the depths as the lab's
 - **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a field's, and one
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
   adds the accent dot, `swatches` draws colours for words, `dimmed` fades a tab that changes something else.
-- **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds.
-- **`Picker`**, field face (`DSPicker`): the value in a hollow, the chevron on a mini `Keycap` that sinks
-  `Depth.hover-press` under the hand and whole on a press; the pill and chip faces keep the hover ground.
-- **`Medal`** (`DSFoil.medal`): spun metal drawn by gradients; `MedalPicker` shrinks a pressed medal on the spring.
+- **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds,
+  on the middle of a small key's height so the hand finds it as a key.
+- **`Picker`**, field face (`DSPicker`): the value in a hollow, a chevron at its end, the hollow lit under the
+  hand as a flat key's face; the pill and chip faces keep the hover ground.
+- **`Medal`**: a flat disc of its metal's colour; `MedalPicker` lights the medal under the hand, shrinks a
+  pressed one on the spring and catches the hand over a small key's square round each.
 
 ## Surfaces
 
@@ -104,8 +121,8 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   cast shade; `sheet` lengthens the shadow (`Outward.lift` 1). The sheets, the notices, the banners, the
   slid columns and the popups stand on it. **Popover** hangs a `Raised` under its tail (`DSPopoverShape`),
   `tail-x` below zero centring it; `PopupPanel` draws one, a menu without a tail.
-- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (its ink glowing) and the passes'
-  reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
+- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (a count in the words' own ink) and
+  the passes' reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
   gallery's many tiles keep their flat well.
 - **Past the bounds**: an `Inward`'s lit lip reaches `Depth.lip-reach` under it and an `Outward`'s shadow
   falls around it, as Swift's. A `Section` clips only while folded; a scrolled column ending on a well
@@ -114,6 +131,8 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
   (a menu's rule) keeps a flat line.
+- **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
+  line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
   clip, no layer), the rule, the embossed ink; the glint sweeps once on `glinting` or a hovered note, clipped
   only while it crosses; `glint-at` holds it still. **Lamp** is `DSLamp`, at a key's legend's top right.

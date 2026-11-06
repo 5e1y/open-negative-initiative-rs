@@ -4,6 +4,7 @@ import { ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
 import { Icons } from "../ui/ds/icons.slint";
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
+import { Button, ButtonGroup, ButtonKind, ButtonSize } from "../ui/ds/controls.slint";
 
 // `KeycapPress`: down on the press, up once `min-hold` has passed; a hover sinks it `hover-press`.
 // `force` at 0 or above pins the depth, for a still state; `enabled` false fades the legend alone.
@@ -188,6 +189,36 @@ export component KeysPage inherits Rectangle {
             padding: 40px;
             spacing: 36px;
             alignment: start;
+            // The app's own keys as its screens lay them: flat, a keycap only where `keycap` asks for one.
+            Section {
+                title: "THE APP'S KEYS";
+                source: "ui/ds/button.slint · a flat face lit by the hand and by on; keycaps switch the mode, commit or run an automatic action";
+                StateRow {
+                    label: "flat";
+                    Button { text: "COPY"; }
+                    Button { text: "PASTE"; enabled: false; }
+                    Button { has-icon: true; square: true; icon: Icons.correction; }
+                    Button { has-icon: true; square: true; icon: Icons.correction; on: true; }
+                    Button { has-icon: true; square: true; icon: Icons.remove; kind: ButtonKind.destructive; }
+                    Button { text: "OK"; kind: ButtonKind.accent; }
+                }
+                StateRow {
+                    label: "plate, mini";
+                    ButtonGroup { plate: true;
+                        Button { text: "FILM"; on: true; }
+                        Button { text: "BASE"; }
+                        Button { text: "FLAGS"; enabled: false; }
+                    }
+                    Button { size: ButtonSize.mini; text: "RESET"; }
+                    Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.chevron-down; }
+                }
+                StateRow {
+                    label: "keycap";
+                    Button { keycap: true; text: "GALLERY"; }
+                    Button { keycap: true; text: "EXPORT"; kind: ButtonKind.accent; }
+                    Button { keycap: true; text: "REMOVE"; enabled: false; }
+                }
+            }
             // Every size the Swift app gives a keycap: its variant (factor, legend), its height, and where.
             Section {
                 title: "SIZES";

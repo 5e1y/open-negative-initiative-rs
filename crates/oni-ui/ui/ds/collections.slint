@@ -286,8 +286,8 @@ export component TileView inherits Rectangle {
             r: Radius.card;
             ground: Tones.ground(root.behind);
         }
-        if root.selected && !root.outset: SelectionRing {
-            tone: root.flagged ? SelectionTone.destructive : SelectionTone.selected;
+        if (root.selected || root.hovered) && !root.outset: SelectionRing {
+            tone: root.flagged ? SelectionTone.destructive : root.selected ? SelectionTone.selected : SelectionTone.hovered;
         }
     }
     // Outside the picture's clip.

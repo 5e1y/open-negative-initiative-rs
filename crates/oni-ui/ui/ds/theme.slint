@@ -14,7 +14,8 @@ export global Colour {
     out property <color> raised: DS.palette-keycap;
     out property <color> ink: DS.system-primary;
     out property <color> ink-secondary: DS.palette-text-secondary;
-    out property <color> ink-tertiary: DS.palette-text-tertiary;
+    // The quietest words, white at 53 %: AA's 4.5:1 on the panel's ground, small type's edges included.
+    out property <color> ink-tertiary: #ffffff87;
     out property <color> ink-on-fill: DS.palette-text-on-fill;
     out property <color> ink-on-light: DS.palette-text-on-light;
     out property <color> warning: DS.palette-warning;
@@ -26,9 +27,9 @@ export global Colour {
     out property <color> on: DS.system-primary;
     out property <color> caution: DS.tint-undoable;
     out property <color> destructive: DS.tint-destructive;
+    // A light red: a destructive key's glyph or word, AA's 4.5:1 on a key's face.
+    out property <color> destructive-ink: #ff6961;
     out property <color> confirm: DS.tint-confirm;
-    // `DS.Tint.update`: the export slot's face while an update waits.
-    out property <color> update: DS.tint-update;
     out property <color> separator: DS.palette-separator;
     out property <color> guide: DS.palette-guide;
     out property <color> guide-faint: DS.palette-guide-faint;
@@ -64,7 +65,7 @@ export global Colour {
     out property <color> channel-yellow: #ffd60a;
     out property <color> channel-green: #30d158;
     out property <color> channel-magenta: #ff00ff;
-    // `DSMedalPicker`'s three foils as flat colours, index 0 being no medal.
+    // The medals' three metals as flat colours, index 0 being no medal.
     out property <[color]> medal: [transparent, #b08d57, #c0c0c0, #e6c200];
     // The system tooltip's ground, opaque enough to read over a photo.
     out property <color> tip: #2c2c2cf2;
@@ -154,34 +155,27 @@ export global ButtonStyle {
     out property <length> small-padding: Space.s;
     // A spaced row's keys apart, Swift's `DS.Space.sm` between keys off a plate.
     out property <length> group-gap: Space.s;
-    out property <length> plate-inset: Stroke.hairline;
     out property <length> icon: DS.control-icon-size;
     out property <length> small-icon: DS.control-toggle-glyph;
+    out property <length> mini-glyph: DS.control-icon-size * 0.75;
     out property <length> tracking: Stroke.hairline;
     out property <length> lamp: DS.control-lamp-size;
-    // `KeycapPlate`'s socket under keys set flush, `KeycapStyle.socketColor`.
-    out property <color> bezel: DS.system-black;
-    // The keycaps (`DSPanelButton`): the standard 40 pt key and the mini 26, a plain grey cap, a toggled
-    // one pale (`pale: true`), each length at `Keycap.Variant`'s factor of the large key's.
+    // A flat key's face, the keycap's grey laid flat; a plate of flat keys is one such face.
+    out property <color> face: Colour.raised;
+    // The lit face of a key that is on, the accent sunk into the ground, on a flat key and a cap alike.
+    out property <color> on: Colour.accent.mix(Colour.ground, 0.4);
+    // The hand's light over a face, and its press, a step brighter.
+    out property <color> veil: Colour.hover;
+    out property <color> veil-pressed: #ffffff26;
+    // The keycap (`DSPanelButton`), its standard 40 pt key and its grey, kept for the few keys that
+    // switch the mode, commit a screen or run an automatic action.
     out property <length> cap-height: DS.control-keycap-height;
-    out property <length> mini-height: DS.control-keycap-mini-height;
-    // `DSPanelButton(height: .plate)`: a panel's or a footer's key on its plate.
-    out property <length> plate-height: DS.control-keycap-plate-height;
-    out property <float> small-factor: 0.525;
-    out property <float> mini-factor: 0.38;
     out property <color> cap: DS.palette-keycap;
-    out property <color> pale: DS.palette-text-on-fill;
-    // `KeycapStyle.paddingH` 32 and `iconSize` 28 at each variant: a word's room either side, a glyph's size.
-    out property <length> cap-padding: 32px * ButtonStyle.small-factor;
-    out property <length> mini-padding: 32px * ButtonStyle.mini-factor;
-    out property <length> cap-glyph: 28px * ButtonStyle.small-factor;
-    out property <length> mini-glyph: 28px * ButtonStyle.mini-factor;
-    // The legend: `Keycap.Variant.fontSize`, bold, 0.5 pt apart; a disabled key fades it alone.
+    // The legend: `Keycap.Variant.fontSize`, bold, 0.5 pt apart, on every key.
     out property <length> legend: 10.5px;
     out property <length> mini-legend: 9px;
     out property <int> legend-weight: 700;
     out property <length> legend-tracking: 0.5px;
-    out property <float> legend-disabled: 0.3;
 }
 
 export global SectionStyle {
@@ -189,8 +183,8 @@ export global SectionStyle {
     // In a sheet, flush with its title and keys, closer under the title.
     out property <length> flush: 0px;
     out property <length> sheet-before: Space.m;
-    out property <length> before: Space.l;
-    out property <length> after: Space.l;
+    out property <length> before: Space.m;
+    out property <length> after: Space.m;
     out property <length> gap: Space.s;
     out property <length> help-mark: DS.control-help-mark-size;
 }
@@ -323,16 +317,9 @@ export global ShellStyle {
     out property <length> info-description: DS.control-project-description-height;
 }
 
-// `DS.Scanner`: the Lab keypad's keys and bands, the face bar, the scanner's screen.
+// `DS.Scanner`: the Lab keypad's bands, the face bar, the scanner's screen.
 export global ScannerStyle {
     out property <length> face-bar: DS.control-mode-bar-width;
-    out property <length> legend: DS.scanner-key-legend-size;
-    out property <length> key-padding: DS.scanner-key-padding-h;
-    // `LabKeyboard`'s 46 pt key.
-    out property <length> key-height: DS.scanner-key-height;
-    // `LabKeyboard.cap`'s two tones: the keycap's grey, and the canvas's dark.
-    out property <color> cap-light: DS.palette-keycap;
-    out property <color> cap-dark: DS.palette-canvas;
     out property <color> band-dark: DS.scanner-band-dark;
     out property <color> band-light: DS.scanner-band-light;
     out property <color> band-red: DS.scanner-band-red;

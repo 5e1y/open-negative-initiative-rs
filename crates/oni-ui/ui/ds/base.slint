@@ -1,11 +1,13 @@
 // The primitives every screen composes: text, glyphs, pictures, surfaces, rules and stacks.
+// Inter's digits and its + − × are mapped to their tabular forms, so a value keeps its width as it changes.
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, CardStyle, SplitStyle, ScannerStyle } from "theme.slint";
 import { Outward, Inward } from "depth.slint";
 
-// `note` is a block's wrapped line in the tertiary ink, the size of a value.
+// `note` is a block's wrapped line in the secondary ink, the size of a value; `section` a block's title,
+// a step heavier than the words under it.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
 // `on-warning` reads on the warning's band, `lcd` on the scanner's glass.
 export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution, on-warning, lcd }
@@ -74,7 +76,7 @@ export global Tones {
 // Every word on screen: its role sets the face and size, its tone the ink, unless it has an ink of its own.
 export component Label inherits Text {
     in property <TextRole> role: TextRole.label;
-    in property <Tone> tone: root.role == TextRole.note ? Tone.tertiary : Tone.primary;
+    in property <Tone> tone: root.role == TextRole.note ? Tone.secondary : Tone.primary;
     in property <color> ink: Tones.ink(root.tone);
     in property <bool> centred;
     // Letters set apart by the seal's tracking, as a stamp in capitals reads.
@@ -87,7 +89,7 @@ export component Label inherits Text {
         : root.role == TextRole.section ? Type.section
         : root.role == TextRole.heading ? Type.heading
         : Type.label;
-    font-weight: root.role == TextRole.button ? Type.strong : Type.regular;
+    font-weight: root.role == TextRole.button || root.role == TextRole.section ? Type.strong : Type.regular;
     letter-spacing: root.spaced ? DS.control-seal-tracking * 1px : root.role == TextRole.button ? ButtonStyle.tracking : 0px;
     color: root.ink;
     vertical-alignment: center;
@@ -156,18 +158,39 @@ export component Divider inherits Rectangle {
     }
 }
 
+// A guide drawn over a photo: its light line edged a line either side by the contrast shade, so it reads
+// on a bright sky as on a shadow.
+export component GuideLine inherits Rectangle {
+    in property <bool> vertical;
+    in property <length> line: Stroke.line;
+    in property <color> ink: Colour.guide;
+    in property <color> edge: Colour.contrast-edge;
+    property <length> band: root.line + 2 * Stroke.line;
+    Rectangle {
+        x: root.vertical ? (parent.width - self.width) / 2 : 0px;
+        y: root.vertical ? 0px : (parent.height - self.height) / 2;
+        width: root.vertical ? root.band : parent.width;
+        height: root.vertical ? parent.height : root.band;
+        background: root.edge;
+    }
+    Rectangle {
+        x: root.vertical ? (parent.width - self.width) / 2 : 0px;
+        y: root.vertical ? 0px : (parent.height - self.height) / 2;
+        width: root.vertical ? root.line : parent.width;
+        height: root.vertical ? parent.height : root.line;
+        background: root.ink;
+    }
+}
+
 // `NegativeView.splitDivider`: the compare split's guide, its before and after labels, a grab the
 // width of a handle; moving it only recomposites.
 export component SplitGuide inherits Rectangle {
     callback dragged(length);
     width: SplitStyle.grab;
-    Rectangle {
-        x: (parent.width - self.width) / 2;
-        width: grab.has-hover || grab.pressed ? Stroke.line + SplitStyle.grow : Stroke.line;
-        height: parent.height;
-        background: grab.has-hover || grab.pressed ? Colour.handle-active : Colour.guide;
-        drop-shadow-color: Colour.contrast-edge;
-        drop-shadow-blur: Stroke.emphasis;
+    GuideLine {
+        vertical: true;
+        line: grab.has-hover || grab.pressed ? Stroke.line + SplitStyle.grow : Stroke.line;
+        ink: grab.has-hover || grab.pressed ? Colour.handle-active : Colour.guide;
     }
     Label {
         text: @tr("before");

@@ -5,9 +5,10 @@ import { DS } from "tokens.slint";
 export global SliderStyle {
     in-out property <length> track: DS.control-track-height;
     in-out property <length> track-radius: DS.radius-track;
-    // `DS.Control.handleThickness` along the travel, `handleLength` across it; the row is the knob's height.
-    in-out property <length> knob-width: DS.control-handle-thickness;
-    in-out property <length> knob-height: DS.control-handle-length;
+    // Along the travel and across it, smaller than Swift's handle so the panel's sliders sit close; the
+    // row is the knob's height.
+    in-out property <length> knob-width: 20px;
+    in-out property <length> knob-height: 26px;
     out property <length> row: SliderStyle.knob-height;
     // `Keycap.Variant.small`: the knob is a small key, its walls level, its face the keycap grey.
     in-out property <float> knob-factor: 0.525;
@@ -18,12 +19,12 @@ export global SliderStyle {
     out property <color> knob-edge: DS.palette-track-line;
     // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
     out property <color> grip-ink: DS.palette-text-on-fill;
-    // The 1 pt `trackLine` edge round the knob, and round the rail and a plot screen at half strength
-    // as every well (`Depth.well-edge`), as opacities.
+    // The 1 pt `trackLine` edge round the knob, and round the rail and a plot screen as every well
+    // (`Depth.well-edge`), as opacities.
     in-out property <float> edge: 1;
-    in-out property <float> well-edge: 0.5;
-    // `dsRecessed`'s lit lower rim outside the hollow, at half Swift's 0.4: blurred 0.7, dropped 1.
-    in-out property <float> rim: 0.2;
+    in-out property <float> well-edge: 0.35;
+    // `dsRecessed`'s lit lower rim outside the hollow, under a third of Swift's 0.4: blurred 0.7, dropped 1.
+    in-out property <float> rim: 0.12;
     in-out property <length> rim-blur: 0.7px;
     in-out property <length> rim-drop: 1px;
     // `DS.Motion.rise`, the knob's grow, and `settle`, a value arriving from elsewhere.
@@ -36,9 +37,9 @@ export global SliderStyle {
     out property <length> label-gap: DS.space-xs;
     // `DS.Control.grabSize`: a handle's catch on a track several handles share.
     out property <length> grab: DS.control-grab-size;
-    // A stepped slider's − and + keys at a standard key's height, their sign larger than a word.
-    in-out property <length> step-key: DS.control-keycap-height;
-    in-out property <length> step-legend: 18px;
+    // A stepped slider's − and + keys as tall as its knob, their sign larger than a word.
+    in-out property <length> step-key: SliderStyle.knob-height;
+    in-out property <length> step-legend: 15px;
 }
 
 // The plots: the panel's main histogram and an editor's screen, its round and engraved quarters, then

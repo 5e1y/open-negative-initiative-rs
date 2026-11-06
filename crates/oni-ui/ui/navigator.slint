@@ -335,6 +335,7 @@ export component RootsCatchUpSheet inherits Sheet {
         alignment: end;
         Button {
             text: @tr("DONE");
+            keycap: true;
             clicked => { Navigator.catch-up-done(); }
         }
     }

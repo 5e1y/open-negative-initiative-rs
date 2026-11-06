@@ -263,6 +263,6 @@ export component PresetEditorSheet inherits Sheet {
         Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
         Button { text: @tr("Delete"); kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
         Rectangle { horizontal-stretch: 1; }
-        Button { text: @tr("Done"); clicked => { Presets.done(); } }
+        Button { text: @tr("Done"); keycap: true; clicked => { Presets.done(); } }
     }
 }

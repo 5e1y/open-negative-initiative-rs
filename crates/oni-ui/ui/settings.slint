@@ -194,6 +194,7 @@ export component SettingsSheet inherits Sheet {
     ButtonGroup { plate: true; align: GroupAlign.end;
         Button {
             text: @tr("DONE");
+            keycap: true;
             clicked => { AppSettings.close(); }
         }
     }

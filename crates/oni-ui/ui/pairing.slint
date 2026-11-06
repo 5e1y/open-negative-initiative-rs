@@ -48,6 +48,7 @@ export component PairingSheet inherits Sheet {
         }
         Button {
             text: @tr("DONE");
+            keycap: true;
             clicked => { Pairing.close(); }
         }
     }

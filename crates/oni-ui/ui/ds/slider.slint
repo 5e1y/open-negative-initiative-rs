@@ -2,7 +2,7 @@
 import { Colour, Space, Stroke, State, Motion, SliderStyle } from "theme.slint";
 import { Keycap, Inward } from "depth.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
-import { Look, Button, ButtonSize } from "button.slint";
+import { Look, Button } from "button.slint";
 
 // `level` and `ramp` light the rail up to the value and `metal` in brushed silver; `bipolar` is a
 // gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
@@ -147,9 +147,9 @@ export component ValueHeader inherits HorizontalLayout {
     Label { text: root.value; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
 }
 
-// A stepped slider's key beside its rail, in its end's colour: one step a click, three with ⇧.
+// A stepped slider's key beside its rail, which shows its end's colour: one step a click, three with ⇧.
 component StepKey inherits Button {
-    size: ButtonSize.key;
+    square: true;
     height: SliderStyle.step-key;
     width: self.height;
     legend-size: SliderStyle.step-legend;
@@ -223,7 +223,6 @@ export component Slider inherits VerticalLayout {
         spacing: Space.s;
         if root.stepped: StepKey {
             text: "−";
-            fill: root.low;
             help: root.minus-help;
             enabled: root.enabled;
             clicked => { root.step(root.field, self.shift ? -3 : -1); }
@@ -320,7 +319,6 @@ export component Slider inherits VerticalLayout {
         }
         if root.stepped: StepKey {
             text: "+";
-            fill: root.high;
             help: root.plus-help;
             enabled: root.enabled;
             clicked => { root.step(root.field, self.shift ? 3 : 1); }
