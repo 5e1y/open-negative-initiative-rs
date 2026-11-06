@@ -71,12 +71,14 @@ component Face inherits Rectangle {
         x: legend.x + legend.width + Space.s - self.width;
         y: (parent.height - root.legend) / 2;
         lit: root.lamp-lit;
+        colour: ButtonStyle.latch;
     }
 }
 
 // A key: a word, a glyph, or both. Flat unless `keycap`, which the few keys that switch the mode, commit
 // a screen or run an automatic action ask for: the hand sinks that cap a quarter, a press the whole way.
-// A press holds the key down `Depth.min-hold` however short the tap; `on` lights its face.
+// A press holds the key down `Depth.min-hold` however short the tap; `on` lights its face, and a
+// `latch` key's lamp too.
 export component Button inherits Rectangle {
     in property <string> text;
     in property <image> icon;
@@ -94,8 +96,9 @@ export component Button inherits Rectangle {
     // The widest word the key ever shows, so it keeps that width as its word changes.
     in property <string> widest;
     in property <length> fixed-width: 0px;
-    in property <bool> lamp-shown;
-    in property <bool> lamp-lit;
+    // A key that stays on until pressed again, as a mode's: a lamp beside its word, dark until `on` lights it,
+    // so the key tells it latches before it is pressed.
+    in property <bool> latch;
     in property <Look> look: Look.live;
     // `DSPanelButton.fills`: the key takes its share of the room; else it keeps its own width, though
     // a row of keys none of which fills still shares its room out, as a filling plate does.
@@ -145,12 +148,14 @@ export component Button inherits Rectangle {
     property <length> tracking: root.keycap ? ButtonStyle.legend-tracking : 0px;
     property <bool> worded: root.text != "";
     property <string> word: root.keycap ? root.text.to-uppercase() : root.text;
-    property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
-    // The glyph's ink: its own, the danger's red on a destructive key, else dark on a light face and
-    // light on a dark one; a ghost's lifts under the hand.
+    property <length> lamp-room: root.latch ? ButtonStyle.lamp + Space.xs : 0px;
+    // The hand or the keyboard on the key, the moment a destructive one shows its danger.
+    property <bool> reached: root.hovered || root.pressed || keys.has-focus;
+    // The glyph's ink: its own, the danger's red on a destructive key reached, else dark on a light face and
+    // light on a dark one; a ghost's lifts under the hand. At rest no red stands beside the photo.
     property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
         : root.ghost ? Tones.ink(root.hovered || touch.pressed ? Tone.primary : Tone.tertiary)
-        : root.kind == ButtonKind.destructive ? Colour.destructive-ink
+        : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
     height: root.mini ? ButtonStyle.small-height : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
     // Never narrower than tall, so a sign's key stays a square the hand can find.
@@ -212,8 +217,8 @@ export component Button inherits Rectangle {
             weight: root.weight;
             tracking: root.tracking;
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px) : 0px;
-            lamp-shown: root.lamp-shown;
-            lamp-lit: root.lamp-lit;
+            lamp-shown: root.latch;
+            lamp-lit: root.on;
         }
     }
     touch := TouchArea {

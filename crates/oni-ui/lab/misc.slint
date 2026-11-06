@@ -292,9 +292,9 @@ export component MiscPage inherits Rectangle {
                 source: "surfaces.slint, button.slint · DSLamp.swift:5 · on a key, AppBar.swift:25";
                 Cell {
                     caption: "live: click the key";
-                    Button { text: "Scan"; lamp-shown: true; lamp-lit: root.lamp-on; clicked => { root.lamp-on = !root.lamp-on; } }
+                    Button { text: "Scan"; latch: true; on: root.lamp-on; clicked => { root.lamp-on = !root.lamp-on; } }
                 }
-                Cell { caption: "key, dark"; Button { text: "Base"; lamp-shown: true; } }
+                Cell { caption: "key, dark"; Button { text: "Base"; latch: true; } }
                 Cell { caption: "dark"; Ground { Lamp { lit: false; } } }
                 Cell { caption: "lit, confirm"; Ground { Lamp { lit: true; } } }
                 Cell { caption: "lit, destructive"; Ground { Lamp { lit: true; colour: DS.tint-destructive; } } }

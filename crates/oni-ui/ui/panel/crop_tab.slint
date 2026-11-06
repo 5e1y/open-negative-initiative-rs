@@ -64,6 +64,7 @@ export component CropPane inherits Pane {
             size: ButtonSize.plate;
             text: Framing.armed ? @tr("Apply window") : @tr("Set window");
             on: Framing.armed;
+            latch: true;
             help: @tr("Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it.");
             clicked => { Framing.act(Act.window-arm); }
         }

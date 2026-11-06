@@ -102,7 +102,7 @@ component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     cross-axis-alignment: center;
-    // `centreKeys`: each family on its own plate, De-dust alone and never plated; a mode's key is on while it is.
+    // `centreKeys`: each family on its own plate, De-dust alone and never plated; a mode's key latches, lit while it is on.
     ButtonGroup { plate: true;
         Tool {
             compact: root.compact;
@@ -111,9 +111,10 @@ component EditorKeys inherits HorizontalLayout {
             icon: Icons.framing;
             on: PanelState.tab == 1;
             help: self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
+            latch: true;
             enabled: Bar.has-photo && Bar.single;
         }
-        Tool { compact: root.compact; action: Act.compare; word: @tr("COMPARE"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; enabled: Bar.has-photo; }
+        Tool { compact: root.compact; action: Act.compare; word: @tr("COMPARE"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; latch: true; enabled: Bar.has-photo; }
         SelectAll { compact: root.compact; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
@@ -145,6 +146,7 @@ component EditorKeys inherits HorizontalLayout {
         word: @tr("DE-DUST");
         icon: Icons.correction;
         on: PanelState.tab == 4;
+        latch: true;
         help: self.on ? @tr("Leave De-dust") : @tr("De-dust");
         enabled: Bar.has-photo && Bar.single;
     }

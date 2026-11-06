@@ -184,7 +184,7 @@ export component Row inherits Rectangle {
         // A menu holds no stock, so its glyph takes only its own width.
         if root.tree && !root.renaming: Rectangle {
             width: root.choice ? RowStyle.icon : RowStyle.slot;
-            opacity: root.away ? State.disabled : 1;
+            opacity: root.away ? State.missing : 1;
             if root.has-stock: StockIcon {
                 artwork: root.stock;
                 has-artwork: true;
@@ -207,14 +207,14 @@ export component Row inherits Rectangle {
         if !root.renaming: VerticalLayout {
             horizontal-stretch: 1;
             if root.tail == "": Label {
-                opacity: root.away ? State.disabled : 1;
+                opacity: root.away ? State.missing : 1;
                 text: root.title;
                 tone: root.ink;
                 overflow: elide;
             }
             // The head shrinks first, so the ellipsis falls before the tail.
             if root.tail != "": HorizontalLayout {
-                opacity: root.away ? State.disabled : 1;
+                opacity: root.away ? State.missing : 1;
                 alignment: start;
                 Label { text: root.head; tone: root.ink; overflow: elide; }
                 Label { text: root.tail; tone: root.ink; horizontal-stretch: 0; }

@@ -6297,5 +6297,33 @@
     "title": "The Measuring Window's copy and paste are worded, and its reset is the block's own RESET",
     "status": "done",
     "detail": "UI evaluation s-0abd2d65 (Iconography): copy and paste were words in the toolbar and in Crop but bare glyphs in the Measuring Window; the block's reset glyph also shared their plate, against the rule that a key which resets never shares a plate with one that keeps. The block now resets through the RESET every block carries on its title's row, shown while a window is set; Set window / Apply window spans the column, lit while armed; Copy and Paste share a plate alike below it, worded as Crop's. On two rows the French Appliquer la fenêtre, in capitals, never crowds the copy keys off the column. The block's note says Reset takes the window away and Copy and Paste carry it from one photo to another. Window check the_panels_switches_follow_their_owner_and_its_blocks_reset copies the window, presses the RESET on the Measuring Window's row (one, and Crop's still leaves the window) and asserts it gone, then Paste lays it back."
+  },
+  {
+    "id": 1280,
+    "type": "fix",
+    "title": "A key out of reach reads apart from a tab merely not chosen",
+    "status": "done",
+    "detail": "Evaluation round 2: a disabled key and an unselected tab or segment shared one grey, as PASTE and Scanner side by side in the editor's bar. Out of reach was a 0.4 opacity of the key's white ink, an idle label 0.55 of the primary ink: about 3.7:1 against 4.8:1 on the ground, no difference to the eye. State.disabled now has its own step, AppKit's disabled control ink at 0.25 (about 2.4:1), for every control that cannot act (keys, tabs, menu lines, pickers, readouts, preset cards); a missing original, a folder away and a frame left out keep the missing state's 0.4 as State.missing, their picture and name still read. A disabled switch's words fade with it instead of taking the secondary ink an idle label wears. The states window check reads the two inks apart; its twin, a key at the old fade, reads alike."
+  },
+  {
+    "id": 1281,
+    "type": "fix",
+    "title": "A destructive key turns red only while the hand or the keyboard is on it",
+    "status": "done",
+    "detail": "Evaluation round 2: the trash stayed saturated red in the gallery bar, even dimmed while disabled, a colour beside the photo the UI bench refuses. Its red was bound to the kind alone. A destructive key now shows the danger's red while it is hovered, pressed or holds the keyboard, the moment the hand is about to act, and keeps the plain ink at rest and out of reach; its own plate still sets it apart. The states window check reads no red at rest or disabled and red under the hand; its twin, a glyph worn red at rest, is seen."
+  },
+  {
+    "id": 1282,
+    "type": "fix",
+    "title": "The hand's ring stands on the ground round a gallery tile",
+    "status": "done",
+    "detail": "Evaluation round 2: a hovered tile showed no perceptible change. The hover ring lay over the picture's own edge in white at 47 %, lost on a light sky and grey on a dark one. It now stands an outset ring's width outside the picture on the canvas, about 4.7:1 there whatever the photo and covering none of it; the selection keeps its ring inside, so a selected tile under the hand shows both. The states window check reads the ring against the ground at 3:1 or more; its twin, a tile at rest, reads the bare ground."
+  },
+  {
+    "id": 1283,
+    "type": "fix",
+    "title": "A latching key carries a lamp, dark until its mode is on",
+    "status": "done",
+    "detail": "Evaluation round 2 (Play): CROP, COMPARE and DE-DUST on showed only a lighter grey face, no latch. Button's lamp, unused, becomes `latch`: a key that stays on until pressed again carries a lamp after its word, dark glass at rest so it tells it latches before the press, lit by `on` in the scanner LCD's phosphor, a glow with no hue beside the photo. The bar's mode keys and the Measuring Window's SET WINDOW latch; the lab's lamp row follows. The states window check reads the lamp lit and dark."
   }
 ]

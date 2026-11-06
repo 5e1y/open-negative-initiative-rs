@@ -73,7 +73,7 @@ export component Toggle inherits HorizontalLayout {
     horizontal-stretch: root.worded ? 1 : 0;
     if root.worded && root.label-side == LabelSide.before: Label {
         text: root.label;
-        tone: root.enabled ? Tone.primary : Tone.secondary;
+        opacity: root.enabled ? 1 : State.disabled;
         wrap: root.wrap ? word-wrap : no-wrap;
         horizontal-stretch: 1;
         TouchArea { enabled: root.enabled; clicked => { root.flip(); } }
@@ -146,7 +146,7 @@ export component Toggle inherits HorizontalLayout {
     }
     if root.worded && root.label-side == LabelSide.after: Label {
         text: root.label;
-        tone: root.enabled ? Tone.primary : Tone.secondary;
+        opacity: root.enabled ? 1 : State.disabled;
         wrap: root.wrap ? word-wrap : no-wrap;
         horizontal-stretch: root.wrap ? 1 : 0;
         TouchArea { enabled: root.enabled; clicked => { root.flip(); } }
