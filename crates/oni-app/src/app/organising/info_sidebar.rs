@@ -62,7 +62,7 @@ impl Ctl {
         let (stock, note) = match (explicit, fallback, mode) {
             (Some(k), _, _) => (k.display_name.to_string(), String::new()),
             (None, Some(k), Some(m)) => (k.display_name.to_string(), tr!("Default, from this roll's {mode} mode", mode = m.label())),
-            _ => (String::new(), tr("No stock set").to_string()),
+            _ => (String::new(), tr("No film stock set").to_string()),
         };
         let artwork = explicit.or(fallback).and_then(|k| crate::stocks::icon(k.icon_name));
         lib.set_stock_has_artwork(artwork.is_some());

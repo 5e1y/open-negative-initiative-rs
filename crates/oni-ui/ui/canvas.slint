@@ -359,8 +359,8 @@ export component CanvasCard inherits Card {
             plate: true;
             mini: true;
             align: GroupAlign.center;
-            Button { text: "−"; size: ButtonSize.mini; enabled: Canvas.can-zoom-out; help: @tr("Zoom out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
-            Button { text: "+"; size: ButtonSize.mini; enabled: Canvas.can-zoom-in; help: @tr("Zoom in ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
+            Button { text: "−"; size: ButtonSize.mini; enabled: Canvas.can-zoom-out; help: @tr("Zoom Out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
+            Button { text: "+"; size: ButtonSize.mini; enabled: Canvas.can-zoom-in; help: @tr("Zoom In ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
         }
         // `columnKey(.trailing)`: the Panel's key alone on its mini plate, last in the zoom bubble.
         ButtonGroup { plate: true; mini: true; align: GroupAlign.center;

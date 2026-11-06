@@ -209,7 +209,7 @@ impl Field {
             Field::Temperature => s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::OfRange(Print::TEMPERATURE_RANGE.1)),
             Field::Tint => s("Tint", Print::TINT_RANGE, 0.0, Readout::OfRange(Print::TINT_RANGE.1)),
             Field::ColorDensity => s(
-                "Color density (same as saturation)",
+                "Colour density",
                 color_density::RANGE,
                 color_density::BASE,
                 Readout::SignedPercent),

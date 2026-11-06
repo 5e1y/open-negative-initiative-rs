@@ -11,8 +11,8 @@ use std::time::{Duration, Instant};
 
 use crate::common;
 
-const SHARPENING: &str = "Sharpens edges without adding color fringing.";
-const CHROMA: &str = "Smooths color noise from the scan without touching the film grain.";
+const SHARPENING: &str = "Sharpens edges without adding colour fringing.";
+const CHROMA: &str = "Smooths colour noise from the scan without touching the film grain.";
 
 /// Sweeps the panel under its tab bar until the card saying `note` opens.
 pub(crate) fn hover_note(rig: &common::Rig, tip: &Tip, left: f32, from: f32, note: &str) -> bool {

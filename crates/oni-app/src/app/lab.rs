@@ -4,6 +4,7 @@
 use super::Ctl;
 use crate::{Bar, Lab, LabCell, MainWindow, PanelState};
 use oni_core::Command;
+use oni_i18n::tr;
 use oni_link::Command as Link;
 use oni_link::scanner::{Effect, Letter, Machine};
 use oni_settings::blocks::Vignette;
@@ -72,21 +73,25 @@ pub struct Screen {
     pub finish: Vec<String>,
 }
 
+/// The screen's words are the panel's own, in the machine's capitals.
 pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
     let channel = match s.mode {
-        ConversionMode::Negative => "NEGA",
-        ConversionMode::Positive => "POSI",
-        ConversionMode::Monochrome => "B&W",
+        ConversionMode::Negative => tr("Negative"),
+        ConversionMode::Positive => tr("Positive"),
+        ConversionMode::Monochrome => tr("B&W"),
     };
     let clicks = &s.scanner;
     let counts = [clicks.d, clicks.c, clicks.m, clicks.y, clicks.w];
-    let mut finish = vec![format!("CT {}", percent(s.scanner_finish.contrast)), format!("VIG {}", stops(s.scanner_finish.vignette.stops))];
+    let named = |name: &str, value: String| format!("{} {value}", name.to_uppercase());
+    let f = &s.scanner_finish;
+    let mut finish = vec![named(tr("Contrast"), percent(f.contrast)), named(tr("Vignette"), stops(f.vignette.stops))];
     if !s.mode.is_monochrome() {
-        finish.push(format!("CHR {}", percent(s.scanner_finish.secret_sauce)));
+        finish.push(named(tr("Chrome"), percent(f.secret_sauce)));
     }
+    let (at, count) = place.map_or(("--".to_string(), "--".to_string()), |(at, count)| (format!("{at:02}"), format!("{count:02}")));
     Screen {
-        frame: place.map_or("FRAME --/--".to_string(), |(at, count)| format!("FRAME {at:02}/{count:02}")),
-        machine: format!("{} · {channel}", s.scanner_machine.title().to_uppercase()),
+        frame: tr!("FRAME {at}/{count}", at = at, count = count),
+        machine: format!("{} · {}", s.scanner_machine.title().to_uppercase(), channel.to_uppercase()),
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
         cells: Letter::ALL.iter().zip(counts).map(|(l, n)| (l.title().to_string(), spelled(n))).collect(),
         finish,

@@ -1,4 +1,4 @@
-//! Select Roll Type on the headless window: the stocks by brand with their artwork, a click picking
+//! Select Film Stock on the headless window: the stocks by brand with their artwork, a click picking
 //! the roll's stock and closing, Done and Escape changing nothing.
 
 use oni_app::app::{Options, Shell};

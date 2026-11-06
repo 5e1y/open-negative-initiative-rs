@@ -48,7 +48,7 @@ export component Tree inherits Surface {
             spacing: Space.s;
             ButtonGroup { plate: true;
                 mini: true;
-                Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.reveal; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
+                Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.reveal; help: @tr("Show the Selected Photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
                 if Library.surface == 1: Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
                     help: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder");

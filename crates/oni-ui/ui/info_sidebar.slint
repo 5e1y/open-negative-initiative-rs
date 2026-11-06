@@ -48,7 +48,7 @@ export component Info inherits Surface {
                     if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
                     if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
                     if Library.stock-dyes != "": Label { text: Library.stock-dyes; role: TextRole.note; tone: Tone.secondary; centred: true; }
-                    Button { text: @tr("Select Roll Type"); clicked => { Library.select-roll-type(); } }
+                    Button { text: @tr("Select Film Stock"); clicked => { Library.select-roll-type(); } }
                 }
                 Section {
                     title: @tr("Shot Date");
@@ -64,7 +64,7 @@ export component Info inherits Surface {
                         }
                         if Library.shot-date-set: Button { has-icon: true; square: true;
                             icon: Icons.reset;
-                            help: @tr("Clear shot date");
+                            help: @tr("Clear Shot Date");
                             clicked => { Library.shot-date-cleared(); }
                         }
                     }
@@ -95,8 +95,8 @@ export component Info inherits Surface {
                 CardStack { pictures: Library.stack; }
                 Section {
                     title: @tr("Film Stocks");
-                    help: @tr("Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.");
-                    if Library.stocks.length == 0: Label { text: @tr("No stock set yet"); tone: Tone.secondary; }
+                    help: @tr("Every film stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.");
+                    if Library.stocks.length == 0: Label { text: @tr("No film stock set yet"); tone: Tone.secondary; }
                     for row in Library.stocks: HorizontalLayout {
                         spacing: Space.s;
                         StockIcon { artwork: row.artwork; has-artwork: row.has-artwork; side: StockStyle.row; }

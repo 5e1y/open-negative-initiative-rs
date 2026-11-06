@@ -12,7 +12,7 @@ import { RatingFilter } from "rating_filter.slint";
 // `rollStepKeys`: one key per step on one plate, the current one lit, a check on each step behind it.
 export component RollStepKeys inherits ButtonGroup {
     plate: true;
-    for name[i] in [@tr("FILM"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
+    for name[i] in [@tr("FILM TYPE"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
         text: name;
         help: [@tr("Select the Film Type"), @tr("Set Up the Flat-Field"), @tr("Pick the Film Base"), @tr("Flag the Frames Left Out"), @tr("Place the Measuring Frame")][i];
         on: Preparing.step == i;
@@ -113,7 +113,7 @@ component EditorKeys inherits HorizontalLayout {
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup { plate: true;
-        Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
+        Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
         Item {
             action: Act.paste;
             icon: Icons.paste;

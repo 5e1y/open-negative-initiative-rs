@@ -13,11 +13,11 @@ fn the_screen_spells_every_count_and_finish_as_the_lab_does() {
     s.scanner_machine = ScannerMachine::Frontier;
     let shown = screen(&s, Some((9, 38)));
     assert_eq!(shown.frame, "FRAME 09/38");
-    assert_eq!(shown.machine, "FRONTIER · NEGA");
+    assert_eq!(shown.machine, "FRONTIER · NEGATIVE");
     let values: Vec<&str> = shown.cells.iter().map(|c| c.1.as_str()).collect();
     assert_eq!(values, ["+1.5", "−1", "0", "+24", "−10"], "half the steps, in the units an old sidecar reads");
     assert_eq!(shown.cells[4].0, "TEMP");
-    assert_eq!(shown.finish, ["CT +20%", "VIG 0.0 EV", "CHR 0%"]);
+    assert_eq!(shown.finish, ["CONTRAST +20%", "VIGNETTE 0.0 EV", "CHROME 0%"]);
     // Twin: in black and white Chrome leaves the screen, and with no frame open the place is blank.
     s.mode = ConversionMode::Monochrome;
     let mono = screen(&s, None);

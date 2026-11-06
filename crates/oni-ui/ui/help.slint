@@ -106,7 +106,7 @@ export component ReportSheet inherits Sheet {
         init => { self.take-focus(); }
     }
     if !Help.report-sent: Toggle {
-        label: @tr("Encrypted console log, readable by ONI's maintainers only");
+        label: @tr("Encrypted diagnostic log, readable by ONI's maintainers only");
         wrap: true;
         on: Help.report-log;
         toggled(on) => { Help.report-log = on; }
@@ -131,7 +131,7 @@ export component ReportSheet inherits Sheet {
 
 // `ConsoleView`: the diagnostics log, polled; Copy and Reveal Log in Finder.
 export component ConsoleWindow inherits AppWindow {
-    title: @tr("Console");
+    title: @tr("Diagnostic Log");
     in property <string> log;
     in property <int> blocks;
     // Reveal Log in Finder, or in Explorer on Windows, as Rust words it.

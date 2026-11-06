@@ -7,7 +7,7 @@ export global Notice {
 }
 
 export component NoticeSheet inherits Sheet {
-    title: @tr("RAW Color, Recalibrated");
+    title: @tr("RAW Colour, Recalibrated");
     card-width: SheetStyle.notice-width;
     // Its groups a wider step apart than a plain sheet's lines.
     gap: Gap.l;
@@ -15,7 +15,7 @@ export component NoticeSheet inherits Sheet {
     VerticalLayout {
         spacing: Space.s;
         for line in [
-            @tr("Camera RAW files now render truer color, especially on unusual film stocks."),
+            @tr("Camera RAW files now render truer colour, especially on unusual film stocks."),
             @tr("Your existing photos have already been nudged to compensate automatically."),
             @tr("Still looks a touch off? One press of your usual balance button settles it."),
         ]: BulletLine { text: line; }

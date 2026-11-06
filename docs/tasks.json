@@ -5576,5 +5576,33 @@
     "title": "One formatter for every readout",
     "status": "done",
     "detail": "UI evaluation, problems 11 and 50: Black point read -0 % at rest, +0 % sat beside 50%, and -4 used a hyphen where the zoom keys use the minus sign. Every value on screen goes through fields::number: a true minus, a plus where the value is signed, no sign on what rounds to zero, % ° and × against the digits, EV and px after a space. The sliders, the Scanner face and its screen, the spectrogram's bands, the levels, the zoom and loupe labels, the export quality, De-dust's brush and sensitivity and the base picker read through it; the levels' own formatter in oni-settings is gone."
+  },
+  {
+    "id": 1146,
+    "type": "change",
+    "title": "Plain words for what the evaluation read as engineering: HDR, P3, a colour table, the diagnostic log, the Scanner screen spelled out",
+    "status": "done",
+    "detail": "UX evaluation, problems 65 and 6: HDR hack becomes HDR above its switch, Brighter on HDR screens (the switch was there, cut by the panel's scroll at 680 pt); DP3 becomes P3, the space's own short name, which five tabs hold in 340 pt (French and Spanish name Custom Profil and Perfil, which fit); the Frontier look's note says a colour table over ONI's conversion, in sRGB, edited as a .cube file; Console becomes the Diagnostic Log in its window, its menu item, its key and the report's switch; the Scanner screen writes CONTRAST, VIGNETTE, CHROME, NEGATIVE and POSITIVE, the panel's own words in the machine's capitals, and its FRAME line is translated as Prepare's is."
+  },
+  {
+    "id": 1147,
+    "type": "change",
+    "title": "One name per concept: the film stock, the film type, colour density",
+    "status": "done",
+    "detail": "UX evaluation, problems 66 and 68: the stock was Film Stock, Roll Type, Stock or Film by panel, and Film also meant negative or positive. The stock is the film stock everywhere (Select Film Stock, No film stock set, the export's Film stock and Choose…), negative, positive or black and white the film type (Prepare's Film type field and its FILM TYPE step); the Spanish catalogue, which called both Tipo de película, names the stock Emulsión. Color density (same as saturation) is Colour density, its help saying what other apps call it. Select the whole film (⌘A) had already left with the roll guide (#1123)."
+  },
+  {
+    "id": 1148,
+    "type": "change",
+    "title": "One spelling, British, in every English text",
+    "status": "done",
+    "detail": "UX evaluation, problem 70: Favourites and digitised sat beside Color. Counted over the catalogue, British spellings led (favourite, grey, colour, centre, digitise, recognise: 46 words against 22 for color), so color becomes colour in every text, the Colour tab and block included; colorimetric, ColorSync and the stocks' own names stay as written."
+  },
+  {
+    "id": 1149,
+    "type": "change",
+    "title": "One case style per role",
+    "status": "done",
+    "detail": "UI evaluation, problem 51: Halo limit and White point beside Brush Size, Frontier look beside Shot Date. Titles of sheets, sections, blocks and Settings pages take title case (Frontier Look, RAW Files, Phone Remote); slider and field labels sentence case (Brush size, Picker size, Export as, Pass order); a key's tooltip naming its command takes the menu's title case (Copy Settings, Zoom In, Show the Selected Photo, Reset Measuring Window, which the Measuring Window section names); the menu's empty line reads No Presets. A help text that describes a key stays a sentence."
   }
 ]

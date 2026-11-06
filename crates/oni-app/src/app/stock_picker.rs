@@ -1,4 +1,4 @@
-//! `StockPickerSheet` in the window: Select Roll Type for a roll, and the export's film field for one
+//! `StockPickerSheet` in the window: Select Film Stock for a roll, and the export's film field for one
 //! frame, the stocks grouped by brand; a click picks and closes, and Done leaves things as they were.
 
 use super::Ctl;

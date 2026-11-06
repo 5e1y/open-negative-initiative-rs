@@ -293,7 +293,7 @@ impl Ctl {
         let console = match existing {
             Some(c) => c,
             None => {
-                let Ok(console) = ConsoleWindow::new() else { return self.say(tr("The console cannot open.")) };
+                let Ok(console) = ConsoleWindow::new() else { return self.say(tr("The diagnostic log cannot open.")) };
                 crate::keycaps::serve(&console);
                 let log = crate::timing::log_path(&self.state.borrow().support);
                 let copied = log.clone();

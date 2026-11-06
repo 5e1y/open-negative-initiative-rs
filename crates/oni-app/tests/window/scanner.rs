@@ -81,7 +81,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!(std::fs::read_to_string(support.join("lastFaceScanner")).unwrap(), "1");
     assert!(!panel.get_separation_shown(), "the Scanner face's Roll tab has no Dye Separation");
     assert_eq!(lab.get_frame(), "FRAME 01/02");
-    assert_eq!(lab.get_machine_line(), "ONI · NEGA");
+    assert_eq!(lab.get_machine_line(), "ONI · NEGATIVE");
     let legends: Vec<String> = (0..4).map(|i| lab.get_legends().row_data(i).unwrap().to_string()).collect();
     assert_eq!(legends, ["−3", "−", "+", "+3"]);
 
@@ -135,7 +135,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     let s = settings();
     assert!((s.scanner_finish.contrast - 0.05).abs() < 1e-6 && (s.scanner_finish.vignette.stops + 0.3).abs() < 1e-6);
     assert_eq!(s.print.contrast, pro_contrast, "a Scanner key never moves Pro's Contrast");
-    assert_eq!(finish(w), ["CT +5%", "VIG −0.3 EV", "CHR 0%"]);
+    assert_eq!(finish(w), ["CONTRAST +5%", "VIGNETTE −0.3 EV", "CHROME 0%"]);
     assert!(modified(w)[3]);
     lab.invoke_clear_effect(1);
     lab.invoke_reset_group(3);
@@ -147,7 +147,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     lab.invoke_machine_picked(1);
     rig.pump();
     assert_eq!(settings().scanner_machine, ScannerMachine::Frontier);
-    assert_eq!((lab.get_machine(), lab.get_machine_line().to_string()), (1, "FRONTIER · NEGA".to_string()));
+    assert_eq!((lab.get_machine(), lab.get_machine_line().to_string()), (1, "FRONTIER · NEGATIVE".to_string()));
     rig.settle();
     println!("shot {}", rig.shot("scanner-face").display());
 

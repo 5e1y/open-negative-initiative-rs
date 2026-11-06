@@ -1,4 +1,4 @@
-// `StockPickerSheet`: Select Roll Type, the stocks grouped by brand, one click picking and closing.
+// `StockPickerSheet`: Select Film Stock, the stocks grouped by brand, one click picking and closing.
 import { Space, StockStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView } from "ds/ds.slint";
 
 export struct StockCell { index: int, name: string, artwork: image, has-artwork: bool, picked: bool }
@@ -15,7 +15,7 @@ export global Stocks {
 }
 
 export component StockPickerSheet inherits Sheet {
-    title: @tr("Select Roll Type");
+    title: @tr("Select Film Stock");
     header: SheetHeader.bar;
     card-width: StockStyle.width;
     card-height: StockStyle.height;

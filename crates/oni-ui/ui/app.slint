@@ -235,7 +235,7 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: @tr("Paste Preset Code"); enabled: Menus.live.paste-preset-code; activated => { App.menu(Act.paste-preset-code); } }
             MenuItem { title: @tr("Show Presets Folder"); enabled: Menus.live.show-presets; activated => { App.menu(Act.show-presets); } }
             MenuSeparator { }
-            if Menus.presets.length == 0: MenuItem { title: @tr("No presets"); enabled: false; }
+            if Menus.presets.length == 0: MenuItem { title: @tr("No Presets"); enabled: false; }
             if Menus.presets.length > 0: MenuItem { title: Menus.apply-title; enabled: false; }
             for line[i] in Menus.presets: MenuItem { title: line; enabled: Menus.live.apply-preset; activated => { Menus.apply-preset(i); } }
             if Menus.presets.length > 0: MenuSeparator { }
@@ -249,7 +249,7 @@ export component MainWindow inherits AppWindow {
             // Slint builds the macOS application menu itself, so the item Swift lays after About is here.
             MenuItem { title: @tr("Check for Updates…"); activated => { App.menu(Act.check-updates); } }
             MenuSeparator { }
-            MenuItem { title: @tr("Show Console"); activated => { App.menu(Act.console); } }
+            MenuItem { title: @tr("Show Diagnostic Log"); activated => { App.menu(Act.console); } }
             MenuItem { title: @tr("What's New in ONI {}", Help.release); activated => { App.menu(Act.welcome); } }
             MenuItem { title: @tr("Show What's New Again"); activated => { App.menu(Act.whats-new); } }
             MenuItem { title: @tr("Report a Bug / Give Feedback…"); activated => { App.menu(Act.report); } }

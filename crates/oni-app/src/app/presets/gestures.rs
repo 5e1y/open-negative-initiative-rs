@@ -112,7 +112,7 @@ impl Ctl {
         let Some(p) = self.held(id) else { return };
         self.ask(
             &tr!("Replace \u{201c}{name}\u{201d} with This Photo\u{2019}s Settings?", name = p.name),
-            tr("The settings it stored are replaced. Its name, color, description and the rows it carries stay as they are."),
+            tr("The settings it stored are replaced. Its name, colour, description and the rows it carries stay as they are."),
             tr("Replace"),
             true,
             Pending::UpdatePreset(id),
