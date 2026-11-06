@@ -153,7 +153,7 @@ impl Ctl {
     }
 
     /// `NavigatorRow.onTapGesture`: a click opens its folder, out of reach too, where the gallery
-    /// says its state; the second of a double click opens nothing more. The arrows follow it.
+    /// says its state; the second of a double click opens nothing more.
     pub(super) fn navigator_row_clicked(self: &Rc<Self>, i: usize) {
         let open = {
             let mut s = self.state.borrow_mut();
@@ -164,7 +164,6 @@ impl Ctl {
                 _ => 1,
             };
             s.nav.clicks = Some((path.clone(), now, count));
-            s.nav.keys = true;
             s.org.trash_picked = None;
             s.nav.model.click(&path, count)
         };
@@ -180,7 +179,6 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.nav.rows.get(i).cloned() else { return };
-            s.nav.keys = true;
             s.nav.model.toggle(&path);
         }
         self.publish_navigator();

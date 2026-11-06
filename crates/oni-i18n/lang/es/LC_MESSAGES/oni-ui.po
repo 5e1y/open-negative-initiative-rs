@@ -1114,6 +1114,10 @@ msgid "RESTORE"
 msgstr "RESTAURAR"
 
 #: crates/oni-ui/ui/navigator.slint
+msgid "Folders"
+msgstr "Carpetas"
+
+#: crates/oni-ui/ui/navigator.slint
 msgid "The archive shows a folder of your disk and everything under it."
 msgstr "El archivo muestra una carpeta de tu disco y todo lo que contiene."
 

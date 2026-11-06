@@ -340,10 +340,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_trash_row_menu(move |i| p.trash_row_menu(index(i)));
         let p = me.clone();
-        lib.on_pointer_down(move |x, y, _, _| {
-            p.grid_took_keys();
-            p.pointer_down(x, y);
-        });
+        lib.on_pointer_down(move |x, y, _, _| p.pointer_down(x, y));
         let p = me.clone();
         lib.on_pointer_moved(move |x, y| p.pointer_moved(x, y));
         let p = me.clone();

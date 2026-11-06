@@ -13,6 +13,7 @@ mod balance_kept;
 mod button_group;
 mod canvas_layout;
 mod canvas_switch;
+mod column_edges;
 mod column_menu;
 mod density;
 mod depth_lip;
@@ -108,6 +109,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("balance_kept::a_kept_balance_lands_at_once_alone_and_six_together", balance_kept::a_kept_balance_lands_at_once_alone_and_six_together),
     ("balance_kept::de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke", balance_kept::de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke),
     ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
+    ("column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is", column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),

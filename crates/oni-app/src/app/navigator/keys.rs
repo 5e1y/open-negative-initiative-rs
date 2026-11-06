@@ -1,5 +1,5 @@
-//! The navigator from the keyboard, as the Finder's sidebar answers it: the arrows walk and fold the
-//! rows, Space folds, Return renames, ⌘↓ opens and ⌘↑ climbs to the parent.
+//! The navigator from the keyboard, as the Finder's sidebar answers it while its rows hold it: the
+//! arrows walk and fold the rows, Space folds, Return renames, ⌘↓ opens and ⌘↑ climbs to the parent.
 
 use super::*;
 
@@ -32,9 +32,10 @@ pub(in crate::app) fn row_key(text: &str, command: bool) -> Option<RowKey> {
 }
 
 impl Ctl {
-    /// A key while the rows hold the keyboard, which a click on one gave them; false leaves it to the grid.
+    /// A key the rows read while they hold the keyboard, which a click on a row or Tab gives them;
+    /// false leaves it to the window.
     pub(in crate::app) fn navigator_key(self: &Rc<Self>, text: &str, command: bool) -> bool {
-        let Some(key) = row_key(text, command).filter(|_| self.state.borrow().nav.keys) else { return false };
+        let Some(key) = row_key(text, command) else { return false };
         let open = {
             let mut s = self.state.borrow_mut();
             let rows = s.nav.rows.clone();
@@ -72,24 +73,18 @@ impl Ctl {
         true
     }
 
-    /// The field of a row renamed gone, the window's keys come back to the rows and the grid.
+    /// The field of a row renamed gone, the keyboard goes back to the photos.
     pub(super) fn keys_back(&self) {
         if let Some(w) = self.window() {
             w.invoke_refocus();
         }
     }
 
-    /// A click on the grid takes the keyboard back for the photos.
-    pub(in crate::app) fn grid_took_keys(&self) {
-        self.state.borrow_mut().nav.keys = false;
-    }
-
-    /// The rows took the keyboard by Tab, the opened folder picked where none is, or Tab carried it on.
-    pub(in crate::app) fn rows_held(&self, held: bool) {
+    /// The rows took the keyboard: the opened folder picked where none is, so the ring shows where the arrows start.
+    pub(in crate::app) fn rows_taken(&self) {
         {
             let mut s = self.state.borrow_mut();
-            s.nav.keys = held;
-            if held && s.nav.model.selected.is_none() {
+            if s.nav.model.selected.is_none() {
                 s.nav.model.selected = s.opened.clone();
             }
         }
