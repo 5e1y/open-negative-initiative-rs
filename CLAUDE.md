@@ -8,8 +8,9 @@ maths and constants, and the sidecar format it reads.
 
 ## Hard rules
 
-1. **Nothing decides on its own.** No film-base detection, no smart inversion, no preset on import.
-   The automatic keys run only on a click and write only what they show.
+1. **Nothing is hidden from the person.** The app may act on its own, but every automatic step and every
+   value of the conversion stays visible and reachable: the levels and gains stay shown and editable even
+   while the automatic mode sets them. An automatic action writes only what it shows.
 2. **Floating point end to end.** Images are `rgba32float` between every stage; a decode and its
    reductions (preview, halvings) are held in `rgba16float` (owner's call, half the memory); the render
    graph accepts no other texture format.

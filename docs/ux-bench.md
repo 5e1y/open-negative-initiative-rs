@@ -56,8 +56,10 @@ How fast and how steadily the app answers, measured rather than estimated.
 The person always knows what the app is doing, and nothing happens behind their back.
 
 - The state shows at every moment: loading, modified, saved, the active mode and its way out.
-- Every edit undoes, nothing irreversible goes unannounced, nothing decides on its own; the export
-  writes what the screen shows; originals are never touched.
+- Every edit undoes, nothing irreversible goes unannounced; the export writes what the screen shows;
+  originals are never touched.
+- Nothing is hidden: every automatic step and every value of the conversion stays visible and
+  reachable, even while an automatic mode sets it.
 - A destructive action stands apart from the harmless ones around it, never on their plate, so the hand
   cannot take one for the other.
 - **Excels:** any step interrupted loses nothing and surprises no one. **Fails:** a silent wait, a

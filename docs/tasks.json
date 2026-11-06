@@ -6073,5 +6073,12 @@
     "title": "Every screen, flow and interaction may be rethought; only the result is fixed",
     "status": "done",
     "detail": "Owner's direction: ONI's work is now making the app better through its UX and UI, every screen open to a full rethink, the conversion untouched. CLAUDE.md drops what held the interface to one way: the design system's tokens owe DSTokens.swift nothing, the drag-and-scroll rule becomes the current state rather than a rule, ui-spec and the parity inventory's interface rows are history, and the parity inventory covers the result alone."
+  },
+  {
+    "id": 1301,
+    "type": "docs",
+    "title": "Hard rule 1 becomes: nothing is hidden from the person",
+    "status": "done",
+    "detail": "Owner's call: 'nothing decides on its own' did not hold, the app already acts on its own around editing. The rule is transparency instead: every automatic step and every value of the conversion stays visible and reachable, the levels and gains shown and editable even while the automatic mode sets them. UX Trust rates it."
   }
 ]
