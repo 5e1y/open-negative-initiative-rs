@@ -1,15 +1,14 @@
 //! The two gestures that make and unmake a roll: a measure landing on every frame Prepare the Roll
-//! read, and Reset the Roll, its inverse, reaching whole rolls and their contact sheets.
+//! read, and Reset the Roll, its inverse, reaching whole rolls.
 
 use super::{EditorStore, Settings, Written, gather};
 use crate::parameters;
 use oni_i18n::trn;
-use oni_library::history::Trash;
 use oni_library::roll_membership::ResetReach;
-use oni_library::{rgb_passes, trash};
+use oni_library::rgb_passes;
 use oni_settings::frame::Geometry;
 use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::{Date, PipelineSettings};
+use oni_settings::PipelineSettings;
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
 
@@ -107,7 +106,7 @@ impl EditorStore {
     }
 
     /// `resetToDefault`: every frame reached back to unconverted, a triplet split into its three
-    /// shots on the crop drawn, the rolls' sheets to the ONI Trash, all as one step.
+    /// shots on the crop drawn, all as one step.
     pub fn reset_to_default(&mut self, reach: &ResetReach) -> usize {
         self.release();
         let open = self.path().map(str::to_string);
@@ -137,15 +136,7 @@ impl EditorStore {
         for id in &reach.references {
             self.measured.remove(&oni_library::roll_membership::RollKey::Measured(*id));
         }
-        let sheets: Vec<String> = reach.sheets.iter().cloned().collect();
-        let mut binned = trash::Outcome::default();
-        if !sheets.is_empty() {
-            let mosaic = &self.archive.mosaic;
-            binned = trash::mark(&sheets, Some(Date::now()), &|p: &Path| mosaic(p));
-            self.took(&binned, true);
-        }
-        let marks = Trash { paths: binned.done.iter().cloned().collect(), marked: true };
-        self.history.record(&step.0, &step.1, &reset_label(reach.frames.len()), Some(marks));
+        self.history.record(&step.0, &step.1, &reset_label(reach.frames.len()), None);
         reach.frames.len()
     }
 }

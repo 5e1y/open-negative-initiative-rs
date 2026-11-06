@@ -26,7 +26,7 @@ impl Ctl {
                 .collect();
             (paths, c.sizes.clone(), previews, room)
         };
-        let numbers = together::ranks(&paths, &self.roll_folders(&paths), oni_library::roll_membership::is_sheet);
+        let numbers = together::ranks(&paths, &self.roll_folders(&paths));
         let (pictures, band, size) = together::sheet_places(&sizes);
         let k = (room.0 / size.0).min(room.1 / size.1);
         let (left, top) = ((room.0 - size.0 * k) / 2.0, (room.1 - size.1 * k) / 2.0);

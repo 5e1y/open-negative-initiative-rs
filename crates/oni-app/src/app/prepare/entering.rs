@@ -37,7 +37,7 @@ impl Ctl {
     /// `enterRollReference`: every frame ticked, the film step, then each sidecar read off this thread.
     pub(in crate::app) fn enter_roll(self: &Rc<Self>, paths: &[String], left_out: usize) {
         let Some(w) = self.window() else { return };
-        let wanted: HashSet<&String> = paths.iter().filter(|p| !roll_membership::is_sheet(p)).collect();
+        let wanted: HashSet<&String> = paths.iter().collect();
         let (ordered, session) = {
             let mut s = self.state.borrow_mut();
             let ordered: Vec<(String, String)> = s.rows.iter().filter(|e| wanted.contains(&e.path)).map(|e| (e.path.clone(), e.fingerprint.clone())).collect();

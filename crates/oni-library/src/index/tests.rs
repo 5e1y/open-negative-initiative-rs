@@ -1,5 +1,6 @@
 use super::*;
 use crate::scratch::Scratch;
+use std::collections::HashSet;
 
 fn day1() -> Date {
     Date::since_reference_date(800_000_000.0)
@@ -118,6 +119,7 @@ fn full_row() -> Entry {
         pass_of: Some("DSC_6431.NEF".into()),
         leads_passes: true,
         trashed_at: Some(Date::since_reference_date(813_000_004.0)),
+        sheet: true,
     }
 }
 

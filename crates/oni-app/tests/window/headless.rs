@@ -186,8 +186,9 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
 
     rig.chord(slint::platform::Key::Control, "g");
     assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");
-    // Ten frames in the shared fixture, the whole roll's 38 and its contact sheet where a tester holds it.
-    let n = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") }).count();
+    // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it; a contact sheet is no frame.
+    let frame = |p: &std::path::Path| oni_settings::sidecar::read(p, true, true).map_or(true, |l| l.settings.sheet.is_none());
+    let n = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") && frame(&e.path()) }).count();
     rig.until("every thumbnail", Duration::from_secs(600), || ctl.state.borrow().loaded() >= n);
     let tiles = app::tiles(w);
     assert_eq!(tiles.len(), n, "every cell of the roll is laid out");

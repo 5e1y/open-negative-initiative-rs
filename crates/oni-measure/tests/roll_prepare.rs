@@ -173,7 +173,6 @@ fn reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_by
     assert_eq!(store.measured_with(id).len(), roll.frames.len());
     let reach = roll_membership::reset_reach(std::slice::from_ref(&roll.frames[0]), &roll.frames);
     assert_eq!(reach.frames.len(), roll.frames.len(), "a roll is reset whole, never one frame of it");
-    assert!(reach.sheets.is_empty());
     let count = store.reset_to_default(&reach);
     assert_eq!(count, roll.frames.len());
     assert_eq!(store.history().undo_label(), Some(reset_label(count).as_str()));

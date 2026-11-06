@@ -145,6 +145,7 @@ pub fn blank() -> Envelope {
         mode: ConversionMode::default(),
         pass_of: None,
         leads_passes: false,
+        sheet: false,
     }
 }
 

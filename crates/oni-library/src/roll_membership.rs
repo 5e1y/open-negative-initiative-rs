@@ -22,8 +22,7 @@ impl From<Id> for RollKey {
 }
 
 impl RollKey {
-    /// The roll `settings` stand on at `path`; a slide's contact sheet stands on its folder's slides,
-    /// as a negative's does on its reference, while a slide's pass stands on none.
+    /// The roll `settings` stand on at `path`: its reference, else a slide's folder; a pass stands on none.
     pub fn of(path: &str, settings: &PipelineSettings) -> Option<RollKey> {
         match &settings.roll_reference {
             Some(r) => Some(RollKey::Measured(r.id)),
@@ -82,34 +81,10 @@ pub fn reference(path: &str) -> Option<Id> {
     reference_in(&settings(path)?)
 }
 
-fn has_sheet(settings: &Value) -> bool {
-    settings.get("sheet").is_some_and(|s| !s.is_null())
-}
-
-/// Whether `path` is a contact sheet, read off its sidecar's grid alone.
-pub fn is_sheet(path: &str) -> bool {
-    settings(path).is_some_and(|s| has_sheet(&s))
-}
-
-/// Whether `path` is the contact sheet of its folder's slide roll, which no reference names.
-pub fn is_slide_sheet(path: &str) -> bool {
-    settings(path).is_some_and(|s| has_sheet(&s) && matches!(key_in(path, &s), Some(RollKey::Slides(_))))
-}
-
-/// The reference a contact sheet's sidecar names, `None` for a photograph or a sheet of none.
-pub fn sheet_reference(path: &str) -> Option<Id> {
-    let settings = settings(path)?;
-    if !has_sheet(&settings) {
-        return None;
-    }
-    reference_in(&settings)
-}
-
-/// What a Reset to Default reaches: frames, contact sheets and the rolls they stand on.
+/// What a Reset to Default reaches: frames and the rolls they stand on.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ResetReach {
     pub frames: BTreeSet<String>,
-    pub sheets: BTreeSet<String>,
     pub references: BTreeSet<Id>,
 }
 
@@ -120,29 +95,18 @@ pub fn beside(anchors: &[String], paths: &[String]) -> Vec<String> {
     paths.iter().filter(|p| folders.contains(&paths::parent(p))).cloned().collect()
 }
 
-/// `RollSettings.resetReach`: the rolls `picked` stands on, every frame naming one of them beside
-/// it, and their contact sheets; a sheet picked brings its roll, never itself as a frame.
+/// `RollSettings.resetReach`: the rolls `picked` stands on and every frame naming one of them beside it.
 pub fn reset_reach(picked: &[String], library: &[String]) -> ResetReach {
     let mut reach = ResetReach::default();
     for path in picked {
-        if let Some(id) = sheet_reference(path).or_else(|| reference(path)) {
-            reach.references.insert(id);
-        }
-        if !is_sheet(path) {
-            reach.frames.insert(path.clone());
-        }
+        reach.references.extend(reference(path));
+        reach.frames.insert(path.clone());
     }
     if reach.references.is_empty() {
         return reach;
     }
     for path in &beside(picked, library) {
-        if let Some(id) = sheet_reference(path) {
-            if reach.references.contains(&id) {
-                reach.sheets.insert(path.clone());
-            }
-        } else if let Some(id) = reference(path)
-            && reach.references.contains(&id)
-        {
+        if reference(path).is_some_and(|id| reach.references.contains(&id)) {
             reach.frames.insert(path.clone());
         }
     }
@@ -188,16 +152,14 @@ mod tests {
         assert_eq!(both.frames.len(), 4);
     }
 
-    /// A slide roll, which no measure gives a reference, is its folder's slides and their sheet: a
-    /// negative never measured and the slides of the folder beside stay out.
+    /// A slide roll, which no measure gives a reference, is its folder's slides: a negative never
+    /// measured and the slides of the folder beside stay out.
     #[test]
     fn a_slide_roll_is_its_folder_s_slides() {
         let scratch = Scratch::new("roll-membership-slides");
         let root = paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let slide = PipelineSettings { mode: ConversionMode::Positive, ..PipelineSettings::default() };
-        let grid = oni_settings::frame::ContactSheetGrid { columns: 1, rows: 1, frames: 1, tile: Default::default(), margin: 0.0, windows: None };
-        let sheet = PipelineSettings { sheet: Some(grid), ..slide.clone() };
-        let laid = [("Slides", "a.ARW", &slide), ("Slides", "b.ARW", &slide), ("Slides", "c.ARW", &PipelineSettings::default()), ("Slides", "sheet.tif", &sheet), ("Slides 2", "d.ARW", &slide)];
+        let laid = [("Slides", "a.ARW", &slide), ("Slides", "b.ARW", &slide), ("Slides", "c.ARW", &PipelineSettings::default()), ("Slides 2", "d.ARW", &slide)];
         let mut library = Vec::new();
         for (folder, name, settings) in laid {
             let path = paths::join(&paths::join(&root, folder), name);
@@ -207,12 +169,10 @@ mod tests {
             library.push(path);
         }
         let key = RollKey::of(&library[0], &slide).expect("a slide stands on its folder");
-        assert_eq!(members(&key, &library), [0, 1, 3].map(|i| library[i].clone()).into_iter().collect());
-        assert!(is_slide_sheet(&library[3]) && !is_slide_sheet(&library[0]));
+        assert_eq!(members(&key, &library), library[..2].iter().cloned().collect());
         // Twin: the folder beside is a roll of its own, and a negative never measured stands on none.
-        assert_eq!(members(&RollKey::of(&library[4], &slide).unwrap(), &library), library[4..].iter().cloned().collect());
+        assert_eq!(members(&RollKey::of(&library[3], &slide).unwrap(), &library), library[3..].iter().cloned().collect());
         assert_eq!(RollKey::of(&library[2], &PipelineSettings::default()), None);
-        assert_eq!(RollKey::of(&library[3], &sheet), Some(key));
         let pass = PipelineSettings { pass_of: Some(library[0].clone()), ..slide.clone() };
         assert_eq!(RollKey::of(&library[0], &pass), None, "a slide's pass stands on none");
     }
