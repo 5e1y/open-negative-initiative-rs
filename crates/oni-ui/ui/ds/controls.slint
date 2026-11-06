@@ -1,8 +1,9 @@
 // The controls: buttons, the toggle and the field; the slider is `slider.slint`, the tabs `tabs.slint`.
-import { Colour, Space, Stroke, State, ButtonStyle, TabsStyle, ToggleStyle, SliderStyle } from "theme.slint";
+import { Colour, Space, State, ButtonStyle, TabsStyle, ToggleStyle, SliderStyle } from "theme.slint";
 import { Label, Tone, Clicks } from "base.slint";
 import { KeyScope } from "keyboard.slint";
 import { Inward } from "depth.slint";
+import { Lamp } from "surfaces.slint";
 
 import { ButtonKind, ButtonSize, Look, KeyInk, Button } from "button.slint";
 import { Knob } from "knob.slint";
@@ -49,8 +50,8 @@ export component ButtonGroup inherits HorizontalLayout {
 // switch named for accessibility alone.
 export enum LabelSide { none, after, before }
 
-// A switch, a camera's slide lever: the slider's knob in a slot of its own, slid along and the slot lit
-// while on. Its owner holds the state, so an undo moves the knob as the hand does; its words flip it too.
+// A switch: the slider's knob in a slot of its own, slid along and the slot lit while on. Its owner
+// holds the state, so an undo moves the knob as the hand does; its words flip it too.
 export component Toggle inherits HorizontalLayout {
     in property <bool> on;
     in property <string> label;
@@ -95,30 +96,18 @@ export component Toggle inherits HorizontalLayout {
                 ground: Colour.canvas;
                 radius: self.height / 2;
                 shade: TabsStyle.track-shade;
+                // What the knob uncovers names the state by the lamps' rule: on, the slot lit as a lamp
+                // is; off, a lamp at rest in the hollow.
                 Rectangle {
                     x: 0;
                     width: SliderStyle.knob-width / 2 + root.shown * ToggleStyle.travel;
                     height: parent.height;
                     border-radius: self.height / 2;
-                    background: SliderStyle.lit;
+                    background: ToggleStyle.lit;
                 }
-                // I where the knob stands while off, O where it stands while on: the mark it uncovers
-                // names the state, as on a power switch.
-                Rectangle {
-                    x: (ToggleStyle.travel - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    width: Stroke.trace;
-                    height: ToggleStyle.mark;
-                    background: ToggleStyle.on-mark;
-                }
-                Rectangle {
+                Lamp {
                     x: SliderStyle.knob-width + (ToggleStyle.travel - self.width) / 2;
                     y: (parent.height - self.height) / 2;
-                    width: ToggleStyle.mark;
-                    height: ToggleStyle.mark;
-                    border-radius: self.width / 2;
-                    border-width: Stroke.trace;
-                    border-color: ToggleStyle.off-mark;
                 }
             }
             // The knob grows under the hand, as a slider's.

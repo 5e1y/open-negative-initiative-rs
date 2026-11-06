@@ -4,7 +4,8 @@ import { Colour, Radius, Stroke, ButtonStyle, ScannerStyle, SurfaceStyle } from 
 import { Raised, Gap } from "base.slint";
 import { Depth } from "depth.slint";
 
-// `DSLamp` (DSLamp.swift:5): dark glass at rest, its colour glowing when lit, in a groove ring.
+// A lamp: dark glass in a light rim at rest, so it reads as a lamp off and never as a speck; lit, glass
+// and rim glow its colour.
 export component Lamp inherits Rectangle {
     in property <bool> lit;
     in property <color> colour: Colour.confirm;
@@ -13,7 +14,7 @@ export component Lamp inherits Rectangle {
     border-radius: self.width / 2;
     background: root.lit ? root.colour : ScannerStyle.glass;
     border-width: Stroke.line;
-    border-color: DS.palette-groove;
+    border-color: root.lit ? root.colour : SurfaceStyle.lamp-rim;
     drop-shadow-color: root.lit ? root.colour : transparent;
     drop-shadow-blur: root.lit ? SurfaceStyle.lamp-glow : 0px;
 }

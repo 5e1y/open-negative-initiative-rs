@@ -6437,5 +6437,19 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1338,
+    "type": "ui",
+    "title": "A lamp reads at rest, and a switch is lit as a lamp while on",
+    "status": "done",
+    "detail": "Evaluation R3: the unlit lamps of Crop, Compare, De-dust and Set window were dark glass in a dark groove, 1.6:1 on the key's face, and read as specks or unread badges at the legend's top right. A lamp is now dark glass in a light rim at rest (over 3:1 on the face, SurfaceStyle.lamp-rim) on the legend's middle line, its glass and rim glowing when lit. A switch differed by its lever's side and a grey I or O: what the knob uncovers now follows the lamps' rule, the slot lit in a lit lamp's phosphor while on (ToggleStyle.lit), a Lamp at rest in the hollow while off; the I and O marks and their three tokens go. The states check measures the lamp at rest against the face and the switch's slot against the lit threshold, each with a twin."
+  },
+  {
+    "id": 1339,
+    "type": "ui",
+    "title": "The primary keycap is calm, and a keycap out of reach keeps its relief",
+    "status": "done",
+    "detail": "Evaluation R3: the saturated system-blue EXPORT keycap was the brightest thing beside the photo on every editor screen. The accent key's face is now the accent sunk into the keycap's grey (ButtonStyle.primary), one accent still, calm beside the photo. De-dust's REMOVE, a keycap out of reach, faded whole and read as a flat key beside DETECT: a keycap out of reach now keeps its relief, its legend alone fading and the primary's tint going, while a flat key still fades whole; DETECT and REMOVE stand a gap apart rather than on one flat plate. The states check measures the relief kept, with a cap faded whole as its twin; the bar's width check picks its row by the four keys alone, a disabled cap across the bar now drawn whole."
   }
 ]

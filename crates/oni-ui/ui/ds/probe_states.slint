@@ -1,6 +1,6 @@
-// The states a check reads off the drawn window, each at a fixed place: a key out of reach and an idle tab,
-// a destructive glyph, a latching key, a tile under the hand; the check gives the one word they show.
-import { Colour, State, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons } from "ds.slint";
+// The states a check reads off the drawn window, each at a fixed place: a key and a keycap out of reach, an
+// idle tab, a destructive glyph, a latching key, a switch, a tile under the hand; the check gives their word.
+import { DS, Colour, State, Stroke, ButtonStyle, SliderStyle, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide } from "ds.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
@@ -29,8 +29,41 @@ export component StateProbe inherits AppWindow {
     Button { width: self.preferred-width; x: 112px; y: 120px; has-icon: true; square: true; icon: Icons.remove; kind: ButtonKind.destructive; enabled: false; }
     // Twin: the red worn at rest.
     Button { width: self.preferred-width; x: 160px; y: 120px; has-icon: true; square: true; icon: Icons.remove; glyph-ink: Colour.destructive-ink; }
+    // A keycap that can act, one out of reach, and the twin: a keycap faded whole.
+    Button { width: self.preferred-width; x: 220px; y: 120px; keycap: true; has-icon: true; square: true; icon: Icons.remove; }
+    Button { width: self.preferred-width; x: 270px; y: 120px; keycap: true; has-icon: true; square: true; icon: Icons.remove; enabled: false; }
+    Button { width: self.preferred-width; x: 320px; y: 120px; keycap: true; has-icon: true; square: true; icon: Icons.remove; opacity: State.disabled; }
     dark := Button { width: self.preferred-width; x: 16px; y: 168px; text: root.word; latch: true; }
     lit := Button { width: self.preferred-width; x: 200px; y: 168px; text: root.word; latch: true; on: true; }
+    // Twin: the lamp at rest as dark glass in a dark groove, alone on a key's face.
+    Rectangle {
+        x: 310px;
+        y: 168px;
+        width: 32px;
+        height: 32px;
+        border-radius: ButtonStyle.radius;
+        background: ButtonStyle.face;
+        Rectangle {
+            width: ButtonStyle.lamp;
+            height: ButtonStyle.lamp;
+            border-radius: self.width / 2;
+            background: ScannerStyle.glass;
+            border-width: Stroke.line;
+            border-color: DS.palette-groove;
+        }
+    }
+    Toggle { x: 240px; y: 20px; width: self.preferred-width; height: self.preferred-height; label-side: LabelSide.none; }
+    Toggle { x: 310px; y: 20px; width: self.preferred-width; height: self.preferred-height; label-side: LabelSide.none; on: true; }
+    // Twin: the slot lit grey as a slider's stretch, on the hollow's ground.
+    Rectangle {
+        x: 310px;
+        y: 81px;
+        width: ToggleStyle.travel;
+        height: ToggleStyle.slot;
+        border-radius: self.height / 2;
+        background: Colour.canvas;
+        Rectangle { border-radius: parent.border-radius; background: SliderStyle.lit; }
+    }
     Rectangle {
         y: 210px;
         height: 130px;

@@ -164,6 +164,8 @@ export global ButtonStyle {
     // switch the mode, commit a screen or run an automatic action.
     out property <length> cap-height: DS.control-keycap-height;
     out property <color> cap: DS.palette-keycap;
+    // The one primary key's face: the accent sunk into the keycap's grey, so it never outshines the photo.
+    out property <color> primary: Colour.accent.mix(ButtonStyle.cap, 0.4);
     // The legend at a step of the type scale: a keycap's in capitals, bold and 0.5 pt apart; a flat
     // key's as written, semibold and set solid.
     out property <length> legend: Type.caption;

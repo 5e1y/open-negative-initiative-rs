@@ -66,7 +66,8 @@ draws a still key once and a pressed one once a frame.
 - **Sizes** (`ButtonSize`): `regular` the 32 pt flat key (40 pt as a keycap), `plate` a panel's or a
   footer's at the same height, `mini` the 24 pt key of a section's header, a row or the canvas's header.
   A worded key is never narrower than tall.
-- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent; `destructive`,
+- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent sunk into the
+  keycap's grey (`ButtonStyle.primary`), calm beside the photo, and grey while out of reach; `destructive`,
   a plain key whose glyph or word takes a light red (`Colour.destructive-ink`) while the hand or the keyboard
   is on it, the plain ink at rest and out of reach, so no red stands beside the photo; `ghost`, a glyph alone on
   no face. Colour says a meaning, never which key it is: no other tint.
@@ -74,10 +75,12 @@ draws a still key once and a pressed one once a frame.
   the cap (`KeycapPress`: `Depth.hover-press` under the hand, the whole way in `Depth.press-time`, held
   `Depth.min-hold`, risen in `Depth.release-time`); `on` lights the face as a selected row is lit, never
   tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`). A `latch` key, a mode's
-  as the crop, compare, De-dust and the measuring window, carries a `Lamp` after its word, dark glass
-  until `on` lights it in the LCD's phosphor (`ButtonStyle.latch`), so it tells it latches before the
-  press. Out of reach, the whole key fades, face and glyph, to `State.disabled` (0.25), well under an idle
-  tab's label (`State.idle`), so a key that cannot act never reads as one merely not chosen; a missing
+  as the crop, compare, De-dust and the measuring window, carries a `Lamp` after its word on its middle
+  line, dark glass in a light rim at rest (over 3:1 on the face, `SurfaceStyle.lamp-rim`) until `on` lights
+  it in the LCD's phosphor (`ButtonStyle.latch`), so it tells it latches before the press. Out of reach, a
+  flat key fades whole, face and glyph, to `State.disabled` (0.25), well under an idle tab's label
+  (`State.idle`), so a key that cannot act never reads as one merely not chosen; a keycap keeps its relief
+  and fades its legend alone, so a pair of keycaps stays a pair while one waits; a missing
   original, a folder away or a frame left out fades less (`State.missing`), its picture and name still read.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
   under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
@@ -156,10 +159,11 @@ field lies flat, as a text field.
   hover lights it alone, a tab out of reach fades to `State.disabled`. `marked`
   adds the accent dot, `swatches` draws colours for words; `ordered` leads each of a walk's steps with its
   number in a disc, the accent check there once `marked` says it is done.
-- **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` in a slot of its own (`ToggleStyle.slot`),
-  an `Inward` hollow cut to the canvas as the tab bar's, never a slider's grey rail; on, the knob stands one
-  `ToggleStyle.travel` along on the grab spring and the slot is lit up to it. The knob uncovers the state's mark,
-  O on the dark hollow while off, I on the lit stretch while on, as a power switch's. The knob grows under the hand.
+- **`Toggle`** (`DSToggle`): the slider's `Knob` in a slot of its own (`ToggleStyle.slot`), an `Inward`
+  hollow cut to the canvas as the tab bar's, never a slider's grey rail; on, the knob stands one
+  `ToggleStyle.travel` along on the grab spring. What it uncovers names the state by the lamps' rule: on, the
+  slot lit up to it in a lit lamp's phosphor (`ToggleStyle.lit`); off, a `Lamp` at rest in the hollow. The knob
+  grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill and chip faces keep the hover ground. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink.
@@ -194,7 +198,7 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
   clip, no layer), the rule, the embossed ink; the glint sweeps once on `glinting` or a hovered note, clipped
-  only while it crosses; `glint-at` holds it still. **Lamp** is `DSLamp`, at a key's legend's top right.
+  only while it crosses; `glint-at` holds it still. **Lamp** is a key's or a switch's state, dark glass in a light rim at rest, glowing its colour when lit.
 
 ## The rule: screens use only the design system
 
