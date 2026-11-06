@@ -6437,5 +6437,26 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1330,
+    "type": "fix",
+    "title": "A selected tile's ring reads on a light photo: its dark edge lies inside the ring, no longer under it",
+    "status": "done",
+    "detail": "Evaluation, UI Colour: a selected tile was marked by a thin white outline alone, faint on light photos. SelectionRing laid its dark edge one line in, where the two-point ring covering the bounds hid it; the edge now lies just inside the ring in the contrast edge's ink, so the ring reads white, dark, then the photo, on a sky as on a shadow. The gallery, Prepare the Roll's frames, the column's thumbnails and the projects' drop ring share the fix. Check: gallery_cell's selected ring, the same tile unselected as its twin, failing on the former ring."
+  },
+  {
+    "id": 1331,
+    "type": "feature",
+    "title": "A roll still to prepare carries the panel's warning mark in the navigator",
+    "status": "done",
+    "detail": "Evaluation, UI Iconography: a prepared roll and an unprepared one differed only by a folder glyph, which tells a marked roll from a folder, never its measure. Each listed row now reads with its listing, off the interface thread, whether photos lie in it and none is measured or a slide, the roll card's own rule (roll_card::unprepared); the row then shows the warning mark in the card's ink and says Not prepared yet to assistive tools and in its tooltip. A sidecar the app writes lists its row's folder again, so Prepare Roll or Reset the Roll moves the mark at once. Check: unprepared, a measured roll, a slide's and a folder of folders as twins, failing without the relisting."
+  },
+  {
+    "id": 1332,
+    "type": "design",
+    "title": "The favourites' view is a funnel key lit while on, and an empty list speaks at its top on the rows' inset",
+    "status": "done",
+    "detail": "Evaluation, UI Iconography and Spacing: the star marked a favourite folder and also toggled the favourites-only view; the view is now a funnel (filter.svg, drawn in Trinil's stroke) on a flat key lit while on, the star kept for the mark alone. 'No Projects' floated mid-column, laid over the whole column; it, No Favourites and an unreachable base now share RowsEmpty, at the list's top on the rows' text inset with the hint beneath, the projects' saying how one is made. Check: column_edges' empty lists, the grid's centred state as twin, and the key's checked state off then on."
   }
 ]

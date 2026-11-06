@@ -80,21 +80,21 @@ export component Medal inherits Rectangle {
 export enum RingPlacement { inset, outset }
 export enum SelectionTone { selected, destructive, hovered }
 
-// `TileLayers`, `RollFrameCell` and `TreeRowChrome.dropRing` alike: a fine edge inset by a line,
-// the selection's ring over it; `outset` rings the bounds an `xs` outside, with no edge.
+// `TileLayers`, `RollFrameCell` and `TreeRowChrome.dropRing` alike: the ring on the bounds, a dark
+// edge just inside it, so it reads on a light photo as on a dark one; `outset` an `xs` out, no edge.
 export component SelectionRing inherits Rectangle {
     in property <RingPlacement> placement: RingPlacement.inset;
     in property <SelectionTone> tone: SelectionTone.selected;
     in property <length> radius: Radius.card;
     property <length> out: root.placement == RingPlacement.outset ? Space.xs : 0px;
     if root.placement == RingPlacement.inset: Rectangle {
-        x: Stroke.line;
-        y: Stroke.line;
-        width: parent.width - 2 * Stroke.line;
-        height: parent.height - 2 * Stroke.line;
-        border-radius: root.radius;
+        x: Stroke.emphasis;
+        y: Stroke.emphasis;
+        width: parent.width - 2 * Stroke.emphasis;
+        height: parent.height - 2 * Stroke.emphasis;
+        border-radius: max(0px, root.radius - Stroke.emphasis);
         border-width: Stroke.line;
-        border-color: Colour.contrast-edge-idle;
+        border-color: Colour.contrast-edge;
     }
     Rectangle {
         x: -root.out;

@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
-import { Space, ShellStyle, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
+import { Space, ShellStyle, RowStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, RowsEmpty, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -41,6 +41,8 @@ export struct FolderLine {
     // A roll's stock artwork, drawn in place of the film-roll glyph.
     stock: image,
     has-stock: bool,
+    // Photos lie in it and none is measured: its roll asks for Prepare Roll.
+    unprepared: bool,
 }
 
 // A former library's folder; one on a disk away is shown, not offered.
@@ -131,6 +133,7 @@ component Rows inherits Scroller {
                 help: row.help != "" ? row.help : row.path;
                 caption: row.caption;
                 reach: row.reach;
+                unprepared: row.unprepared;
                 depth: row.depth;
                 expandable: row.chevron;
                 expanded: row.unfolded;
@@ -155,11 +158,11 @@ component Rows inherits Scroller {
                 cancelled => { Navigator.rename-cancelled(); }
             }
         }
-        if Navigator.no-favourites: EmptyState {
+        if Navigator.no-favourites: RowsEmpty {
             title: @tr("No Favourites");
             detail: @tr("Star a folder to keep it here, ready to open.");
         }
-        if Navigator.blank-title != "": EmptyState {
+        if Navigator.blank-title != "": RowsEmpty {
             title: Navigator.blank-title;
             detail: Navigator.blank-detail;
         }
@@ -239,7 +242,8 @@ export component NavigatorSection inherits Rectangle {
             padding-right: ShellStyle.column-inset;
             padding-bottom: Space.s;
             spacing: Space.s;
-            // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.
+            // `KeycapPlate(.mini)`: parent and the favourites' view flush on one plate, then the pill. The
+            // view is a filter lit while on; the star stays the mark a folder is starred with.
             ButtonGroup { plate: true;
                 mini: true;
                 Button { size: ButtonSize.mini; has-icon: true; square: true;
@@ -249,9 +253,9 @@ export component NavigatorSection inherits Rectangle {
                     clicked => { Navigator.go-up(); }
                 }
                 Button { size: ButtonSize.mini; has-icon: true; square: true;
-                    icon: Icons.favourite;
+                    icon: Icons.filter;
+                    on: Navigator.favourites-only;
                     help: Navigator.favourites-only ? @tr("Show every folder") : @tr("Show the favourites alone");
-                    glyph-ink: Navigator.favourites-only ? NavigatorStyle.favourite : Colour.ink;
                     clicked => { Navigator.favourites-toggled(); }
                 }
             }

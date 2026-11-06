@@ -1,6 +1,6 @@
 // Every line of a list or a tree: a title, its kind's glyph and chevron, a caption, a path before it,
-// a second line, a tint's badge, a star, a key on hover, its state when out of reach, and the title
-// typed over while renamed.
+// a second line, a tint's badge, a star, a key on hover, its state when out of reach or unprepared,
+// and the title typed over while renamed; and what an empty list says in place of its lines.
 import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tips, Divider } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
@@ -57,6 +57,8 @@ export component Row inherits Rectangle {
     // A folder out of reach: its title and glyph faded, its state's mark before the caption, which
     // says it in words at full ink.
     in property <Reach> reach: Reach.here;
+    // A roll whose photos ask for Prepare Roll: the warning mark its card shows, in the same ink.
+    in property <bool> unprepared;
     // The star: lit on a favourite, shown under the pointer on any row that can be starred.
     in property <bool> starrable;
     in property <bool> favourite;
@@ -114,6 +116,9 @@ export component Row inherits Rectangle {
     property <Tone> ink: root.heading || root.faint ? Tone.tertiary : root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
     accessible-role: list-item;
     accessible-label: root.title;
+    accessible-description: root.unprepared ? @tr("Not prepared yet") : "";
+    // Under the pointer, an unprepared roll's state before the row's own words, as its path.
+    property <string> tip: root.unprepared && root.help != "" ? @tr("Not prepared yet") + "\n" + root.help : root.unprepared ? @tr("Not prepared yet") : root.help;
     if root.pinned: Rectangle { background: root.band; }
     area := TouchArea {
         property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
@@ -143,7 +148,7 @@ export component Row inherits Rectangle {
             }
         }
         moved => { if (self.pressed) { root.dragged(self.pressed-x, self.pressed-y, self.mouse-x, self.mouse-y); } }
-        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+        changed has-hover => { Tips.hover(self.has-hover, root.tip, root.absolute-position.x, root.absolute-position.y + root.height); }
     }
     if root.focused: FocusRing { radius: Radius.badge; }
     // A sheet's side list is a few choices, each its own place in Tab's order, Space or Return taking it.
@@ -229,6 +234,10 @@ export component Row inherits Rectangle {
             committed(t) => { root.committed(t); }
             cancelled => { root.cancelled(); }
         }
+        if root.unprepared && !root.renaming: VerticalLayout {
+            alignment: center;
+            Icon { source: Icons.warning; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.warning; }
+        }
         if root.away && !root.renaming: VerticalLayout {
             alignment: center;
             Icon { source: Reaches.glyph(root.reach); width: RowStyle.chevron; height: RowStyle.chevron; tone: Tone.tertiary; }
@@ -270,4 +279,18 @@ export component Row inherits Rectangle {
         y: parent.height - self.height;
         height: Stroke.hairline;
     }
+}
+
+// An empty list's words where its lines would stand: at its top, on the lines' inset, in their quiet
+// ink, the hint beneath.
+export component RowsEmpty inherits VerticalLayout {
+    in property <string> title;
+    in property <string> detail;
+    padding-left: RowStyle.padding;
+    padding-right: RowStyle.padding;
+    padding-top: Space.s;
+    padding-bottom: Space.s;
+    spacing: Space.xxs;
+    Label { text: root.title; tone: Tone.secondary; wrap: word-wrap; }
+    if root.detail != "": Label { role: TextRole.caption; tone: Tone.secondary; text: root.detail; wrap: word-wrap; }
 }

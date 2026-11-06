@@ -155,3 +155,66 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     drop(shell);
     let _ = std::fs::remove_dir_all(&made);
 }
+
+/// An empty list says so where its first row would stand: at the list's top, on the rows' text inset,
+/// its hint beneath, the projects' as the favourites'; the favourites' view is a key lit while on.
+pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the column's empty lists are not exercised"),
+    };
+    let made = std::env::temp_dir().join(format!("oni-app-column-empty-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&made);
+    std::fs::create_dir_all(&made).unwrap();
+    let root = PathBuf::from(canonical(&made));
+    let (home, volumes) = (root.join("Home"), root.join("Volumes"));
+    common::linear_tiff(&home.join("Scans/A.tif"), 64, 48, 0.5);
+    std::fs::create_dir_all(&volumes).unwrap();
+    let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let computer = Computer { home: p(&home), volumes: p(&volumes) };
+    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
+    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    shell.window.show().unwrap();
+    let (ctl, w) = (shell.ctl.clone(), &shell.window);
+    shell.add(&home.join("Scans"));
+    rig.until("Scans read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened().is_some());
+    let text = |words: &str| common::the(w, AccessibleRole::Text, words);
+    let margin = w.global::<oni_app::DS>().get_space_sm();
+    // On the rows' text inset, and close under the bar and the header row, never mid column.
+    let at_top_on_inset = |e: &Placed| {
+        let (left, _) = bar(w);
+        let tabs = common::the(w, AccessibleRole::Tab, "Archive");
+        (e.x - (left + margin)).abs() < 0.5 && e.y > tabs.y + tabs.height && e.y < tabs.y + tabs.height + 80.0
+    };
+
+    w.global::<Library>().invoke_surface_picked(1);
+    rig.settle();
+    rig.shot("column-empty-projects");
+    let (title, hint) = (text("No Projects"), text("Select photos in the Archive, then choose New Project."));
+    assert!(at_top_on_inset(&title), "{title:?} at the list's top on the rows' inset {:?}", bar(w));
+    assert!((hint.x - title.x).abs() < 0.5 && hint.y >= title.y + title.height, "the hint {hint:?} beneath {title:?}");
+    // Twin: the grid's empty state, centred in the canvas, is neither.
+    assert!(!at_top_on_inset(&text("No Photos in a Project")));
+
+    // The favourites' view is a key lit while on, its funnel apart from the star a folder wears.
+    let checked = |label: &str| {
+        let keys: Vec<_> = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, label).filter(|e| e.accessible_role() == Some(AccessibleRole::Button)).collect();
+        assert_eq!(keys.len(), 1, "one key {label:?}");
+        keys[0].accessible_checked().unwrap_or(false)
+    };
+    w.global::<Library>().invoke_surface_picked(0);
+    rig.settle();
+    assert!(!checked("Show the favourites alone"), "twin: every folder shown, the key is off");
+    w.global::<Navigator>().invoke_favourites_toggled();
+    rig.settle();
+    assert!(checked("Show every folder"), "the favourites alone, the key is lit");
+    let none = text("No Favourites");
+    assert!(at_top_on_inset(&none), "the favourites' empty list alike: {none:?}");
+    assert!(text("Star a folder to keep it here, ready to open.").y >= none.y + none.height);
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&made);
+}

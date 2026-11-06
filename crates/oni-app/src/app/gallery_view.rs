@@ -238,6 +238,7 @@ impl Ctl {
         if paths.is_empty() {
             return;
         }
+        self.navigator_wrote(paths);
         {
             let mut s = self.state.borrow_mut();
             // A sidecar written may measure the roll shown: its banner is read again.

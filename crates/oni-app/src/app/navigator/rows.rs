@@ -57,6 +57,7 @@ impl Ctl {
                     renaming: model.renaming.as_deref() == Some(path.as_str()),
                     has_stock: stock.is_some(),
                     stock: stock.unwrap_or_default(),
+                    unprepared: presence.is_present() && s.nav.unprepared.contains(path),
                 }})
                 .collect();
             let blank = s.blank_words();
