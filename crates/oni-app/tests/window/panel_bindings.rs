@@ -1,5 +1,5 @@
 //! The panel's controls by the pointer on the headless window: a switch follows its owner after the
-//! hand moved it, the worded keys of Crop's tab act, Crop, the Measuring Window and Source Encoding
+//! hand moved it, the worded keys of Crop's tab act, Crop, the Measuring Window and Scan Profile
 //! reset, a menu drops under its picker, a typed size box shows what Full resolution writes, and the
 //! chip's popover closes before a key opens a window.
 
@@ -146,17 +146,17 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     assert_eq!(settings().geometry.measure_window, window, "Paste lays the copied window back");
 
-    // Source Encoding's RESET writes no encoding, the file read as sRGB again; the window taller, so
+    // Scan Profile's RESET writes no encoding, the file read as sRGB again; the window taller, so
     // the keys above leave the block in sight.
     rig.window.set_size(slint::PhysicalSize::new(1280, 900));
     tab(0);
     panel.invoke_encoding_picked(1);
     rig.settle();
-    // Flat-Field's chevron: the block unfolds above Source Encoding, its switch then in reach.
+    // Flat-Field's chevron: the block unfolds above Scan Profile, its switch then in reach.
     press(&rig, w, Role::Button, "Show Flat-Field");
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
-    reset("Source Encoding");
+    reset("Scan Profile");
     rig.settle();
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 

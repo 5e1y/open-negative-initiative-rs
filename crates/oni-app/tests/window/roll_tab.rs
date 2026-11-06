@@ -1,4 +1,4 @@
-//! The Roll tab's settings blocks on the headless window: Source Encoding on a file naming no
+//! The Roll tab's settings blocks on the headless window: Scan Profile on a file naming no
 //! profile reads it again, the dye family and Source Balance write and reset as their blocks do,
 //! and the flat-field's toggle, mask picker and Apply to Selection reach the frames.
 
@@ -70,7 +70,7 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     rig.pump();
     assert_eq!(settings().separation_family, Some(SeparationFamily::KodakC41));
     assert!(g.get_dye_separation_modified());
-    g.invoke_reset(5);
+    g.invoke_reset(4);
     rig.pump();
     assert_eq!((settings().separation_family, g.get_dye_separation_modified()), (None, false));
 
@@ -83,7 +83,7 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     rig.pump();
     assert!(settings().gains.stops[0] > 0.1, "{:?}", settings().gains.stops);
     assert!(g.get_source_balance_modified());
-    g.invoke_reset(10);
+    g.invoke_reset(9);
     rig.pump();
     assert_eq!(settings().gains.stops, [0.0; 3]);
     panel.invoke_film_type_picked(1);

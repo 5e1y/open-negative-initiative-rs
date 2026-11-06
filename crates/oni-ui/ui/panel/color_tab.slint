@@ -56,14 +56,37 @@ export component ColorPane inherits Pane {
         block: 2;
         LabSlider { index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; }
     }
+    // A photographer's order: the light and its contrast first, then the colour, then the effects.
+    if !Lab.shown: Block {
+        title: @tr("Lighting");
+        separated: false;
+        demo: "lighting";
+        block: 1;
+        news: News.lighting;
+        news-note: News.lighting-note;
+        news-read => { News.read("lighting.1.3.1"); }
+        modified: Store.lighting-modified;
+        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.");
+        StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
+        StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
+        StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
+        StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
+        StoreSlider {
+            field: 6; label: @tr("White point"); fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
+            fill: SliderFill.ramp; tint: Colour.white; knob: Colour.white;
+        }
+        StoreSlider {
+            field: 7; label: @tr("Black point"); fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
+            fill: SliderFill.ramp; tint: Colour.black; knob: Colour.black;
+        }
+    }
     // `ColorPane`: a black and white film has no colour for this block to move.
     if !Lab.shown && !PanelState.monochrome: Block {
         title: @tr("Colour");
-        separated: false;
         block: 0;
         modified: Store.color-modified;
         demo: "white-balance";
-        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
+        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Balance strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
         // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key. A run keeps the
         // key in place, idle, and counts in the status bar, so the panel never jumps.
         ButtonGroup { plate: true;
@@ -89,6 +112,13 @@ export component ColorPane inherits Pane {
             }
         }
         if PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
+        // The key's dose beside it; the roll's, so it says which photos it reaches. Its reset is its own
+        // double click: the block's would rewrite every photo of the roll.
+        StoreSlider { field: 11; label: @tr("Balance strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
+        if PanelState.roll-state == 1 && PanelState.roll-measured > 1: Label {
+            role: TextRole.note;
+            text: @tr("Shared by the {} photos of this roll.", PanelState.roll-measured);
+        }
         StoreSlider {
             field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
@@ -103,7 +133,7 @@ export component ColorPane inherits Pane {
     if Exporting.on-paper: Block {
         title: @tr("Paper Correction");
         demo: "paper-correction";
-        block: 9;
+        block: 8;
         modified: Store.paper-correction-modified;
         help: @tr("Red, Green and Blue are gains laid last, on a colour or a black and white print alike, for the paper the picture is proofed on; in any other working space they do nothing.\n\nAuto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey. The strongest stays at 0, so nothing clips.");
         ButtonGroup { plate: true;
@@ -129,33 +159,11 @@ export component ColorPane inherits Pane {
         }
     }
     if !Lab.shown: Block {
-        title: @tr("Lighting");
-        demo: "lighting";
-        block: 1;
-        news: News.lighting;
-        news-note: News.lighting-note;
-        news-read => { News.read("lighting.1.3.1"); }
-        modified: Store.lighting-modified;
-        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider brightens to the right. Black point and White point move the ends of the scan itself.");
-        StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
-        StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
-        StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
-        StoreSlider {
-            field: 6; label: @tr("White point"); fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
-            fill: SliderFill.ramp; tint: Colour.white; knob: Colour.white;
-        }
-        StoreSlider {
-            field: 7; label: @tr("Black point"); fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
-            fill: SliderFill.ramp; tint: Colour.black; knob: Colour.black;
-        }
-    }
-    if !Lab.shown: Block {
         title: @tr("Effects");
         demo: "effects";
         block: 2;
         modified: Store.effects-modified;
-        help: @tr("Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
-        StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
+        help: @tr("Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
         StoreSlider { field: 9; label: @tr("Vignette"); fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
         if !PanelState.monochrome: StoreSlider { field: 10; label: @tr("Chrome"); fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
     }
@@ -185,12 +193,12 @@ export component ColorPane inherits Pane {
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.
     if !Editors.monochrome: EditorBlock {
-        title: @tr("Spectrogram Finishing");
+        title: @tr("Colour Mixer");
         demo: "spectrogram";
         block: 2;
         modified: Editors.spectrogram-modified;
         folded <=> Editors.spectrogram-folded;
-        help: @tr("Shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.");
+        help: @tr("Spectrogram finishing: shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.");
         SpectrogramEditor { }
     }
     if !Editors.monochrome: EditorBlock {

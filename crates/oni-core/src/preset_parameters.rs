@@ -27,7 +27,7 @@ pub const BLOCKS: [Block; 4] = [
         id: "Settings",
         title: marked("Settings"),
         entries: &[
-            entry("sourceEncoding", marked("Source Encoding"), &["sourceEncoding"]),
+            entry("sourceEncoding", marked("Scan Profile"), &["sourceEncoding"]),
             entry("flatField", marked("Flat-Field"), &["flatField"]),
             entry("separation", marked("Dye Separation"), &["separation"]),
         ],
@@ -45,7 +45,7 @@ pub const BLOCKS: [Block; 4] = [
             entry("paperCorrection", marked("Paper Correction"), &["paperCorrection"]),
             entry("manualCurves", marked("Curves"), &["manualCurves", "manualContrast"]),
             entry("densityCeiling", marked("Highlight Detail"), &["densityCeiling"]),
-            entry("spectrogram", marked("Spectrogram Finishing"), &["spectrogram"]),
+            entry("spectrogram", marked("Colour Mixer"), &["spectrogram"]),
             entry("saturation", marked("Saturation Curve"), &["saturation"]),
         ],
     },

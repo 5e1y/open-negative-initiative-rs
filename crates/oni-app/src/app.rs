@@ -431,7 +431,6 @@ fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
         Block::Color => g.set_color_modified(on),
         Block::Lighting => g.set_lighting_modified(on),
         Block::Effects => g.set_effects_modified(on),
-        Block::BalanceStrength => g.set_balance_strength_modified(on),
         Block::DensityCeiling => g.set_density_ceiling_modified(on),
         Block::DyeSeparation => g.set_dye_separation_modified(on),
         Block::Sharpening => g.set_sharpening_modified(on),

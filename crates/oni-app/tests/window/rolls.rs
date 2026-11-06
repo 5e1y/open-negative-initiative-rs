@@ -1,7 +1,9 @@
 //! The roll gestures on the headless window: the Measured Roll block counts the roll and the folder's
-//! frames it missed, its two keys reach them, Reset the Roll asks then reaches the whole
-//! roll, Ungroup takes the roll off the targets, and the balance key asks Each or Average.
+//! frames it missed, its two keys reach them, Balance strength says it reaches the roll and does,
+//! Reset the Roll asks then reaches the whole roll, Ungroup takes the roll off the targets, and the
+//! balance key asks Each or Average.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Choice, Confirm, Library, Menus, PanelState};
 use oni_core::{Archive, EditorStore};
@@ -90,6 +92,32 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.until("A open", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some());
     rig.pump();
     assert_eq!((panel.get_roll_state(), panel.get_roll_measured(), panel.get_roll_unmeasured()), (1, 2, 2));
+    // Balance strength, under the balance key, says it is the roll's two photos', and moved on A it
+    // reaches B, while C, left out of the roll, keeps its own.
+    panel.set_tab(2);
+    panel.invoke_tab_picked(2);
+    rig.settle();
+    let shared = "Shared by the 2 photos of this roll.";
+    // The Colour block lies under Lighting: the wheel brings it up.
+    let over = slint::LogicalPosition::new(w.get_panel_x() + 120.0, 500.0);
+    for _ in 0..3 {
+        rig.window.dispatch_event(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -150.0 });
+        rig.pump();
+    }
+    rig.settle();
+    rig.shot("rolls-strength");
+    let (named, note) = (common::the(w, Role::Text, "Balance strength"), common::the(w, Role::Text, shared));
+    assert!(note.y > named.y && note.x == named.x, "the note under Balance strength: {named:?} {note:?}");
+    let strength = |name: &str| settings_of(&canonical(name)).balance_strength;
+    let resting = oni_settings::blocks::filter_balance::RESTING_STRENGTH;
+    w.global::<oni_app::Store>().invoke_step(oni_app::fields::Field::BalanceStrength.index(), -10);
+    rig.pump();
+    rig.until("B takes A's strength", Duration::from_secs(10), || (strength("B.tif") - resting).abs() > 0.05);
+    assert!((strength("B.tif") - ctl.state.borrow().store().settings().balance_strength).abs() < 1e-6);
+    assert_eq!(strength("C.tif"), resting, "twin: a photo outside the roll keeps its strength");
+    panel.set_tab(0);
+    panel.invoke_tab_picked(0);
+    rig.settle();
     panel.invoke_join_roll();
     rig.pump();
     for name in ["C.tif", "D.tif"] {

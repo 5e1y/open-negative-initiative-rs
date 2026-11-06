@@ -249,7 +249,7 @@ pub(crate) mod tests {
     #[test]
     fn a_block_reset_lands_on_the_rest_in_one_write() {
         let (mut s, dir) = fresh("reset");
-        s.apply(Command::Set { knob: Field::Contrast.knob(), value: 0.5 });
+        s.apply(Command::Set { knob: Field::Chrome.knob(), value: 0.5 });
         s.apply(Command::Set { knob: Field::Vignette.knob(), value: -1.0 });
         assert!(is_modified(s.settings(), Block::Effects) && !is_modified(s.settings(), Block::Lighting));
         let revision = s.revision();
@@ -258,7 +258,7 @@ pub(crate) mod tests {
         assert_eq!(s.revision(), revision + 1);
         assert!(!is_modified(s.settings(), Block::Effects));
         s.apply(Command::Undo);
-        assert_eq!(s.get(Field::Contrast), 0.5, "the reset is one step, undone whole");
+        assert_eq!(s.get(Field::Chrome), 0.5, "the reset is one step, undone whole");
         assert_eq!(s.get(Field::Vignette), -1.0);
         let _ = std::fs::remove_dir_all(&dir);
     }

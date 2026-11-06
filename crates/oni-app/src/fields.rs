@@ -53,7 +53,6 @@ pub enum Block {
     Color,
     Lighting,
     Effects,
-    BalanceStrength,
     DensityCeiling,
     DyeSeparation,
     Sharpening,
@@ -65,11 +64,10 @@ pub enum Block {
 }
 
 impl Block {
-    pub const ALL: [Block; 12] = [
+    pub const ALL: [Block; 11] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
-        Block::BalanceStrength,
         Block::DensityCeiling,
         Block::DyeSeparation,
         Block::Sharpening,
@@ -88,9 +86,8 @@ impl Block {
         use Field::*;
         match self {
             Block::Color => &[Temperature, Tint, ColorDensity],
-            Block::Lighting => &[Exposure, Highlights, Shadows, WhitePoint, BlackPoint],
-            Block::Effects => &[Contrast, Vignette, Chrome],
-            Block::BalanceStrength => &[BalanceStrength],
+            Block::Lighting => &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
+            Block::Effects => &[Vignette, Chrome],
             Block::DensityCeiling => &[DensityCeiling],
             Block::DyeSeparation => &[DyeSeparation],
             Block::Sharpening => &[SharpenAmount, SharpenRadius, SharpenHalo],
@@ -226,7 +223,7 @@ impl Field {
             Field::Vignette => s("Vignette", Vignette::RANGE, 0.0, Readout::Stops),
             Field::Chrome => s("Chrome", SAUCE_RANGE, 0.0, Readout::Percent),
             Field::BalanceStrength => s(
-                "Strength",
+                "Balance strength",
                 oni_settings::blocks::filter_balance::STRENGTH_RANGE,
                 oni_settings::blocks::filter_balance::RESTING_STRENGTH,
                 Readout::Percent),
@@ -245,7 +242,7 @@ impl Field {
                 centre: Some(Sharpen::RADIUS_ANCHOR),
                 ..s("Radius", Sharpen::radius_range(), Sharpen::RADIUS_ANCHOR, Readout::Pixels)
             },
-            Field::SharpenHalo => s("Halo limit", Sharpen::HALO_RANGE, Sharpen::default().halo, Readout::Percent),
+            Field::SharpenHalo => s("Halo suppression", Sharpen::HALO_RANGE, Sharpen::default().halo, Readout::Percent),
             Field::ChromaAmount => s("Amount", CHROMA_FORCE_RANGE, ChromaDenoise::default().force, Readout::Percent),
             Field::ChromaRadius => {
                 s("Radius", ChromaDenoise::RADIUS_RANGE, ChromaDenoise::default().radius, Readout::Pixels)

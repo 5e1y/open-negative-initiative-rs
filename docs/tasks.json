@@ -6500,5 +6500,26 @@
     "title": "Each face says what it holds at the head of its Colour tab",
     "status": "done",
     "detail": "UX evaluation (Obvious without a tutorial): the faces were explained only in the switch's tooltip, and 'Pro' said nothing of what it holds. Both names stay; the Colour tab opens on one line in the switch's own words, Pro: every setting by hand, the place to start, or Scanner: a minilab's density and colour, in steps, at the same place on both faces. The Scanner's tooltip leaves its keypad with the keys. Window check scanner reads each caption at one height; twin: Pro's words leave with its face."
+  },
+  {
+    "id": 1318,
+    "type": "interface",
+    "title": "The Pro face decides the light first: Lighting with Contrast, then Colour, then Effects",
+    "status": "done",
+    "detail": "The Colour tab laid Colour before Lighting and filed Contrast under Effects, against the order a photographer decides in. Lighting now leads, Contrast right after Exposure as in every editor's basic panel, and its reset clears Contrast with the light; Colour and Paper Correction follow, Effects keep Vignette and Chrome. Only the panel and its reset groups move, the phone remote's mirror with them: the pipeline's order and every render stay as they are. The Effects help card's demo still films Contrast until the demos are filmed again."
+  },
+  {
+    "id": 1319,
+    "type": "interface",
+    "title": "Auto White Balance in one place: Balance strength under its key",
+    "status": "done",
+    "detail": "Auto White Balance stood twice, a key in the Colour block and a folded block of the same name in the Roll tab holding its dose. Balance strength now stands right under the key, shown wherever the key is, slides and RGB passes included, and says when it is shared by the roll's other photos. Its reset is its own double click, since the Colour block's reset would rewrite every photo of the roll; the block, its reset group and its demo leave the Roll tab."
+  },
+  {
+    "id": 1320,
+    "type": "interface",
+    "title": "Spectrogram Finishing, Source Encoding and Halo limit named by their effect",
+    "status": "done",
+    "detail": "Engineering words a photographer does not parse: the hue wheel is the Colour Mixer, the profile a file naming none is read as is the Scan Profile, and the sharpening's overshoot clamp is Halo suppression. The help cards name the technique; the preset rows, the folds remembered and the news take the new names."
   }
 ]

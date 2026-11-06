@@ -12,8 +12,8 @@ use std::time::Duration;
 use crate::common;
 use crate::help_demo::{clip_pixels, hover_note, watch};
 
-const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider brightens to the right. Black point and White point move the ends of the scan itself.";
-const EFFECTS: &str = "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.";
+const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.";
+const EFFECTS: &str = "Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.";
 
 pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
     let gpu = match oni_app::render::Device::open() {
