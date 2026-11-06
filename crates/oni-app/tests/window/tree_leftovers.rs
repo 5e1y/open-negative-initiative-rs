@@ -85,7 +85,8 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     let w = &shell.window;
     let lib = w.global::<Library>();
     let ds = w.global::<oni_app::DS>();
-    let (h, left) = (ds.get_control_film_sidebar_row_height(), ds.get_control_card_inset());
+    // The column's one inset, `ShellStyle.column-inset`, is `Space.md`.
+    let (h, left) = (ds.get_control_film_sidebar_row_height(), ds.get_space_md());
     shell.open_folder(&scans);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     lib.invoke_tile_clicked(0, false, false);
@@ -106,21 +107,22 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     assert!(b00.thumb && b00.width < 150.0, "two thumbnails a line: {b00:?}");
     rig.until("the projects' thumbnails", Duration::from_secs(60), || project_rows(&lib).iter().filter(|r| r.thumb).all(|r| r.picture.size().width > 0));
     rig.shot("tree-leftovers-thumbnails");
-    assert!(lib.get_tree_layout_help().starts_with("Two thumbnails a line"), "the key on the projects wears the layout");
+    let select = common::placed(w, i_slint_backend_testing::AccessibleRole::Button, "Two thumbnails a line");
+    assert_eq!(select.len(), 1, "the select on the projects names the layout in words");
 
-    // The key cycles the editor's layout: one a line, then names; the gallery keeps its own, names.
-    lib.invoke_tree_layout_next();
+    // The select picks the editor's layout, one a line, then names; the gallery keeps its own, names.
+    lib.invoke_tree_layout_picked(2);
     rig.pump();
     assert!(project_rows(&lib)[at(&lib, "B00")].width > 2.0 * b00.width, "one thumbnail a line");
-    lib.invoke_tree_layout_next();
+    lib.invoke_tree_layout_picked(0);
     rig.pump();
     assert!(project_rows(&lib).iter().all(|r| !r.thumb) && project_rows(&lib).iter().any(|r| r.title == "B00.tif"), "names, in full");
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(project_rows(&lib).iter().all(|r| !r.thumb), "the gallery's projects start as names");
-    lib.invoke_tree_layout_next();
+    lib.invoke_tree_layout_picked(1);
     rig.pump();
-    assert!(project_rows(&lib).iter().any(|r| r.thumb), "the gallery's key gives two a line");
+    assert!(project_rows(&lib).iter().any(|r| r.thumb), "the gallery's select gives two a line");
     let prefs = Preferences::load(&support);
     assert_eq!((prefs.string("sidebarLayout.gallery"), prefs.string("sidebarLayout.editor")), (Some("pairs"), Some("list")));
     ctl.act(oni_app::Act::ToggleMode);

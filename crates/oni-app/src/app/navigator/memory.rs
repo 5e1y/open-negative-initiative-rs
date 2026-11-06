@@ -12,7 +12,9 @@ impl Ctl {
         let p = me.clone();
         n.on_row_folded(move |i| p.navigator_row_folded(index(i)));
         let p = me.clone();
-        n.on_keys_held(move |held| p.rows_held(held));
+        n.on_keys_taken(move || p.rows_taken());
+        let p = me.clone();
+        n.on_key(move |text, command| p.navigator_key(&text, command));
         let p = me.clone();
         n.on_star_clicked(move |i| {
             let path = p.state.borrow().nav.rows.get(index(i)).cloned();

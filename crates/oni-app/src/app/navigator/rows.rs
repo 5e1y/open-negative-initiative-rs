@@ -96,16 +96,15 @@ impl Ctl {
                 })
                 .collect();
             let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
-            let opened_pill = (s.opened.as_deref().map(|o| s.nav.computer.name(o)).unwrap_or_default(), s.opened.clone().unwrap_or_default());
             s.nav.rows = rows.into_iter().map(|(p, _)| p).collect();
             let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
             refused.extend(s.opened.clone().filter(|o| s.survey.unreadable.contains(o)));
             *s.nav.refused.lock().expect("refused") = refused;
             s.remember();
-            (lines, choices, header, welcome, welcome_shown, opened_pill, blank)
+            (lines, choices, header, welcome, welcome_shown, blank)
         };
         self.list_wanted();
-        let (lines, choices, header, welcome, welcome_shown, opened_pill, blank) = published;
+        let (lines, choices, header, welcome, welcome_shown, blank) = published;
         let n = w.global::<crate::Navigator>();
         n.set_rows(ModelRc::new(VecModel::from(lines)));
         n.set_ancestors(ModelRc::new(VecModel::from(choices)));
@@ -119,8 +118,6 @@ impl Ctl {
         n.set_blank_detail(blank.1.into());
         n.set_welcome(ModelRc::new(VecModel::from(welcome)));
         n.set_welcome_shown(welcome_shown);
-        n.set_opened_title(opened_pill.0.into());
-        n.set_opened_help(opened_pill.1.into());
         self.publish_catch_up();
         // A volume mounted under another name moves no tile, so the banner's lead is looked for here too.
         self.look_for_lead();
@@ -153,7 +150,7 @@ impl Ctl {
     }
 
     /// `NavigatorRow.onTapGesture`: a click opens its folder, out of reach too, where the gallery
-    /// says its state; the second of a double click opens nothing more. The arrows follow it.
+    /// says its state; the second of a double click opens nothing more.
     pub(super) fn navigator_row_clicked(self: &Rc<Self>, i: usize) {
         let open = {
             let mut s = self.state.borrow_mut();
@@ -164,7 +161,6 @@ impl Ctl {
                 _ => 1,
             };
             s.nav.clicks = Some((path.clone(), now, count));
-            s.nav.keys = true;
             s.org.trash_picked = None;
             s.nav.model.click(&path, count)
         };
@@ -180,7 +176,6 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.nav.rows.get(i).cloned() else { return };
-            s.nav.keys = true;
             s.nav.model.toggle(&path);
         }
         self.publish_navigator();

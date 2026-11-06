@@ -57,7 +57,6 @@ impl Ctl {
         Metrics {
             row: ds.get_control_film_sidebar_row_height(),
             small: ds.get_space_sm(),
-            medium: ds.get_space_md(),
             tiny: ds.get_space_xxs(),
             caption: ds.get_control_caption_height(),
         }
@@ -80,20 +79,18 @@ impl Ctl {
         if self.state.borrow().org.projects_surface { Which::Projects } else { Which::Archive }
     }
 
-    /// `SidebarKeys`' layout key: the next layout remembered for the mode on screen.
-    pub(super) fn next_layout(&self) {
+    /// The column's select: the layout picked, remembered for the mode on screen.
+    pub(super) fn pick_layout(&self, layout: Layout) {
         let which = self.shown_tree();
         let key = if which == Which::Projects && self.in_gallery() { GALLERY_LAYOUT } else { EDITOR_LAYOUT };
-        self.remember(key, serde_json::Value::from(self.column_layout(which).next().key()));
+        self.remember(key, serde_json::Value::from(layout.key()));
     }
 
-    /// The key wears the layout of the tree shown, and names the next.
+    /// The select names the layout of the tree shown.
     pub(super) fn publish_layout_key(&self) {
         let Some(w) = self.window() else { return };
         let layout = self.column_layout(self.shown_tree());
-        let lib = w.global::<Library>();
-        lib.set_tree_layout(Layout::ALL.iter().position(|l| *l == layout).unwrap_or(0) as i32);
-        lib.set_tree_layout_help(tr!("{layout} — next: {next}", layout = layout.name(), next = layout.next().name()).into());
+        w.global::<Library>().set_tree_layout(Layout::ALL.iter().position(|l| *l == layout).unwrap_or(0) as i32);
     }
 
     /// Lays `rows`, whose photos are `paths`, in the tree's column, and asks the thumbnails they lack.

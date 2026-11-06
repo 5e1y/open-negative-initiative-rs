@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
-import { NavigatorSection, Navigator } from "navigator.slint";
-import { Picker, PickerFace, Icons, Surface, Space, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
+import { NavigatorSection } from "navigator.slint";
+import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, EmptyState, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 
@@ -12,11 +12,26 @@ export component Tree inherits Surface {
     property <length> menu-y;
     // `sidebarLayout` follows the mode: the projects' tree is laid again by the other one.
     changed beside-photo => { Library.tree-moded(); }
-    // Each part pads itself, as Swift's column does: the tab bar, the navigator's header, the tree.
+    // `SidebarLayout`'s names, in its order, then the view's lines on each tree.
+    property <[string]> layouts: [@tr("Names only"), @tr("Two thumbnails a line"), @tr("One thumbnail a line")];
+    property <[MenuLine]> archive-view: [
+        { text: root.layouts[0], enabled: true, rule: false, opens: false },
+        { text: root.layouts[1], enabled: true, rule: false, opens: false },
+        { text: root.layouts[2], enabled: true, rule: false, opens: false },
+        { text: @tr("Show the Selected Photo"), enabled: true, rule: true, opens: false },
+    ];
+    property <[MenuLine]> project-view: [
+        { text: root.layouts[0], enabled: true, rule: false, opens: false },
+        { text: root.layouts[1], enabled: true, rule: false, opens: false },
+        { text: root.layouts[2], enabled: true, rule: false, opens: false },
+        { text: @tr("Show the Selected Photo"), enabled: true, rule: true, opens: false },
+        { text: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder"), enabled: true, rule: false, opens: false },
+    ];
+    // Each part pads itself by the column's one inset: the tab bar, the headers, the rows.
     VerticalLayout {
         HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
             padding-top: Space.s;
             padding-bottom: Space.s;
             Tabs {
@@ -38,34 +53,29 @@ export component Tree inherits Surface {
                 if (Library.trash-row-menu(i)) { menu.show(); }
             }
         }
-        // `SidebarKeys` on a mini plate, then the pill naming what the column lists; on the projects
-        // in both modes, beside a photo alone on the archive. Under the tab bar its padding stands above.
+        // The tree's view in words: a select naming its layout, its menu the layouts, the photo selected
+        // shown and, on the projects, every folder opened or folded; under the tab bar its padding stands above.
         if Library.surface == 1 || root.beside-photo: HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
             padding-top: Library.surface == 1 ? 0 : Space.s;
             padding-bottom: Space.s;
-            spacing: Space.s;
-            ButtonGroup { plate: true;
-                mini: true;
-                Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.reveal; help: @tr("Show the Selected Photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
-                if Library.surface == 1: Button { size: ButtonSize.mini; has-icon: true; square: true;
-                    icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
-                    help: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder");
-                    clicked => { Library.project-fold-all(); }
-                }
-                Button { size: ButtonSize.mini; has-icon: true; square: true;
-                    icon: Library.tree-layout == 0 ? Icons.list : Library.tree-layout == 1 ? Icons.gallery : Icons.single;
-                    help: Library.tree-layout-help;
-                    clicked => { Library.tree-layout-next(); }
-                }
-            }
             Picker {
                 face: PickerFace.pill;
-                pressable: false;
                 horizontal-stretch: 1;
-                value: Library.surface == 1 ? @tr("ONI Projects") : Navigator.opened-title;
-                help: Library.surface == 1 ? "" : Navigator.opened-help;
+                value: root.layouts[Library.tree-layout];
+                lines: Library.surface == 1 ? root.project-view : root.archive-view;
+                chosen(i) => {
+                    if (i < root.layouts.length) {
+                        Library.tree-layout-picked(i);
+                    } else if (i > root.layouts.length) {
+                        Library.project-fold-all();
+                    } else if (Library.surface == 0) {
+                        Library.tree-centre();
+                    } else {
+                        Library.project-centre();
+                    }
+                }
             }
         }
         if Library.surface == 0 && root.beside-photo: RowTree {

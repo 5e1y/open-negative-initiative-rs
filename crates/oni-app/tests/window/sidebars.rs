@@ -1,9 +1,9 @@
-//! The sidebars' keys where Swift lays them, read off the pointer's notes: beside a photo the
-//! column's keys sit on one mini plate left of the folder's pill, a filling plate spans its block with
-//! its words evenly apart, and a black and white photo has no Color block.
+//! The sidebars' keys read off the pointer's notes: beside a photo the column's header is a select in
+//! words, a filling plate spans its block with its words evenly apart, and a black and white photo has
+//! no Color block.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Framing, Library, Navigator, PanelState, Tip};
+use oni_app::{Framing, Library, PanelState, Tip};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::platform::software_renderer::Rgb565Pixel;
@@ -43,10 +43,9 @@ fn notes_along(rig: &common::Rig, tip: &Tip, from: f32, to: f32, y: f32) -> Vec<
     met
 }
 
-/// `librarySidebar`'s row: the target key, the layout key, then the pill, on one line.
-fn keys_then_pill(met: &[(String, f32, f32)], target: &str, layout: &str, pill: &str) -> bool {
-    let names: Vec<&str> = met.iter().map(|m| m.0.as_str()).collect();
-    names == [target, layout, pill]
+/// A row read without a note: every control on it says what it does in words.
+fn worded(met: &[(String, f32, f32)]) -> bool {
+    met.is_empty()
 }
 
 /// A plate filling its block: its three keys from the block's one edge to the other.
@@ -117,27 +116,20 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     rig.settle();
     rig.shot("sidebars-column");
 
-    // Beside a photo: the target and layout keys on one plate at the left, the pill after them.
-    let target = "Show the Selected Photo";
-    let layout = lib.get_tree_layout_help().to_string();
-    let pill = w.global::<Navigator>().get_opened_help().to_string();
-    assert!(!pill.is_empty(), "the opened folder names its path");
-    row_of(&rig, &tip, 22.0, target).expect("the target key at the column's left");
-    // A key's tooltip waits the system's delay; a help mark's note shows at once, as Swift's does.
+    // Beside a photo the column's header is one select naming its layout in words: no key on its row
+    // needs a note to be read.
+    let select = common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Two thumbnails a line");
+    let met = notes_along(&rig, &tip, 0.0, 260.0, select.y + select.height / 2.0);
+    assert!(worded(&met), "{met:?}");
+    // Twin: a row of glyph keys, each read off its note, is refused.
+    assert!(!worded(&[("Show the Selected Photo".to_string(), 16.0, 40.0), ("Names only".to_string(), 40.0, 64.0)]));
+    // A key's tooltip waits the system's delay; a help mark's note shows at once.
     assert!(!tip.get_at_once(), "twin: a tooltip is not shown at once");
     let tips = w.global::<oni_app::Tips>();
     tips.invoke_note(true, "a note".into(), 10.0, 10.0, 0.0);
     assert!(tip.get_shown() && tip.get_at_once(), "a help mark's note shows at once");
     tips.invoke_note(false, "a note".into(), 10.0, 10.0, 0.0);
     assert!(!tip.get_shown());
-    let y = row_of(&rig, &tip, 22.0, target).expect("the target key again");
-    let met = notes_along(&rig, &tip, 0.0, 260.0, y);
-    assert!(keys_then_pill(&met, target, &layout, &pill), "{met:?}");
-    assert!(met.iter().all(|m| m.0 != "Read the folders again"), "Swift shows no reload key here");
-    assert!(met[1].1 - met[0].2 <= 3.0, "the two keys sit flush on their plate: {met:?}");
-    // Twin: the pill alone on its row, the keys right-aligned under it, is refused.
-    let apart = [(layout.clone(), 200.0, 224.0), (target.to_string(), 228.0, 252.0)];
-    assert!(!keys_then_pill(&apart, target, &layout, &pill));
 
     // The Crop tab's first plate spans its block, its three keys sharing the room alike.
     panel.set_tab(1);

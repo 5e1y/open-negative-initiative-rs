@@ -43,6 +43,8 @@ export component Picker inherits HorizontalLayout {
     property <bool> chip: root.face == PickerFace.chip;
     property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
     property <bool> as-field: root.face == PickerFace.field;
+    // A pill wears the chevron only while it has a menu to drop.
+    property <bool> drops: root.pressable && (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0);
     // The press its field last took, and the one that closed its menu: a release whose press never
     // came is a click a menu swallowed, which opens this picker, as AppKit's does, unless it closed its own.
     property <int> down-at: -1;
@@ -82,7 +84,7 @@ export component Picker inherits HorizontalLayout {
             if root.prefix != "": Label { text: root.prefix; tone: Tone.secondary; }
             if root.prefix != "": Label { text: "·"; tone: Tone.secondary; }
             Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
-            if root.chip || root.as-field: VerticalLayout {
+            if root.chip || root.as-field || (root.pill && root.drops): VerticalLayout {
                 alignment: center;
                 Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: self.width; }
             }

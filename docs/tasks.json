@@ -6115,5 +6115,26 @@
     "title": "A light knob's grip lines in the dark ink",
     "status": "done",
     "detail": "Evaluation s-0abd2d65 (UI Consistency, minor): White point's knob was a plain white disc, its white grip lines on a white cap. The ink that once followed a white cap was lost when the knob moved into the design system; the knob now picks its grip ink from its cap: the text-on-fill white, or the on-light ink past an OKLab lightness of 0.6 (`SliderStyle.grip-turn`), where the two inks' contrasts cross. White point and the levels' white and light-grey handles carry dark lines; every darker cap keeps white ones."
+  },
+  {
+    "id": 1240,
+    "type": "design",
+    "title": "The library column's tab bar, headers and rows share one inset, edge to edge",
+    "status": "done",
+    "detail": "Owner's review: the tab bar (Archive / Projects) and the header rows stood at Space.md from the column's edges while the navigator's rows lit a band from Space.sm and the tree's from CardStyle.inset, 8 pt wider on each side, and the tree's thumbnails sat Space.md inside their band again. One token, ShellStyle.column-inset (Space.md), now pads the tab bar, the navigator's header and rows and the tree's header and column; a line of thumbnails spans the band as a row does (sidebar::frames lays no inner inset, Metrics.medium removed), so every edge of the column lines up with the tab bar's. Checks: the frames' unit test asserts a pair of photos flush with the folder's band, its twin a pair inset by 16 pt off it; tree_leftovers reads the column's inset where it read the card's."
+  },
+  {
+    "id": 1241,
+    "type": "fix",
+    "title": "The folders' rows hold the keyboard only while Slint's focus says so, ringed; leaving the editor gives the photos the arrows",
+    "status": "done",
+    "detail": "Evaluation (UX Accessibility, major): after leaving the editor the focus was invisible and the arrows folded folders in the tree. Cause: a click on a navigator row set a Rust flag (nav.keys) that sent the arrows, Space and Return to the rows until a click on the grid, while Slint's focus stayed on the window's monitor, so no ring showed, and nothing else dropped the flag: the editor opened and left by the mode's key or the menu found it still set. The flag, its grid_took_keys resets and the rows' branch in the window's key path are removed; the rows answer their keys from their own KeyScope, which a click on a row (as on a slider) or Tab gives the keyboard and any other press or a change of screen takes back, so the arrows act on the rows only while the ring shows on the picked row. Return still renames the folder clicked, as approved for the explorer. Assistive tools name the holder by a list labelled Folders round the scope. The finding that the gallery's accessibility tree still listed the editor's sliders and keys was not reproduced: Slint's search and AccessKit drop hidden items and the panel is not instantiated in the gallery; the evaluation's shots show the editor still on screen. Checks: column_edges asserts the rows named as the keyboard's holder after a click, the grid's press and the editor's round trip handing the arrows to the photos with every fold kept, no slider listed back in the gallery (twin: the panel's sliders listed beside a photo); the navigator and explorer checks click their rows through the window's pointer hook, and the grid's twin presses before its click."
+  },
+  {
+    "id": 1242,
+    "type": "design",
+    "title": "The column's header is one select naming the tree's layout in words, its menu the column's view",
+    "status": "done",
+    "detail": "Evaluation (UI Iconography): the filmstrip's and the Projects header's keys were small glyphs (a target, a grid, fold-all) read only through their tooltips, and the layout key cycled while naming the next layout. The plate of glyph keys and the pill beside it (the opened folder's name, or ONI Projects, both already on screen in the tree's pinned row and the tab bar) give way to one flat select across the column: it names the layout in words (Names only, Two thumbnails a line, One thumbnail a line) and its menu offers the three layouts, then Show the Selected Photo and, on the projects, Open or Fold every folder. Library.tree-layout-picked(int) replaces tree-layout-next and its help string; Layout::name and next go, and Navigator.opened-title and opened-help with the pill. A pill picker with a menu to drop now wears the chevron, so the navigator's ancestors pill shows it opens too. Checks: column_edges opens the select, finds the menu's lines, picks One thumbnail a line and reads the tree laid so and the select renamed (twin: the former name gone), and asserts the select spans the column's inset; sidebars asserts no control on the header needs its note to be read (twin: the former glyph keys are refused); tree_leftovers, tree_hand and library_column pick layouts by index."
   }
 ]

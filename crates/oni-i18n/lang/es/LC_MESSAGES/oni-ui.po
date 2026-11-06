@@ -986,12 +986,16 @@ msgid "Description"
 msgstr "Descripción"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "Archive"
-msgstr "Archivo"
+msgid "Names only"
+msgstr "Solo nombres"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "Projects"
-msgstr "Proyectos"
+msgid "Two thumbnails a line"
+msgstr "Dos miniaturas por línea"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "One thumbnail a line"
+msgstr "Una miniatura por línea"
 
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Fold every folder"
@@ -1002,8 +1006,12 @@ msgid "Open every folder"
 msgstr "Expandir todas las carpetas"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "ONI Projects"
-msgstr "Proyectos de ONI"
+msgid "Archive"
+msgstr "Archivo"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "Projects"
+msgstr "Proyectos"
 
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
 msgid "Gallery"
@@ -1108,6 +1116,14 @@ msgstr "Sin favoritos"
 #: crates/oni-ui/ui/navigator.slint
 msgid "Star a folder to keep it here, ready to open."
 msgstr "Marca una carpeta con una estrella para tenerla aquí, lista para abrir."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "RESTORE"
+msgstr "RESTAURAR"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Folders"
+msgstr "Carpetas"
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "The archive shows a folder of your disk and everything under it."
@@ -3941,10 +3957,6 @@ msgstr "Balance de blancos automático"
 msgid "{count} frames together"
 msgstr "{count} fotogramas juntos"
 
-#: crates/oni-app/src/app/tree_column.rs
-msgid "{layout} — next: {next}"
-msgstr "{layout} — siguiente: {next}"
-
 #: crates/oni-app/src/app/updates.rs
 msgid "Download"
 msgstr "Descargar"
@@ -4292,18 +4304,6 @@ msgstr "Demasiados informes ahora mismo. Inténtalo de nuevo dentro de una hora.
 #: crates/oni-app/src/report.rs
 msgid "The report was not accepted ({code}). Try again later."
 msgstr "No se aceptó el informe ({code}). Inténtalo de nuevo más tarde."
-
-#: crates/oni-app/src/sidebar.rs
-msgid "Names only"
-msgstr "Solo nombres"
-
-#: crates/oni-app/src/sidebar.rs
-msgid "Two thumbnails a line"
-msgstr "Dos miniaturas por línea"
-
-#: crates/oni-app/src/sidebar.rs
-msgid "One thumbnail a line"
-msgstr "Una miniatura por línea"
 
 #: crates/oni-app/src/starter.rs
 msgid "V{version} Loading"

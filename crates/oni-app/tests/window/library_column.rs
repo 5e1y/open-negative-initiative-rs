@@ -141,7 +141,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     let floor = -(lib.get_tree_content_height() - 520.0);
     assert!((lib.get_tree_viewport_y() - floor).abs() < 0.5, "the scroll clamped to the content: {} against {floor}", lib.get_tree_viewport_y());
     let pairs = rows(&lib)[photo_row(&lib, "P05")].clone();
-    lib.invoke_tree_layout_next();
+    lib.invoke_tree_layout_picked(2);
     let next = rows(&lib)[photo_row(&lib, "P05")].clone();
     assert!((next.thumb, next.width) != (pairs.thumb, pairs.width), "twin: a new layout lays the rows anew");
 
@@ -232,9 +232,7 @@ pub(crate) fn a_scroll_brings_the_pictures_of_the_rows_it_reaches() {
 
     // Memory let go, as past its limit: the column laid again reads only the rows near its view.
     ctl.state.borrow_mut().forget_tiles();
-    for _ in 0..oni_app::sidebar::Layout::ALL.len() {
-        lib.invoke_tree_layout_next();
-    }
+    lib.invoke_tree_layout_picked(lib.get_tree_layout());
     rig.until("the pictures read back", Duration::from_secs(30), shown);
     rig.settle();
     let held = ctl.state.borrow().tiles_held();

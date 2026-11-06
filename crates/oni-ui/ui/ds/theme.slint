@@ -304,6 +304,8 @@ export global ShellStyle {
     out property <length> export-width: DS.control-app-bar-export-width - Space.m;
     out property <length> filter-width: DS.control-app-bar-filter-width;
     out property <length> library-width: DS.control-film-sidebar-width;
+    // A column's one inset: its tab bar, its header rows and its rows' bands share it, so their edges line up.
+    out property <length> column-inset: Space.m;
     out property <length> panel-width: DS.control-panel-width;
     out property <length> info-width: DS.control-info-sidebar-width;
     out property <length> info-description: DS.control-project-description-height;

@@ -273,12 +273,14 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert!(home.join("Scans/New Folder 2").is_dir(), "twin: a taken name is numbered");
     n.invoke_rename_cancelled();
     rig.pump();
-    // A double click renames nothing; the arrows walk the rows and Return renames the picked one,
-    // as in the Finder's sidebar.
+    // A double click renames nothing; the click gives the rows the keyboard, named and ringed, their
+    // arrows walk them and Return renames the picked one, as in the Finder's sidebar.
     rest(&rig);
-    click(&rig, w, "Roll 2");
-    click(&rig, w, "Roll 2");
+    let roll2 = common::the(w, i_slint_backend_testing::AccessibleRole::ListItem, "Roll 2").middle();
+    common::click(&rig, w, roll2);
+    common::click(&rig, w, roll2);
     assert!(lines(w).iter().all(|l| !l.renaming), "a double click renames nothing");
+    assert_eq!(common::focused_label(w), "Folders", "the click gave the rows the keyboard");
     let up: slint::SharedString = slint::platform::Key::UpArrow.into();
     rig.key(&up);
     rig.key(&up);
@@ -336,7 +338,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rig.pump();
     assert!(row(w, "Roll 1").picked && row(w, "Scans 2026").unfolded);
     assert_eq!(n.get_reveal_row() as usize, at(w, "Roll 1"));
-    assert_eq!((n.get_opened_title().as_str(), n.get_height()), ("Roll 1", 200.0));
+    assert_eq!(n.get_height(), 200.0);
     n.set_height(320.0);
     n.invoke_height_stored(320.0);
     rig.settle();

@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
-import { Space, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
+import { Space, ShellStyle, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -65,9 +65,6 @@ export global Navigator {
     in property <int> reveal-row: -1;
     in property <int> reveal-serial;
     in property <[MenuLine]> menu-lines;
-    // The archive tree's pill beside a photograph: the opened folder.
-    in property <string> opened-title;
-    in property <string> opened-help;
     in property <bool> welcome-shown;
     in property <[WelcomeLine]> welcome;
     in property <bool> catch-up-shown;
@@ -77,8 +74,10 @@ export global Navigator {
     in property <string> catch-up-more;
     in property <string> catch-up-all-in;
     callback row-clicked(int);
-    // The rows took the keyboard by Tab, which then walks them with the arrows, or gave it on.
-    callback keys-held(bool);
+    // The rows took the keyboard, by a click on a row or by Tab; a key while they hold it, ⌘ held or
+    // not, answering whether they read it.
+    callback keys-taken();
+    callback key(string, bool) -> bool;
     // The chevron alone: the row folds or unfolds, and nothing opens.
     callback row-folded(int);
     callback star-clicked(int);
@@ -101,7 +100,7 @@ export global Navigator {
 // The folders, then the ONI Trash's rows under Computer; scrolled by the wheel and the knob alone.
 component Rows inherits Scroller {
     in property <[TrashLine]> trash-rows;
-    // A place in Tab's order, beside the grid where the arrows walk the rows.
+    // A place in Tab's order, beside the grid, where the arrows walk the rows.
     in property <bool> keyed;
     callback trash-clicked(int);
     callback trash-folded(int);
@@ -119,8 +118,8 @@ component Rows inherits Scroller {
     column := VerticalLayout {
         width: parent.width;
         alignment: start;
-        padding-left: Space.s;
-        padding-right: Space.s;
+        padding-left: ShellStyle.column-inset;
+        padding-right: ShellStyle.column-inset;
         for row[i] in Navigator.rows: VerticalLayout {
             if !row.renaming: Row {
                 form: RowForm.navigator;
@@ -143,8 +142,8 @@ component Rows inherits Scroller {
                 selected: row.opened;
                 favourite: row.favourite;
                 present: row.present;
-                clicked => { Navigator.row-clicked(i); }
-                folded => { Navigator.row-folded(i); }
+                clicked => { keys.focus(); Navigator.row-clicked(i); }
+                folded => { keys.focus(); Navigator.row-folded(i); }
                 starred => { Navigator.star-clicked(i); }
                 menu(x, y) => { root.folder-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
@@ -186,10 +185,20 @@ component Rows inherits Scroller {
             }
         }
     }
-    keys := KeyScope {
-        enabled: root.keyed;
-        ring: false;
-        changed has-focus => { Navigator.keys-held(self.has-focus); }
+    // A click on a row or Tab gives the rows the keyboard, ringed on the picked row, which a press
+    // elsewhere takes back as from a slider; assistive tools name its holder by the list round it.
+    Rectangle {
+        accessible-role: list;
+        accessible-label: @tr("Folders");
+        keys := KeyScope {
+            enabled: root.keyed;
+            ring: false;
+            changed has-focus => { if (self.has-focus) { Navigator.keys-taken(); } }
+            key-pressed(event) => {
+                if (Navigator.key(event.text, event.modifiers.control)) { return accept; }
+                reject
+            }
+        }
     }
 }
 
@@ -226,8 +235,8 @@ export component NavigatorSection inherits Rectangle {
     VerticalLayout {
         if Navigator.welcome-shown && !root.beside-photo: Welcome { }
         HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
             padding-bottom: Space.s;
             spacing: Space.s;
             // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.

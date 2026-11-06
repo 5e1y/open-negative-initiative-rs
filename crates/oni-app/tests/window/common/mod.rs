@@ -274,6 +274,42 @@ pub fn placed(window: &impl slint::ComponentHandle, role: i_slint_backend_testin
         .collect()
 }
 
+/// Every element shown in the window with this role, where the layout put it; a hidden one is not shown.
+pub fn placed_all(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::AccessibleRole) -> Vec<Placed> {
+    use i_slint_backend_testing::ElementRoot;
+    window
+        .root_element()
+        .query_descendants()
+        .match_descendants()
+        .match_accessible_role(role)
+        .find_all()
+        .into_iter()
+        .map(|e| {
+            let (at, size) = (e.absolute_position(), e.size());
+            Placed { x: at.x, y: at.y, width: size.width, height: size.height }
+        })
+        .collect()
+}
+
+/// A left click as winit hands it over: the window's pointer hook first, then Slint's press and release.
+pub fn click(rig: &Rig, window: &oni_app::MainWindow, (x, y): (f32, f32)) {
+    let position = slint::LogicalPosition::new(x, y);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
+    oni_app::outside::pressed(window);
+    rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left });
+    rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left });
+    rig.pump();
+}
+
+/// The label assistive tools read for what holds the keyboard: its nearest accessible item's, as
+/// AccessKit reports the focus; empty while that item has none.
+pub fn focused_label(window: &impl slint::ComponentHandle) -> String {
+    let inner = i_slint_core::window::WindowInner::from_pub(window.window());
+    let item = inner.focus_item.borrow().upgrade().map(i_slint_core::accessibility::nearest_accessible_item);
+    let label = item.and_then(|i| i.accessible_string_property(i_slint_core::accessibility::AccessibleStringProperty::Label));
+    label.map(|l| l.to_string()).unwrap_or_default()
+}
+
 /// The one element shown with this role and label; the live preview's interpreter carries the
 /// element names the search reads, so a compiled interface finds none.
 pub fn the(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::AccessibleRole, label: &str) -> Placed {

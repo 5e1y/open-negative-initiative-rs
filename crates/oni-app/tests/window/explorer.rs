@@ -181,10 +181,11 @@ pub(crate) fn return_renames_and_double_click_does_not() {
     shell.add(&scans.join("Roll 1"));
     rig.until("Roll 1 read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened().is_some());
     rig.until("Roll 1 among the rows", Duration::from_secs(10), || rows(w).iter().any(|l| l.title == "Roll 1"));
-    // A double click opens and renames nothing.
+    // A double click opens and renames nothing, and gives the rows the keyboard.
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    n.invoke_row_clicked(at(w, "Roll 2"));
-    n.invoke_row_clicked(at(w, "Roll 2"));
+    let roll2 = common::the(w, i_slint_backend_testing::AccessibleRole::ListItem, "Roll 2").middle();
+    common::click(&rig, w, roll2);
+    common::click(&rig, w, roll2);
     rig.until("Roll 2 opened", Duration::from_secs(30), || ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Roll 2")));
     assert!(rows(w).iter().all(|l| !l.renaming), "a double click renames nothing");
     // Return types over the picked row; Escape puts it back.
@@ -195,7 +196,9 @@ pub(crate) fn return_renames_and_double_click_does_not() {
     n.invoke_rename_cancelled();
     rig.pump();
     assert!(rows(w).iter().all(|l| !l.renaming) && scans.join("Roll 2").is_dir());
-    // Twin: once the grid takes a click, Return is the grid's again.
+    // Twin: once the grid takes a press, Return is the grid's again.
+    oni_app::outside::pressed(w);
+    rig.pump();
     shell.window.global::<Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));

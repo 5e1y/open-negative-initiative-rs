@@ -99,8 +99,6 @@ pub(super) struct Nav {
     identify: oni_library::bookmarks::Identify,
     leads: locate::Leads,
     fresh: freshness::Fresh,
-    /// The arrows walk the rows, from a click on one until a click on the grid.
-    pub keys: bool,
     /// A favourite just taken away, which the notice's Undo stars again.
     pub unstarred: Option<String>,
 }
@@ -133,7 +131,6 @@ impl Nav {
             identify,
             leads: locate::Leads::default(),
             fresh: Default::default(),
-            keys: false,
             unstarred: None,
         }
     }

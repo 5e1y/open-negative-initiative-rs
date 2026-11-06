@@ -192,7 +192,6 @@ impl Ctl {
         me.wire_dng();
         let p = me.clone();
         lib.on_tile_clicked(move |i, toggle, extend| {
-            p.grid_took_keys();
             let (toggle, extend) = crate::system::held(toggle, extend);
             p.tile_clicked(i.max(0) as usize, toggle, extend);
         });
