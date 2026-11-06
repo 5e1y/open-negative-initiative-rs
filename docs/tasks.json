@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1264,
+    "type": "fix",
+    "title": "The Settings sheet keeps one height whichever section is open",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (Spacing and density): the sheet grew between General and Editor, so the dialog and its DONE key jumped. The body laid only the page shown under a guessed 320 pt floor, which Editor passed. Every page now shares one grid cell and only the chosen one shows, so the cell is the tallest page's height in the language spoken; a page takes the card's width, so a hidden page's widest row never widens the one shown. SheetStyle.settings-height goes. Check: window sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections, DONE at one place on General, Editor, Frontier Look and About (the former layout moved it 11.5 px); twin: General's last line ends more than 60 px above DONE, room a sheet fit to the page shown would close."
   }
 ]

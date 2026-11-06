@@ -35,7 +35,21 @@ component SheetKey inherits Button {
     }
 }
 
-component GeneralPage inherits VerticalLayout {
+// A section's page. Every page shares one cell and only the chosen one shows, so the sheet stands at
+// the tallest page's height whichever is open and its DONE key never moves.
+component Page inherits Rectangle {
+    in property <int> section;
+    visible: AppSettings.section == root.section;
+    // The card's width is fixed: a hidden page's widest row never widens the page shown.
+    min-width: 0px;
+    VerticalLayout {
+        alignment: start;
+        @children
+    }
+}
+
+component GeneralPage inherits Page {
+    section: 0;
     Section {
         inset: SectionStyle.flush;
         foldable: false;
@@ -63,7 +77,8 @@ component GeneralPage inherits VerticalLayout {
     }
 }
 
-component EditorPage inherits VerticalLayout {
+component EditorPage inherits Page {
+    section: 1;
     Section {
         inset: SectionStyle.flush;
         foldable: false;
@@ -97,7 +112,8 @@ component EditorPage inherits VerticalLayout {
     }
 }
 
-component FrontierPage inherits VerticalLayout {
+component FrontierPage inherits Page {
+    section: 2;
     Section {
         inset: SectionStyle.flush;
         foldable: false;
@@ -114,7 +130,8 @@ component FrontierPage inherits VerticalLayout {
     }
 }
 
-component PhonePage inherits VerticalLayout {
+component PhonePage inherits Page {
+    section: 3;
     Section {
         inset: SectionStyle.flush;
         foldable: false;
@@ -130,7 +147,8 @@ component PhonePage inherits VerticalLayout {
     }
 }
 
-component AboutPage inherits VerticalLayout {
+component AboutPage inherits Page {
+    section: 4;
     Section {
         inset: SectionStyle.flush;
         foldable: false;
@@ -180,15 +198,13 @@ export component SettingsSheet inherits Sheet {
             }
         }
         Divider { vertical: true; hairline: true; }
-        VerticalLayout {
+        GridLayout {
             horizontal-stretch: 1;
-            min-height: SheetStyle.settings-height;
-            alignment: start;
-            if AppSettings.section == 0: GeneralPage { }
-            if AppSettings.section == 1: EditorPage { }
-            if AppSettings.section == 2: FrontierPage { }
-            if AppSettings.section == 3 && Pairing.available: PhonePage { }
-            if AppSettings.section == 4: AboutPage { }
+            GeneralPage { row: 0; col: 0; }
+            EditorPage { row: 0; col: 0; }
+            FrontierPage { row: 0; col: 0; }
+            if Pairing.available: PhonePage { row: 0; col: 0; }
+            AboutPage { row: 0; col: 0; }
         }
     }
     ButtonGroup { plate: true; align: GroupAlign.end;
