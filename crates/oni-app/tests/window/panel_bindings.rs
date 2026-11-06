@@ -1,6 +1,7 @@
 //! The panel's controls by the pointer on the headless window: a switch follows its owner after the
-//! hand moved it, Crop and Source Encoding reset, a menu drops under its picker, a typed size box
-//! shows what Full resolution writes, and the chip's popover closes before a key opens a window.
+//! hand moved it, the worded keys of Crop's tab act, Crop, the Measuring Window and Source Encoding
+//! reset, a menu drops under its picker, a typed size box shows what Full resolution writes, and the
+//! chip's popover closes before a key opens a window.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::export_card::{self, Ask};
@@ -110,17 +111,40 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     assert!(settings().geometry.portrait, "the switch followed the undo, so its click turns it on");
 
+    // Rotate & Mirror's keys, found by their words: each turns or flips the photo its own way.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1000));
+    rig.settle();
+    press(&rig, w, Role::Button, "Rotate ↻");
+    press(&rig, w, Role::Button, "Mirror ↕");
+    rig.settle();
+    let g = settings().geometry;
+    assert_eq!((g.quarter_turns != 0, g.mirrored, g.mirrored_vertically), (true, false, true), "a quarter turn and a flip top for bottom");
+    press(&rig, w, Role::Button, "Mirror ↔");
+    rig.settle();
+    assert!(settings().geometry.mirrored, "a flip left for right");
+
     // Crop's RESET: all of the geometry but the measuring window.
     framing.invoke_act(oni_app::Act::WindowArm);
     framing.invoke_act(oni_app::Act::WindowArm);
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
+    rig.shot("bindings-crop-tab");
     reset("Crop");
     rig.settle();
     let g = settings().geometry;
-    assert_eq!((g.ratio, g.portrait, g.measure_window), (None, false, window), "the window outlives the reset");
+    assert_eq!((g.ratio, g.portrait, g.mirrored, g.measure_window), (None, false, false, window), "the window outlives the reset");
     assert!(!framing.get_modified());
+
+    // The Measuring Window's own RESET, on its title's row, takes the window away; its worded Copy
+    // and Paste lay it back.
+    press(&rig, w, Role::Button, "Copy");
+    reset("Measuring Window");
+    rig.settle();
+    assert_eq!(settings().geometry.measure_window, None, "the block's RESET takes the window away");
+    press(&rig, w, Role::Button, "Paste");
+    rig.settle();
+    assert_eq!(settings().geometry.measure_window, window, "Paste lays the copied window back");
 
     // Source Encoding's RESET writes no encoding, the file read as sRGB again; the window taller, so
     // the keys above leave the block in sight.
