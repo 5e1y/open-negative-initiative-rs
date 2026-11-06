@@ -259,8 +259,8 @@ export component TileView inherits Rectangle {
         source: root.picture;
         rounded: root.rounded;
         radius: Radius.card;
-        picture-opacity: root.missing ? State.disabled : 1;
-        opacity: root.left-out ? State.disabled : 1;
+        picture-opacity: root.missing ? State.missing : 1;
+        opacity: root.left-out ? State.missing : 1;
         // `TileLayers`: the medal's centre level with the seal's.
         if !root.frame && root.medal > 0: Medal {
             x: root.inset;
@@ -304,16 +304,17 @@ export component TileView inherits Rectangle {
             r: Radius.card;
             ground: Tones.ground(root.behind);
         }
-        if (root.selected || root.hovered) && !root.outset: SelectionRing {
-            tone: root.flagged ? SelectionTone.destructive : root.selected ? SelectionTone.selected : SelectionTone.hovered;
+        if root.selected && !root.outset: SelectionRing {
+            tone: root.flagged ? SelectionTone.destructive : SelectionTone.selected;
         }
     }
-    // Outside the picture's clip.
-    if root.outset && (root.selected || root.flagged): SelectionRing {
+    // Outside the picture's clip: a sheet's selection, and the hand's ring on the ground round any tile,
+    // where it reads on a light photo as on a dark one and covers none of it.
+    if root.hovered || (root.outset && (root.selected || root.flagged)): SelectionRing {
         y: 0;
         height: root.picture-height;
         placement: RingPlacement.outset;
-        tone: root.flagged ? SelectionTone.destructive : SelectionTone.selected;
+        tone: !root.outset ? SelectionTone.hovered : root.flagged ? SelectionTone.destructive : root.selected ? SelectionTone.selected : SelectionTone.hovered;
     }
     if root.caption != "": Label {
         y: root.picture-height + TileStyle.caption-gap;

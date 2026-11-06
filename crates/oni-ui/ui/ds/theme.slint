@@ -98,7 +98,11 @@ export global Stroke {
 
 // Opacities of a state, never of a colour.
 export global State {
-    out property <float> disabled: DS.state-missing;
+    // Out of reach, a control at AppKit's disabled ink: well under an idle label, so a key that cannot
+    // act never reads as one merely not chosen.
+    out property <float> disabled: 0.25;
+    // A missing original, a folder away, a frame left out: faded, its name and picture still read.
+    out property <float> missing: DS.state-missing;
     out property <float> idle: DS.state-idle-label;
 }
 
@@ -151,6 +155,8 @@ export global ButtonStyle {
     // The lit face of a key that is on, a flat key's or a cap's: lit as a selected row is, never tinted,
     // so the accent stays the view's one primary.
     out property <color> on: Colour.raised.mix(Colour.white, 1 - Colour.row-selected.alpha / 255);
+    // A latching key's lamp once lit: the scanner screen's phosphor, a glow with no hue beside the photo.
+    out property <color> latch: DS.palette-lcd-ink;
     // The hand's light over a face, and its press, a step brighter.
     out property <color> veil: Colour.hover;
     out property <color> veil-pressed: #ffffff26;

@@ -37,7 +37,8 @@ Swift source, so the generator stays the only source of `DS`.
 To see the result, run `scripts/ds-lab`: the 2.5D lab (`crates/oni-ui/lab`) shows every family in its
 states, reloads on each save and tunes `Depth` live; `scripts/ds-lab --shot FILE PAGE WxH` renders a page.
 The app holds no showcase of its own, so its interface compiles without one. `probes.slint` holds the
-pieces the window checks click at fixed places (fields, a scrolled page, a keycap).
+pieces the window checks click at fixed places (fields, a scrolled page, a keycap), `probe_states.slint`
+the states they read off the drawn window (out of reach, a destructive key, a latch, a tile's hover).
 
 ## Words
 
@@ -66,13 +67,18 @@ draws a still key once and a pressed one once a frame.
   footer's at the same height, `mini` the 24 pt key of a section's header, a row or the canvas's header.
   A worded key is never narrower than tall.
 - **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent; `destructive`,
-  a plain key whose glyph or word takes a light red (`Colour.destructive-ink`); `ghost`, a glyph alone on no face. Colour says a
-  meaning, never which key it is: no other tint.
+  a plain key whose glyph or word takes a light red (`Colour.destructive-ink`) while the hand or the keyboard
+  is on it, the plain ink at rest and out of reach, so no red stands beside the photo; `ghost`, a glyph alone on
+  no face. Colour says a meaning, never which key it is: no other tint.
 - **States**: the hand lights the face (`ButtonStyle.veil`), a press a step more and, on a keycap, sinks
   the cap (`KeycapPress`: `Depth.hover-press` under the hand, the whole way in `Depth.press-time`, held
   `Depth.min-hold`, risen in `Depth.release-time`); `on` lights the face as a selected row is lit, never
-  tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`); out of reach, the whole
-  key fades, face and glyph.
+  tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`). A `latch` key, a mode's
+  as the crop, compare, De-dust and the measuring window, carries a `Lamp` after its word, dark glass
+  until `on` lights it in the LCD's phosphor (`ButtonStyle.latch`), so it tells it latches before the
+  press. Out of reach, the whole key fades, face and glyph, to `State.disabled` (0.25), well under an idle
+  tab's label (`State.idle`), so a key that cannot act never reads as one merely not chosen; a missing
+  original, a folder away or a frame left out fades less (`State.missing`), its picture and name still read.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
   under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
   `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
@@ -137,7 +143,8 @@ The tabs, the switch and the medals stand on the depths as the lab's Tabs page s
 field lies flat, as a text field.
 
 - **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a plot's, and one
-  `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
+  `Outward` pill sliding on the grab spring (`TabsStyle.slide`); an unchosen label rests at `TabsStyle.idle`,
+  hover lights it alone, a tab out of reach fades to `State.disabled`. `marked`
   adds the accent dot, `swatches` draws colours for words.
 - **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` on a `Rail` of its own; on, the knob
   stands one `ToggleStyle.travel` along on the grab spring and the rail is lit up to it. The knob grows under the hand.
