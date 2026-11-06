@@ -4,6 +4,7 @@
 pub const ROLL: i32 = 0;
 pub const CROP: i32 = 1;
 pub const COLOR: i32 = 2;
+pub const DETAILS: i32 = 3;
 pub const DEDUST: i32 = 4;
 
 /// `PanelTab.leaving(toward:)`: a way out never lands back on the crop or the dust tool.

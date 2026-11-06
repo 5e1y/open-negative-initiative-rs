@@ -90,7 +90,7 @@ fn a_burst_of_notches_renders_the_first_and_the_last_only() {
         settings.print.exposure = revision as f32;
         let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
         // At once: a timer's sleep lasts 15 ms on Windows, which would spread the burst over four renders.
-        worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false });
+        worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false, counted: true });
     }
     let mut revisions = Vec::new();
     // The first render compiles the pipeline's kernels; the slot is judged on what follows.
@@ -386,7 +386,7 @@ fn a_failed_render_names_its_frame() {
         }
     });
     let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-    worker.submit(Job { revision: 1, path: PathBuf::from("A.tif"), negative, settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false });
+    worker.submit(Job { revision: 1, path: PathBuf::from("A.tif"), negative, settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false, counted: true });
     let failed = rx.recv_timeout(Duration::from_secs(10)).expect("a failure delivered");
     assert_eq!(failed, PathBuf::from("A.tif"));
     // Twin: the frame opened since is not the one that failed, so the landing drops it.

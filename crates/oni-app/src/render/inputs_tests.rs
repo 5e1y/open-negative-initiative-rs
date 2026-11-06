@@ -1,4 +1,5 @@
-//! The input histograms read the frame the canvas shows: its custom mask and dust patches laid.
+//! The plots' readings: the input histograms read the frame the canvas shows, its custom mask and dust
+//! patches laid; the picture is counted for a plot on screen alone.
 use super::*;
 
 fn tiff(path: &std::path::Path, w: u32, h: u32, pixels: &[f32]) {
@@ -59,4 +60,34 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
     assert_ne!(healed.levels, bare.levels, "the patch reaches the levels' input");
     assert_ne!(healed.curves, bare.curves, "the patch reaches the curves' input");
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A render counts its whole picture only for a plot on screen; one counted for nothing is counted
+/// once a plot shows, the same settings or not.
+#[test]
+fn a_render_counts_its_picture_only_for_a_plot_on_screen() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the count is not exercised");
+        return;
+    };
+    let engine = Engine::shared(&device);
+    let linear = Linear { width: 8, height: 8, pixels: vec![[0.3, 0.2, 0.1, 1.0]; 64] };
+    let negative = Arc::new(engine.prepare(Decoded { linear, full_width: 8.0, undeclared: None }).unwrap());
+    let (tx, rx) = std::sync::mpsc::channel();
+    let worker = Worker::new(Box::new(engine), move |d| match d {
+        Delivery::Render(_) => tx.send("render").unwrap(),
+        Delivery::Counted { .. } => tx.send("counted").unwrap(),
+        Delivery::Inputs { .. } => {}
+    });
+    let job = |revision: u64, counted: bool| {
+        let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
+        Job { revision, path: PathBuf::new(), negative: negative.clone(), settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false, counted }
+    };
+    let landed = || std::iter::from_fn(|| rx.recv_timeout(Duration::from_secs(10)).ok()).take_while(|d| *d != "render").count();
+    let drained = || std::iter::from_fn(|| rx.recv_timeout(Duration::from_millis(500)).ok()).collect::<Vec<_>>();
+    worker.submit(job(1, false));
+    assert_eq!((landed(), drained()), (0, vec![]), "rendered, counted for nothing on screen");
+    // Twin: the same picture asked with a plot on screen is counted.
+    worker.submit(job(2, true));
+    assert_eq!((landed(), drained()), (0, vec!["counted"]));
 }

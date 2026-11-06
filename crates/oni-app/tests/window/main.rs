@@ -17,6 +17,7 @@ mod column_edges;
 mod column_menu;
 mod crop_session;
 mod density;
+mod picture_plots;
 mod dial;
 mod depth_lip;
 mod design_system;
@@ -206,6 +207,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("tooltip::a_slider_s_tooltip_stays_down_through_its_drag", tooltip::a_slider_s_tooltip_stays_down_through_its_drag),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
+    ("picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one", picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one),
     ("dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it", dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),

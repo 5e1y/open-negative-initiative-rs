@@ -162,6 +162,34 @@ fn target(device: &wgpu::Device, width: u32, height: u32) -> wgpu::Texture {
 }
 
 impl Ctl {
+    /// The plots over the picture's histogram on screen, as the panel lays them: the readout's where
+    /// neither the Scanner's screen nor Details' loupe stands, the saturation curve's open on Colour.
+    pub(super) fn picture_plots(&self) -> [bool; 2] {
+        let Some(w) = self.window() else { return [false; 2] };
+        let (tab, editors) = (w.global::<PanelState>().get_tab(), w.global::<crate::Editors>());
+        let readout = !w.global::<crate::Lab>().get_shown() && tab != crate::tabs::DETAILS;
+        [readout, tab == crate::tabs::COLOR && !editors.get_monochrome() && !editors.get_saturation_folded()]
+    }
+
+    /// The picture's plots as the panel shows them, which the next render counts for: one shown again is
+    /// traced at once, and asks the picture anew where none was counted meanwhile, as it may have moved.
+    pub(super) fn look_at_plots(&self) {
+        let shown = self.picture_plots();
+        let again = {
+            let mut s = self.state.borrow_mut();
+            let was = std::mem::replace(&mut s.requests.plots, shown);
+            let again = shown.iter().zip(was).any(|(now, before)| *now && !before);
+            if again && !was.contains(&true) {
+                s.render_anew();
+            }
+            s.histogram_dirty |= again;
+            again
+        };
+        if again {
+            self.publish_histogram();
+        }
+    }
+
     /// The device and queue the plots are written with; none on a window that reads back.
     pub(super) fn plot_writer(&self) -> Writer {
         let s = self.state.borrow();

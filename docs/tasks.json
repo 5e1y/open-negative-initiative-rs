@@ -6794,5 +6794,12 @@
     "title": "Crop mode's help opens under its header, in the panel's flow",
     "status": "done",
     "detail": "The block help card moved into each block's flow while the Crop mode's header still placed its card by column: the header's mark now names its subject, and its card opens under the header, pushing the pane down as a block's does."
+  },
+  {
+    "id": 1385,
+    "type": "perf",
+    "title": "The picture's histogram is counted and traced for the plots on screen alone",
+    "status": "done",
+    "detail": "On the Scanner face the scanner's screen stands where the output histogram is, and under Details the loupe does, yet every render still rendered the whole picture for its count, counted it on the GPU and traced the readout. Each render job now says whether a plot over the picture's histogram shows (the readout where neither the Scanner's screen nor the loupe stands, the saturation curve open on the Colour tab), the worker counts only then, and each plot is traced only while it shows. A plot shown again is traced at once from the kept count, and when none showed meanwhile the picture is asked anew, so Pro's face back traces its readout from its first render's count. The kept count moved into the frame's requests, so another frame's never stands under a new one. Checks: the worker counts nothing for a job with no plot on screen, twin the same picture counted once one shows; window picture_plots: no output trace while the Scanner face shows, the saturation curve opened is counted alone, Pro back traces a fresh readout, twin the same wait on Pro sees each render traced."
   }
 ]
