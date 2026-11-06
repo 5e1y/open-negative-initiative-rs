@@ -6003,5 +6003,12 @@
     "title": "The second round's sixteen corrections, merged",
     "status": "done",
     "detail": "Merging #1159-#1222: De-dust's header now lies over the tab bar, which stays laid out, hidden, so Tab's way into the panel keeps its target (the bar takes the keyboard only while it shows). The fields keep the flat face with the type scale's field-sized digits; Prepare keeps its new steps with the type scale's notes; the Roll tab keeps 'Filtration'. scripts/i18n dropped the texts no source shows any more."
+  },
+  {
+    "id": 1225,
+    "type": "refactor",
+    "title": "The slider and the window's menus, one file per part",
+    "status": "done",
+    "detail": "The merged corrections took ds/slider.slint past the 400-line limit and app.slint past its ceiling. The slider is cut into its parts as Swift names them: knob.slint (DSBarHandle), rail.slint (DSRail and SliderFill), readout.slint (DSReadout, ValueHeader) and slider.slint (DSSlider, its step keys and Typing); controls, plots, ds.slint and the lab import each part from its own file. The menu bar's state (MenuTitles, MenuLive, Menus) moves to menus.slint, the menu bar itself staying in the window, as Slint wants it; app.slint falls under the limit, so its grandfathered ceiling goes. Behaviour unchanged."
   }
 ]

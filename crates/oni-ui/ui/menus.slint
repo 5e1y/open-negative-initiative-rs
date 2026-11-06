@@ -1,0 +1,87 @@
+// The menu bar's state, which Rust sets: each item's title and whether it is live, the presets it lists.
+
+// `EditorMenus`'s titles, which change with the scene.
+export struct MenuTitles {
+    mode: string,
+    export: string,
+    remove: string,
+    restore: string,
+    paste: string,
+    paste-to-roll: string,
+    undo: string,
+    redo: string,
+    smaller: string,
+    larger: string,
+    sound: string,
+    compare: string,
+    library: string,
+    panel: string,
+    correcting: string,
+    mirror: string,
+    filter: string,
+    roll: string,
+    ungroup: string,
+    project: string,
+    screen-gamut: string,
+}
+
+// `EditorMenus.live`: the items a gesture can reach now; a gesture this build lacks stays dark.
+export struct MenuLive {
+    open: bool,
+    toggle-mode: bool,
+    export: bool,
+    refresh: bool,
+    show-selected: bool,
+    remove: bool,
+    restore: bool,
+    undo: bool,
+    redo: bool,
+    reset: bool,
+    smaller: bool,
+    larger: bool,
+    fit: bool,
+    compare: bool,
+    hide-library: bool,
+    hide-panel: bool,
+    framing: bool,
+    correction: bool,
+    bigger-brush: bool,
+    smaller-brush: bool,
+    mirror: bool,
+    screen-gamut: bool,
+    emulator: bool,
+    medal: bool,
+    cycle-filter: bool,
+    new-roll: bool,
+    new-project: bool,
+    ungroup: bool,
+    measure-roll: bool,
+    reset-to-default: bool,
+    copy-settings: bool,
+    paste-settings: bool,
+    paste-to-roll: bool,
+    save-preset: bool,
+    edit-presets: bool,
+    import-presets: bool,
+    show-presets: bool,
+    paste-preset-code: bool,
+    apply-preset: bool,
+}
+
+export global Menus {
+    in property <MenuTitles> titles: {
+        mode: @tr("Gallery"), export: @tr("Export…"), remove: @tr("Move to ONI Trash"), restore: @tr("Restore"),
+        paste: @tr("Paste Settings"), paste-to-roll: @tr("Paste to Roll"), undo: @tr("Undo"), redo: @tr("Redo"),
+        smaller: @tr("Zoom Out"), larger: @tr("Zoom In"), sound: @tr("Mute Key Clicks"), compare: @tr("Compare Before/After"),
+        library: @tr("Hide the Library"), panel: @tr("Hide the Panel"), correcting: @tr("Remove Dust & Scratches"),
+        mirror: @tr("Mirror Horizontally"), filter: @tr("Filter: All"), roll: @tr("Move into a New Roll…"),
+        ungroup: @tr("Ungroup"), project: @tr("New Project from This Photo"), screen-gamut: @tr("Show What This Screen Cannot Show"),
+    };
+    in property <MenuLive> live: { open: true, cycle-filter: true };
+    // `menus.presets`: each one's name and what it carries, under the targets' title.
+    in property <string> apply-title: @tr("Apply");
+    in property <[string]> presets;
+    in property <[string]> preset-names;
+    callback apply-preset(int);
+    callback delete-preset(int);
+}

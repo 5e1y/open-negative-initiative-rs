@@ -29,12 +29,13 @@ import { Absent, Unsaved, UnsavedSheet } from "missing.slint";
 import { Told, ToldNotice } from "told.slint";
 import { KeyWords } from "key_words.slint";
 import { Converting, DngSheet, DngStage } from "dng.slint";
+import { Menus, MenuTitles, MenuLive } from "menus.slint";
 
 export { DS, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Starter, Exporting, ExportLine, PaperRow, SheetTile }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
-export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage }
+export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage, Menus, MenuTitles, MenuLive }
 export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe, KeyboardProbe } from "ds/probes.slint";
 export { Raster, KeycapLook, Depth, Typing } from "ds/ds.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach, EdgeNumber, SheetBox, SheetInks } from "ds/ds.slint";
@@ -51,92 +52,6 @@ export global App {
     callback menu(Act);
     // A sheet shown or closed, so the menus go dark behind it or come back.
     callback sheet-changed();
-}
-
-// `EditorMenus`'s titles, which change with the scene.
-export struct MenuTitles {
-    mode: string,
-    export: string,
-    remove: string,
-    restore: string,
-    paste: string,
-    paste-to-roll: string,
-    undo: string,
-    redo: string,
-    smaller: string,
-    larger: string,
-    sound: string,
-    compare: string,
-    library: string,
-    panel: string,
-    correcting: string,
-    mirror: string,
-    filter: string,
-    roll: string,
-    ungroup: string,
-    project: string,
-    screen-gamut: string,
-}
-
-// `EditorMenus.live`: the items a gesture can reach now; a gesture this build lacks stays dark.
-export struct MenuLive {
-    open: bool,
-    toggle-mode: bool,
-    export: bool,
-    refresh: bool,
-    show-selected: bool,
-    remove: bool,
-    restore: bool,
-    undo: bool,
-    redo: bool,
-    reset: bool,
-    smaller: bool,
-    larger: bool,
-    fit: bool,
-    compare: bool,
-    hide-library: bool,
-    hide-panel: bool,
-    framing: bool,
-    correction: bool,
-    bigger-brush: bool,
-    smaller-brush: bool,
-    mirror: bool,
-    screen-gamut: bool,
-    emulator: bool,
-    medal: bool,
-    cycle-filter: bool,
-    new-roll: bool,
-    new-project: bool,
-    ungroup: bool,
-    measure-roll: bool,
-    reset-to-default: bool,
-    copy-settings: bool,
-    paste-settings: bool,
-    paste-to-roll: bool,
-    save-preset: bool,
-    edit-presets: bool,
-    import-presets: bool,
-    show-presets: bool,
-    paste-preset-code: bool,
-    apply-preset: bool,
-}
-
-export global Menus {
-    in property <MenuTitles> titles: {
-        mode: @tr("Gallery"), export: @tr("Export…"), remove: @tr("Move to ONI Trash"), restore: @tr("Restore"),
-        paste: @tr("Paste Settings"), paste-to-roll: @tr("Paste to Roll"), undo: @tr("Undo"), redo: @tr("Redo"),
-        smaller: @tr("Zoom Out"), larger: @tr("Zoom In"), sound: @tr("Mute Key Clicks"), compare: @tr("Compare Before/After"),
-        library: @tr("Hide the Library"), panel: @tr("Hide the Panel"), correcting: @tr("Remove Dust & Scratches"),
-        mirror: @tr("Mirror Horizontally"), filter: @tr("Filter: All"), roll: @tr("Move into a New Roll…"),
-        ungroup: @tr("Ungroup"), project: @tr("New Project from This Photo"), screen-gamut: @tr("Show What This Screen Cannot Show"),
-    };
-    in property <MenuLive> live: { open: true, cycle-filter: true };
-    // `menus.presets`: each one's name and what it carries, under the targets' title.
-    in property <string> apply-title: @tr("Apply");
-    in property <[string]> presets;
-    in property <[string]> preset-names;
-    callback apply-preset(int);
-    callback delete-preset(int);
 }
 
 export component MainWindow inherits AppWindow {

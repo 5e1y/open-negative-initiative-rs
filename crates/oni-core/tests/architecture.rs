@@ -26,7 +26,6 @@ const GRANDFATHERED: &[(&str, usize)] = &[
     ("crates/oni-settings/src/lighting_catch_up.rs", 504),
     ("crates/oni-settings/src/tone.rs", 479),
     ("crates/oni-settings/tests/codec_checks.rs", 735),
-    ("crates/oni-ui/ui/app.slint", 431),
 ];
 
 /// Each source file under `crates/` past its ceiling, with its line count.
