@@ -5,94 +5,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Gallery"
-msgstr "Galería"
-
-#: crates/oni-app/src/export.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/export_state.slint
-msgid "Export…"
-msgstr "Exportar…"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
-msgid "Move to ONI Trash"
-msgstr "Mover a la Papelera de ONI"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
-msgid "Restore"
-msgstr "Restaurar"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Paste Settings"
-msgstr "Pegar ajustes"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Paste to Roll"
-msgstr "Pegar en el rollo"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
-msgid "Undo"
-msgstr "Deshacer"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
-msgid "Redo"
-msgstr "Rehacer"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Zoom Out"
-msgstr "Alejar"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Zoom In"
-msgstr "Acercar"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Mute Key Clicks"
-msgstr "Silenciar clics de las teclas"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Compare Before/After"
-msgstr "Comparar antes/después"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Hide the Library"
-msgstr "Ocultar la fototeca"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Hide the Panel"
-msgstr "Ocultar el panel"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Remove Dust & Scratches"
-msgstr "Eliminar polvo y arañazos"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Mirror Horizontally"
-msgstr "Reflejar horizontalmente"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "Filter: All"
-msgstr "Filtro: Todas"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Move into a New Roll…"
-msgstr "Mover a un rollo nuevo…"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/app/rolls.rs crates/oni-ui/ui/app.slint
-msgid "Ungroup"
-msgstr "Desagrupar"
-
-#: crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
-msgid "New Project from This Photo"
-msgstr "Nuevo proyecto con esta foto"
-
-#: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/export_state.slint
-msgid "Show What This Screen Cannot Show"
-msgstr "Mostrar lo que esta pantalla no puede mostrar"
-
-#: crates/oni-app/src/app/presets/shelf.rs crates/oni-ui/ui/app.slint
-msgid "Apply"
-msgstr "Aplicar"
-
 #: crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint
 msgid "Open Negative Initiative"
 msgstr "Open Negative Initiative"
@@ -437,6 +349,10 @@ msgstr "Plata (2)"
 msgid "Gold (3)"
 msgstr "Oro (3)"
 
+#: crates/oni-ui/ui/ds/readout.slint
+msgid "Double-click to type a value"
+msgstr "Haz doble clic para escribir un valor"
+
 #: crates/oni-ui/ui/ds/roll.slint
 msgid "Previous"
 msgstr "Anterior"
@@ -456,10 +372,6 @@ msgstr "Quitar de favoritos"
 #: crates/oni-ui/ui/ds/row.slint
 msgid "Add to the favourites"
 msgstr "Añadir a favoritos"
-
-#: crates/oni-ui/ui/ds/slider.slint
-msgid "Double-click to type a value"
-msgstr "Haz doble clic para escribir un valor"
 
 #: crates/oni-ui/ui/ds/splash.slint
 msgid "Photo"
@@ -805,6 +717,14 @@ msgstr "Instalar"
 msgid "EXPORT"
 msgstr "EXPORTAR"
 
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint
+msgid "Export…"
+msgstr "Exportar…"
+
+#: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint
+msgid "Show What This Screen Cannot Show"
+msgstr "Mostrar lo que esta pantalla no puede mostrar"
+
 #: crates/oni-ui/ui/help.slint
 msgid "ONI {}, the slide film and contact sheet update"
 msgstr "ONI {}, la actualización de diapositivas y hojas de contactos"
@@ -1084,6 +1004,86 @@ msgstr "Expandir todas las carpetas"
 #: crates/oni-ui/ui/library_tree.slint
 msgid "ONI Projects"
 msgstr "Proyectos de ONI"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Gallery"
+msgstr "Galería"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+msgid "Move to ONI Trash"
+msgstr "Mover a la Papelera de ONI"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/menus.slint
+msgid "Restore"
+msgstr "Restaurar"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Paste Settings"
+msgstr "Pegar ajustes"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Paste to Roll"
+msgstr "Pegar en el rollo"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+msgid "Undo"
+msgstr "Deshacer"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+msgid "Redo"
+msgstr "Rehacer"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Zoom Out"
+msgstr "Alejar"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Zoom In"
+msgstr "Acercar"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Mute Key Clicks"
+msgstr "Silenciar clics de las teclas"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Compare Before/After"
+msgstr "Comparar antes/después"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Hide the Library"
+msgstr "Ocultar la fototeca"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Hide the Panel"
+msgstr "Ocultar el panel"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Remove Dust & Scratches"
+msgstr "Eliminar polvo y arañazos"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Mirror Horizontally"
+msgstr "Reflejar horizontalmente"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+msgid "Filter: All"
+msgstr "Filtro: Todas"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Move into a New Roll…"
+msgstr "Mover a un rollo nuevo…"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/app/rolls.rs crates/oni-ui/ui/menus.slint
+msgid "Ungroup"
+msgstr "Desagrupar"
+
+#: crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/menus.slint
+msgid "New Project from This Photo"
+msgstr "Nuevo proyecto con esta foto"
+
+#: crates/oni-app/src/app/presets/shelf.rs crates/oni-ui/ui/menus.slint
+msgid "Apply"
+msgstr "Aplicar"
 
 #: crates/oni-ui/ui/missing.slint
 msgid "SHOW THE FOLDER"

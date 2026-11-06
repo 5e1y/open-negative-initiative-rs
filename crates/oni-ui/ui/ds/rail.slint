@@ -1,0 +1,80 @@
+// `DSRail`, the recessed track a slider's, a level's and the toggle's knob runs on, and its fills.
+import { Colour, Stroke, SliderStyle } from "theme.slint";
+import { Inward } from "depth.slint";
+
+// `level` and `ramp` light the rail up to the value and `metal` in brushed silver; `bipolar` is a
+// gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
+export enum SliderFill { level, ramp, bipolar, metal, none }
+
+// `DSRail` in `dsRecessed`: the ground, the lit stretch from `from` to `at` (fractions of the travel),
+// the hollow's shade, the edge, the lit rim below; run past the travel by `overhang` at both ends.
+export component Rail inherits Rectangle {
+    in property <SliderFill> fill: SliderFill.none;
+    in property <float> at;
+    in property <float> from;
+    in property <color> tint: SliderStyle.lit;
+    in property <color> low;
+    in property <color> high;
+    in property <length> overhang;
+    // The value a reset brings back, ticked across the rail; none below 0.
+    in property <float> rest: -1;
+    // The lit stretch's glow, a progress bar's phosphor.
+    in property <length> glow;
+    // Low at the bottom; a vertical rail sets its own width and height.
+    in property <bool> vertical;
+    // The surface the rail is milled into: the rim's light needs an opaque body under a translucent ground.
+    in property <color> under: Colour.ground;
+    property <length> along: root.vertical ? self.height : self.width;
+    property <length> travel: root.along - 2 * root.overhang;
+    property <length> lit: root.overhang + root.at * root.travel;
+    property <length> start: root.from > 0 ? root.overhang + root.from * root.travel : 0;
+    pure function soft(c: color) -> color {
+        hsv(c.to-hsv().hue, c.to-hsv().saturation * SliderStyle.hue-chroma, c.to-hsv().value * SliderStyle.hue-light, c.to-hsv().alpha)
+    }
+    height: SliderStyle.track;
+    Rectangle {
+        border-radius: SliderStyle.track-radius;
+        background: root.under;
+        drop-shadow-color: Colour.white.with-alpha(SliderStyle.rim);
+        drop-shadow-blur: SliderStyle.rim-blur;
+        drop-shadow-offset-y: SliderStyle.rim-drop;
+    }
+    Rectangle {
+        border-radius: SliderStyle.track-radius;
+        background: root.fill != SliderFill.bipolar ? SliderStyle.ground
+            : root.vertical ? @linear-gradient(0deg, root.soft(root.low) 0%, root.soft(root.high) 100%)
+            : @linear-gradient(90deg, root.soft(root.low) 0%, root.soft(root.high) 100%);
+    }
+    // Its own round, no clip: a clipping rail renders each slider apart.
+    if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {
+        x: root.vertical ? 0 : root.start;
+        y: root.vertical ? parent.height - root.lit : 0;
+        width: root.vertical ? parent.width : root.lit - root.start;
+        height: root.vertical ? root.lit : parent.height;
+        border-radius: SliderStyle.track-radius;
+        background: root.fill == SliderFill.metal
+            ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 33.33%, Colour.metal-light 66.67%, Colour.metal-dark 100%)
+            : root.fill == SliderFill.ramp
+            ? (root.vertical ? @linear-gradient(0deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
+                : @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%))
+            : root.tint;
+        drop-shadow-color: root.glow > 0 ? root.tint : transparent;
+        drop-shadow-blur: root.glow;
+    }
+    Inward {
+        ground: transparent;
+        radius: SliderStyle.track-radius;
+    }
+    Rectangle {
+        border-radius: SliderStyle.track-radius;
+        border-width: Stroke.line;
+        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.well-edge);
+    }
+    if root.rest >= 0: Rectangle {
+        x: root.vertical ? (parent.width - self.width) / 2 : root.overhang + root.rest * root.travel - self.width / 2;
+        y: root.vertical ? parent.height - root.overhang - root.rest * root.travel - self.height / 2 : (parent.height - self.height) / 2;
+        width: root.vertical ? SliderStyle.knob-height / 2 : Stroke.line;
+        height: root.vertical ? Stroke.line : SliderStyle.knob-height / 2;
+        background: SliderStyle.rest-ink;
+    }
+}

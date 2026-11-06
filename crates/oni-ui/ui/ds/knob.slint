@@ -1,0 +1,48 @@
+// `DSBarHandle`, the knob a slider, a level and the toggle slide.
+import { Stroke, SliderStyle } from "theme.slint";
+import { Keycap } from "depth.slint";
+
+// `DSBarHandle`: a small keycap set across the track, level walls, no shadow, edged in black, two grip
+// lines on its face; it grows under the hand on the rise spring, a scale so its raster is drawn once.
+export component Knob inherits Rectangle {
+    // Its centre along the travel, and the breadth of the row whose middle it sits on.
+    in property <length> centre;
+    in property <length> across: SliderStyle.row;
+    in property <color> fill: SliderStyle.knob;
+    in property <bool> grip: true;
+    in property <color> grip-ink: SliderStyle.grip-ink;
+    in property <bool> grown;
+    // With `slide`, it settles on a value arriving from elsewhere, never under the hand.
+    in property <bool> slide;
+    // On a vertical track `centre` runs down and the grip lines turn a quarter.
+    in property <bool> vertical;
+    property <float> grow: root.grown ? SliderStyle.knob-grow : 1;
+    animate grow { duration: SliderStyle.rise; easing: ease-out-back; }
+    width: root.vertical ? SliderStyle.knob-height : SliderStyle.knob-width;
+    height: root.vertical ? SliderStyle.knob-width : SliderStyle.knob-height;
+    x: root.vertical ? (root.across - self.width) / 2 : root.centre - self.width / 2;
+    y: root.vertical ? root.centre - self.height / 2 : (root.across - self.height) / 2;
+    animate x, y { duration: root.slide ? SliderStyle.settle : 0ms; easing: ease-out; }
+    Keycap {
+        albedo: root.fill;
+        factor: SliderStyle.knob-factor;
+        level: true;
+        shadow: false;
+        rim: false;
+        edge-width: Stroke.line;
+        edge-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+        transform-scale-x: root.grow;
+        transform-scale-y: root.grow;
+        transform-origin: { x: self.width / 2, y: self.height / 2 };
+        // The face's own size: a child's `parent` names the cap, not the face it lies on.
+        Rectangle {
+            for i in root.grip ? 2 : 0: Rectangle {
+                x: root.vertical ? (parent.width - SliderStyle.grip) / 2 : parent.width / 2 + (i == 0 ? -SliderStyle.grip-gap / 2 - Stroke.line : SliderStyle.grip-gap / 2);
+                y: root.vertical ? parent.height / 2 + (i == 0 ? -SliderStyle.grip-gap / 2 - Stroke.line : SliderStyle.grip-gap / 2) : (parent.height - SliderStyle.grip) / 2;
+                width: root.vertical ? SliderStyle.grip : Stroke.line;
+                height: root.vertical ? Stroke.line : SliderStyle.grip;
+                background: root.grip-ink;
+            }
+        }
+    }
+}

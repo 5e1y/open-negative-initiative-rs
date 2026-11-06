@@ -6017,5 +6017,12 @@
     "title": "The ONI Trash wiring check reads the session's one history",
     "status": "done",
     "detail": "oni-library tests/trash_wiring.rs still looked for the store's gallery stack, which #1167 made the session's one history on purpose: Move to ONI Trash now lays its step through self.history.record_trash, and the check reads that call, so a mark that lays no step is still named."
+  },
+  {
+    "id": 1225,
+    "type": "refactor",
+    "title": "The slider and the window's menus, one file per part",
+    "status": "done",
+    "detail": "The merged corrections took ds/slider.slint past the 400-line limit and app.slint past its ceiling. The slider is cut into its parts as Swift names them: knob.slint (DSBarHandle), rail.slint (DSRail and SliderFill), readout.slint (DSReadout, ValueHeader) and slider.slint (DSSlider, its step keys and Typing); controls, plots, ds.slint and the lab import each part from its own file. The menu bar's state (MenuTitles, MenuLive, Menus) moves to menus.slint, the menu bar itself staying in the window, as Slint wants it; app.slint falls under the limit, so its grandfathered ceiling goes. Behaviour unchanged."
   }
 ]
