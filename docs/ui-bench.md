@@ -77,6 +77,8 @@ Each category says what it judges, what to look at, and the two ends of its scal
 - ONI is a digital tool and owns it, while its look nods to the analogue medium it serves: keys, levers and
   dials, metal, film canisters, playful like a film camera.
 - Large surfaces stay flat; texture belongs to small pieces only, such as labels and medals.
+- The mix is mastered and balanced: each analogue piece earns its place, with the same care and weight on
+  every screen, never clustered in one corner while another reads as generic software.
 - One analogue vocabulary, held with the same care everywhere; the nods never compete with the photo, never
   tint it and never blur what a control says.
 - **Excels:** handling it feels like holding a well-made film camera. **Fails:** generic flat software, or
