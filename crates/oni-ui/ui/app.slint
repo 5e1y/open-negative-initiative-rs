@@ -142,8 +142,9 @@ export component MainWindow inherits AppWindow {
     icon: @image-url("icons/app-icon.png");
     out property <bool> keys-focused: keys.has-focus;
     out property <bool> keys-held: keys.held;
-    // Where the shown note lands; a help mark in the editor panel opens left of it, under its tab bar.
+    // Where the shown note lands.
     out property <TipBox> tip-box: tips.box;
+    // The editor panel's left edge and its tab bar's foot, where the window's checks aim in it.
     out property <length> panel-x: root.width - ShellStyle.panel-width - (App.panel-hidden ? Space.s : 0px);
     out property <length> tabs-foot: ShellStyle.bar-height + PanelState.header + (App.panel-hidden ? Space.s : 0px);
     // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer.
@@ -414,10 +415,7 @@ export component MainWindow inherits AppWindow {
     // A press hides a tooltip, as AppKit's: the key may change its help or vanish under the hand.
     property <int> presses: Outside.presses;
     changed presses => { if (!Tip.card) { Tip.shown = false; } }
-    tips := TipLayer {
-        room: root.width; room-height: root.height; anchored: root.beside-photo && !root.sheet-shown;
-        anchor-x: root.panel-x; anchor-y: root.tabs-foot; anchor-width: ShellStyle.panel-width;
-    }
+    tips := TipLayer { room: root.width; room-height: root.height; }
     // Last, over everything: the app beneath stands up while the starter says each step.
     if Starter.shown: StarterView { x: 0; y: 0; width: root.width; height: root.height; }
 

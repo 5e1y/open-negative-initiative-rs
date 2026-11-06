@@ -5436,5 +5436,40 @@
     "title": "The presets deck names itself on its resting strip",
     "status": "done",
     "detail": "Evaluation: an empty outlined tab sat half cut off at the canvas's bottom-left, with no name. The new card's top, all the strip shows of the deck at rest, now reads Presets, and the deck, the new card and each card carry an accessible role and name (Presets, New preset, the card's own). Its rise under the pointer was there: the testing tool hovers an element's centre, which for the deck's zone lies below the strip it shows. Checks: window preset_deck; real app at 1100 × 680."
+  },
+  {
+    "id": 1111,
+    "type": "fix",
+    "title": "Every mode is left alike: its key, Escape, and every photo opened",
+    "status": "done",
+    "detail": "UX evaluation, problems 15 to 18: the crop's key and ⌘K only ever opened the crop, Escape left neither the crop, Compare, De-dust nor a help card, and the crop and De-dust stayed on from one photo to the next, the gallery's included. One model now. A tool's key, menu item or shortcut opens it and leaves it for the last panel: Route::toggled and one toggle_tool serve the crop and De-dust, Swift's openCrop departing. Escape leaves the innermost thing open: a help card, then the sheets, Export and Prepare as before, then Compare over the canvas before the crop or De-dust. Every photo opens with no mode, at the one place a photo opens (open_photo), as the one still open shown again from the gallery (open_in_editor, which ⌘G and the EDITOR key now go through too), and leaving for the gallery. Leaving De-dust no longer disarms the measuring window: only leaving the crop does, as the route always said."
+  },
+  {
+    "id": 1112,
+    "type": "fix",
+    "title": "Prepare the Roll left unmeasured keeps nothing, and a bare frame shown again asks for its roll again",
+    "status": "done",
+    "detail": "UX evaluation, problem 21: Cancel kept the roll's draft, so the roll opened again on its Window step with every earlier step marked done; after Escape, the frame left open behind the gallery opened in the editor, its measuring window drawn, while another frame went to Prepare the Roll: the requirement ran only where a photo is loaded, never where the one open is shown again. Leaving the roll unmeasured (Cancel, Escape, GALLERY, a sidebar frame) now drops every frame's draft on the drafts' thread; a quit still writes it, so a roll resumes after a relaunch, where Swift kept it on leaving. The roll's frames are read on that thread too, after the drafts queued, so a roll opened again at once never reads a draft being dropped. The photo still open behind the gallery, shown again, is held to its roll's preparation as a loaded one is."
+  },
+  {
+    "id": 1113,
+    "type": "fix",
+    "title": "Prepare the Roll's panel: the step's controls first, its demo played once under them, the settings note once",
+    "status": "done",
+    "detail": "UX and UI evaluation, problems 8, 8b, 44 and 45: the Window step said to use a slider that stood below the fold, under a looping demo and a five-line warning the footer cut mid-sentence; the demo looped without end beside the frame measured; the orange Settings differ note stood on all five steps over each step's own choice. Each step now shows its controls first, then its demo, square at RollStyle.demo so it stands whole under the Window step's controls in a window 680 points tall, then the frames to pick from, the part that scrolls. A clip plays once and rests on its last frame (tutorial::Frames ends; a help card's demo, open while a hand rests on its mark, starts it again). The Settings differ note shows once, on the Flat-Field step, over the grid whose marks it names and whose light it concerns."
+  },
+  {
+    "id": 1114,
+    "type": "fix",
+    "title": "Prepare the Roll's step keys show a check on each step done",
+    "status": "done",
+    "detail": "UX and UI evaluation, problem 32: a step's progress was told by a lamp alone, green when done, black when not, the black one about 1.5:1 on its key. A step behind the current one carries the done glyph before its word; the current key stays lit, the others plain; the lamp is no longer laid on a key of the app."
+  },
+  {
+    "id": 1115,
+    "type": "fix",
+    "title": "A help card opens by its mark, never over the photo",
+    "status": "done",
+    "detail": "UX and UI evaluation, problem 46: in the editor panel every card opened left of the panel under its tab bar, over half the photo and far from the mark that opened it. A card now opens under its mark, or over it where more room stands, its demo shortening so the card keeps to the window, the mark's top reaching the layer through Tips.note; the panel's anchor, its four inputs and TipStyle.card-gap are gone. Escape closes a card first (#1111)."
   }
 ]

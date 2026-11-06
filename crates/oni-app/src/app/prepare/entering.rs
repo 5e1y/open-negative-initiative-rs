@@ -102,8 +102,9 @@ impl Ctl {
                 c.publish_prepare();
             });
         });
-        // Framings land frame by frame, so nothing waits for the slowest file before the first scan shows.
-        std::thread::spawn(move || {
+        // Framings land frame by frame, so nothing waits for the slowest file before the first scan
+        // shows; on the drafts' thread, so a roll left a moment ago is read once its drafts are dropped.
+        self.state.borrow().prepare.post(Box::new(move || {
             for (index, path) in paths.into_iter().enumerate() {
                 let loaded = sidecar::read(Path::new(&path), mosaic(&path), false).ok();
                 let read = loaded.as_ref().map(|l| l.settings.clone()).unwrap_or_default();
@@ -111,7 +112,7 @@ impl Ctl {
                 let aspect = aspect(scan_size(&path), &read.geometry);
                 with_shell(move |c| c.land_frame(session, &path, read, draft, index == 0, aspect));
             }
-        });
+        }));
         self.publish_menus();
         self.publish_bar();
         self.publish_prepare();
@@ -168,7 +169,7 @@ impl Ctl {
         self.publish_prepare();
     }
 
-    /// `leaveRollReference`: refused while measuring; the draft saved, back where the hand came from.
+    /// `leaveRollReference`: refused while measuring; nothing kept, back where the hand came from.
     pub(in crate::app) fn leave_roll(self: &Rc<Self>) {
         {
             let s = self.state.borrow();
@@ -176,7 +177,7 @@ impl Ctl {
                 return;
             }
         }
-        self.save_draft();
+        self.discard_draft();
         self.keep_picker();
         let back = {
             let mut s = self.state.borrow_mut();

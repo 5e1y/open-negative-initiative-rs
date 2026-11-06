@@ -164,7 +164,8 @@ impl Ctl {
         }
     }
 
-    /// `takeOff`: `load(_:)` unless the photo is the one open, then `mode = .editor`.
+    /// `takeOff`: `load(_:)` unless the photo is the one open, then `mode = .editor`; the one open
+    /// shown again opens as a loaded one does, with no mode and held to its roll's preparation.
     pub(super) fn open_in_editor(self: &Rc<Self>, path: &str) {
         // A photo may be on its way to another folder: it opens once the move has landed.
         if self.busy_said(tr("Edit")) {
@@ -174,7 +175,10 @@ impl Ctl {
         let together = self.state.borrow().selected();
         let together = if together.len() > 1 && together.iter().any(|p| p == path) { together } else { Vec::new() };
         self.state.borrow_mut().designate(path);
-        if !reopened {
+        if reopened {
+            self.leave_modes();
+            self.require_roll(path);
+        } else {
             self.open_photo(path);
         }
         self.edit_together(together);

@@ -8,16 +8,16 @@ import { Canvas } from "canvas_state.slint";
 import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
 
-// `rollStepKeys`: one key per step on one plate, the current one lit, a lamp on each step behind it.
-component RollStepKeys inherits ButtonGroup {
+// `rollStepKeys`: one key per step on one plate, the current one lit, a check on each step behind it.
+export component RollStepKeys inherits ButtonGroup {
     plate: true;
     for name[i] in [@tr("FILM"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
         text: name;
         help: [@tr("Select the Film Type"), @tr("Set Up the Flat-Field"), @tr("Pick the Film Base"), @tr("Flag the Frames Left Out"), @tr("Place the Measuring Frame")][i];
         on: Preparing.step == i;
         enabled: !Preparing.measuring && !Preparing.skipped[i];
-        lamp-shown: true;
-        lamp-lit: i < Preparing.step && !Preparing.skipped[i];
+        has-icon: i < Preparing.step && !Preparing.skipped[i];
+        icon: Icons.done;
         clicked => { Preparing.step-picked(i); }
     }
 }

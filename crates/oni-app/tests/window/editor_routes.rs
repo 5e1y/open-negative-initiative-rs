@@ -1,8 +1,8 @@
 //! The editor's routes on the headless window: a frame never balanced opens with its measuring
-//! window armed, Return and the crop's way out, De-dust leaving the Lab, the brush kept, Space, a
-//! preset's automatic balance that asks nothing, ⌘A beside a photo showing its folder together and
-//! a plain click on the lead showing it alone, a frame trashed there handing on to its neighbour, and
-//! the bar's select-all key.
+//! window armed, Return, the tools' keys and Escape out of each mode, every photo opening with none,
+//! De-dust leaving the Lab, the brush kept, Space, a preset's automatic balance that asks nothing, ⌘A
+//! beside a photo showing its folder together and a plain click on the lead showing it alone, a frame
+//! trashed there handing on to its neighbour, and the bar's select-all key.
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
@@ -82,10 +82,18 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.key("\r");
     assert_eq!(panel.get_tab(), 2, "Return on Color leaves nothing");
 
-    // ⌘K opens the crop and stays; Return applies the window first, then leaves for the last panel.
+    // ⌘K opens the crop and a second leaves it for the last panel, as De-dust's key; so does Escape.
     rig.chord(Key::Control, "k");
+    assert_eq!(panel.get_tab(), 1, "⌘K opens the crop");
     rig.chord(Key::Control, "k");
-    assert_eq!(panel.get_tab(), 1, "⌘K never leaves the crop");
+    assert_eq!(panel.get_tab(), 2, "a second ⌘K leaves it");
+    rig.chord(Key::Control, "k");
+    rig.key("\u{1b}");
+    assert_eq!(panel.get_tab(), 2, "Escape leaves the crop");
+    rig.key("\u{1b}");
+    assert_eq!(panel.get_tab(), 2, "twin: Escape on Color leaves nothing");
+    // Return applies the window first, then leaves for the last panel.
+    rig.chord(Key::Control, "k");
     framing.invoke_act(oni_app::Act::WindowArm);
     assert!(framing.get_armed() && canvas.get_window_shown());
     rig.key("\r");
@@ -125,6 +133,32 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     ctl.act(oni_app::Act::Correction);
     rig.pump();
     assert_eq!(panel.get_tab(), 2);
+    ctl.act(oni_app::Act::Correction);
+    rig.key("\u{1b}");
+    assert_eq!(panel.get_tab(), 2, "Escape leaves De-dust");
+
+    // Escape leaves the innermost mode, Compare before the crop; the next photo opens with none.
+    rig.chord(Key::Control, "k");
+    ctl.act(oni_app::Act::Compare);
+    rig.pump();
+    assert!(panel.get_tab() == 1 && canvas.get_split() >= 0.0, "the crop and Compare open together");
+    rig.key("\u{1b}");
+    assert!(panel.get_tab() == 1 && canvas.get_split() < 0.0, "Escape closes Compare first");
+    ctl.act(oni_app::Act::Compare);
+    rig.key("\u{F703}");
+    rig.pump();
+    assert!(ctl.state.borrow().open_path() == Some(names[1].as_str()), "the arrow walks to B");
+    assert!(panel.get_tab() == 2 && canvas.get_split() < 0.0, "B opens with no mode");
+    rig.key("\u{F702}");
+    rig.pump();
+    // The gallery ends them too: A shown again from it opens with none.
+    rig.chord(Key::Control, "k");
+    ctl.act(oni_app::Act::Compare);
+    ctl.act(oni_app::Act::ToggleMode);
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
+    assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path() == Some(names[0].as_str()));
+    assert!(panel.get_tab() == 2 && canvas.get_split() < 0.0, "A opens again with no mode");
 
     // Space leaves the Lab for the gallery, the menu item lit beside a photo only.
     w.global::<App>().invoke_menu(oni_app::Act::Emulator);

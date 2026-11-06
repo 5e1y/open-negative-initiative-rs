@@ -234,7 +234,7 @@ export component Button inherits Rectangle {
             if (!self.has-hover) { root.lifted = false; }
             if (root.note != "") {
                 if (self.has-hover) { Tip.demo = root.demo; }
-                Tips.note(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
+                Tips.note(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height, root.absolute-position.y);
             } else {
                 // Left, it hides the tooltip it showed, whatever its help says since.
                 if (self.has-hover) { root.told = root.help; }

@@ -1,5 +1,5 @@
-//! Prepare the Roll's tutorials, Swift's `TutorialVideo`: one square loop a step, muted, above its
-//! controls. Each is a GIF at 20 fps decoded frame by frame, so every system plays the same file.
+//! Prepare the Roll's tutorials, Swift's `TutorialVideo`: one square clip a step, muted, played once
+//! under its controls. Each is a GIF at 20 fps decoded frame by frame, so every system plays the same file.
 
 use std::io::Cursor;
 use std::time::Duration;
@@ -14,9 +14,8 @@ pub fn clip(step: usize) -> Option<&'static [u8]> {
     }
 }
 
-/// A clip's frames as it plays them, looping: each laid over the picture the last one left.
+/// A clip's frames as it plays them, once: each laid over the picture the last one left.
 pub struct Frames {
-    clip: &'static [u8],
     decoder: gif::Decoder<Cursor<&'static [u8]>>,
     picture: Vec<u8>,
     size: (u32, u32),
@@ -32,19 +31,16 @@ impl Frames {
     pub fn new(clip: &'static [u8]) -> Option<Frames> {
         let decoder = decoder(clip)?;
         let size = (u32::from(decoder.width()), u32::from(decoder.height()));
-        Some(Frames { clip, decoder, picture: vec![0; size.0 as usize * size.1 as usize * 4], size })
+        Some(Frames { decoder, picture: vec![0; size.0 as usize * size.1 as usize * 4], size })
     }
 
     pub fn size(&self) -> (u32, u32) {
         self.size
     }
 
-    /// The next picture, RGBA rows, and how long it shows; past the last frame the clip starts again.
+    /// The next picture, RGBA rows, and how long it shows; none past the last frame.
     pub fn next(&mut self) -> Option<(&[u8], Duration)> {
-        let Some(frame) = self.decoder.read_next_frame().ok()? else {
-            self.decoder = decoder(self.clip)?;
-            return self.next();
-        };
+        let frame = self.decoder.read_next_frame().ok()??;
         let width = self.size.0 as usize;
         let (left, top, w) = (usize::from(frame.left), usize::from(frame.top), usize::from(frame.width));
         // Transparent pixels keep what the frames before laid, as each frame writes only what moved.
@@ -66,7 +62,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn each_clip_plays_square_frames_at_twenty_a_second_and_loops() {
+    fn each_clip_plays_square_frames_at_twenty_a_second_once() {
         for step in 2..=4 {
             let mut frames = Frames::new(clip(step).expect("a clip")).expect("a GIF");
             let (w, h) = frames.size();
@@ -75,12 +71,13 @@ mod tests {
             assert_eq!(first.1, Duration::from_millis(50));
             assert!(first.0.chunks_exact(4).any(|p| p[..3] != first.0[..3]), "step {step}'s first frame is a picture, not a fill");
             let mut count = 1;
-            while frames.next().expect("frames go on").0 != first.0.as_slice() {
+            while frames.next().is_some() {
                 count += 1;
-                assert!(count < 1000, "step {step} never came back to its first frame");
+                assert!(count < 1000, "step {step} never ends");
             }
-            // Twin: the loop came back after the whole clip, not at once.
-            assert!(count > 20, "step {step} looped after {count} frames");
+            assert!(frames.next().is_none(), "step {step} rests on its last frame, never starting again");
+            // Twin: the clip ends after the whole of it, not at once.
+            assert!(count > 20, "step {step} ended after {count} frames");
         }
     }
 

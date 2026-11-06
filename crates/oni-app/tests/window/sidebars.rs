@@ -96,9 +96,9 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     // A key's tooltip waits the system's delay; a help mark's note shows at once, as Swift's does.
     assert!(!tip.get_at_once(), "twin: a tooltip is not shown at once");
     let tips = w.global::<oni_app::Tips>();
-    tips.invoke_note(true, "a note".into(), 10.0, 10.0);
+    tips.invoke_note(true, "a note".into(), 10.0, 10.0, 0.0);
     assert!(tip.get_shown() && tip.get_at_once(), "a help mark's note shows at once");
-    tips.invoke_note(false, "a note".into(), 10.0, 10.0);
+    tips.invoke_note(false, "a note".into(), 10.0, 10.0, 0.0);
     assert!(!tip.get_shown());
     let y = row_of(&rig, &tip, 22.0, target).expect("the target key again");
     let met = notes_along(&rig, &tip, 0.0, 260.0, y);

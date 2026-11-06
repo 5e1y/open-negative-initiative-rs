@@ -118,24 +118,20 @@ mod tests {
     }
 
     #[test]
-    fn each_demo_is_square_at_twenty_a_second_and_loops() {
+    fn each_demo_is_square_at_twenty_a_second_and_lasts_seconds() {
         for (topic, bytes) in every() {
             let mut frames = Frames::new(bytes).expect("a GIF");
             let (w, h) = frames.size();
             assert_eq!(w, h, "{topic} is square");
-            let (first, delay) = frames.next().map(|(p, d)| (p.to_vec(), d)).expect("a first frame");
+            let (_, delay) = frames.next().expect("a first frame");
             assert_eq!(delay.as_millis() % 50, 0, "{topic} runs on 20 fps steps: {delay:?}");
             let mut shown = delay;
-            loop {
-                let (picture, d) = frames.next().expect("frames go on");
-                if picture == first.as_slice() {
-                    break;
-                }
+            while let Some((_, d)) = frames.next() {
                 shown += d;
-                assert!(shown < Duration::from_secs(10), "{topic} never came back to its first frame");
+                assert!(shown < Duration::from_secs(10), "{topic} lasts over ten seconds");
             }
-            // Twin: the loop came back after seconds of clip, not at once.
-            assert!(shown >= Duration::from_secs(1), "{topic} looped after {shown:?}");
+            // Twin: the clip ends after seconds of it, not at once.
+            assert!(shown >= Duration::from_secs(1), "{topic} ended after {shown:?}");
         }
     }
 
