@@ -3,6 +3,9 @@
 import { DS } from "tokens.slint";
 
 export global SurfaceStyle {
+    // `DSLCD`'s ink glow (`lcdInk`, radius `rimBlur` 0.7), drawn as an outer stroke.
+    in-out property <float> lcd-glow: 0.35;
+    in-out property <length> lcd-glow-width: 1.2px;
     // `DSLamp`'s glow, its colour at radius `Space.xxs` (CSS blur is twice SwiftUI's radius).
     in-out property <length> lamp-glow: 2 * DS.space-xxs;
     // The foil's light: 1 is the ramp read off `DSFoil.render`, 0 a flat body.

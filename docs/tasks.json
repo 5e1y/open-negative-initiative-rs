@@ -5541,5 +5541,19 @@
     "title": "The bar's check reads its keys along their middle row",
     "status": "done",
     "detail": "Since most keys are flat (#1088), their top edge no longer differs from the bar, so the check that every mode lays the bar alike saw one key. It now reads the row through the keys' middle: a cap or a plate by its face, a flat key by its glyph, strokes up to 4 px apart bridged."
+  },
+  {
+    "id": 1154,
+    "type": "design",
+    "title": "The medals and the scanner's LCD keep their analogue look",
+    "status": "done",
+    "detail": "Owner's call on the art direction: ONI is digital and owns it, but its look nods to the analogue medium, playful like a film camera. The medals are spun foil again (DSMedal: the metal's ramp, its lobes, bevel, ruled ring and two shadows) and the LCD readout glows on the scanner's glass again, as before #1088; the medal picker keeps its 24-pt catch and its hover."
+  },
+  {
+    "id": 1155,
+    "type": "docs",
+    "title": "The benches rate the art direction: UI Art direction, UX Play",
+    "status": "done",
+    "detail": "Owner's ask: the reviews follow the project's art direction, a digital tool nodding to the analogue medium, playful and tactile like a film camera. The UI bench gains Art direction (one analogue vocabulary that never competes with the photo), the UX bench gains Play (controls that answer like a camera's mechanics without slowing the work)."
   }
 ]
