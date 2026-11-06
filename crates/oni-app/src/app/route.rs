@@ -1,6 +1,5 @@
-//! The panel's routes and the editor's modes: the crop's and De-dust's keys open their tool and leave
-//! it for the last panel the hand was in, Escape leaves the innermost mode, every photo opens with
-//! none, Return validates the measuring window then the crop, and a balance disarms.
+//! The panel's routes and the editor's modes: a tool's key opens it and leaves it for the last panel,
+//! Escape leaves the innermost mode, every photo opens with none, and Return validates then leaves.
 
 use super::*;
 use crate::tabs::{self, Validated};

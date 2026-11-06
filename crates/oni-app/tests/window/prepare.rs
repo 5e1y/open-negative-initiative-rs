@@ -1,6 +1,5 @@
-//! Prepare the Roll on the headless window, every step by the hand: left keeping nothing, resumed from
-//! a quit's draft, measured as one gallery step and shown together, asked for by a bare frame opened,
-//! again once left, and reached from the Roll tab.
+//! Prepare the Roll on the headless window, every step by the hand: left keeping nothing, resumed from a
+//! quit's draft, measured as one gallery step, asked for by a bare frame opened again, from the Roll tab.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{App, Bar, Canvas, Library, Menus, Preparing};
