@@ -87,6 +87,16 @@ pub fn stored_on(f: Field, at: f32, track: &RangeInclusive<f32>) -> f32 {
     f.shown(track::value(at, track, f.spec().centre))
 }
 
+/// Where each field rests on its track on these settings, by its index: its double click's value.
+pub fn rests(s: &oni_settings::PipelineSettings) -> Vec<f32> {
+    Field::ALL.iter().map(|f| position_on(*f, f.double_click_base(s), &track_on(*f, s))).collect()
+}
+
+/// `stored_on`, but rest itself where a drag holds on rest's place, as the double click lands it.
+pub fn landed(f: Field, at: f32, track: &RangeInclusive<f32>, rest: f32) -> f32 {
+    if (at - position_on(f, rest, track)).abs() < 1e-5 { rest } else { stored_on(f, at, track) }
+}
+
 /// Where a stored value sits on its track.
 pub(crate) fn position(f: Field, stored: f32) -> f32 {
     track::position(f.shown(stored), &track_range(f), f.spec().centre)
@@ -150,6 +160,20 @@ mod tests {
     }
 
     #[test]
+    fn a_drag_held_on_rest_lands_on_it_exactly() {
+        let s = PipelineSettings::rest(ConversionMode::Negative, true);
+        let (ceiling, track) = (Field::DensityCeiling, track_on(Field::DensityCeiling, &s));
+        let (at, base) = (rests(&s)[ceiling.index() as usize], ceiling.double_click_base(&s));
+        assert!((stored_on(ceiling, at, &track) - s.density_ceiling).abs() < 1e-5, "the ceiling rests where the frame came in");
+        assert_eq!(landed(ceiling, at + 2e-6, &track, base), base);
+        // Twin: a place a hair past rest is the hand's own, never rest.
+        assert_ne!(landed(ceiling, at + 1e-3, &track, base), base);
+        // A slide's ceiling rests elsewhere on its track.
+        let slide = PipelineSettings::rest(ConversionMode::Positive, true);
+        assert_ne!(rests(&slide)[ceiling.index() as usize], at);
+    }
+
+    #[test]
     fn a_monochrome_frame_spans_its_own_contrast_and_a_value_round_trips() {
         let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);
         let colour = PipelineSettings::rest(ConversionMode::Negative, true);
@@ -164,3 +188,4 @@ mod tests {
         assert!((stored_on(Field::BlackPoint, position_on(Field::BlackPoint, -0.1, &black), &black) + 0.1).abs() < 1e-5);
     }
 }
+

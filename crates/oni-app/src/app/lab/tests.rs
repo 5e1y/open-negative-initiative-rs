@@ -3,7 +3,6 @@ use oni_settings::scanner::ScannerClicks;
 
 #[test]
 fn the_screen_spells_every_count_and_the_balance_as_the_lab_does() {
-    assert_eq!([-3, -1, 1, 3].map(legend), ["−3", "−", "+", "+3"]);
     assert_eq!((spelled(0), spelled(5), spelled(-12)), ("0".into(), "+2.5".into(), "−6".into()));
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.scanner = ScannerClicks::new(3, -2, 0, 48, -20);

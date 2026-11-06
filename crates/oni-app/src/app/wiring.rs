@@ -32,11 +32,12 @@ impl Ctl {
                 double
             };
             if double {
-                let base = f.double_click_base(p.state.borrow().store.settings());
-                p.set(f, base);
+                p.rest(f);
             }
             double
         });
+        let p = me.clone();
+        g.on_rest(move |field| Field::from_index(field).filter(|_| !p.inert()).into_iter().for_each(|f| p.rest(f)));
 
         let p = me.clone();
         g.on_drag(move |field, translation, span, fine| {
@@ -44,11 +45,11 @@ impl Ctl {
             let i = f.index() as usize;
             let (asked, live, offer) = {
                 let mut s = p.state.borrow_mut();
-                let range = track_on(f, s.store.settings());
+                let (range, rest) = (track_on(f, s.store.settings()), f.double_click_base(s.store.settings()));
                 let slide = &mut s.slides[i];
                 let (false, Some(start)) = (slide.resetting, slide.start) else { return };
                 let asked = track::clamped(track::asked(start, translation, span, fine));
-                let live = stored_on(f, asked, &range);
+                let live = crate::slider_track::landed(f, asked, &range, rest);
                 let now = Instant::now();
                 slide.live = Some(live);
                 slide.moved_at = Some(now);

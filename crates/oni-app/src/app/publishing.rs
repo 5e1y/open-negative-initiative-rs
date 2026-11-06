@@ -51,12 +51,16 @@ impl Ctl {
                 }
             }
         }
-        let modified = {
+        let (modified, rests) = {
             let s = self.state.borrow();
-            Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b)))
+            (Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b))), crate::slider_track::rests(s.store.settings()))
         };
         for (b, on) in modified {
             set_modified(&g, b, on);
+        }
+        let shown = g.get_rests();
+        if shown.row_count() != rests.len() || rests.iter().enumerate().any(|(i, r)| shown.row_data(i) != Some(*r)) {
+            g.set_rests(ModelRc::new(VecModel::from(rests)));
         }
         let reread = edited && {
             let s = self.state.borrow();
@@ -159,6 +163,12 @@ impl Ctl {
             self.remember_flat_field(&was);
         }
         self.publish(false);
+    }
+
+    /// A field back to its rest, as a double click on its rail or on its name asks.
+    pub(super) fn rest(self: &Rc<Self>, f: Field) {
+        let base = f.double_click_base(self.state.borrow().store.settings());
+        self.set(f, base);
     }
 
     pub(crate) fn set(self: &Rc<Self>, f: Field, stored: f32) {

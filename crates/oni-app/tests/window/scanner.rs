@@ -81,8 +81,6 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!(lab.get_balance(), "0.00 EV · 0.00 EV", "no Auto White Balance ran on this frame");
     assert_eq!(lab.get_frame(), "FRAME 01/02");
     assert_eq!(lab.get_machine_line(), "ONI · NEGATIVE");
-    let legends: Vec<String> = (0..4).map(|i| lab.get_legends().row_data(i).unwrap().to_string()).collect();
-    assert_eq!(legends, ["−3", "−", "+", "+3"]);
 
     // The keypad's keys, the same commands the phone sends: replayed on a second store, they land alike.
     let pro_contrast = settings().print.contrast;
@@ -177,6 +175,11 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.06 EV") && landed.iter().any(|(d, r)| *d == -3 && r == "−0.17 EV"));
     // Twin: a rail on whole units would skip the odd steps.
     assert!(steps.iter().any(|d| d % 2 != 0));
+    // The rail holds at rest as Pro's do: twelve points of the hand more than a step beside it.
+    let at = |v: i64| steps.iter().filter(|d| **d == v).count();
+    assert!(at(0) >= at(1) + 10, "the drag holds at zero: {} moves there, {} at +1", at(0), at(1));
+    // Twin: the steps beside rest take their own width alone.
+    assert!(at(1) < 8 && at(-1) < 8, "{} and {}", at(-1), at(1));
     lab.invoke_clear(0);
     rig.pump();
     // The rail pressed holds the keyboard, its arrows stepping D: Escape gives it back to the photos.

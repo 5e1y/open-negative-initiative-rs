@@ -11,7 +11,7 @@ use oni_link::scanner::{Effect, Letter, Machine};
 use oni_pipeline::scanner::on_oni_machine;
 use oni_settings::blocks::Vignette;
 use oni_settings::{ConversionMode, Face, PipelineSettings, ScannerMachine};
-use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -44,12 +44,6 @@ pub fn remembered(support: &Path) -> Face {
 pub(super) fn remember(support: &Path, face: Face) {
     let _ = std::fs::create_dir_all(support);
     let _ = std::fs::write(remembered_at(support), if face == Face::Scanner { "1" } else { "0" });
-}
-
-/// `LabKeyboard.legend`: the outer keys their count, the inner ones their sign.
-pub fn legend(step: i32) -> String {
-    let sign = if step < 0 { "−" } else { "+" };
-    if step.abs() == 1 { sign.to_string() } else { format!("{sign}{}", step.abs()) }
 }
 
 pub use oni_link::scanner::spelled;
@@ -280,8 +274,6 @@ impl Ctl {
 
     pub(super) fn wire_lab(me: &Rc<Ctl>, window: &MainWindow) {
         let lab = window.global::<Lab>();
-        let legends: Vec<SharedString> = [-3, -1, 1, 3].map(|s| legend(s).into()).to_vec();
-        lab.set_legends(ModelRc::new(VecModel::from(legends)));
         let p = me.clone();
         lab.on_press(move |letter, by| {
             if let (Some(letter), Ok(by)) = (at(&Letter::ALL, letter), i8::try_from(by)) {

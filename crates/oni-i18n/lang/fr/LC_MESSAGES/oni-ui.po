@@ -1238,88 +1238,44 @@ msgid "Density"
 msgstr "Densité"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point at each press, the screen above counting the points."
-msgstr "D, la touche de densité d’un minilab : + tire la photo plus claire et − plus sombre, d’un demi-point à chaque pression, l’écran au-dessus comptant les points."
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
+msgstr "D, la touche de densité d’un minilab : + tire la photo plus claire et − plus sombre, d’un demi-point par cran, l’écran au-dessus comptant les points."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "D"
 msgstr "D"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −: toward dark"
-msgstr "D − : plus sombre"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Double-click to bring it back to rest; {} with − or + moves three steps."
-msgstr "Double-cliquez pour revenir au repos ; {} avec − ou + avance de trois crans."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light"
-msgstr "D + : plus clair"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
 msgstr "Couleur"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point at each press, the screen above counting the points."
-msgstr "C, M et Y, les touches de couleur d’un minilab : + pousse le tirage vers le cyan, le magenta ou le jaune et − vers le rouge, le vert ou le bleu, d’un demi-point à chaque pression, l’écran au-dessus comptant les points."
+msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points."
+msgstr "C, M et Y, les touches de couleur d’un minilab : + pousse le tirage vers le cyan, le magenta ou le jaune et − vers le rouge, le vert ou le bleu, d’un demi-point par cran, l’écran au-dessus comptant les points."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C"
 msgstr "C"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C −: toward red"
-msgstr "C − : vers le rouge"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C +: toward cyan"
-msgstr "C + : vers le cyan"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "M"
 msgstr "M"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M −: toward green"
-msgstr "M − : vers le vert"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M +: toward magenta"
-msgstr "M + : vers le magenta"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Y"
 msgstr "Y"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y −: toward blue"
-msgstr "Y − : vers le bleu"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y +: toward yellow"
-msgstr "Y + : vers le jaune"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Look"
 msgstr "Look"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP lays the machine's warm or cool look over the print, a little more at each press; at zero the print stays as the keys above set it."
-msgstr "TEMP pose le look chaud ou froid de la machine sur le tirage, un peu plus à chaque pression ; à zéro, le tirage reste tel que les touches au-dessus l’ont réglé."
+msgid "TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it."
+msgstr "TEMP pose le look chaud ou froid de la machine sur le tirage, un peu plus à chaque cran ; à zéro, le tirage reste tel que les touches au-dessus l’ont réglé."
 
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Temperature"
 msgstr "Température"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature −: toward cool"
-msgstr "Température − : plus froid"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature +: toward warm"
-msgstr "Température + : plus chaud"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
@@ -1396,30 +1352,6 @@ msgstr "Vignetage"
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome"
 msgstr "Chrome"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast −: toward softer, 5% a step"
-msgstr "Contraste − : plus doux, 5 % par pas"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast +: toward harder, 5% a step"
-msgstr "Contraste + : plus dur, 5 % par pas"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette −: toward lighter corners, 0.1 EV a step"
-msgstr "Vignetage − : coins plus clairs, 0,1 EV par pas"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette +: toward darker corners, 0.1 EV a step"
-msgstr "Vignetage + : coins plus sombres, 0,1 EV par pas"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome −: toward less, 5% a step"
-msgstr "Chrome − : moins, 5 % par pas"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome +: toward more, 5% a step"
-msgstr "Chrome + : plus, 5 % par pas"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
