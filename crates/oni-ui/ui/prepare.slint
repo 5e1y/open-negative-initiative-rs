@@ -171,9 +171,14 @@ export component RollPanel inherits Surface {
                         name: Preparing.frame-name; can-previous: Preparing.can-previous && !Preparing.measuring; can-next: Preparing.can-next && !Preparing.measuring;
                         previous => { Preparing.previous(); } next => { Preparing.next(); }
                     }
-                    Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: @tr("EPILEPSY WARNING: scrubbing flashes the frames quickly."); }
+                    // Told under the slider it concerns, a caption below the step's own text.
+                    Label { role: TextRole.caption; tone: Tone.secondary; wrap: word-wrap; text: @tr("Epilepsy warning: scrubbing flashes the frames quickly."); }
                 }
-                // Under the controls the step's text names, played once.
+                // The step's demo under the controls its text names, only once asked: nothing moves beside the scan unasked.
+                if Preparing.has-tutorial: HorizontalLayout {
+                    alignment: start;
+                    Button { text: Preparing.tutorial.width > 0 ? @tr("Hide") : @tr("Show How"); clicked => { Preparing.tutorial-toggled(); } }
+                }
                 if Preparing.tutorial.width > 0: HorizontalLayout {
                     alignment: center;
                     Picture {
@@ -202,11 +207,12 @@ export component RollPanel inherits Surface {
             init => { self.laid(); }
             Button { size: ButtonSize.plate; text: Preparing.measuring ? @tr("Stop") : @tr("Cancel"); clicked => { Preparing.cancel(); } }
             if Preparing.back-shown: Button { size: ButtonSize.plate; text: @tr("Back"); clicked => { Preparing.back(); } }
+            // The step's key: its commit a keycap, a flat key while it only passes a step that holds nothing yet.
             Button {
                 size: ButtonSize.plate;
                 text: Preparing.measuring ? @tr("Measuring…") : Preparing.action-title;
-                keycap: true;
-                kind: ButtonKind.accent;
+                keycap: !Preparing.action-skips;
+                kind: Preparing.action-skips ? ButtonKind.plain : ButtonKind.accent;
                 fills: true;
                 enabled: Preparing.action-enabled && !Preparing.measuring;
                 clicked => { Preparing.advance(); }

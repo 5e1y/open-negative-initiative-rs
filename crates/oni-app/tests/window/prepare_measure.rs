@@ -67,7 +67,7 @@ pub(crate) fn each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure
     ctl.act(oni_app::Act::PrepareRoll);
     rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == FRAMES);
     p.invoke_step_picked(4);
-    rig.until("every frame placed", Duration::from_secs(20), || p.get_action_title() == format!("MEASURE {FRAMES} FRAMES"));
+    rig.until("every frame placed", Duration::from_secs(20), || p.get_readouts().row_data(4).is_some_and(|r| r.ends_with(&format!(" / {FRAMES}"))));
     rig.settle();
 
     // Started: every screen is dark until a frame lands, which only the event loop brings.

@@ -110,7 +110,7 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     }
     p.invoke_step_picked(4);
     rig.pump();
-    assert_eq!(p.get_action_title().as_str(), "MEASURE 3 FRAMES");
+    assert_eq!(p.get_readouts().row_data(4).unwrap().as_str(), "1 / 3", "the flagged frame rides unmeasured");
     p.invoke_advance();
     rig.until("the measure landed", Duration::from_secs(120), || !p.get_shown());
     let advice = w.global::<oni_app::Advice>();

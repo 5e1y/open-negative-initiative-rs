@@ -1,6 +1,7 @@
 // `DSTabBar`, the segmented tabs.
 import { Colour, State, TabsStyle } from "theme.slint";
-import { Label, Tips, Clicks } from "base.slint";
+import { Label, Icon, TextRole, Tips, Clicks } from "base.slint";
+import { Icons } from "icons.slint";
 import { Dot } from "marks.slint";
 import { Inward, Outward } from "depth.slint";
 import { KeyScope } from "keyboard.slint";
@@ -18,6 +19,8 @@ export component Tabs inherits Rectangle {
     in property <[string]> helps;
     // Tabs out of reach: drawn at the disabled state's opacity, deaf to the pointer.
     in property <[bool]> disabled;
+    // A walk's steps: each tab leads with its place in a disc, a check there once `marked` says it is done.
+    in property <bool> ordered;
     // The tab a check or the lab shows hovered; -1 follows the pointer alone.
     in property <int> hover-tab: -1;
     callback picked(int);
@@ -66,7 +69,8 @@ export component Tabs inherits Rectangle {
             spacing: TabsStyle.gap;
             for name[i] in root.tabs: Rectangle {
                 property <bool> holds: i == root.held;
-                min-width: (root.swatches.length > 0 ? TabsStyle.swatch : label.preferred-width) + 2 * TabsStyle.margin;
+                min-width: (root.swatches.length > 0 ? TabsStyle.swatch : label.preferred-width) + 2 * TabsStyle.margin
+                    + (root.ordered ? TabsStyle.step + TabsStyle.step-gap : 0px);
                 preferred-width: TabsStyle.reach;
                 horizontal-stretch: 1;
                 init => { if (self.holds) { root.hold(self.x, self.width, false); } }
@@ -79,9 +83,32 @@ export component Tabs inherits Rectangle {
                 opacity: root.disabled[i] ? State.disabled
                     : i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle;
                 label := Label {
-                    visible: root.swatches.length == 0;
+                    visible: root.swatches.length == 0 && !root.ordered;
                     text: name;
                     centred: true;
+                }
+                if root.ordered: HorizontalLayout {
+                    alignment: center;
+                    spacing: TabsStyle.step-gap;
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: TabsStyle.step;
+                            height: TabsStyle.step;
+                            border-radius: self.width / 2;
+                            background: TabsStyle.step-disc;
+                            if !root.marked[i]: Label { role: TextRole.caption; text: i + 1; centred: true; }
+                            if root.marked[i]: Icon {
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                width: TabsStyle.step-check;
+                                height: TabsStyle.step-check;
+                                source: Icons.done;
+                                ink: Colour.accent;
+                            }
+                        }
+                    }
+                    Label { text: name; }
                 }
                 if root.swatches.length > 0: Dot {
                     x: (parent.width - self.width) / 2;
@@ -89,7 +116,7 @@ export component Tabs inherits Rectangle {
                     size: TabsStyle.swatch;
                     ink: root.swatches[i];
                 }
-                if root.marked[i]: Dot {
+                if root.marked[i] && !root.ordered: Dot {
                     x: parent.width - self.width - TabsStyle.mark-inset;
                     y: TabsStyle.mark-inset;
                     size: TabsStyle.mark;

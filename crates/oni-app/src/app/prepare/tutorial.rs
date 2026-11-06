@@ -1,5 +1,5 @@
-//! The step's tutorial above its controls: its clip's frames written into one texture at the clip's
-//! own pace, the picture redrawn by a revision as the canvas is.
+//! The step's demo under its controls, on the hand's request: its clip's frames written into one
+//! texture at the clip's own pace, the picture redrawn by a revision as the canvas is.
 
 use super::super::SHELL;
 use super::*;
@@ -15,23 +15,32 @@ pub(in crate::app) struct Playing {
 }
 
 impl Ctl {
-    /// Plays the step's clip while the panel shows it and nothing is measured, as Swift's `progress ==
-    /// nil`; another step, or none, stops the one playing.
-    pub(in crate::app) fn play_tutorial(&self, step: Option<usize>) {
-        let wanted = step.filter(|s| tutorial::clip(*s).is_some());
-        if self.state.borrow().prepare.tutorial.as_ref().map(|p| p.step) == wanted {
-            return;
+    /// Show How: the step's clip from its first frame, played once and resting on its last; pressed
+    /// again, the clip shown is put away. Nothing moves beside the scan unasked.
+    pub(in crate::app) fn toggle_tutorial(&self) {
+        let (step, shown) = {
+            let r = &self.state.borrow().prepare;
+            (r.step.index(), r.tutorial.is_some())
+        };
+        self.play_tutorial((!shown).then_some(step));
+    }
+
+    /// A clip stays on its own step while nothing is measured; on another step, or none, it goes.
+    pub(in crate::app) fn keep_tutorial(&self, step: Option<usize>) {
+        if self.state.borrow().prepare.tutorial.as_ref().is_some_and(|p| Some(p.step) != step) {
+            self.play_tutorial(None);
         }
-        let playing = wanted.and_then(|step| Some(Playing { step, frames: Frames::new(tutorial::clip(step)?)?, texture: None, revision: 0, timer: Timer::default() }));
-        let playing = std::mem::replace(&mut self.state.borrow_mut().prepare.tutorial, playing).is_some();
-        match wanted {
-            Some(_) => self.tutorial_frame(),
-            None if playing => {
-                if let Some(w) = self.window() {
-                    w.global::<Preparing>().set_tutorial(Image::default());
-                }
-            }
-            None => {}
+    }
+
+    /// The clip of `step` from its start, or none shown.
+    fn play_tutorial(&self, step: Option<usize>) {
+        let playing = step.and_then(|step| Some(Playing { step, frames: Frames::new(tutorial::clip(step)?)?, texture: None, revision: 0, timer: Timer::default() }));
+        let started = playing.is_some();
+        let stopped = std::mem::replace(&mut self.state.borrow_mut().prepare.tutorial, playing).is_some();
+        if started {
+            self.tutorial_frame();
+        } else if stopped && let Some(w) = self.window() {
+            w.global::<Preparing>().set_tutorial(Image::default());
         }
     }
 

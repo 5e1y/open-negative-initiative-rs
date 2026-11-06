@@ -6164,5 +6164,33 @@
     "title": "Paste to Roll says how many photos it rewrote, its UNDO beside",
     "status": "done",
     "detail": "UX evaluation s-0abd2d65 (Trust): Paste to Roll rewrote 25 photos in one click with no count or notice of the change. The bar's PASTE TO ROLL key now shows the menu's title, Paste to Roll (25 Photos), before the click; after it, the notice over every surface says Settings pasted on 25 photos of the roll, its UNDO walking that step back while it is the last, and the crop's Paste to Roll says Crop pasted on … alike. The count is the photos of the step the paste laid; a paste that rewrote nothing, or failed (its own notice then standing), says nothing. `told_step` binds its UNDO to a step with no name too, an edit of the open frame as a roll's paste is. No confirmation added: the count before and the undo after keep the gesture one click. French and Spanish filled in. Checks: window escape (a paste rewriting nothing is silent; one photo rewritten says so, and UNDO takes it back)."
+  },
+  {
+    "id": 1248,
+    "type": "design",
+    "title": "Prepare's step key rises as NEXT once the step holds its value; before, a flat Skip",
+    "status": "done",
+    "detail": "UX evaluation: on the Base step the blue primary keycap read SKIP while no film base was picked, inviting the one skip that lowers the odds of a good conversion. The key's look now follows the step's state at its source (`key` beside `filled`): NEXT, the accent keycap, once the step holds its value; a flat Skip before, so the pick the step asks for stays its call to act. Flat-Field and a slide's white take the same rule; no step is cut, and a roll with no bare film can still go on without one. The footer key follows the design system's capitals like Cancel and Back beside it. Twin: a base picked raises NEXT, never Skip."
+  },
+  {
+    "id": 1249,
+    "type": "design",
+    "title": "Prepare's demos play once when asked; the epilepsy warning is a caption",
+    "status": "done",
+    "detail": "UX evaluation: the step's clip started by itself under the controls, the Window step's for 26.5 s, so the step never settled beside the scan, with no way to keep it still. A Show How key now plays the step's clip once from its start, resting on its last frame; pressed again, or on another step, or while measuring, it goes. Nothing moves beside the scan unasked, which is the reduced-motion answer on both systems with no setting to read. The epilepsy warning under the Frame slider is a secondary caption in sentence case, below the step's own text, never orange capitals. The help card's looping demo is the card's own (app/help/clip.rs), outside Prepare. Twins: a step change puts the demo away; the film step offers none."
+  },
+  {
+    "id": 1250,
+    "type": "design",
+    "title": "One name a concept in Prepare: the measuring window, and Prepare Roll for the measure",
+    "status": "done",
+    "detail": "UX evaluation: the Window tab, a Place the Measuring Frame heading and the editor's Measuring Window block named one thing three ways, frame also being a photo of the roll; the window step's key read MEASURE 14 FRAMES and the gallery's band Not measured yet where the key that opens Prepare reads PREPARE ROLL. The heading, both details and the empty-measure advice now say measuring window; the walk ends on PREPARE ROLL, the bar's own word, its count of measured frames left to the Frame slider (a flagged frame is prepared without voting, so a count on the key misled), and the band says Not prepared yet. French and Spanish follow."
+  },
+  {
+    "id": 1251,
+    "type": "design",
+    "title": "Prepare's step bar numbers its steps and checks the done ones",
+    "status": "done",
+    "detail": "UI evaluation: the five steps looked like a segmented control, a corner dot the only sign of a step done. `Tabs` takes `ordered`: each tab leads with its place in a small disc (`TabsStyle.step`, the hollow's and the pill's lighter track), the disc showing the accent check once the step is done; the corner dot stays for the bars that mark a value. The bar keeps its hollow and sliding pill, 2.5D as the tabs stay, each step's tab a disc wider (`RollStyle.step-tab`)."
   }
 ]

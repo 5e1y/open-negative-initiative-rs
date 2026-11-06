@@ -152,7 +152,7 @@ impl Ctl {
                 store.forget_measured();
             }
             if !stopped {
-                self.advise(tr("Something Went Wrong"), tr("No frame of this roll could be measured: the files could not be read, or the measuring frame holds nothing to balance."));
+                self.advise(tr("Something Went Wrong"), tr("No frame of this roll could be measured: the files could not be read, or the measuring window holds nothing to balance."));
             }
             self.publish_prepare();
             self.publish_bar();

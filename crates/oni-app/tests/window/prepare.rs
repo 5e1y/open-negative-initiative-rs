@@ -78,6 +78,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
     assert_eq!(p.get_left_out().as_str(), "1 frame of this folder, measured on another roll, is left out.");
     assert_eq!(p.get_heading().as_str(), "Select the Film Type");
+    assert!(!p.get_has_tutorial(), "the film step offers no demo");
     assert!(p.get_skipped().row_data(1).unwrap(), "a scanner's roll skips the flat-field");
     assert!(!menus.get_live().toggle_mode && !menus.get_live().measure_roll, "⌘G and the item itself stay dark meanwhile");
     let live = menus.get_live();
@@ -94,9 +95,21 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(p.get_step(), 2);
     rig.until("the drafts written", Duration::from_secs(10), || ["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "base")));
     assert!(loaded(&canonical("D.tif")).roll_draft.is_none(), "the frame left out carries no draft");
-    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str()), ("No base picked yet.", "SKIP"));
+    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_skips()), ("No base picked yet.", "Skip", true));
     let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
     assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
+
+    // The base's demo waits for Show How, nothing moving beside the scan unasked; pressed again, it goes.
+    let demo = || p.get_tutorial().size().width;
+    assert!(p.get_has_tutorial() && demo() == 0, "offered, never played unasked");
+    p.invoke_tutorial_toggled();
+    rig.pump();
+    assert!(demo() > 0, "Show How plays it");
+    p.invoke_tutorial_toggled();
+    rig.pump();
+    assert_eq!(demo(), 0, "twin: pressed again, it goes");
+    p.invoke_tutorial_toggled();
+    rig.pump();
 
     // Picker Size: held in memory while it slides, written once let go.
     let before = radius();
@@ -125,6 +138,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     click(&rig, p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
     assert_eq!(p.get_step(), 3, "a pick goes on to the flags");
     assert_eq!(p.get_base_note().as_str(), "On A.tif");
+    assert!(demo() == 0 && p.get_has_tutorial(), "the base's demo goes with its step; the flags' waits to be asked");
     assert_eq!(done(), [true, false, true, false, false], "the base behind is done once it holds its pick");
 
     // A click on the sheet flags C; Clear Flags takes every flag off; a second click flags it again.
@@ -155,7 +169,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     // The window step: two to measure, the arrows walk them, the body drags the window.
     p.invoke_step_picked(4);
     rig.pump();
-    assert_eq!(p.get_action_title().as_str(), "MEASURE 2 FRAMES");
+    let walked = || p.get_readouts().row_data(4).unwrap_or_default();
+    assert_eq!((p.get_action_title().as_str(), p.get_action_skips(), walked().as_str()), ("PREPARE ROLL", false, "1 / 2"), "the bar's own key ends the walk over two frames");
     assert_eq!(p.get_frame_name().as_str(), "A.tif");
     rig.key("\u{F703}");
     assert_eq!(p.get_frame_name().as_str(), "B.tif");
@@ -192,7 +207,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.pump();
     ctl.act(oni_app::Act::PrepareRoll);
     rig.until("the roll resumed", Duration::from_secs(10), || p.get_shown() && p.get_step() == 4);
-    rig.until("every frame placed", Duration::from_secs(10), || p.get_action_title() == "MEASURE 2 FRAMES");
+    rig.until("every frame placed", Duration::from_secs(10), || walked().ends_with(" / 2"));
     assert!(p.get_cells().row_data(2).unwrap().flagged);
 
     // MEASURE: off this thread, then the editor on the whole roll together; one gallery step lands it.

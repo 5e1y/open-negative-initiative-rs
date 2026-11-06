@@ -1,5 +1,5 @@
 //! Prepare the Roll's tutorials, Swift's `TutorialVideo`: one square clip a step, muted, played once
-//! under its controls. Each is a GIF at 20 fps decoded frame by frame, so every system plays the same file.
+//! when asked. Each is a GIF at 20 fps decoded frame by frame, so every system plays the same file.
 
 use std::io::Cursor;
 use std::time::Duration;
