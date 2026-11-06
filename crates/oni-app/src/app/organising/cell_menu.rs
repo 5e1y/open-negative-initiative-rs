@@ -78,7 +78,8 @@ impl Ctl {
         for (i, line) in organise::cell_menu(scope, &s.order, &facts).into_iter().enumerate() {
             let opens = matches!(line.action, CellAction::AddTo | CellAction::RemoveFrom);
             let rule = line.rule || (edit && scope.len() == 1 && i == 0);
-            items.push(Item { line: menu_line(&line.text, line.enabled, rule, opens), act: Act::Cell(line) });
+            let keys = line.action.chord(crate::platform::Platform::THIS).into();
+            items.push(Item { line: MenuLine { keys, ..menu_line(&line.text, line.enabled, rule, opens) }, act: Act::Cell(line) });
         }
         items
     }
@@ -170,6 +171,18 @@ impl Ctl {
         }
         self.publish_bar();
         false
+    }
+
+    /// Copy Settings from the bar and the menu bar: the open frame's beside it; in the gallery, the one
+    /// photo picked, as its cell menu's line copies it, so the chord that line prints means one thing.
+    pub(in crate::app) fn copy_settings(self: &Rc<Self>) {
+        if self.window().is_some_and(|w| w.global::<App>().get_gallery()) {
+            return self.copy_settings_of(&self.targets());
+        }
+        if let Some(store) = self.state.borrow_mut().store.editor() {
+            store.copy_settings();
+        }
+        self.board_out(crate::pasteboard::SETTINGS);
     }
 
     /// Copy Settings on the cell menu's one photo, onto the board the bar's Paste and the system's share.

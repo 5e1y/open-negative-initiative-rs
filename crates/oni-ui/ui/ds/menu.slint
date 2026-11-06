@@ -8,8 +8,9 @@ import { Icons } from "icons.slint";
 import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
 
-// A line of a context menu: a rule above it, out of reach, or opening a submenu beside it.
-export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
+// A line of a context menu: a rule above it, out of reach, opening a submenu beside it, or printing the
+// chord the menu bar answers for it, as AppKit's menus do.
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string }
 
 export struct FolderChoice { title: string, current: bool }
 
@@ -89,8 +90,9 @@ export component PopupPanel inherits PopupWindow {
 // Words with the current one checked, a context menu's lines, or the folder pill's choices; a choice
 // closes it. An opener's submenu opens beside it as AppKit's, at rest, on a click or on →.
 export component Menu inherits PopupWindow {
-    // A menu dropped under a field is as wide as it; a submenu as wide as its menu.
-    in property <length> span: MenuStyle.width;
+    // A menu dropped under a field is as wide as it; a submenu as wide as its menu; a context menu as wide
+    // as its widest line, word and chord, so neither elides.
+    in property <length> span: max(MenuStyle.width, widest.preferred-width + 2 * Space.xs);
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
@@ -230,6 +232,11 @@ export component Menu inherits PopupWindow {
             reject
         }
     }
+    // The lines at their own widths, unseen, which `span` reads.
+    widest := VerticalLayout {
+        visible: false;
+        for line in root.lines: MenuEntry { text: line.text; shortcut: line.opens ? "›" : line.keys; }
+    }
     // A press on the popup's bare ground, beside a short submenu, closes the menu as one outside it does.
     TouchArea {
         pointer-event(event) => { if (event.kind == PointerEventKind.down) { root.close(); } }
@@ -253,7 +260,7 @@ export component Menu inherits PopupWindow {
             if line.rule: Divider { engraved: false; }
             entry := MenuEntry {
                 text: line.text;
-                shortcut: line.opens ? "›" : "";
+                shortcut: line.opens ? "›" : line.keys;
                 enabled: line.enabled;
                 by-hand: false;
                 held: i == root.lit || i == root.open;

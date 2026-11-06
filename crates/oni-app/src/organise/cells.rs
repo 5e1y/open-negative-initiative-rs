@@ -61,8 +61,26 @@ fn sorted(set: &HashSet<String>, order: &[String]) -> Vec<String> {
     v
 }
 
+impl CellAction {
+    /// The chord the menu bar answers for the same gesture, as `platform` writes it; none where it has none.
+    pub fn chord(&self, platform: Platform) -> String {
+        let k = platform::keys(platform);
+        match self {
+            CellAction::Copy => format!("{}C", k.command_shift),
+            CellAction::Paste => format!("{}V", k.command_shift),
+            CellAction::Reset => format!("{}R", k.command_shift),
+            CellAction::NewRoll => format!("{}G", k.command_shift),
+            CellAction::Ungroup => format!("{}G", k.option_command_shift),
+            CellAction::Export => format!("{}E", k.command),
+            CellAction::Trash => format!("{}{}", k.command, k.delete),
+            _ => String::new(),
+        }
+    }
+}
+
 /// `CellMenu.body`, a submenu's opener being a line of `AddTo` or `RemoveFrom`; the medals and the
 /// roll's reset stay with the status bar and the Rolls menu, as this menu acts on its photos alone.
+/// What resets or removes stands last, in a section of its own, apart from every verb that keeps.
 pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -> Vec<CellLine> {
     let here: HashSet<String> = scope.difference(facts.missing).cloned().collect();
     let gone = scope.len() - here.len();
@@ -81,7 +99,6 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
         // One photo's settings at a time, as the editor's Copy takes the open frame's.
         line(tr("Copy Settings").into(), n == 1 && gone == 0, gone > 0, CellAction::Copy, &here, 0),
         line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste && any, false, CellAction::Paste, &here, gone),
-        line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), any, false, CellAction::Reset, &here, gone),
     ]);
     lines.push(line(counted(n, "Move into a New Roll…", tr!("Move into a New Roll… ({count} photos)", count = n)), any, true, CellAction::NewRoll, &here, gone));
     let j = joined.len();
@@ -97,8 +114,9 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     lines.push(line(counted(n, "Export…", tr!("Export… ({count} photos)", count = n)), any, true, CellAction::Export, &here, 0));
     let reveal = if n > 1 { platform::reveal_photos(Platform::THIS, n) } else { platform::reveal(Platform::THIS).to_owned() };
     lines.push(line(reveal, any, false, CellAction::Reveal, &here, 0));
+    lines.push(line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), any, true, CellAction::Reset, &here, gone));
     let trash = if n > 1 { tr!("Move {count} Photos to ONI Trash", count = n) } else { tr("Move to ONI Trash").into() };
-    lines.push(line(trash, any, true, CellAction::Trash, &here, gone));
+    lines.push(line(trash, any, false, CellAction::Trash, &here, gone));
     lines
 }
 
@@ -150,24 +168,25 @@ mod tests {
         assert_eq!(
             texts,
             [
-                "1 photo missing", "Copy Settings", "Paste Settings", "Reset Settings",
-                "Move into a New Roll\u{2026}", "Ungroup", "New Project from 2 Photos", "Add to Project",
-                "Export\u{2026}", platform::reveal(Platform::THIS), "Move to ONI Trash"
+                "1 photo missing", "Copy Settings", "Paste Settings", "Move into a New Roll\u{2026}", "Ungroup",
+                "New Project from 2 Photos", "Add to Project", "Export\u{2026}", platform::reveal(Platform::THIS),
+                "Reset Settings", "Move to ONI Trash"
             ]
         );
         assert!(!lines[0].enabled && lines[0].action == CellAction::Missing, "the count first, greyed");
         assert!(!lines[1].enabled, "Copy takes one photo whole, never one with a photo away beside it");
         assert!(!lines[2].enabled, "Paste waits for copied settings");
-        assert_eq!(lines[5].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
+        assert_eq!(lines[4].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
         // Each verb that writes or moves acts on the photo there and says the one left out.
-        for at in [3, 4, 10] {
+        for at in [3, 9, 10] {
             assert_eq!((lines[at].scope.clone(), lines[at].left, lines[at].enabled), (paths(&["a"]), 1, true), "{}", lines[at].text);
         }
-        assert_eq!(lines[6].scope, paths(&["a", "b"]), "a project names a photo away too");
-        assert_eq!((lines[8].scope.clone(), lines[8].left), (paths(&["a"]), 0), "a missing original is not exported");
+        assert_eq!(lines[5].scope, paths(&["a", "b"]), "a project names a photo away too");
+        assert_eq!((lines[7].scope.clone(), lines[7].left), (paths(&["a"]), 0), "a missing original is not exported");
+        // Reset and the ONI Trash share the foot's section, ruled off from every verb that keeps.
         let rules: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.rule).map(|(i, _)| i).collect();
-        assert_eq!(rules, [1, 4, 8, 10]);
-        let sub = submenu(&lines[7], &facts);
+        assert_eq!(rules, [1, 3, 7, 9]);
+        let sub = submenu(&lines[6], &facts);
         assert_eq!((sub[0].text.as_str(), sub[0].action.clone()), ("Trip", CellAction::AddToProject(trip)));
         // Twins: a scope all away writes nothing; one all there has no count and leaves none out.
         let away = cell_menu(&set(&["b"]), &order, &facts);
@@ -175,16 +194,56 @@ mod tests {
         assert!(away.iter().any(|l| l.action == CellAction::NewProject && l.enabled));
         let there = cell_menu(&set(&["a", "c"]), &order, &facts);
         assert_eq!((there[1].text.as_str(), there[0].enabled), ("Paste Settings (2 photos)", false), "Copy greyed on two photos");
-        assert_eq!(there[5].text, "New Project from 2 Photos");
+        assert_eq!(there[4].text, "New Project from 2 Photos");
         assert!(there.iter().all(|l| l.left == 0) && there.iter().all(|l| l.action != CellAction::Missing));
         // Twin: one photo there copies its settings, and New Project names it alone.
         let one = cell_menu(&set(&["c"]), &order, &facts);
         assert_eq!((one[0].action.clone(), one[0].enabled, one[0].scope.clone()), (CellAction::Copy, true, paths(&["c"])));
-        assert_eq!(one[5].text, "New Project from This Photo");
+        assert_eq!(one[4].text, "New Project from This Photo");
         // Twin: no project at all offers no Add to Project, and a scope in none no Remove.
         let bare = CellFacts { projects: vec![], ..facts };
         assert!(!cell_menu(&set(&["c"]), &order, &bare).iter().any(|l| matches!(l.action, CellAction::AddTo | CellAction::RemoveFrom)));
         assert_eq!(trash_menu(&set(&["a"]), &order)[0].0, "Restore");
         assert_eq!(trash_menu(&selection, &order)[0].0, "Restore 2 Photos");
+    }
+
+    /// A menu bar line's chord, read off `app.slint`, as the Mac writes it: the item that calls `act`.
+    fn declared(app: &str, act: &str) -> Option<String> {
+        let line = app.lines().find(|l| l.contains(&format!("App.menu({act});")))?;
+        let chord = line.split("@keys(").nth(1)?.split(')').next()?;
+        let parts: Vec<&str> = chord.split('+').map(str::trim).collect();
+        let k = platform::keys(Platform::Mac);
+        let key = parts.last()?.trim_matches('"').to_uppercase();
+        let key = if key == "BACKSPACE" { k.delete.to_owned() } else { key };
+        let lead = match (parts.contains(&"Alt"), parts.contains(&"Shift")) {
+            (true, true) => k.option_command_shift,
+            (true, false) => k.option_command,
+            (false, true) => k.command_shift,
+            (false, false) => k.command,
+        };
+        Some(format!("{lead}{key}"))
+    }
+
+    #[test]
+    fn each_line_prints_the_chord_the_menu_bar_answers_for_its_gesture() {
+        let app = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../oni-ui/ui/app.slint")).unwrap();
+        let pairs = [
+            (CellAction::Copy, "Act.copy"),
+            (CellAction::Paste, "Act.paste"),
+            (CellAction::Reset, "Act.reset"),
+            (CellAction::NewRoll, "Act.new-roll"),
+            (CellAction::Ungroup, "Act.ungroup"),
+            (CellAction::Export, "Act.export"),
+            (CellAction::Trash, "Act.remove"),
+        ];
+        for (action, act) in &pairs {
+            assert_eq!(Some(action.chord(Platform::Mac)), declared(&app, act), "{action:?}");
+        }
+        assert_eq!((CellAction::Trash.chord(Platform::Mac), CellAction::Ungroup.chord(Platform::Windows)), ("⌘⌫".into(), "Ctrl+Alt+Shift+G".into()));
+        assert!(CellAction::Reveal.chord(Platform::Mac).is_empty() && CellAction::NewProject.chord(Platform::Mac).is_empty());
+        // Twin: the menu bar's Reset moved to another chord is caught.
+        let moved = app.replace("@keys(Control + Shift + \"r\")", "@keys(Control + \"r\")");
+        assert_ne!(moved, app);
+        assert_ne!(Some(CellAction::Reset.chord(Platform::Mac)), declared(&moved, "Act.reset"));
     }
 }

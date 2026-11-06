@@ -305,6 +305,8 @@ export global ShellStyle {
     out property <length> bar-padding: Space.s;
     out property <length> bar-gap: Space.m;
     out property <length> compact-gap: Space.s;
+    // The bar's keys that reset or remove stand this far from those that keep.
+    out property <length> bar-apart: 2 * Space.l;
     out property <length> bar-height: DS.control-app-bar-keycap-height + 2 * Space.s;
     // The export slot a hair narrower than `AppBar`'s (owner's call).
     out property <length> export-width: DS.control-app-bar-export-width - Space.m;

@@ -264,6 +264,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar::the_accent_lands_on_each_screens_own_commit", toolbar::the_accent_lands_on_each_screens_own_commit),
+    ("toolbar::the_keys_that_reset_or_remove_stand_last_and_apart", toolbar::the_keys_that_reset_or_remove_stand_last_and_apart),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
     ("tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree", tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree),
     ("tree_cost::the_tree_s_cost_on_a_big_folder", tree_cost::the_tree_s_cost_on_a_big_folder),

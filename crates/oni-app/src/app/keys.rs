@@ -130,17 +130,21 @@ impl Ctl {
         self.publish_bar();
     }
 
+    /// Whether the bar's contact-sheet key stands latched: every photo ⌘A picks is picked, the gallery's,
+    /// or beside a photo the whole roll, shown together.
+    pub(super) fn roll_whole(&self, gallery: bool) -> bool {
+        if gallery {
+            return self.grid_whole();
+        }
+        let s = self.state.borrow();
+        s.picks.selection.len() > 1 && column_whole(&s) == s.picks.selection
+    }
+
     /// The bar's contact-sheet key: the whole roll as ⌘A picks it; pressed on a roll picked whole
     /// already, the photo it was picked from alone again, the open one beside a photo (owner's call).
     pub(super) fn select_roll(self: &Rc<Self>) {
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
-        let whole = if gallery {
-            self.grid_whole()
-        } else {
-            let s = self.state.borrow();
-            s.picks.selection.len() > 1 && column_whole(&s) == s.picks.selection
-        };
-        if !whole {
+        if !self.roll_whole(gallery) {
             self.key("a", true, false, false, false);
             return;
         }

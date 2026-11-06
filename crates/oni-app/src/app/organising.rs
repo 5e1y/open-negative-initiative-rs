@@ -200,7 +200,7 @@ fn home() -> String {
 }
 
 fn menu_line(text: &str, enabled: bool, rule: bool, opens: bool) -> MenuLine {
-    MenuLine { text: text.into(), enabled, rule, opens }
+    MenuLine { text: text.into(), enabled, rule, opens, ..MenuLine::default() }
 }
 
 impl State {

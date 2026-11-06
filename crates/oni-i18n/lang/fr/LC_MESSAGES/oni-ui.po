@@ -253,7 +253,7 @@ msgstr "Nom de la pellicule"
 msgid "What this block does"
 msgstr "Ce que fait ce bloc"
 
-#: crates/oni-ui/ui/ds/containers.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/toolbar.slint
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -1017,7 +1017,7 @@ msgstr "Projets"
 msgid "Gallery"
 msgstr "Galerie"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/menus.slint
 msgid "Move to ONI Trash"
 msgstr "Placer dans la Corbeille ONI"
 
@@ -2242,12 +2242,36 @@ msgid "Whole Roll"
 msgstr "Toute la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Select the Whole Roll ({})"
-msgstr "Sélectionner toute la pellicule ({})"
+msgid "Select All"
+msgstr "Tout sélectionner"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Back to One Photo"
+msgstr "Revenir à une seule photo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Show the Whole Roll Together ({})"
+msgstr "Afficher toute la pellicule ensemble ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Select All ({})"
+msgstr "Tout sélectionner ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Reset Settings ({})"
 msgstr "Réinitialiser les réglages ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Trash"
+msgstr "Corbeille"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Move {} Photos to ONI Trash ({})"
+msgstr "Placer {} photos dans la Corbeille ONI ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Move to ONI Trash ({})"
+msgstr "Placer dans la Corbeille ONI ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
@@ -2288,10 +2312,6 @@ msgstr "PRÉPARER LA PELLICULE"
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
 msgstr "Préparer la pellicule"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Move {} Photos to ONI Trash"
-msgstr "Placer {} photos dans la Corbeille ONI"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "GALLERY"
@@ -2918,8 +2938,8 @@ msgid "Paste Settings to {count} Photos"
 msgstr "Coller les réglages sur {count} photos"
 
 #: crates/oni-app/src/app/menus.rs
-msgid "Paste to Roll ({count} Photos)"
-msgstr "Coller sur la pellicule ({count} photos)"
+msgid "Paste to {count} Photos of the Roll"
+msgstr "Coller sur les {count} photos de la pellicule"
 
 #: crates/oni-app/src/app/menus.rs
 msgid "Filter: {medal}"
@@ -4178,16 +4198,16 @@ msgid "Paste Settings ({count} photos)"
 msgstr "Coller les réglages ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
-msgid "Reset Settings ({count} photos)"
-msgstr "Réinitialiser les réglages ({count} photos)"
-
-#: crates/oni-app/src/organise/cells.rs
 msgid "Move into a New Roll… ({count} photos)"
 msgstr "Déplacer dans une nouvelle pellicule… ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "Ungroup ({count} photos)"
 msgstr "Dissocier ({count} photos)"
+
+#: crates/oni-app/src/organise/cells.rs
+msgid "Reset Settings ({count} photos)"
+msgstr "Réinitialiser les réglages ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "New Project from {count} Photos"
