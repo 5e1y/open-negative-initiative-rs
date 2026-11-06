@@ -6416,5 +6416,12 @@
     "title": "The Colour tab's help notes in short parts, each about its own block",
     "status": "done",
     "detail": "UI and UX evaluation (Typography, Language): the Colour card ran a thirteen-line paragraph and mixed the Roll tab's Balance strength and the roll's levels into the white balance. A note now comes in short parts a blank line apart, one per key or slider group, and says only what its block holds: Colour (Auto White Balance, Temperature and Tint by the colours their tracks show, Saturation), Paper Correction, Lighting, Effects (the Scanner's too), Spectrogram Finishing and Saturation Curve, in English, French and Spanish. The white balance key's own tooltip still names Balance strength. Window check help_demo_color reads the Lighting and Effects cards by their new words."
+  },
+  {
+    "id": 1304,
+    "type": "fix",
+    "title": "The merged wave's checks: one name per key, the guides in their own file, words as shown",
+    "status": "done",
+    "detail": "Crop and its measuring window both had a key named Copy and one named Paste, so a screen reader heard each twice: the window's keys now carry their tooltip as their name. The guides over a photo leave base.slint, past its 400 lines, for guides.slint. A spread field's name keeps its own height, centred on its row, so the export's figures measure as a label beside the glass. The straighten is wired on one line as every slider. The checks read Restore and Undo as shown, capitals being the keycaps' alone."
   }
 ]

@@ -82,10 +82,10 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
     rig.pump();
     assert!((exposure() - copied).abs() < 1e-5, "the copied exposure is back");
     let said = (told.get_shown(), told.get_title().to_string(), told.get_message().to_string(), told.get_action().to_string());
-    assert_eq!(said, (true, "Paste to Roll".into(), "Settings pasted on one photo.".into(), "UNDO".into()));
+    assert_eq!(said, (true, "Paste to Roll".into(), "Settings pasted on one photo.".into(), "Undo".into()));
     told.invoke_acted();
     rig.pump();
-    assert!((exposure() - moved).abs() < 1e-5, "UNDO takes the paste back");
+    assert!((exposure() - moved).abs() < 1e-5, "Undo takes the paste back");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

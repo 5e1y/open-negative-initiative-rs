@@ -1,0 +1,68 @@
+// The guides drawn over a photo: the crop's thirds and the compare split.
+import { Colour, Space, Stroke, SplitStyle } from "theme.slint";
+import { Knob } from "knob.slint";
+import { Label, TextRole } from "base.slint";
+
+// A guide drawn over a photo: its light line edged a line either side by the contrast shade, so it reads
+// on a bright sky as on a shadow.
+export component GuideLine inherits Rectangle {
+    in property <bool> vertical;
+    in property <length> line: Stroke.line;
+    in property <color> ink: Colour.guide;
+    in property <color> edge: Colour.contrast-edge;
+    // Its breadth across, the line and its two edges, which a guide laid by hand takes.
+    out property <length> band: root.line + 2 * Stroke.line;
+    Rectangle {
+        x: root.vertical ? (parent.width - self.width) / 2 : 0px;
+        y: root.vertical ? 0px : (parent.height - self.height) / 2;
+        width: root.vertical ? root.band : parent.width;
+        height: root.vertical ? parent.height : root.band;
+        background: root.edge;
+    }
+    Rectangle {
+        x: root.vertical ? (parent.width - self.width) / 2 : 0px;
+        y: root.vertical ? 0px : (parent.height - self.height) / 2;
+        width: root.vertical ? root.line : parent.width;
+        height: root.vertical ? parent.height : root.line;
+        background: root.ink;
+    }
+}
+
+// The compare split: its guide, a slider's knob on its middle that the eye finds on any photo, its before
+// and after labels, a grab the width of a handle down its whole height; moving it only recomposites.
+export component SplitGuide inherits Rectangle {
+    callback dragged(length);
+    property <bool> held: grab.has-hover || grab.pressed;
+    width: SplitStyle.grab;
+    GuideLine {
+        vertical: true;
+        line: root.held ? Stroke.line + SplitStyle.grow : Stroke.line;
+        ink: root.held ? Colour.handle-active : Colour.guide;
+    }
+    Knob {
+        centre: parent.width / 2;
+        across: parent.height;
+        grown: root.held;
+    }
+    Label {
+        text: @tr("Before");
+        role: TextRole.value;
+        x: (parent.width - self.width) / 2 - SplitStyle.label-inset;
+        y: Space.s;
+    }
+    Label {
+        text: @tr("After");
+        role: TextRole.value;
+        x: (parent.width - self.width) / 2 + SplitStyle.label-inset;
+        y: Space.s;
+    }
+    grab := TouchArea {
+        mouse-cursor: ew-resize;
+        moved => { if (self.pressed) { root.dragged(self.mouse-x); } }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down) {
+                root.dragged(self.mouse-x);
+            }
+        }
+    }
+}

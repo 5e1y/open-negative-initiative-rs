@@ -237,14 +237,6 @@ msgstr "Télécharger et installer"
 msgid "OK"
 msgstr "OK"
 
-#: crates/oni-ui/ui/ds/base.slint
-msgid "Before"
-msgstr "Avant"
-
-#: crates/oni-ui/ui/ds/base.slint
-msgid "After"
-msgstr "Après"
-
 #: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/editors.slint
 msgid "RGB"
 msgstr "RGB"
@@ -324,6 +316,14 @@ msgstr "Arrêter"
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
 msgstr "rendu impossible"
+
+#: crates/oni-ui/ui/ds/guides.slint
+msgid "Before"
+msgstr "Avant"
+
+#: crates/oni-ui/ui/ds/guides.slint
+msgid "After"
+msgstr "Après"
 
 #: crates/oni-ui/ui/ds/keypad.slint
 msgid "REMEASURE ROLL"

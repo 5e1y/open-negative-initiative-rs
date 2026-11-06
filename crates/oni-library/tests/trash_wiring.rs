@@ -62,7 +62,7 @@ fn a_row_of_the_oni_trash_restores_on_hover_and_is_never_starred() {
     let row = source("oni-ui/ui/ds/row.slint");
     let unstarred = |lines: &[String]| {
         let text = lines.join("\n");
-        text.contains("kind: RowKind.trash") && text.contains("@tr(\"RESTORE\")") && text.contains("acted => { root.trash-restore(i); }")
+        text.contains("kind: RowKind.trash") && text.contains("@tr(\"Restore\")") && text.contains("acted => { root.trash-restore(i); }")
             && !text.contains("starrable") && !text.contains("favourite")
     };
     let trash = block(&navigator, "for line[i] in root.trash-rows: Row {");

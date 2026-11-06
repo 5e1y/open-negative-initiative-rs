@@ -39,14 +39,8 @@ export component CropPane inherits Pane {
         title: @tr("Straighten");
         help: @tr("Turns the photo a few degrees either way to level a horizon or a frame's edge; the crop shrinks to stay inside the turned picture.");
         StoreSlider {
-            field: 14;
-            label: @tr("Angle");
-            dial: true;
-            lowest: Framing.angle-lowest;
-            highest: Framing.angle-highest;
-            fraction: Store.angle-fraction;
-            readout: Store.angle-readout;
-            value-text: Store.angle-value;
+            field: 14; label: @tr("Angle"); fraction: Store.angle-fraction; readout: Store.angle-readout; value-text: Store.angle-value;
+            dial: true; lowest: Framing.angle-lowest; highest: Framing.angle-highest;
         }
     }
     Section {
@@ -80,8 +74,8 @@ export component CropPane inherits Pane {
         // Worded as Crop's and the toolbar's copy and paste, the same gesture.
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("Copy"); help: @tr("Copy Measuring Window"); enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
-            Button { size: ButtonSize.plate; text: @tr("Paste"); help: @tr("Paste Measuring Window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
+            Button { size: ButtonSize.plate; text: @tr("Copy"); help: @tr("Copy Measuring Window"); accessible-label: self.help; enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
+            Button { size: ButtonSize.plate; text: @tr("Paste"); help: @tr("Paste Measuring Window"); accessible-label: self.help; enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
         }
     }
     // The crop's size in the file's pixels, a figure the app reports, on the glass as the export's.
