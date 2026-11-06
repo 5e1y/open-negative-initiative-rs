@@ -101,7 +101,6 @@ impl Shell {
             previews,
             hands,
             slides: Field::ALL.iter().map(|_| Slide::default()).collect(),
-            histogram: None,
             histogram_dirty: false,
             last_change: None,
             published_revision: 0,

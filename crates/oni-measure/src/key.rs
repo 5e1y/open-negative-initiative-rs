@@ -104,7 +104,7 @@ pub fn balance_inputs(s: &PipelineSettings) -> PipelineSettings {
     PipelineSettings {
         // `unlit` and `filtered` write the whole print the filters read; before the levels it is bypassed.
         print: rest.print,
-        // `truncated` lays these at rest in front of every stage a reading takes, the face on Pro.
+        // `truncated` lays these at rest in front of every stage a reading takes; a balance reads Pro's face.
         manual_curves: rest.manual_curves,
         spectrogram: rest.spectrogram,
         saturation: rest.saturation,
@@ -114,7 +114,7 @@ pub fn balance_inputs(s: &PipelineSettings) -> PipelineSettings {
         chroma: rest.chroma,
         sharpen: rest.sharpen,
         face: rest.face,
-        // Read on the Scanner's face alone, which no reading takes.
+        // Read on the Scanner's face alone, which no balance reads.
         scanner: rest.scanner,
         scanner_machine: rest.scanner_machine,
         scanner_finish: rest.scanner_finish,

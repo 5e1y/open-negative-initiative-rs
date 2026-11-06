@@ -6,12 +6,13 @@ use oni_graph::{Graph, Source};
 use oni_measure::filter_balance::{filters_to_axes, finite, printable, unlit};
 use oni_measure::key;
 use oni_measure::reader::{Copy, Laying, Reader};
+use oni_measure::truncate::Stage;
 use oni_pipeline::Pipeline;
 use oni_settings::frame::RollReference;
 use oni_settings::levels::{Levels, LevelsSet};
 use oni_settings::settings::roll_settings::dosed;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, Id, PipelineSettings};
+use oni_settings::{ConversionMode, Face, Id, PipelineSettings};
 
 const W: u32 = 96;
 const H: u32 = 64;
@@ -127,4 +128,24 @@ fn a_dust_speck_past_white_is_left_out_and_read_it_sends_an_axis_to_its_stop() {
     assert!(parted(means) < 1e-3 && !stopped(kept), "the rest parts by {} at {:?}", parted(means), filters_to_axes(kept));
     // Twin: read, the dust sends an axis to its stop.
     assert!(stopped(blinded), "{:?}", filters_to_axes(blinded));
+}
+
+#[test]
+fn the_balance_reads_pro_s_print_on_either_face_where_the_scanner_renders_its_own() {
+    let check = "filter_balance::face";
+    let Some(mut graph) = graph(check) else { return };
+    let mut pipeline = Pipeline::new();
+    let source = scene(&mut graph, &[(0, 96, [0.088, 0.11, 0.147]), (0, 32, [0.027, 0.034, 0.046])], None);
+    let copy = Copy { source: &source, full_width: None };
+    let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
+    let pro = settings(2.3);
+    let scanner = PipelineSettings { face: Face::Scanner, ..pro.clone() };
+    let found = key::filters(&mut r, copy, &pro, printable).expect("the cast frame reads");
+    assert_eq!(key::filters(&mut r, copy, &scanner, printable), Some(found), "the filters are Pro's print's on both faces");
+    assert_eq!(key::levels(&mut r, copy, &scanner), key::levels(&mut r, copy, &pro), "the roll's levels read Pro's windows");
+    // Twin: in front of the curves the Scanner face renders its own picture, which a balance would misread.
+    let mut read = |s: &PipelineSettings| r.plane(copy, s, Stage::ManualCurves).expect("the frame renders").pixels;
+    let (own, pro_s) = (read(&scanner), read(&pro));
+    let apart = own.iter().zip(&pro_s).map(|(a, b)| (a[1] - b[1]).abs()).fold(0.0, f32::max);
+    assert!(apart > 1e-2, "the Scanner's look parts from Pro's print by {apart}");
 }

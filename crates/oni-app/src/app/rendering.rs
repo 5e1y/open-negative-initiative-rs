@@ -28,6 +28,10 @@ pub(in crate::app) struct Requests {
     pub requested_live: Option<oni_settings::PipelineSettings>,
     /// When the hand last moved the view, which renders lighter until it rests.
     pub hand: Option<Instant>,
+    /// The picture's histogram last counted, and the output and saturation plots on screen at the last
+    /// ask: a render with neither counts nothing.
+    pub histogram: Option<oni_measure::histogram::Histogram>,
+    pub plots: [bool; 2],
 }
 
 /// Compare Before/After: the split, a fraction of the canvas's width (none while off), where the

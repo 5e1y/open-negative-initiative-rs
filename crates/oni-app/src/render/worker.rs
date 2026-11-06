@@ -17,6 +17,8 @@ pub struct Job {
     pub reference: Option<PipelineSettings>,
     /// A gesture holds the frame: the input histograms read the small measuring copy.
     pub held: bool,
+    /// A plot over the picture's histogram is on screen, which the whole picture is counted for.
+    pub counted: bool,
 }
 
 /// A finished render: the texture the display kernel encodes into the canvas.
@@ -127,7 +129,7 @@ impl Worker {
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
                     // the small copy, the full one read once the hand has rested.
                     let quiet = !shared.waiting();
-                    if drawn && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                    if drawn && job.counted && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_counted = Instant::now();
                         if let Some(picture) = renderer.counted(&job.negative, &job.settings) {
                             deliver(Delivery::Counted { path: job.path.clone(), picture });

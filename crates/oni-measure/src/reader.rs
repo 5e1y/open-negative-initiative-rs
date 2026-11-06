@@ -11,6 +11,7 @@ use oni_graph::{Graph, Image, Rect, Source};
 use oni_pipeline::resident::Resident;
 use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::cg;
+use oni_settings::modes::Face;
 use oni_settings::PipelineSettings;
 
 /// `Negative.measureSide`: the long side of the copy every measurement reads.
@@ -95,10 +96,10 @@ impl Reader<'_> {
         blocks::reading(&read, &windows, blocks::BINS)
     }
 
-    /// `FilterBalance.pixels`: the render through its windows at `READ_SIDE`, one linear pixel each,
-    /// transparent ones left out, since a sheet's gutters are no light of it.
+    /// `FilterBalance.pixels`: Pro's render, whose print the filters weighed are written in, through its
+    /// windows at `READ_SIDE`, one linear pixel each; a transparent one is a sheet's gutter, left out.
     pub fn balance_pixels(&mut self, copy: Copy, s: &PipelineSettings) -> Option<Vec<[f32; 3]>> {
-        let image = self.image(copy, s, Stage::ManualCurves)?;
+        let image = self.image(copy, &PipelineSettings { face: Face::Pro, ..s.clone() }, Stage::ManualCurves)?;
         let e = image.extent();
         let extent = cg::Rect::new(0.0, 0.0, f64::from(e.w), f64::from(e.h));
         let windows = measurement_windows(&extent, s);

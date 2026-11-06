@@ -18,8 +18,8 @@ pub(super) struct Read {
 }
 
 impl Engine {
-    /// Both distributions through the measuring windows, on the small copy while `held`; a stage
-    /// whose entering settings and copy hold keeps its reading, so a later slider reads nothing.
+    /// Both distributions through the measuring windows, the curves' on the face that renders, on the small
+    /// copy while `held`; a stage whose entering settings and copy hold keeps its reading.
     pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
         let id = negative.preview.id();
         self.read_custom(settings);

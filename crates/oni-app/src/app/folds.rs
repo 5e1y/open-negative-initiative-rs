@@ -34,6 +34,8 @@ impl Ctl {
         panel.on_fold_changed(move |title, folded| {
             if let Some(c) = c.upgrade() {
                 c.remember(&format!("{PREFIX}{title}"), (if folded { "folded" } else { "open" }).into());
+                // A block opened may show a plot over the picture's histogram, which the renders then count for.
+                c.request_render();
             }
         });
         let stored: Vec<bool> = {

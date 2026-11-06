@@ -6808,5 +6808,19 @@
     "title": "Plates belong to keycaps alone; every flat key shows its own edge at rest and groups by spacing",
     "status": "done",
     "detail": "Owner's call: a plate only ever meant keycaps sharing one socket, yet flat keys stood flush on shared plates across the app, told apart only under the hand. A flat key now draws its face inside its own edge, the dividers' white at 10 % (ButtonStyle.edge), so it shows its extent at rest; ButtonGroup's plate is a socket of keycaps alone (the colour panel's AUTO WHITE BALANCE and AUTO PAPER CORRECTION), and every other group stands a group's gap apart (ButtonStyle.group-gap, Space.s): the bar's history, families, rating filter and removing keys, the crop, roll and export rows, the navigator's and the canvas header's keys, the questions, notices, banners and job cards. Unrelated or opposite keys stand twice that apart (ButtonStyle.apart): the canvas's Panel key after the zoom keys, a question's destructive answer, the presets editor's Delete; the bar's families keep its own gap at every width (ShellStyle.compact-gap removed). ButtonSize.plate, a regular key under another name, and the mini plate are removed. Window checks: button_group reads a plate's keycaps flush and a group's flat keys 8 pt apart with a lighter edge at rest (twin: a face read twice shows no edge); sheet_layout reads a question's Cancel a group's gap from its key and a destructive one twice that; toolbar, prepare and sidebars read the groups' gaps where they read plates."
+  },
+  {
+    "id": 1385,
+    "type": "perf",
+    "title": "The picture's histogram is counted and traced for the plots on screen alone",
+    "status": "done",
+    "detail": "On the Scanner face the scanner's screen stands where the output histogram is, and under Details the loupe does, yet every render still rendered the whole picture for its count, counted it on the GPU and traced the readout. Each render job now says whether a plot over the picture's histogram shows (the readout where neither the Scanner's screen nor the loupe stands, the saturation curve open on the Colour tab), the worker counts only then, and each plot is traced only while it shows. A plot shown again is traced at once from the kept count, and when none showed meanwhile the picture is asked anew, so Pro's face back traces its readout from its first render's count. The kept count moved into the frame's requests, so another frame's never stands under a new one. Checks: the worker counts nothing for a job with no plot on screen, twin the same picture counted once one shows; window picture_plots: no output trace while the Scanner face shows, the saturation curve opened is counted alone, Pro back traces a fresh readout, twin the same wait on Pro sees each render traced."
+  },
+  {
+    "id": 1386,
+    "type": "fix",
+    "title": "On the Scanner face the Curves editor's histogram reads what enters its curves",
+    "status": "done",
+    "detail": "Every reading took the frame through Pro's print, so on the Scanner face the Curves editor's histogram showed Pro's picture with no look, not what enters the curves being edited. `truncated` now keeps the frame's face past the print and lays the Scanner's own finishing at rest as Pro's, its contrast kept; in front of the print a reading still takes Pro's windows. Auto White Balance's pixels read Pro's render by their own door, the print its filters are written in, so the balance and the roll's measures read as before and no render moves. Checks: the Scanner curves' input differs from Pro's on a frame the look moves, a keypad step moves it and the face's own curve does not, twin the levels' input is the same on both faces; both renders identical after the readings, twin a curve moves one; the press finds the same filters and levels on both faces, twin the Scanner face's own picture parts from Pro's."
   }
 ]

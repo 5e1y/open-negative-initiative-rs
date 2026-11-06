@@ -22,6 +22,7 @@ impl Ctl {
         if self.together_shown() {
             return self.render_together();
         }
+        self.look_at_plots();
         let size = self.canvas_size();
         let cropping = self.cropping();
         let (job, wants_full, heal) = {
@@ -78,7 +79,8 @@ impl Ctl {
             let reference = s.compare.split.map(|_| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
             let held = kind == Kind::Notch;
-            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, wants_full, heal)
+            let counted = s.requests.plots.contains(&true);
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held, counted }, wants_full, heal)
         };
         self.worker.submit(job);
         self.request_loupe();

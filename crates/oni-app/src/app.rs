@@ -250,7 +250,6 @@ pub struct State {
     /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
     pub(crate) hands: Arc<AtomicUsize>,
     slides: Vec<Slide>,
-    histogram: Option<oni_measure::histogram::Histogram>,
     histogram_dirty: bool,
     last_change: Option<Instant>,
     /// The store revision `publish` last saw, so any edit of the open frame arms its write.

@@ -49,16 +49,18 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let counted = landed.as_ref().map(|(_, at)| *at);
             if let Some((h, _)) = landed {
-                s.histogram = Some(h);
+                s.requests.histogram = Some(h);
                 s.histogram_dirty = true;
             }
             if !s.histogram_dirty {
                 return;
             }
             s.histogram_dirty = false;
-            (s.histogram.clone(), counted)
+            (s.requests.histogram.clone(), counted)
         };
-        if let Some(h) = histogram {
+        // Only the plots on screen are traced; one hidden is traced again as it shows.
+        let shown = self.picture_plots();
+        if let Some(h) = histogram.filter(|_| shown.contains(&true)) {
             let plots = w.global::<Plots>();
             let scale = w.window().scale_factor();
             let under = crate::editors::size(self, crate::editors::Plot::Saturation);
@@ -70,11 +72,14 @@ impl Ctl {
                 if TRACES.load(Ordering::SeqCst) != ticket {
                     return;
                 }
-                let [output, saturation] = [Slot::Output, Slot::Saturation].map(|slot| p.trace(&writer, slot, &h, None, sizes[slot as usize], scale));
+                let traced = [Slot::Output, Slot::Saturation].map(|slot| shown[slot as usize].then(|| p.trace(&writer, slot, &h, None, sizes[slot as usize], scale)));
                 with_shell(move |c| {
                     let Some(w) = c.window() else { return };
-                    super::plots::land_since(&w, Slot::Output, since[0], output);
-                    super::plots::land_since(&w, Slot::Saturation, since[1], saturation);
+                    for (slot, traced) in [Slot::Output, Slot::Saturation].into_iter().zip(traced) {
+                        if let Some(traced) = traced {
+                            super::plots::land_since(&w, slot, since[slot as usize], traced);
+                        }
+                    }
                     if let Some(at) = counted {
                         c.state.borrow_mut().notches.record_histogram(at.elapsed());
                     }
