@@ -11,7 +11,9 @@ export global Preparing {
     // The step's tutorial, a texture rewritten in place at each frame (`Picture.revision`); none is empty.
     in property <image> tutorial;
     in property <int> tutorial-revision;
+    // The steps a roll does not walk, and those behind the current one that hold their value.
     in property <[bool]> skipped: [false, false, false, false, false];
+    in property <[bool]> done: [false, false, false, false, false];
     in property <string> heading;
     in property <string> detail;
     in property <string> status;

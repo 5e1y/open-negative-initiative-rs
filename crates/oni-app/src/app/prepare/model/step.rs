@@ -89,3 +89,8 @@ pub fn filled(step: Step, flat: &FlatField, base: bool) -> bool {
         _ => true,
     }
 }
+
+/// A step behind the current one that holds its value; one passed by SKIP, or not walked, holds none.
+pub fn done(step: Step, current: Step, capture: Capture, film: ConversionMode, flat: &FlatField, base: bool) -> bool {
+    step.index() < current.index() && !step.skipped(capture, film) && filled(step, flat, base)
+}

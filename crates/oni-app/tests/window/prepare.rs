@@ -95,6 +95,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.until("the drafts written", Duration::from_secs(10), || ["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "base")));
     assert!(loaded(&canonical("D.tif")).roll_draft.is_none(), "the frame left out carries no draft");
     assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str()), ("No base picked yet.", "SKIP"));
+    let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
+    assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
 
     // Picker Size: held in memory while it slides, written once let go.
     let before = radius();
@@ -123,6 +125,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     click(&rig, p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
     assert_eq!(p.get_step(), 3, "a pick goes on to the flags");
     assert_eq!(p.get_base_note().as_str(), "On A.tif");
+    assert_eq!(done(), [true, false, true, false, false], "the base behind is done once it holds its pick");
 
     // A click on the sheet flags C; Clear Flags takes every flag off; a second click flags it again.
     rig.settle();

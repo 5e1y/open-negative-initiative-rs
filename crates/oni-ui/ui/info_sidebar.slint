@@ -20,10 +20,10 @@ export component Info inherits Surface {
                     padding: Space.m;
                     spacing: Space.s;
                     WarningBand { text: @tr("Not measured yet"); }
+                    // The toolbar's key, flat: its keycap stays the toolbar's, the gallery's commit.
                     Button {
                         size: ButtonSize.plate;
-                        text: @tr("PREPARE THE ROLL…");
-                        keycap: true;
+                        text: @tr("PREPARE ROLL");
                         clicked => { Library.prepare-shown-roll(); }
                     }
                 }

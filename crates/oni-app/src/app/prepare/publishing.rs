@@ -105,6 +105,7 @@ impl Ctl {
         };
         let walked = r.film;
         let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, walked)).collect();
+        let done: Vec<bool> = Step::ALL.iter().map(|s| done(*s, step, r.capture, walked, &r.flat, r.base.is_some())).collect();
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
         let shown_path = shown_frame.as_ref().map(|f| f.path.clone());
         let show_card = shown_path != r.shown_path;
@@ -131,6 +132,7 @@ impl Ctl {
         p.set_step(step.index() as i32);
         self.play_tutorial(measuring.is_none().then_some(step.index()));
         p.set_skipped(ModelRc::new(VecModel::from(skipped)));
+        p.set_done(ModelRc::new(VecModel::from(done)));
         p.set_heading(heading.into());
         p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail(walked).into() });
         p.set_status(status.into());
