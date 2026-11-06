@@ -5667,5 +5667,19 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1219,
+    "type": "fix",
+    "title": "Every block of the panel has a note, so every header wears its help mark",
+    "status": "done",
+    "detail": "UI evaluation (Consistency): the help mark sat on some block headers and not on others, as the port copied Swift's notes and Swift left ten blocks bare. Aspect Ratio, Straighten, Rotate & Mirror, Measuring Window, Source Balance, Per-Channel Levels, Machine, Density and the Scanner's Colour and Look now say what they do, in English, French and Spanish. Window check every_titled_block_has_a_note reads each Section and Block of the panel at its own depth and finds none without a note; twin: Measuring Window's note taken away is caught, its keys' own notes never standing for it."
+  },
+  {
+    "id": 1220,
+    "type": "design",
+    "title": "A block's title is engraved as the rule above it",
+    "status": "done",
+    "detail": "UI evaluation (Art direction): the analogue nods clustered on the Scanner face, the medals and the contact sheet while the Pro face read as generic flat software. Section's title is now a camera's marking, small and on labels alone: in capitals set apart by the seal's tracking, the Divider's groove shade one line above its letters and its lit edge one line below, at the section's size, no new type size. Every block of every screen takes it, the Pro face's first; the screen reader still hears the title as written. The Pro sliders keep no −/+ keys: the Scanner face is the detented one, and two keys on each of a dozen Pro rows would narrow every track and double the panel's controls."
   }
 ]

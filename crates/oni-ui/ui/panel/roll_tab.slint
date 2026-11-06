@@ -134,6 +134,7 @@ export component RollPane inherits Pane {
     }
     Block {
         title: @tr("Source Balance");
+        help: @tr("Raises or lowers each channel of the scan before the conversion, on every photo of the roll: each row trades one colour for its opposite. Prepare the Roll sets them and the reset brings them back there; a slide shows them as a warmth and a tint.");
         block: 10;
         modified: Store.source-balance-modified;
         folded-by-default: true;
@@ -172,6 +173,7 @@ export component RollPane inherits Pane {
     }
     if !Editors.scanner-face: EditorBlock {
         title: @tr("Per-Channel Levels");
+        help: @tr("Each channel's own window on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone.");
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;

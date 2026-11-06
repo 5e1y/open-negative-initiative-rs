@@ -243,15 +243,64 @@ fn slint_help(source: &str, title: &str) -> String {
     line.rsplit('"').nth(1).unwrap_or_default().to_string()
 }
 
-/// `DSSection(help:)` on the blocks: each block's note is Swift's own string.
-pub(crate) fn every_block_says_swifts_own_help() {
-    let Some(swift) = oni_app::swift_sources() else { return eprintln!("no Swift checkout: the notes are not compared") };
-    // The panel and its tabs' files.
+/// The panel and its tabs' files, one text.
+fn panel_source() -> String {
     let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui");
     let mut panel = std::fs::read_to_string(ui.join("panel.slint")).unwrap();
     for f in std::fs::read_dir(ui.join("panel")).unwrap().flatten() {
         panel.push_str(&std::fs::read_to_string(f.path()).unwrap());
     }
+    panel
+}
+
+/// The titles of the blocks `source` lays with no note: each `Section` or `…Block` read at its own
+/// depth, its strings and comments skipped, so a child's `help:` never stands for its block's.
+fn bare_titles(source: &str) -> Vec<String> {
+    let mut bare = Vec::new();
+    for (at, _) in source.match_indices("Section {").chain(source.match_indices("Block {")) {
+        let (mut depth, mut own, mut quoted, mut chars) = (0, String::new(), false, source[at..].chars().peekable());
+        while let Some(c) = chars.next() {
+            match c {
+                '\\' if quoted => {
+                    chars.next();
+                }
+                '"' => quoted = !quoted,
+                '/' if !quoted && chars.peek() == Some(&'/') => {
+                    chars.by_ref().find(|c| *c == '\n');
+                }
+                '{' if !quoted => depth += 1,
+                '}' if !quoted => {
+                    depth -= 1;
+                    if depth == 0 {
+                        break;
+                    }
+                }
+                _ if depth == 1 => own.push(c),
+                _ => {}
+            }
+        }
+        if let Some(title) = own.split("title: @tr(").nth(1).and_then(|t| t.split(')').next())
+            && !own.contains("help:")
+        {
+            bare.push(title.to_string());
+        }
+    }
+    bare
+}
+
+/// Every titled block of the panel has a note, so every block header wears its "?".
+pub(crate) fn every_titled_block_has_a_note() {
+    let panel = panel_source();
+    assert_eq!(bare_titles(&panel), Vec::<String>::new(), "blocks with no note");
+    // Twin: a block's note taken away is caught, its keys' own notes never standing for it.
+    let stripped = panel.replacen("help: @tr(\"The part of the photo", "demo: @tr(\"The part of the photo", 1);
+    assert_eq!(bare_titles(&stripped), ["Measuring Window"]);
+}
+
+/// `DSSection(help:)` on the blocks: each block's note is Swift's own string.
+pub(crate) fn every_block_says_swifts_own_help() {
+    let Some(swift) = oni_app::swift_sources() else { return eprintln!("no Swift checkout: the notes are not compared") };
+    let panel = panel_source();
     for (file, title) in [
         ("UI/SettingsPane.swift", "Measured Roll"),
         ("UI/SettingsPane.swift", "Flat-Field"),

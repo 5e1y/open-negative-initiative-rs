@@ -1202,6 +1202,10 @@ msgid "Machine"
 msgstr "Machine"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The machine the Scanner face prints with: ONI, Pro's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either."
+msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion Pro sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
 msgstr "ONI"
 
@@ -1212,6 +1216,10 @@ msgstr "Frontier"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Density"
 msgstr "Densité"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point at each press, the screen above counting the points."
+msgstr "D, la touche de densité d’un minilab : + tire la photo plus claire et − plus sombre, d’un demi-point à chaque pression, l’écran au-dessus comptant les points."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "D"
@@ -1232,6 +1240,10 @@ msgstr "D + : plus clair"
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
 msgstr "Couleur"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point at each press, the screen above counting the points."
+msgstr "C, M et Y, les touches de couleur d’un minilab : + pousse le tirage vers le cyan, le magenta ou le jaune et − vers le rouge, le vert ou le bleu, d’un demi-point à chaque pression, l’écran au-dessus comptant les points."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C"
@@ -1272,6 +1284,10 @@ msgstr "Y + : vers le jaune"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Look"
 msgstr "Look"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP lays the machine's warm or cool look over the print, a little more at each press; at zero the print stays as the keys above set it."
+msgstr "TEMP pose le look chaud ou froid de la machine sur le tirage, un peu plus à chaque pression ; à zéro, le tirage reste tel que les touches au-dessus l’ont réglé."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "TEMP"
@@ -1458,6 +1474,10 @@ msgid "Aspect Ratio"
 msgstr "Format"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Holds the crop to a ratio while its corners are dragged; Free leaves it loose, and Vertical stands it upright, 2:3 for 3:2. The ratio last chosen follows to the next photo opened on this tab."
+msgstr "Tient le recadrage à un format pendant qu’on en tire les coins ; Libre n’en impose aucun, et Vertical le dresse, 2:3 pour 3:2. Le dernier format choisi suit sur la prochaine photo ouverte dans cet onglet."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Free"
 msgstr "Libre"
 
@@ -1470,12 +1490,20 @@ msgid "Straighten"
 msgstr "Redresser"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Turns the photo a few degrees either way to level a horizon or a frame's edge; the crop shrinks to stay inside the turned picture."
+msgstr "Tourne la photo de quelques degrés dans un sens ou dans l’autre pour mettre d’aplomb un horizon ou le bord d’un cadre ; le recadrage se resserre pour rester dans l’image tournée."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Angle"
 msgstr "Angle"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Rotate & Mirror"
 msgstr "Rotation et miroir"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs."
+msgstr "Tourne la photo d’un quart de tour dans le sens horaire à chaque pression, ou l’inverse gauche-droite ou haut-bas, comme l’exige un négatif numérisé à l’envers."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Rotate 90° Clockwise"
@@ -1500,6 +1528,10 @@ msgstr "Retourner verticalement"
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Measuring Window"
 msgstr "Fenêtre de mesure"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "The part of the photo the balance keys and the histogram read, drawn on the photo while its key is lit; untouched, it follows the crop. The side keys reset it, copy it and paste it on other photos."
+msgstr "La partie de la photo que lisent les touches de balance et l’histogramme, tracée sur la photo tant que sa touche est allumée ; tant qu’on n’y touche pas, elle suit le recadrage. Les touches de côté la réinitialisent, la copient et la collent sur d’autres photos."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Reset Measuring Window"
@@ -1766,6 +1798,10 @@ msgid "Source Balance"
 msgstr "Balance de la source"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Raises or lowers each channel of the scan before the conversion, on every photo of the roll: each row trades one colour for its opposite. Prepare the Roll sets them and the reset brings them back there; a slide shows them as a warmth and a tint."
+msgstr "Relève ou abaisse chaque canal du scan avant la conversion, sur toutes les photos de la pellicule : chaque ligne échange une couleur contre son opposée. Préparer la pellicule les règle et la réinitialisation les y ramène ; une diapositive les montre en chaleur et en teinte."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Amber ↔ Blue"
 msgstr "Ambre ↔ Bleu"
 
@@ -1812,6 +1848,10 @@ msgstr "Plafond"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Per-Channel Levels"
 msgstr "Niveaux par canal"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Each channel's own window on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone."
+msgstr "La fenêtre propre à chaque canal du scan, choisi par R, G ou B : ses extrémités noire et blanche, que Préparer la pellicule place, et ses ombres, son point médian et ses hautes lumières entre elles. Un double-clic sur une poignée la ramène seule."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
