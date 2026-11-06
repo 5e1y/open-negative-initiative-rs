@@ -6633,5 +6633,33 @@
     "title": "One footer for every sheet: Cancel at the left, the commit keycap alone at the right",
     "status": "done",
     "detail": "Evaluation R3: the sheets' footers followed three patterns, and Cancel butted against NEXT or EXPORT on one plate. SheetFooter lays the flat key that leaves at the left with what the sheet adds beside it, then apart at the right a step back and the commit alone, the accent keycap, flat while it writes nothing (the prepare's Skip, a failure's OK). Prepare the Roll, Export, Save a Preset, the preset editor, Settings, Pair Phone, Report a Bug, the welcome, the RAW notice, the catch-up and the DNG converter all end on it: the preset's Save becomes its keycap, Back stands beside the step's key far from Cancel, and Forget Phones leaves DONE's plate. A question's answers keep their own row. A window check measures Cancel apart from SEND on Report a Bug, a question's flush plate its twin."
+  },
+  {
+    "id": 1342,
+    "type": "fix",
+    "title": "Escape and Cancel put back what the crop or De-dust changed; DONE and Return keep it",
+    "status": "done",
+    "detail": "UX evaluation s-9011e109 (Consistency of behaviour, major): Escape in the crop kept the crop as DONE did, where macOS reads Escape as a cancel. A canvas tool entered now keeps its frame's settings as found (`tool_entry`, taken where the route moves); Escape and the header's new flat Cancel write back the tool's own part, the geometry for the crop and the corrections for De-dust, as one undo step, then leave for the last panel. DONE, Return, the tool's bar key and a photo opened elsewhere keep the work, as before. The mode header shows both ways out, Cancel beside the DONE keycap, and the crop's \"?\" says which key does what. One rule for every mode: Escape still steps out of one thing at a time, Compare before the crop. Checks: window crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it (Escape, Cancel, DONE, Return on the crop, Escape and Return on De-dust, Undo taking the cancel back; twins: DONE and Return keep)."
+  },
+  {
+    "id": 1343,
+    "type": "fix",
+    "title": "The crop's pane names its keys by their scope, its reset beside the kept size, and the window says it is the photo's",
+    "status": "done",
+    "detail": "UX/UI evaluation s-9011e109 (Clarity, Consistency of behaviour, Task fit): the mode titled Crop opened on a block titled Crop again, holding Copy, Paste and Paste to Roll beside the bar's keys of the same names that carry the settings. The duplicate block goes: under the mode's name, untitled, the kept size with the crop's Reset beside it, as a block's sits on its title row, then Copy Crop and Paste Crop and, alone on its row, Paste Crop to Roll, so no two keys of one name do different things in any language's length. The measuring window's keys become Copy Window and Paste Window, and a note under its title says it acts on this photo alone: each frame holds its own window, copied with the crop, never with the roll's settings, so it stays where it is set. The crop's help, demo included, moves to a \"?\" beside the mode's name. French and Spanish filled in. Checks: panel_bindings (the crop's Reset on the Kept row, the window's keys by their names), sidebars (the crop's plate of two keys spans its block, each word centred in its share; twins kept)."
+  },
+  {
+    "id": 1344,
+    "type": "fix",
+    "title": "One kept size: the crop's readout, its badge, the status bar and the export panel round one crop",
+    "status": "done",
+    "detail": "UX evaluation s-9011e109 (Trust): the crop read Kept 4031 × 4031 px while the status bar read 4034 × 4031 for the same frame, as the bar scaled the preview render's extent, whose crop covers partly covered pixels, back to full resolution. `Geometry::kept_pixels` rounds the crop on the turned photo once; the crop's readout, its badge, the status bar and the export panel's `cropped_size` all read it, so their figures cannot differ, and no render moves. `oriented_size` reads a quarter turn written backwards as the render does. The editor's full height is still the preview's proportion of the full width, so a file may be a pixel taller than every readout says. Checks: oni-settings the_kept_size_is_whole_pixels_on_the_turned_photo_whichever_way_the_turn_is_written (twin: −1 read as no turn); window crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size (a crop ending past half a pixel, readout and status alike; twin: the render's extent rounds otherwise)."
+  },
+  {
+    "id": 1345,
+    "type": "fix",
+    "title": "The straighten dial prints every figure whole, and the arrows move the crop's frame",
+    "status": "done",
+    "detail": "UX/UI evaluation s-9011e109 (Typography, Accessibility): the dial faded and narrowed its outer figures with the ring's turn until −6° and 6° were barely legible; the marks keep their shading, the figures shown are printed whole and at full ink. The crop's frame existed only as a drawing for the pointer: beside the crop a bare arrow now moves the frame drawn innermost, the measuring window while it is set, else the crop, a point on the canvas, ten with Shift, its steps that follow each other one undo step as a slider's; beside a pane the arrows still walk the photos. Checks: window crop_session (the window first, then the crop moved by a point and ten, the left arrow back; twin: on Colour the arrow leaves the frame); editor_routes (beside the crop the arrow walks nowhere, B opened from the column ending both modes); dial."
   }
 ]

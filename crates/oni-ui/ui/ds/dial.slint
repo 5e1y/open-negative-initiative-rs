@@ -3,8 +3,8 @@ import { Colour, Stroke, DialStyle } from "theme.slint";
 import { Label, TextRole } from "base.slint";
 import { Inward } from "depth.slint";
 
-// The ring's scale, in the value's own unit, slides under a fixed index; each mark is foreshortened and
-// shaded as the ring turns it away. `lowest` and `highest` are the scale's ends.
+// The ring's scale, in the value's own unit, slides under a fixed index; each mark is shaded as the ring
+// turns it away, each figure printed whole so every one shown reads. `lowest` and `highest` are its ends.
 export component Dial inherits Rectangle {
     in property <float> value;
     in property <int> lowest;
@@ -40,9 +40,6 @@ export component Dial inherits Rectangle {
             y: DialStyle.foot;
             width: figure.preferred-width;
             height: parent.height - 2 * DialStyle.foot - DialStyle.whole-mark;
-            opacity: cos(root.turned(self.unit));
-            transform-scale-x: cos(root.turned(self.unit));
-            transform-origin: { x: self.width / 2, y: self.height / 2 };
             figure := Label {
                 width: parent.width;
                 height: parent.height;

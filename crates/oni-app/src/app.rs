@@ -306,6 +306,8 @@ pub struct State {
     straightening: Option<(Geometry, Geometry, Instant)>,
     /// The tab shown, the last panel the hand was in and the measuring window armed.
     route: crate::tabs::Route,
+    /// The frame a canvas tool opened on and its settings then, which the tool's Cancel puts back.
+    tool_entry: Option<(String, oni_settings::PipelineSettings)>,
     /// The stroke being painted, in fractions of the rendered frame, y down.
     painting_stroke: dedusting::live::Live,
     brush_start: Option<f32>,

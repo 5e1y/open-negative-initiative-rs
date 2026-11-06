@@ -92,7 +92,8 @@ impl Ctl {
         if text == "\u{1b}" {
             return !repeat && self.escape();
         }
-        if self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
+        // Beside the crop the arrows move its frame rather than walk the photos.
+        if self.nudge_frame(text, command, shift, bare) || self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
             return true;
         }
         if !w.global::<App>().get_gallery() && command && !shift && matches!(text, "a" | "A") {

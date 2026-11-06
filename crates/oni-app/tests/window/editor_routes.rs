@@ -157,9 +157,12 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.key("\u{1b}");
     assert!(panel.get_tab() == 1 && canvas.get_split() < 0.0, "Escape closes Compare first");
     ctl.act(oni_app::Act::Compare);
+    // Beside the crop the arrow moves its frame and walks nowhere; B opened from the column ends both modes.
     rig.key("\u{F703}");
     rig.pump();
-    assert!(ctl.state.borrow().open_path() == Some(names[1].as_str()), "the arrow walks to B");
+    assert!(ctl.state.borrow().open_path() == Some(names[0].as_str()), "beside the crop the arrow walks nowhere");
+    open(1);
+    assert!(ctl.state.borrow().open_path() == Some(names[1].as_str()), "B opens");
     assert!(panel.get_tab() == 2 && canvas.get_split() < 0.0, "B opens with no mode");
     rig.key("\u{F702}");
     rig.pump();

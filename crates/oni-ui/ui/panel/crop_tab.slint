@@ -1,27 +1,39 @@
-// The Crop tab: the frame, its ratio, rotation, mirror and straightening.
+// The crop's pane: what it keeps, its reset and the keys that carry it, then its ratio, straightening,
+// turns and mirrors, and the photo's measuring window.
 import { Act } from "../act.slint";
-import { Icons, Space, Section, Tabs, Button, ButtonSize, ButtonKind, ButtonGroup, GroupAlign, Toggle, LcdReadout, Field, FieldLayout } from "../ds/ds.slint";
+import { Space, Section, Tabs, Button, ButtonSize, ButtonGroup, GroupAlign, Toggle, LcdReadout, Field, FieldLayout, Label, TextRole } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
 
 export component CropPane inherits Pane {
+    // Under the mode's name, untitled: the crop's size in the file's pixels with its reset beside it,
+    // then its keys, named for the crop apart from the bar's keys that carry the settings.
     Section {
-        title: @tr("Crop");
-        demo: "crop";
-        help: @tr("Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does.");
         separated: false;
-        // All of the geometry but the measuring window, which has its own reset.
-        block: 0;
-        modified: Framing.modified;
-        reset(b) => { Framing.act(Act.reset-crop); }
-        // The three keys share the plate's room alike, so their words stand evenly apart.
+        Field {
+            layout: FieldLayout.spread;
+            label: @tr("Kept");
+            HorizontalLayout {
+                spacing: Space.s;
+                // Laid out at rest too, only hidden, so the glass never moves; the window outlives it.
+                Button {
+                    size: ButtonSize.mini;
+                    text: @tr("Reset");
+                    visible: Framing.modified;
+                    enabled: Framing.modified;
+                    help: @tr("Puts the crop at rest: the whole photo, upright, unmirrored and level; the measuring window stays.");
+                    clicked => { Framing.act(Act.reset-crop); }
+                }
+                LcdReadout { text: Framing.kept; }
+            }
+        }
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("Copy"); help: @tr("Copies this photo's crop."); clicked => { Framing.act(Act.copy-framing); } }
-            Button { size: ButtonSize.plate; text: @tr("Paste"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
-            Button { size: ButtonSize.plate; text: @tr("Paste to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
+            Button { size: ButtonSize.plate; text: @tr("Copy Crop"); help: @tr("Copies this photo's crop: its frame, ratio, angle, turns, mirrors and measuring window."); clicked => { Framing.act(Act.copy-framing); } }
+            Button { size: ButtonSize.plate; text: @tr("Paste Crop"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
         }
+        Button { size: ButtonSize.plate; text: @tr("Paste Crop to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
     }
     Section {
         title: @tr("Aspect Ratio");
@@ -46,8 +58,8 @@ export component CropPane inherits Pane {
     Section {
         title: @tr("Rotate & Mirror");
         help: @tr("Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs.");
-        // Worded keys sharing the plate alike, as Crop's, the sign after each word showing how the
-        // photo moves; none of them ever lights.
+        // Worded keys sharing the plate alike, the sign after each word showing how the photo moves;
+        // none of them ever lights.
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
             Button { size: ButtonSize.plate; text: @tr("Rotate ↻"); help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
@@ -58,10 +70,12 @@ export component CropPane inherits Pane {
     Section {
         title: @tr("Measuring Window");
         help: @tr("The part of the photo the balance keys and the histogram read, drawn on the photo while its key is lit; untouched, it follows the crop. Reset takes it away, Copy and Paste carry it from one photo to another.");
-        // Its own reset on its title's row, apart from the keys that keep it; Crop's never touches it.
+        // Its own reset on its title's row, apart from the keys that keep it; the crop's never touches it.
         block: 0;
         modified: Framing.has-window;
         reset(b) => { Framing.act(Act.window-reset); }
+        // Each photo holds its own window, which the roll's settings never carry: said where it is set.
+        Label { role: TextRole.note; text: @tr("Acts on this photo alone: the balance keys and the histogram read only what it frames."); }
         // `MeasureWindowKeys`: the long sentence is the key's own, lit while armed.
         Button {
             size: ButtonSize.plate;
@@ -71,15 +85,11 @@ export component CropPane inherits Pane {
             help: @tr("Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it.");
             clicked => { Framing.act(Act.window-arm); }
         }
-        // Worded as Crop's and the toolbar's copy and paste, the same gesture.
+        // Named for the window they carry, apart from the crop's keys and the bar's.
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("Copy"); help: @tr("Copy Measuring Window"); accessible-label: self.help; enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
-            Button { size: ButtonSize.plate; text: @tr("Paste"); help: @tr("Paste Measuring Window"); accessible-label: self.help; enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
+            Button { size: ButtonSize.plate; text: @tr("Copy Window"); help: @tr("Copy Measuring Window"); enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
+            Button { size: ButtonSize.plate; text: @tr("Paste Window"); help: @tr("Paste Measuring Window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
         }
-    }
-    // The crop's size in the file's pixels, a figure the app reports, on the glass as the export's.
-    Section {
-        Field { layout: FieldLayout.spread; label: @tr("Kept"); LcdReadout { text: Framing.kept; } }
     }
 }

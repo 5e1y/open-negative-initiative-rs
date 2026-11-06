@@ -91,8 +91,22 @@ export component Panel inherits Surface {
                         PanelState.tab-picked(tab);
                     }
                 }
-                if PanelState.tab == 1: ModeHeader { title: @tr("Crop"); help: @tr("Leave Crop"); done => { Framing.act(Act.framing); } }
-                if PanelState.tab == 4: ModeHeader { title: @tr("De-dust"); help: @tr("Leave De-dust"); done => { Dedust.act(Act.correction); } }
+                if PanelState.tab == 1: ModeHeader {
+                    title: @tr("Crop");
+                    demo: "crop";
+                    note: @tr("Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop.");
+                    help: @tr("Leave Crop");
+                    cancel-help: @tr("Puts back the crop this photo had when Crop opened, and leaves.");
+                    done => { Framing.act(Act.framing); }
+                    cancel => { Framing.act(Act.cancel-tool); }
+                }
+                if PanelState.tab == 4: ModeHeader {
+                    title: @tr("De-dust");
+                    help: @tr("Leave De-dust");
+                    cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
+                    done => { Dedust.act(Act.correction); }
+                    cancel => { Dedust.act(Act.cancel-tool); }
+                }
             }
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.

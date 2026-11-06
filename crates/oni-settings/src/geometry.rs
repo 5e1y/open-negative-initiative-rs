@@ -105,12 +105,19 @@ impl Geometry {
     }
 
     pub fn oriented_size(&self, image: Size) -> Size {
-        if self.quarter_turns % 2 == 1 { (image.1, image.0) } else { image }
+        if self.quarter_turns.rem_euclid(2) == 1 { (image.1, image.0) } else { image }
     }
 
     pub fn cropped_pixel_size(&self, image: Size) -> Size {
         let s = self.oriented_size(image);
         (self.crop.width * s.0, self.crop.height * s.1)
+    }
+
+    /// The crop in whole pixels, the one size every readout says: the crop's, its badge, the status
+    /// bar and the export panel round it alike, so no two of them ever differ.
+    pub fn kept_pixels(&self, image: Size) -> Size {
+        let (w, h) = self.cropped_pixel_size(image);
+        (w.round(), h.round())
     }
 
     /// The frame kept inside the rotated photo with no void: under the threshold only the position
@@ -356,5 +363,16 @@ mod tests {
         g.propose_measure_window(true);
         assert!(close(g.measure_window.unwrap(), Rect { x: 0.3, y: 0.3, width: 0.1, height: 0.1 }));
         assert_eq!(pixel_label((4000.4, 2666.6)), "4000 × 2667 px");
+    }
+
+    #[test]
+    fn the_kept_size_is_whole_pixels_on_the_turned_photo_whichever_way_the_turn_is_written() {
+        let g = Geometry { crop: Rect { x: 0.1, y: 0.0, width: 0.50009, height: 1.0 }, ..Geometry::default() };
+        assert_eq!(g.kept_pixels(RAW), (3001.0, 4000.0), "half a pixel and more rounds up");
+        // A turn written backwards is still a quarter: the sides swap as the render's do.
+        let back = Geometry { quarter_turns: -1, ..g.clone() };
+        assert_eq!(back.kept_pixels(RAW), (2000.0, 6000.0));
+        // Twin: the remainder's sign kept, −1 would read as no turn and the sides stay.
+        assert_ne!(back.kept_pixels(RAW), Geometry { quarter_turns: 0, ..back.clone() }.kept_pixels(RAW));
     }
 }
