@@ -1,6 +1,6 @@
 // The Crop tab: the frame, its ratio, rotation, mirror and straightening.
 import { Act } from "../act.slint";
-import { Icons, Space, Section, Tabs, Button, ButtonSize, ButtonKind, ValueHeader, ButtonGroup, GroupAlign, Toggle, LcdReadout, Field, FieldLayout } from "../ds/ds.slint";
+import { Icons, Space, Section, Tabs, Button, ButtonSize, ButtonKind, ButtonGroup, GroupAlign, Toggle, LcdReadout, Field, FieldLayout } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
@@ -84,8 +84,8 @@ export component CropPane inherits Pane {
             Button { size: ButtonSize.plate; text: @tr("Paste"); help: @tr("Paste Measuring Window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
         }
     }
-    // The crop's size in the file's pixels, read as every value beside its name.
+    // The crop's size in the file's pixels, a figure the app reports, on the glass as the export's.
     Section {
-        ValueHeader { label: @tr("Kept"); value: Framing.kept; }
+        Field { layout: FieldLayout.spread; label: @tr("Kept"); LcdReadout { text: Framing.kept; } }
     }
 }

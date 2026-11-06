@@ -6381,5 +6381,12 @@
     "title": "One title component and one capitals rule after the merges",
     "status": "done",
     "detail": "Two correctors drew the engraved title apart: Engraved stays, SectionTitle goes, every column header at the section's step. The toolbar's word keys lose a property the button no longer has: the button writes capitals on a keycap alone."
+  },
+  {
+    "id": 1303,
+    "type": "design",
+    "title": "Every figure the app reports reads on the glass, the crop's kept size with them",
+    "status": "done",
+    "detail": "Two correctors went opposite ways: the kept size left the LCD for a slider's readout while the export's figures and the version moved onto it, citing the kept size. One rule now: a figure the app reports, never typed, reads on the LcdReadout beside its label, the crop's kept size, the export's size and weight, the version, the status bar's count; a value the hand sets reads in its slider's header."
   }
 ]
