@@ -6780,5 +6780,12 @@
     "title": "Frontier Look names the table in use; its way back to the measured table is the section's Reset",
     "status": "done",
     "detail": "UI evaluation (Hierarchy): Settings > Frontier Look set its way back, a Measured key that looked disabled while the measured table was in use, in one row with Export… and Use a File…, and named the table in use in a note that read as a description. A Table in use row now reads Measured or the file's name, and the way back is the title row's Reset every block shares, shown while a file is in use, apart from the keys that keep one; the note says Reset returns to the measured table. One property, the file's name or empty, replaces the look's sentence and its flag. Window check frontier_look reaches the section and the Reset by the pointer, reads the file then Measured as the table in use; twin: the Reset is not on Export…'s row."
+  },
+  {
+    "id": 1309,
+    "type": "fix",
+    "title": "The fifth wave's merges: one rest, one reset carrying the stock's dyes, one copy sheet, one footer",
+    "status": "done",
+    "detail": "Correctors met in five places. A double click's rest is one function that lands the same value on every frame shown. A block's reset carries the stock's dyes and gives each frame shown its own rest. Copy Settings opens its carries sheet from the bar, the menu bar and a cell's menu, the gallery's one photo picked included. Prepare's footer is the shared sheet footer. The status line names the frame's place and the crop's kept size. The medal probes moved clear of the switches."
   }
 ]

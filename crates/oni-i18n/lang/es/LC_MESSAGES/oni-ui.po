@@ -201,13 +201,11 @@ msgstr "Mostrar el panel ({})"
 msgid "Hide the Panel ({})"
 msgstr "Ocultar el panel ({})"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
-
 #: crates/oni-ui/ui/card_status.slint
 msgid "Settings saved"
 msgstr "Ajustes guardados"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -235,13 +233,13 @@ msgstr "Conservar los archivos NEF incompatibles"
 msgid "The best option if you already opened them in another software."
 msgstr "La mejor opción si ya los abrió en otro programa."
 
-#: crates/oni-ui/ui/dng.slint
-msgid "Download and Install"
-msgstr "Descargar e instalar"
-
 #: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "OK"
 msgstr "Aceptar"
+
+#: crates/oni-ui/ui/dng.slint
+msgid "Download and Install"
+msgstr "Descargar e instalar"
 
 #: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/editors.slint
 msgid "RGB"
@@ -259,9 +257,7 @@ msgstr "Nombre del rollo"
 msgid "Help on {}"
 msgstr "Ayuda sobre {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/toolbar.slint
-
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Reset"
 msgstr "Restablecer"
 
@@ -858,6 +854,10 @@ msgid "A click converts a folder’s HE and HE* NEF files to lossless DNGs throu
 msgstr "Un clic convierte los NEF HE y HE* de una carpeta en DNG sin pérdida con Adobe DNG Converter, que ONI descarga e instala si falta."
 
 #: crates/oni-ui/ui/help.slint
+msgid "GET STARTED"
+msgstr "EMPEZAR"
+
+#: crates/oni-ui/ui/help.slint
 msgid "Website"
 msgstr "Sitio web"
 
@@ -868,10 +868,6 @@ msgstr "Comentarios"
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Report a Bug / Give Feedback"
 msgstr "Informar de un error / Enviar comentarios"
-
-#: crates/oni-ui/ui/help.slint
-msgid "GET STARTED"
-msgstr "EMPEZAR"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Thank You"
@@ -894,16 +890,16 @@ msgid "Encrypted diagnostic log, readable by ONI's maintainers only"
 msgstr "Registro de diagnóstico cifrado, legible solo por los responsables de ONI"
 
 #: crates/oni-ui/ui/help.slint
-msgid "See Community Feedbacks"
-msgstr "Ver comentarios de la comunidad"
-
-#: crates/oni-ui/ui/help.slint
 msgid "Sending…"
 msgstr "Enviando…"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Send"
 msgstr "Enviar"
+
+#: crates/oni-ui/ui/help.slint
+msgid "See Community Feedbacks"
+msgstr "Ver comentarios de la comunidad"
 
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/settings.slint
 msgid "Diagnostic Log"
@@ -921,9 +917,7 @@ msgstr "1 bloque registrado"
 msgid "{} blocks recorded"
 msgstr "{} bloques registrados"
 
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
-
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copiar"
 
@@ -934,13 +928,6 @@ msgstr "Aún no hay nada registrado."
 #: crates/oni-ui/ui/help.slint
 msgid "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."
 msgstr "Deja esto abierto, reproduce el fallo y pulsa Copiar. Si hay que forzar la salida de la app, el archivo de arriba lo conserva todo."
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "Prepare Roll"
-msgstr "Preparar rollo"
-
-msgid "Not prepared yet"
-msgstr "Aún sin preparar"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Prepare Roll, in the bar above, measures the roll before its frames are edited."
@@ -1310,17 +1297,6 @@ msgstr "TEMP aplica el aspecto cálido o frío de la máquina sobre la copia, un
 msgid "Temperature"
 msgstr "Temperatura"
 
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
-msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras, y la lleva hacia el gris con Temperatura y Matiz.\n\nTemperatura mueve el color entre el azul y el amarillo, Matiz entre el verde y el magenta; ninguno cambia la luminosidad de la fotografía.\n\nLa saturación hace todos los colores más intensos o más grises a la vez."
-
-msgid "Temperature −: toward cool"
-msgstr "Temperatura −: hacia frío"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature +: toward warm"
-msgstr "Temperatura +: hacia cálido"
-
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Lighting"
 msgstr "Luz"
@@ -1333,7 +1309,7 @@ msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto n
 msgid "Exposure"
 msgstr "Exposición"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
 msgstr "Contraste"
 
@@ -1394,13 +1370,6 @@ msgid "Effects"
 msgstr "Efectos"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
-msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast"
-msgstr "Contraste"
-
 msgid "Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Viñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 
@@ -1416,29 +1385,6 @@ msgstr "Chrome"
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast −: toward softer, 5% a step"
-msgstr "Contraste −: hacia más suave, 5 % por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast +: toward harder, 5% a step"
-msgstr "Contraste +: hacia más duro, 5 % por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette −: toward lighter corners, 0.1 EV a step"
-msgstr "Viñeta −: hacia esquinas más claras, 0,1 EV por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette +: toward darker corners, 0.1 EV a step"
-msgstr "Viñeta +: hacia esquinas más oscuras, 0,1 EV por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome −: toward less, 5% a step"
-msgstr "Chrome −: hacia menos, 5 % por paso"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome +: toward more, 5% a step"
-msgstr "Chrome +: hacia más, 5 % por paso"
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
 msgstr "Curvas"
@@ -1580,8 +1526,6 @@ msgid "Acts on this photo alone: the balance keys and the histogram read only wh
 msgstr "Solo actúa sobre esta foto: las teclas de balance y el histograma solo leen lo que encuadra."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Apply window"
-
 msgid "Apply Window"
 msgstr "Aplicar ventana"
 
@@ -2318,9 +2262,6 @@ msgid "Reset Settings ({})"
 msgstr "Restablecer ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Select one photo to crop it"
-msgstr "Selecciona una sola foto para recortarla"
-
 msgid "Trash"
 msgstr "Papelera"
 
@@ -2331,6 +2272,10 @@ msgstr "Mover {} fotos a la Papelera de ONI ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Move to ONI Trash ({})"
 msgstr "Mover a la Papelera de ONI ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Select one photo to crop it"
+msgstr "Selecciona una sola foto para recortarla"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
