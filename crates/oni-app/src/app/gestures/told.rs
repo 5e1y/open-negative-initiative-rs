@@ -1,5 +1,5 @@
 //! What a gesture could not do or did only in part, in one notice over every surface; a success
-//! speaks only to offer its Undo, or to say where a located folder went.
+//! speaks only to offer its Undo, with what a paste on the roll rewrote, or where a located folder went.
 
 use super::*;
 use crate::Told;
@@ -47,14 +47,15 @@ impl Ctl {
         }
     }
 
-    /// The notice saying a gesture's step landed, its key walking that step back while it is the last.
+    /// The notice saying a gesture's step landed, its key walking that step back while it is the last;
+    /// an edit of the open frame, a roll's paste among them, is a step with no name.
     pub(in crate::app) fn told_step(&self, title: &str, message: &str) {
         self.told(title, message);
         let step = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             let history = store.history();
-            history.undo_label().map(|label| (label.to_owned(), history.undo_paths()))
+            history.can_undo().then(|| (history.undo_label().unwrap_or_default().to_owned(), history.undo_paths()))
         };
         self.state.borrow_mut().org.told_step = step;
         if let Some(w) = self.window() {
@@ -80,7 +81,7 @@ impl Ctl {
                 let mut s = self.state.borrow_mut();
                 s.store.editor().is_some_and(|store| {
                     let history = store.history();
-                    history.undo_label() == Some(label.as_str()) && history.undo_paths() == paths
+                    history.can_undo() && history.undo_label().unwrap_or_default() == label && history.undo_paths() == paths
                 })
             };
             if last {
@@ -123,4 +124,17 @@ impl Ctl {
             with_shell(move |c| c.told(crate::app::navigator::reveal_word(), &said));
         });
     }
+}
+
+/// The photos a paste on the roll rewrote: those of the step it laid on the history, none when it
+/// laid none or failed, whose notice then stands alone.
+pub(super) fn rewritten(store: &mut oni_core::EditorStore, paste: impl FnOnce(&mut oni_core::EditorStore)) -> usize {
+    let top = |store: &oni_core::EditorStore| {
+        let h = store.history();
+        (h.can_undo(), h.can_redo(), h.undo_label().map(str::to_owned), h.undo_paths())
+    };
+    let before = top(store);
+    paste(store);
+    let after = top(store);
+    if store.failure.is_some() || after == before { 0 } else { after.3.len() }
 }

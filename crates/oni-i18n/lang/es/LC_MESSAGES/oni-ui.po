@@ -1169,7 +1169,7 @@ msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fu
 msgid "ADD"
 msgstr "AÑADIR"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/settings.slint
 msgid "DONE"
 msgstr "OK"
 
@@ -1569,14 +1569,6 @@ msgstr "Tamaño del pincel"
 msgid "Sensitivity"
 msgstr "Sensibilidad"
 
-#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Eliminar polvo"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "Leave De-dust"
-msgstr "Salir de Eliminar polvo"
-
 #: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "Automatic"
 msgstr "Automático"
@@ -1937,6 +1929,18 @@ msgstr "Este rollo se midió antes de que el escáner guardara su mediana: vuelv
 msgid "Details"
 msgstr "Detalles"
 
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Leave Crop"
+msgstr "Salir del recorte"
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Eliminar polvo"
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Leave De-dust"
+msgstr "Salir de Eliminar polvo"
+
 #: crates/oni-ui/ui/prepare.slint
 msgid "Setting…"
 msgstr "Aplicando…"
@@ -2274,10 +2278,6 @@ msgid "COMPARE"
 msgstr "COMPARAR"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Compare"
-msgstr "Comparar"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
 msgstr "Pro"
 
@@ -2302,10 +2302,6 @@ msgid "Paste settings ({})"
 msgstr "Pegar ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Paste to the Roll"
-msgstr "Pegar en el rollo"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "DE-DUST"
 msgstr "ELIMINAR POLVO"
 
@@ -2326,12 +2322,12 @@ msgid "EDITOR"
 msgstr "EDITOR"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Gallery ({})"
-msgstr "Galería ({})"
+msgid "Gallery (Esc or {})"
+msgstr "Galería (Esc o {})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Gallery (Space or {})"
-msgstr "Galería (Espacio o {})"
+msgid "Gallery (Esc, Space or {})"
+msgstr "Galería (Esc, Espacio o {})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Editor (Space or {})"
@@ -2788,6 +2784,18 @@ msgstr "No se puede mostrar «{name}»: ONI no tiene acceso."
 #: crates/oni-app/src/app/gestures/told.rs
 msgid "“{name}” cannot be shown: {cause}."
 msgstr "No se puede mostrar «{name}»: {cause}."
+
+#: crates/oni-app/src/app/gestures.rs
+msgid "Settings pasted on one photo."
+msgid_plural "Settings pasted on {n} photos of the roll."
+msgstr[0] "Ajustes pegados en una foto."
+msgstr[1] "Ajustes pegados en {n} fotos del rollo."
+
+#: crates/oni-app/src/app/gestures.rs
+msgid "Crop pasted on one photo."
+msgid_plural "Crop pasted on {n} photos of the roll."
+msgstr[0] "Recorte pegado en una foto."
+msgstr[1] "Recorte pegado en {n} fotos del rollo."
 
 #: crates/oni-app/src/app/help.rs
 msgid "The diagnostic log cannot open."

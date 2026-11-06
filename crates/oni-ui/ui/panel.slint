@@ -1,10 +1,12 @@
-// The editor's panel: the tab bar and its five tabs, each in its own file under `panel/`.
+// The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
 import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard } from "ds/ds.slint";
+import { Act } from "act.slint";
 import { Editors } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
+import { ModeHeader } from "panel/parts.slint";
 import { RollPane } from "panel/roll_tab.slint";
 import { CropPane } from "panel/crop_tab.slint";
-import { DedustHeader, DedustPane } from "panel/dedust_tab.slint";
+import { DedustPane } from "panel/dedust_tab.slint";
 import { ColorPane } from "panel/color_tab.slint";
 import { DetailsPane } from "panel/details_tab.slint";
 export { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
@@ -61,18 +63,24 @@ export component Panel inherits Surface {
             padding-right: Space.m;
             padding-top: Space.s;
             padding-bottom: Space.s;
-            // De-dust names its mode where the tabs stand; the bar stays, hidden, for Tab's way into the panel.
+            // The bar lists the panes; the crop and De-dust, opened by their keys, name themselves in its
+            // place beside their DONE. The bar stays, hidden, for Tab's way into the panel.
             Rectangle {
                 height: TabsStyle.height;
                 tabs := Tabs {
-                    visible: PanelState.tab != 4;
-                    tabs: [@tr("Roll"), @tr("Crop"), @tr("Colour"), @tr("Details")];
-                    marked: [false, false, false, false];
-                    disabled: [false, PanelState.crop-closed, false, false];
-                    selected: PanelState.tab;
-                    picked(i) => { PanelState.tab = i; PanelState.tab-picked(i); }
+                    visible: PanelState.tab != 1 && PanelState.tab != 4;
+                    tabs: [@tr("Roll"), @tr("Colour"), @tr("Details")];
+                    marked: [false, false, false];
+                    // Each pane's place in the bar, none for a tool.
+                    selected: [0, -1, 1, 2, -1][PanelState.tab];
+                    picked(i) => {
+                        let tab = [0, 2, 3][i];
+                        PanelState.tab = tab;
+                        PanelState.tab-picked(tab);
+                    }
                 }
-                if PanelState.tab == 4: DedustHeader { }
+                if PanelState.tab == 1: ModeHeader { title: @tr("Crop"); help: @tr("Leave Crop"); done => { Framing.act(Act.framing); } }
+                if PanelState.tab == 4: ModeHeader { title: @tr("De-dust"); help: @tr("Leave De-dust"); done => { Dedust.act(Act.correction); } }
             }
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.

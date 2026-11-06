@@ -1,5 +1,5 @@
-//! The panel's routes and the editor's modes: a tool's key opens it and leaves it for the last panel,
-//! Escape leaves the innermost mode, every photo opens with none, and Return validates then leaves.
+//! The panel's routes and the editor's modes: a tool's key or DONE leaves it for the last panel, Escape
+//! steps out of the innermost thing open, every photo opens with no mode, and Return validates then leaves.
 
 use super::*;
 use crate::tabs::{self, Validated};
@@ -57,20 +57,26 @@ impl Ctl {
         self.leave_frame_tools();
     }
 
-    /// Escape in the editor: the innermost mode left, Compare over the canvas before the panel's
-    /// tool; `false` with none open.
-    pub(super) fn leave_mode(self: &Rc<Self>) -> bool {
+    /// Escape the photos hear beside a photo: Compare left, else the crop or De-dust, else the Lab,
+    /// else the editor for the gallery; `false` in the gallery, where nothing stands open.
+    pub(super) fn escape(self: &Rc<Self>) -> bool {
         if self.window().is_none_or(|w| w.global::<App>().get_gallery()) {
             return false;
         }
-        if self.state.borrow().compare.split.is_some() {
+        let compare = self.state.borrow().compare.split.is_some();
+        if compare {
             self.toggle_compare();
-            return true;
+        } else if !self.leave_frame_tools() {
+            if self.in_lab() {
+                self.leave_lab();
+            } else {
+                self.act(crate::Act::ToggleMode);
+            }
         }
-        self.leave_frame_tools()
+        true
     }
 
-    /// `validate(with:)`: Return or Enter, bare and once, on Pro's editor; the Lab takes none.
+    /// `validate(with:)`: Return or Enter, bare and once, on Pro's editor, a tool's DONE; the Lab takes none.
     pub(super) fn validate_key(self: &Rc<Self>, text: &str, bare: bool, repeat: bool) -> bool {
         let Some(w) = self.window() else { return false };
         if !matches!(text, "\r" | "\n" | "\u{3}") || !bare || repeat || w.global::<App>().get_gallery() || self.in_lab() {
@@ -80,7 +86,7 @@ impl Ctl {
         let validated = self.state.borrow_mut().route.validate();
         match validated {
             Validated::Disarmed => self.publish_framing(),
-            Validated::LeaveCrop => {
+            Validated::Leave => {
                 self.leave_frame_tools();
             }
             Validated::Nothing => return false,

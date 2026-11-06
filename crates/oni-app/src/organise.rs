@@ -31,9 +31,8 @@ pub enum GridKey {
     Right,
     Up,
     Down,
-    Return,
-    /// `modified`: ⌘, ⌥, ⌃ or ⇧ held, any of which leaves Space to someone else.
-    Space { repeat: bool, modified: bool },
+    /// Return or Space, one key; `modified`: ⌘, ⌥, ⌃ or ⇧ held, any of which leaves it to someone else.
+    Open { repeat: bool, modified: bool },
     SelectAll,
 }
 
@@ -89,8 +88,7 @@ impl Picks {
             GridKey::Right => Step::Cells(1),
             GridKey::Up => Step::Rows(-1),
             GridKey::Down => Step::Rows(1),
-            GridKey::Return => return Some(self.cursor.clone().filter(|c| shown.index(c).is_some()).map_or(Outcome::None, Outcome::Open)),
-            GridKey::Space { repeat, modified } => {
+            GridKey::Open { repeat, modified } => {
                 return match picking::space_key(repeat, modified) {
                     SpaceKey::Ignore => None,
                     SpaceKey::Swallow => Some(Outcome::None),
@@ -230,15 +228,18 @@ mod tests {
     }
 
     #[test]
-    fn return_and_space_open_and_command_a_completes_the_rolls_touched() {
+    fn return_or_space_opens_and_command_a_completes_the_rolls_touched() {
         let g = Grid::two_rolls();
+        let open = |repeat, modified| GridKey::Open { repeat, modified };
         let mut p = Picks::default();
-        assert_eq!(p.key(GridKey::Return, false, &g.shown(), None, None), Some(Outcome::None));
-        assert_eq!(p.key(GridKey::Space { repeat: false, modified: false }, false, &g.shown(), None, None), Some(Outcome::Open("a1".into())));
-        assert_eq!(p.key(GridKey::Space { repeat: true, modified: false }, false, &g.shown(), None, None), Some(Outcome::None));
-        assert_eq!(p.key(GridKey::Space { repeat: false, modified: true }, false, &g.shown(), None, None), None, "⇧Space is not the grid's");
+        assert_eq!(p.key(open(false, false), false, &g.shown(), None, None), Some(Outcome::Open("a1".into())), "no pick: the first shown");
+        assert_eq!(p.key(open(true, false), false, &g.shown(), None, None), Some(Outcome::None));
+        assert_eq!(p.key(open(false, true), false, &g.shown(), None, None), None, "⇧ or ⌘ held is not the grid's");
+        // A selection with no cursor opens its first photo shown.
+        let mut picked = Picks { selection: set(&["b3", "a5"]), ..Picks::default() };
+        assert_eq!(picked.key(open(false, false), false, &g.shown(), None, None), Some(Outcome::Open("a5".into())));
         p.click(9, &g.shown(), false, false, 0.0, 0.5);
-        assert_eq!(p.key(GridKey::Return, false, &g.shown(), None, None), Some(Outcome::Open("b2".into())));
+        assert_eq!(p.key(open(false, false), false, &g.shown(), None, None), Some(Outcome::Open("b2".into())), "twin: the cursor before the first");
         assert_eq!(p.key(GridKey::SelectAll, false, &g.shown(), None, None), Some(Outcome::None), "the cursor stays inside");
         assert_eq!(p.selection, set(&["b1", "b2", "b3"]));
         let mut none = Picks::default();

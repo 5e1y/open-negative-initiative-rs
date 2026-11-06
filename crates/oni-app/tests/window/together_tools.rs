@@ -104,9 +104,9 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
     w.global::<Exporting>().invoke_space_picked(0);
     rig.until("the sheet under the new proof", Duration::from_secs(60), || canvas.get_frame_revision() != drawn);
 
-    // The crop is each frame's own: its tab, its key and its menu are out of reach while frames show together.
+    // The crop is each frame's own: its key and its menu are out of reach while frames show together.
     let live = w.global::<Menus>().get_live();
-    assert!(panel.get_crop_closed() && !live.framing && !live.mirror && !live.correction, "the crop greyed, De-dust with it");
+    assert!(!bar.get_single() && !live.framing && !live.mirror && !live.correction, "the crop greyed, De-dust with it");
     assert!(!canvas.get_window_shown(), "no measuring window over the sheet");
     ctl.act(oni_app::Act::Framing);
     rig.pump();
@@ -120,7 +120,7 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
     let row = |n: &str| lib.get_rows().iter().position(|r| r.kind == 2 && r.title == n).unwrap_or_else(|| panic!("{n}'s row")) as i32;
     lib.invoke_row_clicked(row("B"), false, false);
     rig.until("B alone", Duration::from_secs(60), || canvas.get_status().contains(" × "));
-    assert!(!panel.get_crop_closed() && bar.get_single());
+    assert!(bar.get_single());
     ctl.act(oni_app::Act::Framing);
     rig.pump();
     assert_eq!(panel.get_tab(), 1, "twin: ⌘K opens the crop on one frame");

@@ -1,11 +1,11 @@
-//! The keys no menu item carries: Escape out of the innermost card, sheet or mode, Return on a sheet,
-//! the Lab's, the rows', the grid's and the walk keys.
+//! The keys no menu item carries: Escape out of the innermost thing open, Return on a sheet, the
+//! Lab's, the rows', the grid's and the walk keys.
 
 use super::*;
 
 impl Ctl {
     /// The keys no menu item carries, ⌘= apart from the menu's ⌘+ included: Escape leaves the innermost
-    /// help card, sheet, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
+    /// help card, sheet, typing, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
     pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         // Tab and ⇧Tab are Slint's walk through the controls, a sheet's included: no branch takes them.
         if matches!(text, "\t" | "\u{19}") {
@@ -82,14 +82,20 @@ impl Ctl {
             self.told_closed();
             return true;
         }
+        // Escape from a field ends its typing, as a press elsewhere does, and nothing behind it; the key
+        // monitor ends a control's hold before the key reaches here.
+        if text == "\u{1b}" && !w.get_keys_held() {
+            w.invoke_refocus();
+            return true;
+        }
         if text == "\u{1b}" && self.export_escape() {
             return true;
         }
         if self.state.borrow().prepare.shown {
             return self.prepare_key(text, command, shift, bare);
         }
-        if text == "\u{1b}" && self.leave_mode() {
-            return true;
+        if text == "\u{1b}" {
+            return !repeat && self.escape();
         }
         if self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
             return true;

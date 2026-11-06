@@ -243,20 +243,23 @@ impl Ctl {
         if self.busy_said(tr("Paste to Roll")) {
             return;
         }
-        let touched: Vec<String> = {
+        let (touched, rewritten) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.clone();
             let Some(store) = s.store.editor() else { return };
             let key = store.roll_key();
-            store.paste_to_roll();
+            let rewritten = told::rewritten(store, oni_core::EditorStore::paste_to_roll);
             let mut touched: Vec<String> = key.and_then(|k| store.measured_group(k)).map(|g| g.iter().cloned().collect()).unwrap_or_default();
             // `rollReach + 1`: the open frame counted once, whether or not its roll lists it.
             touched.retain(|p| Some(p) != open.as_ref());
             touched.extend(open);
-            touched
+            (touched, rewritten)
         };
         self.journal_count(oni_library::journal::Kind::Pasted, touched.len());
         self.gesture(&touched, |_| 0);
+        if rewritten > 0 {
+            self.told_step(tr("Paste to Roll"), &trn("Settings pasted on one photo.", "Settings pasted on {n} photos of the roll.", rewritten as u64));
+        }
     }
 
     /// `pasteFramingToRoll()`: the open frame first, then every frame measured with its roll.
@@ -269,7 +272,16 @@ impl Ctl {
             std::iter::once(open.clone()).chain(members.into_iter().filter(|m| *m != open)).collect()
         };
         let size = self.image_size();
-        self.gesture(&targets, |store| store.paste_framing(&targets, size));
+        let rewritten = std::cell::Cell::new(0);
+        self.gesture(&targets, |store| {
+            rewritten.set(told::rewritten(store, |store| {
+                store.paste_framing(&targets, size);
+            }));
+            rewritten.get()
+        });
+        if rewritten.get() > 0 {
+            self.told_step(tr("Paste to Roll"), &trn("Crop pasted on one photo.", "Crop pasted on {n} photos of the roll.", rewritten.get() as u64));
+        }
     }
 
     /// `moveToOniTrash()`: each target's sidecar marked, its files untouched, one gallery step. The
