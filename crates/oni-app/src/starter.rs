@@ -48,6 +48,42 @@ pub fn step(words: &'static str, run: impl FnOnce() + 'static) -> Step {
     Step { words, run: Box::new(run) }
 }
 
+impl Step {
+    /// The step's work at once, where no starter shows it.
+    pub(crate) fn run(self) {
+        (self.run)()
+    }
+}
+
+/// Steps a running step found, run next and counted on the bar; at once where no launch runs.
+pub fn more(steps: Vec<Step>) {
+    let Some(launch) = LAUNCH.with(|l| l.borrow().clone()) else {
+        return steps.into_iter().for_each(Step::run);
+    };
+    launch.total.set(launch.total.get() + steps.len());
+    let mut queue = launch.steps.borrow_mut();
+    for step in steps.into_iter().rev() {
+        queue.push_front(step);
+    }
+}
+
+/// The parts of one step, each written to the log as it ends: the band cannot redraw inside a step.
+pub struct Laps {
+    step: &'static str,
+    at: Instant,
+}
+
+impl Laps {
+    pub fn new(step: &'static str) -> Laps {
+        Laps { step, at: Instant::now() }
+    }
+
+    pub fn lap(&mut self, part: &str) {
+        crate::timing::line(&format!("boot: {} · {part} in {:.0} ms", self.step, ms(self.at.elapsed())));
+        self.at = Instant::now();
+    }
+}
+
 /// The share of the launch done: each step one part, the kernels one more, filled as they compile.
 pub fn fraction(steps_done: usize, steps: usize, kernels_done: usize, kernels: usize) -> f32 {
     let kernels = if kernels == 0 { 1.0 } else { kernels_done.min(kernels) as f32 / kernels as f32 };
@@ -58,7 +94,7 @@ struct Launch {
     window: slint::Weak<MainWindow>,
     began: Instant,
     steps: RefCell<VecDeque<Step>>,
-    total: usize,
+    total: std::cell::Cell<usize>,
     done: RefCell<Vec<(&'static str, Duration)>>,
     current: RefCell<(&'static str, Instant)>,
     kernels: Arc<Kernels>,
@@ -81,7 +117,7 @@ pub fn launch(window: &MainWindow, began: Instant, before: Vec<(&'static str, Du
     let launch = Rc::new(Launch {
         window: window.as_weak(),
         began,
-        total: before.len() + steps.len(),
+        total: std::cell::Cell::new(before.len() + steps.len()),
         steps: RefCell::new(steps.into()),
         done: RefCell::new(before),
         current: RefCell::new((KERNELS, Instant::now())),
@@ -157,7 +193,7 @@ impl Launch {
         let done = self.done.borrow();
         let line = done.iter().map(|(w, took)| tr!("{step} {seconds}", step = tr(w), seconds = seconds(*took))).collect::<Vec<_>>().join(" · ");
         band.set_done(line.into());
-        band.set_fraction(fraction(done.len(), self.total, self.kernels.done(), Kernels::total()));
+        band.set_fraction(fraction(done.len(), self.total.get(), self.kernels.done(), Kernels::total()));
     }
 
     /// The starter gone and the window at the app's size, centred where it stood, in one turn.

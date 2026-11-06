@@ -3881,6 +3881,30 @@ msgstr[1] "Réinitialiser {n} photos"
 msgid "Version {version}"
 msgstr "Version {version}"
 
+#: crates/oni-app/src/app/shell.rs
+msgid "Wiring the interface"
+msgstr "Raccordement de l'interface"
+
+#: crates/oni-app/src/app/shell.rs
+msgid "Matching the screen's colours"
+msgstr "Accord des couleurs de l'écran"
+
+#: crates/oni-app/src/app/shell.rs
+msgid "Laying out the gallery"
+msgstr "Mise en place de la galerie"
+
+#: crates/oni-app/src/app/shell.rs
+msgid "Counting the ONI Trash"
+msgstr "Comptage de la Corbeille ONI"
+
+#: crates/oni-app/src/app/shell.rs
+msgid "Checking for updates"
+msgstr "Recherche de mises à jour"
+
+#: crates/oni-app/src/app/shell.rs
+msgid "Reconnecting the paired phone"
+msgstr "Reconnexion du téléphone jumelé"
+
 #: crates/oni-app/src/app/state_read.rs
 msgid "Creating thumbnails"
 msgstr "Création des vignettes"

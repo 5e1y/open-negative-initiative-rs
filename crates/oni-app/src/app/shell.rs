@@ -8,14 +8,27 @@ impl Shell {
         Self::with_window(MainWindow::new()?, store, engine, options)
     }
 
-    /// `new` on a window already built, which the starter has shown while the rest stands up.
+    /// `new` on a window already built: the shell stands, then rises, its steps run in a row.
     pub fn with_window(window: MainWindow, store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+        let shell = Self::standing(window, store, engine, options)?;
+        for step in shell.rising() {
+            step.run();
+        }
+        Ok(shell)
+    }
+
+    /// The shell's state and controller on a window already built, each part's time in the log;
+    /// `rising` then wires and lays out the window, a step each the starter names.
+    pub fn standing(window: MainWindow, store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+        let mut laps = crate::starter::Laps::new("Building the app");
         crate::keycaps::serve(&window);
         let caches = engine.lock().ok().and_then(|e| e.caches.clone());
         crate::measuring::set_folders(&options.support, caches);
         let worker = Worker::new(Box::new(engine.clone()), |done| with_shell(move |c| c.deliver(done)));
+        laps.lap("the render worker");
         let (device, queue) = engine.lock().map_err(slint::PlatformError::Other)?.device();
         engine.adopt().map_err(slint::PlatformError::Other)?;
+        laps.lap("the canvas's device");
         let index_path = LibraryIndex::default_path(&options.caches);
         let painter: Painter = Arc::default();
         let previews: Arc<Mutex<Previews>> = Arc::default();
@@ -23,11 +36,21 @@ impl Shell {
         let generation: Arc<AtomicU64> = Arc::default();
         paint(painter.clone(), engine.clone(), previews.clone(), hands.clone(), generation.clone(), options.support.clone(), options.screen);
         let disk = read_disk(options.support.clone(), options.screen);
+        laps.lap("the painter and the disk's state");
         let keep = Preferences::load(&options.support).bool(preferences::KEEP_ZOOM).unwrap_or(false);
         crate::viewport::KEEP_ZOOM.store(keep, Ordering::Relaxed);
         let whole = Preferences::load(&options.support).bool(preferences::FULL_DECODE).unwrap_or(false);
         crate::render::FULL_DECODE.store(whole, Ordering::Relaxed);
         crate::language::speak(crate::language::chosen(&Preferences::load(&options.support)));
+        laps.lap("the preferences and the language");
+        let index = LibraryIndex::open(&index_path);
+        laps.lap("the library index");
+        let kernel = display::Gpu::new(&device);
+        laps.lap("the display kernel");
+        let masks = crate::flat_fields::entries(&options.support);
+        let nav = navigator::Nav::new(options.computer, options.identify);
+        let export = export_card::Card::new(&options.support);
+        laps.lap("the flat fields, the navigator and the export card");
         let state = State {
             store,
             screen: options.screen,
@@ -37,7 +60,7 @@ impl Shell {
             copies: Default::default(),
             opened: None,
             preferences: Preferences::load(&options.support),
-            index: LibraryIndex::open(&index_path),
+            index,
             index_path,
             survey: Arc::default(),
             generation,
@@ -84,14 +107,14 @@ impl Shell {
             reading: None,
             quitting: false,
             stock_target: None,
-            masks: crate::flat_fields::entries(&options.support),
+            masks,
             masking: masks::Masking::new(options.mask_picker, options.show_folder),
             status: String::new(),
             brush: Preferences::load(&options.support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64).map_or(oni_settings::frame::Correction::DEFAULT_RADIUS as f32, |r| r as f32),
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
             gpu: Gpu {
-                kernel: display::Gpu::new(&device),
+                kernel,
                 device,
                 queue,
                 target: None,
@@ -146,7 +169,7 @@ impl Shell {
             news_kept: HashSet::new(),
             report_round: 0,
             console: None,
-            nav: navigator::Nav::new(options.computer, options.identify),
+            nav,
             prepare: prepare::Roll::new(options.require_roll),
             updates: updates::Updates::new(options.updates),
             year: year::Year::default(),
@@ -166,28 +189,72 @@ impl Shell {
             editors: crate::editors::Shell::default(),
             refresher: Timer::default(),
             writer: Timer::default(),
-            export: RefCell::new(export_card::Card::new(&options.support)),
+            export: RefCell::new(export),
         });
         SHELL.with(|s| *s.borrow_mut() = Rc::downgrade(&ctl));
-        Ctl::wire(&ctl, &window);
-        Ctl::wire_export(&ctl, &window);
-        ctl.attach_export();
-        ctl.restore_gamut();
-        // The app opens on the gallery; nothing opens in the editor until a hand asks.
-        window.global::<App>().set_gallery(true);
-        window.global::<App>().set_dev(!crate::updates::stamped());
-        ctl.publish(true);
-        ctl.publish_bar();
-        // The ONI Trash counts the whole library before any folder opens.
-        ctl.read_library();
-        ctl.publish_trash_rows();
-        ctl.start_updates();
-        window.global::<Pairing>().set_available(options.phone);
-        // A phone paired before finds the desktop listening again; nothing pairs until asked.
-        if options.phone && phone::has_trusted(&options.support) {
-            ctl.start_phone();
-        }
+        laps.lap("the controller");
         Ok(Shell { window, ctl })
+    }
+
+    /// The window wired, its colours, the gallery laid out, the ONI Trash counted, the updates and the
+    /// phone: a step each, in the order the shell has always taken them.
+    pub fn rising(&self) -> Vec<crate::starter::Step> {
+        use crate::starter::step;
+        use oni_i18n::marked;
+        let (c, w) = (self.ctl.clone(), self.window.as_weak());
+        vec![
+            step(marked("Wiring the interface"), {
+                let (c, w) = (c.clone(), w.clone());
+                move || {
+                    if let Some(window) = w.upgrade() {
+                        Ctl::wire(&c, &window);
+                        Ctl::wire_export(&c, &window);
+                    }
+                    c.attach_export();
+                }
+            }),
+            step(marked("Matching the screen's colours"), {
+                let c = c.clone();
+                move || c.restore_gamut()
+            }),
+            step(marked("Laying out the gallery"), {
+                let (c, w) = (c.clone(), w.clone());
+                move || {
+                    // The app opens on the gallery; nothing opens in the editor until a hand asks.
+                    if let Some(window) = w.upgrade() {
+                        window.global::<App>().set_gallery(true);
+                        window.global::<App>().set_dev(!crate::updates::stamped());
+                    }
+                    c.publish(true);
+                    c.publish_bar();
+                }
+            }),
+            step(marked("Counting the ONI Trash"), {
+                let c = c.clone();
+                // The ONI Trash counts the whole library before any folder opens.
+                move || {
+                    c.read_library();
+                    c.publish_trash_rows();
+                }
+            }),
+            step(marked("Checking for updates"), {
+                let c = c.clone();
+                move || c.start_updates()
+            }),
+            step(marked("Reconnecting the paired phone"), move || {
+                let (offered, support) = {
+                    let s = c.state.borrow();
+                    (s.phone_offered, s.support.clone())
+                };
+                if let Some(window) = w.upgrade() {
+                    window.global::<Pairing>().set_available(offered);
+                }
+                // A phone paired before finds the desktop listening again; nothing pairs until asked.
+                if offered && phone::has_trusted(&support) {
+                    c.start_phone();
+                }
+            }),
+        ]
     }
 
     /// `openFolder`: the gallery on the folder, read through the index behind, its thumbnails
