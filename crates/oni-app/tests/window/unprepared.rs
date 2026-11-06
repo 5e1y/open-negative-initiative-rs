@@ -1,6 +1,5 @@
-//! The navigator marks a roll still to prepare, as its card does: photos lie in it and none is
-//! measured or a slide; a roll measured, a slide's or a folder of folders shows no mark, and Reset
-//! the Roll, taking the measure away, marks its row at once.
+//! The navigator marks a roll still to prepare as its card does: none measured nor a slide; a roll
+//! measured, a slide's or a folder of folders shows none, and Reset the Roll marks its row at once.
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::{Act, Confirm, FolderLine, Library, Navigator};
