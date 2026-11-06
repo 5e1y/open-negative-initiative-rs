@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use crate::common;
 
-const SHARPENING: &str = "Sharpens edges without adding colour fringing.";
+const SHARPENING: &str = "Sharpens edges without adding colour fringing.\n\nHalo suppression keeps a sharpened edge within the light of its neighbours, clamping the overshoot that draws a bright or dark rim along it.";
 const CHROMA: &str = "Smooths colour noise from the scan without touching the film grain.";
 
 /// Sweeps the panel under its tab bar until the card saying `note` opens.

@@ -60,16 +60,15 @@ pub fn rows(s: &PipelineSettings, face: Face, on_paper: bool) -> Vec<Row> {
     let masked = flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none());
     let separation = !mono && s.rgb_passes.is_none() && pro;
     let sheet = s.sheet.is_some();
-    let blocks: [(Tab, &str, bool, &[Param]); 12] = [
+    let blocks: [(Tab, &str, bool, &[Param]); 11] = [
         (Tab::Roll, "Flat-Field", masked, if mono { &[FlatAmount] } else { &[FlatAmount, FlatTemperature, FlatTint] }),
         (Tab::Roll, "Filtration", true, &[GainRed, GainGreen, GainBlue]),
         (Tab::Roll, "Highlight Detail", true, &[DensityCeiling]),
         (Tab::Roll, "Dye Separation", separation, &[DyeSeparation]),
-        (Tab::Roll, "Auto White Balance", separation, &[BalanceStrength]),
-        (Tab::Color, "Color", pro && !mono, &[Temperature, Tint, ColorDensity]),
+        (Tab::Color, "Lighting", pro, &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint]),
+        (Tab::Color, "Color", pro && !mono, &[BalanceStrength, Temperature, Tint, ColorDensity]),
         (Tab::Color, "Paper Correction", on_paper, &[PaperRed, PaperGreen, PaperBlue]),
-        (Tab::Color, "Lighting", pro, &[Exposure, Highlights, Shadows, WhitePoint, BlackPoint]),
-        (Tab::Color, "Effects", pro, if mono { &[Contrast, Vignette] } else { &[Contrast, Vignette, Chrome] }),
+        (Tab::Color, "Effects", pro, if mono { &[Vignette] } else { &[Vignette, Chrome] }),
         (Tab::Details, "Sharpening", !sheet, &[SharpenAmount, SharpenRadius, SharpenHalo]),
         (Tab::Details, "Chroma Denoise", !sheet && !mono, &[ChromaAmount, ChromaRadius]),
         (Tab::Details, "Texture", true, &[Texture]),
@@ -154,8 +153,8 @@ mod tests {
         let s = PipelineSettings::rest(ConversionMode::Negative, true);
         let pro = rows(&s, Face::Pro, false);
         use Param::*;
-        assert_eq!(params(&pro, Tab::Roll), [GainRed, GainGreen, GainBlue, DensityCeiling, DyeSeparation, BalanceStrength]);
-        assert_eq!(params(&pro, Tab::Color), [Temperature, Tint, ColorDensity, Exposure, Highlights, Shadows, WhitePoint, BlackPoint, Contrast, Vignette, Chrome]);
+        assert_eq!(params(&pro, Tab::Roll), [GainRed, GainGreen, GainBlue, DensityCeiling, DyeSeparation]);
+        assert_eq!(params(&pro, Tab::Color), [Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint, BalanceStrength, Temperature, Tint, ColorDensity, Vignette, Chrome]);
         assert_eq!(params(&pro, Tab::Details), [SharpenAmount, SharpenRadius, SharpenHalo, ChromaAmount, ChromaRadius, Texture]);
         let exposure = pro.iter().find(|r| r.param == Exposure).unwrap();
         assert_eq!((exposure.block.as_str(), exposure.label.as_str()), ("Lighting", "Exposure"));

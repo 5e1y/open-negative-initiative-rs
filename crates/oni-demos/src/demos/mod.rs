@@ -1,6 +1,5 @@
 //! The demos, one a help topic. Each is a scene in `scenes/<topic>.slint` and a timeline here.
 
-mod balance_strength;
 mod crop;
 mod dust;
 mod editing;
@@ -16,7 +15,6 @@ mod slides;
 mod source_encoding;
 mod white_balance;
 
-pub use balance_strength::BalanceStrength;
 pub use crop::Crop;
 pub use dust::Dust;
 pub use editors::{curves, saturation_curve, spectrogram};
@@ -49,7 +47,6 @@ pub fn all() -> Result<Vec<Box<dyn Demo>>, String> {
         Box::new(SourceEncodingDemo::new()),
         Box::new(density_ceiling()),
         Box::new(dye_separation()),
-        Box::new(BalanceStrength::new()),
         Box::new(PaperCorrection::new()),
         Box::new(lighting()),
         Box::new(effects()),

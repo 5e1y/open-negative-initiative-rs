@@ -20,7 +20,7 @@ const PANEL: f32 = 340.0;
 const INSET: f32 = 16.0;
 
 /// The Colour tab's blocks, each with its fold key on its title's row.
-const BLOCKS: [&str; 6] = ["Colour", "Lighting", "Effects", "Curves", "Spectrogram Finishing", "Saturation Curve"];
+const BLOCKS: [&str; 6] = ["Lighting", "Colour", "Effects", "Curves", "Colour Mixer", "Saturation Curve"];
 
 /// A block's fold key, named by what it does: open, it hides the block; folded, it shows it.
 fn fold_key(w: &oni_app::MainWindow, title: &str) -> common::Placed {
@@ -87,12 +87,12 @@ pub(crate) fn the_right_column_keeps_its_width_and_its_rows_keep_their_keys() {
     // Every fold key at the column's edge, the longest title's too; the title yields, never the key.
     let keys: Vec<_> = BLOCKS.iter().map(|title| fold_key(w, title)).collect();
     assert!(on_the_columns_edge(&keys), "{:?}", BLOCKS.iter().zip(&keys).collect::<Vec<_>>());
-    let title = common::the(w, Role::Text, "Spectrogram Finishing");
-    assert!(title.x + title.width < keys[4].x, "the longest title stops before its keys: {title:?} {:?}", keys[4]);
+    let title = common::the(w, Role::Text, "Saturation Curve");
+    assert!(title.x + title.width < keys[5].x, "the longest title stops before its keys: {title:?} {:?}", keys[5]);
     rig.shot("panel-frame-colour");
     // Twin: a key pushed three points out by its title is refused.
     let mut pushed = keys.clone();
-    pushed[4].x += 3.0;
+    pushed[5].x += 3.0;
     assert!(!on_the_columns_edge(&pushed));
     let _ = std::fs::remove_dir_all(&root);
 }

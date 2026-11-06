@@ -1,6 +1,6 @@
 //! The Roll tab's settings blocks (`SettingsPane`): the flat-field's toggle, mask and sliders, the
-//! Source Encoding a file naming no profile is read by, Source Balance's named ends, and the dye
-//! family the separation runs.
+//! Scan Profile a file naming no profile is read by, Source Balance's named ends, and the dye family
+//! the separation runs.
 
 use super::Ctl;
 use crate::{MenuLine, PanelState};

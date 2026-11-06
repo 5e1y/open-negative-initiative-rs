@@ -1317,9 +1317,33 @@ msgstr "Température − : plus froid"
 msgid "Temperature +: toward warm"
 msgstr "Température + : plus chaud"
 
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Lighting"
+msgstr "Lumière"
+
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
-msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant le plus, et la ramène vers le gris avec Température et Teinte.\n\nTempérature déplace la couleur entre le bleu et le jaune, Teinte entre le vert et le magenta ; aucune ne change la luminosité de la photo.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
+msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Exposure"
+msgstr "Exposition"
+
+#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast"
+msgstr "Contraste"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Highlights"
+msgstr "Hautes lumières"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shadows"
+msgstr "Ombres"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Balance strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
+msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant le plus, et la ramène vers le gris avec Température et Teinte. Intensité de la balance est la part de cette correction qu’elles prennent : chaque photo garde sa propre correction, la part est celle de la pellicule.\n\nTempérature déplace la couleur entre le bleu et le jaune, Teinte entre le vert et le magenta ; aucune ne change la luminosité de la photo.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Crop before using the automatic balance"
@@ -1332,6 +1356,14 @@ msgstr "BALANCE DES BLANCS AUTO"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The frame's light toward grey with Temperature and Tint, scaled by Balance strength"
 msgstr "Amène la lumière de la vue vers le gris avec Température et Teinte, dosée par Intensité de la balance"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Balance strength"
+msgstr "Intensité de la balance"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shared by the {} photos of this roll."
+msgstr "Partagée par les {} photos de cette pellicule."
 
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Tint"
@@ -1353,37 +1385,13 @@ msgstr "CORRECTION PAPIER AUTO"
 msgid "Sets the three gains from the paper profile alone"
 msgstr "Règle les trois gains d’après le seul profil papier"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Lighting"
-msgstr "Lumière"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider brightens to the right. Black point and White point move the ends of the scan itself."
-msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur éclaircit vers la droite. Point noir et Point blanc déplacent les extrémités du scan lui-même."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Exposure"
-msgstr "Exposition"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Highlights"
-msgstr "Hautes lumières"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shadows"
-msgstr "Ombres"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Effects"
 msgstr "Effets"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
-msgstr "Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues.\n\nVignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit.\n\nChrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
-
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast"
-msgstr "Contraste"
+msgid "Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
+msgstr "Vignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit.\n\nChrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
 
 #: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette"
@@ -1392,6 +1400,10 @@ msgstr "Vignetage"
 #: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome"
 msgstr "Chrome"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
+msgstr "Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues.\n\nVignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit.\n\nChrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast −: toward softer, 5% a step"
@@ -1426,12 +1438,12 @@ msgid "Curves drawn by hand, one point at a time: a channel's own tints its high
 msgstr "Des courbes tracées à la main, point par point : celle d’un canal ne teinte que ses hautes lumières ou que ses ombres."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Spectrogram Finishing"
-msgstr "Finition spectrale"
+msgid "Colour Mixer"
+msgstr "Mélangeur de couleurs"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
-msgstr "Déplace une plage de couleurs à la fois sans toucher aux autres.\n\nTournez un point autour de la roue pour changer la teinte de cette couleur, vers l’extérieur ou l’intérieur pour la renforcer ou la griser. Cliquez sur un point, puis utilisez les touches fléchées."
+msgid "Spectrogram finishing: shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
+msgstr "Finition spectrale : déplace une plage de couleurs à la fois sans toucher aux autres.\n\nTournez un point autour de la roue pour changer la teinte de cette couleur, vers l’extérieur ou l’intérieur pour la renforcer ou la griser. Cliquez sur un point, puis utilisez les touches fléchées."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Saturation Curve"
@@ -1630,8 +1642,8 @@ msgid "Sharpening"
 msgstr "Netteté"
 
 #: crates/oni-ui/ui/panel/details_tab.slint
-msgid "Sharpens edges without adding colour fringing."
-msgstr "Accentue les contours sans ajouter de franges colorées."
+msgid "Sharpens edges without adding colour fringing.\n\nHalo suppression keeps a sharpened edge within the light of its neighbours, clamping the overshoot that draws a bright or dark rim along it."
+msgstr "Accentue les contours sans ajouter de franges colorées.\n\nAtténuation des halos garde un contour accentué dans la lumière de ses voisins, en écrêtant le dépassement qui trace un liseré clair ou sombre le long de lui."
 
 #: crates/oni-ui/ui/panel/details_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Amount"
@@ -1642,8 +1654,8 @@ msgid "Radius"
 msgstr "Rayon"
 
 #: crates/oni-ui/ui/panel/details_tab.slint
-msgid "Halo limit"
-msgstr "Limite de halo"
+msgid "Halo suppression"
+msgstr "Atténuation des halos"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
 msgid "Chroma Denoise"
@@ -1782,12 +1794,12 @@ msgid "Apply to Selection"
 msgstr "Appliquer à la sélection"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Source Encoding"
-msgstr "Encodage de la source"
+msgid "Scan Profile"
+msgstr "Profil du scan"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "This file names no colour profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again."
-msgstr "Ce fichier n’indique aucun profil colorimétrique : il est donc lu en sRGB. La sortie brute d’un scanner est souvent linéaire : choisissez ce que le logiciel de numérisation a écrit, et la photo est relue."
+msgid "This file names no colour profile, so it is read as sRGB. A scanner's raw output is often linear: pick the encoding the scanning software wrote, and the photograph is read again."
+msgstr "Ce fichier n’indique aucun profil colorimétrique : il est donc lu en sRGB. La sortie brute d’un scanner est souvent linéaire : choisissez l’encodage que le logiciel de numérisation a écrit, et la photo est relue."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Read as"
@@ -1900,18 +1912,6 @@ msgstr "E-6"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Dye separation"
 msgstr "Séparation des colorants"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Auto White Balance"
-msgstr "Balance des blancs auto"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's."
-msgstr "La part de la correction de la balance des blancs auto que prennent Température et Teinte. Chaque photo garde sa propre correction ; la part est celle de la pellicule."
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Strength"
-msgstr "Intensité"
 
 #: crates/oni-ui/ui/panel/state.slint
 msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
@@ -2814,8 +2814,8 @@ msgid "Contrast, Vignette and Chrome are five keys each, read on the machine's s
 msgstr "Contraste, Vignetage et Chrome ont chacun cinq touches, lues sur l’écran de la machine."
 
 #: crates/oni-app/src/app/help.rs
-msgid "Curves, Spectrogram and the saturation curve now act on the Scanner face too, after the machine's render."
-msgstr "Courbes, Finition spectrale et la courbe de saturation agissent désormais aussi sur la face Scanner, après le rendu de la machine."
+msgid "Curves, the Colour Mixer and the Saturation Curve now act on the Scanner face too, after the machine's render."
+msgstr "Courbes, le Mélangeur de couleurs et la Courbe de saturation agissent désormais aussi sur la face Scanner, après le rendu de la machine."
 
 #: crates/oni-app/src/app/help.rs
 msgid "Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays."

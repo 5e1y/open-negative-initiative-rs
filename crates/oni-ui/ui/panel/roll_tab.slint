@@ -59,7 +59,7 @@ export component RollPane inherits Pane {
         title: @tr("Flat-Field");
         demo: "flat-field";
         help: @tr("Evens out uneven lighting from the scanner, whatever you crop to.");
-        block: 11;
+        block: 10;
         modified: Store.flat-field-modified;
         folded-by-default: true;
         // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
@@ -113,9 +113,9 @@ export component RollPane inherits Pane {
         }
     }
     if PanelState.undeclared: Block {
-        title: @tr("Source Encoding");
+        title: @tr("Scan Profile");
         demo: "source-encoding";
-        help: @tr("This file names no colour profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.");
+        help: @tr("This file names no colour profile, so it is read as sRGB. A scanner's raw output is often linear: pick the encoding the scanning software wrote, and the photograph is read again.");
         // No store block: the key writes no encoding, so any index only shows it.
         block: 0;
         modified: PanelState.encoding-modified;
@@ -133,7 +133,7 @@ export component RollPane inherits Pane {
     Block {
         title: @tr("Filtration");
         help: @tr("The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own.");
-        block: 10;
+        block: 9;
         modified: Store.source-balance-modified;
         folded-by-default: true;
         // A slide's cast in two moves, each holding the other and the gains' mean; its three gains
@@ -164,7 +164,7 @@ export component RollPane inherits Pane {
         title: @tr("Highlight Detail");
         demo: "density-ceiling";
         help: @tr("Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there.");
-        block: 4;
+        block: 3;
         modified: Store.density-ceiling-modified;
         folded-by-default: true;
         StoreSlider { field: 12; label: @tr("Ceiling"); fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
@@ -187,7 +187,7 @@ export component RollPane inherits Pane {
         title: @tr("Dye Separation");
         demo: "dye-separation";
         help: @tr("Subtracts each dye's spill into the other two channels, so colours separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.");
-        block: 5;
+        block: 4;
         modified: Store.dye-separation-modified;
         folded-by-default: true;
         Field {
@@ -199,14 +199,5 @@ export component RollPane inherits Pane {
             }
         }
         StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
-    }
-    if PanelState.separation-shown: Block {
-        title: @tr("Auto White Balance");
-        demo: "balance-strength";
-        help: @tr("The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.");
-        block: 3;
-        modified: Store.balance-strength-modified;
-        folded-by-default: true;
-        StoreSlider { field: 11; label: @tr("Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
     }
 }
