@@ -15,6 +15,9 @@ import { Keyboard } from "keyboard.slint";
 export component HelpMark inherits Rectangle {
     in property <string> note;
     in property <string> demo;
+    // The column the card covers, in window points: the block it explains, so no word of it peeks out.
+    in property <length> column-x;
+    in property <length> column-width;
     width: SectionStyle.help-mark;
     height: self.width;
     Button {
@@ -28,6 +31,8 @@ export component HelpMark inherits Rectangle {
         glyph-size: SectionStyle.help-mark;
         note: root.note;
         demo: root.demo;
+        note-x: root.column-x;
+        note-width: root.column-width;
         accessible-label: @tr("What this block does");
     }
 }
@@ -65,41 +70,50 @@ export component Section inherits VerticalLayout {
         spacing: 0;
         if root.title != "": HorizontalLayout {
             spacing: Space.s;
-            // The title engraved as the rule above it, in capitals set apart as a camera's markings:
-            // the groove's shade along the letters' top, its lit edge along their foot.
+            // The title engraved as the rule above it: the groove's shade along the letters' top, its lit
+            // edge along their foot. On a short row it yields, so the keys keep to the column's edge.
             Rectangle {
-                width: word.preferred-width;
+                min-width: 0;
+                preferred-width: word.preferred-width;
+                max-width: word.preferred-width;
                 min-height: word.preferred-height;
                 Label {
                     y: -Stroke.line;
+                    width: parent.width;
                     height: parent.height;
                     role: TextRole.section;
-                    text: word.text;
-                    spaced: true;
+                    text: root.title;
+                    overflow: elide;
                     ink: DS.palette-groove;
                     accessible-role: none;
                 }
                 Label {
                     y: Stroke.line;
+                    width: parent.width;
                     height: parent.height;
                     role: TextRole.section;
-                    text: word.text;
-                    spaced: true;
+                    text: root.title;
+                    overflow: elide;
                     ink: DS.palette-groove-light;
                     accessible-role: none;
                 }
                 word := Label {
+                    width: parent.width;
                     height: parent.height;
                     role: TextRole.section;
-                    text: root.title.to-uppercase();
-                    spaced: true;
-                    accessible-label: root.title;
+                    text: root.title;
+                    overflow: elide;
                 }
                 if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
-                HelpMark { note: root.help; demo: root.demo; }
+                HelpMark {
+                    note: root.help;
+                    demo: root.demo;
+                    column-x: root.absolute-position.x + root.inset;
+                    column-width: root.width - 2 * root.inset;
+                }
             }
             if root.news != "": VerticalLayout {
                 alignment: center;

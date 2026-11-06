@@ -10,11 +10,13 @@ export component TipCard inherits Outward {
     in property <string> text;
     in property <image> picture;
     in property <bool> has-picture;
+    // A card's width, the column it covers.
+    in property <length> card-width: TipStyle.card-width;
     // The demo's side, the card's width inside its padding unless a short room asks for less.
-    in property <length> demo: TipStyle.card-width - 2 * TipStyle.padding;
+    in property <length> demo: root.card-width - 2 * TipStyle.padding;
     // The card's height without its demo, which a short room's demo is measured against.
     out property <length> bare-height: note.preferred-height + 2 * TipStyle.padding;
-    out property <length> natural-width: root.card ? TipStyle.card-width : tip-text.width + 2 * TipStyle.padding;
+    out property <length> natural-width: root.card ? root.card-width : tip-text.width + 2 * TipStyle.padding;
     out property <length> natural-height: root.card ? column.preferred-height : tip-text.preferred-height + 2 * TipStyle.padding-y;
     width: root.natural-width;
     height: root.natural-height;
@@ -30,7 +32,7 @@ export component TipCard inherits Outward {
     }
     column := VerticalLayout {
         visible: root.card;
-        width: TipStyle.card-width;
+        width: root.card-width;
         padding: TipStyle.padding;
         // The demo's place, its ground shown until the first frame lands; laid always, at no height
         // without a demo, so the card's height follows `has-picture` at once.
@@ -59,6 +61,7 @@ export component TipLayer inherits TipCard {
     in property <length> room;
     in property <length> room-height;
     card: Tip.card;
+    card-width: Tip.card-width;
     text: Tip.text;
     picture: Tip.clip;
     has-picture: Tip.has-clip;
@@ -69,7 +72,7 @@ export component TipLayer inherits TipCard {
     // it explains and never over the photo; its demo shortens so the card keeps to that room.
     property <length> under: root.room-height - Space.s - Tip.y;
     property <length> over: Tip.above - Space.s;
-    property <length> full: TipStyle.card-width - 2 * TipStyle.padding;
+    property <length> full: root.card-width - 2 * TipStyle.padding;
     property <length> whole: root.bare-height + (root.has-picture ? TipStyle.padding + root.full : 0px);
     property <bool> below: !Tip.card || root.under >= root.whole || root.under >= root.over;
     demo: max(0px, min(root.full, (root.below ? root.under : root.over) - root.bare-height - TipStyle.padding));

@@ -250,7 +250,8 @@ export global TipStyle {
     out property <length> padding-y: Space.xs;
     out property <length> offset: Space.xs;
     out property <length> max-width: 320px;
-    // A help mark's card: a square demo over its note, wide enough for a note's lines at a label's size.
+    // A help mark's card where no column is named: a square demo over its note, wide enough for a
+    // note's lines at a label's size.
     out property <length> card-width: 300px;
     out property <length> card-radius: Radius.control;
 }
@@ -302,8 +303,8 @@ export global ShellStyle {
     out property <length> export-width: DS.control-app-bar-export-width - Space.m;
     out property <length> filter-width: DS.control-app-bar-filter-width;
     out property <length> library-width: DS.control-film-sidebar-width;
+    // The right column, the editor's panel as the gallery's, so the card's edge holds between them.
     out property <length> panel-width: DS.control-panel-width;
-    out property <length> info-width: DS.control-info-sidebar-width;
     out property <length> info-description: DS.control-project-description-height;
 }
 

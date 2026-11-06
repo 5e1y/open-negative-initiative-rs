@@ -54,7 +54,7 @@ export component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         demo: "white-balance";
-        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is: Temperature reads the stops between red and blue, Tint between magenta and green. Saturation makes every colour stronger or greyer at once.");
+        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
         // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key. A run keeps the
         // key in place, idle, and counts in the status bar, so the panel never jumps.
         ButtonGroup { plate: true;
@@ -96,7 +96,7 @@ export component ColorPane inherits Pane {
         demo: "paper-correction";
         block: 9;
         modified: Store.paper-correction-modified;
-        help: @tr("Gains laid last, on a colour or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips.");
+        help: @tr("Red, Green and Blue are gains laid last, on a colour or a black and white print alike, for the paper the picture is proofed on; in any other working space they do nothing.\n\nAuto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey. The strongest stays at 0, so nothing clips.");
         ButtonGroup { plate: true;
             Button {
                 size: ButtonSize.plate;
@@ -127,7 +127,7 @@ export component ColorPane inherits Pane {
         news-note: News.lighting-note;
         news-read => { News.read("lighting.1.3.1"); }
         modified: Store.lighting-modified;
-        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself.");
+        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider brightens to the right. Black point and White point move the ends of the scan itself.");
         StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
         StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
         StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
@@ -145,7 +145,7 @@ export component ColorPane inherits Pane {
         demo: "effects";
         block: 2;
         modified: Store.effects-modified;
-        help: @tr("Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
+        help: @tr("Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
         StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
         StoreSlider { field: 9; label: @tr("Vignette"); fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
         if !PanelState.monochrome: StoreSlider { field: 10; label: @tr("Chrome"); fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
@@ -157,7 +157,7 @@ export component ColorPane inherits Pane {
         news-note: News.effects-scanner-note;
         news-read => { News.read("effects.scanner.1.3.1"); }
         block: 3;
-        help: @tr("Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
+        help: @tr("Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
         LabSlider { index: 5; label: @tr("Contrast"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; helps: [@tr("Contrast −: toward softer, 5% a step"), @tr("Double-click to bring it back to rest; {} with − or + moves three steps.", KeyWords.shift), @tr("Contrast +: toward harder, 5% a step")]; }
         LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; helps: [@tr("Vignette −: toward lighter corners, 0.1 EV a step"), @tr("Double-click to bring it back to rest; {} with − or + moves three steps.", KeyWords.shift), @tr("Vignette +: toward darker corners, 0.1 EV a step")]; }
         if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; helps: [@tr("Chrome −: toward less, 5% a step"), @tr("Double-click to bring it back to rest; {} with − or + moves three steps.", KeyWords.shift), @tr("Chrome +: toward more, 5% a step")]; }
@@ -181,7 +181,7 @@ export component ColorPane inherits Pane {
         block: 2;
         modified: Editors.spectrogram-modified;
         folded <=> Editors.spectrogram-folded;
-        help: @tr("Shifts one colour range at a time without touching the others: turn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.");
+        help: @tr("Shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.");
         SpectrogramEditor { }
     }
     if !Editors.monochrome: EditorBlock {
@@ -190,7 +190,7 @@ export component ColorPane inherits Pane {
         block: 3;
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
-        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves.");
+        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.");
         SaturationEditor { histogram: Plots.saturation; revision: Plots.saturation-revision; }
     }
 }

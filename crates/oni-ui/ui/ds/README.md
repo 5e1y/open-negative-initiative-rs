@@ -165,8 +165,10 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
   `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
-  (a menu's rule) keeps a flat line. A `Section`'s title is engraved alike under it, in capitals set apart
-  as a camera's markings, the groove's shade along its letters' top and the lit edge along their foot.
+  (a menu's rule) keeps a flat line. A `Section`'s title is engraved alike under it, in its own case (capitals
+  are the keycaps' alone), the groove's shade along its letters' top and the lit edge along their foot; on a
+  short row it yields, so the reset and fold keys keep to the column's edge. A help mark's card covers the
+  column of the block it explains, edge to edge with its inset, its note in short parts a blank line apart.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
