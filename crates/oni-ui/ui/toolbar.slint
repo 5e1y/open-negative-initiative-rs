@@ -64,10 +64,9 @@ component Item inherits Button { has-icon: true; square: true;
     clicked => { Bar.act(root.action); }
 }
 
-// `AppBar.word`: a word key, in capitals on a keycap alone.
+// `AppBar.word`: a word key.
 component Word inherits Button {
     in property <Act> action;
-    capitals: self.keycap;
     clicked => { Bar.act(root.action); }
 }
 

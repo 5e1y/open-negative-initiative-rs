@@ -6374,5 +6374,12 @@
     "title": "The feedback key draws a bug, never a chat",
     "status": "done",
     "detail": "Evaluation, Iconography: the speech bubbles beside the gear read as a chat. The key draws a bug in the Trinil set's stroke, the report it opens; the bubbles' file goes, no other key drew it."
+  },
+  {
+    "id": 1302,
+    "type": "fix",
+    "title": "One title component and one capitals rule after the merges",
+    "status": "done",
+    "detail": "Two correctors drew the engraved title apart: Engraved stays, SectionTitle goes, every column header at the section's step. The toolbar's word keys lose a property the button no longer has: the button writes capitals on a keycap alone."
   }
 ]
