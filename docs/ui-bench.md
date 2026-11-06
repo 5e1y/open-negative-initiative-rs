@@ -32,6 +32,7 @@ Each category says what it judges, what to look at, and the two ends of its scal
 - Every gap from the design system's tokens, on one grid, with a steady rhythm.
 - A density fit for a professional tool: compact, never cramped, the image given its room.
 - Alignment exact to the pixel, and optical where the eye asks for it (icons, round shapes).
+- A column's tab bar, header row and list rows share one inset, so their edges line up.
 - **Excels:** every edge lines up with another for a reason. **Fails:** a one-off gap, two rows that
   almost align, a panel filled to its edges.
 

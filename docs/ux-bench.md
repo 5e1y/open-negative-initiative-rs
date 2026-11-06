@@ -15,6 +15,8 @@ convert, adjust, carry a setting across the roll, de-dust, crop, compare, export
 - Steps, decisions and mode changes per task, and the time to the first right image.
 - The concepts are a photographer's (roll, frame, negative or positive, the roll's window), never
   the code's (stages, caches, sidecars).
+- The structure follows the work: the sidebar's sections, the panel's order and grouping of settings and
+  the steps of each flow match the sequence a photographer decides in, whatever the app did before.
 - **Excels:** no step could go without losing a decision. **Fails:** a detour through an unrelated
   screen, or a concept learnt for the app's sake.
 

@@ -1,9 +1,10 @@
 # Open Negative Initiative in Rust — working notes
 
 The Rust rewrite of Open Negative Initiative (ONI), the film negative converter and editor, native on
-macOS and Windows. The Swift app (`5e1y/open-negative-initiative`) is the reference: until this port
-reaches parity, every behaviour, constant and serialised field is copied from it, and the Swift code
-wins over any note.
+macOS and Windows. The Swift app (`5e1y/open-negative-initiative`) was the reference while the port was
+rebuilt. It is now deprecated and far behind in flows, UX and UI, which answer to the UX and UI benches
+(`docs/ux-bench.md`, `docs/ui-bench.md`) instead. What stays from it is the result: the conversion's
+maths and constants, and the sidecar format it reads.
 
 ## Hard rules
 
@@ -108,14 +109,17 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
 
 ## Goal and definition of done
 
-The port is a **strict behavioural copy** of the Swift app: the same functioning, including the hidden
-rules no panel shows (the hue compensation of the print curve in inverted saturation, the saturation
-compensation of the black and white points, dye separation, double-click behaviours, the exact placement
-of points). Only two differences are allowed: the LibRaw decode and 16-bit rendering. Port the logic from
-the Swift code, never from the interface, and prove it against Swift's outputs.
+The conversion is a **strict behavioural copy** of the Swift app's result: the same pipeline, including
+the hidden rules no panel shows (the hue compensation of the print curve in inverted saturation, the
+saturation compensation of the black and white points, dye separation, the exact placement of points).
+Only two differences are allowed there: the LibRaw decode and 16-bit rendering. Port that logic from the
+Swift code, never from its interface, and prove it against Swift's outputs.
 
-**Done** means the whole clone, every feature present and working, each proven by a check. Features come
-first on the simplified design system; the real interface work comes after.
+**Flows, UX and UI owe Swift nothing** (owner's call): they are judged on the benches and may be rethought
+whole, a sidebar or a flow included, as long as the result stays as good. A step that secures a good
+conversion, such as the dark pick in Prepare the Roll, is never cut to save time.
+
+**Done** means every feature present and working, each proven by a check.
 
 - **The parity inventory is `docs/parity/`**: every function and hidden rule of the Swift app, with its
   status (done, partial, missing), the Swift code it was read from and the Rust test that proves it. Its
