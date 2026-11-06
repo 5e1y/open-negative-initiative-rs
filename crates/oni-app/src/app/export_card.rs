@@ -27,6 +27,7 @@ mod settings;
 mod quality;
 mod writing;
 mod contact;
+mod dated;
 mod sheet_view;
 mod publishing;
 mod wiring;
@@ -241,7 +242,7 @@ impl Card {
             lens: m.lens.into(),
             film: m.film.into(),
             iso: m.iso.into(),
-            date: m.date.into(),
+            date: dated::shown(&m.date).into(),
             artist: m.artist.into(),
             copyright: m.copyright.into(),
             ready: row.is_some(),

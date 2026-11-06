@@ -6087,5 +6087,12 @@
     "title": "The export's EXIF fields lie on the panel's ground, where their faces show",
     "status": "done",
     "detail": "Evaluation (UI Clarity): under the picture the placeholder 'Your name' read as a value. The fields stood on the canvas card, whose ground is the fields' own face colour, so no face showed and a placeholder sat like a fact in a table. Each line's eight fields now lie on a flat rounded block of the panel's ground (Surface gains `rounded`, Radius.card), as every other field of the app does, so each face shows dark and a placeholder reads as the hint inside it. The export_panel check reads the drawn pixels: the Artist field's face differs from the ground beside it; twin: the canvas has the face's colour, and the block set on it fails the check."
+  },
+  {
+    "id": 1263,
+    "type": "fix",
+    "title": "The export's date reads 2026-09-14 16:46:19, the file keeps EXIF's colons",
+    "status": "done",
+    "detail": "Evaluation (UI Clarity): the Date field showed EXIF's raw 2026:09:14 16:46:19. The field now shows and takes the date dashed, as the app names its contact sheets, while the sidecar and the file keep EXIF's form (export_card::dated): a date typed dashed is written with colons, one pasted in EXIF's form is kept, anything else is left as typed. A unit test with its twins (half a date, a day-first date, words, the time's colons untouched), and the export_panel check types a dashed date through the field's callback, reads EXIF's form in the row and the dashed one back in the line."
   }
 ]

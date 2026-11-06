@@ -54,9 +54,10 @@ component FrameFields inherits VerticalLayout {
                     label: @tr("ISO");
                     TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
                 }
+                // Shown and typed as a person writes a date; Rust keeps EXIF's colons in the file.
                 Field { layout: FieldLayout.column;
                     label: @tr("Date");
-                    TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+                    TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026-09-05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
                 }
                 Field { layout: FieldLayout.column;
                     label: @tr("Artist");

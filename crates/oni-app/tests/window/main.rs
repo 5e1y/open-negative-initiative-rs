@@ -26,6 +26,7 @@ mod export_entering;
 mod export_flow;
 mod export_sheet;
 mod export_window;
+mod export_panel;
 mod export_speed;
 mod extended;
 mod first_frame;
@@ -129,6 +130,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("explorer::return_renames_and_double_click_does_not", explorer::return_renames_and_double_click_does_not),
     ("export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone", export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone),
     ("export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata", export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata),
+    ("export_panel::the_export_panel_keeps_one_step_between_its_groups", export_panel::the_export_panel_keeps_one_step_between_its_groups),
     ("export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most", export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most),
     ("export_speed::a_parameter_change_on_a_batch_is_timed", export_speed::a_parameter_change_on_a_batch_is_timed),
     ("export_speed::an_export_is_timed_stage_by_stage", export_speed::an_export_is_timed_stage_by_stage),
