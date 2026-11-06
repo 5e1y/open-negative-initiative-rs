@@ -350,8 +350,8 @@ msgid "Gold (3)"
 msgstr "Oro (3)"
 
 #: crates/oni-ui/ui/ds/readout.slint
-msgid "Double-click to type a value"
-msgstr "Haz doble clic para escribir un valor"
+msgid "Click to type a value"
+msgstr "Haz clic para escribir un valor"
 
 #: crates/oni-ui/ui/ds/roll.slint
 msgid "Previous"
@@ -372,6 +372,10 @@ msgstr "Quitar de favoritos"
 #: crates/oni-ui/ui/ds/row.slint
 msgid "Add to the favourites"
 msgstr "Añadir a favoritos"
+
+#: crates/oni-ui/ui/ds/slider.slint
+msgid "Double-click to bring it back to rest"
+msgstr "Haz doble clic para volver al reposo"
 
 #: crates/oni-ui/ui/ds/splash.slint
 msgid "Photo"

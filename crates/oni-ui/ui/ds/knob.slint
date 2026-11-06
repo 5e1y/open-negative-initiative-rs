@@ -10,7 +10,7 @@ export component Knob inherits Rectangle {
     in property <length> across: SliderStyle.row;
     in property <color> fill: SliderStyle.knob;
     in property <bool> grip: true;
-    in property <color> grip-ink: SliderStyle.grip-ink;
+    in property <color> grip-ink: root.fill.to-oklch().lightness > SliderStyle.grip-turn ? SliderStyle.grip-ink-on-light : SliderStyle.grip-ink;
     in property <bool> grown;
     // With `slide`, it settles on a value arriving from elsewhere, never under the hand.
     in property <bool> slide;

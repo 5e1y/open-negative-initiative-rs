@@ -1,10 +1,10 @@
 // `DSReadout`, a slider's name and value above its rail.
 import { Space, State, SliderStyle, FieldStyle } from "theme.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
-import { RenameField } from "fields.slint";
+import { FieldFace, RenameField } from "fields.slint";
 
 // `DSReadout`: the name, the value right in the secondary ink, both faded when off; a double click on the
-// name rests it (`resets`, `help` its tip), on the value opens a number typed over it (`typeable`).
+// name rests it (`resets`, `help` its tip), a click on the value types a number over it (`typeable`).
 export component ValueHeader inherits HorizontalLayout {
     in property <string> label;
     in property <string> value;
@@ -15,6 +15,7 @@ export component ValueHeader inherits HorizontalLayout {
     // The hand on the slider: the value in the primary ink.
     in property <bool> lit;
     property <bool> typing;
+    property <bool> hovered: entry.has-hover && entry.enabled;
     callback reset();
     callback typed(string);
     spacing: Space.s;
@@ -29,22 +30,41 @@ export component ValueHeader inherits HorizontalLayout {
             changed has-hover => { Tips.hover(self.has-hover, root.help, self.absolute-position.x, self.absolute-position.y + self.height); }
         }
     }
-    Label {
-        text: root.value;
-        role: TextRole.value;
-        tone: root.lit || root.typing ? Tone.primary : Tone.secondary;
-        horizontal-alignment: right;
-        if root.typeable: TouchArea {
-            enabled: root.enabled && !root.typing;
-            double-clicked => { root.typing = true; }
-            changed has-hover => { Tips.hover(self.has-hover, @tr("Double-click to type a value"), self.absolute-position.x, self.absolute-position.y + self.height); }
-        }
-        // Over the value, out of the row's layout so the slider never moves; Escape gives the value back.
-        if root.typing: RenameField {
-            x: parent.width - self.width;
+    // The value is a field: the box the number is typed in, run a padding past it, is the target, a field
+    // tall, and shows its face and a text cursor under the hand; out of the row, so the slider never moves.
+    Rectangle {
+        horizontal-stretch: 0;
+        face := FieldFace {
+            x: parent.width + Space.s - self.width;
             y: (parent.height - self.height) / 2;
             width: SliderStyle.entry;
             height: FieldStyle.height;
+            visible: root.hovered;
+        }
+        HorizontalLayout {
+            Label {
+                text: root.value;
+                role: TextRole.value;
+                tone: root.lit || root.typing || root.hovered ? Tone.primary : Tone.secondary;
+                horizontal-alignment: right;
+            }
+        }
+        entry := TouchArea {
+            x: face.x;
+            y: face.y;
+            width: face.width;
+            height: face.height;
+            enabled: root.typeable && root.enabled && !root.typing;
+            mouse-cursor: MouseCursor.text;
+            clicked => { root.typing = true; }
+            changed has-hover => { Tips.hover(self.has-hover && self.enabled, @tr("Click to type a value"), self.absolute-position.x, self.absolute-position.y + self.height); }
+        }
+        // Escape gives the value back.
+        if root.typing: RenameField {
+            x: face.x;
+            y: face.y;
+            width: face.width;
+            height: face.height;
             text: root.value;
             committed(t) => { root.typing = false; root.typed(t); }
             cancelled => { root.typing = false; root.typed(root.value); }
