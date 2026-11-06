@@ -75,8 +75,9 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
         let (w, px) = drawn(&rig, w);
         runs(w, &px)
     };
-    let (narrow, wide) = (keys(1440), keys(1700));
-    println!("shot {}", rig.shot("toolbar-1700").display());
+    // Both bars hold every word of the centre, so only the room between the keys can change.
+    let (narrow, wide) = (keys(1728), keys(1990));
+    println!("shot {}", rig.shot("toolbar-1990").display());
     assert_eq!(narrow[..7], wide[..7], "the keys and their gaps keep their widths: {narrow:?} {wide:?}");
     assert_eq!((narrow[2], narrow[4]), (narrow[2], narrow[2]), "the gear and the phone are square keys alike");
     // Twin: the room before them does grow with the window.
@@ -85,7 +86,7 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
 
     // The phone switch off: the gear's gap meets the feedback key, with no phone key between them.
     let shell = bar(false);
-    let hidden = keys(1440);
+    let hidden = keys(1728);
     assert_eq!((&hidden[..3], &hidden[3..5]), (&narrow[..3], &narrow[5..7]), "no phone key: {hidden:?} {narrow:?}");
     drop(shell);
 }
@@ -97,7 +98,8 @@ fn spans(w: usize, px: &[u16]) -> Vec<(usize, usize)> {
     let at = |x: usize, y: usize| px[y * w + x];
     let ground = at(30, 44);
     let top = (44..120).find(|&y| at(30, y) != ground).expect("the mode key");
-    let foot = (top..top + 80).find(|&y| at(30, y) == ground).unwrap_or(top + 20);
+    // The cap's last row within its 40 pt: a dished face's top may match the ground.
+    let foot = (top..top + 40).rev().find(|&y| at(30, y) != ground).map_or(top + 20, |y| y + 1);
     let row = (top + foot) / 2;
     let ground = at(2, row);
     let mut out: Vec<(usize, usize)> = Vec::new();

@@ -87,7 +87,7 @@ export component WelcomeSheet inherits Sheet {
             Button { text: @tr("Website"); clicked => { Help.website(); } }
             Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
             Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("GET STARTED"); kind: ButtonKind.accent; clicked => { Help.welcome-closed(); } }
+            Button { text: @tr("GET STARTED"); kind: ButtonKind.accent; keycap: true; clicked => { Help.welcome-closed(); } }
         }
     }
 }
@@ -123,6 +123,7 @@ export component ReportSheet inherits Sheet {
             Button {
                 text: Help.report-sending ? @tr("Sending…") : @tr("Send");
                 kind: ButtonKind.accent;
+                keycap: true;
                 enabled: !Help.report-sending && Help.report-message != "";
                 clicked => { Help.report-send(); }
             }

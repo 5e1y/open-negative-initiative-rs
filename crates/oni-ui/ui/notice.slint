@@ -22,6 +22,6 @@ export component NoticeSheet inherits Sheet {
     }
     HorizontalLayout {
         alignment: end;
-        Button { text: @tr("GOT IT"); clicked => { Notice.close(); } }
+        Button { text: @tr("GOT IT"); keycap: true; clicked => { Notice.close(); } }
     }
 }

@@ -49,8 +49,9 @@ width as it changes, on screen and on a contact sheet's numbers.
 
 Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`), its glyph and word on
 it. A `Keycap` stands only where the use site sets `keycap: true`: the mode switch (EDITOR, GALLERY), a
-screen's commit (EXPORT, ADD FOLDER…, PREPARE ROLL, the prepare footer's NEXT, every DONE) and the
-automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE). The cap
+screen's or a sheet's commit (EXPORT, ADD FOLDER…, PREPARE ROLL, the prepare footer's NEXT, every DONE,
+GOT IT, GET STARTED, SEND) and the automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER
+CORRECTION, DETECT, REMOVE). A question's answers and a passing notice's OK stay flat. The cap
 is a raster of Swift's `KeycapStyle` that Rust draws when the window asks `Raster.keycap(KeycapLook)`;
 `oni_app::keycaps::serve` answers it on a window (the `Shell` does it for the main window and the
 console; a check building a window alone calls it); an unserved window, as slint-viewer's, shows each
@@ -65,8 +66,8 @@ draws a still key once and a pressed one once a frame.
   meaning, never which key it is: no other tint.
 - **States**: the hand lights the face (`ButtonStyle.veil`), a press a step more and, on a keycap, sinks
   the cap (`KeycapPress`: `Depth.hover-press` under the hand, the whole way in `Depth.press-time`, held
-  `Depth.min-hold`, risen in `Depth.release-time`); `on` lights the face with the accent sunk into the
-  ground (`ButtonStyle.on`) and keeps the key's glyph, or rings a swatch (`fill`); out of reach, the whole
+  `Depth.min-hold`, risen in `Depth.release-time`); `on` lights the face as a selected row is lit, never
+  tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`); out of reach, the whole
   key fades, face and glyph.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
   under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
