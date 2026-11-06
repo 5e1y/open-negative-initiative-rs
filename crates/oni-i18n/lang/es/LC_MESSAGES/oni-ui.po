@@ -265,7 +265,7 @@ msgstr "Nombre del rollo"
 msgid "What this block does"
 msgstr "Qué hace este bloque"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/ds/containers.slint
 msgid "RESET"
 msgstr "RESTABLECER"
 
@@ -897,7 +897,7 @@ msgstr "1 bloque registrado"
 msgid "{} blocks recorded"
 msgstr "{} bloques registrados"
 
-#: crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copiar"
 
@@ -1021,7 +1021,7 @@ msgstr "Restaurar"
 msgid "Paste Settings"
 msgstr "Pegar ajustes"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
 msgid "Paste to Roll"
 msgstr "Pegar en el rollo"
 
@@ -1433,7 +1433,7 @@ msgstr "Curva de saturación"
 msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves."
 msgstr "Saturación según la luz, del punto negro al blanco: sube un punto para intensificar el color en sus tonos y bájalo para llevarlo hacia el gris. Arrastra un punto a lo largo de la luz para elegir sus tonos; haz doble clic para devolverlo a neutro. La luminosidad nunca se mueve."
 
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Crop"
 msgstr "Recorte"
 
@@ -1441,7 +1441,7 @@ msgstr "Recorte"
 msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does."
 msgstr "Arrastra las esquinas sobre la foto para recortarla. Copiar y Pegar llevan todo el encuadre a otras fotos, y Pegar en el rollo a cada fotograma del rollo; pegar los ajustes nunca lo hace."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "COPY"
 msgstr "COPIAR"
 
@@ -1449,7 +1449,7 @@ msgstr "COPIAR"
 msgid "Copies this photo's crop."
 msgstr "Copia el recorte de esta foto."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "PASTE"
 msgstr "PEGAR"
 
@@ -1461,7 +1461,7 @@ msgstr "Pega el recorte copiado en las {} fotos seleccionadas."
 msgid "Pastes the copied crop on this photo."
 msgstr "Pega el recorte copiado en esta foto."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "PASTE TO ROLL"
 msgstr "PEGAR EN EL ROLLO"
 
@@ -2098,8 +2098,8 @@ msgid "Delete"
 msgstr "Eliminar"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "ALL"
-msgstr "TODAS"
+msgid "All"
+msgstr "Todas"
 
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "Show every photo, whatever its medal"
@@ -2250,8 +2250,8 @@ msgid "Window"
 msgstr "Ventana"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "WHOLE ROLL"
-msgstr "TODO EL ROLLO"
+msgid "Whole Roll"
+msgstr "Todo el rollo"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select the Whole Roll ({})"
@@ -2262,16 +2262,8 @@ msgid "Reset Settings ({})"
 msgstr "Restablecer ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "CROP"
-msgstr "RECORTAR"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
 msgstr "Recortar y enderezar ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "COMPARE"
-msgstr "COMPARAR"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Compare"
@@ -2294,6 +2286,10 @@ msgid "Copy Settings ({})"
 msgstr "Copiar ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Paste"
+msgstr "Pegar"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings to {} photos ({})"
 msgstr "Pegar ajustes en {} fotos ({})"
 
@@ -2304,10 +2300,6 @@ msgstr "Pegar ajustes ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste to the Roll"
 msgstr "Pegar en el rollo"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "DE-DUST"
-msgstr "ELIMINAR POLVO"
 
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"

@@ -10,6 +10,7 @@ impl Ctl {
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
         if s.org.projects_surface {
+            lib.set_roll_unmeasured(false);
             let Some(group) = s.project_group() else {
                 lib.set_info_kind(0);
                 lib.set_info_empty(tr("Select a project").into());
@@ -46,6 +47,7 @@ impl Ctl {
             return;
         }
         let Some(roll) = s.roll() else {
+            lib.set_roll_unmeasured(false);
             lib.set_info_kind(0);
             lib.set_info_empty(tr("Select a roll").into());
             s.org.info_loaded = None;

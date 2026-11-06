@@ -6066,5 +6066,33 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1288,
+    "type": "design",
+    "title": "The toolbar's flat keys speak in title case; capitals stay on its keycaps",
+    "status": "done",
+    "detail": "Owner's art direction: ALL CAPS only on the keycap CTAs. The bar's word key wrote every word in capitals whatever its face; it now writes them only on a keycap (EDITOR/GALLERY, PREPARE ROLL, the export slot), so Crop, Compare, Whole Roll, Copy, Paste, Paste to Roll and De-dust, and the filter's All, read in title case. French and Spanish follow, the mode keys sharing the panel's own words."
+  },
+  {
+    "id": 1289,
+    "type": "design",
+    "title": "The accent lands on each screen's own commit",
+    "status": "done",
+    "detail": "Evaluation, UI Hierarchy (major): on a roll never measured the blue ADD FOLDER… outranked PREPARE ROLL, and it stayed the blue primary on the projects and in the ONI Trash, where it serves nothing. The bar now reads the roll's measure (Library.roll-unmeasured, cleared where no roll stands, so the projects and the Trash no longer keep the last roll's) and whether the gallery is on the archive (Bar.archive): PREPARE ROLL takes the accent while the roll waits for it, the slot keeps its keycap without it there, on the projects and in the Trash; EXPORT and an update keep theirs. The window check toolbar::the_accent_lands_on_each_screens_own_commit reads the blue on each key's face: ADD FOLDER… on an empty archive, PREPARE ROLL alone beside two unmeasured frames, none on the projects nor in the Trash; twin: the former rule (the slot always blue, PREPARE ROLL plain) fails it beside the unmeasured roll."
+  },
+  {
+    "id": 1290,
+    "type": "design",
+    "title": "RESET is a glyph on its own plate, lighter than the keys that keep the work",
+    "status": "done",
+    "detail": "Evaluation, UI Hierarchy: the editor's bar was nine equal words, RESET weighing as much as COMPARE. The reset is now a square glyph key on its own plate in both modes, as undo and redo are, its gesture and shortcut in its tooltip; the words left are the modes and the clipboard."
+  },
+  {
+    "id": 1291,
+    "type": "design",
+    "title": "The feedback key draws a bug, never a chat",
+    "status": "done",
+    "detail": "Evaluation, Iconography: the speech bubbles beside the gear read as a chat. The key draws a bug in the Trinil set's stroke, the report it opens; the bubbles' file goes, no other key drew it."
   }
 ]

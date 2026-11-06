@@ -1,7 +1,9 @@
 //! The top bar as the window widens: its keys keep their widths and only the room between them grows;
-//! and one layout in every mode, whatever the selection, the picture's right click opening its menu.
+//! one layout in every mode, whatever the selection, the picture's right click opening its menu; and the
+//! accent on each screen's own commit alone.
 
 use oni_app::app::{Options, Shell};
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Act, App, Bar, Library, Preparing};
 use oni_core::{Archive, EditorStore};
 use slint::platform::software_renderer::Rgb565Pixel;
@@ -194,5 +196,73 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     assert!(lines().is_empty(), "twin: a right click on the bar lays no menu: {:?}", lines());
     press(510.0, 200.0);
     assert!(lines().iter().any(|l| l == "Export…") && lines().iter().any(|l| l == "Move to ONI Trash"), "{:?}", lines());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The share of a key's face drawn in the accent's blue, in the window drawn now.
+fn blue(rig: &common::Rig, key: common::Placed) -> f32 {
+    let (w, px) = rig.drawn();
+    let (xs, ys) = (key.x as usize..(key.x + key.width) as usize, key.y as usize..(key.y + key.height) as usize);
+    let total = xs.len() * ys.len();
+    let lit = ys
+        .flat_map(|y| xs.clone().map(move |x| (x, y)))
+        .filter(|&(x, y)| {
+            let v = px[y * w + x].0;
+            let (r, b) = (((v >> 11) & 0x1f) * 255 / 31, (v & 0x1f) * 255 / 31);
+            b > r + 80
+        })
+        .count();
+    lit as f32 / total.max(1) as f32
+}
+
+pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the bar's accent is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-toolbar-accent-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
+        common::graded_tiff(&folder.join(name), 120, 80, tone);
+    }
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let engine = oni_app::render::Engine::shared(&gpu);
+    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1728, 900));
+    shell.window.show().unwrap();
+    let (ctl, w) = (shell.ctl.clone(), &shell.window);
+    let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
+    // The bar's key so named: the info column beside a roll never measured shows a PREPARE ROLL of its own.
+    let face = |label: &str| {
+        rig.settle();
+        let keys: Vec<_> = common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).collect();
+        assert_eq!(keys.len(), 1, "one {label:?} on the bar: {keys:?}");
+        blue(&rig, keys[0])
+    };
+    // An empty archive: a folder to add is all there is to do.
+    let add = face("ADD FOLDER…");
+    assert!(add > 0.5, "ADD FOLDER… wears the accent on the archive: {add}");
+    // A roll never measured: Prepare Roll takes it, and the slot keeps its cap without it.
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    rig.until("the roll found unmeasured", Duration::from_secs(10), || lib.get_roll_unmeasured());
+    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
+    println!("shot {}", rig.shot("toolbar-accent-unmeasured").display());
+    assert!(prepare > 0.5 && add < 0.05, "PREPARE ROLL alone wears the accent: {prepare} {add}");
+    // The projects and the ONI Trash, where neither key is the screen's: no accent.
+    lib.invoke_surface_picked(1);
+    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
+    assert!(prepare < 0.05 && add < 0.05, "no accent on the projects: {prepare} {add}");
+    lib.invoke_surface_picked(0);
+    lib.invoke_trash_row_clicked(0);
+    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
+    println!("shot {}", rig.shot("toolbar-accent-trash").display());
+    assert!(prepare < 0.05 && add < 0.05, "no accent in the ONI Trash: {prepare} {add}");
     let _ = std::fs::remove_dir_all(&root);
 }
