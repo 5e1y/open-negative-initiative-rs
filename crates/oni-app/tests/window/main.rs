@@ -39,6 +39,7 @@ mod frontier_look;
 mod gallery;
 mod gallery_cell;
 mod gallery_keys;
+mod unprepared;
 mod gallery_leftovers;
 mod gestures;
 mod headless;
@@ -118,6 +119,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("balance_kept::de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke", balance_kept::de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke),
     ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
     ("column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is", column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is),
+    ("column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset", column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
@@ -284,6 +286,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("visible::a_missing_tile_is_grey_on_its_own_layer", visible::a_missing_tile_is_grey_on_its_own_layer),
     ("gallery_cell::a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_another", gallery_cell::a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_another),
     ("gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed", gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed),
+    ("gallery_cell::a_selected_tiles_ring_reads_on_a_light_photo", gallery_cell::a_selected_tiles_ring_reads_on_a_light_photo),
+    ("unprepared::a_roll_still_to_prepare_is_marked_in_the_navigator", unprepared::a_roll_still_to_prepare_is_marked_in_the_navigator),
     ("visible::a_triplet_with_a_pass_gone_is_marked", visible::a_triplet_with_a_pass_gone_is_marked),
     ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck),
     ("upgrade::a_swift_roll_opened_and_left_rewrites_no_sidecar", upgrade::a_swift_roll_opened_and_left_rewrites_no_sidecar),

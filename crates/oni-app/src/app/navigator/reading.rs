@@ -4,8 +4,8 @@
 use super::*;
 
 /// One folder's listing: its subfolders (`None` while the disk refuses it), its state, whether
-/// its roll marker is there, and the stock the marker names.
-type Listing = (Option<Vec<String>>, Presence, bool, Option<&'static str>);
+/// its roll marker is there, the stock the marker names, and whether its photos ask for Prepare Roll.
+type Listing = (Option<Vec<String>>, Presence, bool, Option<&'static str>, bool);
 
 impl Ctl {
     /// The navigator waits for the folder opened, whose read marks its rolls.
@@ -44,18 +44,21 @@ impl Ctl {
                 .flatten()
                 .and_then(|film| oni_settings::film::film_stock(film.stock.as_deref()))
                 .map(|kind| kind.id);
-            (children, state, roll, stock)
+            let unprepared = children.is_some() && super::super::organising::roll_card::unprepared(Path::new(folder));
+            (children, state, roll, stock, unprepared)
         };
         favourites::read_apart(wanted, LISTERS, favourites::STUCK, read, |landed| with_shell(move |c| c.listed_apart(landed)));
     }
 
     fn listed_apart(self: &Rc<Self>, landed: Vec<(String, Listing)>) {
-        let listed = {
+        let (listed, marked) = {
             let mut s = self.state.borrow_mut();
             let mut found = Vec::with_capacity(landed.len());
             let mut listed = Vec::with_capacity(landed.len());
-            for (folder, (children, state, roll, stock)) in landed {
+            let mut marked = false;
+            for (folder, (children, state, roll, stock, unprepared)) in landed {
                 if children.is_some() {
+                    marked |= if unprepared { s.nav.unprepared.insert(folder.clone()) } else { s.nav.unprepared.remove(&folder) };
                     // A mark of the hand's that the disk now shows is no longer needed.
                     if s.nav.roll_edits.get(&folder) == Some(&roll) {
                         s.nav.roll_edits.remove(&folder);
@@ -74,9 +77,25 @@ impl Ctl {
                 listed.push((folder, children));
             }
             s.noted(found);
-            listed
+            (listed, marked)
         };
         self.listed(listed);
+        if marked {
+            self.publish_navigator();
+        }
+    }
+
+    /// Sidecars the app wrote: their rows' folders listed again, as a roll prepared or reset
+    /// changes the mark its row shows.
+    pub(in crate::app) fn navigator_wrote(&self, written: &[String]) {
+        {
+            let mut s = self.state.borrow_mut();
+            let folders: HashSet<String> = written.iter().map(|p| paths::parent(p)).filter(|f| s.nav.rows.contains(f)).collect();
+            for folder in folders {
+                s.nav.model.list(&folder, true);
+            }
+        }
+        self.list_wanted();
     }
 
     /// `reveal(current)`: beside a photo, the navigator unfolds down to the photo's folder and

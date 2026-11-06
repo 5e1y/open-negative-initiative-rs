@@ -6556,5 +6556,33 @@
     "title": "A click on a folder's row gives the rows the keyboard unringed; the keys ring the pick",
     "status": "done",
     "detail": "UI and UX evaluation (Colour, Micro-interactions): a click on a navigator row drew the accent ring on it at rest, a second vivid blue beside the main key. As a pressed slider does, a click now gives the rows the keyboard with no ring; Tab or a key acting on them (an arrow, Space, Return) rings the picked row, and losing the keyboard forgets the click. Checked through the window's real event path, its pointer hook first: a click on a photo already hands the grid the arrows and Return, and ⌘ and ⇧ clicks gather photos in the grid (window check gallery) and in the filmstrip; those findings came from the evaluation's tool, which skips the hook and the modifiers. Window check gallery_keys: a click rings nothing, twin an arrow rings the pick; through the hook a click on a photo gives → and Return to the grid, twin unhooked the rows keep the arrows; ⌘ then ⇧ in the filmstrip gather A to D, twin a plain click leaves one photo."
+  },
+  {
+    "id": 1330,
+    "type": "fix",
+    "title": "A selected tile's ring reads on a light photo: its dark edge lies inside the ring, no longer under it",
+    "status": "done",
+    "detail": "Evaluation, UI Colour: a selected tile was marked by a thin white outline alone, faint on light photos. SelectionRing laid its dark edge one line in, where the two-point ring covering the bounds hid it; the edge now lies just inside the ring in the contrast edge's ink, so the ring reads white, dark, then the photo, on a sky as on a shadow. The gallery, Prepare the Roll's frames, the column's thumbnails and the projects' drop ring share the fix. Check: gallery_cell's selected ring, the same tile unselected as its twin, failing on the former ring."
+  },
+  {
+    "id": 1331,
+    "type": "feature",
+    "title": "A roll still to prepare carries the panel's warning mark in the navigator",
+    "status": "done",
+    "detail": "Evaluation, UI Iconography: a prepared roll and an unprepared one differed only by a folder glyph, which tells a marked roll from a folder, never its measure. Each listed row now reads with its listing, off the interface thread, whether photos lie in it and none is measured or a slide, the roll card's own rule (roll_card::unprepared); the row then shows the warning mark in the card's ink and says Not prepared yet to assistive tools and in its tooltip. A sidecar the app writes lists its row's folder again, so Prepare Roll or Reset the Roll moves the mark at once. Check: unprepared, a measured roll, a slide's and a folder of folders as twins, failing without the relisting."
+  },
+  {
+    "id": 1332,
+    "type": "design",
+    "title": "The favourites' view is a funnel key lit while on, and an empty list speaks at its top on the rows' inset",
+    "status": "done",
+    "detail": "Evaluation, UI Iconography and Spacing: the star marked a favourite folder and also toggled the favourites-only view; the view is now a funnel (filter.svg, drawn in Trinil's stroke) on a flat key lit while on, the star kept for the mark alone. 'No Projects' floated mid-column, laid over the whole column; it, No Favourites and an unreachable base now share RowsEmpty, at the list's top on the rows' text inset with the hint beneath, the projects' saying how one is made. Check: column_edges' empty lists, the grid's centred state as twin, and the key's checked state off then on."
+  },
+  {
+    "id": 1333,
+    "type": "design",
+    "title": "A rounded row selected is the tab bar's raised pill",
+    "status": "done",
+    "detail": "Evaluation, UI Art direction: the gallery, the sidebar and Settings read as bare beside the editor's panel. One discreet touch within the art direction: the selection of the navigator, of Settings' and of the presets' side lists is the raised pill the tab bar slides under its tab (Outward on TabsStyle.pill), so a column's selection and its tab bar speak alike. A tree's list rows keep their flat band, which joins several selected; the tiles stay flat, being the photos, their medals and seals already the metal."
   }
 ]

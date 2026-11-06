@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection } from "navigator.slint";
-import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, EmptyState, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
+import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 
@@ -99,6 +99,15 @@ export component Tree inherits Surface {
             rename-edited(t) => { Library.row-rename-edited(t); }
             pin-clicked(command, shift) => { Library.tree-pin-clicked(command, shift); }
         }
+        // No project yet: said where the first would stand, on the rows' inset.
+        if Library.surface == 1 && Library.projects-empty != "": HorizontalLayout {
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
+            RowsEmpty {
+                title: Library.projects-empty;
+                detail: @tr("Select photos in the Archive, then choose New Project.");
+            }
+        }
         // `TreeDrop` on the projects: Rust resolves where a drag of rows would land.
         if Library.surface == 1: RowTree {
             vertical-stretch: 1;
@@ -146,8 +155,6 @@ export component Tree inherits Surface {
             }
         }
     }
-    // The fact alone: the grid beside says how a project is made, wider than this column.
-    if Library.surface == 1 && Library.projects-empty != "": EmptyState { title: Library.projects-empty; }
     // The menu at a point in window coordinates.
     function open-menu(x: length, y: length) {
         root.menu-x = x - root.absolute-position.x;

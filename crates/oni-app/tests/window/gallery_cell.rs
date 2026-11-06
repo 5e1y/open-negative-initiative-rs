@@ -138,3 +138,57 @@ pub(crate) fn a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed() {
     rig.settle();
     rig.shot("pair-tile");
 }
+
+/// The light of the window's pixel at a point of the grid's document, the three channels summed.
+fn light_at(drawn: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), lib: &Library, scale: f32, x: f32, y: f32) -> i32 {
+    let (px, py) = (((lib.get_grid_x() + x) * scale) as usize, ((lib.get_grid_y() + y - lib.get_scroll()) * scale) as usize);
+    let v = drawn.1[py * drawn.0 + px].0;
+    i32::from((v >> 11) & 0x1f) * 8 + i32::from((v >> 5) & 0x3f) * 4 + i32::from(v & 0x1f) * 8
+}
+
+/// A selected tile's ring reads on a light photo: the ring on its bounds, then a dark edge between
+/// it and the photo, so the ring never melts into a pale sky.
+pub(crate) fn a_selected_tiles_ring_reads_on_a_light_photo() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return println!("SKIPPED selected ring: {e}"),
+    };
+    let d = disk();
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    let shell = launch(&d, &gpu);
+    let lib = shell.window.global::<Library>();
+    let scale = rig.window.scale_factor();
+    // The folder whose photos the screen shows lighter, whichever way the conversion turns them.
+    let mut lightest = (0, d.root.join("Home/One"));
+    for folder in [d.root.join("Home/One"), d.root.join("Home/Two")] {
+        open(&rig, &shell, &folder);
+        rig.settle();
+        let a = tile(&shell, "A");
+        let photo = light_at(&rig.drawn(), &lib, scale, a.x + a.width / 2.0, a.y + a.height / 2.0);
+        if photo > lightest.0 {
+            lightest = (photo, folder);
+        }
+    }
+    open(&rig, &shell, &lightest.1);
+    // Across the left edge at mid height: the ring's first point, the edge just inside it, the photo.
+    let across = |drawn: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), t: &oni_app::Tile| {
+        let y = t.y + t.height / 2.0;
+        [0.5, 2.5, 6.5].map(|dx| light_at(drawn, &lib, scale, t.x + dx, y))
+    };
+    let parted = |[ring, edge, photo]: [i32; 3]| photo > 450 && ring > 700 && edge < photo - 150;
+    let a = tile(&shell, "A");
+    lib.invoke_tile_clicked(a.index, false, false);
+    rig.settle();
+    let a = tile(&shell, "A");
+    assert!(a.selected);
+    let picked = across(&rig.drawn(), &a);
+    assert!(parted(picked), "the white ring, a dark edge, then the light photo: {picked:?}");
+    rig.shot("selected-ring");
+    // Twin: the same tile once B is picked shows its light photo to its edge.
+    lib.invoke_tile_clicked(tile(&shell, "B").index, false, false);
+    rig.settle();
+    let a = tile(&shell, "A");
+    let left = across(&rig.drawn(), &a);
+    assert!(!a.selected && !parted(left) && left[2] > 450, "unselected, neither ring nor edge: {left:?}");
+}

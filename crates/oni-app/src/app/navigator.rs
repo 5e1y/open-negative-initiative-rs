@@ -86,6 +86,8 @@ pub(super) struct Nav {
     listed_rolls: HashSet<String>,
     /// Make a Roll and Back to a Folder until the folder is read again.
     roll_edits: HashMap<String, bool>,
+    /// The listed rows whose photos ask for Prepare Roll, read with their listing.
+    unprepared: HashSet<String>,
     /// Each roll's stock: the opened folder's as its tree draws them, a listed one's from its marker.
     opened_stocks: HashMap<String, &'static str>,
     listed_stocks: HashMap<String, &'static str>,
@@ -123,6 +125,7 @@ impl Nav {
             opened_rolls: HashSet::new(),
             listed_rolls: HashSet::new(),
             roll_edits: HashMap::new(),
+            unprepared: HashSet::new(),
             opened_stocks: HashMap::new(),
             listed_stocks: HashMap::new(),
             watcher: Arc::new(()),

@@ -117,6 +117,28 @@ pub(crate) fn measured_or_slide(s: &oni_settings::PipelineSettings) -> bool {
     s.roll_reference.is_some() || s.mode == oni_settings::ConversionMode::Positive
 }
 
+/// Whether a folder's roll asks for Prepare Roll as its card would say: a photo lies in it, out of
+/// the ONI Trash, and none is measured or a slide. Reads the disk; a measured frame ends the look.
+pub(in crate::app) fn unprepared(folder: &std::path::Path) -> bool {
+    let Ok(listing) = std::fs::read_dir(folder) else { return false };
+    let mut held = false;
+    for path in listing.flatten().map(|e| e.path()) {
+        let hidden = path.file_name().is_none_or(|n| n.to_string_lossy().starts_with('.'));
+        if hidden || !oni_library::library::is_importable(&path) || !path.is_file() {
+            continue;
+        }
+        let Ok(loaded) = oni_settings::sidecar::read(&path, oni_decode::decodes_via_mosaic(&path), false) else { continue };
+        if loaded.trashed_at.is_some() {
+            continue;
+        }
+        if measured_or_slide(&loaded.settings) {
+            return false;
+        }
+        held = true;
+    }
+    held
+}
+
 #[cfg(test)]
 mod slide_tests {
     use super::measured_or_slide;
