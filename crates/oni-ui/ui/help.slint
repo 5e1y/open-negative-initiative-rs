@@ -150,9 +150,8 @@ export component ConsoleWindow inherits AppWindow {
                 spacing: Space.s;
                 Badge { text: root.blocks == 0 ? @tr("No block recorded") : root.blocks == 1 ? @tr("1 block recorded") : @tr("{} blocks recorded", root.blocks); }
                 Rectangle { horizontal-stretch: 1; }
-                // AppKit's own keys in Swift's console, their words as written.
-                Button { text: @tr("Copy"); capitals: false; clicked => { root.copy(); } }
-                Button { text: root.reveal-word; capitals: false; clicked => { root.reveal(); } }
+                Button { text: @tr("Copy"); clicked => { root.copy(); } }
+                Button { text: root.reveal-word; clicked => { root.reveal(); } }
             }
             Scroller {
                 vertical-stretch: 1;

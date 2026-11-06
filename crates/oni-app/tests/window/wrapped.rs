@@ -103,20 +103,20 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     rig.settle();
     println!("shot {}", rig.shot("wrapped-title").display());
     let deck = eyebrows(&wrapped);
-    assert_eq!(deck.first().map(String::as_str), Some("THIS YEAR"));
-    assert!(deck.contains(&"THE ONLY THING I SEE IS GOLD".to_string()));
-    assert!(deck.contains(&"YOUR SIGNATURE LOOK".to_string()));
-    assert_eq!(deck.last().map(String::as_str), Some("SEE YOU NEXT YEAR"));
+    assert_eq!(deck.first().map(String::as_str), Some("This year"));
+    assert!(deck.contains(&"The only thing I see is gold".to_string()));
+    assert!(deck.contains(&"Your signature look".to_string()));
+    assert_eq!(deck.last().map(String::as_str), Some("See you next year"));
     let card = |eyebrow: &str| {
         let cards = wrapped.get_cards();
         (0..cards.row_count()).filter_map(|i| cards.row_data(i)).find(|c| c.eyebrow == eyebrow).unwrap()
     };
-    assert_eq!((card("THIS YEAR").figure.as_str(), card("THIS YEAR").caption.as_str()), ("1", "negative brought back to life"));
-    assert_eq!(card("YOUR MOST EDITED PHOTO").caption.as_str(), "A.tif \u{2014} overcooked?");
-    assert!(card("YOUR HANDS KNEW THE WAY").caption.contains("Lighting"));
-    assert_eq!(card("YOUR GO-TO BALANCE").caption.as_str(), "pressed 1 times");
-    assert_eq!(card("YOUR SIGNATURE LOOK").figure.as_str(), "Portra warm");
-    assert_eq!(card("THE ONLY THING I SEE IS GOLD").photos.row_count(), 1);
+    assert_eq!((card("This year").figure.as_str(), card("This year").caption.as_str()), ("1", "negative brought back to life"));
+    assert_eq!(card("Your most edited photo").caption.as_str(), "A.tif \u{2014} overcooked?");
+    assert!(card("Your hands knew the way").caption.contains("Lighting"));
+    assert_eq!(card("Your go-to balance").caption.as_str(), "pressed 1 times");
+    assert_eq!(card("Your signature look").figure.as_str(), "Portra warm");
+    assert_eq!(card("The only thing I see is gold").photos.row_count(), 1);
     rig.key(" ");
     assert!(wrapped.get_dealt());
     assert_eq!(wrapped.get_index(), 0, "twin: the first key deals the deck rather than turning it");
@@ -149,7 +149,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     ctl.act(oni_app::Act::Wrapped);
     rig.until("the summary without A", Duration::from_secs(10), || wrapped.get_shown());
     let kept = eyebrows(&wrapped);
-    assert!(!kept.contains(&"THIS YEAR".to_string()) && !kept.contains(&"THE ONLY THING I SEE IS GOLD".to_string()), "{kept:?}");
+    assert!(!kept.contains(&"This year".to_string()) && !kept.contains(&"The only thing I see is gold".to_string()), "{kept:?}");
     wrapped.invoke_close();
 
     // December offers the year once; any other month offers nothing.

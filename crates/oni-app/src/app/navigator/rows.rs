@@ -90,7 +90,7 @@ impl Ctl {
                         let state = reach::row_words(Presence::Offline(Away::Disconnected), p, &s.nav.computer).0;
                         tr!("{name} — {state}", name = name, state = state)
                     } else {
-                        tr!("Add {name}", name = name).to_uppercase()
+                        tr!("Add {name}", name = name)
                     };
                     WelcomeLine { title: title.into(), path: p.clone().into(), enabled: !away }
                 })

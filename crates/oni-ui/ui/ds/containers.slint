@@ -32,6 +32,41 @@ export component HelpMark inherits Rectangle {
     }
 }
 
+// The one header of every column, a block's or a panel's: its words as written, a step over the labels
+// under it, engraved as the rule above it, the groove's shade along their top and its lit edge at their foot.
+export component SectionTitle inherits Rectangle {
+    in property <string> text;
+    preferred-width: word.preferred-width;
+    min-height: word.preferred-height;
+    Label {
+        y: -Stroke.line;
+        width: parent.width;
+        height: parent.height;
+        role: TextRole.section;
+        text: root.text;
+        wrap: word-wrap;
+        ink: DS.palette-groove;
+        accessible-role: none;
+    }
+    Label {
+        y: Stroke.line;
+        width: parent.width;
+        height: parent.height;
+        role: TextRole.section;
+        text: root.text;
+        wrap: word-wrap;
+        ink: DS.palette-groove-light;
+        accessible-role: none;
+    }
+    word := Label {
+        width: parent.width;
+        height: parent.height;
+        role: TextRole.section;
+        text: root.text;
+        wrap: word-wrap;
+    }
+}
+
 // `DSSection`: a rule above every block, then a title row with its note, reset and fold keys. Every
 // block of the editor's panel has a note, so each title wears its "?".
 export component Section inherits VerticalLayout {
@@ -65,36 +100,9 @@ export component Section inherits VerticalLayout {
         spacing: 0;
         if root.title != "": HorizontalLayout {
             spacing: Space.s;
-            // The title engraved as the rule above it, in capitals set apart as a camera's markings:
-            // the groove's shade along the letters' top, its lit edge along their foot.
-            Rectangle {
-                width: word.preferred-width;
-                min-height: word.preferred-height;
-                Label {
-                    y: -Stroke.line;
-                    height: parent.height;
-                    role: TextRole.section;
-                    text: word.text;
-                    spaced: true;
-                    ink: DS.palette-groove;
-                    accessible-role: none;
-                }
-                Label {
-                    y: Stroke.line;
-                    height: parent.height;
-                    role: TextRole.section;
-                    text: word.text;
-                    spaced: true;
-                    ink: DS.palette-groove-light;
-                    accessible-role: none;
-                }
-                word := Label {
-                    height: parent.height;
-                    role: TextRole.section;
-                    text: root.title.to-uppercase();
-                    spaced: true;
-                    accessible-label: root.title;
-                }
+            SectionTitle {
+                text: root.title;
+                width: self.preferred-width;
                 if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
@@ -110,7 +118,7 @@ export component Section inherits VerticalLayout {
             if root.block >= 0: Button {
                 size: ButtonSize.mini;
                 horizontal-stretch: 0;
-                text: @tr("RESET");
+                text: @tr("Reset");
                 visible: root.modified;
                 enabled: root.modified;
                 clicked => { root.reset(root.block); }

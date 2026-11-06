@@ -19,7 +19,7 @@ export component RollPane inherits Pane {
             if PanelState.roll-state == 0 && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
             if PanelState.roll-state == 0: Button {
                 size: ButtonSize.plate;
-                text: @tr("PREPARE THE ROLL…");
+                text: @tr("Prepare the Roll…");
                 enabled: PanelState.can-prepare;
                 clicked => { PanelState.prepare-roll(); }
             }
@@ -31,7 +31,7 @@ export component RollPane inherits Pane {
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
                 size: ButtonSize.plate;
-                text: PanelState.roll-unmeasured == 1 ? @tr("INCLUDE IT") : @tr("INCLUDE THEM");
+                text: PanelState.roll-unmeasured == 1 ? @tr("Include It") : @tr("Include Them");
                 help: @tr("Gives the photos left out this roll's measurement and settings, their own look kept.");
                 clicked => { PanelState.join-roll(); }
             }
@@ -83,7 +83,7 @@ export component RollPane inherits Pane {
         if PanelState.flat-field-on && PanelState.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
         Button {
             size: ButtonSize.plate;
-            text: PanelState.taking-mask ? @tr("SETTING…") : @tr("USE THIS PHOTO AS FLAT-FIELD");
+            text: PanelState.taking-mask ? @tr("Setting…") : @tr("Use This Photo as Flat-Field");
             enabled: PanelState.can-take-mask;
             clicked => { PanelState.take-mask(); }
         }
@@ -101,13 +101,13 @@ export component RollPane inherits Pane {
         }
         if root.flat-settings: ButtonGroup { plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: PanelState.loading-mask ? @tr("LOADING…") : @tr("LOAD…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
-            Button { size: ButtonSize.plate; text: @tr("RENAME"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
-            Button { size: ButtonSize.plate; text: @tr("FOLDER"); clicked => { PanelState.mask-folder(); } }
+            Button { size: ButtonSize.plate; text: PanelState.loading-mask ? @tr("Loading…") : @tr("Load…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { size: ButtonSize.plate; text: @tr("Rename"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
+            Button { size: ButtonSize.plate; text: @tr("Folder"); clicked => { PanelState.mask-folder(); } }
         }
         if root.flat-settings: Button {
             size: ButtonSize.plate;
-            text: @tr("APPLY TO SELECTION");
+            text: @tr("Apply to Selection");
             enabled: PanelState.flat-picked > 0;
             clicked => { PanelState.flat-apply-selection(); }
         }

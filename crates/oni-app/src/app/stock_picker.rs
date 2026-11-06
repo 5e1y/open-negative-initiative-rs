@@ -45,7 +45,7 @@ impl Ctl {
                     })
                     .collect();
                 let rows: Vec<StockRow> = cells.chunks(columns).map(|c| StockRow { cells: ModelRc::new(VecModel::from(c.to_vec())) }).collect();
-                StockBrand { brand: brand.to_uppercase().into(), rows: ModelRc::new(VecModel::from(rows)) }
+                StockBrand { brand: brand.into(), rows: ModelRc::new(VecModel::from(rows)) }
             })
             .collect();
         g.set_brands(ModelRc::new(VecModel::from(brands)));

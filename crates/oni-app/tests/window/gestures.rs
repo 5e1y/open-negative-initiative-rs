@@ -156,7 +156,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.chord_with(&[Key::Control, Key::Shift], "v");
     let confirm = w.global::<Confirm>();
     assert!(confirm.get_shown());
-    assert_eq!((confirm.get_title().as_str(), confirm.get_key().as_str()), ("Another Roll", "PASTE SETTINGS"));
+    assert_eq!((confirm.get_title().as_str(), confirm.get_key().as_str()), ("Another Roll", "Paste Settings"));
     assert_eq!(confirm.get_message().as_str(), "You are trying to apply settings from one roll to another: results may vary.");
     rig.settle();
     println!("shot {}", rig.shot("another-roll").display());

@@ -212,7 +212,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     menus.invoke_delete_preset(1);
     rig.pump();
     assert!(w.global::<Confirm>().get_shown());
-    assert_eq!(w.global::<Confirm>().get_key().as_str(), "DELETE");
+    assert_eq!(w.global::<Confirm>().get_key().as_str(), "Delete");
     rig.key("\u{1b}");
     assert_eq!(oni_core::presets::files(&shelf).len(), 2, "twin: Cancel deletes nothing");
     menus.invoke_delete_preset(1);

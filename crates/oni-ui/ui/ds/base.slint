@@ -80,8 +80,6 @@ export component Label inherits Text {
     in property <Tone> tone: root.role == TextRole.note ? Tone.secondary : Tone.primary;
     in property <color> ink: Tones.ink(root.tone);
     in property <bool> centred;
-    // Letters set apart by the seal's tracking, as a stamp in capitals reads.
-    in property <bool> spaced;
     font-family: Type.family;
     font-size: root.role == TextRole.value || root.role == TextRole.caption || root.role == TextRole.button ? Type.caption
         : root.role == TextRole.title ? Type.title
@@ -90,7 +88,7 @@ export component Label inherits Text {
         : Type.label;
     font-weight: root.role == TextRole.button || root.role == TextRole.section ? Type.strong : Type.regular;
     line-height-factor: root.role == TextRole.note ? Type.leading : 1;
-    letter-spacing: root.spaced ? DS.control-seal-tracking * 1px : root.role == TextRole.button ? ButtonStyle.tracking : 0px;
+    letter-spacing: root.role == TextRole.button ? ButtonStyle.tracking : 0px;
     color: root.ink;
     vertical-alignment: center;
     horizontal-alignment: root.centred ? center : left;

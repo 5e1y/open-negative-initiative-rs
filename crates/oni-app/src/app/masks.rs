@@ -273,8 +273,8 @@ impl Ctl {
         d.set_message(message.into());
         d.set_field(field.is_some());
         d.set_text(field.unwrap_or_default().into());
-        d.set_cancel(cancel.to_uppercase().into());
-        d.set_key(key.to_uppercase().into());
+        d.set_cancel(cancel.into());
+        d.set_key(key.into());
         // Before the sheet lays its field, which then takes the keys itself.
         w.invoke_refocus();
         d.set_shown(true);

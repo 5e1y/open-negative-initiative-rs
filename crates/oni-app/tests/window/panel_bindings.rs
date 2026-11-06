@@ -73,11 +73,11 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (panel, framing) = (w.global::<PanelState>(), w.global::<Framing>());
-    // A block's RESET, the one shown on its title's row.
+    // A block's Reset, the one shown on its title's row.
     let reset = |title: &str| {
         let titles = common::placed(w, Role::Text, title);
-        let keys: Vec<_> = common::placed(w, Role::Button, "RESET").into_iter().filter(|k| titles.iter().any(|t| t.level_with(k))).collect();
-        assert_eq!(keys.len(), 1, "one RESET on the row of {title}, found {keys:?}");
+        let keys: Vec<_> = common::placed(w, Role::Button, "Reset").into_iter().filter(|k| titles.iter().any(|t| t.level_with(k))).collect();
+        assert_eq!(keys.len(), 1, "one Reset on the row of {title}, found {keys:?}");
         let (x, y) = keys[0].middle();
         click(&rig, x, y);
     };

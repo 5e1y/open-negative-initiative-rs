@@ -21,7 +21,7 @@ export component PaperSheet inherits Sheet {
                 spacing: Space.m;
                 alignment: start;
                 VerticalLayout {
-                    Row { kind: RowKind.heading; title: @tr("DOWNLOAD HERE"); }
+                    Row { kind: RowKind.heading; title: @tr("Download Here"); }
                     for name[i] in Exporting.paper-direct: Row {
                         form: RowForm.sidebar;
                         title: name;
@@ -32,7 +32,7 @@ export component PaperSheet inherits Sheet {
                     }
                 }
                 VerticalLayout {
-                    Row { kind: RowKind.heading; title: @tr("ON THE MAKER’S SITE"); }
+                    Row { kind: RowKind.heading; title: @tr("On the Maker’s Site"); }
                     for name[i] in Exporting.paper-browsed: Row {
                         form: RowForm.sidebar;
                         title: name;

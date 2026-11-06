@@ -41,7 +41,7 @@ export component PairingSheet inherits Sheet {
     }
     ButtonGroup { plate: true; align: GroupAlign.end;
         if Pairing.can-forget: Button {
-            text: @tr("FORGET PHONES");
+            text: @tr("Forget Phones");
             kind: ButtonKind.destructive;
             help: @tr("Every paired phone is cut and pairs again from a new code.");
             clicked => { Pairing.forget(); }

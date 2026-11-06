@@ -154,14 +154,14 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
         let k = w.global::<Library>().get_banner_keys();
         (0..k.row_count()).filter_map(|i| k.row_data(i)).map(|k| k.to_string()).collect::<Vec<_>>()
     };
-    assert_eq!(keys(), ["LOCATE…", "REMOVE FROM FAVOURITES"], "never read, it holds nothing to forget");
+    assert_eq!(keys(), ["Locate…", "Remove from Favourites"], "never read, it holds nothing to forget");
     rig.settle();
     rig.shot("visible-favourite-gone-gallery");
     // Its key takes the favourite away and leaves the banner with Locate alone.
     w.global::<Library>().invoke_banner_acted(1);
     rig.pump();
     assert!(!Favourites::load(&d.support).unwrap().paths.contains(&gone));
-    assert_eq!(keys(), ["LOCATE…"]);
+    assert_eq!(keys(), ["Locate…"]);
     drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);
 }
@@ -299,7 +299,7 @@ pub(crate) fn a_triplet_with_a_pass_gone_is_marked() {
     ctl.probe_presence();
     rig.until("P0's red pass found gone", Duration::from_secs(10), || !tile(&shell, "P0").gone_pass.is_empty());
     let p = tile(&shell, "P0");
-    assert_eq!(p.gone_pass.as_str(), "R MISSING");
+    assert_eq!(p.gone_pass.as_str(), "R missing");
     assert_eq!(p.note.as_str(), "Its red pass “P1.tif” is missing beside it.");
     assert!(!p.missing, "the lead itself is there");
     // Twin: the whole triplet keeps its plain seal.

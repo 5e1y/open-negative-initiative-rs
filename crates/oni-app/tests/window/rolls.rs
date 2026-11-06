@@ -109,7 +109,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the reach", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
     assert_eq!(w.global::<Confirm>().get_title().as_str(), "Reset the Roll of 2 Photos?");
-    assert_eq!(w.global::<Confirm>().get_key().as_str(), "RESET 2 PHOTOS");
+    assert_eq!(w.global::<Confirm>().get_key().as_str(), "Reset 2 Photos");
     rig.key("\u{1b}");
     assert!(settings_of(&canonical("A.tif")).roll_reference.is_some(), "twin: Cancel resets nothing");
     ctl.act(oni_app::Act::ResetToDefault);

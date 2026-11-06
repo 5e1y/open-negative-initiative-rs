@@ -171,7 +171,7 @@ impl Ctl {
         let faces: Vec<WrappedFace> = deck
             .iter()
             .map(|c| WrappedFace {
-                eyebrow: c.eyebrow.to_uppercase().into(),
+                eyebrow: c.eyebrow.as_str().into(),
                 figure: c.figure.clone().unwrap_or_default().into(),
                 caption: c.caption.clone().into(),
                 photos: ModelRc::new(VecModel::from(vec![Image::default(); c.photos.len()])),

@@ -177,7 +177,7 @@ impl Ctl {
                     let c = w.global::<Confirm>();
                     c.set_title(title.into());
                     c.set_message(message.into());
-                    c.set_key(tr("DOWNLOAD").into());
+                    c.set_key(tr("Download").into());
                     c.set_shown(true);
                     w.invoke_refocus();
                 }

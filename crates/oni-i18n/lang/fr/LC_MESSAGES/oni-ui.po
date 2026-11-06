@@ -17,7 +17,7 @@ msgstr "Fichier"
 msgid "Open Folder…"
 msgstr "Ouvrir un dossier…"
 
-#: crates/oni-ui/ui/app.slint
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint
 msgid "Pair Phone…"
 msgstr "Jumeler un téléphone…"
 
@@ -89,7 +89,7 @@ msgstr "Or"
 msgid "Rolls"
 msgstr "Pellicules"
 
-#: crates/oni-ui/ui/app.slint
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Prepare the Roll…"
 msgstr "Préparer la pellicule…"
 
@@ -201,9 +201,9 @@ msgstr "Afficher le panneau ({})"
 msgid "Hide the Panel ({})"
 msgstr "Masquer le panneau ({})"
 
-#: crates/oni-ui/ui/confirm.slint
-msgid "CANCEL"
-msgstr "ANNULER"
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+msgid "Cancel"
+msgstr "Annuler"
 
 #: crates/oni-ui/ui/dng.slint
 msgid "The DNGs Are Written"
@@ -229,10 +229,6 @@ msgstr "Garder les fichiers NEF incompatibles"
 msgid "The best option if you already opened them in another software."
 msgstr "Le meilleur choix si vous les avez déjà ouverts dans un autre logiciel."
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
-msgid "Cancel"
-msgstr "Annuler"
-
 #: crates/oni-ui/ui/dng.slint
 msgid "Download and Install"
 msgstr "Télécharger et installer"
@@ -254,8 +250,8 @@ msgid "RGB"
 msgstr "RGB"
 
 #: crates/oni-ui/ui/ds/collections.slint
-msgid "FLAGGED"
-msgstr "MARQUÉE"
+msgid "Flagged"
+msgstr "Marquée"
 
 #: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "Roll name"
@@ -265,9 +261,9 @@ msgstr "Nom de la pellicule"
 msgid "What this block does"
 msgstr "Ce que fait ce bloc"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/toolbar.slint
-msgid "RESET"
-msgstr "RÉINITIALISER"
+#: crates/oni-ui/ui/ds/containers.slint
+msgid "Reset"
+msgstr "Réinitialiser"
 
 #: crates/oni-ui/ui/ds/containers.slint
 msgid "Show {}"
@@ -378,12 +374,12 @@ msgid "Photo"
 msgstr "Photo"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
-msgid "YOUR YEAR"
-msgstr "VOTRE ANNÉE"
+msgid "Your Year"
+msgstr "Votre année"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
-msgid "ON FILM"
-msgstr "EN ARGENTIQUE"
+msgid "On Film"
+msgstr "En argentique"
 
 #: crates/oni-ui/ui/editors.slint
 msgid "Luma"
@@ -665,7 +661,7 @@ msgstr "Espace de travail"
 msgid "Replace"
 msgstr "Remplacer"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-ui/ui/export.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Rename"
 msgstr "Renommer"
 
@@ -674,12 +670,12 @@ msgid "Paper Profiles"
 msgstr "Profils papier"
 
 #: crates/oni-ui/ui/export_papers.slint
-msgid "DOWNLOAD HERE"
-msgstr "TÉLÉCHARGER ICI"
+msgid "Download Here"
+msgstr "Télécharger ici"
 
 #: crates/oni-ui/ui/export_papers.slint
-msgid "ON THE MAKER’S SITE"
-msgstr "SUR LE SITE DU FABRICANT"
+msgid "On the Maker’s Site"
+msgstr "Sur le site du fabricant"
 
 #: crates/oni-ui/ui/export_papers.slint
 msgid "Open the Maker’s Page"
@@ -717,7 +713,7 @@ msgstr "Installer"
 msgid "EXPORT"
 msgstr "EXPORTER"
 
-#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
 msgid "Export…"
 msgstr "Exporter…"
 
@@ -881,7 +877,7 @@ msgstr "Envoi…"
 msgid "Send"
 msgstr "Envoyer"
 
-#: crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/settings.slint
 msgid "Diagnostic Log"
 msgstr "Journal de diagnostic"
 
@@ -897,7 +893,7 @@ msgstr "1 bloc enregistré"
 msgid "{} blocks recorded"
 msgstr "{} blocs enregistrés"
 
-#: crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copy"
 msgstr "Copier"
 
@@ -913,9 +909,9 @@ msgstr "Laissez cette fenêtre ouverte, reproduisez le problème, puis cliquez s
 msgid "Not measured yet"
 msgstr "Pas encore mesurée"
 
-#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/toolbar.slint
-msgid "PREPARE ROLL"
-msgstr "PRÉPARER LA PELLICULE"
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Prepare Roll"
+msgstr "Préparer la pellicule"
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -1013,7 +1009,7 @@ msgstr "Galerie"
 msgid "Move to ONI Trash"
 msgstr "Placer dans la Corbeille ONI"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/menus.slint
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/navigator.slint
 msgid "Restore"
 msgstr "Restaurer"
 
@@ -1021,11 +1017,11 @@ msgstr "Restaurer"
 msgid "Paste Settings"
 msgstr "Coller les réglages"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
 msgid "Undo"
 msgstr "Annuler"
 
@@ -1086,20 +1082,20 @@ msgid "Apply"
 msgstr "Appliquer"
 
 #: crates/oni-ui/ui/missing.slint
-msgid "SHOW THE FOLDER"
-msgstr "AFFICHER LE DOSSIER"
+msgid "Show the Folder"
+msgstr "Afficher le dossier"
 
 #: crates/oni-ui/ui/missing.slint
-msgid "BACK TO THE GALLERY"
-msgstr "RETOUR À LA GALERIE"
+msgid "Back to the Gallery"
+msgstr "Retour à la galerie"
 
 #: crates/oni-ui/ui/missing.slint
-msgid "DISCARD"
-msgstr "ABANDONNER"
+msgid "Discard"
+msgstr "Abandonner"
 
 #: crates/oni-ui/ui/missing.slint
-msgid "RETRY"
-msgstr "RÉESSAYER"
+msgid "Retry"
+msgstr "Réessayer"
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "No Favourites"
@@ -1110,10 +1106,6 @@ msgid "Star a folder to keep it here, ready to open."
 msgstr "Ajoutez une étoile à un dossier pour le garder ici, prêt à ouvrir."
 
 #: crates/oni-ui/ui/navigator.slint
-msgid "RESTORE"
-msgstr "RESTAURER"
-
-#: crates/oni-ui/ui/navigator.slint
 msgid "The archive shows a folder of your disk and everything under it."
 msgstr "Les archives montrent un dossier de votre disque et tout ce qu’il contient."
 
@@ -1121,9 +1113,9 @@ msgstr "Les archives montrent un dossier de votre disque et tout ce qu’il cont
 msgid "Your photos were in:"
 msgstr "Vos photos se trouvaient dans :"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/toolbar.slint
-msgid "ADD FOLDER…"
-msgstr "AJOUTER UN DOSSIER…"
+#: crates/oni-app/src/app/navigator/catch_up.rs crates/oni-ui/ui/navigator.slint
+msgid "Add Folder…"
+msgstr "Ajouter un dossier…"
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "Parent Folder"
@@ -1166,8 +1158,8 @@ msgid "Too wide and ONI reads everything; too narrow and photos stay out."
 msgstr "Trop large, ONI lit tout ; trop étroit, des photos restent à l’écart."
 
 #: crates/oni-ui/ui/navigator.slint
-msgid "ADD"
-msgstr "AJOUTER"
+msgid "Add"
+msgstr "Ajouter"
 
 #: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "DONE"
@@ -1198,8 +1190,8 @@ msgid "Pair Phone"
 msgstr "Jumeler un téléphone"
 
 #: crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/settings.slint
-msgid "FORGET PHONES"
-msgstr "OUBLIER LES TÉLÉPHONES"
+msgid "Forget Phones"
+msgstr "Oublier les téléphones"
 
 #: crates/oni-ui/ui/pairing.slint
 msgid "Every paired phone is cut and pairs again from a new code."
@@ -1441,17 +1433,13 @@ msgstr "Recadrage"
 msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does."
 msgstr "Faites glisser les coins sur la photo pour la recadrer. Copier et Coller reportent tout le cadrage sur d’autres photos, Coller sur la pellicule sur chaque vue de la pellicule ; le collage des réglages ne le fait jamais."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "COPY"
-msgstr "COPIER"
-
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copies this photo's crop."
 msgstr "Copie le recadrage de cette photo."
 
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "PASTE"
-msgstr "COLLER"
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Paste"
+msgstr "Coller"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on the {} selected photos."
@@ -1460,10 +1448,6 @@ msgstr "Colle le recadrage copié sur les {} photos sélectionnées."
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on this photo."
 msgstr "Colle le recadrage copié sur cette photo."
-
-#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "PASTE TO ROLL"
-msgstr "COLLER SUR LA PELLICULE"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on every photo measured with this roll."
@@ -1538,12 +1522,12 @@ msgid "Reset Measuring Window"
 msgstr "Réinitialiser la fenêtre de mesure"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "APPLY WINDOW"
-msgstr "APPLIQUER LA FENÊTRE"
+msgid "Apply Window"
+msgstr "Appliquer la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "SET WINDOW"
-msgstr "RÉGLER LA FENÊTRE"
+msgid "Set Window"
+msgstr "Régler la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it."
@@ -1586,12 +1570,12 @@ msgid "Detect shows, under a veil, every pixel past the roll's whites on a negat
 msgstr "Détecter montre, sous un voile, chaque pixel au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin dans la fenêtre et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "HIDE"
-msgstr "MASQUER"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "DETECT"
 msgstr "DÉTECTER"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Hides the dust found, changing nothing."
+msgstr "Masque les poussières trouvées, sans rien changer."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."
@@ -1674,10 +1658,6 @@ msgid "This photo was never measured with its roll, so these settings act on it 
 msgstr "Cette photo n’a jamais été mesurée avec sa pellicule : ces réglages n’agissent que sur elle."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "PREPARE THE ROLL…"
-msgstr "PRÉPARER LA PELLICULE…"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Acts on this photo, the only one of its roll."
 msgstr "Agit sur cette photo, la seule de sa pellicule."
 
@@ -1694,12 +1674,12 @@ msgid "{} photos of this roll were left out of its measurement, so these setting
 msgstr "{} photos de cette pellicule sont restées hors de sa mesure : ces réglages ne les atteignent pas."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "INCLUDE IT"
-msgstr "L’INCLURE"
+msgid "Include It"
+msgstr "L’inclure"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "INCLUDE THEM"
-msgstr "LES INCLURE"
+msgid "Include Them"
+msgstr "Les inclure"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Gives the photos left out this roll's measurement and settings, their own look kept."
@@ -1761,33 +1741,29 @@ msgstr "Masque"
 msgid "No mask yet: take a frame of the empty light panel, shot on this rig."
 msgstr "Pas encore de masque : prenez une vue de la table lumineuse vide, sur ce même montage."
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "SETTING…"
-msgstr "APPLICATION…"
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Setting…"
+msgstr "Application…"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "USE THIS PHOTO AS FLAT-FIELD"
-msgstr "UTILISER CETTE PHOTO COMME FLAT-FIELD"
+msgid "Use This Photo as Flat-Field"
+msgstr "Utiliser cette photo comme flat-field"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Load…"
+msgstr "Charger…"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "LOADING…"
-msgstr "CHARGEMENT…"
+msgid "Folder"
+msgstr "Dossier"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "LOAD…"
-msgstr "CHARGER…"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "RENAME"
-msgstr "RENOMMER"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "FOLDER"
-msgstr "DOSSIER"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "APPLY TO SELECTION"
-msgstr "APPLIQUER À LA SÉLECTION"
+msgid "Apply to Selection"
+msgstr "Appliquer à la sélection"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Source Encoding"
@@ -1938,20 +1914,8 @@ msgid "Details"
 msgstr "Détails"
 
 #: crates/oni-ui/ui/prepare.slint
-msgid "Setting…"
-msgstr "Application…"
-
-#: crates/oni-ui/ui/prepare.slint
 msgid "Use This Frame as Flat-Field"
 msgstr "Utiliser cette vue comme flat-field"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Loading…"
-msgstr "Chargement…"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Load…"
-msgstr "Charger…"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Film type"
@@ -2098,8 +2062,8 @@ msgid "Delete"
 msgstr "Supprimer"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "ALL"
-msgstr "TOUTES"
+msgid "All"
+msgstr "Toutes"
 
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "Show every photo, whatever its medal"
@@ -2178,16 +2142,12 @@ msgid "A colour table laid over ONI's conversion, in sRGB. Export it as a .cube 
 msgstr "Une table de couleurs posée sur la conversion d’ONI, en sRGB. Exportez-la en fichier .cube, modifiez-la dans toute app qui l’ouvre, puis utilisez le fichier : chaque enregistrement s’affiche aussitôt."
 
 #: crates/oni-ui/ui/settings.slint
-msgid "EXPORT…"
-msgstr "EXPORTER…"
+msgid "Use a File…"
+msgstr "Utiliser un fichier…"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "USE A FILE…"
-msgstr "UTILISER UN FICHIER…"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "MEASURED"
-msgstr "MESURÉ"
+msgid "Measured"
+msgstr "Mesuré"
 
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone Remote"
@@ -2198,28 +2158,20 @@ msgid "The ONI app on a phone on the same network edits the photo open here, onc
 msgstr "L’app ONI sur un téléphone du même réseau modifie la photo ouverte ici, une fois jumelée en scannant un code."
 
 #: crates/oni-ui/ui/settings.slint
-msgid "PAIR PHONE…"
-msgstr "JUMELER UN TÉLÉPHONE…"
+msgid "Check for Updates"
+msgstr "Rechercher les mises à jour"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "CHECK FOR UPDATES"
-msgstr "RECHERCHER LES MISES À JOUR"
+msgid "What's New"
+msgstr "Nouveautés"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "WHAT'S NEW"
-msgstr "NOUVEAUTÉS"
+msgid "Welcome"
+msgstr "Bienvenue"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "WELCOME"
-msgstr "BIENVENUE"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "REPORT A PROBLEM…"
-msgstr "SIGNALER UN PROBLÈME…"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "DIAGNOSTIC LOG"
-msgstr "JOURNAL DE DIAGNOSTIC"
+msgid "Report a Problem…"
+msgstr "Signaler un problème…"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "General"
@@ -2258,6 +2210,10 @@ msgid "Select the Whole Roll ({})"
 msgstr "Sélectionner toute la pellicule ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "RESET"
+msgstr "RÉINITIALISER"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Reset Settings ({})"
 msgstr "Réinitialiser les réglages ({})"
 
@@ -2290,8 +2246,16 @@ msgid "Scanner: a lab scanner's keypad, density and colour in steps on its machi
 msgstr "Scanner : le clavier d’un scanner de labo, densité et couleur par pas sur le rendu de sa machine"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "COPY"
+msgstr "COPIER"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"
 msgstr "Copier les réglages ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "PASTE"
+msgstr "COLLER"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings to {} photos ({})"
@@ -2302,12 +2266,20 @@ msgid "Paste settings ({})"
 msgstr "Coller les réglages ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "PASTE TO ROLL"
+msgstr "COLLER SUR LA PELLICULE"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Paste to the Roll"
 msgstr "Coller sur la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "DE-DUST"
 msgstr "DÉPOUSSIÉRER"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "PREPARE ROLL"
+msgstr "PRÉPARER LA PELLICULE"
 
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
@@ -2340,6 +2312,10 @@ msgstr "Éditeur (Espace ou {})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "UPDATING"
 msgstr "MISE À JOUR"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "ADD FOLDER…"
+msgstr "AJOUTER UN DOSSIER…"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Star a folder of scans and open it · export stays on {}"
@@ -2770,10 +2746,6 @@ msgstr[0] "Déplacer la photo"
 msgstr[1] "Déplacer {n} photos"
 
 #: crates/oni-app/src/app/gestures/told.rs
-msgid "UNDO"
-msgstr "ANNULER"
-
-#: crates/oni-app/src/app/gestures/told.rs
 msgid "“{name}” is no longer here: the nearest folder still there is shown."
 msgstr "« {name} » n’est plus là : le dossier le plus proche encore présent est affiché."
 
@@ -2946,10 +2918,6 @@ msgid "Ungroup {count} Photos"
 msgstr "Dissocier {count} photos"
 
 #: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "Add Folder…"
-msgstr "Ajouter un dossier…"
-
-#: crates/oni-app/src/app/navigator/catch_up.rs
 msgid "Add Another Folder…"
 msgstr "Ajouter un autre dossier…"
 
@@ -2975,7 +2943,7 @@ msgstr "Le dossier n’a pas pu être renommé : un fichier qu’il contient est
 msgid "Show the Parent Folder"
 msgstr "Afficher le dossier parent"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/reach.rs
 msgid "Remove from Favourites"
 msgstr "Retirer des favoris"
 
@@ -2983,7 +2951,7 @@ msgstr "Retirer des favoris"
 msgid "Add to Favourites"
 msgstr "Ajouter aux favoris"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/reach.rs
 msgid "Locate…"
 msgstr "Le retrouver…"
 
@@ -3003,7 +2971,7 @@ msgstr "Convertir en pellicule"
 msgid "New Folder Inside"
 msgstr "Nouveau dossier à l’intérieur"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/reach.rs
 msgid "Remove from Library…"
 msgstr "Retirer de la bibliothèque…"
 
@@ -3324,8 +3292,8 @@ msgid "A photo deleted in ONI waits here, its file untouched, until it is restor
 msgstr "Une photo supprimée dans ONI attend ici, son fichier intact, jusqu’à ce qu’elle soit restaurée."
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "ALL in the rating filter shows every photo."
-msgstr "TOUTES, dans le filtre des médailles, affiche chaque photo."
+msgid "All in the rating filter shows every photo."
+msgstr "Toutes, dans le filtre des médailles, affiche chaque photo."
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
@@ -3434,16 +3402,16 @@ msgid "Not found"
 msgstr "Introuvable"
 
 #: crates/oni-app/src/app/organising/reach.rs
-msgid "R MISSING"
-msgstr "R MANQUANTE"
+msgid "R missing"
+msgstr "R manquante"
 
 #: crates/oni-app/src/app/organising/reach.rs
-msgid "G MISSING"
-msgstr "V MANQUANTE"
+msgid "G missing"
+msgstr "V manquante"
 
 #: crates/oni-app/src/app/organising/reach.rs
-msgid "B MISSING"
-msgstr "B MANQUANTE"
+msgid "B missing"
+msgstr "B manquante"
 
 #: crates/oni-app/src/app/organising/reach.rs
 msgid "These are the last thumbnails ONI kept; nothing has been changed."
@@ -3470,20 +3438,8 @@ msgid "In the cloud: opening it downloads it"
 msgstr "Dans le cloud : l’ouvrir le télécharge"
 
 #: crates/oni-app/src/app/organising/reach.rs
-msgid "FOLLOW"
-msgstr "SUIVRE"
-
-#: crates/oni-app/src/app/organising/reach.rs
-msgid "LOCATE…"
-msgstr "LE RETROUVER…"
-
-#: crates/oni-app/src/app/organising/reach.rs
-msgid "REMOVE FROM FAVOURITES"
-msgstr "RETIRER DES FAVORIS"
-
-#: crates/oni-app/src/app/organising/reach.rs
-msgid "REMOVE FROM LIBRARY…"
-msgstr "RETIRER DE LA BIBLIOTHÈQUE…"
+msgid "Follow"
+msgstr "Suivre"
 
 #: crates/oni-app/src/app/organising/reach.rs
 msgid "{disk} not connected"
@@ -3986,8 +3942,8 @@ msgid "{layout} — next: {next}"
 msgstr "{layout} — suivant : {next}"
 
 #: crates/oni-app/src/app/updates.rs
-msgid "DOWNLOAD"
-msgstr "TÉLÉCHARGER"
+msgid "Download"
+msgstr "Télécharger"
 
 #: crates/oni-app/src/app/updates.rs
 msgid "{name} is in Downloads, its signature checked: open it to install."

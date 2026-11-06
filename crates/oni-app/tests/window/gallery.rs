@@ -211,7 +211,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     let confirm = w.global::<Confirm>();
     assert!(confirm.get_shown());
     assert_eq!(confirm.get_title().as_str(), "Delete \u{201c}Coast trip\u{201d}?");
-    assert_eq!(confirm.get_key().as_str(), "DELETE PROJECT");
+    assert_eq!(confirm.get_key().as_str(), "Delete Project");
     rig.key(&ret);
     assert!(confirm.get_shown(), "the red key takes no Return");
     confirm.invoke_answered(true);
