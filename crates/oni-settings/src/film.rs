@@ -48,8 +48,8 @@ const fn stock(id: &'static str, display_name: &'static str, brand: &'static str
 pub const FILM_STOCKS: [FilmStockKind; 41] = [
     stock("generic-azure", "Generic Azure", "Generic"),
     stock("generic-black-and-white", "Generic Black & White", "Generic"),
-    stock("generic-color-negative", "Generic Color Negative", "Generic"),
-    stock("generic-color-positive", "Generic Color Positive", "Generic"),
+    stock("generic-color-negative", "Generic Colour Negative", "Generic"),
+    stock("generic-color-positive", "Generic Colour Positive", "Generic"),
     stock("generic-redscale", "Generic Redscale", "Generic"),
     stock("agfaphoto-apx", "AgfaPhoto APX", "AgfaPhoto"),
     stock("cinestill-400d", "CineStill 400D", "CineStill"),

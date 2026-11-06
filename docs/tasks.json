@@ -5674,5 +5674,12 @@
     "title": "The gallery inspector stands on the whole roll, whatever medal the filter keeps",
     "status": "done",
     "detail": "Evaluation s-db78d310: with the Gold filter keeping no photo of Roll #8, the inspector said Select a roll while the navigator still lit Roll #8 as the folder opened. The roll the gallery stands on was looked up among the gallery bands, which the medal filter cuts; it is now the band of the shown anchor folder, else of the opened folder, read off the archive whole tree (`Archive::band`). The card, its Prepare key, the toolbar Prepare and Reset the Roll and every field written act on every frame of the roll, never on its medalled frames alone. The roll card window check holds the card and Prepare on the folder under an empty Gold filter, and fails on the former lookup; the archive check reads a folder band whole under a filter."
+  },
+  {
+    "id": 1208,
+    "type": "interface",
+    "title": "The generic colour stocks spelt as the rest of the app",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: Generic Color Negative broke the British spelling every other text of the app uses (the Colour tab, Colour density). The catalogue two generic colour stocks read Generic Colour Negative and Generic Colour Positive, in the inspector, the stock picker, a project stocks and the export Film field alike; their ids, which sidecars and markers hold, are unchanged, and brand names (Kodak ColorPlus, Lucky Color 200, Mira Color) keep their makers spelling."
   }
 ]
