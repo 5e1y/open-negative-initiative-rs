@@ -6255,5 +6255,33 @@
     "title": "The switch reads on or off at a glance, never as a slider at its minimum",
     "status": "done",
     "detail": "Evaluation s-0abd2d65 (Clarity): off, the slide lever showed the slider's grey rail with the knob at its start, a slider at its minimum; on and off differed by a rail 9 % whiter. The lever keeps the slider's knob and its travel, but now runs in a slot of its own (ToggleStyle.slot, so a slider's rail made thinner never thins it): an Inward hollow cut to the canvas as the tab bar's, dark while off, lit up to the knob (the slider's lit) while on, never tinted, the accent staying the view's one primary. The knob uncovers the state's mark, an O ring on the hollow while off and an I on the lit stretch while on, as a power switch's. The design system's README and the ui-spec say so."
+  },
+  {
+    "id": 1268,
+    "type": "design",
+    "title": "The crop's thirds read on a shadow as on a sky",
+    "status": "done",
+    "detail": "The evaluators found the crop grid mid-grey with no halo, nearly lost over the dark shed and the mid-tones. Its source: the thirds drew half a point at the faint guide's 35 % white, which a 1x screen halves into one grey pixel, a horizontal third losing its light core entirely between two rows. The thirds are now a whole point in the crop edge bars' rest ink (55 % white), edged a point either side by the contrast shade as every guide over a photo is, so the core reads over the shed as over the sky and stays quieter than the frame's own 90 % line. GuideLine gives its breadth (band), which the thirds take instead of repeating it. Seen on a 1x window check: a 139-164 core between 24-57 edges on dark green, deep red and magenta."
+  },
+  {
+    "id": 1269,
+    "type": "design",
+    "title": "Compare's divider carries a slider's knob",
+    "status": "done",
+    "detail": "The evaluators found Compare's divider a bare 1 pt white line with no handle, faint over a light sky. The split is a slider laid over the photo, so it now wears the panel sliders' own knob (the small level keycap with its two grip lines) on its middle, growing under the hand as theirs does, over the line and its contrast edges; the whole height still grabs and a press anywhere on it still moves the split. Nothing new to tune: the knob is the sliders'."
+  },
+  {
+    "id": 1270,
+    "type": "design",
+    "title": "The crop's kept size reads as every other value",
+    "status": "done",
+    "detail": "The evaluators found the kept dimensions in a one-off black bold pill. The crop tab set them on the scanner's LCD glass, which belongs to the scanner and the status bar's count. Kept is now a ValueHeader, the readout every slider uses: its name in the label ink, the size right in the secondary value ink, its real unit (px) kept."
+  },
+  {
+    "id": 1271,
+    "type": "design",
+    "title": "The canvas header names the space first and glosses it after",
+    "status": "done",
+    "detail": "The evaluators found the canvas header dimming the working space's name (Display P3) and brightening its gloss (phones & screens), which inverts value and description. The Picker's secondary words came before its value, and the chip passed the name as those words and the gloss as the value. The secondary words now follow the value (note, replacing prefix, which only the chip used): the chip shows the name in the primary ink, then the gloss in the secondary, and short of room the gloss elides first. Its accessible name reads the same, name then gloss."
   }
 ]
