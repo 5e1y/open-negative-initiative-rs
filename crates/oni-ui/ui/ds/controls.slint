@@ -1,11 +1,10 @@
 // The controls: buttons, the toggle and the field; the slider is `slider.slint`, the tabs `tabs.slint`.
-import { DS } from "tokens.slint";
-import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, ToggleStyle, FieldStyle } from "theme.slint";
-import { Label, TextRole, Tone, Clicks } from "base.slint";
+import { Space, State, ButtonStyle, TabsStyle, ToggleStyle, SliderStyle } from "theme.slint";
+import { Label, Tone, Clicks } from "base.slint";
+import { KeyScope } from "keyboard.slint";
 
-import { Dot } from "marks.slint";
 import { ButtonKind, ButtonSize, Look, KeyInk, Button } from "button.slint";
-import { SliderFill, Knob, Slider } from "slider.slint";
+import { SliderFill, Knob, Rail, Slider } from "slider.slint";
 export { ButtonKind, ButtonSize, Look, KeyInk, Button, SliderFill, Knob, Slider }
 import { TextField, RenameField } from "fields.slint";
 export { TextField, RenameField }
@@ -47,27 +46,9 @@ export component ButtonGroup inherits HorizontalLayout {
 // switch named for accessibility alone.
 export enum LabelSide { none, after, before }
 
-import { TabsStyle } from "theme.slint";
-import { Inward, Outward, Depth } from "depth.slint";
-import { KeyScope } from "keyboard.slint";
-
-// `DSToggle.Glyph`: a cross for off, a check for on, stroked with round ends, dark on the lit pill.
-component ToggleGlyph inherits Path {
-    in property <bool> checked;
-    in property <bool> lit;
-    width: ToggleStyle.glyph;
-    height: ToggleStyle.glyph;
-    viewbox-width: 10;
-    viewbox-height: 10;
-    commands: root.checked ? "M 0 5.5 L 3.8 9 L 10 1.2" : "M 1 1 L 9 9 M 9 1 L 1 9";
-    stroke: root.lit ? ToggleStyle.glyph-lit : ToggleStyle.glyph-idle;
-    stroke-width: ToggleStyle.glyph-stroke;
-    stroke-line-cap: round;
-    animate stroke { duration: TabsStyle.slide; easing: spring(0.38); }
-}
-
-// A switch: a thumb that slides to the lit side. Its owner holds the state: a click only asks,
-// so an undo or another photo moves the thumb as much as the hand does. Its words flip it too.
+// A switch, a camera's slide lever: the slider's knob on a short rail of its own, slid to the far end
+// and the rail lit up to it while on. Its owner holds the state: a click only asks, so an undo or
+// another photo moves the knob as much as the hand does. Its words flip it too.
 export component Toggle inherits HorizontalLayout {
     in property <bool> on;
     in property <string> label;
@@ -77,6 +58,13 @@ export component Toggle inherits HorizontalLayout {
     in property <bool> enabled: true;
     callback toggled(bool);
     property <bool> worded: root.label != "" && root.label-side != LabelSide.none;
+    // Where the knob stands along its travel, sliding on the grab spring as a tab's pill.
+    property <float> shown: root.on ? 1 : 0;
+    animate shown { duration: TabsStyle.slide; easing: spring(0.38); }
+    function flip() {
+        Clicks.press();
+        root.toggled(!root.on);
+    }
     alignment: start;
     spacing: Space.s;
     // Alone, the switch keeps its own width, so a row's label pushes it to the end.
@@ -86,57 +74,41 @@ export component Toggle inherits HorizontalLayout {
         tone: root.enabled ? Tone.primary : Tone.secondary;
         wrap: root.wrap ? word-wrap : no-wrap;
         horizontal-stretch: 1;
-        TouchArea { enabled: root.enabled; clicked => { Clicks.press(); root.toggled(!root.on); } }
+        TouchArea { enabled: root.enabled; clicked => { root.flip(); } }
     }
     VerticalLayout {
         alignment: root.wrap ? start : center;
-        // A small key's height, the hollow on its middle: the hand finds the switch as it finds a key.
         Rectangle {
-            height: ButtonStyle.small-height;
-            width: ToggleStyle.width;
+            height: SliderStyle.row;
+            width: SliderStyle.knob-width + ToggleStyle.travel;
             opacity: root.enabled ? 1 : State.disabled;
             accessible-role: checkbox;
             accessible-checked: root.on;
             accessible-label: root.label;
-            // `DSToggle`'s hollow, its pill sliding on the grab spring as a tab's.
-            Inward {
-                height: ToggleStyle.height;
-                hollow: true;
-                ground: Colour.canvas;
-                radius: self.height / 2;
-                Outward {
-                    x: ToggleStyle.inset + (root.on ? ToggleStyle.cell : 0px);
-                    y: ToggleStyle.inset;
-                    width: ToggleStyle.cell;
-                    height: parent.height - 2 * ToggleStyle.inset;
-                    radius: self.height / 2;
-                    fill: ToggleStyle.thumb;
-                    animate x { duration: TabsStyle.slide; easing: spring(0.38); }
-                }
-                ToggleGlyph { x: ToggleStyle.inset + (ToggleStyle.cell - self.width) / 2; lit: !root.on; }
-                ToggleGlyph { x: ToggleStyle.inset + ToggleStyle.cell + (ToggleStyle.cell - self.width) / 2; checked: true; lit: root.on; }
+            Rail {
+                y: (parent.height - self.height) / 2;
+                overhang: SliderStyle.knob-width / 2;
+                fill: SliderFill.level;
+                at: root.shown;
             }
-            TouchArea {
+            // The knob grows under the hand, as a slider's.
+            Knob {
+                centre: SliderStyle.knob-width / 2 + root.shown * ToggleStyle.travel;
+                grown: root.enabled && area.has-hover;
+            }
+            area := TouchArea {
                 enabled: root.enabled;
-                clicked => {
-                    Clicks.press();
-                    root.toggled(!root.on);
-                }
+                clicked => { root.flip(); }
             }
             // Space or Return flips it while it holds the keyboard.
             KeyScope {
-                y: (parent.height - ToggleStyle.height) / 2;
-                height: ToggleStyle.height;
                 enabled: root.enabled;
                 radius: self.height / 2;
                 key-pressed(event) => {
                     if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
                         return reject;
                     }
-                    if (!event.repeat) {
-                        Clicks.press();
-                        root.toggled(!root.on);
-                    }
+                    if (!event.repeat) { root.flip(); }
                     accept
                 }
             }
@@ -147,6 +119,6 @@ export component Toggle inherits HorizontalLayout {
         tone: root.enabled ? Tone.primary : Tone.secondary;
         wrap: root.wrap ? word-wrap : no-wrap;
         horizontal-stretch: root.wrap ? 1 : 0;
-        TouchArea { enabled: root.enabled; clicked => { Clicks.press(); root.toggled(!root.on); } }
+        TouchArea { enabled: root.enabled; clicked => { root.flip(); } }
     }
 }

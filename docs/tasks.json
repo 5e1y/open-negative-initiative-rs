@@ -5786,5 +5786,26 @@
     "title": "No space tab is dimmed: ProPhoto stays pressable at full ink",
     "status": "done",
     "detail": "Evaluation R1: ProPhoto greyed in JPEG measured 2.20:1 and read as unavailable with no reason; the note meant to say why was shown only in a state that never held. The tab is drawn as the others: chosen, it takes the TIFF along, as before, and its purpose says TIFF 16-bit only. The Tabs' dimmed state, used nowhere else, is removed with its lab specimens."
+  },
+  {
+    "id": 1187,
+    "type": "design",
+    "title": "Inputs and selects are flat: the text fields and the picker's field share one flat face",
+    "status": "done",
+    "detail": "Owner's decision: inputs and selects carry no well and no relief. FieldFace (ds/fields.slint) is dsTextField's chrome laid flat, the canvas's dark at a card's corner, its edge lit and ringed by the keyboard's ring while it holds the focus; TextField, SizeFields, DateFields and the picker's field face wear it. Inward loses its lit rim and ring, which only the fields used. PickerStyle, equal to the field's gauges, merges into FieldStyle, and FieldStyle.padding, read by nothing, goes. The lip check reads an Inset, as fields no longer have a lip; the lab's Fields page loses the well tunables no field shows, and its Inward board the lit-rim specimen."
+  },
+  {
+    "id": 1188,
+    "type": "design",
+    "title": "The switch is a camera's slide lever: the slider's knob on a short rail of its own",
+    "status": "done",
+    "detail": "The evaluation read the cross-and-check toggle as a generic web idiom, not a switch or lever from the camera vocabulary. Toggle now sets the slider's own Knob on a Rail of its own: on, the knob stands one DSToggle cell along (ToggleStyle.travel) and the rail is lit up to it, both on the grab spring; the knob grows under the hand as a slider's. ToggleGlyph, the hollow and the white thumb go, and ToggleStyle keeps only the travel. A click on the lever or its words, Space or Return flip it as before, through one flip function."
+  },
+  {
+    "id": 1189,
+    "type": "fix",
+    "title": "The Favourites pill names the view in the primary ink, no longer dimmed as disabled",
+    "status": "done",
+    "detail": "With the favourites alone, the navigator's pill was disabled, its words at the disabled opacity (3.29:1 against its ground, under AA's 4.5:1). It only names what the column lists, so it is pressable: false, as the projects' pill, its words in the primary ink; the note under it, which named the folder no longer shown, is empty in that view, at its source in the navigator's header."
   }
 ]

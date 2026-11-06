@@ -1,7 +1,6 @@
 // The three depths every 2.5D element is built from: `Keycap`, Swift's lit frustum for the keys;
 // `Outward`, a plain raised surface; `Inward`, a well sunk into the ground. The lab tunes `Depth` live.
 import { DS } from "tokens.slint";
-import { FocusRing } from "keyboard.slint";
 
 // What `Raster.keycap` draws: a key's size, depth and look, every length in points at the large size;
 // `scale` is the window's pixels per point, so a change of screen draws the keys again.
@@ -232,12 +231,8 @@ export component Outward inherits Rectangle {
 export component Inward inherits Rectangle {
     in property <color> ground: DS.palette-tile;
     in property <length> radius: 8px;
-    // A field's, a toggle's or a plot's deeper hollow (`hollowBlur`, `hollowDrop`).
+    // A tab bar's, a plot's or a reorder's deeper hollow (`hollowBlur`, `hollowDrop`).
     in property <bool> hollow;
-    // The rim lit round the edge, as a field holding the keyboard (DSTextField.swift:28), and the
-    // keyboard's ring every control shows outside its edge.
-    in property <bool> lit;
-    in property <bool> ringed;
     // The shade at the rim, all strokes overlapping; one well may ask less than the shared tunable.
     in property <float> shade: Depth.well-shade;
     property <length> reach: root.hollow ? Depth.well-hollow-reach : Depth.well-reach;
@@ -287,11 +282,5 @@ export component Inward inherits Rectangle {
             border-width: 1px;
             border-color: rgba(0, 0, 0, Depth.well-edge);
         }
-        if root.lit: Rectangle {
-            border-radius: root.radius;
-            border-width: 1px;
-            border-color: DS.palette-rim;
-        }
     }
-    if root.ringed: FocusRing { radius: root.radius; }
 }

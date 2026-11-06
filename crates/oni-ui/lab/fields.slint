@@ -1,24 +1,8 @@
-// The lab's Fields page: the design system's own text fields (`dsTextField`, `DSField`), each a hollow
-// floored in the canvas on depth.slint's `Inward`, live beside its states forced through the DS's props.
-import { Slider, ScrollView } from "std-widgets.slint";
+// The lab's Fields page: the design system's own text fields (`dsTextField`, `DSField`), each on its flat
+// face, live beside its states forced through the DS's props.
+import { ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
 import { TextField, Field, FieldLayout, SizeFields, DateFields, TextRole } from "../ui/ds/ds.slint";
-import { Depth } from "depth.slint";
-
-// One tunable, as lab.slint's `Tune`.
-component Tune inherits Rectangle {
-    in property <string> label;
-    in property <float> minimum: 0;
-    in property <float> maximum: 1;
-    in-out property <float> value;
-    height: 34px;
-    HorizontalLayout {
-        spacing: 8px;
-        Text { text: root.label; width: 90px; color: #ffffffcc; font-size: 11px; vertical-alignment: center; overflow: elide; }
-        Slider { minimum: root.minimum; maximum: root.maximum; value <=> root.value; }
-        Text { text: round(root.value * 100) / 100; width: 34px; color: #ffffff8c; font-size: 11px; horizontal-alignment: right; vertical-alignment: center; }
-    }
-}
 
 component Heading inherits Text {
     color: #ffffff59;
@@ -70,27 +54,6 @@ export component FieldsPage inherits Rectangle {
             spacing: 28px;
             alignment: start;
 
-            // The hollow's depth tunables; its gauges are the DS's `FieldStyle`.
-            Rectangle {
-                background: DS.palette-canvas;
-                border-radius: 8px;
-                HorizontalLayout {
-                    padding: 12px;
-                    spacing: 20px;
-                    VerticalLayout {
-                        alignment: start;
-                        Heading { text: "EDGES"; }
-                        Tune { label: "edge"; value <=> Depth.well-edge; }
-                        Tune { label: "lip soft"; value <=> Depth.well-lip-soft; }
-                    }
-                    VerticalLayout {
-                        alignment: start;
-                        Heading { text: "WELL (DEPTH)"; }
-                        Tune { label: "shade"; value <=> Depth.well-shade; }
-                        Tune { label: "lip"; maximum: 0.3; value <=> Depth.well-lip; }
-                    }
-                }
-            }
 
             Row {
                 name: "SINGLE LINE";
