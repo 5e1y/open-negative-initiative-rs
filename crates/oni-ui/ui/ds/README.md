@@ -184,6 +184,7 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   leaves `Depth.lip-reach` under it.
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
   `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
+  The deck opens on `PresetTab`, a flat outline the canvas's edge cuts open, lit while the deck is open.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
   (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
   alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line

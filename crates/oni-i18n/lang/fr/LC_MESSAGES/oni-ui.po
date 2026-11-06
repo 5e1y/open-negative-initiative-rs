@@ -3802,6 +3802,10 @@ msgstr[0] "Un fichier a été écarté : il figure déjà dans vos préréglage
 msgstr[1] "{n} fichiers ont été écartés : ils figurent déjà dans vos préréglages, ou ce ne sont pas des préréglages."
 
 #: crates/oni-app/src/app/presets/shelf.rs
+msgid "No presets yet · + saves this photo’s settings as one"
+msgstr "Aucun préréglage · + enregistre les réglages de cette photo comme préréglage"
+
+#: crates/oni-app/src/app/presets/shelf.rs
 msgid "Hover to preview · click applies"
 msgstr "Survolez pour prévisualiser · cliquez pour appliquer"
 

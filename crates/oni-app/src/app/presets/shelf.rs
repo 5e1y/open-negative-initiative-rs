@@ -139,7 +139,14 @@ impl Ctl {
         g.set_hovered(hovered);
         g.set_can_apply(count > 0);
         g.set_can_update(open);
-        g.set_hint(if count > 1 { tr!("Hover to preview \u{b7} click applies to {count} photos", count = count) } else { tr("Hover to preview \u{b7} click applies").into() }.into());
+        let hint = if self.state.borrow().shelf.held.is_empty() {
+            tr("No presets yet \u{b7} + saves this photo\u{2019}s settings as one").into()
+        } else if count > 1 {
+            tr!("Hover to preview \u{b7} click applies to {count} photos", count = count)
+        } else {
+            tr("Hover to preview \u{b7} click applies").into()
+        };
+        g.set_hint(hint.into());
         w.global::<Menus>().set_apply_title(title.into());
     }
 }

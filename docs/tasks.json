@@ -6437,5 +6437,12 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1346,
+    "type": "ui",
+    "title": "The presets deck opens on its tab, the + card one entry inside it",
+    "status": "done",
+    "detail": "The strip on the canvas's bottom edge was the top of the + card, so a click on Presets opened Save a Preset, and the deck rose only under a hovering pointer. The tab is now the deck's own (PresetTab in the design system): it stays on the canvas's edge, a click opens the deck and a second closes it, the cards rising out of its top edge with the + card first among them; the pointer leaving the deck closes it, and the canvas's edge beside the tab stays the photo's. An empty deck's badge says how to make the first preset. The deck check, the presets check and the presets bench open it on its tab."
   }
 ]
