@@ -6003,5 +6003,12 @@
     "title": "The second round's sixteen corrections, merged",
     "status": "done",
     "detail": "Merging #1159-#1222: De-dust's header now lies over the tab bar, which stays laid out, hidden, so Tab's way into the panel keeps its target (the bar takes the keyboard only while it shows). The fields keep the flat face with the type scale's field-sized digits; Prepare keeps its new steps with the type scale's notes; the Roll tab keeps 'Filtration'. scripts/i18n dropped the texts no source shows any more."
+  },
+  {
+    "id": 1224,
+    "type": "test",
+    "title": "The ONI Trash wiring check reads the session's one history",
+    "status": "done",
+    "detail": "oni-library tests/trash_wiring.rs still looked for the store's gallery stack, which #1167 made the session's one history on purpose: Move to ONI Trash now lays its step through self.history.record_trash, and the check reads that call, so a mark that lays no step is still named."
   }
 ]
