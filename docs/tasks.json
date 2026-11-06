@@ -5674,5 +5674,12 @@
     "title": "A text field at rest ends a value too long for it on an ellipsis",
     "status": "done",
     "detail": "Evaluation R1: Export's Camera field cut 'NIKON CORPORATION N' mid-letter. Every DS text entry now shows its words at rest through a label that elides at the field's edge; the input takes over, the words sliding under the edge, only while it holds the keyboard."
+  },
+  {
+    "id": 1184,
+    "type": "ui",
+    "title": "Export lays each preview over its fields, in two columns of four",
+    "status": "done",
+    "detail": "Evaluation R1: the preview left the column's lower half empty while the EXIF crowded a 260 pt column. Each line is now its preview over its caption, always as tall, and its fields in two columns of four across the room: a lone photo fills the room's height, the fields' values get the room's width; the preview room handed to Rust follows."
   }
 ]

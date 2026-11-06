@@ -1,59 +1,67 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, Depth, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, ButtonSize, Picture, Ground, Fit, EdgePrint } from "ds/ds.slint";
+import { Icons, Space, Depth, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, ButtonSize, Picture, Ground, Fit, EdgePrint, FieldStyle } from "ds/ds.slint";
 import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
 import { Canvas } from "canvas_state.slint";
 export { ExportLine, PaperRow, SheetTile, Exporting }
 
-// `FrameFields`: the file name with its extension, then the EXIF the file will carry.
-component FrameFields inherits VerticalLayout {
+// `FrameFields`: the file name with its extension, then the EXIF the file will carry, in two columns
+// of four under the picture.
+component FrameFields inherits HorizontalLayout {
     in property <ExportLine> line;
     in property <int> at;
-    spacing: FormStyle.row-gap;
-    width: FormStyle.fields-width;
-    Field { layout: FieldLayout.column;
-        label: @tr("Name");
-        TextField {
-            name: @tr("Name");
-            value: root.line.name;
-            suffix: Exporting.extension;
-            enabled: root.line.ready;
-            edited(t) => { Exporting.edited(root.at, "name", t); }
+    in property <length> column;
+    spacing: Space.l;
+    VerticalLayout {
+        width: root.column;
+        spacing: FormStyle.row-gap;
+        Field { layout: FieldLayout.column;
+            label: @tr("Name");
+            TextField {
+                name: @tr("Name");
+                value: root.line.name;
+                suffix: Exporting.extension;
+                enabled: root.line.ready;
+                edited(t) => { Exporting.edited(root.at, "name", t); }
+            }
+        }
+        Field { layout: FieldLayout.column;
+            label: @tr("Camera");
+            TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+        }
+        Field { layout: FieldLayout.column;
+            label: @tr("Lens");
+            TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
+        }
+        Field { layout: FieldLayout.column;
+            label: @tr("Film stock");
+            Picker {
+                value: root.line.film == "" ? @tr("Choose…") : root.line.film;
+                open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
+            }
         }
     }
-    Field { layout: FieldLayout.column;
-        label: @tr("Camera");
-        TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
-    }
-    Field { layout: FieldLayout.column;
-        label: @tr("Lens");
-        TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
-    }
-    Field { layout: FieldLayout.column;
-        label: @tr("Film stock");
-        Picker {
-            value: root.line.film == "" ? @tr("Choose…") : root.line.film;
-            open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
+    VerticalLayout {
+        width: root.column;
+        spacing: FormStyle.row-gap;
+        Field { layout: FieldLayout.column;
+            label: @tr("ISO");
+            TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+        }
+        Field { layout: FieldLayout.column;
+            label: @tr("Date");
+            TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+        }
+        Field { layout: FieldLayout.column;
+            label: @tr("Artist");
+            TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+        }
+        Field { layout: FieldLayout.column;
+            label: @tr("Copyright");
+            TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
         }
     }
-    Field { layout: FieldLayout.column;
-        label: @tr("ISO");
-        TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
-    }
-    Field { layout: FieldLayout.column;
-        label: @tr("Date");
-        TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
-    }
-    Field { layout: FieldLayout.column;
-        label: @tr("Artist");
-        TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
-    }
-    Field { layout: FieldLayout.column;
-        label: @tr("Copyright");
-        TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
-    }
-    Spacer { }
 }
 
 // The contact sheet the export writes, as Rust fits it to this room: its ground, each frame's
@@ -89,17 +97,20 @@ component SheetPreview inherits Rectangle {
     }
 }
 
-// `ExportColumn`: the photographs about to be written, fields left and preview right.
+// `ExportColumn`: the photographs about to be written, each preview over its caption and its fields.
 export component ExportColumn inherits Scroller {
     property <length> room-width: self.width - 2 * Space.l;
     property <length> room-height: self.height - 2 * Space.l;
-    property <length> picture-width: self.room-width - FormStyle.fields-width - Space.l;
+    // `FrameFields`' four rows, after a gap under the caption.
+    property <length> fields-height: Space.s + 4 * FieldStyle.height + 3 * FormStyle.row-gap;
+    // A lone photo fills the room: what its caption and its fields leave of the height.
+    property <length> picture-height: self.room-height - FormStyle.caption - self.fields-height;
     // Several photos on one sheet: the sheet itself in place of their lines.
     property <bool> sheet: Exporting.sheet && Exporting.count > 1;
     content-height: column.preferred-height;
-    init => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
-    changed picture-width => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
-    changed room-height => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
+    init => { Exporting.preview-room(self.room-width, self.picture-height, FormStyle.preview-floor); }
+    changed room-width => { Exporting.preview-room(self.room-width, self.picture-height, FormStyle.preview-floor); }
+    changed picture-height => { Exporting.preview-room(self.room-width, self.picture-height, FormStyle.preview-floor); }
     // From the top, level with the panel's title, however few photos the column holds.
     column := VerticalLayout {
         width: root.width;
@@ -112,19 +123,16 @@ export component ExportColumn inherits Scroller {
         if root.sheet: SheetPreview { height: root.room-height; }
         if !root.sheet: VerticalLayout {
             spacing: Space.l;
-            for line[i] in Exporting.lines: HorizontalLayout {
-                spacing: Space.l;
-                FrameFields { line: line; at: i; }
-                VerticalLayout {
-                    spacing: Space.xs;
-                    PreviewSlot {
-                        // The height a frame of that shape takes, so the list never jumps; unmeasured takes 3:2's.
-                        height: max(FormStyle.preview-floor, min(root.room-height - FormStyle.caption, root.picture-width / (line.aspect > 0 ? line.aspect : 1.5)));
-                        source: line.preview;
-                        state: line.state;
-                    }
-                    if line.caption != "": Label { text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
+            for line[i] in Exporting.lines: VerticalLayout {
+                PreviewSlot {
+                    // The height a frame of that shape takes, so the list never jumps; unmeasured takes 3:2's.
+                    height: max(FormStyle.preview-floor, min(root.picture-height, root.room-width / (line.aspect > 0 ? line.aspect : 1.5)));
+                    source: line.preview;
+                    state: line.state;
                 }
+                // As tall before the size lands as after.
+                Label { height: FormStyle.caption; text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
+                FrameFields { line: line; at: i; column: (root.room-width - Space.l) / 2; padding-top: Space.s; }
             }
         }
     }
