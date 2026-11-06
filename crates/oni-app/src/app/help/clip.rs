@@ -1,5 +1,5 @@
 //! The help card's demo: the topic's GIF decoded frame by frame on a thread of its own, each frame
-//! laid on the card at its own delay while the card stays open, and dropped when it closes.
+//! laid on the card at its own delay, the clip again from its start while the card stays open.
 
 use crate::demos;
 use crate::tutorial::Frames;
@@ -48,11 +48,12 @@ fn play(w: &MainWindow, topic: &str) {
     let Some(clip) = clip else { return };
     let (sender, frames) = sync_channel::<Decoded>(1);
     let spawned = std::thread::Builder::new().name("help demo".into()).spawn(move || {
-        let Some(mut decoder) = Frames::new(clip) else { return };
-        let size = decoder.size();
-        while let Some((picture, delay)) = decoder.next() {
-            if sender.send((picture.to_vec(), size, delay)).is_err() {
-                return;
+        while let Some(mut decoder) = Frames::new(clip) {
+            let size = decoder.size();
+            while let Some((picture, delay)) = decoder.next() {
+                if sender.send((picture.to_vec(), size, delay)).is_err() {
+                    return;
+                }
             }
         }
     });

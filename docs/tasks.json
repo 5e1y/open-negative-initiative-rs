@@ -5338,5 +5338,12 @@
     "title": "Prepare the Roll left unmeasured keeps nothing, and a bare frame shown again asks for its roll again",
     "status": "done",
     "detail": "UX evaluation, problem 21: Cancel kept the roll's draft, so the roll opened again on its Window step with every earlier step marked done; after Escape, the frame left open behind the gallery opened in the editor, its measuring window drawn, while another frame went to Prepare the Roll: the requirement ran only where a photo is loaded, never where the one open is shown again. Leaving the roll unmeasured (Cancel, Escape, GALLERY, a sidebar frame) now drops every frame's draft on the drafts' thread; a quit still writes it, so a roll resumes after a relaunch (owner's call, departing from Swift's draft kept on leaving). The roll's frames are read on that thread too, after the drafts queued, so a roll opened again at once never reads a draft being dropped. The photo still open behind the gallery, shown again, is held to its roll's preparation as a loaded one is."
+  },
+  {
+    "id": 1113,
+    "type": "fix",
+    "title": "Prepare the Roll's panel: the step's controls first, its demo played once under them, the settings note once",
+    "status": "done",
+    "detail": "UX and UI evaluation, problems 8, 8b, 44 and 45: the Window step said to use a slider that stood below the fold, under a looping demo and a five-line warning the footer cut mid-sentence; the demo looped without end beside the frame measured; the orange Settings differ note stood on all five steps over each step's own choice. Each step now shows its controls first, then its demo, square at RollStyle.demo so it stands whole under the Window step's controls in a window 680 points tall, then the frames to pick from, the part that scrolls. A clip plays once and rests on its last frame (tutorial::Frames ends; a help card's demo, open while a hand rests on its mark, starts it again). The Settings differ note shows once, on the Flat-Field step, over the grid whose marks it names and whose light it concerns."
   }
 ]
