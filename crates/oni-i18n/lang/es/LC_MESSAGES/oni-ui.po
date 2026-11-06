@@ -117,7 +117,7 @@ msgstr "Actualizar"
 msgid "Show the Selected Photo"
 msgstr "Mostrar la foto seleccionada"
 
-#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Edición"
 
@@ -786,9 +786,6 @@ msgid "Export a contact sheet"
 msgstr "Exportar una hoja de contactos"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The export panel exports the selection as one sheet, with a preview; the EXP. CONTACT SHEET key opens it."
-msgstr "El panel de exportación exporta la selección como una sola hoja, con vista previa; la tecla EXP. HOJA DE CONTACTOS lo abre."
-
 msgid "The export panel exports the selection as one sheet, with a preview: pick Contact Sheet under Export As."
 msgstr "El panel de exportación exporta la selección como una sola hoja, con vista previa: elige Hoja de contactos en Exportar como."
 
@@ -1869,10 +1866,6 @@ msgid "Load…"
 msgstr "Cargar…"
 
 #: crates/oni-ui/ui/prepare.slint
-msgid "Settings differ across the roll"
-msgstr "Los ajustes varían a lo largo del rollo"
-
-#: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
 msgstr "Digitalizado con"
 
@@ -1903,6 +1896,10 @@ msgstr "Desplazar un archivo"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Check the grouping"
 msgstr "Revisa la agrupación"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Settings differ across the roll"
+msgstr "Los ajustes varían a lo largo del rollo"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Clear"

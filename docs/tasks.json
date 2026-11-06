@@ -5527,5 +5527,12 @@
     "title": "The Measured Roll's keys say what they do: Add Them to the Roll, Move into a New Roll…",
     "status": "done",
     "detail": "UX evaluation: JOIN THE 24 and ROLL OF THE 1 named the gestures by counts. The warning above them counts; the keys are now ADD THEM TO THE ROLL and MOVE INTO A NEW ROLL…, the menus' name for the same gesture."
+  },
+  {
+    "id": 1152,
+    "type": "chore",
+    "title": "The catalogues after the first evaluation's four corrections",
+    "status": "done",
+    "detail": "scripts/i18n run on the merge of #1088-#1128: the texts the merged sources no longer show are dropped from the French and Spanish catalogues; every text left is translated."
   }
 ]
