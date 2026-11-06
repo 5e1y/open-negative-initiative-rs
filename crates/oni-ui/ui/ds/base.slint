@@ -158,6 +158,47 @@ export component Divider inherits Rectangle {
     }
 }
 
+// A title engraved as the rule above it, a camera's marking: the groove's shade a line above its letters,
+// the lit edge a line below. The root lays the words out unseen; its three copies draw them.
+export component Engraved inherits Label {
+    color: transparent;
+    Label {
+        y: -Stroke.line;
+        width: parent.width;
+        height: parent.height;
+        text: root.text;
+        role: root.role;
+        wrap: root.wrap;
+        overflow: root.overflow;
+        horizontal-alignment: root.horizontal-alignment;
+        ink: DS.palette-groove;
+        accessible-role: none;
+    }
+    Label {
+        y: Stroke.line;
+        width: parent.width;
+        height: parent.height;
+        text: root.text;
+        role: root.role;
+        wrap: root.wrap;
+        overflow: root.overflow;
+        horizontal-alignment: root.horizontal-alignment;
+        ink: DS.palette-groove-light;
+        accessible-role: none;
+    }
+    Label {
+        width: parent.width;
+        height: parent.height;
+        text: root.text;
+        role: root.role;
+        wrap: root.wrap;
+        overflow: root.overflow;
+        horizontal-alignment: root.horizontal-alignment;
+        ink: root.ink;
+        accessible-role: none;
+    }
+}
+
 // A guide drawn over a photo: its light line edged a line either side by the contrast shade, so it reads
 // on a bright sky as on a shadow.
 export component GuideLine inherits Rectangle {
