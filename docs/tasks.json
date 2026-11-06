@@ -5758,5 +5758,33 @@
     "title": "The crop's thirds read on a light sky",
     "status": "done",
     "detail": "Evaluation s-db78d310: over roll #8's sky (sRGB 192) the thirds' edges, at the idle contrast shade (30 % black), stood at about 2:1. The thirds now take GuideLine's own edge, the full contrast shade (55 % black), as the compare split does: 86 against 192, about 4.2:1; their faint light line still carries them over a dark picture."
+  },
+  {
+    "id": 1183,
+    "type": "fix",
+    "title": "A text field at rest ends a value too long for it on an ellipsis",
+    "status": "done",
+    "detail": "Evaluation R1: Export's Camera field cut 'NIKON CORPORATION N' mid-letter. Every DS text entry now shows its words at rest through a label that elides at the field's edge; the input takes over, the words sliding under the edge, only while it holds the keyboard."
+  },
+  {
+    "id": 1184,
+    "type": "ui",
+    "title": "Export lays each preview over its fields, in two columns of four",
+    "status": "done",
+    "detail": "Evaluation R1: the preview left the column's lower half empty while the EXIF crowded a 260 pt column. Each line is now its preview over its caption, always as tall, and its fields in two columns of four across the room: a lone photo fills the room's height, the fields' values get the room's width; the preview room handed to Rust follows."
+  },
+  {
+    "id": 1185,
+    "type": "ui",
+    "title": "Export's presets are tabs that light the preset the rows equal",
+    "status": "done",
+    "detail": "Evaluation R1: the Instagram / Display / Print row looked like a segmented control and showed no selection. It is now the DS tabs under a Presets label, the tab lit read off the settings by Preset::matching: a row set by hand lights none, set back it lights again (beyond Swift, whose plate lit no key)."
+  },
+  {
+    "id": 1186,
+    "type": "ui",
+    "title": "No space tab is dimmed: ProPhoto stays pressable at full ink",
+    "status": "done",
+    "detail": "Evaluation R1: ProPhoto greyed in JPEG measured 2.20:1 and read as unavailable with no reason; the note meant to say why was shown only in a state that never held. The tab is drawn as the others: chosen, it takes the TIFF along, as before, and its purpose says TIFF 16-bit only. The Tabs' dimmed state, used nowhere else, is removed with its lab specimens."
   }
 ]

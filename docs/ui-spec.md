@@ -347,8 +347,8 @@ reset is a callback that reads Rust state when called, so that trap disappears.
 
 | Swift | Slint | Risk |
 |---|---|---|
-| Export is a mode of the card: one row per photo, fields left, preview right; the count is in the label in all four places | Mode branch in `MainWindow`, rows in the ds `Scroller` (`ExportColumn`) | |
-| Space field: four matrix spaces or an installed ICC profile; JPEG dims spaces needing 16 bits | `DSPicker` | `[menu]` `[native]` Enumerating installed ICC profiles: ColorSync on macOS, `WcsEnumColorProfiles` on Windows. |
+| Export is a mode of the card: one row per photo, fields left, preview right; the count is in the label in all four places | Mode branch in `MainWindow`, rows in the ds `Scroller` (`ExportColumn`), each preview over its fields in two columns (evaluation R1) | |
+| Space field: four matrix spaces or an installed ICC profile; JPEG dims spaces needing 16 bits | `DSPicker`, no tab dimmed: ProPhoto, chosen, takes the TIFF along and its note says TIFF 16-bit only (evaluation R1) | `[menu]` `[native]` Enumerating installed ICC profiles: ColorSync on macOS, `WcsEnumColorProfiles` on Windows. |
 | `NSSavePanel` / `NSOpenPanel` | `rfd::AsyncFileDialog` | `[native]` rfd uses the native panels on both systems. |
 | The export runs inside the surface, its key reading EXPORTING… and Cancel turned Stop (beyond Swift, owner's design) | On Export the surface closes back to the editor or the gallery, the destination folder opens in the Finder or the Explorer, and `ExportProgress` (DS `JobCard`) floats at the canvas's top-left: the count, the file under way, the bar, Stop; done lingers `SheetStyle.brief`, a failure stays until OK. One export at a time: the surface reopened meanwhile says so and its key waits; quitting asks first | |
 

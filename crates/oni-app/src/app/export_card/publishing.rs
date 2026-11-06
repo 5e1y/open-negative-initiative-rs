@@ -67,10 +67,11 @@ impl Ctl {
         e.set_subtitle(subtitle.into());
         e.set_extension(format!(".{}", c.settings.format().file_extension()).into());
         e.set_format(Format::ALL.iter().position(|f| *f == c.settings.format()).unwrap_or(0) as i32);
+        let lit = Preset::matching(&c.settings).and_then(|p| Preset::ALL.iter().position(|q| *q == p));
+        e.set_lit_preset(lit.map_or(-1, |i| i as i32));
         let on_profile = matches!(space, Space::Profile(_));
         e.set_space_tab(if on_profile || c.pending { 4 } else { Space::BUILT_IN.iter().position(|s| *s == space).unwrap_or(1) as i32 });
         e.set_purpose(space.purpose().into());
-        e.set_jpeg(c.settings.format() == Format::Jpeg);
         e.set_on_profile(on_profile);
         e.set_pending(c.pending && !on_profile);
         e.set_pending_note(tr!("Until a profile is chosen, the picture stays in {space}.", space = space.title()).into());

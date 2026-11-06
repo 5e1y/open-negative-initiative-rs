@@ -1,5 +1,5 @@
 //! Entering the export surface on two frames of roll #8: the window shows before any scan is read,
-//! and the lines land after.
+//! the lines land after, and a preset lights while the rows equal it.
 
 use oni_app::app::export_card;
 use oni_app::app::{Options, Shell};
@@ -57,6 +57,20 @@ pub(crate) fn entering_the_export_reads_no_scan_on_the_interface_thread() {
     let read: Vec<String> = targets.iter().map(|t| oni_app::export::opening_row(&t.path, None, "", "").metadata.camera).collect();
     println!("the same lines read on this thread: {:.1} ms", started.elapsed().as_secs_f64() * 1e3);
     assert_eq!(read, landed);
+
+    // The preset the rows equal stays lit, a row set by hand lights none, set back it lights again.
+    let e = shell.window.global::<oni_app::Exporting>();
+    e.invoke_preset(2);
+    assert_eq!(e.get_lit_preset(), 2, "Print lit once it wrote its rows");
+    e.invoke_compress_set(false);
+    assert_eq!(e.get_lit_preset(), -1, "a row set by hand lights no preset");
+    e.invoke_compress_set(true);
+    assert_eq!(e.get_lit_preset(), 2, "the rows set back light Print again");
+    e.invoke_preset(0);
+    assert_eq!(e.get_lit_preset(), 0);
+    // Twin: the tab follows the rows, never the last click.
+    e.invoke_hdr_set(true);
+    assert_ne!(e.get_lit_preset(), 0, "Instagram writes no HDR");
     ctl.leave_export();
     rig.settle();
     let _ = std::fs::remove_dir_all(&root);
