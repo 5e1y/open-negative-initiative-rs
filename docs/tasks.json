@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1300,
+    "type": "docs",
+    "title": "Every screen, flow and interaction may be rethought; only the result is fixed",
+    "status": "done",
+    "detail": "Owner's direction: ONI's work is now making the app better through its UX and UI, every screen open to a full rethink, the conversion untouched. CLAUDE.md drops what held the interface to one way: the design system's tokens owe DSTokens.swift nothing, the drag-and-scroll rule becomes the current state rather than a rule, ui-spec and the parity inventory's interface rows are history, and the parity inventory covers the result alone."
   }
 ]

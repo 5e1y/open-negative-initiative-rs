@@ -121,9 +121,9 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
 
 **Done** means every feature present and working, each proven by a check.
 
-- **The parity inventory is `docs/parity/`**: every function and hidden rule of the Swift app, with its
-  status (done, partial, missing), the Swift code it was read from and the Rust test that proves it. Its
-  `README.md` carries the counts; update them with every row that changes.
+- **The parity inventory is `docs/parity/`**: every rule of the Swift app's result (conversion, hidden
+  rules, data), with its status, the Swift code it was read from and the Rust test that proves it. Its
+  `README.md` carries the counts; update them when a result row changes. Its interface rows are history.
 - **Proof by difference**: the pipeline against Swift on Swift's own decode with adversarial settings;
   every Swift `Checks/` self-check gets a Rust twin; gestures are replayed through the command layer.
 - **Green tests are not proof that the app works.** Before saying a feature works, drive the real app
@@ -152,13 +152,14 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
 
 ## Interface rules
 
-- **Every screen is built from the design system** (`crates/oni-ui/ui/ds/`, tokens generated from
-  `DSTokens.swift`): no literal size, colour or radius outside it, so a change of look is one edit. Simple
-  buttons until the design system defines the final components; the exact ONI look comes back last.
-- **Drag is reserved for parameters and for the image** (pan, zoom). Menus, lists, sidebars and every
-  other surface scroll by wheel or trackpad only, never by grab-dragging (`mouse-drag-pan-enabled: false`);
-  the one exception is the scroll knob on the edge, which drags and pages as AppKit's scroller.
-- `docs/ui-spec.md` maps every Swift interface item to its Slint construct.
+- **Every screen is built from the design system** (`crates/oni-ui/ui/ds/`): no literal size, colour or
+  radius outside it, so a change of look is one edit. The design system is ONI's own; its tokens began as
+  Swift's `DSTokens.swift` and owe it nothing now. Its look follows the art direction and the UI bench.
+- **Any screen, flow or interaction may be rethought whole** when the benches show a better way. Today drag
+  adjusts parameters and the image, and lists scroll by wheel or trackpad (`mouse-drag-pan-enabled:
+  false`). That is the current state, not a rule. Only the conversion's result is untouchable.
+- `docs/ui-spec.md` and the interface rows of `docs/parity/` are history from the rebuild: no interface
+  change needs to update them.
 - **Every text the app shows is translated**: English in the source, French and Spanish in
   `crates/oni-i18n/lang/<lang>/LC_MESSAGES/oni-ui.po`, which Slint bundles and the Rust side reads. Slint
   writes `@tr("…")` (arguments as `{}`), Rust `tr("…")`, `tr!("… {name}", name = …)`, `trn(one, many, n)` and
