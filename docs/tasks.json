@@ -5681,5 +5681,12 @@
     "title": "The switch is a camera's slide lever: the slider's knob on a short rail of its own",
     "status": "done",
     "detail": "The evaluation read the cross-and-check toggle as a generic web idiom, not a switch or lever from the camera vocabulary. Toggle now sets the slider's own Knob on a Rail of its own: on, the knob stands one DSToggle cell along (ToggleStyle.travel) and the rail is lit up to it, both on the grab spring; the knob grows under the hand as a slider's. ToggleGlyph, the hollow and the white thumb go, and ToggleStyle keeps only the travel. A click on the lever or its words, Space or Return flip it as before, through one flip function."
+  },
+  {
+    "id": 1189,
+    "type": "fix",
+    "title": "The Favourites pill names the view in the primary ink, no longer dimmed as disabled",
+    "status": "done",
+    "detail": "With the favourites alone, the navigator's pill was disabled, its words at the disabled opacity (3.29:1 against its ground, under AA's 4.5:1). It only names what the column lists, so it is pressable: false, as the projects' pill, its words in the primary ink; the note under it, which named the folder no longer shown, is empty in that view, at its source in the navigator's header."
   }
 ]

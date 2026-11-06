@@ -251,7 +251,8 @@ export component NavigatorSection inherits Rectangle {
                 horizontal-stretch: 1;
                 value: Navigator.pill-title;
                 help: Navigator.pill-help;
-                enabled: !Navigator.favourites-only;
+                // The favourites alone, it only names what the column lists.
+                pressable: !Navigator.favourites-only;
                 choices: Navigator.ancestors;
                 chosen(i) => { Navigator.ancestor-chosen(i); }
             }

@@ -204,6 +204,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert_eq!(titles(w), ["Old", "Scans", "Film"]);
     assert!(n.get_favourites_only() && !n.get_at_computer() && !n.get_no_favourites());
     assert_eq!(n.get_pill_title().as_str(), "Favourites");
+    assert_eq!(n.get_pill_help().as_str(), "", "the pill names the favourites, no folder's note under it");
     // A favourite on a volume gone fades; mounted again, it is there.
     std::fs::rename(volumes.join("T7"), root.join("T7 away")).unwrap();
     rig.until("T7 gone", Duration::from_secs(10), || !row(w, "Film").present);

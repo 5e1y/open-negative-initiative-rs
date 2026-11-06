@@ -70,7 +70,11 @@ impl Ctl {
                 model.can_go_up(),
                 model.favourites_only,
                 if model.favourites_only { tr("Favourites").to_string() } else { walk::title(base.as_deref(), &s.nav.computer) },
-                base.as_deref().map(|b| tr!("{folder} — click to jump to a folder above", folder = b)).unwrap_or_else(|| tr("The home folder and every volume").into()),
+                if model.favourites_only {
+                    String::new()
+                } else {
+                    base.as_deref().map(|b| tr!("{folder} — click to jump to a folder above", folder = b)).unwrap_or_else(|| tr("The home folder and every volume").into())
+                },
                 model.favourites_only && favourites.is_empty(),
                 !model.favourites_only && base.is_none(),
             );
