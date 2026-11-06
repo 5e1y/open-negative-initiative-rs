@@ -1,6 +1,7 @@
 //! A plate against a spaced row of keys: on a plate the keys touch on one face as tall as they are,
-//! rounded as a key is; off it they stand Swift's `DS.Space.sm` apart.
+//! rounded as a key is; off it they stand Swift's `DS.Space.sm` apart. Capitals are the keycap's alone.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::GroupProbe;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
@@ -43,4 +44,25 @@ pub(crate) fn a_plate_s_keys_touch_and_a_spaced_row_s_keep_swift_s_gap() {
     // Twins: each variant's radius tells the other's apart.
     assert!(!near(probe.get_mini_radius(), PLATE_RADIUS), "a mini plate is not rounded as a small one");
     assert!(!near(probe.get_plate_radius(), MINI_RADIUS), "a small plate is not rounded as a mini one");
+}
+
+/// A flat key and a block's title show their words as written; a keycap alone shows its word in capitals.
+pub(crate) fn capitals_are_the_keycap_s_alone() {
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let probe = GroupProbe::new().unwrap();
+    oni_app::keycaps::serve(&probe);
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(PhysicalSize::new(400, 360));
+    probe.show().unwrap();
+    rig.settle();
+    let drawn = |word: &str| !common::placed(&probe, Role::Text, word).is_empty();
+
+    assert!(drawn("Copy") && drawn("Website"), "a flat key shows its word as written");
+    assert!(!drawn("COPY") && !drawn("WEBSITE"), "no flat key shows its word in capitals");
+    assert!(drawn("Block title") && !drawn("BLOCK TITLE"), "a block's title shows as written");
+    assert!(drawn("DONE"), "a keycap shows its word in capitals");
+    // Twin: the search reads the legend drawn, not the key's name, which stays "Done".
+    assert!(!drawn("Done"), "the keycap's legend is never its word as written");
 }

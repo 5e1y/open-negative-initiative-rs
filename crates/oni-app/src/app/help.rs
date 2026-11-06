@@ -145,7 +145,7 @@ impl Ctl {
         let seen: Vec<String> = self.state.borrow().preferences.value(SEEN_KEY).and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
         let shown = |id: &str| -> (slint::SharedString, slint::SharedString) {
             let note = NOTES.iter().find(|(i, _, _)| *i == id).filter(|(i, _, _)| !seen.iter().any(|s| s == i) || self.state.borrow().news_kept.contains(*i));
-            note.map_or_else(Default::default, |&(_, word, text)| (tr(word).to_uppercase().into(), tr(text).into()))
+            note.map_or_else(Default::default, |&(_, word, text)| (tr(word).into(), tr(text).into()))
         };
         let n = w.global::<News>();
         let (word, note) = shown("machine.1.3.1");

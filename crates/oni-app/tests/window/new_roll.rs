@@ -78,7 +78,7 @@ pub(crate) fn a_new_roll_asks_names_the_folder_and_counts_files() {
     assert_eq!(confirm.get_title().as_str(), "Move 2 Photos into a New Roll?");
     let message = confirm.get_message().to_string();
     assert!(message.contains(&format!("“{dated}” in “Scans”")) && message.contains("moves 4 files into it"), "{message}");
-    assert_eq!(confirm.get_key().as_str(), "MOVE 2 PHOTOS");
+    assert_eq!(confirm.get_key().as_str(), "Move 2 Photos");
     rig.settle();
     println!("shot {}", rig.shot("new-roll-confirm").display());
     // Twin: Cancel moves nothing and makes no folder.

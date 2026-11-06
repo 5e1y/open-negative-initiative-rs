@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1232,
+    "type": "fix",
+    "title": "Capitals are the keycap's alone; every column opens on one header",
+    "status": "done",
+    "detail": "Owner's call: ALL CAPS only on the keycap CTAs. The Button upper-cased every key unless told not to, and the block's Section upper-cased its title and spaced it, so flat keys (Copy, Paste, Select Film Stock, Cancel, a block's Reset) and every section title (Colour, Film Stock, Shot Date, Language) shouted. The key now writes its word in capitals, bold and spaced only as a keycap, a flat key's word as written and semibold; the capitals switch is gone. The texts that carried capitals in their source or were upper-cased in Rust (Settings', Missing's, the roll tab's and crop tab's keys, the confirm's and the mask dialog's keys, the banner's, the catch-up's, the seals FLAGGED and R MISSING, the news seals, the stock picker's brands, the Wrapped eyebrows and title, the empty filter's hint naming All) are in Title Case for keys and titles, sentence case for labels, French and Spanish to match. Section headers took three faces (letterspaced capitals in the editor, a large light heading in Export, Prepare and De-dust): SectionTitle, the engraved title a step over the labels, is now the one header of every column. De-dust's Detect no longer turns into HIDE: it stays lit while what it found shows, and a second press hides it. Seals lose the tracking that only capitals wanted. The LCD's legends, the date placeholders and the toolbar's keys stay for their own owners. Check: button_group::capitals_are_the_keycap_s_alone reads the drawn words (flat keys and a block's title as written, a keycap in capitals); its twin finds no text 'Done' where the keycap so named shows DONE."
   }
 ]

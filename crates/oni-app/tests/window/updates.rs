@@ -105,7 +105,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     rig.until("the dialog", Duration::from_secs(10), || confirm.get_shown());
     assert_eq!(confirm.get_title().as_str(), "A new version of Open Negative Initiative is available!");
     assert!(confirm.get_message().contains("Open Negative Initiative 9.1.0 is now available\u{2014}you have "));
-    assert_eq!(confirm.get_key().as_str(), "DOWNLOAD");
+    assert_eq!(confirm.get_key().as_str(), "Download");
     confirm.invoke_answered(true);
     let advice = first.window.global::<Advice>();
     rig.until("the refusal", Duration::from_secs(10), || advice.get_shown());

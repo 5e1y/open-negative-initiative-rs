@@ -161,11 +161,11 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     let ctl = shell.ctl.clone();
     opened(&rig, &shell, &old);
     rig.until("its banner", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.0 == "Folder Not Found"));
-    assert_eq!(banner(&shell).unwrap().2, ["LOCATE…", "REMOVE FROM FAVOURITES", "REMOVE FROM LIBRARY…"]);
+    assert_eq!(banner(&shell).unwrap().2, ["Locate…", "Remove from Favourites", "Remove from Library…"]);
 
     // Twin first: a folder sharing no photo asks before anything follows, and Cancel leaves all as it was.
     *picked.borrow_mut() = Some(d.root.join("Home/Other"));
-    press(&rig, &shell, "LOCATE…");
+    press(&rig, &shell, "Locate…");
     rig.until("the sheet", Duration::from_secs(10), || confirm(&shell).is_some());
     let (title, message) = confirm(&shell).unwrap();
     assert_eq!(title, "No Photo Recognised");
@@ -177,7 +177,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     assert_eq!(ctl.state.borrow().opened(), Some(old.as_str()));
 
     *picked.borrow_mut() = Some(d.root.join("Home/Scans/2026-03 Lisbon"));
-    press(&rig, &shell, "LOCATE…");
+    press(&rig, &shell, "Locate…");
     rig.until("followed", Duration::from_secs(10), || ctl.state.borrow().opened() == Some(new.as_str()));
     assert!(confirm(&shell).is_none(), "photos recognised follow at once");
     assert_eq!(told(&shell).as_deref(), Some("2 photos of 2 recognised in “2026-03 Lisbon”: “Roll 12” follows it."));
@@ -223,10 +223,10 @@ pub(crate) fn forget_touches_no_file() {
     // Its favourite's file id finds it where it went, offered beside Locate and the two that forget.
     rig.until("the lead", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.2.len() == 4));
     let (_, message, keys) = banner(&shell).unwrap();
-    assert_eq!(keys, ["FOLLOW", "LOCATE…", "REMOVE FROM FAVOURITES", "REMOVE FROM LIBRARY…"]);
+    assert_eq!(keys, ["Follow", "Locate…", "Remove from Favourites", "Remove from Library…"]);
     assert!(message.ends_with("It seems to be in “Elsewhere” now."), "{message}");
     let before = listing(&d.root);
-    press(&rig, &shell, "REMOVE FROM LIBRARY…");
+    press(&rig, &shell, "Remove from Library…");
     let (title, message) = confirm(&shell).expect("the sheet asks first");
     assert_eq!(title, "Remove “Roll 12” from the Library?");
     assert_eq!(message, format!("ONI forgets the 2 photos it knows in “{roll}”. No file is touched: if the folder comes back, its photos return with their settings."));
@@ -238,7 +238,7 @@ pub(crate) fn forget_touches_no_file() {
     assert!(thumbnail(&print_a).exists(), "the copy elsewhere still claims A's thumbnail");
     assert_eq!(d.index().under(&copy).len(), 1, "the copy's row stays");
     assert_eq!(d.favourites(), [away.clone()], "the favourite gone, the one away kept");
-    rig.until("the banner without the key", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.2 == ["LOCATE…"]));
+    rig.until("the banner without the key", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.2 == ["Locate…"]));
     let after = listing(&d.root);
     assert_eq!(before.keys().collect::<Vec<_>>(), after.keys().collect::<Vec<_>>());
     assert!(before == after, "every file byte for byte as it was");
@@ -251,7 +251,7 @@ pub(crate) fn forget_touches_no_file() {
     std::fs::rename(d.root.join("Volumes/T7"), d.root.join("T7 away")).unwrap();
     opened(&rig, &shell, &away);
     rig.until("T7 away", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.0 == "T7 Not Connected"));
-    assert!(!banner(&shell).unwrap().2.iter().any(|k| k.starts_with("REMOVE FROM LIBRARY")));
+    assert!(!banner(&shell).unwrap().2.iter().any(|k| k.starts_with("Remove from Library")));
     assert_eq!(d.index().under(&away).len(), 1);
     drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);
@@ -304,7 +304,7 @@ pub(crate) fn a_t7_remounted_as_t7_1_is_offered_to_follow() {
     rig.until("Scans drawn", Duration::from_secs(60), || ctl.state.borrow().loaded() >= 2);
     assert!(banner(&shell).is_none());
     std::fs::rename(d.root.join("Volumes/T7"), d.root.join("Volumes/T7 1")).unwrap();
-    rig.until("the lead offered", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.2 == ["FOLLOW"]));
+    rig.until("the lead offered", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.2 == ["Follow"]));
     let (title, message, _) = banner(&shell).unwrap();
     assert_eq!(title, "T7 Not Connected");
     assert!(message.ends_with("“T7” seems to have become “T7 1”."), "{message}");
@@ -318,7 +318,7 @@ pub(crate) fn a_t7_remounted_as_t7_1_is_offered_to_follow() {
     rig.settle();
     rig.shot("locate-t7-offered");
 
-    press(&rig, &shell, "FOLLOW");
+    press(&rig, &shell, "Follow");
     let moved = d.path("Volumes/T7 1/Scans");
     rig.until("followed", Duration::from_secs(10), || ctl.state.borrow().opened() == Some(moved.as_str()));
     assert_eq!(told(&shell).as_deref(), Some("2 photos of 2 recognised in “T7 1”: “T7” follows it."));

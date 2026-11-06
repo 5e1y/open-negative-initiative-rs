@@ -177,7 +177,7 @@ component Rows inherits Scroller {
                 picked: line.picked;
                 selected: line.opened;
                 present: line.present;
-                action: line.restore-help != "" ? @tr("RESTORE") : "";
+                action: line.restore-help != "" ? @tr("Restore") : "";
                 action-help: line.restore-help;
                 clicked => { root.trash-clicked(i); }
                 folded => { root.trash-folded(i); }
@@ -206,7 +206,7 @@ component Welcome inherits VerticalLayout {
         clicked => { Navigator.welcome-added(i); }
     }
     Button {
-        text: @tr("ADD FOLDER…");
+        text: @tr("Add Folder…");
         clicked => { Navigator.welcome-chose(); }
     }
 }
@@ -338,7 +338,7 @@ export component RootsCatchUpSheet inherits Sheet {
             spacing: Space.s;
             Label { text: line.folder; role: TextRole.caption; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
             Label { text: line.count; role: TextRole.caption; tone: Tone.secondary; }
-            Button { text: @tr("ADD"); clicked => { Navigator.catch-up-added(i); } }
+            Button { text: @tr("Add"); clicked => { Navigator.catch-up-added(i); } }
         }
         if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
     }

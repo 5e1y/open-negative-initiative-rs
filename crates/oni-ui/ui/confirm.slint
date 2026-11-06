@@ -17,9 +17,9 @@ export global Confirm {
 export component ConfirmSheet inherits AskSheet {
     title: Confirm.title;
     message: Confirm.message;
-    cancel: Confirm.cancel-default ? "" : @tr("CANCEL");
+    cancel: Confirm.cancel-default ? "" : @tr("Cancel");
     keys: Confirm.cancel-default
-        ? [{ text: Confirm.key, role: AskRole.option }, { text: @tr("CANCEL"), role: AskRole.confirm }]
+        ? [{ text: Confirm.key, role: AskRole.option }, { text: @tr("Cancel"), role: AskRole.confirm }]
         : [{ text: Confirm.key, role: Confirm.destructive ? AskRole.destructive : AskRole.confirm }];
     answered(i) => { Confirm.answered(i == 0); }
 }

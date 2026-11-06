@@ -25,7 +25,7 @@ impl Ctl {
             let mut outside: Vec<(String, usize)> = counts.into_iter().collect();
             outside.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
             let total: usize = outside.iter().map(|(_, n)| n).sum();
-            let choose = if roots.is_empty() { tr("Add Folder…") } else { tr("Add Another Folder…") }.to_uppercase();
+            let choose = if roots.is_empty() { tr("Add Folder…") } else { tr("Add Another Folder…") };
             let left = if outside.is_empty() { String::new() } else { trn("One photo of your former library lies outside your favourites:", "{n} photos of your former library lie outside your favourites:", total as u64) };
             let more = if outside.len() > CATCH_UP_SHOWN { tr!("and {count} more folders", count = outside.len() - CATCH_UP_SHOWN) } else { String::new() };
             let all_in = if outside.is_empty() && !roots.is_empty() { tr("Every photo of your former library lies in a favourite.") } else { "" };

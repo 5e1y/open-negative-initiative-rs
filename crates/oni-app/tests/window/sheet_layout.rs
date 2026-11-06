@@ -162,13 +162,13 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
         ("a confirm", Box::new(|on| {
             confirm.set_title("Delete the Preset?".into());
             confirm.set_message("It is removed from the presets folder.".into());
-            confirm.set_key("DELETE".into());
+            confirm.set_key("Delete".into());
             confirm.set_shown(on);
         }), (w / 2.0 - 180.0, w / 2.0 + 180.0)),
         ("the New Roll confirm", Box::new(|on| {
             confirm.set_title("New Roll".into());
             confirm.set_message("3 photos move into a new folder, Roll #9, beside them. Their sidecars go with them.".into());
-            confirm.set_key("CREATE ROLL".into());
+            confirm.set_key("Create Roll".into());
             confirm.set_shown(on);
         }), (w / 2.0 - 180.0, w / 2.0 + 180.0)),
         ("the welcome", Box::new(|on| help.set_welcome_shown(on)), (w / 2.0 + 120.0, w / 2.0 + 256.0)),

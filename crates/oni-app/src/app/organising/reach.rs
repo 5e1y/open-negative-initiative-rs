@@ -102,9 +102,9 @@ pub(in crate::app) fn tile_note(presence: Presence, path: &str, computer: &Compu
 /// A triplet's lead marked by its pass gone: the seal's words, then its tooltip.
 pub(in crate::app) fn pass_words(channel: usize, name: &str) -> (String, String) {
     match channel {
-        0 => (tr("R MISSING").into(), tr!("Its red pass “{pass}” is missing beside it.", pass = name)),
-        1 => (tr("G MISSING").into(), tr!("Its green pass “{pass}” is missing beside it.", pass = name)),
-        _ => (tr("B MISSING").into(), tr!("Its blue pass “{pass}” is missing beside it.", pass = name)),
+        0 => (tr("R missing").into(), tr!("Its red pass “{pass}” is missing beside it.", pass = name)),
+        1 => (tr("G missing").into(), tr!("Its green pass “{pass}” is missing beside it.", pass = name)),
+        _ => (tr("B missing").into(), tr!("Its blue pass “{pass}” is missing beside it.", pass = name)),
     }
 }
 
@@ -224,10 +224,10 @@ impl Ctl {
             lib.set_banner_reach(reach);
         }
         let words: Vec<SharedString> = keys.iter().map(|k| match k {
-            BannerKey::Follow => tr("FOLLOW").into(),
-            BannerKey::Locate => tr("LOCATE…").into(),
-            BannerKey::Unfavourite => tr("REMOVE FROM FAVOURITES").into(),
-            BannerKey::Forget => tr("REMOVE FROM LIBRARY…").into(),
+            BannerKey::Follow => tr("Follow").into(),
+            BannerKey::Locate => tr("Locate…").into(),
+            BannerKey::Unfavourite => tr("Remove from Favourites").into(),
+            BannerKey::Forget => tr("Remove from Library…").into(),
         }).collect();
         lib.set_banner_keys(ModelRc::new(VecModel::from(words)));
     }

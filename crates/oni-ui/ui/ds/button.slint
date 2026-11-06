@@ -33,6 +33,8 @@ component Face inherits Rectangle {
     in property <length> glyph;
     in property <color> ink;
     in property <length> legend;
+    in property <int> weight;
+    in property <length> tracking;
     in property <length> word-room;
     in property <bool> lamp-shown;
     in property <bool> lamp-lit;
@@ -60,8 +62,8 @@ component Face inherits Rectangle {
             ink: root.ink;
             text: root.word;
             font-size: root.legend;
-            font-weight: ButtonStyle.legend-weight;
-            letter-spacing: ButtonStyle.legend-tracking;
+            font-weight: root.weight;
+            letter-spacing: root.tracking;
         }
     }
     // `keycapOrnament`: the lamp at the legend's top right, a step past its last letter, on the face.
@@ -89,8 +91,6 @@ export component Button inherits Rectangle {
     // help topic whose demo the card plays above it.
     in property <string> note;
     in property <string> demo;
-    // `DSPanelButton`'s capitals, posed here; an AppKit key, as the console's, keeps its word as written.
-    in property <bool> capitals: true;
     // The widest word the key ever shows, so it keeps that width as its word changes.
     in property <string> widest;
     in property <length> fixed-width: 0px;
@@ -139,9 +139,12 @@ export component Button inherits Rectangle {
     property <length> radius: root.mini ? ButtonStyle.small-radius : ButtonStyle.radius;
     property <length> pad: root.mini ? ButtonStyle.small-padding : ButtonStyle.padding;
     property <length> glyph: root.glyph-size > 0 ? root.glyph-size : root.mini ? ButtonStyle.mini-glyph : ButtonStyle.icon;
-    property <length> legend: root.legend-size > 0 ? root.legend-size : root.mini ? ButtonStyle.mini-legend : ButtonStyle.legend;
+    property <length> legend: root.legend-size > 0 ? root.legend-size : root.mini && root.keycap ? ButtonStyle.mini-legend : ButtonStyle.legend;
+    // Capitals, bold and spaced, are the keycap's: a flat key or a ghost shows its word as written.
+    property <int> weight: root.keycap ? ButtonStyle.legend-weight : ButtonStyle.word-weight;
+    property <length> tracking: root.keycap ? ButtonStyle.legend-tracking : 0px;
     property <bool> worded: root.text != "";
-    property <string> word: root.capitals ? root.text.to-uppercase() : root.text;
+    property <string> word: root.keycap ? root.text.to-uppercase() : root.text;
     property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
     // The glyph's ink: its own, the danger's red on a destructive key, else dark on a light face and
     // light on a dark one; a ghost's lifts under the hand.
@@ -169,15 +172,15 @@ export component Button inherits Rectangle {
         visible: false;
         text: root.word;
         font-size: root.legend;
-        font-weight: ButtonStyle.legend-weight;
-        letter-spacing: ButtonStyle.legend-tracking;
+        font-weight: root.weight;
+        letter-spacing: root.tracking;
     }
     measure := Label {
         visible: false;
-        text: root.capitals ? root.widest.to-uppercase() : root.widest;
+        text: root.keycap ? root.widest.to-uppercase() : root.widest;
         font-size: root.legend;
-        font-weight: ButtonStyle.legend-weight;
-        letter-spacing: ButtonStyle.legend-tracking;
+        font-weight: root.weight;
+        letter-spacing: root.tracking;
     }
     if !root.keycap && !root.ghost: Rectangle {
         border-radius: root.radius;
@@ -206,6 +209,8 @@ export component Button inherits Rectangle {
             glyph: root.glyph;
             ink: root.ink;
             legend: root.legend;
+            weight: root.weight;
+            tracking: root.tracking;
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px) : 0px;
             lamp-shown: root.lamp-shown;
             lamp-lit: root.lamp-lit;

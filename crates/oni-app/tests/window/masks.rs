@@ -98,7 +98,7 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     panel.invoke_rename_mask();
     rig.pump();
     assert!(dialog.get_shown() && dialog.get_field());
-    assert_eq!((dialog.get_title().as_str(), dialog.get_text().as_str(), dialog.get_key().as_str()), ("Rename This Flat-Field Mask", "panel", "RENAME"));
+    assert_eq!((dialog.get_title().as_str(), dialog.get_text().as_str(), dialog.get_key().as_str()), ("Rename This Flat-Field Mask", "panel", "Rename"));
     dialog.invoke_answered(true, "   ".into());
     rig.pump();
     assert!(!dialog.get_shown() && flat_fields::entries(&support)[0].name == "panel");
@@ -145,7 +145,7 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     assert_eq!((settings().flat_field.mask, settings().flat_field.custom.as_deref(), settings().flat_field.amount), (FlatFieldMask::Custom, Some(b_id.as_str()), 1.0));
     assert!(dialog.get_shown() && !dialog.get_field());
     assert_eq!(dialog.get_title(), "Move This Photo Out of the Library?");
-    assert_eq!((dialog.get_cancel().as_str(), dialog.get_key().as_str()), ("KEEP IN LIBRARY", "MOVE OUT"));
+    assert_eq!((dialog.get_cancel().as_str(), dialog.get_key().as_str()), ("Keep in Library", "Move Out"));
     rig.shot("masks-move-out");
     // Keep in Library: B stays where it is.
     rig.key("\u{1b}");

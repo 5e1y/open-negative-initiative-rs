@@ -43,7 +43,7 @@ impl Ctl {
         self.told(title, message);
         self.state.borrow_mut().nav.unstarred = Some(favourite.to_owned());
         if let Some(w) = self.window() {
-            w.global::<Told>().set_action(tr("UNDO").into());
+            w.global::<Told>().set_action(tr("Undo").into());
         }
     }
 
@@ -58,7 +58,7 @@ impl Ctl {
         };
         self.state.borrow_mut().org.told_step = step;
         if let Some(w) = self.window() {
-            w.global::<Told>().set_action(tr("UNDO").into());
+            w.global::<Told>().set_action(tr("Undo").into());
         }
     }
 

@@ -190,7 +190,7 @@ impl Ctl {
             let c = w.global::<Confirm>();
             c.set_title(title.into());
             c.set_message(message.into());
-            c.set_key(key.to_uppercase().into());
+            c.set_key(key.into());
             c.set_destructive(destructive);
             c.set_cancel_default(quitting);
             c.set_shown(true);

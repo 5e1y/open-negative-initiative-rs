@@ -19,8 +19,8 @@ export component AbsentNote inherits Inset {
     Label { role: TextRole.section; text: Absent.title; wrap: word-wrap; }
     if Absent.detail != "": Label { tone: Tone.secondary; text: Absent.detail; wrap: word-wrap; }
     ButtonGroup { align: GroupAlign.end;
-        if Absent.folder != "": Button { text: @tr("SHOW THE FOLDER"); clicked => { Absent.show-folder(); } }
-        Button { text: @tr("BACK TO THE GALLERY"); clicked => { Absent.back(); } }
+        if Absent.folder != "": Button { text: @tr("Show the Folder"); clicked => { Absent.show-folder(); } }
+        Button { text: @tr("Back to the Gallery"); clicked => { Absent.back(); } }
     }
 }
 
@@ -36,6 +36,6 @@ export global Unsaved {
 export component UnsavedSheet inherits AskSheet {
     title: Unsaved.title;
     message: Unsaved.message;
-    keys: [{ text: @tr("DISCARD"), role: AskRole.destructive }, { text: @tr("RETRY"), role: AskRole.confirm }];
+    keys: [{ text: @tr("Discard"), role: AskRole.destructive }, { text: @tr("Retry"), role: AskRole.confirm }];
     answered(i) => { Unsaved.answered(i); }
 }

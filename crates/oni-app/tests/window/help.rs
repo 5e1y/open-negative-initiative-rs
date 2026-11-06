@@ -52,10 +52,10 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     // What's New: every note news on a fresh Mac; a hover reads one, which keeps its pill until quit.
     let first = shell(&support);
     let news = first.window.global::<News>();
-    assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("UPDATED", "NEW"));
+    assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("Updated", "New"));
     news.invoke_read("lighting.1.3.1".into());
     rig.pump();
-    assert_eq!(news.get_lighting().as_str(), "UPDATED", "read, but kept this session");
+    assert_eq!(news.get_lighting().as_str(), "Updated", "read, but kept this session");
     let seen = Preferences::load(&support).value("whatsNewSeen").cloned();
     assert_eq!(seen, Some(serde_json::json!(["lighting.1.3.1"])));
 
@@ -90,10 +90,10 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     // The next launch: the read note is gone, the others stay, and the sheet is not due.
     let second = shell(&support);
     let news = second.window.global::<News>();
-    assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("", "NEW"));
+    assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("", "New"));
     assert!(!second.ctl.welcome_due());
     second.ctl.act(oni_app::Act::WhatsNew);
     rig.pump();
-    assert_eq!(news.get_lighting().as_str(), "UPDATED", "Show What's New Again brings every note back");
+    assert_eq!(news.get_lighting().as_str(), "Updated", "Show What's New Again brings every note back");
     let _ = std::fs::remove_dir_all(&root);
 }

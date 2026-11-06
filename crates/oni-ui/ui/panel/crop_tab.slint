@@ -18,9 +18,9 @@ export component CropPane inherits Pane {
         // The three keys share the plate's room alike, so their words stand evenly apart.
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("COPY"); help: @tr("Copies this photo's crop."); clicked => { Framing.act(Act.copy-framing); } }
-            Button { size: ButtonSize.plate; text: @tr("PASTE"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
-            Button { size: ButtonSize.plate; text: @tr("PASTE TO ROLL"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
+            Button { size: ButtonSize.plate; text: @tr("Copy"); help: @tr("Copies this photo's crop."); clicked => { Framing.act(Act.copy-framing); } }
+            Button { size: ButtonSize.plate; text: @tr("Paste"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
+            Button { size: ButtonSize.plate; text: @tr("Paste to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
         }
     }
     Section {
@@ -68,7 +68,7 @@ export component CropPane inherits Pane {
             Button {
                 size: ButtonSize.plate;
                 fills: true;
-                text: Framing.armed ? @tr("APPLY WINDOW") : @tr("SET WINDOW");
+                text: Framing.armed ? @tr("Apply Window") : @tr("Set Window");
                 on: Framing.armed;
                 help: @tr("Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it.");
                 clicked => { Framing.act(Act.window-arm); }

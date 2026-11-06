@@ -139,7 +139,8 @@ export component KeyProbe inherits AppWindow {
     }
 }
 
-// Two keys on a plate, two on a mini plate and two on a spaced row, where a check reads their walls.
+// Two keys on a plate, two on a mini plate and two on a spaced row, where a check reads their walls;
+// a keycap and a block's title, where it reads which words are drawn in capitals.
 export component GroupProbe inherits AppWindow {
     title: "ONI Group Probe";
     out property <length> plate-gap: plate-b.absolute-position.x - plate-a.absolute-position.x - plate-a.width;
@@ -170,6 +171,8 @@ export component GroupProbe inherits AppWindow {
             row-a := Button { text: "Website"; }
             row-b := Button { text: "Feedback"; }
         }
+        Button { keycap: true; text: "Done"; }
+        Section { title: "Block title"; separated: false; foldable: false; }
     }
 }
 

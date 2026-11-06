@@ -110,17 +110,17 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     let caught = n.get_catch_up_lines();
     let caught: Vec<(String, String)> = (0..caught.row_count()).filter_map(|i| caught.row_data(i)).map(|l| (l.folder.to_string(), l.count.to_string())).collect();
     assert_eq!(caught, [(p(&home.join("Old")), "2".to_string()), (p(&home.join("Scans/Roll 1")), "1".to_string())]);
-    assert_eq!(n.get_catch_up_choose().as_str(), "ADD FOLDER…");
+    assert_eq!(n.get_catch_up_choose().as_str(), "Add Folder…");
     assert!(n.get_welcome_shown());
     let welcome = n.get_welcome();
     let offered: Vec<String> = (0..welcome.row_count()).filter_map(|i| welcome.row_data(i)).map(|l| l.title.to_string()).collect();
-    assert_eq!(offered, ["ADD OLD", "ADD SCANS"]);
+    assert_eq!(offered, ["Add Old", "Add Scans"]);
     // Adding a folder from the sheet stars it and opens it; its photos are then in.
     n.invoke_catch_up_added(0);
     rig.until("Old opened", Duration::from_secs(30), || ctl.state.borrow().read_done() && opened().is_some());
     assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()));
     assert_eq!(n.get_catch_up_left().as_str(), "One photo of your former library lies outside your favourites:");
-    assert_eq!(n.get_catch_up_choose().as_str(), "ADD ANOTHER FOLDER…", "twin: a folder in, the key asks for another");
+    assert_eq!(n.get_catch_up_choose().as_str(), "Add Another Folder…", "twin: a folder in, the key asks for another");
     rig.settle();
     println!("shot {}", rig.shot("roots-catch-up").display());
     assert!(!n.get_welcome_shown(), "a folder opened, the welcome leaves");
@@ -216,7 +216,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rig.pump();
     assert_eq!(titles(w), ["Scans", "Film"]);
     let told = w.global::<Told>();
-    assert!(told.get_shown() && told.get_title() == "Removed from Favourites" && told.get_action() == "UNDO");
+    assert!(told.get_shown() && told.get_title() == "Removed from Favourites" && told.get_action() == "Undo");
     assert_eq!(told.get_message().as_str(), "“Old” is no longer a favourite.");
     told.invoke_acted();
     rig.pump();

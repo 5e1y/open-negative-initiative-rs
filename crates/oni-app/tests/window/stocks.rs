@@ -51,7 +51,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     assert!(stocks.get_shown());
     let brands = stocks.get_brands();
     let names: Vec<String> = (0..brands.row_count()).filter_map(|i| brands.row_data(i)).map(|b| b.brand.to_string()).collect();
-    assert_eq!(&names[..3], ["GENERIC", "AGFAPHOTO", "CINESTILL"]);
+    assert_eq!(&names[..3], ["Generic", "AgfaPhoto", "CineStill"]);
     let cells: Vec<_> = (0..brands.row_count())
         .filter_map(|i| brands.row_data(i))
         .flat_map(|b| (0..b.rows.row_count()).filter_map(move |r| b.rows.row_data(r)))
