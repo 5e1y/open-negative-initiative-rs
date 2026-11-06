@@ -8,7 +8,8 @@ and every screen picks it up.
 | File | What it holds | Who writes it |
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme_type.slint` | `Type`, the type scale, re-exported by `theme.slint` | By hand |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
 | `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
 | `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
@@ -40,8 +41,11 @@ pieces the window checks click at fixed places (fields, a scrolled page, a keyca
 
 ## Words
 
-`Label` sets every word in Inter: a block's title (`section`) a step heavier than the words under it, a
-note in the secondary ink, the tertiary ink at AA's 4.5:1 on the panel's ground. `fonts/Inter.ttf` maps
+`Label` sets every word in Inter on one scale (`Type`): `micro` 9.5 pt for a seal or a mini key's legend,
+`caption` 11 for a caption, a value or a key's legend, `label` 13 for the words read, `section` 15
+semibold for a block's title, `title` 17, `heading` 24. A value never outsizes its block's title; a
+note is a label's size in the secondary ink, its lines opened (`Type.leading`); the tertiary ink stands
+at AA's 4.5:1 on the panel's ground. `fonts/Inter.ttf` maps
 its digits and its + − × to their tabular forms (the cmap edited once, offline), so a value keeps its
 width as it changes, on screen and on a contact sheet's numbers.
 
@@ -106,7 +110,7 @@ fade and the chrome stays. The picker's field wears the same face.
   a double click selects a word, a triple click the line (the `text_fields` window check).
 - **`RenameField`**: a `TextField` that takes the focus at once; `role: title` and `outdent` for a title,
   the face led out by its padding so the name typed stays where the title stood.
-- **`SizeFields`, `DateFields`**: two or three centred entries on one face a keycap tall, lit while any
+- **`SizeFields`, `DateFields`**: two or three centred entries on one face a field tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
 - **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it. A help
   mark lays out at its glyph's size and catches the hand over a small key's square, so a line keeps its height.

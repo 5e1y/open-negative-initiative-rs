@@ -47,7 +47,7 @@ component Point inherits VerticalLayout {
     in property <string> text;
     spacing: Space.xs;
     Label { text: root.title; role: TextRole.section; }
-    Label { text: root.text; tone: Tone.secondary; wrap: word-wrap; }
+    Label { text: root.text; role: TextRole.note; }
 }
 
 // `WelcomeSheet`: the version's photo edge to edge, then what changed, and GET STARTED; one column
@@ -67,7 +67,7 @@ export component WelcomeSheet inherits Sheet {
         VerticalLayout {
             spacing: Space.s;
             Label { text: @tr("ONI {}, the slide film and contact sheet update", Help.release); role: TextRole.heading; wrap: word-wrap; }
-            Label { text: @tr("Contact sheets, slides, and the whole roll at a glance."); tone: Tone.secondary; wrap: word-wrap; }
+            Label { text: @tr("Contact sheets, slides, and the whole roll at a glance."); role: TextRole.note; }
         }
         Point { title: @tr("The whole roll, once measured"); text: @tr("After Prepare the Roll, every frame shows together, numbered by its place on the film."); }
         Point { title: @tr("Contact sheets"); text: @tr("Select a few frames, or press the key for the whole roll: they lie together on one sheet."); }

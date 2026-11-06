@@ -5891,5 +5891,26 @@
     "title": "The inspector's Prepare key reads as the toolbar's, flat",
     "status": "done",
     "detail": "Evaluation s-db78d310: the gallery showed 'PREPARE ROLL' as a keycap in the toolbar and 'PREPARE THE ROLL…' as a second keycap under the inspector's warning, one action under two names and depths. The inspector's key says PREPARE ROLL and lies flat: the keycap stays on the toolbar's, the gallery's commit. The Roll tab's key, in the editor, keeps its wording."
+  },
+  {
+    "id": 1199,
+    "type": "interface",
+    "title": "One type scale of six steps; a block's title a size over its labels",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: about nine type sizes, and block headers in semibold at the labels' 13 pt barely outranked them, the blocks read through their rules. `Type` moves to its own theme_type.slint and holds the scale: micro 9.5 pt (a seal, a mini key's legend), caption 11 (a caption, a value, a key's legend, a tooltip), label 13, section 15 semibold, title 17, heading 24. The value and chip sizes, both 11, merge into caption; the keys' legends leave their own 10.5 and 9 pt for caption and micro. A section's title now stands at 15 pt semibold over 13 pt regular labels."
+  },
+  {
+    "id": 1200,
+    "type": "interface",
+    "title": "The inspector's values never outsize their block's title",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the film stock's name, the roll's name and the shot date's digits were set at the 17 pt title size under 13 pt block titles. The inspector's name (`EditableTitle`) and the stock's name take a label's size; the stock's default and dyes, the shot date's default and an empty project's stocks are notes. The size and date boxes hold a field's digits in a hollow a field tall, so the export's W × H and the shot date read as the fields beside them; FieldStyle.boxes-height, a keycap tall for title digits, goes."
+  },
+  {
+    "id": 1201,
+    "type": "interface",
+    "title": "Notes and the help card at a label's size, their lines opened",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: descriptions and help were set at 11 pt in the secondary ink, and a help mark's card was a dense paragraph of 11 pt medium lines. A note takes a label's 13 pt, its lines opened by `Type.leading` (Inter's natural 1.21 em to about 1.4 em); the help card's note is a note in the primary ink, on a card 300 pt wide instead of 260, about 44 characters a line. Prepare's description, its left-out and passes notes and the welcome sheet's lines were notes written by hand at a value's size or without the role: they take the note role. The length of the longest notes (the Colour block's, 487 characters) is the panels' words, left as written."
   }
 ]

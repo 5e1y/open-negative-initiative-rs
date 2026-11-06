@@ -123,8 +123,8 @@ export component Badge inherits Rectangle {
         width: root.fixed ? parent.width : self.preferred-width;
         height: root.fixed || root.seal ? parent.height : self.preferred-height;
         text: root.text;
-        font-size: root.tone == BadgeTone.warning ? Type.value : root.seal ? BadgeStyle.seal-size
-            : root.tone == BadgeTone.step || root.role == TextRole.label ? Type.label : Type.value;
+        font-size: root.tone == BadgeTone.warning ? Type.caption : root.seal ? BadgeStyle.seal-size
+            : root.tone == BadgeTone.step || root.role == TextRole.label ? Type.label : Type.caption;
         font-weight: root.seal ? SealStyle.weight : Type.regular;
         spaced: root.seal;
         // `DSFoil` prints every seal in one dark ink.

@@ -1,5 +1,5 @@
 // The note a hovered control shows: a tooltip's line, a help mark's card and the layer that holds it.
-import { Colour, Space, Type, Motion, TipStyle } from "theme.slint";
+import { Colour, Space, Motion, TipStyle } from "theme.slint";
 import { Outward } from "depth.slint";
 import { Tip, Tips, TipBox, Label, TextRole, Tone, Picture, Ground } from "base.slint";
 
@@ -47,11 +47,9 @@ export component TipCard inherits Outward {
         }
         Rectangle { height: root.has-picture ? TipStyle.padding : 0px; }
         note := Label {
-            role: TextRole.caption;
-            font-weight: Type.medium;
+            role: TextRole.note;
             tone: Tone.primary;
             text: root.card ? root.text : "";
-            wrap: word-wrap;
         }
     }
 }
