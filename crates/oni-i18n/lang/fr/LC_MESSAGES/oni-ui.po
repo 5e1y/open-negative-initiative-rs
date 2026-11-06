@@ -322,12 +322,12 @@ msgid "OK"
 msgstr "OK"
 
 #: crates/oni-ui/ui/ds/base.slint
-msgid "before"
-msgstr "avant"
+msgid "Before"
+msgstr "Avant"
 
 #: crates/oni-ui/ui/ds/base.slint
-msgid "after"
-msgstr "après"
+msgid "After"
+msgstr "Après"
 
 #: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/editors.slint
 msgid "RGB"
@@ -513,7 +513,7 @@ msgstr "Magenta"
 msgid "Hue"
 msgstr "Teinte"
 
-#: crates/oni-ui/ui/editors.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
 msgid "Saturation"
 msgstr "Saturation"
 
@@ -1273,21 +1273,21 @@ msgstr "Y + : vers le jaune"
 msgid "Look"
 msgstr "Look"
 
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP"
-msgstr "TEMP"
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Temperature"
+msgstr "Température"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP −: toward cool"
-msgstr "TEMP − : plus froid"
+msgid "Temperature −: toward cool"
+msgstr "Température − : plus froid"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP +: toward warm"
-msgstr "TEMP + : plus chaud"
+msgid "Temperature +: toward warm"
+msgstr "Température + : plus chaud"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Colour density makes every colour stronger or greyer at once, what other apps call saturation."
-msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant davantage qu’un grand sujet chaud, et la corrige avec Température et Teinte ; les niveaux restent là où la mesure de la pellicule les a placés, et l’onglet Pellicule contient Intensité de la balance, la part de cette correction que prennent les deux curseurs. Température et Teinte ne déplacent que la couleur, jamais la luminosité de la photo. Densité de couleur rend toutes les couleurs plus fortes ou plus grises à la fois, ce que d’autres apps appellent la saturation."
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is: Temperature reads the stops between red and blue, Tint between magenta and green. Saturation makes every colour stronger or greyer at once."
+msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant davantage qu’un grand sujet chaud, et la corrige avec Température et Teinte ; les niveaux restent là où la mesure de la pellicule les a placés, et l’onglet Pellicule contient Intensité de la balance, la part de cette correction que prennent les deux curseurs. Température et Teinte ne déplacent que la couleur, jamais la luminosité de la photo : Température se lit en EV entre le rouge et le bleu, Teinte entre le magenta et le vert. Saturation rend toutes les couleurs plus fortes ou plus grises à la fois."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Crop before using the automatic balance"
@@ -1302,16 +1302,8 @@ msgid "The frame's light toward grey with Temperature and Tint, scaled by Balanc
 msgstr "Amène la lumière de la vue vers le gris avec Température et Teinte, dosée par Intensité de la balance"
 
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Temperature"
-msgstr "Température"
-
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Tint"
 msgstr "Teinte"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Colour density"
-msgstr "Densité de couleur"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper Correction"
@@ -2244,6 +2236,14 @@ msgstr "Comparer"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
 msgstr "Pro"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Pro: every setting by hand, the place to start"
+msgstr "Pro : chaque réglage à la main, pour commencer"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Scanner: a lab scanner's keypad, density and colour in steps on its machine's look"
+msgstr "Scanner : le clavier d’un scanner de labo, densité et couleur par pas sur le rendu de sa machine"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"
@@ -4464,10 +4464,6 @@ msgstr "{list} et {last}"
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Colour (Temperature, Tint)"
 msgstr "Couleur (Température, Teinte)"
-
-#: crates/oni-core/src/preset_parameters.rs
-msgid "Colour Density"
-msgstr "Densité de couleur"
 
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Chroma Decompression"

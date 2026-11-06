@@ -14,6 +14,8 @@ export component Tabs inherits Rectangle {
     in property <[bool]> marked;
     // A colour per tab drawn in place of its name, which stays the tab's accessible label.
     in property <[color]> swatches;
+    // A tooltip per tab; a swatch with none shows its name.
+    in property <[string]> helps;
     // Tabs drawn fainter, still pressable: choosing one changes something else.
     in property <[bool]> dimmed;
     // Tabs out of reach: drawn at the disabled state's opacity, deaf to the pointer.
@@ -73,6 +75,7 @@ export component Tabs inherits Rectangle {
                 changed width => { if (self.holds) { root.hold(self.x, self.width, false); } }
                 accessible-role: tab;
                 accessible-label: name;
+                accessible-description: root.helps[i];
                 opacity: root.disabled[i] ? State.disabled
                     : (i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle)
                     * (root.dimmed[i] && i != root.selected ? TabsStyle.idle : 1);
@@ -99,10 +102,10 @@ export component Tabs inherits Rectangle {
                         if (i != root.selected) { Clicks.press(); }
                         root.picked(i);
                     }
-                    // A swatch shows no name, so its tab gives it in the tooltip.
                     changed has-hover => {
-                        if root.swatches.length > 0 {
-                            Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+                        let tip = root.helps[i] != "" ? root.helps[i] : root.swatches.length > 0 ? name : "";
+                        if tip != "" {
+                            Tips.hover(self.has-hover, tip, self.absolute-position.x, self.absolute-position.y + self.height);
                         }
                     }
                 }

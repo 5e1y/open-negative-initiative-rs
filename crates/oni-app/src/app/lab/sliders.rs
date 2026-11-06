@@ -1,9 +1,9 @@
 //! The Scanner face's sliders, letters then effects: each one's value and range in steps, and its
-//! readout, a letter's steps in the screen's unit, an effect in its own.
+//! readout, a letter's steps in the screen's unit, an effect as Pro's slider of the same quantity.
 
-use super::{EFFECTS, percent, same, spelled, stops};
+use super::{EFFECTS, field, same, spelled};
 use slint::{ModelRc, SharedString, VecModel};
-use oni_link::scanner::{Effect, Letter};
+use oni_link::scanner::Letter;
 use oni_settings::PipelineSettings;
 
 pub struct Slider {
@@ -13,7 +13,7 @@ pub struct Slider {
     pub readout: String,
 }
 
-/// Every slider of `settings`, D, C, M, Y and TEMP, then Contrast, Vignette and Chrome.
+/// Every slider of `settings`, D, C, M, Y and Temperature, then Contrast, Vignette and Chrome.
 pub fn sliders(settings: &PipelineSettings) -> Vec<Slider> {
     let s = &settings.scanner;
     let letters = Letter::ALL.into_iter().zip([s.d, s.c, s.m, s.y, s.w]).map(|(letter, count)| {
@@ -25,7 +25,7 @@ pub fn sliders(settings: &PipelineSettings) -> Vec<Slider> {
     let effects = EFFECTS.into_iter().zip([f.contrast, f.vignette.stops, f.secret_sauce]).map(move |(effect, value)| {
         let (low, high) = effect.range(channel);
         let steps = |v: f32| (v / effect.step()).round() as i32;
-        Slider { steps: steps(value), low: steps(low), high: steps(high), readout: unit(effect, value) }
+        Slider { steps: steps(value), low: steps(low), high: steps(high), readout: field(effect).readout(value) }
     });
     letters.chain(effects).collect()
 }
@@ -48,14 +48,6 @@ pub fn publish(lab: &crate::Lab, settings: &PipelineSettings) {
     }
 }
 
-/// An effect's value as the screen writes it: Contrast and Chrome in percent, Vignette in stops.
-fn unit(effect: Effect, value: f32) -> String {
-    match effect {
-        Effect::Vignette => stops(value),
-        Effect::Contrast | Effect::Chrome => percent(value),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -69,11 +61,12 @@ mod tests {
         let all = sliders(&settings);
         assert_eq!(all.len(), 8);
         assert_eq!((all[1].steps, all[1].low, all[1].high, all[1].readout.as_str()), (4, -48, 48, "+2"));
-        assert_eq!((all[4].low, all[4].high), (-20, 20), "TEMP has its own range, ±10 units in half steps");
-        // A notch of the rail is one step, half a unit: 97 places on density, 41 on TEMP.
+        assert_eq!((all[4].low, all[4].high), (-20, 20), "Temperature has its own range, ±10 units in half steps");
+        // A notch of the rail is one step, half a unit: 97 places on density, 41 on Temperature.
         assert_eq!((all[0].high - all[0].low + 1, all[4].high - all[4].low + 1), (97, 41));
         assert_eq!((all[5].steps, all[5].low, all[5].high, all[5].readout.as_str()), (3, -10, 10, "+15%"));
-        assert_eq!((all[6].steps, all[6].readout.as_str()), (-3, "−0.3 EV"));
+        assert_eq!((all[6].steps, all[6].readout.as_str()), (-3, "−0.30 EV"));
+        assert_eq!(all[6].readout, crate::fields::Field::Vignette.readout(-0.3), "one format on both faces");
         assert_eq!((all[7].low, all[7].high), (0, 30));
         // Twin: a value read in its own unit, not in steps, would put Contrast at 0.
         assert_ne!(all[5].steps, 0);

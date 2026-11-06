@@ -135,7 +135,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     let s = settings();
     assert!((s.scanner_finish.contrast - 0.05).abs() < 1e-6 && (s.scanner_finish.vignette.stops + 0.3).abs() < 1e-6);
     assert_eq!(s.print.contrast, pro_contrast, "a Scanner key never moves Pro's Contrast");
-    assert_eq!(finish(w), ["CONTRAST +5%", "VIGNETTE −0.3 EV", "CHROME 0%"]);
+    assert_eq!(finish(w), ["CONTRAST +5%", "VIGNETTE −0.30 EV", "CHROME 0%"]);
     assert!(modified(w)[3]);
     lab.invoke_clear_effect(1);
     lab.invoke_reset_group(3);

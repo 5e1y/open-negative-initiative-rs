@@ -7,10 +7,9 @@ use std::ops::RangeInclusive;
 /// One unit of a readout's last shown digit, in the value's own terms.
 fn unit(readout: Readout) -> f32 {
     match readout {
-        Readout::OfRange(top) => top / 100.0,
         Readout::Ceiling => 0.001,
         Readout::Pixels => 0.1,
-        Readout::Stops | Readout::Signed | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
+        Readout::Stops | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
         Readout::SignedPercent | Readout::Percent => 0.01,
     }
 }
@@ -63,13 +62,13 @@ mod tests {
     fn an_arrow_moves_the_readout_by_one_and_lands_on_its_numbers() {
         let track = track_range(Field::Temperature);
         let top = *track.end();
-        // +18.6 reads +19: the next press reads +20, never +21.
-        let at = stepped(Field::Temperature, 0.186 * top, 1, &track);
-        assert_eq!(Field::Temperature.readout(at), "+20");
-        assert_eq!(Field::Temperature.readout(stepped(Field::Temperature, at, -10, &track)), "+10");
-        // Twin: a step of 1 % of the range, as accessibility's was, skips every odd number.
+        // +0.186 reads +0.19 EV: the next press reads +0.20 EV, never +0.21 EV.
+        let at = stepped(Field::Temperature, 0.186, 1, &track);
+        assert_eq!(Field::Temperature.readout(at), "+0.20 EV");
+        assert_eq!(Field::Temperature.readout(stepped(Field::Temperature, at, -10, &track)), "+0.10 EV");
+        // Twin: a step of 1 % of the range, as accessibility's was, skips three numbers in four.
         let span = top - *track.start();
-        assert_eq!(Field::Temperature.readout(0.20 * top + span / 100.0), "+22");
+        assert_eq!(Field::Temperature.readout(0.20 + span / 100.0), "+0.24 EV");
         // Held at the track's end, and the black point keeps its shown sense: right lifts the black.
         assert_eq!(stepped(Field::Temperature, top, 5, &track), top);
         let black = track_range(Field::BlackPoint);

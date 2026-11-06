@@ -195,13 +195,13 @@ export component SplitGuide inherits Rectangle {
         ink: grab.has-hover || grab.pressed ? Colour.handle-active : Colour.guide;
     }
     Label {
-        text: @tr("before");
+        text: @tr("Before");
         role: TextRole.value;
         x: (parent.width - self.width) / 2 - SplitStyle.label-inset;
         y: Space.s;
     }
     Label {
-        text: @tr("after");
+        text: @tr("After");
         role: TextRole.value;
         x: (parent.width - self.width) / 2 + SplitStyle.label-inset;
         y: Space.s;
