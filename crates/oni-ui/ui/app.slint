@@ -36,7 +36,7 @@ export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWi
 export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage }
 export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe, KeyboardProbe } from "ds/probes.slint";
-export { Raster, KeycapLook, Depth } from "ds/ds.slint";
+export { Raster, KeycapLook, Depth, Typing } from "ds/ds.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach, EdgeNumber, SheetBox, SheetInks } from "ds/ds.slint";
 
 export global App {
@@ -273,6 +273,11 @@ export component MainWindow inherits AppWindow {
             }
         }
         key-pressed(event) => {
+            // Tab from the photo enters the panel beside it, its tab bar first.
+            if (event.text == Key.Tab && self.has-focus && root.beside-photo && !App.panel-hidden && !Keyboard.covered) {
+                Keyboard.inward += 1;
+                return EventResult.accept;
+            }
             if (event.text == " " && Canvas.painting) {
                 Canvas.space-held = true;
                 return EventResult.accept;

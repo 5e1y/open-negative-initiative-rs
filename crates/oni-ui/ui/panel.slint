@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar and its five tabs, each in its own file under `panel/`.
-import { Space, Tabs, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
+import { Space, Tabs, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard } from "ds/ds.slint";
 import { Editors } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { RollPane } from "panel/roll_tab.slint";
@@ -15,6 +15,9 @@ export component Panel inherits Surface {
     property <length> header: rule.y + rule.height;
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
+    // Tab from the photo enters here, at the tab bar.
+    property <int> inward: Keyboard.inward;
+    changed inward => { tabs.take-keyboard(); }
     VerticalLayout {
         // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
         // `DSHistogram` on the scanner screen's black glass; Lighting's curves over it on the Color tab.
@@ -58,7 +61,7 @@ export component Panel inherits Surface {
             padding-right: Space.m;
             padding-top: Space.s;
             padding-bottom: Space.s;
-            Tabs {
+            tabs := Tabs {
                 tabs: [@tr("Roll"), @tr("Crop"), @tr("Colour"), @tr("Details")];
                 marked: [false, false, false, false];
                 disabled: [false, PanelState.crop-closed, false, false];

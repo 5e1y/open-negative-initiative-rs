@@ -83,8 +83,10 @@ One model for every control, as macOS draws it with full keyboard access:
   editable title, the grid (its photo ringed) and the open photo. Space or Return presses a key or flips a switch.
 - **One ring** (`FocusRing`, `FocusStyle`): the accent around what holds the keyboard, a gap off its edge;
   a control shows it once Tab gives it the keyboard, a field while it is typed in (`Inward { ringed }`).
-- **A click never gives a control the keyboard**: any press gives it back to the photos, a field's own aside
-  (the window's pointer hook counts each press in `Outside`). A key whose holder vanished goes to the monitor
+- **A click gives the keyboard to a slider alone**: any other press gives it back to the photos, a field's own
+  aside (the window's pointer hook counts each press in `Outside`); Escape on a slider gives it back too.
+- **Tab from the photo enters the editor's panel** at its tab bar (`Keyboard.inward`), the short way to its
+  sliders; the walk goes on from there through the window. A key whose holder vanished goes to the monitor
   (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the keyboard back.
 - **A sheet keeps Tab inside it**: the monitor's two walls, Tab stops only while `Keyboard.covered`, hand the
   keyboard to the sheet's first control going forward and to its last going back.
@@ -109,13 +111,17 @@ holds the focus (`focused-look` forces it). Disabled, the words fade and the chr
 
 ## Sliders and plots
 
-- **Rail** (`DSRail` in `dsRecessed`): the track grey or the bipolar gradient, the fill on its own round, then
+- **Rail** (`DSRail` in `dsRecessed`): `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient
+  between soft hues (`hue-chroma`, `hue-light`), the fill (`SliderStyle.lit`) on its own round, then
   `Inward`'s shade, the black edge and the lit rim (`SliderStyle.rim`) over an opaque `under`; `vertical` runs low to high upwards.
 - **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls, no shadow, edged in
   black, two white grip lines centred on its face. It grows by a scale on the rise spring, so its raster is drawn once.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
   the hand; the stepped slider's knob carries its grip too, its − and + flat keys as tall as the knob, the
-  rail beside them showing each end's colour.
+  rail beside them showing each end's colour. AppKit's press, continuous or stepped: the knob pressed is
+  grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put. The hand on the
+  row grows the knob and lights the value; a double click on the value types a number over it (`Typing`,
+  answered by Rust), reached by the steps an arrow takes.
 - **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
   `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
 

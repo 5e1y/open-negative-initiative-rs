@@ -1,9 +1,17 @@
 // The sliders: one knob, one rail, the readout above them, and `Slider`, continuous or in whole steps.
-import { Colour, Space, Stroke, State, Motion, SliderStyle } from "theme.slint";
+import { Colour, Space, Stroke, State, Motion, SliderStyle, FieldStyle } from "theme.slint";
 import { Keycap, Inward } from "depth.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
 import { Look, Button } from "button.slint";
-import { KeyScope } from "keyboard.slint";
+import { KeyScope, Keyboard } from "keyboard.slint";
+import { Outside } from "outside.slint";
+import { RenameField } from "fields.slint";
+
+// A number typed over a slider's readout, which Rust reads: the steps that reach it from the readout,
+// `per` readout units a step or, at 0, one unit of its last digit; 0 when either holds no number.
+export global Typing {
+    pure callback steps(readout: string, typed: string, per: float) -> int;
+}
 
 // `level` and `ramp` light the rail up to the value and `metal` in brushed silver; `bipolar` is a
 // gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
@@ -60,7 +68,7 @@ export component Rail inherits Rectangle {
     in property <SliderFill> fill: SliderFill.none;
     in property <float> at;
     in property <float> from;
-    in property <color> tint: Colour.track-fill;
+    in property <color> tint: SliderStyle.lit;
     in property <color> low;
     in property <color> high;
     in property <length> overhang;
@@ -76,6 +84,9 @@ export component Rail inherits Rectangle {
     property <length> travel: root.along - 2 * root.overhang;
     property <length> lit: root.overhang + root.at * root.travel;
     property <length> start: root.from > 0 ? root.overhang + root.from * root.travel : 0;
+    pure function soft(c: color) -> color {
+        hsv(c.to-hsv().hue, c.to-hsv().saturation * SliderStyle.hue-chroma, c.to-hsv().value * SliderStyle.hue-light, c.to-hsv().alpha)
+    }
     height: SliderStyle.track;
     Rectangle {
         border-radius: SliderStyle.track-radius;
@@ -86,9 +97,9 @@ export component Rail inherits Rectangle {
     }
     Rectangle {
         border-radius: SliderStyle.track-radius;
-        background: root.fill != SliderFill.bipolar ? Colour.track
-            : root.vertical ? @linear-gradient(0deg, root.low 0%, root.high 100%)
-            : @linear-gradient(90deg, root.low 0%, root.high 100%);
+        background: root.fill != SliderFill.bipolar ? SliderStyle.ground
+            : root.vertical ? @linear-gradient(0deg, root.soft(root.low) 0%, root.soft(root.high) 100%)
+            : @linear-gradient(90deg, root.soft(root.low) 0%, root.soft(root.high) 100%);
     }
     // Its own round, no clip: a clipping rail renders each slider apart.
     if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {
@@ -124,15 +135,20 @@ export component Rail inherits Rectangle {
     }
 }
 
-// `DSReadout`: a slider's name, its value at the right in the secondary ink, both faded when off;
-// with `resets`, a double click on the name brings the value back to rest and `help` is its tooltip.
+// `DSReadout`: the name, the value right in the secondary ink, both faded when off; a double click on the
+// name rests it (`resets`, `help` its tip), on the value opens a number typed over it (`typeable`).
 export component ValueHeader inherits HorizontalLayout {
     in property <string> label;
     in property <string> value;
     in property <bool> enabled: true;
     in property <bool> resets;
     in property <string> help;
+    in property <bool> typeable;
+    // The hand on the slider: the value in the primary ink.
+    in property <bool> lit;
+    property <bool> typing;
     callback reset();
+    callback typed(string);
     spacing: Space.s;
     opacity: root.enabled ? 1 : State.disabled;
     Label {
@@ -145,7 +161,27 @@ export component ValueHeader inherits HorizontalLayout {
             changed has-hover => { Tips.hover(self.has-hover, root.help, self.absolute-position.x, self.absolute-position.y + self.height); }
         }
     }
-    Label { text: root.value; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
+    Label {
+        text: root.value;
+        role: TextRole.value;
+        tone: root.lit || root.typing ? Tone.primary : Tone.secondary;
+        horizontal-alignment: right;
+        if root.typeable: TouchArea {
+            enabled: root.enabled && !root.typing;
+            double-clicked => { root.typing = true; }
+            changed has-hover => { Tips.hover(self.has-hover, @tr("Double-click to type a value"), self.absolute-position.x, self.absolute-position.y + self.height); }
+        }
+        // Over the value, out of the row's layout so the slider never moves; Escape gives the value back.
+        if root.typing: RenameField {
+            x: parent.width - self.width;
+            y: (parent.height - self.height) / 2;
+            width: SliderStyle.entry;
+            height: FieldStyle.height;
+            text: root.value;
+            committed(t) => { root.typing = false; root.typed(t); }
+            cancelled => { root.typing = false; root.typed(root.value); }
+        }
+    }
 }
 
 // A stepped slider's key beside its rail, which shows its end's colour: one step a click, three with ⇧.
@@ -157,8 +193,8 @@ component StepKey inherits Button {
     horizontal-stretch: 0;
 }
 
-// `DSSlider`: the readout, then a track whose row grabs; Rust holds the value and its timing.
-// `stepped`: whole steps from `lowest` to `highest`, a key either side, the name's double click resting it.
+// `DSSlider`: the readout, then a track whose row grabs and, pressed, takes the keyboard; Rust holds the
+// value and its timing. `stepped`: whole steps from `lowest` to `highest`, a key either side.
 export component Slider inherits VerticalLayout {
     in property <int> field;
     in property <string> label;
@@ -167,7 +203,7 @@ export component Slider inherits VerticalLayout {
     in property <string> value-text;
     in property <float> fraction;
     in property <SliderFill> fill: SliderFill.level;
-    in property <color> tint: Colour.track-fill;
+    in property <color> tint: SliderStyle.lit;
     in property <color> low;
     in property <color> high;
     // `DSSlider.knob`: a cap in the colour the value carries, the chrome's grey otherwise.
@@ -180,6 +216,8 @@ export component Slider inherits VerticalLayout {
     in property <int> value;
     in property <int> lowest;
     in property <int> highest;
+    // What one whole step reads in the readout's unit, so a number typed over it finds its steps.
+    in property <float> step-reads;
     // The tooltips of the minus key, the name and the plus key.
     in property <string> minus-help;
     in property <string> help;
@@ -215,13 +253,28 @@ export component Slider inherits VerticalLayout {
     pure function step-at(x: length) -> int {
         root.lowest + round(clamp(x / max(1px, track.width), 0, 1) * (root.highest - root.lowest))
     }
+    // The steps from the readout to a number typed over it, held on a stepped slider's range; Return
+    // leaves the keyboard to the slider, a press elsewhere has given it on already.
+    function type-in(text: string) {
+        let by = Typing.steps(root.readout, text, root.stepped ? root.step-reads : 0);
+        let reach = root.stepped ? clamp(root.value + by, root.lowest, root.highest) - root.value : by;
+        if (reach != 0) {
+            root.step(root.field, reach);
+        }
+        if (!Keyboard.held) {
+            keys.focus();
+        }
+    }
     if root.header: ValueHeader {
         label: root.label;
         value: root.readout;
         enabled: root.enabled;
         resets: root.stepped;
         help: root.help;
+        typeable: true;
+        lit: area.has-hover || area.held;
         reset => { root.reset(); }
+        typed(t) => { root.type-in(t); }
     }
     HorizontalLayout {
         spacing: Space.s;
@@ -254,14 +307,15 @@ export component Slider inherits VerticalLayout {
                 Knob {
                     centre: parent.width * root.shown;
                     fill: root.knob;
-                    grown: root.enabled && (area.over-knob || area.held || root.look != Look.live);
+                    grown: root.enabled && (area.has-hover || area.held || root.look != Look.live);
                 }
                 area := TouchArea {
                     enabled: root.enabled;
                     in-out property <bool> held;
                     property <bool> fine;
-                    // Where the drag measures from: a press off the knob lands it under the pointer, as a stepped
-                    // slider's does, and the drag goes on from there; with ⌥ it stays put and the drag is finer.
+                    // AppKit's press, continuous or stepped: the knob grabbed where it stands, the rail landing it
+                    // under the pointer, ⌥ keeping it put; the drag measures from `origin`, the value was at `start`.
+                    property <length> start;
                     property <length> origin;
                     // A scroll's events, and `settle` after the last, which the knob follows unsprung.
                     in-out property <bool> scrolling;
@@ -272,17 +326,19 @@ export component Slider inherits VerticalLayout {
                     }
                     pointer-event(event) => {
                         if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            keys.focus();
+                            self.fine = event.modifiers.alt;
+                            self.start = parent.width * root.at;
+                            self.origin = self.fine || self.over-knob ? self.mouse-x : self.start;
                             if (root.stepped) {
-                                root.hand = root.step-at(self.mouse-x);
+                                root.hand = root.step-at(self.start + self.mouse-x - self.origin);
                                 self.held = true;
                                 root.held(true);
                                 if (root.hand != root.value) {
                                     root.step(root.field, root.hand - root.value);
                                 }
                             } else {
-                                self.fine = event.modifiers.alt;
                                 self.held = !root.press(root.field, self.fine);
-                                self.origin = self.fine || self.over-knob ? self.mouse-x : parent.width * root.shown;
                                 if (self.held && self.origin != self.mouse-x) {
                                     root.drag(root.field, self.mouse-x - self.origin, track.width, false);
                                 }
@@ -303,7 +359,7 @@ export component Slider inherits VerticalLayout {
                     }
                     moved => {
                         if (self.held && root.stepped) {
-                            let next = root.step-at(self.mouse-x);
+                            let next = root.step-at(self.start + self.mouse-x - self.origin);
                             if (next != root.hand) {
                                 root.step(root.field, next - root.hand);
                                 root.hand = next;
@@ -333,6 +389,10 @@ export component Slider inherits VerticalLayout {
                     enabled: root.enabled;
                     radius: self.height / 2;
                     key-pressed(event) => {
+                        if (event.text == Key.Escape) {
+                            Outside.released += 1;
+                            return accept;
+                        }
                         let by = event.text == Key.RightArrow || event.text == Key.UpArrow ? 1 : event.text == Key.LeftArrow || event.text == Key.DownArrow ? -1 : 0;
                         if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
                             return reject;

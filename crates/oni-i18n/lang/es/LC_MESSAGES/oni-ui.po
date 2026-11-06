@@ -449,6 +449,10 @@ msgstr "Quitar de favoritos"
 msgid "Add to the favourites"
 msgstr "Añadir a favoritos"
 
+#: crates/oni-ui/ui/ds/slider.slint
+msgid "Double-click to type a value"
+msgstr "Haz doble clic para escribir un valor"
+
 #: crates/oni-ui/ui/ds/splash.slint
 msgid "Photo"
 msgstr "Foto"

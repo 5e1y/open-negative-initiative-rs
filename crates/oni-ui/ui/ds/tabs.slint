@@ -21,6 +21,8 @@ export component Tabs inherits Rectangle {
     // The tab a check or the lab shows hovered; -1 follows the pointer alone.
     in property <int> hover-tab: -1;
     callback picked(int);
+    // The keyboard given to the bar, as Tab gives it.
+    public function take-keyboard() { keys.focus(); }
     // A selection outside the tabs, as De-dust's, shows no pill; it waits where it stood, so it never slides out.
     out property <bool> pill-shown: root.selected >= 0 && root.selected < root.tabs.length;
     // The held tab's place, written by that tab once laid: tabs share the bar evenly unless a label needs more.
@@ -110,7 +112,7 @@ export component Tabs inherits Rectangle {
         }
     }
     // The bar takes Tab as one control, the arrows picking the tab beside, as a radio group does.
-    KeyScope {
+    keys := KeyScope {
         radius: root.height / 2;
         key-pressed(event) => {
             let by = event.text == Key.RightArrow ? 1 : event.text == Key.LeftArrow ? -1 : 0;

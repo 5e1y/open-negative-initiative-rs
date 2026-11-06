@@ -176,6 +176,12 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(steps.iter().any(|d| d % 2 != 0));
     lab.invoke_clear(0);
     rig.pump();
+    // The rail pressed holds the keyboard, its arrows stepping D: Escape gives it back to the photos.
+    rig.key("\u{F703}");
+    assert_eq!(settings().scanner.d, 1, "the pressed rail takes the arrows");
+    rig.key("\u{1b}");
+    lab.invoke_clear(0);
+    rig.pump();
     // A bare arrow walks the group on the Scanner face, which the next frame opens on.
     rig.key("\u{F703}");
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("B.NEF"));

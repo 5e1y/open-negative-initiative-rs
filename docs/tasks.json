@@ -5667,5 +5667,26 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1159,
+    "type": "interface",
+    "title": "A pressed slider holds the keyboard, one press rule for every slider, and Tab from the photo enters the panel",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (UX, major): a click on a slider left the arrows walking the photos, a click on the track meant to focus moved the value, and the first slider lay about 31 Tabs from the toolbar. A press on a slider now gives it the keyboard, ringed as Tab does: its arrows step it until a press elsewhere (the window's pointer hook, as every control) or Escape gives the keyboard back to the photos. One press rule, AppKit's NSSlider, for the continuous and the stepped slider alike: the knob pressed is grabbed where it stands and moves nothing until the hand does, a press on the rail lands the knob under the pointer, ⌥ keeps it put; the stepped slider's knob jumped to the nearest step under the pointer even when pressed, a click on the knob of a 97-step rail moving it up to three steps. The drag measures from the value's place, never from where the settle spring has the knob. Tab from the open photo enters the editor's panel at its tab bar (`Keyboard.inward`), the first slider a few stops on; ⇧Tab and the walk on from there reach the bar and the columns as before. Checks: window keyboard::a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere (twin: a pressed tab bar takes none), scanner (the pressed rail takes the arrows, Escape gives them back), editor_routes (Tab from the photo, then →, picks the panel's next tab; the bar's first key would have walked the photos)."
+  },
+  {
+    "id": 1160,
+    "type": "interface",
+    "title": "A number typed over a slider's value",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (UX, major, both rounds): double-clicking a slider's number did nothing. A double click on the value opens it, selected, to a number typed over it (`ValueHeader { typeable }`, the `RenameField` laid over the value outside the row's layout, so the slider below never moves); Return or a press elsewhere takes it, Escape gives the value back, a tooltip says so. The number becomes the steps an arrow takes (`Typing.steps`, answered by `slider_track::typed_steps`): one unit of the readout's last digit on a continuous slider, so the value lands on the number typed through the arrows' own path and every owner's `step`, and what one step reads on the Scanner's stepped sliders (`Lab.step-reads`: half a unit a letter, 5% or 0.1 EV an effect), held on their range. Signs +, - and U+2212, a comma for the point, and a unit typed after the digits are read. Return leaves the keyboard to the slider. The body's double clicks are unchanged: the second press on a continuous rail resets, a stepped rail's or name's double click rests it. Checks: slider_track::a_number_typed_over_a_readout_is_the_steps_an_arrow_would_take (twin: whole units fall fifty times short), lab::sliders::a_number_typed_over_a_scanner_readout_finds_its_steps (twin: the last digit makes 15% fifteen steps), window keyboard::a_number_typed_over_a_slider_readout_steps_it_there (twin: words move nothing). French and Spanish filled in."
+  },
+  {
+    "id": 1161,
+    "type": "interface",
+    "title": "The rail in soft hues, its ground at 3:1, and a hover the eye reads",
+    "status": "done",
+    "detail": "Evaluation s-db78d310 (UI and UX, major, owner's decision): Temperature, Tint and the Scanner's C, M, Y and TEMP ran full-chroma gradients beside the photo; the unfilled rail measured 1.83:1 against the panel; the hover grew the knob about a point. Every bipolar rail now runs between soft hues, its ends at 0.4 of their saturation and 0.85 of their value (`SliderStyle.hue-chroma`, `hue-light`), in the Rail itself, so the Roll tab's, Prepare's, the paper's and the bands' alike: the ends of Temperature, Tint, C, M, Y and TEMP keep 3.8:1 or more against the panel. The rail's bare ground is `SliderStyle.ground` (white at 36 %, about 3.2:1 on the panel) and its lit stretch `SliderStyle.lit` over it (white at 45 %, about 2.2:1 on the ground). The hand anywhere on the row, which a press answers, grows the knob by 1.15, three points across, and lights the value in the primary ink."
   }
 ]

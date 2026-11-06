@@ -82,6 +82,15 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.key("\r");
     assert_eq!(panel.get_tab(), 2, "Return on Color leaves nothing");
 
+    // Tab from the photo enters the panel at its tab bar, whose arrows pick the tab beside; the bar's
+    // first key would have taken it, its arrow walking the photos.
+    rig.key("\t");
+    assert!(!w.get_keys_focused() && w.get_keys_held(), "Tab from the photo hands the keyboard to a control");
+    rig.key(&slint::SharedString::from(Key::RightArrow));
+    assert_eq!(panel.get_tab(), 3, "the panel's tab bar holds the keyboard");
+    w.invoke_refocus();
+    pick(2);
+
     // ⌘K opens the crop and a second leaves it for the last panel, as De-dust's key; so does Escape.
     rig.chord(Key::Control, "k");
     assert_eq!(panel.get_tab(), 1, "⌘K opens the crop");

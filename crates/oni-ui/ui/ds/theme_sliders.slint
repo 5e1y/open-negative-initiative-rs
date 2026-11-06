@@ -12,7 +12,8 @@ export global SliderStyle {
     out property <length> row: SliderStyle.knob-height;
     // `Keycap.Variant.small`: the knob is a small key, its walls level, its face the keycap grey.
     in-out property <float> knob-factor: 0.525;
-    in-out property <float> knob-grow: DS.control-knob-grow;
+    // The knob under the hand, larger by three points across, so the hover reads at a glance.
+    in-out property <float> knob-grow: 1.15;
     in-out property <length> grip: DS.control-knob-line * 1px;
     in-out property <length> grip-gap: DS.control-knob-line-gap * 1px;
     out property <color> knob: DS.palette-keycap;
@@ -34,6 +35,16 @@ export global SliderStyle {
     out property <color> rest-ink: DS.palette-text-secondary;
     out property <float> ramp-start: 0.45;
     out property <float> ramp-end: 0.9;
+    // The rail's bare ground, 3:1 against the panel as a control's edge asks, and its lit stretch
+    // laid over it, a step further toward white.
+    out property <color> ground: #ffffff5d;
+    out property <color> lit: #ffffff73;
+    // A bipolar rail's ends at these shares of their saturation and value: soft hues, never full
+    // chroma beside the photo.
+    in-out property <float> hue-chroma: 0.4;
+    in-out property <float> hue-light: 0.85;
+    // The number typed over a readout, wide enough for the longest, "−0.000 EV".
+    out property <length> entry: 88px;
     out property <length> label-gap: DS.space-xs;
     // `DS.Control.grabSize`: a handle's catch on a track several handles share.
     out property <length> grab: DS.control-grab-size;

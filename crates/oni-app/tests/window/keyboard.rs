@@ -14,6 +14,7 @@ fn probe() -> (common::Rig, KeyboardProbe) {
     let rig = common::rig(shots);
     let probe = KeyboardProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
+    oni_app::slider_track::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(PhysicalSize::new(400, 400));
     probe.show().unwrap();
@@ -42,6 +43,12 @@ fn press(rig: &common::Rig, p: &KeyboardProbe, x: f32, y: f32, hooked: bool) {
     rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
     rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
     rig.pump();
+}
+
+/// Two presses at one spot, as quick as a hand's double click, each through the window's pointer hook.
+fn double_click(rig: &common::Rig, p: &KeyboardProbe, x: f32, y: f32) {
+    press(rig, p, x, y, true);
+    press(rig, p, x, y, true);
 }
 
 pub(crate) fn tab_walks_every_control_in_reading_order_each_answering_its_own_keys() {
@@ -151,4 +158,67 @@ pub(crate) fn a_sheet_keeps_tab_inside_it_while_it_covers_the_window() {
     key(&rig, &p, "\t");
     key(&rig, &p, " ");
     assert_eq!(p.get_clicks(), 1, "uncovered, the window's key takes Tab");
+}
+
+pub(crate) fn a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere() {
+    let (rig, p) = probe();
+    let right: SharedString = Key::RightArrow.into();
+    let escape: SharedString = Key::Escape.into();
+    let (x, y) = (p.get_knob_x(), p.get_knob_y());
+    // The knob pressed is grabbed where it stands, the slider holding the keyboard: its arrows step it.
+    press(&rig, &p, x, y, true);
+    assert_eq!(p.get_steps(), 0, "a press on the knob moves nothing");
+    key(&rig, &p, &right);
+    key(&rig, &p, &right);
+    assert!(!p.get_monitor_focused() && p.get_held(), "the pressed slider holds the keyboard");
+    assert_eq!(p.get_steps(), 2, "its arrows step it");
+    rig.shot("keyboard-slider-pressed");
+    // Escape hands the keyboard back to the photos, which hear the next arrow.
+    key(&rig, &p, &escape);
+    assert!(p.get_monitor_focused(), "Escape gives the keyboard back to the photos");
+    key(&rig, &p, &right);
+    assert_eq!((p.get_steps(), p.get_heard()), (2, right.clone()));
+    // A press elsewhere does as well.
+    press(&rig, &p, x, y, true);
+    press(&rig, &p, x, p.get_bare_y(), true);
+    assert!(p.get_monitor_focused(), "a press beside the slider gives the keyboard back");
+    // Twin: a press on another control leaves the keyboard with the photos.
+    press(&rig, &p, p.get_tabs_x(), p.get_tabs_y(), true);
+    key(&rig, &p, &right);
+    assert!(p.get_monitor_focused() && p.get_heard() == right && p.get_steps() == 2, "a pressed tab bar takes no keyboard");
+}
+
+pub(crate) fn a_number_typed_over_a_slider_readout_steps_it_there() {
+    let (rig, p) = probe();
+    let right: SharedString = Key::RightArrow.into();
+    let (x, y) = (p.get_value_x(), p.get_value_y());
+    // A double click on the value opens it selected: the number typed replaces it, Return takes it.
+    double_click(&rig, &p, x, y);
+    assert!(p.get_entering(), "the value opens to a number typed over it");
+    rig.key("2");
+    rig.key("0");
+    rig.shot("keyboard-slider-typed");
+    rig.key("\n");
+    assert_eq!(p.get_steps(), 20, "Return takes the number typed");
+    assert!(!p.get_entering());
+    // Return leaves the keyboard to the slider, whose arrows step on from the number typed.
+    key(&rig, &p, &right);
+    assert_eq!(p.get_steps(), 21);
+    // Escape hands the value back unchanged; then the next Escape gives the photos the keyboard.
+    double_click(&rig, &p, x, y);
+    rig.key("5");
+    rig.key(&SharedString::from(Key::Escape));
+    assert_eq!(p.get_steps(), 21, "Escape leaves the value as it was");
+    // A press elsewhere takes the number typed, the photos holding the keyboard after it.
+    double_click(&rig, &p, x, y);
+    rig.key("\u{2212}");
+    rig.key("3");
+    press(&rig, &p, x, p.get_bare_y(), true);
+    assert_eq!(p.get_steps(), -3, "a press elsewhere takes the number typed");
+    assert!(p.get_monitor_focused(), "the press gave the photos the keyboard");
+    // Twin: words where a number goes move nothing.
+    double_click(&rig, &p, x, y);
+    rig.key("x");
+    rig.key("\n");
+    assert_eq!(p.get_steps(), -3);
 }

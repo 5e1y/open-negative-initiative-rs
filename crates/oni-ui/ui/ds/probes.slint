@@ -1,7 +1,7 @@
 // Pieces at fixed places for the window checks that click or read them: fields and a tab bar, a scrolled
 // page, a step keycap, a field's lip three ways, a plate, fields and pickers to press beside, a submenu,
 // the keyboard's controls.
-import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Keyboard, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle, Slider, Toggle, Sheet } from "ds.slint";
+import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Keyboard, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle, Slider, SliderStyle, Toggle, Sheet } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -335,6 +335,15 @@ export component KeyboardProbe inherits AppWindow {
     // Where the tabs' first tab lies, which a press lands on.
     out property <length> tabs-x: tabs.absolute-position.x + Space.l;
     out property <length> tabs-y: tabs.absolute-position.y + tabs.height / 2;
+    // The slider's knob at rest in the middle, its value at the readout's right end, and a spot of the
+    // window where no control lies.
+    out property <length> knob-x: slider.absolute-position.x + slider.width / 2;
+    out property <length> knob-y: slider.absolute-position.y + slider.height - SliderStyle.row / 2;
+    out property <length> value-x: slider.absolute-position.x + slider.width - Space.xs;
+    out property <length> value-y: slider.absolute-position.y + Space.s;
+    out property <length> bare-y: root.height - Space.s;
+    // A number being typed over the slider's value, which holds the keyboard as a field does.
+    out property <bool> entering: TextInputInterface.text-input-focused && !field.editing;
     public function refocus() { keys.focus(); }
     min-width: 0;
     min-height: 0;
@@ -357,7 +366,7 @@ export component KeyboardProbe inherits AppWindow {
                 if root.keyed: Button { text: "Key"; clicked => { root.clicks += 1; } }
             }
             tabs := Tabs { tabs: ["One", "Two", "Three"]; selected: root.tab; picked(i) => { root.tab = i; } }
-            Slider { label: "Value"; readout: root.steps; fraction: 0.5; step(f, by) => { root.steps += by; } }
+            slider := Slider { label: "Value"; readout: root.steps; fraction: 0.5; step(f, by) => { root.steps += by; } }
             Toggle { label: "Switch"; on: root.on; toggled(on) => { root.on = on; } }
             field := TextField { name: "Field"; }
         }

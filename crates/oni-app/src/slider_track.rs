@@ -23,6 +23,50 @@ pub fn stepped(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f
     f.shown(shown.clamp(*track.start(), *track.end()))
 }
 
+/// A number as a readout or a hand writes it, and its places after the point: `+`, `-` or U+2212
+/// before it, a comma read as the point, and what follows its digits, a unit, left aside.
+pub fn read(text: &str) -> Option<(f64, u32)> {
+    let text = text.trim_start();
+    let (negative, rest) = match text.chars().next() {
+        Some('-' | '\u{2212}') => (true, &text[text.chars().next().map_or(0, char::len_utf8)..]),
+        Some('+') => (false, &text[1..]),
+        _ => (false, text),
+    };
+    let (mut digits, mut places, mut point) = (String::new(), 0, false);
+    for c in rest.trim_start().chars() {
+        match c {
+            '0'..='9' => {
+                digits.push(c);
+                places += u32::from(point);
+            }
+            '.' | ',' if !point => {
+                digits.push('.');
+                point = true;
+            }
+            _ => break,
+        }
+    }
+    let value: f64 = digits.parse().ok()?;
+    Some((if negative { -value } else { value }, places))
+}
+
+/// The steps from a readout to a number typed over it: `per` readout units a step, or one unit of
+/// the readout's last digit where `per` is 0, an arrow's step; none when either holds no number.
+pub fn typed_steps(readout: &str, typed: &str, per: f32) -> i32 {
+    let (Some((shown, places)), Some((wanted, _))) = (read(readout), read(typed)) else { return 0 };
+    let unit = if per > 0.0 { f64::from(per) } else { 10f64.powi(-(places as i32)) };
+    ((wanted - shown) / unit).round() as i32
+}
+
+/// Answers `Typing.steps` on `window`, whose sliders otherwise take no typed number.
+pub fn serve<C>(window: &C)
+where
+    C: slint::ComponentHandle,
+    for<'a> crate::Typing<'a>: slint::Global<'a, C>,
+{
+    window.global::<crate::Typing>().on_steps(|readout, typed, per| typed_steps(&readout, &typed, per));
+}
+
 pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {
     let (low, high) = f.track();
     low..=high
@@ -76,6 +120,30 @@ mod tests {
         let lifted = stepped(Field::BlackPoint, 0.0, 1, &black);
         assert!(lifted < 0.0 && Field::BlackPoint.readout(lifted) == "+1%", "{}", Field::BlackPoint.readout(lifted));
         assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 1, &track_range(Field::Exposure))), "+0.51 EV");
+    }
+
+    #[test]
+    fn a_number_typed_over_a_readout_is_the_steps_an_arrow_would_take() {
+        // The readout's last digit is a step: +1.50 EV to 2 is fifty hundredths, to −0.3 one hundred and eighty.
+        assert_eq!(typed_steps("+1.50 EV", "2", 0.0), 50);
+        assert_eq!(typed_steps("+1.50 EV", "\u{2212}0.3", 0.0), -180);
+        assert_eq!(typed_steps("+23", "-4", 0.0), -27);
+        assert_eq!(typed_steps("0%", "15 %", 0.0), 15);
+        assert_eq!(typed_steps("12.5 px", "12,8", 0.0), 3);
+        assert_eq!(typed_steps("3 / 24", "7", 0.0), 4);
+        // A stepped slider's steps are its own: +15% to 25% at 5% a step is two, half units on a letter.
+        assert_eq!(typed_steps("+15%", "25", 5.0), 2);
+        assert_eq!(typed_steps("+2", "\u{2212}1.5", 0.5), -7);
+        // The same number, or none, moves nothing.
+        assert_eq!(typed_steps("+1.50 EV", "1.5", 0.0), 0);
+        assert_eq!(typed_steps("+1.50 EV", "warm", 0.0), 0);
+        assert_eq!(typed_steps("", "2", 0.0), 0);
+        // Twin: the steps counted in whole units would leave the hundredths' readout fifty times short.
+        assert_ne!(typed_steps("+1.50 EV", "2", 1.0), 50);
+        // Typed then stepped, the value lands on the number typed.
+        let track = track_range(Field::Exposure);
+        let at = stepped(Field::Exposure, 1.5, typed_steps(&Field::Exposure.readout(1.5), "-0.37", 0.0), &track);
+        assert_eq!(Field::Exposure.readout(at), "\u{2212}0.37 EV");
     }
 
     #[test]

@@ -11,6 +11,13 @@ pub struct Slider {
     pub low: i32,
     pub high: i32,
     pub readout: String,
+    /// What one step reads, in the readout's unit: a number typed over the readout finds its steps.
+    pub per_step: f32,
+}
+
+/// A readout's number, as `Typing` reads it.
+fn read(readout: &str) -> f32 {
+    crate::slider_track::read(readout).map_or(0.0, |(n, _)| n as f32)
 }
 
 /// Every slider of `settings`, D, C, M, Y and TEMP, then Contrast, Vignette and Chrome.
@@ -18,14 +25,14 @@ pub fn sliders(settings: &PipelineSettings) -> Vec<Slider> {
     let s = &settings.scanner;
     let letters = Letter::ALL.into_iter().zip([s.d, s.c, s.m, s.y, s.w]).map(|(letter, count)| {
         let (low, high) = letter.range();
-        Slider { steps: count as i32, low: low.into(), high: high.into(), readout: spelled(count) }
+        Slider { steps: count as i32, low: low.into(), high: high.into(), readout: spelled(count), per_step: read(&spelled(1)) }
     });
     let f = &settings.scanner_finish;
     let channel = oni_core::store::channel(settings.mode);
     let effects = EFFECTS.into_iter().zip([f.contrast, f.vignette.stops, f.secret_sauce]).map(move |(effect, value)| {
         let (low, high) = effect.range(channel);
         let steps = |v: f32| (v / effect.step()).round() as i32;
-        Slider { steps: steps(value), low: steps(low), high: steps(high), readout: unit(effect, value) }
+        Slider { steps: steps(value), low: steps(low), high: steps(high), readout: unit(effect, value), per_step: read(&unit(effect, effect.step())) }
     });
     letters.chain(effects).collect()
 }
@@ -36,6 +43,7 @@ pub fn publish(lab: &crate::Lab, settings: &PipelineSettings) {
     let ints = |f: fn(&Slider) -> i32| sliders.iter().map(f).collect::<Vec<i32>>();
     let (steps, lows, highs) = (ints(|s| s.steps), ints(|s| s.low), ints(|s| s.high));
     let readouts: Vec<SharedString> = sliders.iter().map(|s| s.readout.as_str().into()).collect();
+    let per_step: Vec<f32> = sliders.iter().map(|s| s.per_step).collect();
     if !same(&lab.get_steps(), &steps) {
         lab.set_steps(ModelRc::new(VecModel::from(steps)));
     }
@@ -45,6 +53,9 @@ pub fn publish(lab: &crate::Lab, settings: &PipelineSettings) {
     }
     if !same(&lab.get_readouts(), &readouts) {
         lab.set_readouts(ModelRc::new(VecModel::from(readouts)));
+    }
+    if !same(&lab.get_step_reads(), &per_step) {
+        lab.set_step_reads(ModelRc::new(VecModel::from(per_step)));
     }
 }
 
@@ -77,5 +88,16 @@ mod tests {
         assert_eq!((all[7].low, all[7].high), (0, 30));
         // Twin: a value read in its own unit, not in steps, would put Contrast at 0.
         assert_ne!(all[5].steps, 0);
+    }
+
+    #[test]
+    fn a_number_typed_over_a_scanner_readout_finds_its_steps() {
+        let all = sliders(&PipelineSettings::default());
+        let per: Vec<f32> = all.iter().map(|s| s.per_step).collect();
+        assert_eq!(per, [0.5, 0.5, 0.5, 0.5, 0.5, 5.0, 0.1, 5.0], "half a unit a letter, 5% or 0.1 EV an effect");
+        let typed = |i: usize, text: &str| crate::slider_track::typed_steps(&all[i].readout, text, all[i].per_step);
+        assert_eq!((typed(1, "+3.5"), typed(5, "-15"), typed(6, "0.4")), (7, -3, 4));
+        // Twin: counted in the readout's last digit, Contrast's 15% would be fifteen steps, not three.
+        assert_eq!(crate::slider_track::typed_steps(&all[5].readout, "15", 0.0), 15);
     }
 }
