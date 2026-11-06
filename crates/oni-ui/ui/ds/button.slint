@@ -5,6 +5,7 @@ import { Label, Icon, Tone, Tones, Tip, Tips, Clicks } from "base.slint";
 
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
+import { KeyScope } from "keyboard.slint";
 
 // `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
 // glyph alone on no face, its tone lifting under the hand, as a help mark or a star.
@@ -183,7 +184,7 @@ export component Button inherits Rectangle {
         background: root.face;
     }
     // A flat key and a ghost lie bare, their glyph on the whole key, unmoved.
-    Keycap {
+    cap := Keycap {
         bare: !root.keycap;
         albedo: root.face;
         variant: root.mini ? KeycapVariant.mini : KeycapVariant.small;
@@ -220,31 +221,59 @@ export component Button inherits Rectangle {
             // A ghost is a mark, not a key: it neither presses nor sounds.
             if (root.ghost || event.button != PointerEventButton.left) { return; }
             if (event.kind == PointerEventKind.down) {
-                root.down = true;
-                root.waiting = false;
-                root.lifted = false;
-                hold.running = false;
-                hold.running = true;
-                Clicks.press();
+                root.sink();
             } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
                 if (hold.running) { root.waiting = true; } else { root.lift(); }
             }
         }
         changed has-hover => {
             if (!self.has-hover) { root.lifted = false; }
-            if (root.note != "") {
-                if (self.has-hover) { Tip.demo = root.demo; }
-                Tips.note(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height, root.absolute-position.y);
-            } else {
-                // Left, it hides the tooltip it showed, whatever its help says since.
-                if (self.has-hover) { root.told = root.help; }
-                Tips.hover(self.has-hover, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
-            }
+            root.tell();
         }
     }
-    // The help shown under the hand, hidden once it no longer says what the key does.
+    // Space or Return on the key holding the keyboard presses it as a click does.
+    keys := KeyScope {
+        enabled: root.enabled;
+        radius: cap.radius;
+        changed has-focus => { root.tell(); }
+        key-pressed(event) => {
+            if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
+                return reject;
+            }
+            if (!event.repeat) {
+                root.shift = event.modifiers.shift;
+                if (!root.ghost) {
+                    root.sink();
+                    root.waiting = true;
+                }
+                root.clicked();
+            }
+            accept
+        }
+    }
+    // The help shown under the hand or while the key holds the keyboard, a mark's note as a card;
+    // hidden once it no longer says what the key does.
     property <string> told;
-    changed help => { if (touch.has-hover) { Tips.hover(false, root.told, 0px, 0px); } }
+    changed help => { if (touch.has-hover || keys.has-focus) { Tips.hover(false, root.told, 0px, 0px); } }
+    function tell() {
+        let shown = touch.has-hover || keys.has-focus;
+        if (root.note != "") {
+            if (shown) { Tip.demo = root.demo; }
+            Tips.note(shown, root.note, root.absolute-position.x, root.absolute-position.y + root.height, root.absolute-position.y);
+        } else {
+            // Left, it hides the tooltip it showed, whatever its help says since.
+            if (shown) { root.told = root.help; }
+            Tips.hover(shown, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
+        }
+    }
+    function sink() {
+        root.down = true;
+        root.waiting = false;
+        root.lifted = false;
+        hold.running = false;
+        hold.running = true;
+        Clicks.press();
+    }
     // Disabled under the hand, the key hears no release: it rises at once.
     changed enabled => {
         if (!root.enabled && root.down) {

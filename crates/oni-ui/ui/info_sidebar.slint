@@ -74,6 +74,7 @@ export component Info inherits Surface {
                     title: @tr("Camera Body");
                     help: @tr("The body this roll was shot on, hand-entered — never read off a scan's own EXIF.");
                     TextField {
+                        name: @tr("Camera Body");
                         placeholder: @tr("e.g. Leica M6");
                         text <=> Library.camera-body;
                         accepted(t) => { Library.camera-body-committed(t); }
@@ -107,6 +108,7 @@ export component Info inherits Surface {
                 Section {
                     title: @tr("Description");
                     TextField { multiline: true;
+                        name: @tr("Description");
                         lines-height: ShellStyle.info-description;
                         text <=> Library.description;
                         left(t) => { Library.description-committed(t); }

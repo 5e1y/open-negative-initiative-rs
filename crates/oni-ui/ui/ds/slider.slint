@@ -3,6 +3,7 @@ import { Colour, Space, Stroke, State, Motion, SliderStyle } from "theme.slint";
 import { Keycap, Inward } from "depth.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
 import { Look, Button } from "button.slint";
+import { KeyScope } from "keyboard.slint";
 
 // `level` and `ramp` light the rail up to the value and `metal` in brushed silver; `bipolar` is a
 // gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
@@ -156,7 +157,7 @@ component StepKey inherits Button {
     horizontal-stretch: 0;
 }
 
-// `DSSlider`: the readout, then a track whose whole row grabs; Rust holds the value and its timing.
+// `DSSlider`: the readout, then a track whose row grabs; Rust holds the value and its timing.
 // `stepped`: whole steps from `lowest` to `highest`, a key either side, the name's double click resting it.
 export component Slider inherits VerticalLayout {
     in property <int> field;
@@ -189,13 +190,16 @@ export component Slider inherits VerticalLayout {
     callback release(int);
     // Rust answers whether the scroll runs along the track; one across it is left to the panel.
     callback scroll(int, length, length, length, bool) -> bool;
-    // Accessibility's increments; a stepped slider's every move, by whole steps.
+    // An arrow's or accessibility's steps, a stepped slider's every move: whole steps, or the readout's
+    // last shown digit on a continuous one.
     callback step(int, int);
     callback reset();
     // A press on a stepped rail holds the edit, so a whole slide is one step to undo.
     callback held(bool);
     // The step under the hand while it slides, ahead of the value the store answers.
     property <int> hand;
+    // ⇧'s step with an arrow: three on a stepped slider, as its keys take, ten on a continuous one.
+    property <int> big: root.stepped ? 3 : 10;
     property <int> span: max(1, root.highest - root.lowest);
     spacing: SliderStyle.label-gap;
     accessible-role: slider;
@@ -256,6 +260,9 @@ export component Slider inherits VerticalLayout {
                     enabled: root.enabled;
                     in-out property <bool> held;
                     property <bool> fine;
+                    // Where the drag measures from: a press off the knob lands it under the pointer, as a stepped
+                    // slider's does, and the drag goes on from there; with ⌥ it stays put and the drag is finer.
+                    property <length> origin;
                     // A scroll's events, and `settle` after the last, which the knob follows unsprung.
                     in-out property <bool> scrolling;
                     out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2;
@@ -275,6 +282,10 @@ export component Slider inherits VerticalLayout {
                             } else {
                                 self.fine = event.modifiers.alt;
                                 self.held = !root.press(root.field, self.fine);
+                                self.origin = self.fine || self.over-knob ? self.mouse-x : parent.width * root.shown;
+                                if (self.held && self.origin != self.mouse-x) {
+                                    root.drag(root.field, self.mouse-x - self.origin, track.width, false);
+                                }
                             }
                         } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
                             if (root.stepped) {
@@ -298,7 +309,7 @@ export component Slider inherits VerticalLayout {
                                 root.hand = next;
                             }
                         } else if (self.held) {
-                            root.drag(root.field, self.mouse-x - self.pressed-x, track.width, self.fine);
+                            root.drag(root.field, self.mouse-x - self.origin, track.width, self.fine);
                         }
                     }
                     scroll-event(event) => {
@@ -314,6 +325,21 @@ export component Slider inherits VerticalLayout {
                     interval: Motion.settle;
                     running: area.scrolling;
                     triggered => { area.scrolling = false; }
+                }
+                // Over the rail's whole length, past the knob's travel as the rail runs.
+                keys := KeyScope {
+                    x: -SliderStyle.knob-width / 2;
+                    width: parent.width + SliderStyle.knob-width;
+                    enabled: root.enabled;
+                    radius: self.height / 2;
+                    key-pressed(event) => {
+                        let by = event.text == Key.RightArrow || event.text == Key.UpArrow ? 1 : event.text == Key.LeftArrow || event.text == Key.DownArrow ? -1 : 0;
+                        if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
+                            return reject;
+                        }
+                        root.step(root.field, event.modifiers.shift ? by * root.big : by);
+                        accept
+                    }
                 }
             }
         }

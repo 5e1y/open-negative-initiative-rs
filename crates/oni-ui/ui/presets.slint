@@ -161,6 +161,7 @@ component PresetForm inherits VerticalLayout {
         label: @tr("Description");
         TextField {
             multiline: true;
+            name: @tr("Description");
             lines-height: PresetStyle.note-height;
             text: Presets.form-note;
             placeholder: @tr("What this look is for");

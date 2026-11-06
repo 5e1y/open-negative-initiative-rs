@@ -83,6 +83,18 @@ impl Ctl {
     pub(in crate::app) fn grid_took_keys(&self) {
         self.state.borrow_mut().nav.keys = false;
     }
+
+    /// The rows took the keyboard by Tab, the opened folder picked where none is, or Tab carried it on.
+    pub(in crate::app) fn rows_held(&self, held: bool) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.nav.keys = held;
+            if held && s.nav.model.selected.is_none() {
+                s.nav.model.selected = s.opened.clone();
+            }
+        }
+        self.publish_navigator();
+    }
 }
 
 #[cfg(test)]

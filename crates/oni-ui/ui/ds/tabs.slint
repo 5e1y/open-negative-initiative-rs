@@ -3,6 +3,7 @@ import { Colour, State, TabsStyle } from "theme.slint";
 import { Label, Tips, Clicks } from "base.slint";
 import { Dot } from "marks.slint";
 import { Inward, Outward } from "depth.slint";
+import { KeyScope } from "keyboard.slint";
 
 // `DSTabBar`: a hollow cut down to the canvas, one raised pill sliding under the selection on the grab
 // spring; a tab answers hover with its label alone. Its owner holds the choice: a click only asks, so a
@@ -32,6 +33,12 @@ export component Tabs inherits Rectangle {
         root.sliding = slide;
         root.pill-x = x;
         root.pill-width = width;
+    }
+    // The tab `by` from the one picked, the first or the last while none is, passing over one out of reach.
+    function pick-beside(by: int) {
+        let from = root.pill-shown ? root.selected : by > 0 ? -1 : root.tabs.length;
+        let next = root.disabled[from + by] ? from + 2 * by : from + by;
+        if (next >= 0 && next < root.tabs.length && !root.disabled[next]) { root.picked(next); }
     }
     init => { if (self.pill-shown) { root.held = root.selected; } }
     changed pill-shown => { if (self.pill-shown) { root.held = root.selected; } }
@@ -100,6 +107,18 @@ export component Tabs inherits Rectangle {
                     }
                 }
             }
+        }
+    }
+    // The bar takes Tab as one control, the arrows picking the tab beside, as a radio group does.
+    KeyScope {
+        radius: root.height / 2;
+        key-pressed(event) => {
+            let by = event.text == Key.RightArrow ? 1 : event.text == Key.LeftArrow ? -1 : 0;
+            if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
+                return reject;
+            }
+            root.pick-beside(by);
+            accept
         }
     }
 }

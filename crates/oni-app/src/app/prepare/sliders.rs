@@ -67,6 +67,21 @@ impl Ctl {
         self.slider_set(i, self.slider_value_at(i, at));
     }
 
+    /// An arrow on a step's slider: a unit of its readout, a pixel of the picker, a frame of the scrubber.
+    pub(in crate::app) fn slider_step(self: &Rc<Self>, i: usize, by: i32) {
+        let value = {
+            let s = self.state.borrow();
+            let v = Self::slider_value(&s.prepare, base_radius(&s), i);
+            match i {
+                AMOUNT | TEMPERATURE | TINT => crate::slider_track::stepped(flat_field(i), v, by, &crate::slider_track::track_range(flat_field(i))),
+                PICKER => (f64::from(v.round() + by as f32)).clamp(pipette::RADIUS_RANGE.0, pipette::RADIUS_RANGE.1) as f32,
+                _ => v + by as f32,
+            }
+        };
+        self.slider_set(i, value);
+        self.keep_picker();
+    }
+
     /// `DSScrollAdjust` on a step's slider: moved along its track, the Picker Size kept once it rests.
     pub(in crate::app) fn slider_scroll(self: &Rc<Self>, i: usize, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
         let from = {

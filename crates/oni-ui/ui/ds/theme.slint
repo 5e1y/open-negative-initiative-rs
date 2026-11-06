@@ -250,6 +250,13 @@ export global MenuStyle {
     out property <duration> sub-delay: 200ms;
 }
 
+// The keyboard's ring around what holds it, as macOS draws it: the accent, a gap off the control's edge.
+export global FocusStyle {
+    out property <color> ink: Colour.accent;
+    out property <length> width: Stroke.emphasis;
+    out property <length> reach: Space.xxs + Stroke.emphasis;
+}
+
 export global TipStyle {
     // A control's tooltip, the system's in Swift, on the scale's smallest round; a help mark's card
     // rounds as `DSHelpBubble`.

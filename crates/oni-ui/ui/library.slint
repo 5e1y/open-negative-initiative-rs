@@ -3,7 +3,7 @@ import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
 import { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
 export { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
-import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu, Banner, Reach } from "ds/ds.slint";
+import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu, Banner, Reach, KeyScope } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -24,6 +24,8 @@ export struct Tile {
     gone-pass: string,
     // A RAW+JPEG pair's mark, `+JPG`, its JPEG behind the RAW.
     companion: string,
+    // The photo the keys act on, ringed while the grid holds the keyboard.
+    cursor: bool,
 }
 
 export struct Heading {
@@ -278,6 +280,8 @@ export component Grid inherits Surface {
                 rgb: t.rgb;
                 gone-pass: t.gone-pass;
                 companion: t.companion;
+                name: t.caption;
+                focused: keys.has-focus && t.cursor;
                 hovered: pointer.has-hover && pointer.mouse-x >= t.x && pointer.mouse-x < t.x + t.width
                     && pointer.mouse-y + Library.scroll >= t.y && pointer.mouse-y + Library.scroll < t.y + t.height;
             }
@@ -310,6 +314,8 @@ export component Grid inherits Surface {
             cancelled => { Library.heading-cancelled(); }
         }
     }
+    // The photos' place in Tab's order: the keys go on to the window's monitor, the ring to their photo.
+    keys := KeyScope { ring: false; }
     // `GalleryEngine`'s ScrollView knob, over the document Rust scrolls: its drag takes the wheel's way.
     knob := ScrollKnob {
         x: 0;

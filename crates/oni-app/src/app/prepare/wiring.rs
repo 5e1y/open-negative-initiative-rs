@@ -60,6 +60,8 @@ impl Ctl {
         let c = me.clone();
         p.on_scroll(move |i, dx, dy, span, fine| c.slider_scroll(usize::try_from(i).unwrap_or(usize::MAX), dx, dy, span, fine));
         let c = me.clone();
+        p.on_slider_step(move |i, by| c.slider_step(usize::try_from(i).unwrap_or(usize::MAX), by));
+        let c = me.clone();
         p.on_release(move |_| {
             c.state.borrow_mut().prepare.slide = None;
             c.keep_picker();

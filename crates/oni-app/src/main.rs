@@ -249,6 +249,12 @@ fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer
         if let WindowEvent::CursorMoved { position, .. } = event {
             cursor.set((position.x, position.y));
         }
+        if let WindowEvent::KeyboardInput { event: key, .. } = event
+            && key.state == ElementState::Pressed
+            && let Some(w) = told.upgrade()
+        {
+            oni_app::outside::keyed(w.window(), || w.invoke_refocus());
+        }
         if let WindowEvent::MouseInput { state: ElementState::Pressed, button, .. } = event {
             if let Some(w) = told.upgrade() {
                 oni_app::outside::pressed(&w);

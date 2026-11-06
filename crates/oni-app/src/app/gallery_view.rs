@@ -87,6 +87,8 @@ impl Ctl {
             let _ = s.disk.send(fingerprint);
         }
         let flags = Ctl::tile_flags(&s);
+        // The photo Space and the arrows act on, which the keyboard's ring marks.
+        let target = crate::picking::space_target(s.shown_picks().cursor.as_deref(), &s.shown_picks().selection, &s.order);
         let tiles: Vec<Tile> = range
             .clone()
             .filter_map(|i| {
@@ -112,6 +114,7 @@ impl Ctl {
                     rgb: flags.get(path).is_some_and(|f| f.2),
                     gone_pass,
                     companion: companion(&s, path).into(),
+                    cursor: target.as_deref() == Some(path.as_str()),
                 })
             })
             .collect();
@@ -348,7 +351,7 @@ fn companion(s: &State, path: &str) -> String {
 fn same_tile(old: &Tile, new: &Tile) -> bool {
     let held = old.picture.size().width > 0 || new.picture.size().width == 0;
     let place = (old.index, old.x, old.y, old.width, old.height) == (new.index, new.x, new.y, new.width, new.height);
-    let marks = (old.selected, old.medal, old.missing, old.rgb) == (new.selected, new.medal, new.missing, new.rgb);
+    let marks = (old.selected, old.cursor, old.medal, old.missing, old.rgb) == (new.selected, new.cursor, new.medal, new.missing, new.rgb);
     let words = (old.away, &old.note, &old.gone_pass, &old.companion) == (new.away, &new.note, &new.gone_pass, &new.companion);
     held && place && marks && words && old.caption == new.caption
 }
@@ -370,6 +373,7 @@ mod tests {
         assert!(same_tile(&tile, &Tile { picture: Image::default(), ..tile.clone() }));
         // Twins: a pick, a move or a first picture each rewrite the cell.
         assert!(!same_tile(&tile, &Tile { selected: true, ..tile.clone() }));
+        assert!(!same_tile(&tile, &Tile { cursor: true, ..tile.clone() }), "the keyboard's ring moving rewrites the cell");
         assert!(!same_tile(&tile, &Tile { index: 8, ..tile.clone() }));
         let pending = Tile { picture: Image::default(), ..tile.clone() };
         assert!(!same_tile(&pending, &tile));

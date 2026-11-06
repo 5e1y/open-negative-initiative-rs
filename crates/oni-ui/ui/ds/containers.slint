@@ -7,6 +7,7 @@ import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextFiel
 import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
 import { Reach, Reaches } from "reach.slint";
+import { Keyboard } from "keyboard.slint";
 
 // The "?" beside a block's title: a ghost key whose note shows as a card. It lays out at its glyph's size
 // and catches the hand over a small key's square around it, so a line keeps its height.
@@ -139,11 +140,18 @@ export component Sheet inherits Rectangle {
     property <bool> fixed: root.card-height > 0;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;
     TouchArea { }
+    // Tab leaving the sheet meets the window's walls, which hand the keyboard back to the sheet: to this
+    // scope going forward, so Tab goes on to its first control, to `back` going back, before its last.
+    property <int> entered: Keyboard.entered;
+    changed entered => { scope.focus(); }
+    property <int> entered-back: Keyboard.entered-back;
+    changed entered-back => { back.focus(); }
     // A field's Escape bubbles here: the window's key monitor is the sheet's sibling, never its parent.
-    FocusScope {
+    scope := FocusScope {
         width: 100%;
         height: 100%;
         focus-on-click: false;
+        focus-on-tab-navigation: false;
         key-pressed(event) => {
             if (event.text == Key.Escape) {
                 root.dismissed();
@@ -180,6 +188,7 @@ export component Sheet inherits Rectangle {
                 }
             }
         }
+        back := FocusScope { focus-on-click: false; focus-on-tab-navigation: false; }
     }
 }
 

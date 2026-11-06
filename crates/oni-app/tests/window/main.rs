@@ -44,6 +44,7 @@ mod help_demo_roll;
 mod help_demo_color;
 mod help_demo_details;
 mod help_demo_language;
+mod keyboard;
 mod keycap;
 mod keycap_cost;
 mod launch;
@@ -170,6 +171,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("submenus::a_submenu_opens_on_the_pointer_at_rest_and_closes_on_another_line", submenus::a_submenu_opens_on_the_pointer_at_rest_and_closes_on_another_line),
     ("submenus::a_pointer_heading_for_the_submenu_keeps_it_open_across_other_lines", submenus::a_pointer_heading_for_the_submenu_keeps_it_open_across_other_lines),
     ("submenus::a_click_or_the_arrow_opens_a_submenu_at_once_and_it_turns_at_the_window_s_edge", submenus::a_click_or_the_arrow_opens_a_submenu_at_once_and_it_turns_at_the_window_s_edge),
+    ("keyboard::tab_walks_every_control_in_reading_order_each_answering_its_own_keys", keyboard::tab_walks_every_control_in_reading_order_each_answering_its_own_keys),
+    ("keyboard::a_press_gives_the_keyboard_back_to_the_photos_and_a_key_whose_holder_is_gone_reaches_them", keyboard::a_press_gives_the_keyboard_back_to_the_photos_and_a_key_whose_holder_is_gone_reaches_them),
+    ("keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window", keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
     ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),

@@ -135,10 +135,9 @@ impl Ctl {
         });
 
         let p = me.clone();
-        g.on_step(move |field, direction| {
-            let Some(f) = Field::from_index(field) else { return };
-            let (low, high) = f.spec().range;
-            let v = p.state.borrow().store.get(f) + direction as f32 * (high - low) / 100.0;
+        g.on_step(move |field, by| {
+            let Some(f) = Field::from_index(field).filter(|_| !p.inert()) else { return };
+            let v = { let s = p.state.borrow(); crate::slider_track::stepped(f, s.store.get(f), by, &track_on(f, s.store.settings())) };
             p.set(f, v);
         });
 
@@ -267,6 +266,8 @@ impl Ctl {
         let p = me.clone();
         d.on_scroll(move |dx, dy, span, fine| p.brush_scroll(dx, dy, span, fine));
         let p = me.clone();
+        d.on_step(move |by| p.brush_step(by));
+        let p = me.clone();
         d.on_release(move || {
             let dragged = p.state.borrow_mut().brush_start.take().is_some();
             if dragged {
@@ -288,6 +289,8 @@ impl Ctl {
         d.on_sensitivity_release(move || p.sensitivity_release());
         let p = me.clone();
         d.on_sensitivity_scroll(move |dx, dy, span, fine| p.sensitivity_scroll(dx, dy, span, fine));
+        let p = me.clone();
+        d.on_sensitivity_step(move |by| p.sensitivity_step(by));
         let c = window.global::<Canvas>();
         let p = me.clone();
         c.on_paint_start(move |x, y| p.paint_at(x, y, true));

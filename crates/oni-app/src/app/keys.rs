@@ -7,6 +7,10 @@ impl Ctl {
     /// The keys no menu item carries, ⌘= apart from the menu's ⌘+ included: Escape leaves the innermost
     /// help card, sheet, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
     pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
+        // Tab and ⇧Tab are Slint's walk through the controls, a sheet's included: no branch takes them.
+        if matches!(text, "\t" | "\u{19}") {
+            return false;
+        }
         let Some(w) = self.window() else { return false };
         let tip = w.global::<crate::Tip>();
         if text == "\u{1b}" && tip.get_card() && tip.get_shown() {

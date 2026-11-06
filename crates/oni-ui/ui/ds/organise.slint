@@ -2,7 +2,8 @@
 // rules and submenus, the date fields, the drop line and ghost of a reorder, the ONI Trash's row.
 import { DS } from "tokens.slint";
 import { Colour, Space, State, TileStyle, ButtonStyle } from "theme.slint";
-import { Label, Picture, TextRole, Tone, Clicks } from "base.slint";
+import { Label, Picture, TextRole, Tone, Clicks, Tips } from "base.slint";
+import { KeyScope } from "keyboard.slint";
 import { Button } from "controls.slint";
 export { DateFields } from "fields.slint";
 import { Icons } from "icons.slint";
@@ -21,6 +22,15 @@ export component MedalPicker inherits HorizontalLayout {
         width: ButtonStyle.small-height;
         height: MedalStyle.size;
         property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;
+        // The medal and the key that lays it; the lit one's, the key that takes it off.
+        property <string> help: medal == root.current ? @tr("No Medal (0)") : medal == 1 ? @tr("Bronze (1)") : medal == 2 ? @tr("Silver (2)") : @tr("Gold (3)");
+        // The help it shows, hidden by that text once it leaves, whatever its help says since.
+        property <bool> telling: touch.has-hover || keys.has-focus;
+        property <string> told;
+        changed telling => {
+            if (self.telling) { self.told = self.help; }
+            Tips.hover(self.telling, self.told, self.absolute-position.x, self.absolute-position.y + self.height);
+        }
         animate scale { duration: TabsStyle.slide; easing: spring(0.38); }
         Medal {
             x: (parent.width - self.width) / 2;
@@ -34,9 +44,23 @@ export component MedalPicker inherits HorizontalLayout {
             height: self.width;
             accessible-role: button;
             accessible-label: medal == 1 ? @tr("Bronze") : medal == 2 ? @tr("Silver") : @tr("Gold");
+            accessible-description: parent.help;
             accessible-action-default => { root.picked(medal); }
             clicked => { root.picked(medal); }
             changed pressed => { if (self.pressed) { Clicks.press(); } else { Clicks.release(); } }
+        }
+        // Space or Return lays it while it holds the keyboard.
+        keys := KeyScope {
+            x: (parent.width - self.width) / 2;
+            width: MedalStyle.size;
+            radius: self.width / 2;
+            key-pressed(event) => {
+                if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
+                    return reject;
+                }
+                if (!event.repeat) { root.picked(medal); }
+                accept
+            }
         }
     }
 }

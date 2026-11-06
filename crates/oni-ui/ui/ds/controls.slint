@@ -49,6 +49,7 @@ export enum LabelSide { none, after, before }
 
 import { TabsStyle } from "theme.slint";
 import { Inward, Outward, Depth } from "depth.slint";
+import { KeyScope } from "keyboard.slint";
 
 // `DSToggle.Glyph`: a cross for off, a check for on, stroked with round ends, dark on the lit pill.
 component ToggleGlyph inherits Path {
@@ -120,6 +121,23 @@ export component Toggle inherits HorizontalLayout {
                 clicked => {
                     Clicks.press();
                     root.toggled(!root.on);
+                }
+            }
+            // Space or Return flips it while it holds the keyboard.
+            KeyScope {
+                y: (parent.height - ToggleStyle.height) / 2;
+                height: ToggleStyle.height;
+                enabled: root.enabled;
+                radius: self.height / 2;
+                key-pressed(event) => {
+                    if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
+                        return reject;
+                    }
+                    if (!event.repeat) {
+                        Clicks.press();
+                        root.toggled(!root.on);
+                    }
+                    accept
                 }
             }
         }

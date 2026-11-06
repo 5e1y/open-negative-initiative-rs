@@ -143,9 +143,10 @@ impl Ctl {
             true
         });
         let p = me.clone();
+        // An arrow's step: a percent of the readout, on its grid.
         e.on_quality_step(move |d| {
-            let q = p.export.borrow().settings.jpeg_quality + f64::from(d) * (QUALITY.1 - QUALITY.0) / 100.0;
-            p.set_quality(q, true);
+            let q = ((p.export.borrow().settings.jpeg_quality * 100.0).round() + f64::from(d)) / 100.0;
+            p.set_quality(q.clamp(QUALITY.0, QUALITY.1), true);
         });
         let p = me.clone();
         e.on_size_typed(move |width, height| {

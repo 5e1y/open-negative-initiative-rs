@@ -7,6 +7,7 @@ import { Icons } from "icons.slint";
 import { FormStyle } from "forms.slint";
 import { Inward } from "depth.slint";
 import { MenuLine, FolderChoice, Menu } from "menu.slint";
+import { KeyScope } from "keyboard.slint";
 
 // A picker's face: `field` set in the panel as a text field is, `pill` a column header's name on the
 // canvas's dark, `chip` the Working Space's words on no ground.
@@ -96,6 +97,18 @@ export component Picker inherits HorizontalLayout {
                 if (event.kind == PointerEventKind.up && root.down-at != Outside.presses && root.closed-at != Outside.presses) { root.drop(); }
             }
             changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+        }
+        // Space, Return or ↓ drops its menu while it holds the keyboard.
+        KeyScope {
+            enabled: root.enabled && root.pressable;
+            radius: root.well ? PickerStyle.radius : Radius.badge;
+            key-pressed(event) => {
+                if ((event.text != " " && event.text != Key.Return && event.text != Key.DownArrow) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
+                    return reject;
+                }
+                if (!event.repeat) { root.drop(); }
+                accept
+            }
         }
     }
     menu := Menu {

@@ -545,12 +545,12 @@ impl Gestures {
         true
     }
 
-    /// An accessibility step: a hundredth of the axis.
+    /// An arrow's or accessibility's step: a unit of the readout, a degree or a percent, on its grid.
     pub fn band_step(&mut self, store: &mut dyn Store, field: usize, direction: i32) -> Then {
         let s = self.view(store).spectrogram;
-        let band = self.selected.band;
+        let (band, unit) = (self.selected.band, if field == 0 { 1.0 } else { 0.01 });
         let (low, high) = band_range(field, band);
-        let v = (band_value(&s, band, field) + direction as f32 * (high - low) / 100.0).clamp(low, high);
+        let v = (((band_value(&s, band, field) / unit).round() + direction as f32) * unit).clamp(low, high);
         self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, v)))
     }
 }

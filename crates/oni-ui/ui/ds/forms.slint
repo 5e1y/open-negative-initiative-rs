@@ -8,6 +8,7 @@ import { HelpMark } from "containers.slint";
 import { RenameField, Button, ButtonKind, ButtonGroup, GroupAlign } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Inward } from "depth.slint";
+import { KeyScope } from "keyboard.slint";
 
 export global FormStyle {
     out property <length> panel-width: DS.control-export-panel-width;
@@ -248,6 +249,17 @@ export component EditableTitle inherits VerticalLayout {
         role: TextRole.title;
         text: root.text;
         TouchArea { clicked => { root.renaming = true; } }
+        // Space or Return types it over while it holds the keyboard.
+        KeyScope {
+            radius: Radius.badge;
+            key-pressed(event) => {
+                if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
+                    return reject;
+                }
+                root.renaming = true;
+                accept
+            }
+        }
     }
     if root.renaming: RenameField {
         role: TextRole.title;
