@@ -26,17 +26,9 @@ export global TabsStyle {
     in-out property <float> idle: DS.state-idle-label;
 }
 
-// `DSToggle`: a 20 pt hollow holding a cross and a check, a white pill on the state that holds.
+// The switch, a slide lever: the slider's knob travels one of `DSToggle`'s cells along its rail.
 export global ToggleStyle {
-    out property <length> height: DS.control-toggle-height;
-    out property <length> cell: DS.control-toggle-cell-width;
-    out property <length> inset: DS.space-xxs;
-    out property <length> width: 2 * ToggleStyle.cell + 2 * ToggleStyle.inset;
-    out property <length> glyph: DS.control-toggle-glyph;
-    out property <length> glyph-stroke: DS.stroke-emphasis;
-    out property <color> thumb: DS.palette-selected;
-    out property <color> glyph-lit: DS.palette-canvas;
-    out property <color> glyph-idle: DS.palette-text-secondary;
+    out property <length> travel: DS.control-toggle-cell-width;
 }
 
 // `DSMedal`: a flat disc; `press` is the scale a pressed one shrinks to.

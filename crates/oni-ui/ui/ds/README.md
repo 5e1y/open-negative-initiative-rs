@@ -128,8 +128,8 @@ field lies flat, as a text field.
 - **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a plot's, and one
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
   adds the accent dot, `swatches` draws colours for words, `dimmed` fades a tab that changes something else.
-- **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds,
-  on the middle of a small key's height so the hand finds it as a key.
+- **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` on a `Rail` of its own; on, the knob
+  stands one `ToggleStyle.travel` along on the grab spring and the rail is lit up to it. The knob grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill and chip faces keep the hover ground.
 - **`Medal`**: a flat disc of its metal's colour; `MedalPicker` lights the medal under the hand, shrinks a
