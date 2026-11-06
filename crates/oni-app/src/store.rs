@@ -144,6 +144,13 @@ impl Store for EditorStore {
     }
 }
 
+/// The hand's value for `field` on the open frame, as a move from where it stands: the frames edited
+/// with it move by the same distance, each keeping its own offset.
+pub fn moved(store: &dyn Store, field: Field, to: f32) -> Command {
+    let knob = field.knob();
+    Command::Step { knob, by: to - knob.get(&store.face_view()) }
+}
+
 /// What a block's reset key lands on: `Parameters.rest(for:)` in the frame's own mode and decode.
 pub fn rest(settings: &PipelineSettings) -> PipelineSettings {
     PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic)
@@ -166,18 +173,23 @@ pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
 
 /// The block's sliders at their rest, as one write so the reset is one undo step.
 pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
+    Command::Write(Box::new(rested(settings, block)))
+}
+
+/// The settings with the block's sliders at the rest of the frame's own mode, decode and measure.
+pub fn rested(settings: &PipelineSettings, block: Block) -> PipelineSettings {
     let rest = rest(settings);
     let mut next = settings.clone();
     match block {
         Block::FlatField => {
             next.flat_field = Default::default();
-            return Command::Write(Box::new(next));
+            return next;
         }
         Block::SourceBalance => {
             for f in block.fields() {
                 next = f.knob().set(&next, f.base(settings));
             }
-            return Command::Write(Box::new(next));
+            return next;
         }
         _ => {}
     }
@@ -190,7 +202,7 @@ pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
         next.separation_family = None;
         next.separation_by_hand = false;
     }
-    Command::Write(Box::new(next))
+    next
 }
 
 #[cfg(test)]

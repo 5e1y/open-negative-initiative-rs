@@ -86,10 +86,15 @@ impl EditorStore {
             return Applied::default();
         }
         let by_hand = !matches!(command, Command::Reset);
+        // The frames together take what the command did, read once the open frame has taken it.
+        let taking = (!self.together().is_empty()).then(|| (command.clone(), self.settings.clone()));
         let next = self.commanded(command);
         let changed = self.replace(next);
         if changed.is_empty() {
             return Applied::default();
+        }
+        if let Some((command, was)) = taking {
+            self.take_together(&command, &was);
         }
         if by_hand && changed.intersects(FieldSet::of_family(Family::Roll)) {
             self.roll_touched = true;
@@ -144,6 +149,7 @@ impl EditorStore {
         self.deferred = None;
         let touched = std::mem::take(&mut self.roll_touched);
         let look = self.roll_look.take();
+        let took = self.step_taken();
         let Some(path) = self.path().map(str::to_string) else { return };
         let (before, after) = (self.recorded.clone(), self.settings.clone());
         let moved = before != after;
@@ -159,7 +165,7 @@ impl EditorStore {
             gather(&mut step, self.paste_on_roll(&donor, key));
         }
         if moved {
-            gather(&mut step, self.propagate_together(&before, &after, &[]));
+            gather(&mut step, self.propagate_together(&before, &after, &took, &[]));
         }
         self.recorded = after;
         self.history.record_edit(&path, step.0, step.1, now);
@@ -177,13 +183,14 @@ impl EditorStore {
         self.replace(next.clone());
         self.last_change = Some(now);
         let mut step = (Settings::from([(path.clone(), before.clone())]), Settings::from([(path, next.clone())]));
-        gather(&mut step, self.propagate_together(&before, &next, handled));
+        let took = [together::Took::Wrote(Box::new(before.clone()), Box::new(next.clone()))];
+        gather(&mut step, self.propagate_together(&before, &next, &took, handled));
         self.recorded = next;
         step
     }
 
-    /// A Roll Settings step on the open frame's roll; a slide roll keeps each slide's own levels and
-    /// film type, the one a slide's own Auto levels placed and the one that makes it a slide.
+    /// A Roll Settings step on the roll's frames but those together, which take it themselves; a slide
+    /// keeps its own levels and film type, those its Auto levels placed and that make it a slide.
     pub(super) fn propagate_roll(&mut self, before: &PipelineSettings, after: &PipelineSettings) -> Written {
         let Some(path) = self.path().map(str::to_string) else { return Written::default() };
         let Some(key) = RollKey::of(&path, after).or_else(|| RollKey::of(&path, before)) else { return Written::default() };
@@ -195,7 +202,8 @@ impl EditorStore {
         if fields.is_empty() {
             return Written::default();
         }
-        let others = self.others_on_roll(&key);
+        let together = self.together().to_vec();
+        let others: Vec<String> = self.others_on_roll(&key).into_iter().filter(|p| !together.contains(p)).collect();
         let offset = matches!(key, RollKey::Slides(_)) && fields.contains(&roll_settings::Field::Gains);
         let base = |s: &PipelineSettings| s.measured_gains.unwrap_or_default();
         self.modify(&others, |p, loaded| {
@@ -270,7 +278,7 @@ fn adapted(s: &PipelineSettings, mode: ConversionMode) -> PipelineSettings {
 }
 
 /// The Scanner face's keys on its own fields; the ranges are the phone's, the desktop's the same.
-fn scanned(s: &PipelineSettings, scan: Scan) -> PipelineSettings {
+pub(super) fn scanned(s: &PipelineSettings, scan: Scan) -> PipelineSettings {
     let mut out = s.clone();
     match scan {
         Scan::Step { letter, by } => {

@@ -342,6 +342,14 @@ impl Field {
         spec.readout.along(spec.axis, self.shown(stored))
     }
 
+    /// The readout of stored values from `low` to `high` in the sense the slider shows them, as the
+    /// frames shown together span them.
+    pub fn span_readout(self, low: f32, high: f32) -> String {
+        let spec = self.spec();
+        let (a, b) = (self.shown(low), self.shown(high));
+        spec.readout.span(spec.axis, a.min(b), a.max(b))
+    }
+
     /// The range the track spans, in the shown sense.
     pub fn track(self) -> (f32, f32) {
         let spec = self.spec();

@@ -157,7 +157,7 @@ export component Button inherits Rectangle {
     // The glyph's ink: its own, the danger's red on a destructive key reached, else dark on a light face and
     // light on a dark one; a ghost's lifts under the hand. At rest no red stands beside the photo.
     property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
-        : root.ghost ? Tones.ink(root.hovered || touch.pressed ? Tone.primary : Tone.tertiary)
+        : root.ghost ? Tones.ink(root.hovered || (root.enabled && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
     height: root.mini ? ButtonStyle.small-height : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
@@ -224,10 +224,11 @@ export component Button inherits Rectangle {
             lamp-lit: root.on;
         }
     }
+    // Out of reach, the key still tells its help under the hand, so it can say why; it takes no press.
     touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
+        clicked => { if (root.enabled) { root.clicked(); } }
         pointer-event(event) => {
+            if (!root.enabled) { return; }
             if (event.kind == PointerEventKind.down) {
                 root.shift = event.modifiers.shift;
             }

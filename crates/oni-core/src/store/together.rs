@@ -1,8 +1,10 @@
-//! Edit Together: frames opened beside the open one, each step taken on the open frame laid on them at
-//! the same values, as part of that one step; what belongs to each file stays its own.
+//! Edit Together: the frames beside the open one take each step it takes, in that one step: a knob the
+//! hand moves by its distance from each one's own value, a value set as it is, and nothing else.
 
 use super::*;
 use crate::fields::{Field, FieldSet};
+use crate::knob::Knob;
+use super::commands::scanned;
 
 /// A frame's own fields, which a step on the open frame never lays on the others: its file, its
 /// framing, its dust, its roll.
@@ -25,11 +27,26 @@ const OWN: [Field; 16] = [
     Field::BalanceMethod,
 ];
 
-/// The frames edited with the open one, in their order, and each one's settings as last written.
+/// What the open frame took during a step, as each frame together takes it.
+#[derive(Debug, Clone, PartialEq)]
+pub(super) enum Took {
+    /// A knob the hand moved, by the open frame's distance.
+    Moved(Knob, f32),
+    /// A knob set at a value, a double click's rest.
+    Set(Knob, f32),
+    /// A scanner key, pressed on each frame's own counts.
+    Scanned(crate::command::Scan),
+    /// A structured edit, from the first settings to the last: the values it moved, leaf by leaf.
+    Wrote(Box<PipelineSettings>, Box<PipelineSettings>),
+}
+
+/// The frames edited with the open one, in their order, each one's settings as last written, and
+/// the step under way, laid on them until it is recorded.
 #[derive(Default)]
 pub(super) struct Together {
     paths: Vec<String>,
     held: Vec<PipelineSettings>,
+    took: Vec<Took>,
 }
 
 impl Together {
@@ -49,37 +66,57 @@ impl Together {
             }
         }
     }
-}
 
-/// The fields moved from `before` to `after` that are no frame's own, and the face they were moved on:
-/// a frame left on the other face would hold the value and show none of it.
-fn shared(before: &PipelineSettings, after: &PipelineSettings) -> Vec<Field> {
-    let mut fields: Vec<Field> = FieldSet::between(before, after).iter().filter(|f| !OWN.contains(f)).collect();
-    if !fields.is_empty() && !fields.contains(&Field::Face) {
-        fields.push(Field::Face);
+    /// A command the open frame took, joined to the last of its kind on the same knob, so a drag is
+    /// one move however many notches it lands.
+    fn took(&mut self, took: Took) {
+        match (self.took.last_mut(), took) {
+            (Some(Took::Moved(k, by)), Took::Moved(knob, more)) if *k == knob => *by += more,
+            (Some(Took::Set(k, at)), Took::Set(knob, value)) if *k == knob => *at = value,
+            (Some(Took::Wrote(_, last)), Took::Wrote(_, now)) => *last = now,
+            (_, took) => self.took.push(took),
+        }
     }
-    fields
 }
 
-/// The `fields` moved on `open` that are laid on `other`: a roll's measured windows, gains and mode
-/// belong to its roll and its decode, so a frame of another keeps its own, and its face with them;
-/// the face changed alone is laid on every frame.
-fn laid(fields: &[Field], open: &PipelineSettings, other: &PipelineSettings) -> Vec<Field> {
-    let same_roll = open.roll_reference.as_ref().map(|r| r.id) == other.roll_reference.as_ref().map(|r| r.id)
-        && open.decoded_from_mosaic == other.decoded_from_mosaic;
-    let reached: Vec<Field> = fields.iter().copied().filter(|f| same_roll || f.family() != Some(Family::Roll)).collect();
-    let face_alone = fields.iter().all(|f| *f == Field::Face);
-    if !face_alone && reached.iter().all(|f| *f == Field::Face) { Vec::new() } else { reached }
+/// `frame` with the step `took` laid on it, the open frame gone from `before` to `after`; a frame of
+/// another roll or decode keeps the roll's own values, as their windows were measured on it.
+fn laid(took: &[Took], before: &PipelineSettings, after: &PipelineSettings, frame: &PipelineSettings, scanner: bool) -> PipelineSettings {
+    let same_roll = after.roll_reference.as_ref().map(|r| r.id) == frame.roll_reference.as_ref().map(|r| r.id)
+        && after.decoded_from_mosaic == frame.decoded_from_mosaic;
+    let reaches = |f: Field| !OWN.contains(&f) && f != Field::Face && (same_roll || f.family() != Some(Family::Roll));
+    // A knob reads and writes the face edited, as the open frame's panel does.
+    let knobbed = |s: &PipelineSettings, edit: &dyn Fn(&PipelineSettings) -> PipelineSettings| {
+        if scanner { s.storing_scanner_edit(&edit(&s.as_scanner())) } else { edit(s) }
+    };
+    let mut out = frame.clone();
+    for t in took {
+        match t {
+            Took::Moved(knob, by) if reaches(knob.field()) => out = knobbed(&out, &|v| knob.set(v, knob.get(v) + by)),
+            Took::Set(knob, value) if reaches(knob.field()) => out = knobbed(&out, &|v| knob.set(v, *value)),
+            Took::Scanned(scan) => out = scanned(&out, *scan),
+            Took::Wrote(was, now) => FieldSet::between(was, now).iter().filter(|f| reaches(*f)).for_each(|f| f.patch(was, now, &mut out)),
+            Took::Moved(..) | Took::Set(..) => {}
+        }
+    }
+    // A frame left on the other face would hold the values and show none of them.
+    let face_alone = FieldSet::between(before, after).iter().collect::<Vec<_>>() == [Field::Face];
+    if out != *frame || face_alone {
+        out.face = after.face;
+    }
+    out
 }
 
 impl EditorStore {
-    /// The frames edited with the open one, in their order; none for the open frame alone.
+    /// The frames edited with the open one, in their order; none for the open frame alone. A step
+    /// still waiting is recorded first, on the frames it was taken with.
     pub fn set_together(&mut self, paths: Vec<String>) {
+        self.release();
         let held = paths
             .iter()
             .map(|p| sidecar::read(Path::new(p), self.mosaic(p), true).map(|l| l.settings).unwrap_or_default())
             .collect();
-        self.together = Together { paths, held };
+        self.together = Together { paths, held, took: Vec::new() };
     }
 
     pub fn together(&self) -> &[String] {
@@ -88,153 +125,39 @@ impl EditorStore {
 
     /// Each frame together as it shows now: as written, with the step still under the hand laid on it.
     pub fn together_live(&self) -> Vec<(String, PipelineSettings)> {
-        let fields = shared(&self.recorded, &self.settings);
-        let paths = self.together.paths.iter().zip(&self.together.held);
-        paths
-            .map(|(path, held)| {
-                let mut live = held.clone();
-                laid(&fields, &self.settings, held).iter().for_each(|f| f.carry(&self.settings, &mut live));
-                (path.clone(), live)
-            })
-            .collect()
+        let t = &self.together;
+        let live = |held| laid(&t.took, &self.recorded, &self.settings, held, self.scanner_face);
+        t.paths.iter().zip(&t.held).map(|(path, held)| (path.clone(), live(held))).collect()
     }
 
-    /// The fields this step moved, but each frame's own, laid on the frames edited together but those
-    /// of `handled`; what it wrote.
-    pub(super) fn propagate_together(&mut self, before: &PipelineSettings, after: &PipelineSettings, handled: &[String]) -> Written {
-        let fields = shared(before, after);
+    /// What `command` did to the open frame, which stood at `was`, kept for the frames together.
+    pub(super) fn take_together(&mut self, command: &Command, was: &PipelineSettings) {
+        let view = |s: &PipelineSettings| if self.scanner_face { s.as_scanner() } else { s.clone() };
+        let took = match *command {
+            Command::Step { knob, .. } => Took::Moved(knob, knob.get(&view(&self.settings)) - knob.get(&view(was))),
+            Command::Set { knob, value } => Took::Set(knob, value),
+            Command::Scan(scan) => Took::Scanned(scan),
+            _ => Took::Wrote(Box::new(was.clone()), Box::new(self.settings.clone())),
+        };
+        self.together.took(took);
+    }
+
+    /// The step under way, handed over once it is recorded.
+    pub(super) fn step_taken(&mut self) -> Vec<Took> {
+        std::mem::take(&mut self.together.took)
+    }
+
+    /// The step `took`, the open frame gone from `before` to `after`, laid on the frames together but
+    /// those of `handled`, which the gesture writes itself; what it wrote.
+    pub(super) fn propagate_together(&mut self, before: &PipelineSettings, after: &PipelineSettings, took: &[Took], handled: &[String]) -> Written {
         let others: Vec<String> = self.together.paths.iter().filter(|p| !handled.contains(p)).cloned().collect();
-        if others.is_empty() || fields.is_empty() {
+        if others.is_empty() || took.is_empty() {
             return Written::default();
         }
+        let scanner = self.scanner_face;
         self.modify(&others, |_, loaded| {
-            let mut out = loaded.clone();
-            laid(&fields, after, loaded).iter().for_each(|f| f.carry(after, &mut out));
+            let out = laid(took, before, after, loaded, scanner);
             (out != *loaded).then_some(out)
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::command::Command;
-
-    #[test]
-    fn a_step_sets_the_same_value_on_the_frames_together_keeps_their_own_and_undoes_as_one() {
-        let dir = std::env::temp_dir().join(format!("oni-core-store-together-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let [a, b, c] = ["a.tif", "b.tif", "c.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
-        std::fs::write(&a, b"").unwrap();
-        let mut theirs = PipelineSettings::default();
-        theirs.vignette.stops = -0.7;
-        theirs.manual_order = Some(4.0);
-        theirs.face = oni_settings::Face::Scanner;
-        for p in [&b, &c] {
-            std::fs::write(p, b"").unwrap();
-            sidecar::write(&theirs, Path::new(p), WriteOptions::default()).unwrap();
-        }
-        let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone(), c.clone()], |_: &Path| false));
-        store.open(&a).unwrap();
-        store.set_together(vec![b.clone()]);
-        let mut next = store.settings().clone();
-        next.vignette.stops = 0.5;
-        next.manual_order = Some(9.0);
-        store.apply_at(Command::Write(Box::new(next)), 0.0);
-        let read = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().settings;
-        assert_eq!(store.together_live()[0].1.vignette.stops, 0.5, "shown as written");
-        assert_eq!(read(&b).vignette.stops, 0.5, "the value set, not the difference");
-        assert_eq!(read(&b).manual_order, Some(4.0), "a frame's own field stays its own");
-        assert_eq!(read(&b).face, store.settings().face, "on the face the step was taken on, or it would show none of it");
-        assert_eq!(read(&c).vignette.stops, -0.7, "twin: a frame left out keeps its value");
-        assert_eq!(read(&c).face, oni_settings::Face::Scanner, "and its face");
-        store.undo();
-        assert_eq!(read(&b).vignette.stops, -0.7, "one undo takes the others back");
-        assert_eq!(store.together_live()[0].1.vignette.stops, -0.7, "and shows them back");
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    /// Frames a, b and c, b and c with a vignette of their own, and the store open on a.
-    fn three(label: &str, b_settings: PipelineSettings, c_settings: PipelineSettings) -> (EditorStore, std::path::PathBuf, [String; 3]) {
-        let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let [a, b, c] = ["a.tif", "b.tif", "c.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
-        std::fs::write(&a, b"").unwrap();
-        for (p, s) in [(&b, b_settings), (&c, c_settings)] {
-            std::fs::write(p, b"").unwrap();
-            sidecar::write(&s, Path::new(p), WriteOptions::default()).unwrap();
-        }
-        // c stays out of the archive, so no roll gesture reaches it but the step laid together.
-        let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));
-        store.open(&a).unwrap();
-        (store, dir, [a, b, c])
-    }
-
-    fn read(p: &str) -> PipelineSettings {
-        sidecar::read(Path::new(p), false, true).unwrap().settings
-    }
-
-    #[test]
-    fn a_paste_on_frames_together_is_one_step_undone_to_each_one_s_own_settings() {
-        let own = |stops| PipelineSettings { vignette: oni_settings::blocks::Vignette { stops, ..Default::default() }, ..PipelineSettings::default() };
-        let (mut store, dir, [a, b, c]) = three("together-paste", own(-0.7), own(-0.4));
-        store.set_together(vec![b.clone(), c.clone()]);
-        store.board.settings = Some(codec::encode_settings(&own(0.2)).unwrap());
-        store.paste_settings(&[a.clone(), b.clone()]);
-        assert_eq!((read(&b).vignette.stops, read(&c).vignette.stops), (0.2, 0.2), "a frame together left out of the targets takes the step");
-        store.undo();
-        assert_eq!(read(&b).vignette.stops, -0.7, "the undo lays its own settings back, not a mix");
-        assert_eq!(read(&c).vignette.stops, -0.4, "and the frame no target named, in the same step");
-        assert!(!store.can_undo(), "one step");
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn a_roll_field_moved_together_stays_on_the_frames_of_that_roll() {
-        let roll = |id| oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
-        let (r1, r2) = (Id::new(), Id::new());
-        let on = |id| PipelineSettings { roll_reference: Some(roll(id)), ..PipelineSettings::default() };
-        let (mut store, dir, [_, b, c]) = three("together-rolls", on(r2), on(r1));
-        let mut next = PipelineSettings { roll_reference: Some(roll(r1)), ..store.settings().clone() };
-        store.apply_at(Command::Write(Box::new(next.clone())), 0.0);
-        store.set_together(vec![b.clone(), c.clone()]);
-        next.levels.red.black = 0.2;
-        next.vignette.stops = 0.5;
-        store.apply_at(Command::Write(Box::new(next)), 5.0);
-        let live: Vec<f32> = store.together_live().iter().map(|(_, s)| s.levels.red.black).collect();
-        assert_eq!(read(&b).levels.red.black, 0.0, "another roll keeps its own windows");
-        assert_eq!(read(&b).vignette.stops, 0.5, "and takes the look");
-        assert_eq!(live[0], 0.0, "shown as written");
-        // Twin: a frame of the same roll takes the window moved.
-        assert_eq!(read(&c).levels.red.black, 0.2);
-        assert_eq!(live[1], 0.2);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn the_face_changed_alone_reaches_every_frame_together() {
-        let roll = |id| oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
-        let (r1, r2) = (Id::new(), Id::new());
-        let on = |id| PipelineSettings { roll_reference: Some(roll(id)), ..PipelineSettings::default() };
-        let (mut store, dir, [_, b, c]) = three("together-face", on(r2), on(r1));
-        let next = PipelineSettings { roll_reference: Some(roll(r1)), ..store.settings().clone() };
-        store.apply_at(Command::Write(Box::new(next)), 0.0);
-        store.set_together(vec![b.clone(), c.clone()]);
-        store.apply_at(Command::Face(oni_settings::Face::Scanner), 5.0);
-        let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
-        assert_eq!([read(&b).face, read(&c).face], [oni_settings::Face::Scanner; 2], "another roll's frame takes the face too");
-        assert_eq!(live, [oni_settings::Face::Scanner; 2], "and shows it");
-        store.undo();
-        assert_eq!(read(&b).face, oni_settings::Face::Pro, "one undo takes it back");
-        // Twin: a roll field moved on the Scanner face leaves another roll's frame on its own face.
-        let mut next = store.settings().clone();
-        next.face = oni_settings::Face::Scanner;
-        next.levels.red.black = 0.2;
-        store.apply_at(Command::Write(Box::new(next)), 10.0);
-        assert_eq!((read(&b).face, read(&b).levels.red.black), (oni_settings::Face::Pro, 0.0));
-        assert_eq!((read(&c).face, read(&c).levels.red.black), (oni_settings::Face::Scanner, 0.2));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -21,6 +21,8 @@ mod plate;
 mod logo;
 #[path = "together/sources.rs"]
 mod sources;
+#[path = "together/spans.rs"]
+mod spans;
 use drawing::{draw_grids, tile_source};
 use sheet::{Sheet, Window, laid, reduced, scale_for, source_side};
 pub(in crate::app) use numbers::ranks;
@@ -82,6 +84,8 @@ pub(in crate::app) struct Group {
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
     drawn: u64,
     latencies: Vec<Duration>,
+    /// Each slider's span over the frames, lowest and highest, as offsets from the open frame's value.
+    spans: Vec<(f32, f32)>,
 }
 
 static GROUPS: AtomicU64 = AtomicU64::new(0);
@@ -157,8 +161,9 @@ impl Ctl {
         let (stand_ins, numbers, sheet) = (vec![None; paths.len()], vec![None; paths.len()], laid(&vec![UNKNOWN; paths.len()]));
         // A full row's band is as wide whatever the frames' proportions: its logo is drawn once.
         let band = sheet.band.map(|b| b.2 as usize);
-        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new() };
+        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new(), spans: Vec::new() };
         self.state.borrow_mut().together = Some(group);
+        self.publish_spans();
         if fresh {
             self.state.borrow_mut().viewport.fit();
         }
@@ -234,6 +239,7 @@ impl Ctl {
             e.set_together(Vec::new());
         }
         self.unnumbered();
+        self.publish_readouts(Field::ALL);
         self.state.borrow_mut().viewport.fit();
         {
             let mut s = self.state.borrow_mut();

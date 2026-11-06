@@ -6437,5 +6437,26 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1310,
+    "type": "fix",
+    "title": "Frames edited together take each step value by value: a hand's move by its distance, nothing it left alone",
+    "status": "done",
+    "detail": "UX evaluation (Trust, Expert efficiency): on the Whole Roll a Temperature drag laid frame 1's whole print block on every frame, its Tint with it, and any slider set one absolute value on all, so balances measured frame by frame were lost. The store now keeps what the open frame took during a step and lays exactly that on each frame together: a knob the hand moved (Step) moves each frame by the same distance from its own value, clamped once from the step's start so a frame held at an end finds its offset again; a value set (Set, a double click's rest) lands on each through the knob, so Temperature never moves Tint; a scanner key presses each frame's own counts; a structured edit lays the values it moved, leaf by leaf (Field::patch), never a whole block. The sliders' drags, scrolls, arrows and typed numbers send Step, the double click Set. A block's reset key on frames together brings each to its own rest, as the bar's reset does (reset_each). The roll's propagation leaves the frames together to their own step, so a slide together moves once on its own measure. A step still waiting is recorded before the frames together change. Unit checks with twins in oni-core (store::tests::together, slides, fields); window check together_moves drags Temperature over three frames balanced apart."
+  },
+  {
+    "id": 1311,
+    "type": "feature",
+    "title": "A slider over frames shown together reads their span before any change",
+    "status": "done",
+    "detail": "UX evaluation (Expert efficiency): a value that differs across the selection showed the open frame's alone. Each slider's readout now reads the span of the frames shown together, lowest to highest with the unit once, the colour end named when both lean to it (Warm +0.37 … +1.21 EV), one value where all read the same; a drag shifts the span whole under the hand, and leaving the group gives back the single value. The span is read from the store's live frames, the step under the hand included. Window check together_moves; unit check fields::tests with its twin on the black point's inverted sense."
+  },
+  {
+    "id": 1312,
+    "type": "fix",
+    "title": "Crop and De-dust out of reach say why under the hand",
+    "status": "done",
+    "detail": "UX evaluation (Robustness): on frames together Crop and De-dust greyed out with no word. A key out of reach now still tells its help under the hand and takes no press (the design system's Button), and the two keys say Select one photo to crop it / to de-dust it while frames show together, in English, French and Spanish. Window check together_moves hovers both, and its twin hovers Crop on one frame alone."
   }
 ]

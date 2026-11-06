@@ -110,16 +110,36 @@ impl Readout {
     }
 
     pub fn format(self, v: f32) -> String {
-        let n = self.scaled(v);
+        let (places, signed, unit) = self.shape();
+        number(self.scaled(v), places, signed, unit)
+    }
+
+    /// The places, the sign and the unit `format` writes.
+    fn shape(self) -> (usize, bool, Unit) {
         match self {
-            Readout::Stops => number(n, 2, true, Unit::Stops),
-            Readout::SignedPercent => number(n, 0, true, Unit::Percent),
-            Readout::Percent => number(n, 0, false, Unit::Percent),
-            Readout::Ceiling => number(n, 3, false, Unit::Bare),
-            Readout::Degrees => number(n, 2, true, Unit::Degrees),
-            Readout::Times => number(n, 2, false, Unit::Times),
-            Readout::SignedTimes => number(n, 2, true, Unit::Times),
-            Readout::Pixels => number(n, 1, false, Unit::Pixels),
+            Readout::Stops => (2, true, Unit::Stops),
+            Readout::SignedPercent => (0, true, Unit::Percent),
+            Readout::Percent => (0, false, Unit::Percent),
+            Readout::Ceiling => (3, false, Unit::Bare),
+            Readout::Degrees => (2, true, Unit::Degrees),
+            Readout::Times => (2, false, Unit::Times),
+            Readout::SignedTimes => (2, true, Unit::Times),
+            Readout::Pixels => (1, false, Unit::Pixels),
+        }
+    }
+
+    /// Values from `low` to `high`, as frames shown together span them: the unit once, after the
+    /// higher, and the end of `axis` named when both lean to it; one value where both read the same.
+    pub fn span(self, axis: Option<Axis>, low: f32, high: f32) -> String {
+        let (from, to) = (self.format(low), self.format(high));
+        if from == to {
+            return self.along(axis, low);
+        }
+        let bare = from.strip_suffix(self.shape().2.symbol()).unwrap_or(&from);
+        let text = format!("{bare} \u{2026} {to}");
+        match axis {
+            Some(axis) if from.chars().next() == to.chars().next() => axis.named(text),
+            _ => text,
         }
     }
 }

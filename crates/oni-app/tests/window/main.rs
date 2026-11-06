@@ -96,6 +96,7 @@ mod tab_bar;
 mod text_fields;
 mod together;
 mod together_all;
+mod together_moves;
 mod together_tools;
 mod told;
 mod toolbar;
@@ -261,6 +262,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),
     ("together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame", together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
+    ("together_moves::frames_together_read_their_span_and_move_by_one_distance", together_moves::frames_together_read_their_span_and_move_by_one_distance),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar::the_accent_lands_on_each_screens_own_commit", toolbar::the_accent_lands_on_each_screens_own_commit),

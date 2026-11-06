@@ -78,3 +78,17 @@ fn paste_to_roll_on_a_slide_reaches_its_folder_s_slides() {
     assert_eq!(written(&paths[2]).vignette.stops, PipelineSettings::default().vignette.stops);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_slide_together_takes_a_gain_move_once_on_its_own_measure() {
+    let (mut store, dir, paths) = slides("together");
+    store.open(&paths[0]).unwrap();
+    store.set_together(vec![paths[1].clone()]);
+    store.apply(Command::Step { knob: Knob::Gain(Channel::Blue), by: 0.1 });
+    let (b, sheet) = (written(&paths[1]), written(&paths[4]));
+    assert!((b.gains.stops[2] - 0.2).abs() < 1e-6, "0.1 up from its own 0.1: {:?}", b.gains);
+    assert!((sheet.gains.stops[2] - 0.2).abs() < 1e-6, "the roll's frame not together takes it on its measure too: {:?}", sheet.gains);
+    // Twin: laid by the roll and again together, the slide moves twice.
+    assert!((b.gains.stops[2] - 0.3).abs() > 1e-3);
+    let _ = std::fs::remove_dir_all(&dir);
+}

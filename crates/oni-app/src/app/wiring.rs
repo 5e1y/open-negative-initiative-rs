@@ -33,7 +33,7 @@ impl Ctl {
             };
             if double {
                 let base = f.double_click_base(p.state.borrow().store.settings());
-                p.set(f, base);
+                p.rest(f, base);
             }
             double
         });
@@ -60,7 +60,7 @@ impl Ctl {
             };
             p.place(f, asked);
             if let Some(w) = p.window() {
-                set_readout(&w.global::<StoreGlobal>(), f, f.readout(live).into());
+                set_readout(&w.global::<StoreGlobal>(), f, p.readout_at(f, live).into());
             }
             match offer {
                 Offer::Now => p.set(f, live),
@@ -98,7 +98,9 @@ impl Ctl {
             };
             p.trailing[i].stop();
             if let Some(live) = live {
-                p.state.borrow_mut().store.apply(Command::Set { knob: f.knob(), value: live });
+                let mut s = p.state.borrow_mut();
+                let command = store::moved(&*s.store, f, live);
+                s.store.apply(command);
             }
             let released = std::time::Instant::now();
             p.state.borrow_mut().store.release();
@@ -114,7 +116,7 @@ impl Ctl {
             // The readout leaves the hand's value for the store's, which a clamp may have moved.
             if let Some(w) = p.window() {
                 let v = p.state.borrow().store.get(f);
-                set_readout(&w.global::<StoreGlobal>(), f, f.readout(v).into());
+                set_readout(&w.global::<StoreGlobal>(), f, p.readout_at(f, v).into());
             }
         });
 
@@ -144,8 +146,7 @@ impl Ctl {
         let p = me.clone();
         g.on_reset(move |block| {
             let Some(b) = Block::from_index(block) else { return };
-            let command = store::reset(p.state.borrow().store.settings(), b);
-            p.write(command);
+            p.reset_block(b);
         });
 
         let p = me.clone();
