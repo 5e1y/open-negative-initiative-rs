@@ -219,8 +219,14 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
         [lib.get_month(), lib.get_day(), lib.get_year(), lib.get_camera_body(), lib.get_description()]
     };
     let before = fields();
-    rig.key("\t");
-    assert!(!w.get_keys_focused(), "Tab moves the keyboard into the sidebar's first field");
+    // Tab walks the bar's keys and the columns' controls until the sidebar's first field holds the keys.
+    for _ in 0..80 {
+        if !w.get_keys_held() {
+            break;
+        }
+        rig.key("\t");
+    }
+    assert!(!w.get_keys_focused() && !w.get_keys_held(), "Tab reaches the sidebar's first field");
     rig.key("1");
     assert_eq!(label_of(&fourth), oni_settings::Medal::Silver, "a key typed into a field never labels");
     let typed: Vec<usize> = (0..5).filter(|&i| fields()[i] != before[i]).collect();

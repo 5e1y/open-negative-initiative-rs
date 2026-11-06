@@ -184,7 +184,8 @@ export component Toolbar inherits Surface {
             action: Preparing.shown ? Act.leave-roll : Act.toggle-mode;
             text: Bar.editing || Preparing.shown ? @tr("GALLERY") : @tr("EDITOR");
             widest: @tr("GALLERY");
-            help: Bar.editing || Preparing.shown ? @tr("Gallery ({})", KeyWords.command + "G") : @tr("Editor ({})", KeyWords.command + "G");
+            help: Preparing.shown ? @tr("Gallery ({})", KeyWords.command + "G")
+                : Bar.editing ? @tr("Gallery (Space or {})", KeyWords.command + "G") : @tr("Editor (Space or {})", KeyWords.command + "G");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
         history := History { }

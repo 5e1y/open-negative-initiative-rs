@@ -6,6 +6,7 @@ import { Look, RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Dot, Medal, RingPlacement, SelectionTone, SelectionRing } from "marks.slint";
 import { Reach, Reaches } from "reach.slint";
+import { FocusRing } from "keyboard.slint";
 
 // AppKit's overlay scroller over a surface's edge: drawn only while the content overflows, lit while
 // it moves, `linger` after, or while the pointer is on the edge, where it widens and takes the pointer.
@@ -220,7 +221,16 @@ export component TileView inherits Rectangle {
     // each tile to a layer.
     in property <bool> rounded;
     in property <Ground> behind: Ground.canvas;
+    // Its photo's name, which assistive technology reads where no caption shows it.
+    in property <string> name: root.caption;
+    // The keyboard's ring, while its grid holds the keyboard on it.
+    in property <bool> focused;
     callback clicked();
+    accessible-role: list-item;
+    accessible-label: root.name;
+    accessible-description: root.note;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.selected;
     property <bool> frame: root.marks == TileMarks.apart;
     property <length> inset: root.frame ? Space.xs : TileStyle.badge-inset;
     property <bool> outset: root.ring == RingPlacement.outset;
@@ -307,6 +317,7 @@ export component TileView inherits Rectangle {
         centred: true;
         overflow: elide;
     }
+    if root.focused: FocusRing { y: 0; height: root.picture-height; radius: Radius.card; }
     if root.frame: TouchArea { clicked => { root.clicked(); } }
 }
 

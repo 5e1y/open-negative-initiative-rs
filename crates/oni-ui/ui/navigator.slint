@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
-import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -77,6 +77,8 @@ export global Navigator {
     in property <string> catch-up-more;
     in property <string> catch-up-all-in;
     callback row-clicked(int);
+    // The rows took the keyboard by Tab, which then walks them with the arrows, or gave it on.
+    callback keys-held(bool);
     // The chevron alone: the row folds or unfolds, and nothing opens.
     callback row-folded(int);
     callback star-clicked(int);
@@ -99,6 +101,8 @@ export global Navigator {
 // The folders, then the ONI Trash's rows under Computer; scrolled by the wheel and the knob alone.
 component Rows inherits Scroller {
     in property <[TrashLine]> trash-rows;
+    // A place in Tab's order, beside the grid where the arrows walk the rows.
+    in property <bool> keyed;
     callback trash-clicked(int);
     callback trash-folded(int);
     callback trash-restore(int);
@@ -135,6 +139,7 @@ component Rows inherits Scroller {
                 stock: row.stock;
                 has-stock: row.has-stock;
                 picked: row.picked;
+                focused: keys.has-focus && row.picked;
                 selected: row.opened;
                 favourite: row.favourite;
                 present: row.present;
@@ -180,6 +185,11 @@ component Rows inherits Scroller {
                 menu(x, y) => { root.trash-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
         }
+    }
+    keys := KeyScope {
+        enabled: root.keyed;
+        ring: false;
+        changed has-focus => { Navigator.keys-held(self.has-focus); }
     }
 }
 
@@ -249,6 +259,7 @@ export component NavigatorSection inherits Rectangle {
         if !root.beside-photo: Rectangle {
             vertical-stretch: 1;
             Rows {
+                keyed: true;
                 trash-rows: root.trash-rows;
                 trash-clicked(i) => { root.trash-clicked(i); }
                 trash-folded(i) => { root.trash-folded(i); }

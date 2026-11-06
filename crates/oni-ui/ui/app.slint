@@ -1,6 +1,6 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
 import { Act } from "act.slint";
-import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
@@ -35,7 +35,7 @@ export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage }
-export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe } from "ds/probes.slint";
+export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe, KeyboardProbe } from "ds/probes.slint";
 export { Raster, KeycapLook, Depth } from "ds/ds.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach, EdgeNumber, SheetBox, SheetInks } from "ds/ds.slint";
 
@@ -45,8 +45,8 @@ export global App {
     in property <bool> dev;
     in property <bool> panel-hidden;
     in property <bool> library-hidden;
-    // A key with control, meta, shift and alt, then whether it repeats; Rust reads ⌘ as meta on
-    // macOS, control elsewhere, and answers whether the key was claimed.
+    // A key with control, meta, shift and alt, then whether it repeats; Slint hands ⌘ as control on
+    // macOS, its Control key as meta; Rust answers whether the key was claimed.
     callback key(string, bool, bool, bool, bool, bool) -> bool;
     callback menu(Act);
     // A sheet shown or closed, so the menus go dark behind it or come back.
@@ -152,13 +152,20 @@ export component MainWindow inherits AppWindow {
     property <bool> beside-photo: !App.gallery && !Exporting.shown && !Preparing.shown;
     // `mode == .gallery`: the grid mounts afresh each time it shows, and lands on the open photo.
     out property <bool> grid-shown: App.gallery && !Exporting.shown && !Preparing.shown;
-    changed grid-shown => { if (self.grid-shown) { Library.gallery-shown(); } }
+    // A new screen gives the keyboard to its photos, a key of the last one gone with it.
+    changed grid-shown => { keys.focus(); if (self.grid-shown) { Library.gallery-shown(); } }
+    changed beside-photo => { keys.focus(); }
     // Any sheet over the window, every flag that lays one below.
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || AppSettings.shown || Notice.shown
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
         || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
         || Advice.shown || Wrapped.shown || Unsaved.shown || Converting.shown;
-    changed sheet-shown => { App.sheet-changed(); }
+    // A sheet shown or closed takes the keyboard from a control behind it, a field it opens on aside.
+    changed sheet-shown => {
+        App.sheet-changed();
+        Keyboard.covered = self.sheet-shown;
+        if (!TextInputInterface.text-input-focused) { keys.focus(); }
+    }
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
 
@@ -257,7 +264,7 @@ export component MainWindow inherits AppWindow {
         }
     }
 
-    // A press beside a field gives this monitor the keyboard back, the field's editing ended.
+    // The photos' keyboard: a press beside a field or a control gives it back here.
     keys := KeyMonitor {
         // A key released while another window held the focus never comes: Space is let go with it.
         changed has-focus => {
@@ -418,5 +425,5 @@ export component MainWindow inherits AppWindow {
     // Last, over everything: the app beneath stands up while the starter says each step.
     if Starter.shown: StarterView { x: 0; y: 0; width: root.width; height: root.height; }
 
-    init => { keys.focus(); }
+    init => { keys.focus(); Keyboard.covered = self.sheet-shown; }
 }

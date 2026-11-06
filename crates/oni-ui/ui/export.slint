@@ -15,6 +15,7 @@ component FrameFields inherits VerticalLayout {
     Field { layout: FieldLayout.column;
         label: @tr("Name");
         TextField {
+            name: @tr("Name");
             value: root.line.name;
             suffix: Exporting.extension;
             enabled: root.line.ready;
@@ -23,11 +24,11 @@ component FrameFields inherits VerticalLayout {
     }
     Field { layout: FieldLayout.column;
         label: @tr("Camera");
-        TextField { value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+        TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
     }
     Field { layout: FieldLayout.column;
         label: @tr("Lens");
-        TextField { value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
+        TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
     }
     Field { layout: FieldLayout.column;
         label: @tr("Film stock");
@@ -38,19 +39,19 @@ component FrameFields inherits VerticalLayout {
     }
     Field { layout: FieldLayout.column;
         label: @tr("ISO");
-        TextField { value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+        TextField { name: @tr("ISO"); value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
     }
     Field { layout: FieldLayout.column;
         label: @tr("Date");
-        TextField { value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+        TextField { name: @tr("Date"); value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
     }
     Field { layout: FieldLayout.column;
         label: @tr("Artist");
-        TextField { value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+        TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
     }
     Field { layout: FieldLayout.column;
         label: @tr("Copyright");
-        TextField { value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
+        TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
     }
     Spacer { }
 }

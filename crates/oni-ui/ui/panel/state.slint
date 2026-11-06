@@ -161,8 +161,9 @@ export global Dedust {
     callback press(bool) -> bool;
     callback drag(length, length, bool);
     callback release();
-    // A scroll along the track sets the size; one across it is left to the panel.
+    // A scroll along the track sets the size; one across it is left to the panel; an arrow's steps.
     callback scroll(length, length, length, bool) -> bool;
+    callback step(int);
     callback remove(int);
     // Auto De-dust: a reading under way or shown, the dust it keeps, what it says.
     in property <bool> detecting;
@@ -178,6 +179,7 @@ export global Dedust {
     callback sensitivity-drag(length, length, bool);
     callback sensitivity-release();
     callback sensitivity-scroll(length, length, length, bool) -> bool;
+    callback sensitivity-step(int);
 }
 
 // `Loupe`'s band under Details: Rust renders the region the canvas centres and says its size in points.

@@ -10,6 +10,7 @@ import { NavigatorStyle } from "folders.slint";
 import { FormStyle } from "forms.slint";
 import { StockIcon } from "stocks.slint";
 import { Reach, Reaches } from "reach.slint";
+import { KeyScope, FocusRing } from "keyboard.slint";
 
 // `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders;
 // `heading` names the lines under it, in the tertiary ink, out of reach.
@@ -69,6 +70,8 @@ export component Row inherits Rectangle {
     // The title typed over, Return or a click elsewhere keeping it, Escape dropping it.
     in property <bool> renaming;
     in property <Look> look: Look.live;
+    // The keyboard's ring, while its list holds the keyboard on it.
+    in property <bool> focused;
     callback clicked();
     callback double-clicked();
     callback folded();
@@ -141,6 +144,18 @@ export component Row inherits Rectangle {
         }
         moved => { if (self.pressed) { root.dragged(self.pressed-x, self.pressed-y, self.mouse-x, self.mouse-y); } }
         changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+    }
+    if root.focused: FocusRing { radius: Radius.badge; }
+    // A sheet's side list is a few choices, each its own place in Tab's order, Space or Return taking it.
+    if root.form == RowForm.sidebar: KeyScope {
+        radius: Radius.badge;
+        key-pressed(event) => {
+            if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
+                return reject;
+            }
+            if (!event.repeat) { root.clicked(); }
+            accept
+        }
     }
     row := HorizontalLayout {
         // Renamed, the typed name starts where the title stood.

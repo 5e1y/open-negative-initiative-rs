@@ -1,0 +1,70 @@
+// The keyboard in the window: what holds it, the ring Tab draws around a control, the window's monitor
+// that holds it for the photos, and the walls that keep Tab inside a sheet.
+import { FocusStyle } from "theme.slint";
+import { Outside } from "outside.slint";
+
+export global Keyboard {
+    // The keyboard is the window's, its photos' or a control's, not a field's; a switch of window
+    // aside: the menus read it, as each change rebuilds Windows' menu bar and blanks the window.
+    in-out property <bool> held;
+    // A sheet covers the window: Tab crossing into the window behind enters the sheet instead, at its
+    // first control going forward (`entered`), at its last going back (`entered-back`).
+    in-out property <bool> covered;
+    in-out property <int> entered;
+    in-out property <int> entered-back;
+}
+
+// The ring around what holds the keyboard, on the box it fills, `radius` its control's own corner.
+export component FocusRing inherits Rectangle {
+    in property <length> radius;
+    Rectangle {
+        x: -FocusStyle.reach;
+        y: -FocusStyle.reach;
+        width: parent.width + 2 * FocusStyle.reach;
+        height: parent.height + 2 * FocusStyle.reach;
+        border-radius: root.radius + FocusStyle.reach;
+        border-width: FocusStyle.width;
+        border-color: FocusStyle.ink;
+    }
+}
+
+// A control's place in Tab's order, over the box it fills: Tab gives it the keyboard and rings it, a
+// click never does, and any press gives the keyboard back to the photos.
+export component KeyScope inherits FocusScope {
+    in property <length> radius;
+    // A control; the window's monitor is the one scope that is not.
+    in property <bool> control: true;
+    // A list that rings the item its keys act on rather than itself, as the grid its photo.
+    in property <bool> ring: true;
+    focus-on-click: false;
+    focus-gained(reason) => { if (reason != FocusReason.window-activation) { Keyboard.held = true; } }
+    focus-lost(reason) => { if (reason != FocusReason.window-activation) { Keyboard.held = false; } }
+    property <int> presses: Outside.presses;
+    changed presses => { if (root.control && self.has-focus) { Outside.released += 1; } }
+    if root.ring && root.control && root.has-focus: FocusRing { radius: root.radius; }
+}
+
+// A wall at an end of the window's controls: Tab reaching it while a sheet covers them enters the sheet.
+component Wall inherits FocusScope {
+    in property <bool> back;
+    focus-on-click: false;
+    focus-on-tab-navigation: Keyboard.covered;
+    focus-gained(reason) => {
+        if (reason != FocusReason.tab-navigation) { return; }
+        if (root.back) { Keyboard.entered-back += 1; } else { Keyboard.entered += 1; }
+    }
+}
+
+// The window's key monitor: the photos' keyboard, which a press beside a field or a control gives back
+// to it, and every key a control lets through reaches; Tab passes over it to the controls.
+export component KeyMonitor inherits KeyScope {
+    control: false;
+    focus-on-click: true;
+    focus-on-tab-navigation: false;
+    out property <bool> held: Keyboard.held;
+    property <int> released: Outside.released;
+    changed released => { self.focus(); }
+    Wall { }
+    @children
+    Wall { back: true; }
+}

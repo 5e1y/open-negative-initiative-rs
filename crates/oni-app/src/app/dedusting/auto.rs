@@ -227,6 +227,16 @@ impl Ctl {
         true
     }
 
+    /// An arrow on the Sensitivity slider: a percent a press, kept as the hand's is.
+    pub(in crate::app) fn sensitivity_step(&self, by: i32) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.dust.sensitivity = (((s.dust.sensitivity * 100.0).round() + by as f32) / 100.0).clamp(0.0, 1.0);
+        }
+        self.keep_sensitivity();
+        self.sensitivity_moved();
+    }
+
     /// The sensitivity the hand left, for every photo and launch, as the brush's size is.
     fn keep_sensitivity(&self) {
         let at = f64::from(self.state.borrow().dust.sensitivity);

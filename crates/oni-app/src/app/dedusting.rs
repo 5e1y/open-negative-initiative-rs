@@ -257,6 +257,15 @@ impl Ctl {
         true
     }
 
+    /// An arrow on the brush: a pixel a press, kept as the hand's size is.
+    pub(super) fn brush_step(&self, by: i32) {
+        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+        let radius = (f64::from(self.state.borrow().brush).round() + f64::from(by)).clamp(low, high);
+        self.state.borrow_mut().brush = radius as f32;
+        self.keep_brush();
+        self.publish_dedust();
+    }
+
     pub(super) fn brush_drag(&self, translation: f32, span: f32, fine: bool) {
         {
             let mut s = self.state.borrow_mut();

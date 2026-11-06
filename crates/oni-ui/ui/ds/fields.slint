@@ -15,6 +15,8 @@ global FieldFocus {
 component Entry inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <string> placeholder;
+    // What assistive technology calls it, its placeholder where it has no name of its own.
+    in property <string> name;
     in property <bool> multiline;
     in property <bool> centred;
     in property <TextRole> role: TextRole.label;
@@ -72,6 +74,7 @@ component Entry inherits Rectangle {
             color: root.enabled ? FieldStyle.ink : Colour.ink-tertiary;
             selection-background-color: FieldStyle.selection;
             enabled: root.enabled;
+            accessible-label: root.name != "" ? root.name : root.placeholder;
             edited => { root.edited(self.text); }
             accepted => { root.accepted(self.text); }
             cursor-position-changed(at) => {
@@ -112,6 +115,8 @@ export component TextField inherits HorizontalLayout {
     // The owner's text, pushed in at each change: a binding on `text` dies at the first key typed.
     in property <string> value;
     in property <string> placeholder;
+    // The field's label, which assistive technology reads.
+    in property <string> name;
     // A unit at the hollow's end, as the extension after a file name.
     in property <string> suffix;
     // Lines that wrap, `lines-height` of them inside the hollow's padding, as a report's message.
@@ -140,6 +145,7 @@ export component TextField inherits HorizontalLayout {
         radius: FieldStyle.radius;
         hollow: true;
         lit: entry.editing || root.focused-look;
+        ringed: self.lit;
         // The hollow's padding enters the field as its words do, and keeps it while it is edited.
         rim := TouchArea {
             enabled: root.enabled;
@@ -155,6 +161,7 @@ export component TextField inherits HorizontalLayout {
             padding-bottom: root.multiline ? FieldStyle.down : 0px;
             entry := Entry {
                 placeholder: root.placeholder;
+                name: root.name;
                 multiline: root.multiline;
                 centred: root.centred;
                 role: root.role;
@@ -235,6 +242,7 @@ export component SizeFields inherits HorizontalLayout {
         radius: FieldStyle.radius;
         hollow: true;
         lit: root.editing || root.focused-look;
+        ringed: self.lit;
         row := HorizontalLayout {
             padding-left: FieldStyle.across;
             padding-right: FieldStyle.across;
@@ -242,14 +250,14 @@ export component SizeFields inherits HorizontalLayout {
             spacing: Space.xs;
             wide := Entry {
                 width: FieldStyle.size-box; horizontal-stretch: 0;
-                placeholder: @tr("W"); role: TextRole.title; centred: true; enabled: root.enabled;
+                placeholder: @tr("W"); name: @tr("Width"); role: TextRole.title; centred: true; enabled: root.enabled;
                 accepted => { root.commit(); }
                 left => { root.commit(); }
             }
             Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
             high := Entry {
                 width: FieldStyle.size-box; horizontal-stretch: 0;
-                placeholder: @tr("H"); role: TextRole.title; centred: true; enabled: root.enabled;
+                placeholder: @tr("H"); name: @tr("Height"); role: TextRole.title; centred: true; enabled: root.enabled;
                 accepted => { root.commit(); }
                 left => { root.commit(); }
             }
@@ -278,6 +286,7 @@ export component DateFields inherits HorizontalLayout {
         radius: FieldStyle.radius;
         hollow: true;
         lit: root.editing || root.focused-look;
+        ringed: self.lit;
         // The hollow around the boxes, one focus for the three: a press on it or on a sibling box
         // keeps the editing, so a date half typed is not committed.
         rim := TouchArea { }
@@ -287,21 +296,21 @@ export component DateFields inherits HorizontalLayout {
             spacing: Space.xs;
             m := Entry {
                 width: FieldStyle.date-box; horizontal-stretch: 0;
-                placeholder: @tr("MM"); role: TextRole.title; centred: true;
+                placeholder: @tr("MM"); name: @tr("Month"); role: TextRole.title; centred: true;
                 rim: rim.has-hover || d.hovered || y.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
             Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
             d := Entry {
                 width: FieldStyle.date-box; horizontal-stretch: 0;
-                placeholder: @tr("DD"); role: TextRole.title; centred: true;
+                placeholder: @tr("DD"); name: @tr("Day"); role: TextRole.title; centred: true;
                 rim: rim.has-hover || m.hovered || y.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
             Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
             y := Entry {
                 width: FieldStyle.year-box; horizontal-stretch: 0;
-                placeholder: @tr("YYYY"); role: TextRole.title; centred: true;
+                placeholder: @tr("YYYY"); name: @tr("Year"); role: TextRole.title; centred: true;
                 rim: rim.has-hover || m.hovered || d.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }

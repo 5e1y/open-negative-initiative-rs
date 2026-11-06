@@ -101,6 +101,7 @@ export component ReportSheet inherits Sheet {
     if !Help.report-sent: Label { role: TextRole.note; text: @tr("Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."); }
     // Both ways: typing reaches Send's gate, and Rust's cut at the site's limit reaches the field.
     if !Help.report-sent: message := TextField { multiline: true;
+        name: @tr("Report a Bug or Give Feedback");
         text <=> Help.report-message;
         edited(t) => { Help.report-edited(t); }
         init => { self.take-focus(); }

@@ -128,7 +128,7 @@ export global Preparing {
     callback take-flat(); callback load-flat();
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
-    callback release(int); callback scroll(int, length, length, length, bool) -> bool;
+    callback release(int); callback scroll(int, length, length, length, bool) -> bool; callback slider-step(int, int);
     callback clear-base();
     callback clear-flags();
     callback previous();

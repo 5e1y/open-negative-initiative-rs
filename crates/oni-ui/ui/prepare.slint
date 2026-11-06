@@ -14,6 +14,7 @@ component RollSlider inherits Slider {
     drag(f, t, s, fine) => { Preparing.drag(f, t, s, fine); }
     release(f) => { Preparing.release(f); }
     scroll(f, dx, dy, s, fine) => { return Preparing.scroll(f, dx, dy, s, fine); }
+    step(f, by) => { Preparing.slider-step(f, by); }
 }
 
 // `RollPanel.frameGrid`: three to a row, the step's own mark on each.

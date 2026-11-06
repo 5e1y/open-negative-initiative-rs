@@ -14,6 +14,7 @@ and every screen picks it up.
 | `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `PickerStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
+| `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
 | `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
@@ -70,6 +71,25 @@ draws a still key once and a pressed one once a frame.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
   under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
   `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
+
+## Keyboard
+
+One model for every control, as macOS draws it with full keyboard access:
+
+- **The photos hold the keyboard** (`KeyMonitor`): the grid's or the open photo's keys, every key a control
+  lets through. Tab passes over it.
+- **Tab walks the controls in reading order** (`KeyScope`): every key, the tabs as one control (← → pick), every
+  slider (← → ↑ ↓ one step, ⇧ `big`), the switch, the picker (Space, Return or ↓ drops it), each medal, an
+  editable title, the grid (its photo ringed) and the open photo. Space or Return presses a key or flips a switch.
+- **One ring** (`FocusRing`, `FocusStyle`): the accent around what holds the keyboard, a gap off its edge;
+  a control shows it once Tab gives it the keyboard, a field while it is typed in (`Inward { ringed }`).
+- **A click never gives a control the keyboard**: any press gives it back to the photos, a field's own aside
+  (the window's pointer hook counts each press in `Outside`). A key whose holder vanished goes to the monitor
+  (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the keyboard back.
+- **A sheet keeps Tab inside it**: the monitor's two walls, Tab stops only while `Keyboard.covered`, hand the
+  keyboard to the sheet's first control going forward and to its last going back.
+- **`Keyboard.held`**: the keyboard is the window's, not a field's; the menus' bare keys (the medals, the
+  brush) answer only then.
 
 ## Fields
 

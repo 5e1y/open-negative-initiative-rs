@@ -1,6 +1,7 @@
 // Pieces at fixed places for the window checks that click or read them: fields and a tab bar, a scrolled
-// page, a step keycap, a field's lip three ways, a plate, fields and pickers to press beside, a submenu.
-import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle } from "ds.slint";
+// page, a step keycap, a field's lip three ways, a plate, fields and pickers to press beside, a submenu,
+// the keyboard's controls.
+import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Keyboard, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle, Slider, Toggle, Sheet } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -309,4 +310,70 @@ export component SubmenuProbe inherits AppWindow {
         sub-chosen(j) => { root.sub-chosen = j; self.close(); }
         state-changed(state) => { root.state = state; }
     }
+}
+
+// A key, the tabs, a slider, a switch and a field in reading order, which Tab walks under a key monitor,
+// and a sheet of two keys over them whose walls keep Tab inside it while it covers them.
+export component KeyboardProbe inherits AppWindow {
+    title: "ONI Keyboard Probe";
+    // The key shown; taken away, as a press may take away the key holding the keyboard.
+    in-out property <bool> keyed: true;
+    in-out property <bool> covered;
+    changed covered => { Keyboard.covered = self.covered; }
+    in-out property <string> text <=> field.text;
+    out property <bool> monitor-focused: keys.has-focus;
+    out property <bool> held: keys.held;
+    out property <bool> editing: field.editing;
+    // The last key the monitor heard, the key's presses, the tab picked, the slider's steps, the switch,
+    // and the sheet key pressed last: 1 its first, 2 its last.
+    out property <string> heard;
+    out property <int> clicks;
+    out property <int> tab;
+    out property <int> steps;
+    out property <bool> on;
+    out property <int> answered;
+    // Where the tabs' first tab lies, which a press lands on.
+    out property <length> tabs-x: tabs.absolute-position.x + Space.l;
+    out property <length> tabs-y: tabs.absolute-position.y + tabs.height / 2;
+    public function refocus() { keys.focus(); }
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 400px;
+    preferred-height: 400px;
+    keys := KeyMonitor {
+        // Tab goes on to Slint's walk, as the app's monitor leaves it.
+        key-pressed(event) => {
+            if (event.text == Key.Tab || event.text == Key.Backtab) { return reject; }
+            root.heard = event.text;
+            accept
+        }
+        VerticalLayout {
+            padding: Space.l;
+            spacing: Space.l;
+            alignment: start;
+            HorizontalLayout {
+                alignment: start;
+                height: ButtonStyle.height;
+                if root.keyed: Button { text: "Key"; clicked => { root.clicks += 1; } }
+            }
+            tabs := Tabs { tabs: ["One", "Two", "Three"]; selected: root.tab; picked(i) => { root.tab = i; } }
+            Slider { label: "Value"; readout: root.steps; fraction: 0.5; step(f, by) => { root.steps += by; } }
+            Toggle { label: "Switch"; on: root.on; toggled(on) => { root.on = on; } }
+            field := TextField { name: "Field"; }
+        }
+    }
+    if root.covered: Sheet {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: "Sheet";
+        dismissed => { root.covered = false; }
+        HorizontalLayout {
+            spacing: Space.s;
+            Button { text: "First"; clicked => { root.answered = 1; } }
+            Button { text: "Last"; clicked => { root.answered = 2; } }
+        }
+    }
+    init => { keys.focus(); }
 }
