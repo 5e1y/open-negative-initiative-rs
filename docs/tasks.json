@@ -6080,5 +6080,12 @@
     "title": "Compare's divider carries a slider's knob",
     "status": "done",
     "detail": "The evaluators found Compare's divider a bare 1 pt white line with no handle, faint over a light sky. The split is a slider laid over the photo, so it now wears the panel sliders' own knob (the small level keycap with its two grip lines) on its middle, growing under the hand as theirs does, over the line and its contrast edges; the whole height still grabs and a press anywhere on it still moves the split. Nothing new to tune: the knob is the sliders'."
+  },
+  {
+    "id": 1270,
+    "type": "design",
+    "title": "The crop's kept size reads as every other value",
+    "status": "done",
+    "detail": "The evaluators found the kept dimensions in a one-off black bold pill. The crop tab set them on the scanner's LCD glass, which belongs to the scanner and the status bar's count. Kept is now a ValueHeader, the readout every slider uses: its name in the label ink, the size right in the secondary value ink, its real unit (px) kept."
   }
 ]
