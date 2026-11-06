@@ -1,7 +1,8 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
+import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
 import { Absent, AbsentNote } from "missing.slint";
@@ -27,6 +28,16 @@ export component CanvasCard inherits Card {
     changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
     // Moved to a screen of another density, the same size in points holds other pixels.
     changed density => { Canvas.resized(); }
+    property <length> menu-x;
+    property <length> menu-y;
+    // A right click on the picture opens the photo's own menu, as its tile and its filmstrip row do.
+    function open-menu(x: length, y: length) {
+        if (Canvas.menu()) {
+            root.menu-x = x;
+            root.menu-y = y;
+            menu.show();
+        }
+    }
     Rectangle {
         x: CardStyle.padding;
         y: CardStyle.padding;
@@ -103,6 +114,9 @@ export component CanvasCard inherits Card {
                 pointer-event(event) => {
                     if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
                         Canvas.grabbed(self.mouse-x, self.mouse-y);
+                    }
+                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                        root.open-menu(self.absolute-position.x - root.absolute-position.x + self.mouse-x, self.absolute-position.y - root.absolute-position.y + self.mouse-y);
                     }
                 }
                 moved => { Canvas.dragged(self.mouse-x, self.mouse-y); }
@@ -215,6 +229,9 @@ export component CanvasCard inherits Card {
                 enabled: !Canvas.space-held || self.pressed;
                 mouse-cursor: self.shows-brush ? MouseCursor.none : MouseCursor.default;
                 pointer-event(event) => {
+                    if (event.button == PointerEventButton.right && event.kind == PointerEventKind.down) {
+                        root.open-menu(self.absolute-position.x - root.absolute-position.x + self.mouse-x, self.absolute-position.y - root.absolute-position.y + self.mouse-y);
+                    }
                     if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
                         root.refocused();
                         self.panning = event.modifiers.control;
@@ -285,13 +302,16 @@ export component CanvasCard inherits Card {
         width: parent.width;
         y: parent.height - self.height;
     }
+    // The Working Space in the room between the column keys, on the card's centre while that room allows.
     SpaceChip {
-        x: (parent.width - self.width) / 2;
+        property <length> start: library-key.x + library-key.width + Space.s;
+        property <length> end: zoom.x - Space.s;
         y: 0;
-        width: min(self.preferred-width, parent.width - 2 * (zoom.width + CardStyle.padding + Space.s));
+        width: min(self.preferred-width, self.end - self.start);
+        x: max(self.start, min((parent.width - self.width) / 2, self.end - self.width));
     }
     // `columnKey(.leading)`: the Library's key in the canvas's top-left band.
-    HorizontalLayout {
+    library-key := HorizontalLayout {
         // Centred in the band over the image: a row stretched to it lays its keys at its top.
         x: CardStyle.padding;
         y: (CardStyle.padding - self.height) / 2;
@@ -320,7 +340,20 @@ export component CanvasCard inherits Card {
         spacing: Space.s;
         alignment: center;
         if Canvas.hz != "": Label { text: Canvas.hz; role: TextRole.value; }
-        Label { text: Canvas.zoom-label; role: TextRole.value; }
+        // The tag tells a picture enlarged from its preview, whose softness is not the scan's own.
+        Rectangle {
+            min-width: readout.preferred-width;
+            preferred-width: readout.preferred-width;
+            readout := Label {
+                width: parent.width;
+                height: parent.height;
+                text: Canvas.enlarged ? @tr("{} · preview", Canvas.zoom-label) : Canvas.zoom-label;
+                role: TextRole.value;
+            }
+            TouchArea {
+                changed has-hover => { Tips.hover(self.has-hover && Canvas.enlarged, @tr("Enlarged from its preview: the grain and sharpness are not the file’s own"), self.absolute-position.x, self.absolute-position.y + self.height); }
+            }
+        }
         // `KeycapPlate(.mini)`: the two zoom keys flush on one plate.
         ButtonGroup {
             plate: true;
@@ -343,4 +376,15 @@ export component CanvasCard inherits Card {
         }
     }
     CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square-left: root.square-left; square-right: root.square-right; }
+    menu := Menu {
+        anchor-x: root.menu-x;
+        y: root.menu-y;
+        window-x: root.absolute-position.x + root.menu-x;
+        window-y: root.absolute-position.y + root.menu-y;
+        lines: Library.menu-lines;
+        sub-lines: Library.menu-sub-lines;
+        chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
+        opened(i) => { Library.menu-opened(i); }
+        sub-chosen(i) => { if (!Library.menu-sub-chosen(i)) { menu.close(); } }
+    }
 }

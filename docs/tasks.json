@@ -5387,5 +5387,54 @@
     "title": "The gallery opens on four columns",
     "status": "done",
     "detail": "Evaluation R0: at the 1100 pt window the six-column rung left tiles of 78 pt and 40 % of the card empty. The ladder gains a rung of four past Swift's twelve and six and the gallery opens on it; ⌘− steps to six then twelve, and a stored count keeps its own rung."
+  },
+  {
+    "id": 1101,
+    "type": "change",
+    "title": "One bar in every mode: the mode key and the history at the left, feedback, settings and the commit at the right",
+    "status": "done",
+    "detail": "Evaluation s-1d4fb9c3: Undo, Settings and Feedback changed place between the gallery, the editor and Prepare, and at the 1100 pt window the editor's EXPORT ran 12 pt past the window's edge, cutting EXPORT 25 PHOTOS. The bar now holds one layout: the mode key and Undo/Redo beside it, the mode's own keys centred in the room left, then Feedback, the phone, Settings and the commit slot, whose room stays, its key hidden, while a roll is prepared. The centre is the one zone that gives room, its faces narrowing to their labels first, so the compact bar fits the narrowest window in every mode. Feedback is a glyph at every width, as Settings beside it: its word turning into a glyph with the window's width made the bar's width loop through the window's. EXPORT keeps one word, the photos' count in its help (Export 25 photos (⌘E)), in the menu and on the export card's key; Bar.export-title goes. Checks: window toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu (the gallery, Prepare and the editor at 1100 pt keep the mode key, the history, Feedback and Settings to the pixel, EXPORT ends inside the window; twin: the keys between differ), toolbar::the_bars_keys_keep_their_widths_as_the_window_widens; real app at 1100 × 680 in the three modes."
+  },
+  {
+    "id": 1102,
+    "type": "change",
+    "title": "The contact sheet's export key leaves the bar: the export panel's Export As chooses",
+    "status": "done",
+    "detail": "Evaluation: picking the whole roll inserted EXP. CONTACT SHEET and an empty black plate beside the export key, sliding the bar's keys about 150 pt, and its 3×3 grid was also Select the Whole Roll's glyph. The two keys opened the same panel, whose Export As (#1035) already offers Separate Photos or Contact Sheet first: the bar keeps one export key, which opens the panel on separate photos, the sheet one click away there. Act::ExportSheet and Ctl::export_sheet go; the welcome's line names Export As. The grid now means Select the Whole Roll alone. This withdraws the orange key of #1034 (owner's call then) on the owner's guideline for this round: merge what is alike. Checks: window toolbar (the whole roll picked adds no key and moves none), export_sheet (export opens on separate photos, Export As lays the five on one sheet, the next export opens on separate photos again)."
+  },
+  {
+    "id": 1103,
+    "type": "fix",
+    "title": "The canvas header lays the Working Space between the column keys, and tells the preview only while it shows enlarged",
+    "status": "done",
+    "detail": "Evaluation: while a photo opened, '14% · preview' was drawn over the Working Space's name, and the name was cut to 'Display P3 · pho…', then 'p…' at 100 %, with room free beside it. The chip was centred on the card at the card's width less twice the zoom group, below its own words' minimum. It now takes the room between the Library's key and the zoom group, on the card's centre while that room allows, so it elides only when that room is short and never meets the readout. The readout's tag said the canvas read the preview whatever the zoom, seconds after each opening, at fit where nothing differs: it now shows only while the preview is stretched past its own pixels (viewport::enlarged: a zoom above the preview's share of the frame, the full resolution not read), with a tooltip saying what it means. Checks: viewport::the_preview_is_told_only_once_the_zoom_outgrows_it (twin: a rule on the full resolution alone tells it at fit), window space_chip; real app at 1100 × 680: 'Display P3 · phones & screens' whole at fit, '50% · preview' beside the elided name while the full resolution loads, '100%' once it has."
+  },
+  {
+    "id": 1104,
+    "type": "change",
+    "title": "Crop, Compare and De-dust show their mode through the key's on, read off the state they open",
+    "status": "done",
+    "detail": "Evaluation: Crop and Compare looked the same on and off, while De-dust turned white and swapped its bandage for a check. The three keys now set on from the state itself, PanelState.tab for Crop and De-dust, Canvas.split for Compare, so a key cannot disagree with its mode; Bar.dedust, the copy Rust kept of the tab, goes, and De-dust keeps its glyph. The look of on is the design system's. Checks: window canvas_switch (De-dust's key reads the tab it opens, and goes dark with the tab bar), toolbar; real app: Crop, Compare and De-dust each lit while on."
+  },
+  {
+    "id": 1105,
+    "type": "change",
+    "title": "Paste draws a clipboard apart from Copy's pages; Show the selected photo draws a photo between brackets",
+    "status": "done",
+    "detail": "Evaluation: Copy, Paste and Paste to the Roll read as three near-identical pages, and the crosshair meant Show the selected photo in the filmstrip while the help card's demo presses it for white balance. Paste is now a clipboard, drawn for this build in the Trinil set's stroke, and Paste to the Roll keeps the roll's canister: three silhouettes. Show the selected photo draws a photo between four corner brackets (icons/reveal.svg, Icons.reveal); the crosshair is the demo's white balance key alone. The demo is not filmed again, its photograph not mounted. Checks: oni-ui icons (every icon named is present); real app."
+  },
+  {
+    "id": 1106,
+    "type": "feature",
+    "title": "A right click on the picture opens the photo's own menu",
+    "status": "done",
+    "detail": "Evaluation: a right click on the image opened nothing, unlike the tiles, the filmstrip and the sidebar rows. The canvas now asks Rust (Canvas.menu) and shows the open photo's cell menu, on the frames shown with it when they show together, through the Library's own menu lines and actions (Ctl::canvas_menu beside Ctl::context), De-dust's brush area alike. A crop frame or an armed measuring window keeps the press on it for its own drag. Checks: window toolbar (a right click on the canvas lays Export… and Move to ONI Trash; twin: one on the bar lays none); real app."
+  },
+  {
+    "id": 1107,
+    "type": "fix",
+    "title": "The presets deck names itself on its resting strip",
+    "status": "done",
+    "detail": "Evaluation: an empty outlined tab sat half cut off at the canvas's bottom-left, with no name. The new card's top, all the strip shows of the deck at rest, now reads Presets, and the deck, the new card and each card carry an accessible role and name (Presets, New preset, the card's own). Its rise under the pointer was there: the testing tool hovers an element's centre, which for the deck's zone lies below the strip it shows. Checks: window preset_deck; real app at 1100 × 680."
   }
 ]

@@ -254,10 +254,10 @@ reaches.
 
 | Zone | Keys | Slint | Risk |
 |---|---|---|---|
-| Leading (`.navigation`) | EDITOR / GALLERY word key (⌘G), holding the width of the wider face | `Keycap` component with `faces` measured: width = max of both labels' `Text.preferred-width` | `[text]` |
-| Principal, editor | Plate: framing (⌘K), compare; contact sheet; plate: undo (⌘Z), redo (⌘⇧Z); plate: copy (⌘⇧C), paste, PASTE TO ROLL; PREPARE ROLL; de-dust; plate: RESET SCAN, trash | `ButtonGroup { plate: true }`: keys flush on the black socket; icon keys from the Trinil SVGs | `[draw]` Keycap chrome (section 5). A hidden copy of the editor keys holds the zone's width so keys move inside it: Slint's layouts re-measure, so this becomes a fixed `min-width` computed from the editing set. |
+| Leading (`.navigation`) | EDITOR / GALLERY word key (⌘G), holding the width of the wider face; then the plate of undo (⌘Z), redo (⌘⇧Z) in every mode | `Keycap` component with `faces` measured: width = max of both labels' `Text.preferred-width`; `History` | `[text]` |
+| Principal, editor | Plate: framing (⌘K), compare, select the whole roll; the faces; plate: copy (⌘⇧C), paste, PASTE TO ROLL; de-dust; plate: RESET SCAN. Gallery: select the whole roll; the filter; PREPARE ROLL; plate: RESET SCAN, trash | `ButtonGroup { plate: true }`: keys flush on the black socket; icon keys from the Trinil SVGs | `[draw]` Keycap chrome (section 5). A hidden copy of the editor keys holds the zone's width so keys move inside it: Slint's layouts re-measure, so this becomes a fixed `min-width` computed from the editing set. |
 | Principal, roll mode | One word key per `RollStep` on one plate, the current one inverted, a lamp on done steps | `RollStepKeys`, a `ButtonGroup { plate: true }` of `Button { on, lamp-shown, lamp-lit }` | `[draw]` `DSLamp` glow. |
-| Trailing (`.primaryAction`) | FEEDBACKS; the export/import/update key (EXPORT, EXPORT n PHOTOS, IMPORT, UPDATE, busy titles ADDING / EXPORTING / UPDATING) | `Keycap` with label from Rust | Low. |
+| Trailing (`.primaryAction`) | Feedback and settings glyphs; the export/import/update key (EXPORT, ADD FOLDER…, UPDATE, UPDATING) in one slot, kept empty while a roll is prepared | `Keycap`; the photos' count in the export key's help | Low. |
 | Help tooltips (`help:`) | System tooltips on every key | Slint has no tooltip element: a hover-delayed overlay `Text` | `[native]` The system tooltip delay (~1 s) and look must be imitated. |
 
 ### 4.4 The panel: panes, blocks, controls

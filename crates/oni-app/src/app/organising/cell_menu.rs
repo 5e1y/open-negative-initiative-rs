@@ -32,6 +32,18 @@ impl Ctl {
         self.open_menu(items, Some(path))
     }
 
+    /// A right click on the canvas: the open photo's cell menu, on the frames shown with it.
+    pub(in crate::app) fn canvas_menu(self: &Rc<Self>) -> bool {
+        let can_paste = self.can_paste();
+        let (items, path) = {
+            let s = self.state.borrow();
+            let Some(path) = s.open.clone() else { return false };
+            let scope = organise::cell_scope(&path, &s.picks.selection);
+            (self.cell_items(&s, &path, &scope, false, can_paste), path)
+        };
+        self.open_menu(items, Some(path))
+    }
+
     pub(super) fn can_paste(&self) -> bool {
         self.state.borrow_mut().store.editor().is_some_and(|e| e.has_copied_settings())
     }

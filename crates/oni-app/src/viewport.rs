@@ -186,10 +186,15 @@ pub fn take_wheel() -> Option<Wheel> {
     WHEEL.with(|w| w.take())
 }
 
-/// `AppBar.zoomLabel`.
-pub fn zoom_label(scale: f64, at_full_resolution: bool) -> String {
-    let percent = format!("{:.0}%", scale * 100.0);
-    if at_full_resolution { percent } else { format!("{percent} · {}", oni_i18n::tr("preview")) }
+/// `AppBar.zoomLabel`, whose preview tag the canvas adds while the picture is its preview enlarged.
+pub fn zoom_label(scale: f64) -> String {
+    format!("{:.0}%", scale * 100.0)
+}
+
+/// The picture shown is the preview stretched past its own pixels: the zoom asks more of the frame
+/// than the preview's share of it, `preview_ratio`, and the full resolution is not what it reads.
+pub fn enlarged(scale: f64, preview_ratio: f64, at_full_resolution: bool) -> bool {
+    !at_full_resolution && scale > preview_ratio
 }
 
 /// Where the image lands in a `view`, and the part of it the view shows, in drawable pixels.
@@ -337,7 +342,19 @@ mod tests {
         // Twin: a placement ignoring the offset shows the middle instead.
         let centred = Viewport { scale: Some(1.0), offset: (0.0, 0.0) }.placement((2000.0, 1000.0), view);
         assert_ne!(centred.visible, zoomed.visible);
-        assert_eq!(zoom_label(1.0, true), "100%");
-        assert_eq!(zoom_label(0.25, false), "25% · preview");
+        assert_eq!(zoom_label(1.0), "100%");
+        assert_eq!(zoom_label(0.25), "25%");
+    }
+
+    #[test]
+    fn the_preview_is_told_only_once_the_zoom_outgrows_it() {
+        // A 6048 px frame read as a 2000 px preview: fitted to a 900 px canvas, the preview holds every pixel shown.
+        let ratio = 2000.0 / 6048.0;
+        assert!(!enlarged(900.0 / 6048.0, ratio, false), "fitted, the preview is enough");
+        assert!(enlarged(1.0, ratio, false), "at 100 % the preview is stretched three times");
+        assert!(!enlarged(1.0, ratio, true), "the full resolution is the frame's own");
+        // Twin: a rule reading the full resolution alone tells the preview at fit too.
+        let by_full_alone = |at_full: bool| !at_full;
+        assert_ne!(by_full_alone(false), enlarged(900.0 / 6048.0, ratio, false));
     }
 }
