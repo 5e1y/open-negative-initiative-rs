@@ -1,6 +1,8 @@
 //! Gestures on several frames at once, each one gallery step.
 
 use super::*;
+use oni_library::gallery_history::Medals;
+use oni_settings::Medal;
 
 impl EditorStore {
     /// Each target back to its imported state, one step for the gesture.
@@ -137,6 +139,38 @@ impl EditorStore {
 
     fn film_on(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: impl Fn(usize) -> String) -> usize {
         self.roll_on(paths, None, |s| s.film = film.clone(), label)
+    }
+
+    /// The medal on each target's sidecar, its settings untouched, one gallery step; answers each
+    /// target's write, a refusal for the host to say.
+    pub fn lay_medal(&mut self, targets: &[String], medal: Medal) -> Vec<(String, Result<(), sidecar::Error>)> {
+        let mut worn = BTreeMap::new();
+        let written: Vec<(String, Result<(), sidecar::Error>)> = targets
+            .iter()
+            .map(|path| {
+                let (original, mosaic) = (Path::new(path), self.mosaic(path));
+                let before = sidecar::read(original, mosaic, true).map_or(Medal::None, |l| l.label);
+                let done = sidecar::set_label(medal, original, mosaic);
+                if done.is_ok() {
+                    worn.insert(path.clone(), before);
+                }
+                (path.clone(), done)
+            })
+            .collect();
+        let changed = worn.values().filter(|m| **m != medal).count();
+        let label = trn("Medal on {n} photo", "Medal on {n} photos", changed as u64);
+        self.gallery.record_medals(Medals { before: worn, after: medal }, &label);
+        written
+    }
+
+    /// A medal step laid back: each photo's own medal on undo, the one they took on redo.
+    pub(super) fn lay_medals(&mut self, medals: &Medals, undoing: bool) {
+        for (path, worn) in &medals.before {
+            let medal = if undoing { *worn } else { medals.after };
+            if let Err(e) = sidecar::set_label(medal, Path::new(path), self.mosaic(path)) {
+                self.failure = Some(refusal::said(&e));
+            }
+        }
     }
 
     /// A roll's marker and what it writes on its frames, one gallery step: the marker first, so a

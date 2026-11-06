@@ -73,6 +73,20 @@ fn a_trash_step_comes_back_whole_and_an_empty_one_opens_none() {
 }
 
 #[test]
+fn a_medal_step_keeps_what_each_photo_wore_and_one_that_changed_nothing_opens_none() {
+    let worn = BTreeMap::from([("/a".to_string(), Medal::None), ("/b".to_string(), Medal::Gold)]);
+    let mut h = GalleryHistory::default();
+    h.record_medals(Medals { before: worn, after: Medal::Gold }, "Gold");
+    let step = h.undo_step().and_then(|s| s.medals).expect("a medal step");
+    assert_eq!(step.before, BTreeMap::from([("/a".to_string(), Medal::None)]), "a photo already gold stays out");
+    assert_eq!(h.redo_paths(), BTreeSet::from(["/a".to_string()]));
+    // Twin: the medal every photo already wears opens no step.
+    let mut idle = GalleryHistory::default();
+    idle.record_medals(Medals { before: BTreeMap::from([("/a".to_string(), Medal::Gold)]), after: Medal::Gold }, "Gold");
+    assert!(!idle.can_undo());
+}
+
+#[test]
 fn a_folder_renamed_after_a_new_roll_is_where_its_undo_walks_from() {
     let (neutral, edited) = pair();
     let mut h = GalleryHistory::default();

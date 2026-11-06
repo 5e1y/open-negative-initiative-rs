@@ -55,6 +55,9 @@ impl EditorStore {
         if let Some(marks) = &step.trash {
             self.lay_trash(marks, undoing);
         }
+        if let Some(medals) = &step.medals {
+            self.lay_medals(medals, undoing);
+        }
         if let Some(m) = &step.marker {
             let film = if undoing { &m.before } else { &m.after };
             match oni_library::folders::set_roll(film.as_ref(), &m.folder) {

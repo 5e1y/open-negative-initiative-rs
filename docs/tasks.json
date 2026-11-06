@@ -5324,5 +5324,12 @@
     "title": "The UX and UI benches' criteria",
     "status": "done",
     "detail": "Owner's ask: the twelve criteria proposed for an in-depth review become the UX bench (docs/ux-bench.md), the owner's eight categories the UI bench (docs/ui-bench.md). The UX bench rates the app in use (tasks, counts, timings, behaviour, words), the UI bench one still screen in one of its states; a criterion bordering on the other bench names it, so nothing is rated twice. Each gives what it judges, what to look at and the two ends of its scale; how a bench runs and scores comes with the owner's procedure."
+  },
+  {
+    "id": 1122,
+    "type": "fix",
+    "title": "A medal laid is a gallery step: Undo takes it back",
+    "status": "done",
+    "detail": "UX evaluation (s-1d4fb9c3): rating a photo added no undo step, the medal written to the sidecar beside the history. The gallery history gains a medals part, the medal each photo wore and the one laid; the store lays the medal on each sidecar and records it, and undo and redo lay each photo's own back. The status bar's medals, the keys 0-3 and the Labels menu all go through it."
   }
 ]
