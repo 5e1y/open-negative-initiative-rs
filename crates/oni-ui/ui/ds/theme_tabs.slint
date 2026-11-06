@@ -22,7 +22,7 @@ export global TabsStyle {
     out property <color> pill: DS.palette-canvas.mix(#ffffff, 1 - TabsStyle.pill-tone);
     // The bar's hollow, lighter at its rim than a plot's.
     in-out property <float> track-shade: 0.14;
-    // `DS.State.idleLabel`: an unselected tab's label, a medal not chosen.
+    // `DS.State.idleLabel`: an unselected tab's label.
     in-out property <float> idle: DS.state-idle-label;
 }
 
@@ -31,9 +31,12 @@ export global ToggleStyle {
     out property <length> travel: DS.control-toggle-cell-width;
 }
 
-// `DSMedal`: a flat disc; `press` is the scale a pressed one shrinks to.
+// `DSMedal`: a foil disc, its rank struck at `figure` of its side; `press` is the scale a pressed one shrinks to.
 export global MedalStyle {
     out property <length> size: DS.control-medal-size;
+    // The picker's medals at an icon's side, told apart at a glance and still inside the status bar's row.
+    out property <length> key: DS.control-icon-size;
+    out property <float> figure: 0.6;
     in-out property <float> press: DS.control-medal-press;
     // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.
     in-out property <float> foil-spin: 0.7;

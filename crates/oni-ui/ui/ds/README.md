@@ -140,8 +140,9 @@ field lies flat, as a text field.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill and chip faces keep the hover ground. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink.
-- **`Medal`**: a flat disc of its metal's colour; `MedalPicker` lights the medal under the hand, shrinks a
-  pressed one on the spring and catches the hand over a small key's square round each.
+- **`Medal`**: a foil disc of its metal with its rank struck in the middle; `given: false` leaves its empty
+  place, edge and rank in the secondary ink. `MedalPicker` gives the medal under the hand, shrinks a pressed
+  one on the spring and catches the hand over a small key's square round each.
 
 ## Surfaces
 
