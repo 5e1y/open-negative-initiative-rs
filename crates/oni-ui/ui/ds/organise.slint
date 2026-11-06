@@ -10,7 +10,7 @@ import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 import { MedalStyle, TabsStyle } from "theme.slint";
 
-// `DSMedalPicker`: the current medal (-1 none) and the one under the hand given, each other one its empty place, a
+// `DSMedalPicker`: the current medal (-1 none) and the one under the hand lit, each other one idle, a
 // pressed one shrunk on the spring; each catches the hand over a small key's square, overhanging the status bar.
 export component MedalPicker inherits HorizontalLayout {
     in property <int> current: -1;
@@ -37,7 +37,7 @@ export component MedalPicker inherits HorizontalLayout {
             y: (parent.height - self.height) / 2;
             rank: medal;
             size: MedalStyle.key * parent.scale;
-            given: root.current == medal || touch.has-hover;
+            opacity: root.current == medal || touch.has-hover ? 1 : TabsStyle.idle;
         }
         touch := TouchArea {
             y: (parent.height - self.height) / 2;

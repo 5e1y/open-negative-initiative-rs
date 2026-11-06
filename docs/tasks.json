@@ -6031,5 +6031,19 @@
     "title": "The preset deck's check aims at the balance field where the sheet now lays it",
     "status": "done",
     "detail": "After #1221 the window check preset_deck clicked 20 px above the save sheet's White balance field, in the gap under its label, so its menu never opened and the balance stayed Not carried. The field moved on purpose: the switches above it are slide levers a knob tall (#1188) and the block titles a step larger (#1199). The check now aims at the field's middle and at Automatic, the menu's third line, where they stand; the stale aim, which failed on 0 against 2, is its twin."
+  },
+  {
+    "id": 1228,
+    "type": "design",
+    "title": "The medals are spun foil again, without figures",
+    "status": "done",
+    "detail": "Owner's call: the medals stay 2.5D, as decided for the art direction; #1192 had struck their rank in the middle and drawn a medal not given as an outline. A medal is the foil disc again, and those not given rest at the idle opacity, lit under the hand; its name stays in its tooltip and accessible label, its key size is kept."
+  },
+  {
+    "id": 1229,
+    "type": "fix",
+    "title": "The trash stands on a plate of its own, apart from RESET",
+    "status": "done",
+    "detail": "Owner's call: on one plate, the trash read as part of RESET, as if resetting a photo removed it. The gallery bar now lays RESET and the trash on two plates."
   }
 ]

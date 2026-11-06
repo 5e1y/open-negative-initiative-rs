@@ -162,6 +162,9 @@ component GalleryKeys inherits HorizontalLayout {
     Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); keycap: true; help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
     ButtonGroup { plate: true;
         ResetScan { compact: root.compact; }
+    }
+    // The trash stands on a plate of its own, never beside a key that keeps the photo.
+    ButtonGroup { plate: true;
         Item { action: Act.remove; icon: Icons.remove; help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash", Bar.targets) : @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
     }
 }

@@ -31,12 +31,11 @@ export global ToggleStyle {
     out property <length> travel: DS.control-toggle-cell-width;
 }
 
-// `DSMedal`: a foil disc, its rank struck at `figure` of its side; `press` is the scale a pressed one shrinks to.
+// `DSMedal`: a foil disc; `press` is the scale a pressed one shrinks to.
 export global MedalStyle {
     out property <length> size: DS.control-medal-size;
     // The picker's medals at an icon's side, told apart at a glance and still inside the status bar's row.
     out property <length> key: DS.control-icon-size;
-    out property <float> figure: 0.6;
     in-out property <float> press: DS.control-medal-press;
     // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.
     in-out property <float> foil-spin: 0.7;
