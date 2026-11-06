@@ -5681,5 +5681,12 @@
     "title": "Export lays each preview over its fields, in two columns of four",
     "status": "done",
     "detail": "Evaluation R1: the preview left the column's lower half empty while the EXIF crowded a 260 pt column. Each line is now its preview over its caption, always as tall, and its fields in two columns of four across the room: a lone photo fills the room's height, the fields' values get the room's width; the preview room handed to Rust follows."
+  },
+  {
+    "id": 1185,
+    "type": "ui",
+    "title": "Export's presets are tabs that light the preset the rows equal",
+    "status": "done",
+    "detail": "Evaluation R1: the Instagram / Display / Print row looked like a segmented control and showed no selection. It is now the DS tabs under a Presets label, the tab lit read off the settings by Preset::matching: a row set by hand lights none, set back it lights again (beyond Swift, whose plate lit no key)."
   }
 ]

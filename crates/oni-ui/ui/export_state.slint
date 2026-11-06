@@ -48,6 +48,8 @@ export global Exporting {
     in property <string> subtitle;
     in property <int> count;
     in-out property <int> format: 1;
+    // The preset the settings equal, -1 once a row is set by hand.
+    in property <int> lit-preset: -1;
     // 0 to 3 the built-in spaces, 4 Custom.
     in-out property <int> space-tab: 1;
     in property <string> purpose;

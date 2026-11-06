@@ -217,7 +217,7 @@ export component SpaceField inherits VerticalLayout {
     }
 }
 
-// `ExportPanel`: preset plate, rows, what the file will be, the two exits.
+// `ExportPanel`: presets, rows, what the file will be, the two exits.
 export component ExportPanel inherits Surface {
     width: FormStyle.panel-width;
     VerticalLayout {
@@ -248,13 +248,14 @@ export component ExportPanel inherits Surface {
                         picked(i) => { Exporting.sheet-set(i == 1); }
                     }
                 }
-                // Three keys, one row: a click writes every row below at once and locks none.
-                ButtonGroup {
-                    plate: true;
-                    align: GroupAlign.fill;
-                    Button { size: ButtonSize.plate; text: @tr("Instagram"); fills: true; clicked => { Exporting.preset(0); } }
-                    Button { size: ButtonSize.plate; text: @tr("Display"); fills: true; clicked => { Exporting.preset(1); } }
-                    Button { size: ButtonSize.plate; text: @tr("Print"); fills: true; clicked => { Exporting.preset(2); } }
+                // A click writes every row below at once and locks none; the tab the rows equal stays lit.
+                Field {
+                    label: @tr("Presets");
+                    Tabs {
+                        tabs: [@tr("Instagram"), @tr("Display"), @tr("Print")];
+                        selected: Exporting.lit-preset;
+                        picked(i) => { Exporting.preset(i); }
+                    }
                 }
                 Field {
                     label: @tr("Format");

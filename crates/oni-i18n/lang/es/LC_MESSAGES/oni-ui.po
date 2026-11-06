@@ -661,6 +661,10 @@ msgstr "Fotos separadas"
 msgid "Contact Sheet"
 msgstr "Hoja de contactos"
 
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/preset_deck.slint
+msgid "Presets"
+msgstr "Preajustes"
+
 #: crates/oni-ui/ui/export.slint
 msgid "Instagram"
 msgstr "Instagram"
@@ -1980,10 +1984,6 @@ msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
 msgstr "SIGUIENTE"
-
-#: crates/oni-ui/ui/preset_deck.slint
-msgid "Presets"
-msgstr "Preajustes"
 
 #: crates/oni-ui/ui/preset_deck.slint
 msgid "New preset"

@@ -619,7 +619,7 @@ msgstr "Profil"
 
 #: crates/oni-ui/ui/export.slint
 msgid "TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."
-msgstr "TIFF 16 bits uniquement : sur huit bits, un espace aussi large fait apparaître des cassures de dégradé. Le choisir passe l’export en TIFF."
+msgstr "TIFF 16 bits uniquement : sur huit bits, un espace aussi large fait apparaître des cassures de dégradé. Le choisir passe l’export en TIFF."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Profile"
@@ -660,6 +660,10 @@ msgstr "Photos séparées"
 #: crates/oni-app/src/app/export_card/writing.rs crates/oni-ui/ui/export.slint
 msgid "Contact Sheet"
 msgstr "Planche contact"
+
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/preset_deck.slint
+msgid "Presets"
+msgstr "Préréglages"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Instagram"
@@ -1980,10 +1984,6 @@ msgstr "Le scan entier, bord du film compris, s’affiche ici."
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
 msgstr "SUIVANT"
-
-#: crates/oni-ui/ui/preset_deck.slint
-msgid "Presets"
-msgstr "Préréglages"
 
 #: crates/oni-ui/ui/preset_deck.slint
 msgid "New preset"
