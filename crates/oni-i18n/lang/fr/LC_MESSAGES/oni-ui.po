@@ -1766,8 +1766,12 @@ msgid "Display P3"
 msgstr "Display P3"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Source Balance"
-msgstr "Balance de la source"
+msgid "Filtration"
+msgstr "Filtration"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own."
+msgstr "La filtration couleur de la pellicule, comme on règle les filtres d’un agrandisseur pour un film : elle s’applique à toutes les photos de la pellicule, tandis que Température et Teinte restent propres à chaque photo."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Amber ↔ Blue"
@@ -1802,12 +1806,12 @@ msgid "Yellow ↔ Blue"
 msgstr "Jaune ↔ Bleu"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Density Ceiling"
-msgstr "Plafond de densité"
+msgid "Highlight Detail"
+msgstr "Détail des hautes lumières"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there."
-msgstr "Révèle plus de détails dans les zones les plus denses du négatif, au prix d’un bruit plus visible à ces endroits."
+msgid "Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there."
+msgstr "Révèle plus de détails dans les zones les plus claires de la photo, les plus denses du négatif, au prix d’un bruit plus visible à ces endroits."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Ceiling"
@@ -1858,8 +1862,8 @@ msgid "Dye separation"
 msgstr "Séparation des colorants"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Balance Strength"
-msgstr "Intensité de la balance"
+msgid "Auto White Balance"
+msgstr "Balance des blancs auto"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's."

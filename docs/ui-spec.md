@@ -271,8 +271,8 @@ controls. Every slider is `DSSlider` (4.4.1). The labels below are exact strings
 | Roll (`SettingsPane`) | Film Type | Mode picker | `DSPicker` | `[menu]` |
 | | Source Encoding | "Read as" picker | `DSPicker` | `[menu]` |
 | | Measured Roll | `DSWarning` bands, PREPARE THE ROLL…, JOIN / ROLL OF on one filling plate, roll previews (`RollPreviews`) | note `Label`s, a plate `Button` a row, `Image` row | Previews render through oni-render. The state reads as a line of words, never a band beside the photo. |
-| | Source Balance / Balance Strength | Strength slider | `DSSlider` | |
-| | Density Ceiling | Ceiling slider | `DSSlider` | |
+| | Source Balance / Balance Strength | Strength slider | `DSSlider` | Shown as Filtration and Auto White Balance. |
+| | Density Ceiling | Ceiling slider | `DSSlider` | Shown as Highlight Detail. |
 | | Per-Channel Levels | `LevelsView`: histogram, five handles, RGB/R/G/B tabs | `DSTabBar` + histogram `Image` + `DSHandle`s | `[draw]` The histogram is a `Canvas` path in Swift: render it as an RGBA buffer in Rust or as a Slint `Path` from `commands` built in Rust. Path rebuilds cost on the software renderer only. |
 | | Dye Separation | Dyes picker, Dye separation slider | `DSPicker`, `DSSlider` | |
 | | Flat-Field (`FlatFieldControls`) | Switch then its word at the left, gear at the far right; Mask label above its picker; USE THIS PHOTO AS FLAT-FIELD; the gear reveals Amount, Temperature, Tint, then LOAD / RENAME / FOLDER on one filling plate | `ToggleRow`, `GlyphKey`, `Field` over `LinesPicker`, sliders, `KeyPlate { fills }` | |

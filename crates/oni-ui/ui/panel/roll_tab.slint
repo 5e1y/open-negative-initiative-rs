@@ -131,7 +131,8 @@ export component RollPane inherits Pane {
         }
     }
     Block {
-        title: @tr("Source Balance");
+        title: @tr("Filtration");
+        help: @tr("The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own.");
         block: 10;
         modified: Store.source-balance-modified;
         folded-by-default: true;
@@ -158,11 +159,11 @@ export component RollPane inherits Pane {
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow; high: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue;
         }
     }
-    // Between the balance that feeds it and the windows placed on it, where it acts.
+    // Between the filtration that feeds it and the windows placed on it, where it acts.
     if !PanelState.slide: Block {
-        title: @tr("Density Ceiling");
+        title: @tr("Highlight Detail");
         demo: "density-ceiling";
-        help: @tr("Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.");
+        help: @tr("Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there.");
         block: 4;
         modified: Store.density-ceiling-modified;
         folded-by-default: true;
@@ -199,7 +200,7 @@ export component RollPane inherits Pane {
         StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }
     if PanelState.separation-shown: Block {
-        title: @tr("Balance Strength");
+        title: @tr("Auto White Balance");
         demo: "balance-strength";
         help: @tr("The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.");
         block: 3;
