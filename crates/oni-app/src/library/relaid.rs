@@ -49,7 +49,7 @@ pub fn cuts() -> (usize, usize) {
 
 /// Two rows alike but for their medal; every field is named, so a field added is never left out.
 fn alike(a: &Entry, b: &Entry) -> bool {
-    let Entry { path, imported_at, captured_at, fingerprint, label: _, film, manual_order, mode, pass_of, leads_passes, trashed_at } = a;
+    let Entry { path, imported_at, captured_at, fingerprint, label: _, film, manual_order, mode, pass_of, leads_passes, trashed_at, sheet } = a;
     *path == b.path
         && *imported_at == b.imported_at
         && *captured_at == b.captured_at
@@ -60,6 +60,7 @@ fn alike(a: &Entry, b: &Entry) -> bool {
         && *pass_of == b.pass_of
         && *leads_passes == b.leads_passes
         && *trashed_at == b.trashed_at
+        && *sheet == b.sheet
 }
 
 impl Archive {

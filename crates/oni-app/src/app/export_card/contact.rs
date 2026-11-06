@@ -34,7 +34,7 @@ impl Ctl {
                     for t in &targets {
                         oni_export::lands(&t.path, &destination, &ledger, replacing)?;
                     }
-                    let numbers = together::ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
+                    let numbers = together::ranks(&paths, &folders);
                     let captions = Captions { numbers, inks };
                     let Some(sheet) = together::printed(&engine, &targets, sizes, &captions, &stop)? else { return Ok(false) };
                     let first = &targets[0];

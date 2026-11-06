@@ -3898,10 +3898,6 @@ msgid "Acts on the selected photo, not the one on screen."
 msgstr "Actúa sobre la foto seleccionada, no sobre la que está en pantalla."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Dust corrections, flat-fields, medals and EXIF stay. Undo brings both back."
-msgstr "Cada foto del rollo vuelve a como se escaneó: se eliminan la medición del rollo, los recortes y todos los ajustes del aspecto, un fotograma tomado en pasadas RGB vuelve a separarse en sus tres tomas y la hoja de contactos del rollo va a la Papelera de ONI. Las correcciones de polvo, los flat-fields, las medallas y el EXIF se mantienen. Deshacer recupera ambas cosas."
-
-#: crates/oni-app/src/app/rolls.rs
 msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back."
 msgstr "Cada foto del rollo vuelve a como se escaneó: se eliminan la medición del rollo, los recortes y todos los ajustes del aspecto, y un fotograma tomado en pasadas RGB vuelve a separarse en sus tres tomas. Las correcciones de polvo, los flat-fields, las medallas y el EXIF se mantienen. Deshacer los recupera."
 

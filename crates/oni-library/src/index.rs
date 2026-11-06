@@ -4,10 +4,9 @@
 use crate::paths::normal;
 use oni_settings::{ConversionMode, Date, Film, Id, Medal};
 use rusqlite::{Connection, OptionalExtension, Row, params};
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-pub const SCHEMA_VERSION: i32 = 9;
+pub const SCHEMA_VERSION: i32 = 10;
 /// How long a write waits for the other app's to end; theirs last milliseconds.
 pub const BUSY: std::time::Duration = std::time::Duration::from_secs(5);
 
@@ -28,6 +27,8 @@ pub struct Entry {
     pub pass_of: Option<String>,
     pub leads_passes: bool,
     pub trashed_at: Option<Date>,
+    /// A contact sheet laid from a roll's frames: ONI's own file, never one of them.
+    pub sheet: bool,
 }
 
 impl Entry {
@@ -44,6 +45,7 @@ impl Entry {
             pass_of: None,
             leads_passes: false,
             trashed_at: None,
+            sheet: false,
         }
     }
 }
@@ -72,7 +74,7 @@ pub struct LibraryIndex {
 
 const COLUMNS: &str = "path, imported_at, captured_at, fingerprint, label, film_id, film_name, \
     film_order, film_stock, film_shot_date, film_camera_body, manual_order, mode, pass_of, \
-    leads_passes, trashed_at";
+    leads_passes, trashed_at, sheet";
 
 impl LibraryIndex {
     /// Lives in the caches folder, which the system may purge; `ONI_INDEX` gives a probe its own.
@@ -124,7 +126,8 @@ impl LibraryIndex {
                 mode TEXT,
                 pass_of TEXT,
                 leads_passes INTEGER NOT NULL DEFAULT 0,
-                trashed_at REAL
+                trashed_at REAL,
+                sheet INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS photos_imported_at ON photos(imported_at);
             CREATE INDEX IF NOT EXISTS photos_captured_at ON photos(captured_at);
@@ -159,7 +162,7 @@ impl LibraryIndex {
         self.connection
             .prepare_cached(&format!(
                 "INSERT INTO photos ({COLUMNS})
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     imported_at = excluded.imported_at,
                     captured_at = excluded.captured_at,
@@ -175,7 +178,8 @@ impl LibraryIndex {
                     mode = excluded.mode,
                     pass_of = excluded.pass_of,
                     leads_passes = excluded.leads_passes,
-                    trashed_at = excluded.trashed_at"
+                    trashed_at = excluded.trashed_at,
+                    sheet = excluded.sheet"
             ))?
             .execute(params![
                 normal(&entry.path),
@@ -194,6 +198,7 @@ impl LibraryIndex {
                 entry.pass_of,
                 i64::from(entry.leads_passes),
                 entry.trashed_at.map(reference),
+                i64::from(entry.sheet),
             ])?;
         Ok(())
     }
@@ -293,7 +298,7 @@ impl LibraryIndex {
             .iter()
             .filter(|e| e.pass_of.as_ref().is_none_or(|lead| !held(&crate::paths::join(&crate::paths::parent(&e.path), lead))))
             .collect();
-        latest_first(picked.into_iter().cloned().collect())
+        frames::latest_first(picked.into_iter().cloned().collect())
     }
 
     /// The row at `path`, in either spelling the index may hold it under.
@@ -311,7 +316,7 @@ impl LibraryIndex {
         rows.filter_map(Result::ok).collect()
     }
 
-    /// What the gallery draws: every member but the ONI Trash's and the passes a lead composes.
+    /// What the gallery draws: every member but the ONI Trash's, the contact sheets and the passes a lead composes.
     pub fn shown(&self) -> Vec<Entry> {
         shown(&self.all())
     }
@@ -354,41 +359,13 @@ fn entry(row: &Row<'_>) -> rusqlite::Result<Entry> {
         pass_of: row.get(13)?,
         leads_passes: row.get::<_, i64>(14)? != 0,
         trashed_at: date(15)?,
+        sheet: row.get::<_, i64>(16)? != 0,
     })
 }
 
-/// Every row but the ONI Trash's and the passes whose lead the library holds; a pass whose lead
-/// is gone shows again, so no file vanishes for want of its frame.
-pub fn shown(rows: &[Entry]) -> Vec<Entry> {
-    let picked: Vec<&Entry> = rows.iter().filter(|e| e.trashed_at.is_none()).collect();
-    frames(&picked, rows)
-}
-
-/// The ONI Trash's rows, a triplet as its lead, latest deletion first.
-pub fn trashed(rows: &[Entry]) -> Vec<Entry> {
-    let picked: Vec<&Entry> = rows.iter().filter(|e| e.trashed_at.is_some()).collect();
-    latest_first(frames(&picked, rows))
-}
-
-fn latest_first(mut out: Vec<Entry>) -> Vec<Entry> {
-    let at = |e: &Entry| e.trashed_at.map(crate::seconds).unwrap_or(crate::DISTANT_PAST_SECONDS);
-    out.sort_by(|a, b| at(b).total_cmp(&at(a)));
-    out
-}
-
-fn frames(picked: &[&Entry], rows: &[Entry]) -> Vec<Entry> {
-    let held: HashSet<&str> = rows.iter().map(|e| e.path.as_str()).collect();
-    picked
-        .iter()
-        .filter(|entry| match &entry.pass_of {
-            None => true,
-            Some(lead) => !held.contains(crate::paths::join(&crate::paths::parent(&entry.path), lead).as_str()),
-        })
-        .map(|e| (*e).clone())
-        .collect()
-}
-
 mod forget;
+mod frames;
+pub use frames::{shown, trashed};
 pub mod prune;
 mod rebuilt;
 mod spelling;

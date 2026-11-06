@@ -3898,10 +3898,6 @@ msgid "Acts on the selected photo, not the one on screen."
 msgstr "Agit sur la photo sélectionnée, pas sur celle affichée."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Dust corrections, flat-fields, medals and EXIF stay. Undo brings both back."
-msgstr "Chaque photo de la pellicule revient telle qu’elle a été numérisée : la mesure de la pellicule, les recadrages et tous les réglages du look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises, et la planche contact de la pellicule part dans la Corbeille ONI. Corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler rétablit le tout."
-
-#: crates/oni-app/src/app/rolls.rs
 msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back."
 msgstr "Chaque photo de la pellicule revient telle qu’elle a été numérisée : la mesure de la pellicule, les recadrages et tous les réglages du look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises. Corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler les rétablit."
 

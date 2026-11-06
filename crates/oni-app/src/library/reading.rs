@@ -160,7 +160,7 @@ pub fn refreshed(row: &Entry) -> Entry {
         Ok(data) => oni_settings::sidecar::identity::envelope(&data, original),
         // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
         Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
-            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, ..row.clone() };
+            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, sheet: false, ..row.clone() };
         }
         Err(_) => None,
     };
@@ -173,6 +173,7 @@ pub fn refreshed(row: &Entry) -> Entry {
         pass_of: envelope.pass_of,
         leads_passes: envelope.leads_passes,
         trashed_at: envelope.trashed_at,
+        sheet: envelope.sheet,
         ..row.clone()
     }
 }
@@ -190,8 +191,8 @@ pub fn refresh(index: &LibraryIndex, paths: &[String]) {
     let _ = index.upsert_all(&entries);
 }
 
-/// The index's rows for the gallery, the ONI Trash's and the composed passes left out: a pass's
-/// lead lies beside it, so the folder's rows alone tell which passes it composes.
+/// The index's rows for the gallery, the ONI Trash's, the contact sheets and the composed passes left
+/// out: a pass's lead lies beside it, so the folder's rows alone tell which passes it composes.
 pub fn shown_under(index: &LibraryIndex, folder: &str) -> Vec<Entry> {
     library_index::shown(&index.under(folder))
 }

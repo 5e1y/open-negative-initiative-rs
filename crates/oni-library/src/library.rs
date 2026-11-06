@@ -95,6 +95,7 @@ pub fn indexed(path: &str) -> Option<Entry> {
         pass_of: loaded.as_ref().and_then(|l| l.pass_of.clone()),
         leads_passes: loaded.as_ref().is_some_and(|l| l.leads_passes),
         trashed_at: loaded.as_ref().and_then(|l| l.trashed_at),
+        sheet: loaded.as_ref().is_some_and(|l| l.sheet),
     })
 }
 
@@ -131,5 +132,31 @@ mod tests {
         // Twin: a second pass over a healed index finds nothing to drop.
         assert_eq!(drop_invented(&index).unwrap(), 0);
         assert_eq!(waiting("/negs/b.RW2", None).imported_at, crate::distant_past());
+    }
+
+    /// A contact sheet laid from a roll is ONI's own file: its row is held, never drawn among the
+    /// frames beside it, so no count, pick or export of the roll reaches it.
+    #[test]
+    fn a_contact_sheet_is_held_but_never_drawn_as_a_frame() {
+        use oni_settings::PipelineSettings;
+        use oni_settings::frame::ContactSheetGrid;
+        let scratch = crate::scratch::Scratch::new("sheet");
+        let path = |name: &str| crate::paths::join(&scratch.path().to_string_lossy(), name);
+        let (frame, sheet) = (path("DSC_6432.NEF"), path("2026-09-14 — contact sheet.tif"));
+        let grid = ContactSheetGrid { columns: 6, rows: 7, frames: 38, tile: Default::default(), margin: 29.0, windows: None };
+        let laid = [(&frame, PipelineSettings::default()), (&sheet, PipelineSettings { sheet: Some(grid), ..PipelineSettings::default() })];
+        let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
+        for (file, settings) in laid {
+            std::fs::write(file, file.repeat(64)).unwrap();
+            sidecar::write(&settings, Path::new(file), sidecar::WriteOptions::default()).unwrap();
+            index.upsert(&indexed(file).unwrap()).unwrap();
+        }
+        assert!(index.row(&sheet).is_some_and(|r| r.sheet), "the sheet's row is held, told a sheet");
+        let drawn: Vec<String> = index.shown().into_iter().map(|e| e.path).collect();
+        assert_eq!(drawn, [frame.clone()]);
+        // Twin: the same file whose sidecar holds no grid is drawn as any scan is.
+        sidecar::write(&PipelineSettings::default(), Path::new(&sheet), sidecar::WriteOptions::default()).unwrap();
+        index.upsert(&indexed(&sheet).unwrap()).unwrap();
+        assert_eq!(index.shown().len(), 2);
     }
 }

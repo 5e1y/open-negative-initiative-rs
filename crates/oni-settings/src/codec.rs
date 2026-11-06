@@ -109,6 +109,8 @@ pub struct Envelope {
     pub mode: ConversionMode,
     pub pass_of: Option<String>,
     pub leads_passes: bool,
+    /// The file is a contact sheet laid from a roll's frames, never one of them.
+    pub sheet: bool,
 }
 
 /// The document as the sidecar's text, sorted and indented so it reads and diffs by hand.
@@ -195,6 +197,7 @@ pub fn envelope(data: &[u8]) -> Option<Envelope> {
         mode: fact("mode").and_then(|v| serde_json::from_value(v).ok()).unwrap_or_default(),
         pass_of: fact("passOf").and_then(|v| v.as_str().map(str::to_owned)),
         leads_passes: fact("rgbPasses").and_then(|v| serde_json::from_value::<RgbPasses>(v).ok()).is_some(),
+        sheet: fact("sheet").is_some(),
     })
 }
 

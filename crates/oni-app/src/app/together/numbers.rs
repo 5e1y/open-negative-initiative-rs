@@ -7,8 +7,7 @@ use super::plate::{Inks, Lettering};
 use super::sheet::Area;
 
 impl Ctl {
-    /// Each frame's place on its roll, read off this thread: a contact sheet's sidecar is opened to
-    /// leave it out of its folder's count.
+    /// Each frame's place on its roll, read off this thread.
     pub(super) fn number_frames(&self, id: u64) {
         let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
         let folders = self.roll_folders(&paths);
@@ -16,7 +15,7 @@ impl Ctl {
             w.global::<Canvas>().set_together(true);
         }
         std::thread::spawn(move || {
-            let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
+            let numbers = ranks(&paths, &folders);
             with_shell(move |c| c.numbers_landed(id, numbers));
         });
     }
@@ -112,13 +111,13 @@ impl Ctl {
     }
 }
 
-/// Each frame's place on its roll from 1, its rank in its folder's shooting order with the contact
-/// sheets left out; a frame its folder does not list, or a sheet, has none.
-pub(in crate::app) fn ranks(paths: &[String], folders: &HashMap<String, Vec<String>>, sheet: impl Fn(&str) -> bool) -> Vec<Option<usize>> {
+/// Each frame's place on its roll from 1, its rank in its folder's shooting order; a frame its
+/// folder does not list has none.
+pub(in crate::app) fn ranks(paths: &[String], folders: &HashMap<String, Vec<String>>) -> Vec<Option<usize>> {
     let rolls: HashMap<&str, HashMap<&str, usize>> = folders
         .iter()
         .map(|(folder, photos)| {
-            let frames = photos.iter().filter(|p| !sheet(p)).enumerate().map(|(i, p)| (p.as_str(), i + 1)).collect();
+            let frames = photos.iter().enumerate().map(|(i, p)| (p.as_str(), i + 1)).collect();
             (folder.as_str(), frames)
         })
         .collect();
@@ -153,14 +152,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_frame_is_numbered_by_its_place_in_its_folder_its_contact_sheets_left_out() {
-        let roll: Vec<String> = ["/R/sheet.tif", "/R/a.RW2", "/R/b.RW2", "/R/c.RW2"].map(String::from).to_vec();
-        let folders = HashMap::from([("/R".to_string(), roll)]);
-        let paths: Vec<String> = ["/R/c.RW2", "/R/a.RW2", "/R/sheet.tif", "/S/x.RW2"].map(String::from).to_vec();
-        let is_sheet = |p: &str| p.ends_with(".tif");
-        assert_eq!(ranks(&paths, &folders, is_sheet), vec![Some(3), Some(1), None, None]);
-        // Twin: the sheet counted, every frame after it reads one further down the roll.
-        assert_eq!(ranks(&paths, &folders, |_| false)[0], Some(4));
+    fn a_frame_is_numbered_by_its_place_in_its_folder() {
+        let roll: Vec<String> = ["/R/a.RW2", "/R/b.RW2", "/R/c.RW2"].map(String::from).to_vec();
+        let folders = HashMap::from([("/R".to_string(), roll.clone())]);
+        let paths: Vec<String> = ["/R/c.RW2", "/R/a.RW2", "/S/x.RW2"].map(String::from).to_vec();
+        assert_eq!(ranks(&paths, &folders), vec![Some(3), Some(1), None]);
+        // Twin: the folder listed the other way round, the same pick reads the other numbers.
+        let reversed = HashMap::from([("/R".to_string(), roll.into_iter().rev().collect())]);
+        assert_eq!(ranks(&paths, &reversed), vec![Some(1), Some(3), None]);
     }
 
     #[test]

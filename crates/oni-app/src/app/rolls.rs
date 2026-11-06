@@ -168,19 +168,14 @@ impl Ctl {
         if count == 0 {
             return;
         }
-        let sheets = !reach.sheets.is_empty();
         let title = trn("Reset the Roll of This Photo?", "Reset the Roll of {n} Photos?", count as u64);
-        let message = if sheets {
-            tr("Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Dust corrections, flat-fields, medals and EXIF stay. Undo brings both back.")
-        } else {
-            tr("Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back.")
-        };
+        let message = tr("Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back.");
         let key = trn("Reset Photo", "Reset {n} Photos", count as u64);
         self.ask(&title, &message, &key, true, Pending::ResetToDefault(reach));
     }
 
     pub(super) fn reset_to_default(self: &Rc<Self>, reach: ResetReach) {
-        let touched: Vec<String> = reach.frames.iter().chain(reach.sheets.iter()).cloned().collect();
+        let touched: Vec<String> = reach.frames.iter().cloned().collect();
         self.gesture_as(tr("Reset the Roll"), &touched, |store| store.reset_to_default(&reach));
     }
 

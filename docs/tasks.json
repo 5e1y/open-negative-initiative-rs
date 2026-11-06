@@ -6066,5 +6066,12 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1252,
+    "type": "fix",
+    "title": "A contact sheet is ONI's own file, never a frame of its roll",
+    "status": "done",
+    "detail": "Evaluation (UX Robustness and Task fit, major): roll #8 showed 25 photos, the 25th the Swift app's '2026-09-14 — contact sheet.tif', whose sidecar holds the sheet's grid and names the roll's reference; Whole Roll picked it, Export offered it as a frame, Roll Settings and Paste to Roll wrote it, and Prepare the Roll and Edit Together's numbering each read every sidecar again to leave it out. The rule now sits at the source, once: the index reads the grid off the sidecar's envelope with the rest of the row (a sheet column, schema 10, one rebuild), and the rows the gallery draws leave contact sheets out, so every band, count, pick, measure, numbering and export sees the frames alone. The guards that re-read each sidecar go (Prepare's, Edit Together's and the contact-sheet export's numbering), and with them Reset the Roll's trip of the sheet to the ONI Trash and its second wording: ONI leaves a file it never lists where it is. A sheet already in the ONI Trash still shows there. Departs from #1033's 'a sheet already on disk still opens on its grid'. Left: a file ONI exported carries no mark of its own, so one saved into a roll folder is still a scan to the archive; telling it needs a mark in every export, an owner's call on the export's metadata (none is written when nothing is stated). Twins: the same file with no grid in its sidecar is drawn; the index round trip holds the column set; the numbering reads the folder's order, reversed to the other numbers."
   }
 ]
