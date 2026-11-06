@@ -4,6 +4,7 @@ import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerSty
 import { Preparing } from "prepare.slint";
 import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
+import { RatingFilter } from "rating_filter.slint";
 
 // `rollStepKeys`: one key per step on one plate, the current one lit, a lamp on each step behind it.
 export component RollStepKeys inherits ButtonGroup {
@@ -33,12 +34,12 @@ export global Bar {
     // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
     in property <bool> can-select-all;
     in property <bool> can-prepare;
+    in property <bool> can-toggle-mode;
     in property <string> export-title: @tr("EXPORT");
     // `ExportButton`'s third face: an update outranks export and import alike, and says to what.
     in property <string> update-title;
     in property <string> update-help;
     in property <bool> updating;
-    in property <string> filter: @tr("ALL");
     in property <string> undo-title: @tr("Undo");
     in property <string> redo-title: @tr("Redo");
     // The face the open photo is edited on: 0 Pro, 1 Scanner.
@@ -78,10 +79,10 @@ component SelectAll inherits Item {
 component ResetScan inherits Word {
     in property <bool> compact;
     action: Act.reset;
-    text: root.compact ? "" : @tr("RESET SCAN");
+    text: root.compact ? "" : @tr("RESET");
     has-icon: root.compact;
     icon: Icons.reset;
-    help: @tr("Reset to Imported State");
+    help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
     kind: ButtonKind.caution;
     enabled: Bar.can-reset;
 }
@@ -147,12 +148,7 @@ component GalleryKeys inherits HorizontalLayout {
         Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
         Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
     }
-    Word {
-        action: Act.cycle-filter;
-        text: Bar.filter;
-        fixed-width: ShellStyle.filter-width;
-        help: Bar.filter == @tr("ALL") ? @tr("Filter: All") : @tr("Filter: {}", Bar.filter);
-    }
+    RatingFilter { }
     Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
     ButtonGroup { plate: true;
         ResetScan { compact: root.compact; }
@@ -186,7 +182,7 @@ export component Toolbar inherits Surface {
             text: Bar.editing || Preparing.shown ? @tr("GALLERY") : @tr("EDITOR");
             widest: @tr("GALLERY");
             help: Bar.editing || Preparing.shown ? @tr("Gallery ({})", KeyWords.command + "G") : @tr("Editor ({})", KeyWords.command + "G");
-            enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
+            enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
         // Hidden copies of both sets hold the zone at the wider one's width, short of room at the shown
         // set's compact width; the zone takes the room between the sides and its keys sit on the window's centre if they can.

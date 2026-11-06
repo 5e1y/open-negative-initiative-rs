@@ -1,5 +1,5 @@
 //! The roll gestures on the headless window: the Measured Roll block counts the roll and the folder's
-//! frames it missed, Join and Roll of the N reach them, Reset to Default asks then reaches the whole
+//! frames it missed, its two keys reach them, Reset the Roll asks then reaches the whole
 //! roll, Ungroup takes the roll off the targets, and the balance key asks Each or Average.
 
 use oni_app::app::{Options, Shell};
@@ -66,8 +66,8 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     };
     let rest = || std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
 
-    // Nothing picked, nothing to prepare; the bar's ⌘A key is live while the gallery shows photos.
-    assert!(!menus.get_live().measure_roll && !w.global::<Bar>().get_can_prepare() && w.global::<Bar>().get_can_select_all());
+    // Nothing picked, the roll shown is the one to prepare; the bar's ⌘A key is live while the gallery shows photos.
+    assert!(menus.get_live().measure_roll && w.global::<Bar>().get_can_prepare() && w.global::<Bar>().get_can_select_all());
 
     // Ungroup names the photos it takes off their roll: A and B carry Roll 9, C does not.
     lib.invoke_tile_clicked(tile("A"), false, false);
@@ -102,13 +102,13 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.pump();
     assert!(settings_of(&canonical("C.tif")).roll_reference.is_none(), "one undo takes the join back");
 
-    // Reset to Default from B alone reaches the whole roll, once the key confirms it.
+    // Reset the Roll from B alone reaches the whole roll, once the key confirms it.
     lib.invoke_tile_clicked(tile("B"), false, false);
     rig.pump();
     assert!(menus.get_live().reset_to_default);
     ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the reach", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
-    assert_eq!(w.global::<Confirm>().get_title().as_str(), "Reset 2 Photos to Default?");
+    assert_eq!(w.global::<Confirm>().get_title().as_str(), "Reset the Roll of 2 Photos?");
     assert_eq!(w.global::<Confirm>().get_key().as_str(), "RESET 2 PHOTOS");
     rig.key("\u{1b}");
     assert!(settings_of(&canonical("A.tif")).roll_reference.is_some(), "twin: Cancel resets nothing");

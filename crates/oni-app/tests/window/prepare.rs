@@ -67,8 +67,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let names = || (0..p.get_cells().row_count()).count();
     let action = || (p.get_footer_x() + p.get_footer_width() - 12.0, p.get_footer_y() + p.get_footer_height() / 2.0);
 
-    // Nothing picked, nothing to prepare; one frame picked lights the menu item and the bar's key.
-    assert!(!menus.get_live().measure_roll && !w.global::<Bar>().get_can_prepare());
+    // Nothing picked, the roll shown is the one to prepare; one frame picked prepares its own roll.
+    assert!(menus.get_live().measure_roll && w.global::<Bar>().get_can_prepare());
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
     assert!(menus.get_live().measure_roll && w.global::<Bar>().get_can_prepare());

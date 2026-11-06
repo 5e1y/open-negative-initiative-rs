@@ -123,6 +123,14 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     lib.invoke_medal_picked(2);
     rig.pump();
     assert_eq!((row(&canonical("A.tif")).label, row(&canonical("B.tif")).label), (Medal::Silver, Medal::Silver), "twin: several keep it");
+    // A medal laid is a gallery step: one undo takes both back, a redo lays them again.
+    assert_eq!(w.global::<Menus>().get_titles().undo.as_str(), "Undo Medal on 2 photos");
+    ctl.act(oni_app::Act::Undo);
+    rig.pump();
+    assert_eq!((row(&canonical("A.tif")).label, row(&canonical("B.tif")).label), (Medal::None, Medal::None));
+    ctl.act(oni_app::Act::Redo);
+    rig.pump();
+    assert_eq!((row(&canonical("A.tif")).label, row(&canonical("B.tif")).label), (Medal::Silver, Medal::Silver));
 
     // The cell menu counts its scope, and New Project from takes the two photos.
     hand.right_click("B");
@@ -204,7 +212,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.pump();
     assert_eq!(hand.shown().len(), 4, "the photos are untouched");
 
-    // The ONI Trash: ⌘⌫ marks C, the trash row counts it, a double click lays it as a grid.
+    // The ONI Trash: ⌘⌫ marks C, the trash row counts it, a click lays it as a grid as a folder's does.
     hand.rest();
     hand.click("C", &[]);
     let backspace: SharedString = Key::Backspace.into();
@@ -213,13 +221,13 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(hand.shown(), ["A", "B", "D"]);
     let trash = lib.get_trash_rows();
     assert_eq!((trash.row_data(0).unwrap().title.as_str(), trash.row_data(0).unwrap().count.as_str()), ("ONI Trash", "1"));
-    // A real double click: two clicks, then the double click on the second.
     lib.invoke_trash_row_clicked(0);
-    lib.invoke_trash_row_clicked(0);
-    lib.invoke_trash_row_double_clicked(0);
     rig.pump();
     assert!(lib.get_trash_rows().row_data(0).unwrap().opened);
-    assert_eq!(lib.get_trash_rows().row_count(), 2, "the double click leaves the trash unfolded on its folder");
+    assert_eq!(lib.get_trash_rows().row_count(), 1, "the click opens, never folds");
+    lib.invoke_trash_row_folded(0);
+    rig.pump();
+    assert_eq!(lib.get_trash_rows().row_count(), 2, "twin: the chevron unfolds the trash on its folder");
     assert_eq!(hand.shown(), ["C"]);
     assert_eq!(hand.status(), "1 photo in the ONI Trash");
     hand.click("C", &[]);

@@ -14,8 +14,6 @@ pub(crate) enum StockTarget {
     Roll,
     /// The export row whose film field opened it: this frame alone.
     Export,
-    /// The roll the info sidebar's guide would make, written once the roll is.
-    Guide,
 }
 
 impl Ctl {
@@ -64,7 +62,6 @@ impl Ctl {
         let kind = i.and_then(|i| FILM_STOCKS.get(i));
         match (target, kind) {
             (Some(StockTarget::Roll), Some(kind)) => self.set_roll_stock(kind.id),
-            (Some(StockTarget::Guide), Some(kind)) => self.guide_stock_chosen(kind.id),
             (Some(StockTarget::Export), _) => w.global::<Exporting>().invoke_stock_chosen(i.map_or(-1, |i| i as i32)),
             _ => {}
         }

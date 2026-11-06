@@ -30,7 +30,7 @@ mod members;
 mod status_bar;
 mod info_sidebar;
 mod resolving;
-pub(in crate::app) mod roll_guide;
+pub(in crate::app) mod roll_card;
 mod band_rename;
 mod tree_menu;
 
@@ -185,8 +185,8 @@ pub struct Organising {
     pub(in crate::app) restore_told: Option<(String, Vec<String>)>,
     /// The gesture whose writes or moves run off this thread, named; the others wait for it.
     pub(in crate::app) disk_busy: Option<String>,
-    /// The roll guide's draft and whether the roll shown is measured.
-    pub(in crate::app) guide: roll_guide::Guide,
+    /// The roll shown, by key, and whether a frame of it is measured, `None` while it reads.
+    pub(in crate::app) measured: Option<(String, Option<bool>)>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
@@ -334,7 +334,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_trash_row_clicked(move |i| p.trash_row_clicked(index(i)));
         let p = me.clone();
-        lib.on_trash_row_double_clicked(move |i| p.trash_row_double_clicked(index(i)));
+        lib.on_trash_row_folded(move |i| p.trash_row_folded(index(i)));
         let p = me.clone();
         lib.on_trash_row_restore(move |i| p.trash_row_restore(index(i)));
         let p = me.clone();
@@ -364,6 +364,8 @@ impl Ctl {
         let p = me.clone();
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();
+        lib.on_filter_picked(move |m| p.filter_picked(m));
+        let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));
         let p = me.clone();
         lib.on_title_edited(move |t| p.title_edited(&t));
@@ -377,6 +379,6 @@ impl Ctl {
         lib.on_camera_body_committed(move |t| p.camera_body_committed(&t));
         let p = me.clone();
         lib.on_description_committed(move |t| p.description_committed(&t));
-        Ctl::wire_guide(me, window);
+        Ctl::wire_roll_card(me, window);
     }
 }

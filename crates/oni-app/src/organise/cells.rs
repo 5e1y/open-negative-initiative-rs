@@ -12,8 +12,6 @@ pub enum CellAction {
     Missing,
     Paste,
     Reset,
-    ResetToDefault,
-    Medal(oni_settings::Medal),
     NewRoll,
     Ungroup,
     NewProject,
@@ -39,17 +37,6 @@ pub struct CellLine {
     pub left: usize,
 }
 
-/// `Medal.label`.
-pub fn medal_name(medal: oni_settings::Medal) -> &'static str {
-    use oni_settings::Medal;
-    match medal {
-        Medal::None => tr("None"),
-        Medal::Bronze => tr("Bronze"),
-        Medal::Silver => tr("Silver"),
-        Medal::Gold => tr("Gold"),
-    }
-}
-
 /// `CellMenu.targets`: the selection when the pointed photo is in it, else the photo alone.
 pub fn cell_scope(path: &str, selection: &HashSet<String>) -> HashSet<String> {
     if selection.contains(path) { selection.clone() } else { HashSet::from([path.to_owned()]) }
@@ -73,9 +60,9 @@ fn sorted(set: &HashSet<String>, order: &[String]) -> Vec<String> {
     v
 }
 
-/// `CellMenu.body`, line by line; a submenu's opener is a line whose action is `AddTo` or `RemoveFrom`.
+/// `CellMenu.body`, a submenu's opener being a line of `AddTo` or `RemoveFrom`; the medals and the
+/// roll's reset stay with the status bar and the Rolls menu, as this menu acts on its photos alone.
 pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -> Vec<CellLine> {
-    use oni_settings::Medal;
     let here: HashSet<String> = scope.difference(facts.missing).cloned().collect();
     let gone = scope.len() - here.len();
     let joined: HashSet<String> = here.intersection(facts.rolled).cloned().collect();
@@ -92,11 +79,7 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     lines.extend([
         line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste && any, gone > 0, CellAction::Paste, &here, gone),
         line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), any, false, CellAction::Reset, &here, gone),
-        line(counted(n, "Reset to Default…", tr!("Reset to Default… ({count} photos)", count = n)), any, false, CellAction::ResetToDefault, &here, gone),
     ]);
-    for (i, medal) in [Medal::None, Medal::Bronze, Medal::Silver, Medal::Gold].into_iter().enumerate() {
-        lines.push(line(medal_name(medal).into(), any, i == 0, CellAction::Medal(medal), &here, gone));
-    }
     lines.push(line(counted(n, "Move into a New Roll…", tr!("Move into a New Roll… ({count} photos)", count = n)), any, true, CellAction::NewRoll, &here, gone));
     let j = joined.len();
     lines.push(line(counted(j, "Ungroup", tr!("Ungroup ({count} photos)", count = j)), !joined.is_empty(), false, CellAction::Ungroup, &joined, gone));
@@ -159,24 +142,23 @@ mod tests {
         assert_eq!(
             texts,
             [
-                "1 photo missing", "Paste Settings", "Reset Settings", "Reset to Default\u{2026}",
-                "None", "Bronze", "Silver", "Gold",
+                "1 photo missing", "Paste Settings", "Reset Settings",
                 "Move into a New Roll\u{2026}", "Ungroup", "New Project from (2 photos)", "Add to Project",
                 "Export\u{2026}", platform::reveal(Platform::THIS), "Move to ONI Trash"
             ]
         );
         assert!(!lines[0].enabled && lines[0].action == CellAction::Missing, "the count first, greyed");
         assert!(!lines[1].enabled, "Paste waits for copied settings");
-        assert_eq!(lines[9].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
+        assert_eq!(lines[4].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
         // Each verb that writes or moves acts on the photo there and says the one left out.
-        for at in [2, 3, 5, 8, 14] {
+        for at in [2, 3, 9] {
             assert_eq!((lines[at].scope.clone(), lines[at].left, lines[at].enabled), (paths(&["a"]), 1, true), "{}", lines[at].text);
         }
-        assert_eq!(lines[10].scope, paths(&["a", "b"]), "a project names a photo away too");
-        assert_eq!((lines[12].scope.clone(), lines[12].left), (paths(&["a"]), 0), "a missing original is not exported");
+        assert_eq!(lines[5].scope, paths(&["a", "b"]), "a project names a photo away too");
+        assert_eq!((lines[7].scope.clone(), lines[7].left), (paths(&["a"]), 0), "a missing original is not exported");
         let rules: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.rule).map(|(i, _)| i).collect();
-        assert_eq!(rules, [1, 4, 8, 12, 14]);
-        let sub = submenu(&lines[11], &facts);
+        assert_eq!(rules, [1, 3, 7, 9]);
+        let sub = submenu(&lines[6], &facts);
         assert_eq!((sub[0].text.as_str(), sub[0].action.clone()), ("Trip", CellAction::AddToProject(trip)));
         // Twins: a scope all away writes nothing; one all there has no count and leaves none out.
         let away = cell_menu(&set(&["b"]), &order, &facts);

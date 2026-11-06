@@ -1,6 +1,6 @@
-//! The roll gestures the core already carries, reached from the window: Reset to Default…, Ungroup,
-//! the Measured Roll block's Join and Roll of the N, and Auto White Balance over several frames
-//! with its Each or Average choice and its progress on the key.
+//! The roll gestures the core already carries, reached from the window: Reset the Roll…, Ungroup,
+//! the Measured Roll block's two keys, and Auto White Balance over several frames with its Each or
+//! Average choice and its progress on the key.
 
 
 use super::{Ctl, Pending, with_shell};
@@ -142,14 +142,18 @@ impl Ctl {
         self.gesture(&members, |store| store.apply_film(&members, None, tr("Ungroup")));
     }
 
-    // MARK: - Reset to Default
+    /// `targets`, else in the gallery the roll it stands on: Prepare the Roll's and Reset the Roll's.
+    pub(in crate::app) fn roll_targets(&self) -> Vec<String> {
+        let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
+        self.state.borrow().roll_targets(gallery)
+    }
+
+    // MARK: - Reset the Roll
 
     /// `askResetToDefault`: the reach read off this thread, then a confirm naming what goes.
     pub(super) fn ask_reset_to_default(self: &Rc<Self>) {
-        let (picked, library) = {
-            let s = self.state.borrow();
-            (s.preset_targets(), s.rows.iter().map(|e| e.path.clone()).collect::<Vec<_>>())
-        };
+        let picked = self.roll_targets();
+        let library: Vec<String> = self.state.borrow().rows.iter().map(|e| e.path.clone()).collect();
         if picked.is_empty() {
             return;
         }
@@ -165,11 +169,11 @@ impl Ctl {
             return;
         }
         let sheets = !reach.sheets.is_empty();
-        let title = trn("Reset This Photo to Default?", "Reset {n} Photos to Default?", count as u64);
+        let title = trn("Reset the Roll of This Photo?", "Reset the Roll of {n} Photos?", count as u64);
         let message = if sheets {
-            tr("Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings both back.")
+            tr("Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Dust corrections, flat-fields, medals and EXIF stay. Undo brings both back.")
         } else {
-            tr("Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings the settings back.")
+            tr("Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back.")
         };
         let key = trn("Reset Photo", "Reset {n} Photos", count as u64);
         self.ask(&title, &message, &key, true, Pending::ResetToDefault(reach));
@@ -177,7 +181,7 @@ impl Ctl {
 
     pub(super) fn reset_to_default(self: &Rc<Self>, reach: ResetReach) {
         let touched: Vec<String> = reach.frames.iter().chain(reach.sheets.iter()).cloned().collect();
-        self.gesture_as(tr("Reset to Default"), &touched, |store| store.reset_to_default(&reach));
+        self.gesture_as(tr("Reset the Roll"), &touched, |store| store.reset_to_default(&reach));
     }
 
     // MARK: - Auto White Balance over several frames

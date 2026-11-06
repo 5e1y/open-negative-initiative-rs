@@ -7,7 +7,8 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (leading, target, editor_target, seals) = {
             let s = self.state.borrow();
-            let shown = s.archive.as_ref().map_or(0, |a| a.groups.iter().map(|g| g.entries.len()).sum());
+            // The photos the grid lays, on whichever surface shows: the archive, a project, the ONI Trash.
+            let shown = s.order.len();
             // `statusSeal`: the word of the tile's seal, for the one frame the bar names when it leads passes.
             let seal = |editing: bool| {
                 let path = picking::status_path(&s.picks.selection, editing, s.open.as_deref());
@@ -52,5 +53,6 @@ impl Ctl {
         let Some((current, paths)) = target else { return };
         let applied = picking::medal_tapped(current, paths.len(), library::medal_of(medal));
         self.label_paths(&paths, applied);
+        self.publish_bar();
     }
 }

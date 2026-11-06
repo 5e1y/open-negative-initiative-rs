@@ -69,11 +69,11 @@ msgstr "Supprimer les poussières et rayures"
 msgid "Mirror Horizontally"
 msgstr "Retourner horizontalement"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
 msgid "Filter: All"
 msgstr "Filtre : Toutes"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Move into a New Roll…"
 msgstr "Déplacer dans une nouvelle pellicule…"
 
@@ -121,9 +121,9 @@ msgstr "Afficher la photo sélectionnée"
 msgid "Edit"
 msgstr "Édition"
 
-#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
-msgid "Reset to Imported State"
-msgstr "Revenir à l’état importé"
+#: crates/oni-ui/ui/app.slint
+msgid "Reset Settings"
+msgstr "Réinitialiser les réglages"
 
 #: crates/oni-ui/ui/app.slint
 msgid "View"
@@ -149,19 +149,19 @@ msgstr "Émulateur de scanner"
 msgid "Labels"
 msgstr "Étiquettes"
 
-#: crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
+#: crates/oni-ui/ui/app.slint
 msgid "None"
 msgstr "Aucune"
 
-#: crates/oni-app/src/library.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+#: crates/oni-app/src/library.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Bronze"
 msgstr "Bronze"
 
-#: crates/oni-app/src/library.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+#: crates/oni-app/src/library.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Silver"
 msgstr "Argent"
 
-#: crates/oni-app/src/library.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+#: crates/oni-app/src/library.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Gold"
 msgstr "Or"
 
@@ -174,8 +174,8 @@ msgid "Prepare the Roll…"
 msgstr "Préparer la pellicule…"
 
 #: crates/oni-ui/ui/app.slint
-msgid "Reset to Default…"
-msgstr "Rétablir les valeurs par défaut…"
+msgid "Reset the Roll…"
+msgstr "Réinitialiser la pellicule…"
 
 #: crates/oni-app/src/wrapped.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Settings"
@@ -337,7 +337,7 @@ msgstr "Nom de la pellicule"
 msgid "What this block does"
 msgstr "Ce que fait ce bloc"
 
-#: crates/oni-ui/ui/ds/containers.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/toolbar.slint
 msgid "RESET"
 msgstr "RÉINITIALISER"
 
@@ -393,7 +393,7 @@ msgstr "Précédent"
 msgid "Next"
 msgstr "Suivant"
 
-#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "Name"
 msgstr "Nom"
 
@@ -932,42 +932,6 @@ msgstr "Rien n’est encore enregistré."
 #: crates/oni-ui/ui/help.slint
 msgid "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."
 msgstr "Laissez cette fenêtre ouverte, reproduisez le problème, puis cliquez sur Copier. S’il faut forcer l’app à quitter, le fichier ci-dessus conserve tout."
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "Not in a roll yet"
-msgstr "Pas encore dans une pellicule"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "A roll groups the frames of one film: measured once, they share base, levels and dyes."
-msgstr "Une pellicule regroupe les vues d'un même film : mesurées une fois, elles partagent base, niveaux et colorants."
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "1 · Frames"
-msgstr "1 · Vues"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "Select the whole film ({})"
-msgstr "Sélectionnez tout le film ({})"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "2 · Name and Stock"
-msgstr "2 · Nom et film"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "Stock"
-msgstr "Film"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "Pick the film…"
-msgstr "Choisir le film…"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "3 · Make the Roll"
-msgstr "3 · Créer la pellicule"
-
-#: crates/oni-ui/ui/info_sidebar.slint
-msgid "Next: Prepare the Roll measures it."
-msgstr "Ensuite : Préparer la pellicule la mesure."
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Not measured yet"
@@ -1646,24 +1610,16 @@ msgid "{} photos of this folder were not measured with the roll."
 msgstr "{} photos de ce dossier n’ont pas été mesurées avec la pellicule."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "JOIN THE ROLL"
-msgstr "REJOINDRE LA PELLICULE"
+msgid "ADD THEM TO THE ROLL"
+msgstr "LES AJOUTER À LA PELLICULE"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "JOIN THE {}"
-msgstr "INTÉGRER LES {}"
+msgid "Gives the photos left out this roll's measurement and settings, their own look kept."
+msgstr "Donne aux photos laissées de côté la mesure et les réglages de cette pellicule, en gardant leur propre look."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Gives them this roll's measurement and settings, their own look kept."
-msgstr "Leur donne la mesure et les réglages de cette pellicule, en gardant leur propre look."
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "ROLL OF THE {}"
-msgstr "SÉPARER LES {}"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Makes the photos measured together a roll of their own."
-msgstr "Fait des photos mesurées ensemble une pellicule à part entière."
+msgid "Moves the photos measured with this roll into a roll folder of their own."
+msgstr "Déplace les photos mesurées avec cette pellicule dans un dossier de pellicule à part."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Finding the photos measured with this roll…"
@@ -1833,23 +1789,23 @@ msgstr "Soustrait le débordement de chaque colorant dans les deux autres canaux
 msgid "Dyes"
 msgstr "Colorants"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Kodak"
 msgstr "Kodak"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Fuji"
 msgstr "Fuji"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Generic"
 msgstr "Générique"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "ECN-2"
 msgstr "ECN-2"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_card.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "E-6"
 msgstr "E-6"
 
@@ -2037,6 +1993,26 @@ msgstr "Copie le préréglage sous forme d’une ligne de texte, à coller dans 
 msgid "Delete"
 msgstr "Supprimer"
 
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "ALL"
+msgstr "TOUTES"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "Show every photo, whatever its medal"
+msgstr "Afficher toutes les photos, quelle que soit leur médaille"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "Show the Bronze photos alone"
+msgstr "N’afficher que les photos Bronze"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "Show the Silver photos alone"
+msgstr "N’afficher que les photos Argent"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "Show the Gold photos alone"
+msgstr "N’afficher que les photos Or"
+
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"
 msgstr "Langue"
@@ -2197,17 +2173,13 @@ msgstr "Marquer les vues à écarter"
 msgid "Place the Measuring Frame"
 msgstr "Placer le cadre de mesure"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/toolbar.slint
-msgid "ALL"
-msgstr "TOUTES"
-
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select the Whole Roll ({})"
 msgstr "Sélectionner toute la pellicule ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "RESET SCAN"
-msgstr "RÉINITIALISER LE SCAN"
+msgid "Reset Settings ({})"
+msgstr "Réinitialiser les réglages ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
@@ -2244,10 +2216,6 @@ msgstr "Quitter le dépoussiérage"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "De-dust"
 msgstr "Dépoussiérage"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Filter: {}"
-msgstr "Filtre : {}"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
@@ -2411,7 +2379,7 @@ msgid_plural "{n} items from other folders were left out: ONI opens one folder a
 msgstr[0] "Un élément d’un autre dossier laissé de côté : ONI ouvre un dossier à la fois."
 msgstr[1] "{n} éléments d’autres dossiers laissés de côté : ONI ouvre un dossier à la fois."
 
-#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs
+#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs
 msgid "Something Went Wrong"
 msgstr "Un problème est survenu"
 
@@ -2939,7 +2907,7 @@ msgstr "Renommer…"
 msgid "Back to a Folder"
 msgstr "Reconvertir en dossier"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/roll_guide.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Make a Roll"
 msgstr "Convertir en pellicule"
 
@@ -3264,6 +3232,10 @@ msgid "A photo deleted in ONI waits here, its file untouched, until it is restor
 msgstr "Une photo supprimée dans ONI attend ici, son fichier intact, jusqu’à ce qu’elle soit restaurée."
 
 #: crates/oni-app/src/app/organising/grid.rs
+msgid "ALL in the rating filter shows every photo."
+msgstr "TOUTES, dans le filtre des médailles, affiche chaque photo."
+
+#: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
 msgstr "Aucun dossier ouvert"
 
@@ -3286,10 +3258,6 @@ msgstr "Aucun projet"
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No {medal} Photos"
 msgstr "Aucune photo {medal}"
-
-#: crates/oni-app/src/app/organising/grid.rs
-msgid "Cycle the filter ({key}) to see the others."
-msgstr "Changez de filtre ({key}) pour voir les autres."
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Select a project"
@@ -3318,10 +3286,6 @@ msgstr "Définir la date de prise de vue"
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"
 msgstr "Par défaut, d’après le mode {mode} de cette pellicule"
-
-#: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-core/src/store/several.rs crates/oni-core/src/store/undo.rs
-msgid "The roll could not be written in its folder: {error}"
-msgstr "La pellicule n’a pas pu être écrite dans son dossier : {error}"
 
 #: crates/oni-app/src/app/organising/oni_trash.rs
 msgid "ONI Trash"
@@ -3491,33 +3455,13 @@ msgid_plural "{n} originals missing"
 msgstr[0] "{n} original introuvable"
 msgstr[1] "{n} originaux introuvables"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs
-msgid "Make this folder a roll"
-msgstr "Faire de ce dossier une pellicule"
-
-#: crates/oni-app/src/app/organising/roll_guide.rs
-msgid "Move into a new roll"
-msgstr "Déplacer dans une nouvelle pellicule"
-
-#: crates/oni-app/src/app/organising/roll_guide.rs
+#: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Set Film Stock"
 msgstr "Définir l’émulsion"
 
-#: crates/oni-app/src/app/organising/roll_guide.rs
+#: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Dyes: {family}"
 msgstr "Colorants : {family}"
-
-#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-app/src/picking.rs
-msgid "{n} selected"
-msgid_plural "{n} selected"
-msgstr[0] "{n} sélectionnée"
-msgstr[1] "{n} sélectionnées"
-
-#: crates/oni-app/src/app/organising/roll_guide.rs
-msgid "{n} folder"
-msgid_plural "{n} folders"
-msgstr[0] "{n} dossier"
-msgstr[1] "{n} dossiers"
 
 #: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
 msgid "Delete Project"
@@ -3846,16 +3790,16 @@ msgid "Acts on the selected photo, not the one on screen."
 msgstr "Agit sur la photo sélectionnée, pas sur celle affichée."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings both back."
-msgstr "La mesure de leur pellicule et tous les réglages de leur look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises, et la planche contact de la pellicule part dans la Corbeille ONI. Recadrages, corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler rétablit le tout."
+msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Dust corrections, flat-fields, medals and EXIF stay. Undo brings both back."
+msgstr "Chaque photo de la pellicule revient telle qu’elle a été numérisée : la mesure de la pellicule, les recadrages et tous les réglages du look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises, et la planche contact de la pellicule part dans la Corbeille ONI. Corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler rétablit le tout."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings the settings back."
-msgstr "La mesure de leur pellicule et tous les réglages de leur look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises. Recadrages, corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler rétablit les réglages."
+msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back."
+msgstr "Chaque photo de la pellicule revient telle qu’elle a été numérisée : la mesure de la pellicule, les recadrages et tous les réglages du look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises. Corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler les rétablit."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Reset to Default"
-msgstr "Rétablir les réglages par défaut"
+msgid "Reset the Roll"
+msgstr "Réinitialiser la pellicule"
 
 #: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
 msgid "Balance"
@@ -3866,10 +3810,10 @@ msgid "Acts on {count} photos."
 msgstr "Agit sur {count} photos."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Reset This Photo to Default?"
-msgid_plural "Reset {n} Photos to Default?"
-msgstr[0] "Rétablir les valeurs par défaut de cette photo ?"
-msgstr[1] "Rétablir les valeurs par défaut de {n} photos ?"
+msgid "Reset the Roll of This Photo?"
+msgid_plural "Reset the Roll of {n} Photos?"
+msgstr[0] "Réinitialiser la pellicule de cette photo ?"
+msgstr[1] "Réinitialiser la pellicule de {n} photos ?"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Reset Photo"
@@ -4164,10 +4108,6 @@ msgid "Reset Settings ({count} photos)"
 msgstr "Réinitialiser les réglages ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
-msgid "Reset to Default… ({count} photos)"
-msgstr "Rétablir les valeurs par défaut… ({count} photos)"
-
-#: crates/oni-app/src/organise/cells.rs
 msgid "Move into a New Roll… ({count} photos)"
 msgstr "Déplacer dans une nouvelle pellicule… ({count} photos)"
 
@@ -4198,6 +4138,12 @@ msgid "{n} photo"
 msgid_plural "{n} photos"
 msgstr[0] "{n} photo"
 msgstr[1] "{n} photos"
+
+#: crates/oni-app/src/picking.rs
+msgid "{n} selected"
+msgid_plural "{n} selected"
+msgstr[0] "{n} sélectionnée"
+msgstr[1] "{n} sélectionnées"
 
 #: crates/oni-app/src/platform.rs
 msgid "Show in Finder"
@@ -4568,10 +4514,14 @@ msgstr[0] "Mesurer la pellicule"
 msgstr[1] "Mesurer la pellicule de {n} photos"
 
 #: crates/oni-core/src/store/roll.rs
-msgid "Reset to Default · {n} photo"
-msgid_plural "Reset to Default · {n} photos"
-msgstr[0] "Valeurs par défaut · {n} photo"
-msgstr[1] "Valeurs par défaut · {n} photos"
+msgid "Reset the Roll · {n} photo"
+msgid_plural "Reset the Roll · {n} photos"
+msgstr[0] "Réinitialiser la pellicule · {n} photo"
+msgstr[1] "Réinitialiser la pellicule · {n} photos"
+
+#: crates/oni-core/src/store/several.rs crates/oni-core/src/store/undo.rs
+msgid "The roll could not be written in its folder: {error}"
+msgstr "La pellicule n’a pas pu être écrite dans son dossier : {error}"
 
 #: crates/oni-core/src/store/several.rs
 msgid "Reset {n} photo"
@@ -4614,6 +4564,12 @@ msgid "{label} · {n} photo"
 msgid_plural "{label} · {n} photos"
 msgstr[0] "{label} · {n} photo"
 msgstr[1] "{label} · {n} photos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Medal on {n} photo"
+msgid_plural "Medal on {n} photos"
+msgstr[0] "Médaille sur {n} photo"
+msgstr[1] "Médaille sur {n} photos"
 
 #: crates/oni-library/src/lib.rs
 msgid "{file} cannot be read, so it is kept as it is: {error}"

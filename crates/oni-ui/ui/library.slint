@@ -127,6 +127,9 @@ export global Library {
     // The picker beside the open frame: the frame itself while nothing is selected.
     in property <bool> editor-medal-shown;
     in property <int> editor-medal-current: -1;
+    // The rating filter: 0 every photo, else the one medal the gallery keeps; a key of it picked.
+    in property <int> filter-medal;
+    callback filter-picked(int);
     // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project.
     in property <int> info-kind;
     in property <string> info-empty;
@@ -183,8 +186,9 @@ export global Library {
     callback project-row-dragged(int, length, length, length, length);
     callback project-drag-ended(bool);
     in property <TreeDrag> project-drag;
+    // A trash row's click opens the ONI Trash, its chevron folds the trash's folders.
     callback trash-row-clicked(int);
-    callback trash-row-double-clicked(int);
+    callback trash-row-folded(int);
     callback trash-row-restore(int);
     callback trash-row-menu(int) -> bool;
     // A click on a cell resolved by index, with ⌘ and ⇧; the pointer's own path is below.

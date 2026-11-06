@@ -5326,10 +5326,59 @@
     "detail": "Owner's ask: the twelve criteria proposed for an in-depth review become the UX bench (docs/ux-bench.md), the owner's eight categories the UI bench (docs/ui-bench.md). The UX bench rates the app in use (tasks, counts, timings, behaviour, words), the UI bench one still screen in one of its states; a criterion bordering on the other bench names it, so nothing is rated twice. Each gives what it judges, what to look at and the two ends of its scale; how a bench runs and scores comes with the owner's procedure."
   },
   {
+    "id": 1121,
+    "type": "fix",
+    "title": "The shot date writes only what a hand typed, and every field of a roll is one undoable step",
+    "status": "done",
+    "detail": "UX evaluation (s-1d4fb9c3), data integrity: tabbing through Shot Date without typing wrote the default, the roll's first photo's capture, as the roll's own date, and Undo skipped it. The date fields commit as the focus leaves them; a commit holding the fields as they were shown now writes nothing, one rule with the drafts written before a scene hides them, so only a date typed is written. A folder's marker was written beside the gallery history: name, date, body and stock now go through one gallery step with the marker, as the stock already did, so Undo takes any of them back."
+  },
+  {
     "id": 1122,
     "type": "fix",
     "title": "A medal laid is a gallery step: Undo takes it back",
     "status": "done",
     "detail": "UX evaluation (s-1d4fb9c3): rating a photo added no undo step, the medal written to the sidecar beside the history. The gallery history gains a medals part, the medal each photo wore and the one laid; the store lays the medal on each sidecar and records it, and undo and redo lay each photo's own back. The status bar's medals, the keys 0-3 and the Labels menu all go through it."
+  },
+  {
+    "id": 1123,
+    "type": "change",
+    "title": "The roll the gallery shows stands for a pick, and a folder of photos is a roll: the roll guide merges into the roll card",
+    "status": "done",
+    "detail": "UX and UI evaluation: with a roll open and nothing selected the inspector read Select a roll, EDITOR was greyed and PREPARE ROLL disabled, though one photo picked then measured the whole folder; an unprepared folder read Not in a roll yet, said nothing of its measure, and a blue Move into a New Roll competed with PREPARE ROLL. One root: only a picked photo was ever the gallery's subject. The sidebar, Prepare the Roll and Reset the Roll now stand on the anchor's folder, else the folder opened; the editor's key opens the anchor, else the first photo shown, and the bar's key reads the menu's rule. A folder with no marker is a roll named after it, its marker made by the first field written, so the roll guide (#830) goes: Not measured yet and PREPARE THE ROLL… show on every unmeasured folder, and Move into a New Roll stays in the menus."
+  },
+  {
+    "id": 1124,
+    "type": "fix",
+    "title": "The status bar counts the photos the grid shows, on every surface",
+    "status": "done",
+    "detail": "UI evaluation: Projects said No Photos in a Project above 25 photos, the count read off the archive's bands whatever the surface. It reads the grid laid."
+  },
+  {
+    "id": 1125,
+    "type": "change",
+    "title": "A click opens the ONI Trash, as a folder's click opens the folder",
+    "status": "done",
+    "detail": "UX evaluation: a click on ONI Trash opened nothing and said nothing; it folded the row, a double click opened it, and the empty row was greyed as a folder away. As every row of the navigator (D4), a click opens it, its empty grid saying so, the chevron folds its folders, and the row is never greyed."
+  },
+  {
+    "id": 1126,
+    "type": "change",
+    "title": "The resets are named by what they do, and a photo's menu holds no reset of its whole roll",
+    "status": "done",
+    "detail": "UX evaluation: Reset Settings, Reset to Default… and Reset to Imported State sat side by side with no stated difference, and Reset to Default… on one photo's menu proposed to reset all 24 photos of its roll. Two gestures, two names: Reset Settings, the look back to rest with the measure and the crop kept, in the cell menu, the Edit menu and the bar's RESET key; Reset the Roll…, every photo of the roll back as scanned, in the Rolls menu alone, its confirm and undo step named the same and its message saying the crops go (owner's call of 2026-10-31)."
+  },
+  {
+    "id": 1127,
+    "type": "change",
+    "title": "The rating filter is ALL and the three medals, a press each, and a medal is shown as its medal",
+    "status": "done",
+    "detail": "UX and UI evaluation: the filter was one key cycling ALL, BRONZE, SILVER and GOLD, showing its state rather than that it filters by rating, Gold three presses away; ratings were medals in the status bar but words in the menu and the filter. The bar's filter is ALL and the three medals on one plate, each a press, the one kept lit; the cell menu's four medal lines go, the status bar's medals and the keys 0-3 laying one. ⌘L still cycles."
+  },
+  {
+    "id": 1128,
+    "type": "change",
+    "title": "The Measured Roll's keys say what they do: Add Them to the Roll, Move into a New Roll…",
+    "status": "done",
+    "detail": "UX evaluation: JOIN THE 24 and ROLL OF THE 1 named the gestures by counts. The warning above them counts; the keys are now ADD THEM TO THE ROLL and MOVE INTO A NEW ROLL…, the menus' name for the same gesture."
   }
 ]

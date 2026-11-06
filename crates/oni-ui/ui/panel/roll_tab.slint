@@ -32,14 +32,14 @@ export component RollPane inherits Pane {
                 align: GroupAlign.fill;
                 Button {
                     size: ButtonSize.plate;
-                    text: PanelState.roll-unmeasured == 1 ? @tr("JOIN THE ROLL") : @tr("JOIN THE {}", PanelState.roll-unmeasured);
-                    help: @tr("Gives them this roll's measurement and settings, their own look kept.");
+                    text: @tr("ADD THEM TO THE ROLL");
+                    help: @tr("Gives the photos left out this roll's measurement and settings, their own look kept.");
                     clicked => { PanelState.join-roll(); }
                 }
                 Button {
                     size: ButtonSize.plate;
-                    text: @tr("ROLL OF THE {}", PanelState.roll-measured);
-                    help: @tr("Makes the photos measured together a roll of their own.");
+                    text: @tr("Move into a New Roll…");
+                    help: @tr("Moves the photos measured with this roll into a roll folder of their own.");
                     clicked => { PanelState.make-roll(); }
                 }
             }

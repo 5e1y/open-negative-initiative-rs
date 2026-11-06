@@ -155,7 +155,7 @@ impl Ctl {
         }
     }
 
-    /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery.
+    /// `toggleMode()`: the editor on the photo the gallery stands on, or back to the gallery.
     pub(super) fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
         // Leaving the editor takes the deck away with no exit event: the preview goes with it.
@@ -168,11 +168,7 @@ impl Ctl {
             return;
         }
         self.commit_info_drafts();
-        let ringed = {
-            let s = self.state.borrow();
-            s.picks.anchor.clone().filter(|_| !s.trash_shown())
-        };
-        let Some(path) = ringed else { return };
+        let Some(path) = self.state.borrow().editor_subject() else { return };
         self.drop_split();
         if self.state.borrow().open.as_deref() == Some(path.as_str()) {
             // As `open_in_editor`: no edit lands on a frame whose file a gesture may be moving.

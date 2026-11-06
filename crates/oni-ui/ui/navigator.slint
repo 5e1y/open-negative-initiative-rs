@@ -100,7 +100,7 @@ export global Navigator {
 component Rows inherits Scroller {
     in property <[TrashLine]> trash-rows;
     callback trash-clicked(int);
-    callback trash-double-clicked(int);
+    callback trash-folded(int);
     callback trash-restore(int);
     // A right click, at the pointer in window coordinates.
     callback trash-menu(int, length, length);
@@ -175,7 +175,7 @@ component Rows inherits Scroller {
                 action: line.restore-help != "" ? @tr("RESTORE") : "";
                 action-help: line.restore-help;
                 clicked => { root.trash-clicked(i); }
-                double-clicked => { root.trash-double-clicked(i); }
+                folded => { root.trash-folded(i); }
                 acted => { root.trash-restore(i); }
                 menu(x, y) => { root.trash-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
@@ -207,7 +207,7 @@ export component NavigatorSection inherits Rectangle {
     in property <bool> beside-photo;
     in property <[TrashLine]> trash-rows;
     callback trash-clicked(int);
-    callback trash-double-clicked(int);
+    callback trash-folded(int);
     callback trash-restore(int);
     callback trash-menu(int, length, length);
     property <length> menu-x;
@@ -251,7 +251,7 @@ export component NavigatorSection inherits Rectangle {
             Rows {
                 trash-rows: root.trash-rows;
                 trash-clicked(i) => { root.trash-clicked(i); }
-                trash-double-clicked(i) => { root.trash-double-clicked(i); }
+                trash-folded(i) => { root.trash-folded(i); }
                 trash-restore(i) => { root.trash-restore(i); }
                 trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
                 folder-menu(i, x, y) => { root.show-menu(i, x, y); }
@@ -262,7 +262,7 @@ export component NavigatorSection inherits Rectangle {
             Rows {
                 trash-rows: root.trash-rows;
                 trash-clicked(i) => { root.trash-clicked(i); }
-                trash-double-clicked(i) => { root.trash-double-clicked(i); }
+                trash-folded(i) => { root.trash-folded(i); }
                 trash-restore(i) => { root.trash-restore(i); }
                 trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
                 folder-menu(i, x, y) => { root.show-menu(i, x, y); }

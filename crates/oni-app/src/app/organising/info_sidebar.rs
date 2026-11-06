@@ -1,6 +1,8 @@
 //! The info sidebar: the roll's or the project's name, stock, date, body and description.
 
 use super::*;
+use oni_library::gallery_history::Marker;
+use oni_settings::film::dye_family;
 
 impl Ctl {
     pub(in crate::app) fn publish_info(&self) {
@@ -8,7 +10,6 @@ impl Ctl {
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
         if s.org.projects_surface {
-            w.global::<crate::RollGuide>().set_shown(false);
             let Some(group) = s.project_group() else {
                 lib.set_info_kind(0);
                 lib.set_info_empty(tr("Select a project").into());
@@ -44,17 +45,15 @@ impl Ctl {
             }
             return;
         }
-        let Some(roll) = s.roll().filter(|_| !s.trash_shown()) else {
+        let Some(roll) = s.roll() else {
             lib.set_info_kind(0);
             lib.set_info_empty(tr("Select a roll").into());
             s.org.info_loaded = None;
-            drop(s);
-            return self.publish_guide();
+            return;
         };
-        w.global::<crate::RollGuide>().set_shown(false);
         let film = &roll.film;
         lib.set_info_kind(1);
-        lib.set_stock_dyes(roll_guide::dyes_note(film.stock.as_deref()).into());
+        lib.set_stock_dyes(roll_card::dyes_note(film.stock.as_deref()).into());
         lib.set_info_title(film.name.clone().into());
         // `heroStock`: the stock a hand picked, else the first photo's mode's default, said so.
         let mode = roll.first.as_ref().and_then(|e| e.mode);
@@ -73,7 +72,7 @@ impl Ctl {
         let default = default_date(&roll);
         lib.set_shot_date_set(film.shot_date.is_some());
         lib.set_shot_date_default(default.is_some());
-        let key = format!("roll {} {:?} {:?} {:?}", film.id, film.shot_date, film.camera_body, default);
+        let key = format!("{} {:?} {:?} {:?}", roll.key(), film.shot_date, film.camera_body, default);
         if s.org.info_loaded.as_deref() != Some(key.as_str()) {
             let [m, d, y] = date_fields(&roll);
             lib.set_month(m.into());
@@ -82,31 +81,33 @@ impl Ctl {
             lib.set_camera_body(film.camera_body.clone().unwrap_or_default().into());
             s.org.info_loaded = Some(key);
         }
-        let measure_key = format!("{} {}", film.id, roll.paths.join("\n"));
+        let measure_key = format!("{} {}", roll.key(), roll.paths.join("\n"));
         drop(s);
         let unmeasured = self.roll_measured(measure_key, &roll.paths) == Some(false);
         lib.set_roll_unmeasured(unmeasured);
     }
 
-    /// `updateRoll`: a folder's roll is its marker; a roll its sidecars name is written on each
-    /// member as one gallery step.
+    /// `updateRoll`, one gallery step whatever the field: a folder's marker, made by its first field
+    /// written, with the dyes a stock picked names on its frames; else the film on every member.
     pub(in crate::app) fn update_roll(self: &Rc<Self>, label: &str, mutate: impl FnOnce(&mut Film)) {
         let Some(roll) = self.state.borrow().roll() else { return };
         let mut film = roll.film.clone();
         mutate(&mut film);
         if film != roll.film {
-            match &roll.marker {
+            let family = film.stock.as_deref().filter(|_| film.stock != roll.film.stock).and_then(dye_family);
+            match roll.marker {
                 Some(folder) => {
-                    match oni_library::folders::set_roll(Some(&film), folder) {
-                        Ok(()) => self.roll_written(folder, Some(film.clone())),
-                        Err(e) => self.told(tr("Something Went Wrong"), &tr!("The roll could not be written in its folder: {error}", error = oni_library::refusal::cause(&e))),
-                    }
-                    self.lay_archive();
+                    let members = if family.is_some() { self.state.borrow().folder_frames(&folder) } else { Vec::new() };
+                    let marker = Marker { before: oni_library::folders::roll(&folder), folder, after: Some(film) };
+                    self.gesture_as(label, &members, |store| store.lay_roll(&members, Some(marker), |s| roll_card::dyed(s, family), label));
                 }
                 None => {
-                    let paths = roll.paths.clone();
-                    let label = label.to_string();
-                    self.gesture(&paths, |store| store.set_film(&paths, Some(film), &label));
+                    let frames = roll.paths;
+                    let lay = |s: &mut oni_settings::PipelineSettings| {
+                        s.film = Some(film.clone());
+                        roll_card::dyed(s, family);
+                    };
+                    self.gesture_as(label, &frames, |store| store.lay_roll(&frames, None, lay, label));
                 }
             }
         }
@@ -120,7 +121,7 @@ impl Ctl {
         if s.org.projects_surface {
             return s.project_group().map(|g| format!("project {}", g.id));
         }
-        s.roll().filter(|_| !s.trash_shown()).map(|r| format!("roll {}", r.film.id))
+        s.roll().map(|r| r.key())
     }
 
     pub(in crate::app) fn title_edited(&self, draft: &str) {
@@ -158,9 +159,10 @@ impl Ctl {
         if body != film.camera_body.clone().unwrap_or_default() {
             film.camera_body = (!body.is_empty()).then_some(body);
         }
-        let typed = [lib.get_month(), lib.get_day(), lib.get_year()].map(|t| t.to_string());
-        if typed != date_fields(&roll)
-            && let Some(date) = typed_date(&typed[0], &typed[1], &typed[2])
+        let typed = [lib.get_month(), lib.get_day(), lib.get_year()];
+        let typed = typed.each_ref().map(|t| t.as_str());
+        if !as_shown(&roll, typed)
+            && let Some(date) = spelled(typed)
         {
             film.shot_date = Some(date);
         }
@@ -197,9 +199,15 @@ impl Ctl {
         self.update_roll(tr("Rename Roll"), |f| f.name = name);
     }
 
-    /// `DateFields.commit`: month and year must read as numbers, the day falls back on the first.
+    /// `DateFields.commit`, on Return or as the focus leaves: the fields as they were shown write
+    /// nothing, so a focus passing through never turns the default into a date of the roll's own.
     pub(in crate::app) fn shot_date_committed(self: &Rc<Self>, month: &str, day: &str, year: &str) {
-        match typed_date(month, day, year) {
+        let Some(roll) = self.state.borrow().roll() else { return };
+        let typed = [month, day, year];
+        if as_shown(&roll, typed) {
+            return;
+        }
+        match spelled(typed) {
             Some(date) => self.update_roll(tr("Set Shot Date"), |f| f.shot_date = Some(date)),
             None => {
                 self.state.borrow_mut().org.info_loaded = None;
@@ -248,8 +256,13 @@ fn date_fields(roll: &Roll) -> [String; 3] {
     [m.to_string(), d.to_string(), y.to_string()]
 }
 
+/// The month, day and year still as `date_fields` laid them, which no hand typed over.
+fn as_shown(roll: &Roll, typed: [&str; 3]) -> bool {
+    typed.iter().zip(date_fields(roll)).all(|(t, shown)| t.trim() == shown)
+}
+
 /// The date the fields spell: month and year must read as numbers, the day falls back on the first.
-fn typed_date(month: &str, day: &str, year: &str) -> Option<Date> {
+fn spelled([month, day, year]: [&str; 3]) -> Option<Date> {
     match (month.trim().parse::<u32>(), year.trim().parse::<i32>()) {
         (Ok(m), Ok(y)) => oni_library::info::made(y, m, day.trim().parse().unwrap_or(1)),
         _ => None,
