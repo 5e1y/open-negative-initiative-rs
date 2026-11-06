@@ -1,12 +1,15 @@
-// The top bar in three zones; every key there is a gesture a menu already reaches.
+// The top bar, one layout in every mode: the mode key and the history at the left, the mode's own keys
+// centred, feedback, settings and the screen's commit at the right; every key there is a menu's gesture.
 import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
-import { Preparing } from "prepare.slint";
+import { Preparing } from "prepare_state.slint";
+import { PanelState } from "panel/state.slint";
+import { Canvas } from "canvas_state.slint";
 import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
 
 // `rollStepKeys`: one key per step on one plate, the current one lit, a lamp on each step behind it.
-export component RollStepKeys inherits ButtonGroup {
+component RollStepKeys inherits ButtonGroup {
     plate: true;
     for name[i] in [@tr("FILM"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
         text: name;
@@ -28,12 +31,10 @@ export global Bar {
     in property <bool> can-redo;
     in property <bool> can-paste;
     in property <bool> can-reset;
-    in property <bool> dedust;
     in property <int> targets: 1;
     // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
     in property <bool> can-select-all;
     in property <bool> can-prepare;
-    in property <string> export-title: @tr("EXPORT");
     // `ExportButton`'s third face: an update outranks export and import alike, and says to what.
     in property <string> update-title;
     in property <string> update-help;
@@ -86,22 +87,26 @@ component ResetScan inherits Word {
     enabled: Bar.can-reset;
 }
 
+// Undo and Redo beside the mode key, in every mode: the history is the app's, never one screen's.
+component History inherits ButtonGroup {
+    plate: true;
+    Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
+    Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
+}
+
 component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
-    // `centreKeys`: each family on its own plate, De-dust alone and never plated.
+    // `centreKeys`: each family on its own plate, De-dust alone and never plated; a mode's key is on while it is.
     ButtonGroup { plate: true;
-        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); enabled: Bar.has-photo && Bar.single; }
-        Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); enabled: Bar.has-photo; }
+        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); on: PanelState.tab == 1; enabled: Bar.has-photo && Bar.single; }
+        Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); on: Canvas.split >= 0; enabled: Bar.has-photo; }
         SelectAll { }
     }
-    ButtonGroup { plate: true;
-        Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
-        Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
-    }
-    // `faceBinding`: the faces ride beside the history, present only while a photograph is worked.
+    // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
     Tabs {
-        width: ScannerStyle.face-bar;
+        preferred-width: ScannerStyle.face-bar;
+        max-width: ScannerStyle.face-bar;
         tabs: [@tr("Pro"), @tr("Scanner")];
         marked: [false, false];
         selected: Bar.face;
@@ -126,9 +131,9 @@ component EditorKeys inherits HorizontalLayout {
     }
     Item {
         action: Act.correction;
-        icon: Bar.dedust ? Icons.done : Icons.correction;
-        help: Bar.dedust ? @tr("Leave De-dust") : @tr("De-dust");
-        on: Bar.dedust;
+        icon: Icons.correction;
+        on: PanelState.tab == 4;
+        help: self.on ? @tr("Leave De-dust") : @tr("De-dust");
         enabled: Bar.has-photo && Bar.single;
     }
     ButtonGroup { plate: true;
@@ -142,10 +147,6 @@ component GalleryKeys inherits HorizontalLayout {
     // The editor's first plate holds the select-all key alone here, as in Swift's `centreKeys`.
     ButtonGroup { plate: true;
         SelectAll { }
-    }
-    ButtonGroup { plate: true;
-        Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
-        Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
     }
     Word {
         action: Act.cycle-filter;
@@ -162,11 +163,11 @@ component GalleryKeys inherits HorizontalLayout {
 
 export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
-    // The bar's width with every word, read off hidden copies: the layout's widths never depend on
-    // which face shows, or the window's width would loop through it.
-    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + 2 * glyphs.preferred-width + 4 * ShellStyle.bar-gap
-        + (Preparing.shown ? 0px : ShellStyle.export-width + ShellStyle.bar-gap) + (Preparing.shown || Bar.targets < 2 ? 0px : sheet-sizing.preferred-width);
-    property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
+    // The bar with every word, read off hidden copies, never off the face shown, or the window's width
+    // would loop through it; narrower, the centre's words give way to glyphs.
+    property <length> full: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + history.preferred-width
+        + max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width)
+        + (Pairing.available ? 3 : 2) * glyph-sizing.preferred-width + ShellStyle.export-width + (Pairing.available ? 6 : 5) * ShellStyle.bar-gap;
     property <bool> compact: root.width < root.full;
     // Under the keys, so only the room between them reaches it.
     TouchArea {
@@ -188,78 +189,51 @@ export component Toolbar inherits Surface {
             help: Bar.editing || Preparing.shown ? @tr("Gallery ({})", KeyWords.command + "G") : @tr("Editor ({})", KeyWords.command + "G");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
-        // Hidden copies of both sets hold the zone at the wider one's width, short of room at the shown
-        // set's compact width; the zone takes the room between the sides and its keys sit on the window's centre if they can.
+        history := History { }
+        // The zone holds the widest set of keys with its words, and the widest compact one at least, alone
+        // giving way; the set shown sits on the window's centre if it can, its faces narrowing first.
         Rectangle {
             horizontal-stretch: 1;
-            min-width: Bar.editing ? compact-sizing.preferred-width : compact-gallery-sizing.preferred-width;
-            preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width);
+            min-width: max(compact-sizing.min-width, compact-gallery-sizing.min-width, steps-sizing.min-width);
+            preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width);
             sizing := EditorKeys { visible: false; }
             gallery-sizing := GalleryKeys { visible: false; }
             compact-sizing := EditorKeys { visible: false; compact: true; }
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
-            feedback-sizing := Word { visible: false; text: @tr("FEEDBACKS"); }
-            sheet-sizing := Word { visible: false; text: @tr("EXP. CONTACT SHEET"); }
-            glyph-sizing := Word { visible: false; has-icon: true; icon: Icons.chat; }
-            glyphs := Item { visible: false; icon: Icons.settings; }
-            if Preparing.shown: RollStepKeys { x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
-            if Bar.editing && !Preparing.shown: EditorKeys { compact: root.compact; x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
-            if !Bar.editing && !Preparing.shown: GalleryKeys { compact: root.compact; x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
-        }
-        // The key keeps its own width; only the room around it gives way.
-        Rectangle {
-            min-width: glyph-sizing.preferred-width;
-            preferred-width: feedback-sizing.preferred-width;
-            max-width: feedback-sizing.preferred-width;
-            horizontal-stretch: 0;
-            Word {
-                width: self.preferred-width;
-                x: parent.width - self.width;
-                action: Act.report;
-                text: root.compact ? "" : @tr("FEEDBACKS");
-                has-icon: root.compact;
-                icon: Icons.chat;
-                help: @tr("Report a Bug / Give Feedback");
+            steps-sizing := RollStepKeys { visible: false; }
+            glyph-sizing := Item { visible: false; icon: Icons.settings; }
+            if Preparing.shown: RollStepKeys {
+                width: min(self.preferred-width, parent.width);
+                x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
+            }
+            if Bar.editing && !Preparing.shown: EditorKeys {
+                compact: root.compact;
+                width: min(self.preferred-width, parent.width);
+                x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
+            }
+            if !Bar.editing && !Preparing.shown: GalleryKeys {
+                compact: root.compact;
+                width: min(self.preferred-width, parent.width);
+                x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
         }
+        // A glyph as Settings beside it, its width the same at every width of the window.
+        Item { action: Act.report; icon: Icons.chat; help: @tr("Report a Bug / Give Feedback"); }
         if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
-        // Several photos picked: their contact sheet's key, orange as its numbers, on one plate with export.
-        if !Preparing.shown: ButtonGroup {
-            plate: Bar.targets > 1;
-            // As FEEDBACKS: the zone's widths come from hidden copies, so the face shown never loops the window's width.
-            if Bar.targets > 1: Rectangle {
-                min-width: glyph-sizing.preferred-width;
-                preferred-width: sheet-sizing.preferred-width;
-                max-width: sheet-sizing.preferred-width;
-                horizontal-stretch: 0;
-                Word {
-                    width: self.preferred-width;
-                    x: parent.width - self.width;
-                    action: Act.export-sheet;
-                    text: root.compact ? "" : @tr("EXP. CONTACT SHEET");
-                    has-icon: root.compact;
-                    icon: Icons.contact-sheet;
-                    kind: ButtonKind.sheet;
-                    help: @tr("Export the photos picked as one contact sheet");
-                }
-            }
-            if Bar.update-title == "": Word {
-                action: Bar.editing ? Act.export : Act.add-folder;
-                text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER…");
-                kind: ButtonKind.accent;
-                fixed-width: ShellStyle.export-width;
-                help: Bar.editing ? "" : @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E");
-                enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
-            }
-            if Bar.update-title != "": Word {
-                action: Act.update;
-                text: Bar.updating ? @tr("UPDATING") : Bar.update-title;
-                kind: ButtonKind.update;
-                fixed-width: ShellStyle.export-width;
-                help: Bar.update-help;
-                enabled: !Bar.updating;
-            }
+        // `ExportButton`: one slot, three faces (import in the gallery, export in the editor, an update over
+        // both), the count of photos in its help; hidden while a roll is prepared, its room kept.
+        Word {
+            property <bool> update: Bar.update-title != "";
+            visible: !Preparing.shown;
+            action: self.update ? Act.update : Bar.editing ? Act.export : Act.add-folder;
+            text: self.update ? (Bar.updating ? @tr("UPDATING") : Bar.update-title) : Bar.editing ? @tr("EXPORT") : @tr("ADD FOLDER…");
+            kind: self.update ? ButtonKind.update : ButtonKind.accent;
+            fixed-width: ShellStyle.export-width;
+            help: self.update ? Bar.update-help
+                : !Bar.editing ? @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E")
+                : Bar.targets > 1 ? @tr("Export {} photos ({})", Bar.targets, KeyWords.command + "E") : @tr("Export ({})", KeyWords.command + "E");
+            enabled: self.update ? !Bar.updating : !Bar.editing || Bar.has-photo || Bar.targets > 0;
         }
     }
 }

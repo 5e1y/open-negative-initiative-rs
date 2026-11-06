@@ -57,15 +57,16 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
     };
     tab(&rig, 460.0);
     assert_eq!(e.get_chip_title(), "sRGB", "sRGB from Display P3");
-    tab(&rig, 739.0);
-    assert_eq!(e.get_space_tab(), 4, "Custom");
     tab(&rig, 530.0);
     assert_eq!(e.get_chip_title(), "Display P3");
+    // Last: a longer title widens the chip into its room, which the popover under it follows.
+    tab(&rig, 739.0);
+    assert_eq!(e.get_space_tab(), 4, "Custom from Display P3");
     // Twin: a click beside the popover closes it and picks nothing.
     click(&rig, 600.0, 108.0);
     rig.settle();
     click(&rig, 600.0, 600.0);
     rig.settle();
     click(&rig, 460.0, 200.0);
-    assert_eq!(e.get_chip_title(), "Display P3", "the popover closed, the tabs under it gone");
+    assert_eq!(e.get_space_tab(), 4, "the popover closed, the tabs under it gone");
 }

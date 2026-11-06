@@ -320,8 +320,8 @@ impl Ctl {
         c.on_frame_released(move |_| p.frame_released());
     }
 
-    /// `NegativeView`'s gestures: a drag pans, a double click toggles 100 %, the wheel zooms about
-    /// the pointer, a touch surface pans unless ⌘ is held, a pinch zooms about its centre.
+    /// `NegativeView`'s gestures: a drag pans, a double click toggles 100 %, the wheel zooms about the
+    /// pointer, a touch surface pans unless ⌘ is held, a pinch zooms, a right click opens the photo's menu.
     pub(super) fn wire_canvas(me: &Rc<Ctl>, window: &MainWindow) {
         let c = window.global::<Canvas>();
         let backing = move |p: &Rc<Ctl>| p.window().map_or(2.0, |w| f64::from(w.window().scale_factor()));
@@ -386,5 +386,8 @@ impl Ctl {
             let b = backing(&p);
             p.by_hand(|v, full, size| v.zoom_by(factor, (f64::from(x) * b, f64::from(y) * b), full, size));
         });
+
+        let p = me.clone();
+        c.on_menu(move || p.canvas_menu());
     }
 }

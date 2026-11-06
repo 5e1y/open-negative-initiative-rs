@@ -1,7 +1,7 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
 //! gaps, each frame's number in orange under its picture, no logo under less than a row; the same
 //! three as positives on the same black; five photos with the logo's band under a foot of four
-//! margins; the sheet shown in the column, and the bar's orange key opening the export on one sheet.
+//! margins; the sheet shown in the column, and Export As laying the gallery's pick on one sheet.
 
 use oni_app::app::export_card::{self, Ask, job::End};
 use oni_app::app::{Options, Shell};
@@ -149,8 +149,8 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert_eq!(count(1114..5300, 1067..1337, &|p| !black(p)), 0, "twin: nothing beside the logo");
     assert_eq!(count(0..5360, 1344..1398, &|p| !black(p)), 0, "twin: the margin under it");
 
-    // The bar's two keys on the gallery's five photos: the orange one opens the export on one sheet,
-    // the blue one on separate photos.
+    // Export on the gallery's five photos opens on separate photos; Export As lays them on one sheet,
+    // and the next export opens on separate photos again.
     rig.until("the surface left", LONG, || !e.get_shown());
     if !w.global::<oni_app::App>().get_gallery() {
         ctl.act(oni_app::Act::ToggleMode);
@@ -161,13 +161,16 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
         lib.invoke_tile_clicked(i, true, false);
     }
     rig.pump();
-    assert_eq!(w.global::<oni_app::Bar>().get_targets(), names.len() as i32, "the orange key shows for several photos");
-    ctl.act(oni_app::Act::ExportSheet);
-    rig.until("the export on one sheet", LONG, || e.get_shown() && e.get_sheet());
-    ctl.leave_export();
+    assert_eq!(w.global::<oni_app::Bar>().get_targets(), names.len() as i32, "the bar counts the five");
     ctl.act(oni_app::Act::Export);
     rig.until("the export on separate photos", LONG, || e.get_shown());
-    assert!(!e.get_sheet(), "twin: the blue key writes each photo");
+    assert!(!e.get_sheet(), "export writes each photo first");
+    e.invoke_sheet_set(true);
+    rig.until("the export on one sheet", LONG, || e.get_sheet());
+    ctl.leave_export();
+    ctl.act(oni_app::Act::Export);
+    rig.until("the export on separate photos again", LONG, || e.get_shown());
+    assert!(!e.get_sheet(), "twin: the sheet chosen once is not the next export's");
     // The contact-sheet key on the roll picked whole leaves the photo last picked alone, then picks the
     // roll again.
     ctl.leave_export();

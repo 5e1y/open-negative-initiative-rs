@@ -99,7 +99,6 @@ impl Ctl {
         bar.set_redo_title(titles.redo);
         bar.set_can_reset(live.reset);
         bar.set_targets(targets as i32);
-        bar.set_export_title(crate::export::label::key(targets).into());
         bar.set_editing(!gallery);
         self.publish_lab();
         self.publish_export_menu(selected, has_photo && !gallery);

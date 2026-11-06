@@ -1,10 +1,12 @@
 // The presets' deck on the canvas's bottom edge.
-import { Space, State, PresetStyle, PresetFace, Badge, Scroller, Tips, Menu } from "ds/ds.slint";
+import { Space, State, Colour, PresetStyle, PresetFace, Badge, Scroller, Tips, Menu, Label, TextRole } from "ds/ds.slint";
 import { Presets } from "presets.slint";
 
 // `PresetCarousel`: down to a strip at rest, up while the pointer is on it; a card previews under
 // the pointer and applies on a click; the rest sits on its right click.
 export component PresetDeck inherits Rectangle {
+    accessible-role: list;
+    accessible-label: @tr("Presets");
     property <length> full: PresetStyle.lift + PresetStyle.card-height + Space.s;
     property <bool> up: zone.has-hover;
     property <length> menu-x;
@@ -41,17 +43,33 @@ export component PresetDeck inherits Rectangle {
                 Rectangle {
                     width: PresetStyle.card-width;
                     height: root.full;
-                    PresetFace { new: true;
+                    new-card := PresetFace { new: true;
                         y: PresetStyle.lift - (plus.has-hover && Presets.can-update ? PresetStyle.lift : 0px);
                         lit: plus.has-hover && Presets.can-update;
                         enabled: Presets.can-update;
                         animate y { duration: PresetStyle.rise; }
+                    }
+                    // The deck's name along the new card's top, all the strip shows of the deck at rest.
+                    Label {
+                        x: Space.xs;
+                        y: new-card.y;
+                        width: parent.width - 2 * Space.xs;
+                        height: PresetStyle.peek;
+                        text: @tr("Presets");
+                        role: TextRole.caption;
+                        centred: true;
+                        overflow: elide;
+                        ink: new-card.lit ? Colour.ink : Colour.handle-idle;
+                        opacity: new-card.opacity;
                     }
                     // On the cell, not the face: the face rises off the pointer it lifts under.
                     plus := TouchArea {
                         y: 0;
                         height: PresetStyle.lift + PresetStyle.card-height;
                         enabled: Presets.can-update;
+                        accessible-role: button;
+                        accessible-label: @tr("New preset");
+                        accessible-action-default => { Presets.create(); }
                         clicked => { Presets.create(); }
                         changed has-hover => { Tips.hover(self.has-hover, @tr("Save this photo’s settings as a preset…"), self.absolute-position.x, self.absolute-position.y + self.height); }
                     }
@@ -85,6 +103,10 @@ export component PresetDeck inherits Rectangle {
                             TouchArea {
                                 y: 0;
                                 height: PresetStyle.lift + PresetStyle.card-height;
+                                accessible-role: button;
+                                accessible-label: card.name;
+                                accessible-enabled: Presets.can-apply;
+                                accessible-action-default => { if (Presets.can-apply) { Presets.apply(i); } }
                                 changed has-hover => {
                                     if (self.has-hover && Presets.can-apply) {
                                         Presets.hover(i);

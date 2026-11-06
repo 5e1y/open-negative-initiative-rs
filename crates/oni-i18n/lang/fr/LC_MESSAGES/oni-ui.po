@@ -258,6 +258,14 @@ msgid "Hide the Library ({})"
 msgstr "Masquer la photothèque ({})"
 
 #: crates/oni-ui/ui/canvas.slint
+msgid "{} · preview"
+msgstr "{} · aperçu"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Enlarged from its preview: the grain and sharpness are not the file’s own"
+msgstr "Agrandie depuis son aperçu : le grain et la netteté ne sont pas ceux du fichier"
+
+#: crates/oni-ui/ui/canvas.slint
 msgid "Zoom out ({})"
 msgstr "Zoom arrière ({})"
 
@@ -778,8 +786,8 @@ msgid "Export a contact sheet"
 msgstr "Exporter une planche contact"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The export panel exports the selection as one sheet, with a preview; the orange EXP. CONTACT SHEET key opens it."
-msgstr "Le panneau d'export exporte la sélection en une seule planche, avec un aperçu ; la touche orange EXP. PLANCHE CONTACT l'ouvre."
+msgid "The export panel exports the selection as one sheet, with a preview: pick Contact Sheet under Export As."
+msgstr "Le panneau d'export exporte la sélection en une seule planche, avec un aperçu : choisissez Planche contact sous Exporter en."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Slide films"
@@ -1982,6 +1990,14 @@ msgid "NEXT"
 msgstr "SUIVANT"
 
 #: crates/oni-ui/ui/preset_deck.slint
+msgid "Presets"
+msgstr "Préréglages"
+
+#: crates/oni-ui/ui/preset_deck.slint
+msgid "New preset"
+msgstr "Nouveau préréglage"
+
+#: crates/oni-ui/ui/preset_deck.slint
 msgid "Save this photo’s settings as a preset…"
 msgstr "Enregistrer les réglages de cette photo comme préréglage…"
 
@@ -2278,28 +2294,24 @@ msgid "Editor ({})"
 msgstr "Éditeur ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "FEEDBACKS"
-msgstr "AVIS"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "EXP. CONTACT SHEET"
-msgstr "EXP. PLANCHE CONTACT"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Phone Remote"
 msgstr "Télécommande sur téléphone"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Export the photos picked as one contact sheet"
-msgstr "Exporter les photos choisies sur une seule planche contact"
+msgid "UPDATING"
+msgstr "MISE À JOUR"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Star a folder of scans and open it · export stays on {}"
 msgstr "Mettre un dossier de scans en favori et l’ouvrir · l’export reste sur {}"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "UPDATING"
-msgstr "MISE À JOUR"
+msgid "Export {} photos ({})"
+msgstr "Exporter {} photos ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Export ({})"
+msgstr "Exporter ({})"
 
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Click or press → to turn · ← to go back · Esc to leave"
@@ -4350,10 +4362,6 @@ msgstr "Une erreur s’est produite lors du téléchargement de la mise à jour.
 #: crates/oni-app/src/updates.rs
 msgid "The update is improperly signed and could not be validated. Please try again later or contact the app developer."
 msgstr "La mise à jour n’est pas correctement signée et n’a pas pu être validée. Veuillez réessayer plus tard ou contacter le développeur de l’app."
-
-#: crates/oni-app/src/viewport.rs
-msgid "preview"
-msgstr "aperçu"
 
 #: crates/oni-app/src/web.rs
 msgid "the download ended before the file did"

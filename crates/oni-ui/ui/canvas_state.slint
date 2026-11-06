@@ -100,6 +100,8 @@ export global Canvas {
     in property <length> crop-badge-y;
     // `zoomBubble`: the zoom's readout and the ladder's keys, above the canvas's top right corner.
     in property <string> zoom-label;
+    // The picture shown is the preview enlarged past its own pixels, which the readout then says.
+    in property <bool> enlarged;
     // `ONI_HZ=1`: the canvas's real rate and the window's frames this second, by the zoom.
     in property <string> hz;
     in property <bool> can-zoom-out;
@@ -115,4 +117,6 @@ export global Canvas {
     callback scrolled(length, length, length, length, bool) -> bool;
     callback pinch-started();
     callback pinched(float, length, length);
+    // A right click on the picture: Rust lays the open photo's menu and answers whether it opens.
+    callback menu() -> bool;
 }

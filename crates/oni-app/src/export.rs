@@ -44,7 +44,7 @@ pub mod label {
         if count > 1 { tr!("Export {count} Photos…", count = count) } else { tr("Export…").into() }
     }
 
-    /// `AppBar.ExportButton.title` and the card's own key.
+    /// `AppBar.ExportButton.title`, which the card's own key reads; the bar's key keeps one word.
     pub fn key(count: usize) -> String {
         if count > 1 { tr!("EXPORT {count} PHOTOS", count = count) } else { tr("EXPORT").into() }
     }

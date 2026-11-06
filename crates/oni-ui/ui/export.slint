@@ -229,7 +229,7 @@ export component ExportPanel inherits Surface {
                     Label { text: @tr("Export"); role: TextRole.heading; }
                     Label { text: Exporting.subtitle; role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
                 }
-                // First, as the bar's two keys offer it: every photo its own file, or all on one sheet.
+                // First, the one place the choice is made: every photo its own file, or all on one sheet.
                 if Exporting.count > 1: Field {
                     label: @tr("Export As");
                     help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row on black, numbered in orange by their place on their roll, the logo under them from five photos.");

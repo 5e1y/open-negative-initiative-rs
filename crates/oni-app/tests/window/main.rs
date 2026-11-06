@@ -240,6 +240,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame", together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
+    ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
     ("tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree", tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree),
     ("tree_cost::the_tree_s_cost_on_a_big_folder", tree_cost::the_tree_s_cost_on_a_big_folder),

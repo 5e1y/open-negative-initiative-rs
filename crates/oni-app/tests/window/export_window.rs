@@ -172,7 +172,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     rig.until("the first render", LONG, || ctl.state.borrow().renders() >= 1);
     let first = ctl.state.borrow().open_path().unwrap().to_string();
     assert!(first.ends_with("DSC_6432.NEF"), "{first}");
-    // The four labels on one photo: the menu, the bar's key, the card's key, the context menu.
+    // The labels on one photo: the menu, the card's key, the context menu; the bar's key keeps one word.
     assert_eq!(e.get_menu_title(), "Export…");
     assert!(e.get_menu_live());
     // The wheel along the quality slider moves it, as every slider; a scroll across it is the card's.
@@ -182,7 +182,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert!(e.get_quality_fraction() < quality, "{} from {quality}", e.get_quality_fraction());
     assert!(e.invoke_quality_scroll(40.0, 0.0, 200.0, false));
     assert!((e.get_quality_fraction() - quality).abs() < 1e-5, "twin: the way back lands where it began");
-    assert_eq!(w.global::<Bar>().get_export_title(), "EXPORT");
+    assert_eq!(w.global::<Bar>().get_targets(), 1);
     assert_eq!(label::context(1), "Export…");
     assert_eq!(e.get_chip_title(), "Display P3", "the export space is the canvas's, Display P3 at rest");
     assert_eq!(e.get_chip_hint(), Space::DisplayP3.hint());
@@ -324,7 +324,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(1, true, false);
     assert_eq!(e.get_menu_title(), "Export 2 Photos…");
-    assert_eq!(w.global::<Bar>().get_export_title(), "EXPORT 2 PHOTOS");
+    assert_eq!(w.global::<Bar>().get_targets(), 2, "the bar's help counts the two");
     assert_eq!(label::context(2), "Export… (2 photos)");
     ctl.act(oni_app::Act::Export);
     assert!(e.get_shown());

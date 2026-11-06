@@ -23,17 +23,9 @@ impl Ctl {
         self.publish_export();
     }
 
-    /// The bar's contact-sheet key: the surface on the selection, laid as one sheet.
-    pub(in crate::app) fn export_sheet(self: &Rc<Self>) {
-        self.export_on(true);
-    }
-
-    /// `exportNow`: the selection in gallery order, else beside it the open photo, each its own file.
+    /// `exportNow`: the selection in gallery order, else beside it the open photo, each its own file
+    /// until the panel's Export As lays them on one sheet.
     pub fn export_now(self: &Rc<Self>) {
-        self.export_on(false);
-    }
-
-    fn export_on(self: &Rc<Self>, sheet: bool) {
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
         let targets = {
             let s = self.state.borrow();
@@ -57,7 +49,7 @@ impl Ctl {
             return;
         }
         self.flush();
-        self.export.borrow_mut().sheet = sheet;
+        self.export.borrow_mut().sheet = false;
         self.enter_export(targets);
     }
 

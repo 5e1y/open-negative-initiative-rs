@@ -4,7 +4,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Bar, Canvas, Dedust, Library, PanelState, Store as StoreGlobal};
+use oni_app::{Canvas, Dedust, Library, PanelState, Store as StoreGlobal};
 use oni_core::{Archive, EditorStore};
 use oni_settings::cg::Point;
 use oni_settings::frame::Correction;
@@ -91,12 +91,12 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     rig.until("B's patches", Duration::from_secs(60), || healed(w));
     assert_eq!(labels(w), ["Correction 1", "Correction 2"], "B's corrections number from one, as A's did");
 
-    // The De-dust key goes dark when the tab bar leaves De-dust.
+    // The De-dust key is on while the tab it opens shows, and goes dark when the tab bar leaves it.
     ctl.act(oni_app::Act::Correction);
-    assert!(w.global::<Bar>().get_dedust(), "the key lights on De-dust");
+    assert_eq!(w.global::<PanelState>().get_tab(), 4, "the key lights on De-dust");
     w.global::<PanelState>().set_tab(2);
     w.global::<PanelState>().invoke_tab_picked(2);
-    assert!(!w.global::<Bar>().get_dedust(), "twin: the tab bar leaving De-dust darkens it");
+    assert_ne!(w.global::<PanelState>().get_tab(), 4, "twin: the tab bar leaving De-dust darkens it");
     ctl.act(oni_app::Act::Correction);
 
     // A double press on the brush resets its size at once, before the release.
