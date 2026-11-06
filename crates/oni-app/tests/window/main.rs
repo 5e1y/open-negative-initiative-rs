@@ -109,7 +109,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("balance_kept::de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke", balance_kept::de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke),
     ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
-    ("depth_lip::a_section_ending_on_a_field_draws_its_lip_whole", depth_lip::a_section_ending_on_a_field_draws_its_lip_whole),
+    ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),
     ("editor_leftovers::the_editors_last_gestures_behave_as_swifts", editor_leftovers::the_editors_last_gestures_behave_as_swifts),

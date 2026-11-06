@@ -1,9 +1,24 @@
-// The text fields (`dsTextField`): one entry in a hollow floored in the canvas, a name typed over in
-// place, and the size and date boxes that share one hollow and one focus.
-import { Colour, Space, Type, FieldStyle } from "theme.slint";
+// The text fields (`dsTextField`): one entry on a flat face in the canvas's dark, a name typed over in
+// place, and the size and date boxes that share one face and one focus.
+import { Colour, Space, Stroke, Type, FieldStyle } from "theme.slint";
 import { Label, TextRole, Tone } from "base.slint";
 import { Outside } from "outside.slint";
-import { Inward } from "depth.slint";
+import { FocusRing } from "keyboard.slint";
+
+// `dsTextField`'s chrome laid flat, as every input and select: no well, no relief. Holding the keyboard,
+// its edge lights and the keyboard's ring rounds it. A picker's field wears it too.
+export component FieldFace inherits Rectangle {
+    in property <bool> lit;
+    border-radius: FieldStyle.radius;
+    background: FieldStyle.ground;
+    @children
+    if root.lit: Rectangle {
+        border-radius: FieldStyle.radius;
+        border-width: Stroke.line;
+        border-color: FieldStyle.rim;
+    }
+    if root.lit: FocusRing { radius: FieldStyle.radius; }
+}
 
 // The serial of the last entry focused, so a window's return to its field keeps its selection.
 global FieldFocus {
@@ -21,7 +36,7 @@ component Entry inherits Rectangle {
     in property <bool> centred;
     in property <TextRole> role: TextRole.label;
     in property <bool> enabled: true;
-    // The pointer on the hollow's padding around the words, which keeps the editing as they do.
+    // The pointer on the face's padding around the words, which keeps the editing as they do.
     in property <bool> rim;
     out property <bool> editing: input.has-focus;
     // The pointer on the words, entered or not, which a sibling box sharing the focus reads as its own.
@@ -108,7 +123,7 @@ component Entry inherits Rectangle {
     }
 }
 
-// `DSTextField`: an entry in its hollow, the rim lit while it holds the focus; once in, a click places
+// `DSTextField`: an entry on its face, the edge lit while it holds the focus; once in, a click places
 // the caret, a double click selects a word and a triple click the line. Disabled, only the words fade.
 export component TextField inherits HorizontalLayout {
     in-out property <string> text <=> entry.text;
@@ -117,15 +132,15 @@ export component TextField inherits HorizontalLayout {
     in property <string> placeholder;
     // The field's label, which assistive technology reads.
     in property <string> name;
-    // A unit at the hollow's end, as the extension after a file name.
+    // A unit at the face's end, as the extension after a file name.
     in property <string> suffix;
-    // Lines that wrap, `lines-height` of them inside the hollow's padding, as a report's message.
+    // Lines that wrap, `lines-height` of them inside the face's padding, as a report's message.
     in property <bool> multiline;
     in property <length> lines-height: FieldStyle.lines;
     in property <bool> centred;
     // The face of the words typed: a label's, or a title's as a roll's name typed over.
     in property <TextRole> role: TextRole.label;
-    // The rim lit as if focused, a state shown without the keyboard.
+    // The edge lit as if focused, a state shown without the keyboard.
     in property <bool> focused-look;
     in property <bool> enabled: true;
     out property <bool> editing: entry.editing;
@@ -137,16 +152,12 @@ export component TextField inherits HorizontalLayout {
     public function take-focus-selecting() { entry.enter(); }
     init => { if (root.value != "") { entry.text = root.value; } }
     changed value => { entry.text = root.value; }
-    Inward {
+    FieldFace {
         horizontal-stretch: 1;
         min-width: row.min-width;
         height: root.multiline ? root.lines-height + 2 * FieldStyle.down : FieldStyle.height;
-        ground: FieldStyle.ground;
-        radius: FieldStyle.radius;
-        hollow: true;
         lit: entry.editing || root.focused-look;
-        ringed: self.lit;
-        // The hollow's padding enters the field as its words do, and keeps it while it is edited.
+        // The face's padding enters the field as its words do, and keeps it while it is edited.
         rim := TouchArea {
             enabled: root.enabled;
             mouse-cursor: MouseCursor.text;
@@ -182,7 +193,7 @@ export component RenameField inherits FocusScope {
     in property <string> text;
     in property <string> placeholder;
     in property <TextRole> role: TextRole.label;
-    // The hollow led out by its padding, so the typed name starts where the title stood.
+    // The face led out by its padding, so the typed name starts where the title stood.
     in property <bool> outdent;
     callback edited(string);
     callback committed(string);
@@ -212,7 +223,7 @@ export component RenameField inherits FocusScope {
     }
 }
 
-// `SizeFields`: W × H, centred title digits in one hollow a keycap tall, lit while either holds the
+// `SizeFields`: W × H, centred title digits on one face a keycap tall, lit while either holds the
 // focus. Return in a box, or the focus leaving it, hands both to `typed`.
 export component SizeFields inherits HorizontalLayout {
     // The owner's numbers, pushed in at each change, and what the boxes hold.
@@ -234,15 +245,11 @@ export component SizeFields inherits HorizontalLayout {
         wide.text = root.width-value;
         high.text = root.height-value;
     }
-    Inward {
+    FieldFace {
         horizontal-stretch: 1;
         min-width: row.min-width;
         height: FieldStyle.boxes-height;
-        ground: FieldStyle.ground;
-        radius: FieldStyle.radius;
-        hollow: true;
         lit: root.editing || root.focused-look;
-        ringed: self.lit;
         row := HorizontalLayout {
             padding-left: FieldStyle.across;
             padding-right: FieldStyle.across;
@@ -265,7 +272,7 @@ export component SizeFields inherits HorizontalLayout {
     }
 }
 
-// `DateFields`: MM / DD / YYYY in one hollow hugging its boxes, committed on Return or when the focus
+// `DateFields`: MM / DD / YYYY on one face hugging its boxes, committed on Return or when the focus
 // leaves the three.
 export component DateFields inherits HorizontalLayout {
     in-out property <string> month <=> m.text;
@@ -279,15 +286,11 @@ export component DateFields inherits HorizontalLayout {
     callback committed(string, string, string);
     changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
     alignment: start;
-    Inward {
+    FieldFace {
         width: row.preferred-width;
         height: FieldStyle.boxes-height;
-        ground: FieldStyle.ground;
-        radius: FieldStyle.radius;
-        hollow: true;
         lit: root.editing || root.focused-look;
-        ringed: self.lit;
-        // The hollow around the boxes, one focus for the three: a press on it or on a sibling box
+        // The face around the boxes, one focus for the three: a press on it or on a sibling box
         // keeps the editing, so a date half typed is not committed.
         rim := TouchArea { }
         row := HorizontalLayout {

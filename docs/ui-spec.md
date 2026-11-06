@@ -487,8 +487,8 @@ hand. The website does the same with `sync-app-tokens.mjs`, which refuses name c
 | `DSPanelSkeleton` | Each control's outline remembered per build | Rust geometry cache | |
 | `DSTabBar` | Condensed tabs, marks for settings in hidden tabs, hover shows the label | `HorizontalLayout` of tabs, `accessible-role: tab` | `[a11y]` |
 | `DSToggle` | A switch: cross and check in a hollow, the held state lit | Component, `accessible-role: checkbox` | `[a11y]` |
-| `DSPicker` | Value in a hollow, chevron key, drops the system menu | 4.8 | `[menu]` |
-| `DSTextField`, `DSField` | Field in a hollow, lit edge while focused; multiline grows | ds `TextField`, `SizeFields`, `DateFields`: a `TextInput` in an `Inward` hollow (ds/fields.slint) | Text editing, IME and undo come from Slint, which differ from NSTextField's. |
+| `DSPicker` | Value in a hollow, chevron key, drops the system menu | 4.8, the field on the text fields' flat `FieldFace` | `[menu]` Departs from Swift (evaluation R1): flat, no hollow. |
+| `DSTextField`, `DSField` | Field in a hollow, lit edge while focused; multiline grows | ds `TextField`, `SizeFields`, `DateFields`: a `TextInput` on a flat `FieldFace` (ds/fields.slint) | Text editing, IME and undo come from Slint, which differ from NSTextField's. Departs from Swift (evaluation R1): flat, no hollow. |
 | `DSHelp` | "?" beside a heading; the note drawn by the help layer | 4.2 | |
 | `DSHover` | Fill for area elements; state for self-drawn ones | `TouchArea.has-hover` | |
 | `DSGesture` | Count of hands on controls | Rust counter (section 3) | |

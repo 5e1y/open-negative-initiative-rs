@@ -1,5 +1,5 @@
-// The selection controls' gauges: the tab bar, the switch, the picker's field and the medals. The
-// 2.5D lab tunes the `in-out` ones live, as it tunes `Depth`.
+// The selection controls' gauges: the tab bar, the switch and the medals. The 2.5D lab tunes the
+// `in-out` ones live, as it tunes `Depth`.
 import { DS } from "tokens.slint";
 
 // `DSTabBar`: a 40 pt hollow, tabs a line apart, one raised pill sliding under the selection.
@@ -20,7 +20,7 @@ export global TabsStyle {
     // The pill: `DS.Palette.track` (white 15 %) laid on the canvas, opaque so its shadow stays under it.
     in-out property <float> pill-tone: 0.153;
     out property <color> pill: DS.palette-canvas.mix(#ffffff, 1 - TabsStyle.pill-tone);
-    // The bar's hollow, lighter at its rim than a field's.
+    // The bar's hollow, lighter at its rim than a plot's.
     in-out property <float> track-shade: 0.14;
     // `DS.State.idleLabel`: an unselected tab's label, a dimmed tab, a medal not chosen.
     in-out property <float> idle: DS.state-idle-label;
@@ -37,12 +37,6 @@ export global ToggleStyle {
     out property <color> thumb: DS.palette-selected;
     out property <color> glyph-lit: DS.palette-canvas;
     out property <color> glyph-idle: DS.palette-text-secondary;
-}
-
-// `DSPicker`'s field face: the value in a hollow, a chevron at its end.
-export global PickerStyle {
-    out property <length> radius: DS.radius-card;
-    out property <length> padding: DS.space-md;
 }
 
 // `DSMedal`: a flat disc; `press` is the scale a pressed one shrinks to.

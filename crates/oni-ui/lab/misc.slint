@@ -172,7 +172,6 @@ export component MiscPage inherits Rectangle {
     property <int> status-done: 12;
     property <bool> popover-open;
     property <string> answer: "nothing asked yet";
-    property <bool> field-lit;
     property <float> live-fraction: 0.4;
     Timer {
         interval: 80ms;
@@ -259,18 +258,6 @@ export component MiscPage inherits Rectangle {
             Row {
                 title: "INWARD · INSET";
                 source: "depth.slint, base.slint · Swift dsRecessed, DSSlider.swift:276";
-                Cell {
-                    caption: "live: click lights the rim";
-                    Inward {
-                        width: 160px;
-                        height: 32px;
-                        ground: DS.palette-canvas;
-                        radius: DS.radius-card;
-                        hollow: true;
-                        lit: root.field-lit;
-                        TouchArea { clicked => { root.field-lit = !root.field-lit; } }
-                    }
-                }
                 Cell { caption: "track recess"; Inward { width: 120px; height: DS.control-track-height; ground: DS.palette-track; radius: DS.radius-track; } }
                 Cell { caption: "hollow"; Inward { width: 120px; height: 32px; ground: DS.palette-canvas; radius: DS.radius-card; hollow: true; } }
                 Cell { caption: "pill hollow (toggle)"; Inward { width: 80px; height: 20px; ground: DS.palette-canvas; radius: 10px; hollow: true; } }

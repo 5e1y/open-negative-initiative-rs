@@ -5667,5 +5667,12 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1187,
+    "type": "design",
+    "title": "Inputs and selects are flat: the text fields and the picker's field share one flat face",
+    "status": "done",
+    "detail": "Owner's decision: inputs and selects carry no well and no relief. FieldFace (ds/fields.slint) is dsTextField's chrome laid flat, the canvas's dark at a card's corner, its edge lit and ringed by the keyboard's ring while it holds the focus; TextField, SizeFields, DateFields and the picker's field face wear it. Inward loses its lit rim and ring, which only the fields used. PickerStyle, equal to the field's gauges, merges into FieldStyle, and FieldStyle.padding, read by nothing, goes. The lip check reads an Inset, as fields no longer have a lip; the lab's Fields page loses the well tunables no field shows, and its Inward board the lit-rim specimen."
   }
 ]

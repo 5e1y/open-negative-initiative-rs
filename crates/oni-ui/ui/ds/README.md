@@ -11,7 +11,7 @@ and every screen picks it up.
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
 | `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
-| `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `PickerStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
+| `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
 | `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
@@ -82,7 +82,7 @@ One model for every control, as macOS draws it with full keyboard access:
   slider (← → ↑ ↓ one step, ⇧ `big`), the switch, the picker (Space, Return or ↓ drops it), each medal, an
   editable title, the grid (its photo ringed) and the open photo. Space or Return presses a key or flips a switch.
 - **One ring** (`FocusRing`, `FocusStyle`): the accent around what holds the keyboard, a gap off its edge;
-  a control shows it once Tab gives it the keyboard, a field while it is typed in (`Inward { ringed }`).
+  a control shows it once Tab gives it the keyboard, a field while it is typed in (`FieldFace { lit }`).
 - **A click never gives a control the keyboard**: any press gives it back to the photos, a field's own aside
   (the window's pointer hook counts each press in `Outside`). A key whose holder vanished goes to the monitor
   (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the keyboard back.
@@ -93,16 +93,17 @@ One model for every control, as macOS draws it with full keyboard access:
 
 ## Fields
 
-Every text field is Swift's `dsTextField`: an `Inward { hollow: true }` floored in the canvas, a card's
-corner, `FieldStyle.across` either side and `down` above and below a multiline one, its rim lit while it
-holds the focus (`focused-look` forces it). Disabled, the words fade and the chrome stays.
+Inputs and selects are flat, no well and no relief: every text field is Swift's `dsTextField` laid flat on a
+`FieldFace`, the canvas's dark at a card's corner, `FieldStyle.across` either side and `down` above and below a
+multiline one, its edge lit and ringed while it holds the focus (`focused-look` forces it). Disabled, the words
+fade and the chrome stays. The picker's field wears the same face.
 
-- **`TextField`**: one entry; `suffix` sits at the hollow's end, `lines-height` is the text's height inside
+- **`TextField`**: one entry; `suffix` sits at the face's end, `lines-height` is the text's height inside
   the padding. Entered by a click, Tab or its owner, it selects its value; then a click places the caret,
   a double click selects a word, a triple click the line (the `text_fields` window check).
 - **`RenameField`**: a `TextField` that takes the focus at once; `role: title` and `outdent` for a title,
-  the hollow led out by its padding so the name typed stays where the title stood.
-- **`SizeFields`, `DateFields`**: two or three centred entries in one hollow a keycap tall, lit while any
+  the face led out by its padding so the name typed stays where the title stood.
+- **`SizeFields`, `DateFields`**: two or three centred entries on one face a keycap tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
 - **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it. A help
   mark lays out at its glyph's size and catches the hand over a small key's square, so a line keeps its height.
@@ -121,15 +122,16 @@ holds the focus (`focused-look` forces it). Disabled, the words fade and the chr
 
 ## Selection controls
 
-The tabs, the switch, the picker and the medals stand on the depths as the lab's Tabs page shows them.
+The tabs, the switch and the medals stand on the depths as the lab's Tabs page shows them; the picker's
+field lies flat, as a text field.
 
-- **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a field's, and one
+- **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a plot's, and one
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
   adds the accent dot, `swatches` draws colours for words, `dimmed` fades a tab that changes something else.
 - **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds,
   on the middle of a small key's height so the hand finds it as a key.
-- **`Picker`**, field face (`DSPicker`): the value in a hollow, a chevron at its end, the hollow lit under the
-  hand as a flat key's face; the pill and chip faces keep the hover ground.
+- **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
+  under the hand as a flat key's face; the pill and chip faces keep the hover ground.
 - **`Medal`**: a flat disc of its metal's colour; `MedalPicker` lights the medal under the hand, shrinks a
   pressed one on the spring and catches the hand over a small key's square round each.
 
