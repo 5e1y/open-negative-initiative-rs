@@ -6801,5 +6801,12 @@
     "title": "The checks follow the merged fifth wave; the dialog answer is emptied, never removed",
     "status": "done",
     "detail": "Eight checks still read the app as one corrector left it: the Pro face now lays Lighting first, so a slider check opens taller and the help card's twin reads the light above the colour; a block's Reset stays in place dimmed; Copy Settings ends on its ellipsis; Prepare's footer sets Back beside the step's key with Cancel apart; the dye block's reset index follows the panel; the medal probes sit on the tiles' ground. The dialog seam empties its answer file rather than removing it, as no crate removes a file."
+  },
+  {
+    "id": 1381,
+    "type": "interface",
+    "title": "Plates belong to keycaps alone; every flat key shows its own edge at rest and groups by spacing",
+    "status": "done",
+    "detail": "Owner's call: a plate only ever meant keycaps sharing one socket, yet flat keys stood flush on shared plates across the app, told apart only under the hand. A flat key now draws its face inside its own edge, the dividers' white at 10 % (ButtonStyle.edge), so it shows its extent at rest; ButtonGroup's plate is a socket of keycaps alone (the colour panel's AUTO WHITE BALANCE and AUTO PAPER CORRECTION), and every other group stands a group's gap apart (ButtonStyle.group-gap, Space.s): the bar's history, families, rating filter and removing keys, the crop, roll and export rows, the navigator's and the canvas header's keys, the questions, notices, banners and job cards. Unrelated or opposite keys stand twice that apart (ButtonStyle.apart): the canvas's Panel key after the zoom keys, a question's destructive answer, the presets editor's Delete; the bar's families keep its own gap at every width (ShellStyle.compact-gap removed). ButtonSize.plate, a regular key under another name, and the mini plate are removed. Window checks: button_group reads a plate's keycaps flush and a group's flat keys 8 pt apart with a lighter edge at rest (twin: a face read twice shows no edge); sheet_layout reads a question's Cancel a group's gap from its key and a destructive one twice that; toolbar, prepare and sidebars read the groups' gaps where they read plates."
   }
 ]

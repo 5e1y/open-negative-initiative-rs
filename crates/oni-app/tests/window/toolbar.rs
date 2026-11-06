@@ -94,8 +94,8 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
     drop(shell);
 }
 
-/// The keys along the bar's middle row, as spans of x from the window's left edge: a cap or a plate by
-/// its face, a flat key by its glyph, whose strokes stand at most `STROKE_GAP` pixels apart.
+/// The keys along the bar's middle row, as spans of x from the window's left edge, each by its face,
+/// whose strokes stand at most `STROKE_GAP` pixels apart.
 fn spans(w: usize, px: &[u16]) -> Vec<(usize, usize)> {
     const STROKE_GAP: usize = 4;
     let at = |x: usize, y: usize| px[y * w + x];
@@ -272,6 +272,9 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// Swift's `DS.Space.sm` between the keys of one group.
+const GROUP_GAP: f32 = 8.0;
+
 /// The one key of the bar so named, where the layout put it.
 fn bar_key(w: &oni_app::MainWindow, label: &str) -> common::Placed {
     let keys: Vec<_> = common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < w.global::<Bar>().get_height()).collect();
@@ -309,11 +312,11 @@ pub(crate) fn the_keys_that_reset_or_remove_stand_last_and_apart() {
     rig.settle();
     let right = |k: common::Placed| k.x + k.width;
 
-    // The gallery: Reset and Trash share one plate, last, a wide gap after PREPARE ROLL.
+    // The gallery: Reset and Trash one group, a group's gap apart, last, a wide gap after PREPARE ROLL.
     let (prepare, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Reset"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-apart-gallery").display());
     assert!(reset.x - right(prepare) >= 47.0, "Reset stands apart from PREPARE ROLL: {prepare:?} {reset:?}");
-    assert!((trash.x - right(reset)).abs() <= 1.0, "Trash beside Reset on their plate: {reset:?} {trash:?}");
+    assert!((trash.x - right(reset) - GROUP_GAP).abs() <= 1.0, "Trash a group's gap after Reset: {reset:?} {trash:?}");
 
     // Select All latches with its lamp; a second press leaves one photo again, its lamp dark.
     let select = bar_key(w, "Select All");
@@ -356,15 +359,15 @@ pub(crate) fn the_keys_that_reset_or_remove_stand_last_and_apart() {
     assert!(keys(oni_app::platform::reveal(oni_app::platform::Platform::THIS)).is_empty(), "twin: a line with no chord prints none");
     rig.key("\u{1b}");
 
-    // The editor: Paste to Roll on its own plate, apart from Copy and Paste, and Whole Roll's lamp.
+    // The editor: Paste to Roll a family of its own, apart from Copy and Paste's group, and Whole Roll's lamp.
     lib.invoke_tile_opened(tile("A"));
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     rig.settle();
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
     let (de_dust, reset) = (bar_key(w, "De-dust"), bar_key(w, "Reset"));
     println!("shot {}", rig.shot("toolbar-apart-editor").display());
-    assert!((paste.x - right(copy)).abs() <= 1.0, "Copy and Paste share a plate: {copy:?} {paste:?}");
-    assert!(to_roll.x - right(paste) >= 15.0, "Paste to Roll on a plate of its own: {paste:?} {to_roll:?}");
+    assert!((paste.x - right(copy) - GROUP_GAP).abs() <= 1.0, "Copy and Paste a group's gap apart: {copy:?} {paste:?}");
+    assert!(to_roll.x - right(paste) >= 2.0 * GROUP_GAP, "Paste to Roll twice that from Paste: {paste:?} {to_roll:?}");
     assert!(reset.x - right(de_dust) >= 2.0 * (to_roll.x - right(paste)), "the removing keys stand further apart: {de_dust:?} {reset:?}");
     bar_key(w, "Trash");
     bar_key(w, "Whole Roll");

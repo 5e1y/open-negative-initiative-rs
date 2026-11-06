@@ -16,18 +16,16 @@ export { TextField, RenameField }
 // Where a group of keys sits in its row; `fill` spans it, its worded keys sharing the width.
 export enum GroupAlign { start, end, center, fill }
 
-// Keys side by side as one family: `plate` sets them flush on one face, a segmented row whose key under
-// the hand or on lights alone, else a spaced row `Space.s` apart, as Swift's `HStack(spacing: DS.Space.sm)`.
+// Keys side by side as one group, a group's gap apart, each on its own face. `plate` is a socket of
+// keycaps alone, set flush on one face rounded as a key; flat keys never share one.
 export component ButtonGroup inherits HorizontalLayout {
     in property <bool> plate;
     in property <GroupAlign> align: GroupAlign.start;
-    // A plate of mini keys, rounded as they are.
-    in property <bool> mini;
-    out property <length> radius: !root.plate ? 0px : root.mini ? ButtonStyle.small-radius : ButtonStyle.radius;
+    out property <length> radius: root.plate ? ButtonStyle.radius : 0px;
     out property <length> gap: root.plate ? 0px : ButtonStyle.group-gap;
     property <bool> fills: root.align == GroupAlign.fill;
     alignment: root.align == GroupAlign.end ? end : root.align == GroupAlign.center ? center : root.fills ? stretch : start;
-    // A flat key beside a keycap stands on the plate's middle.
+    // Keys of unlike heights share their middle line.
     cross-axis-alignment: center;
     socket := Rectangle {
         horizontal-stretch: root.fills ? 1 : 0;

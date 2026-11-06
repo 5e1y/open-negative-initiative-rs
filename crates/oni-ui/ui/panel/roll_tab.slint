@@ -18,7 +18,6 @@ export component RollPane inherits Pane {
             spacing: Space.s;
             if PanelState.roll-state == 0 && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
             if PanelState.roll-state == 0: Button {
-                size: ButtonSize.plate;
                 text: @tr("Prepare the Roll…");
                 enabled: PanelState.can-prepare;
                 clicked => { PanelState.prepare-roll(); }
@@ -30,13 +29,11 @@ export component RollPane inherits Pane {
                 text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this roll was left out of its measurement, so these settings do not reach it.") : @tr("{} photos of this roll were left out of its measurement, so these settings do not reach them.", PanelState.roll-unmeasured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
-                size: ButtonSize.plate;
                 text: PanelState.roll-unmeasured == 1 ? @tr("Include It") : @tr("Include Them");
                 help: @tr("Gives the photos left out this roll's measurement and settings, their own look kept.");
                 clicked => { PanelState.join-roll(); }
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
-                size: ButtonSize.plate;
                 text: @tr("Move into a New Roll…");
                 help: @tr("Moves the photos measured with this roll into a roll folder of their own.");
                 clicked => { PanelState.make-roll(); }
@@ -82,7 +79,6 @@ export component RollPane inherits Pane {
         }
         if PanelState.flat-field-on && PanelState.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
         Button {
-            size: ButtonSize.plate;
             text: PanelState.taking-mask ? @tr("Setting…") : @tr("Use This Photo as Flat-Field");
             enabled: PanelState.can-take-mask;
             clicked => { PanelState.take-mask(); }
@@ -99,14 +95,13 @@ export component RollPane inherits Pane {
             field: 29; label: @tr("Tint"); fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
-        if root.flat-settings: ButtonGroup { plate: true;
+        if root.flat-settings: ButtonGroup {
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: PanelState.loading-mask ? @tr("Loading…") : @tr("Load…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
-            Button { size: ButtonSize.plate; text: @tr("Rename"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
-            Button { size: ButtonSize.plate; text: @tr("Folder"); clicked => { PanelState.mask-folder(); } }
+            Button { text: PanelState.loading-mask ? @tr("Loading…") : @tr("Load…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { text: @tr("Rename"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
+            Button { text: @tr("Folder"); clicked => { PanelState.mask-folder(); } }
         }
         if root.flat-settings: Button {
-            size: ButtonSize.plate;
             text: @tr("Apply to Selection");
             enabled: PanelState.flat-picked > 0;
             clicked => { PanelState.flat-apply-selection(); }

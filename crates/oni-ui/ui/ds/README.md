@@ -53,20 +53,20 @@ width as it changes, on screen and on a contact sheet's numbers.
 
 ## Keys
 
-Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`), its glyph and word on
-it. A `Keycap` stands only where the use site sets `keycap: true`: the mode switch (EDITOR, GALLERY), a
-screen's or a sheet's commit (EXPORT, ADD FOLDER…, PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE,
-GOT IT, GET STARTED, SEND) and the automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER
-CORRECTION, DETECT, REMOVE). A question's answers and a passing notice's OK stay flat. The cap
-is a raster of Swift's `KeycapStyle` that Rust draws when the window asks `Raster.keycap(KeycapLook)`;
-`oni_app::keycaps::serve` answers it on a window (the `Shell` does it for the main window and the
-console; a check building a window alone calls it); an unserved window, as slint-viewer's, shows each
-cap's flat stand-in. One cache by the look's numbers (oni-keycap's `look::Cache`, shared with oni-lab)
-draws a still key once and a pressed one once a frame.
+Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`) inside its own edge, the
+dividers' line (`ButtonStyle.edge`), its glyph and word on it, so every key shows its extent at rest and two
+keys side by side read apart before the hand reaches either. A `Keycap` stands only where the use site sets
+`keycap: true`: the mode switch (EDITOR, GALLERY), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
+PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE, GOT IT, GET STARTED, SEND) and the
+automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE). A question's
+answers and a passing notice's OK stay flat. The cap is a raster of Swift's `KeycapStyle` that Rust draws
+when the window asks `Raster.keycap(KeycapLook)`; `oni_app::keycaps::serve` answers it on a window (the
+`Shell` does it for the main window and the console; a check building a window alone calls it); an
+unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache by the look's numbers
+(oni-keycap's `look::Cache`, shared with oni-lab) draws a still key once and a pressed one once a frame.
 
-- **Sizes** (`ButtonSize`): `regular` the 32 pt flat key (40 pt as a keycap), `plate` a panel's or a
-  footer's at the same height, `mini` the 24 pt key of a section's header, a row or the canvas's header.
-  A worded key is never narrower than tall.
+- **Sizes** (`ButtonSize`): `regular` the 32 pt flat key (40 pt as a keycap), `mini` the 24 pt key of a
+  section's header, a row or the canvas's header. A worded key is never narrower than tall.
 - **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent sunk into the
   keycap's grey (`ButtonStyle.primary`), calm beside the photo, and grey while out of reach; `destructive`,
   a plain key whose glyph or word takes a light red (`Colour.destructive-ink`) while the hand or the keyboard
@@ -83,9 +83,14 @@ draws a still key once and a pressed one once a frame.
   (`State.idle`), so a key that cannot act never reads as one merely not chosen; a keycap keeps its relief
   and fades its legend alone, so a pair of keycaps stays a pair while one waits; a missing
   original, a folder away or a frame left out fades less (`State.missing`), its picture and name still read.
-- **Plates**: `ButtonGroup { plate: true }` sets its keys flush on one face rounded as a key, so a key
-  under the hand or on lights alone; flat keys beside a keycap stand on the plate's middle. Without
-  `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
+- **Groups**: related keys stand in a `ButtonGroup`, `ButtonStyle.group-gap` (`Space.s`) apart as Swift's
+  `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A key unrelated to its
+  neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`
+  (twice the group's gap) from it: an `AskSheet` sets its destructive answer so, the bar its removing keys
+  wider still (`ShellStyle.bar-apart`).
+- **Plates**: `ButtonGroup { plate: true }` is a socket of keycaps alone, the one place keys share a face:
+  its caps flush on one face rounded as a key, as the panel's AUTO WHITE BALANCE with the crop's warning
+  over it. Flat keys never stand on a plate.
 - **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the flat key that
   leaves (Cancel) at the left with what the sheet adds beside it, then apart at the right a step back and
   the commit alone, the accent keycap, a flat key while it writes nothing (Skip, a failure's OK). A

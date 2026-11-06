@@ -4,7 +4,6 @@ import { Button, ButtonGroup, Medal } from "ds/ds.slint";
 import { Library } from "library.slint";
 
 export component RatingFilter inherits ButtonGroup {
-    plate: true;
     Button {
         text: @tr("All");
         on: Library.filter-medal == 0;

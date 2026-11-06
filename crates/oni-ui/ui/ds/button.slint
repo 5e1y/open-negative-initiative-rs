@@ -10,9 +10,8 @@ import { KeyScope } from "keyboard.slint";
 // `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
 // glyph alone on no face, its tone lifting under the hand, as a help mark or a star.
 export enum ButtonKind { plain, accent, destructive, ghost }
-// `regular` the standard key, `plate` a panel's or a footer's at the same height, `mini` the small key
-// of a section's header, a row or the canvas's header.
-export enum ButtonSize { regular, plate, mini }
+// `regular` the standard key, `mini` the small key of a section's header, a row or the canvas's header.
+export enum ButtonSize { regular, mini }
 // What a check forces a control to look like; `live` follows the pointer.
 export enum Look { live, hover, pressed }
 
@@ -97,7 +96,7 @@ export component Button inherits Rectangle {
     in property <bool> latch;
     in property <Look> look: Look.live;
     // `DSPanelButton.fills`: the key takes its share of the room; else it keeps its own width, though
-    // a row of keys none of which fills still shares its room out, as a filling plate does.
+    // a row of keys none of which fills still shares its room out, as a filling group does.
     in property <bool> fills;
     // `DSPanelButton.rotated`: the glyph turned a quarter for a gesture whose twin the icon bank lacks.
     in property <bool> turned;
@@ -185,9 +184,12 @@ export component Button inherits Rectangle {
         font-weight: root.weight;
         letter-spacing: root.tracking;
     }
+    // A flat key's face inside its own edge, so it shows its extent at rest beside any other key.
     if !root.keycap && !root.ghost: Rectangle {
         border-radius: root.radius;
         background: root.face;
+        border-width: Stroke.line;
+        border-color: ButtonStyle.edge;
     }
     // A flat key and a ghost lie bare, their glyph on the whole key, unmoved.
     cap := Keycap {

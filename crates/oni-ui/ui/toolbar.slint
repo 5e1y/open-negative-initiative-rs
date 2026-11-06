@@ -95,11 +95,10 @@ component SelectAll inherits Tool {
     enabled: Bar.can-select-all;
 }
 
-// The keys that reset or remove, last on the bar and on a plate of their own, never beside one that keeps;
+// The keys that reset or remove, last on the bar and a group of their own, never beside one that keeps;
 // each says its word, as the keys that keep do, and shows its danger under the hand.
 component Removing inherits ButtonGroup {
     in property <bool> compact;
-    plate: true;
     Tool {
         compact: root.compact;
         action: Act.reset;
@@ -123,18 +122,17 @@ component Removing inherits ButtonGroup {
 
 // Undo and Redo beside the mode key, in every mode: the history is the app's, never one screen's.
 component History inherits ButtonGroup {
-    plate: true;
     Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
     Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
 }
 
-// A mode's own keys, then the keys that reset or remove, set apart by a gap wider than the keys' own.
+// A mode's own groups, then the keys that reset or remove, set apart by a gap wider than the groups'.
 component Apart inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.bar-gap : ShellStyle.bar-apart;
     cross-axis-alignment: center;
     HorizontalLayout {
-        spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
+        spacing: ShellStyle.bar-gap;
         cross-axis-alignment: center;
         @children
     }
@@ -142,9 +140,9 @@ component Apart inherits HorizontalLayout {
 }
 
 component EditorKeys inherits Apart {
-    // `centreKeys`: each family on its own plate, De-dust alone and never plated; every key that latches
+    // `centreKeys`: each family a group of its own, a bar's gap from the next; every key that latches
     // wears a lamp, lit while it is on.
-    ButtonGroup { plate: true;
+    ButtonGroup {
         Tool {
             compact: root.compact;
             action: Act.framing;
@@ -168,7 +166,7 @@ component EditorKeys inherits Apart {
         selected: Bar.face;
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
-    ButtonGroup { plate: true;
+    ButtonGroup {
         Tool { compact: root.compact; action: Act.copy; word: @tr("Copy"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
         Tool {
             compact: root.compact;
@@ -179,16 +177,14 @@ component EditorKeys inherits Apart {
             enabled: Bar.can-paste;
         }
     }
-    // A plate of its own: it rewrites every frame of the roll at once, as the menu's title counts them.
-    ButtonGroup { plate: true;
-        Tool {
-            compact: root.compact;
-            action: Act.paste-to-roll;
-            word: @tr("Paste to Roll");
-            icon: Icons.film-roll;
-            help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
-            enabled: Bar.can-paste;
-        }
+    // Apart from Copy and Paste: it rewrites every frame of the roll at once, as the menu's title counts them.
+    Tool {
+        compact: root.compact;
+        action: Act.paste-to-roll;
+        word: @tr("Paste to Roll");
+        icon: Icons.film-roll;
+        help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
+        enabled: Bar.can-paste;
     }
     Tool {
         compact: root.compact;
@@ -203,10 +199,8 @@ component EditorKeys inherits Apart {
 }
 
 component GalleryKeys inherits Apart {
-    // The editor's first plate holds the select-all key alone here, as in Swift's `centreKeys`.
-    ButtonGroup { plate: true;
-        SelectAll { compact: root.compact; }
-    }
+    // The editor's first group holds the select-all key alone here, as in Swift's `centreKeys`.
+    SelectAll { compact: root.compact; }
     RatingFilter { }
     Word {
         action: Act.prepare-roll;

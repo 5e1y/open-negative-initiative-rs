@@ -252,10 +252,9 @@ export component NavigatorSection inherits Rectangle {
             padding-right: ShellStyle.column-inset;
             padding-bottom: Space.s;
             spacing: Space.s;
-            // `KeycapPlate(.mini)`: parent and the favourites' view flush on one plate, then the pill. The
-            // view is a filter lit while on; the star stays the mark a folder is starred with.
-            ButtonGroup { plate: true;
-                mini: true;
+            // Parent and the favourites' view, then the pill. The view is a filter lit while on; the star
+            // stays the mark a folder is starred with.
+            ButtonGroup {
                 Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Icons.parent;
                     help: @tr("Parent Folder");

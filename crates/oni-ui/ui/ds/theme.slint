@@ -143,15 +143,19 @@ export global ButtonStyle {
     out property <length> small-radius: Radius.track;
     out property <length> padding: Space.m;
     out property <length> small-padding: Space.s;
-    // A spaced row's keys apart, Swift's `DS.Space.sm` between keys off a plate.
+    // A group's keys `Space.s` apart, as Swift's `HStack(spacing: DS.Space.sm)`; a key unrelated to the
+    // one beside it, or one that removes beside one that keeps, twice that.
     out property <length> group-gap: Space.s;
+    out property <length> apart: Space.m;
     out property <length> icon: DS.control-icon-size;
     out property <length> small-icon: DS.control-toggle-glyph;
     out property <length> mini-glyph: DS.control-icon-size * 0.75;
     out property <length> tracking: Stroke.hairline;
     out property <length> lamp: DS.control-lamp-size;
-    // A flat key's face, the keycap's grey laid flat; a plate of flat keys is one such face.
+    // A flat key's face, the keycap's grey laid flat, and the plate keycaps share as one socket.
     out property <color> face: Colour.raised;
+    // A flat key's own edge, the dividers' line: two keys side by side read apart before the hand comes.
+    out property <color> edge: Colour.separator;
     // The lit face of a key that is on, a flat key's or a cap's: lit as a selected row is, never tinted,
     // so the accent stays the view's one primary.
     out property <color> on: Colour.raised.mix(Colour.white, 1 - Colour.row-selected.alpha / 255);
@@ -302,7 +306,6 @@ export global ShellStyle {
     out property <length> min-height: DS.control-min-window-height;
     out property <length> bar-padding: Space.s;
     out property <length> bar-gap: Space.m;
-    out property <length> compact-gap: Space.s;
     // The bar's keys that reset or remove stand this far from those that keep.
     out property <length> bar-apart: 2 * Space.l;
     out property <length> bar-height: DS.control-app-bar-keycap-height + 2 * Space.s;
