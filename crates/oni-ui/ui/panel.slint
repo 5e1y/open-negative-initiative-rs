@@ -32,7 +32,6 @@ export component Panel inherits Surface {
                 if !Lab.shown && PanelState.tab != 3: Plot {
                     width: parent.width;
                     height: parent.height;
-                    border-radius: PlotStyle.radius;
                     plot: 5;
                     screen: false;
                     glass: true;
@@ -50,7 +49,6 @@ export component Panel inherits Surface {
                 if PanelState.tab == 3: LoupeBand {
                     width: parent.width;
                     height: parent.height;
-                    border-radius: PlotStyle.radius;
                     source: DetailLoupe.source;
                     revision: DetailLoupe.revision;
                     shown-width: DetailLoupe.shown-width;
