@@ -5296,5 +5296,12 @@
     "title": "Building the app is six steps on the starter's band, its own parts timed in the log",
     "status": "done",
     "detail": "Owner's ask: the launch's longest step (2.1 s on the M2 with the owner's library) said as much as it can. Shell::with_window is now standing (state and controller: render worker, canvas device, painter and disk state, preferences and language, library index, display kernel, flat fields with the navigator and the export card, the controller, each a 'boot: Building the app · <part> in N ms' line) then rising, six steps in the order the shell always took: wiring the interface, the screen's colours, the gallery laid out, the ONI Trash counted, updates, the paired phone. The starter runs them as its own steps, a frame of the band between two; Shell::new runs them in a row, so every check builds the same shell. Checks: the app's unit checks, the window checks on the shell (launch, told, gallery); a real launch logs each part and step."
+  },
+  {
+    "id": 1084,
+    "type": "change",
+    "title": "The window keeps the system's own title bar, its traffic lights in it",
+    "status": "done",
+    "detail": "Owner's call: no unified bar on macOS. Of the window's attributes, the transparent, hidden and full-size title bar is the one the main window carried and the splash did not, on the Intel Mac where only the splash ever showed (releases issue 13); the window now takes the system's defaults. Gone with it: the attributes hook, the lights laid back in the app's bar on every resize, the bar's room for them and its empty room dragging the window, which the system's bar does. chrome.rs keeps the Dock's icon. Checks: canvas_layout (the GALLERY key still takes its press) and the launch check; the parity row says the change."
   }
 ]
