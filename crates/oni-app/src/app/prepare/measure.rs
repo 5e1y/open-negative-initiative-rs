@@ -205,12 +205,17 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `saveRollDraft`: each frame's draft written on the serial thread, after the writes before it.
-    pub(in crate::app) fn save_draft(&self) {
-        // The open frame on disk first: a draft write reads its settings back, and must not revive older ones.
+    /// The open frame on disk before a draft is written or dropped: the write reads its settings back,
+    /// and must not revive older ones.
+    fn flush_open(&self) {
         if let Some(failure) = self.state.borrow_mut().store.flush() {
             crate::timing::line(&format!("the open frame's settings could not be saved: {failure}"));
         }
+    }
+
+    /// `saveRollDraft`: each frame's draft written on the serial thread, after the writes before it.
+    pub(in crate::app) fn save_draft(&self) {
+        self.flush_open();
         let job = {
             let r = &mut self.state.borrow_mut().prepare;
             let Some(drafts) = r.drafts() else { return };
@@ -225,6 +230,22 @@ impl Ctl {
             job
         };
         self.state.borrow().prepare.post(job);
+    }
+
+    /// A roll left unmeasured keeps nothing: every frame's draft dropped on the serial thread, after
+    /// the writes before it, so the roll opens again on its first step.
+    pub(in crate::app) fn discard_draft(&self) {
+        self.flush_open();
+        let paths = {
+            let r = &mut self.state.borrow_mut().prepare;
+            r.draft_id = None;
+            r.roll()
+        };
+        self.state.borrow().prepare.post(Box::new(move || {
+            for path in paths {
+                let _ = sidecar::set_roll_draft(None, Path::new(&path), mosaic(&path));
+            }
+        }));
     }
 
     /// As the window closes: the step's draft written and every queued write waited for, since the

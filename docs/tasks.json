@@ -5331,5 +5331,12 @@
     "title": "Every mode is left alike: its key, Escape, and every photo opened",
     "status": "done",
     "detail": "UX evaluation, problems 15 to 18: the crop's key and ⌘K only ever opened the crop, Escape left neither the crop, Compare, De-dust nor a help card, and the crop and De-dust stayed on from one photo to the next, the gallery's included. One model now. A tool's key, menu item or shortcut opens it and leaves it for the last panel: Route::toggled and one toggle_tool serve the crop and De-dust, Swift's openCrop departing (owner's call). Escape leaves the innermost thing open: a help card, then the sheets, Export and Prepare as before, then Compare over the canvas before the crop or De-dust. Every photo opens with no mode, at the one place a photo opens (open_photo), as the one still open shown again from the gallery (open_in_editor, which ⌘G and the EDITOR key now go through too), and leaving for the gallery. Leaving De-dust no longer disarms the measuring window: only leaving the crop does, as the route always said."
+  },
+  {
+    "id": 1112,
+    "type": "fix",
+    "title": "Prepare the Roll left unmeasured keeps nothing, and a bare frame shown again asks for its roll again",
+    "status": "done",
+    "detail": "UX evaluation, problem 21: Cancel kept the roll's draft, so the roll opened again on its Window step with every earlier step marked done; after Escape, the frame left open behind the gallery opened in the editor, its measuring window drawn, while another frame went to Prepare the Roll: the requirement ran only where a photo is loaded, never where the one open is shown again. Leaving the roll unmeasured (Cancel, Escape, GALLERY, a sidebar frame) now drops every frame's draft on the drafts' thread; a quit still writes it, so a roll resumes after a relaunch (owner's call, departing from Swift's draft kept on leaving). The roll's frames are read on that thread too, after the drafts queued, so a roll opened again at once never reads a draft being dropped. The photo still open behind the gallery, shown again, is held to its roll's preparation as a loaded one is."
   }
 ]

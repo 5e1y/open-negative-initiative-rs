@@ -165,7 +165,7 @@ impl Ctl {
     }
 
     /// `takeOff`: `load(_:)` unless the photo is the one open, then `mode = .editor`; the one open
-    /// shown again opens as a loaded one does, with no mode.
+    /// shown again opens as a loaded one does, with no mode and held to its roll's preparation.
     pub(super) fn open_in_editor(self: &Rc<Self>, path: &str) {
         // A photo may be on its way to another folder: it opens once the move has landed.
         if self.busy_said(tr("Edit")) {
@@ -177,6 +177,7 @@ impl Ctl {
         self.state.borrow_mut().designate(path);
         if reopened {
             self.leave_modes();
+            self.require_roll(path);
         } else {
             self.open_photo(path);
         }

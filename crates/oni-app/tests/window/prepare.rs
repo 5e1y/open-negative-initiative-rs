@@ -1,5 +1,6 @@
-//! Prepare the Roll on the headless window, every step by the hand: left and resumed from its draft,
-//! measured as one gallery step and shown together, asked for by a bare frame opened, and reached from the Roll tab.
+//! Prepare the Roll on the headless window, every step by the hand: left keeping nothing, resumed from
+//! a quit's draft, measured as one gallery step and shown together, asked for by a bare frame opened,
+//! again once left, and reached from the Roll tab.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{App, Bar, Canvas, Library, Menus, Preparing};
@@ -169,12 +170,20 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!((p.get_window_x() - (wx - 10.0)).abs() < 1.0 && (p.get_window_y() - (wy - 6.0)).abs() < 1.0, "the body moves the window");
     println!("shot {}", rig.shot("prepare-window").display());
 
-    // Escape leaves for the gallery, every frame's place kept in its sidecar.
+    // Each step reached rides in every frame's sidecar, a quit's to resume from.
+    let roll = ["A.tif", "B.tif", "C.tif"];
+    rig.until("the drafts written", Duration::from_secs(10), || roll.iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "window")));
+    let drafts: Vec<_> = roll.iter().map(|n| loaded(&canonical(n)).roll_draft.unwrap()).collect();
+    assert!(drafts[2].flagged && drafts[2].ticked && drafts[2].base.as_ref().is_some_and(|b| b.path.ends_with("A.tif")));
+
+    // Escape leaves for the gallery and keeps nothing: every frame's draft dropped.
     rig.key("\u{1b}");
     assert!(!p.get_shown() && app.get_gallery());
-    rig.until("the drafts written", Duration::from_secs(10), || loaded(&canonical("C.tif")).roll_draft.is_some_and(|d| d.step == "window"));
-    let c = loaded(&canonical("C.tif")).roll_draft.unwrap();
-    assert!(c.flagged && c.ticked && c.base.as_ref().is_some_and(|b| b.path.ends_with("A.tif")));
+    rig.until("the drafts dropped", Duration::from_secs(10), || roll.iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()));
+    // The roll as a quit leaves it, its drafts on disk.
+    for (n, d) in roll.iter().zip(drafts) {
+        sidecar::set_roll_draft(Some(d), &canonical(n), false).unwrap();
+    }
 
     // B picked brings the same roll back where it stood.
     lib.invoke_tile_clicked(tile("B"), false, false);
@@ -218,6 +227,12 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(names(), 3);
     rig.key("\u{1b}");
     assert!(app.get_gallery(), "Cancel leaves for the gallery, not the editor");
+    // C, still the photo open, opened again goes to Prepare the Roll again, on its first step.
+    lib.invoke_tile_opened(tile("C"));
+    rig.until("the roll asked for again", Duration::from_secs(30), || p.get_shown());
+    assert_eq!(p.get_step(), 0, "the roll left keeps no step");
+    rig.key("\u{1b}");
+    assert!(app.get_gallery());
     // Twin: a frame on a roll opens in the editor and stays there.
     lib.invoke_tile_opened(tile("D"));
     rig.until("D open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("D.tif")));
