@@ -1,5 +1,5 @@
 // `DSStatusBar`, the one bar under the card in every mode: what loads, else the mode's own line.
-import { StatusBar, MedalPicker, Space } from "ds/ds.slint";
+import { StatusBar, MedalPicker, Space, StatusStyle } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { Preparing } from "prepare.slint";
 
@@ -7,8 +7,8 @@ export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
     padding-top: Space.s;
     padding-bottom: Space.s;
-    // The medal's own inset in its cell makes up the rest, so both ends sit `s` from the card.
-    padding-right: Space.s - Space.xxs;
+    // The medal's own inset in its cell makes up the rest, so both ends sit the status inset from the card.
+    padding-right: StatusStyle.inset - Space.xxs;
     // The editor's line, the open frame and its size.
     in property <string> editor-line;
     property <bool> loading: Library.loading != "" && !Preparing.shown;

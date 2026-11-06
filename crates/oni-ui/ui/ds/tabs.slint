@@ -28,16 +28,18 @@ export component Tabs inherits Rectangle {
     public function take-keyboard() { keys.focus(); }
     // A selection outside the tabs shows no pill; it waits where it stood, so it never slides out.
     out property <bool> pill-shown: root.selected >= 0 && root.selected < root.tabs.length;
-    // The held tab's place, written by that tab once laid: tabs share the bar evenly unless a label needs more.
+    // The held tab's place, written by that tab once laid, and the room either side of its label.
     out property <length> pill-x;
     out property <length> pill-width;
+    out property <length> pill-room;
     property <int> held;
     // A change of tab slides the pill; a change of layout moves it at once, so a resize never trails it.
     property <bool> sliding;
-    function hold(x: length, width: length, slide: bool) {
+    function hold(x: length, width: length, words: length, slide: bool) {
         root.sliding = slide;
         root.pill-x = x;
         root.pill-width = width;
+        root.pill-room = (width - words) / 2;
     }
     // The tab `by` from the one picked, the first or the last while none is, passing over one out of reach.
     function pick-beside(by: int) {
@@ -69,15 +71,16 @@ export component Tabs inherits Rectangle {
             spacing: TabsStyle.gap;
             for name[i] in root.tabs: Rectangle {
                 property <bool> holds: i == root.held;
-                min-width: (root.swatches.length > 0 ? TabsStyle.swatch : label.preferred-width) + 2 * TabsStyle.margin
+                property <length> words: (root.swatches.length > 0 ? TabsStyle.swatch : label.preferred-width)
                     + (root.ordered ? TabsStyle.step + TabsStyle.step-gap : 0px);
+                min-width: self.words + 2 * TabsStyle.margin;
                 // A walk's steps share the room left past their words, so the gaps between them are even.
-                preferred-width: root.ordered ? self.min-width : TabsStyle.reach;
+                preferred-width: root.ordered ? self.min-width : self.words + 2 * TabsStyle.room;
                 horizontal-stretch: 1;
-                init => { if (self.holds) { root.hold(self.x, self.width, false); } }
-                changed holds => { if (self.holds) { root.hold(self.x, self.width, true); } }
-                changed x => { if (self.holds) { root.hold(self.x, self.width, false); } }
-                changed width => { if (self.holds) { root.hold(self.x, self.width, false); } }
+                init => { if (self.holds) { root.hold(self.x, self.width, self.words, false); } }
+                changed holds => { if (self.holds) { root.hold(self.x, self.width, self.words, true); } }
+                changed x => { if (self.holds) { root.hold(self.x, self.width, self.words, false); } }
+                changed width => { if (self.holds) { root.hold(self.x, self.width, self.words, false); } }
                 accessible-role: tab;
                 accessible-label: name;
                 accessible-description: root.helps[i];

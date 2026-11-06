@@ -4,7 +4,7 @@ import { Look } from "button.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 import { Knob } from "knob.slint";
 import { SliderFill, Rail } from "rail.slint";
-import { ValueHeader } from "readout.slint";
+import { ValueHeader, Readouts } from "readout.slint";
 import { Tips } from "base.slint";
 import { Dial } from "dial.slint";
 
@@ -109,7 +109,7 @@ export component Slider inherits VerticalLayout {
     // The steps from the readout to a number typed over it, held on a stepped slider's range; Return
     // leaves the keyboard to the slider, a press elsewhere has given it on already.
     function type-in(text: string) {
-        let by = Typing.steps(root.readout, text, root.stepped ? root.step-reads : 0);
+        let by = Readouts.steps(root.readout, text, root.stepped ? root.step-reads : 0);
         let reach = root.stepped ? clamp(root.value + by, root.lowest, root.highest) - root.value : by;
         if (reach != 0) {
             root.step(root.field, reach);

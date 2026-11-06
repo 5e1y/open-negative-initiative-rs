@@ -62,6 +62,7 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
         let (x, y) = common::in_popup(w, Role::Tab, name).middle();
         click(rig, x, y);
         rig.settle();
+        (x, y)
     };
     tab(&rig, "sRGB");
     assert_eq!(e.get_chip_title(), "sRGB", "sRGB from Display P3");

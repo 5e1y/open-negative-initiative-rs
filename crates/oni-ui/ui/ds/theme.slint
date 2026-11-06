@@ -293,6 +293,8 @@ export global SplitStyle {
 
 export global StatusStyle {
     out property <length> height: DS.control-status-row-height;
+    // The card's content inset, the grid's and the deck's: the line starts and the medals end where they do.
+    out property <length> inset: Space.l;
 }
 
 // The window's frame: its floor, the bar and the three columns.

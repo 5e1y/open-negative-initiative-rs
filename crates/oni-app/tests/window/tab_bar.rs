@@ -1,6 +1,6 @@
 //! The tab bar on the headless window: a click only asks, the owner writes the choice, so a bar bound
 //! one way to its owner's value, as Settings' language, still follows it after a click; a choice
-//! beyond its tabs shows no pill; a label longer than an even share takes room from its neighbours.
+//! beyond its tabs shows no pill; every label keeps the same room either side, a long one included.
 
 use oni_app::FieldProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -51,20 +51,29 @@ pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
     rig.settle();
     assert!(probe.get_pill_shown() && probe.get_pill_x() < at, "the pill comes back under the first tab");
 
-    // Short labels share the bar evenly: every tab is as wide as the others.
-    let even = probe.get_pill_width();
-    probe.set_choice(1);
+    // A tab is its label and an equal share of the rest: One and Three keep the same room either side.
+    let (one, one_room) = (probe.get_pill_width(), probe.get_pill_room());
+    probe.set_choice(2);
     rig.settle();
-    assert!((probe.get_pill_width() - even).abs() < 1.0, "even labels get even tabs");
+    let (three, three_room) = (probe.get_pill_width(), probe.get_pill_room());
+    assert!((three_room - one_room).abs() < 1.0, "every label keeps the same room ({one_room} against {three_room})");
+    assert!(one_room >= 12.0, "a bar with room gives each label at least 12 pt: {one_room}");
+    // Twin: an even share of the bar leaves the longer label less room, which the measure sees.
+    let even = (probe.get_bar_width() - 2.0 * 4.0 - 2.0 * 1.0) / 3.0;
+    let (even_one, even_three) = ((even - (one - 2.0 * one_room)) / 2.0, (even - (three - 2.0 * three_room)) / 2.0);
+    assert!((even_one - even_three).abs() > 1.0, "an even share's rooms differ ({even_one} against {even_three})");
 
-    // Export's spaces: Adobe RGB needs more than an even share and takes it from the shorter ones.
+    // Export's spaces, tight: Adobe RGB's tab outgrows an even share, sRGB's gives room, and both labels
+    // keep the same room, past the floor of 8 pt.
     let share = (probe.get_space_width() - 2.0 * 4.0 - 4.0 * 1.0) / 5.0;
     probe.set_space(2);
     rig.settle();
-    let long = probe.get_space_pill_width();
+    let (long, long_room) = (probe.get_space_pill_width(), probe.get_space_room());
     assert!(long > share + 1.0, "Adobe RGB's tab is wider than an even share ({long} against {share})");
+    assert!(long_room > 9.0, "the long label keeps more than the floor: {long_room}");
     // Twin: sRGB gives room, so its tab is narrower than an even share.
     probe.set_space(0);
     rig.settle();
     assert!(probe.get_space_pill_width() < share - 1.0, "sRGB's tab gives room to the long label");
+    assert!((probe.get_space_room() - long_room).abs() < 1.0, "sRGB keeps Adobe RGB's room ({} against {long_room})", probe.get_space_room());
 }

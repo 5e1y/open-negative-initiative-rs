@@ -1,6 +1,6 @@
-//! The states read off the drawn window: out of reach far under an idle tab, a keycap keeping its relief
-//! there, a destructive glyph red only while reached, a lamp that reads at rest and lit only while on, a
-//! switch's slot lit as a lamp while on, the hand's ring round a tile on the ground, whatever the photo.
+//! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
+//! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit
+//! only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the photo.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -26,6 +26,8 @@ const SLOT: usize = 14;
 /// The knob's 20 pt and its travel, `DS.Control.toggleCellWidth`.
 const KNOB: usize = 20;
 const TRAVEL: usize = 24;
+/// AA's 4.5:1 for small text, with the margin a quiet label keeps.
+const TEXT: f64 = 5.0;
 
 /// An sRGB channel of 0 to 255, linearised.
 fn linear(c: f64) -> f64 {
@@ -87,6 +89,12 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     assert!(contrast(idle, off) >= 1.5, "a key out of reach reads apart from an idle tab: {:.2}:1", contrast(idle, off));
     // Twin: at a missing photo's fade, the key's word stands as bright as the idle label.
     assert!(contrast(idle, was) < 1.5, "the measure sees two inks alike: {:.2}:1", contrast(idle, was));
+    // The idle label on the hollow beside it, left of its words: AA's 4.5:1 with a margin.
+    let hollow = luminance(at(16 + 100 + 8, 16 + tabs_h / 2));
+    eprintln!("idle label on its hollow {:.2}:1", contrast(idle, hollow));
+    assert!(contrast(idle, hollow) >= TEXT, "an idle tab's label reads on its hollow: {:.2}:1", contrast(idle, hollow));
+    // Twin: the out-of-reach word, far fainter, falls under it.
+    assert!(contrast(off, hollow) < TEXT, "the measure sees a faint word: {:.2}:1", contrast(off, hollow));
 
     let (rest, reached, away, worn) = (red(16, 120), red(64, 120), red(112, 120), red(160, 120));
     eprintln!("red at rest {rest:.0}, reached {reached:.0}, out of reach {away:.0}, worn at rest {worn:.0}");
@@ -146,4 +154,34 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     assert!(contrast(hand, ground) >= NON_TEXT, "the hand's ring reads on the ground: {:.2}:1", contrast(hand, ground));
     // Twin: at rest nothing rings the tile.
     assert!(contrast(still, ground) < NON_TEXT, "the measure sees the bare ground: {:.2}:1", contrast(still, ground));
+}
+
+/// A readout's unit stands in a column of its own: one number bare, in percent and in stops ends its
+/// digits at one edge, each unit past it, the widest within the column.
+pub(crate) fn readouts_end_their_digits_at_one_edge() {
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let probe = StateProbe::new().unwrap();
+    probe.set_word("Value".into());
+    let readouts = ["1.50", "1.50%", "1.50 EV"];
+    probe.set_readouts(std::rc::Rc::new(slint::VecModel::from(readouts.map(slint::SharedString::from).to_vec())).into());
+    oni_app::keycaps::serve(&probe);
+    oni_app::slider_track::serve(&probe);
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(PhysicalSize::new(400, 500));
+    probe.show().unwrap();
+    rig.settle();
+    rig.shot("readouts");
+    let placed = readouts.map(|text| common::the(&probe, i_slint_backend_testing::AccessibleRole::Text, text));
+    // Where each readout's digits end: its left edge and the bare number's width.
+    let digits = placed.map(|p| p.x + placed[0].width);
+    let rights = placed.map(|p| p.x + p.width);
+    eprintln!("digits end at {digits:?}, readouts at {rights:?}");
+    // Within the pixel each edge rounds to.
+    assert!(digits.iter().all(|d| (d - digits[0]).abs() <= 1.0), "the digits end at one edge: {digits:?}");
+    assert!(rights[2] - digits[0] <= 19.0, "the column holds the widest unit: {:.1}", rights[2] - digits[0]);
+    // Twin: right-aligned whole, the same readouts end their digits a unit's width apart.
+    let whole = placed.map(|p| rights[0] - p.width + placed[0].width);
+    assert!((whole[2] - whole[0]).abs() > 3.0, "the measure sees digits apart: {whole:?}");
 }

@@ -1575,10 +1575,12 @@ msgstr "Solo actúa sobre esta foto: las teclas de balance y el histograma solo 
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Apply window"
+
+msgid "Apply Window"
 msgstr "Aplicar ventana"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Set window"
+msgid "Set Window"
 msgstr "Ajustar ventana"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
@@ -1999,7 +2001,7 @@ msgstr "Escáner"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "DSLR Scan"
-msgstr "Escaneo con cámara"
+msgstr "Cámara"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "RGB Passes"

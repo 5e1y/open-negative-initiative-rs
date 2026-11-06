@@ -1575,10 +1575,12 @@ msgstr "N’agit que sur cette photo : les touches de balance et l’histogramme
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Apply window"
+
+msgid "Apply Window"
 msgstr "Appliquer la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Set window"
+msgid "Set Window"
 msgstr "Régler la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
