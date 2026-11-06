@@ -6437,5 +6437,12 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1326,
+    "type": "fix",
+    "title": "A click on a folder's row gives the rows the keyboard unringed; the keys ring the pick",
+    "status": "done",
+    "detail": "UI and UX evaluation (Colour, Micro-interactions): a click on a navigator row drew the accent ring on it at rest, a second vivid blue beside the main key. As a pressed slider does, a click now gives the rows the keyboard with no ring; Tab or a key acting on them (an arrow, Space, Return) rings the picked row, and losing the keyboard forgets the click. Checked through the window's real event path, its pointer hook first: a click on a photo already hands the grid the arrows and Return, and ⌘ and ⇧ clicks gather photos in the grid (window check gallery) and in the filmstrip; those findings came from the evaluation's tool, which skips the hook and the modifiers. Window check gallery_keys: a click rings nothing, twin an arrow rings the pick; through the hook a click on a photo gives → and Return to the grid, twin unhooked the rows keep the arrows; ⌘ then ⇧ in the filmstrip gather A to D, twin a plain click leaves one photo."
   }
 ]
