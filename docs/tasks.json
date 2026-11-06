@@ -6444,5 +6444,12 @@
     "title": "UI Clarity: each control shows its own extent at rest",
     "status": "done",
     "detail": "Owner's catch: flat keys sharing one plate could be told apart only under the hand. A shared plate was a socket of keycaps; the bench now asks that every control show its own extent at rest, whatever groups it."
+  },
+  {
+    "id": 1308,
+    "type": "tooling",
+    "title": "The file dialogs answer from ONI_ANSWERS, so an evaluation lives the import and the export",
+    "status": "done",
+    "detail": "An evaluation drives the app through Slint's MCP server, which reaches no system panel: Add Folder and every export stopped at the dialog. With ONI_ANSWERS set, each dialog takes the path laid in its folder's answer file once, a dialog with none answering as cancelled; unset, the panels show as before. Checks: an answer is taken once (twin: the second dialog finds none); a save into a folder keeps the suggested name (twin: a file path stands as given)."
   }
 ]

@@ -14,6 +14,7 @@ pub fn double_click() -> Duration {
 }
 
 mod about;
+mod answers;
 pub use about::described;
 
 static VERIFIED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -38,23 +39,35 @@ fn kept(asked: (bool, bool), down: Option<(bool, bool)>) -> (bool, bool) {
 /// `NSOpenPanel` for one folder, or the system's own dialog; `None` when the hand cancels or no
 /// dialog exists on this system.
 pub fn pick_folder(message: &str) -> Option<PathBuf> {
-    platform::pick_folder(message)
+    match answers::folder() {
+        Some(folder) => answers::taken(&folder),
+        None => platform::pick_folder(message),
+    }
 }
 
 /// `NSOpenPanel` for several files with one of `extensions` (bare, without the dot; empty takes any
 /// file); empty when the hand cancels.
 pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
-    platform::pick_files(message, extensions)
+    match answers::folder() {
+        Some(folder) => answers::taken(&folder).into_iter().collect(),
+        None => platform::pick_files(message, extensions),
+    }
 }
 
 /// `NSOpenPanel` for one file with one of `extensions`; `None` when the hand cancels.
 pub fn pick_file(message: &str, extensions: &[&str]) -> Option<PathBuf> {
-    platform::pick_file(message, extensions)
+    match answers::folder() {
+        Some(folder) => answers::taken(&folder),
+        None => platform::pick_file(message, extensions),
+    }
 }
 
 /// `NSSavePanel` opened on `suggested_name`, limited to `extensions`; `None` when the hand cancels.
 pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
-    platform::save_file(message, suggested_name, extensions)
+    match answers::folder() {
+        Some(folder) => answers::taken(&folder).map(|answer| answers::saved(answer, suggested_name)),
+        None => platform::save_file(message, suggested_name, extensions),
+    }
 }
 
 /// Opens the Finder or the Explorer with `path` selected, as Show in Finder does.
