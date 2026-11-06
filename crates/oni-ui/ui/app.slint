@@ -74,6 +74,7 @@ export struct MenuTitles {
     filter: string,
     roll: string,
     ungroup: string,
+    project: string,
     screen-gamut: string,
 }
 
@@ -104,6 +105,7 @@ export struct MenuLive {
     medal: bool,
     cycle-filter: bool,
     new-roll: bool,
+    new-project: bool,
     ungroup: bool,
     measure-roll: bool,
     reset-to-default: bool,
@@ -125,7 +127,7 @@ export global Menus {
         smaller: @tr("Zoom Out"), larger: @tr("Zoom In"), sound: @tr("Mute Key Clicks"), compare: @tr("Compare Before/After"),
         library: @tr("Hide the Library"), panel: @tr("Hide the Panel"), correcting: @tr("Remove Dust & Scratches"),
         mirror: @tr("Mirror Horizontally"), filter: @tr("Filter: All"), roll: @tr("Move into a New Roll…"),
-        ungroup: @tr("Ungroup"), screen-gamut: @tr("Show What This Screen Cannot Show"),
+        ungroup: @tr("Ungroup"), project: @tr("New Project from This Photo"), screen-gamut: @tr("Show What This Screen Cannot Show"),
     };
     in property <MenuLive> live: { open: true, cycle-filter: true };
     // `menus.presets`: each one's name and what it carries, under the targets' title.
@@ -175,6 +177,7 @@ export component MainWindow inherits AppWindow {
         Menu {
             title: @tr("File");
             MenuItem { title: @tr("Open Folder…"); shortcut: @keys(Control + "o"); enabled: Menus.live.open; activated => { App.menu(Act.open); } }
+            MenuItem { title: Menus.titles.project; enabled: Menus.live.new-project; activated => { App.menu(Act.new-project); } }
             if Pairing.available: MenuItem { title: @tr("Pair Phone…"); activated => { App.menu(Act.pair-phone); } }
             MenuItem { title: @tr("Settings…"); shortcut: @keys(Control + ","); activated => { App.menu(Act.settings); } }
             MenuSeparator { }

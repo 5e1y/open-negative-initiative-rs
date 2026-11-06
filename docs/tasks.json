@@ -5667,5 +5667,33 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1203,
+    "type": "interface",
+    "title": "A right click outside the selection selects its tile, the one its menu acts on",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: a right click on a tile outside the selection opened its menu on that photo alone while another tile stayed marked, so the menu's target showed nowhere. The click now selects its tile alone, anchored and under the keyboard's ring, before the menu opens, as Photos does; inside the selection it keeps the selection whole. The menu's photos are always the ones marked, in the archive, a project and the ONI Trash."
+  },
+  {
+    "id": 1204,
+    "type": "interface",
+    "title": "The cell menu copies a photo's settings",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the right-click menus offered Paste Settings but no Copy Settings. Copy Settings now heads the cell menu, live on one photo whose original is there: the open frame lends what it shows, any other photo its sidecar (`EditorStore::copy_settings_of`), onto the board the bar's Paste and the system's pasteboard share; an original away lends nothing and says why. Beyond Swift, whose cell menu had no Copy."
+  },
+  {
+    "id": 1205,
+    "type": "interface",
+    "title": "New Project names its photos and stands in the File menu",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the line 'New Project from' read as cut, its one-photo words were never in the catalogue, and a project could be made only by a right click. The line now says New Project from This Photo, or from 3 Photos, in the cell menu and in a new File menu item that makes a project from the selection (or the open photo), dark in the ONI Trash. French and Spanish filled in."
+  },
+  {
+    "id": 1206,
+    "type": "interface",
+    "title": "One empty state says how a project is made",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: with no project, the column and the grid both said to right-click photos, the column's narrow copy ending on a lone word. The column now says No Projects alone; the grid beside it says to select photos in the Archive, then choose New Project in the File menu or their right-click menu."
   }
 ]

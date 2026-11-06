@@ -10,6 +10,20 @@ impl EditorStore {
         }
     }
 
+    /// Copy Settings on any photo: the open frame's in memory, another's read off its sidecar.
+    pub fn copy_settings_of(&mut self, path: &str) {
+        if self.path() == Some(path) {
+            return self.copy_settings();
+        }
+        let original = Path::new(path);
+        let read = sidecar::original_present(original).and_then(|()| sidecar::read(original, self.mosaic(path), true));
+        match read.map(|loaded| codec::encode_settings(&loaded.settings)) {
+            Ok(Ok(text)) => self.board.settings = Some(text),
+            Ok(Err(e)) => self.failure = Some(e.to_string()),
+            Err(e) => self.failure = Some(refusal::said(&e)),
+        }
+    }
+
     pub(super) fn paste_source(&self) -> Option<PipelineSettings> {
         let text = self.board.settings.as_ref()?;
         codec::decode(text.as_bytes()).ok().map(|d| d.settings)

@@ -100,6 +100,7 @@ impl Ctl {
                 self.restore(&picked);
             }
             Act::NewRoll if app.get_gallery() => self.new_roll(),
+            Act::NewProject => self.new_project_from_targets(),
             Act::SelectAll => self.select_roll(),
             Act::ResetToDefault if app.get_gallery() => self.ask_reset_to_default(),
             Act::Ungroup => self.ungroup(),

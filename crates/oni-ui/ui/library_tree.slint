@@ -136,10 +136,8 @@ export component Tree inherits Surface {
             }
         }
     }
-    if Library.surface == 1 && Library.projects-empty != "": EmptyState {
-        title: Library.projects-empty;
-        detail: @tr("Right-click photos in the library and choose New Project from them.");
-    }
+    // The fact alone: the grid beside says how a project is made, wider than this column.
+    if Library.surface == 1 && Library.projects-empty != "": EmptyState { title: Library.projects-empty; }
     // The menu at a point in window coordinates.
     function open-menu(x: length, y: length) {
         root.menu-x = x - root.absolute-position.x;
