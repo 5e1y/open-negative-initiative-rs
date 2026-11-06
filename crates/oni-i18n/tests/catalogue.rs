@@ -281,3 +281,75 @@ fn no_word_of_the_interface_is_left_outside_tr() {
     // Twin: a label written bare is caught.
     assert_eq!(bare_words(r#"Button { text: "Open"; help: @tr("Opens"); }"#), vec!["Open".to_string()]);
 }
+
+/// Each `@tr` text a key shows: a `text:` of a `Button` or of a component named `…Key`, past comments and quotes.
+fn key_words(source: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    // Whether each brace still open is a key's.
+    let mut keys: Vec<bool> = Vec::new();
+    let mut at = 0;
+    while let Some(c) = source[at..].chars().next() {
+        let rest = &source[at..];
+        let named = |name: &str| rest.starts_with(name) && !source[..at].ends_with(|b: char| b.is_alphanumeric() || b == '-');
+        if rest.starts_with("//") {
+            at += rest.find('\n').unwrap_or(rest.len());
+        } else if c == '"' {
+            at = literal(source, at).map_or(source.len(), |(_, end)| end);
+        } else if c == '{' {
+            let name = source[..at].trim_end().rsplit(|c: char| !(c.is_alphanumeric() || c == '_' || c == '-')).next().unwrap_or_default();
+            keys.push(name == "Button" || name.ends_with("Key"));
+            at += 1;
+        } else if c == '}' {
+            keys.pop();
+            at += 1;
+        } else if named("text:") && keys.last() == Some(&true) {
+            let end = at + rest.find(';').unwrap_or(rest.len());
+            out.extend(texts(&source[at..end], "@tr(", true).into_iter().map(|(t, _)| t));
+            at = end;
+        } else {
+            at += c.len_utf8();
+        }
+    }
+    out
+}
+
+/// Title Case, as macOS writes a key: every word capitalised but a short article, conjunction or
+/// preposition inside it; a word led by no letter, a figure or a sign, stands as written.
+fn title_case(text: &str) -> bool {
+    const MINOR: [&str; 24] =
+        ["a", "an", "the", "and", "but", "or", "nor", "for", "as", "at", "by", "in", "of", "off", "on", "out", "per", "to", "up", "via", "from", "into", "onto", "with"];
+    text.split_whitespace().enumerate().all(|(i, word)| !word.starts_with(char::is_lowercase) || (i > 0 && MINOR.contains(&word)))
+}
+
+#[test]
+fn every_key_is_in_title_case() {
+    let root = root();
+    let mut slint = Vec::new();
+    files(&root.join("crates/oni-ui/ui"), "slint", &mut slint);
+    let keys: Vec<(String, String)> = slint
+        .iter()
+        .filter(|f| !f.ends_with("ds/probes.slint"))
+        .flat_map(|f| key_words(&std::fs::read_to_string(f).unwrap()).into_iter().map(move |w| (f.file_name().unwrap().to_string_lossy().to_string(), w)))
+        .collect();
+    assert!(keys.len() > 60, "the sources give {} key words: the reading lost its keys", keys.len());
+    let wrong: Vec<String> = keys.iter().filter(|(_, w)| !title_case(w)).map(|(f, w)| format!("{f}: {w:?}")).collect();
+    assert!(wrong.is_empty(), "keys out of Title Case:\n{}", wrong.join("\n"));
+    assert!(title_case("Move into a New Roll…") && title_case("AUTO WHITE BALANCE") && title_case("TIFF 16-bit"));
+    // Twin: a key in sentence case is caught, and only a key's words are read.
+    assert!(!title_case("Set window"));
+    let source = r#"Button { text: @tr("Set window"); help: @tr("a tip"); Label { text: @tr("a label"); } } x := StepKey { text: c ? @tr("Go") : @tr("Stop"); }"#;
+    assert_eq!(key_words(source), ["Set window", "Go", "Stop"]);
+}
+
+#[test]
+fn an_ellipsis_is_one_character() {
+    let three = |text: &str| text.contains("...");
+    let mut wrong: Vec<String> = sources().into_iter().filter(|((one, many), _)| three(one) || many.as_deref().is_some_and(three)).map(|((one, _), _)| one).collect();
+    for language in LANGUAGES {
+        let po = std::fs::read_to_string(catalogue_path(language)).unwrap();
+        wrong.extend(entries(&po).into_values().flatten().filter(|t| three(t)).map(|t| format!("{language}: {t}")));
+    }
+    assert!(wrong.is_empty(), "three periods where the ellipsis belongs: {wrong:?}");
+    // Twin: three periods are seen, the one character is not.
+    assert!(three("Export...") && !three("Export…"));
+}

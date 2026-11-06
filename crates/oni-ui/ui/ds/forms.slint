@@ -209,9 +209,9 @@ export component StatusBar inherits Rectangle {
     // Below zero the work cannot be counted: the progress sweeps.
     in property <float> fraction: -1;
     height: StatusStyle.height;
+    // The line starts at the card's content inset; the row's far end is its owner's, after the medals.
     HorizontalLayout {
-        padding-left: root.busy ? Space.s : 0px;
-        padding-right: root.busy ? Space.s : 0px;
+        padding-left: StatusStyle.inset;
         spacing: Space.s;
         if root.busy: Label { text: root.text; role: TextRole.value; tone: Tone.secondary; vertical-alignment: center; overflow: elide; }
         if root.busy && root.count != "": VerticalLayout {
@@ -227,10 +227,9 @@ export component StatusBar inherits Rectangle {
         if !root.busy: Rectangle {
             horizontal-stretch: 0;
             min-width: 0;
-            preferred-width: line.preferred-width + 2 * Space.s;
+            preferred-width: line.preferred-width;
             line := Label {
-                x: Space.s;
-                width: parent.width - 2 * Space.s;
+                width: parent.width;
                 height: parent.height;
                 role: TextRole.value;
                 tone: Tone.secondary;

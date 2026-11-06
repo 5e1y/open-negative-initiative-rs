@@ -51,22 +51,25 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
     // The chip's title opens the popover, which stays open while its tabs are picked.
     click(&rig, 600.0, 108.0);
     rig.settle();
-    let tab = |rig: &common::Rig, x: f32| {
-        click(rig, x, 200.0);
+    // Each tab where the popover lays it, found by its name.
+    let tab = |rig: &common::Rig, name: &str| {
+        let (x, y) = common::in_popup(w, i_slint_backend_testing::AccessibleRole::Tab, name).middle();
+        click(rig, x, y);
         rig.settle();
+        (x, y)
     };
-    tab(&rig, 460.0);
+    let srgb = tab(&rig, "sRGB");
     assert_eq!(e.get_chip_title(), "sRGB", "sRGB from Display P3");
-    tab(&rig, 530.0);
+    tab(&rig, "P3");
     assert_eq!(e.get_chip_title(), "Display P3");
     // Last: a longer title widens the chip into its room, which the popover under it follows.
-    tab(&rig, 739.0);
+    tab(&rig, "Custom");
     assert_eq!(e.get_space_tab(), 4, "Custom from Display P3");
     // Twin: a click beside the popover closes it and picks nothing.
     click(&rig, 600.0, 108.0);
     rig.settle();
     click(&rig, 600.0, 600.0);
     rig.settle();
-    click(&rig, 460.0, 200.0);
+    click(&rig, srgb.0, srgb.1);
     assert_eq!(e.get_space_tab(), 4, "the popover closed, the tabs under it gone");
 }

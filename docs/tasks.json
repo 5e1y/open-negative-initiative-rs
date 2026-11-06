@@ -6437,5 +6437,33 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1358,
+    "type": "fix",
+    "title": "A mode's or a sheet's title stands a step over the block titles under it",
+    "status": "done",
+    "detail": "Crop, De-dust, Settings and every sheet's title read lighter than the semibold block titles beneath them. The title role is now bold at its 17 pt, the block title semibold at 15 pt, the label regular at 13 pt: title, block and label part by type alone. A role's size and weight live in one place, shared by a label and a field typed over it, so a roll's name keeps its weight while renamed."
+  },
+  {
+    "id": 1359,
+    "type": "fix",
+    "title": "Every key in Title Case, every ellipsis one character, both kept by the catalogue",
+    "status": "done",
+    "detail": "Set window and Apply window were the flat keys left in sentence case: they read Set Window and Apply Window, as macOS writes a key and as every other key of the app already did. The catalogue check now reads each key's words in the interface and fails on one out of Title Case, and fails on three periods in any text or translation; every ellipsis was already the one character, Inter's own spaced glyph."
+  },
+  {
+    "id": 1360,
+    "type": "fix",
+    "title": "Tab labels keep equal room and read with a margin over AA",
+    "status": "done",
+    "detail": "Every tab asked for the whole bar, so a long label took its bare 8 pt minimum while short ones floated: RGB Passes and Custom crowded their edges and the Prepare stepper's gaps ran uneven. A tab is now its label and an equal share of the rest, 12 pt either side where the bar holds it, never under 8 pt. An unselected label rises from 0.55 to 0.62 of the ink, 5.6:1 on its hollow. The Spanish DSLR Scan reads Cámara, which overflowed Prepare's bar."
+  },
+  {
+    "id": 1361,
+    "type": "fix",
+    "title": "Readouts end their digits at one edge; the status line starts at the card's inset",
+    "status": "done",
+    "detail": "A readout's unit (EV, %, °, ×, px) now stands in a column of its own, as wide as EV, so the tabular digits of every row end at one edge; Rust names the unit, what follows the last digit. The status line sat 8 pt in while the grid, the title and the presets' deck sit 24 pt, and hugged the window in full canvas: it now starts at the card's content inset in every layout, and the medals end there."
   }
 ]

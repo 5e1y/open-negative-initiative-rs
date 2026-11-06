@@ -7,7 +7,7 @@ import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, Car
 import { Outward, Inward } from "depth.slint";
 
 // `note` is a block's wrapped line in the secondary ink, a label's size, its lines opened; `section` a
-// block's title, a step larger and heavier than the words under it.
+// block's title, a step larger and heavier than the words under it; `title` a mode's or a sheet's, a step over that.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
 // `lcd` reads on the scanner's glass.
 export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution, lcd }
@@ -76,6 +76,22 @@ export global Tones {
     }
 }
 
+// A role's size and weight, which a label and a field typed over it share.
+export global Roles {
+    public pure function size(role: TextRole) -> length {
+        if (role == TextRole.value || role == TextRole.caption || role == TextRole.button) { return Type.caption; }
+        if (role == TextRole.title) { return Type.title; }
+        if (role == TextRole.section) { return Type.section; }
+        if (role == TextRole.heading) { return Type.heading; }
+        Type.label
+    }
+    public pure function weight(role: TextRole) -> int {
+        if (role == TextRole.title) { return Type.bold; }
+        if (role == TextRole.button || role == TextRole.section) { return Type.strong; }
+        Type.regular
+    }
+}
+
 // Every word on screen: its role sets the face and size, its tone the ink, unless it has an ink of its own.
 export component Label inherits Text {
     in property <TextRole> role: TextRole.label;
@@ -83,12 +99,8 @@ export component Label inherits Text {
     in property <color> ink: Tones.ink(root.tone);
     in property <bool> centred;
     font-family: Type.family;
-    font-size: root.role == TextRole.value || root.role == TextRole.caption || root.role == TextRole.button ? Type.caption
-        : root.role == TextRole.title ? Type.title
-        : root.role == TextRole.section ? Type.section
-        : root.role == TextRole.heading ? Type.heading
-        : Type.label;
-    font-weight: root.role == TextRole.button || root.role == TextRole.section ? Type.strong : Type.regular;
+    font-size: Roles.size(root.role);
+    font-weight: Roles.weight(root.role);
     line-height-factor: root.role == TextRole.note ? Type.leading : 1;
     letter-spacing: root.role == TextRole.button ? ButtonStyle.tracking : 0px;
     color: root.ink;

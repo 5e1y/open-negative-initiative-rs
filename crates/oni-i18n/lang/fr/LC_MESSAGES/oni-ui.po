@@ -1546,11 +1546,11 @@ msgid "The part of the photo the balance keys and the histogram read, drawn on t
 msgstr "La partie de la photo que lisent les touches de balance et l’histogramme, tracée sur la photo tant que sa touche est allumée ; tant qu’on n’y touche pas, elle suit le recadrage. Réinitialiser la retire, Copier et Coller la portent d’une photo à l’autre."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Apply window"
+msgid "Apply Window"
 msgstr "Appliquer la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Set window"
+msgid "Set Window"
 msgstr "Régler la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint

@@ -10,10 +10,10 @@ export global TabsStyle {
     out property <length> height: DS.control-tab-bar-height;
     out property <length> inset: DS.space-xs;
     out property <length> gap: DS.stroke-line;
-    // Room kept on each side of a label: a long one takes it from its neighbours rather than touching them.
+    // The room either side of every label: `room` where the bar holds it, never under `margin`; a tab is its
+    // label and an equal share of the rest, so the gaps between labels match however long each is.
     out property <length> margin: DS.space-sm;
-    // Every tab asks for the whole bar, as SwiftUI's `maxWidth: .infinity`, so the bar shares out evenly while all fit.
-    out property <length> reach: 100000px;
+    out property <length> room: DS.space-sm + DS.space-xs;
     out property <length> mark: DS.space-xs;
     out property <length> mark-inset: DS.space-xxs;
     // An ordered bar's step disc, an icon's size, lighter than both the hollow and the pill it sits on.
@@ -27,8 +27,8 @@ export global TabsStyle {
     out property <color> pill: DS.palette-canvas.mix(#ffffff, 1 - TabsStyle.pill-tone);
     // The bar's hollow, lighter at its rim than a plot's.
     in-out property <float> track-shade: 0.14;
-    // `DS.State.idleLabel`: an unselected tab's label.
-    in-out property <float> idle: DS.state-idle-label;
+    // An unselected tab's label: 5.6:1 on the hollow, AA's 4.5:1 with a margin.
+    in-out property <float> idle: 0.62;
 }
 
 // The switch, a slide lever: the slider's knob travels one of `DSToggle`'s cells along a slot whose

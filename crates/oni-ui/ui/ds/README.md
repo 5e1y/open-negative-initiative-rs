@@ -44,7 +44,8 @@ the states they read off the drawn window (out of reach, a destructive key, a la
 
 `Label` sets every word in Inter on one scale (`Type`): `micro` 9.5 pt for a seal or a mini key's legend,
 `caption` 11 for a caption, a value or a key's legend, `label` 13 for the words read, `section` 15
-semibold for a block's title, `title` 17, `heading` 24. A value never outsizes its block's title; a
+semibold for a block's title, `title` 17 bold for a mode's or a sheet's, `heading` 24; `Roles` gives a role's
+size and weight to a label and to a field typed over it alike. A value never outsizes its block's title; a
 note is a label's size in the secondary ink, its lines opened (`Type.leading`); the tertiary ink stands
 at AA's 4.5:1 on the panel's ground. `fonts/Inter.ttf` maps
 its digits and its + − × to their tabular forms (the cmap edited once, offline), so a value keeps its
@@ -137,7 +138,8 @@ fade and the chrome stays. The picker's field wears the same face.
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field
   tall, shows the field's face and a text cursor under the hand, and a click types a number over it
-  (`Typing`, answered by Rust), reached by the steps an arrow takes.
+  (`Readouts.steps`, answered by Rust), reached by the steps an arrow takes. Its unit stands in a column
+  `SliderStyle.unit` wide (`Readouts.unit`, what follows the last digit), so the digits of every row end at one edge.
 - **Dial** (`Slider { dial }`, `Dial`): a value that is truly a turn, the straighten's angle, as a camera's command
   dial seen edge on: a black-anodised ring in an `Inward` slot, its scale in the value's unit (`lowest` to `highest`)
   foreshortened and shaded toward the ends, a fixed index at its middle. The scale moves with the hand, so a drag
@@ -153,7 +155,8 @@ field lies flat, as a text field.
 
 - **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a plot's, and one
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); an unchosen label rests at `TabsStyle.idle`,
-  hover lights it alone, a tab out of reach fades to `State.disabled`. `marked`
+  5.6:1 on the hollow, hover lights it alone, a tab out of reach fades to `State.disabled`. A tab is its label
+  and an equal share of the rest, `TabsStyle.room` either side where the bar holds it, never under `margin`. `marked`
   adds the accent dot, `swatches` draws colours for words; `ordered` leads each of a walk's steps with its
   number in a disc, the accent check there once `marked` says it is done.
 - **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` in a slot of its own (`ToggleStyle.slot`),

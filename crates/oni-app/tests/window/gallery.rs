@@ -49,6 +49,13 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.settle();
     assert_eq!(hand.shown(), ["A", "B", "C", "D"]);
     assert_eq!(hand.status(), "4 photos");
+    // The status line starts at the card's content inset, where the grid's first column does.
+    let first = oni_app::app::tiles(w).iter().map(|t| t.x).fold(f32::MAX, f32::min);
+    let line = common::placed(w, i_slint_backend_testing::AccessibleRole::Text, "4 photos").into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).expect("the status line");
+    let on_column = |inset: f32| (inset - first).abs() < 1.0;
+    assert!(on_column(line.x - lib.get_grid_x()), "the status line starts at {} in the card, the grid at {first}", line.x - lib.get_grid_x());
+    // Twin: a line 8 pt in, as the bar's own padding laid it, misses the column.
+    assert!(!on_column(8.0));
     let row = |p: &str| LibraryIndex::open(&LibraryIndex::default_path(&caches)).unwrap().all().into_iter().find(|e| e.path == p).unwrap();
 
     // `ListPicking`: a plain click selects, ⌘ adds, ⇧ runs from the anchor ⌘ moved.

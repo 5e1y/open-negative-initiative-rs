@@ -1,7 +1,7 @@
 // The text fields (`dsTextField`): one entry on a flat face in the canvas's dark, a name typed over in
 // place, and the size and date boxes that share one face and one focus.
 import { Colour, Space, Stroke, Type, FieldStyle } from "theme.slint";
-import { Label, TextRole, Tone } from "base.slint";
+import { Label, TextRole, Tone, Roles } from "base.slint";
 import { Outside } from "outside.slint";
 import { FocusRing } from "keyboard.slint";
 
@@ -96,7 +96,8 @@ component Entry inherits Rectangle {
             vertical-alignment: root.multiline ? top : center;
             horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
             font-family: Type.family;
-            font-size: root.role == TextRole.title ? Type.title : Type.label;
+            font-size: Roles.size(root.role);
+            font-weight: Roles.weight(root.role);
             color: root.resting ? transparent : root.ink;
             selection-background-color: FieldStyle.selection;
             enabled: root.enabled;

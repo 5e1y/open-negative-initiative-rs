@@ -24,10 +24,12 @@ export component FieldProbe inherits AppWindow {
     out property <bool> pill-shown: bar.pill-shown;
     out property <length> pill-x: bar.pill-x;
     out property <length> pill-width: bar.pill-width;
+    out property <length> pill-room: bar.pill-room;
     // Export's spaces, one label longer than an even share of the bar: what each tab is given.
     in-out property <int> space;
     out property <length> space-width: spaces.width;
     out property <length> space-pill-width: spaces.pill-width;
+    out property <length> space-room: spaces.pill-room;
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;

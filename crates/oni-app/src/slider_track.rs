@@ -57,13 +57,15 @@ pub fn typed_steps(readout: &str, typed: &str, per: f32) -> i32 {
     ((wanted - shown) / unit).round() as i32
 }
 
-/// Answers `Typing.steps` on `window`, whose sliders otherwise take no typed number.
+/// Answers `Readouts` on `window`, whose sliders otherwise take no typed number and set no unit apart.
 pub fn serve<C>(window: &C)
 where
     C: slint::ComponentHandle,
-    for<'a> crate::Typing<'a>: slint::Global<'a, C>,
+    for<'a> crate::Readouts<'a>: slint::Global<'a, C>,
 {
-    window.global::<crate::Typing>().on_steps(|readout, typed, per| typed_steps(&readout, &typed, per));
+    let readouts = window.global::<crate::Readouts>();
+    readouts.on_steps(|readout, typed, per| typed_steps(&readout, &typed, per));
+    readouts.on_unit(|readout| crate::fields::unit_of(&readout).into());
 }
 
 pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {

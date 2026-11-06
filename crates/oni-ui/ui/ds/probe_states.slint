@@ -1,9 +1,10 @@
 // The states a check reads off the drawn window, each at a fixed place: a key out of reach and an idle tab,
-// a destructive glyph, a latching key, a tile under the hand; the check gives the one word they show.
-import { Colour, State, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons } from "ds.slint";
+// a destructive glyph, a latching key, a tile under the hand, readouts in three units; the check gives the words.
+import { Colour, State, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Slider } from "ds.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
+    in property <[string]> readouts;
     out property <length> tabs-height: tabs.height;
     out property <length> off-width: off.width;
     out property <length> was-width: was.width;
@@ -12,7 +13,7 @@ export component StateProbe inherits AppWindow {
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;
-    preferred-height: 340px;
+    preferred-height: 500px;
     tabs := Tabs {
         x: 16px;
         y: 16px;
@@ -37,5 +38,13 @@ export component StateProbe inherits AppWindow {
         background: Colour.canvas;
         TileView { x: 24px; y: 30px; width: 90px; picture-height: 60px; }
         TileView { x: 200px; y: 30px; width: 90px; picture-height: 60px; hovered: true; }
+    }
+    // The check's readouts, one under the other.
+    VerticalLayout {
+        x: 16px;
+        y: 350px;
+        width: 200px;
+        height: self.preferred-height;
+        for readout in root.readouts: Slider { label: root.word; readout: readout; fraction: 0.5; }
     }
 }

@@ -46,6 +46,8 @@ export global SliderStyle {
     // The number typed over a readout, wide enough for the longest, "Magenta −0.00 EV"; the value's
     // target is that field's box, a field tall, past the 24 pt a target asks.
     out property <length> entry: 140px;
+    // A readout's unit column, as wide as its widest unit, " EV" at a value's size.
+    out property <length> unit: 18px;
     out property <length> label-gap: DS.space-xs;
     // `DS.Control.grabSize`: a handle's catch on a track several handles share.
     out property <length> grab: DS.control-grab-size;
