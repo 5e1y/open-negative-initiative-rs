@@ -5646,5 +5646,12 @@
     "title": "The medals' keys and Space shown in their controls' tooltips",
     "status": "done",
     "detail": "Evaluation s-1d4fb9c3: the keys 1 to 3 and 0 that lay the medals and Space for the editor were shown nowhere but the menu bar, which the evaluation tool cannot see. Each medal of the status bar names itself and its key, Bronze (1), Silver (2), Gold (3), the lit one the key that takes it off, No Medal (0), on hover and while it holds the keyboard; the mode key says Editor (Space or ⌘G) in the gallery, Gallery (Space or ⌘G) in the editor. French and Spanish filled in."
+  },
+  {
+    "id": 1156,
+    "type": "fix",
+    "title": "A slider's arrow step follows the one readout formatter",
+    "status": "done",
+    "detail": "Merging #1131 (arrow steps on the readout's last digit) with #1149 (one formatter, its readout kinds merged): the step's unit now reads the kinds left, a percent one unit of a percent, every other two-place kind a hundredth, a ceiling a thousandth, pixels a tenth."
   }
 ]

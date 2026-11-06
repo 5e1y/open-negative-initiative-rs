@@ -10,8 +10,8 @@ fn unit(readout: Readout) -> f32 {
         Readout::OfRange(top) => top / 100.0,
         Readout::Ceiling => 0.001,
         Readout::Pixels => 0.1,
-        Readout::Stops | Readout::Signed | Readout::Plain | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
-        Readout::SignedPercentSpaced | Readout::PercentSpaced | Readout::Percent => 0.01,
+        Readout::Stops | Readout::Signed | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
+        Readout::SignedPercent | Readout::Percent => 0.01,
     }
 }
 
