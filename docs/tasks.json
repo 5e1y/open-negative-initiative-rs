@@ -5534,5 +5534,12 @@
     "title": "The catalogues after the first evaluation's four corrections",
     "status": "done",
     "detail": "scripts/i18n run on the merge of #1088-#1128: the texts the merged sources no longer show are dropped from the French and Spanish catalogues; every text left is translated."
+  },
+  {
+    "id": 1153,
+    "type": "test",
+    "title": "The bar's check reads its keys along their middle row",
+    "status": "done",
+    "detail": "Since most keys are flat (#1088), their top edge no longer differs from the bar, so the check that every mode lays the bar alike saw one key. It now reads the row through the keys' middle: a cap or a plate by its face, a flat key by its glyph, strokes up to 4 px apart bridged."
   }
 ]

@@ -90,21 +90,28 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
     drop(shell);
 }
 
-/// The keys along the bar's row through their caps, as spans of x from the window's left edge.
+/// The keys along the bar's middle row, as spans of x from the window's left edge: a cap or a plate by
+/// its face, a flat key by its glyph, whose strokes stand at most `STROKE_GAP` pixels apart.
 fn spans(w: usize, px: &[u16]) -> Vec<(usize, usize)> {
+    const STROKE_GAP: usize = 4;
     let at = |x: usize, y: usize| px[y * w + x];
     let ground = at(30, 44);
-    let top = (44..120).find(|&y| at(30, y) != ground).expect("the mode key") + 2;
-    let ground = at(2, top);
-    let mut out = Vec::new();
+    let top = (44..120).find(|&y| at(30, y) != ground).expect("the mode key");
+    let foot = (top..top + 80).find(|&y| at(30, y) == ground).unwrap_or(top + 20);
+    let row = (top + foot) / 2;
+    let ground = at(2, row);
+    let mut out: Vec<(usize, usize)> = Vec::new();
     let mut x = 0;
     while x < w {
         let start = x;
-        while x < w && at(x, top) != ground {
+        while x < w && at(x, row) != ground {
             x += 1;
         }
         if x > start {
-            out.push((start, x));
+            match out.last_mut() {
+                Some(last) if start - last.1 <= STROKE_GAP => last.1 = x,
+                _ => out.push((start, x)),
+            }
         }
         x += 1;
     }
