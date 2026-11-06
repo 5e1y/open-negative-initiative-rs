@@ -6031,5 +6031,12 @@
     "title": "The preset deck's check aims at the balance field where the sheet now lays it",
     "status": "done",
     "detail": "After #1221 the window check preset_deck clicked 20 px above the save sheet's White balance field, in the gap under its label, so its menu never opened and the balance stayed Not carried. The field moved on purpose: the switches above it are slide levers a knob tall (#1188) and the block titles a step larger (#1199). The check now aims at the field's middle and at Automatic, the menu's third line, where they stand; the stale aim, which failed on 0 against 2, is its twin."
+  },
+  {
+    "id": 1227,
+    "type": "test",
+    "title": "The panel bindings' checks find each control by its accessible name where the layout puts it",
+    "status": "done",
+    "detail": "After #1221 the two panel_bindings window checks pressed fixed points the corrected interface no longer holds: in the Roll tab re-laid on purpose (the block titles a step larger, #1199; the roll's state a line of words, #1172), Flat-Field's chevron stood 32 px above the press, so Source Encoding's RESET was never reached; in the export column re-laid by the same merge, the Width box stood 29 px below its press, which typed nowhere. No binding was lost: aimed at the controls, every assertion holds. Each press now finds its control by accessible role and label through Slint's ElementHandle (i-slint-backend-testing, a dev-dependency) and lands on its middle; a block's RESET is the one on its title's row, and a control in a popup moves by the corner i-slint-core says the window shows it at, so the mask menu is asserted under its picker and the chip's popover is reached, its Custom tab's press asserted taken. Twins: the stale aims fail on ('96', false) against ('48', true) and on Some(Linear) against None; a size box no longer following its owner, a flat-field switch bound to a constant and a Load a Profile… key that leaves the popover open each fail their check."
   }
 ]

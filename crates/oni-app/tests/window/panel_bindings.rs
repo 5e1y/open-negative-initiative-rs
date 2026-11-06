@@ -2,6 +2,7 @@
 //! hand moved it, Crop and Source Encoding reset, a menu drops under its picker, a typed size box
 //! shows what Full resolution writes, and the chip's popover closes before a key opens a window.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::export_card::{self, Ask};
 use oni_app::app::{Options, Shell};
 use oni_app::{Exporting, Framing, Library, PanelState};
@@ -23,6 +24,12 @@ fn click(rig: &common::Rig, x: f32, y: f32) {
     rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
     rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
     rig.pump();
+}
+
+/// A press on the middle of the element shown with this role and name, where the layout put it.
+fn press(rig: &common::Rig, window: &impl ComponentHandle, role: Role, name: &str) {
+    let (x, y) = common::the(window, role, name).middle();
+    click(rig, x, y);
 }
 
 /// A shell on one TIFF naming no profile, its frame open and rendered.
@@ -66,8 +73,14 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (panel, framing) = (w.global::<PanelState>(), w.global::<Framing>());
-    // Each press measured from the panel's left edge and its tab bar's foot, which the window publishes.
-    let at = |x: f32, y: f32| click(&rig, w.get_panel_x() + x, w.get_tabs_foot() + y);
+    // A block's RESET, the one shown on its title's row.
+    let reset = |title: &str| {
+        let titles = common::placed(w, Role::Text, title);
+        let keys: Vec<_> = common::placed(w, Role::Button, "RESET").into_iter().filter(|k| titles.iter().any(|t| t.level_with(k))).collect();
+        assert_eq!(keys.len(), 1, "one RESET on the row of {title}, found {keys:?}");
+        let (x, y) = keys[0].middle();
+        click(&rig, x, y);
+    };
     let settings = || ctl.state.borrow().store().settings().clone();
     let tab = |i: i32| {
         panel.set_tab(i);
@@ -86,8 +99,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     framing.invoke_ratio_picked(1);
     rig.settle();
     assert!(framing.get_orientable(), "twin: 3:2 shows the Vertical switch");
-    // `DSToggle`: the switch at the block's left, before its word.
-    let vertical = || at(30.0, 244.0);
+    let vertical = || press(&rig, w, Role::Checkbox, "Vertical");
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
@@ -104,7 +116,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
-    at(261.0, 68.0);
+    reset("Crop");
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.ratio, g.portrait, g.measure_window), (None, false, window), "the window outlives the reset");
@@ -117,15 +129,15 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     panel.invoke_encoding_picked(1);
     rig.settle();
     // Flat-Field's chevron: the block unfolds above Source Encoding, its switch then in reach.
-    at(311.0, 348.0);
+    press(&rig, w, Role::Button, "Show Flat-Field");
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
-    at(261.0, 478.0);
+    reset("Source Encoding");
     rig.settle();
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 
     // The flat-field's switch follows an undo too; its mask menu drops under the picker.
-    let flat = || at(30.0, 380.0);
+    let flat = || press(&rig, w, Role::Checkbox, "Flat-field");
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
@@ -135,19 +147,24 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom, "the switch followed the undo");
-    at(160.0, 436.0);
+    let picker = common::the(w, Role::Button, &panel.get_mask_title());
+    click(&rig, picker.middle().0, picker.middle().1);
     rig.settle();
     rig.shot("bindings-mask-menu");
-    at(100.0, 492.0);
+    let line = common::in_popup(w, Role::Button, "Rig");
+    let under = line.y >= picker.y + picker.height && line.x < picker.x + picker.width && picker.x < line.x + line.width;
+    assert!(under, "the menu drops under its picker {picker:?}, its line Rig at {line:?}");
+    click(&rig, line.middle().0, line.middle().1);
     rig.settle();
-    assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's second line, under the picker");
+    assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's line, chosen");
     let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window() {
     let Some((rig, shell, root)) = opened("size-boxes") else { return };
     let ctl = shell.ctl.clone();
-    let e = shell.window.global::<Exporting>();
+    let w = &shell.window;
+    let e = w.global::<Exporting>();
     let asked = Rc::new(Cell::new(0));
     let count = asked.clone();
     export_card::answer_with(&ctl, Rc::new(move |_: &Ask| {
@@ -160,7 +177,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     ctl.act(oni_app::Act::Export);
     rig.settle();
     // The field's click selects its value, so the digits typed replace it.
-    let width_box = || click(&rig, 952.0, 532.0);
+    let width_box = || press(&rig, w, Role::TextInput, "Width");
     width_box();
     rig.key(&named(Key::Delete));
     rig.key(&named(Key::Delete));
@@ -170,7 +187,8 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("48", true));
     rig.shot("bindings-export-typed");
     // Full resolution, the key beside the box once it is resized.
-    click(&rig, 1112.0, 532.0);
+    let full = || press(&rig, w, Role::Button, "Full Resolution");
+    full();
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false));
     width_box();
@@ -185,14 +203,14 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.key(&named(Key::Return));
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false), "8000 is refused");
-    let height_box = || click(&rig, 1034.0, 532.0);
+    let height_box = || press(&rig, w, Role::TextInput, "Height");
     height_box();
     rig.key("32");
     rig.key(&named(Key::Return));
     rig.settle();
     assert_eq!((e.get_height_text().as_str(), e.get_resized()), ("32", true), "the height typed after a refused width resizes");
     // Twin: a width the photo holds still decides, the height following its ratio.
-    click(&rig, 1112.0, 532.0);
+    full();
     rig.settle();
     width_box();
     rig.key("48");
@@ -202,22 +220,27 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
 
     // Load a Profile… in the chip's popover closes it before the file window opens.
     // CANCEL, then the space chip over the canvas, then its popover's Custom tab.
-    click(&rig, 943.0, 755.0);
+    press(&rig, w, Role::Button, "Cancel");
     rig.settle();
-    click(&rig, 600.0, 116.0);
+    press(&rig, w, Role::Button, &format!("{} · {}", e.get_chip_title(), e.get_chip_hint()));
     rig.settle();
-    click(&rig, 739.0, 200.0);
+    let popped = |role: Role, name: &str| {
+        let (x, y) = common::in_popup(w, role, name).middle();
+        click(&rig, x, y);
+    };
+    popped(Role::Tab, "Custom");
     rig.settle();
+    assert_eq!(e.get_space_tab(), 4, "the popover's Custom tab took the press");
     if !e.get_on_profile() {
         eprintln!("no profile installed: the popover's Load a Profile… is not exercised");
         let _ = std::fs::remove_dir_all(&root);
         return;
     }
-    let title = e.get_chip_title();
-    click(&rig, 504.0, 371.0);
+    let (title, srgb) = (e.get_chip_title(), common::in_popup(w, Role::Tab, "sRGB").middle());
+    popped(Role::Button, "Load a Profile…");
     rig.settle();
     assert_eq!(asked.get(), 1, "the key asked for files");
-    click(&rig, 460.0, 200.0);
+    click(&rig, srgb.0, srgb.1);
     rig.settle();
     assert_eq!(e.get_chip_title(), title, "the popover closed, its sRGB tab gone from under the pointer");
     let _ = std::fs::remove_dir_all(&root);
