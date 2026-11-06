@@ -5667,5 +5667,26 @@
     "title": "The UI bench's Art direction asks for a mastered, balanced mix",
     "status": "done",
     "detail": "Owner's direction: the mix of flat digital surfaces and analogue pieces must be mastered and balanced. Art direction now says so: each analogue piece earns its place, with the same care and weight on every screen, never clustered while another screen reads as generic software."
+  },
+  {
+    "id": 1195,
+    "type": "interface",
+    "title": "Film canisters turned in metal, their labels in soft inks",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the canisters were flat pictograms with full-chroma labels beside finely rendered medals, and the Fujifilm green sat loud beside the thumbnails. Every artwork's shell is now turned metal: the spool and caps in the silver medal's foil ramp, lit across the barrel and rolled at their rims, the spool knurled, the barrel shaded round with a gleam on the lamp's side, the top cap's shade on the label and a contact shadow under the foot; the three inner-shadow filters per artwork are gone. Each label keeps its brand's hue, its chroma compressed to OKLab 0.10 and its white to paper. Check: no_canister_ink_is_more_chromatic_than_the_soft_hues_beside_the_photo (twin: the old Fujifilm green is caught)."
+  },
+  {
+    "id": 1196,
+    "type": "interface",
+    "title": "Each medal carries its rank struck in the middle",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: Bronze, Silver and Gold were told by colour alone, their names only in tooltips. Every medal, on a tile, in the rating filter and in the status bar, now carries its rank, 1, 2 or 3, struck in the ruled ring's ink: the same figure as the key that lays it."
+  },
+  {
+    "id": 1197,
+    "type": "interface",
+    "title": "The status bar's medals at an icon's size, a medal not given an empty place",
+    "status": "done",
+    "detail": "Evaluation s-db78d310: the status bar's medals were 12 pt and told given from not given by opacity alone, the dimmed ones at 2.67:1. The picker's medals are now 16 pt, the icon's size, inside the bar's 18 pt row; a medal not given is its empty place, its edge and rank in the secondary ink (5.5:1 on the panel), and the hand over it shows the medal it would lay."
   }
 ]

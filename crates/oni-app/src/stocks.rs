@@ -139,4 +139,35 @@ mod tests {
         assert!(row_icon("no-such-stock", 44).is_none());
         ROW_ICONS.with(|c| assert!(c.borrow().contains_key(&("kodak-portra", 44)), "kept for the next row"));
     }
+
+    /// OKLab chroma of a `#RRGGBB` ink.
+    fn chroma(ink: &str) -> f64 {
+        let lin = |i: usize| {
+            let c = f64::from(u8::from_str_radix(&ink[i..i + 2], 16).unwrap()) / 255.0;
+            if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
+        };
+        let (r, g, b) = (lin(1), lin(3), lin(5));
+        let l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b).cbrt();
+        let m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b).cbrt();
+        let s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b).cbrt();
+        (1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s).hypot(0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
+    }
+
+    #[test]
+    fn no_canister_ink_is_more_chromatic_than_the_soft_hues_beside_the_photo() {
+        // Each brand keeps its hue, softened so no canister competes with the photo beside it.
+        const SOFT: f64 = 0.10;
+        for (id, data) in ARTWORK {
+            let svg = std::str::from_utf8(data).unwrap();
+            for (at, _) in svg.match_indices('#') {
+                let ink = &svg[at..(at + 7).min(svg.len())];
+                if ink.len() == 7 && ink[1..].bytes().all(|b| b.is_ascii_hexdigit()) {
+                    assert!(chroma(ink) <= SOFT, "{id}: {ink} at chroma {:.3}", chroma(ink));
+                }
+            }
+        }
+        // Twin: the full-chroma green a Fujifilm label wore is caught, a grey is not.
+        assert!(chroma("#10C61F") > SOFT);
+        assert!(chroma("#9E9E9E") < 0.01);
+    }
 }
