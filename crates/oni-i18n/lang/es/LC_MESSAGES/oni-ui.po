@@ -914,8 +914,8 @@ msgid "Not prepared yet"
 msgstr "Aún sin preparar"
 
 #: crates/oni-ui/ui/info_sidebar.slint
-msgid "Prepare Roll"
-msgstr "Preparar rollo"
+msgid "Prepare Roll, in the bar above, measures the roll before its frames are edited."
+msgstr "«Preparar rollo», en la barra superior, mide el rollo antes de editar sus fotogramas."
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
 msgid "Roll"
