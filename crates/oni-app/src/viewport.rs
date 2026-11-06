@@ -188,7 +188,7 @@ pub fn take_wheel() -> Option<Wheel> {
 
 /// `AppBar.zoomLabel`, whose preview tag the canvas adds while the picture is its preview enlarged.
 pub fn zoom_label(scale: f64) -> String {
-    format!("{:.0}%", scale * 100.0)
+    crate::fields::number(scale * 100.0, 0, false, crate::fields::Unit::Percent)
 }
 
 /// The picture shown is the preview stretched past its own pixels: the zoom asks more of the frame

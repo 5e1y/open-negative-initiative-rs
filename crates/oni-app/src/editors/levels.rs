@@ -159,9 +159,15 @@ pub fn readouts(levels: &Levels, channel: LevelsChannel) -> Vec<(&'static str, S
                 Grip::Highlights => levels.display_highlights(),
                 Grip::White => levels.white,
             };
-            (g.readout_name(), channel.readout(v))
+            (g.readout_name(), readout(channel, v))
         })
         .collect()
+}
+
+/// Three decimals of density where values are densities, a share of the output otherwise.
+pub fn readout(channel: LevelsChannel, value: f32) -> String {
+    use crate::fields::{Unit, number};
+    if channel.is_density() { number(f64::from(value), 3, false, Unit::Bare) } else { number(f64::from(value) * 100.0, 1, false, Unit::Percent) }
 }
 
 /// The handles' own places marked on the histogram, dashed.
@@ -306,9 +312,9 @@ mod tests {
     fn the_readouts_are_densities_to_three_decimals() {
         let l = Levels::with_ends(-0.243, 2.5);
         let r = readouts(&l, LevelsChannel::Red);
-        assert_eq!(r[0], ("Black", "-0.243".to_string()));
+        assert_eq!(r[0], ("Black", "\u{2212}0.243".to_string()));
         assert_eq!(r.iter().map(|(n, _)| *n).collect::<Vec<_>>(), vec!["Black", "Shadows", "Mid", "Highs", "White"]);
         // Twin: a global set would read a share of its output.
-        assert_eq!(LevelsChannel::Linked.readout(0.5), "50.0%");
+        assert_eq!(readout(LevelsChannel::Linked, 0.5), "50.0%");
     }
 }

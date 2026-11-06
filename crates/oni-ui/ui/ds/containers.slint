@@ -114,8 +114,8 @@ export component Section inherits VerticalLayout {
 // question, the title face else; `bar`, the title beside its exit key above a rule, as a board's.
 export enum SheetHeader { leading, bar }
 
-// A window-modal sheet centred in the window, a margin kept above and below; no scrim is drawn, yet a
-// click beside the card reaches nothing, as Swift's sheet ignores it. Escape closes it.
+// A window-modal sheet centred in the window over a scrim that sets the window back, a margin kept
+// above and below; a click beside the card reaches nothing, as Swift's sheet ignores it. Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
     in property <SheetHeader> header: SheetHeader.leading;
@@ -138,6 +138,7 @@ export component Sheet inherits Rectangle {
     out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
     property <bool> fixed: root.card-height > 0;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;
+    background: Colour.scrim;
     TouchArea { }
     // A field's Escape bubbles here: the window's key monitor is the sheet's sibling, never its parent.
     FocusScope {

@@ -95,20 +95,19 @@ export component ExportColumn inherits Scroller {
     property <length> picture-width: self.room-width - FormStyle.fields-width - Space.l;
     // Several photos on one sheet: the sheet itself in place of their lines.
     property <bool> sheet: Exporting.sheet && Exporting.count > 1;
-    content-height: max(column.preferred-height, self.height);
+    content-height: column.preferred-height;
     init => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
     changed picture-width => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
     changed room-height => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
+    // From the top, level with the panel's title, however few photos the column holds.
     column := VerticalLayout {
         width: root.width;
-        height: max(self.preferred-height, root.height);
+        alignment: start;
         padding-top: Space.l;
         padding-bottom: Space.l;
         padding-left: Space.l;
         padding-right: Space.l;
         spacing: Space.l;
-        // Centres a single frame under one screenful; above that the floor does nothing.
-        alignment: center;
         if root.sheet: SheetPreview { height: root.room-height; }
         if !root.sheet: VerticalLayout {
             spacing: Space.l;

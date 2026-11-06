@@ -37,6 +37,10 @@ component Entry inherits Rectangle {
         if (input.has-focus && !hover.has-hover && !root.rim) { Outside.released += 1; }
     }
     horizontal-stretch: 1;
+    // Its owner's width whatever it holds: longer words slide under its edge, as in AppKit's field.
+    // Slint's TextInput takes no focus below 1 px wide, hence the floor.
+    min-width: 1px;
+    clip: true;
     if input.text == "": Label {
         width: parent.width;
         height: parent.height;
@@ -54,7 +58,10 @@ component Entry inherits Rectangle {
         enabled: root.enabled;
         mouse-cursor: MouseCursor.text;
         input := TextInput {
-            width: parent.width;
+            // How far a line wider than the field slid left to keep the caret in view.
+            property <length> shift;
+            x: root.multiline ? 0px : min(0px, max(parent.width - self.width - self.text-cursor-width, self.shift));
+            width: root.multiline ? parent.width : max(parent.width - self.text-cursor-width, self.preferred-width);
             height: parent.height;
             single-line: !root.multiline;
             wrap: root.multiline ? word-wrap : no-wrap;
@@ -67,6 +74,13 @@ component Entry inherits Rectangle {
             enabled: root.enabled;
             edited => { root.edited(self.text); }
             accepted => { root.accepted(self.text); }
+            cursor-position-changed(at) => {
+                if (at.x + self.shift < 0px) {
+                    self.shift = -at.x;
+                } else if (at.x + self.shift > parent.width - self.text-cursor-width) {
+                    self.shift = parent.width - self.text-cursor-width - at.x;
+                }
+            }
             changed has-focus => {
                 if (self.has-focus) {
                     // A return with no other entry focused meanwhile is the window's coming back.
@@ -74,6 +88,8 @@ component Entry inherits Rectangle {
                     FieldFocus.serial += 1;
                     root.held = FieldFocus.serial;
                 } else {
+                    // Left, the words show from their start again.
+                    self.shift = 0px;
                     root.left(self.text);
                 }
             }

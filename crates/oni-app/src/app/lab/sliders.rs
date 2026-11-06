@@ -1,7 +1,7 @@
 //! The Scanner face's sliders, letters then effects: each one's value and range in steps, and its
 //! readout, a letter's steps in the screen's unit, an effect in its own.
 
-use super::{EFFECTS, same, spelled};
+use super::{EFFECTS, percent, same, spelled, stops};
 use slint::{ModelRc, SharedString, VecModel};
 use oni_link::scanner::{Effect, Letter};
 use oni_settings::PipelineSettings;
@@ -48,12 +48,11 @@ pub fn publish(lab: &crate::Lab, settings: &PipelineSettings) {
     }
 }
 
-/// An effect's value as the hand reads it: Contrast and Chrome in percent, Vignette in stops.
+/// An effect's value as the screen writes it: Contrast and Chrome in percent, Vignette in stops.
 fn unit(effect: Effect, value: f32) -> String {
-    let sign = if value < 0.0 { "−" } else if value > 0.0 { "+" } else { "" };
     match effect {
-        Effect::Vignette => format!("{sign}{:.1} EV", value.abs()),
-        Effect::Contrast | Effect::Chrome => format!("{sign}{:.0} %", (value * 100.0).abs()),
+        Effect::Vignette => stops(value),
+        Effect::Contrast | Effect::Chrome => percent(value),
     }
 }
 
@@ -73,7 +72,7 @@ mod tests {
         assert_eq!((all[4].low, all[4].high), (-20, 20), "TEMP has its own range, ±10 units in half steps");
         // A notch of the rail is one step, half a unit: 97 places on density, 41 on TEMP.
         assert_eq!((all[0].high - all[0].low + 1, all[4].high - all[4].low + 1), (97, 41));
-        assert_eq!((all[5].steps, all[5].low, all[5].high, all[5].readout.as_str()), (3, -10, 10, "+15 %"));
+        assert_eq!((all[5].steps, all[5].low, all[5].high, all[5].readout.as_str()), (3, -10, 10, "+15%"));
         assert_eq!((all[6].steps, all[6].readout.as_str()), (-3, "−0.3 EV"));
         assert_eq!((all[7].low, all[7].high), (0, 30));
         // Twin: a value read in its own unit, not in steps, would put Contrast at 0.

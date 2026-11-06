@@ -124,7 +124,7 @@ fn with_band_value(s: &Spectrogram, band: Band, field: usize, v: f32) -> Spectro
 
 /// `SpectrogramBands`' readouts: the hue in degrees, the others in percent, signed.
 pub fn band_readout(field: usize, v: f32) -> String {
-    if field == 0 { format!("{v:+.0}°") } else { format!("{:+.0}%", v * 100.0) }
+    if field == 0 { crate::fields::number(f64::from(v), 0, true, crate::fields::Unit::Degrees) } else { crate::fields::Readout::SignedPercent.format(v) }
 }
 
 /// The press under way, decided once at the touch.

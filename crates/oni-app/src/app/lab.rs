@@ -52,22 +52,14 @@ pub fn legend(step: i32) -> String {
 
 pub use oni_link::scanner::spelled;
 
-/// `LabStepKeys.percent`: whole percent, signed, zero bare.
+/// `LabStepKeys.percent`: whole percent, signed.
 pub fn percent(value: f32) -> String {
-    let shown = (value * 100.0).round() as i64;
-    match shown {
-        0 => "0 %".to_string(),
-        s if s < 0 => format!("−{} %", s.abs()),
-        s => format!("+{s} %"),
-    }
+    crate::fields::Readout::SignedPercent.format(value)
 }
 
-/// `LabStepKeys.stops`: tenths of a stop, signed, under half a hundredth bare.
+/// `LabStepKeys.stops`: tenths of a stop, signed.
 pub fn stops(value: f32) -> String {
-    if value.abs() < 0.005 {
-        return "0 EV".to_string();
-    }
-    format!("{}{:.1} EV", if value < 0.0 { "−" } else { "+" }, value.abs())
+    crate::fields::number(f64::from(value), 1, true, crate::fields::Unit::Stops)
 }
 
 /// What the scanner's screen shows, every line as `LabScreen` writes it.

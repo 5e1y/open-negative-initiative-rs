@@ -91,7 +91,7 @@ impl Ctl {
         let d = w.global::<crate::Dedust>();
         let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
         d.set_fraction(((f64::from(radius) - low) / (high - low)) as f32);
-        let text: SharedString = format!("{radius:.0} px").into();
+        let text: SharedString = crate::fields::number(f64::from(radius), 0, false, crate::fields::Unit::Pixels).into();
         d.set_readout(text.clone());
         d.set_value_text(text);
         if let Some(rows) = renewed(&d.get_rows(), rows) {

@@ -5541,5 +5541,40 @@
     "title": "The bar's check reads its keys along their middle row",
     "status": "done",
     "detail": "Since most keys are flat (#1088), their top edge no longer differs from the bar, so the check that every mode lays the bar alike saw one key. It now reads the row through the keys' middle: a cap or a plate by its face, a flat key by its glyph, strokes up to 4 px apart bridged."
+  },
+  {
+    "id": 1141,
+    "type": "fix",
+    "title": "An export line opens on its roll's film stock",
+    "status": "done",
+    "detail": "UX evaluation (s-1d4fb9c3), problem 26: Export asked to pick a film though the roll named its stock. A line opened on the roll its sidecar names, which a folder made a roll leaves empty, its stock living in the folder's marker. Each target now takes the roll of the band holding it, as the roll's panel does: the folder's marker, else the sidecar's roll."
+  },
+  {
+    "id": 1142,
+    "type": "fix",
+    "title": "A text field keeps the width it is laid at; longer words slide under its edge",
+    "status": "done",
+    "detail": "UI evaluation, problem 7: Export's Camera value NIKON CORPORATION NIKON ran past its field and under the preview. The design system's entry took its text's width as its least, as Slint's TextInput asks, so a long value widened the field. The entry now clips at its owner's width and slides a long line to keep the caret in view, as AppKit's field and Slint's own line edit do, back to its start once left."
+  },
+  {
+    "id": 1143,
+    "type": "change",
+    "title": "The export column starts at the top, level with the panel's title",
+    "status": "done",
+    "detail": "UI evaluation, problem 55: the form and the preview floated mid-column between empty bands of about 190 pt. The centring floor is gone: the column lays its lines from the top, as the settings panel beside it does, and scrolls past one screenful as before."
+  },
+  {
+    "id": 1144,
+    "type": "change",
+    "title": "Every sheet sets the window back behind a scrim",
+    "status": "done",
+    "detail": "UI evaluation, problem 48: Settings opened with the toolbar and the sidebar at full strength around it. The design system's sheet, which every sheet and question inherits, lays the scrim token under its card; the click beside the card still reaches nothing."
+  },
+  {
+    "id": 1145,
+    "type": "change",
+    "title": "One formatter for every readout",
+    "status": "done",
+    "detail": "UI evaluation, problems 11 and 50: Black point read -0 % at rest, +0 % sat beside 50%, and -4 used a hyphen where the zoom keys use the minus sign. Every value on screen goes through fields::number: a true minus, a plus where the value is signed, no sign on what rounds to zero, % ° and × against the digits, EV and px after a space. The sliders, the Scanner face and its screen, the spectrogram's bands, the levels, the zoom and loupe labels, the export quality, De-dust's brush and sensitivity and the base picker read through it; the levels' own formatter in oni-settings is gone."
   }
 ]
