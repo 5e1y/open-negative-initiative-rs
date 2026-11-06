@@ -22,6 +22,8 @@ Each category says what it judges, what to look at, and the two ends of its scal
 - The order of attention matches the order of importance: the image, the active tool, its main
   action, the secondary ones, the chrome.
 - One primary action per group; groups read by proximity, size and weight before any border.
+- What sits together reads as related: a key that removes, resets or empties never shares a plate or a
+  group with one that keeps; it stands apart, so a reset can never be mistaken for a deletion.
 - **Excels:** a squint shows the screen's structure. **Fails:** everything at the same weight, two
   primary actions competing.
 

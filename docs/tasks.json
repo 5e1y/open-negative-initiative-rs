@@ -6045,5 +6045,12 @@
     "title": "The trash stands on a plate of its own, apart from RESET",
     "status": "done",
     "detail": "Owner's call: on one plate, the trash read as part of RESET, as if resetting a photo removed it. The gallery bar now lays RESET and the trash on two plates."
+  },
+  {
+    "id": 1230,
+    "type": "docs",
+    "title": "The benches ask that a destructive key stand apart",
+    "status": "done",
+    "detail": "Two evaluation rounds missed the trash sharing RESET's plate, which the owner spotted at once. UI Hierarchy now says a key that removes, resets or empties never shares a plate with one that keeps; UX Trust says a destructive action stands apart from the harmless ones around it."
   }
 ]
