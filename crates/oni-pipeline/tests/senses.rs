@@ -94,10 +94,11 @@ fn temperature_and_tint_reach_the_colours_their_tracks_end_on() {
         return;
     };
     let colour = panel("color_tab.slint");
+    // The Pro face's sliders: the Scanner's TEMP key is named Temperature too and ends on its own bands.
     let track = |label: &str| {
-        let lines: Vec<&str> = colour.lines().collect();
-        let at = lines.iter().position(|l| l.contains(&format!("label: @tr(\"{label}\")"))).expect("the slider");
-        lines[at + 1].split("high: ").nth(1).unwrap_or_default().trim_end_matches(';').to_string()
+        let mut sliders = colour.split("StoreSlider {").skip(1).map(|s| s.split('}').next().unwrap_or_default());
+        let body = sliders.find(|s| s.contains(&format!("label: @tr(\"{label}\")"))).expect("the Pro slider");
+        body.split("high: ").nth(1).and_then(|h| h.split(';').next()).unwrap_or_default().trim().to_string()
     };
     assert_eq!((track("Temperature").as_str(), track("Tint").as_str()), ("Colour.channel-yellow", "Colour.channel-magenta"));
     let lay = |s: &mut PipelineSettings, axis: V3| {
