@@ -5688,5 +5688,12 @@
     "title": "Export's presets are tabs that light the preset the rows equal",
     "status": "done",
     "detail": "Evaluation R1: the Instagram / Display / Print row looked like a segmented control and showed no selection. It is now the DS tabs under a Presets label, the tab lit read off the settings by Preset::matching: a row set by hand lights none, set back it lights again (beyond Swift, whose plate lit no key)."
+  },
+  {
+    "id": 1186,
+    "type": "ui",
+    "title": "No space tab is dimmed: ProPhoto stays pressable at full ink",
+    "status": "done",
+    "detail": "Evaluation R1: ProPhoto greyed in JPEG measured 2.20:1 and read as unavailable with no reason; the note meant to say why was shown only in a state that never held. The tab is drawn as the others: chosen, it takes the TIFF along, as before, and its purpose says TIFF 16-bit only. The Tabs' dimmed state, used nowhere else, is removed with its lab specimens."
   }
 ]

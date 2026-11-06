@@ -618,10 +618,6 @@ msgid "Custom"
 msgstr "Perfil"
 
 #: crates/oni-ui/ui/export.slint
-msgid "TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."
-msgstr "Solo TIFF de 16 bits: en ocho bits, un espacio tan amplio produce bandas. Al elegirlo, la exportación pasa a TIFF."
-
-#: crates/oni-ui/ui/export.slint
 msgid "Profile"
 msgstr "Perfil"
 

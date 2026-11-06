@@ -125,7 +125,7 @@ The tabs, the switch, the picker and the medals stand on the depths as the lab's
 
 - **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a field's, and one
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
-  adds the accent dot, `swatches` draws colours for words, `dimmed` fades a tab that changes something else.
+  adds the accent dot, `swatches` draws colours for words.
 - **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds,
   on the middle of a small key's height so the hand finds it as a key.
 - **`Picker`**, field face (`DSPicker`): the value in a hollow, a chevron at its end, the hollow lit under the

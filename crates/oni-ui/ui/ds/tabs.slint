@@ -14,8 +14,6 @@ export component Tabs inherits Rectangle {
     in property <[bool]> marked;
     // A colour per tab drawn in place of its name, which stays the tab's accessible label.
     in property <[color]> swatches;
-    // Tabs drawn fainter, still pressable: choosing one changes something else.
-    in property <[bool]> dimmed;
     // Tabs out of reach: drawn at the disabled state's opacity, deaf to the pointer.
     in property <[bool]> disabled;
     // The tab a check or the lab shows hovered; -1 follows the pointer alone.
@@ -74,8 +72,7 @@ export component Tabs inherits Rectangle {
                 accessible-role: tab;
                 accessible-label: name;
                 opacity: root.disabled[i] ? State.disabled
-                    : (i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle)
-                    * (root.dimmed[i] && i != root.selected ? TabsStyle.idle : 1);
+                    : i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle;
                 label := Label {
                     visible: root.swatches.length == 0;
                     text: name;

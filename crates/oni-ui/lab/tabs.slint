@@ -25,7 +25,6 @@ component TabBar inherits Rectangle {
     in property <[string]> tabs;
     in-out property <int> selected;
     in property <[bool]> marked;
-    in property <[bool]> dimmed;
     in property <[color]> swatches;
     in property <int> force-hover: -1;
     height: TabsStyle.height;
@@ -33,7 +32,6 @@ component TabBar inherits Rectangle {
         tabs: root.tabs;
         selected: root.selected;
         marked: root.marked;
-        dimmed: root.dimmed;
         swatches: root.swatches;
         hover-tab: root.force-hover;
         picked(i) => { root.selected = i; }
@@ -121,7 +119,6 @@ export component TabsPage inherits Rectangle {
     background: DS.palette-panel;
     property <[string]> panel: ["Roll", "Crop", "Color", "Details"];
     property <[string]> three: ["Roll", "Crop", "Color"];
-    property <[string]> spaces: ["sRGB", "DP3", "Adobe RGB", "ProPhoto", "Custom"];
     property <[string]> channels: ["Luma", "RGB", "R", "G", "B"];
     property <[color]> bands: [hsv(0, 0.85, 1), hsv(30, 0.85, 1), hsv(60, 0.85, 1), hsv(120, 0.85, 1),
         hsv(180, 0.85, 1), hsv(240, 0.85, 1), hsv(270, 0.85, 1), hsv(300, 0.85, 1)];
@@ -175,22 +172,6 @@ export component TabsPage inherits Rectangle {
                 States {
                     Specimen { caption: "marked, unselected"; TabBar { width: 200px; tabs: ["RGB", "R", "G"]; selected: 0; marked: [false, true, false]; } }
                     Specimen { caption: "marked, selected"; TabBar { width: 200px; tabs: ["RGB", "R", "G"]; selected: 1; marked: [false, true, false]; } }
-                }
-            }
-
-            Row {
-                name: "DSTabBar · dimmed";
-                source: "DSTabBar.swift:88 · ExportSpaceField.swift:152 (ProPhoto in JPEG, in the 400 pt popover)";
-                TabBar {
-                    width: DS.control-export-panel-width - 2 * DS.space-md;
-                    tabs: root.spaces;
-                    selected: 0;
-                    dimmed: [false, false, false, true, false];
-                }
-                States {
-                    Specimen { caption: "dimmed"; TabBar { width: 200px; tabs: ["sRGB", "DP3", "ProPhoto"]; selected: 0; dimmed: [false, false, true]; } }
-                    Specimen { caption: "dimmed, hover"; TabBar { width: 200px; tabs: ["sRGB", "DP3", "ProPhoto"]; selected: 0; dimmed: [false, false, true]; force-hover: 2; } }
-                    Specimen { caption: "dimmed, selected"; TabBar { width: 200px; tabs: ["sRGB", "DP3", "ProPhoto"]; selected: 2; dimmed: [false, false, true]; } }
                 }
             }
 

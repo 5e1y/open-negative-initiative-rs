@@ -72,7 +72,6 @@ impl Ctl {
         let on_profile = matches!(space, Space::Profile(_));
         e.set_space_tab(if on_profile || c.pending { 4 } else { Space::BUILT_IN.iter().position(|s| *s == space).unwrap_or(1) as i32 });
         e.set_purpose(space.purpose().into());
-        e.set_jpeg(c.settings.format() == Format::Jpeg);
         e.set_on_profile(on_profile);
         e.set_pending(c.pending && !on_profile);
         e.set_pending_note(tr!("Until a profile is chosen, the picture stays in {space}.", space = space.title()).into());

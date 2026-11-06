@@ -167,16 +167,13 @@ export component SpaceField inherits VerticalLayout {
         help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
         Tabs {
             tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-            dimmed: [false, false, false, Exporting.jpeg, false];
             selected: Exporting.space-tab;
             picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
         }
-        if Exporting.jpeg && Exporting.space-tab == 3: Label { role: TextRole.note; text: @tr("TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."); }
         Label { role: TextRole.note; text: Exporting.purpose; }
     }
     if root.compact: Tabs {
         tabs: [@tr("sRGB"), @tr("P3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-        dimmed: [false, false, false, Exporting.jpeg, false];
         selected: Exporting.space-tab;
         picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
     }
