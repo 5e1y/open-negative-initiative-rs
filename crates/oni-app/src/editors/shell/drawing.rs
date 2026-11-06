@@ -28,14 +28,14 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
     let Some(w) = ctl.window() else { return };
     let g = w.global::<Global>();
     let now = Instant::now();
-    let (view, gestures, scanner, path, scrolled) = {
+    let (view, gestures, path, scrolled) = {
         let mut s = ctl.state.borrow_mut();
         let mut gestures = ctl.editors.gestures.borrow_mut();
         let scrolled = std::mem::take(&mut gestures.scrolled);
         let view = gestures.view(s.store.as_mut());
         let open = s.store.editor_ref();
-        let (scanner, path) = (open.is_some_and(|e| e.scanner_face), open.and_then(|e| e.path()).map(str::to_string));
-        (view, Snapshot::of(&gestures), scanner, path, scrolled)
+        let path = open.and_then(|e| e.path()).map(str::to_string);
+        (view, Snapshot::of(&gestures), path, scrolled)
     };
     let jump = ctl.editors.jump.take() || force;
     let mut knobs = ctl.editors.knobs.borrow_mut();
@@ -46,7 +46,6 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
     let sizes = gestures.sizes;
     let monochrome = view.mode.is_monochrome();
     g.set_monochrome(monochrome);
-    g.set_scanner_face(scanner);
     g.set_low_precision(ctl.editors.low_precision(path.as_deref()));
 
     // The curves: the channel's spline, its points and the tabs of the moved channels.

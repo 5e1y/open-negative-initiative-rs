@@ -6437,5 +6437,12 @@
     "title": "The art direction is a balance: ordinary software, perfectly designed, with a few real-world reminders",
     "status": "done",
     "detail": "Owner's call, replacing #1305: ONI should feel like ordinary, perfectly designed digital software with a few deeply satisfying reminders of the real world, a fair balance between pure minimal flat 2D and cues such as a discreet reflection, a shadow or a key that presses. The benches name no hardware to imitate: going further into the analogue reads as a costume."
+  },
+  {
+    "id": 1314,
+    "type": "fix",
+    "title": "The Scanner face shows every value acting on its frame",
+    "status": "done",
+    "detail": "UX evaluation (Trust): the Scanner face read D, C, M and Y at zero while the frame carried Pro's values. Read in the pipeline, the Scanner render takes the roll's conversion (Film Type, Filtration, Highlight Detail, Per-Channel Levels, Dye Separation) and Auto White Balance's correction at the roll's strength, and none of Pro's Lighting, Colour or Effects sliders. Per-Channel Levels, Dye Separation and Auto White Balance, which the face hid though they act, now stand on its Roll tab as on Pro's. The scanner's screen reads, in place of the finishing its own sliders already show, the balance its render prints with, taken from that render's own filters in Pro's Temperature and Tint readouts. The Machine help says what both faces share and that Pro's sliders stay Pro's own. No render changes; the Frontier's rest held in the gains still reads zero. Unit check the_screen_spells_every_count_and_the_balance_as_the_lab_does, twin: Pro's Temperature moved by hand never reaches the screen; window checks scanner and the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have read the blocks on the Scanner face."
   }
 ]

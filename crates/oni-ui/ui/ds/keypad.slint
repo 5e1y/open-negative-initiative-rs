@@ -5,15 +5,16 @@ import { CrtScreen, CrtLine as Lcd } from "crt.slint";
 
 export struct LabCell { title: string, value: string }
 
-// `LabScreen`: the scanner's screen in the plot band, its frame, its machine, every letter's count
-// and the finishing's values, glowing behind scanlines.
+// `LabScreen`: the scanner's screen in the readout, its frame, its machine, every letter's count and
+// the balance it prints with, glowing behind scanlines.
 export component LabScreen inherits Rectangle {
     in property <string> frame;
     in property <string> machine;
     in property <bool> remeasure;
     in property <string> remeasure-help;
     in property <[LabCell]> cells;
-    in property <[string]> finish;
+    in property <string> balance;
+    in property <string> balance-help;
     CrtScreen {
         VerticalLayout {
             padding: Space.m;
@@ -42,8 +43,14 @@ export component LabScreen inherits Rectangle {
             }
             Rectangle { min-height: Space.xs; vertical-stretch: 1; }
             HorizontalLayout {
-                alignment: space-between;
-                for line in root.finish: Lcd { text: line; }
+                Lcd {
+                    text: @tr("BALANCE");
+                    TouchArea {
+                        changed has-hover => { Tips.hover(self.has-hover, root.balance-help, self.absolute-position.x, self.absolute-position.y + self.height); }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Lcd { text: root.balance; }
             }
         }
     }

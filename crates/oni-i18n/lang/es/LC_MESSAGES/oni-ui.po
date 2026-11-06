@@ -329,6 +329,10 @@ msgstr "Después"
 msgid "REMEASURE ROLL"
 msgstr "VOLVER A MEDIR"
 
+#: crates/oni-ui/ui/ds/keypad.slint
+msgid "BALANCE"
+msgstr "BALANCE"
+
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Sin medalla (0)"
@@ -1218,8 +1222,8 @@ msgid "Machine"
 msgstr "Máquina"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, Pro's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either."
-msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión de Pro con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas."
+msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own."
+msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión del rollo con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Rollo y la corrección del Balance de blancos automático actúan en ambas caras; los deslizadores Luz, Color y Efectos de Pro siguen siendo solo de Pro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
@@ -1381,15 +1385,15 @@ msgstr "Efectos"
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
 msgstr "Contraste"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette"
 msgstr "Viñeta"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome"
 msgstr "Chrome"
 
@@ -1924,6 +1928,10 @@ msgstr "FOTOGRAMA --/--"
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess."
 msgstr "Este rollo se midió antes de que el escáner guardara su mediana: vuelve a medirlo en Preparar el rollo, o el escáner se centrará en una estimación."
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab."
+msgstr "La corrección del Balance de blancos automático a la intensidad del rollo, que se imprime en ambas caras; Intensidad está en la pestaña Rollo."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint
 msgid "Details"

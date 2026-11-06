@@ -329,6 +329,10 @@ msgstr "Après"
 msgid "REMEASURE ROLL"
 msgstr "REMESURER LA PELLICULE"
 
+#: crates/oni-ui/ui/ds/keypad.slint
+msgid "BALANCE"
+msgstr "BALANCE"
+
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Aucune médaille (0)"
@@ -1218,8 +1222,8 @@ msgid "Machine"
 msgstr "Machine"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, Pro's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either."
-msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion Pro sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre."
+msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own."
+msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion de la pellicule sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre.\n\nL’onglet Pellicule et la correction de la Balance des blancs auto agissent sur les deux faces ; les curseurs Lumière, Couleur et Effets de Pro restent propres à Pro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
@@ -1381,15 +1385,15 @@ msgstr "Effets"
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues.\n\nVignetage assombrit les coins, en EV, sans changer leur couleur ; sous zéro, il les éclaircit.\n\nChrome pose une courbe de saturation sur l’ensemble, qui grise les extrémités et garde la couleur au milieu."
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
 msgstr "Contraste"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette"
 msgstr "Vignetage"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome"
 msgstr "Chrome"
 
@@ -1924,6 +1928,10 @@ msgstr "VUE --/--"
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess."
 msgstr "Cette pellicule a été mesurée avant que le scanner ne conserve sa médiane : mesurez-la de nouveau dans Préparer la pellicule, sinon le scanner se centre sur une estimation."
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab."
+msgstr "La correction de la Balance des blancs auto à l’intensité de la pellicule, tirée sur les deux faces ; Intensité se trouve dans l’onglet Pellicule."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint
 msgid "Details"

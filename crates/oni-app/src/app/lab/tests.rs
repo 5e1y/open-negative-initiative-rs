@@ -2,12 +2,11 @@ use super::*;
 use oni_settings::scanner::ScannerClicks;
 
 #[test]
-fn the_screen_spells_every_count_and_finish_as_the_lab_does() {
+fn the_screen_spells_every_count_and_the_balance_as_the_lab_does() {
     assert_eq!([-3, -1, 1, 3].map(legend), ["−3", "−", "+", "+3"]);
     assert_eq!((spelled(0), spelled(5), spelled(-12)), ("0".into(), "+2.5".into(), "−6".into()));
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.scanner = ScannerClicks::new(3, -2, 0, 48, -20);
-    s.scanner_finish.contrast = 0.2;
     s.scanner_machine = ScannerMachine::Frontier;
     let shown = screen(&s, Some((9, 38)));
     assert_eq!(shown.frame, "FRAME 09/38");
@@ -15,14 +14,20 @@ fn the_screen_spells_every_count_and_finish_as_the_lab_does() {
     let values: Vec<&str> = shown.cells.iter().map(|c| c.1.as_str()).collect();
     assert_eq!(values, ["+1.5", "−1", "0", "+24", "−10"], "half the steps, in the units an old sidecar reads");
     assert_eq!(shown.cells[4].0, "TEMP");
-    assert_eq!(shown.finish, ["CONTRAST +20%", "VIGNETTE 0.00 EV", "CHROME 0%"]);
-    // Each effect reads as Pro's slider of the same quantity; twin: Pro's Contrast is no bare number.
-    assert_eq!(shown.finish[0], format!("CONTRAST {}", crate::fields::Field::Contrast.readout(0.2)));
-    assert_ne!(crate::fields::Field::Contrast.readout(0.2), "+0.20");
-    // Twin: in black and white Chrome leaves the screen, and with no frame open the place is blank.
+    assert_eq!(shown.balance, "0.00 EV · 0.00 EV", "no Auto White Balance, no balance");
+    // Auto White Balance's correction at the roll's strength acts on this face, read as Pro reads it.
+    s.balance_filters = Some([0.4, -0.2, -0.4]);
+    s.balance_strength = 0.5;
+    let balanced = screen(&s, None);
+    assert_eq!(balanced.balance, "WARM +0.40 EV · MAGENTA +0.10 EV");
+    // Twin: Pro's Temperature moved by hand acts on Pro alone, so the screen never reads it.
+    s.print.set_filters([1.0, 0.0, -1.0]);
+    assert_eq!(crate::fields::Field::Temperature.readout(oni_core::Knob::Temperature.get(&s)), "Warm +2.00 EV");
+    assert_eq!(screen(&s, None).balance, balanced.balance);
+    // Twin: with no frame open the place is blank, and in black and white the channel says so.
     s.mode = ConversionMode::Monochrome;
     let mono = screen(&s, None);
-    assert_eq!((mono.frame.as_str(), mono.machine.as_str(), mono.finish.len()), ("FRAME --/--", "FRONTIER · B&W", 2));
+    assert_eq!((mono.frame.as_str(), mono.machine.as_str()), ("FRAME --/--", "FRONTIER · B&W"));
 }
 
 #[test]

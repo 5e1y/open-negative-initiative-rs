@@ -20,11 +20,6 @@ fn cells(w: &MainWindow) -> Vec<String> {
     (0..model.row_count()).map(|i| model.row_data(i).unwrap().value.to_string()).collect()
 }
 
-fn finish(w: &MainWindow) -> Vec<String> {
-    let model = w.global::<Lab>().get_finish();
-    (0..model.row_count()).map(|i| model.row_data(i).unwrap().to_string()).collect()
-}
-
 fn modified(w: &MainWindow) -> Vec<bool> {
     let model = w.global::<Lab>().get_modified();
     (0..model.row_count()).map(|i| model.row_data(i).unwrap()).collect()
@@ -79,7 +74,9 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(lab.get_shown() && bar.get_face() == 1);
     assert_eq!(settings().face, Face::Scanner);
     assert_eq!(std::fs::read_to_string(support.join("lastFaceScanner")).unwrap(), "1");
-    assert!(!panel.get_separation_shown(), "the Scanner face's Roll tab has no Dye Separation");
+    // Dye Separation and Auto White Balance act on this face's render too: its Roll tab holds them.
+    assert!(panel.get_separation_shown(), "the Scanner face's Roll tab hides Dye Separation");
+    assert_eq!(lab.get_balance(), "0.00 EV · 0.00 EV", "no Auto White Balance ran on this frame");
     assert_eq!(lab.get_frame(), "FRAME 01/02");
     assert_eq!(lab.get_machine_line(), "ONI · NEGATIVE");
     let legends: Vec<String> = (0..4).map(|i| lab.get_legends().row_data(i).unwrap().to_string()).collect();
@@ -136,7 +133,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     let s = settings();
     assert!((s.scanner_finish.contrast - 0.05).abs() < 1e-6 && (s.scanner_finish.vignette.stops + 0.3).abs() < 1e-6);
     assert_eq!(s.print.contrast, pro_contrast, "a Scanner key never moves Pro's Contrast");
-    assert_eq!(finish(w), ["CONTRAST +5%", "VIGNETTE −0.30 EV", "CHROME 0%"]);
+    assert_eq!((readout(5), readout(6)), ("+5%".to_string(), "−0.30 EV".to_string()));
     assert!(modified(w)[3]);
     lab.invoke_clear_effect(1);
     lab.invoke_reset_group(3);

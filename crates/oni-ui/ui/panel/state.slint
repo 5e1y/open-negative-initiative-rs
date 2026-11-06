@@ -103,7 +103,8 @@ export global Lab {
     in property <string> machine-line;
     in property <bool> remeasure;
     in property <[LabCell]> cells;
-    in property <[string]> finish;
+    // The balance Pro's Auto White Balance left acting on this face, as its Temperature and Tint read.
+    in property <string> balance;
     in property <[string]> legends: ["−3", "−", "+", "+3"];
     // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
     in property <[bool]> modified: [false, false, false, false];

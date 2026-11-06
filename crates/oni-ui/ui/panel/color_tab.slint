@@ -12,7 +12,7 @@ export component ColorPane inherits Pane {
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");
-        help: @tr("The machine the Scanner face prints with: ONI, Pro's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.");
+        help: @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own.");
         separated: false;
         news: News.machine;
         news-note: News.machine-note;
