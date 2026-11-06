@@ -6346,5 +6346,33 @@
     "title": "The figures the app reports read on the glass",
     "status": "done",
     "detail": "UI evaluation s-0abd2d65: Export read as generic software, its summary a well of type smaller than the panel's; the crop's kept size sat alone on its LCD pill. What the export writes now reads as Kept does: each figure on the LcdReadout beside its label (the bit depth's line its size, Estimated size its weight), the well gone and the notes under them, so the column's one textured piece is small. The size reads in pixels, '6048 × 4031 px', from the formatter Kept uses (geometry::pixel_label), under each preview too. Settings > About shows the version on the same glass. The weight's labels are in sentence case, Estimated size and Estimated total size, French and Spanish with them. Checks: export_sheet's sizes read in pixels; export_window's caption still equals the summary's size."
+  },
+  {
+    "id": 1288,
+    "type": "design",
+    "title": "The toolbar's flat keys speak in title case; capitals stay on its keycaps",
+    "status": "done",
+    "detail": "Owner's art direction: ALL CAPS only on the keycap CTAs. The bar's word key wrote every word in capitals whatever its face; it now writes them only on a keycap (EDITOR/GALLERY, PREPARE ROLL, the export slot), so Crop, Compare, Whole Roll, Copy, Paste, Paste to Roll and De-dust, and the filter's All, read in title case. French and Spanish follow, the mode keys sharing the panel's own words."
+  },
+  {
+    "id": 1289,
+    "type": "design",
+    "title": "The accent lands on each screen's own commit",
+    "status": "done",
+    "detail": "Evaluation, UI Hierarchy (major): on a roll never measured the blue ADD FOLDER… outranked PREPARE ROLL, and it stayed the blue primary on the projects and in the ONI Trash, where it serves nothing. The bar now reads the roll's measure (Library.roll-unmeasured, cleared where no roll stands, so the projects and the Trash no longer keep the last roll's) and whether the gallery is on the archive (Bar.archive): PREPARE ROLL takes the accent while the roll waits for it, the slot keeps its keycap without it there, on the projects and in the Trash; EXPORT and an update keep theirs. The window check toolbar::the_accent_lands_on_each_screens_own_commit reads the blue on each key's face: ADD FOLDER… on an empty archive, PREPARE ROLL alone beside two unmeasured frames, none on the projects nor in the Trash; twin: the former rule (the slot always blue, PREPARE ROLL plain) fails it beside the unmeasured roll."
+  },
+  {
+    "id": 1290,
+    "type": "design",
+    "title": "RESET is a glyph on its own plate, lighter than the keys that keep the work",
+    "status": "done",
+    "detail": "Evaluation, UI Hierarchy: the editor's bar was nine equal words, RESET weighing as much as COMPARE. The reset is now a square glyph key on its own plate in both modes, as undo and redo are, its gesture and shortcut in its tooltip; the words left are the modes and the clipboard."
+  },
+  {
+    "id": 1291,
+    "type": "design",
+    "title": "The feedback key draws a bug, never a chat",
+    "status": "done",
+    "detail": "Evaluation, Iconography: the speech bubbles beside the gear read as a chat. The key draws a bug in the Trinil set's stroke, the report it opens; the bubbles' file goes, no other key drew it."
   }
 ]

@@ -265,6 +265,9 @@ msgstr "Ce que fait ce bloc"
 msgid "Reset"
 msgstr "Réinitialiser"
 
+msgid "RESET"
+msgstr "RÉINITIALISER"
+
 #: crates/oni-ui/ui/ds/containers.slint
 msgid "Show {}"
 msgstr "Afficher {}"
@@ -898,6 +901,8 @@ msgid "{} blocks recorded"
 msgstr "{} blocs enregistrés"
 
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint
+
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copier"
 
@@ -1034,6 +1039,8 @@ msgid "Paste Settings"
 msgstr "Coller les réglages"
 
 #: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/crop_tab.slint
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
 
@@ -1449,7 +1456,7 @@ msgstr "Courbe de saturation"
 msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves."
 msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. Faites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre. La luminosité ne bouge jamais."
 
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Crop"
 msgstr "Recadrage"
 
@@ -1458,12 +1465,18 @@ msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole 
 msgstr "Faites glisser les coins sur la photo pour la recadrer. Copier et Coller reportent tout le cadrage sur d’autres photos, Coller sur la pellicule sur chaque vue de la pellicule ; le collage des réglages ne le fait jamais."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "COPY"
+msgstr "COPIER"
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copies this photo's crop."
 msgstr "Copie le recadrage de cette photo."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Paste"
 msgstr "Coller"
+
+msgid "PASTE"
+msgstr "COLLER"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on the {} selected photos."
@@ -1473,6 +1486,9 @@ msgstr "Colle le recadrage copié sur les {} photos sélectionnées."
 msgid "Pastes the copied crop on this photo."
 msgstr "Colle le recadrage copié sur cette photo."
 
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "PASTE TO ROLL"
+msgstr "COLLER SUR LA PELLICULE"
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Pastes the copied crop on every photo measured with this roll."
 msgstr "Colle le recadrage copié sur chaque photo mesurée avec cette pellicule."
@@ -2256,8 +2272,8 @@ msgid "Window"
 msgstr "Fenêtre"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "WHOLE ROLL"
-msgstr "TOUTE LA PELLICULE"
+msgid "Whole Roll"
+msgstr "Toute la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select the Whole Roll ({})"
@@ -2272,16 +2288,15 @@ msgid "Reset Settings ({})"
 msgstr "Réinitialiser les réglages ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "CROP"
-msgstr "RECADRER"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Crop and Straighten ({})"
 msgstr "Recadrer et redresser ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "COMPARE"
 msgstr "COMPARER"
+
+msgid "Compare"
+msgstr "Comparer"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
@@ -2307,6 +2322,9 @@ msgstr "Copier les réglages ({})"
 msgid "PASTE"
 msgstr "COLLER"
 
+msgid "Paste"
+msgstr "Coller"
+
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings to {} photos ({})"
 msgstr "Coller les réglages sur {} photos ({})"
@@ -2330,7 +2348,6 @@ msgstr "DÉPOUSSIÉRER"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
 msgstr "PRÉPARER LA PELLICULE"
-
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
 msgstr "Préparer la pellicule"

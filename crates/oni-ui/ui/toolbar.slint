@@ -9,6 +9,7 @@ import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
 import { RatingFilter } from "rating_filter.slint";
 import { Menus } from "menus.slint";
+import { Library } from "library.slint";
 
 // `rollStepKeys`, the faces' bar for the steps, numbered in their order: the current one held, a check on
 // each done, a step the roll does not walk out of reach, and all of them while it measures.
@@ -36,6 +37,10 @@ export global Bar {
     in property <bool> can-select-all;
     in property <bool> can-prepare;
     in property <bool> can-toggle-mode;
+    // The gallery on the archive's folders, where scans come in: neither the projects nor the ONI Trash.
+    in property <bool> archive;
+    // The roll the gallery stands on waits for its measurement: Prepare Roll is the screen's one primary.
+    out property <bool> prepare-first: !Bar.editing && Library.roll-unmeasured;
     // `ExportButton`'s third face: an update outranks export and import alike, and says to what.
     in property <string> update-title;
     in property <string> update-help;
@@ -59,9 +64,10 @@ component Item inherits Button { has-icon: true; square: true;
     clicked => { Bar.act(root.action); }
 }
 
-// `AppBar.word`: a word key.
+// `AppBar.word`: a word key, in capitals on a keycap alone.
 component Word inherits Button {
     in property <Act> action;
+    capitals: self.keycap;
     clicked => { Bar.act(root.action); }
 }
 
@@ -77,15 +83,15 @@ component Tool inherits Word {
 // on a roll picked whole, the photo it came from alone again.
 component SelectAll inherits Tool {
     action: Act.select-all;
-    word: @tr("WHOLE ROLL");
+    word: @tr("Whole Roll");
     icon: Icons.contact-sheet;
     help: @tr("Select the Whole Roll ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
 }
 
-component ResetScan inherits Tool {
+// A glyph on its own plate, apart from the words that keep the work and lighter than them.
+component ResetScan inherits Item {
     action: Act.reset;
-    word: @tr("RESET");
     icon: Icons.reset;
     help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
     enabled: Bar.can-reset;
@@ -107,14 +113,14 @@ component EditorKeys inherits HorizontalLayout {
         Tool {
             compact: root.compact;
             action: Act.framing;
-            word: @tr("CROP");
+            word: @tr("Crop");
             icon: Icons.framing;
             on: PanelState.tab == 1;
             help: self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
             latch: true;
             enabled: Bar.has-photo && Bar.single;
         }
-        Tool { compact: root.compact; action: Act.compare; word: @tr("COMPARE"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; latch: true; enabled: Bar.has-photo; }
+        Tool { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; latch: true; enabled: Bar.has-photo; }
         SelectAll { compact: root.compact; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
@@ -128,22 +134,22 @@ component EditorKeys inherits HorizontalLayout {
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup { plate: true;
-        Tool { compact: root.compact; action: Act.copy; word: @tr("COPY"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
+        Tool { compact: root.compact; action: Act.copy; word: @tr("Copy"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
         Tool {
             compact: root.compact;
             action: Act.paste;
-            word: @tr("PASTE");
+            word: @tr("Paste");
             icon: Icons.paste;
             help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, KeyWords.command-shift + "V") : @tr("Paste settings ({})", KeyWords.command-shift + "V");
             enabled: Bar.can-paste;
         }
         // The menu's title, which counts the photos the paste rewrites.
-        Tool { compact: root.compact; action: Act.paste-to-roll; word: @tr("PASTE TO ROLL"); icon: Icons.film-roll; help: Menus.titles.paste-to-roll; enabled: Bar.can-paste; }
+        Tool { compact: root.compact; action: Act.paste-to-roll; word: @tr("Paste to Roll"); icon: Icons.film-roll; help: Menus.titles.paste-to-roll; enabled: Bar.can-paste; }
     }
     Tool {
         compact: root.compact;
         action: Act.correction;
-        word: @tr("DE-DUST");
+        word: @tr("De-dust");
         icon: Icons.correction;
         on: PanelState.tab == 4;
         latch: true;
@@ -151,7 +157,7 @@ component EditorKeys inherits HorizontalLayout {
         enabled: Bar.has-photo && Bar.single;
     }
     ButtonGroup { plate: true;
-        ResetScan { compact: root.compact; }
+        ResetScan { }
     }
 }
 
@@ -164,9 +170,16 @@ component GalleryKeys inherits HorizontalLayout {
         SelectAll { compact: root.compact; }
     }
     RatingFilter { }
-    Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); keycap: true; help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
+    Word {
+        action: Act.prepare-roll;
+        text: @tr("PREPARE ROLL");
+        keycap: true;
+        kind: Bar.prepare-first ? ButtonKind.accent : ButtonKind.plain;
+        help: @tr("Prepare the Roll");
+        enabled: Bar.can-prepare;
+    }
     ButtonGroup { plate: true;
-        ResetScan { compact: root.compact; }
+        ResetScan { }
     }
     // The trash stands on a plate of its own, never beside a key that keeps the photo.
     ButtonGroup { plate: true;
@@ -234,18 +247,18 @@ export component Toolbar inherits Surface {
             }
         }
         // A glyph as Settings beside it, its width the same at every width of the window.
-        Item { action: Act.report; icon: Icons.chat; help: @tr("Report a Bug / Give Feedback"); }
+        Item { action: Act.report; icon: Icons.feedback; help: @tr("Report a Bug / Give Feedback"); }
         if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
-        // `ExportButton`: one slot, three faces (import in the gallery, export in the editor, an update over
-        // both), each the screen's one primary; the count of photos in its help; hidden while a roll is prepared.
+        // `ExportButton`: one slot, three faces (import in the gallery, export in the editor, an update over both),
+        // the primary except beside a roll awaiting Prepare Roll or off the archive; hidden while a roll is prepared.
         Word {
             property <bool> update: Bar.update-title != "";
             visible: !Preparing.shown;
             action: self.update ? Act.update : Bar.editing ? Act.export : Act.add-folder;
             text: self.update ? (Bar.updating ? @tr("UPDATING") : Bar.update-title) : Bar.editing ? @tr("EXPORT") : @tr("ADD FOLDER…");
             keycap: true;
-            kind: ButtonKind.accent;
+            kind: !Bar.prepare-first && (self.update || Bar.editing || Bar.archive) ? ButtonKind.accent : ButtonKind.plain;
             fixed-width: ShellStyle.export-width;
             help: self.update ? Bar.update-help
                 : !Bar.editing ? @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E")
