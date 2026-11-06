@@ -1,6 +1,6 @@
 //! The sidebars' keys where Swift lays them, read off the pointer's notes: beside a photo the
-//! column's keys sit on one mini plate left of the folder's pill, a filling plate spans its block with
-//! its words evenly apart, and a black and white photo has no Color block.
+//! column's keys sit on one mini plate left of the folder's pill, a filling plate spans its block and
+//! stops at its edge, its words evenly apart, and a black and white photo has no Color block.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, Navigator, PanelState, Tip};
@@ -52,6 +52,11 @@ fn keys_then_pill(met: &[(String, f32, f32)], target: &str, layout: &str, pill: 
 /// A plate filling its block: its three keys from the block's one edge to the other.
 fn fills_block(met: &[(String, f32, f32)], start: f32, edge: f32) -> bool {
     met.len() == 3 && met[0].1 - start <= 4.0 && edge - met[2].2 <= 4.0
+}
+
+/// A row of keys ending inside the block, none pushed past its edge.
+fn within(met: &[(String, f32, f32)], edge: f32) -> bool {
+    met.last().is_some_and(|last| last.2 <= edge)
 }
 
 /// The sum of a 565 pixel's three channels, each scaled to 8 bits.
@@ -160,6 +165,17 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     assert!(evenly_apart(&words), "COPY, PASTE and PASTE TO ROLL evenly apart: {words:?}");
     // Twin: COPY and PASTE hugging their words, PASTE TO ROLL centred in the rest of the plate.
     assert!(!evenly_apart(&[(968.0, 1000.0), (1024.0, 1059.0), (1124.0, 1210.0)]));
+
+    // Rotate & Mirror's plate alike: its worded keys span the block and stop at its edge.
+    let y = row_of(&rig, &tip, left + 20.0, "Rotate 90° Clockwise").expect("Rotate ↻ at the block's left");
+    let met = notes_along(&rig, &tip, left, right, y);
+    assert!(fills_block(&met, start, edge) && within(&met, edge), "the plate spans the block, inside it: {met:?}");
+    // Twin: keys running past the block's edge, as words too wide for the column push them.
+    let past = [(met[0].0.clone(), start, 1040.0), ("m".to_string(), 1041.0, 1150.0), ("v".to_string(), 1151.0, edge + 12.0)];
+    assert!(!within(&past, edge));
+    tip.set_shown(false);
+    let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
+    assert!(evenly_apart(&words), "Rotate ↻, Mirror ↔ and Mirror ↕ evenly apart: {words:?}");
 
     // `ColorPane`: a colour photo offers Auto White Balance; a black and white one has no Color block.
     let balance = "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";

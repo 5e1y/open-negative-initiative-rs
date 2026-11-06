@@ -6066,5 +6066,19 @@
     "title": "Flows, UX and UI owe the Swift app nothing; the result does",
     "status": "done",
     "detail": "Owner's call: the Swift app is deprecated and far behind in flows, UX and UI; its parity rule only served the rebuild. CLAUDE.md now keeps Swift as the reference for the result alone (the conversion's maths and constants, the sidecar format) and lets flows, UX and UI be rethought whole on the benches, as long as the result stays as good. UX Task fit asks that the structure follow the photographer's sequence; UI Spacing that a column's tab bar, header and rows share one inset."
+  },
+  {
+    "id": 1272,
+    "type": "interface",
+    "title": "Rotate & Mirror's keys say what they do: Rotate ↻, Mirror ↔, Mirror ↕",
+    "status": "done",
+    "detail": "UI evaluation s-0abd2d65 (Iconography, raised twice): the block showed three bare 16 pt glyphs, the rotate one read as a cup rather than a turn, and the vertical mirror borrowed the horizontal glyph turned a quarter. The three keys are now worded and share one plate alike, as Crop's COPY, PASTE and PASTE TO ROLL above them, the sign after each word (↻, ↔, ↕, all in Inter) showing how the photo moves; tooltips unchanged. Measured in Inter at the legend's size, each catalogue's three words fit the 308 pt column in capitals, three glyphs and words would not. French Pivoter ↻, Miroir ↔, Miroir ↕; Spanish Girar ↻, Espejo ↔, Espejo ↕. Window check the_panels_switches_follow_their_owner_and_its_blocks_reset presses each key by its word and asserts a quarter turn, a flip top for bottom and a flip left for right, each its own, which Crop's RESET then clears; the_sidebars_lay_their_keys_on_plates_as_swift finds the plate spanning its block and stopping at its edge, its words evenly apart (twin: keys pushed past the edge are refused)."
+  },
+  {
+    "id": 1273,
+    "type": "interface",
+    "title": "The Measuring Window's copy and paste are worded, and its reset is the block's own RESET",
+    "status": "done",
+    "detail": "UI evaluation s-0abd2d65 (Iconography): copy and paste were words in the toolbar and in Crop but bare glyphs in the Measuring Window; the block's reset glyph also shared their plate, against the rule that a key which resets never shares a plate with one that keeps. The block now resets through the RESET every block carries on its title's row, shown while a window is set; Set window / Apply window spans the column, lit while armed; Copy and Paste share a plate alike below it, worded as Crop's. On two rows the French Appliquer la fenêtre, in capitals, never crowds the copy keys off the column. The block's note says Reset takes the window away and Copy and Paste carry it from one photo to another. Window check the_panels_switches_follow_their_owner_and_its_blocks_reset copies the window, presses the RESET on the Measuring Window's row (one, and Crop's still leaves the window) and asserts it gone, then Paste lays it back."
   }
 ]

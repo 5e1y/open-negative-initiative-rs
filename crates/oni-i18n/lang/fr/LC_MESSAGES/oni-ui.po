@@ -897,7 +897,7 @@ msgstr "1 bloc enregistré"
 msgid "{} blocks recorded"
 msgstr "{} blocs enregistrés"
 
-#: crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copy"
 msgstr "Copier"
 
@@ -1506,8 +1506,16 @@ msgid "Turns the photo a quarter clockwise at each press, or flips it left for r
 msgstr "Tourne la photo d’un quart de tour dans le sens horaire à chaque pression, ou l’inverse gauche-droite ou haut-bas, comme l’exige un négatif numérisé à l’envers."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Rotate ↻"
+msgstr "Pivoter ↻"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Rotate 90° Clockwise"
 msgstr "Faire pivoter de 90° vers la droite"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Mirror ↔"
+msgstr "Miroir ↔"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Unmirror left for right"
@@ -1516,6 +1524,10 @@ msgstr "Annuler le retournement horizontal"
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Mirror left for right"
 msgstr "Retourner horizontalement"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Mirror ↕"
+msgstr "Miroir ↕"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Unmirror top for bottom"
@@ -1530,20 +1542,16 @@ msgid "Measuring Window"
 msgstr "Fenêtre de mesure"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "The part of the photo the balance keys and the histogram read, drawn on the photo while its key is lit; untouched, it follows the crop. The side keys reset it, copy it and paste it on other photos."
-msgstr "La partie de la photo que lisent les touches de balance et l’histogramme, tracée sur la photo tant que sa touche est allumée ; tant qu’on n’y touche pas, elle suit le recadrage. Les touches de côté la réinitialisent, la copient et la collent sur d’autres photos."
+msgid "The part of the photo the balance keys and the histogram read, drawn on the photo while its key is lit; untouched, it follows the crop. Reset takes it away, Copy and Paste carry it from one photo to another."
+msgstr "La partie de la photo que lisent les touches de balance et l’histogramme, tracée sur la photo tant que sa touche est allumée ; tant qu’on n’y touche pas, elle suit le recadrage. Réinitialiser la retire, Copier et Coller la portent d’une photo à l’autre."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Reset Measuring Window"
-msgstr "Réinitialiser la fenêtre de mesure"
+msgid "Apply window"
+msgstr "Appliquer la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "APPLY WINDOW"
-msgstr "APPLIQUER LA FENÊTRE"
-
-#: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "SET WINDOW"
-msgstr "RÉGLER LA FENÊTRE"
+msgid "Set window"
+msgstr "Régler la fenêtre"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it."
@@ -1552,6 +1560,10 @@ msgstr "Affiche un cadre sur la photo ; les touches de balance et l’histogram
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Copy Measuring Window"
 msgstr "Copier la fenêtre de mesure"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Paste"
+msgstr "Coller"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Paste Measuring Window"
