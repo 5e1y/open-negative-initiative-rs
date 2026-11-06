@@ -28,12 +28,12 @@ export component CropPane inherits Pane {
                 LcdReadout { text: Framing.kept; }
             }
         }
-        ButtonGroup { plate: true;
+        ButtonGroup {
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("Copy Crop"); help: @tr("Copies this photo's crop: its frame, ratio, angle, turns, mirrors and measuring window."); clicked => { Framing.act(Act.copy-framing); } }
-            Button { size: ButtonSize.plate; text: @tr("Paste Crop"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
+            Button { text: @tr("Copy Crop"); help: @tr("Copies this photo's crop: its frame, ratio, angle, turns, mirrors and measuring window."); clicked => { Framing.act(Act.copy-framing); } }
+            Button { text: @tr("Paste Crop"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
         }
-        Button { size: ButtonSize.plate; text: @tr("Paste Crop to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
+        Button { text: @tr("Paste Crop to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
     }
     Section {
         title: @tr("Aspect Ratio");
@@ -58,13 +58,13 @@ export component CropPane inherits Pane {
     Section {
         title: @tr("Rotate & Mirror");
         help: @tr("Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs.");
-        // Worded keys sharing the plate alike, the sign after each word showing how the photo moves;
+        // Worded keys sharing the row alike, the sign after each word showing how the photo moves;
         // none of them ever lights.
-        ButtonGroup { plate: true;
+        ButtonGroup {
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("Rotate ↻"); help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
-            Button { size: ButtonSize.plate; text: @tr("Mirror ↔"); help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
-            Button { size: ButtonSize.plate; text: @tr("Mirror ↕"); help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
+            Button { text: @tr("Rotate ↻"); help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
+            Button { text: @tr("Mirror ↔"); help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
+            Button { text: @tr("Mirror ↕"); help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
         }
     }
     Section {
@@ -78,7 +78,6 @@ export component CropPane inherits Pane {
         Label { role: TextRole.note; text: @tr("Acts on this photo alone: the balance keys and the histogram read only what it frames."); }
         // `MeasureWindowKeys`: the long sentence is the key's own, lit while armed.
         Button {
-            size: ButtonSize.plate;
             text: Framing.armed ? @tr("Apply Window") : @tr("Set Window");
             on: Framing.armed;
             latch: true;
@@ -86,10 +85,10 @@ export component CropPane inherits Pane {
             clicked => { Framing.act(Act.window-arm); }
         }
         // Named for the window they carry, apart from the crop's keys and the bar's.
-        ButtonGroup { plate: true;
+        ButtonGroup {
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: @tr("Copy Window"); help: @tr("Copy Measuring Window"); enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
-            Button { size: ButtonSize.plate; text: @tr("Paste Window"); help: @tr("Paste Measuring Window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
+            Button { text: @tr("Copy Window"); help: @tr("Copy Measuring Window"); enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
+            Button { text: @tr("Paste Window"); help: @tr("Paste Measuring Window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
         }
     }
 }

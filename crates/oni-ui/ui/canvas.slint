@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips, KeyScope } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips, KeyScope } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
@@ -320,16 +320,13 @@ export component CanvasCard inherits Card {
         width: self.preferred-width;
         height: self.preferred-height;
         alignment: center;
-        // `KeycapPlate(variant: .mini)`: the column's key alone on its plate.
-        ButtonGroup { plate: true; mini: true;
-            Button { has-icon: true; square: true;
-                size: ButtonSize.mini;
-                icon: Icons.menu-left;
-                help: root.library-hidden ? @tr("Show the Library ({})", KeyWords.option-command + "[") : @tr("Hide the Library ({})", KeyWords.option-command + "[");
-                clicked => {
-                    root.column-toggled(true);
-                    root.menu(Act.hide-library);
-                }
+        Button { has-icon: true; square: true;
+            size: ButtonSize.mini;
+            icon: Icons.menu-left;
+            help: root.library-hidden ? @tr("Show the Library ({})", KeyWords.option-command + "[") : @tr("Hide the Library ({})", KeyWords.option-command + "[");
+            clicked => {
+                root.column-toggled(true);
+                root.menu(Act.hide-library);
             }
         }
     }
@@ -339,41 +336,39 @@ export component CanvasCard inherits Card {
         y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
         height: self.preferred-height;
-        spacing: Space.s;
+        spacing: ButtonStyle.apart;
         alignment: center;
-        if Canvas.hz != "": Label { text: Canvas.hz; role: TextRole.value; }
-        // The tag tells a picture enlarged from its preview, whose softness is not the scan's own.
-        Rectangle {
-            min-width: readout.preferred-width;
-            preferred-width: readout.preferred-width;
-            readout := Label {
-                width: parent.width;
-                height: parent.height;
-                text: Canvas.enlarged ? @tr("{} · preview", Canvas.zoom-label) : Canvas.zoom-label;
-                role: TextRole.value;
-            }
-            TouchArea {
-                changed has-hover => { Tips.hover(self.has-hover && Canvas.enlarged, @tr("Enlarged from its preview: the grain and sharpness are not the file’s own"), self.absolute-position.x, self.absolute-position.y + self.height); }
-            }
-        }
-        // `KeycapPlate(.mini)`: the two zoom keys flush on one plate.
-        ButtonGroup {
-            plate: true;
-            mini: true;
-            align: GroupAlign.center;
-            Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.zoom-out; enabled: Canvas.can-zoom-out; help: @tr("Zoom Out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
-            Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.zoom-in; enabled: Canvas.can-zoom-in; help: @tr("Zoom In ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
-        }
-        // `columnKey(.trailing)`: the Panel's key alone on its mini plate, last in the zoom bubble.
-        ButtonGroup { plate: true; mini: true; align: GroupAlign.center;
-            Button { has-icon: true; square: true;
-                size: ButtonSize.mini;
-                icon: Icons.menu-right;
-                help: root.panel-hidden ? @tr("Show the Panel ({})", KeyWords.option-command + "]") : @tr("Hide the Panel ({})", KeyWords.option-command + "]");
-                clicked => {
-                    root.column-toggled(false);
-                    root.menu(Act.hide-panel);
+        // The zoom's readouts and its two keys, then the Panel's key apart, last in the bubble.
+        HorizontalLayout {
+            spacing: Space.s;
+            if Canvas.hz != "": Label { text: Canvas.hz; role: TextRole.value; }
+            // The tag tells a picture enlarged from its preview, whose softness is not the scan's own.
+            Rectangle {
+                min-width: readout.preferred-width;
+                preferred-width: readout.preferred-width;
+                readout := Label {
+                    width: parent.width;
+                    height: parent.height;
+                    text: Canvas.enlarged ? @tr("{} · preview", Canvas.zoom-label) : Canvas.zoom-label;
+                    role: TextRole.value;
                 }
+                TouchArea {
+                    changed has-hover => { Tips.hover(self.has-hover && Canvas.enlarged, @tr("Enlarged from its preview: the grain and sharpness are not the file’s own"), self.absolute-position.x, self.absolute-position.y + self.height); }
+                }
+            }
+            ButtonGroup {
+                align: GroupAlign.center;
+                Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.zoom-out; enabled: Canvas.can-zoom-out; help: @tr("Zoom Out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
+                Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.zoom-in; enabled: Canvas.can-zoom-in; help: @tr("Zoom In ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
+            }
+        }
+        Button { has-icon: true; square: true;
+            size: ButtonSize.mini;
+            icon: Icons.menu-right;
+            help: root.panel-hidden ? @tr("Show the Panel ({})", KeyWords.option-command + "]") : @tr("Hide the Panel ({})", KeyWords.option-command + "]");
+            clicked => {
+                root.column-toggled(false);
+                root.menu(Act.hide-panel);
             }
         }
     }

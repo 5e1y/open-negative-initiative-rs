@@ -192,31 +192,34 @@ export component KeysPage inherits Rectangle {
             // The app's own keys as its screens lay them: flat, a keycap only where `keycap` asks for one.
             Section {
                 title: "THE APP'S KEYS";
-                source: "ui/ds/button.slint · a flat face lit by the hand and by on; keycaps switch the mode, commit or run an automatic action";
+                source: "ui/ds/button.slint · a flat face in its own edge, lit by the hand and by on; keycaps switch the mode, commit or run an automatic action, a plate their socket";
                 StateRow {
                     label: "flat";
-                    Button { text: "COPY"; }
-                    Button { text: "PASTE"; enabled: false; }
+                    Button { text: "Copy"; }
+                    Button { text: "Paste"; enabled: false; }
                     Button { has-icon: true; square: true; icon: Icons.correction; }
                     Button { has-icon: true; square: true; icon: Icons.correction; on: true; }
                     Button { has-icon: true; square: true; icon: Icons.remove; kind: ButtonKind.destructive; }
                     Button { text: "OK"; kind: ButtonKind.accent; }
                 }
                 StateRow {
-                    label: "plate, mini";
-                    ButtonGroup { plate: true;
-                        Button { text: "FILM"; on: true; }
-                        Button { text: "BASE"; }
-                        Button { text: "FLAGS"; enabled: false; }
+                    label: "group, mini";
+                    ButtonGroup {
+                        Button { text: "Film"; on: true; }
+                        Button { text: "Base"; }
+                        Button { text: "Flags"; enabled: false; }
                     }
-                    Button { size: ButtonSize.mini; text: "RESET"; }
+                    Button { size: ButtonSize.mini; text: "Reset"; }
                     Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.chevron-down; }
                 }
                 StateRow {
-                    label: "keycap";
+                    label: "keycap, plate";
                     Button { keycap: true; text: "GALLERY"; }
                     Button { keycap: true; text: "EXPORT"; kind: ButtonKind.accent; }
                     Button { keycap: true; text: "REMOVE"; enabled: false; }
+                    ButtonGroup { plate: true;
+                        Button { keycap: true; text: "AUTO WHITE BALANCE"; }
+                    }
                 }
             }
             // Every size the Swift app gives a keycap: its variant (factor, legend), its height, and where.

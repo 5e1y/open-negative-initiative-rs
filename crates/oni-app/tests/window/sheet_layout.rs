@@ -248,9 +248,11 @@ pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
 
 /// The clear gap between what leaves and what commits, the proposal's 12 pt at the least.
 const FOOTER_GAP: f32 = 12.0;
+/// Swift's `DS.Space.sm` between the keys of one group.
+const GROUP_GAP: f32 = 8.0;
 
-/// A sheet's footer: Cancel flat at its left, the commit a keycap alone at its right, a clear gap between.
-/// Twin: a question's Cancel and its key share one plate, flush.
+/// A sheet's footer: Cancel flat at its left, the commit a keycap alone at its right, a clear gap between;
+/// a question's Cancel and its key a group's gap apart, a destructive key twice that.
 pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
@@ -277,8 +279,17 @@ pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     confirm.set_key("Delete".into());
     confirm.set_shown(true);
     rig.settle();
-    let (cancel, delete) = (common::the(&window, Role::Button, "Cancel"), common::the(&window, Role::Button, "Delete"));
-    let gap = delete.x - (cancel.x + cancel.width);
-    assert!(gap < FOOTER_GAP, "twin: the measure sees a plate's keys flush: {gap} pt");
+    let gap = || {
+        rig.settle();
+        let (cancel, delete) = (common::the(&window, Role::Button, "Cancel"), common::the(&window, Role::Button, "Delete"));
+        delete.x - (cancel.x + cancel.width)
+    };
+    let kept = gap();
+    assert!((kept - GROUP_GAP).abs() < 1.0, "a question's keys a group's gap apart: {kept} pt");
+    confirm.set_destructive(true);
+    let removing = gap();
+    assert!(removing >= 2.0 * GROUP_GAP - 1.0, "a destructive key apart from Cancel: {removing} pt");
+    // Twin: the measure reads a group's gap as less than the destructive key's.
+    assert!(kept < removing, "twin: Cancel beside a key that keeps stands nearer: {kept} {removing}");
     window.hide().unwrap();
 }

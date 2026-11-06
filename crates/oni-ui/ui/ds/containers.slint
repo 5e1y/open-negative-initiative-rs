@@ -229,7 +229,7 @@ export component SheetFooter inherits HorizontalLayout {
     cross-axis-alignment: center;
     if root.cancel != "": Button { text: root.cancel; clicked => { root.cancelled(); } }
     @children
-    // Two gaps at the least, so what leaves never reads as one plate with what commits.
+    // Two gaps at the least, so what leaves never reads as one group with what commits.
     Rectangle { horizontal-stretch: 1; }
     if root.back != "": Button { text: root.back; clicked => { root.backed(); } }
     if root.commit != "": Button {
@@ -248,8 +248,8 @@ export enum AskRole { confirm, destructive, option }
 export struct AskKey { text: string, role: AskRole }
 
 // `DSDialogPanel`: a question as a sheet, its message, a field when it asks for a word, then Cancel
-// and its keys on one plate at the end. `answered` gives the key's place, -1 for Cancel and Escape,
-// with the field's text; Return in the field presses `default-key`.
+// and its keys at the end, a destructive one apart from those beside it. `answered` gives the key's
+// place, -1 for Cancel and Escape, with the field's text; Return in the field presses `default-key`.
 export component AskSheet inherits Sheet {
     in property <string> message;
     in property <bool> field;
@@ -269,12 +269,17 @@ export component AskSheet inherits Sheet {
         accepted(typed) => { root.answered(root.default-key, typed); }
         init => { self.take-focus(); }
     }
-    ButtonGroup { plate: true; align: GroupAlign.end;
+    ButtonGroup { align: GroupAlign.end;
         if root.cancel != "": Button { text: root.cancel; clicked => { root.answered(-1, ""); } }
-        for key[i] in root.keys: Button {
-            text: key.text;
-            kind: key.role == AskRole.confirm ? ButtonKind.accent : key.role == AskRole.destructive ? ButtonKind.destructive : ButtonKind.plain;
-            clicked => { root.answered(i, root.text); }
+        // A key that removes stands apart from the key before it and the key after it.
+        for key[i] in root.keys: HorizontalLayout {
+            property <bool> beside: key.role == AskRole.destructive || root.keys[max(0, i - 1)].role == AskRole.destructive;
+            padding-left: (i > 0 || root.cancel != "") && self.beside ? ButtonStyle.apart - ButtonStyle.group-gap : 0px;
+            Button {
+                text: key.text;
+                kind: key.role == AskRole.confirm ? ButtonKind.accent : key.role == AskRole.destructive ? ButtonKind.destructive : ButtonKind.plain;
+                clicked => { root.answered(i, root.text); }
+            }
         }
     }
 }
@@ -311,7 +316,7 @@ export component Toast inherits Rectangle {
             width: root.width;
             if root.title != "": Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
             Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
-            ButtonGroup { plate: true; align: GroupAlign.end;
+            ButtonGroup { align: GroupAlign.end;
                 if root.action != "": Button { text: root.action; clicked => { root.acted(); } }
                 Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { root.closed(); } }
             }
@@ -344,7 +349,7 @@ export component Banner inherits Raised {
             Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
             if root.keys.length > 0: VerticalLayout {
                 padding-top: Space.s;
-                ButtonGroup { plate: true; align: GroupAlign.end;
+                ButtonGroup { align: GroupAlign.end;
                     for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
                 }
             }

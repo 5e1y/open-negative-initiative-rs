@@ -1,5 +1,5 @@
 //! The sidebars' keys read off the pointer's notes: beside a photo the column's header is a select in
-//! words, a filling plate spans its block with its words evenly apart, and a black and white photo has
+//! words, a filling group spans its block with its words evenly apart, and a black and white photo has
 //! no Color block.
 
 use oni_app::app::{Options, Shell};
@@ -48,7 +48,7 @@ fn worded(met: &[(String, f32, f32)]) -> bool {
     met.is_empty()
 }
 
-/// A plate filling its block: its keys from the block's one edge to the other.
+/// A group filling its block: its keys from the block's one edge to the other.
 fn fills_block(met: &[(String, f32, f32)], start: f32, edge: f32) -> bool {
     met.len() > 1 && met[0].1 - start <= 4.0 && met.last().is_some_and(|last| edge - last.2 <= 4.0)
 }
@@ -84,13 +84,18 @@ fn words_along(rig: &common::Rig, from: f32, to: f32, top: f32, height: f32) -> 
     words
 }
 
-/// Each word centred in its equal share of the plate, to within a few points.
+/// Swift's `DS.Space.sm` between the keys of one group.
+const GROUP_GAP: f32 = 8.0;
+
+/// Each word centred on its key, the group's keys sharing its width alike a group's gap apart, to
+/// within a few points.
 fn evenly_apart(words: &[(f32, f32)], start: f32, edge: f32) -> bool {
-    let share = (edge - start) / words.len().max(1) as f32;
-    words.len() > 1 && words.iter().enumerate().all(|(i, w)| ((w.0 + w.1) / 2.0 - start - share * (i as f32 + 0.5)).abs() <= 3.0)
+    let n = words.len().max(1) as f32;
+    let key = (edge - start - GROUP_GAP * (n - 1.0)) / n;
+    words.len() > 1 && words.iter().enumerate().all(|(i, w)| ((w.0 + w.1) / 2.0 - start - (key + GROUP_GAP) * i as f32 - key / 2.0).abs() <= 3.0)
 }
 
-pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
+pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the sidebars are not exercised"),
@@ -130,7 +135,7 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     // Twin: a row of glyph keys, each read off its note, is refused.
     assert!(!worded(&[("Show the Selected Photo".to_string(), 16.0, 40.0), ("Names only".to_string(), 40.0, 64.0)]));
 
-    // The crop's first plate spans its block, its two keys sharing the room alike.
+    // The crop's first group spans its block, its two keys sharing the room alike.
     panel.set_tab(1);
     panel.invoke_tab_picked(1);
     w.global::<Framing>().invoke_act(oni_app::Act::CopyFraming);
@@ -142,20 +147,20 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     let met = notes_along(&rig, &tip, left, right, y);
     // The block's edges: the panel's, less the section's inset (`Space.md`).
     let (start, edge) = (left + 16.0, right - 16.0);
-    assert!(fills_block(&met, start, edge), "the plate spans the block: {met:?}");
-    // Twin: three keys hugging their words at the block's left is no filling plate.
+    assert!(fills_block(&met, start, edge), "the group spans the block: {met:?}");
+    // Twin: three keys hugging their words at the block's left is no filling group.
     let hugging = [(copy.to_string(), 956.0, 990.0), ("p".to_string(), 992.0, 1030.0), ("r".to_string(), 1032.0, 1100.0)];
     assert!(!fills_block(&hugging, start, edge));
     tip.set_shown(false);
     let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
     assert!(evenly_apart(&words, start, edge), "Copy Crop and Paste Crop evenly apart: {words:?}");
-    // Twin: keys hugging their words, the last centred in the rest of the plate.
+    // Twin: keys hugging their words, the last centred in the rest of the group.
     assert!(!evenly_apart(&[(968.0, 1000.0), (1024.0, 1059.0), (1124.0, 1210.0)], start, edge));
 
-    // Rotate & Mirror's plate alike: its worded keys span the block and stop at its edge.
+    // Rotate & Mirror's group alike: its worded keys span the block and stop at its edge.
     let y = row_of(&rig, &tip, left + 20.0, "Rotate 90° Clockwise").expect("Rotate ↻ at the block's left");
     let met = notes_along(&rig, &tip, left, right, y);
-    assert!(fills_block(&met, start, edge) && within(&met, edge), "the plate spans the block, inside it: {met:?}");
+    assert!(fills_block(&met, start, edge) && within(&met, edge), "the group spans the block, inside it: {met:?}");
     // Twin: keys running past the block's edge, as words too wide for the column push them.
     let past = [(met[0].0.clone(), start, 1040.0), ("m".to_string(), 1041.0, 1150.0), ("v".to_string(), 1151.0, edge + 12.0)];
     assert!(!within(&past, edge));

@@ -42,11 +42,11 @@ export component DedustPane inherits Pane {
             align: GroupAlign.fill;
             // Lit while what it found shows, which a second press hides.
             Button {
-                size: ButtonSize.plate; text: @tr("DETECT"); keycap: true; on: Dedust.found-shown; fills: true; enabled: !Dedust.detecting;
+                text: @tr("DETECT"); keycap: true; on: Dedust.found-shown; fills: true; enabled: !Dedust.detecting;
                 help: Dedust.found-shown ? @tr("Hides the dust found, changing nothing.") : @tr("Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it.");
                 clicked => { Dedust.detect(); }
             }
-            Button { size: ButtonSize.plate; text: @tr("REMOVE"); keycap: true; fills: true; enabled: Dedust.found > 0; help: @tr("Lays one patch on each speck of dust ringed."); clicked => { Dedust.remove-found(); } }
+            Button { text: @tr("REMOVE"); keycap: true; fills: true; enabled: Dedust.found > 0; help: @tr("Lays one patch on each speck of dust ringed."); clicked => { Dedust.remove-found(); } }
         }
         if Dedust.found-note != "": Label { text: Dedust.found-note; role: TextRole.note; }
     }
