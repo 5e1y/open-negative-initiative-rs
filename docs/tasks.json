@@ -6612,5 +6612,26 @@
     "title": "One lamp for every latching key, and Undo names the slider it takes back",
     "status": "done",
     "detail": "UI and UX evaluation (UI Clarity, UI Consistency, UX Trust): the contact-sheet key read Whole Roll in both modes, meaning select all in the gallery and the roll together in the editor, and was the one latching key with no lamp; Undo's tooltip named no edit while Redo's named gestures. The key now says Select All in the gallery and Whole Roll beside a photo, and wears a lamp lit while every photo it picks is picked (Bar.whole, from the same rule its press reads). A step with no label of its own, an edit, is named by the one slider it moved, read on the open frame (Undo Exposure, Redo Exposure); an edit that moved several values keeps the bare word. Unit check menus::an_edit_is_named_by_the_one_slider_it_moved, with twins on two values and none; window check gestures reads Undo Exposure and Redo Exposure."
+  },
+  {
+    "id": 1338,
+    "type": "ui",
+    "title": "A lamp reads at rest, and a switch is lit as a lamp while on",
+    "status": "done",
+    "detail": "Evaluation R3: the unlit lamps of Crop, Compare, De-dust and Set window were dark glass in a dark groove, 1.6:1 on the key's face, and read as specks or unread badges at the legend's top right. A lamp is now dark glass in a light rim at rest (over 3:1 on the face, SurfaceStyle.lamp-rim) on the legend's middle line, its glass and rim glowing when lit. A switch differed by its lever's side and a grey I or O: what the knob uncovers now follows the lamps' rule, the slot lit in a lit lamp's phosphor while on (ToggleStyle.lit), a Lamp at rest in the hollow while off; the I and O marks and their three tokens go. The states check measures the lamp at rest against the face and the switch's slot against the lit threshold, each with a twin."
+  },
+  {
+    "id": 1339,
+    "type": "ui",
+    "title": "The primary keycap is calm, and a keycap out of reach keeps its relief",
+    "status": "done",
+    "detail": "Evaluation R3: the saturated system-blue EXPORT keycap was the brightest thing beside the photo on every editor screen. The accent key's face is now the accent sunk into the keycap's grey (ButtonStyle.primary), one accent still, calm beside the photo. De-dust's REMOVE, a keycap out of reach, faded whole and read as a flat key beside DETECT: a keycap out of reach now keeps its relief, its legend alone fading and the primary's tint going, while a flat key still fades whole; DETECT and REMOVE stand a gap apart rather than on one flat plate. The states check measures the relief kept, with a cap faded whole as its twin; the bar's width check picks its row by the four keys alone, a disabled cap across the bar now drawn whole."
+  },
+  {
+    "id": 1340,
+    "type": "ui",
+    "title": "One footer for every sheet: Cancel at the left, the commit keycap alone at the right",
+    "status": "done",
+    "detail": "Evaluation R3: the sheets' footers followed three patterns, and Cancel butted against NEXT or EXPORT on one plate. SheetFooter lays the flat key that leaves at the left with what the sheet adds beside it, then apart at the right a step back and the commit alone, the accent keycap, flat while it writes nothing (the prepare's Skip, a failure's OK). Prepare the Roll, Export, Save a Preset, the preset editor, Settings, Pair Phone, Report a Bug, the welcome, the RAW notice, the catch-up and the DNG converter all end on it: the preset's Save becomes its keycap, Back stands beside the step's key far from Cancel, and Forget Phones leaves DONE's plate. A question's answers keep their own row. A window check measures Cancel apart from SEND on Report a Bug, a question's flush plate its twin."
   }
 ]

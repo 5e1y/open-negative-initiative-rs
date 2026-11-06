@@ -47,7 +47,8 @@ fn runs(w: usize, px: &[u16]) -> Vec<usize> {
         }
         out
     };
-    (top..top + 12).map(along).find(|r| r.len() == 8).expect("a row crossing the four keys")
+    // The cap's neighbour nearer than the cap is wide: a key across the bar is none of the four.
+    (top..top + 12).map(along).find(|r| r.len() == 8 && r[1] < r[0]).expect("a row crossing the four keys")
 }
 
 pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {

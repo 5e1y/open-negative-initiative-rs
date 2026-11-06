@@ -66,10 +66,10 @@ component Face inherits Rectangle {
             letter-spacing: root.tracking;
         }
     }
-    // `keycapOrnament`: the lamp at the legend's top right, a step past its last letter, on the face.
+    // The lamp after the legend, on its middle line: an indicator on the face, never a badge at its corner.
     if root.lamp-shown: Lamp {
-        x: legend.x + legend.width + Space.s - self.width;
-        y: (parent.height - root.legend) / 2;
+        x: legend.x + legend.width + Space.xs;
+        y: (parent.height - self.height) / 2;
         lit: root.lamp-lit;
         colour: ButtonStyle.latch;
     }
@@ -119,7 +119,8 @@ export component Button inherits Rectangle {
     property <bool> mini: root.size == ButtonSize.mini;
     property <bool> ghost: root.kind == ButtonKind.ghost;
     property <bool> swatch: root.fill.alpha > 0;
-    property <color> tint: root.swatch ? root.fill : root.kind == ButtonKind.accent ? Colour.accent : transparent;
+    // The primary's face only while it can act: out of reach, it is a key like any other.
+    property <color> tint: root.swatch ? root.fill : root.kind == ButtonKind.accent && root.enabled ? ButtonStyle.primary : transparent;
     // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
     property <color> face: root.tint.alpha > 0 ? root.tint : root.on ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
@@ -161,8 +162,9 @@ export component Button inherits Rectangle {
         : self.height;
     preferred-width: self.min-width;
     horizontal-stretch: root.fills ? 1 : 0;
-    // Out of reach, the whole key fades, its face with its glyph.
-    opacity: root.enabled ? 1 : State.disabled;
+    // Out of reach, a flat key fades whole, its face with its glyph; a keycap keeps its relief, its legend faded.
+    property <float> fade: root.enabled ? 1 : State.disabled;
+    opacity: root.keycap ? 1 : root.fade;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
     accessible-enabled: root.enabled;
@@ -202,6 +204,7 @@ export component Button inherits Rectangle {
             background: root.pressed ? ButtonStyle.veil-pressed : root.hovered ? ButtonStyle.veil : transparent;
         }
         Face {
+            opacity: root.keycap ? root.fade : 1;
             word: root.word;
             worded: root.worded;
             icon: root.icon;

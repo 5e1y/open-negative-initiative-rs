@@ -37,7 +37,8 @@ export component DedustPane inherits Pane {
         help: @tr("Detect shows, under a veil, every pixel past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed.");
         separated: false;
         SensitivitySlider { }
-        ButtonGroup { plate: true;
+        // Two keycaps a gap apart, as keys stand, never one plate.
+        ButtonGroup {
             align: GroupAlign.fill;
             // Lit while what it found shows, which a second press hides.
             Button {

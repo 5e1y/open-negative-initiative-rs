@@ -36,10 +36,8 @@ export global TabsStyle {
 export global ToggleStyle {
     out property <length> travel: DS.control-toggle-cell-width;
     out property <length> slot: DS.control-track-height;
-    // The I and O engraved at the slot's ends, half its height: I dark on the lit stretch, O light on the hollow.
-    out property <length> mark: ToggleStyle.slot / 2;
-    out property <color> on-mark: DS.palette-text-on-light;
-    out property <color> off-mark: DS.palette-text-secondary;
+    // The stretch the knob uncovers while on, in a lit lamp's phosphor.
+    out property <color> lit: DS.palette-lcd-ink;
 }
 
 // `DSMedal`: a foil disc; `press` is the scale a pressed one shrinks to.
