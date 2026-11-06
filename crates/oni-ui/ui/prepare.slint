@@ -78,7 +78,7 @@ export component RollPanel inherits Surface {
             spacing: Space.s;
             padding-bottom: Space.s;
             Label { role: TextRole.heading; text: Preparing.heading; wrap: word-wrap; }
-            if Preparing.detail != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.detail; wrap: word-wrap; }
+            if Preparing.detail != "": Label { role: TextRole.note; text: Preparing.detail; }
         }
         // In a box of its own, so the body's width never feeds the layout it sits in.
         Rectangle {
@@ -97,7 +97,7 @@ export component RollPanel inherits Surface {
                     spacing: Space.m;
                     if Preparing.step == 0: VerticalLayout {
                         spacing: Space.m;
-                        if Preparing.left-out != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.left-out; wrap: word-wrap; }
+                        if Preparing.left-out != "": Label { role: TextRole.note; text: Preparing.left-out; }
                         Field {
                             label: @tr("Film type");
                             Tabs {
@@ -137,7 +137,7 @@ export component RollPanel inherits Surface {
                             Label { text: @tr("Check the grouping"); }
                             Label { role: TextRole.note; tone: Tone.warning; text: Preparing.grouping-remark; }
                         }
-                        if Preparing.passes-note != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.passes-note; wrap: word-wrap; }
+                        if Preparing.passes-note != "": Label { role: TextRole.note; text: Preparing.passes-note; }
                     }
                     if Preparing.step == 1: VerticalLayout {
                         spacing: Space.m;

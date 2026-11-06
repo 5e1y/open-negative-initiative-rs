@@ -212,7 +212,7 @@ export component RenameField inherits FocusScope {
     }
 }
 
-// `SizeFields`: W × H, centred title digits in one hollow a keycap tall, lit while either holds the
+// `SizeFields`: W × H, centred digits in one hollow a field tall, lit while either holds the
 // focus. Return in a box, or the focus leaving it, hands both to `typed`.
 export component SizeFields inherits HorizontalLayout {
     // The owner's numbers, pushed in at each change, and what the boxes hold.
@@ -237,7 +237,7 @@ export component SizeFields inherits HorizontalLayout {
     Inward {
         horizontal-stretch: 1;
         min-width: row.min-width;
-        height: FieldStyle.boxes-height;
+        height: FieldStyle.height;
         ground: FieldStyle.ground;
         radius: FieldStyle.radius;
         hollow: true;
@@ -250,14 +250,14 @@ export component SizeFields inherits HorizontalLayout {
             spacing: Space.xs;
             wide := Entry {
                 width: FieldStyle.size-box; horizontal-stretch: 0;
-                placeholder: @tr("W"); name: @tr("Width"); role: TextRole.title; centred: true; enabled: root.enabled;
+                placeholder: @tr("W"); name: @tr("Width"); centred: true; enabled: root.enabled;
                 accepted => { root.commit(); }
                 left => { root.commit(); }
             }
-            Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
+            Label { text: "×"; tone: Tone.secondary; }
             high := Entry {
                 width: FieldStyle.size-box; horizontal-stretch: 0;
-                placeholder: @tr("H"); name: @tr("Height"); role: TextRole.title; centred: true; enabled: root.enabled;
+                placeholder: @tr("H"); name: @tr("Height"); centred: true; enabled: root.enabled;
                 accepted => { root.commit(); }
                 left => { root.commit(); }
             }
@@ -281,7 +281,7 @@ export component DateFields inherits HorizontalLayout {
     alignment: start;
     Inward {
         width: row.preferred-width;
-        height: FieldStyle.boxes-height;
+        height: FieldStyle.height;
         ground: FieldStyle.ground;
         radius: FieldStyle.radius;
         hollow: true;
@@ -296,21 +296,21 @@ export component DateFields inherits HorizontalLayout {
             spacing: Space.xs;
             m := Entry {
                 width: FieldStyle.date-box; horizontal-stretch: 0;
-                placeholder: @tr("MM"); name: @tr("Month"); role: TextRole.title; centred: true;
+                placeholder: @tr("MM"); name: @tr("Month"); centred: true;
                 rim: rim.has-hover || d.hovered || y.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
-            Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
+            Label { tone: Tone.secondary; text: "/"; }
             d := Entry {
                 width: FieldStyle.date-box; horizontal-stretch: 0;
-                placeholder: @tr("DD"); name: @tr("Day"); role: TextRole.title; centred: true;
+                placeholder: @tr("DD"); name: @tr("Day"); centred: true;
                 rim: rim.has-hover || m.hovered || y.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
-            Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
+            Label { tone: Tone.secondary; text: "/"; }
             y := Entry {
                 width: FieldStyle.year-box; horizontal-stretch: 0;
-                placeholder: @tr("YYYY"); name: @tr("Year"); role: TextRole.title; centred: true;
+                placeholder: @tr("YYYY"); name: @tr("Year"); centred: true;
                 rim: rim.has-hover || m.hovered || d.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }

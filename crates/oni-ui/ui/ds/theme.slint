@@ -5,6 +5,8 @@ export { DS }
 export { SliderStyle, PlotStyle } from "theme_sliders.slint";
 export { TabsStyle, ToggleStyle, PickerStyle, MedalStyle } from "theme_tabs.slint";
 export { SurfaceStyle, SealStyle, Foil } from "theme_surfaces.slint";
+import { Type } from "theme_type.slint";
+export { Type }
 
 // Surfaces from back to front, then inks, then the meaning colours.
 export global Colour {
@@ -96,20 +98,6 @@ export global Stroke {
     out property <length> trace: DS.stroke-trace;
 }
 
-export global Type {
-    out property <string> family: DS.typo-label-family;
-    out property <int> regular: DS.typo-label-weight;
-    out property <int> medium: 500;
-    out property <int> strong: 600;
-    out property <int> bold: 700;
-    out property <length> label: DS.typo-label-size;
-    out property <length> value: DS.typo-value-size;
-    out property <length> chip: DS.typo-chip-size;
-    out property <length> title: DS.typo-title-size;
-    out property <length> section: DS.typo-section-size;
-    out property <length> heading: DS.typo-heading-size;
-}
-
 // Opacities of a state, never of a colour.
 export global State {
     out property <float> disabled: DS.state-missing;
@@ -171,9 +159,9 @@ export global ButtonStyle {
     // switch the mode, commit a screen or run an automatic action.
     out property <length> cap-height: DS.control-keycap-height;
     out property <color> cap: DS.palette-keycap;
-    // The legend: `Keycap.Variant.fontSize`, bold, 0.5 pt apart, on every key.
-    out property <length> legend: 10.5px;
-    out property <length> mini-legend: 9px;
+    // The legend, bold and 0.5 pt apart on every key, at a step of the type scale.
+    out property <length> legend: Type.caption;
+    out property <length> mini-legend: Type.micro;
     out property <int> legend-weight: 700;
     out property <length> legend-tracking: 0.5px;
 }
@@ -265,8 +253,8 @@ export global TipStyle {
     out property <length> padding-y: Space.xs;
     out property <length> offset: Space.xs;
     out property <length> max-width: 320px;
-    // A help mark's card: a square demo over its note.
-    out property <length> card-width: 260px;
+    // A help mark's card: a square demo over its note, wide enough for a note's lines at a label's size.
+    out property <length> card-width: 300px;
     out property <length> card-radius: Radius.control;
 }
 

@@ -45,9 +45,9 @@ export component Info inherits Surface {
                         alignment: center;
                         StockIcon { artwork: Library.stock-artwork; has-artwork: Library.stock-has-artwork; side: StockStyle.hero; }
                     }
-                    if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
-                    if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
-                    if Library.stock-dyes != "": Label { text: Library.stock-dyes; role: TextRole.note; tone: Tone.secondary; centred: true; }
+                    if Library.stock != "": Label { text: Library.stock; centred: true; }
+                    if Library.stock-note != "": Label { text: Library.stock-note; role: TextRole.note; centred: true; }
+                    if Library.stock-dyes != "": Label { text: Library.stock-dyes; role: TextRole.note; centred: true; }
                     Button { text: @tr("Select Film Stock"); clicked => { Library.select-roll-type(); } }
                 }
                 Section {
@@ -68,7 +68,7 @@ export component Info inherits Surface {
                             clicked => { Library.shot-date-cleared(); }
                         }
                     }
-                    if Library.shot-date-default: Label { text: @tr("Default, from this roll's first photo"); tone: Tone.secondary; }
+                    if Library.shot-date-default: Label { text: @tr("Default, from this roll's first photo"); role: TextRole.note; }
                 }
                 Section {
                     title: @tr("Camera Body");
@@ -97,7 +97,7 @@ export component Info inherits Surface {
                 Section {
                     title: @tr("Film Stocks");
                     help: @tr("Every film stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.");
-                    if Library.stocks.length == 0: Label { text: @tr("No film stock set yet"); tone: Tone.secondary; }
+                    if Library.stocks.length == 0: Label { text: @tr("No film stock set yet"); role: TextRole.note; }
                     for row in Library.stocks: HorizontalLayout {
                         spacing: Space.s;
                         StockIcon { artwork: row.artwork; has-artwork: row.has-artwork; side: StockStyle.row; }
