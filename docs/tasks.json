@@ -6241,5 +6241,19 @@
     "title": "The export's date reads 2026-09-14 16:46:19, the file keeps EXIF's colons",
     "status": "done",
     "detail": "Evaluation (UI Clarity): the Date field showed EXIF's raw 2026:09:14 16:46:19. The field now shows and takes the date dashed, as the app names its contact sheets, while the sidecar and the file keep EXIF's form (export_card::dated): a date typed dashed is written with colons, one pasted in EXIF's form is kept, anything else is left as typed. A unit test with its twins (half a date, a day-first date, words, the time's colons untouched), and the export_panel check types a dashed date through the field's callback, reads EXIF's form in the row and the dashed one back in the line."
+  },
+  {
+    "id": 1264,
+    "type": "fix",
+    "title": "The Settings sheet keeps one height whichever section is open",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (Spacing and density): the sheet grew between General and Editor, so the dialog and its DONE key jumped. The body laid only the page shown under a guessed 320 pt floor, which Editor passed. Every page now shares one grid cell and only the chosen one shows, so the cell is the tallest page's height in the language spoken; a page takes the card's width, so a hidden page's widest row never widens the one shown. SheetStyle.settings-height goes. Check: window sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections, DONE at one place on General, Editor, Frontier Look and About (the former layout moved it 11.5 px); twin: General's last line ends more than 60 px above DONE, room a sheet fit to the page shown would close."
+  },
+  {
+    "id": 1265,
+    "type": "fix",
+    "title": "The switch reads on or off at a glance, never as a slider at its minimum",
+    "status": "done",
+    "detail": "Evaluation s-0abd2d65 (Clarity): off, the slide lever showed the slider's grey rail with the knob at its start, a slider at its minimum; on and off differed by a rail 9 % whiter. The lever keeps the slider's knob and its travel, but now runs in a slot of its own (ToggleStyle.slot, so a slider's rail made thinner never thins it): an Inward hollow cut to the canvas as the tab bar's, dark while off, lit up to the knob (the slider's lit) while on, never tinted, the accent staying the view's one primary. The knob uncovers the state's mark, an O ring on the hollow while off and an I on the lit stretch while on, as a power switch's. The design system's README and the ui-spec say so."
   }
 ]

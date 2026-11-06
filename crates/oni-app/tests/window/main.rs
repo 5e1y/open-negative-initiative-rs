@@ -244,6 +244,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right", sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right),
     ("sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height", sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),
+    ("sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections", sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("sheets::a_clash_with_an_original_offers_rename_and_keeps_it", sheets::a_clash_with_an_original_offers_rename_and_keeps_it),

@@ -1,11 +1,12 @@
 // The controls: buttons, the toggle and the field; the slider is `slider.slint`, the tabs `tabs.slint`.
-import { Space, State, ButtonStyle, TabsStyle, ToggleStyle, SliderStyle } from "theme.slint";
+import { Colour, Space, Stroke, State, ButtonStyle, TabsStyle, ToggleStyle, SliderStyle } from "theme.slint";
 import { Label, Tone, Clicks } from "base.slint";
 import { KeyScope } from "keyboard.slint";
+import { Inward } from "depth.slint";
 
 import { ButtonKind, ButtonSize, Look, KeyInk, Button } from "button.slint";
 import { Knob } from "knob.slint";
-import { SliderFill, Rail } from "rail.slint";
+import { SliderFill } from "rail.slint";
 import { Slider } from "slider.slint";
 export { ButtonKind, ButtonSize, Look, KeyInk, Button, SliderFill, Knob, Slider }
 import { TextField, RenameField } from "fields.slint";
@@ -48,9 +49,8 @@ export component ButtonGroup inherits HorizontalLayout {
 // switch named for accessibility alone.
 export enum LabelSide { none, after, before }
 
-// A switch, a camera's slide lever: the slider's knob on a short rail of its own, slid to the far end
-// and the rail lit up to it while on. Its owner holds the state: a click only asks, so an undo or
-// another photo moves the knob as much as the hand does. Its words flip it too.
+// A switch, a camera's slide lever: the slider's knob in a slot of its own, slid along and the slot lit
+// while on. Its owner holds the state, so an undo moves the knob as the hand does; its words flip it too.
 export component Toggle inherits HorizontalLayout {
     in property <bool> on;
     in property <string> label;
@@ -87,11 +87,39 @@ export component Toggle inherits HorizontalLayout {
             accessible-role: checkbox;
             accessible-checked: root.on;
             accessible-label: root.label;
-            Rail {
+            // A hollow cut to the canvas as the tab bar's, never a slider's grey rail, lit up to the knob.
+            Inward {
                 y: (parent.height - self.height) / 2;
-                overhang: SliderStyle.knob-width / 2;
-                fill: SliderFill.level;
-                at: root.shown;
+                height: ToggleStyle.slot;
+                hollow: true;
+                ground: Colour.canvas;
+                radius: self.height / 2;
+                shade: TabsStyle.track-shade;
+                Rectangle {
+                    x: 0;
+                    width: SliderStyle.knob-width / 2 + root.shown * ToggleStyle.travel;
+                    height: parent.height;
+                    border-radius: self.height / 2;
+                    background: SliderStyle.lit;
+                }
+                // I where the knob stands while off, O where it stands while on: the mark it uncovers
+                // names the state, as on a power switch.
+                Rectangle {
+                    x: (ToggleStyle.travel - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: Stroke.trace;
+                    height: ToggleStyle.mark;
+                    background: ToggleStyle.on-mark;
+                }
+                Rectangle {
+                    x: SliderStyle.knob-width + (ToggleStyle.travel - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: ToggleStyle.mark;
+                    height: ToggleStyle.mark;
+                    border-radius: self.width / 2;
+                    border-width: Stroke.trace;
+                    border-color: ToggleStyle.off-mark;
+                }
             }
             // The knob grows under the hand, as a slider's.
             Knob {

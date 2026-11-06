@@ -1,7 +1,9 @@
 //! Where a sheet's pieces sit, read by the pointer as a hand finds them: the welcome as tall as its
 //! content in a tall window and scrolled to reach GET STARTED in a short one, a notice's key on the
-//! right of its message, no sheet closed by a click beside it, and every sheet centred in the window.
+//! right of its message, no sheet closed by a click beside it, every sheet centred in the window, and
+//! the Settings sheet one height whichever section is open.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Advice, AppSettings, Confirm, Help, MainWindow, OutsideProbe, Stocks};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
@@ -208,4 +210,38 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
         assert_eq!(probe.get_first_chosen(), 1, "the same point picks the same line {height} px tall");
         probe.hide().unwrap();
     }
+}
+
+/// The Settings sheet stands at its tallest page's height, so DONE stays put from section to section.
+/// Twin: General ends far above DONE, room a sheet fit to the page shown would close.
+pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    let window = MainWindow::new().unwrap();
+    oni_app::keycaps::serve(&window);
+    rig.window.set_size(PhysicalSize::new(1400, 1000));
+    window.show().unwrap();
+    let settings = window.global::<AppSettings>();
+    settings.set_shown(true);
+    let shown = |section: i32| {
+        settings.set_section(section);
+        rig.settle();
+    };
+    shown(0);
+    let done = common::the(&window, Role::Button, "DONE");
+    let last = common::the(&window, Role::Text, "A click as each key is pressed and released.");
+    for section in [1, 2, 4, 0] {
+        shown(section);
+        let at = common::the(&window, Role::Button, "DONE");
+        assert!((at.y - done.y).abs() < 0.5 && (at.x - done.x).abs() < 0.5, "section {section}: DONE at {at:?}, {done:?} on General");
+    }
+    let room = done.y - (last.y + last.height);
+    assert!(room > 60.0, "twin: General's last line ends {room} px above DONE");
+    // One switch on beside the others off, for the eye.
+    settings.set_keep_zoom(true);
+    shown(1);
+    rig.shot("settings-editor-height");
+    window.hide().unwrap();
 }

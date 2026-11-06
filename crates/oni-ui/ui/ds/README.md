@@ -144,8 +144,10 @@ field lies flat, as a text field.
   `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
   adds the accent dot, `swatches` draws colours for words; `ordered` leads each of a walk's steps with its
   number in a disc, the accent check there once `marked` says it is done.
-- **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` on a `Rail` of its own; on, the knob
-  stands one `ToggleStyle.travel` along on the grab spring and the rail is lit up to it. The knob grows under the hand.
+- **`Toggle`** (`DSToggle`): a camera's slide lever, the slider's `Knob` in a slot of its own (`ToggleStyle.slot`),
+  an `Inward` hollow cut to the canvas as the tab bar's, never a slider's grey rail; on, the knob stands one
+  `ToggleStyle.travel` along on the grab spring and the slot is lit up to it. The knob uncovers the state's mark,
+  O on the dark hollow while off, I on the lit stretch while on, as a power switch's. The knob grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill and chip faces keep the hover ground. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink.
