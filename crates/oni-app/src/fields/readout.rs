@@ -1,6 +1,8 @@
 //! The one way the app writes a value on screen: a true minus, a plus where the value is signed, no
 //! sign on what rounds to zero, and its unit after it, `%`, `°` and `×` set against the digits.
 
+use oni_i18n::tr;
+
 /// What a readout's number counts, written after it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Unit {
@@ -41,6 +43,32 @@ pub fn number(value: f64, places: usize, signed: bool, unit: Unit) -> String {
     format!("{sign}{digits}{}", unit.symbol())
 }
 
+/// The colour axis a slider's track runs along: its ends say which way a value leans, which the
+/// number's own unit, stops or percent, leaves a photographer to guess.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Axis {
+    /// Blue to yellow, cool to warm.
+    Warmth,
+    /// Green to magenta.
+    Tint,
+}
+
+impl Axis {
+    /// `text`, a signed readout, after the end its sign leans to; unsigned, at rest, it stands alone.
+    /// The word goes first, so the number holds its place at the readout's right edge.
+    pub fn named(self, text: String) -> String {
+        let (low, high) = match self {
+            Axis::Warmth => (tr("Cool"), tr("Warm")),
+            Axis::Tint => (tr("Green"), tr("Magenta")),
+        };
+        match text.chars().next() {
+            Some('+') => format!("{high} {text}"),
+            Some('\u{2212}') => format!("{low} {text}"),
+            _ => text,
+        }
+    }
+}
+
 /// How a slider writes its stored value, each through `number`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Readout {
@@ -63,17 +91,35 @@ pub enum Readout {
 }
 
 impl Readout {
-    pub fn format(self, v: f32) -> String {
+    /// The number `format` writes for `v`, before its rounding: a percent's is a hundred times it.
+    pub fn scaled(self, v: f32) -> f64 {
         let v = f64::from(v);
         match self {
-            Readout::Stops => number(v, 2, true, Unit::Stops),
-            Readout::SignedPercent => number(v * 100.0, 0, true, Unit::Percent),
-            Readout::Percent => number(v * 100.0, 0, false, Unit::Percent),
-            Readout::Ceiling => number(v, 3, false, Unit::Bare),
-            Readout::Degrees => number(v, 2, true, Unit::Degrees),
-            Readout::Times => number(v, 2, false, Unit::Times),
-            Readout::SignedTimes => number(v, 2, true, Unit::Times),
-            Readout::Pixels => number(v, 1, false, Unit::Pixels),
+            Readout::SignedPercent | Readout::Percent => v * 100.0,
+            _ => v,
+        }
+    }
+
+    /// `format`, after the end of `axis` the value leans to.
+    pub fn along(self, axis: Option<Axis>, v: f32) -> String {
+        let text = self.format(v);
+        match axis {
+            Some(axis) => axis.named(text),
+            None => text,
+        }
+    }
+
+    pub fn format(self, v: f32) -> String {
+        let n = self.scaled(v);
+        match self {
+            Readout::Stops => number(n, 2, true, Unit::Stops),
+            Readout::SignedPercent => number(n, 0, true, Unit::Percent),
+            Readout::Percent => number(n, 0, false, Unit::Percent),
+            Readout::Ceiling => number(n, 3, false, Unit::Bare),
+            Readout::Degrees => number(n, 2, true, Unit::Degrees),
+            Readout::Times => number(n, 2, false, Unit::Times),
+            Readout::SignedTimes => number(n, 2, true, Unit::Times),
+            Readout::Pixels => number(n, 1, false, Unit::Pixels),
         }
     }
 }

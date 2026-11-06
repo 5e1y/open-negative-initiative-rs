@@ -23,9 +23,9 @@ pub fn stepped(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f
 }
 
 /// A number as a readout or a hand writes it, and its places after the point: `+`, `-` or U+2212
-/// before it, a comma read as the point, and what follows its digits, a unit, left aside.
+/// before it, a comma read as the point, the side a readout names before it and its unit left aside.
 pub fn read(text: &str) -> Option<(f64, u32)> {
-    let text = text.trim_start();
+    let text = text.trim_start_matches(|c: char| c.is_alphabetic() || c.is_whitespace());
     let (negative, rest) = match text.chars().next() {
         Some('-' | '\u{2212}') => (true, &text[text.chars().next().map_or(0, char::len_utf8)..]),
         Some('+') => (false, &text[1..]),
@@ -108,11 +108,11 @@ mod tests {
         let top = *track.end();
         // +0.186 reads +0.19 EV: the next press reads +0.20 EV, never +0.21 EV.
         let at = stepped(Field::Temperature, 0.186, 1, &track);
-        assert_eq!(Field::Temperature.readout(at), "+0.20 EV");
-        assert_eq!(Field::Temperature.readout(stepped(Field::Temperature, at, -10, &track)), "+0.10 EV");
+        assert_eq!(Field::Temperature.readout(at), "Warm +0.20 EV");
+        assert_eq!(Field::Temperature.readout(stepped(Field::Temperature, at, -10, &track)), "Warm +0.10 EV");
         // Twin: a step of 1 % of the range, as accessibility's was, skips three numbers in four.
         let span = top - *track.start();
-        assert_eq!(Field::Temperature.readout(0.20 + span / 100.0), "+0.24 EV");
+        assert_eq!(Field::Temperature.readout(0.20 + span / 100.0), "Warm +0.24 EV");
         // Held at the track's end, and the black point keeps its shown sense: right lifts the black.
         assert_eq!(stepped(Field::Temperature, top, 5, &track), top);
         let black = track_range(Field::BlackPoint);
@@ -136,6 +136,10 @@ mod tests {
         // The same number, or none, moves nothing.
         assert_eq!(typed_steps("+1.50 EV", "1.5", 0.0), 0);
         assert_eq!(typed_steps("+1.50 EV", "warm", 0.0), 0);
+        // The side a colour readout names is left aside, its sign read: Green −0.06 EV to 0 is six.
+        assert_eq!((typed_steps("Warm +0.46 EV", "0.5", 0.0), typed_steps("Green \u{2212}0.06 EV", "0", 0.0)), (4, 6));
+        // Twin: the side named without its sign would step the wrong way.
+        assert_eq!(typed_steps("Green 0.06 EV", "0", 0.0), -6);
         assert_eq!(typed_steps("", "2", 0.0), 0);
         // Twin: the steps counted in whole units would leave the hundredths' readout fifty times short.
         assert_ne!(typed_steps("+1.50 EV", "2", 1.0), 50);
