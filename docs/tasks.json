@@ -6024,5 +6024,12 @@
     "title": "The slider and the window's menus, one file per part",
     "status": "done",
     "detail": "The merged corrections took ds/slider.slint past the 400-line limit and app.slint past its ceiling. The slider is cut into its parts as Swift names them: knob.slint (DSBarHandle), rail.slint (DSRail and SliderFill), readout.slint (DSReadout, ValueHeader) and slider.slint (DSSlider, its step keys and Typing); controls, plots, ds.slint and the lab import each part from its own file. The menu bar's state (MenuTitles, MenuLive, Menus) moves to menus.slint, the menu bar itself staying in the window, as Slint wants it; app.slint falls under the limit, so its grandfathered ceiling goes. Behaviour unchanged."
+  },
+  {
+    "id": 1226,
+    "type": "test",
+    "title": "The preset deck's check aims at the balance field where the sheet now lays it",
+    "status": "done",
+    "detail": "After #1221 the window check preset_deck clicked 20 px above the save sheet's White balance field, in the gap under its label, so its menu never opened and the balance stayed Not carried. The field moved on purpose: the switches above it are slide levers a knob tall (#1188) and the block titles a step larger (#1199). The check now aims at the field's middle and at Automatic, the menu's third line, where they stand; the stale aim, which failed on 0 against 2, is its twin."
   }
 ]
