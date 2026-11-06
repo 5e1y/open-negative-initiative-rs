@@ -71,7 +71,8 @@ export component Tabs inherits Rectangle {
                 property <bool> holds: i == root.held;
                 min-width: (root.swatches.length > 0 ? TabsStyle.swatch : label.preferred-width) + 2 * TabsStyle.margin
                     + (root.ordered ? TabsStyle.step + TabsStyle.step-gap : 0px);
-                preferred-width: TabsStyle.reach;
+                // A walk's steps share the room left past their words, so the gaps between them are even.
+                preferred-width: root.ordered ? self.min-width : TabsStyle.reach;
                 horizontal-stretch: 1;
                 init => { if (self.holds) { root.hold(self.x, self.width, false); } }
                 changed holds => { if (self.holds) { root.hold(self.x, self.width, true); } }

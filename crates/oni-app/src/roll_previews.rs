@@ -1,5 +1,5 @@
 //! `RollPreviews` and the base's scans: each frame at rest on the roll's film and flat-field, framed
-//! with its mask and dust then inverted on screen values; the base's scan unturned and uninverted.
+//! with its mask and dust on screen values, uninverted as the base's scan, so every step shows one look.
 
 use crate::display::{Params, Screen};
 use crate::render::{self, Linear, Reading};
@@ -53,25 +53,6 @@ pub fn rendered(base: &PipelineSettings, look: &Look) -> PipelineSettings {
         s.flat_field = flat.clone();
     }
     s.per_pixel_only()
-}
-
-/// `RollPreviews.inverted`: each channel's complement under its alpha, a monochrome film's on its
-/// Rec. 709 luma, so a negative reads as its print.
-pub fn inverted(rgba: &mut [u8], grey: bool) {
-    for p in rgba.chunks_exact_mut(4) {
-        let alpha = p[3];
-        if grey {
-            let luma = (0.2126 * f64::from(p[0]) + 0.7152 * f64::from(p[1]) + 0.0722 * f64::from(p[2])).round().min(f64::from(alpha)) as u8;
-            let v = alpha - luma;
-            p[0] = v;
-            p[1] = v;
-            p[2] = v;
-        } else {
-            for c in 0..3 {
-                p[c] = alpha - p[c].min(alpha);
-            }
-        }
-    }
 }
 
 struct Source {
@@ -339,8 +320,7 @@ fn reduced(graph: &mut Graph, path: &str, side: f64) -> Result<Source, String> {
     Ok(Source { linear: Linear { width: e.w as usize, height: e.h as usize, pixels }, full_width: decoded.full_width })
 }
 
-/// `Pipeline.framed` on a held source, its mask and patches laid, then on screen values, inverted
-/// unless the film is positive.
+/// `Pipeline.framed` on a held source, its mask and patches laid, then on screen values.
 fn picture(graph: &mut Graph, pipeline: &mut Pipeline, resident: &mut Resident, source: &Source, settings: &PipelineSettings, seed: u32) -> Option<Bitmap> {
     let l = &source.linear;
     let uploaded = graph.upload(l.width as u32, l.height as u32, &l.pixels).ok()?;
@@ -352,11 +332,7 @@ fn picture(graph: &mut Graph, pipeline: &mut Pipeline, resident: &mut Resident, 
         return None;
     }
     let pixels = graph.render(&framed, e, None).ok()?;
-    let mut b = encoded(&Linear { width: e.w as usize, height: e.h as usize, pixels }, seed);
-    if settings.mode != ConversionMode::Positive {
-        inverted(&mut b.rgba, settings.mode.is_monochrome());
-    }
-    Some(b)
+    Some(encoded(&Linear { width: e.w as usize, height: e.h as usize, pixels }, seed))
 }
 
 /// The frame's size at full resolution, its height on the reduced copy's aspect.

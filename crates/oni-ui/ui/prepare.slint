@@ -1,10 +1,9 @@
-// Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
-// the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize, SheetFooter } from "ds/ds.slint";
+// Prepare the Roll: the panel with its five steps, beside the floor that shows a frame, the flags'
+// sheet or the base's scan. Rust holds every value and rule.
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Label, TextRole, Tone, Button, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, RollStyle, TileView, TileMarks, RingPlacement, PassReorder, Picker, SheetFooter } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
-import { MeasureFloor } from "measure_floor.slint";
-import { Converting } from "dng.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
+export { RollFloor } from "prepare_floor.slint";
 
 component RollSlider inherits Slider {
     fraction: Preparing.fractions[self.field];
@@ -256,124 +255,3 @@ component FlagSheet inherits Scroller {
         }
     }
 }
-
-// `RollBaseSurface`: Previous, the frame's name, Next, then its whole scan to click the bare film on.
-component BaseSurface inherits VerticalLayout {
-    padding: CardStyle.padding;
-    spacing: Space.s;
-    Pager {
-        name: Preparing.base-name; name-width: RollStyle.name-width; can-previous: Preparing.base-can-previous; can-next: Preparing.base-can-next;
-        previous => { Preparing.base-previous(); } next => { Preparing.base-next(); }
-    }
-    area := Rectangle {
-        vertical-stretch: 1;
-        function laid() {
-            Preparing.base-width = self.width;
-            Preparing.base-height = self.height;
-            Preparing.base-origin-x = self.absolute-position.x;
-            Preparing.base-origin-y = self.absolute-position.y;
-            Preparing.base-resized();
-        }
-        changed width => { self.laid(); }
-        changed height => { self.laid(); }
-        init => { self.laid(); }
-        if !Preparing.scan-ready: EmptyState {
-            width: parent.width;
-            height: parent.height;
-            title: Preparing.scan-failure == "" ? @tr("Reading the Scan") : @tr("This Scan Cannot Be Read");
-            detail: Preparing.scan-failure == "" ? @tr("The whole scan, its rebate included, shows here.") : Preparing.scan-failure;
-            action: Preparing.scan-convertible ? @tr("Convert to DNG") : "";
-            acted => { Converting.offered(); }
-        }
-        if Preparing.scan-ready: Picture {
-            x: Preparing.scan-x;
-            y: Preparing.scan-y;
-            width: Preparing.scan-width;
-            height: Preparing.scan-height;
-            ground: Ground.canvas;
-            fit: Fit.fill;
-            source: Preparing.scan;
-        }
-        if Preparing.scan-ready && Preparing.ring-shown: Ring { centre-x: Preparing.ring-x; centre-y: Preparing.ring-y; diameter: Preparing.ring-diameter; }
-        if Preparing.scan-ready: TouchArea {
-            changed has-hover => { Preparing.base-hover(self.mouse-x, self.mouse-y, self.has-hover); }
-            moved => { Preparing.base-hover(self.mouse-x, self.mouse-y, true); }
-            pointer-event(event) => {
-                if (event.kind == PointerEventKind.move) { Preparing.base-hover(self.mouse-x, self.mouse-y, true); }
-            }
-            clicked => { Preparing.base-clicked(self.mouse-x, self.mouse-y); }
-        }
-        if Preparing.scan-ready: Loupe { visible: Preparing.loupe-shown; // kept while the pointer leaves: its source is the whole frame
-            x: Preparing.loupe-x - self.width / 2;
-            y: Preparing.loupe-y - self.height / 2;
-            source: Preparing.loupe-source;
-            cut-x: Preparing.loupe-cut[0];
-            cut-y: Preparing.loupe-cut[1];
-            cut-width: Preparing.loupe-cut[2];
-            cut-height: Preparing.loupe-cut[3];
-            cut-at-x: Preparing.loupe-shown-at[0];
-            cut-at-y: Preparing.loupe-shown-at[1];
-            cut-shown-width: Preparing.loupe-shown-at[2];
-            cut-shown-height: Preparing.loupe-shown-at[3];
-            disc-x: Preparing.loupe-rings[0];
-            disc-y: Preparing.loupe-rings[1];
-            disc: Preparing.loupe-rings[2];
-            picked-shown: Preparing.loupe-picked;
-            picked-x: Preparing.loupe-rings[3];
-            picked-y: Preparing.loupe-rings[4];
-            picked-disc: Preparing.loupe-rings[5];
-        }
-    }
-}
-
-// `RollFrameView`: the frame placed where its crop lies in its own turned scan, the measuring
-// window over the whole scan on the window step.
-component FrameCard inherits Rectangle {
-    function laid() {
-        Preparing.card-width = self.width - 2 * CardStyle.padding;
-        Preparing.card-height = self.height - 2 * CardStyle.padding;
-        Preparing.card-origin-x = self.absolute-position.x + CardStyle.padding;
-        Preparing.card-origin-y = self.absolute-position.y + CardStyle.padding;
-        Preparing.card-resized();
-    }
-    changed width => { self.laid(); }
-    changed height => { self.laid(); }
-    init => { self.laid(); }
-    Rectangle {
-        x: CardStyle.padding;
-        y: CardStyle.padding;
-        width: parent.width - 2 * CardStyle.padding;
-        height: parent.height - 2 * CardStyle.padding;
-        Picture {
-            x: Preparing.picture-x;
-            y: Preparing.picture-y;
-            width: Preparing.picture-width;
-            height: Preparing.picture-height;
-            ground: Ground.canvas;
-            fit: Fit.fill;
-            source: Preparing.card-picture;
-        }
-        if Preparing.window-shown: FrameOverlay {
-            width: parent.width;
-            height: parent.height;
-            look: FrameStyle.window;
-            frame-x: Preparing.window-x;
-            frame-y: Preparing.window-y;
-            frame-width: Preparing.window-width;
-            frame-height: Preparing.window-height;
-            grabbed(h) => { Preparing.window-grabbed(h); }
-            dragged(h, dx, dy) => { Preparing.window-dragged(h, dx, dy); }
-            released => { Preparing.window-released(); }
-        }
-    }
-}
-
-// `rollFloor`: the flags' sheet, the base's scan, the frame card, or the measure's screens.
-export component RollFloor inherits Card {
-    if Preparing.step == 3: FlagSheet { width: parent.width; height: parent.height; }
-    if Preparing.step == 2: BaseSurface { width: parent.width; height: parent.height; }
-    if Preparing.step != 2 && Preparing.step != 3 && !Preparing.measuring: FrameCard { width: parent.width; height: parent.height; }
-    if Preparing.step == 4 && Preparing.measuring: MeasureFloor { width: parent.width; height: parent.height; }
-    CardCorners { width: parent.width; height: parent.height; }
-}
-

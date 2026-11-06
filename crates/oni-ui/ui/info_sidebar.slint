@@ -1,6 +1,6 @@
 // `InfoSidebar` beside the gallery: the roll the gallery stands on, a folder of photos being one,
 // or the project.
-import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, ButtonSize, DateFields, Icons, TextField, CardStack, WarningBand } from "ds/ds.slint";
+import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack, WarningBand } from "ds/ds.slint";
 import { Library } from "library.slint";
 
 export component Info inherits Surface {
@@ -20,12 +20,8 @@ export component Info inherits Surface {
                     padding: Space.m;
                     spacing: Space.s;
                     WarningBand { text: @tr("Not prepared yet"); }
-                    // The toolbar's key, flat: its keycap stays the toolbar's, the gallery's commit.
-                    Button {
-                        size: ButtonSize.plate;
-                        text: @tr("Prepare Roll");
-                        clicked => { Library.prepare-shown-roll(); }
-                    }
+                    // Words, no key: the bar's Prepare Roll stays the gallery's one commit.
+                    Label { role: TextRole.note; text: @tr("Prepare Roll, in the bar above, measures the roll before its frames are edited."); }
                 }
                 Section {
                     title: @tr("Roll");

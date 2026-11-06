@@ -41,11 +41,6 @@ pub(super) fn dyes_note(stock: Option<&str>) -> String {
 }
 
 impl Ctl {
-    pub(super) fn wire_roll_card(me: &Rc<Ctl>, window: &crate::MainWindow) {
-        let p = me.clone();
-        window.global::<Library>().on_prepare_shown_roll(move || p.prepare_shown_roll());
-    }
-
     /// `setFilmStock`, and beyond Swift the dye family it names on every frame of the roll: one
     /// gallery step with the marker, a family picked by hand overwritten, the dose kept.
     pub(in crate::app) fn set_roll_stock(self: &Rc<Self>, id: &str) {
@@ -102,13 +97,6 @@ impl Ctl {
             }
         }
         self.publish_info();
-    }
-
-    /// The card's key: the toolbar's Prepare Roll on every frame of the roll shown.
-    pub(in crate::app) fn prepare_shown_roll(self: &Rc<Self>) {
-        let Some(roll) = self.state.borrow().roll() else { return };
-        self.commit_info_drafts();
-        self.roll_of(roll.paths, |c, paths, left| c.enter_roll(&paths, left));
     }
 }
 

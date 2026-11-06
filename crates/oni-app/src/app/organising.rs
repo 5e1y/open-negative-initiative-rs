@@ -376,6 +376,5 @@ impl Ctl {
         lib.on_camera_body_committed(move |t| p.camera_body_committed(&t));
         let p = me.clone();
         lib.on_description_committed(move |t| p.description_committed(&t));
-        Ctl::wire_roll_card(me, window);
     }
 }

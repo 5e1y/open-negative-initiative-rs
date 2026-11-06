@@ -165,7 +165,7 @@ msgstr "Mostrar mi año en película"
 msgid "Read-only: settings will not be saved"
 msgstr "Solo lectura: los ajustes no se guardarán"
 
-#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/prepare_floor.slint
 msgid "Convert to DNG"
 msgstr "Convertir a DNG"
 
@@ -925,6 +925,13 @@ msgstr "Deja esto abierto, reproduce el fallo y pulsa Copiar. Si hay que forzar 
 msgid "Prepare Roll"
 msgstr "Preparar rollo"
 
+msgid "Not prepared yet"
+msgstr "Aún sin preparar"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Prepare Roll, in the bar above, measures the roll before its frames are edited."
+msgstr "«Preparar rollo», en la barra superior, mide el rollo antes de editar sus fotogramas."
+
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
 msgid "Roll"
 msgstr "Rollo"
@@ -1113,7 +1120,7 @@ msgstr "Mostrar la carpeta"
 msgid "Back to the Gallery"
 msgstr "Volver a la galería"
 
-#: crates/oni-ui/ui/missing.slint
+#: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
 msgid "Discard"
 msgstr "Descartar"
 
@@ -2050,15 +2057,15 @@ msgstr "Atrás"
 msgid "Measuring…"
 msgstr "Midiendo…"
 
-#: crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/prepare_floor.slint
 msgid "Reading the Scan"
 msgstr "Lectura del escaneo"
 
-#: crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/prepare_floor.slint
 msgid "This Scan Cannot Be Read"
 msgstr "Este escaneo no se puede leer"
 
-#: crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/prepare_floor.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
 
@@ -3640,6 +3647,14 @@ msgid "One phone paired, none connected."
 msgid_plural "{n} phones paired, none connected."
 msgstr[0] "Un teléfono vinculado, ninguno conectado."
 msgstr[1] "{n} teléfonos vinculados, ninguno conectado."
+
+#: crates/oni-app/src/app/prepare/entering.rs
+msgid "The base picked, the frames flagged and the window drawn are dropped, and the roll opens again on its first step."
+msgstr "La base elegida, los fotogramas marcados y la ventana dibujada se descartan, y el rollo vuelve a abrirse en su primer paso."
+
+#: crates/oni-app/src/app/prepare/entering.rs
+msgid "Discard This Roll's Preparation?"
+msgstr "¿Descartar la preparación de este rollo?"
 
 #: crates/oni-app/src/app/prepare/measure.rs
 msgid "No frame of this roll could be measured: the files could not be read, or the measuring window holds nothing to balance."

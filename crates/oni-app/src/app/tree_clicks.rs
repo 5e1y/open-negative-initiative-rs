@@ -77,17 +77,19 @@ impl Ctl {
             }
         };
         let Some(path) = path.filter(|_| photo || self.beside_photo()) else { return self.publish_tree() };
-        if !self.take_off_roll() {
-            return;
-        }
-        let reopened = self.state.borrow().open.as_deref() == Some(path.as_str());
+        self.take_off_roll(move |c| c.open_from_row(&path));
+    }
+
+    /// The photo a row opens, the roll being prepared left first.
+    fn open_from_row(self: &Rc<Self>, path: &str) {
+        let reopened = self.state.borrow().open.as_deref() == Some(path);
         {
             let mut s = self.state.borrow_mut();
-            s.designate(&path);
-            s.anchored_here(&path);
+            s.designate(path);
+            s.anchored_here(path);
         }
         if !reopened {
-            self.open_photo(&path);
+            self.open_photo(path);
         }
         // The frame leading a group, clicked alone, shows alone again.
         self.follow_selection();

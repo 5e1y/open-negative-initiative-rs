@@ -239,7 +239,7 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     shell.window.show().unwrap();
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
-    // The bar's key so named: the info column beside a roll never measured shows a PREPARE ROLL of its own.
+    // The bar's key so named.
     let face = |label: &str| {
         rig.settle();
         let keys: Vec<_> = common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).collect();
@@ -256,6 +256,10 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
     println!("shot {}", rig.shot("toolbar-accent-unmeasured").display());
     assert!(prepare > 0.5 && add < 0.05, "PREPARE ROLL alone wears the accent: {prepare} {add}");
+    // One Prepare Roll on screen: the info column's notice points to the bar's, with no key of its own.
+    let keys = |label: &str| common::placed(w, Role::Button, label).len();
+    assert_eq!((keys("PREPARE ROLL"), keys("Prepare Roll")), (1, 0), "the bar's key alone prepares the roll");
+    assert_eq!(common::placed(w, Role::Text, "Not prepared yet").len(), 1, "twin: the notice the key stood under shows");
     // The projects and the ONI Trash, where neither key is the screen's: no accent.
     lib.invoke_surface_picked(1);
     let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));

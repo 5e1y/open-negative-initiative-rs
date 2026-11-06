@@ -1,6 +1,7 @@
 //! Entering Prepare the Roll from its three keys, and leaving it.
 
 use super::*;
+use crate::app::Pending;
 
 impl Ctl {
     // MARK: - Entering and leaving
@@ -75,6 +76,7 @@ impl Ctl {
             r.stop.store(false, Ordering::Relaxed);
             r.base = None;
             r.base_frame = 0;
+            r.laid_window = r.window;
             r.draft_id = None;
             r.draftless.clear();
             r.shown = true;
@@ -154,6 +156,7 @@ impl Ctl {
                     r.aspect = a;
                 }
                 r.window = read.geometry.measure_window.unwrap_or_else(|| oni_measure::window::proposal(&read.geometry.crop, false));
+                r.laid_window = r.window;
                 r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
                 // A slide once read as its own negative comes back as the positive it is.
                 r.film = if read.inverted_source { ConversionMode::Positive } else { read.mode };
@@ -170,8 +173,36 @@ impl Ctl {
         self.publish_prepare();
     }
 
-    /// `leaveRollReference`: refused while measuring; nothing kept, back where the hand came from.
+    /// Cancel, Escape and the GALLERY key: the roll left, after asking while it holds a choice.
     pub(in crate::app) fn leave_roll(self: &Rc<Self>) {
+        self.take_off_roll(|_| {});
+    }
+
+    /// `takeOff`: the roll left, then `then`; asked first while it holds a choice, never while it measures.
+    pub(in crate::app) fn take_off_roll(self: &Rc<Self>, then: impl FnOnce(&Rc<Ctl>) + 'static) {
+        let (shown, measuring, holds) = {
+            let r = &self.state.borrow().prepare;
+            (r.shown, r.progress.is_some(), r.holds_choices())
+        };
+        if !shown {
+            return then(self);
+        }
+        if measuring {
+            return;
+        }
+        let leave = move |c: &Rc<Ctl>| {
+            c.drop_roll();
+            then(c);
+        };
+        if !holds {
+            return leave(self);
+        }
+        let message = tr("The base picked, the frames flagged and the window drawn are dropped, and the roll opens again on its first step.");
+        self.ask(tr("Discard This Roll's Preparation?"), message, tr("Discard"), true, Pending::Run(Box::new(leave)));
+    }
+
+    /// `leaveRollReference`: refused while measuring; nothing kept, back where the hand came from.
+    pub(in crate::app) fn drop_roll(self: &Rc<Self>) {
         {
             let s = self.state.borrow();
             if !s.prepare.shown || s.prepare.progress.is_some() {
@@ -202,21 +233,6 @@ impl Ctl {
         self.publish_tiles();
         self.publish_bar();
         self.request_render();
-    }
-
-    /// `takeOff`: a frame opened from the sidebar leaves the roll first, never while it measures.
-    pub(in crate::app) fn take_off_roll(self: &Rc<Self>) -> bool {
-        let (shown, measuring) = {
-            let r = &self.state.borrow().prepare;
-            (r.shown, r.progress.is_some())
-        };
-        if shown && measuring {
-            return false;
-        }
-        if shown {
-            self.leave_roll();
-        }
-        true
     }
 
     /// `requireRoll`: a frame never measured, opened in the editor, goes to Prepare the Roll on its
