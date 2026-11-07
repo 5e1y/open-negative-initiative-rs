@@ -15,7 +15,7 @@ pub use gestures::{
     Joined, Rosters, add_to, carried, delete, lands_beside, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from,
     rename, reorder_drop, reorder_root, rosters, set_description,
 };
-pub use member::{Member, distinct, exclusive, printed};
+pub use member::{Member, distinct, exclusive, holder, printed};
 pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve};
 
 #[derive(Debug, Clone, PartialEq)]
