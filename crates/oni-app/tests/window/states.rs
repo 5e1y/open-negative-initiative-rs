@@ -113,17 +113,17 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     assert!(contrast(idle, hollow) >= TEXT, "an idle tab's label reads on its hollow: {:.2}:1", contrast(idle, hollow));
     // Twin: the out-of-reach word, far fainter, falls under it.
     assert!(contrast(off, hollow) < TEXT, "the measure sees a faint word: {:.2}:1", contrast(off, hollow));
-    // Out of reach, a flat key keeps its plate, its edge on the ground as an able key's, its legend about
+    // Out of reach, a flat key keeps its plate, its face on the ground as an able key's, its legend about
     // 3:1 on its face; its twin, faded whole, sinks into the ground with its legend.
-    let edge = |x: usize, y: usize| contrast(peak(x, y + 8, x + 3, y + KEY - 8), luminance(at(x - 3, y + KEY / 2)));
+    let plate = |x: usize, y: usize| contrast(peak(x, y + 8, x + 3, y + KEY - 8), luminance(at(x - 3, y + KEY / 2)));
     let legend = |x: usize, y: usize, w: f32| contrast(peak(x + 4, y + 4, x + width(w) - 4, y + KEY - 4), luminance(at(x + 4, y + KEY / 2)));
     let faded = width(probe.get_faded_x());
-    let (able_edge, off_edge, faded_edge) = (edge(16, 168), edge(16, 72), edge(faded, 72));
+    let (able_plate, off_plate, faded_plate) = (plate(16, 168), plate(16, 72), plate(faded, 72));
     let (off_legend, faded_legend) = (legend(16, 72, probe.get_off_width()), legend(faded, 72, probe.get_off_width()));
-    eprintln!("edge able {able_edge:.2}:1, out of reach {off_edge:.2}:1, faded whole {faded_edge:.2}:1; legend {off_legend:.2}:1, faded whole {faded_legend:.2}:1");
-    assert!((off_edge - able_edge).abs() < 0.05, "a key out of reach keeps its edge: {off_edge:.2}:1 against {able_edge:.2}:1");
+    eprintln!("plate able {able_plate:.2}:1, out of reach {off_plate:.2}:1, faded whole {faded_plate:.2}:1; legend {off_legend:.2}:1, faded whole {faded_legend:.2}:1");
+    assert!((off_plate - able_plate).abs() < 0.05, "a key out of reach keeps its plate: {off_plate:.2}:1 against {able_plate:.2}:1");
     assert!(off_legend >= DISABLED, "its legend reads about 3:1 on its face: {off_legend:.2}:1");
-    assert!(able_edge - faded_edge > 0.1, "twin: the measure sees a plate faded whole: {faded_edge:.2}:1");
+    assert!(able_plate - faded_plate > 0.1, "twin: the measure sees a plate faded whole: {faded_plate:.2}:1");
     assert!(faded_legend < DISABLED, "twin: the measure sees a legend faded with its plate: {faded_legend:.2}:1");
 
     let (rest, reached, away, worn) = (red(16, 120), red(64, 120), red(112, 120), red(160, 120));

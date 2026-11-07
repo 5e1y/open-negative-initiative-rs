@@ -121,10 +121,11 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     assert!((first.x - rating.x).abs() < 0.5 && (rating.x - 260.0 - INSET).abs() < 0.5, "the Library's key at {}, Rating at {}", first.x, rating.x);
     assert!((WIDTH - 340.0 - last.x - last.width - INSET).abs() < 0.5, "the Panel's key ends {} in", WIDTH - 340.0 - last.x - last.width);
     assert!((first.x - 260.0 - 40.0).abs() > 8.0, "twin: not on the picture's padding");
-    // The colour space's select wears a flat key's face at rest, the band's own ground beside it.
+    // The colour space's select wears a flat key's face at rest, edgeless, the band's own ground beside it.
     let chip = band.iter().max_by(|a, b| a.width.total_cmp(&b.width)).expect("the colour space's select");
     let at = |x: f32| px[(chip.y + chip.height / 2.0) as usize * pw + x as usize].0;
-    assert_ne!(at(chip.x + 3.0), ground, "the select's face inside its edge");
+    assert_ne!(at(chip.x + 3.0), ground, "the select's own face");
+    assert_eq!(at(chip.x), at(chip.x + 3.0), "no edge around the select: its first column is its face");
     assert_eq!(at(chip.x - 3.0), ground, "twin: the band's ground beside the select");
     // `card`: flush with the library and the panel, so the canvas is the column less its padding.
     let flush = WIDTH - 260.0 - 340.0 - 2.0 * 40.0;

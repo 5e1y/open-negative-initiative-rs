@@ -20,9 +20,11 @@ export enum GroupAlign { start, end, center, fill }
 // keycaps alone, set flush on one face rounded as a key; flat keys never share one.
 export component ButtonGroup inherits HorizontalLayout {
     in property <bool> plate;
+    // The bar's flat keys touching, no face between them at rest: a group reads by the room around it.
+    in property <bool> joined;
     in property <GroupAlign> align: GroupAlign.start;
     out property <length> radius: root.plate ? ButtonStyle.radius : 0px;
-    out property <length> gap: root.plate ? 0px : ButtonStyle.group-gap;
+    out property <length> gap: root.plate || root.joined ? 0px : ButtonStyle.group-gap;
     property <bool> fills: root.align == GroupAlign.fill;
     alignment: root.align == GroupAlign.end ? end : root.align == GroupAlign.center ? center : root.fills ? stretch : start;
     // Keys of unlike heights share their middle line.

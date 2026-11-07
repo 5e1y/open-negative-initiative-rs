@@ -7914,5 +7914,40 @@
     "title": "The tree checks read the projects' list's top off a row it shows, no longer a literal 188 pt",
     "status": "done",
     "detail": "Merge of w24 to w29: tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift found Trip still heading the projects after Walk was dropped on its top strip. Cause: da582057 (#1573), the bar 8 pt taller (theme.slint ShellStyle.bar-height), lowers the list, which at the merge starts at 192 pt (the column's header row 4 pt shorter since 27c7f588 put the rating filter's pill where New Project stood); the check's LIST_TOP 188 aimed Walk's drop 2 pt above Trip's row, in the list's top margin, no strip of any row. The app is right (the old check passes with the old bar height at the merge; a drop on the strip lands); the check was wrong. Fix: common::projects_top reads the list's top off a project row shown, its place in the window less its place in the list and the scroll, which tree_leftovers and tree_hand (the same stale 188, its presses 4 pt off their rows' middles) aim from. Checks: window tree_leftovers and tree_hand green; twin: Landing::Before made to land nothing (project_drop.rs) fails tree_leftovers at Walk now heads the projects."
+  },
+  {
+    "id": 1601,
+    "type": "design",
+    "title": "The bar's flat keys show no ground at rest, one under the hand, and a group's keys touch",
+    "status": "done",
+    "detail": "Owner: the bar's keys are stuck together when grouped, no socket, no border, no ground at rest, only on rollover. A stacked flat key (Button's bar form) draws no face at rest, its glyph and word its extent; the hand's veil (ButtonStyle.veil) is its ground under the hand, veil-pressed while pressed. ButtonGroup gains `joined` (no gap), set on every group of the bar: Undo and Redo, the views and tools, Copy to Paste to Roll, Reset and Trash, Feedback to Settings; groups keep ShellStyle.bar-gap. Checks: window toolbar_keys (Crop, De-dust, Compare and Select All each read the bar's ground inside their padding at rest; twin: under the hand a ground shows; Copy beside stays bare), toolbar (Reset and Trash, Feedback and Settings, the editor's groups touching, groups a bar's gap apart; the bar's keys read off their accessible places, no longer off faces the flat keys no longer draw; twin: with `joined` undone the gaps fail)."
+  },
+  {
+    "id": 1602,
+    "type": "design",
+    "title": "A bar key that is on lies on a flat lit ground, no hollow and no shade",
+    "status": "done",
+    "detail": "Owner: selected states take no 2.5D with a shadow, flat only. A stacked flat key on wears ButtonStyle.on, the selected row's light on the keycap's grey, opaque, flat from top to foot, a step over the hand's veil, its glyph and word in place and in the full ink; under the hand the veil lies over it. The Inward hollow, its sunk legend and the tokens ButtonStyle.sunk and sunk-shade go. Checks: toolbar_keys (on, one ground at the key's top, middle and foot, brighter than the hover's, as wide; under the hand brighter still; let go, bare again; twin: the old hollow drawn instead fails the check)."
+  },
+  {
+    "id": 1603,
+    "type": "design",
+    "title": "EXPORT is the blue accent keycap at the bar's right end in both screens; ADD FOLDER… takes the gallery's Export place",
+    "status": "done",
+    "detail": "Owner: the blue Export did not come through; Export at the right in the gallery too, blue too, swapping places with the import key. The bar's primary is filled again (ButtonStyle.primary, the glyph-only accent and ButtonStyle.primary-glyph withdrawn), its blue tuned from 40 % to 60 % of the accent on the keycap's grey (white legend 6:1), every DONE with it. One slot at the right end shows EXPORT in the gallery as in the editor (an update over it), the primary except beside a roll awaiting Prepare Roll or under a tool, out of reach while nothing can be exported (Bar.exportable: the editor's rule, the menu's Export in the gallery). ADD FOLDER… is a keycap in the centre where the gallery's flat Export… stood, the primary only on the archive while nothing prepares, exports or updates (Bar.add-first), so a view keeps one primary. Checks: toolbar_accent rewritten (empty archive: ADD FOLDER… over half blue, EXPORT none; unmeasured roll: PREPARE ROLL alone; editor: EXPORT filled at the window's right end, a tool's DONE alone while it stands; a measured roll with a photo picked: the gallery's EXPORT alone filled, ADD FOLDER… none; projects and ONI Trash none; twins: BACK, Copy and Settings none; with the glyph-only accent back the check fails), toolbar (EXPORT one slot in both screens, its click exporting what is picked)."
+  },
+  {
+    "id": 1604,
+    "type": "design",
+    "title": "Every button that is not a keycap is edgeless",
+    "status": "done",
+    "detail": "Owner: every button of the app that is not a keycap, no border. Button's flat face keeps its ground (ButtonStyle.face, ButtonStyle.on) and loses its Stroke.line edge; the Picker's chip, the colour space's select among the canvas band's keys, loses its edge too; ButtonStyle.edge goes. Checks: button_group (a flat key's first column is its face, the ground between two keys; twin: a column off the key reads the ground; with the edge back the check fails), canvas_layout (the chip's first column is its face; twin: the band's ground beside it; with the edge back it fails), states (a key out of reach keeps its plate, measured on its face)."
+  },
+  {
+    "id": 1605,
+    "type": "docs",
+    "title": "The UI bench and the design system's README say the bar's keys and the buttons as the owner does",
+    "status": "done",
+    "detail": "docs/ui-bench.md, Clarity: 'Each control shows its own extent at rest' (#1307) becomes 'A key of the bar is its icon and its title, its ground shown only under the hand; a button carries no border.' crates/oni-ui/ui/ds/README.md: keys edgeless, the bar's form (no ground at rest, the veil under the hand, `on` a flat lit ground, EXPORT the accent keycap at the right end), the primary's 60 % blue, `joined` groups, the chip edgeless."
   }
 ]

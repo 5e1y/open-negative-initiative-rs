@@ -1,5 +1,6 @@
-//! Every key of the bar at one height, its glyph over its word, in both screens; a key that holds a state
-//! pressed into the bar while it holds, as every other key of its kind, and plain again once it lets go.
+//! Every key of the bar at one height, its glyph over its word, in both screens; a flat key shows no ground
+//! at rest, one under the hand, and while it holds a state a flat ground stronger than the hand's, edge to
+//! edge with no inset, as every other key of its kind, bare again once it lets go.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -46,7 +47,7 @@ fn stacked(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, word: &str) 
     assert!(glyph > 10, "{label}'s glyph drawn over its word: {glyph}");
 }
 
-pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_is_pressed_in() {
+pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the bar's keys are not exercised"),
@@ -80,7 +81,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_is_presse
     let (keys, others) = heights();
     assert!(keys.len() >= 9 && keys.iter().all(|k| k.height == KEY), "every key of the gallery's bar {KEY} pt tall: {keys:?}");
     assert!(others.iter().any(|k| k.height != KEY), "twin: the measure tells a key of another height");
-    for (label, word) in [("EDIT", "EDIT"), ("Select All", "Select All"), ("PREPARE ROLL", "PREPARE ROLL"), ("Export\u{2026}", "Export\u{2026}"), ("Reset Photo", "Reset Photo"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}")] {
+    for (label, word) in [("EDIT", "EDIT"), ("Select All", "Select All"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset Photo", "Reset Photo"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
         stacked(&rig, w, label, word);
     }
     // Twin: beside the glyph, within the key's padding, nothing is drawn but its face.
@@ -97,27 +98,45 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_is_presse
         stacked(&rig, w, label, word);
     }
 
-    // A key that holds a state sinks below the bar's ground while it holds, plain above it otherwise,
-    // the same for each, its width kept; a plain key beside it stays raised.
+    // Inside a key's padding beside its glyph, at its top, its middle and its foot, with the bar's ground
+    // over the key; and its width.
     let face = |label: &str| {
         let key = bar_key(w, label);
         let px = rig.drawn();
-        let y = key.y + key.height / 2.0;
-        (level(&px, key.x + 5.0, y), level(&px, key.x - 3.0, y), key.width)
+        let at = |y: f32| level(&px, key.x + 5.0, y);
+        ([at(key.y + 3.0), at(key.y + key.height / 2.0), at(key.y + key.height - 4.0)], level(&px, key.x + 5.0, key.y - 3.0), key.width)
+    };
+    let hover = |label: &str| {
+        rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(bar_key(w, label).middle().0, bar_key(w, label).middle().1) });
+        rig.settle();
+    };
+    let away = || {
+        rig.window.dispatch_event(WindowEvent::PointerExited);
+        rig.settle();
     };
     for (label, act) in [("Crop", Act::Framing), ("De-dust", Act::Correction), ("Compare", Act::Compare), ("Select All", Act::SelectAll)] {
-        let (off, ground, width) = face(label);
-        assert!(off > ground, "{label} off: a plain key's face over the bar's ground: {off} {ground}");
+        let (rest, ground, width) = face(label);
+        assert_eq!(rest, [ground; 3], "{label} at rest: no ground of its own, the bar's around its glyph");
+        hover(label);
+        let (under, ground, _) = face(label);
+        println!("shot {}", rig.shot(&format!("toolbar-keys-{}-hover", label.replace(' ', "-"))).display());
+        assert!(under[1] > ground, "twin: under the hand {label} shows a ground: {under:?} {ground}");
+        away();
         bar.invoke_act(act);
         rig.settle();
-        let (on, ground, held) = face(label);
+        let (on, _, held) = face(label);
         println!("shot {}", rig.shot(&format!("toolbar-keys-{}", label.replace(' ', "-"))).display());
-        assert!(on < ground && held == width, "{label} on: pressed in under the bar's ground, as wide: {on} {ground} {held} {width}");
+        assert!(on[0] == on[1] && on[1] == on[2], "{label} on: one flat ground from top to foot, no inset nor shade: {on:?}");
+        assert!(on[1] > under[1] && held == width, "{label} on: a ground stronger than the hand's, as wide: {on:?} {under:?} {held} {width}");
+        hover(label);
+        let (both, _, _) = face(label);
+        assert!(both[1] > on[1], "{label} on and under the hand: the hand's light over its ground: {both:?} {on:?}");
+        away();
         let (copy, ground, _) = face("Copy");
-        assert!(copy > ground, "twin: Copy, which holds nothing, stays raised beside it: {copy} {ground}");
+        assert_eq!(copy, [ground; 3], "twin: Copy, which holds nothing, stays bare beside it: {copy:?} {ground}");
         bar.invoke_act(act);
         rig.settle();
-        assert_eq!(face(label).0, off, "twin: {label} let go, plain again");
+        assert_eq!(face(label).0, rest, "twin: {label} let go, bare again");
     }
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -54,9 +54,9 @@ width as it changes, on screen and on a contact sheet's numbers.
 
 ## Keys
 
-Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`) inside its own edge, the
-dividers' line (`ButtonStyle.edge`), its glyph and word on it, so every key shows its extent at rest and two
-keys side by side read apart before the hand reaches either. A `Keycap` stands only where the use site sets
+Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`), no edge around it, its
+glyph and word on it; two keys side by side read apart by the ground between them. A key of the window's bar
+is its glyph and word alone, its ground shown only under the hand. A `Keycap` stands only where the use site sets
 `keycap: true`: the mode switch (EDIT, BACK), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
 PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE, GOT IT, GET STARTED, SEND), the
 automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the Scanner
@@ -71,11 +71,13 @@ oni-lab) draws a still key once and a pressed one once a frame.
   section's header, a row or the canvas's header. A worded key is never narrower than tall.
 - **The bar's form** (`stacked`): every key of the window's bar, flat or keycap, its glyph over its word at
   `ButtonStyle.bar-key` (48 pt), the bar's tab bars as tall; short of room a flat key keeps its glyph alone
-  on a `bar-glyph-key`-wide key. Its accent is the glyph's alone (`ButtonStyle.primary-glyph`) on the bar's
-  grey keycap, never a fill; `on` presses it in, a flat key a hollow in the bar (`ButtonStyle.sunk`, the
-  tab bar's ground and shade) with its legend sunk a travel, a keycap held down: no lamp on the bar.
-- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent sunk into the
-  keycap's grey (`ButtonStyle.primary`), calm beside the photo, and grey while out of reach; `destructive`,
+  on a `bar-glyph-key`-wide key. A flat key shows no ground at rest: the hand's veil (`ButtonStyle.veil`)
+  under the hand, a step more pressed, and while `on` a flat lit ground (`ButtonStyle.on`), no hollow and no
+  shade, a step over the veil so the two never read alike; a keycap `on` is held down: no lamp on the bar.
+  Its primary is the accent keycap as anywhere else (`ButtonStyle.primary`): EXPORT at the bar's right end in
+  both screens.
+- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent at 60 % on the
+  keycap's grey (`ButtonStyle.primary`), blue yet calm beside the photo, and grey while out of reach; `destructive`,
   a plain key whose glyph or word takes a light red (`Colour.destructive-ink`) while the hand or the keyboard
   is on it, the plain ink at rest and out of reach, so no red stands beside the photo; `ghost`, a glyph alone on
   no face. Colour says a meaning, never which key it is: no other tint.
@@ -87,7 +89,7 @@ oni-lab) draws a still key once and a pressed one once a frame.
   line, dark glass in a light rim at rest (over 3:1 on the face, `SurfaceStyle.lamp-rim`) until `on` lights
   it in the LCD's phosphor (`ButtonStyle.latch`), its light blooming on the face around it (`SurfaceStyle.lamp-glow`
   past the glass, `lamp-bloom` at the middle), so it tells it latches before the press and reads on at a glance. Out of reach, every
-  key, flat or keycap, keeps its face, its edge or its relief and fades its legend and glyph alone to
+  key, flat or keycap, keeps its face or its relief and fades its legend and glyph alone to
   `State.disabled` (0.36), about 3:1 on its face and a glance's step under an idle tab's label (`State.idle`), so a key
   that cannot act still reads as a key and never as one merely not chosen; a missing
   original, a folder away or a frame left out fades less (`State.missing`), its picture and name still read.
@@ -97,9 +99,9 @@ oni-lab) draws a still key once and a pressed one once a frame.
   `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A key unrelated to its
   neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`
   (twice the group's gap) from it: an `AskSheet` sets its destructive answer so. The bar has two gaps
-  alone, a group's within and `ShellStyle.bar-gap` (three times it) between groups, its groups by job; its
-  Reset and Trash end the centre as one group past a vertical `Divider`, Reset naming the photos it reaches
-  and Trash, last, wearing its can.
+  alone, none within a group (`ButtonGroup { joined: true }`, its flat keys touching) and `ShellStyle.bar-gap`
+  between groups, its groups by job; its Reset and Trash end the centre as one group past a vertical
+  `Divider`, Reset naming the photos it reaches and Trash, last, wearing its can.
 - **Plates**: `ButtonGroup { plate: true }` is a socket of keycaps alone, the one place keys share a face:
   its caps flush on one face rounded as a key, as the panel's AUTO WHITE BALANCE with the crop's warning
   over it. Flat keys never stand on a plate.
@@ -208,7 +210,7 @@ field lies flat, as a text field.
   grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill face keeps the hover ground, and the chip, the colour space's
-  among the canvas band's mini keys, wears their flat face within its own edge. A pill that only names
+  among the canvas band's mini keys, wears their flat face, edgeless. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink. A value
   naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
   menu line names one the same way, every line's words then starting past the medal's room. A menu's line
