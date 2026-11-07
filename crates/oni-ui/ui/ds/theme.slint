@@ -212,6 +212,8 @@ export global RowStyle {
     out property <length> icon: DS.control-icon-size;
     // One slot sized to the stock's mini canister, so a glyph and a canister share a starting edge.
     out property <length> slot: DS.control-film-sidebar-stock-icon-size;
+    // Every mark at a row's end, the warning, a reach's, the star and the check, one column's width.
+    out property <length> mark: DS.control-icon-size * 0.8;
 }
 
 export global TileStyle {

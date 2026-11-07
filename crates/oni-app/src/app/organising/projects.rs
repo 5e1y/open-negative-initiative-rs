@@ -151,6 +151,7 @@ impl Ctl {
     /// a photo as a name or a thumbnail.
     pub(in crate::app) fn publish_projects(&self) {
         let Some(w) = self.window() else { return };
+        let side = crate::stocks::row_side(&w);
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
             let mut roots = {
@@ -197,7 +198,9 @@ impl Ctl {
                         },
                         Node::Roll { folder, entries, .. } => {
                             let (title, caption) = (roll_title(&markers, folder).into(), entries.len().to_string().into());
-                            TreeRow { depth, title, caption, kind: 3, selected: ringed, ..TreeRow::default() }
+                            let stock = crate::stocks::row_icon(library::roll_stock(markers.get(folder), entries.first()), side);
+                            let has_stock = stock.is_some();
+                            TreeRow { depth, title, caption, kind: 3, selected: ringed, has_stock, stock: stock.unwrap_or_default(), ..TreeRow::default() }
                         }
                         Node::Photo { entry, .. } => TreeRow {
                             depth,

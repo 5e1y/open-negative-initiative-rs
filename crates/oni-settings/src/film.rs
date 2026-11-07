@@ -39,10 +39,17 @@ pub struct FilmStockKind {
     pub display_name: &'static str,
     pub icon_name: &'static str,
     pub brand: &'static str,
+    /// The picker lists it; a stock it no longer lists still reads, names and draws on a roll that has it.
+    pub offered: bool,
 }
 
 const fn stock(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
-    FilmStockKind { id, display_name, icon_name: id, brand }
+    FilmStockKind { id, display_name, icon_name: id, brand, offered: true }
+}
+
+/// A stock the picker no longer lists (owner's call), kept so a roll already on it reads as it did.
+const fn withdrawn(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
+    FilmStockKind { offered: false, ..stock(id, display_name, brand) }
 }
 
 pub const FILM_STOCKS: [FilmStockKind; 41] = [
@@ -57,7 +64,7 @@ pub const FILM_STOCKS: [FilmStockKind; 41] = [
     stock("cinestill-800t", "CineStill 800T", "CineStill"),
     stock("foma-fomapan200", "Foma Fomapan 200", "Foma"),
     stock("foma-fomapan400", "Foma Fomapan 400", "Foma"),
-    stock("foma-fomapan401", "Foma Fomapan 401", "Foma"),
+    withdrawn("foma-fomapan401", "Foma Fomapan 401", "Foma"),
     stock("fujifilm-acros", "Fujifilm Acros", "Fujifilm"),
     stock("fujifilm-fujicolor", "Fujifilm Fujicolor", "Fujifilm"),
     stock("fujifilm-fujicolor-pro", "Fujifilm Fujicolor Pro", "Fujifilm"),
@@ -92,6 +99,11 @@ pub const FILM_STOCKS: [FilmStockKind; 41] = [
 pub fn film_stock(id: Option<&str>) -> Option<&'static FilmStockKind> {
     let id = id?;
     FILM_STOCKS.iter().find(|k| k.id == id)
+}
+
+/// The stocks the picker lists, each with its place in `FILM_STOCKS`, which a pick names.
+pub fn offered_stocks() -> impl Iterator<Item = (usize, &'static FilmStockKind)> {
+    FILM_STOCKS.iter().enumerate().filter(|(_, k)| k.offered)
 }
 
 /// Each stock's dye set, which picking it writes on the roll's frames; black and white has none.
@@ -247,6 +259,26 @@ mod tests {
         assert_eq!(ids.len(), FILM_STOCKS.len());
         assert_eq!(film_stock(Some("fujifilm-fujicolor")).map(|k| k.brand), Some("Fujifilm"));
         assert_eq!(film_stock(Some("fujifilm-fujicolour")), None);
+    }
+
+    #[test]
+    fn foma_401_is_no_longer_offered_yet_a_roll_on_it_still_reads() {
+        let offered: Vec<&str> = offered_stocks().map(|(_, k)| k.id).collect();
+        assert!(!offered.contains(&"foma-fomapan401"), "the picker no longer lists Foma 401");
+        assert_eq!(offered.len(), FILM_STOCKS.len() - 1, "every other stock is still offered");
+        assert!(offered.contains(&"foma-fomapan400") && offered.contains(&"foma-fomapan200"), "twin: the other Fomapans stay");
+        for (i, kind) in offered_stocks() {
+            assert_eq!(FILM_STOCKS[i].id, kind.id, "a pick names the stock's place in the catalogue");
+        }
+        let kept = film_stock(Some("foma-fomapan401")).expect("a roll on Foma 401 still finds its stock");
+        assert_eq!((kept.display_name, kept.icon_name, kept.brand), ("Foma Fomapan 401", "foma-fomapan401", "Foma"));
+        let mut film = Film::new("Roll 401");
+        film.stock = Some("foma-fomapan401".into());
+        let back = roll_folder::decode(roll_folder::encode(&film).as_bytes()).unwrap();
+        assert_eq!(back.stock.as_deref(), Some("foma-fomapan401"), "its marker reads and writes it unchanged");
+        // Twin: a stock still offered is listed, so the filter is the withdrawn flag's alone.
+        assert!(film_stock(Some("foma-fomapan400")).is_some_and(|k| k.offered));
+        assert!(!kept.offered);
     }
 
     #[test]
