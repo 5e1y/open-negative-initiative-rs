@@ -75,7 +75,7 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     let shown = confirm.get_shown();
     let title = confirm.get_title().to_string();
     assert!(confirm.get_cancel_default() && !confirm.get_destructive(), "Cancel is the alert's default");
-    rig.key("\r");
+    rig.key("\n");
     std::fs::remove_dir(&sidecar).unwrap();
     assert!(shown, "a failed write asks before quitting");
     assert_eq!(title, "Your latest settings could not be saved");

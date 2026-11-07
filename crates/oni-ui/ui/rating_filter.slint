@@ -5,12 +5,14 @@ import { Library } from "library.slint";
 
 export component RatingFilter inherits ButtonGroup {
     Button {
+        in-bar: true;
         text: @tr("All");
         on: Library.filter-medal == 0;
         help: @tr("Show every photo, whatever its medal");
         clicked => { Library.filter-picked(0); }
     }
     for medal in [1, 2, 3]: Button {
+        in-bar: true;
         square: true;
         on: Library.filter-medal == medal;
         help: [@tr("Show the Gold photos alone"), @tr("Show the Silver photos alone"), @tr("Show the Bronze photos alone")][medal - 1];

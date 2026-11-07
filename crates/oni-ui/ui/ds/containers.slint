@@ -135,8 +135,8 @@ export component Section inherits VerticalLayout {
 // question, the title face else; `bar`, the title beside its exit key above a rule, as a board's.
 export enum SheetHeader { leading, bar }
 
-// A window-modal sheet centred in the window over a scrim that sets the window back, a margin kept
-// above and below; a click beside the card reaches nothing, as Swift's sheet ignores it. Escape closes it.
+// A window-modal sheet centred over a scrim that sets the window back, a margin kept above and below; a
+// click beside the card reaches nothing. Its default key holds the keyboard for Return, Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
     in property <SheetHeader> header: SheetHeader.leading;
@@ -202,7 +202,7 @@ export component Sheet inherits Rectangle {
                         padding-left: SheetStyle.padding;
                         padding-right: SheetStyle.padding;
                         Engraved { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
-                        Button { text: root.exit; keycap: true; clicked => { root.dismissed(); } }
+                        Button { text: root.exit; keycap: true; default: true; clicked => { root.dismissed(); } }
                     }
                     if root.header == SheetHeader.bar: Divider { }
                     @children
@@ -220,6 +220,9 @@ export component SheetFooter inherits HorizontalLayout {
     in property <string> back;
     in property <string> commit;
     in property <bool> commit-enabled: true;
+    // The commit is its sheet's default key, holding the keyboard as it opens: never a panel's, under the
+    // sheets, nor one at the foot of a sheet read from its top, which the keyboard would scroll away.
+    in property <bool> default-commit: true;
     // A commit that writes nothing, as the prepare's Skip past an empty step or a failure's OK: a flat key.
     in property <bool> passes;
     callback cancelled();
@@ -237,6 +240,7 @@ export component SheetFooter inherits HorizontalLayout {
         keycap: !root.passes;
         kind: root.passes ? ButtonKind.plain : ButtonKind.accent;
         enabled: root.commit-enabled;
+        default: root.default-commit;
         clicked => { root.committed(); }
     }
 }
@@ -278,6 +282,7 @@ export component AskSheet inherits Sheet {
             Button {
                 text: key.text;
                 kind: key.role == AskRole.confirm ? ButtonKind.accent : key.role == AskRole.destructive ? ButtonKind.destructive : ButtonKind.plain;
+                default: key.role == AskRole.confirm;
                 clicked => { root.answered(i, root.text); }
             }
         }

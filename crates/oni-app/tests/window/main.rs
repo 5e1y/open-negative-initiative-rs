@@ -95,6 +95,7 @@ mod scroll;
 mod session;
 mod sheet_layout;
 mod sheets;
+mod sheet_keys;
 mod sidebar_reveal;
 mod sidebars;
 mod space_chip;
@@ -273,6 +274,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height", sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),
     ("sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections", sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections),
     ("sheet_layout::a_footer_sets_cancel_apart_from_the_commit", sheet_layout::a_footer_sets_cancel_apart_from_the_commit),
+    ("sheet_keys::a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_it", sheet_keys::a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_it),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("sheets::a_clash_with_an_original_offers_rename_and_keeps_it", sheets::a_clash_with_an_original_offers_rename_and_keeps_it),

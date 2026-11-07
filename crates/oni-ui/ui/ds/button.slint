@@ -5,7 +5,7 @@ import { Label, Icon, Tone, Tones, Tips, Clicks } from "base.slint";
 
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
-import { KeyScope } from "keyboard.slint";
+import { KeyScope, Keyboard } from "keyboard.slint";
 
 // `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
 // glyph alone on no face, its tone lifting under the hand, as a help mark or a star.
@@ -87,6 +87,11 @@ export component Button inherits Rectangle {
     in property <bool> keycap;
     in property <bool> on;
     in property <bool> enabled: true;
+    // A key of the window's bar: out of reach while a sheet covers the window, as AppKit's toolbar.
+    in property <bool> in-bar;
+    // The key Return presses on its sheet: it takes the keyboard once the sheet covers the window, a
+    // field the sheet opens on aside, so an assistive tool lands on it. A panel's key never asks.
+    in property <bool> default;
     in property <string> help;
     // The widest word the key ever shows, so it keeps that width as its word changes.
     in property <string> widest;
@@ -118,16 +123,18 @@ export component Button inherits Rectangle {
     property <bool> mini: root.size == ButtonSize.mini;
     property <bool> ghost: root.kind == ButtonKind.ghost;
     property <bool> swatch: root.fill.alpha > 0;
+    // Within reach: enabled, and no sheet over a key of the bar.
+    property <bool> live: root.enabled && !(root.in-bar && Keyboard.covered);
     // The primary's face only while it can act: out of reach, it is a key like any other.
-    property <color> tint: root.swatch ? root.fill : root.kind == ButtonKind.accent && root.enabled ? ButtonStyle.primary : transparent;
+    property <color> tint: root.swatch ? root.fill : root.kind == ButtonKind.accent && root.live ? ButtonStyle.primary : transparent;
     // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
     property <color> face: root.tint.alpha > 0 ? root.tint : root.on ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
     property <bool> waiting;
     // Lifted while still hovered: going back up to the hover depth is a release, not a press.
     property <bool> lifted;
-    property <bool> hovered: root.enabled && (touch.has-hover || root.look == Look.hover);
-    property <bool> pressed: root.enabled && (root.look == Look.pressed || root.down);
+    property <bool> hovered: root.live && (touch.has-hover || root.look == Look.hover);
+    property <bool> pressed: root.live && (root.look == Look.pressed || root.down);
     property <float> target: root.pressed ? 1 : root.hovered ? Depth.hover-press : 0;
     property <bool> sinking: root.down || (touch.has-hover && !root.lifted);
     property <float> depth: root.keycap ? root.target : 0;
@@ -150,7 +157,7 @@ export component Button inherits Rectangle {
     // The glyph's ink: its own, the danger's red on a destructive key reached, else dark on a light face and
     // light on a dark one; a ghost's lifts under the hand. At rest no red stands beside the photo.
     property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
-        : root.ghost ? Tones.ink(root.hovered || (root.enabled && touch.pressed) ? Tone.primary : Tone.tertiary)
+        : root.ghost ? Tones.ink(root.hovered || (root.live && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
     height: root.mini ? ButtonStyle.small-height : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
@@ -162,13 +169,17 @@ export component Button inherits Rectangle {
     preferred-width: self.min-width;
     horizontal-stretch: root.fills ? 1 : 0;
     // Out of reach, a flat key fades whole, its face with its glyph; a keycap keeps its relief, its legend faded.
-    property <float> fade: root.enabled ? 1 : State.disabled;
+    property <float> fade: root.live ? 1 : State.disabled;
     opacity: root.keycap ? 1 : root.fade;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
-    accessible-enabled: root.enabled;
+    accessible-enabled: root.live;
     accessible-checked: root.on;
-    accessible-action-default => { root.clicked(); }
+    accessible-action-default => { if (root.live) { root.clicked(); } }
+    // The sheet may cover the window before the key is built or after: either way the key ends holding it.
+    property <bool> holding: root.default && Keyboard.covered;
+    changed holding => { root.take-keyboard(); }
+    init => { root.take-keyboard(); }
 
     word-measure := Label {
         visible: false;
@@ -224,9 +235,9 @@ export component Button inherits Rectangle {
     }
     // Out of reach, the key still tells its help under the hand, so it can say why; it takes no press.
     touch := TouchArea {
-        clicked => { if (root.enabled) { root.clicked(); } }
+        clicked => { if (root.live) { root.clicked(); } }
         pointer-event(event) => {
-            if (!root.enabled) { return; }
+            if (!root.live) { return; }
             if (event.kind == PointerEventKind.down) {
                 root.shift = event.modifiers.shift;
             }
@@ -245,11 +256,11 @@ export component Button inherits Rectangle {
     }
     // Space or Return on the key holding the keyboard presses it as a click does.
     keys := KeyScope {
-        enabled: root.enabled;
+        enabled: root.live;
         radius: cap.radius;
         changed has-focus => { root.tell(); }
         key-pressed(event) => {
-            if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
+            if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.live) {
                 return reject;
             }
             if (!event.repeat) {
@@ -273,6 +284,9 @@ export component Button inherits Rectangle {
         if (shown) { root.told = root.help; }
         Tips.hover(shown, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
     }
+    function take-keyboard() {
+        if (root.holding && root.live && !TextInputInterface.text-input-focused) { keys.focus(); }
+    }
     function sink() {
         root.down = true;
         root.waiting = false;
@@ -282,8 +296,8 @@ export component Button inherits Rectangle {
         Clicks.press();
     }
     // Disabled under the hand, the key hears no release: it rises at once.
-    changed enabled => {
-        if (!root.enabled && root.down) {
+    changed live => {
+        if (!root.live && root.down) {
             hold.running = false;
             root.waiting = false;
             root.lift();

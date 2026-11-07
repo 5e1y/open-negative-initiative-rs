@@ -142,7 +142,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     let donor = ctl.state.borrow().store().get(Field::Exposure);
     rig.chord_with(&[Key::Control, Key::Shift], "c");
     assert!(w.global::<oni_app::Presets>().get_copying() && !menus.get_live().paste_to_roll, "the copy sheet asks what it carries first");
-    rig.key("\r");
+    rig.key("\n");
     assert!(menus.get_live().paste_to_roll, "twin: Return copies");
     rig.chord(Key::Control, "g");
     assert!(w.global::<App>().get_gallery());
@@ -167,7 +167,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!((exposure(&b), exposure(&c)), (b0, c0), "a cancelled paste writes nothing");
     // Twin: Return goes ahead, both frames take the look, and ⌘Z names the gallery's step.
     rig.chord_with(&[Key::Control, Key::Shift], "v");
-    rig.key("\r");
+    rig.key("\n");
     assert!((exposure(&b) - donor).abs() < 1e-5 && (exposure(&c) - donor).abs() < 1e-5);
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Paste settings to 2 photos");
     rig.chord(Key::Control, "z");

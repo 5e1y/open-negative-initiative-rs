@@ -6969,5 +6969,19 @@
     "title": "A slider worked by hand leaves the keyboard to the photos; Tab alone gives it the keys, ringed",
     "status": "done",
     "detail": "Evaluation s-c82a3414 (UX Expert efficiency, minor): after a slider was pressed, the arrows nudged it instead of walking the frames, with no ring to say so (#1159, #1237). A press, a drag or a typed value no longer gives the slider the keyboard: the `pressed` mark and its unringed hold are gone, so the arrows walk the frames and the digits rate them after any work by hand, as AppKit's sliders do without full keyboard access; Return or Escape on a typed value hands the keyboard back to the photos (`Outside.released`), even a key that skips the window's hook. Tab still reaches every slider, Tab from the photo the panel first (#1159), and a slider holding the keyboard is always ringed. Checks: window keyboard a_slider_worked_by_hand_leaves_the_arrows_to_the_photos (twin: Tab gives it the keyboard, ringed, its arrows step it) and a_number_typed_over_a_slider_readout_steps_it_there (Return hands the arrow to the photos; twin: Tab steps on from the number typed), escape (one Escape leaves the crop after a pressed slider), scanner (the photos keep the keyboard after D's slide); run: the former slider fails both keyboard checks."
+  },
+  {
+    "id": 1422,
+    "type": "interface",
+    "title": "A sheet's default key holds the keyboard, named, so Return presses it and an assistive tool lands on it",
+    "status": "done",
+    "detail": "Evaluation: Copy Settings' COPY and the notices' OK reached the evaluator with no name. Measured in Slint's tree: every key of a sheet and a notice carries its name (COPY reads Copy, OK reads OK), but a sheet stands last in a tree of some 23,500 elements, past the 1,000 the evaluation tool's element tree returns, and the keyboard, which AccessKit reports as the focus, stayed on the window's unnamed key monitor behind the sheet. The design system's Button gains `default`: a sheet footer's commit, a question's confirming answer and a bar sheet's exit take the keyboard once a sheet covers the window, whether the sheet is built before or after the window moves its keyboard, a field the sheet opens on keeping it; Return (Slint's own key) presses it, Escape reaches the sheet from any key. A question whose key removes keeps no default, so Return takes nothing there; a passing notice takes no keyboard; the prepare and export panels' footers and the welcome's, which Slint would scroll to its key, away from its top, keep no default commit (`default-commit: false`), their keyboard as it was. A key's press through an assistive tool now honours its reach. Checks: window sheet_keys (twin: with no sheet, and once it closes, the photos hold the keyboard; a removing question leaves it to them). Window checks that pressed \"\\r\", a code the window never delivers, now press Slint's Return."
+  },
+  {
+    "id": 1423,
+    "type": "interface",
+    "title": "Behind a sheet the window's bar reads out of reach, to the eye and to assistive tools",
+    "status": "done",
+    "detail": "The bar's keys followed two rules: Undo, Redo, Paste, Reset and the mode key read the menus' state, which a sheet blanks, while Crop, Compare, Copy, De-dust, Trash, the report and settings keys, EXPORT or ADD FOLDER… and the gallery's medals read the photo alone, so they stayed lit behind the scrim and an assistive tool could press them through it. The bar's own key types, the rating filter and the face and step tabs now say they belong to the bar (`in-bar`), out of reach while `Keyboard.covered`, faded as any key out of reach, the scrim unchanged. Checks: window sheet_keys (twin: the sheet closed, the bar is live again, and Settings pressed by an assistive tool opens only then; a passing notice leaves the bar live)."
   }
 ]

@@ -64,7 +64,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     first.welcome_if_due();
     let help = first.window.global::<Help>();
     assert!(help.get_welcome_shown());
-    rig.key("\r");
+    rig.key("\n");
     assert!(!help.get_welcome_shown());
     assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.5"));
 
