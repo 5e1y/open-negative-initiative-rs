@@ -7193,5 +7193,33 @@
     "title": "One Escape leaves Compare turned on by its key, a slider dragged before",
     "status": "done",
     "detail": "UX evaluation (Consistency of behaviour): Escape seemed to leave Compare on. Escape already leaves Compare first, by the one route every mode takes (route.rs escape: Compare, then the crop or De-dust put back, then the Lab, then the editor). The evaluator had dragged Shadows, which holds the keyboard without a ring, then pressed Compare's key through a tool whose clicks skip the window's pointer hook: the slider kept its hold, which took that Escape, and the two shots match byte for byte. Through the real event path the press on the key gives the keyboard back to the photos and one Escape leaves Compare. Window check escape::one_escape_leaves_compare_its_key_turned_on_after_a_slider_held_the_keyboard; its twin, a hookless press, needs a second Escape. Left as it stands, the keyboard's rule: a slider pressed by the hand, then Compare from the View menu, which no window press reaches, keeps its unringed hold for the first Escape."
+  },
+  {
+    "id": 1466,
+    "type": "fix",
+    "title": "The readout's histogram names what it draws: a legend under it, the print curve and its dashed inverse on the Colour tab",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Clarity): the Colour tab overlaid the print curves and a dashed reference on the histogram with no legend. The readout's box now holds the plot over one caption row, PlotLegend, each entry a sample of its ink and its name: Histogram (three bars, red, green and blue) on every tab the plot shows, Print curve (the solid guide line) and Its inverse (two dashes) while the Colour tab draws them. The box keeps its height on every tab, so the tab bar never moves; the plot gives the row its height. French and Spanish filled in. Window check picture_plots the_readout_names_its_curves_under_the_histogram: the three names on one row under the plot, above the tab bar; on the Roll tab the histogram alone at the same place, the bar unmoved (twin: a legend at the plot's top stands a plot's height above the bar)."
+  },
+  {
+    "id": 1467,
+    "type": "fix",
+    "title": "Every slider readout ends on one edge, its unit with it",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Spacing): percent readouts stopped about 7 pt short of the edge EV, px and × readouts reached, as #1361 set every unit in an 18 pt column after the digits. A readout is now right-aligned whole on the rail's edge, in Inter's tabular figures: the unit column, SliderStyle.unit, Readouts.unit and fields::unit_of go. Window check states readouts_end_at_one_edge: a bare number, a percent and a stop readout end within a pixel (twin: their digits set at one edge, the readouts end a unit apart)."
+  },
+  {
+    "id": 1468,
+    "type": "fix",
+    "title": "The contact sheet's frame numbers take a soft amber",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Colour and contrast): the frame numbers under every photo of a sheet were the system's saturated orange. Colour.edge-print, which the canvas's sheet and the exported sheet share, is now #cba372, the edge print's amber at OKLab chroma 0.08 (was 0.17), 9:1 on the sheet's black; De-dust's lit pixels keep the orange. Window check export_sheet reads the written sheet's numbers in that amber (twin: the saturated orange fails the measure)."
+  },
+  {
+    "id": 1469,
+    "type": "fix",
+    "title": "A latching key's lit lamp blooms on its face, so on reads at a glance",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Clarity): a latching key told on by its lit face, a selected row's grey the hand's light resembles, and a 6 pt lamp turning from ringed to filled. A lit lamp now spreads its phosphor on the face around it, a radial bloom SurfaceStyle.lamp-glow (6 pt) past the glass at lamp-bloom 0.5 in the middle, kept on the key's face where a glyph's square key holds the lamp 3 pt from its edge; it replaces the drop shadow, which the software renderer never drew. Window check states: the face two points past a lit lamp reads 1.5:1 over the face, a lamp at rest none (twin: a lit disc with no bloom leaves the face bare)."
   }
 ]

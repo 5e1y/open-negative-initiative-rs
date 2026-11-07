@@ -80,7 +80,8 @@ oni-lab) draws a still key once and a pressed one once a frame.
   tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`). A `latch` key, a mode's
   as the crop, compare, De-dust and the measuring window, carries a `Lamp` after its word on its middle
   line, dark glass in a light rim at rest (over 3:1 on the face, `SurfaceStyle.lamp-rim`) until `on` lights
-  it in the LCD's phosphor (`ButtonStyle.latch`), so it tells it latches before the press. Out of reach, a
+  it in the LCD's phosphor (`ButtonStyle.latch`), its light blooming on the face around it (`SurfaceStyle.lamp-glow`
+  past the glass, `lamp-bloom` at the middle), so it tells it latches before the press and reads on at a glance. Out of reach, a
   flat key fades whole, face and glyph, to `State.disabled` (0.25), well under an idle tab's label
   (`State.idle`), so a key that cannot act never reads as one merely not chosen; a keycap keeps its relief
   and fades its legend alone, so a pair of keycaps stays a pair while one waits; a missing
@@ -163,8 +164,8 @@ fade and the chrome stays. The picker's field wears the same face.
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field
   tall, shows the field's face and a text cursor under the hand, and a click types a number over it
-  (`Readouts.steps`, answered by Rust), reached by the steps an arrow takes. Its unit stands in a column
-  `SliderStyle.unit` wide (`Readouts.unit`, what follows the last digit), so the digits of every row end at one edge.
+  (`Readouts.steps`, answered by Rust), reached by the steps an arrow takes. Every readout ends on one edge,
+  its unit with it, in Inter's tabular figures.
 - **Dial** (`Slider { dial }`, `Dial`): a value that is truly a turn, the straighten's angle, as a camera's command
   dial seen edge on: a black-anodised ring in an `Inward` slot, its scale in the value's unit (`lowest` to `highest`)
   foreshortened and shaded toward the ends, a fixed index at its middle. The scale moves with the hand, so a drag
@@ -228,7 +229,7 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
   clip, no layer), the rule, the embossed ink; the glint sweeps once on `glinting` or a hovered note, clipped
-  only while it crosses; `glint-at` holds it still. **Lamp** is a key's or a switch's state, dark glass in a light rim at rest, glowing its colour when lit.
+  only while it crosses; `glint-at` holds it still. **Lamp** is a key's or a switch's state, dark glass in a light rim at rest, its colour blooming on the face when lit.
 
 ## The rule: screens use only the design system
 

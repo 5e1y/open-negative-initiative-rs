@@ -57,6 +57,21 @@ export component StateProbe inherits AppWindow {
             border-color: DS.palette-groove;
         }
     }
+    // Twin: a lit disc with no bloom, on a lit key's face.
+    Rectangle {
+        x: 350px;
+        y: 168px;
+        width: 32px;
+        height: 32px;
+        border-radius: ButtonStyle.radius;
+        background: ButtonStyle.on;
+        Rectangle {
+            width: ButtonStyle.lamp;
+            height: ButtonStyle.lamp;
+            border-radius: self.width / 2;
+            background: ButtonStyle.latch;
+        }
+    }
     Toggle { x: 240px; y: 20px; width: self.preferred-width; height: self.preferred-height; label-side: LabelSide.none; }
     Toggle { x: 310px; y: 20px; width: self.preferred-width; height: self.preferred-height; label-side: LabelSide.none; on: true; }
     // Twin: the slot lit grey as a slider's stretch, on the hollow's ground.

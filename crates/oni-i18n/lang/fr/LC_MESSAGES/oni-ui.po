@@ -357,6 +357,18 @@ msgstr "Argent (2)"
 msgid "Bronze (3)"
 msgstr "Bronze (3)"
 
+#: crates/oni-ui/ui/ds/plots.slint
+msgid "Histogram"
+msgstr "Histogramme"
+
+#: crates/oni-ui/ui/ds/plots.slint
+msgid "Print curve"
+msgstr "Courbe du tirage"
+
+#: crates/oni-ui/ui/ds/plots.slint
+msgid "Its inverse"
+msgstr "Son inverse"
+
 #: crates/oni-ui/ui/ds/readout.slint
 msgid "Click to type a value"
 msgstr "Cliquez pour saisir une valeur"

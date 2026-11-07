@@ -1,5 +1,5 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
-//! gaps, each frame's number in orange under its picture, no logo under less than a row; the same
+//! gaps, each frame's number in a soft amber under its picture, no logo under less than a row; the same
 //! three as positives on the same black; five photos with the logo's band under a foot of four
 //! margins; the sheet shown in the column, and Export As laying the gallery's pick on one sheet.
 
@@ -102,16 +102,19 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert!(black(px(60 + 1024 + 15, 580)) && black(px(10, 10)), "the gaps and the margin are black: {:?}", px(60 + 1024 + 15, 580));
     assert!(!black(px(60 + 512, 640)), "twin: a picture is not black");
     let count = |xs: std::ops::Range<u32>, ys: std::ops::Range<u32>, f: &dyn Fn([u8; 3]) -> bool| xs.flat_map(|x| ys.clone().map(move |y| (x, y))).filter(|&(x, y)| f(px(x, y))).count();
-    let orange = |p: [u8; 3]| p[0] > 180 && p[1] > 90 && p[1] < 200 && p[2] < 90;
+    // The numbers' soft amber: red over green over blue, the blue never sunk as a saturated orange's.
+    let amber = |p: [u8; 3]| p[0] > 150 && p[0] > p[1] + 15 && p[1] > p[2] + 15 && p[2] > 60;
+    // Twin: the system's saturated orange is no soft amber.
+    assert!(!amber([255, 159, 10]), "the measure tells a saturated orange");
     let white = |p: [u8; 3]| p.iter().all(|v| *v > 200);
-    // Under the first picture, centred in B's row, its number in orange: red over green over blue.
+    // Under the first picture, centred in B's row, its number in amber.
     let bottom = 60 + (767 - 683) / 2 + 683;
-    let numbered = count(60..260, bottom..bottom + 60, &orange);
-    assert!(numbered > 100, "the first number is orange under its picture: {numbered} pixels");
+    let numbered = count(60..260, bottom..bottom + 60, &amber);
+    assert!(numbered > 100, "the first number is amber under its picture: {numbered} pixels");
     // Under the row's numbers the margin alone, black, and above the row.
     assert_eq!(count(0..3252, 892..948, &|p| !black(p)) + count(0..3252, 0..56, &|p| !black(p)), 0, "the margins under the numbers and above the row");
 
-    // The same three as positives: the same black, the numbers orange.
+    // The same three as positives: the same black, the numbers amber.
     *file.borrow_mut() = out.join("Positives.jpg");
     let positive = |mut t: oni_app::export::Target| {
         t.settings.mode = oni_settings::ConversionMode::Positive;
@@ -127,8 +130,8 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let px = |x: u32, y: u32| sheet.get_pixel(x, y).0;
     let count = |xs: std::ops::Range<u32>, ys: std::ops::Range<u32>, f: &dyn Fn([u8; 3]) -> bool| xs.flat_map(|x| ys.clone().map(move |y| (x, y))).filter(|&(x, y)| f(px(x, y))).count();
     assert!(black(px(60 + 1024 + 15, 580)) && black(px(10, 10)), "positives lie on black too: {:?}", px(60 + 1024 + 15, 580));
-    let numbered = count(60..260, bottom..bottom + 60, &orange);
-    assert!(numbered > 100, "numbered in orange: {numbered} pixels");
+    let numbered = count(60..260, bottom..bottom + 60, &amber);
+    assert!(numbered > 100, "numbered in amber: {numbered} pixels");
 
     // Five photos fill a row: the white logo four margins under it, across the first column, nothing
     // beside it, and the margin under it.

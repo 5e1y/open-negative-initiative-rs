@@ -65,12 +65,16 @@ component Face inherits Rectangle {
             letter-spacing: root.tracking;
         }
     }
-    // The lamp after the legend, on its middle line: an indicator on the face, never a badge at its corner.
-    if root.lamp-shown: Lamp {
-        x: legend.x + legend.width + Space.xs;
-        y: (parent.height - self.height) / 2;
-        lit: root.lamp-lit;
-        colour: ButtonStyle.latch;
+    // The lamp after the legend, on its middle line: an indicator on the face, never a badge at its corner;
+    // its light stays on the key, a glyph's square key holding the lamp 3 pt from its edge.
+    if root.lamp-shown: Rectangle {
+        clip: true;
+        Lamp {
+            x: legend.x + legend.width + Space.xs;
+            y: (parent.height - self.height) / 2;
+            lit: root.lamp-lit;
+            colour: ButtonStyle.latch;
+        }
     }
 }
 

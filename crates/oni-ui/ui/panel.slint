@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { Editors } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
@@ -30,21 +30,27 @@ export component Panel inherits Surface {
             padding-top: Space.m;
             Rectangle {
                 height: PlotStyle.main;
-                if !Lab.shown && PanelState.tab != 3: Plot {
+                // The plot over its legend, one height on every tab, so the tab bar never moves.
+                if !Lab.shown && PanelState.tab != 3: VerticalLayout {
                     width: parent.width;
                     height: parent.height;
-                    plot: 5;
-                    screen: false;
-                    glass: true;
-                    grid: false;
-                    interactive: false;
-                    histogram: Plots.output;
-                    histogram-revision: Plots.output-revision;
-                    lines: PanelState.tab == 2 ? Editors.print-lines : [];
-                    // The trace's size, set by the plot itself so it is known before any histogram lands.
-                    resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
-                    property <int> epoch: Editors.epoch;
-                    changed epoch => { Editors.resized(self.plot, self.width, self.height); }
+                    spacing: Space.xs;
+                    Plot {
+                        vertical-stretch: 1;
+                        plot: 5;
+                        screen: false;
+                        glass: true;
+                        grid: false;
+                        interactive: false;
+                        histogram: Plots.output;
+                        histogram-revision: Plots.output-revision;
+                        lines: PanelState.tab == 2 ? Editors.print-lines : [];
+                        // The trace's size, set by the plot itself so it is known before any histogram lands.
+                        resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
+                        property <int> epoch: Editors.epoch;
+                        changed epoch => { Editors.resized(self.plot, self.width, self.height); }
+                    }
+                    PlotLegend { vertical-stretch: 0; curves: PanelState.tab == 2; }
                 }
                 // Under Details the output histogram cannot move, so the readout holds the loupe.
                 if PanelState.tab == 3: LoupeBand {
