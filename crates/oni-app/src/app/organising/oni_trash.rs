@@ -1,4 +1,4 @@
-//! The ONI Trash: laid as a grid, its rows, Restore and Restore All.
+//! The ONI Trash: laid as a grid, its rows, its inspector's key, Restore and Restore All.
 
 use super::*;
 
@@ -175,6 +175,15 @@ impl Ctl {
         self.ask(&title, tr("Every photo in the ONI Trash goes back to its folder, roll and project."), &key, false, Pending::RestoreAll);
     }
 
+    /// The inspector's key: the photos picked go back as ⇧⌘⌫ sends them; none picked, Restore All asks.
+    pub(in crate::app) fn trash_restore(self: &Rc<Self>) {
+        if self.state.borrow().trash_picks.selection.is_empty() {
+            self.ask_restore_all();
+        } else {
+            self.act(crate::Act::Restore);
+        }
+    }
+
     pub(in crate::app) fn restore_all(self: &Rc<Self>) {
         let all: Vec<String> = self.state.borrow().org.trashed.iter().map(|e| e.path.clone()).collect();
         self.restore(&all);
@@ -199,6 +208,17 @@ impl Ctl {
     }
 }
 
+/// The inspector's count and its key's word, which names what `trash_restore` reaches: the photos
+/// picked, else every one once asked; no key on an empty trash.
+pub(super) fn inspector(trashed: usize, picked: usize) -> (String, String) {
+    let key = match (picked, trashed) {
+        (0, 0) => String::new(),
+        (0, _) => tr("Restore All…").to_string(),
+        (n, _) => trn("Restore Photo", "Restore {n} Photos", n as u64),
+    };
+    (trn("{n} photo", "{n} photos", trashed as u64), key)
+}
+
 /// The folder `lines` shows at row `i`, while the trash still holds photos of it, and how many.
 fn shown_folder(lines: &[String], trashed: &[Entry], i: usize) -> Option<(String, usize)> {
     let path = lines.get(i).filter(|p| !p.is_empty())?;
@@ -221,5 +241,16 @@ mod tests {
         // Twin: A's row read as the trash's first folder cut anew, as a row index would, names B.
         assert_eq!(oni_library::trash::folders(&now).first().map(|f| f.path.clone()), Some("/r/B".to_string()));
         assert_eq!(shown_folder(&lines, &now, 0), None, "the trash's own row is no folder");
+    }
+
+    #[test]
+    fn the_inspector_key_names_the_picks_else_every_photo_and_is_gone_on_an_empty_trash() {
+        assert_eq!(inspector(3, 0), ("3 photos".to_string(), "Restore All…".to_string()));
+        assert_eq!(inspector(3, 1).1, "Restore Photo");
+        assert_eq!(inspector(3, 2).1, "Restore 2 Photos");
+        assert_eq!(inspector(0, 0), ("0 photos".to_string(), String::new()));
+        // Twin: a key read off the trash's size instead of the picks names photos never picked.
+        let wrong = |trashed: usize, _picked: usize| trn("Restore Photo", "Restore {n} Photos", trashed as u64);
+        assert_ne!(wrong(3, 1), inspector(3, 1).1);
     }
 }

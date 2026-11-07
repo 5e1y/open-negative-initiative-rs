@@ -194,6 +194,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("library_column::a_long_tree_makes_only_the_rows_near_its_view", library_column::a_long_tree_makes_only_the_rows_near_its_view),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
     ("library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it", library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it),
+    ("library_wide::the_trash_inspector_counts_and_its_key_restores_what_it_names", library_wide::the_trash_inspector_counts_and_its_key_restores_what_it_names),
     ("library_wide::a_project_from_a_still_lists_after_b_opens", library_wide::a_project_from_a_still_lists_after_b_opens),
     ("library_wide::a_rename_moves_the_projects_recorded_path", library_wide::a_rename_moves_the_projects_recorded_path),
     ("projects_tab::two_rolls_copies_join_one_project_said_with_undo", projects_tab::two_rolls_copies_join_one_project_said_with_undo),

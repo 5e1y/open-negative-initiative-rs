@@ -1037,6 +1037,14 @@ msgstr "Aún no hay emulsión definida"
 msgid "Description"
 msgstr "Descripción"
 
+#: crates/oni-app/src/app/organising/oni_trash.rs crates/oni-ui/ui/info_sidebar.slint
+msgid "ONI Trash"
+msgstr "Papelera de ONI"
+
+#: crates/oni-app/src/app/organising/grid.rs crates/oni-ui/ui/info_sidebar.slint
+msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
+msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
+
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Names only"
 msgstr "Solo nombres"
@@ -3510,10 +3518,6 @@ msgid "ONI Trash Is Empty"
 msgstr "La Papelera de ONI está vacía"
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
-msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
-
-#: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
 msgstr "Ninguna carpeta abierta"
 
@@ -3566,10 +3570,6 @@ msgid "Default, from this roll's {mode} mode"
 msgstr "Por defecto, según el modo {mode} de este rollo"
 
 #: crates/oni-app/src/app/organising/oni_trash.rs
-msgid "ONI Trash"
-msgstr "Papelera de ONI"
-
-#: crates/oni-app/src/app/organising/oni_trash.rs
 msgid "Restore every photo in the ONI Trash"
 msgstr "Restaurar todas las fotos de la Papelera de ONI"
 
@@ -3602,6 +3602,12 @@ msgid "Restore This Photo?"
 msgid_plural "Restore {n} Photos?"
 msgstr[0] "¿Restaurar esta foto?"
 msgstr[1] "¿Restaurar {n} fotos?"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/picking.rs
+msgid "{n} photo"
+msgid_plural "{n} photos"
+msgstr[0] "{n} foto"
+msgstr[1] "{n} fotos"
 
 #: crates/oni-app/src/app/organising/projects.rs
 msgid "The projects could not be saved: {error}"
@@ -4446,12 +4452,6 @@ msgstr "{verb} ({count} fotos)"
 #: crates/oni-app/src/picking.rs
 msgid "{photos} in the ONI Trash"
 msgstr "{photos} en la Papelera de ONI"
-
-#: crates/oni-app/src/picking.rs
-msgid "{n} photo"
-msgid_plural "{n} photos"
-msgstr[0] "{n} foto"
-msgstr[1] "{n} fotos"
 
 #: crates/oni-app/src/picking.rs
 msgid "{n} selected"

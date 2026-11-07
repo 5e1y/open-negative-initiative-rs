@@ -134,7 +134,7 @@ export global Library {
     // The rating filter: 0 every photo, else the one medal the gallery keeps; a key of it picked.
     in property <int> filter-medal;
     callback filter-picked(int);
-    // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project.
+    // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project, 3 the ONI Trash.
     in property <int> info-kind;
     in property <string> info-empty;
     in property <string> info-title;
@@ -196,6 +196,10 @@ export global Library {
     callback trash-row-folded(int);
     callback trash-row-restore(int);
     callback trash-row-menu(int) -> bool;
+    // The ONI Trash's count and its key's word, the photos picked else all of them, none when empty.
+    in property <string> trash-count;
+    in property <string> trash-key;
+    callback trash-restore();
     // A click on a cell resolved by index, with ⌘ and ⇧; the pointer's own path is below.
     callback tile-clicked(int, bool, bool);
     callback tile-opened(int);

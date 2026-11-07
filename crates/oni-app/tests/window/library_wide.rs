@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use crate::common;
+use i_slint_backend_testing::AccessibleRole;
 
 struct Disk {
     root: PathBuf,
@@ -174,6 +175,47 @@ pub(crate) fn a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it(
     restore_all(&rig, &shell);
     assert!(!trashed(&c1));
     assert_eq!((told(&shell), trash_count(&shell)), (None, String::new()));
+    let _ = std::fs::remove_dir_all(&d.root);
+}
+
+pub(crate) fn the_trash_inspector_counts_and_its_key_restores_what_it_names() {
+    let Some(gpu) = gpu("the ONI Trash's inspector") else { return };
+    let d = disk("inspector", &["Home/A/A1.tif", "Home/A/A2.tif", "Home/A/A3.tif"]);
+    let (a1, a2) = (d.at("Home/A/A1.tif"), d.at("Home/A/A2.tif"));
+    let rig = rig();
+    let shell = d.launch(&gpu);
+    let w = &shell.window;
+    opened(&rig, &shell, &d.root.join("Home/A"));
+    for photo in ["A1", "A2"] {
+        rest(&rig);
+        click(&rig, &shell, photo, false);
+        shell.ctl.act(oni_app::Act::Remove);
+        rig.landed(&shell.ctl);
+    }
+    let keys = |label: &str| common::placed(w, AccessibleRole::Button, label).len();
+    let lib = w.global::<Library>();
+    // Twin: the folder's inspector is its roll's, with no key of the trash.
+    assert_eq!((lib.get_info_kind(), keys("Restore All…")), (1, 0));
+    lib.invoke_trash_row_clicked(0);
+    rig.pump();
+    assert_eq!((lib.get_info_kind(), lib.get_trash_count().as_str()), (3, "2 photos"), "the trash's own, never Select a roll");
+
+    // A photo picked, the key names it and restores it alone, unasked.
+    rest(&rig);
+    click(&rig, &shell, "A1", false);
+    common::click(&rig, w, common::the(w, AccessibleRole::Button, "Restore Photo").middle());
+    rig.landed(&shell.ctl);
+    assert!(!w.global::<Confirm>().get_shown(), "a restore of the picks is undoable, never asked");
+    assert!(!trashed(&a1) && trashed(&a2));
+    assert_eq!(lib.get_trash_count(), "1 photo");
+
+    // None picked, Restore All asks, then empties the trash; the key leaves with the last photo.
+    common::click(&rig, w, common::the(w, AccessibleRole::Button, "Restore All…").middle());
+    assert!(w.global::<Confirm>().get_shown(), "Restore All asks first");
+    common::click(&rig, w, common::the(w, AccessibleRole::Button, "Restore Photo").middle());
+    rig.landed(&shell.ctl);
+    assert!(!trashed(&a2));
+    assert_eq!((lib.get_trash_count().as_str(), keys("Restore All…"), keys("Restore Photo")), ("0 photos", 0, 0));
     let _ = std::fs::remove_dir_all(&d.root);
 }
 

@@ -7487,5 +7487,12 @@
     "title": "The colour space's select shows its face at rest on the canvas's band",
     "status": "done",
     "detail": "UI evaluation s-f5b562fe (Clarity): the Working Space chip had no ground until hovered and read as the canvas's title. Picker's chip face now wears a flat key's face within its own edge (ButtonStyle.face, ButtonStyle.edge), as tall and as round as the mini keys beside it and centred in the band as they are, lit by the hand's veil as a flat key; its chevron stays and its popover drops under it. One corner per face (Picker.corner) serves the face, its veil and its focus ring; the field and pill faces are unchanged. Check: window canvas_layout, the select's face drawn inside its edge at rest (twin: the band's ground beside it); space_chip and panel_bindings still open its popover where it lies."
+  },
+  {
+    "id": 1517,
+    "type": "feature",
+    "title": "The ONI Trash has its own inspector: its count, what it keeps, and its Restore key",
+    "status": "done",
+    "detail": "The fifth evaluation found the inspector reading 'Select a roll' over the trashed photos, with no Restore beside them. The sidebar now lays the trash as its own kind: the photos it holds, the note that a file stays untouched, and one plain key naming its reach, Restore Photo or Restore N Photos on the picks, as the menu bar's Restore does, else Restore All…, asked as the row's menu asks; an empty trash shows no key. No Empty Trash key: ONI never deletes a library member's file (the trash only marks the sidecar), so emptying would delete originals, the owner's call alone."
   }
 ]
