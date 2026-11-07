@@ -7256,5 +7256,12 @@
     "title": "A block folds by the tree's chevron before its title; its Reset shows only off rest, at the row's end",
     "status": "done",
     "detail": "Both evaluators found a block's Reset beside its boxed fold key, and the boxed › of a folded block read as a key that opens a sub-page. A Section now folds by the library tree's own bare chevron leading its title, the app's one look for folding, and its Reset shows only while the block stands off its rest, alone at the row's far end, the whole title between it and the fold. The title row keeps a key's height, so nothing moves as the Reset comes and goes; the panel's right edge no longer holds a chevron beside the scroll knob."
+  },
+  {
+    "id": 1507,
+    "type": "interface",
+    "title": "The gear names the app's Settings alone; a block's options wear two sliders",
+    "status": "done",
+    "detail": "The gear opened the app's Settings, white balance's options and the flat-field's. A block's own options key, in the panel and in Prepare the Roll, now draws an options glyph, two sliders in the Trinil stroke; a check fails if the gear appears outside the toolbar's Settings key."
   }
 ]
