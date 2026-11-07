@@ -1,13 +1,15 @@
 //! `projects.json`, read in any format an app wrote it and written in one every build reads: the
 //! members as version 1 names them, with each one's exact path and print beside, which older builds drop.
 
-use super::member::{self, Member, distinct, exclusive};
-use crate::library::WAITING_MARK;
 use super::Project;
+use super::member::{self, Member, exclusive};
+use super::unsettled::{self, Read};
+use crate::library::WAITING_MARK;
 use crate::paths;
 use oni_settings::json;
 use oni_settings::{Date, Id};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
@@ -50,6 +52,9 @@ struct Written {
     paths: Option<HashMap<String, String>>,
     #[serde(rename = "exactMembers", default)]
     exact: Option<Vec<Member>>,
+    /// The prints each text held apart stood against, by its text, as this format writes them.
+    #[serde(default)]
+    unsettled: BTreeMap<String, Vec<String>>,
 }
 
 /// One member as written: a text, or version 2's object.
@@ -63,7 +68,7 @@ enum Writ {
 impl From<Incoming> for ProjectsFile {
     fn from(file: Incoming) -> ProjectsFile {
         let named: HashSet<String> = file.projects.iter().flat_map(Written::named).collect();
-        ProjectsFile { version: file.version, projects: file.projects.into_iter().map(|w| w.read(&named)).collect() }
+        ProjectsFile { version: file.version, projects: unsettled::hold(file.projects.into_iter().map(|w| w.read(&named)).collect()) }
     }
 }
 
@@ -83,31 +88,38 @@ impl Written {
 
     /// The exact members while the texts beside still name them one for one, else the texts read
     /// as version 1: an older build rewrote them and dropped the rest.
-    fn read(self, named: &HashSet<String>) -> Project {
+    fn read(self, named: &HashSet<String>) -> Read {
         let recorded = self.paths.unwrap_or_default();
-        let members: Vec<Member> = match self.exact.filter(|exact| agree(exact, &self.members)) {
+        let members = match self.exact.filter(|exact| agree(exact, &self.members)) {
             Some(exact) => exact.into_iter().map(spelt).collect(),
             None => self
                 .members
                 .into_iter()
                 .map(|writ| match writ {
                     Writ::Member(m) => spelt(m),
-                    Writ::Text(text) => former(&text, &recorded, named),
+                    Writ::Text(text) => (former(&text, &recorded, named), waiting(&text)),
                 })
                 .collect(),
         };
-        Project { id: self.id, name: self.name, description: self.description, created_at: self.created_at, manual_order: self.manual_order, members: distinct(members) }
+        let (id, name, description, created_at, manual_order) = (self.id, self.name, self.description, self.created_at, self.manual_order);
+        Read { project: Project { id, name, description, created_at, manual_order, members: Vec::new(), unsettled: Vec::new() }, members, listed: self.unsettled }
     }
 }
 
 /// A member as an object names it, a print that is none naming its place where it has no path: a
-/// path text a version 2 build took for a print, or a placeholder an earlier build kept as one.
-fn spelt(m: Member) -> Member {
+/// path text a version 2 build took for a print, or a placeholder kept as one; beside, that placeholder.
+fn spelt(m: Member) -> (Member, Option<String>) {
     let (print, named) = match m.print {
         Some(print) if is_print(&print) => (Some(print), None),
-        text => (None, text.as_deref().and_then(place).map(str::to_owned)),
+        text => (None, text),
     };
-    Member { path: m.path.or(named).map(|p| paths::normal(&p).into_owned()), print }
+    let path = m.path.as_deref().or_else(|| named.as_deref().and_then(place)).map(|p| paths::normal(p).into_owned());
+    (Member { path, print }, named.as_deref().and_then(waiting))
+}
+
+/// A text that is 1.5.6's placeholder for a print not read yet.
+fn waiting(text: &str) -> Option<String> {
+    text.starts_with(WAITING_MARK).then(|| text.to_owned())
 }
 
 /// Whether each text is its exact member's print or path, in order.
@@ -151,7 +163,8 @@ struct Outgoing<'a> {
     projects: Vec<Out<'a>>,
 }
 
-/// A project as this format writes it; `members` and `paths` are what 1.5.6 reads.
+/// A project as this format writes it; `members` and `paths` are what 1.5.6 reads, a member held apart
+/// among them as 1.5.6 gave it.
 #[derive(Serialize)]
 struct Out<'a> {
     id: Id,
@@ -165,18 +178,29 @@ struct Out<'a> {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     paths: BTreeMap<String, String>,
     #[serde(rename = "exactMembers")]
-    exact: Vec<&'a Member>,
+    exact: Vec<Cow<'a, Member>>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    unsettled: BTreeMap<&'a str, &'a [String]>,
 }
 
-/// Each member named by its print the first time the file names that print, a print alone first,
-/// by its path after, so no two members share a text 1.5.6 takes for one photo; each text's path beside.
+/// Each member named by its print the first time the file names it, a print alone first, by its path after,
+/// so 1.5.6 takes no two for one photo; each text's path beside, one held apart at its place in its own text.
 fn written(projects: &[Project]) -> Vec<Out<'_>> {
     let members = projects.iter().flat_map(|p| &p.members);
     let mut used: HashSet<&str> = members.filter(|m| m.path.is_none()).filter_map(|m| m.print.as_deref()).collect();
     let mut out = Vec::with_capacity(projects.len());
     for p in projects {
         let (mut members, mut recorded, mut exact) = (Vec::new(), BTreeMap::new(), Vec::new());
-        for m in &p.members {
+        let mut held: Vec<&super::Unsettled> = p.unsettled.iter().collect();
+        held.sort_by_key(|u| u.at);
+        let mut held = held.into_iter().peekable();
+        for at in 0..=p.members.len() {
+            while let Some(u) = held.next_if(|u| u.at <= at || at == p.members.len()) {
+                recorded.insert(u.text.clone(), u.path.clone());
+                members.push(u.text.clone());
+                exact.push(Cow::Owned(Member::new(Some(&u.path), Some(&u.text))));
+            }
+            let Some(m) = p.members.get(at) else { break };
             let text = match (m.print.as_deref(), m.path.as_deref()) {
                 (Some(print), None) => print,
                 (Some(print), Some(_)) if used.insert(print) => print,
@@ -187,10 +211,11 @@ fn written(projects: &[Project]) -> Vec<Out<'_>> {
                 recorded.insert(text.to_owned(), path.clone());
             }
             members.push(text.to_owned());
-            exact.push(m);
+            exact.push(Cow::Borrowed(m));
         }
+        let unsettled = p.unsettled.iter().map(|u| (u.text.as_str(), u.against.as_slice())).collect();
         let (id, name, description, created_at, manual_order) = (p.id, p.name.as_str(), p.description.as_str(), p.created_at, p.manual_order);
-        out.push(Out { id, name, description, created_at, manual_order, members, paths: recorded, exact });
+        out.push(Out { id, name, description, created_at, manual_order, members, paths: recorded, exact, unsettled });
     }
     out
 }

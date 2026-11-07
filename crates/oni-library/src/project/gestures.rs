@@ -3,7 +3,7 @@
 
 use super::member::{Member, distinct, printed};
 use super::resolve::{Reach, holders, resolve};
-use super::{Project, root_order, untitled};
+use super::{Project, Unsettled, root_order, untitled};
 use crate::index::Entry;
 use crate::paths::{self, holds};
 use crate::project_tree::rolls;
@@ -207,11 +207,12 @@ pub fn moved_member(member: &Member, moves: &[(String, String)]) -> Member {
     Member { path: member.path.as_deref().map(|p| carried(p, moves)), print: member.print.clone() }
 }
 
-/// A folder or a file moved in ONI carries the members under it, each keeping its print; two that
-/// land on one photo become one.
+/// A folder or a file moved in ONI carries the members under it, each keeping its print, and the path
+/// recorded beside each one held apart, its text kept as 1.5.6 keeps it; two that land on one photo become one.
 pub fn moved(projects: &[Project], moves: &[(String, String)]) -> Vec<Project> {
     let carry = |project: &Project| distinct(project.members.iter().map(|m| moved_member(m, moves)).collect());
-    projects.iter().map(|project| Project { members: carry(project), ..project.clone() }).collect()
+    let held = |project: &Project| project.unsettled.iter().map(|u| Unsettled { path: carried(&u.path, moves), ..u.clone() }).collect();
+    projects.iter().map(|project| Project { members: carry(project), unsettled: held(project), ..project.clone() }).collect()
 }
 
 pub fn rosters(projects: &[Project]) -> Rosters {

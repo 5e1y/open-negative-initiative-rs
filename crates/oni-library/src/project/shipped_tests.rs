@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 /// 1.5.6's `Project` and `ProjectsFile`, field for field.
-mod shipped {
+pub(super) mod shipped {
     use oni_settings::{Date, Id};
     use serde::{Deserialize, Serialize};
     use std::collections::BTreeMap;
@@ -39,12 +39,12 @@ fn stamp() -> Date {
     Date::since_reference_date(8e8)
 }
 
-fn row(path: &str, print: &str) -> Entry {
+pub(super) fn row(path: &str, print: &str) -> Entry {
     Entry { captured_at: Some(stamp()), ..Entry::new(path, stamp(), print) }
 }
 
 /// 1.5.6's `grouped` for one project: each member at its recorded path, else at the first row of its print.
-fn shown<'a>(project: &shipped::Project, rows: &'a [Entry]) -> Vec<&'a Entry> {
+pub(super) fn shown<'a>(project: &shipped::Project, rows: &'a [Entry]) -> Vec<&'a Entry> {
     let (mut by_print, mut by_path): (HashMap<&str, &Entry>, HashMap<&str, &Entry>) = (HashMap::new(), HashMap::new());
     for e in rows {
         by_print.entry(e.fingerprint.as_str()).or_insert(e);
@@ -55,7 +55,7 @@ fn shown<'a>(project: &shipped::Project, rows: &'a [Entry]) -> Vec<&'a Entry> {
 }
 
 /// 1.5.6's save: `located` on each project, then the file written as version 1 by its own types.
-fn written_back(support: &Path, rows: &[Entry]) {
+pub(super) fn written_back(support: &Path, rows: &[Entry]) {
     let text = std::fs::read(file_path(support)).unwrap();
     let mut file: shipped::ProjectsFile = serde_json::from_slice(&text).expect("1.5.6 parses the file");
     for project in &mut file.projects {
@@ -205,7 +205,7 @@ fn a_member_1_5_6_named_by_its_placeholder_learns_its_real_print() {
 }
 
 /// 1.5.6 leaves by text, so Trip's placeholder for a and Portfolio's print 1-a both held it: whatever the
-/// dates, Portfolio keeps a while the file there carries 1-a, else Trip, through the launch and the next save.
+/// dates, the placeholder waits apart, then Portfolio keeps a while the file there carries 1-a, else Trip.
 #[test]
 fn the_file_at_its_place_tells_a_placeholder_from_a_print() {
     let scratch = Scratch::new("projects-placeholder-moved");
@@ -231,10 +231,13 @@ fn the_file_at_its_place_tells_a_placeholder_from_a_print() {
             let file = shipped::ProjectsFile { version: 1, projects: vec![made("Trip", trip, &waiting), made("Portfolio", portfolio, "1-a")] };
             std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
             let loaded = load(support).projects;
-            assert_eq!(members(&loaded), [vec![Member::new(Some(a), None)], vec![old.clone()]], "the file alone tells nothing, both kept");
+            assert_eq!(members(&loaded), [vec![], vec![old.clone()]], "the file alone tells nothing: one member, Portfolio's");
+            let apart = Unsettled { text: waiting.clone(), path: a.into(), against: vec!["1-a".into()], at: 0 };
+            assert_eq!(loaded[0].unsettled, [apart], "the placeholder waits apart, as 1.5.6 gave it");
             let mut read = loaded.clone();
             assert!(project_standing::learn(&mut read, &[], &index), "the launch settles it, and saves");
             assert_eq!(members(&read), kept, "{carried} at a");
+            assert!(read[0].unsettled.is_empty());
             let standing = project_standing::standing(&read, &[], &index, &Found::new());
             let at_a: Vec<String> = grouped(&read, &Reach::new(&standing.rows, &standing.found)).into_iter().filter(|g| g.entries.iter().any(|e| e.path == a)).map(|g| g.project.name).collect();
             assert_eq!(at_a, [holding], "the file at a stands in one project");
