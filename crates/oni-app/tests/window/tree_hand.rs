@@ -46,8 +46,7 @@ fn project_row(lib: &Library, title: &str) -> i32 {
     project_rows(lib).iter().position(|r| r.title == title).unwrap_or_else(|| panic!("{title} has a project row")) as i32
 }
 
-/// Where the window lays the projects' list at 1280 × 800, and a row's middle across it.
-const LIST_TOP: f32 = 188.0;
+/// A row's middle across the projects' list.
 const ACROSS: f32 = 120.0;
 
 /// A press and release through the window, as a hand gives it, with a modifier held or none.
@@ -257,7 +256,8 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     // Through the pointer: a plain click drops the pick, ⌘ held adds a row, a right click opens its menu.
     let ds = w.global::<oni_app::DS>();
     let (height, margin) = (ds.get_control_film_sidebar_row_height(), ds.get_space_sm());
-    let y = |title: &str| LIST_TOP + margin + (project_row(&lib, title) as f32 + 0.5) * height;
+    let list_top = common::projects_top(w, &lib, "Holiday");
+    let y = |title: &str| list_top + margin + (project_row(&lib, title) as f32 + 0.5) * height;
     let lit = || project_rows(&lib).into_iter().filter(|r| r.selected).map(|r| r.title.to_string()).collect::<Vec<_>>();
     rest(&rig);
     press(&rig, y("B00.tif"), PointerEventButton::Left, None);

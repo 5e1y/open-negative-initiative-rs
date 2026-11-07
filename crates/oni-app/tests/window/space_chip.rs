@@ -49,8 +49,15 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.settle();
     assert_eq!(e.get_chip_title(), "Display P3");
+    // The chip where the canvas's band lays it under the bar, found by the words it shows.
+    let chip = || {
+        let (title, hint) = (e.get_chip_title(), e.get_chip_hint());
+        let label = if hint.is_empty() { title.to_string() } else { format!("{title} · {hint}") };
+        common::the(w, Role::Button, &label).middle()
+    };
     // The chip's title opens the popover, which stays open while its tabs are picked.
-    click(&rig, 600.0, 108.0);
+    let (x, y) = chip();
+    click(&rig, x, y);
     rig.settle();
     // The export panel's name, and the choice said to be the export's; twin: the former name is gone.
     common::in_popup(w, Role::Text, "Colour space");
@@ -73,7 +80,8 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
     assert_eq!(e.get_space_tab(), 4, "Custom from Display P3");
     // Twin: a click beside the popover closes it and picks nothing.
     let (x, y) = common::in_popup(w, Role::Tab, "sRGB").middle();
-    click(&rig, 600.0, 108.0);
+    let at = chip();
+    click(&rig, at.0, at.1);
     rig.settle();
     click(&rig, 600.0, 600.0);
     rig.settle();
