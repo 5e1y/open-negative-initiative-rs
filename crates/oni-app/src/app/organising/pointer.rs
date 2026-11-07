@@ -102,8 +102,7 @@ impl Ctl {
             if s.order.is_empty() {
                 return;
             }
-            let at = boundary.min(s.order.len() - 1);
-            let Some(target) = s.entry(&s.order[at].clone()).cloned() else { return };
+            let target = s.order[boundary.min(s.order.len() - 1)].clone();
             let rows = s.reach().into_owned();
             project::reorder_drop(&mut s.org.projects, &rows, &r.sources, &target)
         };

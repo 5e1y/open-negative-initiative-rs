@@ -195,12 +195,11 @@ impl Ctl {
             s.org.project_ring = s.org.project_ring.take().map(|id| project_moved(id, &moved));
             // The folders a hand folded stay folded under their new names.
             let folded: HashSet<TreeId> = s.archive.as_ref().map(|a| a.folded().into_iter().map(|id| tree_moved(id, &moved)).collect()).unwrap_or_default();
-            // `Project.moved` then `saveProjects`: a member no read reaches is found at its new path.
-            let recorded = s.org.projects.iter().any(|p| p.paths.is_some());
-            if recorded {
-                let pairs: Vec<(String, String)> = moves.iter().map(|m| (m.from.clone(), m.to.clone())).collect();
-                s.org.projects = oni_library::project::moved(&s.org.projects, &pairs);
-            }
+            // `Project.moved` then `saveProjects`: a member is found at its new path.
+            let pairs: Vec<(String, String)> = moves.iter().map(|m| (m.from.clone(), m.to.clone())).collect();
+            let carried = oni_library::project::moved(&s.org.projects, &pairs);
+            let recorded = carried != s.org.projects;
+            s.org.projects = carried;
             (s.open.as_deref().and_then(|p| moved(p)), folded, recorded)
         };
         if recorded {

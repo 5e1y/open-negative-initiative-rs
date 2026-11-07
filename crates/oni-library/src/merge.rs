@@ -3,7 +3,6 @@
 
 use crate::project::{self, Project, ProjectsFile};
 use oni_settings::Id;
-use std::collections::BTreeMap;
 use std::path::Path;
 
 /// `ours` against `base`, laid over `theirs`: what this side removed goes, what it added comes
@@ -38,7 +37,7 @@ pub fn projects(base: &[Project], ours: &[Project], theirs: &[Project]) -> Vec<P
     for mine in ours {
         match (find(base, mine.id), find(theirs, mine.id)) {
             (None, _) => out.push(mine.clone()),
-            (Some(read), None) if !edited(&read, mine) => {}
+            (Some(read), None) if read == *mine => {}
             (Some(_), None) => out.push(mine.clone()),
             (Some(read), Some(other)) => out.push(project(&read, mine, &other)),
         }
@@ -52,31 +51,14 @@ pub fn projects(base: &[Project], ours: &[Project], theirs: &[Project]) -> Vec<P
     out
 }
 
-/// Whether this side changed what a hand sees; the paths a save writes down are not a change.
-fn edited(read: &Project, mine: &Project) -> bool {
-    Project { paths: None, ..read.clone() } != Project { paths: None, ..mine.clone() }
-}
-
 fn project(base: &Project, ours: &Project, theirs: &Project) -> Project {
-    let members = list(&base.members, &ours.members, &theirs.members);
-    let mut paths: BTreeMap<String, String> = theirs.paths.clone().unwrap_or_default();
-    let read = base.paths.clone().unwrap_or_default();
-    for (member, path) in ours.paths.iter().flatten() {
-        if read.get(member) != Some(path) {
-            paths.insert(member.clone(), path.clone());
-        } else {
-            paths.entry(member.clone()).or_insert_with(|| path.clone());
-        }
-    }
-    paths.retain(|member, _| members.contains(member));
     Project {
         id: ours.id,
         name: pick(&base.name, &ours.name, &theirs.name),
         description: pick(&base.description, &ours.description, &theirs.description),
         created_at: pick(&base.created_at, &ours.created_at, &theirs.created_at),
         manual_order: pick(&base.manual_order, &ours.manual_order, &theirs.manual_order),
-        members,
-        paths: (!paths.is_empty()).then_some(paths),
+        members: list(&base.members, &ours.members, &theirs.members),
     }
 }
 

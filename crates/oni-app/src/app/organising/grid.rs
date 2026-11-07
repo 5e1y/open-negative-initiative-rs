@@ -55,12 +55,12 @@ impl Ctl {
         let s = self.state.borrow();
         let (title, detail, action) = if !s.order.is_empty() {
             (String::new(), String::new(), String::new())
+        } else if let Some(m) = s.filter.filter(|_| !s.trash_shown()) {
+            (tr!("No {medal} Photos", medal = library::medal(m)), tr("All in the rating filter shows every photo.").into(), String::new())
         } else if s.org.projects_surface {
-            (tr("No Photos in a Project").into(), tr("Select photos in the Archive, then choose New Project in the File menu or their right-click menu.").into(), String::new())
+            (tr("No Photos in a Project").into(), tr("Make a project here, then add photos to it in the Archive: Add to Project is in their right-click menu.").into(), tr("New Project").into())
         } else if s.org.trash_open {
             (tr("ONI Trash Is Empty").into(), tr("A photo deleted in ONI waits here, its file untouched, until it is restored.").into(), String::new())
-        } else if let Some(m) = s.filter {
-            (tr!("No {medal} Photos", medal = library::medal(m)), tr("All in the rating filter shows every photo.").into(), String::new())
         } else if s.opened.is_none() {
             (
                 tr("No Folder Open").into(),

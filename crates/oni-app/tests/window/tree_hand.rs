@@ -87,14 +87,11 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 60.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.65 + i as f32 / 100.0);
     }
-    let fingerprint = |name: &str| {
-        let path = oni_library::paths::canonical(&scans.join(name));
-        oni_library::library::indexed(&path).expect("a readable TIFF").fingerprint
-    };
+    let member = |name: &str| oni_library::paths::canonical(&scans.join(name));
     let at = |minutes: f64| Date::since_reference_date(8e8 + minutes * 60.0);
     let projects = vec![
-        Project::new("Trip", at(2.0), vec![fingerprint("Roll B/B00.tif"), fingerprint("Roll B/B01.tif")]),
-        Project::new("Walk", at(1.0), vec![fingerprint("Roll A/A04.tif")]),
+        Project::new("Trip", at(2.0), vec![member("Roll B/B00.tif"), member("Roll B/B01.tif")]),
+        Project::new("Walk", at(1.0), vec![member("Roll A/A04.tif")]),
     ];
     project::save(&support, &ProjectsFile { version: 1, projects }).unwrap();
 

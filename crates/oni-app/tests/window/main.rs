@@ -79,6 +79,7 @@ mod prepare_measure;
 mod prepare_loupe;
 mod slides;
 mod project_walk;
+mod projects_tab;
 mod preset_deck;
 mod presets;
 mod presence;
@@ -182,6 +183,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it", library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it),
     ("library_wide::a_project_from_a_still_lists_after_b_opens", library_wide::a_project_from_a_still_lists_after_b_opens),
     ("library_wide::a_rename_moves_the_projects_recorded_path", library_wide::a_rename_moves_the_projects_recorded_path),
+    ("projects_tab::two_rolls_copies_join_one_project_said_with_undo", projects_tab::two_rolls_copies_join_one_project_said_with_undo),
+    ("projects_tab::the_empty_tab_makes_a_project_and_the_filter_acts_in_it", projects_tab::the_empty_tab_makes_a_project_and_the_filter_acts_in_it),
     ("missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas", missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas),
     ("missing_original::a_heic_says_format_not_supported", missing_original::a_heic_says_format_not_supported),
     ("presence::lay_grid_touches_no_disk", presence::lay_grid_touches_no_disk),

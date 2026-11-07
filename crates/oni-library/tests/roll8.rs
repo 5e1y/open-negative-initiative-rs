@@ -2,7 +2,7 @@
 //! only ever read; what holds on any roll is proven again in `made_roll.rs` and `trash/round_trip.rs`.
 
 use oni_library::{
-    Id, LibraryIndex, film_group, folders, index, library, project, relink, roll_membership, roots, trash,
+    Id, LibraryIndex, film_group, folders, index, library, project, project_standing, relink, roll_membership, roots, trash,
 };
 use oni_settings::{Date, sidecar};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -341,17 +341,18 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
     assert_eq!(days.iter().map(|g| g.entries.len()).collect::<Vec<_>>(), [ORACLE.len(), FRAMES - ORACLE.len()]);
     assert_eq!(days[0].display_title(), "Monday, September 14, 2026");
 
-    // A project from the other app names its photos by print: they resolve on the copies.
+    // A project from the other app names its photos by print: each is found on its copy, as its path.
     let named: Vec<String> =
         ORACLE.iter().rev().map(|(f, _)| relink::fingerprint(&copy.staged.join(f)).unwrap()).collect();
     let trip = project::Project::new("Roll #8 picks", Date::since_reference_date(8e8), named);
-    let resolved = project::grouped(std::slice::from_ref(&trip), &all);
+    let found = project_standing::standing(std::slice::from_ref(&trip), &[], &index).found;
+    let resolved = project::grouped(&project::moved(std::slice::from_ref(&trip), &found), &all);
     let picked: Vec<String> = resolved[0].entries.iter().map(|e| name(&e.path)).collect();
     assert_eq!(picked, ORACLE.iter().rev().map(|(f, _)| f.to_string()).collect::<Vec<_>>());
-    // Twin: a print stamped off another size of the same frame resolves nothing.
+    // Twin: a print stamped off another size of the same frame is found nowhere.
     let stale = relink::fingerprint(&copy.staged.join(ORACLE[0].0)).unwrap().replacen("30005388", "30005389", 1);
     let lost = project::Project::new("Stale", Date::since_reference_date(8e8), vec![stale]);
-    assert!(project::grouped(std::slice::from_ref(&lost), &all)[0].entries.is_empty());
+    assert!(project_standing::standing(std::slice::from_ref(&lost), &[], &index).found.is_empty());
 }
 
 /// `CaptureExposure.offsets` on the NEFs present: each frame's stops past the roll's common settings

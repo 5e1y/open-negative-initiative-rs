@@ -64,7 +64,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 90.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.6 + i as f32 / 90.0);
     }
-    let print = |name: &str| oni_library::library::indexed(&oni_library::paths::canonical(&scans.join(name))).expect("a readable TIFF").fingerprint;
+    let print = |name: &str| oni_library::paths::canonical(&scans.join(name));
     let when = |minutes: f64| Date::since_reference_date(8e8 + minutes * 60.0);
     let trip: Vec<String> = (0..20).map(|i| print(&format!("Roll B/B{i:02}.tif"))).collect();
     let walk: Vec<String> = (4..24).map(|i| print(&format!("Roll A/A{i:02}.tif"))).collect();

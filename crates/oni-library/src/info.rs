@@ -6,14 +6,20 @@ use crate::index::Entry;
 use crate::project::{self, Project, ProjectGroup};
 use chrono::{Datelike, Local, NaiveDate, TimeZone};
 use oni_settings::film::{FilmStockKind, film_stock};
-use oni_settings::{Date, Id};
+use oni_settings::{Date, Film, Id};
 use std::collections::HashMap;
+
+/// The roll a photo stands in, as the archive reads it: its folder's marker, else the roll its
+/// sidecar names.
+pub fn roll_of<'a>(entry: &'a Entry, markers: &'a HashMap<String, Film>) -> Option<&'a Film> {
+    markers.get(&crate::paths::parent(&entry.path)).or(entry.film.as_ref())
+}
 
 /// `InfoSidebar.stocks(among:)`: each stock of the photos' rolls with its count of photos, by
 /// display name; a photo with no stock, or one the catalogue does not know, gives no row.
-pub fn stocks(entries: &[Entry]) -> Vec<(&'static FilmStockKind, usize)> {
+pub fn stocks(entries: &[Entry], markers: &HashMap<String, Film>) -> Vec<(&'static FilmStockKind, usize)> {
     let mut counts: HashMap<&str, usize> = HashMap::new();
-    for stock in entries.iter().filter_map(|e| e.film.as_ref()?.stock.as_deref()) {
+    for stock in entries.iter().filter_map(|e| roll_of(e, markers)?.stock.as_deref()) {
         *counts.entry(stock).or_default() += 1;
     }
     let mut rows: Vec<_> = counts.into_iter().filter_map(|(id, n)| film_stock(Some(id)).map(|k| (k, n))).collect();
@@ -83,12 +89,28 @@ mod tests {
     /// `InfoSidebar.selfCheck`, its stock half.
     #[test]
     fn a_projects_stocks_are_counted_by_photo_and_a_photo_with_none_gives_no_row() {
-        let rows = stocks(&[shot("/a", Some("kodak-gold")), shot("/b", Some("kodak-gold")), shot("/c", None), shot("/d", Some("kodak-ektachrome"))]);
+        let none = HashMap::new();
+        let rows = stocks(&[shot("/a", Some("kodak-gold")), shot("/b", Some("kodak-gold")), shot("/c", None), shot("/d", Some("kodak-ektachrome"))], &none);
         let read: Vec<(&str, usize)> = rows.iter().map(|(k, n)| (k.id, *n)).collect();
         assert_eq!(read, [("kodak-ektachrome", 1), ("kodak-gold", 2)], "sorted by display name");
-        assert!(stocks(&[shot("/x", Some("no-such-stock"))]).is_empty());
+        assert!(stocks(&[shot("/x", Some("no-such-stock"))], &none).is_empty());
         // Twin: counted by roll instead of by photo, Gold would read once.
         assert_ne!(read[1].1, 1);
+    }
+
+    /// A roll made of a folder carries its stock in the folder's marker, its photos' sidecars naming
+    /// none: the project counts the marker's stock for each of them, over what a sidecar names.
+    #[test]
+    fn a_photos_stock_is_its_folders_marker_first() {
+        let mut marker = Film::new("Roll 10");
+        marker.stock = Some("kodak-gold".into());
+        let markers = HashMap::from([("/Roll 10".to_string(), marker)]);
+        let photos = [shot("/Roll 10/a", None), shot("/Roll 10/b", Some("kodak-ektachrome")), shot("/Roll 8/c", Some("kodak-ektachrome"))];
+        let read: Vec<(&str, usize)> = stocks(&photos, &markers).iter().map(|(k, n)| (k.id, *n)).collect();
+        assert_eq!(read, [("kodak-ektachrome", 1), ("kodak-gold", 2)]);
+        // Twin: read off the sidecars alone, the marker's roll has no stock to count.
+        let sidecars: Vec<(&str, usize)> = stocks(&photos, &HashMap::new()).iter().map(|(k, n)| (k.id, *n)).collect();
+        assert_ne!(sidecars, read);
     }
 
     /// `InfoSidebar.selfCheck`, its date half: the clamp reads the real calendar.

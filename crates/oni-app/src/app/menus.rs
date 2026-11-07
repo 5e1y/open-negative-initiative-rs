@@ -209,7 +209,7 @@ mod tests {
         let before = PipelineSettings::default();
         let after = moved.iter().fold(before.clone(), |s, (f, by)| f.knob().set(&s, f.knob().get(&s) + by));
         let one = |s: PipelineSettings| Settings::from([("a".to_owned(), s)]);
-        Step { before: one(before), after: one(after), label: label.into(), disk: None, trash: None, marker: None, medals: None }
+        Step { before: one(before), after: one(after), label: label.into(), ..Step::default() }
     }
 
     #[test]

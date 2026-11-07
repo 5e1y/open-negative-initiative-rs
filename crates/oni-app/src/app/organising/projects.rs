@@ -9,14 +9,12 @@ impl Ctl {
         s.org.projects_read = s.org.projects.clone();
     }
 
-    /// `saveProjects`: every member's path written down, then the one file, merged with what
-    /// another app wrote since it was read.
+    /// `saveProjects`: the one file, merged with what another app wrote since it was read.
     pub(in crate::app) fn save_projects(&self) {
         let failure = {
             let mut s = self.state.borrow_mut();
-            let located = project::located(&s.org.projects, &s.reach());
-            s.org.projects = located.clone();
-            match oni_library::merge::save_projects(&s.support, &s.org.projects_read, &located) {
+            let ours = s.org.projects.clone();
+            match oni_library::merge::save_projects(&s.support, &s.org.projects_read, &ours) {
                 Ok(written) => {
                     s.org.projects_read = written.clone();
                     s.org.projects = written;
@@ -30,15 +28,55 @@ impl Ctl {
         }
     }
 
-    pub(super) fn new_project(self: &Rc<Self>, paths: &HashSet<String>) {
+    pub(super) fn new_project(self: &Rc<Self>, paths: &HashSet<String>) -> Id {
         let made = {
             let mut s = self.state.borrow_mut();
             let rows = s.reach().into_owned();
             project::new_from(&mut s.org.projects, &rows, paths, Date::now())
         };
-        if made.is_some() {
-            self.save_projects();
+        self.save_projects();
+        made
+    }
+
+    /// The empty Projects tab's key: a project with no photo yet, ringed, its name open to type.
+    pub(super) fn new_empty_project(self: &Rc<Self>) {
+        let id = self.new_project(&HashSet::new());
+        {
+            let mut s = self.state.borrow_mut();
+            s.org.project_ring = Some(NodeId::Project(id));
+            s.org.project_renaming = Some(id);
         }
+        self.lay_grid();
+    }
+
+    /// A gesture on the projects' members, one step the Undo key takes back, saved and laid;
+    /// whether it moved any.
+    pub(in crate::app) fn regroup(self: &Rc<Self>, label: &str, gesture: impl FnOnce(&mut Vec<Project>, &[Entry]) -> bool) -> bool {
+        let moved = {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            let rows = s.reach().into_owned();
+            let before = project::rosters(&s.org.projects);
+            let moved = gesture(&mut s.org.projects, &rows);
+            let members = oni_library::history::Members { before, after: project::rosters(&s.org.projects) };
+            if let Some(store) = s.store.editor().filter(|_| moved) {
+                store.record_members(members, label);
+            }
+            moved
+        };
+        if moved {
+            self.save_projects();
+            self.lay_grid();
+            self.publish_bar();
+        }
+        moved
+    }
+
+    /// An undo or a redo of a gesture on the projects: their members as the step holds them, saved.
+    pub(in crate::app) fn regrouped(self: &Rc<Self>, rosters: &std::collections::BTreeMap<Id, Vec<String>>) {
+        project::regroup(&mut self.state.borrow_mut().org.projects, rosters);
+        self.save_projects();
+        self.lay_grid();
     }
 
     /// `deleteProjectRequested`: real curation work asks before it goes.
@@ -87,8 +125,10 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
-            let nodes = project_tree::flatten(&project_tree::roots(&s.org.projects, &s.reach()), &s.org.project_expanded, 0);
+            let roots = project_tree::roots(&s.org.projects, &s.reach());
+            let nodes = project_tree::flatten(&roots, &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
+            let titles = photo_titles(&roots);
             let mut paths = Vec::with_capacity(nodes.len());
             for (node, _) in &nodes {
                 let Node::Photo { entry, .. } = node else {
@@ -117,10 +157,9 @@ impl Ctl {
                             renaming: s.org.project_renaming == Some(g.id),
                             ..TreeRow::default()
                         },
-                        Node::Photo { entry, .. } => TreeRow {
+                        Node::Photo { entry, project } => TreeRow {
                             depth: *depth as i32,
-                            // `ProjectRow.title`: the photo's whole file name.
-                            title: oni_library::paths::name(&entry.path).into(),
+                            title: titles.get(&(*project, entry.path.clone())).cloned().unwrap_or_default().into(),
                             caption: library::medal(entry.label).into(),
                             kind: 2,
                             expandable: false,
@@ -157,4 +196,23 @@ impl Ctl {
         }
         self.publish_projects();
     }
+}
+
+/// `ProjectRow.title`: the photo's whole file name, its roll's folder beside it where another photo
+/// of the project bears the same, as two rolls' copies of one file do.
+fn photo_titles(roots: &[Node]) -> HashMap<(Id, String), String> {
+    let mut titles = HashMap::new();
+    for root in roots {
+        let Node::Project(group) = root else { continue };
+        let named: Vec<(&Entry, String)> = group.entries.iter().map(|e| (e, oni_library::paths::name(&e.path))).collect();
+        let mut seen: HashMap<&str, usize> = HashMap::new();
+        for (_, name) in &named {
+            *seen.entry(name.as_str()).or_default() += 1;
+        }
+        for (e, name) in &named {
+            let title = if seen[name.as_str()] > 1 { format!("{name} \u{b7} {}", oni_library::paths::name(&oni_library::paths::parent(&e.path))) } else { name.clone() };
+            titles.insert((group.id, e.path.clone()), title);
+        }
+    }
+    titles
 }

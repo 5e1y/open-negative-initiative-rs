@@ -19,7 +19,7 @@ impl Ctl {
             };
             lib.set_info_kind(2);
             lib.set_info_title(group.project.name.clone().into());
-            let stocks: Vec<StockCount> = oni_library::info::stocks(&group.entries)
+            let stocks: Vec<StockCount> = oni_library::info::stocks(&group.entries, &s.roll_markers())
                 .into_iter()
                 .map(|(k, n)| {
                     let artwork = crate::stocks::icon(k.icon_name);
