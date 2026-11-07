@@ -341,17 +341,17 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
     assert_eq!(days.iter().map(|g| g.entries.len()).collect::<Vec<_>>(), [ORACLE.len(), FRAMES - ORACLE.len()]);
     assert_eq!(days[0].display_title(), "Monday, September 14, 2026");
 
-    // A project from the other app names its photos by print: each is found on its copy, as its path.
-    let named: Vec<String> =
-        ORACLE.iter().rev().map(|(f, _)| relink::fingerprint(&copy.staged.join(f)).unwrap()).collect();
+    // A project from the other app names its photos by print: each is found on its copy.
+    let named: Vec<project::Member> =
+        ORACLE.iter().rev().map(|(f, _)| project::Member::new(None, relink::fingerprint(&copy.staged.join(f)).as_deref())).collect();
     let trip = project::Project::new("Roll #8 picks", Date::since_reference_date(8e8), named);
-    let found = project_standing::standing(std::slice::from_ref(&trip), &[], &index).found;
-    let resolved = project::grouped(&project::moved(std::slice::from_ref(&trip), &found), &all);
+    let standing = project_standing::standing(std::slice::from_ref(&trip), &[], &index);
+    let resolved = project::grouped(std::slice::from_ref(&trip), &project::Reach::new(&standing.rows, &standing.found));
     let picked: Vec<String> = resolved[0].entries.iter().map(|e| name(&e.path)).collect();
     assert_eq!(picked, ORACLE.iter().rev().map(|(f, _)| f.to_string()).collect::<Vec<_>>());
     // Twin: a print stamped off another size of the same frame is found nowhere.
     let stale = relink::fingerprint(&copy.staged.join(ORACLE[0].0)).unwrap().replacen("30005388", "30005389", 1);
-    let lost = project::Project::new("Stale", Date::since_reference_date(8e8), vec![stale]);
+    let lost = project::Project::new("Stale", Date::since_reference_date(8e8), vec![project::Member::new(None, Some(&stale))]);
     assert!(project_standing::standing(std::slice::from_ref(&lost), &[], &index).found.is_empty());
 }
 

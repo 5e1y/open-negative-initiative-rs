@@ -40,8 +40,8 @@ pub struct Medals {
 /// The projects whose members a gesture changed, each one's list as the step found it and left it.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Members {
-    pub before: BTreeMap<Id, Vec<String>>,
-    pub after: BTreeMap<Id, Vec<String>>,
+    pub before: crate::project::Rosters,
+    pub after: crate::project::Rosters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,6 +91,9 @@ pub struct History {
     steps: Vec<Step>,
     /// Each step's settings in bytes, as their JSON spells them.
     sizes: Vec<usize>,
+    /// Each step's mark, which no other step of the session bears.
+    marks: Vec<u64>,
+    made: u64,
     cursor: usize,
     ceiling: usize,
     /// The frame, the setting and the time of the edit on top, which an edit continuing it joins.
@@ -112,7 +115,7 @@ fn weight(step: &Step) -> usize {
 impl History {
     /// A history holding at most `ceiling` bytes of settings.
     pub fn bounded(ceiling: usize) -> History {
-        History { steps: Vec::new(), sizes: Vec::new(), cursor: 0, ceiling, last: None }
+        History { steps: Vec::new(), sizes: Vec::new(), marks: Vec::new(), made: 0, cursor: 0, ceiling, last: None }
     }
 
     /// The bytes of settings the steps hold now.
@@ -135,6 +138,11 @@ impl History {
 
     pub fn next_redo(&self) -> Option<&Step> {
         self.steps.get(self.cursor)
+    }
+
+    /// The mark of the step the next undo takes back, so a host names that very step and no other.
+    pub fn undo_mark(&self) -> Option<u64> {
+        self.cursor.checked_sub(1).and_then(|at| self.marks.get(at).copied())
     }
 
     /// The name of the next undo's gesture; an edit of the open frame has none.
@@ -161,7 +169,10 @@ impl History {
         self.last = None;
         self.steps.truncate(self.cursor);
         self.sizes.truncate(self.cursor);
+        self.marks.truncate(self.cursor);
         self.sizes.push(weight(&step));
+        self.made += 1;
+        self.marks.push(self.made);
         self.steps.push(step);
         let mut over = self.steps.len().saturating_sub(LIMIT);
         let mut held: usize = self.sizes[over..].iter().sum();
@@ -171,6 +182,7 @@ impl History {
         }
         self.steps.drain(..over);
         self.sizes.drain(..over);
+        self.marks.drain(..over);
         self.cursor = self.steps.len();
     }
 
@@ -295,8 +307,8 @@ impl History {
                 medals.before = std::mem::take(&mut medals.before).into_iter().map(|(p, m)| (moved(&p), m)).collect();
             }
             if let Some(members) = &mut step.members {
-                for list in members.before.values_mut().chain(members.after.values_mut()) {
-                    list.iter_mut().for_each(|p| *p = moved(p));
+                for member in members.before.values_mut().chain(members.after.values_mut()).flatten() {
+                    member.path = member.path.as_deref().map(moved);
                 }
             }
             if let Some(disk) = &mut step.disk {

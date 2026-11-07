@@ -94,22 +94,15 @@ impl Ctl {
         }
     }
 
-    /// `commitReorder`: the boundary past the last cell reads back the last one.
+    /// `commitReorder`: the boundary past the last cell reads back the last one; one step of the Undo key.
     pub(super) fn commit_reorder(self: &Rc<Self>, r: Reorder) {
-        let moved = {
-            let mut s = self.state.borrow_mut();
+        let target = {
+            let s = self.state.borrow();
             let Some(boundary) = r.boundary else { return };
-            if s.order.is_empty() {
-                return;
-            }
-            let target = s.order[boundary.min(s.order.len() - 1)].clone();
-            let rows = s.reach().into_owned();
-            project::reorder_drop(&mut s.org.projects, &rows, &r.sources, &target)
+            let Some(last) = s.order.len().checked_sub(1) else { return };
+            s.order[boundary.min(last)].clone()
         };
-        if moved {
-            self.save_projects();
-            self.lay_grid();
-        }
+        self.regroup(tr("Move"), |projects, reach| project::reorder_drop(projects, reach, &r.sources, &target));
     }
 
     /// `click(_:)` on a cell: the picks, then the second plain click within the system's interval opens.

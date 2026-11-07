@@ -46,7 +46,8 @@ impl EditorStore {
             self.lay_medals(medals, undoing);
         }
         if let Some(members) = step.members.as_ref() {
-            self.regrouped = Some(if undoing { members.before.clone() } else { members.after.clone() });
+            let (from, to) = if undoing { (&members.after, &members.before) } else { (&members.before, &members.after) };
+            self.regrouped = Some((from.clone(), to.clone()));
         }
         if let Some(m) = &step.marker {
             let film = if undoing { &m.before } else { &m.after };

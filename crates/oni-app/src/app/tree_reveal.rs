@@ -2,7 +2,6 @@
 //! and on the projects, once each time that photo changes, so a fold made by hand afterwards stays.
 
 use super::*;
-use oni_library::project;
 use oni_library::project_tree::NodeId as ProjectNode;
 
 /// The photo each tree last unfolded for, and whether the next archive laid is a folder just opened.
@@ -28,7 +27,7 @@ impl State {
 
     /// The first project holding `path`, as `Project.grouped(...).first` finds it.
     pub(super) fn project_of(&self, path: &str) -> Option<oni_settings::Id> {
-        project::grouped(&self.org.projects, &self.reach()).into_iter().find(|g| g.entries.iter().any(|e| e.path == path)).map(|g| g.id)
+        self.project_groups().into_iter().find(|g| g.entries.iter().any(|e| e.path == path)).map(|g| g.id)
     }
 }
 

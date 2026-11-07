@@ -4,7 +4,6 @@
 use super::organising::Column;
 use super::*;
 use oni_library::archive_tree::{self, NodeId};
-use oni_library::project;
 use oni_library::project_tree::NodeId as ProjectNode;
 
 impl Ctl {
@@ -175,7 +174,7 @@ impl Ctl {
                 ProjectNode::Project(project) => {
                     s.picks.selection.clear();
                     s.picks.cursor = None;
-                    let groups = project::grouped(&s.org.projects, &s.reach());
+                    let groups = s.project_groups();
                     let first = groups.iter().find(|g| g.id == *project).and_then(|g| g.entries.first()).map(|e| e.path.clone());
                     // `revealInTree`: the photo opened rings under its project, which opens.
                     first.filter(|_| beside).inspect(|path| {

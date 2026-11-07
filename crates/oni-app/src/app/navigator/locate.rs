@@ -120,19 +120,19 @@ impl Ctl {
     }
 
     /// A row whose place under `to` holds another file loses its row, so that file is stamped
-    /// afresh and never wears another's print; then every record follows the folder.
+    /// afresh and never wears another's print; then every record follows the folder but that photo's.
     fn follow_located(self: &Rc<Self>, from: &str, to: &str, recognised: &Recognised) {
         if let Some(index) = &self.state.borrow().index {
             for path in &recognised.other {
                 let _ = index.remove(path);
             }
         }
-        self.follow_folder(from, to);
+        self.follow_folder(from, to, &recognised.other);
     }
 
-    /// A folder renamed in ONI or located: the navigator, the favourites, the opened folder, then
-    /// the index rows, the picks, the folds and the projects' paths follow it, the folder read again.
-    pub(in crate::app) fn follow_folder(self: &Rc<Self>, old: &str, new: &str) {
+    /// A folder renamed in ONI or located: the navigator, the favourites, the opened folder, the rows,
+    /// picks, folds and projects follow it, but a photo in `stay`, whose place there holds another file.
+    pub(in crate::app) fn follow_folder(self: &Rc<Self>, old: &str, new: &str, stay: &[String]) {
         let failure = {
             let mut s = self.state.borrow_mut();
             s.nav.model.follow(old, new);
@@ -152,7 +152,9 @@ impl Ctl {
         if let Some(message) = failure {
             self.told(tr("Something Went Wrong"), &message);
         }
-        self.followed_outside(&[Move { from: old.to_owned(), to: new.to_owned() }]);
+        let kept = stay.iter().map(|p| Move { from: p.clone(), to: p.clone() });
+        let moves: Vec<Move> = kept.chain([Move { from: old.to_owned(), to: new.to_owned() }]).collect();
+        self.followed_outside(&moves);
         self.publish_navigator();
     }
 

@@ -68,8 +68,12 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     let when = |minutes: f64| Date::since_reference_date(8e8 + minutes * 60.0);
     let trip: Vec<String> = (0..20).map(|i| print(&format!("Roll B/B{i:02}.tif"))).collect();
     let walk: Vec<String> = (4..24).map(|i| print(&format!("Roll A/A{i:02}.tif"))).collect();
-    project::save(&support, &ProjectsFile { version: 1, projects: vec![Project::new("Trip", when(2.0), trip.clone()), Project::new("Walk", when(1.0), walk.clone())] }).unwrap();
-    let members = |name: &str| project::load(&support).projects.into_iter().find(|p| p.name == name).map(|p| p.members).unwrap_or_default();
+    let held = |paths: &[String]| paths.iter().map(|p| project::Member::new(Some(p), None)).collect::<Vec<_>>();
+    project::save(&support, &ProjectsFile { version: project::FORMAT, projects: vec![Project::new("Trip", when(2.0), held(&trip)), Project::new("Walk", when(1.0), held(&walk))] }).unwrap();
+    let members = |name: &str| -> Vec<String> {
+        let projects = project::load(&support).projects;
+        projects.into_iter().find(|p| p.name == name).map(|p| p.paths().into_iter().map(str::to_owned).collect()).unwrap_or_default()
+    };
 
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();

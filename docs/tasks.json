@@ -7235,5 +7235,54 @@
     "title": "Two checks follow the merged sixth wave",
     "status": "done",
     "detail": "Prepare's left-out notice now says 'prepared with another roll'. A pressed slider shows it holds the keyboard, and one Escape leaves Compare whether or not the window's hook saw the press, as the keyboard's rework settled; the check proves both paths."
+  },
+  {
+    "id": 1472,
+    "type": "fix",
+    "title": "A project's member keeps its path and its print, so another file at its path is never taken for it",
+    "status": "done",
+    "detail": "Review of #1410 (points 2, 3 and 8): a member held its path alone, so a Locate or a file replaced at that path made another file the member, and a former file's print was dropped at the first save. A member is now {path, print} (project::Member). A row stands for a member at its path while it carries the member's print, or while either print is still being read; a member gone from its path, or whose path holds another file, is looked for by its print in project_standing on a shown row no member stands at, the same file first where the volume ignores case, and only for that read (project::Found), never written. Locate leaves the photos whose place in the folder found holds another file where every record names them (identity moves before the folder's, for the projects, the history, the picks and the open frame), and the open frame is never reopened on a path that did not move. A former member's text is a path when it starts at a root (/, \\ or a drive letter), a print otherwise, so a print holding a slash stays a print. Checks: project a_member_shows_only_on_the_file_its_print_names (twin: by path alone the other file shows), project_standing a_member_whose_path_holds_another_file_is_found_by_its_print (twin: path-only takes the other file), window locate::locate_onto_copies_carries_no_member_onto_another_file (twin: carried, B would name Roll 10's B; mutation without the stay list fails)."
+  },
+  {
+    "id": 1473,
+    "type": "fix",
+    "title": "projects.json is read whole in any former format, written in format 2 only when something changed, the former file kept beside it once",
+    "status": "done",
+    "detail": "Review of #1410 (points 3 and 7): a former file's prints were swapped for their recorded paths as raw text, unchecked, and the conversion was saved at launch with no copy of the file. Reading converts in memory only: an earlier build's prints keep the paths beside them, its paths alone stay paths, a Swift print stays a print, each path spelt as the index spells it (composed on macOS, '/' on Windows), each photo once. Nothing is written by a read: read_standing no longer saves, and merge::save_projects writes only when the merged projects differ from the file's. The file now says version 2 (project::FORMAT) and names each member as its path and its print; before the first write over a version 1 file, it is copied byte for byte to projects-v1.json, once, never replaced. Swift-to-Rust reading holds; Rust-to-Swift writing was dropped by the owner. Checks: project file_tests a_former_file_reads_each_member_with_its_path_and_its_print (twin: a slash taken for a path loses the date-stamped print), only_a_change_writes_and_the_former_file_is_kept_beside_it_once (twin: a format 2 write sets nothing aside), a_former_files_stale_and_respelt_paths_are_found_by_their_prints (twin: by recorded paths alone the other file shows and the moved photo is lost), a_file_round_trips_through_the_disk_saying_its_format, window projects_tab::a_swift_file_is_read_without_a_write_and_kept_at_the_first_change."
+  },
+  {
+    "id": 1474,
+    "type": "fix",
+    "title": "A Swift print is found on a copy for one read only, so an original back from the ONI Trash shows again",
+    "status": "done",
+    "detail": "Review of #1410 (point 4): a print with no path was matched once at launch to the first copy shown and that path saved for good; with the original in the ONI Trash a backup became the member. The match is now the read's (project::Found), the member keeping its print alone until a gesture names a photo, so the next read chooses again as Swift did; a trashed member at its own path is hidden, never shown on its copy. Checks: project_standing a_print_whose_original_is_trashed_shows_its_copy_for_this_read_only (twin: the choice written holds the copy for good), a_swift_print_is_found_at_a_row_no_member_holds, a_project_resolves_beyond_the_opened_folder_and_never_shows_its_trashed_member."
+  },
+  {
+    "id": 1475,
+    "type": "fix",
+    "title": "Every change to a project's members is one step of the Undo key, which turns back only what that step changed",
+    "status": "done",
+    "detail": "Review of #1411 (point 1): a grid drag and a tree drop before a photo changed and saved the members with no step, and an undo laid each changed project's whole former list, so undoing an earlier Add to Project after a drag took the dragged photo out of every project. Every gesture on the members, New Project, Add to and Remove from Project, a drop onto a project, a drop before a photo in the tree and a drag in the Projects grid, goes through Ctl::regroup and records one step; New Project takes its photos out of their projects in that step. An undo or a redo lays what its step changed on the members as they stand (project::regroup, a three-way merge), so a member the step never touched stays; a project the step made is emptied, its name kept. Checks: project an_undo_turns_back_what_its_step_changed_and_nothing_else (twin: the former list laid whole loses the dragged photo), window projects_tab::every_drag_is_one_step_and_the_notice_undoes_its_own (mutation: an unrecorded grid drag fails it)."
+  },
+  {
+    "id": 1476,
+    "type": "fix",
+    "title": "The notice's Undo walks back the very step it announced",
+    "status": "done",
+    "detail": "Review of #1411 (point 5): the notice named its step by label and photos, and a members step names no photo, so a later tree drop, also 'Add to Project', passed for it. Each step of the history bears a mark no other bears (History::undo_mark); the notice keeps the mark and walks back only while that step is on top. Checks: history each_step_bears_a_mark_no_other_does (twin: by name and photos the two steps are one), window projects_tab::every_drag_is_one_step_and_the_notice_undoes_its_own (mutation: a notice told by name undoes the drop)."
+  },
+  {
+    "id": 1477,
+    "type": "fix",
+    "title": "A move landing a member on another of its project's photos leaves the photo once",
+    "status": "done",
+    "detail": "Review of #1410 (point 6): photos added from /Volumes/T7 1, then /Volumes/T7 located there, gave a project the same path twice. project::moved, a merge, an add and a drop keep each photo once (project::distinct: one path whose prints agree, or one print with no path), the first in place taking the print the other knew; two prints at one path are two photos and both stay. Check: project a_move_landing_on_a_member_leaves_one_photo (twin: two prints at one path both stay)."
+  },
+  {
+    "id": 1478,
+    "type": "fix",
+    "title": "New Project with nothing picked makes no project",
+    "status": "done",
+    "detail": "Review of #1412 (point 9): the menu greyed File > New Project with nothing picked, yet its act made an empty project. project::new_from makes none from no photo; the empty Projects tab's key alone makes an empty one (project::new_empty). Checks: project a_new_project_takes_the_picked_photos_in_library_order_and_none_makes_none, window projects_tab::the_empty_tab_makes_a_project_and_the_filter_acts_in_it (the menu dark, its act making none)."
   }
 ]

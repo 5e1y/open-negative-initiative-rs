@@ -149,8 +149,8 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
         index.upsert(&oni_library::Entry::new(path, oni_settings::Date::now(), print)).unwrap();
     }
     Favourites { version: 1, paths: vec![old.clone()] }.save(&d.support).unwrap();
-    let held = project::Project::new("Lisbon", oni_settings::Date::now(), vec![old_a.clone()]);
-    project::save(&d.support, &project::ProjectsFile { version: 1, projects: vec![held] }).unwrap();
+    let held = project::Project::new("Lisbon", oni_settings::Date::now(), vec![project::Member::new(Some(&old_a), Some(&print_a))]);
+    project::save(&d.support, &project::ProjectsFile { version: project::FORMAT, projects: vec![held] }).unwrap();
     let mut preferences = oni_app::preferences::Preferences::load(&d.support);
     preferences.set("navigatorUnfolded", serde_json::json!([old.clone()])).unwrap();
 
@@ -184,12 +184,50 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     let rows: Vec<(String, String)> = d.index().under(&d.path("Home/Scans")).into_iter().map(|e| (e.path, e.fingerprint)).collect();
     assert_eq!(rows.len(), 2, "{rows:?}");
     assert!(rows.contains(&(new_a.clone(), print_a.clone())) && rows.contains(&(new_b.clone(), print_b.clone())), "{rows:?}");
-    assert_eq!(project::load(&d.support).projects[0].members, [new_a.clone()], "the project's member follows");
+    assert_eq!(project::load(&d.support).projects[0].members, [project::Member::new(Some(&new_a), Some(&print_a))], "the project's member follows");
     let unfolded = oni_app::preferences::Preferences::load(&d.support).value("navigatorUnfolded").cloned();
     assert_eq!(unfolded, Some(serde_json::json!([new.clone()])), "the fold follows");
     rig.until("the folder there", Duration::from_secs(20), || ctl.state.borrow().read_done() && banner(&shell).is_none());
     rig.settle();
     rig.shot("locate-followed");
+    drop((ctl, shell));
+    let _ = std::fs::remove_dir_all(&d.root);
+}
+
+/// Roll 8 gone, located at Roll 10, which holds a byte copy of its A and another file named B: the
+/// project's A follows onto its copy; its B stays where it was, print kept, never the other file.
+pub(crate) fn locate_onto_copies_carries_no_member_onto_another_file() {
+    let Some(gpu) = gpu("Locate… onto copies") else { return };
+    let d = disk("copies", &["Home/Scans/Roll 10/A.tif", "Home/Scans/Roll 10/B.tif"]);
+    let (old, new) = (d.path("Home/Scans/Roll 8"), d.path("Home/Scans/Roll 10"));
+    let [old_a, old_b, new_a, new_b] = [(&old, "A.tif"), (&old, "B.tif"), (&new, "A.tif"), (&new, "B.tif")].map(|(f, n)| paths::join(f, n));
+    let (print_a, print_b) = (print(&new_a), "1-roll-8-b".to_string());
+    let index = d.index();
+    for (path, print) in [(&old_a, &print_a), (&old_b, &print_b)] {
+        index.upsert(&oni_library::Entry::new(path, oni_settings::Date::now(), print)).unwrap();
+    }
+    let members = vec![project::Member::new(Some(&old_a), Some(&print_a)), project::Member::new(Some(&old_b), Some(&print_b))];
+    let held = project::Project::new("Lisbon", oni_settings::Date::now(), members);
+    project::save(&d.support, &project::ProjectsFile { version: project::FORMAT, projects: vec![held] }).unwrap();
+
+    let picked = Rc::new(RefCell::new(None));
+    let rig = rig();
+    let shell = d.launch(&gpu, picked.clone(), bookmarks::system());
+    let ctl = shell.ctl.clone();
+    opened(&rig, &shell, &old);
+    rig.until("its banner", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.0 == "Folder Not Found"));
+    *picked.borrow_mut() = Some(d.root.join("Home/Scans/Roll 10"));
+    press(&rig, &shell, "Locate…");
+    rig.until("followed", Duration::from_secs(10), || ctl.state.borrow().opened() == Some(new.as_str()));
+    assert_eq!(told(&shell).as_deref(), Some("1 photo of 2 recognised in “Roll 10”: “Roll 8” follows it."));
+    let recorded = project::load(&d.support).projects[0].members.clone();
+    assert_eq!(recorded, [project::Member::new(Some(&new_a), Some(&print_a)), project::Member::new(Some(&old_b), Some(&print_b))], "B stays");
+    // Twin: carried with the folder, B's member would name the other file.
+    assert_ne!(recorded[1].path.as_deref(), Some(new_b.as_str()));
+    rig.until("the folder there", Duration::from_secs(20), || ctl.state.borrow().read_done() && banner(&shell).is_none());
+    shell.window.global::<Library>().invoke_surface_picked(1);
+    rig.pump();
+    assert_eq!(ctl.state.borrow().order(), [new_a, old_b], "A on its copy, B missing at its place, Roll 10's B in no project");
     drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);
 }

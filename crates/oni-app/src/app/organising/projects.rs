@@ -28,19 +28,21 @@ impl Ctl {
         }
     }
 
-    pub(super) fn new_project(self: &Rc<Self>, paths: &HashSet<String>) -> Id {
-        let made = {
-            let mut s = self.state.borrow_mut();
-            let rows = s.reach().into_owned();
-            project::new_from(&mut s.org.projects, &rows, paths, Date::now())
-        };
-        self.save_projects();
+    /// New Project from photos: one step of the Undo key, each photo leaving the project it sat in;
+    /// none picked makes none.
+    pub(super) fn new_project(self: &Rc<Self>, paths: &HashSet<String>) -> Option<Id> {
+        let mut made = None;
+        self.regroup(tr("New Project"), |projects, reach| {
+            made = project::new_from(projects, reach, paths, Date::now());
+            made.is_some()
+        });
         made
     }
 
     /// The empty Projects tab's key: a project with no photo yet, ringed, its name open to type.
     pub(super) fn new_empty_project(self: &Rc<Self>) {
-        let id = self.new_project(&HashSet::new());
+        let id = project::new_empty(&mut self.state.borrow_mut().org.projects, Date::now());
+        self.save_projects();
         {
             let mut s = self.state.borrow_mut();
             s.org.project_ring = Some(NodeId::Project(id));
@@ -49,15 +51,15 @@ impl Ctl {
         self.lay_grid();
     }
 
-    /// A gesture on the projects' members, one step the Undo key takes back, saved and laid;
-    /// whether it moved any.
-    pub(in crate::app) fn regroup(self: &Rc<Self>, label: &str, gesture: impl FnOnce(&mut Vec<Project>, &[Entry]) -> bool) -> bool {
+    /// Every gesture on the projects' members, a drag and a drop included: one step the Undo key
+    /// takes back, saved and laid; whether it moved any.
+    pub(in crate::app) fn regroup(self: &Rc<Self>, label: &str, gesture: impl FnOnce(&mut Vec<Project>, &project::Reach) -> bool) -> bool {
         let moved = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
             let rows = s.reach().into_owned();
             let before = project::rosters(&s.org.projects);
-            let moved = gesture(&mut s.org.projects, &rows);
+            let moved = gesture(&mut s.org.projects, &project::Reach::new(&rows, &s.org.found));
             let members = oni_library::history::Members { before, after: project::rosters(&s.org.projects) };
             if let Some(store) = s.store.editor().filter(|_| moved) {
                 store.record_members(members, label);
@@ -72,11 +74,13 @@ impl Ctl {
         moved
     }
 
-    /// An undo or a redo of a gesture on the projects: their members as the step holds them, saved.
-    pub(in crate::app) fn regrouped(self: &Rc<Self>, rosters: &std::collections::BTreeMap<Id, Vec<String>>) {
-        project::regroup(&mut self.state.borrow_mut().org.projects, rosters);
+    /// An undo or a redo of a gesture on the projects: what its step changed, turned on the members
+    /// as they stand, saved.
+    pub(in crate::app) fn regrouped(self: &Rc<Self>, from: &project::Rosters, to: &project::Rosters) {
+        project::regroup(&mut self.state.borrow_mut().org.projects, from, to);
         self.save_projects();
         self.lay_grid();
+        self.publish_bar();
     }
 
     /// `deleteProjectRequested`: real curation work asks before it goes.
@@ -125,7 +129,10 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
-            let roots = project_tree::roots(&s.org.projects, &s.reach());
+            let roots = {
+                let reached = s.reach();
+                project_tree::roots(&s.org.projects, &project::Reach::new(&reached, &s.org.found))
+            };
             let nodes = project_tree::flatten(&roots, &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
             let titles = photo_titles(&roots);

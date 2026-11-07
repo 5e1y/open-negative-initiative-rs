@@ -183,7 +183,7 @@ impl Ctl {
             film.name = trimmed.to_owned();
             let _ = folders::set_roll(Some(&film), &target);
         }
-        self.follow_folder(path, &target);
+        self.follow_folder(path, &target, &[]);
     }
 
     /// `newFolder(in:)`: "New Folder", numbered as the Finder numbers one taken, its name typed at

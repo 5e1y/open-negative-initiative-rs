@@ -68,8 +68,10 @@ impl Ctl {
     pub(super) fn cell_items(&self, s: &State, path: &str, scope: &HashSet<String>, edit: bool, can_paste: bool) -> Vec<Item> {
         let rolled: HashSet<String> = s.rows.iter().filter(|e| e.film.is_some()).map(|e| e.path.clone()).collect();
         let projects: Vec<(Id, String)> = s.org.projects.iter().map(|p| (p.id, p.name.clone())).collect();
+        let rows = s.reach();
+        let reach = project::Reach::new(&rows, &s.org.found);
         let member_of: Vec<(Id, String)> =
-            project::member_projects(&s.org.projects, scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
+            project::member_projects(&s.org.projects, &reach, scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
         let facts = CellFacts { missing: &s.org.missing, rolled: &rolled, can_paste, projects, member_of };
         let mut items = Vec::new();
         if edit && scope.len() == 1 {
@@ -101,8 +103,12 @@ impl Ctl {
                     _ => None,
                 })
                 .unwrap_or_default();
-            let member: Vec<(Id, String)> =
-                project::member_projects(&s.org.projects, &scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
+            let rows = s.reach();
+            let member: Vec<(Id, String)> = project::member_projects(&s.org.projects, &project::Reach::new(&rows, &s.org.found), &scope)
+                .into_iter()
+                .map(|p| (p.id, p.name.clone()))
+                .collect();
+            drop(rows);
             s.org.menu_lists = (projects, member);
             s.org.menu = items;
             s.org.sub_menu.clear();
@@ -184,11 +190,11 @@ impl Ctl {
         }
     }
 
-    /// File > New Project: the photos the gestures reach now, as the cell menu's line on them.
+    /// File > New Project: the photos the gestures reach now, as the cell menu's line on them; with
+    /// none, nothing, as the menu shows it.
     pub(in crate::app) fn new_project_from_targets(self: &Rc<Self>) {
         let targets: HashSet<String> = self.targets().into_iter().collect();
         self.new_project(&targets);
-        self.lay_grid();
     }
 
     /// Add to Project, asked first when it takes photos from another project, as a photo sits in one;
@@ -197,7 +203,8 @@ impl Ctl {
         let (target, asked) = {
             let s = self.state.borrow();
             let target = s.org.projects.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default();
-            let leaving = project::leaving(&s.org.projects, &scope, id);
+            let rows = s.reach();
+            let leaving = project::leaving(&s.org.projects, &project::Reach::new(&rows, &s.org.found), &scope, id);
             let lines: Vec<String> = leaving
                 .iter()
                 .map(|(p, n)| trn("One photo leaves “{project}”.", "{n} photos leave “{project}”.", *n as u64).replace("{project}", &p.name))
@@ -207,8 +214,8 @@ impl Ctl {
         let named = target.clone();
         let add = move |c: &Rc<Ctl>| {
             let mut joined = project::Joined::default();
-            c.regroup(tr("Add to Project"), |projects, rows| {
-                joined = project::add_to(projects, rows, &scope, id);
+            c.regroup(tr("Add to Project"), |projects, reach| {
+                joined = project::add_to(projects, reach, &scope, id);
                 joined.added > 0
             });
             c.said_joined(&named, joined);
@@ -240,8 +247,8 @@ impl Ctl {
     fn remove_from_project(self: &Rc<Self>, scope: &HashSet<String>, id: Id) {
         let name = self.state.borrow().org.projects.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default();
         let mut removed = 0;
-        if self.regroup(tr("Remove from Project"), |projects, _| {
-            removed = project::remove_from(projects, scope, id);
+        if self.regroup(tr("Remove from Project"), |projects, reach| {
+            removed = project::remove_from(projects, reach, scope, id);
             removed > 0
         }) {
             let said = trn("One photo removed from “{project}”.", "{n} photos removed from “{project}”.", removed as u64);

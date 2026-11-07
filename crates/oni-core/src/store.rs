@@ -125,8 +125,9 @@ pub struct EditorStore {
     pub walking: Option<oni_library::roll_folder::Walk>,
     /// The roll marker a gesture, an undo or a redo last wrote, for the host to show the folder's roll.
     pub marked: Option<(String, Option<oni_settings::Film>)>,
-    /// The projects' members an undo or a redo last laid, by project, for the host to save.
-    pub regrouped: Option<BTreeMap<Id, Vec<String>>>,
+    /// The projects' members an undo or a redo last turned back, from the step's one end to its
+    /// other, for the host to lay on the projects as they stand and save.
+    pub regrouped: Option<(oni_library::project::Rosters, oni_library::project::Rosters)>,
     /// Frames left with edits their sidecar refused, kept until a write takes them or the hand drops them.
     unsaved: Vec<opening::Unsaved>,
 }

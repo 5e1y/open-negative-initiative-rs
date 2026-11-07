@@ -118,8 +118,8 @@ impl Ctl {
             let touched: Vec<String> = if undo { history.redo_paths() } else { history.undo_paths() }.into_iter().collect();
             (touched, store.failure.take(), store.walking.take(), store.marked.take(), store.regrouped.take(), store.face())
         };
-        if let Some(rosters) = regrouped {
-            self.regrouped(&rosters);
+        if let Some((from, to)) = regrouped {
+            self.regrouped(&from, &to);
         }
         // The view turns to the face the step was taken on.
         self.faced(face);
