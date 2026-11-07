@@ -85,8 +85,6 @@ impl Written {
     /// as version 1: an older build rewrote them and dropped the rest.
     fn read(self, named: &HashSet<String>) -> Project {
         let recorded = self.paths.unwrap_or_default();
-        // A print shaped as a path is a path text a version 2 build took for a print with its path beside.
-        let spelt = |m: Member| Member { path: m.path.map(|p| paths::normal(&p).into_owned()), print: m.print.filter(|p| is_print(p)) };
         let members: Vec<Member> = match self.exact.filter(|exact| agree(exact, &self.members)) {
             Some(exact) => exact.into_iter().map(spelt).collect(),
             None => self
@@ -102,23 +100,29 @@ impl Written {
     }
 }
 
+/// A member as an object names it, a print that is none naming its place where it has no path: a
+/// path text a version 2 build took for a print, or a placeholder an earlier build kept as one.
+fn spelt(m: Member) -> Member {
+    let (print, named) = match m.print {
+        Some(print) if is_print(&print) => (Some(print), None),
+        text => (None, text.as_deref().and_then(place).map(str::to_owned)),
+    };
+    Member { path: m.path.or(named).map(|p| paths::normal(&p).into_owned()), print }
+}
+
 /// Whether each text is its exact member's print or path, in order.
 fn agree(exact: &[Member], texts: &[Writ]) -> bool {
     let names = |m: &Member, t: &String| m.print.as_ref() == Some(t) || m.path.as_ref() == Some(t);
     exact.len() == texts.len() && exact.iter().zip(texts).all(|(m, writ)| matches!(writ, Writ::Text(t) if names(m, t)))
 }
 
-/// A version 1 member: a path, carried where a move recorded it, or a print with the path it was last
-/// seen at; a print gives up a path another member is named by, as 1.5.6 records the copy it found.
+/// A version 1 member: a path or a placeholder, at the place a move recorded else the one it names, or
+/// a print at its last path, given up where another member is named by it, as 1.5.6 records the copy it found.
 fn former(text: &str, recorded: &HashMap<String, String>, named: &HashSet<String>) -> Member {
     let spelt = |path: &str| paths::normal(path).into_owned();
     let own = recorded.get(text).map(String::as_str);
-    if is_path(text) {
-        return Member { path: Some(spelt(own.unwrap_or(text))), print: None };
-    }
-    // 1.5.6 names a photo still being read by its placeholder, the photo's path after the mark.
     if !is_print(text) {
-        return Member { path: own.or_else(|| text.strip_prefix(WAITING_MARK)).filter(|p| !p.is_empty()).map(spelt), print: None };
+        return Member { path: own.filter(|p| !p.is_empty()).or_else(|| place(text)).map(spelt), print: None };
     }
     let path = own.filter(|p| !named.contains(&p.to_lowercase())).map(spelt);
     Member { path, print: Some(text.to_owned()) }
@@ -133,6 +137,12 @@ pub fn is_path(text: &str) -> bool {
 /// Whether a text is a print as read: neither a path nor a placeholder for a print not read yet.
 fn is_print(text: &str) -> bool {
     !is_path(text) && member::read(text).is_some()
+}
+
+/// Where a text that is no print stands: itself as a path, or the path after the placeholder's mark,
+/// as 1.5.6 names a photo still being read.
+fn place(text: &str) -> Option<&str> {
+    if is_path(text) { Some(text) } else { text.strip_prefix(WAITING_MARK).filter(|p| !p.is_empty()) }
 }
 
 #[derive(Serialize)]
@@ -189,9 +199,17 @@ pub fn file_path(support: &Path) -> PathBuf {
     support.join("projects.json")
 }
 
-/// Where the file a former format wrote is kept, once, before this format first replaces it.
+/// Where the first file a former format wrote is kept before this format replaces it.
 pub fn former_path(support: &Path, version: i64) -> PathBuf {
-    support.join(format!("projects-v{version}.json"))
+    kept_path(support, version, 1)
+}
+
+/// The `n`th copy of a former format's file, each later one numbered after the first.
+fn kept_path(support: &Path, version: i64, n: usize) -> PathBuf {
+    match n {
+        1 => support.join(format!("projects-v{version}.json")),
+        _ => support.join(format!("projects-v{version}-{n}.json")),
+    }
 }
 
 /// The version a file says, when it says one.
@@ -233,17 +251,24 @@ pub fn save(support: &Path, file: &ProjectsFile) -> std::io::Result<()> {
     crate::replace_readable(&file_path(support), text.as_bytes())
 }
 
-/// The file as a former format wrote it, copied beside it unless a copy of that format is kept
-/// already; a file a newer build wrote is never written over.
+/// The file as a former format wrote it, copied beside it under the first free name unless a copy
+/// holds it already, so no former build's file is lost; a file a newer build wrote is never written over.
 fn keep_former(support: &Path) -> std::io::Result<()> {
     let Ok(bytes) = std::fs::read(file_path(support)) else { return Ok(()) };
     let Some(version) = stamp(&bytes) else { return Ok(()) };
     if version > FORMAT {
         return Err(std::io::Error::other(oni_i18n::tr("their file comes from a newer version of ONI, which this one never overwrites")));
     }
-    let kept = former_path(support, version);
-    if version == FORMAT || kept.exists() {
+    if version == FORMAT {
         return Ok(());
     }
-    crate::write_atomically(&kept, &bytes)
+    let mut n = 1;
+    loop {
+        let kept = kept_path(support, version, n);
+        match std::fs::read(&kept) {
+            Ok(held) if held == bytes => return Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return crate::write_atomically(&kept, &bytes),
+            _ => n += 1,
+        }
+    }
 }

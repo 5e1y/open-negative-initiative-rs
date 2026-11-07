@@ -64,9 +64,9 @@ fn a_former_file_reads_each_member_with_its_path_and_its_print() {
 }
 
 /// Read and laid, a former file is never written; the first change writes this format and keeps
-/// the former file beside it, once, byte for byte.
+/// the former file beside it, byte for byte, and a later one beside the first, each once.
 #[test]
-fn only_a_change_writes_and_the_former_file_is_kept_beside_it_once() {
+fn only_a_change_writes_and_each_former_file_is_kept_beside_it_once() {
     let scratch = Scratch::new("projects-kept");
     let support = scratch.path();
     former(support, Id::new(), &["1-no-date-a"], &[("1-no-date-a", "/r/a.NEF")]);
@@ -83,19 +83,51 @@ fn only_a_change_writes_and_the_former_file_is_kept_beside_it_once() {
     assert_eq!(std::fs::read(former_path(support, 1)).unwrap(), original, "the former file kept beside");
     assert_eq!(load(support), ProjectsFile { version: FORMAT, projects: read.clone() });
     assert_eq!(load(support).projects[0].members[0], Member::new(Some("/r/a.NEF"), Some("1-no-date-a")), "its print written beside its path");
-    // A second former file never takes the first one's place.
+    // A former build's later file is kept beside the first, never in its place.
     former(support, Id::new(), &["1-no-date-z"], &[]);
+    let later = std::fs::read(file_path(support)).unwrap();
     let again = load(support).projects;
     let mut renamed = again.clone();
     renamed[0].name = "Porto".into();
     merge::save_projects(support, &again, &renamed).unwrap();
-    assert_eq!(std::fs::read(former_path(support, 1)).unwrap(), original, "kept once");
+    assert_eq!(std::fs::read(former_path(support, 1)).unwrap(), original, "the first kept as it was");
+    assert_eq!(std::fs::read(support.join("projects-v1-2.json")).unwrap(), later, "the later one beside it");
+    // Twin: a former file a copy holds already sets no other aside.
+    std::fs::write(file_path(support), &later).unwrap();
+    let mut seen = load(support).projects;
+    seen[0].name = "Faro".into();
+    merge::save_projects(support, &again, &seen).unwrap();
+    assert!(!support.join("projects-v1-3.json").exists());
     // Twin: a change written in this format sets nothing aside.
     std::fs::remove_file(former_path(support, 1)).unwrap();
     let mut third = load(support).projects;
     third[0].description = "Coast".into();
-    merge::save_projects(support, &renamed, &third).unwrap();
+    merge::save_projects(support, &seen, &third).unwrap();
     assert!(!former_path(support, 1).exists() && !former_path(support, 2).exists());
+}
+
+/// Builds before #1550 took 1.5.6's placeholder for a print and wrote it as an exact member, with its
+/// path or without: each reads at its path with no print, and the next write keeps both.
+#[test]
+fn an_exact_member_holding_a_placeholder_stands_at_its_path() {
+    let scratch = Scratch::new("projects-exact-placeholder");
+    let support = scratch.path();
+    let (a, b) = ("/r/a.NEF", "/r/b.NEF");
+    let (wa, wb) = (format!("{}{a}", crate::library::WAITING_MARK), format!("{}{b}", crate::library::WAITING_MARK));
+    let paths: serde_json::Map<String, serde_json::Value> = [(wb.clone(), b.into())].into_iter().collect();
+    let exact = serde_json::json!([{"print": wa}, {"path": b, "print": wb}]);
+    let project = serde_json::json!({"id": Id::new().to_string(), "name": "Trip", "description": "", "createdAt": 8e8, "members": [wa, wb], "paths": paths, "exactMembers": exact});
+    std::fs::write(file_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [project]})).unwrap()).unwrap();
+    let read = load(support).projects;
+    let standing = [Member::new(Some(a), None), Member::new(Some(b), None)];
+    assert_eq!(read[0].members, standing, "each at its path, no print");
+    let mut renamed = read.clone();
+    renamed[0].name = "Porto".into();
+    merge::save_projects(support, &read, &renamed).unwrap();
+    assert_eq!(load(support).projects[0].members, standing, "the next write keeps both");
+    // Twin: a member left with neither path nor print, as a's was, is dropped by that write.
+    save(support, &ProjectsFile { version: FORMAT, projects: vec![Project::new("Lost", stamp(), vec![Member::new(None, None)])] }).unwrap();
+    assert!(load(support).projects[0].members.is_empty());
 }
 
 /// A former file whose recorded paths went stale, decomposed or backslashed: every member found

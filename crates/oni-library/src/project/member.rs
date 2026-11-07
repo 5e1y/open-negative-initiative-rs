@@ -95,16 +95,19 @@ pub fn printed(members: &[Member], known: &[Member]) -> Vec<Member> {
     members.iter().map(|m| if m.path.is_some() && m.print.is_none() { Member { print: learned(m), ..m.clone() } } else { m.clone() }).collect()
 }
 
-/// One project per photo: the most recently created keeps it.
+/// One project per photo: a member holding its print keeps it over one with none, as that print was
+/// read after the other was named and so marks the later gesture; else the most recently created.
 pub fn exclusive(projects: &[Project]) -> Vec<Project> {
+    let rank = |(m, _, at): &(Member, Id, Date)| (m.print.is_some(), *at);
     let mut slots: HashMap<String, Vec<(Member, Id, Date)>> = HashMap::new();
     for project in projects {
         for member in &project.members {
             let slot = slots.entry(member.slot()).or_default();
+            let claim = (member.clone(), project.id, project.created_at);
             match slot.iter_mut().find(|(m, _, _)| m.same(member)) {
-                Some(keeper) if keeper.2 < project.created_at => (keeper.1, keeper.2) = (project.id, project.created_at),
+                Some(keeper) if rank(keeper) < rank(&claim) => *keeper = claim,
                 Some(_) => {}
-                None => slot.push((member.clone(), project.id, project.created_at)),
+                None => slot.push(claim),
             }
         }
     }

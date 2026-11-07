@@ -105,8 +105,9 @@ impl Hand {
         project::load(&self.root.join("Support")).projects.iter().map(|p| p.paths().into_iter().map(str::to_owned).collect()).collect()
     }
 
-    /// A hand pressing on `path`'s tile, moving in steps to `to`, and letting go there.
-    pub(crate) fn drag(&self, path: &str, to: (f32, f32)) {
+    /// A hand pressing on `path`'s tile, moving in steps to `to`, and letting go there: whether the
+    /// drop's line showed as it let go.
+    pub(crate) fn drag(&self, path: &str, to: (f32, f32)) -> bool {
         let lib = self.lib();
         let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
         let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
@@ -122,7 +123,9 @@ impl Hand {
             let f = k as f32 / 8.0;
             event(WindowEvent::PointerMoved { position: at((from.0 + (to.0 - from.0) * f, from.1 + (to.1 - from.1) * f)) });
         }
+        let line = lib.get_drop_shown();
         event(WindowEvent::PointerReleased { position: at(to), button });
+        line
     }
 
     /// Where a drop lands before `path`'s tile, a little left of its middle.

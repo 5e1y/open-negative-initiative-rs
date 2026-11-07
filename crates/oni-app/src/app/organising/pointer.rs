@@ -26,14 +26,14 @@ impl Ctl {
                 let sources = if s.picks.selection.contains(&lead) { s.picks.selection.clone() } else { HashSet::from([lead.clone()]) };
                 let width = s.layout.frame(start).map_or(0.0, |f| f.width);
                 let size = (width, s.layout.tile.1);
-                s.org.reorder = Some(Reorder { sources, lead, size, boundary: None, at: (x, y) });
+                s.org.reorder = Some(Reorder { sources, lead, size, boundary: None, pointed: None, at: (x, y) });
             }
-            // The line shows only where the photos would stand: beside a photo of their own roll.
-            let sources = s.org.reorder.as_ref().map(|r| &r.sources);
-            let lands = |cell: usize| s.order.get(cell).zip(sources).is_some_and(|(target, sources)| project::lands_beside(sources, target));
-            let boundary = s.layout.boundary(x, y).filter(|(cell, _)| lands(*cell));
+            // The line shows only where the drop would change the project, weighed once a cell and side.
+            let pointed = s.layout.boundary(x, y);
+            let Some(r) = s.org.reorder.as_ref() else { return };
+            let boundary = if r.pointed == pointed { r.boundary } else { pointed.filter(|(cell, past)| s.reorders(&r.sources, *cell, *past)) };
             if let Some(r) = s.org.reorder.as_mut() {
-                (r.at, r.boundary) = ((x, y), boundary);
+                (r.at, r.boundary, r.pointed) = ((x, y), boundary, pointed);
             }
         }
         self.publish_reorder();

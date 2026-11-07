@@ -172,21 +172,26 @@ pub fn reorder_drop(projects: &mut [Project], reach: &Reach, dragged: &HashSet<S
 }
 
 /// `reorderProjectsRoot`: projects sort newest first, so the dragged ones take orders stepping
-/// down from the target's towards the sibling above it, or a day above when it heads the list.
+/// down from the target's towards the sibling above it, or a day above when it heads the list;
+/// a drop that leaves the order as it stands writes nothing.
 pub fn reorder_root(projects: &mut [Project], dragged: &HashSet<Id>, target: Id) -> bool {
+    let descending = |list: &mut Vec<(Id, f64)>| list.sort_by(|a, b| b.1.total_cmp(&a.1));
     let mut siblings: Vec<(Id, f64)> = projects.iter().map(|p| (p.id, root_order(p))).collect();
-    siblings.sort_by(|a, b| b.1.total_cmp(&a.1));
+    descending(&mut siblings);
     let Some(target_at) = siblings.iter().position(|(id, _)| *id == target) else { return false };
     let movable: Vec<Id> = siblings.iter().map(|(id, _)| *id).filter(|id| *id != target && dragged.contains(id)).collect();
-    if movable.is_empty() {
-        return false;
-    }
     let ahead = siblings[target_at].1;
     let behind = if target_at > 0 { siblings[target_at - 1].1 } else { ahead + 86_400.0 };
     let step = (ahead - behind) / (movable.len() + 1) as f64;
-    for (i, id) in movable.iter().enumerate() {
-        if let Some(project) = projects.iter_mut().find(|p| p.id == *id) {
-            project.manual_order = Some(ahead - step * (i + 1) as f64);
+    let placed: HashMap<Id, f64> = movable.iter().enumerate().map(|(i, id)| (*id, ahead - step * (i + 1) as f64)).collect();
+    let mut after: Vec<(Id, f64)> = siblings.iter().map(|(id, order)| (*id, placed.get(id).copied().unwrap_or(*order))).collect();
+    descending(&mut after);
+    if after.iter().map(|(id, _)| id).eq(siblings.iter().map(|(id, _)| id)) {
+        return false;
+    }
+    for project in projects.iter_mut() {
+        if let Some(order) = placed.get(&project.id) {
+            project.manual_order = Some(*order);
         }
     }
     true
