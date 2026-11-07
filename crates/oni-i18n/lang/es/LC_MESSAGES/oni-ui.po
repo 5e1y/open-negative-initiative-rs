@@ -338,6 +338,10 @@ msgid "BALANCE"
 msgstr "BALANCE"
 
 #: crates/oni-ui/ui/ds/organise.slint
+msgid "Rating"
+msgstr "Valoración"
+
+#: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Sin medalla (0)"
 

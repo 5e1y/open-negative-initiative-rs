@@ -29,6 +29,9 @@ export component Figure inherits Text {
 export component Medal inherits Rectangle {
     in property <int> rank;
     in property <length> size: MedalStyle.size;
+    // Not given: its rim lit on top and its place alone, in its metal, brighter while `reached`.
+    in property <bool> blank;
+    in property <bool> reached;
     // The ruled ring's line, 0.4 pt at the 12 pt size.
     property <length> rule: root.size * 0.4 / 12;
     property <color> deep: MedalStyle.deeps[root.rank];
@@ -51,10 +54,17 @@ export component Medal inherits Rectangle {
     height: root.size;
     visible: root.rank > 0;
     border-radius: self.width / 2;
-    drop-shadow-color: MedalStyle.far-shadow;
+    drop-shadow-color: root.blank ? transparent : MedalStyle.far-shadow;
     drop-shadow-blur: MedalStyle.far-blur;
     drop-shadow-offset-y: MedalStyle.far-y;
-    Rectangle {
+    if root.blank: Rectangle {
+        property <float> lift: root.reached ? MedalStyle.reached : MedalStyle.blank;
+        border-radius: self.width / 2;
+        border-width: MedalStyle.rim;
+        border-color: @linear-gradient(180deg, root.tone(MedalStyle.reached) 0%, root.tone(self.lift) 100%);
+        Figure { text: root.rank; font-size: root.size * MedalStyle.figure; color: root.tone(parent.lift); }
+    }
+    if !root.blank: Rectangle {
         border-radius: self.width / 2;
         drop-shadow-color: MedalStyle.near-shadow;
         drop-shadow-blur: MedalStyle.near-blur;

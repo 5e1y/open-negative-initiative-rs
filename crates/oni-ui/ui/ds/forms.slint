@@ -211,7 +211,7 @@ export component StatusBar inherits Rectangle {
     // Below zero the work cannot be counted: the progress sweeps.
     in property <float> fraction: -1;
     height: StatusStyle.height;
-    // The line starts at the card's content inset; the row's far end is its owner's, after the medals.
+    // The line starts the card's content inset in, after its owner's medals when they lead the row.
     HorizontalLayout {
         padding-left: StatusStyle.inset;
         spacing: Space.s;

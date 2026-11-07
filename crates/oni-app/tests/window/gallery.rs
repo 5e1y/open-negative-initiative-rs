@@ -117,6 +117,19 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     // The status bar's medal picker: one photo toggles its own medal off, several keep it.
     hand.click("A", &[]);
     assert!(lib.get_medal_shown());
+    // Named, the medals lead the line where it starts, the photo's name right after the bronze.
+    use i_slint_backend_testing::AccessibleRole::{Button, Text};
+    let lowest = |text: &str| common::placed(w, Text, text).into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).unwrap_or_else(|| panic!("{text} shown"));
+    let (rating, name) = (lowest("Rating"), lowest("A.tif"));
+    let medals = ["Gold", "Silver", "Bronze"].map(|m| common::the(w, Button, m));
+    assert!(on_column(rating.x - lib.get_grid_x()), "the group's name starts the line, at {}", rating.x - lib.get_grid_x());
+    assert!(medals.iter().all(|m| rating.level_with(m) && name.level_with(m)), "one row: {rating:?} {medals:?} {name:?}");
+    assert!(rating.x + rating.width <= medals[0].x && medals.windows(2).all(|m| m[0].x < m[1].x), "Rating, then gold, silver, bronze");
+    // The status bar's inset parts the bronze's key from the name.
+    let by_name = |from: f32| name.x - from <= 24.5;
+    assert!(by_name(medals[2].x + medals[2].width), "the name {} pt after the bronze", name.x - medals[2].x - medals[2].width);
+    // Twin: from the group's start, the name stands the whole group away.
+    assert!(!by_name(rating.x));
     lib.invoke_medal_picked(1);
     rig.pump();
     assert_eq!(row(&canonical("A.tif")).label, Medal::Gold, "the first place is gold");
@@ -125,6 +138,10 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.pump();
     assert_eq!(row(&canonical("A.tif")).label, Medal::None, "the lit medal tapped on one photo clears it");
     hand.click("B", &[Key::Control]);
+    // The line's words change under the medals, which stand still.
+    assert_eq!(common::the(w, Button, "Gold").x, medals[0].x, "the medals keep their place");
+    // Twin: the line did change.
+    assert_ne!(lowest(&hand.status()).width, name.width, "{} reads as wide as A.tif", hand.status());
     lib.invoke_medal_picked(2);
     rig.pump();
     lib.invoke_medal_picked(2);
