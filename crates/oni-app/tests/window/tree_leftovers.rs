@@ -14,9 +14,6 @@ use std::time::{Duration, Instant};
 
 use crate::common;
 
-/// Where the window lays the projects' list at 1280 × 800 beside a photo.
-const LIST_TOP: f32 = 188.0;
-
 fn project_rows(lib: &Library) -> Vec<TreeRow> {
     lib.get_project_rows().iter().collect()
 }
@@ -134,6 +131,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     assert!(project_rows(&lib).iter().all(|r| !r.thumb), "twin: beside a photo the editor's names stay");
 
     // `PinnedRow`: an open project whose photos pass under the top is held there until the next pushes it.
+    let list_top = common::projects_top(w, &lib, "Trip");
     let rows = project_rows(&lib);
     let walk_y = rows[at(&lib, "Walk")].y;
     let pin = || lib.get_project_pin();
@@ -154,7 +152,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     rest(&rig);
-    let pinned_middle = (left + 120.0, LIST_TOP + h / 2.0);
+    let pinned_middle = (left + 120.0, list_top + h / 2.0);
     drag(&rig, pinned_middle, pinned_middle);
     release(&rig, pinned_middle);
     assert_eq!(open(), "B00", "beside a photo, Trip's first photo opens");
@@ -163,7 +161,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     rest(&rig);
-    let chevron = (left + ds.get_space_sm() + ds.get_control_film_sidebar_chevron_zone_width() / 2.0, LIST_TOP + h / 2.0);
+    let chevron = (left + ds.get_space_sm() + ds.get_control_film_sidebar_chevron_zone_width() / 2.0, list_top + h / 2.0);
     drag(&rig, chevron, chevron);
     release(&rig, chevron);
     assert!(!project_rows(&lib)[at(&lib, "Trip")].expanded && pin().row.title != "Trip", "the chevron folds Trip, held no more");
@@ -174,11 +172,11 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     rig.pump();
     let middle = |title: &str| {
         let r = project_rows(&lib)[at(&lib, title)].clone();
-        (left + r.x + r.width / 2.0, LIST_TOP + r.y + r.height / 2.0)
+        (left + r.x + r.width / 2.0, list_top + r.y + r.height / 2.0)
     };
     let top_strip = |title: &str| {
         let r = project_rows(&lib)[at(&lib, title)].clone();
-        (left + r.x + r.width / 2.0, LIST_TOP + r.y + 2.0)
+        (left + r.x + r.width / 2.0, list_top + r.y + 2.0)
     };
     rest(&rig);
     let (from, to) = (middle("A04.tif"), middle("Trip"));
@@ -225,7 +223,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
 
     // `clickEmptyProjects`: a click on no row drops the ring and the selection.
     rest(&rig);
-    let gap = (left + 120.0, LIST_TOP + 2.0);
+    let gap = (left + 120.0, list_top + 2.0);
     drag(&rig, gap, gap);
     release(&rig, gap);
     assert!(project_rows(&lib).iter().all(|r| !r.selected), "nothing is ringed: {:?}", project_rows(&lib).iter().filter(|r| r.selected).map(|r| r.title.to_string()).collect::<Vec<_>>());

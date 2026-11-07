@@ -341,3 +341,11 @@ pub fn scroll_projects(lib: &oni_app::Library, y: f32) {
     lib.set_project_viewport_y(y);
     lib.set_project_scroll_asks(lib.get_project_scroll_asks().wrapping_add(1));
 }
+
+/// Where the window lays the projects' list, read off the row `title` shown in it: the bar and the
+/// column's header above set it, so a press aimed from here follows a layout changed on purpose.
+pub fn projects_top(window: &impl slint::ComponentHandle, lib: &oni_app::Library, title: &str) -> f32 {
+    use slint::Model;
+    let row = lib.get_project_rows().iter().find(|r| r.title == title).unwrap_or_else(|| panic!("{title} has a project row"));
+    the(window, i_slint_backend_testing::AccessibleRole::ListItem, title).y - row.y - lib.get_project_viewport_y()
+}

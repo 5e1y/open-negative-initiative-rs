@@ -7900,5 +7900,19 @@
     "title": "The info column names the ONI Trash while it is selected",
     "status": "done",
     "detail": "Evaluation: with the ONI Trash selected, the column's head still showed the last roll's name (“Roll #8”), as an editable title. Fix: publish_info sets info_title to “ONI Trash” in the trash's branch; the column types over a roll's or a project's name only, the trash's a plain title of the same role; its count, note and Restore key sit under it in the head's block, as a roll's warning does, the separate block titled ONI Trash gone. Checks: window gallery (twin: before the trash the column's title reads Roll 7; with it, ONI Trash heads the column and no Roll 7 stands there; shot gallery-trash-info); library_wide the_trash_inspector_counts_and_its_key_restores_what_it_names unchanged and green."
+  },
+  {
+    "id": 1599,
+    "type": "test",
+    "title": "The space chip's check aims at the chip where the band lays it under the taller bar",
+    "status": "done",
+    "detail": "Merge of w24 to w29: space_chip::the_space_chips_tabs_take_the_pointer found no popover. Cause: da582057 (#1573), theme.slint ShellStyle.bar-height = ButtonStyle.bar-key + 2 * Space.s, the bar 64 pt instead of 56, so the card and its band stand 8 pt lower and the chip now spans y 112 to 136; the check pressed at the literal (600, 108), the band's ground above it. The app is right (the old check passes with the old bar height at the merge); the check was wrong. Fix: the chip found by the words it shows (its title, a middle dot, its hint), both of its presses at its middle. Checks: window space_chip green; twin: the chip's open emptied in export.slint fails it at no popover shown."
+  },
+  {
+    "id": 1600,
+    "type": "test",
+    "title": "The tree checks read the projects' list's top off a row it shows, no longer a literal 188 pt",
+    "status": "done",
+    "detail": "Merge of w24 to w29: tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift found Trip still heading the projects after Walk was dropped on its top strip. Cause: da582057 (#1573), the bar 8 pt taller (theme.slint ShellStyle.bar-height), lowers the list, which at the merge starts at 192 pt (the column's header row 4 pt shorter since 27c7f588 put the rating filter's pill where New Project stood); the check's LIST_TOP 188 aimed Walk's drop 2 pt above Trip's row, in the list's top margin, no strip of any row. The app is right (the old check passes with the old bar height at the merge; a drop on the strip lands); the check was wrong. Fix: common::projects_top reads the list's top off a project row shown, its place in the window less its place in the list and the scroll, which tree_leftovers and tree_hand (the same stale 188, its presses 4 pt off their rows' middles) aim from. Checks: window tree_leftovers and tree_hand green; twin: Landing::Before made to land nothing (project_drop.rs) fails tree_leftovers at Walk now heads the projects."
   }
 ]
