@@ -3,8 +3,8 @@
 use super::*;
 
 impl Ctl {
-    /// The bands the surface shows, the selection kept to them, then the tiles, the tree's other
-    /// rows, the status bar, the sidebar and the empty state.
+    /// The bands the surface shows, the selection and the frames together kept to them, then the
+    /// tiles, the tree's other rows, the status bar, the sidebar and the empty state.
     pub(in crate::app) fn lay_grid(self: &Rc<Self>) {
         let (remounted, unknown) = {
             let mut s = self.state.borrow_mut();
@@ -33,6 +33,12 @@ impl Ctl {
             let surface = if s.org.projects_surface { 1 } else { u8::from(s.trash_shown()) * 2 };
             (s.org.laid_surface.replace(surface) != Some(surface), unknown)
         };
+        // The frames together are the selection: one the grid stops showing, another roll's or one a
+        // filter hides, leaves it, and the group follows what is left.
+        let cut = self.together_paths().is_some_and(|g| g.iter().any(|p| !self.state.borrow().picks.selection.contains(p)));
+        if cut {
+            self.follow_selection();
+        }
         self.probe(unknown);
         self.relayout();
         if remounted {

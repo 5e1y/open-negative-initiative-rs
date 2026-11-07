@@ -6920,5 +6920,12 @@
     "title": "Prepare the Roll ends on one frame alone; the whole roll together is its key's",
     "status": "done",
     "detail": "UX evaluation s-c82a3414 (Obvious without a tutorial, major): the measure landed on the whole roll together (#1037), so a newcomer's first Auto White Balance and edits silently reached 14 frames. land_measure now opens the open frame when it was measured, else the roll's first, alone; the bar's Whole Roll key lays the roll together on demand, the status bar then saying how many frames and the panel 'Acts on N photos'. The 1.5 welcome sheet's point now names that key, in French and Spanish too. Reverses #1037. Checks: window prepare (the first frame alone once measured; twin: no 'frames together' status), window slides (one frame picked)."
+  },
+  {
+    "id": 1416,
+    "type": "fix",
+    "title": "Frames together leave a frame the grid stops showing: the whole roll ends when another roll opens",
+    "status": "done",
+    "detail": "UX evaluation s-c82a3414 (Trust, minor): with Roll #10 together in the editor, opening Roll #8 kept Roll #10's 24 frames together under an unlit Whole Roll key, so a step would reach a roll no longer shown. lay_grid kept the selection to the bands shown but not the group, which beside a photo is that selection; a group holding a frame the selection lost now follows it (follow_selection), so another roll opened, a medal filter or the projects leave the open frame alone, or the frames still shown together. Checks: window whole_roll the_whole_roll_together_ends_when_another_roll_opens (twin: together, the step reaches B; without the rule the check waits in vain for the open frame alone)."
   }
 ]
