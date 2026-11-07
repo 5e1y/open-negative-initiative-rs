@@ -20,14 +20,17 @@ fn exposure_of(path: &Path) -> f32 {
     Field::Exposure.knob().get(&loaded.settings)
 }
 
-/// A sheet sized to its content: the last box of each column shows above the footer's `commit`, a
-/// footer's step from it, the footer inside the window.
+/// `Space.m`: a footer's keys stand this far under its rule, and the form ends further over it.
+const STEP: f32 = 16.0;
+
+/// A sheet sized to its content: the last box of each column ends a step over the footer's rule, the
+/// footer inside the window.
 fn fits(w: &oni_app::MainWindow, commit: &str) {
     let key = common::the(w, AccessibleRole::Button, commit);
     let size = w.window().size().to_logical(w.window().scale_factor());
     assert!(key.y + key.height <= size.height, "{commit} in the window: {key:?}");
     let lowest = ["Saturation Curve", "Scanner Keypad"].map(|name| common::the(w, AccessibleRole::Checkbox, name)).into_iter().fold(0.0, |y: f32, b| y.max(b.y + b.height));
-    assert!(lowest < key.y, "every box above {commit}: {lowest} against {key:?}");
+    assert!(lowest + 2.0 * STEP < key.y, "every box a step over the rule above {commit}: {lowest} against {key:?}");
     // Twin: a card taller than its content would leave the boxes far above its footer.
     assert!(key.y - lowest < 100.0, "the card ends with its content: {lowest} against {key:?}");
 }
@@ -247,7 +250,26 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
     rig.settle();
     fits(w, "Done");
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    // What a preset carries reads whole under its name, wrapped in the list's column.
+    let row = || common::the(w, AccessibleRole::ListItem, "Bright");
+    let within = |words: &str| {
+        let r = row();
+        let inside = |t: &common::Placed| t.x >= r.x && t.x < r.x + r.width && t.y >= r.y && t.y < r.y + r.height;
+        common::placed(w, AccessibleRole::Text, words).into_iter().find(inside).unwrap_or_else(|| panic!("{words:?} in {r:?}"))
+    };
+    let detail = || within(presets.get_rows().row_data(0).unwrap().carries.as_str());
+    let (one, name) = (detail(), within("Bright"));
+    for line in ["Saturation", "Chroma Decompression", "Vignette", "Curves"] {
+        presets.invoke_form_ticked(boxes().iter().find(|b| b.1 == line).unwrap().0 as i32, true);
+    }
+    rig.settle();
+    println!("shot {}", rig.shot("presets-editor-carries").display());
+    let (long, r) = (detail(), row());
+    assert!(long.height > 2.0 * one.height, "the carries wrap whole: {long:?} against {one:?}");
+    assert!(long.y + long.height <= r.y + r.height && long.x + long.width <= r.x + r.width, "inside their row: {long:?} in {r:?}");
+    // Twin: one carried block stays one line, as high as the name over it.
+    assert!(one.height <= name.height + 1.0, "twin: one block on one line: {one:?} against {name:?}");
+    rig.until("the boxes written", Duration::from_secs(5), || oni_core::presets::load(&shelf)[0].parameters.len() > saved.parameters.len());
     rig.settle();
     assert_eq!(presets.get_selected(), 0);
     presets.invoke_form_named("Brighter".into());

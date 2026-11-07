@@ -302,15 +302,15 @@ export component PresetEditorSheet inherits Sheet {
                 }
             }
             Divider { vertical: true; hairline: true; }
-            // One instance per selected preset: its fields start from that preset's values.
+            // One instance per selected preset: its fields start from that preset's values. The form fills
+            // the scroll's content, so the content is the form's own height, its margin inside it.
             for instance in Presets.form-instance: Scroller {
                 horizontal-stretch: 1;
-                preferred-height: form.preferred-height + 2 * Space.l;
-                content-height: form.preferred-height + 2 * Space.l;
+                preferred-height: form.preferred-height;
+                content-height: form.preferred-height;
                 form := PresetForm {
-                    x: Space.l;
-                    y: Space.l;
-                    width: parent.width - 2 * Space.l;
+                    width: parent.width;
+                    padding: Space.l;
                     noted: true;
                     named => { Presets.done(); }
                 }

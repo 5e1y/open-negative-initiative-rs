@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1521,
+    "type": "fix",
+    "title": "The preset editor's form ends above its footer, and what a preset carries reads whole in the list",
+    "status": "done",
+    "detail": "The fifth evaluation saw the Carries boxes cut by the editor's footer mid-row and the list's subtitle ellipsized. The form filled its scroll's content, which was its height plus both margins, so its rows were stretched two margins taller than the sheet measured: the content is now the form's own height, its margin inside it, as in the save sheet. The list's detail line wraps whole; Slint reads a row's height with a wrapped text at its one-line width, so the text's own height, read at the width it is laid at, sizes the row. The check now asks every box to end a step over the footer's rule and the carries to wrap inside their row."
   }
 ]
