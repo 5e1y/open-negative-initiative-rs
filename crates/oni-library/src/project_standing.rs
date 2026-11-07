@@ -25,8 +25,8 @@ enum Left {
     Replaced,
 }
 
-/// A member stands at its path while the row there carries its print, a trashed one hidden; else on a
-/// free copy, the one `last` chose while free, then the nearest by name and folder; else missing.
+/// A member stands at its path while the row there carries its print (a placeholder claiming no file), a trashed
+/// one hidden; else on a free copy, the one `last` chose while free, then the nearest by name and folder; else missing.
 pub fn standing(projects: &[Project], held: &[Entry], index: &LibraryIndex, last: &Found) -> Standing {
     let held_at: HashMap<&str, &Entry> = held.iter().map(|e| (e.path.as_str(), e)).collect();
     let mut out = Standing::default();
@@ -45,7 +45,9 @@ pub fn standing(projects: &[Project], held: &[Entry], index: &LibraryIndex, last
         };
         match held_at.get(path).map(|e| (*e).clone()).or_else(|| index.row(path)) {
             Some(row) if member.agrees(&row.fingerprint) => {
-                claimed.insert(row.path.clone());
+                if member.placeholder().is_none() {
+                    claimed.insert(row.path.clone());
+                }
                 if row.path != path {
                     out.found.insert(member.clone(), row.path.clone());
                 }
@@ -59,7 +61,7 @@ pub fn standing(projects: &[Project], held: &[Entry], index: &LibraryIndex, last
     }
     let copies: Vec<Vec<Entry>> = looked
         .iter()
-        .map(|(member, _)| member.print.as_deref().map(|print| index.with_fingerprint(print)).unwrap_or_default().into_iter().filter(|r| shown(r, index)).collect())
+        .map(|(member, _)| member.print.as_deref().filter(|_| member.placeholder().is_none()).map(|print| index.with_fingerprint(print)).unwrap_or_default().into_iter().filter(|r| shown(r, index)).collect())
         .collect();
     // The copy each stood on last read stays its own while free, before any other member chooses.
     let mut chosen: Vec<Option<&Entry>> = vec![None; looked.len()];
@@ -126,7 +128,7 @@ fn lost(file: &str, name: &str, taken: &HashSet<String>) -> String {
 }
 
 /// Each member with a path and no print takes the print its file there carries, or gives the photo up
-/// to a member holding that print there; each held apart then settles on its file. Whether any changed.
+/// to a member holding that print there, as that print was read after it was named. Whether any changed.
 pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> bool {
     let held_at: HashMap<&str, &Entry> = held.iter().map(|e| (e.path.as_str(), e)).collect();
     let carried = |path: &str| held_at.get(path).map(|e| (*e).clone()).or_else(|| index.row(path)).and_then(|row| Member::of(&row, None).print);
@@ -146,7 +148,7 @@ pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> 
             kept
         });
     }
-    project::settle(projects, carried) || changed
+    changed
 }
 
 /// `LibraryIndex.shown`'s cut on one row: out of the ONI Trash, and no pass whose lead is held.

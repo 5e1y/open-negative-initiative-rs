@@ -101,9 +101,14 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `deleteProjectRequested`: real curation work asks before it goes.
+    /// `deleteProjectRequested`: real curation work asks before it goes, counting what it shows.
     pub(super) fn ask_delete_project(self: &Rc<Self>, id: Id) {
-        let prompt = self.state.borrow().org.projects.iter().find(|p| p.id == id).map(project::delete_prompt);
+        let prompt = {
+            let s = self.state.borrow();
+            let rows = s.reach();
+            let shadowed = project::shadowed(&s.org.projects, &project::Reach::new(&rows, &s.org.found));
+            s.org.projects.iter().zip(shadowed).find(|(p, _)| p.id == id).map(|(p, n)| project::delete_prompt(p, n))
+        };
         if let Some((title, message, key)) = prompt {
             self.ask(&title, &message, key, true, Pending::DeleteProject(id));
         }
