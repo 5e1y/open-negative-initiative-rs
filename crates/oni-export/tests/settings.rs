@@ -170,6 +170,14 @@ fn every_key_writes_a_distinct_complete_state() {
     assert_eq!(insta.resize.output_size(6048.0, 4032.0), (1080.0, 720.0));
     assert_eq!(insta.resize.output_size(4032.0, 6048.0), (720.0, 1080.0));
     assert_eq!(Resize::ShortestEdge(1440).output_size(6048.0, 4032.0), (2160.0, 1440.0));
+    // Web: a page's JPEG in sRGB, 2048 on the long side at 85 %; twin: Instagram's 1080 at 92 % is not it.
+    let web = Preset::Web.applied(&hand);
+    assert_eq!(
+        (web.format(), web.space().clone(), web.resize, web.jpeg_quality),
+        (Format::Jpeg, Space::Srgb, Resize::LongestEdge(2048), 0.85)
+    );
+    assert_eq!(web.resize.output_size(6048.0, 4032.0), (2048.0, 1365.0));
+    assert_ne!((insta.resize, insta.jpeg_quality), (web.resize, web.jpeg_quality));
     let mut print_as_jpeg = Preset::FullPrint.applied(&hand);
     print_as_jpeg.set_format(Format::Jpeg);
     print_as_jpeg.set_space(Space::DisplayP3);
@@ -209,7 +217,7 @@ fn the_lit_key_is_read_off_the_state() {
 #[test]
 fn presets_serialise_under_their_swift_names() {
     let names: Vec<String> = Preset::ALL.iter().map(|p| serde_json::to_string(p).unwrap()).collect();
-    assert_eq!(names, ["\"Instagram\"", "\"Display\"", "\"Print\""]);
+    assert_eq!(names, ["\"Instagram\"", "\"Display\"", "\"Print\"", "\"Web\""]);
     assert!(Preset::ALL.iter().all(|p| format!("\"{}\"", p.raw_value()) == serde_json::to_string(p).unwrap()));
     assert_eq!(serde_json::from_str::<Preset>("\"Display\"").unwrap(), Preset::FullDisplay);
     // Twin: the Rust variant name is not the serialised one.

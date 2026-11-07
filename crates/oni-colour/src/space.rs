@@ -61,31 +61,6 @@ impl Space {
         }
     }
 
-    /// What the space is for, under the name a lab or printer will ask for.
-    pub fn purpose(&self) -> &'static str {
-        match self {
-            Space::Srgb => "Web and social networks: what every screen and app reads.",
-            Space::DisplayP3 => "Recent phones, tablets and Apple screens: richer reds and greens.",
-            Space::AdobeRgb => "Print labs and photo printers: richer cyans and greens.",
-            Space::ProPhoto => {
-                "Printing at home through the printer's own profile: holds nearly every color the \
-                 conversion makes. TIFF 16-bit only."
-            }
-            Space::Profile(_) => "An ICC profile for a paper or a lab's printer.",
-        }
-    }
-
-    /// The purpose in a few words, for the canvas chip; a profile's own name already says it.
-    pub fn hint(&self) -> &'static str {
-        match self {
-            Space::Srgb => "web & social",
-            Space::DisplayP3 => "phones & screens",
-            Space::AdobeRgb => "print",
-            Space::ProPhoto => "wide print",
-            Space::Profile(_) => "paper",
-        }
-    }
-
     pub fn key(&self) -> String {
         match self {
             Space::Srgb => "srgb".into(),

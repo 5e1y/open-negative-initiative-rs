@@ -257,6 +257,8 @@ export global SheetStyle {
 
 export global MenuStyle {
     out property <length> width: DS.control-export-fields-width;
+    // A line over its note: a label's line and a caption's in a small key's padding.
+    out property <length> noted-height: 40px;
     // How long the pointer rests on a line before its submenu opens or the open one closes, as AppKit's.
     out property <duration> sub-delay: 200ms;
 }

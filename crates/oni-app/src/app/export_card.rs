@@ -32,6 +32,7 @@ mod sheet_view;
 mod publishing;
 mod wiring;
 mod kept;
+mod notes;
 
 pub mod job;
 pub mod paper_sheet;
@@ -111,6 +112,8 @@ pub struct Card {
     /// The presets the hand saved, kept as the settings are, and the name typed for the next one.
     kept: Vec<Kept>,
     kept_saver: crate::latest::Worker<Value>,
+    /// The name sheet open, and the name typed in it.
+    naming: Option<kept::Naming>,
     draft: String,
     artist: String,
     copyright: String,
@@ -195,6 +198,7 @@ impl Card {
             saver,
             kept: kept::from_value(prefs.value(kept::KEPT)),
             kept_saver,
+            naming: None,
             draft: String::new(),
             installed: OutputProfile::last_installed(),
             pending: false,

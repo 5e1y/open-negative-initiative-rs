@@ -1,6 +1,6 @@
 // The export surface's state: its lines, its settings and the paper profiles sheet, which Rust sets.
 
-import { PreviewState, SheetBox } from "ds/ds.slint";
+import { PreviewState, SheetBox, MenuLine } from "ds/ds.slint";
 
 // A frame on the contact sheet the export writes, where the column lays it: its preview and its
 // number, empty when it has none.
@@ -32,19 +32,6 @@ export struct ExportLine {
     aspect: float,
 }
 
-// A preset's key on the plate: its name, lit while the settings equal it, its place among them all,
-// the built-in ones first.
-export struct PresetKey {
-    name: string,
-    on: bool,
-    at: int,
-}
-
-// A row of the plate's keys, three at most.
-export struct PresetRow {
-    keys: [PresetKey],
-}
-
 // One profile a maker's page offers, titled from its file name.
 export struct PaperRow {
     title: string,
@@ -61,26 +48,33 @@ export global Exporting {
     in property <string> subtitle;
     in property <int> count;
     in-out property <int> format: 1;
-    // The preset the settings equal, -1 once a row is set by hand.
+    // The picker's lines, the presets built-in then saved over their summaries, then what renames,
+    // removes and saves them; the one the settings equal, -1 once a row is set by hand, named at rest.
+    in property <[MenuLine]> preset-lines;
     in property <int> lit-preset: -1;
-    in property <[PresetRow]> preset-rows;
-    // The name line under the keys, shown unless a built-in key is lit: it names the settings to save,
-    // or renames the saved preset lit, which Remove takes off.
-    in property <bool> preset-line;
-    in property <bool> preset-saved;
-    in property <string> preset-name;
-    in property <bool> can-save-preset;
+    in property <string> preset-title;
+    in property <string> preset-summary;
+    // The sheet naming the settings to save, or the saved preset lit to rename; blank, it keeps nothing.
+    in property <bool> naming-shown;
+    in property <string> naming-title;
+    in property <string> naming-note;
+    in property <string> naming-commit;
+    in property <string> naming-name;
+    in property <bool> can-name;
     // 0 to 3 the built-in spaces, 4 Custom.
     in-out property <int> space-tab: 1;
     // The one note under the space's tabs: a profile's trouble, the choice still to make, else what
-    // the space is for.
+    // the space is for; then every note it may say, which its room is fitted to.
     in property <string> space-note;
+    in property <[string]> space-notes;
     in property <bool> on-profile;
     in property <bool> pending;
     in property <[string]> profiles;
     in property <int> profile;
     in property <bool> colour-only;
+    // The space the photos were edited in, and every way the note may say it.
     in property <string> edited-in;
+    in property <[string]> edited-notes;
     in property <bool> compress: true;
     in property <float> quality-fraction;
     in property <string> quality-readout;
@@ -116,10 +110,11 @@ export global Exporting {
     in property <bool> notice-shown;
     in property <string> notice-title;
     in property <string> notice-message;
+    // A line of the picker chosen; the name sheet typed in, committed or closed.
     callback preset(int);
     callback preset-typed(string);
     callback preset-save();
-    callback preset-remove();
+    callback preset-cancel();
     callback format-picked(int);
     callback space-picked(int);
     callback profile-picked(int);

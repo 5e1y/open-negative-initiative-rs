@@ -1,6 +1,6 @@
 // The menus: one popup for every list a key or a click opens, a context menu's submenu beside it.
 import { Colour, Space, State, ButtonStyle, MenuStyle, MedalStyle } from "theme.slint";
-import { Label, Icon, Tone, Divider, Gap } from "base.slint";
+import { Label, Icon, Tone, TextRole, Divider, Gap } from "base.slint";
 import { Bounds } from "outside.slint";
 import { Popover } from "surfaces.slint";
 import { Look } from "button.slint";
@@ -9,9 +9,9 @@ import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
 import { Medal } from "marks.slint";
 
-// A line of a context menu: a rule above it, out of reach, opening a submenu beside it, printing the
-// chord the menu bar answers for it as AppKit's menus do, or the medal it names struck before its words.
-export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int }
+// A line of a menu: a rule above it, out of reach, a submenu beside it, the chord the menu bar answers
+// for it as AppKit's menus print it, a medal struck before its words, or a picker's note under them.
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int, note: string }
 
 export struct FolderChoice { title: string, current: bool }
 
@@ -23,6 +23,8 @@ export struct MenuState { lit: int, open: int, sub-lit: int, turned: bool, lead-
 // the line its menu holds lit (`held`) when it does not follow the pointer alone (`by-hand`).
 export component MenuEntry inherits Rectangle {
     in property <string> text;
+    // Words under the line's own, in the secondary ink: what a preset writes.
+    in property <string> note;
     in property <string> shortcut;
     in property <bool> enabled: true;
     in property <bool> checked;
@@ -36,8 +38,8 @@ export component MenuEntry inherits Rectangle {
     callback pointed(length, length);
     callback activated();
     property <bool> hovered: root.enabled && ((root.by-hand && area.has-hover) || root.held || root.look != Look.live);
-    // A small key's height, AppKit's rhythm for a menu of a dozen lines.
-    height: ButtonStyle.small-height;
+    // A small key's height, AppKit's rhythm for a menu of a dozen lines; a line over its note, two.
+    height: root.note != "" ? MenuStyle.noted-height : ButtonStyle.small-height;
     border-radius: ButtonStyle.small-radius;
     background: root.hovered ? Colour.accent : Colour.raised.transparentize(1);
     opacity: root.enabled ? 1 : State.disabled;
@@ -52,7 +54,12 @@ export component MenuEntry inherits Rectangle {
             if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
             if root.medal > 0: Medal { rank: root.medal; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
         }
-        Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Label { text: root.text; overflow: elide; }
+            if root.note != "": Label { text: root.note; role: TextRole.caption; tone: Tone.secondary; overflow: elide; }
+        }
         Label { text: root.shortcut; tone: Tone.secondary; }
     }
     // Live on an out-of-reach line too, so resting on it still closes an open submenu.
@@ -247,7 +254,7 @@ export component Menu inherits PopupWindow {
     // The lines at their own widths, unseen, which `span` reads.
     widest := VerticalLayout {
         visible: false;
-        for line in root.lines: MenuEntry { text: line.text; shortcut: line.opens ? "›" : line.keys; medal: line.medal; lead: root.lead; }
+        for line in root.lines: MenuEntry { text: line.text; note: line.note; shortcut: line.opens ? "›" : line.keys; medal: line.medal; lead: root.lead; }
     }
     // A press on the popup's bare ground, beside a short submenu, closes the menu as one outside it does.
     TouchArea {
@@ -272,9 +279,11 @@ export component Menu inherits PopupWindow {
             if line.rule: Divider { engraved: false; }
             entry := MenuEntry {
                 text: line.text;
+                note: line.note;
                 shortcut: line.opens ? "›" : line.keys;
                 medal: line.medal;
                 lead: root.lead;
+                checked: i == root.current;
                 enabled: line.enabled;
                 by-hand: false;
                 held: i == root.lit || i == root.open;

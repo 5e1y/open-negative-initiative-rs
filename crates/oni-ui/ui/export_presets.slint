@@ -1,0 +1,49 @@
+// The export's presets: one picker listing them all, and the sheet naming the ones the hand keeps.
+import { Picker, Menu, Sheet, TextField, Label, TextRole, SheetFooter } from "ds/ds.slint";
+import { Exporting } from "export_state.slint";
+
+// Each line a preset's name over what it writes, the one the settings equal checked and named at rest
+// with its summary; what renames, removes and saves ends the list, as wide as the field it drops from.
+export component PresetPicker inherits Picker {
+    value: Exporting.preset-title;
+    note: Exporting.preset-summary;
+    own-popup: menu.is-open;
+    open => { menu.show(); }
+    menu := Menu {
+        x: root.field-x;
+        y: root.height;
+        span: root.field-width;
+        lines: Exporting.preset-lines;
+        current: Exporting.lit-preset;
+        chosen(i) => {
+            self.close();
+            Exporting.preset(i);
+        }
+    }
+}
+
+// The name the settings are saved under, or the lit preset's new one, typed over at once; its commit
+// stays dark while the name is blank, and Return commits as the key does.
+export component PresetNameSheet inherits Sheet {
+    title: Exporting.naming-title;
+    question: true;
+    dismissed => { Exporting.preset-cancel(); }
+    Label { role: TextRole.note; text: Exporting.naming-note; }
+    TextField {
+        name: @tr("Preset name");
+        value: Exporting.naming-name;
+        placeholder: @tr("e.g. Client TIFF");
+        edited(t) => { Exporting.preset-typed(t); }
+        accepted => { if (Exporting.can-name) { Exporting.preset-save(); } }
+        init => { self.take-focus-selecting(); }
+    }
+    // The field holds the keyboard, not the commit.
+    SheetFooter {
+        default-commit: false;
+        cancel: @tr("Cancel");
+        commit: Exporting.naming-commit;
+        commit-enabled: Exporting.can-name;
+        cancelled => { Exporting.preset-cancel(); }
+        committed => { Exporting.preset-save(); }
+    }
+}

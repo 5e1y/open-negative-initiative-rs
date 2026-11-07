@@ -1,10 +1,11 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the colour space shared with the canvas's chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, FieldStyle, SheetFooter } from "ds/ds.slint";
-import { ExportLine, PaperRow, SheetTile, PresetKey, PresetRow, Exporting } from "export_state.slint";
+import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, FieldStyle, SheetFooter, SteadyNote } from "ds/ds.slint";
+import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
+import { PresetPicker, PresetNameSheet } from "export_presets.slint";
 import { Canvas } from "canvas_state.slint";
-export { ExportLine, PaperRow, SheetTile, PresetKey, PresetRow, Exporting }
+export { ExportLine, PaperRow, SheetTile, Exporting, PresetNameSheet }
 
 // `FrameFields`: the file name with its extension, then the EXIF the file will carry, in two columns
 // of four under the picture, on the panel's ground: on the canvas's, no field's face would show.
@@ -168,20 +169,34 @@ component SpaceTabs inherits Tabs {
     picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
 }
 
-// `ExportSpaceField`'s profile: the one Custom converts into or the choice still to make, then the keys
-// that load or fetch one; the chip's adds the colour-only switch.
+// The space's note in a room fitted to every note it may say, so a tab or a preset never moves what follows.
+component SpaceNote inherits SteadyNote {
+    text: Exporting.space-note;
+    notes: Exporting.space-notes;
+}
+
+// `ExportSpaceField`'s profile, always laid so no preset moves a row: Custom's, the choice still to make,
+// or the built-in space's out of reach; then the keys that load or fetch one, and the chip's switch.
 component SpaceField inherits VerticalLayout {
     in property <bool> chip;
     // Asked before a key opens a window of its own, so a popover holding the field closes first.
     callback dismiss();
     spacing: FormStyle.gap;
-    if Exporting.on-profile: Field {
+    Field {
         label: @tr("Profile");
         Picker {
-            value: Exporting.profiles[Exporting.profile];
-            entries: Exporting.profiles;
-            current: Exporting.profile;
-            chosen(i) => { Exporting.profile-picked(i); }
+            enabled: Exporting.on-profile || Exporting.pending;
+            value: Exporting.on-profile ? Exporting.profiles[Exporting.profile] : Exporting.pending ? @tr("Choose a profile…") : Exporting.chip-title;
+            entries: Exporting.on-profile ? Exporting.profiles : Exporting.pending ? [@tr("Choose a profile…"), @tr("Load a Profile…")] : [];
+            current: Exporting.on-profile ? Exporting.profile : 0;
+            chosen(i) => {
+                if (Exporting.on-profile) {
+                    Exporting.profile-picked(i);
+                } else {
+                    if (i == 1) { root.dismiss(); }
+                    Exporting.pending-picked(i);
+                }
+            }
         }
     }
     if Exporting.on-profile && root.chip: Toggle {
@@ -190,49 +205,10 @@ component SpaceField inherits VerticalLayout {
         on: Exporting.colour-only;
         toggled(on) => { Exporting.colour-only-set(on); }
     }
-    if Exporting.pending: Field {
-        label: @tr("Profile");
-        Picker {
-            value: @tr("Choose a profile…");
-            entries: [@tr("Choose a profile…"), @tr("Load a Profile…")];
-            current: 0;
-            chosen(i) => {
-                if (i == 1) { root.dismiss(); }
-                Exporting.pending-picked(i);
-            }
-        }
-    }
     ButtonGroup {
         align: GroupAlign.fill;
         Button { text: @tr("Load a Profile…"); fills: true; clicked => { root.dismiss(); Exporting.load-profile(); } }
         Button { text: @tr("Get Paper Profiles…"); fills: true; clicked => { root.dismiss(); Exporting.get-papers(); } }
-    }
-}
-
-// The presets' plate, the built-in keys then the saved ones, three a row at a third of `room` each;
-// under them the name that saves the settings as they stand, or renames the saved preset lit.
-component PresetPlate inherits VerticalLayout {
-    in property <length> room;
-    property <length> column: (root.room - 2 * ButtonStyle.group-gap) / 3;
-    spacing: ButtonStyle.group-gap;
-    for row in Exporting.preset-rows: HorizontalLayout {
-        spacing: ButtonStyle.group-gap;
-        alignment: start;
-        for key in row.keys: Button { fixed-width: root.column; text: key.name; on: key.on; clicked => { Exporting.preset(key.at); } }
-    }
-    // Remove stands apart from the keys that keep, beside the name it takes off.
-    if Exporting.preset-line: HorizontalLayout {
-        padding-top: FormStyle.row-gap;
-        spacing: Space.s;
-        TextField {
-            name: @tr("Preset name");
-            value: Exporting.preset-name;
-            placeholder: @tr("e.g. Client TIFF");
-            edited(t) => { Exporting.preset-typed(t); }
-            accepted => { if (!Exporting.preset-saved) { Exporting.preset-save(); } }
-        }
-        if !Exporting.preset-saved: Button { text: @tr("Save as Preset"); enabled: Exporting.can-save-preset; clicked => { Exporting.preset-save(); } }
-        if Exporting.preset-saved: Button { text: @tr("Remove"); kind: ButtonKind.destructive; clicked => { Exporting.preset-remove(); } }
     }
 }
 
@@ -266,11 +242,11 @@ export component ExportPanel inherits Surface {
                     }
                 }
                 // Shortcuts, not a choice to make: each writes every row below at once and locks none,
-                // and the one the rows equal stays lit.
+                // and the picker names the one the rows equal.
                 Field {
                     label: @tr("Presets");
-                    help: @tr("Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit. Name the settings to save them as a key of your own: its name renames it, Remove takes it off.");
-                    PresetPlate { room: fields.width; }
+                    help: @tr("Each fills every setting below at once, all of them still yours to change; the picker names the one the settings equal. Save as Preset… keeps the settings as they stand under a name of your own, which the list then renames or removes.");
+                    PresetPicker { }
                 }
                 Field {
                     label: @tr("Format");
@@ -291,10 +267,12 @@ export component ExportPanel inherits Surface {
                     label: @tr("Colour space");
                     help: @tr("Shared by the canvas and the export: the canvas shows the picture in this space and the export writes it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
                     SpaceTabs { }
-                    Label { role: TextRole.note; text: Exporting.space-note; }
+                    SpaceNote { }
                 }
                 SpaceField { }
-                if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
+                SteadyNote { text: Exporting.edited-in; notes: Exporting.edited-notes; }
+                // The format's own row, Compression's field as tall as Quality's slider, so a format
+                // changed by a preset moves no row under it.
                 if Exporting.format == 0: Field {
                     label: @tr("Compression");
                     Toggle { label: @tr("ZIP, lossless"); on: Exporting.compress; toggled(on) => { Exporting.compress-set(on); } }
@@ -365,7 +343,7 @@ export component SpaceChip inherits Picker {
         VerticalLayout {
             spacing: FormStyle.row-gap;
             SpaceTabs { }
-            Label { role: TextRole.note; text: Exporting.space-note; }
+            SpaceNote { }
         }
         SpaceField { chip: true; dismiss => { chooser.close(); } }
     }

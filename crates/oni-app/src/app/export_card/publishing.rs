@@ -69,18 +69,10 @@ impl Ctl {
         let pending = c.pending && !on_profile;
         e.set_on_profile(on_profile);
         e.set_pending(pending);
-        let trouble = match &space {
-            Space::Profile(chosen) => export::profile_note(chosen, &c.installed),
-            _ => "",
-        };
-        let note = if !trouble.is_empty() {
-            trouble.to_owned()
-        } else if pending {
-            tr!("Until a profile is chosen, the picture stays in {space}.", space = space.title())
-        } else {
-            space.purpose().to_owned()
-        };
-        e.set_space_note(note.into());
+        e.set_space_note(notes::space_note(&space, pending, &c.installed).into());
+        if let Some(texts) = notes::changed(e.get_space_notes(), notes::space_notes()) {
+            e.set_space_notes(texts);
+        }
         if let Space::Profile(chosen) = &space {
             let (listed, titles) = c.profile_titles(chosen);
             let at = listed.iter().position(|p| p == chosen).unwrap_or(0);
@@ -88,7 +80,10 @@ impl Ctl {
             e.set_profile(at as i32);
         }
         e.set_colour_only(c.colour_only);
-        e.set_edited_in(export::edited_in_note(c.edited_in.as_ref(), &space, batch).into());
+        e.set_edited_in(notes::edited_in_note(c.edited_in.as_ref(), &space, batch).into());
+        if let Some(texts) = notes::changed(e.get_edited_notes(), notes::edited_in_notes(c.edited_in.as_ref(), count > 1)) {
+            e.set_edited_notes(texts);
+        }
         e.set_compress(c.settings.compress_tiff);
         e.set_quality_fraction(Ctl::quality_fraction(c.settings.jpeg_quality));
         e.set_quality_readout(crate::fields::number(c.settings.jpeg_quality * 100.0, 0, false, crate::fields::Unit::Percent).into());
@@ -110,7 +105,7 @@ impl Ctl {
         e.set_key_title(if sheet { tr("EXPORT CONTACT SHEET").into() } else { label::key(count) }.into());
         e.set_gamut_title(if c.gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into());
         e.set_chip_title(space.title().into());
-        e.set_chip_hint(space.hint().into());
+        e.set_chip_hint(notes::hint(&space).into());
         e.set_confirm_shown(c.confirm.is_some());
         e.set_notice_shown(c.notice.is_some());
         if let Some((title, message)) = &c.notice {

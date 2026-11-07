@@ -157,6 +157,8 @@ fade and the chrome stays. The picker's field wears the same face.
 - **`Field`** lays a label above (`stacked`, with its help mark and the mark's card), beside (`column`) or spread
   before it. A help mark lays out at its glyph's size and catches the hand over a small key's square, so a line
   keeps its height.
+- **`SteadyNote`**: a note as tall as the tallest of the texts it may say, measured unseen, so what it says
+  changes in its room and never moves the rows after it.
 
 ## Sliders and plots
 
@@ -209,7 +211,9 @@ field lies flat, as a text field.
   among the canvas band's mini keys, wears their flat face within its own edge. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink. A value
   naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
-  menu line names one the same way, every line's words then starting past the medal's room.
+  menu line names one the same way, every line's words then starting past the medal's room. A menu's line
+  may carry a `note` under its words in the caption's secondary ink, two lines tall
+  (`MenuStyle.noted-height`), as the export's presets over their summaries; the `current` line is checked.
 - **`Medal`**: a foil disc of its metal, an icon's size on a tile and in the rating filter, its podium place sunk
   in the middle as the key that lays it (gold 1, silver 2, bronze 3), in the ruled ring's ink over a lip lit a rule
   below, so no medal is told by its colour alone. One drawing everywhere: `blank`, one not given, is the same disc

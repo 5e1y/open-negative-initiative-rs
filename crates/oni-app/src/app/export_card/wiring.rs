@@ -39,7 +39,7 @@ impl Ctl {
         let p = me.clone();
         e.on_preset_save(move || p.preset_save());
         let p = me.clone();
-        e.on_preset_remove(move || p.preset_remove());
+        e.on_preset_cancel(move || p.preset_cancel());
         let p = me.clone();
         e.on_format_picked(move |i| {
             let Some(format) = Format::ALL.get(i as usize).copied() else { return };

@@ -20,7 +20,7 @@ import { Wrapped, WrappedFace, WrappedView } from "wrapped.slint";
 import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { PresetDeck } from "preset_deck.slint";
-import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperRow, SheetTile } from "export.slint";
+import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PresetNameSheet, PaperRow, SheetTile } from "export.slint";
 import { PaperSheet } from "export_papers.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 import { Confirm, ConfirmSheet } from "confirm.slint";
@@ -76,7 +76,7 @@ export component MainWindow inherits AppWindow {
     changed beside-photo => { keys.focus(); Tip.shown = false; }
     // Any sheet over the window, every flag that lays one below.
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || AppSettings.shown || Notice.shown
-        || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
+        || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Exporting.naming-shown || Stocks.shown
         || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
         || Advice.shown || Wrapped.shown || Unsaved.shown || Converting.shown;
     // A sheet shown or closed takes the keyboard from a control behind it, a field it opens on aside, and
@@ -321,6 +321,7 @@ export component MainWindow inherits AppWindow {
     if Navigator.catch-up-shown: RootsCatchUpSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.confirm-shown: ExportConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.naming-shown: PresetNameSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Stocks.shown: StockPickerSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }
 

@@ -185,7 +185,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(w.global::<Bar>().get_targets(), 1);
     assert_eq!(label::context(1), "Export…");
     assert_eq!(e.get_chip_title(), "Display P3", "the export space is the canvas's, Display P3 at rest");
-    assert_eq!(e.get_chip_hint(), Space::DisplayP3.hint());
+    assert_eq!(e.get_chip_hint(), "phones & screens");
 
     // Colour density raised so the frame holds colours sRGB cannot.
     let g = w.global::<StoreGlobal>();
@@ -230,7 +230,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(e.get_key_title(), "EXPORT");
     assert_eq!(w.global::<Menus>().get_titles().export, "Export…");
     assert_eq!(e.get_subtitle(), "DSC_6432.NEF");
-    assert_eq!(e.get_edited_in(), "", "edited and previewed in one space, the note says nothing");
+    assert_eq!(e.get_edited_in(), "This photo was edited in Display P3, the space the export writes.", "edited and previewed in one space");
     rig.until("the preview and the estimate", LONG, || {
         let l = export_card::lines(w);
         l.len() == 1 && l[0].state == oni_app::PreviewState::Shown && l[0].ready && e.get_weight() != "estimating…"
@@ -249,9 +249,9 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert!(!line.camera.is_empty(), "the line opens on the sidecar's box or the scan's camera");
     // Another space says, under the tabs, that the canvas follows it as the previews do.
     e.invoke_space_picked(0);
-    assert_eq!(e.get_edited_in(), "This photo was edited in Display P3. The canvas and this preview now show it in sRGB, the space the export writes.");
+    assert_eq!(e.get_edited_in(), "This photo was edited in Display P3. The canvas and this preview now show it in the space the export writes.");
     e.invoke_space_picked(1);
-    assert_eq!(e.get_edited_in(), "");
+    assert_eq!(e.get_edited_in(), "This photo was edited in Display P3, the space the export writes.");
     rig.until("the preview again", LONG, || export_card::lines(w)[0].state == oni_app::PreviewState::Shown);
     rig.settle();
     println!("shot {}", rig.shot("export-surface").display());

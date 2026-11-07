@@ -1,7 +1,7 @@
 //! Export as a mode of the card, the Swift `Export` and `ExportPanel` without their views: the
 //! targets, each frame's line, the labels that count them, the renders and the write.
 
-use oni_colour::{OutputProfile, Space};
+use oni_colour::OutputProfile;
 use oni_export::{Format, Resize, Row};
 use oni_i18n::{tr, trn};
 use oni_settings::PipelineSettings;
@@ -175,17 +175,6 @@ pub fn profile_titles(listed: &[OutputProfile]) -> Vec<String> {
         .collect()
 }
 
-/// The note under the profile picker, empty when there is nothing to say.
-pub fn profile_note(chosen: &OutputProfile, installed: &[OutputProfile]) -> &'static str {
-    if !chosen.is_usable() {
-        tr("This profile can no longer be read. Choose another one.")
-    } else if installed.is_empty() {
-        tr("No printer or paper profile is installed yet: load one, or get your paper's below.")
-    } else {
-        ""
-    }
-}
-
 /// `loadProfile`'s report, `None` when every file chosen was installed.
 pub fn import_report(installed: usize, refused: usize) -> Option<(String, String)> {
     if refused == 0 && installed > 0 {
@@ -204,23 +193,6 @@ pub fn import_report(installed: usize, refused: usize) -> Option<(String, String
         )
     };
     Some((title, message))
-}
-
-/// The note under the space once it differs from the one edited in: the canvas shares it, so it says so.
-pub fn edited_in_note(edited_in: Option<&Space>, space: &Space, batch: bool) -> String {
-    match edited_in {
-        Some(e) if e != space && batch => tr!(
-            "These photos were edited in {edited}. The canvas and these previews now show them in {space}, the space the export writes.",
-            edited = e.title(),
-            space = space.title()
-        ),
-        Some(e) if e != space => tr!(
-            "This photo was edited in {edited}. The canvas and this preview now show it in {space}, the space the export writes.",
-            edited = e.title(),
-            space = space.title()
-        ),
-        _ => String::new(),
-    }
 }
 
 #[cfg(test)]
@@ -313,12 +285,6 @@ mod tests {
         let (title, message) = import_report(1, 2).unwrap();
         assert_eq!(title, "1 Profile Installed");
         assert!(message.starts_with("2 left out: Custom takes RGB printer and paper profiles."));
-        assert_eq!(
-            edited_in_note(Some(&Space::Srgb), &Space::DisplayP3, true),
-            "These photos were edited in sRGB. The canvas and these previews now show them in Display P3, the space the export writes."
-        );
-        // Twin: the same space says nothing.
-        assert_eq!(edited_in_note(Some(&Space::DisplayP3), &Space::DisplayP3, false), "");
     }
 
     /// The export renders the frame with the custom mask and the dust patches the canvas lays, so

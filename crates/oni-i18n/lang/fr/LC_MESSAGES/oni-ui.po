@@ -105,7 +105,7 @@ msgstr "Réglages"
 msgid "Copy Settings…"
 msgstr "Copier les réglages…"
 
-#: crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/export_card/kept.rs crates/oni-ui/ui/app.slint
 msgid "Save as Preset…"
 msgstr "Enregistrer comme préréglage…"
 
@@ -221,7 +221,7 @@ msgstr "Tout sélectionner ({}) pour modifier toute la pellicule"
 msgid "Stop"
 msgstr "Arrêter"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -586,10 +586,6 @@ msgid "Profile"
 msgstr "Profil"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Show only colour variation (not recommended)"
-msgstr "N’afficher que la variation de couleur (déconseillé)"
-
-#: crates/oni-ui/ui/export.slint
 msgid "Choose a profile…"
 msgstr "Choisir un profil…"
 
@@ -598,24 +594,12 @@ msgid "Load a Profile…"
 msgstr "Charger un profil…"
 
 #: crates/oni-ui/ui/export.slint
+msgid "Show only colour variation (not recommended)"
+msgstr "N’afficher que la variation de couleur (déconseillé)"
+
+#: crates/oni-ui/ui/export.slint
 msgid "Get Paper Profiles…"
 msgstr "Obtenir des profils papier…"
-
-#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
-msgid "Preset name"
-msgstr "Nom du préréglage"
-
-#: crates/oni-ui/ui/export.slint
-msgid "e.g. Client TIFF"
-msgstr "p. ex. TIFF client"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Save as Preset"
-msgstr "Enregistrer comme préréglage"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Remove"
-msgstr "Retirer"
 
 #: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
 msgid "Export"
@@ -642,18 +626,18 @@ msgid "Presets"
 msgstr "Préréglages"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit. Name the settings to save them as a key of your own: its name renames it, Remove takes it off."
-msgstr "Chacun remplit d’un coup tous les réglages ci-dessous, que vous restez libre de changer. Celui auquel les réglages correspondent reste allumé. Nommez les réglages pour les garder comme une touche à vous : son nom la renomme, Retirer l’enlève."
+msgid "Each fills every setting below at once, all of them still yours to change; the picker names the one the settings equal. Save as Preset… keeps the settings as they stand under a name of your own, which the list then renames or removes."
+msgstr "Chacun remplit d’un coup tous les réglages ci-dessous, que vous restez libre de changer ; le sélecteur nomme celui auquel les réglages correspondent. Enregistrer comme préréglage… garde les réglages tels quels sous un nom à vous, que la liste permet ensuite de renommer ou de retirer."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Format"
 msgstr "Format"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-app/src/app/export_card/kept.rs crates/oni-ui/ui/export.slint
 msgid "TIFF 16-bit"
 msgstr "TIFF 16 bits"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-app/src/app/export_card/kept.rs crates/oni-ui/ui/export.slint
 msgid "JPEG"
 msgstr "JPEG"
 
@@ -729,7 +713,7 @@ msgstr "Commun au canevas et à l’export."
 msgid "Replace"
 msgstr "Remplacer"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/export_card/kept.rs crates/oni-app/src/app/masks.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Rename"
 msgstr "Renommer"
 
@@ -776,6 +760,14 @@ msgstr "Désinstaller"
 #: crates/oni-ui/ui/export_papers.slint
 msgid "Install"
 msgstr "Installer"
+
+#: crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/presets.slint
+msgid "Preset name"
+msgstr "Nom du préréglage"
+
+#: crates/oni-ui/ui/export_presets.slint
+msgid "e.g. Client TIFF"
+msgstr "p. ex. TIFF client"
 
 #: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
 msgid "EXPORT"
@@ -2193,7 +2185,7 @@ msgstr "Copier les réglages"
 msgid "Save a Preset"
 msgstr "Enregistrer un préréglage"
 
-#: crates/oni-ui/ui/presets.slint
+#: crates/oni-app/src/app/export_card/kept.rs crates/oni-ui/ui/presets.slint
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -2741,6 +2733,114 @@ msgstr "Écran"
 msgid "Print"
 msgstr "Impression"
 
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Web"
+msgstr "Web"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Full resolution"
+msgstr "Pleine résolution"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "No preset"
+msgstr "Aucun préréglage"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Rename Preset"
+msgstr "Renommer le préréglage"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Save as Preset"
+msgstr "Enregistrer comme préréglage"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "{n} px"
+msgstr "{n} px"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "{n} px on the short edge"
+msgstr "{n} px sur le petit côté"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Rename “{name}”…"
+msgstr "Renommer « {name} »…"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Remove “{name}”"
+msgstr "Retirer « {name} »"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Keeps every export setting as it stands: {summary}."
+msgstr "Garde tous les réglages d’export tels quels : {summary}."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "Web and social networks: what every screen and app reads."
+msgstr "Web et réseaux sociaux : ce que lisent tous les écrans et toutes les apps."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "Recent phones, tablets and Apple screens: richer reds and greens."
+msgstr "Téléphones, tablettes récents et écrans Apple : rouges et verts plus riches."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "Print labs and photo printers: richer cyans and greens."
+msgstr "Laboratoires et imprimantes photo : cyans et verts plus riches."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "Home printing through the printer's own profile: holds nearly every colour. TIFF 16-bit only."
+msgstr "Impression à domicile par le profil de l’imprimante : garde presque toutes les couleurs. TIFF 16 bits seulement."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "An ICC profile for a paper or a lab's printer."
+msgstr "Un profil ICC pour un papier ou l’imprimante d’un laboratoire."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "web & social"
+msgstr "web et réseaux"
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "phones & screens"
+msgstr "téléphones et écrans"
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "print"
+msgstr "impression"
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "wide print"
+msgstr "impression large"
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "paper"
+msgstr "papier"
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "This profile can no longer be read. Choose another one."
+msgstr "Ce profil n’est plus lisible. Choisissez-en un autre."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "No printer or paper profile is installed yet: load one, or get your paper's below."
+msgstr "Aucun profil d’imprimante ou de papier n’est encore installé : chargez-en un, ou obtenez celui de votre papier ci-dessous."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "Until a profile is chosen, the picture stays in {space}."
+msgstr "Tant qu’aucun profil n’est choisi, l’image reste en {space}."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "This photo was edited in {edited}, the space the export writes."
+msgstr "Cette photo a été éditée en {edited}, l’espace qu’écrit l’export."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "These photos were edited in {edited}, the space the export writes."
+msgstr "Ces photos ont été éditées en {edited}, l’espace qu’écrit l’export."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "This photo was edited in {edited}. The canvas and this preview now show it in the space the export writes."
+msgstr "Cette photo a été éditée en {edited}. Le canevas et cet aperçu la montrent désormais dans l’espace qu’écrit l’export."
+
+#: crates/oni-app/src/app/export_card/notes.rs
+msgid "These photos were edited in {edited}. The canvas and these previews now show them in the space the export writes."
+msgstr "Ces photos ont été éditées en {edited}. Le canevas et ces aperçus les montrent désormais dans l’espace qu’écrit l’export."
+
 #: crates/oni-app/src/app/export_card/paper_sheet.rs
 msgid "Nothing to install: the file held no RGB printer profile (CMYK profiles are not supported)."
 msgstr "Rien à installer : le fichier ne contenait aucun profil d’imprimante RGB (les profils CMYK ne sont pas pris en charge)."
@@ -2798,10 +2898,6 @@ msgstr "Un export est en cours, {done} sur {total} : celui-ci pourra commencer u
 #: crates/oni-app/src/app/export_card/publishing.rs
 msgid "{count} photos on one contact sheet. You will be asked for its name."
 msgstr "{count} photos sur une planche contact. Son nom vous sera demandé."
-
-#: crates/oni-app/src/app/export_card/publishing.rs
-msgid "Until a profile is chosen, the picture stays in {space}."
-msgstr "Tant qu’aucun profil n’est choisi, l’image reste en {space}."
 
 #: crates/oni-app/src/app/export_card/settings.rs
 msgid "Choose ICC profiles, or the zip a paper maker or a lab ships them in."
@@ -4292,14 +4388,6 @@ msgid "8-bit source: shadows may band once inverted"
 msgstr "Source 8 bits : cassures possibles dans les ombres après inversion"
 
 #: crates/oni-app/src/export.rs
-msgid "This profile can no longer be read. Choose another one."
-msgstr "Ce profil n’est plus lisible. Choisissez-en un autre."
-
-#: crates/oni-app/src/export.rs
-msgid "No printer or paper profile is installed yet: load one, or get your paper's below."
-msgstr "Aucun profil d’imprimante ou de papier n’est encore installé : chargez-en un, ou obtenez celui de votre papier ci-dessous."
-
-#: crates/oni-app/src/export.rs
 msgid "No Profile Installed"
 msgstr "Aucun profil installé"
 
@@ -4338,14 +4426,6 @@ msgstr "{count} sources sur {of} sont en 8 bits : cassures possibles dans leurs
 #: crates/oni-app/src/export.rs
 msgid "{refused} left out: Custom takes RGB printer and paper profiles. CMYK profiles are not supported, and sRGB, Display P3, Adobe RGB and ProPhoto have their own tabs."
 msgstr "Fichiers écartés : {refused}. Profil accepte les profils RGB d’imprimante et de papier. Les profils CMYK ne sont pas pris en charge, et sRGB, Display P3, Adobe RGB et ProPhoto ont leurs propres onglets."
-
-#: crates/oni-app/src/export.rs
-msgid "These photos were edited in {edited}. The canvas and these previews now show them in {space}, the space the export writes."
-msgstr "Ces photos ont été éditées en {edited}. Le canevas et ces aperçus les montrent désormais en {space}, l’espace qu’écrit l’export."
-
-#: crates/oni-app/src/export.rs
-msgid "This photo was edited in {edited}. The canvas and this preview now show it in {space}, the space the export writes."
-msgstr "Cette photo a été éditée en {edited}. Le canevas et cet aperçu la montrent désormais en {space}, l’espace qu’écrit l’export."
 
 #: crates/oni-app/src/export.rs
 msgid "{n} Profile Installed"
