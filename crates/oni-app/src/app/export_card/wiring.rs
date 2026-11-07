@@ -20,18 +20,6 @@ impl Ctl {
         }
     }
 
-    /// The File menu's item, which counts the selection off the surface.
-    pub(in crate::app) fn publish_export_menu(&self, selected: usize, has_photo: bool) {
-        let Some(w) = self.window() else { return };
-        let c = self.export.borrow();
-        if c.shown {
-            return;
-        }
-        let e = w.global::<Exporting>();
-        e.set_menu_title(label::menu(selected).into());
-        e.set_menu_live(has_photo || selected > 0);
-    }
-
     pub(in crate::app) fn wire_export(me: &Rc<Ctl>, window: &MainWindow) {
         let e = window.global::<Exporting>();
         let p = me.clone();

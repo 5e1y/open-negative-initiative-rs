@@ -277,47 +277,45 @@ fn the_source_is_never_overwritten() {
 #[test]
 fn the_estimate_holds_on_roll_8() {
     let Some(roll) = oni_fixtures::raw_dir("the_estimate_holds_on_roll_8") else { return };
-    let mut jpeg = Settings::default();
-    jpeg.set_space(Space::Srgb);
-    let mut tiff = Settings::default();
-    tiff.set_format(Format::Tiff16);
-    tiff.set_space(Space::AdobeRgb);
+    let presets = oni_export::Preset::ALL.map(|p| (p, p.applied(&Settings::default())));
     let frames = files(&roll, "nef");
-    let mut worst = [0.0f64; 2];
-    let mut side_worst = 0.0f64;
-    for path in frames.iter().step_by(3) {
+    let mut worst = [0.0f64; 3];
+    let mut former_best = f64::INFINITY;
+    for path in frames.iter().step_by(4) {
         let full = decoded(path);
-        let full_pixels = (full.width * full.height) as f64;
-        let scale = oni_export::SAMPLE_SIDE / full.width.max(full.height) as f64;
-        // The reduced decode rendered, as the estimate sees it.
-        let preview = as_set(path, resized(full.clone(), scale));
-        let full = as_set(path, full);
-        for (i, export) in [&jpeg, &tiff].into_iter().enumerate() {
+        let (width, height) = (full.width as f64, full.height as f64);
+        for (i, (preset, export)) in presets.iter().enumerate() {
+            let scale = export.resize.scale(width, height);
+            let (w, h) = export.resize.output_size(width, height);
+            // The sample at the file's own scale, never past the half-size decode the editor holds.
+            let sample = as_set(path, resized(full.clone(), scale.min(0.5)));
             let started = Instant::now();
-            let guess = estimate(&preview, full_pixels, export) as f64;
+            let guess = estimate(&sample, w * h, export) as f64;
             let guessed_in = started.elapsed().as_secs_f64();
-            let started = Instant::now();
-            let actual =
-                encoded(&converted(&full, export).unwrap(), export, None, &ExifMetadata::default()).unwrap().len() as f64;
+            let written = as_set(path, resized(full.clone(), scale));
+            let actual = encoded(&converted(&written, export).unwrap(), export, None, &ExifMetadata::default()).unwrap().len() as f64;
             let error = guess / actual - 1.0;
             println!(
-                "{} {:?}: estimated {:.1} MB in {guessed_in:.2} s, written {:.1} MB in {:.2} s, error {:+.1} %",
+                "{} {preset:?}: estimated {:.2} MB in {guessed_in:.2} s, written {:.2} MB, error {:+.1} %",
                 path.file_name().unwrap().to_string_lossy(),
-                export.format(),
                 guess / 1e6,
                 actual / 1e6,
-                started.elapsed().as_secs_f64(),
                 100.0 * error
             );
             worst[i] = worst[i].max(error.abs());
-            // Twin: extrapolated by the ratio of sides instead of areas.
-            let by_side = guess / (full_pixels / (preview.width * preview.height) as f64).sqrt();
-            side_worst = side_worst.max((by_side / actual - 1.0).abs());
+            // Twin: the former reading, a 500 px sample weighed over the frame's full pixels.
+            if *preset == oni_export::Preset::Instagram {
+                let small = as_set(path, resized(full.clone(), 500.0 / width.max(height)));
+                former_best = former_best.min(estimate(&small, width * height, export) as f64 / actual - 1.0);
+            }
         }
     }
-    println!("worst error: JPEG {:.1} %, TIFF ZIP {:.1} %", 100.0 * worst[0], 100.0 * worst[1]);
-    // ZIP weighs the grain alike at every size. A JPEG's bytes per pixel climb as the frame
-    // shrinks, so without sharpening its figure is printed, not held.
-    assert!(worst[1] < 0.03, "TIFF ZIP estimate off by {:.1} %", 100.0 * worst[1]);
-    assert!(side_worst > 0.5, "the twin extrapolation is off by only {side_worst}");
+    println!("worst error: Instagram {:.1} %, Display {:.1} %, Print {:.1} %", 100.0 * worst[0], 100.0 * worst[1], 100.0 * worst[2]);
+    // A file within the half-size decode is its own sample's encode; past it a JPEG's bytes per pixel
+    // fall as the frame grows, ZIP's hold.
+    assert!(worst[0] < 0.02, "Instagram estimate off by {:.1} %", 100.0 * worst[0]);
+    assert!(worst[1] < 0.15, "Display estimate off by {:.1} %", 100.0 * worst[1]);
+    assert!(worst[2] < 0.03, "Print estimate off by {:.1} %", 100.0 * worst[2]);
+    assert!(former_best > 4.0, "the former reading is off by only {:.0} %", 100.0 * former_best);
 }
+

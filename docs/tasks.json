@@ -6906,5 +6906,33 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1442,
+    "type": "bug",
+    "title": "The export's estimate weighs the file at the size it is written, not the full frame",
+    "status": "done",
+    "detail": "Evaluation: three Instagram JPEGs that weighed 4 MB read about 56 MB. The weigher extrapolated a 500 px sample over the full frame's pixels, the resize ignored (+833 to +1270 % on roll #8 at Instagram's size), and a JPEG's bytes per pixel climb as a frame shrinks. The sample is now the first photo rendered at the scale the file is written at (on a contact sheet its tile's), never past the reduced decode the editor holds, and weighed over the size the panel shows: on roll #8 Instagram reads within 0.0 %, full JPEG within 10 %, TIFF ZIP within 0.5 %. The first photo's decode is kept from its preview, so the weigher keeps nothing and never decodes the frame a second time; SAMPLE_SIDE goes. Checks: oni-export roll8 the_estimate_holds_on_roll_8 (twin: the former reading is off by more than 400 %), window export_flow the_estimate_weighs_the_file_the_export_writes, 220,462 bytes for a file of 220,802 (twin: the full frame's pixels read four times the file)."
+  },
+  {
+    "id": 1443,
+    "type": "bug",
+    "title": "An export into a missing folder makes it, as a save does",
+    "status": "done",
+    "detail": "Evaluation: a folder named but missing failed on the first file after its full render, with OK as the only way out. The write now makes the folder it was given before anything renders; a folder that cannot be made says why over the surface, which stays open so EXPORT asks for another. A folder gone mid-batch still fails in the card. Checks: window export_flow writes three frames into a folder made for them (twin: a folder inside a read-only one cannot be made, the notice says so and no export begins), and a read-only folder still fails in the card past its stay."
+  },
+  {
+    "id": 1444,
+    "type": "interface",
+    "title": "Export's presets are three flat keys that fill the settings, lit while the settings equal one",
+    "status": "done",
+    "detail": "Evaluation: the presets' segmented control showed nothing selected, reading as a choice left unset. They were never a choice: each writes every row at once and locks none. They are now three flat keys in a filling group with a help mark saying so; the one the rows equal stays lit, read off the rows as before. Checks: window export_panel clicks Instagram, which writes JPEG and sRGB and alone is lit (twin: a quality step by hand lights none)."
+  },
+  {
+    "id": 1445,
+    "type": "interface",
+    "title": "Under a rating filter, Export opens on the photos it keeps",
+    "status": "done",
+    "detail": "Evaluation: delivering the gold frames took filter, Select All, right-click, Export. With nothing picked in the gallery, Export now takes every photo a rating filter keeps, the set it was turned on to find; the selection still wins, the open photo in the editor, and the ONI Trash never. The File menu counts the same set, read from one State::export_targets; the export global's own menu title and switch, which no screen read, go. Checks: window export_flow labels two frames gold, filters on gold and opens the surface on them with ⌘E (twin: with every photo shown and none picked, Export stays dark)."
   }
 ]

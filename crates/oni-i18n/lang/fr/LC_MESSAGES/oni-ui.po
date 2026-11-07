@@ -598,6 +598,10 @@ msgid "Presets"
 msgstr "Préréglages"
 
 #: crates/oni-ui/ui/export.slint
+msgid "Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit."
+msgstr "Chacun remplit d’un coup tous les réglages ci-dessous, que vous restez libre de changer. Celui auquel les réglages correspondent reste allumé."
+
+#: crates/oni-ui/ui/export.slint
 msgid "Instagram"
 msgstr "Instagram"
 
@@ -736,10 +740,6 @@ msgstr "Installer"
 #: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
 msgid "EXPORT"
 msgstr "EXPORTER"
-
-#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
-msgid "Export…"
-msgstr "Exporter…"
 
 #: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint
 msgid "Show What This Screen Cannot Show"
@@ -1032,6 +1032,10 @@ msgstr "Sélectionnez des photos dans l’onglet Archives, puis choisissez Nouve
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
 msgid "Gallery"
 msgstr "Galerie"
+
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
+msgid "Export…"
+msgstr "Exporter…"
 
 #: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/menus.slint
 msgid "Move to ONI Trash"
@@ -2649,7 +2653,7 @@ msgstr[1] "{n} fichiers NEF n’ont pas pu aller à la Corbeille."
 msgid "Stopping after this photo…"
 msgstr "Arrêt après cette photo…"
 
-#: crates/oni-app/src/app/export_card/job.rs
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/writing.rs
 msgid "Export Failed"
 msgstr "Échec de l’export"
 

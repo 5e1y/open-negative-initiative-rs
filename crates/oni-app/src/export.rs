@@ -9,7 +9,7 @@ use oni_settings::film::{Film, film_stock};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-pub use oni_export::{PREVIEW_SIDE, SAMPLE_SIDE};
+pub use oni_export::PREVIEW_SIDE;
 
 pub mod batch;
 pub mod clash;
@@ -87,7 +87,7 @@ pub fn bits(format: Format) -> &'static str {
     if format == Format::Tiff16 { tr("16 bits per channel") } else { tr("8 bits per channel") }
 }
 
-/// `ExportPanel.weight`: one frame's estimate times the count, an order of magnitude only.
+/// `ExportPanel.weight`: one frame's estimate times the count.
 pub fn weight(estimate: Option<u64>, count: usize) -> String {
     let Some(estimate) = estimate.filter(|e| *e > 0) else { return tr("estimating…").into() };
     let total = estimate as f64 * count.max(1) as f64;

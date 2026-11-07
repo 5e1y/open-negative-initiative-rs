@@ -20,6 +20,7 @@ impl Ctl {
             let trash = s.trash_shown() && gallery;
             let restoring = s.trash_picks.selection.len();
             let count = s.target_count(gallery);
+            let exported = s.export_targets(gallery).len();
             // In the gallery with nothing picked, the editor opens on the photo it stands on and
             // the roll gestures act on the roll shown.
             let subject = s.editor_subject().is_some();
@@ -76,7 +77,7 @@ impl Ctl {
             };
             let titles = MenuTitles {
                 mode: if gallery { tr("Editor") } else { tr("Gallery") }.into(),
-                export: crate::export::label::menu(exporting.unwrap_or(selected)).into(),
+                export: crate::export::label::menu(exporting.unwrap_or(exported)).into(),
                 remove: if count > 1 { tr!("Move {count} Photos to ONI Trash", count = count) } else { tr("Move to ONI Trash").into() }.into(),
                 restore: if restoring > 1 { tr!("Restore {count} Photos", count = restoring) } else { tr("Restore").into() }.into(),
                 paste: if count > 1 { tr!("Paste Settings to {count} Photos", count = count) } else { tr("Paste Settings").into() }.into(),
@@ -101,8 +102,8 @@ impl Ctl {
             let live = MenuLive {
                 open: true,
                 toggle_mode: !gallery || subject,
-                // On the surface ⌘E confirms; elsewhere it opens on the selection, else the open photo.
-                export: exporting.map_or(count > 0, |n| n > 0 && !writing),
+                // On the surface ⌘E confirms; elsewhere it opens on what `export_targets` names.
+                export: exporting.map_or(exported > 0, |n| n > 0 && !writing),
                 // A read under way is the refresh already.
                 refresh: read_done || !opened,
                 show_selected: gallery && (open || selected > 0),

@@ -82,6 +82,8 @@ pub struct Card {
     pub rows: Vec<Option<Row>>,
     sizes: Vec<Option<(f64, f64)>>,
     previews: Vec<Preview>,
+    /// The first target's reduced decode, as its preview read it, which the estimate's sample renders.
+    first: Option<Arc<crate::render::Negative>>,
     /// The room the column gives the sheet, in points, and its logo band last drawn, for its width.
     sheet_room: Option<(f64, f64)>,
     logo: Option<(usize, Image)>,
@@ -166,6 +168,7 @@ impl Card {
             rows: Vec::new(),
             sizes: Vec::new(),
             previews: Vec::new(),
+            first: None,
             sheet_room: None,
             logo: None,
             room: Arc::default(),
@@ -206,6 +209,22 @@ impl Card {
             return self.sizes.iter().copied().collect::<Option<Vec<_>>>().map(|sizes| super::gallery_view::together::sheet_size(&sizes));
         }
         self.sizes.first().copied().flatten()
+    }
+
+    /// What the estimate weighs: the first target's scale in the file, on a sheet its tile's, and the
+    /// file's pixels, the size the panel shows.
+    fn written(&self) -> Option<(f64, f64)> {
+        let (fw, fh) = self.full()?;
+        let resize = self.settings.resize;
+        let (w, h) = resize.output_size(fw, fh);
+        let mut scale = resize.scale(fw, fh);
+        if self.on_sheet() {
+            let first = self.sizes.first().copied().flatten()?;
+            let (pictures, _, _) = super::gallery_view::together::sheet_places(&self.sizes);
+            let &(_, _, pw, ph) = pictures.first()?;
+            scale *= pw.max(ph) / first.0.max(first.1);
+        }
+        Some((scale, w * h))
     }
 
     /// Whether the batch is written as one contact sheet: two photos or more.

@@ -1,9 +1,9 @@
 //! The export's renders: the frame decoded whole, rendered unproofed at full resolution and read back
-//! in bands, the estimate's reduced sample, and one frame written.
+//! in bands, the estimate's sample, and one frame written.
 
 use super::{Target, BAND_ROWS};
 use crate::render::{Decoded, Engine, Negative, Shared};
-use oni_export::{ExifMetadata, Failure, Image, SAMPLE_SIDE, Settings};
+use oni_export::{ExifMetadata, Failure, Image, Settings};
 use oni_graph::Image as Recipe;
 use oni_pipeline::Request;
 use oni_settings::PipelineSettings;
@@ -60,18 +60,14 @@ pub fn read_laid(engine: &mut Engine, sheet: oni_graph::Source) -> Result<Image,
     out
 }
 
-/// `Pipeline.apply` on a preview reduced to `side`, unproofed: the estimate's sample.
-pub fn render_reduced(engine: &mut Engine, negative: &Negative, settings: &PipelineSettings, side: usize) -> Result<Image, Failure> {
-    let (w, h) = negative.size();
-    let scale = (side as f64 / w.max(h) as f64).min(1.0);
-    let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
-    let image = engine.unproofed(&negative.preview, settings, &request).map_err(|_| Failure::Render)?;
-    read_back(engine.parts().0, &image)
-}
-
-/// The 500 px sample `refreshEstimate` weighs: the frame's own, whatever the export's settings.
-pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings) -> Option<Image> {
-    render_reduced(&mut *engine.lock().ok()?, negative, settings, SAMPLE_SIDE as usize).ok()
+/// The sample the estimate weighs: `Pipeline.apply` unproofed on the editor's reduced decode at `scale`
+/// of the full frame, the scale the file is written at, never past what that decode holds.
+pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings, scale: f64) -> Option<Image> {
+    let (w, _) = negative.size();
+    let request = Request { scale: (scale * negative.full_width / f64::from(w.max(1))).min(1.0), full_width: Some(negative.full_width), ..Request::default() };
+    let mut engine = engine.lock().ok()?;
+    let image = engine.unproofed(&negative.preview, settings, &request).ok()?;
+    read_back(engine.parts().0, &image).ok()
 }
 
 /// One frame written: its full render, its file, then its line kept in its sidecar; a batch writes the

@@ -122,8 +122,9 @@ impl Ctl {
                             (n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1)))
                         });
                         let size = full.map(|f| export::cropped_size(f, &target.settings));
+                        let first = negative.as_ref().ok().filter(|_| i == 0).cloned();
                         // The size lands at once, as the size boxes wait for it; the render waits for the room.
-                        with_shell(move |c| c.size_landed(generation, i, size));
+                        with_shell(move |c| c.size_landed(generation, i, size, first));
                         while live() && asked.elapsed() < ROOM_WAIT && room.lock().is_ok_and(|r| r.is_none()) {
                             std::thread::sleep(std::time::Duration::from_millis(5));
                         }
@@ -150,11 +151,18 @@ impl Ctl {
         }
     }
 
-    /// A target's size after its turns and crop, published and weighed when it changed.
-    fn size_landed(self: &Rc<Self>, generation: u64, i: usize, size: Option<(f64, f64)>) {
+    /// A target's size after its turns and crop, published and weighed when it changed; the first
+    /// target's decode kept for the estimate.
+    fn size_landed(self: &Rc<Self>, generation: u64, i: usize, size: Option<(f64, f64)>, first: Option<Arc<crate::render::Negative>>) {
         {
             let mut card = self.export.borrow_mut();
-            if card.pass.load(Ordering::Relaxed) != generation || card.sizes[i] == size {
+            if card.pass.load(Ordering::Relaxed) != generation {
+                return;
+            }
+            if i == 0 {
+                card.first = first;
+            }
+            if card.sizes[i] == size {
                 return;
             }
             card.sizes[i] = size;
@@ -167,54 +175,42 @@ impl Ctl {
         }
     }
 
-    /// `refreshEstimate`: the first target weighed on its 500 px sample, multiplied by the count; asked
-    /// of the weigher, so a burst of changes weighs the latest once.
+    /// `refreshEstimate`: the first target's sample weighed at the scale the file is written at, then
+    /// multiplied by the count; asked of the weigher, so a burst of changes weighs the latest once.
     pub(super) fn weigh_export(self: &Rc<Self>) {
-        let (target, full, export, generation, weighing) = {
+        let weigh = {
             let mut c = self.export.borrow_mut();
             c.estimate = None;
             let generation = c.weighing.fetch_add(1, Ordering::Relaxed) + 1;
-            let (Some(target), Some(full)) = (c.targets.first().cloned(), c.full()) else { return };
-            (target, full, c.settings.clone(), generation, c.weighing.clone())
+            let (Some(target), Some(negative), Some((scale, pixels))) = (c.targets.first(), c.first.clone(), c.written()) else { return };
+            Weigh { settings: target.settings.clone(), negative, scale, pixels, export: c.settings.clone(), generation, weighing: c.weighing.clone(), engine: self.engine.clone() }
         };
-        let (engine, previews, open) = {
-            let s = self.state.borrow();
-            (self.engine.clone(), s.previews.clone(), s.negative.clone())
-        };
-        let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
-        let slide = crate::render::Reading::of(&target.settings).slide;
-        let known = open.filter(|(p, _)| *p == path).map(|(_, n)| n).or_else(|| previews.lock().ok()?.get(&path, slide));
-        self.export.borrow().weigher.ask(Weigh { target, path, known, full, export, generation, weighing, engine });
+        self.export.borrow().weigher.ask(weigh);
     }
 }
 
-/// One weighing asked: the first target, its preview when one is at hand, and the export's settings.
+/// One weighing asked: the first target's decode and edit, its scale in the file, the file's pixels
+/// and the export's settings.
 pub(super) struct Weigh {
-    target: Target,
-    path: String,
-    known: Option<Arc<crate::render::Negative>>,
-    full: (f64, f64),
+    settings: oni_settings::PipelineSettings,
+    negative: Arc<crate::render::Negative>,
+    scale: f64,
+    pixels: f64,
     export: Settings,
     generation: u64,
     weighing: Arc<AtomicU64>,
     engine: Shared,
 }
 
-/// The weigher: the sample rendered once a frame and its settings, then each export's settings
-/// weighed on it, which encodes 500 px and decodes nothing.
+/// The weigher: the sample rendered and encoded as the file would be, then extrapolated to its pixels,
+/// which past the reduced decode a JPEG's grain makes an overestimate of a few percent.
 pub(super) fn weigher(runs: Arc<std::sync::atomic::AtomicUsize>) -> crate::latest::Worker<Weigh> {
-    let mut kept: Option<(PathBuf, oni_settings::PipelineSettings, Option<oni_export::Image>)> = None;
     crate::latest::Worker::spawn("export estimate", move |w: Weigh| {
         if w.weighing.load(Ordering::Relaxed) != w.generation {
             return;
         }
         runs.fetch_add(1, Ordering::SeqCst);
-        if kept.as_ref().is_none_or(|(p, s, _)| *p != w.target.path || *s != w.target.settings) {
-            let negative = w.known.or_else(|| prepared(&w.engine, &w.path, crate::render::Reading::of(&w.target.settings)).ok());
-            let sample = negative.and_then(|n| export::sample(&w.engine, &n, &w.target.settings));
-            kept = Some((w.target.path.clone(), w.target.settings.clone(), sample));
-        }
-        let weighed = kept.as_ref().and_then(|(_, _, s)| s.as_ref()).map(|s| oni_export::estimate(s, w.full.0 * w.full.1, &w.export));
+        let weighed = export::sample(&w.engine, &w.negative, &w.settings, w.scale).map(|s| oni_export::estimate(&s, w.pixels, &w.export));
         let generation = w.generation;
         with_shell(move |c| {
             if c.export.borrow().weighing.load(Ordering::Relaxed) != generation {
