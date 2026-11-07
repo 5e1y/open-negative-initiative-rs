@@ -758,8 +758,8 @@ msgid "The whole roll, once measured"
 msgstr "Toute la pellicule, une fois mesurée"
 
 #: crates/oni-ui/ui/help.slint
-msgid "After Prepare the Roll, every frame shows together, numbered by its place on the film."
-msgstr "Après Préparer la pellicule, toutes les vues s'affichent ensemble, numérotées selon leur place sur le film."
+msgid "After Prepare the Roll, the Whole Roll key shows every frame together, numbered by its place on the film."
+msgstr "Après Préparer la pellicule, la touche Toute la pellicule affiche toutes les vues ensemble, numérotées selon leur place sur le film."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Contact sheets"

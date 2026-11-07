@@ -144,7 +144,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
         found
     };
     assert!(sheets().is_empty(), "{:?}", sheets());
-    assert_eq!(ctl.state.borrow().picked().len(), FRAMES, "the measure picks the whole roll");
+    assert_eq!(ctl.state.borrow().picked().len(), 1, "the measure lands on one frame alone, never the whole roll unasked");
     // A gallery undo takes back every frame of the measure, a redo lays them again.
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
