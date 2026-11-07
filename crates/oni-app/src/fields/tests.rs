@@ -60,11 +60,6 @@ fn every_unit_sits_where_the_others_do() {
     assert_eq!(number(0.3, 1, true, Unit::Stops), "+0.3 EV");
     // Twin: the percent spaced from its number is the old way, no longer written.
     assert_ne!(Readout::Percent.format(0.85), "85 %");
-    // The unit set in its own column is all past the last digit, a side's name staying with the number.
-    assert_eq!([unit_of("Warm +0.46 EV"), unit_of("50%"), unit_of("\u{2212}1.00°"), unit_of("2.1 px")], [" EV", "%", "°", " px"]);
-    assert_eq!([unit_of("0.950"), unit_of("3 / 24"), unit_of("Off")], ["", "", ""]);
-    // Twin: read up to the first digit, a colour readout would lose its number to the unit.
-    assert_ne!(unit_of("Warm +0.46 EV"), &"Warm +0.46 EV"["Warm +".len() + 1..]);
 }
 
 #[test]

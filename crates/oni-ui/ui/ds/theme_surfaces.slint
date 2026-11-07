@@ -6,8 +6,9 @@ export global SurfaceStyle {
     // `DSLCD`'s ink glow (`lcdInk`, radius `rimBlur` 0.7), drawn as an outer stroke.
     in-out property <float> lcd-glow: 0.35;
     in-out property <length> lcd-glow-width: 1.2px;
-    // `DSLamp`'s glow, its colour at radius `Space.xxs` (CSS blur is twice SwiftUI's radius).
-    in-out property <length> lamp-glow: 2 * DS.space-xxs;
+    // How far a lit lamp's light reaches past its glass, and its strength at the middle.
+    in-out property <length> lamp-glow: 3 * DS.space-xxs;
+    in-out property <float> lamp-bloom: 0.5;
     // The rim of a lamp at rest: over 3:1 on a key's face, hovered or not, as a control's state asks.
     out property <color> lamp-rim: DS.palette-text-secondary;
     // The foil's light: 1 is the ramp read off `DSFoil.render`, 0 a flat body.

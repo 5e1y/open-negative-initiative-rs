@@ -6906,5 +6906,33 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1466,
+    "type": "fix",
+    "title": "The readout's histogram names what it draws: a legend under it, the print curve and its dashed inverse on the Colour tab",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Clarity): the Colour tab overlaid the print curves and a dashed reference on the histogram with no legend. The readout's box now holds the plot over one caption row, PlotLegend, each entry a sample of its ink and its name: Histogram (three bars, red, green and blue) on every tab the plot shows, Print curve (the solid guide line) and Its inverse (two dashes) while the Colour tab draws them. The box keeps its height on every tab, so the tab bar never moves; the plot gives the row its height. French and Spanish filled in. Window check picture_plots the_readout_names_its_curves_under_the_histogram: the three names on one row under the plot, above the tab bar; on the Roll tab the histogram alone at the same place, the bar unmoved (twin: a legend at the plot's top stands a plot's height above the bar)."
+  },
+  {
+    "id": 1467,
+    "type": "fix",
+    "title": "Every slider readout ends on one edge, its unit with it",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Spacing): percent readouts stopped about 7 pt short of the edge EV, px and × readouts reached, as #1361 set every unit in an 18 pt column after the digits. A readout is now right-aligned whole on the rail's edge, in Inter's tabular figures: the unit column, SliderStyle.unit, Readouts.unit and fields::unit_of go. Window check states readouts_end_at_one_edge: a bare number, a percent and a stop readout end within a pixel (twin: their digits set at one edge, the readouts end a unit apart)."
+  },
+  {
+    "id": 1468,
+    "type": "fix",
+    "title": "The contact sheet's frame numbers take a soft amber",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Colour and contrast): the frame numbers under every photo of a sheet were the system's saturated orange. Colour.edge-print, which the canvas's sheet and the exported sheet share, is now #cba372, the edge print's amber at OKLab chroma 0.08 (was 0.17), 9:1 on the sheet's black; De-dust's lit pixels keep the orange. Window check export_sheet reads the written sheet's numbers in that amber (twin: the saturated orange fails the measure)."
+  },
+  {
+    "id": 1469,
+    "type": "fix",
+    "title": "A latching key's lit lamp blooms on its face, so on reads at a glance",
+    "status": "done",
+    "detail": "UI evaluation s-c82a3414 (Clarity): a latching key told on by its lit face, a selected row's grey the hand's light resembles, and a 6 pt lamp turning from ringed to filled. A lit lamp now spreads its phosphor on the face around it, a radial bloom SurfaceStyle.lamp-glow (6 pt) past the glass at lamp-bloom 0.5 in the middle, kept on the key's face where a glyph's square key holds the lamp 3 pt from its edge; it replaces the drop shadow, which the software renderer never drew. Window check states: the face two points past a lit lamp reads 1.5:1 over the face, a lamp at rest none (twin: a lit disc with no bloom leaves the face bare)."
   }
 ]

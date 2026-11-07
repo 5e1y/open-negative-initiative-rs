@@ -1,5 +1,5 @@
 //! Edit Together as a contact sheet: the sheet's black under its frames, its logo, and each
-//! frame's place on its roll, orange under its picture as a film's edge print.
+//! frame's place on its roll, in amber under its picture as a film's edge print.
 
 use super::*;
 use crate::{EdgeNumber, SheetBox};

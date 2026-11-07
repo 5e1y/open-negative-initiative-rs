@@ -43,12 +43,6 @@ pub fn number(value: f64, places: usize, signed: bool, unit: Unit) -> String {
     format!("{sign}{digits}{}", unit.symbol())
 }
 
-/// The unit a readout ends on, all it holds past its last digit, set in a column of its own so the
-/// digits of every row end at one edge: " EV", "%", "°", nothing for a bare number or a word.
-pub fn unit_of(readout: &str) -> &str {
-    readout.rfind(|c: char| c.is_ascii_digit()).map_or("", |at| &readout[at + 1..])
-}
-
 /// The colour axis a slider's track runs along: its ends say which way a value leans, which the
 /// number's own unit, stops or percent, leaves a photographer to guess.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

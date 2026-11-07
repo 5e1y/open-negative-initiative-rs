@@ -4,10 +4,9 @@ import { Label, TextRole, Tone, Tips } from "base.slint";
 import { FieldFace, RenameField } from "fields.slint";
 
 // A readout as Rust reads it. `steps`: from the readout to a number typed over it, `per` readout units
-// a step or, at 0, one unit of its last digit, 0 when either holds no number; `unit`: what follows its last digit.
+// a step or, at 0, one unit of its last digit, 0 when either holds no number.
 export global Readouts {
     pure callback steps(readout: string, typed: string, per: float) -> int;
-    pure callback unit(readout: string) -> string;
 }
 
 // `DSReadout`: the name, the value right in the secondary ink, both faded when off; a double click on the
@@ -40,18 +39,9 @@ export component ValueHeader inherits HorizontalLayout {
     // The value is a field: the box the number is typed in, run a padding past it, is the target, a field
     // tall, and shows its face and a text cursor under the hand; out of the row, so the slider never moves.
     Rectangle {
-        // The unit stands in a column of its own, so the digits end at one edge from row to row; Slint
-        // measures an empty text a few pixels wide, so no unit is no width.
-        property <length> unit: suffix.text == "" ? 0px : suffix.preferred-width;
         horizontal-stretch: 0;
         min-width: self.preferred-width;
-        preferred-width: shown.preferred-width - self.unit + SliderStyle.unit;
-        suffix := Label {
-            visible: false;
-            text: Readouts.unit(root.value);
-            role: TextRole.value;
-            accessible-role: none;
-        }
+        preferred-width: shown.preferred-width;
         face := FieldFace {
             x: parent.width + Space.s - self.width;
             y: (parent.height - self.height) / 2;
@@ -59,8 +49,9 @@ export component ValueHeader inherits HorizontalLayout {
             height: FieldStyle.height;
             visible: root.hovered;
         }
+        // Every readout ends on one edge, its unit with it, in Inter's tabular figures.
         shown := Label {
-            x: parent.width - SliderStyle.unit + parent.unit - self.width;
+            x: parent.width - self.width;
             width: self.preferred-width;
             height: parent.height;
             text: root.value;

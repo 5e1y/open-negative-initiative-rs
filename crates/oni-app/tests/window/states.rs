@@ -1,7 +1,7 @@
 //! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
-//! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit
-//! only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the photo, each
-//! medal told by its figure without its colour, gold striking 1 as on a podium.
+//! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit,
+//! blooming, only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the
+//! photo, each medal told by its figure without its colour, gold striking 1 as on a podium; readouts on one edge.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -21,6 +21,8 @@ const LAMP_ROOM: usize = 10;
 const NON_TEXT: f64 = 3.0;
 /// The luminance above which a lamp, or a switch's slot, reads lit.
 const LIT: f64 = 0.5;
+/// A lit lamp's light on the face just past its glass, against the face itself.
+const BLOOM: f64 = 1.3;
 /// A switch's slot, `DS.Control.trackHeight`, centred in the knob's 26 pt row.
 const SLOT_TOP: usize = 6;
 const SLOT: usize = 14;
@@ -143,6 +145,14 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     assert!(dark < LIT, "a latching key off keeps its lamp unlit: {dark:.3}");
     // Twin: dark glass alone falls under the floor, a speck on the face.
     assert!(contrast(glass, face) < NON_TEXT, "the measure sees dark glass as a speck: {:.2}:1", contrast(glass, face));
+    // A lit lamp's light on the face two points past its glass, against the face left of the word.
+    let past = |x: usize, key: f32| contrast(luminance(at(x + width(key) - PAD + 2, 168 + KEY / 2)), luminance(at(x + 4, 168 + KEY / 2)));
+    let (bloom, unlit, bare) = (past(200, probe.get_lit_width()), past(16, probe.get_dark_width()), past(350 + 16 + 3 - PAD, 32.0));
+    eprintln!("past the lamp lit {bloom:.2}:1, at rest {unlit:.2}:1, a bare lit disc {bare:.2}:1");
+    assert!(bloom >= BLOOM, "a lit lamp blooms on its key's face: {bloom:.2}:1");
+    assert!(unlit < BLOOM, "a lamp at rest throws no light: {unlit:.2}:1");
+    // Twin: a lit disc with no bloom leaves the face around it bare.
+    assert!(bare < BLOOM, "the measure sees a bare face: {bare:.2}:1");
 
     // The slot the knob leaves bare: on, the stretch at its left; off, the hollow at its right.
     let slot = |x: usize, from: usize, to: usize| peak(x + from, 20 + SLOT_TOP + 3, x + to, 20 + SLOT_TOP + SLOT - 3);
@@ -191,9 +201,8 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     assert!(apart(&bronze, &one) >= FIGURES_APART, "the measure sees a 3 apart from a 1: {}", apart(&bronze, &one));
 }
 
-/// A readout's unit stands in a column of its own: one number bare, in percent and in stops ends its
-/// digits at one edge, each unit past it, the widest within the column.
-pub(crate) fn readouts_end_their_digits_at_one_edge() {
+/// Every readout ends on one edge, its unit with it: one number bare, in percent and in stops.
+pub(crate) fn readouts_end_at_one_edge() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
@@ -209,14 +218,11 @@ pub(crate) fn readouts_end_their_digits_at_one_edge() {
     rig.settle();
     rig.shot("readouts");
     let placed = readouts.map(|text| common::the(&probe, i_slint_backend_testing::AccessibleRole::Text, text));
-    // Where each readout's digits end: its left edge and the bare number's width.
-    let digits = placed.map(|p| p.x + placed[0].width);
     let rights = placed.map(|p| p.x + p.width);
-    eprintln!("digits end at {digits:?}, readouts at {rights:?}");
+    eprintln!("readouts end at {rights:?}");
     // Within the pixel each edge rounds to.
-    assert!(digits.iter().all(|d| (d - digits[0]).abs() <= 1.0), "the digits end at one edge: {digits:?}");
-    assert!(rights[2] - digits[0] <= 19.0, "the column holds the widest unit: {:.1}", rights[2] - digits[0]);
-    // Twin: right-aligned whole, the same readouts end their digits a unit's width apart.
-    let whole = placed.map(|p| rights[0] - p.width + placed[0].width);
-    assert!((whole[2] - whole[0]).abs() > 3.0, "the measure sees digits apart: {whole:?}");
+    assert!(rights.iter().all(|r| (r - rights[0]).abs() <= 1.0), "every readout ends on one edge: {rights:?}");
+    // Twin: their digits set at one edge, the units in a column after them, the readouts end a unit apart.
+    let columned = placed.map(|p| rights[0] + p.width - placed[0].width);
+    assert!((columned[1] - columned[2]).abs() > 3.0, "the measure sees readouts ending apart: {columned:?}");
 }

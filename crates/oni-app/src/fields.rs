@@ -8,7 +8,7 @@ use oni_settings::tone::{Print, color_density};
 
 mod readout;
 
-pub use readout::{Axis, Readout, Unit, number, unit_of};
+pub use readout::{Axis, Readout, Unit, number};
 
 /// One slider's value, its index the `field` the Slint `Store` passes back.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]

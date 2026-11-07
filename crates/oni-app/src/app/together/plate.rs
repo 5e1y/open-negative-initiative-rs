@@ -125,7 +125,7 @@ impl Face {
     }
 }
 
-/// The design system's orange in bold, as the checks set it.
+/// A bold lettering in a saturated orange, whose channels the checks tell apart.
 #[cfg(test)]
 pub(super) const ORANGE: Lettering = Lettering { ink: [1.0, 159.0 / 255.0, 10.0 / 255.0], weight: 700.0 };
 

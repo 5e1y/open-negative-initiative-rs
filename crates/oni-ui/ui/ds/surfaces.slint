@@ -5,18 +5,26 @@ import { Raised, Gap } from "base.slint";
 import { Depth } from "depth.slint";
 
 // A lamp: dark glass in a light rim at rest, so it reads as a lamp off and never as a speck; lit, glass
-// and rim glow its colour.
+// and rim take its colour and its light blooms on the face around it, so on reads at a glance.
 export component Lamp inherits Rectangle {
     in property <bool> lit;
     in property <color> colour: Colour.confirm;
     width: ButtonStyle.lamp;
     height: ButtonStyle.lamp;
-    border-radius: self.width / 2;
-    background: root.lit ? root.colour : ScannerStyle.glass;
-    border-width: Stroke.line;
-    border-color: root.lit ? root.colour : SurfaceStyle.lamp-rim;
-    drop-shadow-color: root.lit ? root.colour : transparent;
-    drop-shadow-blur: root.lit ? SurfaceStyle.lamp-glow : 0px;
+    // A default radial gradient spans half the box's diagonal: it fades out at 70 %, on the circle.
+    if root.lit: Rectangle {
+        x: -SurfaceStyle.lamp-glow;
+        y: -SurfaceStyle.lamp-glow;
+        width: parent.width + 2 * SurfaceStyle.lamp-glow;
+        height: self.width;
+        background: @radial-gradient(circle, root.colour.with-alpha(SurfaceStyle.lamp-bloom) 0%, root.colour.with-alpha(0) 70%);
+    }
+    Rectangle {
+        border-radius: self.width / 2;
+        background: root.lit ? root.colour : ScannerStyle.glass;
+        border-width: Stroke.line;
+        border-color: root.lit ? root.colour : SurfaceStyle.lamp-rim;
+    }
 }
 
 // `DSPopoverShape` under `dsFloating` (DSPopover.swift:68): the panel hung under its anchor, its tail
