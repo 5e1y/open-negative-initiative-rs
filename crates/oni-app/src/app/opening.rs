@@ -8,6 +8,7 @@ impl Ctl {
     /// Opens a photo in the store, with no mode; the canvas renders once its negative is decoded.
     pub(super) fn open_photo(self: &Rc<Self>, path: &str) {
         self.leave_together();
+        self.leave_landed();
         self.leave_modes();
         let remembered = self.remembered_flat_field();
         let (failure, stranded) = {

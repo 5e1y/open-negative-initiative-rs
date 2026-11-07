@@ -213,6 +213,10 @@ msgstr "Las flechas mueven el recorte, {}-flechas su borde derecho o inferior, {
 msgid "Settings saved"
 msgstr "Ajustes guardados"
 
+#: crates/oni-ui/ui/card_status.slint
+msgid "Select All ({}) to edit the whole roll"
+msgstr "Seleccionar todo ({}) para editar todo el rollo"
+
 #: crates/oni-ui/ui/card_status.slint crates/oni-ui/ui/prepare.slint
 msgid "Stop"
 msgstr "Detener"
@@ -794,8 +798,8 @@ msgid "The whole roll, once prepared"
 msgstr "Todo el rollo, una vez preparado"
 
 #: crates/oni-ui/ui/help.slint
-msgid "After Prepare the Roll, every frame shows together, numbered by its place on the film."
-msgstr "Tras Preparar el rollo, todos los fotogramas se muestran juntos, numerados según su lugar en la película."
+msgid "After Prepare the Roll, Select All ({}) shows every frame together, numbered by its place on the film."
+msgstr "Tras Preparar el rollo, Seleccionar todo ({}) muestra todos los fotogramas juntos, numerados según su lugar en la película."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Contact sheets"
@@ -2260,6 +2264,14 @@ msgstr "Mantener el zoom de una foto a la siguiente"
 #: crates/oni-ui/ui/settings.slint
 msgid "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."
 msgstr "Desactivado, cada foto se abre ajustada al lienzo. Activado, se abre con el zoom de la anterior, centrada, para comparar el grano a lo largo de un rollo."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "After Prepare, open the whole roll"
+msgstr "Tras preparar, abrir todo el rollo"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Off, a prepared roll opens on its first frame alone. On, it opens with every frame together, each edit reaching them all."
+msgstr "Desactivado, un rollo preparado se abre en su primer fotograma solo. Activado, se abre con todos sus fotogramas juntos, y cada edición los alcanza a todos."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Show what this screen cannot show"

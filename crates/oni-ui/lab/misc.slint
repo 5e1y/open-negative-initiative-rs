@@ -490,11 +490,12 @@ export component MiscPage inherits Rectangle {
                     }
                 }
                 Cell {
-                    caption: "idle with seal; loading 12/40; loading, no total";
+                    caption: "idle with seal; idle with a hint; loading 12/40; loading, no total";
                     VerticalLayout {
                         spacing: 8px;
                         width: 420px;
                         StatusBar { text: "Roll #8 · 36 frames · Nikon Z f"; seal: "RGB"; }
+                        StatusBar { text: "A · Frame 1 of 36"; hint: "Select All (⌘A) to edit the whole roll"; }
                         StatusBar { busy: true; text: "Importing"; count: "12/40"; fraction: 0.3; }
                         StatusBar { busy: true; text: "Reading the roll"; }
                     }

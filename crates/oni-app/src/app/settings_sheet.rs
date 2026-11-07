@@ -77,6 +77,7 @@ impl Ctl {
         s.set_clicks(!self.state.borrow().muted);
         s.set_keep_zoom(crate::viewport::KEEP_ZOOM.load(Ordering::Relaxed));
         s.set_full_decode(crate::render::FULL_DECODE.load(Ordering::Relaxed));
+        s.set_whole_roll_after_prepare(self.state.borrow().preferences.whole_roll_after_prepare());
         s.set_frontier_file(self.frontier_file().into());
         s.set_screen_gamut(self.state.borrow().screen_gamut);
         s.set_version(oni_i18n::tr!("Version {version}", version = crate::updates::version()).into());

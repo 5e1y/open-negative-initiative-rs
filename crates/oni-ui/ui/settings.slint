@@ -15,6 +15,7 @@ export global AppSettings {
     in property <bool> keep-zoom;
     in property <bool> full-decode;
     in property <bool> screen-gamut;
+    in property <bool> whole-roll-after-prepare;
     // The name of the hand's Frontier look file, empty while the measured table is in use.
     in property <string> frontier-file;
     // The phones connected or paired, empty with none, and whether any can be forgotten.
@@ -90,6 +91,12 @@ component EditorPage inherits Page {
             toggled => { AppSettings.flip(Act.keep-zoom); }
         }
         Label { role: TextRole.note; text: @tr("Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."); }
+        Toggle {
+            label: @tr("After Prepare, open the whole roll");
+            on: AppSettings.whole-roll-after-prepare;
+            toggled => { AppSettings.flip(Act.whole-roll-after-prepare); }
+        }
+        Label { role: TextRole.note; text: @tr("Off, a prepared roll opens on its first frame alone. On, it opens with every frame together, each edit reaching them all."); }
         Toggle {
             label: @tr("Show what this screen cannot show");
             on: AppSettings.screen-gamut;

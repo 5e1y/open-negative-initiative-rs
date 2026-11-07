@@ -114,6 +114,8 @@ pub(crate) struct Roll {
     asked: HashSet<String>,
     /// `work.openedAmong`: the selection a load narrowed, when it held the frame opened.
     pub opened_among: HashSet<String>,
+    /// The measure landed on one frame alone, until the editor leaves it.
+    landed_alone: bool,
     pub require: bool,
     tutorial: Option<tutorial::Playing>,
     trace: trace::Trace,
@@ -176,6 +178,7 @@ impl Default for Roll {
             last_press: None,
             asked: HashSet::new(),
             opened_among: HashSet::new(),
+            landed_alone: false,
             require: false,
             tutorial: None,
             trace: trace::Trace::default(),

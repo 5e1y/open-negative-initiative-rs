@@ -320,7 +320,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.until("every frame placed", Duration::from_secs(10), || walked().ends_with(" / 2"));
     assert!(p.get_cells().row_data(2).unwrap().flagged);
 
-    // MEASURE: off this thread, then the editor on the whole roll together; one gallery step lands it.
+    // MEASURE: off this thread, then the editor on the roll's first frame alone; one gallery step lands it.
     let (x, y) = action();
     click(&rig, x, y);
     let advice = w.global::<oni_app::Advice>();
@@ -329,9 +329,10 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.pump();
     assert!(!app.get_gallery(), "the editor opens once measured");
     assert!(ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("A.tif")));
-    let roll: std::collections::HashSet<String> = ["A.tif", "B.tif", "C.tif"].iter().map(|n| canonical(n).to_string_lossy().into_owned()).collect();
-    assert_eq!(*ctl.state.borrow().picked(), roll, "the whole roll picked, D left out");
-    rig.until("the roll together", Duration::from_secs(30), || w.global::<Canvas>().get_status().as_str() == "3 frames together");
+    let first: std::collections::HashSet<String> = [canonical("A.tif").to_string_lossy().into_owned()].into();
+    assert_eq!(*ctl.state.borrow().picked(), first, "the roll's first frame alone, B picked before the measure");
+    rig.until("the first frame shown", Duration::from_secs(30), || w.global::<Canvas>().get_status().contains(" × "));
+    assert!(p.get_landed_alone() && !w.global::<Canvas>().get_together(), "twin: no frames together");
     let ids: Vec<Option<Id>> = ["B.tif", "C.tif"].iter().map(|n| loaded(&canonical(n)).settings.roll_reference.map(|r| r.id)).collect();
     assert!(ids[0].is_some() && ids[0] == ids[1], "B and the flagged C stand on one roll: {ids:?}");
     assert!(["B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "a measure clears the draft");

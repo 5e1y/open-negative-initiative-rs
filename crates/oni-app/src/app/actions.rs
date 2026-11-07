@@ -75,6 +75,11 @@ impl Ctl {
                 self.remember(preferences::KEEP_ZOOM, keep.into());
                 self.publish_settings();
             }
+            Act::WholeRollAfterPrepare => {
+                let whole = !self.state.borrow().preferences.whole_roll_after_prepare();
+                self.remember(preferences::WHOLE_ROLL_AFTER_PREPARE, whole.into());
+                self.publish_settings();
+            }
             Act::CycleFilter => self.cycle_filter(),
             Act::ShowSelected => self.show_selected(),
             Act::Copy => self.copy_settings(),
