@@ -1,5 +1,5 @@
-//! The one home of the app's calls to the system: the double-click interval, the file dialogs, the
-//! file manager, the Trash and the general clipboard.
+//! The one home of the app's calls to the system: the double-click interval, Reduce Motion, the file
+//! dialogs, the file manager, the Trash and the general clipboard.
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -15,7 +15,9 @@ pub fn double_click() -> Duration {
 
 mod about;
 mod answers;
+mod motion;
 pub use about::described;
+pub use motion::reduce_motion;
 
 static VERIFIED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 

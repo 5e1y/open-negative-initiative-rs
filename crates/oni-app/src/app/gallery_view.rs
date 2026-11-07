@@ -129,6 +129,8 @@ impl Ctl {
             })
             .collect();
         let slots = range.len().max(s.layout.slots(s.grid.1));
+        // The ONI Trash's photos take no medal, as its status bar offers none.
+        lib.set_tiles_rated(!s.trash_shown());
         s.visible = range;
         let (height, scroll) = (s.layout.height, s.scroll);
         drop(s);

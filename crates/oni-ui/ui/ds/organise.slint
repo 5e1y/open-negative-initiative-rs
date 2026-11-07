@@ -1,4 +1,4 @@
-// The archive's organising controls: the medal picker, an empty grid's state, a context menu with
+// The archive's organising controls: the medal keys and picker, an empty grid's state, a context menu with
 // rules and submenus, the date fields, the drop line and ghost of a reorder, the ONI Trash's row.
 import { DS } from "tokens.slint";
 import { Colour, Space, State, TileStyle, ButtonStyle } from "theme.slint";
@@ -10,19 +10,28 @@ import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 import { MedalStyle, TabsStyle } from "theme.slint";
 
-// `DSMedalPicker`: the group's name, then gold, silver and bronze at a key's size, the given one (-1 none)
-// struck, the others blank and lit under the hand, a pressed one shrunk on the spring; each catches the
-// hand over a small key's square, overhanging the status bar.
-export component MedalPicker inherits HorizontalLayout {
+// The podium's three keys, gold 1, silver 2 and bronze 3, each figure the key that lays it: the given one
+// (-1 none) lit, the others in the shade and lifted under the hand, a pressed one shrunk on the spring.
+export component MedalKeys inherits Rectangle {
     in property <int> current: -1;
+    // The medal's side, the square catching the hand round it, and the room between two squares.
+    in property <length> size: MedalStyle.picker;
+    in property <length> key: ButtonStyle.small-height;
+    in property <length> gap: Space.xs;
+    // Tab stops on each key, which Space or Return lays; a tile's leave the keyboard to its grid.
+    in property <bool> keyed: true;
+    // Whom the medals are given to (`Medal.holder`).
+    in property <string> holder;
     // The medal the lab shows pressed; -1 follows the hand alone.
     in property <int> pressed-rank: -1;
     callback picked(int);
-    alignment: start;
-    spacing: Space.xs;
-    Label { role: TextRole.value; tone: Tone.secondary; text: @tr("Rating"); }
+    // As wide as its three keys, as high as its row, which a key's square may overhang.
+    width: 3 * root.key + 2 * root.gap;
     for medal[i] in [1, 2, 3]: Rectangle {
-        width: ButtonStyle.small-height;
+        x: i * (root.key + root.gap);
+        y: (root.height - self.height) / 2;
+        width: root.key;
+        height: root.key;
         property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;
         // The medal and the key that lays it; the given one's, the key that takes it off.
         property <string> help: medal == root.current ? @tr("No Medal (0)") : medal == 1 ? @tr("Gold (1)") : medal == 2 ? @tr("Silver (2)") : @tr("Bronze (3)");
@@ -38,13 +47,12 @@ export component MedalPicker inherits HorizontalLayout {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             rank: medal;
-            size: MedalStyle.picker * parent.scale;
+            size: root.size * parent.scale;
             blank: root.current != medal;
             reached: touch.has-hover;
+            holder: root.holder;
         }
         touch := TouchArea {
-            y: (parent.height - self.height) / 2;
-            height: self.width;
             accessible-role: button;
             accessible-label: medal == 1 ? @tr("Gold") : medal == 2 ? @tr("Silver") : @tr("Bronze");
             accessible-description: parent.help;
@@ -52,13 +60,13 @@ export component MedalPicker inherits HorizontalLayout {
             clicked => { root.picked(medal); }
             changed pressed => { if (self.pressed) { Clicks.press(); } else { Clicks.release(); } }
         }
-        // Space or Return lays it while it holds the keyboard.
         keys := KeyScope {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: MedalStyle.picker;
+            width: root.size;
             height: self.width;
             radius: self.width / 2;
+            focus-on-tab-navigation: root.keyed;
             key-pressed(event) => {
                 if ((event.text != " " && event.text != Key.Return) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
                     return reject;
@@ -67,6 +75,24 @@ export component MedalPicker inherits HorizontalLayout {
                 accept
             }
         }
+    }
+}
+
+// `DSMedalPicker`: the group's name, then the podium's keys at a small key's size, each catching the hand
+// over a small key's square, overhanging the status bar.
+export component MedalPicker inherits HorizontalLayout {
+    in property <int> current: -1;
+    in property <string> holder;
+    in property <int> pressed-rank: -1;
+    callback picked(int);
+    alignment: start;
+    spacing: Space.xs;
+    Label { role: TextRole.value; tone: Tone.secondary; text: @tr("Rating"); }
+    MedalKeys {
+        current: root.current;
+        holder: root.holder;
+        pressed-rank: root.pressed-rank;
+        picked(m) => { root.picked(m); }
     }
 }
 

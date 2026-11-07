@@ -108,6 +108,8 @@ export global State {
 }
 
 export global Motion {
+    // The system's Reduce Motion, read at launch: what moves only to answer a gesture stands still.
+    in property <bool> reduced;
     out property <duration> quick: DS.motion-curtain-duration;
     out property <duration> slide: DS.motion-reveal-response * 1s;
     // `DS.Motion.settle`'s response: a value arriving from elsewhere, a reset or an undo, eases in.
