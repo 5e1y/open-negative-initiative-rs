@@ -1,13 +1,13 @@
 // `DSRail`, the recessed track a slider's, a level's and the toggle's knob runs on, and its fills.
 import { Colour, Stroke, SliderStyle } from "theme.slint";
-import { Inward } from "depth.slint";
+import { Depth, Inward } from "depth.slint";
 
 // `level` and `ramp` light the rail up to the value and `metal` in brushed silver; `bipolar` is a
 // gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
 export enum SliderFill { level, ramp, bipolar, metal, none }
 
 // `DSRail` in `dsRecessed`: the ground, the lit stretch from `from` to `at` (fractions of the travel),
-// the hollow's shade, the edge, the lit rim below; run past the travel by `overhang` at both ends.
+// then `Inward`'s shade, edge and lit lip; run past the travel by `overhang` at both ends.
 export component Rail inherits Rectangle {
     in property <SliderFill> fill: SliderFill.none;
     in property <float> at;
@@ -22,20 +22,15 @@ export component Rail inherits Rectangle {
     in property <length> glow;
     // Low at the bottom; a vertical rail sets its own width and height.
     in property <bool> vertical;
-    // The surface the rail is milled into: the rim's light needs an opaque body under a translucent ground.
-    in property <color> under: Colour.ground;
+    // Under the hand, the hollow sinks to a well's whole shade, as the knob's edge darkens.
+    in property <bool> deep;
+    property <float> shade: Depth.well-shade * (root.deep ? 1 : SliderStyle.idle-relief);
+    animate shade { duration: SliderStyle.rise; easing: ease-out; }
     property <length> along: root.vertical ? self.height : self.width;
     property <length> travel: root.along - 2 * root.overhang;
     property <length> lit: root.overhang + root.at * root.travel;
     property <length> start: root.from > 0 ? root.overhang + root.from * root.travel : 0;
     height: SliderStyle.track;
-    Rectangle {
-        border-radius: SliderStyle.track-radius;
-        background: root.under;
-        drop-shadow-color: Colour.white.with-alpha(SliderStyle.rim);
-        drop-shadow-blur: SliderStyle.rim-blur;
-        drop-shadow-offset-y: SliderStyle.rim-drop;
-    }
     Rectangle {
         border-radius: SliderStyle.track-radius;
         background: root.fill != SliderFill.bipolar ? SliderStyle.ground
@@ -61,11 +56,7 @@ export component Rail inherits Rectangle {
     Inward {
         ground: transparent;
         radius: SliderStyle.track-radius;
-    }
-    Rectangle {
-        border-radius: SliderStyle.track-radius;
-        border-width: Stroke.line;
-        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.well-edge);
+        shade: root.shade;
     }
     if root.rest >= 0: Rectangle {
         x: root.vertical ? (parent.width - self.width) / 2 : root.overhang + root.rest * root.travel - self.width / 2;

@@ -93,6 +93,7 @@ mod roll_card;
 mod roll_tab;
 mod rolls;
 mod scanner;
+mod slider_relief;
 mod slider_rest;
 mod scroll;
 mod session;
@@ -267,6 +268,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("rolls::the_navigators_rolls_draw_their_stock", rolls::the_navigators_rolls_draw_their_stock),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
+    ("slider_relief::a_sliders_relief_is_light_at_rest_and_deepens_under_the_hand", slider_relief::a_sliders_relief_is_light_at_rest_and_deepens_under_the_hand),
     ("slider_rest::a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back", slider_rest::a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back),
     ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),

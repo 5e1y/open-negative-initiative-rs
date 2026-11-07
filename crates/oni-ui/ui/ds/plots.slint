@@ -210,6 +210,7 @@ export component LevelsTrack inherits Rectangle {
         width: parent.width + SliderStyle.knob-width;
         y: (parent.height - self.height) / 2;
         overhang: SliderStyle.knob-width / 2;
+        deep: area.has-hover || area.pressed;
     }
     // `DSTrackHandle`: the slider's knob, tinted with the value it carries, grown under the hand; Rust
     // springs every handle but the one held or scrolled, so none slides here on top of it.

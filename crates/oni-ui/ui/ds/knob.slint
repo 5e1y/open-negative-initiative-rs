@@ -18,6 +18,9 @@ export component Knob inherits Rectangle {
     in property <bool> vertical;
     property <float> grow: root.grown ? SliderStyle.knob-grow : 1;
     animate grow { duration: SliderStyle.rise; easing: ease-out-back; }
+    // Its edge darkens as it grows, lighter at rest.
+    property <float> edge: SliderStyle.edge * (root.grown ? 1 : SliderStyle.idle-relief);
+    animate edge { duration: SliderStyle.rise; easing: ease-out; }
     width: root.vertical ? SliderStyle.knob-height : SliderStyle.knob-width;
     height: root.vertical ? SliderStyle.knob-width : SliderStyle.knob-height;
     x: root.vertical ? (root.across - self.width) / 2 : root.centre - self.width / 2;
@@ -30,7 +33,7 @@ export component Knob inherits Rectangle {
         shadow: false;
         rim: false;
         edge-width: Stroke.line;
-        edge-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+        edge-color: SliderStyle.knob-edge.with-alpha(root.edge);
         transform-scale-x: root.grow;
         transform-scale-y: root.grow;
         transform-origin: { x: self.width / 2, y: self.height / 2 };
