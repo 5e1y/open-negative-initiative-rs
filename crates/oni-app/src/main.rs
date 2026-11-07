@@ -71,7 +71,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => timing::line(&format!("no log file ({e}); stderr only")),
     }
     timing::keep_panics();
-    oni_app::system::verify_held_keys();
+    // Slint's MCP server, an evaluation's driver, sends keys no hand holds: the system cannot confirm them.
+    if std::env::var_os("SLINT_MCP_PORT").is_none() {
+        oni_app::system::verify_held_keys();
+    }
     timing::line(&format!("system: {}, ONI {}", oni_app::system::described(), env!("CARGO_PKG_VERSION")));
     // One device for the pipeline, the display kernel and the window, so the canvas texture is shared.
     let gpu = Device::open()?;

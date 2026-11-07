@@ -7235,5 +7235,12 @@
     "title": "Two checks follow the merged sixth wave",
     "status": "done",
     "detail": "Prepare's left-out notice now says 'prepared with another roll'. A pressed slider shows it holds the keyboard, and one Escape leaves Compare whether or not the window's hook saw the press, as the keyboard's rework settled; the check proves both paths."
+  },
+  {
+    "id": 1480,
+    "type": "tooling",
+    "title": "A click's modifiers from Slint's MCP server are taken as sent",
+    "status": "done",
+    "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
   }
 ]
