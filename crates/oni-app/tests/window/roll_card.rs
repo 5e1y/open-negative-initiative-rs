@@ -125,7 +125,9 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
 
     // The roll's name heads the column, the warning under it, and Film Stock is its first block.
     let first = common::the(w, AccessibleRole::Text, "Film Stock");
-    let in_column = |words: &str| common::placed(w, AccessibleRole::Text, words).into_iter().filter(|p| p.x >= first.x - 1.0).collect::<Vec<_>>();
+    // The column's edge is the blocks' fold keys, a block's title standing past its chevron.
+    let edge = common::the(w, AccessibleRole::Button, "Hide Film Stock").x;
+    let in_column = |words: &str| common::placed(w, AccessibleRole::Text, words).into_iter().filter(|p| p.x >= edge - 1.0).collect::<Vec<_>>();
     let (named, warned) = (in_column("Scans"), in_column("Not prepared yet"));
     assert!(named.len() == 1 && warned.len() == 1, "{named:?} {warned:?}");
     assert!(named[0].y < warned[0].y && warned[0].y < first.y, "{named:?} over {warned:?} over {first:?}");

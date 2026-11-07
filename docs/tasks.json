@@ -7515,5 +7515,12 @@
     "title": "The gallery's inspector is headed by the roll's name, its first block Film Stock",
     "status": "done",
     "detail": "An evaluation found the inspector spending its first block, 'Roll', on the roll's name alone, which pushed Film Stock down. The name is now the column's own title, in the title face and typed over where it stands, with the not-prepared warning under it; Film Stock opens the blocks. A project's name heads its column the same way, the 'Project' block gone. The window check clicks the title, types the name and presses Return."
+  },
+  {
+    "id": 1545,
+    "type": "fix",
+    "title": "The inspector's check measures its column from the blocks' fold keys",
+    "status": "done",
+    "detail": "A block's title now stands past its fold chevron, so the column's edge is the chevron, where the roll's name heading the inspector stands too; the check found the name outside a column measured from the title."
   }
 ]
