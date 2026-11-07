@@ -27,6 +27,8 @@ pub const FRONTIER_LOOK: &str = "frontierLook";
 pub const LANGUAGE: &str = "language";
 /// The look's rows the last Copy Settings carried, which the next one opens on; the look whole without it.
 pub const COPY_CARRIES: &str = "copyCarries";
+/// Prepare the Roll ends on every frame together, a choice this build adds; without it, on the roll's first frame alone.
+pub const WHOLE_ROLL_AFTER_PREPARE: &str = "wholeRollAfterPrepare";
 
 enum Read {
     Absent,
@@ -80,6 +82,11 @@ impl Preferences {
 
     pub fn int(&self, key: &str) -> Option<i64> {
         self.values.get(key)?.as_i64()
+    }
+
+    /// Whether Prepare the Roll ends on the whole roll together; off in a file written without the key.
+    pub fn whole_roll_after_prepare(&self) -> bool {
+        self.bool(WHOLE_ROLL_AFTER_PREPARE).unwrap_or(false)
     }
 
     /// The whole file written at once, read again first as another holder may have written a key;
@@ -187,6 +194,44 @@ mod tests {
         }
         let leftovers = std::fs::read_dir(&dir).unwrap().flatten().filter(|e| e.file_name().to_string_lossy().ends_with(".tmp")).count();
         assert_eq!(leftovers, 0, "no temporary is left beside");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 1.5.6's reading of the file (eac39604, `Preferences::read`): a JSON object, else set aside unread.
+    fn read_by_1_5_6(file: &Path) -> Option<Map<String, Value>> {
+        match serde_json::from_slice::<Value>(&std::fs::read(file).ok()?) {
+            Ok(Value::Object(values)) => Some(values),
+            _ => None,
+        }
+    }
+
+    /// 1.5.6's write of one of its keys: the file read again, the key laid in, every other key kept.
+    fn written_by_1_5_6(file: &Path, key: &str, value: Value) {
+        let mut values = read_by_1_5_6(file).expect("1.5.6 reads the file before its write");
+        values.insert(key.to_owned(), value);
+        std::fs::write(file, serde_json::to_vec_pretty(&values).unwrap()).unwrap();
+    }
+
+    #[test]
+    fn the_whole_roll_choice_reads_off_without_its_key_and_rides_through_1_5_6() {
+        let dir = std::env::temp_dir().join(format!("oni-app-preferences-whole-roll-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = Preferences::file_path(&dir);
+        // The file as 1.5.6 leaves it: its own keys, none of this choice.
+        std::fs::write(&file, br#"{ "keepZoom": true, "language": "fr", "soundMuted": false }"#).unwrap();
+        assert!(!Preferences::load(&dir).whole_roll_after_prepare(), "without its key, Prepare ends on one frame");
+        Preferences::load(&dir).set(WHOLE_ROLL_AFTER_PREPARE, Value::from(true)).unwrap();
+        assert!(Preferences::load(&dir).whole_roll_after_prepare(), "twin: the key written reads on");
+        let shipped = read_by_1_5_6(&file).expect("1.5.6 parses the file this build writes");
+        assert_eq!((shipped.get(KEEP_ZOOM), shipped.get(LANGUAGE)), (Some(&Value::from(true)), Some(&Value::from("fr"))), "1.5.6's keys as it left them");
+        // 1.5.6 writing a key of its own keeps the choice, which this build reads again.
+        written_by_1_5_6(&file, GALLERY_COLUMNS, Value::from(6));
+        assert!(Preferences::load(&dir).whole_roll_after_prepare(), "the choice outlives a 1.5.6 write");
+        assert_eq!(Preferences::load(&dir).int(GALLERY_COLUMNS), Some(6));
+        // Twin: a file that is no JSON object is one 1.5.6 sets aside, which the check above would catch.
+        std::fs::write(&file, b"[true]").unwrap();
+        assert!(read_by_1_5_6(&file).is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -163,6 +163,8 @@ export component LcdReadout inherits Inward {
 export component StatusBar inherits Rectangle {
     in property <string> text;
     in property <string> seal;
+    // Idle, a quieter word at the row's far end on what to do next; empty for none.
+    in property <string> hint;
     in property <bool> busy;
     in property <string> count;
     // Below zero the work cannot be counted: the progress sweeps.
@@ -217,6 +219,20 @@ export component StatusBar inherits Rectangle {
             seal := Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: root.seal; }
         }
         if !root.busy: Rectangle { horizontal-stretch: 1; }
+        // As wide as its words, eliding once the row is short of room.
+        if !root.busy && root.hint != "": Rectangle {
+            horizontal-stretch: 0;
+            min-width: 0;
+            preferred-width: hint.preferred-width;
+            hint := Label {
+                width: parent.width;
+                height: parent.height;
+                role: TextRole.value;
+                tone: Tone.tertiary;
+                text: root.hint;
+                overflow: elide;
+            }
+        }
     }
 }
 

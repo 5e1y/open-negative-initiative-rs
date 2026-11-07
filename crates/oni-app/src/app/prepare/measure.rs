@@ -129,7 +129,7 @@ impl Ctl {
     }
 
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
-    /// gallery step, the whole roll shown together led by the open frame or the first, what was left out named.
+    /// gallery step, the editor on the roll's first frame alone, what was left out named.
     pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: &[String], blank: &[String]) {
         let prepared: Vec<String> = {
             let mut s = self.state.borrow_mut();
@@ -187,14 +187,22 @@ impl Ctl {
         touched.extend(passes.iter().cloned());
         self.landed(&touched);
         self.index_passes(&written, &passes);
-        if open.is_none() || !written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
+        // The roll's first frame alone, so a first edit never reaches the roll unseen; Settings may ask
+        // for every frame together instead, led by the open frame when it was measured (owner's call).
+        let whole = self.state.borrow().preferences.whole_roll_after_prepare();
+        if !whole || !written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
             let first = written[0].0.clone();
             self.state.borrow_mut().designate(&first);
-            self.open_photo(&first);
+            if open.as_ref() != Some(&first) {
+                self.open_photo(&first);
+            }
         }
-        // The whole roll picked and shown together at once, the open frame leading (owner's call).
-        self.state.borrow_mut().picks.selection = prepared.into_iter().collect();
+        if whole {
+            self.state.borrow_mut().picks.selection = prepared.into_iter().collect();
+        }
         self.follow_selection();
+        self.state.borrow_mut().prepare.landed_alone = !whole;
+        self.publish_landed();
         self.publish_tiles();
         self.publish_organising();
         self.publish_tree();
@@ -203,6 +211,19 @@ impl Ctl {
         }
         self.publish_prepare();
         self.publish_bar();
+    }
+
+    /// The editor leaves the frame the measure landed on alone: the status bar's word on the whole roll goes.
+    pub(in crate::app) fn leave_landed(&self) {
+        if std::mem::take(&mut self.state.borrow_mut().prepare.landed_alone) {
+            self.publish_landed();
+        }
+    }
+
+    fn publish_landed(&self) {
+        if let Some(w) = self.window() {
+            w.global::<Preparing>().set_landed_alone(self.state.borrow().prepare.landed_alone);
+        }
     }
 
     /// The open frame on disk before a draft is written or dropped: the write reads its settings back,

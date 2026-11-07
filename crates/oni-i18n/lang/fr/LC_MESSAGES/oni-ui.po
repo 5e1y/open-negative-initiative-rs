@@ -213,6 +213,10 @@ msgstr "Les flèches déplacent le recadrage, {}-flèches son bord droit ou bas,
 msgid "Settings saved"
 msgstr "Réglages enregistrés"
 
+#: crates/oni-ui/ui/card_status.slint
+msgid "Select All ({}) to edit the whole roll"
+msgstr "Tout sélectionner ({}) pour modifier toute la pellicule"
+
 #: crates/oni-ui/ui/card_status.slint crates/oni-ui/ui/prepare.slint
 msgid "Stop"
 msgstr "Arrêter"
@@ -794,8 +798,8 @@ msgid "The whole roll, once prepared"
 msgstr "Toute la pellicule, une fois préparée"
 
 #: crates/oni-ui/ui/help.slint
-msgid "After Prepare the Roll, every frame shows together, numbered by its place on the film."
-msgstr "Après Préparer la pellicule, toutes les vues s’affichent ensemble, numérotées selon leur place sur le film."
+msgid "After Prepare the Roll, Select All ({}) shows every frame together, numbered by its place on the film."
+msgstr "Après Préparer la pellicule, Tout sélectionner ({}) affiche toutes les vues ensemble, numérotées selon leur place sur le film."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Contact sheets"
@@ -2272,6 +2276,14 @@ msgstr "Conserver le zoom d’une photo à l’autre"
 #: crates/oni-ui/ui/settings.slint
 msgid "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."
 msgstr "Désactivé, chaque photo s’ouvre ajustée au canevas. Activé, elle s’ouvre au zoom de la précédente, centrée, pour comparer le grain sur une pellicule."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "After Prepare, open the whole roll"
+msgstr "Après la préparation, ouvrir toute la pellicule"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Off, a prepared roll opens on its first frame alone. On, it opens with every frame together, each edit reaching them all."
+msgstr "Désactivé, une pellicule préparée s’ouvre sur sa première vue seule. Activé, elle s’ouvre avec toutes ses vues ensemble, chaque modification les touchant toutes."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Show what this screen cannot show"

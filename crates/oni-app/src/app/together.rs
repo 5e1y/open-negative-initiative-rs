@@ -146,6 +146,7 @@ impl Ctl {
         if paths.len() < 2 {
             return self.leave_together();
         }
+        self.leave_landed();
         let open = self.state.borrow().open.clone();
         let others = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         {

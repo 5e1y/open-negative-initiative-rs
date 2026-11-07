@@ -4,6 +4,7 @@ import { Library } from "library.slint";
 import { Preparing } from "prepare.slint";
 import { Canvas } from "canvas_state.slint";
 import { Exporting } from "export_state.slint";
+import { KeyWords } from "key_words.slint";
 
 export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
@@ -34,6 +35,8 @@ export component CardStatus inherits HorizontalLayout {
         count: root.exporting ? Exporting.job-count : Library.loading-count;
         fraction: root.exporting ? Exporting.job-fraction : Library.loading-fraction;
         seal: Preparing.shown ? "" : root.gallery ? Library.status-seal : Library.editor-seal;
+        // Once a roll prepared opens on its first frame alone, how to show every frame together.
+        hint: !root.gallery && !Preparing.shown && Preparing.landed-alone ? @tr("Select All ({}) to edit the whole roll", KeyWords.command + "A") : "";
         key: root.exporting ? @tr("Stop") : "";
         key-enabled: !Exporting.job-stopping;
         key-clicked => { Exporting.job-stop(); }

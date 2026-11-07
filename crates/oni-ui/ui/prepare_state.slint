@@ -7,6 +7,9 @@ export struct RollCell { picture: image, marked: bool, flagged: bool, apart: boo
 export global Preparing {
     in property <bool> shown;
     in property <bool> measuring;
+    // The measure landed on the roll's first frame alone, until the editor leaves it: the status bar
+    // then says how to show the whole roll.
+    in property <bool> landed-alone;
     in property <int> step;
     // The step's demo, shown once asked: a texture rewritten in place at each frame (`Picture.revision`); none is empty.
     in property <bool> has-tutorial;
