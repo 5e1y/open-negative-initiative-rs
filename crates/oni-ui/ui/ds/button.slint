@@ -174,9 +174,9 @@ export component Button inherits Rectangle {
         : self.height;
     preferred-width: self.min-width;
     horizontal-stretch: root.fills ? 1 : 0;
-    // Out of reach, a flat key fades whole, its face with its glyph; a keycap keeps its relief, its legend faded.
+    // Out of reach, every key keeps its face, its edge or a keycap's relief, its legend and glyph alone faded:
+    // what cannot act still reads as a key, apart from the room around it.
     property <float> fade: root.live ? 1 : State.disabled;
-    opacity: root.keycap ? 1 : root.fade;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
     // A worded key's help tells two keys of one word apart, as the mirrors' axes.
@@ -225,7 +225,7 @@ export component Button inherits Rectangle {
             background: root.pressed ? ButtonStyle.veil-pressed : root.hovered ? ButtonStyle.veil : transparent;
         }
         Face {
-            opacity: root.keycap ? root.fade : 1;
+            opacity: root.fade;
             word: root.word;
             worded: root.worded;
             icon: root.icon;

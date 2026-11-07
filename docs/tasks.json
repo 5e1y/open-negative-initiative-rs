@@ -7256,5 +7256,12 @@
     "title": "Select All has one name and one place in both modes",
     "status": "done",
     "detail": "UI and UX evaluation s-f5b562fe (Consistency, minor): the bar's ⌘A key read Select All in the gallery and Whole Roll in the editor, first in one bar and last of the tools in the other. It is one action (Act::SelectAll, the ⌘A key path completing the selection with every photo of the rolls it touches); it now reads Select All in both and opens the centre's first group in both, its help still saying what it does beside a photo (Show the Whole Roll Together). The Whole Roll text leaves the catalogues. Checks: window toolbar (the editor's Select All a group's gap before Crop; no Whole Roll on the bar), window whole_roll presses it by its name."
+  },
+  {
+    "id": 1491,
+    "type": "design",
+    "title": "One disabled rule for every key: its plate kept, its legend about 3:1",
+    "status": "done",
+    "detail": "UI evaluation s-f5b562fe (Color and contrast, Consistency, minor): a flat key out of reach faded whole, face, edge and legend, to 2.07:1 on the bar, while a keycap kept its relief, so two disabled looks stood side by side and Paste or a section's Reset nearly vanished. Every key now keeps its face and edge, or its relief, and fades its legend and glyph alone; State.disabled rises from 0.25 to 0.36 for every control that reads it: a legend 2.8:1 on its face as drawn, 3.2:1 on the bar, a glance's step (1.4:1) under an idle tab's label, which the 3:1 asked for leaves no room to hold at 1.5:1. Checks: window states every_state_reads_apart_from_its_neighbour (a flat key out of reach keeps its edge as an able key's and its legend reaches 2.7:1 on its face; twin: a key faded whole loses its edge and its legend falls under; out of reach reads 1.3:1 apart from an idle label, twin a key faded whole to that label's ink reads alike), the keycap checks unchanged."
   }
 ]

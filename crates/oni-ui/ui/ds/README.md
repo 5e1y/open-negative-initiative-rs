@@ -81,10 +81,10 @@ oni-lab) draws a still key once and a pressed one once a frame.
   as the crop, compare, De-dust and the measuring window, carries a `Lamp` after its word on its middle
   line, dark glass in a light rim at rest (over 3:1 on the face, `SurfaceStyle.lamp-rim`) until `on` lights
   it in the LCD's phosphor (`ButtonStyle.latch`), its light blooming on the face around it (`SurfaceStyle.lamp-glow`
-  past the glass, `lamp-bloom` at the middle), so it tells it latches before the press and reads on at a glance. Out of reach, a
-  flat key fades whole, face and glyph, to `State.disabled` (0.25), well under an idle tab's label
-  (`State.idle`), so a key that cannot act never reads as one merely not chosen; a keycap keeps its relief
-  and fades its legend alone, so a pair of keycaps stays a pair while one waits; a missing
+  past the glass, `lamp-bloom` at the middle), so it tells it latches before the press and reads on at a glance. Out of reach, every
+  key, flat or keycap, keeps its face, its edge or its relief and fades its legend and glyph alone to
+  `State.disabled` (0.36), about 3:1 on its face and a glance's step under an idle tab's label (`State.idle`), so a key
+  that cannot act still reads as a key and never as one merely not chosen; a missing
   original, a folder away or a frame left out fades less (`State.missing`), its picture and name still read.
 - **Groups**: related keys stand in a `ButtonGroup`, `ButtonStyle.group-gap` (`Space.s`) apart as Swift's
   `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A key unrelated to its
