@@ -275,6 +275,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves", scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves),
     ("scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s", scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s),
     ("scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way", scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way),
+    ("scroll::the_panels_knob_is_dark_when_a_double_click_opens_the_editor", scroll::the_panels_knob_is_dark_when_a_double_click_opens_the_editor),
     ("phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded", phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right", sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right),

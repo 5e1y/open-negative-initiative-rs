@@ -7263,5 +7263,12 @@
     "title": "The gear names the app's Settings alone; a block's options wear two sliders",
     "status": "done",
     "detail": "The gear opened the app's Settings, white balance's options and the flat-field's. A block's own options key, in the panel and in Prepare the Roll, now draws an options glyph, two sliders in the Trinil stroke; a check fails if the gear appears outside the toolbar's Settings key."
+  },
+  {
+    "id": 1508,
+    "type": "check",
+    "title": "The panel's scroll knob stays dark when a double click opens the editor",
+    "status": "done",
+    "detail": "An evaluation saw the panel's knob lit at rest after a double click opened the editor; its shots show the knob widened over its track, the state the pointer resting on the knob's edge strip gives by design. Replayed through the window's real event path (the pointer parked in the corner, a double click on a tile), the knob stays dark until a wheel moves the panel and goes out after its linger; the window check keeps that proof. The overlay knob is unchanged."
   }
 ]
