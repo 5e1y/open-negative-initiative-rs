@@ -82,6 +82,7 @@ mod prepare_measure;
 mod prepare_loupe;
 mod prepare_frames;
 mod slides;
+mod project_steps;
 mod project_walk;
 mod projects_tab;
 mod preset_deck;
@@ -202,6 +203,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("projects_tab::the_empty_tab_makes_a_project_and_the_filter_acts_in_it", projects_tab::the_empty_tab_makes_a_project_and_the_filter_acts_in_it),
     ("projects_tab::every_drag_is_one_step_and_the_notice_undoes_its_own", projects_tab::every_drag_is_one_step_and_the_notice_undoes_its_own),
     ("projects_tab::a_swift_file_is_read_without_a_write_and_kept_at_the_first_change", projects_tab::a_swift_file_is_read_without_a_write_and_kept_at_the_first_change),
+    ("project_steps::an_undo_of_new_project_leaves_no_project_and_its_redo_makes_it_again", project_steps::an_undo_of_new_project_leaves_no_project_and_its_redo_makes_it_again),
+    ("project_steps::an_undo_shows_a_member_beyond_the_folder_at_once", project_steps::an_undo_shows_a_member_beyond_the_folder_at_once),
     ("missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas", missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas),
     ("missing_original::a_heic_says_format_not_supported", missing_original::a_heic_says_format_not_supported),
     ("presence::lay_grid_touches_no_disk", presence::lay_grid_touches_no_disk),

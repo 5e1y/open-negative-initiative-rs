@@ -25,10 +25,13 @@ impl Member {
         Member { path: path.map(str::to_owned), print: print.map(str::to_owned) }
     }
 
-    /// The member a row makes, its print taken from `known` while the row's is still being read.
+    /// The member a row makes: the row's path and print; a row with no print read yet, a stand-in for
+    /// a member no file shows included, is the member it stands for, whole.
     pub fn of(row: &Entry, known: Option<&Member>) -> Member {
-        let print = read(&row.fingerprint).map(str::to_owned).or_else(|| known.and_then(|m| m.print.clone()));
-        Member { path: Some(row.path.clone()), print }
+        match (read(&row.fingerprint), known) {
+            (None, Some(member)) => member.clone(),
+            (print, _) => Member { path: Some(row.path.clone()), print: print.map(str::to_owned) },
+        }
     }
 
     /// Whether a row's print could be this photo's: the same, or one side not read yet.
@@ -79,6 +82,17 @@ pub fn distinct(members: Vec<Member>) -> Vec<Member> {
         }
     }
     out
+}
+
+/// `members`, each with a path and no print taking the print its photo carries in `known`: a print
+/// read since, so each side of a merge or an undo names the same member alike.
+pub fn printed(members: &[Member], known: &[Member]) -> Vec<Member> {
+    let mut prints: HashMap<String, Vec<&Member>> = HashMap::new();
+    for k in known.iter().filter(|k| k.path.is_some() && k.print.is_some()) {
+        prints.entry(k.slot()).or_default().push(k);
+    }
+    let learned = |m: &Member| prints.get(&m.slot()).and_then(|ks| ks.iter().find(|k| m.same(k))).and_then(|k| k.print.clone());
+    members.iter().map(|m| if m.path.is_some() && m.print.is_none() { Member { print: learned(m), ..m.clone() } } else { m.clone() }).collect()
 }
 
 /// One project per photo: the most recently created keeps it.

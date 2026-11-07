@@ -33,17 +33,25 @@ fn surveyed(opened: Option<&str>, folder: &str) -> bool {
 }
 
 impl Ctl {
-    /// `checkProjectPhotos`: the members beyond the opened folder read again off the index, one look
-    /// per member, the originals' states looked at behind; where one is found stays this read's.
+    /// `checkProjectPhotos`: the members beyond the opened folder read again off the index, where one is
+    /// found this read's; a print a member learns off its file is written at once, for later launches.
     pub(in crate::app) fn read_standing(&self) {
-        {
-            let mut s = self.state.borrow_mut();
-            let standing = match &s.index {
-                Some(index) if !s.org.projects.is_empty() => oni_library::project_standing::standing(&s.org.projects, &s.rows, index),
-                _ => Default::default(),
+        let learned = {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            let (learned, standing) = match &s.index {
+                Some(index) if !s.org.projects.is_empty() => {
+                    let learned = oni_library::project_standing::learn(&mut s.org.projects, &s.rows, index);
+                    (learned, oni_library::project_standing::standing(&s.org.projects, &s.rows, index, &s.org.found))
+                }
+                _ => (false, Default::default()),
             };
             s.org.standing = standing.rows;
             s.org.found = standing.found;
+            learned
+        };
+        if learned {
+            self.save_projects();
         }
         self.read_member_rolls();
     }

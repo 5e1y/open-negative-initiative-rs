@@ -13,16 +13,16 @@ use std::time::Duration;
 
 use crate::common;
 
-struct Hand {
-    rig: common::Rig,
-    shell: Shell,
+pub(crate) struct Hand {
+    pub(crate) rig: common::Rig,
+    pub(crate) shell: Shell,
     root: PathBuf,
 }
 
 impl Hand {
     /// A scans folder holding each of `files`, a TIFF of the tone given: one tone twice is one file
     /// twice, byte for byte.
-    fn new(label: &str, files: &[(&str, f32)]) -> Hand {
+    pub(crate) fn new(label: &str, files: &[(&str, f32)]) -> Hand {
         Hand::made(label, files, |_| {})
     }
 
@@ -47,11 +47,11 @@ impl Hand {
         Hand { rig, shell, root }
     }
 
-    fn at(&self, file: &str) -> String {
+    pub(crate) fn at(&self, file: &str) -> String {
         paths::join(&paths::canonical(&self.root.join("Scans")), file)
     }
 
-    fn open(&self, folder: &str) {
+    pub(crate) fn open(&self, folder: &str) {
         let folder = self.root.join("Scans").join(folder);
         self.shell.open_folder(&folder);
         let ctl = self.shell.ctl.clone();
@@ -59,12 +59,12 @@ impl Hand {
         self.rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened() == Some(want.as_str()));
     }
 
-    fn lib(&self) -> Library<'_> {
+    pub(crate) fn lib(&self) -> Library<'_> {
         self.shell.window.global::<Library>()
     }
 
     /// The tiles shown, by path in the grid's order.
-    fn shown(&self) -> Vec<String> {
+    pub(crate) fn shown(&self) -> Vec<String> {
         let mut tiles = app::tiles(&self.shell.window);
         tiles.sort_by_key(|t| t.index);
         let order = self.shell.ctl.state.borrow().order().to_vec();
@@ -72,7 +72,7 @@ impl Hand {
     }
 
     /// A click on the tile of `path`, past the double click; `shift` extends the selection.
-    fn click(&self, path: &str, shift: bool) {
+    pub(crate) fn click(&self, path: &str, shift: bool) {
         std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
         self.rig.pump();
         let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap_or_else(|| panic!("{path} shown"));
@@ -81,7 +81,7 @@ impl Hand {
     }
 
     /// The right click on `path`'s tile, its line starting with `line`, then the submenu's `sub`.
-    fn menu(&self, path: &str, line: &str, sub: Option<&str>) {
+    pub(crate) fn menu(&self, path: &str, line: &str, sub: Option<&str>) {
         let lib = self.lib();
         let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
         let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
@@ -101,7 +101,7 @@ impl Hand {
         t.get_shown().then(|| (t.get_title().to_string(), t.get_message().to_string(), t.get_action().to_string()))
     }
 
-    fn members(&self) -> Vec<Vec<String>> {
+    pub(crate) fn members(&self) -> Vec<Vec<String>> {
         project::load(&self.root.join("Support")).projects.iter().map(|p| p.paths().into_iter().map(str::to_owned).collect()).collect()
     }
 
@@ -145,7 +145,7 @@ impl Hand {
         self.rig.pump();
     }
 
-    fn project_titles(&self) -> Vec<String> {
+    pub(crate) fn project_titles(&self) -> Vec<String> {
         let rows = self.lib().get_project_rows();
         (0..rows.row_count()).filter_map(|i| rows.row_data(i)).map(|r| r.title.to_string()).collect()
     }
@@ -353,5 +353,5 @@ pub(crate) fn a_swift_file_is_read_without_a_write_and_kept_at_the_first_change(
     assert_eq!(std::fs::read(project::former_path(&support, 1)).unwrap(), original, "the Swift file kept beside, as it was");
     let text = std::fs::read_to_string(project::file_path(&support)).unwrap();
     // Twin: the file written is this format's, no longer the one kept.
-    assert!(text.contains("\"version\" : 2") && text.contains("\"print\""), "{text}");
+    assert!(text.contains(&format!("\"version\" : {}", project::FORMAT)) && text.contains("\"exactMembers\""), "{text}");
 }

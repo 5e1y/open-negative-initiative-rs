@@ -25,9 +25,9 @@ fn a_file_round_trips_through_the_disk_saying_its_format() {
     save(scratch.path(), &file).unwrap();
     assert_eq!(load(scratch.path()), file);
     let text = std::fs::read_to_string(file_path(scratch.path())).unwrap();
-    assert!(text.contains("\"version\" : 2") && text.contains("\"print\" : \"fa\""), "{text}");
+    assert!(text.contains(&format!("\"version\" : {FORMAT}")) && text.contains("\"print\" : \"fa\""), "{text}");
     assert!(text.contains("\"createdAt\" : 800000000") && text.contains("\"manualOrder\" : 3"));
-    assert!(!former_path(scratch.path(), 2).exists(), "a file in this format is never set aside");
+    assert!(!former_path(scratch.path(), FORMAT).exists(), "a file in this format is never set aside");
     // Twin: the sidecar's ISO spelling of the same date is not what a project writes.
     assert!(!text.contains(&stamp().iso8601()));
 }
@@ -112,9 +112,9 @@ fn a_former_files_stale_and_respelt_paths_are_found_by_their_prints() {
     former(scratch.path(), Id::new(), &["1-a", "1-e", "1-c", "1-b"], &[("1-a", "/Roll 8/a.NEF"), ("1-e", "/Roll 8/E\u{301}te\u{301}.NEF"), ("1-c", r"D:\Scans\c.NEF"), ("1-b", other)]);
     let original = std::fs::read(file_path(scratch.path())).unwrap();
     let projects = load(scratch.path()).projects;
-    let standing = project_standing::standing(&projects, &[], &index);
+    let standing = project_standing::standing(&projects, &[], &index, &Default::default());
     let shown: Vec<String> = grouped(&projects, &Reach::new(&standing.rows, &standing.found))[0].entries.iter().map(|e| e.path.clone()).collect();
-    assert_eq!(shown, [moved, accented, windows], "the stale, the accented and the backslashed found; b's place holds another file");
+    assert_eq!(shown, [moved, accented, windows, "/Roll 8/b.NEF/b.NEF"], "the stale, the accented and the backslashed found; b missing, as its place holds another file");
     assert_eq!(projects[0].members.len(), 4, "b stays a member, its print kept for a later read");
     assert_eq!(std::fs::read(file_path(scratch.path())).unwrap(), original, "reading writes nothing");
     // Twin: by their recorded paths alone, only the other file at b's place would show.

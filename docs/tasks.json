@@ -7522,5 +7522,47 @@
     "title": "The inspector's check measures its column from the blocks' fold keys",
     "status": "done",
     "detail": "A block's title now stands past its fold chevron, so the column's edge is the chevron, where the roll's name heading the inspector stands too; the check found the name outside a column measured from the title."
+  },
+  {
+    "id": 1537,
+    "type": "fix",
+    "title": "projects.json is written so the shipped 1.5.6 reads it, each member's exact path and print beside",
+    "status": "done",
+    "detail": "Second review of #1473 (point 1): version 2 wrote each member as an object, which 1.5.6 cannot parse, so it set the file aside and every project vanished from every build. Version 3 writes members as version 1's texts, a print the first time the file names it and the path after (a print alone first), each with its path in paths, which 1.5.6 reads and shows; each member's exact path and print go in exactMembers, which 1.5.6 drops. A project read with exactMembers whose texts still name them one for one takes them; one an older build wrote back is read as version 1, a path text as a print-less member, a print giving up a path another member is named by (1.5.6 records the copy it found for a stale print), a print shaped as a path read as none. A file whose version is newer than this build's is read as far as it can, never set aside, never written (the save says why); projects-v1.json is still kept once, and a version 2 file as projects-v2.json. Checks: project::shipped_tests (1.5.6's types and lookups from eac39604) the_shipped_build_reads_the_file_and_its_write_back_loses_no_member (twin: the copy named by its print is lost), the_former_object_members_are_what_the_shipped_build_cannot_parse (twin: a path as print agrees with no file), a_print_recorded_on_its_copys_path_keeps_both_members (twin: kept, the two are one), a_file_from_a_newer_build_is_never_set_aside_or_written (twin: a known version's unreadable file is set aside)."
+  },
+  {
+    "id": 1538,
+    "type": "fix",
+    "title": "A member no file shows stands missing in its project, where it can be removed",
+    "status": "done",
+    "detail": "Second review of #1472 (point 2, hard rule 1): a member whose path holds another file, and a Swift print whose only rows other members hold, vanished from their project. Each stands missing under the file holding its place (project_standing::lost: a path under a file, which no file can have, ending in that file's name), found there by the read, so Remove from Project takes it; a stand-in carries its member whole into another project (Member::of). Checks: project_standing a_member_no_file_shows_stands_missing_where_it_can_be_removed (twin: by the rows alone Trip shows nothing), project::file_tests a_former_files_stale_and_respelt_paths_are_found_by_their_prints."
+  },
+  {
+    "id": 1539,
+    "type": "fix",
+    "title": "A member without a print takes it once its file is read",
+    "status": "done",
+    "detail": "Second review of #1472 (point 3): a photo added while its tile was read, or one a version 1 file named by its path, never got a print, so a later read could not find it once its path went stale. Each read of the members gives a print-less member the print its file at its path was read with (project_standing::learn), written at once; a member holding a print keeps it whatever file stands at its place. A merge and an undo take a print learned on one side as the same member on every side (project::printed). Checks: project_standing a_member_without_a_print_learns_it_from_its_file (twin: unlearned, the moved photo stands missing), merge a_print_learned_here_is_the_same_member_in_the_merge (twin: compared whole it falls to the end), project::shipped_tests the_shipped_build_reads_the_file_and_its_write_back_loses_no_member."
+  },
+  {
+    "id": 1540,
+    "type": "fix",
+    "title": "Undo of New Project takes the project away and Redo brings it back",
+    "status": "done",
+    "detail": "Second review of #1475 (point 4): an undo of New Project gave the photos back and left an empty project. A members step holds each project it changed whole (project::Rosters); its undo takes away the project it made while it holds nothing else, its redo makes the same project again, and a photo it sends to a project deleted since stays where it stands. Checks: project an_undo_of_new_project_takes_the_project_away_and_its_redo_brings_it_back (twin: the project held at both ends stays, empty), project a_redo_toward_a_project_deleted_since_leaves_the_photo_where_it_stands, window project_steps::an_undo_of_new_project_leaves_no_project_and_its_redo_makes_it_again."
+  },
+  {
+    "id": 1541,
+    "type": "fix",
+    "title": "An undo or a redo on the projects reads where their members stand again",
+    "status": "done",
+    "detail": "Second review of #1475 (point 5): a member an undo brought back beyond the opened folder showed only after the next folder read. Ctl::regrouped reads the members' standing again before laying the grid. Check: window project_steps::an_undo_shows_a_member_beyond_the_folder_at_once (mutation: without the read, Z stays hidden)."
+  },
+  {
+    "id": 1542,
+    "type": "fix",
+    "title": "A lost member stands on its nearest copy, the same from read to read",
+    "status": "done",
+    "detail": "Second review of #1474 (point 6): the copy standing in for a member lost from its place was the first by date then path, a backup copy as likely as any. The copy one read chose stays the member's while it stays free, chosen before any other member's; else the copy at its own path, then the one bearing its file name, then the one in its folder, then the first by date then path. Check: project_standing a_lost_member_stands_on_its_nearest_copy_and_keeps_it (twin: by date then path the backup wins)."
   }
 ]
