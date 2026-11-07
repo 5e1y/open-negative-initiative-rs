@@ -1,7 +1,7 @@
 // The marks laid over a picture, a control or the canvas: a disc, a medal, a selection's ring, a
 // guide's ring and a stroke's trace.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, TileStyle, MedalStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, Motion, TileStyle, MedalStyle } from "theme.slint";
 
 // A disc of one ink: a medal, a lamp, a switch's thumb, a tab's swatch or mark, a bullet.
 export component Dot inherits Rectangle {
@@ -29,11 +29,23 @@ export component Figure inherits Text {
 export component Medal inherits Rectangle {
     in property <int> rank;
     in property <length> size: MedalStyle.size;
-    // Not given: its rim lit on top and its place alone, in its metal, brighter while `reached`.
+    // Not given: the same medal in the shade, its rim and its place lit as a given one's lip; under the
+    // hand, `reached`, its face lifts.
     in property <bool> blank;
     in property <bool> reached;
+    // Whom it is given to: given on the same holder, a hand laid it, so it lands; given as the holder
+    // changes, a scroll's or a selection's, it stands still.
+    in property <string> holder;
+    property <bool> given: !root.blank && root.rank > 0;
+    property <string> worn: root.given ? root.holder + "\n" + root.rank : root.holder;
+    property <string> held;
+    // Its side, from `MedalStyle.landing` the instant it lands to 1 once it settles.
+    property <float> drop: 1;
+    property <bool> dropping;
+    property <length> side: root.size * root.drop;
+    property <float> light: root.given ? 1 : root.reached ? MedalStyle.reached : MedalStyle.shade;
     // The ruled ring's line, 0.4 pt at the 12 pt size.
-    property <length> rule: root.size * 0.4 / 12;
+    property <length> rule: root.side * 0.4 / 12;
     property <color> deep: MedalStyle.deeps[root.rank];
     property <color> body: MedalStyle.bodies[root.rank];
     property <color> bright: MedalStyle.brights[root.rank];
@@ -48,57 +60,68 @@ export component Medal inherits Rectangle {
     }
     // The flat face's light (0.70) plus the spun lobes, |cos(bearing)|^4, brightest at 328.5° and 148.5°.
     pure function at(a: float) -> color {
-        root.tone(0.70 + MedalStyle.foil-spin * pow(abs(cos((a - 328.5) * 1deg)), 4))
+        root.tone(root.light * (0.70 + MedalStyle.foil-spin * pow(abs(cos((a - 328.5) * 1deg)), 4)))
     }
+    init => { self.held = root.holder; }
+    changed worn => {
+        if (root.given && root.holder == self.held && !Motion.reduced) {
+            self.dropping = false;
+            self.drop = MedalStyle.landing;
+            self.dropping = true;
+            self.drop = 1;
+        }
+        self.held = root.holder;
+    }
+    animate drop { duration: self.dropping ? MedalStyle.settle : 0ms; easing: ease-out-back; }
     width: root.size;
     height: root.size;
     visible: root.rank > 0;
-    border-radius: self.width / 2;
-    drop-shadow-color: root.blank ? transparent : MedalStyle.far-shadow;
-    drop-shadow-blur: MedalStyle.far-blur;
-    drop-shadow-offset-y: MedalStyle.far-y;
-    if root.blank: Rectangle {
-        property <float> lift: root.reached ? MedalStyle.reached : MedalStyle.blank;
+    coin := Rectangle {
+        x: (root.size - root.side) / 2;
+        y: self.x;
+        width: root.side;
+        height: root.side;
         border-radius: self.width / 2;
-        border-width: MedalStyle.rim;
-        border-color: @linear-gradient(180deg, root.tone(MedalStyle.reached) 0%, root.tone(self.lift) 100%);
-        Figure { text: root.rank; font-size: root.size * MedalStyle.figure; color: root.tone(parent.lift); }
-    }
-    if !root.blank: Rectangle {
-        border-radius: self.width / 2;
-        drop-shadow-color: MedalStyle.near-shadow;
-        drop-shadow-blur: MedalStyle.near-blur;
-        drop-shadow-offset-y: MedalStyle.near-blur;
-        background: @conic-gradient(
-            root.at(0) 0deg, root.at(22.5) 22.5deg, root.at(45) 45deg, root.at(67.5) 67.5deg,
-            root.at(90) 90deg, root.at(112.5) 112.5deg, root.at(135) 135deg, root.at(157.5) 157.5deg,
-            root.at(180) 180deg, root.at(202.5) 202.5deg, root.at(225) 225deg, root.at(247.5) 247.5deg,
-            root.at(270) 270deg, root.at(292.5) 292.5deg, root.at(315) 315deg, root.at(337.5) 337.5deg,
-            root.at(360) 360deg);
-        // The lobes fade into the centre (`min(ring / radius * 2, 1)`).
+        drop-shadow-color: MedalStyle.far-shadow;
+        drop-shadow-blur: MedalStyle.far-blur;
+        drop-shadow-offset-y: MedalStyle.far-y;
         Rectangle {
             border-radius: self.width / 2;
-            background: @radial-gradient(circle, root.tone(0.70) 0%, root.tone(0.70).transparentize(1) 35%);
+            drop-shadow-color: MedalStyle.near-shadow;
+            drop-shadow-blur: MedalStyle.near-blur;
+            drop-shadow-offset-y: MedalStyle.near-blur;
+            background: @conic-gradient(
+                root.at(0) 0deg, root.at(22.5) 22.5deg, root.at(45) 45deg, root.at(67.5) 67.5deg,
+                root.at(90) 90deg, root.at(112.5) 112.5deg, root.at(135) 135deg, root.at(157.5) 157.5deg,
+                root.at(180) 180deg, root.at(202.5) 202.5deg, root.at(225) 225deg, root.at(247.5) 247.5deg,
+                root.at(270) 270deg, root.at(292.5) 292.5deg, root.at(315) 315deg, root.at(337.5) 337.5deg,
+                root.at(360) 360deg);
+            // The lobes fade into the centre (`min(ring / radius * 2, 1)`).
+            Rectangle {
+                border-radius: self.width / 2;
+                background: @radial-gradient(circle, root.tone(0.70 * root.light) 0%, root.tone(0.70 * root.light).transparentize(1) 35%);
+            }
+            // The rolled bevel: lit on top, shaded at the foot.
+            Rectangle {
+                border-radius: self.width / 2;
+                border-width: parent.width * 0.6 / 12;
+                border-color: @linear-gradient(180deg, root.tone(MedalStyle.lip) 0%, root.tone(0.35 * root.light) 100%);
+            }
+            // The ruled ring, 1.5 pt inside the edge at the 12 pt size.
+            Rectangle {
+                x: parent.width * 1.5 / 12;
+                y: self.x;
+                width: parent.width - 2 * self.x;
+                height: self.width;
+                border-radius: self.width / 2;
+                border-width: root.rule;
+                border-color: MedalStyle.struck;
+            }
+            // The place sunk as the key that lays it: given, its foot's wall catches the lamp a rule
+            // below; in the shade, that lit wall alone shows.
+            Figure { y: root.rule; text: root.rank; font-size: root.side * MedalStyle.figure; color: root.given ? root.tone(MedalStyle.lip) : transparent; }
+            Figure { text: root.rank; font-size: root.side * MedalStyle.figure; color: root.given ? MedalStyle.struck : root.tone(MedalStyle.lip); }
         }
-        // The rolled bevel: lit on top, shaded at the foot.
-        Rectangle {
-            border-radius: self.width / 2;
-            border-width: parent.width * 0.6 / 12;
-            border-color: @linear-gradient(180deg, root.tone(1.5) 0%, root.tone(0.35) 100%);
-        }
-        // The ruled ring, 1.5 pt inside the edge at the 12 pt size.
-        Rectangle {
-            x: parent.width * 1.5 / 12;
-            y: self.x;
-            width: parent.width - 2 * self.x;
-            height: self.width;
-            border-radius: self.width / 2;
-            border-width: root.rule;
-            border-color: MedalStyle.struck;
-        }
-        // The place sunk as the key that lays it: its foot's wall catches the lamp a rule below.
-        Figure { y: root.rule; text: root.rank; font-size: root.size * MedalStyle.figure; color: root.tone(1.5); }
-        Figure { text: root.rank; font-size: root.size * MedalStyle.figure; color: MedalStyle.struck; }
     }
 }
 

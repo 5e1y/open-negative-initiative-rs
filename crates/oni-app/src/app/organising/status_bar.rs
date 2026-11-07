@@ -63,4 +63,16 @@ impl Ctl {
         self.label_paths(&paths, applied);
         self.publish_bar();
     }
+
+    /// A tile's medal key under the hand: that photo alone, whatever is selected, its own medal coming off.
+    pub(in crate::app) fn tile_medal_picked(self: &Rc<Self>, index: usize, medal: i32) {
+        let target = {
+            let s = self.state.borrow();
+            s.order.get(index).map(|p| (p.clone(), s.entry(p).map_or(Medal::None, |e| e.label)))
+        };
+        let Some((path, current)) = target else { return };
+        let applied = picking::medal_tapped(Some(current), 1, library::medal_of(medal));
+        self.label_paths(&[path], applied);
+        self.publish_bar();
+    }
 }

@@ -57,6 +57,7 @@ mod help_demo_language;
 mod keyboard;
 mod keycap;
 mod keycap_cost;
+mod medal_keys;
 mod launch;
 mod library_column;
 mod library_wide;
@@ -310,6 +311,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("visible::a_favourite_moved_away_on_the_home_fades_and_its_menu_greys", visible::a_favourite_moved_away_on_the_home_fades_and_its_menu_greys),
     ("visible::an_opened_folder_gone_is_not_an_empty_folder", visible::an_opened_folder_gone_is_not_an_empty_folder),
     ("visible::a_missing_tile_is_grey_on_its_own_layer", visible::a_missing_tile_is_grey_on_its_own_layer),
+    ("medal_keys::the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands", medal_keys::the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands),
     ("gallery_cell::a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_another", gallery_cell::a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_another),
     ("gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed", gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed),
     ("gallery_cell::a_selected_tiles_ring_reads_on_a_light_photo", gallery_cell::a_selected_tiles_ring_reads_on_a_light_photo),

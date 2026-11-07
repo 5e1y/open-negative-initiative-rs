@@ -7242,5 +7242,26 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1485,
+    "type": "design",
+    "title": "One medal drawing everywhere, in the shade until given",
+    "status": "done",
+    "detail": "The rating filter and the tiles drew the medals as foil coins, the status bar the ones not given as a rim and a figure, which read as two drawings. A medal not given is now the same coin in the shade, its face at a fifth of a given one's light (lifted under the hand), its rim and its figure lit as a given one's lip: gold's 1 reads at 4.5:1 on its face at least. The states check reads a disc, under half a given one's light, and a lit figure on it."
+  },
+  {
+    "id": 1486,
+    "type": "design",
+    "title": "A medal laid lands with a short settle, still under Reduce Motion",
+    "status": "done",
+    "detail": "Rating, the most repeated gesture, gave no answer: the medal appeared. A medal given on the same holder (the tile's photo where it stands, the status bar's line) lands from 1.3 of its side and settles within 140 ms; one shown because a scroll or a selection brought it stands still. The system's Reduce Motion, read at launch (Motion.reduced), keeps it still. A window check measures the landing after the key 1 and its twins under Reduce Motion and on a selection moved."
+  },
+  {
+    "id": 1487,
+    "type": "feature",
+    "title": "The tile under the hand shows the podium's keys",
+    "status": "done",
+    "detail": "Rating lived in the status bar alone; nothing on the tiles said the keys 1 to 3 rate. The tile under the hand shows gold, silver and bronze over its medal's corner, the given one lit, each figure the key that lays it; a click lays that medal on that photo alone, or takes its own off, and selects nothing. The status bar keeps the selection's keys under the canvas and the grid; the ONI Trash and a missing original show none. One component, MedalKeys, lays both."
   }
 ]

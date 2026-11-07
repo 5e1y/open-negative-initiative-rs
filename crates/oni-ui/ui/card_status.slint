@@ -20,6 +20,8 @@ export component CardStatus inherits HorizontalLayout {
         padding-left: StatusStyle.inset;
         horizontal-stretch: 0;
         current: root.gallery ? Library.medal-current : Library.editor-medal-current;
+        // The line names what the medals rate: a medal changing under the same line was laid on it.
+        holder: root.gallery ? Library.status : root.editor-line;
         picked(m) => { Library.medal-picked(m); }
     }
     StatusBar {

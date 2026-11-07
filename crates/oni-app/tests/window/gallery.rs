@@ -119,9 +119,11 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert!(lib.get_medal_shown());
     // Named, the medals lead the line where it starts, the photo's name right after the bronze.
     use i_slint_backend_testing::AccessibleRole::{Button, Text};
-    let lowest = |text: &str| common::placed(w, Text, text).into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).unwrap_or_else(|| panic!("{text} shown"));
+    let lowest_of = |role, text: &str| common::placed(w, role, text).into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).unwrap_or_else(|| panic!("{text} shown"));
+    let lowest = |text: &str| lowest_of(Text, text);
     let (rating, name) = (lowest("Rating"), lowest("A.tif"));
-    let medals = ["Gold", "Silver", "Bronze"].map(|m| common::the(w, Button, m));
+    // The bar's keys, under the tile's own beneath the hand.
+    let medals = ["Gold", "Silver", "Bronze"].map(|m| lowest_of(Button, m));
     assert!(on_column(rating.x - lib.get_grid_x()), "the group's name starts the line, at {}", rating.x - lib.get_grid_x());
     assert!(medals.iter().all(|m| rating.level_with(m) && name.level_with(m)), "one row: {rating:?} {medals:?} {name:?}");
     assert!(rating.x + rating.width <= medals[0].x && medals.windows(2).all(|m| m[0].x < m[1].x), "Rating, then gold, silver, bronze");
@@ -139,7 +141,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(row(&canonical("A.tif")).label, Medal::None, "the lit medal tapped on one photo clears it");
     hand.click("B", &[Key::Control]);
     // The line's words change under the medals, which stand still.
-    assert_eq!(common::the(w, Button, "Gold").x, medals[0].x, "the medals keep their place");
+    assert_eq!(lowest_of(Button, "Gold").x, medals[0].x, "the medals keep their place");
     // Twin: the line did change.
     assert_ne!(lowest(&hand.status()).width, name.width, "{} reads as wide as A.tif", hand.status());
     lib.invoke_medal_picked(2);

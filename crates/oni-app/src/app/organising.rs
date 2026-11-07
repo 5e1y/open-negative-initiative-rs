@@ -363,6 +363,8 @@ impl Ctl {
         let p = me.clone();
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();
+        lib.on_tile_medal_picked(move |i, m| p.tile_medal_picked(i.max(0) as usize, m));
+        let p = me.clone();
         lib.on_filter_picked(move |m| p.filter_picked(m));
         let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));

@@ -1,10 +1,11 @@
 // The collections' cells and their scrolled surfaces: a list row, a tree row, a gallery tile, a heading.
-import { Colour, Space, Radius, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
+import { Colour, Space, Radius, State, RowStyle, TileStyle, ScrollStyle, MedalStyle } from "theme.slint";
 import { Label, Icon, Picture, CardCorners, Ground, Tones, TextRole, Tone, Tips } from "base.slint";
 import { Badge, BadgeTone, Metal, BadgeStyle } from "badge.slint";
 import { Look, RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Medal, RingPlacement, SelectionTone, SelectionRing } from "marks.slint";
+import { MedalKeys } from "organise.slint";
 import { Reach, Reaches } from "reach.slint";
 import { FocusRing } from "keyboard.slint";
 
@@ -243,13 +244,19 @@ export component TileView inherits Rectangle {
     in property <string> name: root.caption;
     // The keyboard's ring, while its grid holds the keyboard on it.
     in property <bool> focused;
+    // Its medal keys show under the hand: a photo the archive or a project holds, its original in reach.
+    in property <bool> rating;
     callback clicked();
+    callback medal-picked(int);
     accessible-role: list-item;
     accessible-label: root.name;
     accessible-description: root.note;
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
     property <bool> frame: root.marks == TileMarks.apart;
+    property <bool> keys-shown: !root.frame && root.hovered && root.rating && !root.missing;
+    // The photo shown where it stands: its medal changing there was laid on it (`Medal.holder`).
+    property <string> holder: root.name + "@" + root.x / 1px + "," + root.y / 1px;
     property <length> inset: root.frame ? Space.xs : TileStyle.badge-inset;
     property <bool> outset: root.ring == RingPlacement.outset;
     height: root.caption == "" ? root.picture-height : root.picture-height + TileStyle.caption-gap + TileStyle.caption;
@@ -263,11 +270,25 @@ export component TileView inherits Rectangle {
         radius: Radius.card;
         picture-opacity: root.missing ? State.missing : 1;
         opacity: root.left-out ? State.missing : 1;
-        // `TileLayers`: the medal's centre level with the seal's.
-        if !root.frame && root.medal > 0: Medal {
+        // `TileLayers`: the medal's centre level with the seal's; under the hand, the podium's keys there.
+        if !root.frame: Medal {
             x: root.inset;
             y: parent.height - root.inset - (BadgeStyle.seal-height + self.height) / 2;
+            visible: root.medal > 0 && !root.keys-shown;
             rank: root.medal;
+            holder: root.holder;
+        }
+        if root.keys-shown: MedalKeys {
+            x: root.inset - (MedalStyle.tile-key - MedalStyle.size) / 2;
+            y: parent.height - root.inset - (BadgeStyle.seal-height + self.height) / 2;
+            height: MedalStyle.tile-key;
+            size: MedalStyle.size;
+            key: MedalStyle.tile-key;
+            gap: 0;
+            keyed: false;
+            current: root.medal > 0 ? root.medal : -1;
+            holder: root.holder;
+            picked(m) => { root.medal-picked(m); }
         }
         if root.frame && root.apart: StateDisc {
             x: root.inset;

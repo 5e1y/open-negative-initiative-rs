@@ -128,6 +128,9 @@ export global Library {
     // The picker beside the open frame: the frame itself while nothing is selected.
     in property <bool> editor-medal-shown;
     in property <int> editor-medal-current: -1;
+    // The tiles' medal keys under the hand, which the ONI Trash's photos lack; a key pressed, by tile.
+    in property <bool> tiles-rated;
+    callback tile-medal-picked(int, int);
     // The rating filter: 0 every photo, else the one medal the gallery keeps; a key of it picked.
     in property <int> filter-medal;
     callback filter-picked(int);
@@ -294,6 +297,8 @@ export component Grid inherits Surface {
                 companion: t.companion;
                 name: t.caption;
                 focused: keys.has-focus && t.cursor;
+                rating: Library.tiles-rated;
+                medal-picked(m) => { Library.tile-medal-picked(t.index, m); }
                 hovered: pointer.has-hover && pointer.mouse-x >= t.x && pointer.mouse-x < t.x + t.width
                     && pointer.mouse-y + Library.scroll >= t.y && pointer.mouse-y + Library.scroll < t.y + t.height;
             }

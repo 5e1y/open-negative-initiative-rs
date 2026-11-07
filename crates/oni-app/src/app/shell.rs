@@ -225,6 +225,7 @@ impl Shell {
                     if let Some(window) = w.upgrade() {
                         window.global::<App>().set_gallery(true);
                         window.global::<App>().set_dev(!crate::updates::stamped());
+                        window.global::<crate::Motion>().set_reduced(crate::system::reduce_motion());
                     }
                     c.publish(true);
                     c.publish_bar();

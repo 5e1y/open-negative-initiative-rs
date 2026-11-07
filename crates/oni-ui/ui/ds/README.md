@@ -195,10 +195,13 @@ field lies flat, as a text field.
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink.
 - **`Medal`**: a foil disc of its metal, an icon's size on a tile and in the rating filter, its podium place sunk
   in the middle as the key that lays it (gold 1, silver 2, bronze 3), in the ruled ring's ink over a lip lit a rule
-  below, so no medal is told by its colour alone; `blank`, one not given, its rim lit on top and its figure alone in
-  its metal, brighter `reached`. `MedalPicker` leads the status bar's line, by the photo's name: "Rating", then the
-  podium at a small key's size, the given medal struck, the others blank and lit under the hand, a pressed one shrunk
-  on the spring, each catching the hand over a small key's square.
+  below, so no medal is told by its colour alone. One drawing everywhere: `blank`, one not given, is the same disc
+  in the shade, its rim and its figure lit as the lip, its face lifted `reached`. Given on the same `holder`, a
+  hand laid it: it lands from 1.3 of its side and settles within 140 ms, still under Reduce Motion (`Motion.reduced`).
+- **`MedalKeys`**: the podium's three keys, the given one lit, a pressed one shrunk on the spring. `MedalPicker`
+  leads the status bar's line with them, by the photo's name: "Rating", then the keys at a small key's size, each
+  catching the hand over a small key's square. A gallery tile under the hand shows them over its medal's corner,
+  at its medal's size; a click lays that medal on that photo alone, or takes its own off.
 
 ## Surfaces
 

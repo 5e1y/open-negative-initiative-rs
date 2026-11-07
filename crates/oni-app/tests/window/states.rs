@@ -1,8 +1,8 @@
 //! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
 //! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit,
 //! blooming, only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the
-//! photo, each medal told by its figure without its colour, gold striking 1 as on a podium, one not given a rim
-//! and a figure that reads; readouts on one edge.
+//! photo, each medal told by its figure without its colour, gold striking 1 as on a podium, one not given the
+//! same disc in the shade, its figure lit; readouts on one edge.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -32,6 +32,8 @@ const KNOB: usize = 20;
 const TRAVEL: usize = 24;
 /// AA's 4.5:1 for small text, with the margin a quiet label keeps.
 const TEXT: f64 = 5.0;
+/// AA's 4.5:1 for small text: a medal's figure on its own face.
+const FIGURE: f64 = 4.5;
 /// The most a box may differ from the ground and still read as bare ground.
 const EMPTY: f64 = 1.2;
 /// The pixels two figures must differ by, of the 64 inside a 16 pt medal's ring at one pixel a point.
@@ -219,9 +221,17 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     };
     let bar = luminance(at(300 + 3 * key - 2, 302 + key - 1));
     eprintln!("on the bar's ground {bar:.3}: faces given {:.3}, blank {:.3}; figures blank {:.3}, bronze's body {:.3}", face(0), face(1), figure(2), figure(3));
-    assert!(contrast(face(1), bar) < EMPTY, "a medal not given is a rim alone: {:.2}:1 in its middle", contrast(face(1), bar));
+    // A medal not given is the given one's disc in the shade, never a rim round bare ground.
+    assert!(contrast(face(1), bar) >= EMPTY, "a medal not given is a disc: {:.2}:1 in its middle", contrast(face(1), bar));
+    // Twin: round a figure alone, the middle is bare ground.
+    assert!(contrast(face(3), bar) < EMPTY, "the measure sees bare ground: {:.2}:1", contrast(face(3), bar));
+    assert!(face(1) < face(0) / 2.0, "in the shade, under half a given one's light: {:.3} and {:.3}", face(1), face(0));
     // Twin: the given one reads filled.
     assert!(contrast(face(0), bar) >= NON_TEXT, "the measure sees a struck face: {:.2}:1", contrast(face(0), bar));
+    // Its figure lit as the given one's lip reads on its shaded face.
+    assert!(contrast(figure(1), face(1)) >= FIGURE, "a blank gold's 1 reads on its face: {:.2}:1", contrast(figure(1), face(1)));
+    // Twin: on the given gold, struck dark, the brightest pixel is its foil, no lit figure.
+    assert!(contrast(figure(0), face(0)) < FIGURE, "the measure sees no lit figure: {:.2}:1", contrast(figure(0), face(0)));
     assert!(contrast(figure(2), bar) >= TEXT, "a blank bronze's 3 reads as text: {:.2}:1", contrast(figure(2), bar));
     // Twin: in bronze's own body the figure is too dim to read.
     assert!(contrast(figure(3), bar) < TEXT, "the measure sees a dim 3: {:.2}:1", contrast(figure(3), bar));

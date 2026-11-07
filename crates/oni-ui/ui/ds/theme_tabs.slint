@@ -46,12 +46,17 @@ export global MedalStyle {
     out property <length> size: DS.control-icon-size;
     // The status bar's, keys the hand aims at: a small key's square but a rule round, its figure read as the key.
     out property <length> picker: DS.control-icon-button-size - 2 * DS.space-xxs;
-    // A medal not given, its rim and its place alone: at `blank` on its ramp at rest, bronze's 3 at 5.6:1
-    // on the panel, at `reached` under the hand.
-    out property <float> blank: 1.2;
-    out property <float> reached: 1.6;
-    out property <length> rim: DS.stroke-trace;
+    // A tile's keys under the hand, side by side: its medal and a hair round it.
+    out property <length> tile-key: DS.control-icon-size + DS.space-xs;
+    // A medal not given lies in the shade, its face at `shade` of a given one's light, at `reached` under the
+    // hand, its place lit at `lip` on its ramp: gold's 1 reads at 4.5:1 on its face at least.
+    out property <float> shade: 0.2;
+    out property <float> reached: 0.3;
+    out property <float> lip: 1.5;
     out property <float> figure: 0.6;
+    // A medal given lands from `landing` of its side and settles within the curtain's 140 ms.
+    out property <float> landing: 1.3;
+    out property <duration> settle: DS.motion-curtain-duration;
     in-out property <float> press: DS.control-medal-press;
     // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.
     in-out property <float> foil-spin: 0.7;
