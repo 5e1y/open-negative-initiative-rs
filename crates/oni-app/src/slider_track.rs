@@ -87,9 +87,10 @@ pub fn stored_on(f: Field, at: f32, track: &RangeInclusive<f32>) -> f32 {
     f.shown(track::value(at, track, f.spec().centre))
 }
 
-/// Where each field rests on its track on these settings, by its index: its double click's value.
+/// Where each field rests on its track on these settings, by its index: its tick, which a double click
+/// and its block's reset land on alike.
 pub fn rests(s: &oni_settings::PipelineSettings) -> Vec<f32> {
-    Field::ALL.iter().map(|f| position_on(*f, f.double_click_base(s), &track_on(*f, s))).collect()
+    Field::ALL.iter().map(|f| position_on(*f, f.base(s), &track_on(*f, s))).collect()
 }
 
 /// `stored_on`, but rest itself where a drag holds on rest's place, as the double click lands it.
@@ -163,7 +164,7 @@ mod tests {
     fn a_drag_held_on_rest_lands_on_it_exactly() {
         let s = PipelineSettings::rest(ConversionMode::Negative, true);
         let (ceiling, track) = (Field::DensityCeiling, track_on(Field::DensityCeiling, &s));
-        let (at, base) = (rests(&s)[ceiling.index() as usize], ceiling.double_click_base(&s));
+        let (at, base) = (rests(&s)[ceiling.index() as usize], ceiling.base(&s));
         assert!((stored_on(ceiling, at, &track) - s.density_ceiling).abs() < 1e-5, "the ceiling rests where the frame came in");
         assert_eq!(landed(ceiling, at + 2e-6, &track, base), base);
         // Twin: a place a hair past rest is the hand's own, never rest.
@@ -171,6 +172,44 @@ mod tests {
         // A slide's ceiling rests elsewhere on its track.
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
         assert_ne!(rests(&slide)[ceiling.index() as usize], at);
+    }
+
+    #[test]
+    fn a_sliders_tick_its_double_click_and_its_blocks_reset_are_one_rest() {
+        use crate::fields::Block;
+        use crate::store::{is_modified, rested};
+        let mut measured = PipelineSettings::rest(ConversionMode::Negative, true);
+        let id = oni_settings::Id::new();
+        let stops = [0.3, 0.0, -0.2];
+        measured.roll_reference = Some(oni_settings::frame::RollReference { id, stops, black: [0.0; 3], white: [1.0; 3], base: None, median: None });
+        let mut frames: Vec<PipelineSettings> = ConversionMode::ALL.iter().flat_map(|m| [true, false].map(|mosaic| PipelineSettings::rest(*m, mosaic))).collect();
+        frames.push(measured);
+        for frame in &frames {
+            // Every slider moved off, then each block reset: its tick stands where the reset landed.
+            let mut moved = frame.clone();
+            for f in Field::ALL.iter().filter(|f| f.block().is_some()) {
+                moved = f.knob().set(&moved, f.knob().get(&moved) + 0.05);
+            }
+            let ticks = rests(&moved);
+            for block in Block::ALL.into_iter().filter(|b| *b != Block::FlatField) {
+                let reset = rested(&moved, block, None);
+                assert!(!is_modified(&reset, block, None), "{block:?} lit after its reset on {:?}", frame.mode);
+                for f in block.fields() {
+                    let (at, landed) = (ticks[f.index() as usize], position_on(*f, f.knob().get(&reset), &track_on(*f, &moved)));
+                    assert!((at - landed).abs() < 1e-5, "{f:?} ticked at {at}, reset to {landed} on {:?}", frame.mode);
+                    assert!((f.base(&moved) - f.knob().get(&reset)).abs() < 1e-5, "{f:?}'s double click beside its reset");
+                }
+            }
+        }
+        // A fresh negative opens on its rest: +1.50 EV under the tick, its Lighting's Reset away.
+        let negative = &frames[0];
+        let exposure = Field::Exposure;
+        assert_eq!(exposure.readout(exposure.knob().get(negative)), "+1.50 EV");
+        assert_eq!(rests(negative)[exposure.index() as usize], position_on(exposure, 1.5, &track_on(exposure, negative)));
+        assert!(!is_modified(negative, Block::Lighting, None));
+        // Twin: a tick at zero, as a slider's own middle, stands off the rest the reset returns to.
+        assert_ne!(rests(negative)[exposure.index() as usize], position_on(exposure, 0.0, &track_on(exposure, negative)));
+        assert!(is_modified(&exposure.knob().set(negative, 0.0), Block::Lighting, None));
     }
 
     #[test]

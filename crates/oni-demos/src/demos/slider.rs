@@ -83,7 +83,7 @@ impl Demo for OneSlider {
     fn prepare(&mut self, stage: &Stage, _photo: &mut Photo) -> Result<(), String> {
         self.size = Picture::of(stage).pixels();
         let f = self.spec.field;
-        let rest = fraction_of(f, &f.knob().set(&self.settings, f.double_click_base(&self.settings)));
+        let rest = fraction_of(f, &f.knob().set(&self.settings, f.base(&self.settings)));
         self.drag = Some(Drag::lay(stage, rest, self.spec.to, self.spec.levels, true));
         Ok(())
     }

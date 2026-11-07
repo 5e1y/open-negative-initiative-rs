@@ -38,8 +38,33 @@ export component HelpMark inherits Rectangle {
     }
 }
 
-// `DSSection`: a rule above every block, then a title row with its "?", reset and fold keys, the "?"'s
-// card under it, then the block. Every block of the editor's panel has a note, so each title wears its "?".
+// The tree's disclosure before a block's title, the app's one look for folding: a bare chevron, down
+// while open, laid at its glyph's width, the hand caught over a small key's square.
+component FoldMark inherits Rectangle {
+    in property <string> subject;
+    in property <bool> folded;
+    callback toggled();
+    width: SectionStyle.fold;
+    Button {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: self.height;
+        size: ButtonSize.mini;
+        kind: ButtonKind.ghost;
+        has-icon: true;
+        icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
+        glyph-size: SectionStyle.fold;
+        // In the primary ink, as the tree's: its line is a single pixel, which a quieter ink leaves under 3:1.
+        glyph-ink: Colour.ink;
+        help: root.folded ? @tr("Show {}", root.subject) : @tr("Hide {}", root.subject);
+        accessible-expandable: true;
+        accessible-expanded: !root.folded;
+        clicked => { root.toggled(); }
+    }
+}
+
+// `DSSection`: a rule above every block, then a title row, its fold's chevron first and its reset at
+// the far end, the "?"'s card under it, then the block. Every block of the editor's panel has a note.
 export component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> help;
@@ -62,6 +87,10 @@ export component Section inherits VerticalLayout {
     callback reset(int);
     // The hand's fold, which `sectionFold.<title>` remembers.
     callback fold-toggled(bool);
+    function fold() {
+        root.folded = !root.folded;
+        root.fold-toggled(root.folded);
+    }
     if root.separated: Divider { }
     VerticalLayout {
         padding-left: root.inset;
@@ -71,14 +100,17 @@ export component Section inherits VerticalLayout {
         spacing: 0;
         if root.title != "": HorizontalLayout {
             spacing: Space.s;
-            // On a short row the title yields, so the reset and fold keys keep to the column's edge.
+            // A key's height whether the reset shows or not, so the block never moves as it comes and goes.
+            min-height: root.foldable || root.block >= 0 ? ButtonStyle.small-height : 0px;
+            if root.foldable: FoldMark { subject: root.title; folded: root.folded; toggled => { root.fold(); } }
+            // On a short row the title yields, so the reset keeps to the column's edge.
             Engraved {
                 horizontal-stretch: 0;
                 min-width: 0;
                 role: TextRole.section;
                 text: root.title;
                 overflow: elide;
-                if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
+                if root.foldable: TouchArea { clicked => { root.fold(); } }
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
@@ -89,26 +121,12 @@ export component Section inherits VerticalLayout {
                 Badge { tone: BadgeTone.seal; text: root.news; note: root.news-note; read => { root.news-read(); } }
             }
             Rectangle { horizontal-stretch: 1; }
-            // Always in its place, dimmed while nothing moved, and a step apart from the fold key.
-            if root.block >= 0: HorizontalLayout {
-                horizontal-stretch: 0;
-                padding-right: root.foldable ? Space.m : 0px;
-                Button {
-                    size: ButtonSize.mini;
-                    horizontal-stretch: 0;
-                    text: @tr("Reset");
-                    enabled: root.modified;
-                    clicked => { root.reset(root.block); }
-                }
-            }
-            if root.foldable: Button {
+            // Only while the block stands off its rest, at the far end, the whole title between it and the fold.
+            if root.block >= 0 && root.modified: Button {
                 size: ButtonSize.mini;
-                has-icon: true;
-                square: true;
                 horizontal-stretch: 0;
-                icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
-                help: root.folded ? @tr("Show {}", root.title) : @tr("Hide {}", root.title);
-                clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); }
+                text: @tr("Reset");
+                clicked => { root.reset(root.block); }
             }
         }
         // Open or folded, the card follows its "?": it pushes the block down rather than lie over it.

@@ -281,3 +281,69 @@ pub(crate) fn the_gallery_knob_scrolls_the_grid_the_wheel_s_way() {
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// The brightest green, 0 to 63, in the panel's right margin past its blocks' inset, where its knob
+/// runs, from `top` down.
+fn edge_ink(rig: &common::Rig, top: usize) -> u16 {
+    let (width, pixels) = rig.drawn();
+    let rows = pixels.len() / width;
+    (top..rows - 40).flat_map(|y| (width - 14..width).map(move |x| y * width + x)).map(|i| (pixels[i].0 >> 5) & 0x3f).max().unwrap_or(0)
+}
+
+/// The editor opened by a double click on a tile from a pointer parked in the corner, as an
+/// evaluation drives it: the panel's knob dark once the opening settles, lit by a wheel over the panel.
+pub(crate) fn the_panels_knob_is_dark_when_a_double_click_opens_the_editor() {
+    use oni_app::app::{Options, Shell};
+    use oni_app::{App, Library};
+    use oni_core::{Archive, EditorStore};
+    use std::time::Duration;
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the panel's knob is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-panel-knob-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    for name in ["A.tif", "B.tif", "C.tif"] {
+        common::plain_tiff(&folder.join(name), 96, 64, 0.6);
+    }
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(PhysicalSize::new(1728, 1017));
+    shell.window.show().unwrap();
+    let (ctl, w) = (shell.ctl.clone(), &shell.window);
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(1726.0, 1015.0) });
+    rig.settle();
+    let lib = w.global::<Library>();
+    let t = oni_app::app::tiles(w).into_iter().min_by_key(|t| t.index).expect("a tile");
+    let at = (lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
+    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+    common::click(&rig, w, at);
+    common::click(&rig, w, at);
+    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    assert!(!w.global::<App>().get_gallery(), "the double click opened the editor");
+    wait(&rig, Duration::from_millis(2500));
+    let top = 360;
+    let rest = edge_ink(&rig, top);
+    println!("shot {}", rig.shot("panel-knob-opened").display());
+    // A wheel over the panel lights its knob: the edge's ink rises well past the panel's at rest.
+    let over = slint::LogicalPosition::new(1500.0, 700.0);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: over });
+    rig.window.dispatch_event(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -40.0 });
+    wait(&rig, Duration::from_millis(300));
+    let lit = edge_ink(&rig, top);
+    // A moment after, the pointer over the canvas, the knob out: the ink the editor opened on.
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(700.0, 500.0) });
+    wait(&rig, Duration::from_millis(2500));
+    let out = edge_ink(&rig, top);
+    assert_eq!(rest, out, "the editor opened with its knob lit");
+    // Twin: the measure sees a lit knob.
+    assert!(lit > out + 10, "a wheel over the panel lit its knob: {lit} against {out}");
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}

@@ -45,7 +45,7 @@ impl Ctl {
             let i = f.index() as usize;
             let (asked, live, offer) = {
                 let mut s = p.state.borrow_mut();
-                let (range, rest) = (track_on(f, s.store.settings()), f.double_click_base(s.store.settings()));
+                let (range, rest) = (track_on(f, s.store.settings()), f.base(s.store.settings()));
                 let slide = &mut s.slides[i];
                 let (false, Some(start)) = (slide.resetting, slide.start) else { return };
                 let asked = track::clamped(track::asked(start, translation, span, fine));

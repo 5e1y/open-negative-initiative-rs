@@ -70,7 +70,7 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     assert_eq!(g.get_vignette_readout().as_str(), Field::Vignette.readout(open(Knob::Vignette)), "twin: one value where the frames agree");
 
     // B at rest beside A and C balanced each its own way: Colour's Reset is live for them alone.
-    let live = |block: &str| crate::help_card::reset_of(w, block).1;
+    let live = |block: &str| crate::help_card::reset_of(w, block).is_some();
     assert!(open(Knob::Temperature) == 0.0 && live("Colour"), "the open frame at rest, the others not");
 
     let field = Field::Temperature.index();
@@ -92,13 +92,13 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     assert_eq!(g.get_temperature_readout().as_str(), Field::Temperature.span_readout(-0.4 + moved, 0.6 + moved), "the span moved whole");
     println!("shot {}", rig.shot("together-moves").display());
 
-    // Colour's Reset lays each frame's own rest on all three, then dims.
-    common::click(&rig, w, crate::help_card::reset_of(w, "Colour").0.middle());
+    // Colour's Reset lays each frame's own rest on all three, then leaves.
+    common::click(&rig, w, crate::help_card::reset_of(w, "Colour").expect("Colour's Reset").middle());
     rig.until("the others at rest", Duration::from_secs(10), || near(Knob::Temperature.get(&read(&path("A"))), 0.0));
     let (a, c) = (read(&path("A")), read(&path("C")));
     assert!(near(Knob::Tint.get(&a), 0.0) && near(Knob::Temperature.get(&c), 0.0) && near(Knob::Tint.get(&c), 0.0));
     rig.settle();
-    assert!(!live("Colour"), "twin: every frame at rest, the key dims");
+    assert!(!live("Colour"), "twin: every frame at rest, the key leaves");
 
     // The crop and De-dust, each frame's own, say under the hand why they wait.
     let hover = |label: &str| {

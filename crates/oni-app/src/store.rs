@@ -160,15 +160,11 @@ pub fn rest(settings: &PipelineSettings) -> PipelineSettings {
 /// Whether the block's reset key shows: its value differs from what its reset writes. `dyes` is
 /// the family the roll's stock names, which the dyes rest on; none rests on the mode's own.
 pub fn is_modified(settings: &PipelineSettings, block: Block, dyes: Option<SeparationFamily>) -> bool {
-    match block {
-        // `FlatField()`: the block's value is the whole flat-field, its mask included.
-        Block::FlatField => return settings.flat_field != Default::default(),
-        // `restingGains`: the measured roll's own stops.
-        Block::SourceBalance => return block.fields().iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6),
-        _ => {}
+    // `FlatField()`: the block's value is the whole flat-field, its mask included.
+    if block == Block::FlatField {
+        return settings.flat_field != Default::default();
     }
-    let rest = rest(settings);
-    let off = block.fields().iter().any(|f| (f.knob().get(settings) - f.knob().get(&rest)).abs() > 1e-6);
+    let off = block.fields().iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6);
     // `SettingsPane.dyes`: the block's value is the dose, the family and the hand's mark together.
     off || (block == Block::DyeSeparation && (settings.separation_family != dyes || settings.separation_by_hand))
 }
@@ -187,27 +183,17 @@ pub fn rest_of(block: Block, dyes: Option<SeparationFamily>) -> Each {
 /// The settings with the block's sliders at the rest of the frame's own mode, decode and measure; the
 /// dyes land on the family the roll's stock names.
 pub fn rested(settings: &PipelineSettings, block: Block, dyes: Option<SeparationFamily>) -> PipelineSettings {
-    let rest = rest(settings);
     let mut next = settings.clone();
-    match block {
-        Block::FlatField => {
-            next.flat_field = Default::default();
-            return next;
-        }
-        Block::SourceBalance => {
-            for f in block.fields() {
-                next = f.knob().set(&next, f.base(settings));
-            }
-            return next;
-        }
-        _ => {}
+    if block == Block::FlatField {
+        next.flat_field = Default::default();
+        return next;
     }
     for f in block.fields() {
-        next = f.knob().set(&next, f.knob().get(&rest));
+        next = f.knob().set(&next, f.base(settings));
     }
     if block == Block::DyeSeparation {
         // The dose at its base and the stock's dyes, which the dose's knob alone would mark by hand.
-        next.separation = rest.separation;
+        next.separation = rest(settings).separation;
         next.separation_family = dyes;
         next.separation_by_hand = false;
     }

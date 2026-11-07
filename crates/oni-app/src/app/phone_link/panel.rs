@@ -89,7 +89,7 @@ pub fn rows(s: &PipelineSettings, face: Face, on_paper: bool) -> Vec<Row> {
                 label: label(f, inverted),
                 value: f.readout(v),
                 position: position_on(f, v, &track_on(f, s)),
-                modified: (v - f.double_click_base(s)).abs() > 1e-6,
+                modified: (v - f.base(s)).abs() > 1e-6,
             });
         }
     }
@@ -118,7 +118,7 @@ pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
             let sense = if f.spec().inverted { -1.0 } else { 1.0 };
             Command::Step { knob, by: sense * f32::from(by) * (high - low) / 100.0 }
         }
-        Move::Reset => Command::Set { knob, value: f.double_click_base(s) },
+        Move::Reset => Command::Set { knob, value: f.base(s) },
         Move::To(at) => Command::Step { knob, by: stored_on(f, track::clamped(at), &track_on(f, s)) - knob.get(s) },
     }
 }
@@ -198,7 +198,7 @@ mod tests {
         let mut moved = s.clone();
         moved.print.exposure = 0.7;
         let Command::Set { value, .. } = command(&moved, Param::Exposure, Move::Reset) else { panic!() };
-        assert_eq!(value, Field::Exposure.double_click_base(&moved));
+        assert_eq!(value, Field::Exposure.base(&moved));
         // Twin: a step on another slider leaves Exposure's knob, so the check reads the right one.
         let Command::Step { knob, .. } = command(&s, Param::Texture, Move::Step(1)) else { panic!() };
         assert_ne!(knob, Field::Exposure.knob());

@@ -187,7 +187,7 @@ impl Ctl {
 
     /// `f` back to its rest on every frame shown, as a double click on its rail or on its name asks.
     pub(crate) fn rest(self: &Rc<Self>, f: Field) {
-        let stored = f.double_click_base(self.state.borrow().store.settings());
+        let stored = f.base(self.state.borrow().store.settings());
         if f == Field::Angle {
             return self.straighten(stored);
         }

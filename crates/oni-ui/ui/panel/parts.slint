@@ -70,7 +70,7 @@ export component SettingsRow inherits HorizontalLayout {
     Rectangle { horizontal-stretch: 1; }
     VerticalLayout {
         alignment: center;
-        Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.settings; help: root.open ? root.hide-help : root.show-help; clicked => { root.open = !root.open; } }
+        Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.options; help: root.open ? root.hide-help : root.show-help; clicked => { root.open = !root.open; } }
     }
 }
 

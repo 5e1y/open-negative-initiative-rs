@@ -166,7 +166,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     g.invoke_drag(field, 100.0, span, false);
     g.invoke_release(field);
     rig.pump();
-    assert_eq!(ctl.state.borrow().store().get(Field::Exposure), Field::Exposure.spec().base);
+    assert_eq!(ctl.state.borrow().store().get(Field::Exposure), Field::Exposure.base(ctl.state.borrow().store().settings()));
     rig.chord(slint::platform::Key::Control, "z");
     rig.settle();
     // One more notch alone, from the store's write to the canvas: the render a held slider waits on.

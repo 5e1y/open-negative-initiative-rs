@@ -60,7 +60,7 @@ component FlatFieldBlock inherits VerticalLayout {
         spacing: Space.s;
         Toggle { label: @tr("Flat-field"); on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } }
         Rectangle { horizontal-stretch: 1; }
-        Button { has-icon: true; square: true; icon: Icons.settings; help: root.settings ? @tr("Hide Amount and Colour") : @tr("Show Amount and Colour"); clicked => { root.settings = !root.settings; } }
+        Button { has-icon: true; square: true; icon: Icons.options; help: root.settings ? @tr("Hide Amount and Colour") : @tr("Show Amount and Colour"); clicked => { root.settings = !root.settings; } }
     }
     if Preparing.flat-on: Picker { label: @tr("Mask"); value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
     if Preparing.flat-on && Preparing.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
