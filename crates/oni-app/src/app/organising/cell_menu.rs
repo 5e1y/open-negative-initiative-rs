@@ -69,7 +69,7 @@ impl Ctl {
         let rolled: HashSet<String> = s.rows.iter().filter(|e| e.film.is_some()).map(|e| e.path.clone()).collect();
         let projects: Vec<(Id, String)> = s.org.projects.iter().map(|p| (p.id, p.name.clone())).collect();
         let member_of: Vec<(Id, String)> =
-            project::member_projects(&s.org.projects, &s.reach(), scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
+            project::member_projects(&s.org.projects, scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
         let facts = CellFacts { missing: &s.org.missing, rolled: &rolled, can_paste, projects, member_of };
         let mut items = Vec::new();
         if edit && scope.len() == 1 {
@@ -102,7 +102,7 @@ impl Ctl {
                 })
                 .unwrap_or_default();
             let member: Vec<(Id, String)> =
-                project::member_projects(&s.org.projects, &s.reach(), &scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
+                project::member_projects(&s.org.projects, &scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
             s.org.menu_lists = (projects, member);
             s.org.menu = items;
             s.org.sub_menu.clear();
@@ -191,37 +191,61 @@ impl Ctl {
         self.lay_grid();
     }
 
-    /// Add to Project, asked first when it takes photos from another project, as a photo sits in one.
+    /// Add to Project, asked first when it takes photos from another project, as a photo sits in one;
+    /// then said, what joined and what was there already, with Undo.
     fn ask_add_to_project(self: &Rc<Self>, scope: HashSet<String>, id: Id) {
-        let asked = {
+        let (target, asked) = {
             let s = self.state.borrow();
-            let rows = s.reach();
             let target = s.org.projects.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default();
-            let leaving = project::leaving(&s.org.projects, &rows, &scope, id);
+            let leaving = project::leaving(&s.org.projects, &scope, id);
             let lines: Vec<String> = leaving
                 .iter()
                 .map(|(p, n)| trn("One photo leaves “{project}”.", "{n} photos leave “{project}”.", *n as u64).replace("{project}", &p.name))
                 .collect();
-            (!lines.is_empty()).then(|| (target, lines.join(" ")))
+            (target, (!lines.is_empty()).then(|| lines.join(" ")))
         };
+        let named = target.clone();
         let add = move |c: &Rc<Ctl>| {
-            let added = {
-                let mut s = c.state.borrow_mut();
-                let rows = s.reach().into_owned();
-                project::add_to(&mut s.org.projects, &rows, &scope, id)
-            };
-            if added {
-                c.save_projects();
-            }
-            c.lay_grid();
-            c.publish_bar();
+            let mut joined = project::Joined::default();
+            c.regroup(tr("Add to Project"), |projects, rows| {
+                joined = project::add_to(projects, rows, &scope, id);
+                joined.added > 0
+            });
+            c.said_joined(&named, joined);
         };
         match asked {
             None => add(self),
-            Some((target, lines)) => {
+            Some(lines) => {
                 let message = tr!("{lines} A photo sits in one project at a time; a project left empty stays.", lines = lines);
                 self.ask(&tr!("Move to “{project}”?", project = target), &message, tr("Move"), false, Pending::Run(Box::new(add)));
             }
+        }
+    }
+
+    /// What Add to Project did, in the notice: the photos that joined, with Undo, and those already there.
+    fn said_joined(&self, project: &str, joined: project::Joined) {
+        let there = |n: usize| trn("One was already in it.", "{n} were already in it.", n as u64);
+        let message = match joined {
+            project::Joined { added: 0, already } => trn("The photo is already in “{project}”.", "The {n} photos are already in “{project}”.", already as u64),
+            project::Joined { added, already: 0 } => trn("One photo added to “{project}”.", "{n} photos added to “{project}”.", added as u64),
+            project::Joined { added, already } => {
+                format!("{} {}", trn("One photo added to “{project}”.", "{n} photos added to “{project}”.", added as u64), there(already))
+            }
+        };
+        let message = message.replace("{project}", project);
+        if joined.added > 0 { self.told_step(tr("Add to Project"), &message) } else { self.told(tr("Add to Project"), &message) }
+    }
+
+    /// Remove from Project, said with Undo, as a photo leaving a project leaves no other trace.
+    fn remove_from_project(self: &Rc<Self>, scope: &HashSet<String>, id: Id) {
+        let name = self.state.borrow().org.projects.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default();
+        let mut removed = 0;
+        if self.regroup(tr("Remove from Project"), |projects, _| {
+            removed = project::remove_from(projects, scope, id);
+            removed > 0
+        }) {
+            let said = trn("One photo removed from “{project}”.", "{n} photos removed from “{project}”.", removed as u64);
+            self.told_step(tr("Remove from Project"), &said.replace("{project}", &name));
         }
     }
 
@@ -248,16 +272,11 @@ impl Ctl {
                 let paths = line.scope.clone();
                 self.gesture(&paths, |store| store.apply_film(&paths, None, tr("Ungroup")));
             }
-            CellAction::NewProject => self.new_project(&scope),
-            CellAction::AddToProject(id) => self.ask_add_to_project(scope, id),
-            CellAction::RemoveFromProject(id) => {
-                {
-                    let mut s = self.state.borrow_mut();
-                    let rows = s.reach().into_owned();
-                    project::remove_from(&mut s.org.projects, &rows, &scope, id);
-                }
-                self.save_projects();
+            CellAction::NewProject => {
+                self.new_project(&scope);
             }
+            CellAction::AddToProject(id) => self.ask_add_to_project(scope, id),
+            CellAction::RemoveFromProject(id) => self.remove_from_project(&scope, id),
             CellAction::Export => self.act(crate::Act::Export),
             CellAction::Reveal => system::reveal_all(&line.scope.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             CellAction::Trash => self.move_paths_to_trash(&line.scope),

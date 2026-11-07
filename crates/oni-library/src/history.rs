@@ -2,7 +2,7 @@
 //! naming each photo it wrote, an edit of the open frame as much as a gesture on several.
 
 use crate::paths;
-use oni_settings::{Film, Medal, PipelineSettings};
+use oni_settings::{Film, Id, Medal, PipelineSettings};
 use std::collections::{BTreeMap, BTreeSet};
 
 mod class;
@@ -10,7 +10,7 @@ pub use class::Class;
 
 pub type Settings = BTreeMap<String, PipelineSettings>;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Step {
     pub before: Settings,
     pub after: Settings,
@@ -19,6 +19,7 @@ pub struct Step {
     pub trash: Option<Trash>,
     pub marker: Option<Marker>,
     pub medals: Option<Medals>,
+    pub members: Option<Members>,
 }
 
 /// A folder's roll marker as the step found it and as it left it; `None` is a plain folder.
@@ -34,6 +35,13 @@ pub struct Marker {
 pub struct Medals {
     pub before: BTreeMap<String, Medal>,
     pub after: Medal,
+}
+
+/// The projects whose members a gesture changed, each one's list as the step found it and left it.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Members {
+    pub before: BTreeMap<Id, Vec<String>>,
+    pub after: BTreeMap<Id, Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,7 +68,8 @@ pub struct Disk {
 }
 
 impl Step {
-    /// Every photo the step writes, marks or moves, at either end of a move.
+    /// Every photo the step writes, marks or moves, at either end of a move; a project's members
+    /// change no photo.
     pub fn paths(&self) -> BTreeSet<String> {
         let mut out: BTreeSet<String> = self.before.keys().chain(self.after.keys()).cloned().collect();
         out.extend(self.trash.iter().flat_map(|t| t.paths.iter().cloned()));
@@ -214,7 +223,7 @@ impl History {
         }
         let kept: Settings =
             after.iter().filter(|(p, _)| changed.contains_key(*p)).map(|(p, s)| (p.clone(), s.clone())).collect();
-        self.push(Step { before: changed, after: kept, label: label.to_owned(), disk: None, trash, marker, medals: None });
+        self.push(Step { before: changed, after: kept, label: label.to_owned(), trash, marker, ..Step::default() });
         true
     }
 
@@ -223,15 +232,7 @@ impl History {
         if disk.moves.is_empty() {
             return;
         }
-        self.push(Step {
-            before: Settings::new(),
-            after: Settings::new(),
-            label: label.to_owned(),
-            disk: Some(disk),
-            trash: None,
-            marker: None,
-            medals: None,
-        });
+        self.push(Step { label: label.to_owned(), disk: Some(disk), ..Step::default() });
     }
 
     /// Records a mark or a restore, already applied; one that touched nothing opens no step.
@@ -239,15 +240,7 @@ impl History {
         if trash.paths.is_empty() {
             return;
         }
-        self.push(Step {
-            before: Settings::new(),
-            after: Settings::new(),
-            label: label.to_owned(),
-            disk: None,
-            trash: Some(trash),
-            marker: None,
-            medals: None,
-        });
+        self.push(Step { label: label.to_owned(), trash: Some(trash), ..Step::default() });
     }
 
     /// Records medals laid, already written; a photo that wore the medal already is left out, and
@@ -257,15 +250,19 @@ impl History {
         if medals.before.is_empty() {
             return;
         }
-        self.push(Step {
-            before: Settings::new(),
-            after: Settings::new(),
-            label: label.to_owned(),
-            disk: None,
-            trash: None,
-            marker: None,
-            medals: Some(medals),
-        });
+        self.push(Step { label: label.to_owned(), medals: Some(medals), ..Step::default() });
+    }
+
+    /// Records the projects' members a gesture changed, already saved; a project left as it was is
+    /// left out, and a gesture that changed none opens no step.
+    pub fn record_members(&mut self, mut members: Members, label: &str) {
+        let changed: Vec<Id> = members.after.iter().filter(|(id, after)| members.before.get(*id) != Some(*after)).map(|(id, _)| *id).collect();
+        members.before.retain(|id, _| changed.contains(id));
+        members.after.retain(|id, _| changed.contains(id));
+        if changed.is_empty() {
+            return;
+        }
+        self.push(Step { label: label.to_owned(), members: Some(members), ..Step::default() });
     }
 
     /// A walk refused before anything moved gives its step back, so the same key offers it again.
@@ -296,6 +293,11 @@ impl History {
             }
             if let Some(medals) = &mut step.medals {
                 medals.before = std::mem::take(&mut medals.before).into_iter().map(|(p, m)| (moved(&p), m)).collect();
+            }
+            if let Some(members) = &mut step.members {
+                for list in members.before.values_mut().chain(members.after.values_mut()) {
+                    list.iter_mut().for_each(|p| *p = moved(p));
+                }
             }
             if let Some(disk) = &mut step.disk {
                 disk.folder = disk.folder.as_deref().map(moved);

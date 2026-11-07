@@ -123,6 +123,8 @@ pub struct Organising {
     pub projects_read: Vec<Project>,
     /// The projects' members the index holds beyond the opened folder's rows.
     pub standing: Vec<Entry>,
+    /// The roll marker of each member's folder beyond the opened one, `None` for a plain folder.
+    pub member_rolls: HashMap<String, Option<Film>>,
     pub project_ring: Option<NodeId>,
     /// `editingProject`: the first project holding the photo opened on the Projects tab, which the
     /// editor's walk follows.
@@ -249,18 +251,19 @@ impl State {
 
     fn bands(&self) -> Vec<Band> {
         if self.org.projects_surface {
-            // On the rows, never the medal-filtered ones: a project is hand-picked.
+            // The rating filter keeps one medal as in the archive; the tree keeps every member.
+            let kept = |e: &Entry| self.filter.is_none_or(|m| e.label == m);
             return project::grouped(&self.org.projects, &self.reach())
                 .into_iter()
-                .filter(|g| !g.entries.is_empty())
                 .map(|g| Band {
                     key: g.id.to_string(),
                     title: g.project.name.clone(),
                     caption: String::new(),
-                    entries: g.entries,
+                    entries: g.entries.into_iter().filter(kept).collect(),
                     naming: Some(Naming::Project(g.id)),
                     explicit: g.project.name.clone(),
                 })
+                .filter(|b| !b.entries.is_empty())
                 .collect();
         }
         if self.org.trash_open {
@@ -358,7 +361,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_menu_sub_chosen(move |i| p.menu_sub_chosen(index(i)));
         let p = me.clone();
-        lib.on_empty_acted(move || p.act(crate::Act::Open));
+        lib.on_empty_acted(move || if p.state.borrow().org.projects_surface { p.new_empty_project() } else { p.act(crate::Act::Open) });
         let p = me.clone();
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();

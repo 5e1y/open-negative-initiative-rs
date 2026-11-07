@@ -125,6 +125,8 @@ pub struct EditorStore {
     pub walking: Option<oni_library::roll_folder::Walk>,
     /// The roll marker a gesture, an undo or a redo last wrote, for the host to show the folder's roll.
     pub marked: Option<(String, Option<oni_settings::Film>)>,
+    /// The projects' members an undo or a redo last laid, by project, for the host to save.
+    pub regrouped: Option<BTreeMap<Id, Vec<String>>>,
     /// Frames left with edits their sidecar refused, kept until a write takes them or the hand drops them.
     unsaved: Vec<opening::Unsaved>,
 }
@@ -152,6 +154,7 @@ impl EditorStore {
             failure: None,
             walking: None,
             marked: None,
+            regrouped: None,
             unsaved: Vec::new(),
         }
     }
@@ -238,10 +241,15 @@ impl EditorStore {
         self.release();
         self.history.record_disk(disk, label);
     }
+
+    pub fn record_members(&mut self, members: Members, label: &str) {
+        self.release();
+        self.history.record_members(members, label);
+    }
 }
 
-/// Re-exported for the host, which records disk gestures on the same history.
-pub use history::Disk;
+/// Re-exported for the host, which records disk and project gestures on the same history.
+pub use history::{Disk, Members};
 
 #[cfg(test)]
 mod tests;

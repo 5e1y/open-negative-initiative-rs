@@ -104,10 +104,8 @@ fn a_project_the_other_app_deleted_survives_an_edit_here() {
     ours.push(base[0].clone());
     ours[0].members.push("f2".into());
     assert_eq!(projects(&base, &ours, &[]).len(), 1, "an edit here is not thrown away");
-    // Twin: only the paths a save writes down are no edit, so the deletion holds.
-    let mut located = base.clone();
-    located[0].paths = Some([("f1".to_string(), "/r/a.NEF".to_string())].into());
-    assert!(projects(&base, &located, &[]).is_empty());
+    // Twin: untouched here, the deletion holds.
+    assert!(projects(&base, &base, &[]).is_empty());
 }
 
 /// Closes `at` to every reader; `false` when the check runs as root, which reads it all the same.

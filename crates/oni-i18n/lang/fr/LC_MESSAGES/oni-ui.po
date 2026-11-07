@@ -3365,9 +3365,17 @@ msgstr "{name} · décodage"
 msgid "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved."
 msgstr "Choisissez un dossier : toutes les photos qu’il contient s’affichent dans les archives. Rien n’est copié ni déplacé."
 
+#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/app/project_drop.rs crates/oni-app/src/organise/cells.rs
+msgid "Add to Project"
+msgstr "Ajouter au projet"
+
 #: crates/oni-app/src/app/organising/cell_menu.rs
 msgid "Move"
 msgstr "Déplacer"
+
+#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/organise/cells.rs
+msgid "Remove from Project"
+msgstr "Retirer du projet"
 
 #: crates/oni-app/src/app/organising/cell_menu.rs
 msgid "{lines} A photo sits in one project at a time; a project left empty stays."
@@ -3383,13 +3391,45 @@ msgid_plural "{n} photos leave “{project}”."
 msgstr[0] "Une photo quitte « {project} »."
 msgstr[1] "{n} photos quittent « {project} »."
 
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "One was already in it."
+msgid_plural "{n} were already in it."
+msgstr[0] "Une y était déjà."
+msgstr[1] "{n} y étaient déjà."
+
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "The photo is already in “{project}”."
+msgid_plural "The {n} photos are already in “{project}”."
+msgstr[0] "La photo est déjà dans « {project} »."
+msgstr[1] "Les {n} photos sont déjà dans « {project} »."
+
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "One photo added to “{project}”."
+msgid_plural "{n} photos added to “{project}”."
+msgstr[0] "Une photo ajoutée à « {project} »."
+msgstr[1] "{n} photos ajoutées à « {project} »."
+
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "One photo removed from “{project}”."
+msgid_plural "{n} photos removed from “{project}”."
+msgstr[0] "Une photo retirée de « {project} »."
+msgstr[1] "{n} photos retirées de « {project} »."
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "All in the rating filter shows every photo."
+msgstr "Toutes, dans le filtre des médailles, affiche chaque photo."
+
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Photos in a Project"
 msgstr "Aucune photo dans un projet"
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "Select photos in the Archive, then choose New Project in the File menu or their right-click menu."
-msgstr "Sélectionnez des photos dans l’onglet Archives, puis choisissez Nouveau projet dans le menu Fichier ou dans leur menu contextuel."
+msgid "Make a project here, then add photos to it in the Archive: Add to Project is in their right-click menu."
+msgstr "Créez un projet ici, puis ajoutez-y des photos depuis l’onglet Archives : Ajouter au projet est dans leur menu contextuel."
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "New Project"
+msgstr "Nouveau projet"
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "ONI Trash Is Empty"
@@ -3398,10 +3438,6 @@ msgstr "La Corbeille ONI est vide"
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
 msgstr "Une photo supprimée dans ONI attend ici, son fichier intact, jusqu’à ce qu’elle soit restaurée."
-
-#: crates/oni-app/src/app/organising/grid.rs
-msgid "All in the rating filter shows every photo."
-msgstr "Toutes, dans le filtre des médailles, affiche chaque photo."
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
@@ -4288,14 +4324,6 @@ msgstr "Démarrage de l'interface"
 #: crates/oni-app/src/main.rs
 msgid "Building the window"
 msgstr "Construction de la fenêtre"
-
-#: crates/oni-app/src/organise/cells.rs
-msgid "Add to Project"
-msgstr "Ajouter au projet"
-
-#: crates/oni-app/src/organise/cells.rs
-msgid "Remove from Project"
-msgstr "Retirer du projet"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "Paste Settings ({count} photos)"

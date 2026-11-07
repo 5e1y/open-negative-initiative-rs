@@ -79,13 +79,10 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     }
     // Thirty one-photo projects around the one holding B05, so its row lands mid-list; a photo
     // sits in one project only, so the older half of them load empty.
-    let fingerprint = |name: &str| {
-        let path = oni_library::paths::canonical(&scans.join(name));
-        oni_library::library::indexed(&path).expect("a readable TIFF").fingerprint
-    };
+    let member = |name: &str| oni_library::paths::canonical(&scans.join(name));
     let at = |minutes: f64| Date::since_reference_date(8e8 + minutes * 60.0);
-    let mut projects: Vec<Project> = (0..30).map(|i| Project::new(&format!("Crowd {i:02}"), at(i as f64), vec![fingerprint(&format!("Roll A/A{:02}.tif", i % 20))])).collect();
-    projects.push(Project::new("Trip", at(15.5), vec![fingerprint("Roll B/B05.tif"), fingerprint("Roll B/B06.tif")]));
+    let mut projects: Vec<Project> = (0..30).map(|i| Project::new(&format!("Crowd {i:02}"), at(i as f64), vec![member(&format!("Roll A/A{:02}.tif", i % 20))])).collect();
+    projects.push(Project::new("Trip", at(15.5), vec![member("Roll B/B05.tif"), member("Roll B/B06.tif")]));
     project::save(&support, &ProjectsFile { version: 1, projects }).unwrap();
 
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));

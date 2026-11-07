@@ -6906,5 +6906,33 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1410,
+    "type": "fix",
+    "title": "A project holds each photo by its full path: two rolls' copies of one file are two photos",
+    "status": "done",
+    "detail": "Evaluation: Add to Project silently added none of Roll #8 because Roll #10 held byte copies under the same names; members were keyed by print, so a copy counted as already there. A project's members are now the photos' paths, which every project gesture compares (new, add, remove, leave, reorder, exclusivity, merge), and the file writes no print map. A file written before reads each print at the path it recorded; a Swift file's prints are found by project_standing at the first row carrying them that no member holds, and written as that path. A move made in ONI or Locate carries the members; a path gone stands at its place as missing, never guessed onto a copy. In the Projects tree a file name another photo of the project bears shows its folder beside it (A.tif · Roll 10). Checks: project tests two_copies_of_one_file_are_two_members_each_found_at_its_path (twin: print-keyed, one joins), a_former_file_reads_each_member_at_its_recorded_path, project_standing a_swift_print_is_found_at_a_row_no_member_holds (twin: Kept's own row would be taken), roll8 the Swift prints found on the reference roll, window projects_tab two_rolls_copies_join_one_project_said_with_undo."
+  },
+  {
+    "id": 1411,
+    "type": "fix",
+    "title": "Add to Project says what it added and what was already there, with Undo",
+    "status": "done",
+    "detail": "Evaluation: the bulk action said nothing. Every gesture on a project's members is now one step of the session's history (history::Members, each changed project's list before and after, carried by a rename), which the store hands back to the host on undo or redo as it hands a roll marker. Add to Project says '24 photos added to “X”.' with Undo, and how many were already in it; when none joins it says they are all there, with nothing to undo. Remove from Project says what left, with Undo; a drop onto a project in the tree is the same step. Checks: history a_members_step_keeps_the_projects_it_changed_and_follows_a_rename (twin: an idle gesture opens no step), project rosters lay every project back, window projects_tab the notice, its Undo, the bar's Undo and Redo (twin: Redo lays the add again)."
+  },
+  {
+    "id": 1412,
+    "type": "fix",
+    "title": "The rating filter acts in Projects as in the Archive; the empty Projects tab makes a project",
+    "status": "done",
+    "detail": "Evaluation: Gold lit in Projects while every photo stayed shown, and the empty tab offered no way to make a project. A project's band keeps the filter's one medal as an archive band does, the tree keeping every member; a filter that leaves nothing says No Gold Photos on any surface but the ONI Trash. The empty Projects grid carries a New Project key: an empty project, ringed, its name open to type, then filled by Add to Project; 'New Project from Selection' cannot stand there, as switching tabs keeps no selection the tab does not show. Check: window projects_tab the_empty_tab_makes_a_project_and_the_filter_acts_in_it (twin: All shows the project whole)."
+  },
+  {
+    "id": 1413,
+    "type": "fix",
+    "title": "A project's stocks come from its members' rolls, a folder's marker first",
+    "status": "done",
+    "detail": "Evaluation: a project read No film stock set yet while its roll was set to Fujifilm Fujicolor: the stocks were read off the sidecars, and a roll made of a folder keeps its stock in the folder's marker. info::stocks reads each photo's roll as the archive does, its folder's marker else its sidecar's film; the markers beyond the opened folder are read once each off the interface thread, a folder the survey covers taking the survey's. Checks: info a_photos_stock_is_its_folders_marker_first (twin: off the sidecars alone, nothing is counted), window projects_tab Kodak Gold counted twice, Roll 8 opened or beyond."
   }
 ]

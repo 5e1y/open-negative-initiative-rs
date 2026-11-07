@@ -149,8 +149,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
         index.upsert(&oni_library::Entry::new(path, oni_settings::Date::now(), print)).unwrap();
     }
     Favourites { version: 1, paths: vec![old.clone()] }.save(&d.support).unwrap();
-    let mut held = project::Project::new("Lisbon", oni_settings::Date::now(), vec![print_a.clone()]);
-    held.paths = Some([(print_a.clone(), old_a.clone())].into());
+    let held = project::Project::new("Lisbon", oni_settings::Date::now(), vec![old_a.clone()]);
     project::save(&d.support, &project::ProjectsFile { version: 1, projects: vec![held] }).unwrap();
     let mut preferences = oni_app::preferences::Preferences::load(&d.support);
     preferences.set("navigatorUnfolded", serde_json::json!([old.clone()])).unwrap();
@@ -185,8 +184,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     let rows: Vec<(String, String)> = d.index().under(&d.path("Home/Scans")).into_iter().map(|e| (e.path, e.fingerprint)).collect();
     assert_eq!(rows.len(), 2, "{rows:?}");
     assert!(rows.contains(&(new_a.clone(), print_a.clone())) && rows.contains(&(new_b.clone(), print_b.clone())), "{rows:?}");
-    let recorded = project::load(&d.support).projects[0].paths.clone().unwrap_or_default();
-    assert_eq!(recorded.get(&print_a), Some(&new_a), "the project's recorded path follows");
+    assert_eq!(project::load(&d.support).projects[0].members, [new_a.clone()], "the project's member follows");
     let unfolded = oni_app::preferences::Preferences::load(&d.support).value("navigatorUnfolded").cloned();
     assert_eq!(unfolded, Some(serde_json::json!([new.clone()])), "the fold follows");
     rig.until("the folder there", Duration::from_secs(20), || ctl.state.borrow().read_done() && banner(&shell).is_none());

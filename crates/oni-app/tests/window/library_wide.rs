@@ -259,7 +259,7 @@ pub(crate) fn a_rename_moves_the_projects_recorded_path() {
     rest(&rig);
     click(&rig, &shell, "A", false);
     cell_menu(&rig, &shell, "A", "New Project from");
-    let recorded = || project::load(&support).projects[0].paths.clone().unwrap_or_default().into_values().collect::<Vec<_>>();
+    let recorded = || project::load(&support).projects[0].members.clone();
     assert_eq!(recorded(), [d.at("Home/Scans/Roll 1/A.tif")]);
     // A hand folds Sub, and A stays selected.
     let lib = shell.window.global::<Library>();

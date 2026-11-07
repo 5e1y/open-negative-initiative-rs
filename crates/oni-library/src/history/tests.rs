@@ -86,6 +86,28 @@ fn a_medal_step_keeps_what_each_photo_wore_and_one_that_changed_nothing_opens_no
     assert!(!idle.can_undo());
 }
 
+/// Add to Project is one step: the projects it changed, each with its members before and after,
+/// carried by a folder renamed since; it names no photo, so an undo redraws none.
+#[test]
+fn a_members_step_keeps_the_projects_it_changed_and_follows_a_rename() {
+    let (client, other) = (Id::new(), Id::new());
+    let list = |items: &[&str]| items.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+    let before = BTreeMap::from([(client, list(&["/r10/a"])), (other, list(&["/r8/b"]))]);
+    let after = BTreeMap::from([(client, list(&["/r10/a", "/r8/a"])), (other, list(&["/r8/b"]))]);
+    let mut h = History::default();
+    h.record_members(Members { before, after }, "Add to Project");
+    assert_eq!((h.undo_label(), h.undo_paths()), (Some("Add to Project"), BTreeSet::new()));
+    h.follow(&[Move { from: "/r8".into(), to: "/Roll 8".into() }]);
+    let step = h.undo_step().and_then(|s| s.members).expect("a members step");
+    assert_eq!(step.before, BTreeMap::from([(client, list(&["/r10/a"]))]), "a project left as it was stays out");
+    assert_eq!(step.after[&client], list(&["/r10/a", "/Roll 8/a"]));
+    // Twin: a gesture that changed no project's members opens no step.
+    let mut idle = History::default();
+    let same = BTreeMap::from([(client, list(&["/r10/a"]))]);
+    idle.record_members(Members { before: same.clone(), after: same }, "Add to Project");
+    assert!(!idle.can_undo());
+}
+
 #[test]
 fn a_folder_renamed_after_a_new_roll_is_where_its_undo_walks_from() {
     let (neutral, edited) = pair();

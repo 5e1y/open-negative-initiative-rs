@@ -72,13 +72,10 @@ fn scratch() -> (PathBuf, PathBuf) {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 40.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.65 + i as f32 / 60.0);
     }
-    let fingerprint = |name: &str| {
-        let path = oni_library::paths::canonical(&scans.join(name));
-        oni_library::library::indexed(&path).expect("a readable TIFF").fingerprint
-    };
+    let member = |name: &str| oni_library::paths::canonical(&scans.join(name));
     let at = |minutes: f64| Date::since_reference_date(8e8 + minutes * 60.0);
-    let trip = ["Roll B/B02.tif", "Roll A/A03.tif", "Roll B/B04.tif", "Roll A/A01.tif"].map(fingerprint).to_vec();
-    let other = ["Roll A/A00.tif", "Roll B/B00.tif"].map(fingerprint).to_vec();
+    let trip = ["Roll B/B02.tif", "Roll A/A03.tif", "Roll B/B04.tif", "Roll A/A01.tif"].map(member).to_vec();
+    let other = ["Roll A/A00.tif", "Roll B/B00.tif"].map(member).to_vec();
     let projects = vec![Project::new("Other", at(1.0), other), Project::new("Trip", at(2.0), trip)];
     project::save(&root.join("Support"), &ProjectsFile { version: 1, projects }).unwrap();
     (root, scans)
