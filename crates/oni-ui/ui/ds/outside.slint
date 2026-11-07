@@ -4,7 +4,8 @@
 // a control holding the keyboard that it misses gives it back, a picker whose release comes without it opens.
 export global Outside {
     in-out property <int> presses;
-    // Bumped by a field or a control a press missed, so the window's key monitor takes the keyboard back.
+    // Bumped by a field or a control a press missed, or a value typed in, so the window's key monitor
+    // takes the keyboard back.
     in-out property <int> released;
 }
 

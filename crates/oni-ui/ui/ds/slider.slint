@@ -6,6 +6,7 @@ import { Knob } from "knob.slint";
 import { SliderFill, Rail } from "rail.slint";
 import { ValueHeader, Readouts } from "readout.slint";
 import { Tips } from "base.slint";
+import { Outside } from "outside.slint";
 import { Dial } from "dial.slint";
 
 // A number typed over a slider's readout, which Rust reads: the steps that reach it from the readout,
@@ -26,8 +27,8 @@ component StepKey inherits Button {
     accessible-label: self.help;
 }
 
-// `DSSlider`: the readout, then a track whose row grabs and, pressed, takes the keyboard; Rust holds the
-// value and its timing. `stepped`: whole steps from `lowest` to `highest`, a keycap either side.
+// `DSSlider`: the readout, then a track whose row grabs and to which Tab alone gives the keyboard; Rust
+// holds the value and its timing. `stepped`: whole steps from `lowest` to `highest`, a keycap either side.
 export component Slider inherits VerticalLayout {
     in property <int> field;
     in property <string> label;
@@ -122,7 +123,7 @@ export component Slider inherits VerticalLayout {
         root.step-at(root.detented(area.start-at, (area.start + dx) / max(1px, track.width)) * track.width)
     }
     // The steps from the readout to a number typed over it, held on a stepped slider's range; Return
-    // leaves the keyboard to the slider, a press elsewhere has given it on already.
+    // gives the photos the keyboard back, a press elsewhere has given it on already.
     function type-in(text: string) {
         let by = Readouts.steps(root.readout, text, root.stepped ? root.step-reads : 0);
         let reach = root.stepped ? clamp(root.value + by, root.lowest, root.highest) - root.value : by;
@@ -130,7 +131,7 @@ export component Slider inherits VerticalLayout {
             root.step(root.field, reach);
         }
         if (!Keyboard.held) {
-            keys.focus();
+            Outside.released += 1;
         }
     }
     if root.header: ValueHeader {
@@ -204,8 +205,6 @@ export component Slider inherits VerticalLayout {
                     }
                     pointer-event(event) => {
                         if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                            keys.pressed = true;
-                            keys.focus();
                             self.fine = event.modifiers.alt;
                             self.start = parent.width * root.at;
                             self.start-at = root.at;
@@ -262,24 +261,18 @@ export component Slider inherits VerticalLayout {
                     running: area.scrolling;
                     triggered => { area.scrolling = false; }
                 }
-                // Over the rail's whole length, past the knob's travel as the rail runs. A hand's press gives it
-                // the keyboard with no ring beside the photo; Tab, or an arrow acting here, rings it.
-                keys := KeyScope {
-                    in-out property <bool> pressed;
+                // Over the rail's whole length, past the knob's travel as the rail runs. Tab alone gives it the
+                // keyboard, ringed: after the hand's work the arrows walk the photos and the digits rate them.
+                KeyScope {
                     x: -SliderStyle.knob-width / 2;
                     width: parent.width + SliderStyle.knob-width;
                     enabled: root.enabled;
                     radius: root.dial ? DialStyle.radius : self.height / 2;
-                    ring: !self.pressed;
-                    changed has-focus => {
-                        if (!self.has-focus) { self.pressed = false; }
-                    }
                     key-pressed(event) => {
                         let by = event.text == Key.RightArrow || event.text == Key.UpArrow ? 1 : event.text == Key.LeftArrow || event.text == Key.DownArrow ? -1 : 0;
                         if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
                             return reject;
                         }
-                        self.pressed = false;
                         root.step(root.field, event.modifiers.shift ? by * root.big : by);
                         accept
                     }

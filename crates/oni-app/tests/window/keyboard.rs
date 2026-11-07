@@ -160,35 +160,40 @@ pub(crate) fn a_sheet_keeps_tab_inside_it_while_it_covers_the_window() {
     assert_eq!(p.get_clicks(), 1, "uncovered, the window's key takes Tab");
 }
 
-pub(crate) fn a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere() {
+pub(crate) fn a_slider_worked_by_hand_leaves_the_arrows_to_the_photos() {
     let (rig, p) = probe();
     let right: SharedString = Key::RightArrow.into();
     let escape: SharedString = Key::Escape.into();
     let (x, y) = (p.get_knob_x(), p.get_knob_y());
-    // The knob pressed is grabbed where it stands, the slider holding the keyboard: its arrows step it.
-    press(&rig, &p, x, y, true);
-    assert_eq!(p.get_steps(), 0, "a press on the knob moves nothing");
-    // The hand's press rings nothing beside the photo; an arrow acting on the slider rings it.
-    assert!(!ringed(&p), "a pressed slider draws no ring");
+    // A drag Slint alone sees, no hook handing the keyboard on: the slider takes none, the photos hear the arrow.
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
+    rig.window.dispatch_event(WindowEvent::PointerPressed { position: LogicalPosition::new(x, y), button: PointerEventButton::Left });
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x + 30.0, y) });
+    rig.window.dispatch_event(WindowEvent::PointerReleased { position: LogicalPosition::new(x + 30.0, y), button: PointerEventButton::Left });
+    rig.pump();
+    let dragged = p.get_steps();
+    assert!(p.get_monitor_focused() && !ringed(&p), "the photos keep the keyboard, nothing ringed");
     key(&rig, &p, &right);
-    assert!(ringed(&p), "twin: the arrow acting on it rings it");
+    assert_eq!((p.get_steps(), p.get_heard()), (dragged, right.clone()), "the arrow walks the photos");
+    // Twin: Tab gives the slider the keyboard, ringed, and its arrows step it.
+    for _ in 0..3 {
+        key(&rig, &p, "\t");
+    }
+    assert!(!p.get_monitor_focused() && ringed(&p), "Tab rings the slider holding the keyboard");
     key(&rig, &p, &right);
-    assert!(!p.get_monitor_focused() && p.get_held(), "the pressed slider holds the keyboard");
-    assert_eq!(p.get_steps(), 2, "its arrows step it");
-    rig.shot("keyboard-slider-pressed");
+    assert_eq!(p.get_steps(), dragged + 1, "its arrows step it");
+    rig.shot("keyboard-slider-tabbed");
     // Escape hands the keyboard back to the photos, which hear the next arrow.
     key(&rig, &p, &escape);
     assert!(p.get_monitor_focused(), "Escape gives the keyboard back to the photos");
     key(&rig, &p, &right);
-    assert_eq!((p.get_steps(), p.get_heard()), (2, right.clone()));
-    // A press elsewhere does as well.
-    press(&rig, &p, x, y, true);
+    assert_eq!(p.get_steps(), dragged + 1);
+    // A press beside the slider holding it does as well, through the window's pointer hook.
+    for _ in 0..3 {
+        key(&rig, &p, "\t");
+    }
     press(&rig, &p, x, p.get_bare_y(), true);
     assert!(p.get_monitor_focused(), "a press beside the slider gives the keyboard back");
-    // Twin: a press on another control leaves the keyboard with the photos.
-    press(&rig, &p, p.get_tabs_x(), p.get_tabs_y(), true);
-    key(&rig, &p, &right);
-    assert!(p.get_monitor_focused() && p.get_heard() == right && p.get_steps() == 2, "a pressed tab bar takes no keyboard");
 }
 
 pub(crate) fn a_number_typed_over_a_slider_readout_steps_it_there() {
@@ -204,10 +209,16 @@ pub(crate) fn a_number_typed_over_a_slider_readout_steps_it_there() {
     rig.key("\n");
     assert_eq!(p.get_steps(), 20, "Return takes the number typed");
     assert!(!p.get_entering());
-    // Return leaves the keyboard to the slider, whose arrows step on from the number typed.
+    // Return gives the photos the keyboard back, even a key Slint alone sees: the arrow walks them.
+    rig.key(&right);
+    assert!(p.get_monitor_focused() && p.get_heard() == right, "the photos hear the arrow after Return");
+    // Twin: Tab gives the slider the keyboard, whose arrows step on from the number typed.
+    for _ in 0..3 {
+        key(&rig, &p, "\t");
+    }
     key(&rig, &p, &right);
     assert_eq!(p.get_steps(), 21);
-    // Escape hands the value back unchanged; then the next Escape gives the photos the keyboard.
+    // Escape hands the value back unchanged.
     press(&rig, &p, x, y, true);
     rig.key("5");
     rig.key(&SharedString::from(Key::Escape));

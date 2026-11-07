@@ -49,15 +49,13 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
     assert_eq!(panel.get_tab(), 2, "DONE leaves the crop for the last panel");
     assert!(common::placed(w, Role::Button, "DONE").is_empty(), "twin: no DONE beside a pane");
 
-    // A slider pressed in the crop holds the keyboard: Escape gives it back, a second leaves the crop.
+    // A slider pressed in the crop leaves the keyboard with the photos: one Escape leaves the crop.
     rig.chord(Key::Control, "k");
     let rail = common::the(w, Role::Slider, "Angle");
     click(&rig, (rail.x + rail.width / 2.0, rail.y + rail.height - 4.0));
-    assert!(!w.get_keys_focused() && w.get_keys_held(), "the pressed slider holds the keyboard");
+    assert!(w.get_keys_focused(), "the pressed slider takes no keyboard");
     rig.key(&escape);
-    assert!(w.get_keys_focused() && panel.get_tab() == 1, "the slider's hold goes first");
-    rig.key(&escape);
-    assert_eq!(panel.get_tab(), 2, "then the crop");
+    assert_eq!(panel.get_tab(), 2, "Escape leaves the crop");
 
     // Return is De-dust's DONE as it is the crop's.
     ctl.act(oni_app::Act::Correction);

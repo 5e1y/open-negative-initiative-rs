@@ -32,7 +32,7 @@ export component FocusRing inherits Rectangle {
 }
 
 // A control's place in Tab's order, over the box it fills: Tab gives it the keyboard and rings it, a
-// click only on a slider or a folder's row, and any other press gives the keyboard back to the photos.
+// click only on a folder's row, and any other press gives the keyboard back to the photos.
 export component KeyScope inherits FocusScope {
     in property <length> radius;
     // A control; the window's monitor is the one scope that is not.

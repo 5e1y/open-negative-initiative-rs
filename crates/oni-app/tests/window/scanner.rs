@@ -217,12 +217,8 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(at(1) < 8 && at(-1) < 8, "{} and {}", at(-1), at(1));
     lab.invoke_clear(0);
     rig.pump();
-    // The rail pressed holds the keyboard, its arrows stepping D: Escape gives it back to the photos.
-    rig.key("\u{F703}");
-    assert_eq!(settings().scanner.d, 1, "the pressed rail takes the arrows");
-    rig.key("\u{1b}");
-    lab.invoke_clear(0);
-    rig.pump();
+    // The rail slid by the hand leaves the keyboard with the photos, whose arrows walk the frames.
+    assert!(w.get_keys_focused(), "the photos hold the keyboard after the slide");
     // D's keys stand at its rail's ends, keycaps in their ends' colours: a press steps once, ⇧ three times.
     let (minus, plus) = (common::the(w, Role::Button, "D −: toward dark"), common::the(w, Role::Button, "D +: toward light"));
     let row = |k: &common::Placed| (k.middle().1 - y).abs() < 1.0;

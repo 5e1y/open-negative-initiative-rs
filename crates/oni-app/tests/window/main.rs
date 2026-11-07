@@ -202,7 +202,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("keyboard::tab_walks_every_control_in_reading_order_each_answering_its_own_keys", keyboard::tab_walks_every_control_in_reading_order_each_answering_its_own_keys),
     ("keyboard::a_press_gives_the_keyboard_back_to_the_photos_and_a_key_whose_holder_is_gone_reaches_them", keyboard::a_press_gives_the_keyboard_back_to_the_photos_and_a_key_whose_holder_is_gone_reaches_them),
     ("keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window", keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window),
-    ("keyboard::a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere", keyboard::a_pressed_slider_takes_the_arrows_until_escape_or_a_press_elsewhere),
+    ("keyboard::a_slider_worked_by_hand_leaves_the_arrows_to_the_photos", keyboard::a_slider_worked_by_hand_leaves_the_arrows_to_the_photos),
     ("keyboard::a_number_typed_over_a_slider_readout_steps_it_there", keyboard::a_number_typed_over_a_slider_readout_steps_it_there),
     ("keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand", keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
