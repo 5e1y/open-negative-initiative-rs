@@ -7592,5 +7592,12 @@
     "title": "A tab opens at its top; a long project name wraps in the inspector and shows whole where it is cut",
     "status": "done",
     "detail": "Evaluation s-f5b562fe (Craft and Robustness, minor): after Add to Project the project grid opened scrolled, its first row under the title, and a long name was cut mid-word in the inspector. A surface switched to (Archive, Projects, the ONI Trash) opens at its top; the open photo lands only back from the editor (land_gallery). The inspector's name wraps over as many lines as it takes (EditableTitle); a row's title and a band's heading cut short by their ellipsis show whole under the pointer, and a tip whose words change under the hand is taken down, as a key's. Check: window project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole (twins: back from the editor the open photo lands down the grid; a short name is one line and shows no tip; mutations: no wrap fails at the wrap, no cut tip at the row)."
+  },
+  {
+    "id": 1550,
+    "type": "fix",
+    "title": "A member 1.5.6 named by its loading placeholder reads as a member with no print",
+    "status": "done",
+    "detail": "Third review of the projects (point 1): 1.5.6 names a photo added while its tile loads by its placeholder 'waiting-/path', its path beside; this build read that text as the photo's print, which no file carries, so the member stood as a missing tile and never learned its print. A text project::member::read rejects is no print: a version 1 text is then a member at its recorded path (else the path after the mark), with no print, and a version 2 or exact member's such print is dropped (file.rs is_print). The learned-print step then gives it its real print off its file. Check: project shipped_tests::a_member_1_5_6_named_by_its_placeholder_learns_its_real_print, a 1.5.6-shaped file (twin: the placeholder kept as a print stands missing and learns nothing; mutation: without the rule the check fails)."
   }
 ]

@@ -1,7 +1,8 @@
 //! `projects.json`, read in any format an app wrote it and written in one every build reads: the
 //! members as version 1 names them, with each one's exact path and print beside, which older builds drop.
 
-use super::member::{Member, distinct, exclusive};
+use super::member::{self, Member, distinct, exclusive};
+use crate::library::WAITING_MARK;
 use super::Project;
 use crate::paths;
 use oni_settings::json;
@@ -85,7 +86,7 @@ impl Written {
     fn read(self, named: &HashSet<String>) -> Project {
         let recorded = self.paths.unwrap_or_default();
         // A print shaped as a path is a path text a version 2 build took for a print with its path beside.
-        let spelt = |m: Member| Member { path: m.path.map(|p| paths::normal(&p).into_owned()), print: m.print.filter(|p| !is_path(p)) };
+        let spelt = |m: Member| Member { path: m.path.map(|p| paths::normal(&p).into_owned()), print: m.print.filter(|p| is_print(p)) };
         let members: Vec<Member> = match self.exact.filter(|exact| agree(exact, &self.members)) {
             Some(exact) => exact.into_iter().map(spelt).collect(),
             None => self
@@ -111,10 +112,15 @@ fn agree(exact: &[Member], texts: &[Writ]) -> bool {
 /// seen at; a print gives up a path another member is named by, as 1.5.6 records the copy it found.
 fn former(text: &str, recorded: &HashMap<String, String>, named: &HashSet<String>) -> Member {
     let spelt = |path: &str| paths::normal(path).into_owned();
+    let own = recorded.get(text).map(String::as_str);
     if is_path(text) {
-        return Member { path: Some(spelt(recorded.get(text).map_or(text, String::as_str))), print: None };
+        return Member { path: Some(spelt(own.unwrap_or(text))), print: None };
     }
-    let path = recorded.get(text).filter(|p| !named.contains(&p.to_lowercase())).map(|p| spelt(p));
+    // 1.5.6 names a photo still being read by its placeholder, the photo's path after the mark.
+    if !is_print(text) {
+        return Member { path: own.or_else(|| text.strip_prefix(WAITING_MARK)).filter(|p| !p.is_empty()).map(spelt), print: None };
+    }
+    let path = own.filter(|p| !named.contains(&p.to_lowercase())).map(spelt);
     Member { path, print: Some(text.to_owned()) }
 }
 
@@ -122,6 +128,11 @@ fn former(text: &str, recorded: &HashMap<String, String>, named: &HashSet<String
 /// a print starts with its file's size.
 pub fn is_path(text: &str) -> bool {
     text.starts_with(['/', '\\']) || text.as_bytes().get(1) == Some(&b':')
+}
+
+/// Whether a text is a print as read: neither a path nor a placeholder for a print not read yet.
+fn is_print(text: &str) -> bool {
+    !is_path(text) && member::read(text).is_some()
 }
 
 #[derive(Serialize)]

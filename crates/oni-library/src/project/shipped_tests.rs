@@ -174,3 +174,32 @@ fn a_file_from_a_newer_build_is_never_set_aside_or_written() {
     assert!(load(support).projects.is_empty());
     assert!(!file_path(support).exists());
 }
+
+/// 1.5.6 names a photo added while its tile was read by its placeholder, its path beside: this build
+/// reads a member with no print there, which stands at its file and learns the print it carries.
+#[test]
+fn a_member_1_5_6_named_by_its_placeholder_learns_its_real_print() {
+    let scratch = Scratch::new("projects-placeholder");
+    let support = scratch.path();
+    let (a, b) = ("/r/a.NEF", "/r/b.NEF");
+    let waiting = format!("{}{a}", crate::library::WAITING_MARK);
+    let recorded = BTreeMap::from([(waiting.clone(), a.to_owned()), ("1-b".to_owned(), b.to_owned())]);
+    let trip = shipped::Project { id: Id::new(), name: "Trip".into(), description: String::new(), created_at: stamp(), manual_order: None, members: vec![waiting.clone(), "1-b".into()], paths: Some(recorded) };
+    let file = shipped::ProjectsFile { version: 1, projects: vec![trip] };
+    std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
+    let mut read = load(support).projects;
+    assert_eq!(read[0].members, [Member::new(Some(a), None), Member::new(Some(b), Some("1-b"))], "the placeholder is no print");
+    let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
+    for r in [row(a, "1-a"), row(b, "1-b")] {
+        index.upsert(&r).unwrap();
+    }
+    let found = project_standing::standing(&read, &[], &index, &Found::new());
+    assert!(found.found.is_empty() && found.rows.iter().all(|e| Member::of(e, None).print.is_some()), "each stands at its own file, none missing");
+    assert!(project_standing::learn(&mut read, &[], &index));
+    assert_eq!(read[0].members[0], Member::new(Some(a), Some("1-a")), "its real print learned off its file");
+    // Twin: the placeholder kept as a print disagrees with the file, which then stands missing, and learns nothing.
+    let mut kept = vec![Project::new("Trip", stamp(), vec![Member::new(Some(a), Some(&waiting))])];
+    let lost = project_standing::standing(&kept, &[], &index, &Found::new());
+    assert!(lost.rows.iter().all(|e| Member::of(e, None).print.is_none()), "a missing tile stands for it");
+    assert!(!project_standing::learn(&mut kept, &[], &index));
+}
