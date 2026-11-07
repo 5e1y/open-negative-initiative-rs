@@ -6920,5 +6920,12 @@
     "title": "A roll's glyph is a film canister, told from a folder at a glance",
     "status": "done",
     "detail": "Evaluation s-c82a3414: a prepared roll and a plain folder differed by a subtle folder-like glyph. The roll glyph is now a 35 mm canister drawn in the Trinil set's stroke, knob, flanged caps and leader with its holes, wherever a roll is drawn as a line glyph: the navigator's and the tree's rows, a stock at a row's size, a project card without pictures and Paste to Roll. Folders keep the folder glyphs; an unprepared roll keeps the warning mark its card shows, in the same ink."
+  },
+  {
+    "id": 1448,
+    "type": "interface",
+    "title": "Rotate and Mirror draw their moves in the icon family",
+    "status": "done",
+    "detail": "Evaluation s-c82a3414: the crop tab's keys carried typed arrows unlike the drawn glyphs elsewhere, the two mirrors differing by an arrow alone. Each key keeps its word and draws its move: Rotate a photo under a clockwise arc, Mirror a flip across an upright axis, the second Mirror a flip across a level axis, a glyph of its own drawn in the same stroke. A worded key's help is now its accessible description, so the two Mirror keys stay apart for a screen reader. Checks: window panel_bindings presses each mirror by its help, sidebars keeps the three keys evenly apart."
   }
 ]

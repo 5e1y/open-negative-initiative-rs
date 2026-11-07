@@ -1554,16 +1554,16 @@ msgid "Turns the photo a quarter clockwise at each press, or flips it left for r
 msgstr "Tourne la photo d’un quart de tour dans le sens horaire à chaque pression, ou l’inverse gauche-droite ou haut-bas, comme l’exige un négatif numérisé à l’envers."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Rotate ↻"
-msgstr "Pivoter ↻"
+msgid "Rotate"
+msgstr "Pivoter"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Rotate 90° Clockwise"
 msgstr "Faire pivoter de 90° vers la droite"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Mirror ↔"
-msgstr "Miroir ↔"
+msgid "Mirror"
+msgstr "Miroir"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Unmirror left for right"
@@ -1572,10 +1572,6 @@ msgstr "Annuler le retournement horizontal"
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Mirror left for right"
 msgstr "Retourner horizontalement"
-
-#: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Mirror ↕"
-msgstr "Miroir ↕"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Unmirror top for bottom"
