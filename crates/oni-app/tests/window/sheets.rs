@@ -301,3 +301,56 @@ pub(crate) fn a_clash_with_an_original_offers_rename_and_keeps_it() {
     assert_eq!(std::fs::read(&original).unwrap(), b"the camera's own");
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// The preset name sheet over the export: its field holds the keys, a click beside it keeps what was
+/// typed, Escape keeps nothing, Return saves the name typed.
+pub(crate) fn the_preset_name_sheet_holds_the_keys_and_answers_them() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the preset name sheet is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-preset-name-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Scans");
+    common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
+    let ctl = shell.ctl.clone();
+    let w = &shell.window;
+    let e = w.global::<Exporting>();
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    w.global::<Library>().invoke_tile_clicked(0, false, false);
+    ctl.act(oni_app::Act::Export);
+    rig.until("the line", Duration::from_secs(120), || export_card::lines(w).iter().all(|l| l.ready));
+    rig.settle();
+    // Save as Preset… ends the picker's list.
+    let save = || slint::Model::row_count(&e.get_preset_lines()) as i32 - 1;
+    assert!(!w.get_sheet_shown(), "twin: no sheet before the line is chosen");
+    assert!(w.get_keys_focused(), "the key monitor holds the keys over the export");
+    e.invoke_preset(save());
+    rig.pump();
+    println!("shot {}", rig.shot("preset-name-sheet").display());
+    assert!(e.get_naming_shown() && w.get_sheet_shown(), "the name sheet covers the window");
+    assert!(!w.get_keys_focused(), "its field holds the keys");
+    rig.key("Lab");
+    assert_eq!(e.get_naming_name().as_str(), "Lab", "typing reaches the field");
+    click(&rig, 12.0, 400.0);
+    assert!(e.get_naming_shown() && e.get_naming_name() == "Lab", "a click beside the sheet keeps the name typed");
+    rig.key("\u{1b}");
+    rig.pump();
+    assert!(!e.get_naming_shown() && export_card::kept(&ctl).is_empty(), "Escape from the field keeps nothing");
+    assert!(w.get_keys_focused(), "closed, the keys come back");
+    e.invoke_preset(save());
+    rig.pump();
+    rig.drawn();
+    assert_eq!(e.get_naming_name().as_str(), "", "the sheet opens on no name");
+    rig.key("Lab");
+    rig.key("\n");
+    rig.pump();
+    assert!(!e.get_naming_shown(), "Return commits");
+    assert_eq!(export_card::kept(&ctl).iter().map(|k| k.name.as_str()).collect::<Vec<_>>(), ["Lab"], "twin of Escape: Return keeps the name typed");
+    let _ = std::fs::remove_dir_all(&root);
+}

@@ -184,7 +184,7 @@ impl Ctl {
 
     fn escape_sheet(self: &Rc<Self>, w: &crate::MainWindow) {
         let e = w.global::<crate::Exporting>();
-        if e.get_confirm_shown() || e.get_notice_shown() || e.get_papers_shown() {
+        if e.get_confirm_shown() || e.get_notice_shown() || e.get_naming_shown() || e.get_papers_shown() {
             self.export_escape();
         } else if w.global::<crate::Notice>().get_shown() {
             w.global::<crate::Notice>().invoke_close();

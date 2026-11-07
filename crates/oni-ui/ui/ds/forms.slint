@@ -64,6 +64,30 @@ export component Field inherits VerticalLayout {
     }
 }
 
+// A note as tall as the tallest of `notes`, every text it may come to say, so what it says changes
+// within its room and never moves what follows; the texts that measure it stay unseen and unread.
+export component SteadyNote inherits Rectangle {
+    in property <string> text;
+    in property <[string]> notes;
+    height: max(shown.preferred-height, room.preferred-height);
+    room := HorizontalLayout {
+        x: 0px;
+        y: 0px;
+        width: root.width * root.notes.length;
+        height: self.preferred-height;
+        visible: false;
+        for note in root.notes: Label { width: root.width; role: TextRole.note; text: note; accessible-role: none; }
+    }
+    shown := Label {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: self.preferred-height;
+        role: TextRole.note;
+        text: root.text;
+    }
+}
+
 // `DSWarning`: the warning's triangle, then its sentence, on the panel's own ground: the orange stays
 // in the glyph, as a band of it beside the photo would tint how its colours are judged.
 export component WarningBand inherits HorizontalLayout {

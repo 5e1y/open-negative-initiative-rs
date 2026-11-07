@@ -112,7 +112,7 @@ impl Ctl {
     pub(in crate::app) fn export_escape(self: &Rc<Self>) -> bool {
         let (shown, sheet) = {
             let c = self.export.borrow();
-            (c.shown, c.confirm.is_some() || c.notice.is_some() || c.film_row.is_some() || c.papers.shown)
+            (c.shown, c.confirm.is_some() || c.notice.is_some() || c.naming.is_some() || c.film_row.is_some() || c.papers.shown)
         };
         if sheet {
             self.close_export_sheets();
@@ -129,6 +129,8 @@ impl Ctl {
             let mut c = self.export.borrow_mut();
             c.confirm = None;
             c.notice = None;
+            c.naming = None;
+            c.draft.clear();
             c.film_row = None;
             c.papers.shown = false;
         }

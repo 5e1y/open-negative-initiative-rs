@@ -35,6 +35,11 @@ fn press(rig: &common::Rig, window: &impl ComponentHandle, role: Role, name: &st
 
 /// A shell on one TIFF naming no profile, its frame open and rendered.
 pub(crate) fn opened(name: &str) -> Option<(common::Rig, Shell, PathBuf)> {
+    opened_with(name, |_| {})
+}
+
+/// `opened`, its support folder first laid by `seed` as an earlier build left it.
+pub(crate) fn opened_with(name: &str, seed: impl FnOnce(&std::path::Path)) -> Option<(common::Rig, Shell, PathBuf)> {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -48,6 +53,7 @@ pub(crate) fn opened(name: &str) -> Option<(common::Rig, Shell, PathBuf)> {
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     std::fs::create_dir_all(support.join("FlatFields")).unwrap();
     std::fs::write(support.join("FlatFields/masks.json"), r#"[{"id":"a1","name":"Rig"}]"#).unwrap();
+    seed(&support);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);

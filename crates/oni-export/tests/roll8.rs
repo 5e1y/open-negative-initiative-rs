@@ -279,7 +279,7 @@ fn the_estimate_holds_on_roll_8() {
     let Some(roll) = oni_fixtures::raw_dir("the_estimate_holds_on_roll_8") else { return };
     let presets = oni_export::Preset::ALL.map(|p| (p, p.applied(&Settings::default())));
     let frames = files(&roll, "nef");
-    let mut worst = [0.0f64; 3];
+    let mut worst = [0.0f64; 4];
     let mut former_best = f64::INFINITY;
     for path in frames.iter().step_by(4) {
         let full = decoded(path);
@@ -310,12 +310,19 @@ fn the_estimate_holds_on_roll_8() {
             }
         }
     }
-    println!("worst error: Instagram {:.1} %, Display {:.1} %, Print {:.1} %", 100.0 * worst[0], 100.0 * worst[1], 100.0 * worst[2]);
+    println!(
+        "worst error: Instagram {:.1} %, Display {:.1} %, Print {:.1} %, Web {:.1} %",
+        100.0 * worst[0],
+        100.0 * worst[1],
+        100.0 * worst[2],
+        100.0 * worst[3]
+    );
     // A file within the half-size decode is its own sample's encode; past it a JPEG's bytes per pixel
     // fall as the frame grows, ZIP's hold.
     assert!(worst[0] < 0.02, "Instagram estimate off by {:.1} %", 100.0 * worst[0]);
     assert!(worst[1] < 0.15, "Display estimate off by {:.1} %", 100.0 * worst[1]);
     assert!(worst[2] < 0.03, "Print estimate off by {:.1} %", 100.0 * worst[2]);
+    assert!(worst[3] < 0.02, "Web estimate off by {:.1} %", 100.0 * worst[3]);
     assert!(former_best > 4.0, "the former reading is off by only {:.0} %", 100.0 * former_best);
 }
 

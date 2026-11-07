@@ -14,10 +14,12 @@ pub enum Preset {
     FullDisplay,
     #[serde(rename = "Print")]
     FullPrint,
+    #[serde(rename = "Web")]
+    Web,
 }
 
 impl Preset {
-    pub const ALL: [Preset; 3] = [Preset::Instagram, Preset::FullDisplay, Preset::FullPrint];
+    pub const ALL: [Preset; 4] = [Preset::Instagram, Preset::FullDisplay, Preset::FullPrint, Preset::Web];
 
     /// The key's name, also its identity.
     pub fn raw_value(self) -> &'static str {
@@ -25,6 +27,7 @@ impl Preset {
             Preset::Instagram => "Instagram",
             Preset::FullDisplay => "Display",
             Preset::FullPrint => "Print",
+            Preset::Web => "Web",
         }
     }
 
@@ -56,6 +59,15 @@ impl Preset {
                 out.resize = Resize::Full;
                 out.compress_tiff = true;
                 out.jpeg_quality = 1.0;
+                out.hdr = false;
+            }
+            Preset::Web => {
+                out.set_format(Format::Jpeg);
+                out.set_space(Space::Srgb);
+                // A page's picture: sharp on a wide screen, light enough to load at once.
+                out.resize = Resize::LongestEdge(2048);
+                out.compress_tiff = true;
+                out.jpeg_quality = 0.85;
                 out.hdr = false;
             }
         }
