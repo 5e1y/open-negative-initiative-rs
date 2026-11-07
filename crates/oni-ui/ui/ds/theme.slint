@@ -157,24 +157,21 @@ export global ButtonStyle {
     out property <length> lamp: DS.control-lamp-size;
     // A flat key's face, the keycap's grey laid flat, and the plate keycaps share as one socket.
     out property <color> face: Colour.raised;
-    // A flat key's own edge, the dividers' line: two keys side by side read apart before the hand comes.
-    out property <color> edge: Colour.separator;
-    // The lit face of a key that is on, a flat key's or a cap's: lit as a selected row is, never tinted,
-    // so the accent stays the view's one primary.
+    // The lit face of a key that is on, a flat key's or a cap's, lit as a selected row is, never tinted:
+    // the accent stays the view's one primary; on the bar, a step over the hand's veil, never read as it.
     out property <color> on: Colour.raised.mix(Colour.white, 1 - Colour.row-selected.alpha / 255);
     // A latching key's lamp once lit: the scanner screen's phosphor, a glow with no hue beside the photo.
     out property <color> latch: DS.palette-lcd-ink;
-    // The hand's light over a face, and its press, a step brighter.
+    // The hand's light over a face, and its press, a step brighter: on the bar, the ground a flat key shows.
     out property <color> veil: Colour.hover;
     out property <color> veil-pressed: #ffffff26;
     // The keycap (`DSPanelButton`), its standard 40 pt key and its grey, kept for the few keys that
     // switch the mode, commit a screen or run an automatic action.
     out property <length> cap-height: DS.control-keycap-height;
     out property <color> cap: DS.palette-keycap;
-    // The one primary key's face: the accent sunk into the keycap's grey, so it never outshines the photo.
-    out property <color> primary: Colour.accent.mix(ButtonStyle.cap, 0.4);
-    // The bar's primary keeps the keycap's grey, its glyph alone in the accent: 3.5:1 on the cap.
-    out property <color> primary-glyph: Colour.accent;
+    // The one primary key's face: the accent at 60 % on the keycap's grey, blue at a glance and calmer than
+    // the accent beside the photo; its white legend 6:1.
+    out property <color> primary: Colour.accent.mix(ButtonStyle.cap, 0.6);
     // The legend at a step of the type scale: a keycap's in capitals, bold and 0.5 pt apart; a flat
     // key's as written, semibold and set solid.
     out property <length> legend: Type.caption;
@@ -188,9 +185,6 @@ export global ButtonStyle {
     out property <length> bar-glyph-key: DS.control-field-height;
     out property <length> bar-key-padding: Space.s;
     out property <length> bar-legend-gap: Space.xxs;
-    // A bar's key that is on, pressed into the bar: a hollow as the tab bar's, its ground and shade.
-    out property <color> sunk: Colour.canvas;
-    out property <float> sunk-shade: 0.14;
 }
 
 export global SectionStyle {

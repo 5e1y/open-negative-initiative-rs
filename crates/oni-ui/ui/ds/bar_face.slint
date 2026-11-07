@@ -9,8 +9,6 @@ export component BarFace inherits Rectangle {
     in property <bool> turned;
     in property <length> glyph;
     in property <color> ink;
-    // The glyph's own ink, the view's primary wearing its accent there alone.
-    in property <color> glyph-ink: root.ink;
     in property <length> legend;
     in property <int> weight;
     in property <length> tracking;
@@ -26,7 +24,7 @@ export component BarFace inherits Rectangle {
                 width: root.glyph;
                 height: root.glyph;
                 transform-rotation: root.turned ? 90deg : 0deg;
-                ink: root.glyph-ink;
+                ink: root.ink;
             }
         }
         if root.worded: HorizontalLayout {

@@ -1,11 +1,15 @@
-//! The accent on each screen's own commit alone: ADD FOLDER… or PREPARE ROLL in the gallery, EXPORT in the
-//! editor, a tool's DONE while the crop or De-dust stands open, none on the projects or in the ONI Trash. On the
-//! bar it is the commit's glyph alone, its keycap the bar's grey; a DONE keeps its accent face.
+//! The accent on each screen's one primary: ADD FOLDER… on an empty archive, PREPARE ROLL beside a roll
+//! never measured, EXPORT at the bar's right end once it can act, in the gallery as in the editor, a tool's
+//! DONE while the crop or De-dust stands open, none on the projects or in the ONI Trash. Each is a keycap
+//! filled with the accent, as a DONE is.
 
 use oni_app::app::{Options, Shell};
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Act, App, Bar, Library};
 use oni_core::{Archive, EditorStore};
+use oni_settings::frame::RollReference;
+use oni_settings::sidecar::{self, WriteOptions};
+use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::platform::WindowEvent;
 use slint::ComponentHandle;
 use std::path::PathBuf;
@@ -29,13 +33,12 @@ fn blue(rig: &common::Rig, key: common::Placed) -> (usize, f32) {
     (lit, lit as f32 / total.max(1) as f32)
 }
 
-/// A glyph in the accent on a grey face: a 16 pt stroke draws some tens of pixels, a fill most of the key.
-const GLYPH: usize = 12;
-const FILL: f32 = 0.05;
+/// A key filled with the accent: most of its box blue, as a DONE's; a glyph alone in the accent, some tens
+/// of pixels, stays under a twentieth of it.
+const FILL: f32 = 0.5;
 
-/// Whether a bar key wears the accent as the bar does: on its glyph, never as its face.
-fn accented((lit, share): (usize, f32)) -> bool {
-    lit >= GLYPH && share < FILL
+fn filled((_, share): (usize, f32)) -> bool {
+    share > FILL
 }
 
 pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
@@ -45,10 +48,16 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     };
     let root = std::env::temp_dir().join(format!("oni-app-toolbar-accent-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let (folder, measured, support, caches) = (root.join("Scans"), root.join("Measured"), root.join("Support"), root.join("Caches"));
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
+    // A roll measured once: nothing waits on Prepare Roll.
+    let done = measured.join("C.tif");
+    common::graded_tiff(&done, 120, 80, 0.6);
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, false);
+    s.roll_reference = Some(RollReference { id: Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
+    sidecar::write(&s, &done, WriteOptions::default()).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
@@ -62,23 +71,33 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
     // The bar's key so named.
-    let face = |label: &str| {
+    let key = |label: &str| {
         rig.settle();
         let keys: Vec<_> = common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).collect();
         assert_eq!(keys.len(), 1, "one {label:?} on the bar: {keys:?}");
-        blue(&rig, keys[0])
+        keys[0]
     };
-    // An empty archive: a folder to add is all there is to do.
-    let add = face("ADD FOLDER…");
+    let face = |label: &str| blue(&rig, key(label));
+    // EXPORT ends the bar, a bar's padding from the window's right edge, no key after it.
+    let at_end = || {
+        let export = key("EXPORT");
+        let after = common::placed_all(w, Role::Button).into_iter().filter(|k| k.y < bar.get_height() && k.x > export.x).count();
+        ((export.x + export.width - (1728.0 - 8.0)).abs() < 0.5, after)
+    };
+
+    // An empty archive: a folder to add is all there is to do, EXPORT out of reach at the end.
+    let (add, export) = (face("ADD FOLDER…"), face("EXPORT"));
     println!("shot {}", rig.shot("toolbar-accent-archive").display());
-    assert!(accented(add), "ADD FOLDER… wears the accent on its glyph, its face grey: {add:?}");
-    // A roll never measured: Prepare Roll takes it, and the slot keeps its cap without it.
+    assert!(filled(add) && export.0 == 0, "ADD FOLDER… alone filled with the accent: {add:?} {export:?}");
+    assert_eq!(at_end(), (true, 0), "EXPORT at the gallery's right end");
+    assert!(key("ADD FOLDER…").x < key("Reset Photo").x, "ADD FOLDER… in the centre, before Reset");
+    // A roll never measured: Prepare Roll takes it.
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     rig.until("the roll found unmeasured", Duration::from_secs(10), || lib.get_roll_unmeasured());
-    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
+    let (prepare, add, export) = (face("PREPARE ROLL"), face("ADD FOLDER…"), face("EXPORT"));
     println!("shot {}", rig.shot("toolbar-accent-unmeasured").display());
-    assert!(accented(prepare) && add.0 == 0, "PREPARE ROLL alone wears the accent: {prepare:?} {add:?}");
+    assert!(filled(prepare) && add.0 == 0 && export.0 == 0, "PREPARE ROLL alone filled: {prepare:?} {add:?} {export:?}");
     // One Prepare Roll on screen: the info column's notice points to the bar's, with no key of its own.
     let keys = |label: &str| common::placed(w, Role::Button, label).len();
     assert_eq!((keys("PREPARE ROLL"), keys("Prepare Roll")), (1, 0), "the bar's key alone prepares the roll");
@@ -89,31 +108,42 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     let export = face("EXPORT");
     println!("shot {}", rig.shot("toolbar-accent-editor").display());
-    assert!(accented(export), "EXPORT wears the accent on its glyph, its keycap grey: {export:?}");
-    for key in ["BACK", "Copy", "Settings"] {
-        assert_eq!(face(key).0, 0, "{key} wears no accent");
+    assert!(filled(export), "EXPORT filled with the accent: {export:?}");
+    assert_eq!(at_end(), (true, 0), "EXPORT at the editor's right end, where it stands in the gallery");
+    for name in ["BACK", "Copy", "Settings"] {
+        assert_eq!(face(name).0, 0, "twin: {name} wears no accent");
     }
     for (tool, act) in [("crop", Act::Framing), ("De-dust", Act::Correction)] {
         bar.invoke_act(act);
         rig.settle();
         let (done, export) = (blue(&rig, common::the(w, Role::Button, "DONE")), face("EXPORT"));
         println!("shot {}", rig.shot(&format!("toolbar-accent-{tool}")).display());
-        // Twin: the measure sees a face filled with the accent, the DONE's, which the bar's commit never is.
-        assert!(done.1 > 0.5 && !accented(done) && export.0 == 0, "the {tool}'s DONE alone wears the accent: {done:?} {export:?}");
+        assert!(filled(done) && export.0 == 0, "the {tool}'s DONE alone wears the accent: {done:?} {export:?}");
         bar.invoke_act(act);
         let export = face("EXPORT");
-        assert!(accented(export) && common::placed(w, Role::Button, "DONE").is_empty(), "twin: the {tool} left, EXPORT takes it back: {export:?}");
+        assert!(filled(export) && common::placed(w, Role::Button, "DONE").is_empty(), "twin: the {tool} left, EXPORT takes it back: {export:?}");
     }
     bar.invoke_act(Act::ToggleMode);
     rig.until("the gallery again", Duration::from_secs(10), || w.global::<App>().get_gallery());
-    // The projects and the ONI Trash, where neither key is the screen's: no accent.
+    // A measured roll with a photo picked: the gallery's EXPORT is its primary, ADD FOLDER… a key like any other.
+    shell.open_folder(&measured);
+    rig.until("the measured folder read", Duration::from_secs(30), || ctl.state.borrow().read_done() && oni_app::app::tiles(w).iter().any(|t| t.caption == "C"));
+    lib.invoke_tile_clicked(tile("C"), false, false);
+    rig.until("the roll found measured", Duration::from_secs(10), || {
+        rig.pump();
+        !lib.get_roll_unmeasured()
+    });
+    let (export, add, prepare) = (face("EXPORT"), face("ADD FOLDER…"), face("PREPARE ROLL"));
+    println!("shot {}", rig.shot("toolbar-accent-gallery").display());
+    assert!(filled(export) && add.0 == 0 && prepare.0 == 0, "the gallery's EXPORT alone filled: {export:?} {add:?} {prepare:?}");
+    // The projects and the ONI Trash, where nothing is the screen's to commit: no accent.
     lib.invoke_surface_picked(1);
-    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
-    assert!(prepare.0 == 0 && add.0 == 0, "no accent on the projects: {prepare:?} {add:?}");
+    let (prepare, add, export) = (face("PREPARE ROLL"), face("ADD FOLDER…"), face("EXPORT"));
+    assert!(prepare.0 == 0 && add.0 == 0 && export.0 == 0, "no accent on the projects: {prepare:?} {add:?} {export:?}");
     lib.invoke_surface_picked(0);
     lib.invoke_trash_row_clicked(0);
-    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
+    let (prepare, add, export) = (face("PREPARE ROLL"), face("ADD FOLDER…"), face("EXPORT"));
     println!("shot {}", rig.shot("toolbar-accent-trash").display());
-    assert!(prepare.0 == 0 && add.0 == 0, "no accent in the ONI Trash: {prepare:?} {add:?}");
+    assert!(prepare.0 == 0 && add.0 == 0 && export.0 == 0, "no accent in the ONI Trash: {prepare:?} {add:?} {export:?}");
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -1,5 +1,5 @@
 // The picker: a field naming the value chosen, whose menu drops under it.
-import { Colour, Radius, Space, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, MedalStyle } from "theme.slint";
+import { Colour, Radius, Space, State, ButtonStyle, MenuStyle, FieldStyle, MedalStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
 import { Outside } from "outside.slint";
 import { Look } from "button.slint";
@@ -15,7 +15,7 @@ import { Medal } from "marks.slint";
 export enum PickerFace { field, pill, chip }
 
 // A field naming the value chosen, a chevron at its end; its words, lines or folders drop under it as a
-// menu. The field wears a text field's flat face and the chip a flat key's within its own edge, both lit
+// menu. The field wears a text field's flat face and the chip a flat key's, edgeless, both lit
 // under the hand as a flat key is; a pill lights the hover ground. Every face dims when it is out of reach.
 export component Picker inherits HorizontalLayout {
     in property <PickerFace> face: PickerFace.field;
@@ -73,8 +73,6 @@ export component Picker inherits HorizontalLayout {
         horizontal-stretch: 1;
         border-radius: root.corner;
         background: root.as-field ? Colour.hover.transparentize(1) : root.chip ? ButtonStyle.face : root.hovered ? Colour.hover : Colour.canvas;
-        border-width: root.chip ? Stroke.line : 0px;
-        border-color: ButtonStyle.edge;
         opacity: root.enabled ? 1 : State.disabled;
         accessible-role: button;
         accessible-label: root.note != "" ? root.value + " · " + root.note : root.value;
