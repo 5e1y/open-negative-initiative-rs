@@ -173,6 +173,8 @@ export global ButtonStyle {
     out property <color> cap: DS.palette-keycap;
     // The one primary key's face: the accent sunk into the keycap's grey, so it never outshines the photo.
     out property <color> primary: Colour.accent.mix(ButtonStyle.cap, 0.4);
+    // The bar's primary keeps the keycap's grey, its glyph alone in the accent: 3.5:1 on the cap.
+    out property <color> primary-glyph: Colour.accent;
     // The legend at a step of the type scale: a keycap's in capitals, bold and 0.5 pt apart; a flat
     // key's as written, semibold and set solid.
     out property <length> legend: Type.caption;
@@ -180,6 +182,15 @@ export global ButtonStyle {
     out property <int> legend-weight: 700;
     out property <length> legend-tracking: 0.5px;
     out property <int> word-weight: Type.strong;
+    // A key of the window's bar, flat or keycap: its glyph over its word, every key of the bar this tall;
+    // short of room, its glyph alone on a key as wide as a flat key is tall.
+    out property <length> bar-key: DS.control-keycap-height + Space.s;
+    out property <length> bar-glyph-key: DS.control-field-height;
+    out property <length> bar-key-padding: Space.s;
+    out property <length> bar-legend-gap: Space.xxs;
+    // A bar's key that is on, pressed into the bar: a hollow as the tab bar's, its ground and shade.
+    out property <color> sunk: Colour.canvas;
+    out property <float> sunk-shade: 0.14;
 }
 
 export global SectionStyle {
@@ -309,7 +320,7 @@ export global ShellStyle {
     out property <length> bar-padding: Space.s;
     // Between the bar's groups, three times a group's own gap between its keys, so they read at a glance.
     out property <length> bar-gap: Space.l;
-    out property <length> bar-height: DS.control-app-bar-keycap-height + 2 * Space.s;
+    out property <length> bar-height: ButtonStyle.bar-key + 2 * Space.s;
     // The export slot a hair narrower than `AppBar`'s (owner's call).
     out property <length> export-width: DS.control-app-bar-export-width - Space.m;
     out property <length> filter-width: DS.control-app-bar-filter-width;

@@ -1,5 +1,5 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and
-// ended past a rule by Reset and Trash, then the app's glyphs and the screen's commit; each a menu's gesture.
+// ended past a rule by Reset and Trash, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
@@ -7,13 +7,13 @@ import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
 import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
-import { RatingFilter } from "rating_filter.slint";
 import { Menus } from "menus.slint";
 import { Library } from "library.slint";
 
 // `rollStepKeys`, the faces' bar for the steps, numbered in their order: the current one held, a check on
 // each done, a step the roll does not walk out of reach, and all of them while it measures.
 export component RollStepKeys inherits Tabs {
+    height: ButtonStyle.bar-key;
     tabs: [@tr("Film Type"), @tr("Flat-Field"), @tr("Base"), @tr("Flags"), @tr("Window")];
     ordered: true;
     preferred-width: self.tabs.length * RollStyle.step-tab;
@@ -36,7 +36,7 @@ export global Bar {
     in property <int> targets: 1;
     // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
     in property <bool> can-select-all;
-    // Every photo ⌘A picks is picked: the select-all key's lamp.
+    // Every photo ⌘A picks is picked: the select-all key pressed in.
     in property <bool> whole;
     in property <bool> can-prepare;
     in property <bool> can-toggle-mode;
@@ -61,34 +61,34 @@ export global Bar {
     callback room-pressed();
 }
 
-// `AppBar.item`: a glyph key that names its gesture.
-component Item inherits Button { has-icon: true; square: true; in-bar: true;
+// `AppBar.item`: a flat key of the bar, its glyph over its word, the glyph alone short of room.
+component Key inherits Button {
     in property <Act> action;
-    clicked => { Bar.act(root.action); }
-}
-
-// `AppBar.word`: a word key.
-component Word inherits Button {
-    in property <Act> action;
-    in-bar: true;
-    clicked => { Bar.act(root.action); }
-}
-
-// A key of the centre, named by its word; short of room the word gives way to its glyph, a square key.
-component Tool inherits Word {
     in property <bool> compact;
     in property <string> word;
+    stacked: true;
+    in-bar: true;
+    has-icon: true;
     text: root.compact ? "" : root.word;
-    has-icon: root.compact;
+    clicked => { Bar.act(root.action); }
 }
 
-// ⌘A from the bar, one name and the first key of the centre in both modes, a latch lit while it holds:
-// every photo the gallery shows picked, or beside a photo the whole roll together; pressed lit, one again.
-component SelectAll inherits Tool {
+// A keycap of the bar, the mode's key or a commit: its glyph over its legend at every width.
+component Cap inherits Button {
+    in property <Act> action;
+    stacked: true;
+    in-bar: true;
+    has-icon: true;
+    keycap: true;
+    clicked => { Bar.act(root.action); }
+}
+
+// ⌘A from the bar, one name and the first key of the centre in both modes, pressed in while it holds:
+// every photo the gallery shows picked, or beside a photo the whole roll together; pressed again, one.
+component SelectAll inherits Key {
     action: Act.select-all;
     word: @tr("Select All");
     icon: Icons.contact-sheet;
-    latch: true;
     on: Bar.whole;
     help: self.on ? @tr("Back to One Photo")
         : Bar.editing ? @tr("Show the Whole Roll Together ({})", KeyWords.command + "A") : @tr("Select All ({})", KeyWords.command + "A");
@@ -97,8 +97,17 @@ component SelectAll inherits Tool {
 
 // Undo and Redo beside the mode key, in every mode: the history is the app's, never one screen's.
 component History inherits ButtonGroup {
-    Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
-    Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
+    in property <bool> compact;
+    Key { compact: root.compact; action: Act.undo; word: @tr("Undo"); icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
+    Key { compact: root.compact; action: Act.redo; word: @tr("Redo"); icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
+}
+
+// The app's own keys, one group, the same in every mode.
+component Own inherits ButtonGroup {
+    in property <bool> compact;
+    Key { compact: root.compact; action: Act.report; word: @tr("Feedback"); icon: Icons.feedback; help: @tr("Report a Bug / Give Feedback"); }
+    if Pairing.available: Key { compact: root.compact; action: Act.pair-phone; word: @tr("Phone"); icon: Icons.phone; help: @tr("Phone Remote"); }
+    Key { compact: root.compact; action: Act.settings; word: @tr("Settings"); icon: Icons.settings; help: @tr("Settings"); }
 }
 
 // A mode's groups a bar's gap apart, then past a rule the keys that reset and remove, one group, Trash last:
@@ -110,7 +119,7 @@ component Centre inherits HorizontalLayout {
     @children
     Divider { vertical: true; height: ButtonStyle.height; }
     ButtonGroup {
-        Tool {
+        Key {
             compact: root.compact;
             action: Act.reset;
             word: @tr("Reset Photo" | "Reset {n} Photos" % max(1, Bar.targets));
@@ -121,12 +130,11 @@ component Centre inherits HorizontalLayout {
             help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
             enabled: Bar.can-reset;
         }
-        Tool {
+        Key {
             compact: root.compact;
             action: Act.remove;
             word: @tr("Trash");
             icon: Icons.remove;
-            has-icon: true;
             kind: ButtonKind.destructive;
             help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash ({})", Bar.targets, KeyWords.command + KeyWords.delete)
                 : @tr("Move to ONI Trash ({})", KeyWords.command + KeyWords.delete);
@@ -136,34 +144,34 @@ component Centre inherits HorizontalLayout {
 }
 
 component EditorKeys inherits Centre {
-    // `centreKeys` by job: the canvas's views and tools, one family of latches each wearing its lamp, the
-    // faces, then the settings carried from photo to photo.
+    // `centreKeys` by job: the canvas's views and tools, each pressed in while it holds, the faces,
+    // then the settings carried from photo to photo.
     ButtonGroup {
         SelectAll { compact: root.compact; }
-        Tool {
+        Key {
             compact: root.compact;
             action: Act.framing;
             word: @tr("Crop");
             icon: Icons.framing;
             on: PanelState.tab == 1;
             help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
-            latch: true;
             enabled: Bar.has-photo && Bar.single;
         }
-        Tool {
+        Key {
             compact: root.compact;
             action: Act.correction;
             word: @tr("De-dust");
             icon: Icons.correction;
             on: PanelState.tab == 4;
-            latch: true;
             help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
             enabled: Bar.has-photo && Bar.single;
         }
-        Tool { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; latch: true; enabled: Bar.has-photo; }
+        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; enabled: Bar.has-photo; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
+    // As tall as the bar's keys, so the bar's line holds from end to end.
     Tabs {
+        height: ButtonStyle.bar-key;
         preferred-width: ScannerStyle.face-bar;
         max-width: ScannerStyle.face-bar;
         tabs: [@tr("Pro"), @tr("Scanner")];
@@ -174,8 +182,8 @@ component EditorKeys inherits Centre {
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup {
-        Tool { compact: root.compact; action: Act.copy; word: @tr("Copy"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
-        Tool {
+        Key { compact: root.compact; action: Act.copy; word: @tr("Copy"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
+        Key {
             compact: root.compact;
             action: Act.paste;
             word: @tr("Paste");
@@ -184,7 +192,7 @@ component EditorKeys inherits Centre {
             enabled: Bar.can-paste;
         }
         // Every frame of the roll rewritten at once, as the menu's title counts them, its notice's Undo after.
-        Tool {
+        Key {
             compact: root.compact;
             action: Act.paste-to-roll;
             word: @tr("Paste to Roll");
@@ -196,21 +204,18 @@ component EditorKeys inherits Centre {
 }
 
 component GalleryKeys inherits Centre {
-    // The photos picked and the photos shown, one group, opening on the key the editor's first opens on.
-    ButtonGroup {
-        SelectAll { compact: root.compact; }
-        RatingFilter { }
-    }
-    Word {
+    // The photos picked, opening on the key the editor's first opens on; the rating filter is the library's.
+    SelectAll { compact: root.compact; }
+    Cap {
         action: Act.prepare-roll;
         text: @tr("PREPARE ROLL");
-        keycap: true;
+        icon: Icons.prepare;
         kind: Bar.prepare-first ? ButtonKind.accent : ButtonKind.plain;
         help: @tr("Prepare the Roll");
         enabled: Bar.can-prepare;
     }
     // ⌘E from the bar, on what the menu's Export names: its title and its rule, so the two cannot disagree.
-    Tool {
+    Key {
         compact: root.compact;
         action: Act.export;
         word: Menus.titles.export;
@@ -223,14 +228,21 @@ component GalleryKeys inherits Centre {
 
 export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
-    // The bar with every word, read off hidden copies, never off the face shown, or the window's width
-    // would loop through it; narrower, the centre's words give way to glyphs.
-    property <length> full: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + history.preferred-width
+    // The bar with every word, read off hidden copies, never off the keys shown, or the window's width
+    // would loop through it; narrower, the flat keys' words give way to glyphs.
+    property <length> full: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + history-sizing.preferred-width
         + max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width)
-        + own.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
-    property <bool> compact: root.width < root.full;
+        + own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
+    // Settled once the bar is laid: the history's and the app's keys stand in the bar's own layout, so
+    // a binding would feed their widths back into the width that decides them.
+    property <bool> compact;
+    init => { root.compact = root.width < root.full; }
+    changed width => { root.compact = root.width < root.full; }
+    changed full => { root.compact = root.width < root.full; }
     // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
     property <bool> tool: Bar.editing && (PanelState.tab == 1 || PanelState.tab == 4);
+    // Out of the gallery, the mode key goes back to it.
+    property <bool> back: Bar.editing || Preparing.shown;
     // Under the keys, so only the room between them reaches it.
     TouchArea {
         pointer-event(event) => {
@@ -244,17 +256,18 @@ export component Toolbar inherits Surface {
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;
         cross-axis-alignment: center;
-        // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
-        mode := Word {
-            keycap: true;
+        // The mode key names its action, EDIT or BACK, as wide as the wider so the bar holds still; while a
+        // roll is prepared it leaves it, as Cancel does, except while it measures.
+        mode := Cap {
             action: Preparing.shown ? Act.leave-roll : Act.toggle-mode;
-            text: Bar.editing || Preparing.shown ? @tr("GALLERY") : @tr("EDITOR");
-            widest: @tr("GALLERY");
+            text: root.back ? @tr("BACK") : @tr("EDIT");
+            icon: root.back ? Icons.back : Icons.edit;
+            fixed-width: max(edit-sizing.preferred-width, back-sizing.preferred-width);
             help: Preparing.shown ? @tr("Gallery (Esc or {})", KeyWords.command + "G")
                 : Bar.editing ? @tr("Gallery (Esc, Space or {})", KeyWords.command + "G") : @tr("Editor (Space or {})", KeyWords.command + "G");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
-        history := History { }
+        history := History { compact: root.compact; }
         // The zone holds the widest set of keys with its words, and the widest compact one at least, alone
         // giving way; the set shown sits on the window's centre if it can, its faces narrowing first.
         Rectangle {
@@ -266,6 +279,10 @@ export component Toolbar inherits Surface {
             compact-sizing := EditorKeys { visible: false; compact: true; }
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
             steps-sizing := RollStepKeys { visible: false; }
+            history-sizing := History { visible: false; }
+            own-sizing := Own { visible: false; }
+            edit-sizing := Cap { visible: false; text: @tr("EDIT"); icon: Icons.edit; }
+            back-sizing := Cap { visible: false; text: @tr("BACK"); icon: Icons.back; }
             if Preparing.shown: RollStepKeys {
                 width: min(self.preferred-width, parent.width);
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
@@ -281,20 +298,15 @@ export component Toolbar inherits Surface {
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
         }
-        // The app's own glyphs, one group, their widths the same at every width of the window.
-        own := ButtonGroup {
-            Item { action: Act.report; icon: Icons.feedback; help: @tr("Report a Bug / Give Feedback"); }
-            if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
-            Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
-        }
+        own := Own { compact: root.compact; }
         // `ExportButton`: one slot, three faces (import in the gallery, export in the editor, an update over both),
         // the primary except beside a roll awaiting Prepare Roll, off the archive or under a tool; hidden while a roll is prepared.
-        Word {
+        Cap {
             property <bool> update: Bar.update-title != "";
             visible: !Preparing.shown;
             action: self.update ? Act.update : Bar.editing ? Act.export : Act.add-folder;
             text: self.update ? (Bar.updating ? @tr("UPDATING") : Bar.update-title) : Bar.editing ? @tr("EXPORT") : @tr("ADD FOLDER…");
-            keycap: true;
+            icon: self.update ? Icons.update : Bar.editing ? Icons.export : Icons.add-folder;
             kind: !Bar.prepare-first && !root.tool && (self.update || Bar.editing || Bar.archive) ? ButtonKind.accent : ButtonKind.plain;
             fixed-width: ShellStyle.export-width;
             help: self.update ? Bar.update-help

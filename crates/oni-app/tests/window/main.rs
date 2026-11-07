@@ -118,6 +118,7 @@ mod together_tools;
 mod told;
 mod toolbar;
 mod toolbar_accent;
+mod toolbar_keys;
 mod tooltip;
 mod tree_hand;
 mod tree_held;
@@ -326,6 +327,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar_accent::the_accent_lands_on_each_screens_own_commit", toolbar_accent::the_accent_lands_on_each_screens_own_commit),
+    ("toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_is_pressed_in", toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_is_pressed_in),
     ("toolbar::the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last", toolbar::the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
     ("tree_held::a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows", tree_held::a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows),

@@ -897,7 +897,7 @@ msgstr "COMMENCER"
 msgid "Website"
 msgstr "Site web"
 
-#: crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Feedback"
 msgstr "Avis"
 
@@ -2345,7 +2345,7 @@ msgstr "Général"
 msgid "Editor"
 msgstr "Éditeur"
 
-#: crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone"
 msgstr "Téléphone"
 
@@ -2458,12 +2458,12 @@ msgid "Export ({})"
 msgstr "Exporter ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "GALLERY"
-msgstr "GALERIE"
+msgid "BACK"
+msgstr "RETOUR"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "EDITOR"
-msgstr "ÉDITEUR"
+msgid "EDIT"
+msgstr "MODIFIER"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Gallery (Esc or {})"
