@@ -268,9 +268,17 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     e.invoke_format_picked(0);
     assert_eq!(e.get_bits(), "16 bits per channel");
     let full_height = e.get_height_text();
+    // The frame's own height, read off its decode; twin: the preview's proportion of its width, the
+    // preview rounded to its 2000 px, reads a row short, as the panel once announced it.
+    let decoded = oni_decode::decode(&roll.join("DSC_6432.NEF"), 1.0).unwrap();
+    assert_eq!(full_height, decoded.height.to_string(), "the full height is the decode's");
+    let preview = (2000.0 * decoded.height as f64 / decoded.width as f64).round();
+    assert_ne!((decoded.width as f64 * preview / 2000.0).round().to_string(), full_height.as_str());
+    drop(decoded);
     e.invoke_size_typed("2000".into(), full_height.clone());
     assert_eq!(e.get_width_text(), "2000", "a landscape's width is its long edge");
     assert!(e.get_resized());
+    let announced = e.get_dims().to_string();
     let destination = out.join("proofed.tiff");
     *answer.borrow_mut() = vec![destination.clone()];
     e.invoke_export();
@@ -282,7 +290,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     let file = std::fs::read(&destination).unwrap();
     let mut tiff = tiff::decoder::Decoder::new(Cursor::new(&file)).unwrap();
     let (tw, th) = tiff.dimensions().unwrap();
-    assert_eq!(tw, 2000);
+    assert_eq!(format!("{tw} × {th} px"), announced, "the file is the size the panel announced");
     assert_eq!(tiff.get_tag_u32(tiff::tags::Tag::Compression).unwrap(), 8, "ZIP");
     let icc = tiff.get_tag_u8_vec(tiff::tags::Tag::Unknown(34675)).unwrap();
     assert_eq!(Some(icc), Space::DisplayP3.icc_data(), "the file declares its space's profile");

@@ -7,9 +7,6 @@ use oni_graph::{Image, Rect};
 use oni_render::{Affine, Orient};
 use oni_settings::frame::Geometry;
 
-/// One pixel of the current source: the band over which the rotation blends edges with transparency.
-pub const BLEED_MARGIN: f64 = 1.0;
-
 /// The turns and mirrors as one permutation from `input` onto an extent at the origin.
 pub fn orientation(g: &Geometry, input: Rect) -> (Orient, Rect) {
     let (w, h) = (input.w as i32, input.h as i32);
@@ -51,29 +48,10 @@ pub fn rotation(degrees: f32, upright: Rect) -> (Affine, Rect) {
     (Affine { m: m.map(|r| r.map(|v| v as f32)), transparent: true }, extent)
 }
 
-fn quantised(fraction: f64, divisions: f64, up: bool) -> f64 {
-    if divisions <= 0.0 {
-        return fraction;
-    }
-    let v = fraction * divisions;
-    // The grid's own float noise must not move a whole division.
-    let v = if (v - v.round()).abs() < 1e-9 { v.round() } else if up { v.ceil() } else { v.floor() };
-    v / divisions
-}
-
-/// The frame in the upright box's pixels, before rounding: fractions with a bottom-left origin.
+/// The frame in the upright box's pixels, before rounding: fractions with a bottom-left origin, as
+/// every readout of the kept size reads them.
 pub fn frame(g: &Geometry, upright: Rect, scale: f64) -> [f64; 4] {
-    let (w, h) = (f64::from(upright.w), f64::from(upright.h));
-    let (gw, gh) = (w / scale, h / scale);
-    let min_x = quantised(g.crop.x, gw, true);
-    let min_y = quantised(g.crop.y, gh, true);
-    let width = quantised(g.crop.width, gw, false);
-    let height = quantised(g.crop.height, gh, false);
-    let mut r = [f64::from(upright.x) + min_x * w, f64::from(upright.y) + (1.0 - min_y - height) * h, width * w, height * h];
-    if g.angle != 0.0 {
-        r = [r[0] + BLEED_MARGIN, r[1] + BLEED_MARGIN, r[2] - 2.0 * BLEED_MARGIN, r[3] - 2.0 * BLEED_MARGIN];
-    }
-    r
+    g.frame_in([f64::from(upright.x), f64::from(upright.y), f64::from(upright.w), f64::from(upright.h)], scale)
 }
 
 fn integral(v: f64) -> bool {

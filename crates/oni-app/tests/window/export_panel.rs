@@ -103,6 +103,7 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     let kept = export_card::kept(&ctl);
     assert_eq!(kept.iter().map(|k| k.name.as_str()).collect::<Vec<_>>(), ["Web 1080"]);
     assert!(lit("Web 1080") && !lit("Instagram"), "the saved key lit");
+    rig.shot("export-presets");
     // Another key writes its own state; the saved one's key writes every setting back in one press.
     common::click(&rig, w, common::the(w, Role::Button, "Print").middle());
     assert!(lit("Print") && common::placed(w, Role::TextInput, "Preset name").is_empty(), "a built-in key lit hides the name line");

@@ -117,10 +117,7 @@ impl Ctl {
                             Some(n) => Ok(n),
                             None => prepared(&engine, &path, crate::render::Reading::of(&target.settings)),
                         };
-                        let full = negative.as_ref().ok().map(|n| {
-                            let (w, h) = n.size();
-                            (n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1)))
-                        });
+                        let full = negative.as_ref().ok().map(|n| n.full());
                         let size = full.map(|f| export::cropped_size(f, &target.settings));
                         let first = negative.as_ref().ok().filter(|_| i == 0).cloned();
                         // The size lands at once, as the size boxes wait for it; the render waits for the room.

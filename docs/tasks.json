@@ -7263,5 +7263,12 @@
     "title": "An export's progress and Stop in the status bar, its end told with Show in Finder",
     "status": "done",
     "detail": "Evaluation s-f5b562fe (Hierarchy, Task fit): the progress card covered the image's corner for a whole export and its end offered only OK. The card (JobCard, ExportProgress) is gone: the status bar's busy line counts the frames on its glass with its progress and a Stop key, the status bar's own key; the end is told in the app's one notice, the number written or where it stopped, with Show in Finder selecting the first file written, or the frame that failed. The Finder no longer opens by itself as an export starts. Window check export_flow clicks Stop in the bar (frames large enough that it lands mid-export) and reads the notice and its key."
+  },
+  {
+    "id": 1496,
+    "type": "fix",
+    "title": "Every readout says the size the file is written at: one rounding, stage 0's",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Trust): the export announced 2161 x 1440 and wrote 2160 x 1440, 6048 x 4031 and wrote 6048 x 4032. Two causes. The negative carried only the full width, so every readout took the full height from the preview's proportion, which the reduction rounds to its own grid (a 2048 side read 4031 for a 4032 frame); the negative now carries the full height, read off the decode before it is reduced. And the readouts rounded the crop while stage 0 cuts it on the full-resolution grid; the frame's quantisation moved from oni-pipeline into Geometry::frame_in, which stage 0 calls unchanged, and kept_pixels is the extent stage 0 keeps from it, so the crop's readout, its badge, the status bar, the export panel and the file share one size and no render moves. The frame in pixels is a part of its own, oni-settings geometry/pixels.rs. Checks: oni-settings the_kept_size_is_whole_pixels_on_the_turned_photo_whichever_way_the_turn_is_written (a crop ending past half a pixel, slivers at both edges, a tilt's bleed, a box of no whole height; twin: the former rounding a pixel off); window crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size (the render's extent now equals the readouts; twin: the rounded crop a pixel more); window export_window on roll #8: the panel's full height is the decode's 4032 and the file is the size announced (twin: the preview's proportion of the width reads 4031)."
   }
 ]
