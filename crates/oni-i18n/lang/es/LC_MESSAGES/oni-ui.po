@@ -201,6 +201,14 @@ msgstr "Mostrar el panel ({})"
 msgid "Hide the Panel ({})"
 msgstr "Ocultar el panel ({})"
 
+#: crates/oni-ui/ui/canvas.slint
+msgid "Arrows move the measuring window, {}-arrows its right or bottom edge, {} ten times as far. Return applies it."
+msgstr "Las flechas mueven la ventana de medición, {}-flechas su borde derecho o inferior, {} diez veces más lejos. Retorno la aplica."
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Arrows move the crop, {}-arrows its right or bottom edge, {} ten times as far. Return keeps it."
+msgstr "Las flechas mueven el recorte, {}-flechas su borde derecho o inferior, {} diez veces más lejos. Retorno lo conserva."
+
 #: crates/oni-ui/ui/card_status.slint
 msgid "Settings saved"
 msgstr "Ajustes guardados"
@@ -1994,8 +2002,8 @@ msgid "FRAME --/--"
 msgstr "FOTOGRAMA --/--"
 
 #: crates/oni-ui/ui/panel.slint
-msgid "Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop."
-msgstr "Arrastra las esquinas o los bordes del marco sobre la foto para recortarla, o muévelo con las flechas, diez veces más lejos con Mayús. Esc o Cancelar devuelve la foto tal como la encontró el recorte; Retorno u OK conserva el recorte."
+msgid "Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys and its right or bottom edge with {} and an arrow, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop."
+msgstr "Arrastra las esquinas o los bordes del marco sobre la foto para recortarla, o muévelo con las flechas y su borde derecho o inferior con {} y una flecha, diez veces más lejos con Mayús. Esc o Cancelar devuelve la foto tal como la encontró el recorte; Retorno u OK conserva el recorte."
 
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
@@ -2124,6 +2132,14 @@ msgstr "Este escaneo no se puede leer"
 #: crates/oni-ui/ui/prepare_floor.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
+
+#: crates/oni-ui/ui/prepare_floor.slint
+msgid "Arrows move the picker, {} ten times as far. Return picks the film base under it."
+msgstr "Las flechas mueven el selector, {} diez veces más lejos. Retorno elige la base de la película debajo."
+
+#: crates/oni-ui/ui/prepare_floor.slint
+msgid "Arrows move the measuring window, {}-arrows its right or bottom edge, {} ten times as far."
+msgstr "Las flechas mueven la ventana de medición, {}-flechas su borde derecho o inferior, {} diez veces más lejos."
 
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"

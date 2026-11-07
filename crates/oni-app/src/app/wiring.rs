@@ -159,7 +159,7 @@ impl Ctl {
         let p = me.clone();
         window.global::<App>().on_key(move |text, control, meta, shift, option, repeat| {
             // Slint already hands ⌘ over as `control` on a Mac, and the Control key as `meta`.
-            p.key(&text, control, shift, !(control || meta || shift || option), repeat)
+            p.key(&text, control, shift, option, !(control || meta || shift || option), repeat)
         });
         Ctl::wire_lab(me, window);
         Ctl::wire_settings(me, window);
@@ -325,6 +325,8 @@ impl Ctl {
         c.on_frame_dragged(move |_, _, dx, dy| p.frame_dragged(dx, dy));
         let p = me.clone();
         c.on_frame_released(move |_| p.frame_released());
+        let p = me.clone();
+        c.on_keyed(move |text, shift, option| p.canvas_key(&text, shift, option));
     }
 
     /// `NegativeView`'s gestures: a drag pans, a double click toggles 100 %, the wheel zooms about the
@@ -332,10 +334,8 @@ impl Ctl {
     pub(super) fn wire_canvas(me: &Rc<Ctl>, window: &MainWindow) {
         let c = window.global::<Canvas>();
         let backing = move |p: &Rc<Ctl>| p.window().map_or(2.0, |w| f64::from(w.window().scale_factor()));
-
         let p = me.clone();
         c.on_resized(move || p.resized());
-
         let p = me.clone();
         c.on_split_dragged(move |x| {
             let width = p.window().map_or(0.0, |w| w.global::<Canvas>().get_width());

@@ -6,7 +6,7 @@ use super::*;
 impl Ctl {
     /// The keys no menu item carries, ⌘= apart from the menu's ⌘+ included: Escape leaves the innermost
     /// sheet, typing, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
-    pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
+    pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, option: bool, bare: bool, repeat: bool) -> bool {
         // Tab and ⇧Tab are Slint's walk through the controls, a sheet's included: no branch takes them.
         if matches!(text, "\t" | "\u{19}") {
             return false;
@@ -93,7 +93,7 @@ impl Ctl {
             return !repeat && self.escape();
         }
         // Beside the crop the arrows move its frame rather than walk the photos.
-        if self.nudge_frame(text, command, shift, bare) || self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
+        if self.nudge_frame(text, command, shift, option, bare) || self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
             return true;
         }
         if !w.global::<App>().get_gallery() && command && !shift && matches!(text, "a" | "A") {
@@ -141,7 +141,7 @@ impl Ctl {
     pub(super) fn select_roll(self: &Rc<Self>) {
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
         if !self.roll_whole(gallery) {
-            self.key("a", true, false, false, false);
+            self.key("a", true, false, false, false, false);
             return;
         }
         let solo = {

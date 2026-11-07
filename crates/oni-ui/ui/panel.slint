@@ -1,6 +1,7 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
 import { Act } from "act.slint";
+import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { ModeHeader } from "panel/parts.slint";
@@ -13,14 +14,11 @@ export { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
 
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
-    property <string> crop-note: @tr("Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop.");
+    property <string> crop-note: @tr("Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys and its right or bottom edge with {} and an arrow, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop.", KeyWords.option);
     // The header down to the tab bar's rule, which the window's checks aim under.
     property <length> header: rule.y + rule.height;
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
-    // Tab from the photo enters here, at the tab bar.
-    property <int> inward: Keyboard.inward;
-    changed inward => { if tabs.visible { tabs.take-keyboard(); } }
     VerticalLayout {
         // The readout, one glass inset as the panel's rows, alike on both faces: Pro's histogram, Lighting's
         // curves over it on the Colour tab; the scanner's screen on the Scanner face; the loupe under Details.

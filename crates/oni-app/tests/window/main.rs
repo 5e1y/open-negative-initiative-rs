@@ -11,6 +11,7 @@ mod auto_balance;
 mod auto_dust;
 mod balance_kept;
 mod button_group;
+mod canvas_keys;
 mod canvas_layout;
 mod canvas_switch;
 mod column_edges;
@@ -142,6 +143,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("editor_routes::the_panels_routes_and_the_measuring_window_behave_as_swifts", editor_routes::the_panels_routes_and_the_measuring_window_behave_as_swifts),
     ("escape::escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_done", escape::escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_done),
     ("escape::one_escape_leaves_compare_its_key_turned_on_after_a_slider_held_the_keyboard", escape::one_escape_leaves_compare_its_key_turned_on_after_a_slider_held_the_keyboard),
+    ("canvas_keys::tab_walks_the_bar_the_sidebar_the_canvas_then_the_panel", canvas_keys::tab_walks_the_bar_the_sidebar_the_canvas_then_the_panel),
+    ("canvas_keys::the_canvas_holding_the_keyboard_places_the_window_the_crop_and_their_edges", canvas_keys::the_canvas_holding_the_keyboard_places_the_window_the_crop_and_their_edges),
+    ("canvas_keys::prepares_floor_places_the_base_picker_and_the_window_by_the_keyboard", canvas_keys::prepares_floor_places_the_base_picker_and_the_window_by_the_keyboard),
     ("crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it", crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it),
     ("crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size", crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size),
     ("crop_session::the_crops_handles_take_a_hand_past_their_slim_lines", crop_session::the_crops_handles_take_a_hand_past_their_slim_lines),

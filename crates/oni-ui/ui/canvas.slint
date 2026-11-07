@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips, KeyScope } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
@@ -8,6 +8,7 @@ import { SpaceChip } from "export.slint";
 import { Absent, AbsentNote } from "missing.slint";
 import { KeyWords } from "key_words.slint";
 import { Converting } from "dng.slint";
+import { CanvasKeys } from "canvas_keys.slint";
 
 import { Canvas, Mark } from "canvas_state.slint";
 export { Canvas, Mark }
@@ -67,8 +68,6 @@ export component CanvasCard inherits Card {
             ground: Canvas.cropping ? Ground.canvas-cropping : Canvas.together ? Ground.sheet : Ground.canvas;
             fit: Fit.fill;
             source: Canvas.frame;
-            accessible-role: image;
-            accessible-label: Canvas.status;
             revision: Canvas.frame-revision;
             clip-width: Canvas.frame-clip-width;
             clip-height: Canvas.frame-clip-height;
@@ -372,8 +371,12 @@ export component CanvasCard inherits Card {
         }
     }
     CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square-left: root.square-left; square-right: root.square-right; }
-    // The open photo's place in Tab's order: its keys go on to the window's monitor.
-    KeyScope { radius: CardStyle.radius; }
+    // The open photo's place in Tab's order, read as the photo: its arrows place the frame drawn on it.
+    CanvasKeys {
+        label: Canvas.status;
+        told: Canvas.window-shown ? @tr("Arrows move the measuring window, {}-arrows its right or bottom edge, {} ten times as far. Return applies it.", KeyWords.option, KeyWords.shift)
+            : Canvas.cropping ? @tr("Arrows move the crop, {}-arrows its right or bottom edge, {} ten times as far. Return keeps it.", KeyWords.option, KeyWords.shift) : "";
+    }
     menu := Menu {
         anchor-x: root.menu-x;
         y: root.menu-y;

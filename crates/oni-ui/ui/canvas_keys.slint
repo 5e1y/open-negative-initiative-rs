@@ -1,0 +1,29 @@
+// The canvas's place in Tab's order, the editor's and Prepare's alike: the one element assistive
+// tools read for it, whose arrows place what it draws while it holds the keyboard.
+import { KeyScope, Badge, CardStyle, Space } from "ds/ds.slint";
+import { Canvas } from "canvas_state.slint";
+
+export component CanvasKeys inherits KeyScope {
+    // What the canvas shows, and what its keys do there; empty while they do nothing of their own.
+    in property <string> label;
+    in property <string> told;
+    // Where its keys are told: below the picture where the canvas's top holds keys of its own.
+    in property <bool> told-below;
+    radius: CardStyle.radius;
+    accessible-role: image;
+    accessible-label: root.label;
+    accessible-description: root.told;
+    accessible-action-default => { Canvas.keyed("\n", false, false); }
+    // ⌘ or Control held goes on to the menus; any key Rust leaves goes on to the photos.
+    key-pressed(event) => {
+        if (event.modifiers.control || event.modifiers.meta || !Canvas.keyed(event.text, event.modifiers.shift, event.modifiers.alt)) {
+            return reject;
+        }
+        accept
+    }
+    if root.has-focus && root.told != "": Badge {
+        x: (parent.width - self.width) / 2;
+        y: root.told-below ? parent.height - CardStyle.padding - Space.s - self.height : CardStyle.padding + Space.s;
+        text: root.told;
+    }
+}
