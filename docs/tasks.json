@@ -7977,5 +7977,12 @@
     "title": "Foma 401 no longer offered in Select Film Stock; a roll already on it still reads",
     "status": "done",
     "detail": "Owner, round 6: remove Foma 401 from the list. FilmStockKind gains `offered`; Foma Fomapan 401 is `withdrawn`, still in FILM_STOCKS so a marker or sidecar naming it reads, names it and draws its canister, its dyes and indices unchanged; stocks::by_brand lists offered_stocks() alone, so neither the roll's picker nor the export's film field offers it. Nothing is rewritten. Checks: oni-settings film::foma_401_is_no_longer_offered_yet_a_roll_on_it_still_reads, oni-app stocks::the_picker_lists_no_foma_401_yet_its_artwork_still_draws, window stocks (40 cells, no Foma 401; twin: Foma 400 listed) and row_marks (a roll marked Foma 401 shows its name and canister; its picker lists no Foma 401; twin: Foma 400)."
+  },
+  {
+    "id": 1613,
+    "type": "ui",
+    "title": "Export lays each photo's EXIF in one column on its left, the preview beside it",
+    "status": "done",
+    "detail": "Owner, evaluation R6: EXIF on the left, as before. Each line is now its fields in one column on the panel's ground, then its preview over its caption, both from the line's top; the column is FormStyle.fields-width, as wide as the settings' panel (DS.control-export-panel-width), so the longest film stock's name, Lomography LomoChrome Turquoise, shows whole in its picker and a scan's camera, NIKON CORPORATION NIKON Z f, in its field, which the 260 pt column cut. The preview takes the rest of the width and a lone photo the room's height less its caption; the preview room handed to Rust follows. Several photos keep a line each. Checks: window export_columns (a landscape and a portrait together: every field of each line left of its preview, the preview reaching the room's edge, the second line under the first; every example, label, film stock and long camera and lens measured by the window whole in its room, in English and in French; twins: the panel's Presets fails the same left-of test, the fields' own edge fails the room's-edge test, a value longer than its field reads as cut, and a 260 pt column cuts the camera's and the stock's names; undone, the two-column layout fails at the fields one above the other and a 380 pt column at the stock's name; shots export-columns, export-columns-narrowest); export_panel, export_window and export_entering (on the test copy of roll #8), export_sheet, export_flow, sheets, panel_bindings and design_system green."
   }
 ]

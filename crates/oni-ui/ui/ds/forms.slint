@@ -14,6 +14,9 @@ import { KeyScope } from "keyboard.slint";
 export global FormStyle {
     out property <length> panel-width: DS.control-export-panel-width;
     out property <length> label-width: DS.control-exif-label-width;
+    // The EXIF's column beside each export preview, its ground's padding in, as wide as the settings':
+    // the longest film stock's name shows whole in its picker, a camera's maker and model in its field.
+    out property <length> fields-width: DS.control-export-panel-width;
     out property <length> caption: DS.control-export-caption-height;
     out property <length> preview-floor: DS.control-export-preview-floor;
     out property <length> progress: DS.control-inline-progress-width;
