@@ -1,6 +1,5 @@
-// The top bar, one layout in every mode: the mode key and the history at the left, the mode's own keys
-// centred, the keys that reset or remove last and apart, feedback, settings and the screen's commit at the
-// right; every key there is a menu's gesture.
+// The top bar, one layout in every mode: the mode key and the history, the mode's own keys centred, Reset
+// and Trash last among them, then the app's glyphs and the screen's commit; every key is a menu's gesture.
 import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
@@ -95,14 +94,25 @@ component SelectAll inherits Tool {
     enabled: Bar.can-select-all;
 }
 
-// The keys that reset or remove, last on the bar and a group of their own, never beside one that keeps;
-// each says its word, as the keys that keep do, and shows its danger under the hand.
-component Removing inherits ButtonGroup {
+// Undo and Redo beside the mode key, in every mode: the history is the app's, never one screen's.
+component History inherits ButtonGroup {
+    Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
+    Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
+}
+
+// A mode's groups a bar's gap apart, then the key that resets and the key that trashes, each a group
+// of its own: Reset names the photos it reaches, Trash wears its can, so neither reads as the other.
+component Centre inherits HorizontalLayout {
     in property <bool> compact;
+    spacing: ShellStyle.bar-gap;
+    cross-axis-alignment: center;
+    @children
     Tool {
         compact: root.compact;
         action: Act.reset;
-        word: @tr("Reset");
+        word: @tr("Reset Photo" | "Reset {n} Photos" % max(1, Bar.targets));
+        // As wide as a roll's count, so the bar holds still while the count changes under the hand.
+        widest: @tr("Reset Photo" | "Reset {n} Photos" % 88);
         icon: Icons.reset;
         kind: ButtonKind.destructive;
         help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
@@ -113,6 +123,7 @@ component Removing inherits ButtonGroup {
         action: Act.remove;
         word: @tr("Trash");
         icon: Icons.remove;
+        has-icon: true;
         kind: ButtonKind.destructive;
         help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash ({})", Bar.targets, KeyWords.command + KeyWords.delete)
             : @tr("Move to ONI Trash ({})", KeyWords.command + KeyWords.delete);
@@ -120,28 +131,9 @@ component Removing inherits ButtonGroup {
     }
 }
 
-// Undo and Redo beside the mode key, in every mode: the history is the app's, never one screen's.
-component History inherits ButtonGroup {
-    Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
-    Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
-}
-
-// A mode's own groups, then the keys that reset or remove, set apart by a gap wider than the groups'.
-component Apart inherits HorizontalLayout {
-    in property <bool> compact;
-    spacing: root.compact ? ShellStyle.bar-gap : ShellStyle.bar-apart;
-    cross-axis-alignment: center;
-    HorizontalLayout {
-        spacing: ShellStyle.bar-gap;
-        cross-axis-alignment: center;
-        @children
-    }
-    Removing { compact: root.compact; }
-}
-
-component EditorKeys inherits Apart {
-    // `centreKeys`: each family a group of its own, a bar's gap from the next; every key that latches
-    // wears a lamp, lit while it is on.
+component EditorKeys inherits Centre {
+    // `centreKeys`: each family a group of its own; every key that latches wears a lamp, lit while it is on.
+    // The canvas's tools and views, one family of latches.
     ButtonGroup {
         Tool {
             compact: root.compact;
@@ -151,6 +143,16 @@ component EditorKeys inherits Apart {
             on: PanelState.tab == 1;
             help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
             latch: true;
+            enabled: Bar.has-photo && Bar.single;
+        }
+        Tool {
+            compact: root.compact;
+            action: Act.correction;
+            word: @tr("De-dust");
+            icon: Icons.correction;
+            on: PanelState.tab == 4;
+            latch: true;
+            help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
             enabled: Bar.has-photo && Bar.single;
         }
         Tool { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; latch: true; enabled: Bar.has-photo; }
@@ -186,19 +188,9 @@ component EditorKeys inherits Apart {
         help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
         enabled: Bar.can-paste;
     }
-    Tool {
-        compact: root.compact;
-        action: Act.correction;
-        word: @tr("De-dust");
-        icon: Icons.correction;
-        on: PanelState.tab == 4;
-        latch: true;
-        help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
-        enabled: Bar.has-photo && Bar.single;
-    }
 }
 
-component GalleryKeys inherits Apart {
+component GalleryKeys inherits Centre {
     // The editor's first group holds the select-all key alone here, as in Swift's `centreKeys`.
     SelectAll { compact: root.compact; }
     RatingFilter { }
@@ -218,8 +210,10 @@ export component Toolbar inherits Surface {
     // would loop through it; narrower, the centre's words give way to glyphs.
     property <length> full: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + history.preferred-width
         + max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width)
-        + (Pairing.available ? 3 : 2) * glyph-sizing.preferred-width + ShellStyle.export-width + (Pairing.available ? 6 : 5) * ShellStyle.bar-gap;
+        + own.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
     property <bool> compact: root.width < root.full;
+    // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
+    property <bool> tool: Bar.editing && (PanelState.tab == 1 || PanelState.tab == 4);
     // Under the keys, so only the room between them reaches it.
     TouchArea {
         pointer-event(event) => {
@@ -255,7 +249,6 @@ export component Toolbar inherits Surface {
             compact-sizing := EditorKeys { visible: false; compact: true; }
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
             steps-sizing := RollStepKeys { visible: false; }
-            glyph-sizing := Item { visible: false; icon: Icons.settings; }
             if Preparing.shown: RollStepKeys {
                 width: min(self.preferred-width, parent.width);
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
@@ -271,19 +264,21 @@ export component Toolbar inherits Surface {
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
         }
-        // A glyph as Settings beside it, its width the same at every width of the window.
-        Item { action: Act.report; icon: Icons.feedback; help: @tr("Report a Bug / Give Feedback"); }
-        if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
-        Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
+        // The app's own glyphs, one group, their widths the same at every width of the window.
+        own := ButtonGroup {
+            Item { action: Act.report; icon: Icons.feedback; help: @tr("Report a Bug / Give Feedback"); }
+            if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
+            Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
+        }
         // `ExportButton`: one slot, three faces (import in the gallery, export in the editor, an update over both),
-        // the primary except beside a roll awaiting Prepare Roll or off the archive; hidden while a roll is prepared.
+        // the primary except beside a roll awaiting Prepare Roll, off the archive or under a tool; hidden while a roll is prepared.
         Word {
             property <bool> update: Bar.update-title != "";
             visible: !Preparing.shown;
             action: self.update ? Act.update : Bar.editing ? Act.export : Act.add-folder;
             text: self.update ? (Bar.updating ? @tr("UPDATING") : Bar.update-title) : Bar.editing ? @tr("EXPORT") : @tr("ADD FOLDER…");
             keycap: true;
-            kind: !Bar.prepare-first && (self.update || Bar.editing || Bar.archive) ? ButtonKind.accent : ButtonKind.plain;
+            kind: !Bar.prepare-first && !root.tool && (self.update || Bar.editing || Bar.archive) ? ButtonKind.accent : ButtonKind.plain;
             fixed-width: ShellStyle.export-width;
             help: self.update ? Bar.update-help
                 : !Bar.editing ? @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E")

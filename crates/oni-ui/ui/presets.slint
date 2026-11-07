@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, Depth, PresetStyle, ButtonStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm, SheetFooter } from "ds/ds.slint";
+import { Space, Depth, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm, SheetFooter } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -267,17 +267,16 @@ export component PresetEditorSheet inherits Sheet {
         }
     }
     Divider { }
+    // Delete alone at the left end, the keys that keep the preset beside DONE.
     SheetFooter {
         padding: Space.m;
+        remove: @tr("Delete");
+        remove-enabled: Presets.form-shown;
+        removed => { Presets.delete(); }
         commit: @tr("Done");
         committed => { Presets.done(); }
         Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
         Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
         Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
-        // Apart from the keys that keep the preset.
-        HorizontalLayout {
-            padding-left: ButtonStyle.apart - ButtonStyle.group-gap;
-            Button { text: @tr("Delete"); kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
-        }
     }
 }

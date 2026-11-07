@@ -106,6 +106,7 @@ mod together_moves;
 mod together_tools;
 mod told;
 mod toolbar;
+mod toolbar_accent;
 mod tooltip;
 mod tree_hand;
 mod tree_cost;
@@ -281,8 +282,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("together_moves::frames_together_read_their_span_and_move_by_one_distance", together_moves::frames_together_read_their_span_and_move_by_one_distance),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
-    ("toolbar::the_accent_lands_on_each_screens_own_commit", toolbar::the_accent_lands_on_each_screens_own_commit),
-    ("toolbar::the_keys_that_reset_or_remove_stand_last_and_apart", toolbar::the_keys_that_reset_or_remove_stand_last_and_apart),
+    ("toolbar_accent::the_accent_lands_on_each_screens_own_commit", toolbar_accent::the_accent_lands_on_each_screens_own_commit),
+    ("toolbar::the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last", toolbar::the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
     ("tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree", tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree),
     ("tree_cost::the_tree_s_cost_on_a_big_folder", tree_cost::the_tree_s_cost_on_a_big_folder),

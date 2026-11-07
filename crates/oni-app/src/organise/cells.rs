@@ -80,7 +80,7 @@ impl CellAction {
 
 /// `CellMenu.body`, a submenu's opener being a line of `AddTo` or `RemoveFrom`; the medals and the
 /// roll's reset stay with the status bar and the Rolls menu, as this menu acts on its photos alone.
-/// What resets or removes stands last, in a section of its own, apart from every verb that keeps.
+/// Reset stands in a section of its own after every verb that keeps, the ONI Trash last and alone.
 pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -> Vec<CellLine> {
     let here: HashSet<String> = scope.difference(facts.missing).cloned().collect();
     let gone = scope.len() - here.len();
@@ -116,7 +116,7 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     lines.push(line(reveal, any, false, CellAction::Reveal, &here, 0));
     lines.push(line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), any, true, CellAction::Reset, &here, gone));
     let trash = if n > 1 { tr!("Move {count} Photos to ONI Trash", count = n) } else { tr("Move to ONI Trash").into() };
-    lines.push(line(trash, any, false, CellAction::Trash, &here, gone));
+    lines.push(line(trash, any, true, CellAction::Trash, &here, gone));
     lines
 }
 
@@ -183,9 +183,9 @@ mod tests {
         }
         assert_eq!(lines[5].scope, paths(&["a", "b"]), "a project names a photo away too");
         assert_eq!((lines[7].scope.clone(), lines[7].left), (paths(&["a"]), 0), "a missing original is not exported");
-        // Reset and the ONI Trash share the foot's section, ruled off from every verb that keeps.
+        // Reset ruled off from every verb that keeps, the ONI Trash ruled off from Reset, alone last.
         let rules: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.rule).map(|(i, _)| i).collect();
-        assert_eq!(rules, [1, 3, 7, 9]);
+        assert_eq!(rules, [1, 3, 7, 9, 10]);
         let sub = submenu(&lines[6], &facts);
         assert_eq!((sub[0].text.as_str(), sub[0].action.clone()), ("Trip", CellAction::AddToProject(trip)));
         // Twins: a scope all away writes nothing; one all there has no count and leaves none out.

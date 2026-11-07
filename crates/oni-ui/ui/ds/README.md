@@ -87,15 +87,18 @@ oni-lab) draws a still key once and a pressed one once a frame.
 - **Groups**: related keys stand in a `ButtonGroup`, `ButtonStyle.group-gap` (`Space.s`) apart as Swift's
   `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A key unrelated to its
   neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`
-  (twice the group's gap) from it: an `AskSheet` sets its destructive answer so, the bar its removing keys
-  wider still (`ShellStyle.bar-apart`).
+  (twice the group's gap) from it: an `AskSheet` sets its destructive answer so. The bar has the same two
+  gaps alone, a group's within and `ShellStyle.bar-gap` between groups; its Reset and Trash are a group each,
+  last of the centre, Reset naming the photos it reaches and Trash wearing its can.
 - **Plates**: `ButtonGroup { plate: true }` is a socket of keycaps alone, the one place keys share a face:
   its caps flush on one face rounded as a key, as the panel's AUTO WHITE BALANCE with the crop's warning
   over it. Flat keys never stand on a plate.
 - **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the flat key that
   leaves (Cancel) at the left with what the sheet adds beside it, then apart at the right a step back and
-  the commit alone, the accent keycap, a flat key while it writes nothing (Skip, a failure's OK). A
-  question's answers (`AskSheet`) keep their own row.
+  the commit alone, the accent keycap, a flat key while it writes nothing (Skip, a failure's OK). A key that
+  removes (`remove`, a preset's Delete) stands alone at the left end, what the sheet adds then beside the
+  commit. Every DONE is that accent keycap, a tool's in the panel as a sheet's, the bar's export laying its
+  accent down while a tool is open. A question's answers (`AskSheet`) keep their own row.
 
 ## Keyboard
 
