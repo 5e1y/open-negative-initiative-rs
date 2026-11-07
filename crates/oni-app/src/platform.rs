@@ -33,8 +33,9 @@ pub struct Keys {
     pub command_shift: &'static str,
     pub option_command: &'static str,
     pub option_command_shift: &'static str,
-    /// The Shift key named alone, as in "⇧ with − or +".
+    /// The Shift key named alone, as in "⇧ with − or +", and Option likewise.
     pub shift: &'static str,
+    pub option: &'static str,
     /// The key that deletes backwards, named alone.
     pub delete: &'static str,
 }
@@ -42,13 +43,14 @@ pub struct Keys {
 pub fn keys(platform: Platform) -> Keys {
     match platform {
         // AppKit's order: Option, Shift, then Command, last before the key.
-        Platform::Mac => Keys { command: "⌘", command_shift: "⇧⌘", option_command: "⌥⌘", option_command_shift: "⌥⇧⌘", shift: "⇧", delete: "⌫" },
+        Platform::Mac => Keys { command: "⌘", command_shift: "⇧⌘", option_command: "⌥⌘", option_command_shift: "⌥⇧⌘", shift: "⇧", option: "⌥", delete: "⌫" },
         Platform::Windows => Keys {
             command: "Ctrl+",
             command_shift: "Ctrl+Shift+",
             option_command: "Ctrl+Alt+",
             option_command_shift: "Ctrl+Alt+Shift+",
             shift: "Shift",
+            option: "Alt",
             delete: "Backspace",
         },
     }
@@ -63,6 +65,7 @@ pub fn publish_keys(window: &crate::MainWindow) {
     words.set_command_shift(k.command_shift.into());
     words.set_option_command(k.option_command.into());
     words.set_shift(k.shift.into());
+    words.set_option(k.option.into());
     words.set_delete(k.delete.into());
 }
 
@@ -139,6 +142,7 @@ mod tests {
             k.option_command.into(),
             k.option_command_shift.into(),
             k.shift.into(),
+            k.option.into(),
             k.delete.into(),
         ];
         for word in &windows {

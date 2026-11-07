@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1501,
+    "type": "fix",
+    "title": "The canvas takes the keyboard: its arrows place the crop, the measuring window and the base's picker, Return keeps them",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (UX Accessibility, major): the canvas had no accessible name or action, and picking the base or cropping needed a pointer. The canvas's place in Tab's order is one element, `CanvasKeys`, the editor's and Prepare's alike: read as the photo (the status line, the scan's or the frame's name in Prepare), its description and a badge on it saying what its keys do. Holding the keyboard, its arrows place what it draws: the measuring window while it shows, on Colour too, else the crop, ⇧ ten times as far, ⌥ its right and bottom edges (one `framing::arrow`, laid through the drag's own `apply`); in Prepare the base's picker, its loupe with it, Return picking the film under it, and the measuring window. Return and the canvas's accessible default action keep the frame as the photos' Return does. The photos' own keys stay: their arrows walk the photos and Prepare's frames, and beside the crop move its frame, ⌥ resizing it there too, which the crop's help now says. Checks: window canvas_keys::the_canvas_holding_the_keyboard_places_the_window_the_crop_and_their_edges (twins: the photos' arrow moves no window; the bare arrow moves the left edge with it) and canvas_keys::prepares_floor_places_the_base_picker_and_the_window_by_the_keyboard (twins: the photos' arrow moves no picker, and walks the frames); unit framing::an_arrow_moves_the_body_and_with_option_the_right_and_bottom_edges."
   }
 ]

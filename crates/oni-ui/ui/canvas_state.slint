@@ -121,4 +121,7 @@ export global Canvas {
     callback pinched(float, length, length);
     // A right click on the picture: Rust lays the open photo's menu and answers whether it opens.
     callback menu() -> bool;
+    // A key on the canvas holding the keyboard, with Shift and Option: Rust places the frame or the
+    // picker it draws and answers whether it took the key.
+    callback keyed(string, bool, bool) -> bool;
 }

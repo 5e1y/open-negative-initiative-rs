@@ -55,6 +55,24 @@ impl Handle {
     }
 }
 
+/// An arrow's step on the canvas in points, a visible move at any zoom; Shift's goes ten times as far.
+pub const NUDGE: f64 = 1.0;
+pub const NUDGE_FAR: f64 = 10.0;
+
+/// An arrow on a frame the canvas draws: the body it moves, or with ⌥ the right and bottom edges,
+/// and its travel in points; any other key is none.
+pub fn arrow(text: &str, shift: bool, option: bool) -> Option<(Handle, Size)> {
+    let (dx, dy) = match text {
+        "\u{F702}" => (-1.0, 0.0),
+        "\u{F703}" => (1.0, 0.0),
+        "\u{F700}" => (0.0, -1.0),
+        "\u{F701}" => (0.0, 1.0),
+        _ => return None,
+    };
+    let step = if shift { NUDGE_FAR } else { NUDGE };
+    Some((if option { Handle::BottomRight } else { Handle::Body }, (dx * step, dy * step)))
+}
+
 /// `FrameOverlay.apply`: the frame at the gesture's start moved by a translation in points over a
 /// displayed frame of `frame` points, y down on screen and up in the fractions.
 pub fn apply(handle: Handle, from: Rect, frame: Size, translation: Size) -> Rect {
@@ -140,6 +158,28 @@ mod tests {
         // Twin: the floor holds a side the hand pushes past the other.
         let closed = apply(Handle::Right, from, (600.0, 400.0), (-1000.0, 0.0));
         assert!((closed.width - MIN_CROP).abs() < 1e-9);
+    }
+
+    #[test]
+    fn an_arrow_moves_the_body_and_with_option_the_right_and_bottom_edges() {
+        let from = Rect { x: 0.2, y: 0.2, width: 0.6, height: 0.6 };
+        let step = |text: &str, shift, option| {
+            let (handle, by) = arrow(text, shift, option).expect("an arrow");
+            apply(handle, from, (100.0, 100.0), by)
+        };
+        // → moves the body one point of the 100 shown, ⇧→ ten; ↓ lowers it, the fractions' y going up.
+        assert!((step("\u{F703}", false, false).x - 0.21).abs() < 1e-9);
+        assert!((step("\u{F703}", true, false).x - 0.3).abs() < 1e-9);
+        assert!((step("\u{F701}", false, false).y - 0.19).abs() < 1e-9);
+        // ⌥→ draws the right edge out, the left kept; ⌥↓ the bottom edge down, the top kept.
+        let wider = step("\u{F703}", false, true);
+        assert!((wider.x - 0.2).abs() < 1e-9 && (wider.width - 0.61).abs() < 1e-9, "{wider:?}");
+        let taller = step("\u{F701}", false, true);
+        assert!((taller.y + taller.height - 0.8).abs() < 1e-9 && (taller.height - 0.61).abs() < 1e-9, "{taller:?}");
+        // Twin: without ⌥ the arrow keeps the size and moves the left edge along.
+        let moved = step("\u{F703}", false, false);
+        assert!((moved.width - 0.6).abs() < 1e-9 && (moved.x - 0.2).abs() > 1e-3);
+        assert!(arrow("a", false, false).is_none(), "a letter is no arrow");
     }
 
     #[test]

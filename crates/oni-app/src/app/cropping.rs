@@ -2,10 +2,6 @@
 
 use super::*;
 
-/// An arrow's step on the canvas in points, a visible move at any zoom; Shift's goes ten times as far.
-const NUDGE: f64 = 1.0;
-const NUDGE_FAR: f64 = 10.0;
-
 impl Ctl {
     // MARK: - Framing
 
@@ -131,31 +127,38 @@ impl Ctl {
         }
     }
 
-    /// An arrow beside the crop moves the frame drawn innermost, the measuring window while it is set,
-    /// else the crop; the steps that follow each other are one undo step, as a slider's are.
-    pub(super) fn nudge_frame(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool) -> bool {
-        if !(bare || (shift && !command)) || !self.cropping() {
+    /// An arrow beside the crop moves its frame rather than walk the photos, as on the canvas.
+    pub(super) fn nudge_frame(self: &Rc<Self>, text: &str, command: bool, shift: bool, option: bool, bare: bool) -> bool {
+        (bare || ((shift || option) && !command)) && self.cropping() && self.place_frame(text, shift, option)
+    }
+
+    /// A key on the canvas holding the keyboard: Prepare's floor places its picker or its window, the
+    /// editor's canvas the frame it draws and Return keeps it; a key neither takes goes on to the photos.
+    pub(super) fn canvas_key(self: &Rc<Self>, text: &str, shift: bool, option: bool) -> bool {
+        if self.state.borrow().prepare.shown {
+            return self.floor_key(text, shift, option);
+        }
+        self.validate_key(text, !shift && !option, false) || self.place_frame(text, shift, option)
+    }
+
+    /// An arrow on the frame drawn innermost, the measuring window while it shows, else the crop while
+    /// cropping: its body, or with ⌥ its right and bottom edges; the steps that follow each other are
+    /// one undo step, as a slider's are.
+    fn place_frame(self: &Rc<Self>, text: &str, shift: bool, option: bool) -> bool {
+        let Some(w) = self.window() else { return false };
+        let Some((handle, by)) = frames::arrow(text, shift, option) else { return false };
+        let (cropping, armed) = (self.cropping(), self.state.borrow().route.armed);
+        let window = crate::tabs::window_shown(armed, w.global::<PanelState>().get_tab()) && !self.together_shown();
+        if !(cropping || window) {
             return false;
         }
-        let (dx, dy) = match text {
-            "\u{F702}" => (-1.0, 0.0),
-            "\u{F703}" => (1.0, 0.0),
-            "\u{F700}" => (0.0, -1.0),
-            "\u{F701}" => (0.0, 1.0),
-            _ => return false,
-        };
-        let (Some(image), Some(frame)) = (self.image_size(), self.image_frame(true)) else { return true };
-        let step = if shift { NUDGE_FAR } else { NUDGE };
-        let (g, armed) = {
-            let s = self.state.borrow();
-            (s.store.settings().geometry.clone(), s.route.armed)
-        };
-        let moved = |from| frames::apply(Handle::Body, from, (frame.2, frame.3), (dx * step, dy * step));
-        let next = if armed {
-            let window = frames::window_stored(&g, frames::bounded(moved(frames::window_shown(&g, true))), true);
-            Geometry { measure_window: Some(window), ..g }
+        let (Some(image), Some(frame)) = (self.image_size(), self.image_frame(cropping || !window)) else { return true };
+        let g = self.state.borrow().store.settings().geometry.clone();
+        let next = if window {
+            let moved = frames::apply(handle, frames::window_shown(&g, cropping), (frame.2, frame.3), by);
+            Geometry { measure_window: Some(frames::window_stored(&g, frames::bounded(moved), cropping)), ..g }
         } else {
-            frames::constrained_crop(&g, Handle::Body, moved(g.crop), image)
+            frames::constrained_crop(&g, handle, frames::apply(handle, g.crop, (frame.2, frame.3), by), image)
         };
         self.state.borrow_mut().store.defer();
         self.write_geometry(next);

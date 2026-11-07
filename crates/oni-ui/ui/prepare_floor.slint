@@ -4,6 +4,8 @@ import { Space, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement,
 import { Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
 import { Converting } from "dng.slint";
+import { CanvasKeys } from "canvas_keys.slint";
+import { KeyWords } from "key_words.slint";
 
 // `RollFrameSheet`: six to a row, a click flagging a frame, an unticked one dimmed.
 component FlagSheet inherits Scroller {
@@ -182,5 +184,15 @@ export component RollFloor inherits Card {
     if Preparing.step != 2 && Preparing.step != 3 && !Preparing.measuring: FrameCard { width: parent.width; height: parent.height; }
     if Preparing.step == 4 && Preparing.measuring: MeasureFloor { width: parent.width; height: parent.height; }
     CardCorners { width: parent.width; height: parent.height; }
+    // The floor's place in Tab's order on the two steps that place something on it.
+    CanvasKeys {
+        property <bool> base: Preparing.step == 2 && Preparing.scan-ready;
+        property <bool> window: Preparing.step == 4 && !Preparing.measuring;
+        focus-on-tab-navigation: self.base || self.window;
+        told-below: true;
+        label: self.base ? Preparing.base-name : self.window ? Preparing.frame-name : "";
+        told: self.base ? @tr("Arrows move the picker, {} ten times as far. Return picks the film base under it.", KeyWords.shift)
+            : self.window ? @tr("Arrows move the measuring window, {}-arrows its right or bottom edge, {} ten times as far.", KeyWords.option, KeyWords.shift) : "";
+    }
 }
 

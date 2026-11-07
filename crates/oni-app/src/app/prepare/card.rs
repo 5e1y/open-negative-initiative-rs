@@ -29,6 +29,55 @@ impl Ctl {
         self.publish_card();
     }
 
+    /// A key on the floor holding the keyboard: the base's picker or the measuring window, each step's
+    /// one thing to place; any other step, or the measure under way, leaves it to the photos.
+    pub(in crate::app) fn floor_key(self: &Rc<Self>, text: &str, shift: bool, option: bool) -> bool {
+        let (step, measuring) = {
+            let r = &self.state.borrow().prepare;
+            (r.step, r.progress.is_some())
+        };
+        match step {
+            Step::Base if !measuring => self.base_key(text, shift, option),
+            Step::Window if !measuring => self.window_key(text, shift, option),
+            _ => false,
+        }
+    }
+
+    /// The arrows move the picker over the scan, its loupe with it, from where the hand or the pick
+    /// left it; Return picks the film under it, as a click there does.
+    fn base_key(self: &Rc<Self>, text: &str, shift: bool, option: bool) -> bool {
+        let Some((rect, _)) = self.scan_rect().filter(|(r, _)| r.2 > 0.0 && r.3 > 0.0) else { return false };
+        let inside = |(x, y): (f64, f64)| (x.clamp(rect.0, rect.0 + rect.2), y.clamp(rect.1, rect.1 + rect.3));
+        let at = {
+            let r = &self.state.borrow().prepare;
+            let shown = r.base_shown().map(|f| f.path.clone());
+            let picked = r.base.as_ref().filter(|b| Some(&b.path) == shown.as_ref()).map(|b| (rect.0 + b.unit.0 * rect.2, rect.1 + b.unit.1 * rect.3));
+            r.pointer.or(picked).map(inside)
+        };
+        if matches!(text, "\r" | "\n") {
+            let Some((x, y)) = at else { return false };
+            self.base_clicked(x, y);
+            return true;
+        }
+        let Some((Handle::Body, (dx, dy))) = frames::arrow(text, shift, option) else { return false };
+        let (x, y) = at.unwrap_or((rect.0 + rect.2 / 2.0, rect.1 + rect.3 / 2.0));
+        self.state.borrow_mut().prepare.pointer = Some(inside((x + dx, y + dy)));
+        self.publish_base();
+        true
+    }
+
+    /// The arrows move the measuring window over the card, ⌥ its right and bottom edges, as a drag does.
+    fn window_key(self: &Rc<Self>, text: &str, shift: bool, option: bool) -> bool {
+        let Some((handle, by)) = frames::arrow(text, shift, option) else { return false };
+        let Some(b) = self.card_box() else { return true };
+        {
+            let r = &mut self.state.borrow_mut().prepare;
+            r.window = frames::bounded(frames::apply(handle, r.window, (b.2, b.3), by));
+        }
+        self.publish_card();
+        true
+    }
+
     /// The scan's rectangle in the base area, and the scan's own size in pixels.
     pub(in crate::app) fn scan_rect(&self) -> Option<((f64, f64, f64, f64), (usize, usize))> {
         let w = self.window()?;
