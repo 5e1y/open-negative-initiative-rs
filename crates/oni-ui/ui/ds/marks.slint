@@ -14,7 +14,7 @@ export component Dot inherits Rectangle {
 }
 
 // A figure struck in a medal: Inter's line box centred on the disc centres its digits on it.
-component Figure inherits Text {
+export component Figure inherits Text {
     width: 100%;
     height: 100%;
     font-family: Type.family;
@@ -24,8 +24,8 @@ component Figure inherits Text {
     accessible-role: none;
 }
 
-// `DSMedal`: bronze, silver or gold spun in foil (0 none), lit along the lamp's radius, a ruled ring
-// inside the edge, two cast shadows; its rank struck in the middle tells it without its colour.
+// `DSMedal`: its podium place, gold 1, silver 2 or bronze 3 (0 none), spun in foil and lit along the
+// lamp's radius, a ruled ring inside the edge, two cast shadows; the place struck tells it uncoloured.
 export component Medal inherits Rectangle {
     in property <int> rank;
     in property <length> size: MedalStyle.size;
@@ -86,7 +86,7 @@ export component Medal inherits Rectangle {
             border-width: root.rule;
             border-color: MedalStyle.struck;
         }
-        // The rank sunk as the key that lays it: its foot's wall catches the lamp a rule below.
+        // The place sunk as the key that lays it: its foot's wall catches the lamp a rule below.
         Figure { y: root.rule; text: root.rank; font-size: root.size * MedalStyle.figure; color: root.tone(1.5); }
         Figure { text: root.rank; font-size: root.size * MedalStyle.figure; color: MedalStyle.struck; }
     }

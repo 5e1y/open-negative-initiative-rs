@@ -117,11 +117,11 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     // The status bar's medal picker: one photo toggles its own medal off, several keep it.
     hand.click("A", &[]);
     assert!(lib.get_medal_shown());
-    lib.invoke_medal_picked(3);
+    lib.invoke_medal_picked(1);
     rig.pump();
-    assert_eq!(row(&canonical("A.tif")).label, Medal::Gold);
-    assert_eq!(lib.get_medal_current(), 3);
-    lib.invoke_medal_picked(3);
+    assert_eq!(row(&canonical("A.tif")).label, Medal::Gold, "the first place is gold");
+    assert_eq!(lib.get_medal_current(), 1);
+    lib.invoke_medal_picked(1);
     rig.pump();
     assert_eq!(row(&canonical("A.tif")).label, Medal::None, "the lit medal tapped on one photo clears it");
     hand.click("B", &[Key::Control]);

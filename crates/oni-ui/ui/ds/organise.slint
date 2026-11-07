@@ -10,8 +10,8 @@ import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 import { MedalStyle, TabsStyle } from "theme.slint";
 
-// `DSMedalPicker`: the current medal (-1 none) and the one under the hand lit, each other one idle, a
-// pressed one shrunk on the spring; each catches the hand over a small key's square, overhanging the status bar.
+// `DSMedalPicker`: gold, silver, bronze, the current one (-1 none) and the one under the hand lit, the others
+// idle, a pressed one shrunk on the spring; each catches the hand over a small key's square, overhanging the status bar.
 export component MedalPicker inherits HorizontalLayout {
     in property <int> current: -1;
     // The medal the lab shows pressed; -1 follows the hand alone.
@@ -23,7 +23,7 @@ export component MedalPicker inherits HorizontalLayout {
         height: MedalStyle.size;
         property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;
         // The medal and the key that lays it; the given one's, the key that takes it off.
-        property <string> help: medal == root.current ? @tr("No Medal (0)") : medal == 1 ? @tr("Bronze (1)") : medal == 2 ? @tr("Silver (2)") : @tr("Gold (3)");
+        property <string> help: medal == root.current ? @tr("No Medal (0)") : medal == 1 ? @tr("Gold (1)") : medal == 2 ? @tr("Silver (2)") : @tr("Bronze (3)");
         // The help it shows, hidden by that text once it leaves, whatever its help says since.
         property <bool> telling: touch.has-hover || keys.has-focus;
         property <string> told;
@@ -43,7 +43,7 @@ export component MedalPicker inherits HorizontalLayout {
             y: (parent.height - self.height) / 2;
             height: self.width;
             accessible-role: button;
-            accessible-label: medal == 1 ? @tr("Bronze") : medal == 2 ? @tr("Silver") : @tr("Gold");
+            accessible-label: medal == 1 ? @tr("Gold") : medal == 2 ? @tr("Silver") : @tr("Bronze");
             accessible-description: parent.help;
             accessible-action-default => { root.picked(medal); }
             clicked => { root.picked(medal); }

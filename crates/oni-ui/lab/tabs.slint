@@ -233,13 +233,13 @@ export component TabsPage inherits Rectangle {
             Row {
                 name: "DSMedalPicker";
                 source: "DSMedalPicker.swift:31 · DSMedal :3, DSFoil.medal · EditorScene+Card.swift:210";
-                LiveMedals { current: 3; }
+                LiveMedals { current: 1; }
                 States {
                     Specimen { caption: "none (mixed)"; LiveMedals { current: -1; } }
-                    Specimen { caption: "bronze"; LiveMedals { current: 1; } }
+                    Specimen { caption: "gold"; LiveMedals { current: 1; } }
                     Specimen { caption: "silver"; LiveMedals { current: 2; } }
-                    Specimen { caption: "gold"; LiveMedals { current: 3; } }
-                    Specimen { caption: "pressed silver"; LiveMedals { current: 3; force-pressed: 2; } }
+                    Specimen { caption: "bronze"; LiveMedals { current: 3; } }
+                    Specimen { caption: "pressed silver"; LiveMedals { current: 1; force-pressed: 2; } }
                     Specimen {
                         caption: "×8, to judge the foil";
                         HorizontalLayout {

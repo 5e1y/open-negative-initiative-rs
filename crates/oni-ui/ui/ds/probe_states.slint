@@ -2,6 +2,7 @@
 // idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals.
 import { DS, Colour, State, Stroke, ButtonStyle, SliderStyle, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal } from "ds.slint";
 import { MedalStyle } from "theme.slint";
+import { Figure } from "marks.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
@@ -73,8 +74,18 @@ export component StateProbe inherits AppWindow {
         background: Colour.canvas;
         TileView { x: 24px; y: 30px; width: 90px; picture-height: 60px; }
         TileView { x: 200px; y: 30px; width: 90px; picture-height: 60px; hovered: true; }
-        // Bronze, silver and gold a medal and a half apart, then a second gold: the twin of a rank.
-        for rank[i] in [1, 2, 3, 3]: Medal { x: 300px + i * 1.5 * MedalStyle.size; y: 50px; rank: rank; }
+        // Gold, silver and bronze a medal and a half apart, then a second gold: the twin of a place.
+        for rank[i] in [1, 2, 3, 1]: Medal { x: 300px + i * 1.5 * MedalStyle.size; y: 50px; rank: rank; }
+        // Under the first, a 1 alone on a flat disc: the figure gold must strike.
+        Rectangle {
+            x: 300px;
+            y: 50px + 1.5 * MedalStyle.size;
+            width: MedalStyle.size;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: MedalStyle.bodies[2];
+            Figure { text: "1"; font-size: MedalStyle.size * MedalStyle.figure; color: MedalStyle.struck; }
+        }
     }
     // The check's readouts, one under the other.
     VerticalLayout {
