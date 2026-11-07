@@ -23,9 +23,6 @@ pub use presets::Preset;
 pub use resize::{Resize, resized};
 pub use settings::{Format, Settings};
 
-/// The reduced copy a file is weighed on; the estimate's ±2 % is priced at this side.
-pub const SAMPLE_SIDE: f64 = 500.0;
-
 /// The copy a cell of the export column renders: large enough to judge the picture.
 pub const PREVIEW_SIDE: f64 = 1600.0;
 
@@ -250,8 +247,8 @@ pub fn land(to: Landing<'_>, bytes: &[u8]) -> Result<(), Failure> {
     }
 }
 
-/// Estimated weight, extrapolated from the reduced preview by ratio of areas: more accurate than
-/// a full-resolution crop, which lands on one particular area.
+/// Estimated weight of a file of `full_pixels`, extrapolated from `preview` by ratio of areas: more
+/// accurate than a full-resolution crop, which lands on one particular area.
 pub fn estimate(preview: &Image, full_pixels: f64, export: &Settings) -> u64 {
     let preview_pixels = (preview.width * preview.height) as f64;
     if preview_pixels <= 0.0 {

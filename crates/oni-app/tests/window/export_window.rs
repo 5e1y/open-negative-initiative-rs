@@ -6,7 +6,7 @@ use oni_app::app::{Options, Shell};
 use oni_app::display::Screen;
 use oni_app::export::label;
 use oni_app::fields::Field;
-use oni_app::{App, Bar, Exporting, Library, MainWindow, Store as StoreGlobal};
+use oni_app::{App, Bar, Exporting, Library, MainWindow, Menus, Store as StoreGlobal};
 use oni_colour::Space;
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
@@ -173,8 +173,8 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     let first = ctl.state.borrow().open_path().unwrap().to_string();
     assert!(first.ends_with("DSC_6432.NEF"), "{first}");
     // The labels on one photo: the menu, the card's key, the context menu; the bar's key keeps one word.
-    assert_eq!(e.get_menu_title(), "Export…");
-    assert!(e.get_menu_live());
+    assert_eq!(w.global::<Menus>().get_titles().export, "Export…");
+    assert!(w.global::<Menus>().get_live().export);
     // The wheel along the quality slider moves it, as every slider; a scroll across it is the card's.
     let quality = e.get_quality_fraction();
     assert!(!e.invoke_quality_scroll(0.0, -40.0, 200.0, false), "a scroll across the track is the card's");
@@ -228,7 +228,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert!(e.get_shown() && export_card::card(&ctl).shown);
     assert_eq!(e.get_count(), 1);
     assert_eq!(e.get_key_title(), "EXPORT");
-    assert_eq!(e.get_menu_title(), "Export…");
+    assert_eq!(w.global::<Menus>().get_titles().export, "Export…");
     assert_eq!(e.get_subtitle(), "DSC_6432.NEF");
     assert_eq!(e.get_edited_in(), "", "edited and previewed in one space, the note says nothing");
     rig.until("the preview and the estimate", LONG, || {
@@ -330,13 +330,13 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     let lib = w.global::<Library>();
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(1, true, false);
-    assert_eq!(e.get_menu_title(), "Export 2 Photos…");
+    assert_eq!(w.global::<Menus>().get_titles().export, "Export 2 Photos…");
     assert_eq!(w.global::<Bar>().get_targets(), 2, "the bar's help counts the two");
     assert_eq!(label::context(2), "Export… (2 photos)");
     ctl.act(oni_app::Act::Export);
     assert!(e.get_shown());
     assert_eq!(e.get_key_title(), "EXPORT 2 PHOTOS");
-    assert_eq!(e.get_menu_title(), "Export 2 Photos…");
+    assert_eq!(w.global::<Menus>().get_titles().export, "Export 2 Photos…");
     assert!(e.get_subtitle().starts_with("2 photos."));
     rig.until("the batch's lines", LONG, || export_card::lines(w).iter().all(|l| l.ready));
     let names: Vec<String> = export_card::lines(w).iter().map(|l| l.name.to_string()).collect();

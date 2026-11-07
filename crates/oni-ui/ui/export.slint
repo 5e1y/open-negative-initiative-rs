@@ -238,13 +238,16 @@ export component ExportPanel inherits Surface {
                         picked(i) => { Exporting.sheet-set(i == 1); }
                     }
                 }
-                // A click writes every row below at once and locks none; the tab the rows equal stays lit.
+                // Shortcuts, not a choice to make: each writes every row below at once and locks none,
+                // and the one the rows equal stays lit.
                 Field {
                     label: @tr("Presets");
-                    Tabs {
-                        tabs: [@tr("Instagram"), @tr("Display"), @tr("Print")];
-                        selected: Exporting.lit-preset;
-                        picked(i) => { Exporting.preset(i); }
+                    help: @tr("Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit.");
+                    ButtonGroup {
+                        align: GroupAlign.fill;
+                        Button { text: @tr("Instagram"); fills: true; on: Exporting.lit-preset == 0; clicked => { Exporting.preset(0); } }
+                        Button { text: @tr("Display"); fills: true; on: Exporting.lit-preset == 1; clicked => { Exporting.preset(1); } }
+                        Button { text: @tr("Print"); fills: true; on: Exporting.lit-preset == 2; clicked => { Exporting.preset(2); } }
                     }
                 }
                 Field {

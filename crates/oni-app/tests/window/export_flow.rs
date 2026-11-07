@@ -1,9 +1,10 @@
 //! An export from the editor unfolds beside it: the surface closes, the destination folder is shown,
 //! a card at the canvas's top-left counts the frames to the last and leaves; a failure stays in it.
+//! Under a rating filter Export opens on the photos it keeps, and the estimate weighs the file written.
 
 use oni_app::app::export_card::{self, job::End};
 use oni_app::app::{Options, Shell};
-use oni_app::{App, Confirm, Exporting, Library};
+use oni_app::{App, Confirm, Exporting, Library, Menus};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
@@ -53,12 +54,35 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     let lib = w.global::<Library>();
+    let e = w.global::<Exporting>();
+
+    // Gold on A and C, the filter on Gold and nothing picked: Export opens on the two it keeps.
+    for tile in [0, 2] {
+        lib.invoke_tile_clicked(tile, false, false);
+        rig.key("1");
+        rig.landed(&ctl);
+    }
+    lib.invoke_tree_empty_clicked();
+    lib.invoke_filter_picked(1);
+    rig.pump();
+    let menus = w.global::<Menus>();
+    assert_eq!(menus.get_titles().export, "Export 2 Photos…");
+    rig.chord(slint::platform::Key::Control, "e");
+    assert!(e.get_shown(), "⌘E opens the surface on the filter's photos");
+    let opened: Vec<String> = export_card::card(&ctl).targets.iter().map(|t| t.path.file_name().unwrap().to_string_lossy().into_owned()).collect();
+    assert_eq!(opened, ["A.tif", "C.tif"]);
+    ctl.leave_export();
+    // Twin: every photo shown and none picked, Export waits for a pick.
+    lib.invoke_filter_picked(0);
+    rig.pump();
+    assert!(!menus.get_live().export, "the whole gallery is no set the hand chose");
+    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A open", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some());
     assert!(!w.global::<App>().get_gallery());
 
-    let e = w.global::<Exporting>();
     let chosen = Rc::new(RefCell::new(out.clone()));
     let answer = chosen.clone();
     export_card::answer_with(&ctl, Rc::new(move |_| vec![answer.borrow().clone()]));
@@ -118,10 +142,32 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     assert!(ended.elapsed() > Duration::from_millis(1500), "the card said so for its stay before leaving");
     assert!(export_card::job::job(&ctl).is_none());
 
-    // Twin: a folder that cannot be written fails, and the card keeps the failure past its stay.
-    *chosen.borrow_mut() = root.join("Gone").join("Here");
+    // A folder named but missing is made and written into, as a save makes it.
+    let made = root.join("Gone").join("Here");
+    *chosen.borrow_mut() = made.clone();
     ctl.enter_export(targets());
     rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
+    e.invoke_export();
+    rig.until("the export into the folder made", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
+    assert_eq!(export_card::job::job(&ctl), Some((3, 3, Some(End::Written))));
+    assert_eq!(std::fs::read_dir(&made).unwrap().count(), 3, "every frame written in the folder made");
+    e.invoke_job_closed();
+    // Twin: a folder that cannot be made, in a read-only one, says why over the surface, which stays.
+    let locked = root.join("Locked");
+    std::fs::create_dir_all(&locked).unwrap();
+    let mut permissions = std::fs::metadata(&locked).unwrap().permissions();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(&locked, permissions.clone()).unwrap();
+    *chosen.borrow_mut() = locked.join("Here");
+    ctl.enter_export(targets());
+    rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
+    e.invoke_export();
+    assert!(e.get_notice_shown() && e.get_notice_title() == "Export Failed", "{}", e.get_notice_message());
+    assert!(e.get_shown() && export_card::job::job(&ctl).is_none(), "no export began; the surface waits");
+    e.invoke_notice_closed();
+
+    // A folder that cannot be written fails in the card, which keeps the failure past its stay.
+    *chosen.borrow_mut() = locked.clone();
     e.invoke_export();
     rig.until("the failure", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert!(matches!(export_card::job::job(&ctl).and_then(|j| j.2), Some(End::Failed(_))));
@@ -156,5 +202,54 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     // Twin: once no export runs, quitting asks nothing.
     rig.window.dispatch_event(WindowEvent::CloseRequested);
     assert!(!confirm.get_shown(), "no export, no question on quitting");
+    #[allow(clippy::permissions_set_readonly_false)]
+    permissions.set_readonly(false);
+    let _ = std::fs::set_permissions(&locked, permissions);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The estimate on a frame resized for the web weighs the file the export then writes.
+pub(crate) fn the_estimate_weighs_the_file_the_export_writes() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the estimate is not weighed"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-export-estimate-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (scan, out) = (root.join("Scans").join("Grain.tif"), root.join("Out").join("Grain.jpg"));
+    std::fs::create_dir_all(out.parent().unwrap()).unwrap();
+    // Detail at every scale the sample and the file are drawn at, none finer than either keeps.
+    common::pixels_tiff(&scan, 3000, 2000, |x, y| {
+        let (x, y) = (x as f32, y as f32);
+        let v = 0.45 + 0.15 * (x / 41.0).sin() * (y / 37.0).cos() + 0.08 * ((x + 2.0 * y) / 19.0).sin() + 0.05 * ((3.0 * x - y) / 23.0).cos();
+        [v, 0.9 * v + 0.05 * (y / 53.0).sin(), 0.8 * v + 0.05 * (x / 61.0).cos()]
+    });
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = Options { canvas: false, support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    let e = shell.window.global::<Exporting>();
+    let answer = out.clone();
+    export_card::answer_with(&ctl, Rc::new(move |_| vec![answer.clone()]));
+    export_card::job::reveal_with(&ctl, Rc::new(|_| {}));
+
+    ctl.enter_export(vec![oni_app::export::Target { path: scan, settings: Default::default() }]);
+    e.invoke_preset(0);
+    rig.until("the size", LONG, || e.get_size_enabled());
+    e.invoke_size_typed("1500".into(), e.get_height_text());
+    assert_eq!(e.get_dims(), "1500 × 1000 px");
+    rig.until("the estimate", LONG, || export_card::estimate(&ctl).0.is_some());
+    let estimated = export_card::estimate(&ctl).0.unwrap() as f64;
+    e.invoke_export();
+    rig.until("the file written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
+    let written = std::fs::metadata(&out).unwrap().len() as f64;
+    println!("estimated {estimated:.0} bytes, written {written:.0}");
+    assert!((estimated / written - 1.0).abs() < 0.05, "estimated {estimated:.0} bytes for a file of {written:.0}");
+    // Twin: weighed over the frame's full pixels, as the panel weighed it, the figure reads four times the file.
+    let former = estimated * (3000.0 * 2000.0) / (1500.0 * 1000.0);
+    assert!(former / written > 3.0, "the full frame's pixels weigh {former:.0} bytes");
+    rig.settle();
     let _ = std::fs::remove_dir_all(&root);
 }

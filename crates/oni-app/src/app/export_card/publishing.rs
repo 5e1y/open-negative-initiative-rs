@@ -42,10 +42,6 @@ impl Ctl {
     /// Every property the surface, the chip and the menus read, read before any is set.
     pub(in crate::app) fn publish_export(&self) {
         let Some(w) = self.window() else { return };
-        let (selected, has_photo) = {
-            let s = self.state.borrow();
-            (s.picks.selection.len(), s.open.is_some())
-        };
         let c = self.export.borrow();
         let e = w.global::<Exporting>();
         let space = c.settings.space().clone();
@@ -113,8 +109,6 @@ impl Ctl {
         e.set_exporting(c.exporting);
         e.set_can_export(count > 0);
         e.set_key_title(if sheet { tr("EXPORT CONTACT SHEET").into() } else { label::key(count) }.into());
-        e.set_menu_title(label::menu(if c.shown { count } else { selected }).into());
-        e.set_menu_live(if c.shown { count > 0 && !c.exporting } else { has_photo || selected > 0 });
         e.set_gamut_title(if c.gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into());
         e.set_chip_title(space.title().into());
         e.set_chip_hint(space.hint().into());

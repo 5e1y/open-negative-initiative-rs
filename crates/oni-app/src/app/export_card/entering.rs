@@ -23,13 +23,12 @@ impl Ctl {
         self.publish_export();
     }
 
-    /// `exportNow`: the selection in gallery order, else beside it the open photo, each its own file
-    /// until the panel's Export As lays them on one sheet.
+    /// `exportNow` on `export_targets`, each its own file until the panel's Export As lays them on one sheet.
     pub fn export_now(self: &Rc<Self>) {
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
         let targets = {
             let s = self.state.borrow();
-            let paths = export::targets(&s.order, &s.selection(), s.open.as_deref().filter(|_| !gallery));
+            let paths = s.export_targets(gallery);
             let open = s.open_path().map(str::to_string);
             let current = s.store.settings().clone();
             paths
@@ -69,6 +68,7 @@ impl Ctl {
             c.previews = vec![Preview::Waiting; targets.len()];
             c.low_precision = 0;
             c.estimate = None;
+            c.first = None;
             c.targets = targets;
         }
         self.publish_lines();
@@ -85,6 +85,7 @@ impl Ctl {
             }
             c.shown = false;
             c.stopped = None;
+            c.first = None;
             // The column goes with the card; the next one lays out its own room.
             if let Ok(mut room) = c.room.lock() {
                 *room = None;
@@ -133,5 +134,17 @@ impl Ctl {
         }
         self.publish_export();
         self.publish_papers();
+    }
+}
+
+impl crate::app::State {
+    /// What Export opens on: the selection in the gallery's order; else in the gallery every photo a
+    /// rating filter keeps, the set it was turned on to find; else the open photo.
+    pub(in crate::app) fn export_targets(&self, gallery: bool) -> Vec<String> {
+        let picked = self.targets_in(gallery);
+        if picked.is_empty() && gallery && self.filter.is_some() && !self.trash_shown() {
+            return self.order.clone();
+        }
+        picked
     }
 }

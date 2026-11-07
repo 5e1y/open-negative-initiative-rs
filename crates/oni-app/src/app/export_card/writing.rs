@@ -60,6 +60,12 @@ impl Ctl {
     /// `writeExport`: in order off this thread on an engine apart, the stop honoured between files, an
     /// earlier export replaced only when `replacing`; the first line's artist and copyright are remembered.
     pub(super) fn write_export(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
+        // The folder named is made, as a save makes it, so one typed in the panel or gone since is
+        // written into; one that cannot be made says why, the surface open for another.
+        if let Some(Err(e)) = destinations.first().and_then(|d| d.parent()).map(std::fs::create_dir_all) {
+            self.export.borrow_mut().notice = Some((tr("Export Failed").into(), oni_export::Failure::Write(e.kind()).to_string()));
+            return self.publish_export();
+        }
         if self.export.borrow().on_sheet() {
             return self.write_sheet(destinations, replacing);
         }

@@ -95,10 +95,10 @@ impl Ctl {
         self.publish_menus();
         let bar = w.global::<Bar>();
         let gallery = w.global::<App>().get_gallery();
-        let (has_photo, single, selected, targets, archive) = {
+        let (has_photo, single, targets, archive) = {
             let s = self.state.borrow();
             let archive = !s.org.projects_surface && !s.trash_shown();
-            (s.open.is_some(), s.together.is_none(), s.picks.selection.len(), s.target_count(gallery), archive)
+            (s.open.is_some(), s.together.is_none(), s.target_count(gallery), archive)
         };
         let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);
@@ -112,7 +112,6 @@ impl Ctl {
         bar.set_editing(!gallery);
         bar.set_archive(archive);
         self.publish_lab();
-        self.publish_export_menu(selected, has_photo && !gallery);
     }
 
     pub(super) fn place(&self, f: Field, at: f32) {

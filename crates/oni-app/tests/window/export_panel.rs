@@ -1,6 +1,6 @@
 //! The export surface as the window lays and draws it: one step between the panel's groups whatever
 //! the space's note wraps to, the summary in the panel's words, each field's face and example under
-//! the picture, and the date shown dashed while the file keeps EXIF's colons.
+//! the picture, the date shown dashed while the file keeps EXIF's colons, and the presets as keys.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::Exporting;
@@ -77,6 +77,14 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     e.invoke_full_size();
     rig.settle();
     assert_eq!(export_card::lines(w)[0].date, "2026-09-14 16:46:19");
+    // The presets are keys that fill the rows, lit while the rows equal one; twin: a row set by hand lights none.
+    common::click(&rig, w, common::the(w, Role::Button, "Instagram").middle());
+    assert_eq!((e.get_format(), e.get_chip_title().as_str()), (1, "sRGB"), "Instagram wrote its rows");
+    let lit = |name: &str| i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, name).any(|k| k.accessible_role() == Some(Role::Button) && k.accessible_checked() == Some(true));
+    assert!(lit("Instagram") && !lit("Display") && !lit("Print"));
+    e.invoke_quality_step(-1);
+    rig.pump();
+    assert!(!lit("Instagram"), "a row set by hand lights no preset");
     rig.shot("export-panel");
     let _ = std::fs::remove_dir_all(&root);
 }
