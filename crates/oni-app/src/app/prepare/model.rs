@@ -225,10 +225,9 @@ mod tests {
         assert!(!done(Step::Base, Step::Flags, Capture::Camera, n, &flat, false) && done(Step::Base, Step::Flags, Capture::Camera, n, &flat, true));
         assert!(!done(Step::FlatField, Step::Base, Capture::Scanner, n, &flat, false), "a step the roll does not walk is not done");
         assert!(!done(Step::Base, Step::Base, Capture::Camera, n, &flat, true), "twin: the current step is not behind");
-        // The key names the walk's end as the bar's key does; before a step holds its value it only passes it, flat.
-        assert_eq!((key(Step::Window, false), key(Step::Flags, true)), (("PREPARE ROLL", false), ("NEXT", false)));
-        assert_eq!(key(Step::Base, false), ("Skip", true), "no base picked: the key passes the step, flat");
-        assert_ne!(key(Step::Base, true), ("Skip", true), "twin: a base picked raises NEXT");
+        // The keycap names the walk's end as the bar's key does, and NEXT on every other step, picked or not.
+        assert_eq!((key(Step::Window), key(Step::Flags), key(Step::Base)), ("PREPARE ROLL", "NEXT", "NEXT"));
+        assert_ne!(key(Step::FlatField), "Skip", "twin: no step turns its keycap into Skip");
         assert_eq!(left_out_text(1), "1 frame of this folder, measured on another roll, is left out.");
         assert_eq!(left_out_text(2), "2 frames of this folder, measured on another roll, are left out.");
     }

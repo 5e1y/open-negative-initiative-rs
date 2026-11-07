@@ -117,6 +117,15 @@ struct Paint {
     redraws: VecDeque<(String, Option<String>)>,
     /// The pass a folder asked last, by generation, and the thumbnails its unreachable photos need.
     pass: Option<(u64, Vec<(String, String)>, Vec<String>)>,
+    /// The redraw under way, by path.
+    drawing: Option<String>,
+}
+
+impl Paint {
+    /// The photo's thumbnail waits to be drawn again: the one on disk shows a look it no longer has.
+    fn stale(&self, path: &str) -> bool {
+        self.drawing.as_deref() == Some(path) || self.redraws.iter().any(|(p, _)| p == path)
+    }
 }
 
 type Painter = Arc<(Mutex<Paint>, Condvar)>;
@@ -455,5 +464,19 @@ pub struct Shell {
 impl Ctl {
     pub(crate) fn window(&self) -> Option<MainWindow> {
         self.window.upgrade()
+    }
+}
+
+#[cfg(test)]
+mod paint_tests {
+    use super::Paint;
+
+    #[test]
+    fn a_thumbnail_waiting_or_being_drawn_again_is_stale_and_no_other() {
+        let mut paint = Paint::default();
+        paint.redraws.push_back(("a".into(), None));
+        paint.drawing = Some("b".into());
+        assert!(paint.stale("a") && paint.stale("b"));
+        assert!(!paint.stale("c"), "twin: a photo no redraw waits for stands in as drawn");
     }
 }

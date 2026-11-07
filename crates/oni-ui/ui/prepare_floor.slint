@@ -1,6 +1,6 @@
 // Prepare the Roll's floor: the flags' sheet, the base's scan, the frame card with its window, or the
 // measure's screens; Rust holds every value and rule.
-import { Space, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement, Pager, EmptyState, Picture, Ground, Fit, Ring, Loupe, FrameOverlay, FrameStyle, CardStyle, RollStyle, Motion, Clicks } from "ds/ds.slint";
+import { Space, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement, Pager, EmptyState, Picture, Ground, Fit, Pick, Loupe, FrameOverlay, FrameStyle, CardStyle, RollStyle, Motion, Clicks } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
 import { Converting } from "dng.slint";
@@ -94,7 +94,13 @@ component BaseSurface inherits VerticalLayout {
             fit: Fit.fill;
             source: Preparing.scan;
         }
-        if Preparing.scan-ready && Preparing.ring-shown: Ring { centre-x: Preparing.ring-x; centre-y: Preparing.ring-y; diameter: Preparing.ring-diameter * area.landing; }
+        if Preparing.scan-ready && Preparing.ring-shown: Pick {
+            centre-x: Preparing.ring-x;
+            centre-y: Preparing.ring-y;
+            sampled: Preparing.ring-diameter;
+            landing: area.landing;
+            colour: Preparing.ring-colour;
+        }
         if Preparing.scan-ready: TouchArea {
             changed has-hover => { Preparing.base-hover(self.mouse-x, self.mouse-y, self.has-hover); }
             moved => { Preparing.base-hover(self.mouse-x, self.mouse-y, true); }

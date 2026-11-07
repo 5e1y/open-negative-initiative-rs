@@ -6906,5 +6906,33 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1438,
+    "type": "interface",
+    "title": "Prepare the Roll keeps one footer: NEXT in its place on every step, Skip a key apart, the base's pick shown with its colour",
+    "status": "done",
+    "detail": "Evaluation: on the base step Skip turned into NEXT in the same place, so the pick could be passed unknowingly, and the footer changed height between steps (a 40 pt keycap on the film step, flat 32 pt keys after). The step's key is now the NEXT keycap on every step, PREPARE ROLL on the last, lit once the step holds its value; while the flat-field or the base is empty a flat Skip stands at the left beside Cancel, far from the keycap, and goes once a value is picked. The footer is therefore the same on every step, its keys on one line. On the scan, the pick is drawn as the disc it read filled with the colour it sampled (the scan's mean inside the disc), never under 16 points wide so a 2-pixel disc still shows; the loupe keeps the true size. The flags' sheet copy that prepare.slint never used goes. Nothing in the measure or the conversion moves. Checks: oni-app prepare::card a_pick_reads_the_mean_of_its_own_disc_alone (twin: the picture's side and a disc across both read otherwise); model's keycap names (twin: no step turns its keycap into Skip); window prepare the base step's footer laid as the film step's, Skip beside Cancel and apart from the keycap, a click at the keycap's place passing no empty base, the pick's colour within the scan's in its disc (twin: not the far corner's); slides and the prepare bench follow Skip's own key."
+  },
+  {
+    "id": 1439,
+    "type": "fix",
+    "title": "The step bar's done check takes the number's ink: 3:1 on its dimmed disc",
+    "status": "done",
+    "detail": "Evaluation: a finished step's check was the accent's blue on the charcoal disc, under 2:1 once the idle tab dims it. The check now takes the ink the step numbers use. Check: window prepare_masks reads the check at 3:1 at least on its disc at 2 pixels a point (twin: the accent at the idle tab's 62 % reads under it, 2.18 measured with the old ink)."
+  },
+  {
+    "id": 1440,
+    "type": "interface",
+    "title": "Prepare the Roll's cautions keep the orange in their triangle, the words in the panel's ink",
+    "status": "done",
+    "detail": "Evaluation: the flat-field step printed a six-line orange paragraph beside the negative. 'Settings differ across the roll' and 'Check the grouping' now share one block: the design system's WarningBand (the triangle in the warning's orange beside the title) and the reason under it as a note in the panel's ink, as the cells the roll marks wear the same triangle. Check: window prepare_masks finds no orange in the words (twin: the triangle before the title is orange; the old orange words fail with 1553 pixels)."
+  },
+  {
+    "id": 1441,
+    "type": "fix",
+    "title": "Frames opened together after a measure wait for their own render instead of their stale thumbnail",
+    "status": "done",
+    "detail": "Evaluation: after Prepare the Roll the canvas showed the frames as raw orange negatives for about six seconds. The tiles stood in with thumbnails drawn before the measure, which the measure had just queued to be drawn again. The painter now knows the redraw under way as well as those queued (Paint::stale), and a frame whose thumbnail waits to be drawn again gets no stand-in: its tile fills in converted as its own decode lands, beside the opening's progress. Frames whose thumbnails are current stand in as before. Check: oni-app a_thumbnail_waiting_or_being_drawn_again_is_stale_and_no_other (twin: a photo no redraw waits for is current); window together checks unchanged."
   }
 ]

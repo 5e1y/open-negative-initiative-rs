@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, beside the floor that shows a frame, the flags'
 // sheet or the base's scan. Rust holds every value and rule.
-import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Label, TextRole, Tone, Button, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, RollStyle, TileView, TileMarks, RingPlacement, PassReorder, Picker, SheetFooter } from "ds/ds.slint";
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Label, TextRole, Tone, Button, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, RollStyle, TileView, TileMarks, PassReorder, Picker, SheetFooter, WarningBand } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
 export { RollFloor } from "prepare_floor.slint";
@@ -40,6 +40,16 @@ component FrameGrid inherits VerticalLayout {
             }
         }
     }
+}
+
+// What the step asks to check: the warning's triangle beside its title, the reason under it in the
+// panel's own ink, so the orange stays in the glyph the marked cells wear.
+component Caution inherits VerticalLayout {
+    in property <string> title;
+    in property <string> text;
+    spacing: Space.xs;
+    WarningBand { text: root.title; }
+    Label { role: TextRole.note; text: root.text; }
 }
 
 component FlatFieldBlock inherits VerticalLayout {
@@ -131,22 +141,14 @@ export component RollPanel inherits Surface {
                         Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
                         Button { text: @tr("Shift by One File"); enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
                     }
-                    if Preparing.grouped && Preparing.grouping-remark != "": VerticalLayout {
-                        spacing: Space.xs;
-                        Label { text: @tr("Check the grouping"); }
-                        Label { role: TextRole.note; tone: Tone.warning; text: Preparing.grouping-remark; }
-                    }
+                    if Preparing.grouped && Preparing.grouping-remark != "": Caution { title: @tr("Check the grouping"); text: Preparing.grouping-remark; }
                     if Preparing.passes-note != "": Label { role: TextRole.note; text: Preparing.passes-note; }
                 }
                 if Preparing.step == 1: VerticalLayout {
                     spacing: Space.m;
                     FlatFieldBlock { }
                     // Told once, over the grid that marks the frames shot apart, on the step whose light they change.
-                    if Preparing.differ != "": VerticalLayout {
-                        spacing: Space.xs;
-                        Label { text: @tr("Settings differ across the roll"); }
-                        Label { role: TextRole.note; tone: Tone.warning; text: Preparing.differ; }
-                    }
+                    if Preparing.differ != "": Caution { title: @tr("Settings differ across the roll"); text: Preparing.differ; }
                 }
                 if Preparing.step == 2: VerticalLayout {
                     spacing: Space.m;
@@ -193,7 +195,8 @@ export component RollPanel inherits Surface {
             }
           }
         }
-        // Cancel alone at the left, far from the step's key, which Back stands beside.
+        // Cancel at the left, Skip beside it while the step is empty; Back and the step's keycap at the
+        // right, the same on every step, so a hand at the keycap's place never passes a pick unseen.
         footer := SheetFooter {
             function laid() {
                 Preparing.footer-x = self.absolute-position.x;
@@ -207,51 +210,11 @@ export component RollPanel inherits Surface {
             cancel: Preparing.measuring ? @tr("Stop") : @tr("Cancel");
             back: Preparing.back-shown ? @tr("Back") : "";
             commit: Preparing.measuring ? @tr("Measuring…") : Preparing.action-title;
-            passes: Preparing.action-skips;
             commit-enabled: Preparing.action-enabled && !Preparing.measuring;
             cancelled => { Preparing.cancel(); }
             backed => { Preparing.back(); }
             committed => { Preparing.advance(); }
-        }
-    }
-}
-
-// `RollFrameSheet`: six to a row, a click flagging a frame, an unticked one dimmed.
-component FlagSheet inherits Scroller {
-    content-height: grid.preferred-height;
-    function laid() {
-        Preparing.sheet-origin-x = self.absolute-position.x;
-        Preparing.sheet-origin-y = self.absolute-position.y;
-        Preparing.sheet-width = self.width;
-    }
-    changed width => { self.laid(); }
-    init => { self.laid(); }
-    grid := VerticalLayout {
-        width: root.width;
-        alignment: start;
-        padding: Space.l;
-        spacing: Space.m;
-        for row in Math.ceil(Preparing.cells.length / RollStyle.sheet-columns): HorizontalLayout {
-            spacing: Space.m;
-            alignment: start;
-            for column in RollStyle.sheet-columns: Rectangle {
-                property <int> at: row * RollStyle.sheet-columns + column;
-                width: (grid.width - 2 * Space.l - (RollStyle.sheet-columns - 1) * Space.m) / RollStyle.sheet-columns;
-                height: self.width * RollStyle.well-ratio;
-                if self.at < Preparing.cells.length: TileView {
-                    width: parent.width;
-                    picture-height: parent.height;
-                    marks: TileMarks.apart;
-                    rounded: true;
-                    ring: RingPlacement.outset;
-                    picture: Preparing.cells[parent.at].picture;
-                    flagged: Preparing.cells[parent.at].flagged;
-                    apart: Preparing.cells[parent.at].apart;
-                    rgb: Preparing.cells[parent.at].rgb;
-                    left-out: !Preparing.cells[parent.at].ticked;
-                    clicked => { Preparing.sheet-clicked(parent.at); }
-                }
-            }
+            if Preparing.skippable && !Preparing.measuring: Button { text: @tr("Skip"); clicked => { Preparing.advance(); } }
         }
     }
 }

@@ -23,6 +23,8 @@ export global RollStyle {
     out property <length> step-tab: 7 * Space.m;
     // The base's ring at a pick: this many times its size, settling onto it as a key comes to rest.
     out property <float> landing: 1.6;
+    // The base's pick on its scan at least this wide, so a disc of a few pixels still shows where it lies.
+    out property <length> pick: 2 * Space.s;
 }
 
 // `RollReferenceSurface`'s pager: Previous, a frame's name, Next. A `name-width` holds the keys still,
@@ -40,6 +42,16 @@ export component Pager inherits HorizontalLayout {
     if root.name-width > 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; width: root.name-width; horizontal-alignment: center; overflow: elide; }
     if root.name-width == 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; horizontal-stretch: 1; horizontal-alignment: center; overflow: elide; }
     Button { text: @tr("Next"); widest: @tr("Previous"); enabled: root.can-next; clicked => { root.next(); } }
+}
+
+// The base picked on its scan: the ring of the disc it read, filled with the colour it sampled and
+// never under `pick` wide; the loupe keeps the disc's true size.
+export component Pick inherits Ring {
+    in property <length> sampled;
+    in property <float> landing: 1;
+    in property <color> colour;
+    diameter: max(root.sampled, RollStyle.pick) * root.landing;
+    background: root.colour;
 }
 
 // The base's loupe: the scan's pixels under the pointer, nearest neighbour, the canvas past its

@@ -128,20 +128,29 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(spread(&centred) > 4.0, "twin: the words centred in equal cells leave uneven gaps: {centred:?}");
 
     // NEXT walks past the skipped flat-field to the base; the step reached rides in every sidecar.
+    let first = (common::the(w, Role::Button, "Cancel"), p.get_footer_height());
     let (x, y) = action();
     click(&rig, x, y);
     assert_eq!(p.get_step(), 2);
     rig.until("the drafts written", Duration::from_secs(10), || ["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "base")));
     assert!(loaded(&canonical("D.tif")).roll_draft.is_none(), "the frame left out carries no draft");
-    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_skips()), ("No base picked yet.", "Skip", true));
+    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_enabled(), p.get_skippable()), ("No base picked yet.", "NEXT", false, true));
     let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
     assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
-    // Cancel stands apart at the left; Back and the step's key a group's gap apart at the right.
+    // Cancel and Skip at the left; Back and the step's keycap a group's gap apart at the right, the
+    // footer laid as on the film step, its keys on the same line.
     rig.settle();
-    let (cancel, back, skip) = (common::the(w, Role::Button, "Cancel"), common::the(w, Role::Button, "Back"), common::the(w, Role::Button, "Skip"));
-    let group = skip.x - (back.x + back.width);
-    assert!((group - 8.0).abs() < 1.0, "Back and the step's key a group's gap apart: {back:?} {skip:?}");
-    assert!(back.x - (cancel.x + cancel.width) >= 2.0 * group, "twin: Cancel further apart than a group's gap: {cancel:?} {back:?}");
+    let key = |name: &str| common::the(w, Role::Button, name);
+    let (cancel, skip, back, next) = (key("Cancel"), key("Skip"), key("Back"), key("NEXT"));
+    let group = next.x - (back.x + back.width);
+    assert!((group - 8.0).abs() < 1.0 && (skip.x - (cancel.x + cancel.width) - group).abs() < 1.0, "two groups: {cancel:?} {skip:?} {back:?} {next:?}");
+    assert!(back.x - (skip.x + skip.width) >= 2.0 * group, "twin: Skip stands far from the keycap: {skip:?} {back:?}");
+    assert_eq!((cancel.y, cancel.height, p.get_footer_height()), (first.0.y, first.0.height, first.1), "one footer on every step");
+    assert!(cancel.height < p.get_footer_height(), "twin: the keycap lays the footer, taller than a flat key");
+    // At the keycap's place, a click passes no empty base: Skip is a choice apart.
+    let (x, y) = action();
+    click(&rig, x, y);
+    assert_eq!(p.get_step(), 2, "the keycap waits for the base");
 
     // The base's demo waits for Show How, nothing moving beside the scan unasked; pressed again, it goes.
     let demo = || p.get_tutorial().size().width;
@@ -195,8 +204,29 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     click(&rig, on_scan.0, on_scan.1);
     assert_eq!((p.get_step(), p.get_base_picks(), pressed.get()), (2, 1, 1), "a pick stays on its step, its ring landing with a click");
     assert!(p.get_ring_shown());
-    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_skips()), ("On A.tif", "NEXT", false));
+    assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_enabled(), p.get_skippable()), ("On A.tif", "NEXT", true, false));
+    assert!(common::placed(w, Role::Button, "Skip").is_empty(), "a base picked: nothing left to skip");
+    // The pick shows the colour it sampled: within the scan's own colours in its disc, never the far corner's.
+    let (sx, sy, r) = (scan.width() as usize, scan.height() as usize, oni_measure::pipette::radius(radius().unwrap_or(oni_measure::roll::BASE_RADIUS)));
+    let span = |fx: f32, fy: f32| {
+        let (cx, cy) = (f64::from(fx) * sx as f64, f64::from(fy) * sy as f64);
+        let inside = (0..sx * sy).filter(|i| ((i % sx) as f64 + 0.5 - cx).powi(2) + ((i / sx) as f64 + 0.5 - cy).powi(2) <= r * r);
+        inside.fold([(255u8, 0u8); 3], |mut b, i| {
+            for (c, v) in b.iter_mut().zip(&scan.as_bytes()[i * 4..i * 4 + 3]) {
+                *c = (c.0.min(*v), c.1.max(*v));
+            }
+            b
+        })
+    };
+    let within = |c: [u8; 3], b: [(u8, u8); 3]| c.iter().zip(b).all(|(v, (lo, hi))| (lo..=hi).contains(v));
+    let ring = p.get_ring_colour();
+    let (pick, corner) = (span(0.05, 0.1), span(0.95, 0.9));
+    println!("the pick's colour {ring:?}, its disc {pick:?}, the far corner's {corner:?}");
+    assert!(within([ring.red(), ring.green(), ring.blue()], pick), "the pick's colour is the scan's in its disc");
+    assert!(!within([ring.red(), ring.green(), ring.blue()], corner), "twin: it is not the far corner's");
     println!("shot {}", rig.shot("prepare-base-landing").display());
+    // The hand gone, the loupe with it: the pick's mark alone shows where and what it sampled.
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(p.get_footer_x(), p.get_footer_y() - 40.0) });
     rig.settle();
     println!("shot {}", rig.shot("prepare-base-picked").display());
     let (x, y) = action();
@@ -234,7 +264,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     p.invoke_step_picked(4);
     rig.pump();
     let walked = || p.get_readouts().row_data(4).unwrap_or_default();
-    assert_eq!((p.get_action_title().as_str(), p.get_action_skips(), walked().as_str()), ("PREPARE ROLL", false, "1 / 2"), "the bar's own key ends the walk over two frames");
+    assert_eq!((p.get_action_title().as_str(), p.get_skippable(), walked().as_str()), ("PREPARE ROLL", false, "1 / 2"), "the bar's own key ends the walk over two frames");
     assert_eq!(p.get_frame_name().as_str(), "A.tif");
     rig.key("\u{F703}");
     assert_eq!(p.get_frame_name().as_str(), "B.tif");

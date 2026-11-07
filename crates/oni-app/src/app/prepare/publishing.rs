@@ -93,7 +93,7 @@ impl Ctl {
         let base_note = r.base.as_ref().map_or(unpicked.to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
         // A slide roll walks no flags step: every slide ticked is measured.
         let measured = if r.film == ConversionMode::Positive { ticked } else { ticked - flagged };
-        let (action, skips) = key(step, filled(step, &r.flat, r.base.is_some()));
+        let holds = filled(step, &r.flat, r.base.is_some());
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title(r.film).to_string(),
@@ -163,9 +163,9 @@ impl Ctl {
         p.set_can_next(at < last);
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
-        p.set_action_title(action.into());
-        p.set_action_skips(skips);
-        p.set_action_enabled(step != Step::Window || measured > 0);
+        p.set_action_title(key(step).into());
+        p.set_skippable(!holds);
+        p.set_action_enabled(holds && (step != Step::Window || measured > 0));
         p.set_card_picture(card);
         self.publish_passes(&p);
         self.publish_card();
@@ -249,6 +249,7 @@ impl Ctl {
             p.set_ring_x((rect.0 + b.unit.0 * rect.2) as f32);
             p.set_ring_y((rect.1 + b.unit.1 * rect.3) as f32);
             p.set_ring_diameter((2.0 * b.radius / size.0.max(1) as f64 * rect.2) as f32);
+            p.set_ring_colour(card::sampled(&scan, b.unit, b.radius));
         }
         let Some(pointer) = r.pointer.filter(|(x, y)| *x >= rect.0 && *y >= rect.1 && *x <= rect.0 + rect.2 && *y <= rect.1 + rect.3) else {
             p.set_loupe_shown(false);

@@ -95,12 +95,8 @@ pub fn done(step: Step, current: Step, capture: Capture, film: ConversionMode, f
     step.index() < current.index() && !step.skipped(capture, film) && filled(step, flat, base)
 }
 
-/// The step's key and whether it only passes the step: PREPARE ROLL ends the walk, NEXT rises once
-/// the step holds its value; before, a flat Skip, so the pick the step asks for stays its call to act.
-pub fn key(step: Step, filled: bool) -> (&'static str, bool) {
-    match step {
-        Step::Window => (tr("PREPARE ROLL"), false),
-        _ if filled => (tr("NEXT"), false),
-        _ => (tr("Skip"), true),
-    }
+/// The step's keycap, in one place on every step and lit once the step holds its value: PREPARE ROLL
+/// ends the walk, NEXT goes on. A step still empty is passed by Skip alone, a key apart from it.
+pub fn key(step: Step) -> &'static str {
+    if step == Step::Window { tr("PREPARE ROLL") } else { tr("NEXT") }
 }

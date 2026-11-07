@@ -39,11 +39,13 @@ impl Ctl {
     }
 
     /// Each lacking frame's thumbnail, read from disk and laid on the GPU off this thread: a tile shows
-    /// it at once rather than nothing until its frame decodes.
+    /// it at once until its frame decodes, unless it waits to be drawn again, a look the frame left.
     pub(super) fn stand_in(&self, id: u64, lacking: &[(usize, String)]) {
         let (support, held): (PathBuf, Vec<(usize, String)>) = {
             let s = self.state.borrow();
-            (s.support.clone(), lacking.iter().filter_map(|(i, p)| s.fingerprint(p).map(|f| (*i, f.to_string()))).collect())
+            let paint = s.painter.0.lock().expect("painter");
+            let current = lacking.iter().filter(|(_, p)| !paint.stale(p));
+            (s.support.clone(), current.filter_map(|(i, p)| s.fingerprint(p).map(|f| (*i, f.to_string()))).collect())
         };
         let engine = self.engine.clone();
         std::thread::spawn(move || {
