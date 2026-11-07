@@ -1,5 +1,5 @@
 //! The export surface as the window lays and draws it: one step between the panel's groups whatever
-//! the space's note wraps to, the summary in the panel's words, each field's face and example under
+//! the space's note wraps to, the summary in the panel's words, each field's face and example beside
 //! the picture, the date shown dashed while the file keeps EXIF's colons, and the presets in one picker
 //! whose choices move no row under it.
 
