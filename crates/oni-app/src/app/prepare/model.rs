@@ -228,8 +228,8 @@ mod tests {
         // The keycap names the walk's end as the bar's key does, and NEXT on every other step, picked or not.
         assert_eq!((key(Step::Window), key(Step::Flags), key(Step::Base)), ("PREPARE ROLL", "NEXT", "NEXT"));
         assert_ne!(key(Step::FlatField), "Skip", "twin: no step turns its keycap into Skip");
-        assert_eq!(left_out_text(1), "1 frame of this folder, measured on another roll, is left out.");
-        assert_eq!(left_out_text(2), "2 frames of this folder, measured on another roll, are left out.");
+        assert_eq!(left_out_text(1), "1 frame of this folder, prepared with another roll, is left out.");
+        assert_eq!(left_out_text(2), "2 frames of this folder, prepared with another roll, are left out.");
     }
 
     /// `RollFrameView.selfCheck`: a quarter-turned, cropped frame shows in its render's shape.

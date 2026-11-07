@@ -7228,5 +7228,12 @@
     "title": "A prepared roll opens whole again, as the owner decided (#1037); #1415 withdrawn pending his word",
     "status": "done",
     "detail": "The fourth evaluation asked that Prepare end on one frame alone, so a newcomer's first edit never reaches the whole roll unseen (#1415). That reversed the owner's own call (#1037): a measured roll opens with every frame together on its contact sheet. Back to #1037 until the owner decides; the Whole Roll key and the panel's 'Acts on N photos' say how many frames an edit reaches."
+  },
+  {
+    "id": 1471,
+    "type": "fix",
+    "title": "Two checks follow the merged sixth wave",
+    "status": "done",
+    "detail": "Prepare's left-out notice now says 'prepared with another roll'. A pressed slider shows it holds the keyboard, and one Escape leaves Compare whether or not the window's hook saw the press, as the keyboard's rework settled; the check proves both paths."
   }
 ]

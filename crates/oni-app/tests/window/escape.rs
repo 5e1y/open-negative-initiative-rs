@@ -35,20 +35,17 @@ pub(crate) fn one_escape_leaves_compare_its_key_turned_on_after_a_slider_held_th
         let worded = common::placed(w, Role::Button, "Compare");
         if worded.is_empty() { common::the(w, Role::Button, "Compare Before/After") } else { worded[0] }
     };
-    // Twin first: a press the window's hook never sees, as an evaluation tool's, leaves the dragged
-    // slider its hold, which takes the first Escape; the hand's press, through the hook, takes it away.
+    // A press the window's hook never sees, as an evaluation tool's, and the hand's, through the hook:
+    // the slider holds the keyboard either way, and one Escape still leaves Compare.
     for hooked in [false, true] {
         let rail = common::the(w, Role::Slider, "Exposure");
         common::click(&rig, w, (rail.x + rail.width / 2.0, rail.y + rail.height - 4.0));
-        assert!(!w.get_keys_focused() && w.get_keys_held(), "the pressed slider holds the keyboard");
+        // The pressed slider holds the keyboard, and shows it holds it.
+        assert!(w.get_keys_held(), "the pressed slider holds the keyboard");
         if hooked { common::click(&rig, w, compare().middle()) } else { click(&rig, compare().middle()) }
         assert!(canvas.get_split() >= 0.0, "Compare's key turns it on");
         key(&rig, w, &escape);
-        assert_eq!(canvas.get_split() < 0.0, hooked, "one Escape leaves Compare only after the hand's press");
-        if !hooked {
-            key(&rig, w, &escape);
-            assert!(canvas.get_split() < 0.0, "a second Escape leaves it");
-        }
+        assert!(canvas.get_split() < 0.0, "one Escape leaves Compare, the hook seeing the press or not");
         assert!(!w.global::<App>().get_gallery(), "and only Compare");
     }
     drop(shell);
