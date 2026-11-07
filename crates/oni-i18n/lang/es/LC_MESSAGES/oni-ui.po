@@ -2810,6 +2810,12 @@ msgid "“{gesture}” is still under way: try again once it is done."
 msgstr "«{gesture}» sigue en curso: inténtalo de nuevo cuando termine."
 
 #: crates/oni-app/src/app/gestures/busy.rs
+msgid "One photo moved to the ONI Trash."
+msgid_plural "{n} photos moved to the ONI Trash."
+msgstr[0] "Una foto movida a la Papelera de ONI."
+msgstr[1] "{n} fotos movidas a la Papelera de ONI."
+
+#: crates/oni-app/src/app/gestures/busy.rs
 msgid "One photo of “{folder}” is back in its folder."
 msgid_plural "{n} photos of “{folder}” are back in their folder."
 msgstr[0] "Una foto de «{folder}» volvió a su carpeta."

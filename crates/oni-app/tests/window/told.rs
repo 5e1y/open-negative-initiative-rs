@@ -1,6 +1,6 @@
 //! What a gesture could not do is told wherever the hand is, by the notice over every view: a trash
 //! refused in the gallery, a roll walked back in part, a folder the disk refuses, a name refused.
-//! A success says nothing. Every folder lies in the check's own scratch.
+//! A success says nothing but a trash, told with its Undo. Every folder lies in the check's own scratch.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{App, FolderLine, Navigator, Told};
@@ -86,19 +86,29 @@ pub(crate) fn a_refused_trash_in_the_gallery_opens_a_notice() {
     let d = disk("trash", &["Home/Scans/A.tif", "Home/Scans/B.tif"]);
     let scans = d.root.join("Home/Scans");
     let rig = rig();
+    // Wide enough for the bar's keys to show their words.
+    rig.window.set_size(slint::PhysicalSize::new(1728, 900));
     let shell = d.launch(&gpu);
     opened(&rig, &shell, &scans);
     assert!(shell.window.global::<App>().get_gallery(), "the gesture is made in the gallery");
     let lib = shell.window.global::<oni_app::Library>();
 
-    // Twin: a trash that lands says nothing.
+    // Twin: a trash that lands, pressed on the bar's key, says so with its Undo, which brings the photo back.
+    let trashed = || oni_settings::sidecar::read(&scans.join("A.tif"), false, true).unwrap().trashed_at.is_some();
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
-    shell.ctl.act(oni_app::Act::Remove);
+    common::click(&rig, &shell.window, common::the(&shell.window, i_slint_backend_testing::AccessibleRole::Button, "Trash").middle());
     rig.landed(&shell.ctl);
-    assert_eq!(told(&shell), None, "a success stays silent");
-    let a = sidecar_of(&scans.join("A.tif"));
-    assert!(oni_settings::sidecar::read(&scans.join("A.tif"), false, true).unwrap().trashed_at.is_some(), "{a}");
+    let landed = told(&shell).expect("a move to the ONI Trash is told");
+    assert_eq!(landed, ("Move to ONI Trash".into(), "One photo moved to the ONI Trash.".into(), "Undo".into()));
+    assert!(trashed(), "{}", sidecar_of(&scans.join("A.tif")));
+    shell.window.global::<Told>().invoke_acted();
+    rig.landed(&shell.ctl);
+    assert!(!trashed() && told(&shell).is_none(), "the notice's Undo puts the photo back and goes");
+    shell.ctl.act(oni_app::Act::Redo);
+    rig.landed(&shell.ctl);
+    assert!(trashed(), "{}", sidecar_of(&scans.join("A.tif")));
+    shell.window.global::<Told>().invoke_closed();
 
     // A newer ONI wrote B's settings: the trash refuses it, and the gallery says so over itself.
     std::fs::write(oni_settings::sidecar::url_for(&scans.join("B.tif")), r#"{"version": 999}"#).unwrap();

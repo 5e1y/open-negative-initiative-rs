@@ -104,6 +104,9 @@ impl Ctl {
         };
         if let Some(message) = failure {
             self.told(title, &message);
+        } else if date.is_some() && frames > 0 {
+            // A photo leaves its folder's view: the notice says so, its Undo bringing it back.
+            self.told_step(title, &trn("One photo moved to the ONI Trash.", "{n} photos moved to the ONI Trash.", frames as u64));
         } else if let Some(folder) = folder.filter(|_| date.is_none() && frames > 0) {
             // A folder row's RESTORE asks nothing first, and its row goes: the notice brings it back.
             let said = trn("One photo of “{folder}” is back in its folder.", "{n} photos of “{folder}” are back in their folder.", frames as u64);
