@@ -6906,5 +6906,12 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1414,
+    "type": "fix",
+    "title": "The face turned is a view: one undo history spans both faces",
+    "status": "done",
+    "detail": "UX evaluation s-c82a3414 (Trust, major): after Pro's Contrast and a turn to the Scanner face and back, the Contrast seemed lost to undo. Each turn was an undo step, and its undo laid the frame's face back in the settings without turning the store's face, so the first undos changed nothing the panel showed. The face is now a view, never a step (EditorStore::turn): the step under way is recorded on its own face, then the open frame and the frames together take the new face, written as an opening writes it. An undo or a redo turns the view to the face its step was taken on, the frames together with it, so what it lays back shows; the app keeps that face for the next launch as the bar's and the phone's turns do (Ctl::faced, shared by the three). The face-alone rule of #1063 goes with the step it served. Checks: store scanner the_face_is_no_step_and_an_undo_turns_to_the_face_of_its_step (twin: turns as steps leave more to undo), store together the_face_turned_reaches_every_frame_together_and_is_no_step (twin: nothing left to undo), window face_turn (the undo still names Contrast after two turns, and a Scanner key's undo shows on the Scanner face; run on the former store, it fails)."
   }
 ]

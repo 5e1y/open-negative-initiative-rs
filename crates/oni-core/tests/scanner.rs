@@ -1,5 +1,5 @@
 //! The Scanner face on the store: the keypad's commands, which the desktop keys and the phone send
-//! alike, the face switch, and the rule that a gesture on one face never moves the other.
+//! alike, the face turned, and the rule that a gesture on one face never moves the other.
 
 use oni_core::{Archive, Command, EditorStore, Knob, Scan};
 use oni_keys::{Effect, Letter, Machine};
@@ -118,15 +118,28 @@ fn a_gesture_on_one_face_never_moves_the_other() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// `toggleLab`: the switch is one undo step on the open frame; a frame opens on the face it is opened
-/// in, which is its opening and no step, so an undo reaches past it to what a hand did.
+/// The face is a view, never a step: an undo reaches past a turn to what a hand did and turns the view
+/// to the face that step was taken on; a frame opens on the face in use, its opening no step either.
 #[test]
-fn the_face_is_one_step_and_a_frame_opens_on_the_face_it_is_opened_in() {
+fn the_face_is_no_step_and_an_undo_turns_to_the_face_of_its_step() {
     let (mut store, paths, dir) = fresh("face", 2);
     assert_eq!(store.settings().face, Face::Pro);
+    store.apply(Command::Set { knob: Knob::Contrast, value: 0.4 });
     let applied = store.apply(Command::Face(Face::Scanner));
     assert!(!applied.changed.is_empty() && store.settings().face == Face::Scanner && store.scanner_face);
-    assert!(store.can_undo());
+    store.apply(step(Letter::D, 3));
+    store.apply(Command::Face(Face::Pro));
+    // Back on Pro, the first undo takes the Scanner's key back, shown on the face it was pressed on.
+    store.apply(Command::Undo);
+    assert_eq!((store.settings().scanner.d, store.settings().face, store.scanner_face), (0, Face::Scanner, true));
+    // The second reaches Pro's Contrast, past both turns, and shows it on Pro.
+    store.apply(Command::Undo);
+    assert_eq!((store.settings().print.contrast, store.settings().face, store.scanner_face), (0.0, Face::Pro, false));
+    // Twin: turns as steps would leave the Contrast where the hand put it, with more to undo.
+    assert!(!store.can_undo(), "two hands, two steps");
+    store.apply(Command::Redo);
+    store.apply(Command::Redo);
+    assert_eq!((store.settings().print.contrast, store.settings().scanner.d, store.face()), (0.4, 3, Face::Scanner));
     store.apply(Command::Scan(Scan::Machine(Machine::Frontier)));
     assert_eq!(store.settings().scanner_machine, ScannerMachine::Frontier);
     store.flush();

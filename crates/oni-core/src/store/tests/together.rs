@@ -97,8 +97,11 @@ fn a_roll_field_moved_together_stays_on_the_frames_of_that_roll() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// The face turned reaches every frame together, as a view and no step: the undos reach past it, and
+/// the one of a step taken on Pro turns the view back there, every frame together with it.
 #[test]
-fn the_face_changed_alone_reaches_every_frame_together() {
+fn the_face_turned_reaches_every_frame_together_and_is_no_step() {
+    use oni_settings::Face::{Pro, Scanner};
     let roll = |id| oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
     let (r1, r2) = (Id::new(), Id::new());
     let on = |id| PipelineSettings { roll_reference: Some(roll(id)), ..PipelineSettings::default() };
@@ -106,19 +109,22 @@ fn the_face_changed_alone_reaches_every_frame_together() {
     let next = PipelineSettings { roll_reference: Some(roll(r1)), ..store.settings().clone() };
     store.apply_at(Command::Write(Box::new(next)), 0.0);
     store.set_together(vec![b.clone(), c.clone()]);
-    store.apply_at(Command::Face(oni_settings::Face::Scanner), 5.0);
+    store.apply_at(Command::Face(Scanner), 5.0);
     let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
-    assert_eq!([read(&b).face, read(&c).face], [oni_settings::Face::Scanner; 2], "another roll's frame takes the face too");
-    assert_eq!(live, [oni_settings::Face::Scanner; 2], "and shows it");
-    store.undo();
-    assert_eq!(read(&b).face, oni_settings::Face::Pro, "one undo takes it back");
-    // Twin: a roll field moved on the Scanner face leaves another roll's frame on its own face.
+    assert_eq!([read(&b).face, read(&c).face], [Scanner; 2], "another roll's frame takes the face too");
+    assert_eq!(live, [Scanner; 2], "and shows it");
+    // A roll field moved on the Scanner face reaches the roll's frame alone.
     let mut next = store.settings().clone();
-    next.face = oni_settings::Face::Scanner;
     next.levels.red.black = 0.2;
     store.apply_at(Command::Write(Box::new(next)), 10.0);
-    assert_eq!((read(&b).face, read(&b).levels.red.black), (oni_settings::Face::Pro, 0.0));
-    assert_eq!((read(&c).face, read(&c).levels.red.black), (oni_settings::Face::Scanner, 0.2));
+    assert_eq!((read(&b).levels.red.black, read(&c).levels.red.black), (0.0, 0.2));
+    store.undo();
+    assert_eq!((read(&c).levels.red.black, store.face()), (0.0, Scanner), "the step taken on the Scanner face undone there");
+    store.undo();
+    assert_eq!(store.settings().roll_reference, None, "the second undo reaches the write made before the turn");
+    assert_eq!([store.face(), read(&b).face, read(&c).face], [Pro; 3], "on Pro, where it was made, the frames together with it");
+    // Twin: the turn as a step would be the second undo's, the write before it still to take.
+    assert!(!store.can_undo());
     let _ = std::fs::remove_dir_all(&dir);
 }
 

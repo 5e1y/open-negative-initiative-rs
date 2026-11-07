@@ -121,11 +121,10 @@ fn on_face(stored: &PipelineSettings, scanner: bool, edit: &dyn Fn(&PipelineSett
     if scanner { stored.storing_scanner_edit(&edit(&stored.as_scanner())) } else { edit(stored) }
 }
 
-/// The step, the open frame gone from `before` to `after` on roll `key`, as the frames together take
-/// it: `took` on what no roll shares, and the roll's `fields` by its rule on a frame of that roll.
+/// The step, the open frame gone to `after` on roll `key`, as the frames together take it: `took` on
+/// what no roll shares, and the roll's `fields` by its rule on a frame of that roll.
 struct Step<'a> {
     took: &'a [Took],
-    before: &'a PipelineSettings,
     after: &'a PipelineSettings,
     key: Option<&'a RollKey>,
     fields: &'a BTreeSet<Shared>,
@@ -166,8 +165,7 @@ impl Step<'_> {
             out = rolled(self.fields, self.key.expect("on the roll"), self.after, &out);
         }
         // A frame left on the other face would hold the values and show none of them.
-        let face_alone = FieldSet::between(self.before, self.after).iter().collect::<Vec<_>>() == [Field::Face];
-        if out != *frame || face_alone {
+        if out != *frame {
             out.face = self.after.face;
         }
         out
@@ -178,10 +176,7 @@ impl EditorStore {
     /// The frames edited with the open one, in their order; none for the open frame alone. A step
     /// still waiting is recorded first, on the frames it was taken with; a hand still down holds on.
     pub fn set_together(&mut self, paths: Vec<String>) {
-        if self.held || self.deferred.is_some() {
-            let now = self.now();
-            self.settle(now);
-        }
+        self.settle_under_way();
         let held = paths
             .iter()
             .map(|p| sidecar::read(Path::new(p), self.mosaic(p), true).map(|l| l.settings).unwrap_or_default())
@@ -203,7 +198,7 @@ impl EditorStore {
         let (before, after) = (&self.recorded, &self.settings);
         let key = self.path().and_then(|p| RollKey::of(p, after).or_else(|| RollKey::of(p, before)));
         let fields = key.as_ref().filter(|_| self.roll_touched).map(|k| shared(k, before, after)).unwrap_or_default();
-        let step = Step { took: &self.together.took, before, after, key: key.as_ref(), fields: &fields };
+        let step = Step { took: &self.together.took, after, key: key.as_ref(), fields: &fields };
         self.together.paths.iter().zip(&self.together.held).map(|(path, held)| (path.clone(), step.laid(path, held))).collect()
     }
 
@@ -212,7 +207,7 @@ impl EditorStore {
     pub fn together_where(&self, field: Field, off: impl Fn(&PipelineSettings) -> bool) -> bool {
         let none = BTreeSet::new();
         let key = self.roll_key();
-        let step = Step { took: &[], before: &self.settings, after: &self.settings, key: key.as_ref(), fields: &none };
+        let step = Step { took: &[], after: &self.settings, key: key.as_ref(), fields: &none };
         self.together.paths.iter().zip(&self.together.held).any(|(path, held)| step.reaches(path, held)(field) && off(held))
     }
 
@@ -249,7 +244,7 @@ impl EditorStore {
         if reached.is_empty() {
             return Written::default();
         }
-        let step = Step { took, before, after, key: key.as_ref(), fields: &fields };
+        let step = Step { took, after, key: key.as_ref(), fields: &fields };
         self.modify(&reached, |p, loaded| {
             let out = if together.iter().any(|t| t == p) {
                 step.laid(p, loaded)
