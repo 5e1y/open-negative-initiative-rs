@@ -108,16 +108,16 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
         }
     }
     let b00 = project_rows(&lib)[at(&lib, "B00")].clone();
-    assert!(b00.thumb && b00.width < 150.0, "two thumbnails a line: {b00:?}");
+    assert!(b00.thumb && b00.width < 150.0, "two thumbnails per row: {b00:?}");
     rig.until("the projects' thumbnails", Duration::from_secs(60), || project_rows(&lib).iter().filter(|r| r.thumb).all(|r| r.picture.size().width > 0));
     rig.shot("tree-leftovers-thumbnails");
-    let select = common::placed(w, i_slint_backend_testing::AccessibleRole::Button, "Two thumbnails a line");
+    let select = common::placed(w, i_slint_backend_testing::AccessibleRole::Button, "Two per row");
     assert_eq!(select.len(), 1, "the select on the projects names the layout in words");
 
     // The select picks the editor's layout, one a line, then names; the gallery keeps its own, names.
     lib.invoke_tree_layout_picked(2);
     rig.pump();
-    assert!(project_rows(&lib)[at(&lib, "B00")].width > 2.0 * b00.width, "one thumbnail a line");
+    assert!(project_rows(&lib)[at(&lib, "B00")].width > 2.0 * b00.width, "one thumbnail per row");
     lib.invoke_tree_layout_picked(0);
     rig.pump();
     assert!(project_rows(&lib).iter().all(|r| !r.thumb) && project_rows(&lib).iter().any(|r| r.title == "B00.tif"), "names, in full");

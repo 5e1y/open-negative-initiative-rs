@@ -374,8 +374,8 @@ msgid "Print curve"
 msgstr "Curva de la copia"
 
 #: crates/oni-ui/ui/ds/plots.slint
-msgid "Its inverse"
-msgstr "Su inversa"
+msgid "Inverse curve"
+msgstr "Curva inversa"
 
 #: crates/oni-ui/ui/ds/readout.slint
 msgid "Click to type a value"
@@ -981,6 +981,10 @@ msgstr "Emulsión"
 msgid "What this roll was shot on — never guessed, only ever what a hand picks."
 msgstr "En qué se fotografió este rollo: nunca se adivina, solo lo que elige una mano."
 
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Sets every frame of this roll to the film stock's dyes, leaving each frame's Dye separation amount as it is."
+msgstr "Ajusta todos los fotogramas de este rollo a los tintes de la emulsión, sin tocar la Separación de tintes de cada uno."
+
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/stocks.slint
 msgid "Select Film Stock"
 msgstr "Seleccionar emulsión"
@@ -1038,12 +1042,12 @@ msgid "Names only"
 msgstr "Solo nombres"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "Two thumbnails a line"
-msgstr "Dos miniaturas por línea"
+msgid "Two per row"
+msgstr "Dos por fila"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "One thumbnail a line"
-msgstr "Una miniatura por línea"
+msgid "One per row"
+msgstr "Una por fila"
 
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Fold every folder"
@@ -2610,12 +2614,16 @@ msgstr[0] "Una foto no tiene miniatura: no se puede acceder a su original."
 msgstr[1] "{n} fotos no tienen miniatura: no se puede acceder a sus originales."
 
 #: crates/oni-app/src/app/dedusting/auto.rs
-msgid "Reading the photo…"
-msgstr "Leyendo la foto…"
+msgid "No dust found, even at full Sensitivity"
+msgstr "No se encontró polvo, ni siquiera con la Sensibilidad al máximo"
 
 #: crates/oni-app/src/app/dedusting/auto.rs
-msgid "No dust at this sensitivity"
-msgstr "Sin polvo con esta sensibilidad"
+msgid "No dust found: raise Sensitivity to catch fainter specks"
+msgstr "No se encontró polvo: sube la Sensibilidad para captar motas más tenues"
+
+#: crates/oni-app/src/app/dedusting/auto.rs
+msgid "Reading the photo…"
+msgstr "Leyendo la foto…"
 
 #: crates/oni-app/src/app/dedusting/auto.rs
 msgid "{n} speck of dust ringed"
@@ -3718,8 +3726,12 @@ msgid "Set Film Stock"
 msgstr "Definir emulsión"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Dyes: {family}; this film stock calls for {named}"
-msgstr "Tintes: {family}; esta emulsión pide {named}"
+msgid "Frames set to {family} dyes, but this film stock has {named} dyes"
+msgstr "Fotogramas con tintes {family}, pero esta emulsión tiene tintes {named}"
+
+#: crates/oni-app/src/app/organising/roll_card.rs
+msgid "Use {named} Dyes"
+msgstr "Usar tintes {named}"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Dyes: {family}"
@@ -4070,8 +4082,8 @@ msgid "Frame {number} of {count}"
 msgstr "Fotograma {number} de {count}"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "No film stock calls for these dyes"
-msgstr "Ninguna emulsión pide estos tintes"
+msgid "Not from a film stock"
+msgstr "No vienen de una emulsión"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
@@ -4082,8 +4094,8 @@ msgid "From the film stock, {stock}"
 msgstr "Según la emulsión, {stock}"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "Not the film stock's: {stock} calls for {family}"
-msgstr "No son los de la emulsión: {stock} pide {family}"
+msgid "Not the film stock's: {stock} has {family} dyes"
+msgstr "No son los de la emulsión: {stock} tiene tintes {family}"
 
 #: crates/oni-app/src/app/rolls/balance_words.rs
 msgid "Balance Each of the {count}"

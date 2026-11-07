@@ -376,6 +376,8 @@ impl Ctl {
         let p = me.clone();
         lib.on_select_roll_type(move || p.act(crate::Act::SelectRollType));
         let p = me.clone();
+        lib.on_stock_dyes_laid(move || p.stock_dyes_laid());
+        let p = me.clone();
         lib.on_shot_date_committed(move |m, d, y| p.shot_date_committed(&m, &d, &y));
         let p = me.clone();
         lib.on_shot_date_cleared(move || p.shot_date_cleared());

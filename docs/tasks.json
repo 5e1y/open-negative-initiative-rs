@@ -7452,5 +7452,26 @@
     "title": "The panel's scroll knob stays dark when a double click opens the editor",
     "status": "done",
     "detail": "An evaluation saw the panel's knob lit at rest after a double click opened the editor; its shots show the knob widened over its track, the state the pointer resting on the knob's edge strip gives by design. Replayed through the window's real event path (the pointer parked in the corner, a double click on a tile), the knob stays dark until a wheel moves the panel and goes out after its linger; the window check keeps that proof. The overlay knob is unchanged."
+  },
+  {
+    "id": 1509,
+    "type": "ui",
+    "title": "The readout's legend and the column's layouts say what a photographer says",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (UX Language): 'Its inverse' and 'Two thumbnails a line' read oddly. The readout's dashed line is now named Inverse curve, and the column's select offers Names only, Two per row and One per row, in its menu and at rest. Only words move. French and Spanish filled in. Window checks picture_plots the_readout_names_its_curves_under_the_histogram, column_edges the_column_lines_up_and_its_keyboard_shows_where_it_is, sidebars and tree_leftovers find the new names."
+  },
+  {
+    "id": 1510,
+    "type": "ui",
+    "title": "De-dust's empty reading says which way Sensitivity reaches further",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (UX Language): 'No dust at this sensitivity' left the slider's direction to guess. A reading that rings nothing now says 'No dust found: raise Sensitivity to catch fainter specks', since a higher sensitivity reads deeper inside the window and asks less of a speck; at full sensitivity, where there is nowhere further to go, it says 'No dust found, even at full Sensitivity'. Check: dedusting auto none_found_says_which_way_the_sensitivity_reaches_further (twin: a notch short of full still says raise), window auto_dust reads the note at rest."
+  },
+  {
+    "id": 1511,
+    "type": "ui",
+    "title": "The roll card warns of dyes off the film stock's and offers the stock's beside the warning",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (UX Language, UI Clarity): 'Dyes: Kodak; this film stock calls for Fuji' was quiet grey text and a riddle with no way out. Frames unmixing other dyes than their stock's now raise the warning band, 'Frames set to Kodak dyes, but this film stock has Fuji dyes', with a flat Use Fuji Dyes key under it: one gallery step writing the stock's family on every frame of the roll, each frame's dose kept, as picking the stock does (lay_dyes, shared with New Roll's dyes). Matching dyes keep the quiet 'Dyes: Fuji'. The Dye Separation block's note takes the same verb: 'Not the film stock's: Fujifilm Fujicolor has Fuji dyes', and 'Not from a film stock' where no stock names any. No render moves until the key is pressed. Checks: roll_card the_card_warns_of_dyes_off_the_stocks_and_offers_the_stocks (twin: mixed frames name only those off the stock's), roll_tab the_dyes_say_whether_they_are_the_film_stocks, window roll_card clicks the key, sees the card fall quiet and one undo bring the warning back."
   }
 ]

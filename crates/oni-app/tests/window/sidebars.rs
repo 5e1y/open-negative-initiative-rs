@@ -129,7 +129,7 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
 
     // Beside a photo the column's header is one select naming its layout in words: no key on its row
     // needs a note to be read.
-    let select = common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Two thumbnails a line");
+    let select = common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Two per row");
     let met = notes_along(&rig, &tip, 0.0, 260.0, select.y + select.height / 2.0);
     assert!(worded(&met), "{met:?}");
     // Twin: a row of glyph keys, each read off its note, is refused.

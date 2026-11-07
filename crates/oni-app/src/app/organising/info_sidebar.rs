@@ -86,7 +86,9 @@ impl Ctl {
         drop(s);
         let read = self.roll_frames(&frames_key, &roll.paths);
         lib.set_roll_unmeasured(read.as_ref().is_some_and(|r| !r.measured));
-        lib.set_stock_dyes(roll_card::dyes_note(roll.film.stock.as_deref(), read.as_ref().map(|r| r.dyes.as_slice())).into());
+        let (dyes, fix) = roll_card::dyes_note(roll.film.stock.as_deref(), read.as_ref().map(|r| r.dyes.as_slice()));
+        lib.set_stock_dyes(dyes.into());
+        lib.set_stock_dyes_fix(fix.into());
     }
 
     /// `updateRoll`, one gallery step whatever the field: a folder's marker, made by its first field

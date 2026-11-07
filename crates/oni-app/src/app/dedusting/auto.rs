@@ -84,6 +84,16 @@ impl Shown {
     }
 }
 
+/// What a reading found at `sensitivity`: none found says which way the slider reaches further,
+/// as a higher sensitivity reads deeper inside the window and asks less of a speck.
+fn found_note(count: usize, sensitivity: f32) -> String {
+    match count {
+        0 if sensitivity >= 1.0 => tr("No dust found, even at full Sensitivity").to_string(),
+        0 => tr("No dust found: raise Sensitivity to catch fainter specks").to_string(),
+        n => trn("{n} speck of dust ringed", "{n} specks of dust ringed", n as u64),
+    }
+}
+
 fn rings(dust: &[&dust::Speck], width: usize, height: usize) -> Vec<[f64; 4]> {
     let (fw, fh) = (width as f64, height as f64);
     dust.iter().map(|s| [f64::from(s.bounds[0]) / fw, f64::from(s.bounds[1]) / fh, f64::from(s.bounds[2] - s.bounds[0]) / fw, f64::from(s.bounds[3] - s.bounds[1]) / fh]).collect()
@@ -290,11 +300,7 @@ impl Ctl {
         let note: SharedString = if working {
             tr("Reading the photo…").into()
         } else {
-            match shown {
-                Some(_) if count > 0 => trn("{n} speck of dust ringed", "{n} specks of dust ringed", count as u64).into(),
-                Some(_) => tr("No dust at this sensitivity").into(),
-                None => SharedString::default(),
-            }
+            shown.map_or_else(SharedString::default, |_| found_note(count, sensitivity).into())
         };
         d.set_found_note(note);
         if shown.is_none() && c.get_dust_mask().size().width != 0 {
@@ -328,6 +334,15 @@ mod tests {
         assert!((ring[0] - 0.1).abs() < 1e-12 && (ring[1] - 0.1).abs() < 1e-12);
         // Twin: no dust writes nothing.
         assert!(corrections(&[], 1000, 500).is_empty());
+    }
+
+    #[test]
+    fn none_found_says_which_way_the_sensitivity_reaches_further() {
+        assert_eq!(found_note(0, 0.6), "No dust found: raise Sensitivity to catch fainter specks");
+        assert_eq!(found_note(0, 1.0), "No dust found, even at full Sensitivity", "at full, nowhere further to go");
+        assert_eq!(found_note(2, 0.6), "2 specks of dust ringed");
+        // Twin: a sensitivity a notch short of full still has further to go.
+        assert_ne!(found_note(0, 0.99), found_note(0, 1.0));
     }
 
     #[test]
