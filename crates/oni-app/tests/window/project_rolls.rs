@@ -1,5 +1,6 @@
 //! A drop in a project shown roll by roll, as a hand makes it in the tree and the grid: it lands where
-//! its line shows, a roll's end included, writes the order shown, and never leaves its project unbidden.
+//! its mark shows, only where it changes something, writes the order shown, and never leaves its project
+//! unbidden; the rating filter keeps the rolls in the tree's order.
 
 use oni_app::app;
 use oni_library::paths;
@@ -18,19 +19,24 @@ fn past(hand: &Hand, path: &str) -> (f32, f32) {
     (lib.get_grid_x() + t.x + t.width / 2.0 + 30.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0)
 }
 
-/// Row `from` of the projects' tree, as last drawn, pressed and moved onto the top strip of row
-/// `onto`: whether its line showed there, the drop then let go.
-pub(crate) fn tree_line(hand: &Hand, from: usize, onto: usize) -> bool {
+/// Row `from` of the projects' tree, as last drawn, pressed and moved onto row `onto`, its middle or
+/// its top strip: the mark shown there, the drop then let go or cancelled.
+fn tree_mark(hand: &Hand, from: usize, onto: usize, middle: bool, dropped: bool) -> oni_app::TreeDrag {
     hand.rig.drawn();
     let rows: Vec<oni_app::TreeRow> = hand.lib().get_project_rows().iter().collect();
     let start = (rows[from].x + rows[from].width / 2.0, rows[from].y + rows[from].height / 2.0);
-    let to = (rows[onto].x + rows[onto].width / 2.0, rows[onto].y + 1.0);
+    let to = (rows[onto].x + rows[onto].width / 2.0, rows[onto].y + if middle { rows[onto].height / 2.0 } else { 1.0 });
     hand.lib().invoke_project_row_dragged(from as i32, start.0, start.1, to.0, to.1);
     hand.rig.pump();
-    let line = hand.lib().get_project_drag().line;
-    hand.lib().invoke_project_drag_ended(true);
+    let mark = hand.lib().get_project_drag();
+    hand.lib().invoke_project_drag_ended(dropped);
     hand.rig.pump();
-    line
+    mark
+}
+
+/// `tree_mark` onto the top strip of row `onto`: whether its line showed there.
+pub(crate) fn tree_line(hand: &Hand, from: usize, onto: usize) -> bool {
+    tree_mark(hand, from, onto, false, true).line
 }
 
 /// Client stores Roll 10's A C, Roll 8's A B, then Roll 10's D, so Roll 10 shows A C D; Other holds
@@ -61,13 +67,21 @@ pub(crate) fn a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid() {
     // Twin: Roll 8's B on that line would stand in Roll 10, where it cannot: no line, nothing moves.
     assert!(!tree_line(&hand, 7, 5));
     assert_eq!(hand.members()[0], [c.clone(), d.clone(), a.clone(), a8.clone(), b8.clone()]);
+    // A on its own project's row, on its roll's heading or on the line above itself changes nothing: no mark.
+    let (onto_client, onto_roll) = (tree_mark(&hand, 4, 0, true, true), tree_mark(&hand, 4, 1, true, true));
+    assert!(!onto_client.ring && !onto_roll.ring && !tree_line(&hand, 4, 4), "no mark where A stands already");
+    assert_eq!(hand.members()[0], [c.clone(), d.clone(), a.clone(), a8.clone(), b8.clone()]);
+    // Twin: Other's row rings, as A would join it; the line above D moves A, which goes back to Roll 10's end.
+    assert!(tree_mark(&hand, 4, 8, true, false).ring);
+    assert!(tree_line(&hand, 4, 3) && tree_line(&hand, 3, 5));
+    assert_eq!(hand.members(), [vec![c.clone(), d.clone(), a.clone(), a8.clone(), b8.clone()], vec![x.clone()]]);
 
     // The grid: C past A, Roll 10's last tile, ends Roll 10 there.
-    hand.drag(&c, past(&hand, &a));
+    assert!(hand.drag(&c, past(&hand, &a)), "the line shows past A");
     assert_eq!(hand.shown()[..3], [d.clone(), a.clone(), c.clone()], "Roll 10 reads D A C");
     assert_eq!(hand.members()[0], [d.clone(), a.clone(), c.clone(), a8.clone(), b8.clone()]);
-    // Twin: Roll 8's A beside Roll 10's D lands nowhere.
-    hand.drag(&a8, hand.before(&d));
+    // Twin: Roll 8's A beside Roll 10's D lands nowhere, and C past itself changes nothing: no line.
+    assert!(!hand.drag(&a8, hand.before(&d)) && !hand.drag(&c, past(&hand, &c)));
     assert_eq!(hand.members()[0], [d.clone(), a.clone(), c.clone(), a8.clone(), b8.clone()]);
 
     // Past Client's last tile, A stays in Client, though Other's X is the next tile.
@@ -76,4 +90,34 @@ pub(crate) fn a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid() {
     hand.drag(&a8, past(&hand, &b8));
     assert_eq!(hand.members(), [vec![d, a, c, b8, a8], vec![x]], "Roll 8 reads B A, Other untouched");
     assert!(!hand.lib().get_drop_shown(), "the line leaves with the drop");
+}
+
+/// Client stores Roll 10's A, Roll 8's A, then Roll 10's D, so the tree reads Roll 10 then Roll 8;
+/// under Gold, worn by Roll 8's A and Roll 10's D, the grid keeps that order: D, then Roll 8's A.
+pub(crate) fn the_rating_filter_keeps_the_trees_roll_order() {
+    let files = [("Roll 10/A.tif", 0.2), ("Roll 10/D.tif", 0.4), ("Roll 8/A.tif", 0.5)];
+    let hand = Hand::made("rolls-filter", &files, |root| {
+        let at = |f: &str| paths::join(&paths::canonical(&root.join("Scans")), f);
+        let members: Vec<String> = ["Roll 10/A.tif", "Roll 8/A.tif", "Roll 10/D.tif"].map(at).to_vec();
+        let client = serde_json::json!({"id": oni_settings::Id::new().to_string(), "name": "Client", "description": "", "createdAt": 8e8, "members": members});
+        std::fs::create_dir_all(root.join("Support")).unwrap();
+        std::fs::write(oni_library::project::file_path(&root.join("Support")), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+    });
+    let [a, d, a8] = files.map(|(f, _)| hand.at(f));
+    hand.open("");
+    let lib = hand.lib();
+    for gold in [&a8, &d] {
+        hand.click(gold, false);
+        lib.invoke_medal_picked(1);
+        hand.rig.pump();
+    }
+    lib.invoke_surface_picked(1);
+    hand.rig.pump();
+    assert_eq!(hand.shown(), [a.clone(), d.clone(), a8.clone()], "Roll 10, then Roll 8");
+    lib.invoke_filter_picked(1);
+    hand.rig.pump();
+    assert_eq!(hand.shown(), [d.clone(), a8.clone()], "Gold keeps Roll 10 ahead");
+    // Twin: Gold's photos in the order stored would put Roll 8's A first.
+    let stored: Vec<String> = hand.members()[0].iter().filter(|p| *p == &a8 || *p == &d).cloned().collect();
+    assert_eq!(stored, [a8, d]);
 }

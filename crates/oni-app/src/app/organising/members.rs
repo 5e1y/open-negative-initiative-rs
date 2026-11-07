@@ -19,6 +19,14 @@ impl State {
         project::grouped(&self.org.projects, &project::Reach::new(&rows, &self.org.found))
     }
 
+    /// Whether `sources` dropped beside the grid's cell `cell`, past it or before, change its project:
+    /// the line shows only where the drop acts.
+    pub(in crate::app) fn reorders(&self, sources: &HashSet<String>, cell: usize, past: bool) -> bool {
+        let Some(target) = self.order.get(cell) else { return false };
+        let rows = self.reach();
+        project::reorder_drop(&mut self.org.projects.clone(), &project::Reach::new(&rows, &self.org.found), sources, target, past)
+    }
+
     /// Every roll marker known, by folder: the opened folder's survey, then those read for the
     /// projects' members beyond it.
     pub(in crate::app) fn roll_markers(&self) -> HashMap<String, Film> {

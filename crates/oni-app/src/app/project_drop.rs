@@ -9,12 +9,13 @@ use crate::sidebar::{self, DropTarget};
 use oni_library::project;
 use oni_library::project_tree::NodeId;
 
-/// A drag under way: the rows it carries, the pointer in the tree's coordinates, where it would land.
+/// A drag under way: the rows it carries, the pointer in the tree's coordinates, the place last
+/// pointed at with where a release there lands, none where it changes nothing.
 #[derive(Clone, Debug)]
 pub(super) struct Drag {
     items: HashSet<NodeId>,
     at: (f32, f32),
-    target: Option<DropTarget>,
+    target: Option<(DropTarget, Option<Landing>)>,
 }
 
 /// The photos a drag carries, its projects' rows left out.
@@ -31,9 +32,16 @@ enum Landing {
     Before(oni_settings::Id),
 }
 
-/// Where a release at `target` lands `items` among the tree's `nodes`, none where it does nothing,
-/// so no mark promises it: a line above a heading or a project ends the roll above it.
-fn landing(nodes: &[NodeId], items: &HashSet<NodeId>, target: DropTarget) -> Option<Landing> {
+/// Where a release at `target` lands `items` among the tree's `nodes`, none where it changes no
+/// project, so no mark promises it.
+fn landing(nodes: &[NodeId], projects: &[project::Project], reach: &project::Reach, items: &HashSet<NodeId>, target: DropTarget) -> Option<Landing> {
+    let aimed = aimed(nodes, items, target)?;
+    land(&mut projects.to_vec(), reach, items, &aimed).then_some(aimed)
+}
+
+/// What a release at `target` aims at: a project, a roll's heading of the photos' roll, a photo of
+/// their roll; a line above a heading or a project ends the roll above it.
+fn aimed(nodes: &[NodeId], items: &HashSet<NodeId>, target: DropTarget) -> Option<Landing> {
     let paths = photos(items);
     let roll_of = |folder: &str| !paths.is_empty() && paths.iter().all(|p| oni_library::paths::parent(p) == folder);
     let photo = |j: usize| match nodes.get(j) {
@@ -100,9 +108,15 @@ impl Ctl {
                 s.org.project_drag = Some(Drag { items, at, target: None });
             }
             let l = &s.project_tree;
-            let target = sidebar::drop_target(at.0, at.1, &l.frames, &l.photos, &l.depths, true, strip);
-            let items = s.org.project_drag.as_ref().map(|d| &d.items);
-            let target = target.filter(|t| items.is_some_and(|items| landing(&s.org.project_nodes, items, *t).is_some()));
+            let pointed = sidebar::drop_target(at.0, at.1, &l.frames, &l.photos, &l.depths, true, strip);
+            let Some(d) = s.org.project_drag.as_ref() else { return };
+            let target = match &d.target {
+                Some((t, landed)) if Some(*t) == pointed => Some((*t, landed.clone())),
+                _ => pointed.map(|t| {
+                    let rows = s.reach();
+                    (t, landing(&s.org.project_nodes, &s.org.projects, &project::Reach::new(&rows, &s.org.found), &d.items, t))
+                }),
+            };
             if let Some(d) = s.org.project_drag.as_mut() {
                 (d.at, d.target) = (at, target);
             }
@@ -115,8 +129,7 @@ impl Ctl {
     pub(super) fn project_drag_ended(self: &Rc<Self>, dropped: bool) {
         let Some(drag) = self.state.borrow_mut().org.project_drag.take() else { return };
         self.publish_project_drag();
-        let target = drag.target.filter(|_| dropped);
-        let Some(landed) = target.and_then(|t| landing(&self.state.borrow().org.project_nodes, &drag.items, t)) else { return };
+        let Some(landed) = drag.target.and_then(|(_, landed)| landed).filter(|_| dropped) else { return };
         let label = if matches!(landed, Landing::Join(_)) { tr("Add to Project") } else { tr("Move") };
         self.regroup(label, |projects, reach| land(projects, reach, &drag.items, &landed));
     }
@@ -139,9 +152,9 @@ impl Ctl {
             let mut mark = TreeDrag { shown: true, chip: chip.into(), x: d.at.0, y: d.at.1, ..TreeDrag::default() };
             let l = s.laid(Which::Projects);
             let (i, ring) = match d.target {
-                Some(DropTarget::Join(i)) => (i, true),
-                Some(DropTarget::Before(i)) => (i, false),
-                None => return mark,
+                Some((DropTarget::Join(i), Some(_))) => (i, true),
+                Some((DropTarget::Before(i), Some(_))) => (i, false),
+                _ => return mark,
             };
             let Some(f) = l.frames.get(i).copied() else { return mark };
             let (x, y, width, height) = if ring {
@@ -221,7 +234,7 @@ mod tests {
     fn dropped(projects: &mut Vec<Project>, reach: &Reach, items: &HashSet<NodeId>, target: fn(usize) -> DropTarget, node: &NodeId) -> bool {
         let rows = nodes(projects, reach);
         let at = rows.iter().position(|n| n == node).expect("the row laid");
-        landing(&rows, items, target(at)).is_some_and(|l| land(projects, reach, items, &l))
+        landing(&rows, projects, reach, items, target(at)).is_some_and(|l| land(projects, reach, items, &l))
     }
 
     #[test]
@@ -269,12 +282,12 @@ mod tests {
         let photo = |p: &str, project| NodeId::Photo { path: p.into(), project };
         let a = HashSet::from([photo(paths[0], id)]);
         let above = DropTarget::Before(row(&projects, heading("/s/Roll 8", id)));
-        assert_eq!(landing(&nodes(&projects, &reach), &a, above), Some(Landing::Beside(paths[4].into(), true)));
+        assert_eq!(landing(&nodes(&projects, &reach), &projects, &reach, &a, above), Some(Landing::Beside(paths[4].into(), true)));
         assert!(dropped(&mut projects, &reach, &a, DropTarget::Before, &heading("/s/Roll 8", id)));
         assert_eq!(projects[0].paths(), ["/s/Roll 10/C", "/s/Roll 10/D", "/s/Roll 10/A", "/s/Roll 8/A", "/s/Roll 8/B"], "Roll 10 reads C D A");
         // Twin: the line beside Roll 8's first photo takes no photo of Roll 10.
         let first = DropTarget::Before(row(&projects, photo(paths[2], id)));
-        assert_eq!(landing(&nodes(&projects, &reach), &a, first), None);
+        assert_eq!(landing(&nodes(&projects, &reach), &projects, &reach, &a, first), None);
         // The line above Other's row ends Client's last roll for a photo of it; it never joins Other.
         let b = HashSet::from([photo(paths[2], id)]);
         assert!(dropped(&mut projects, &reach, &b, DropTarget::Before, &NodeId::Project(other_id)));
@@ -283,7 +296,33 @@ mod tests {
         // Roll 10's heading takes no photo of Roll 8; Other's Roll 8 heading does.
         let laid = nodes(&projects, &reach);
         let z = HashSet::from([photo(paths[5], other_id)]);
-        assert_eq!(landing(&laid, &z, DropTarget::Join(row(&projects, heading("/s/Roll 10", id)))), None);
-        assert_eq!(landing(&laid, &b, DropTarget::Join(row(&projects, heading("/s/Roll 8", other_id)))), Some(Landing::Join(other_id)));
+        assert_eq!(landing(&laid, &projects, &reach, &z, DropTarget::Join(row(&projects, heading("/s/Roll 10", id)))), None);
+        assert_eq!(landing(&laid, &projects, &reach, &b, DropTarget::Join(row(&projects, heading("/s/Roll 8", other_id)))), Some(Landing::Join(other_id)));
+    }
+
+    /// Client holds Roll 10's A and C above Other: A onto Client's row, onto its roll's heading or on
+    /// the line above C lands nowhere, nor Client on the line above Other, as nothing would change.
+    #[test]
+    fn a_drop_lands_only_where_it_changes_a_project() {
+        let paths = ["/s/Roll 10/A", "/s/Roll 10/C", "/s/Roll 9/X"];
+        let rows: Vec<_> = paths.iter().map(|p| entry(p)).collect();
+        let reach = Reach::rows(&rows);
+        let client = Project::new("Client", Date::since_reference_date(8e8), vec![of(paths[0]), of(paths[1])]);
+        let other = Project::new("Other", Date::since_reference_date(7e8), vec![of(paths[2])]);
+        let (id, other_id) = (client.id, other.id);
+        let projects = vec![client, other];
+        let laid = nodes(&projects, &reach);
+        let row = |node: NodeId| laid.iter().position(|n| *n == node).unwrap();
+        let a = HashSet::from([NodeId::Photo { path: paths[0].into(), project: id }]);
+        let lands = |items: &HashSet<NodeId>, target| landing(&laid, &projects, &reach, items, target);
+        assert_eq!(lands(&a, DropTarget::Join(row(NodeId::Project(id)))), None, "A is Client's already");
+        assert_eq!(lands(&a, DropTarget::Join(row(NodeId::Roll { folder: "/s/Roll 10".into(), project: id }))), None);
+        assert_eq!(lands(&a, DropTarget::Before(row(NodeId::Photo { path: paths[1].into(), project: id }))), None, "A stands above C");
+        let projects_row = |p| HashSet::from([NodeId::Project(p)]);
+        assert_eq!(lands(&projects_row(id), DropTarget::Before(row(NodeId::Project(other_id)))), None, "Client stands above Other");
+        // Twins: Other's row takes A, the line below C moves it, and Other above Client moves Other.
+        assert_eq!(lands(&a, DropTarget::Join(row(NodeId::Project(other_id)))), Some(Landing::Join(other_id)));
+        assert_eq!(lands(&a, DropTarget::Before(row(NodeId::Project(other_id)))), Some(Landing::Beside(paths[1].into(), true)));
+        assert_eq!(lands(&projects_row(other_id), DropTarget::Before(row(NodeId::Project(id)))), Some(Landing::Before(id)));
     }
 }

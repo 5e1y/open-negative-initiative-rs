@@ -7655,5 +7655,19 @@
     "title": "A redo never makes again a project deleted since its undo",
     "status": "done",
     "detail": "Fourth review of the projects (point 3): New Project, the project renamed then deleted, then ⌘Z found it gone and ⌘⇧Z made it again under the name it was made with, pulling the photos it was made from out of their projects again. A redo remakes only what its undo took away: the step just walked is told the projects as its walk found and left them (History::walked, from Ctl::regrouped, in place of keep_taken); one it took away is held as found, so the walk back brings the name it bore; one it found gone is put at the step's other end too, so no walk makes it again and its photos stay where they stand. Checks: history a_redo_never_makes_again_a_project_deleted_since (twin: the step as recorded makes 'Project 1' again and takes a out of Old; mutation: without the rule it fails), window project_steps::a_redo_never_makes_again_a_project_deleted_since (twin: before the delete, ⌘Z then ⌘⇧Z brings Client back; mutation fails it)."
+  },
+  {
+    "id": 1557,
+    "type": "fix",
+    "title": "A drop shows its ring or line, and acts, only where it changes a project",
+    "status": "done",
+    "detail": "Fourth review of the projects (point 4): a photo carried onto its own project's row or its roll's heading rang that row, and the release changed nothing, against #1551's rule. One rule for every mark: a place shows its ring or line only where its drop would change the projects, weighed by laying the drop on a copy of them (project_drop::landing in the tree, State::reorders in the grid), once a place pointed at, and the release lands what the mark showed. It also hides the line beside a photo where it already stands and the line above the project just below the one dragged, whose reorder_root now writes nothing when the order stays. Checks: project_drop a_drop_lands_only_where_it_changes_a_project (twins: Other's row takes A, the line below C moves it, Other above Client moves Other; mutations: landing without the trial, reorder_root writing a reorder that keeps the order), window project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid (no ring on Client's row or Roll 10's heading, no line above A itself; twin: Other's row rings, the line above D moves A; mutation: the tree's marks unweighed fail it)."
+  },
+  {
+    "id": 1558,
+    "type": "test",
+    "title": "Checks for the grid's line where no drop lands and the roll order under the rating filter",
+    "status": "done",
+    "detail": "Fourth review of the projects (point 5): removing the grid's line filter passed every check, as its twin asserted the members alone, and the bands' roll order under the rating filter was untested. Window project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid asserts the line itself as the hand lets go (Hand::drag tells it): shown past A, none for Roll 8's A beside Roll 10's D, none past C itself (mutations: the line unweighed, or weighed by roll alone as before #1557, fail it). project_rolls::the_rating_filter_keeps_the_trees_roll_order: Client stores Roll 10's A, Roll 8's A, Roll 10's D; under Gold the grid shows D, then Roll 8's A (twin: Gold's photos in the stored order put Roll 8's A first; mutation: the filter applied before grouping fails it)."
   }
 ]

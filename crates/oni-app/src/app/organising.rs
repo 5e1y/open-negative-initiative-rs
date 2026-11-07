@@ -73,13 +73,15 @@ struct Item {
 }
 
 /// A reorder under way: the photos it carries, the one under the pointer, the cell it would land
-/// beside and whether past it, none where it lands nowhere, the ghost's place in document coordinates.
+/// beside and whether past it, none where it changes nothing, the ghost's place in document coordinates.
 #[derive(Clone, Debug)]
 struct Reorder {
     sources: HashSet<String>,
     lead: String,
     size: (f32, f32),
     boundary: Option<(usize, bool)>,
+    /// The cell and side last pointed at, which `boundary` was weighed for.
+    pointed: Option<(usize, bool)>,
     at: (f32, f32),
 }
 
