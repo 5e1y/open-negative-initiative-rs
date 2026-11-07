@@ -171,19 +171,24 @@ impl Ctl {
 
     /// `toggleLab` and `leaveLab`: the Scanner face needs a photograph, leaving needs a Lab.
     fn set_face(self: &Rc<Self>, face: Face) {
-        let (open, current, support) = {
+        let (open, current) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.store.face(), s.support.clone())
+            (s.open.is_some(), s.store.face())
         };
         if face == current || (face == Face::Scanner && !open) {
             return self.publish_bar();
         }
-        remember(&support, face);
-        // The Lab's screen takes the deck, and the deck its preview.
+        self.faced(face);
+        self.write(Command::Face(face));
+    }
+
+    /// The face turned, by the bar, the phone or an undo, kept for the next launch; on the Scanner
+    /// face the Lab's screen takes the deck, and the deck its preview.
+    pub(super) fn faced(&self, face: Face) {
+        remember(&self.state.borrow().support, face);
         if face == Face::Scanner {
             self.clear_hover();
         }
-        self.write(Command::Face(face));
     }
 
     /// Whether the Scanner face is on screen: the face, a photograph worked, not the gallery.

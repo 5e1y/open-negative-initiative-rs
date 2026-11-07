@@ -78,6 +78,10 @@ impl EditorStore {
         }
         let others: Vec<String> = restored.keys().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         self.modify(&others, |path, _| restored.get(path).cloned());
-        changed
+        // The view turns to the face the step was taken on, where what it lays back shows.
+        match open.and_then(|p| restored.get(&p)).map(|s| s.face).filter(|f| *f != self.face()) {
+            Some(face) => changed.union(self.turn(face)),
+            None => changed,
+        }
     }
 }

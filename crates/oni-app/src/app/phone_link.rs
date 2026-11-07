@@ -211,12 +211,9 @@ impl Ctl {
         }
     }
 
-    /// The phone switched the face on the store: kept for the next launch, as the bar's switch keeps it.
+    /// The phone turned the face on the store, as the bar's switch turns it.
     fn phone_faced(self: &Rc<Self>, face: oni_settings::Face) {
-        super::lab::remember(&self.state.borrow().support, face);
-        if face == oni_settings::Face::Scanner {
-            self.clear_hover();
-        }
+        self.faced(face);
         self.publish_bar();
     }
 

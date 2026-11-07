@@ -103,7 +103,7 @@ pub struct EditorStore {
     archive: Archive,
     pub board: Board,
     /// Open on the Scanner face: the frame adopts it, its Color tab edits `ScannerFinish`, its reset
-    /// keeps Chrome and clears the clicks. Set through `Command::Face`.
+    /// keeps Chrome and clears the clicks. Turned by `Command::Face` and by an undo, never a step.
     pub scanner_face: bool,
     held: bool,
     /// When a lifted hand's step is recorded; every change before it moves it on.

@@ -110,17 +110,19 @@ impl Ctl {
     /// thread, its failure said, and the photos its step touched read again.
     pub(super) fn stepped(self: &Rc<Self>, undo: bool) {
         let title = if undo { tr("Undo") } else { tr("Redo") };
-        let (touched, failure, walk, marked, regrouped) = {
+        let (touched, failure, walk, marked, regrouped, face) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             // The step just taken stands at the other end of the history now.
             let history = store.history();
             let touched: Vec<String> = if undo { history.redo_paths() } else { history.undo_paths() }.into_iter().collect();
-            (touched, store.failure.take(), store.walking.take(), store.marked.take(), store.regrouped.take())
+            (touched, store.failure.take(), store.walking.take(), store.marked.take(), store.regrouped.take(), store.face())
         };
         if let Some(rosters) = regrouped {
             self.regrouped(&rosters);
         }
+        // The view turns to the face the step was taken on.
+        self.faced(face);
         if let Some(walk) = walk {
             return self.walk_off_thread(title, walk, touched);
         }

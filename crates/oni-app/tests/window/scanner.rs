@@ -102,7 +102,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     // Each face says what it holds at the Colour tab's head, in the same place on both.
     let (pro_caption, scanner_caption) = ("Pro: every setting by hand, the place to start", "Scanner: a minilab's density and colour, in steps");
     let caption = common::the(w, i_slint_backend_testing::AccessibleRole::Text, pro_caption);
-    // The bar's Scanner tab: the face, one undo step, remembered.
+    // The bar's Scanner tab: the face, a view and no step, remembered.
     bar.invoke_act(oni_app::Act::FaceScanner);
     rig.pump();
     assert!(lab.get_shown() && bar.get_face() == 1);

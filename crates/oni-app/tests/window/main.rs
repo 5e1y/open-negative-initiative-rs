@@ -16,6 +16,7 @@ mod canvas_switch;
 mod column_edges;
 mod column_menu;
 mod crop_session;
+mod face_turn;
 mod density;
 mod picture_plots;
 mod dial;
@@ -113,6 +114,7 @@ mod tree_cost;
 mod tree_leftovers;
 mod updates;
 mod visible;
+mod whole_roll;
 mod wrapped;
 
 /// Each check by the name the runner prints and filters on.
@@ -282,6 +284,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame", together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
     ("together_moves::frames_together_read_their_span_and_move_by_one_distance", together_moves::frames_together_read_their_span_and_move_by_one_distance),
+    ("whole_roll::the_whole_roll_together_ends_when_another_roll_opens", whole_roll::the_whole_roll_together_ends_when_another_roll_opens),
+    ("face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face", face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar::the_accent_lands_on_each_screens_own_commit", toolbar::the_accent_lands_on_each_screens_own_commit),

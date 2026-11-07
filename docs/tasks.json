@@ -6934,5 +6934,26 @@
     "title": "A project's stocks come from its members' rolls, a folder's marker first",
     "status": "done",
     "detail": "Evaluation: a project read No film stock set yet while its roll was set to Fujifilm Fujicolor: the stocks were read off the sidecars, and a roll made of a folder keeps its stock in the folder's marker. info::stocks reads each photo's roll as the archive does, its folder's marker else its sidecar's film; the markers beyond the opened folder are read once each off the interface thread, a folder the survey covers taking the survey's. Checks: info a_photos_stock_is_its_folders_marker_first (twin: off the sidecars alone, nothing is counted), window projects_tab Kodak Gold counted twice, Roll 8 opened or beyond."
+  },
+  {
+    "id": 1414,
+    "type": "fix",
+    "title": "The face turned is a view: one undo history spans both faces",
+    "status": "done",
+    "detail": "UX evaluation s-c82a3414 (Trust, major): after Pro's Contrast and a turn to the Scanner face and back, the Contrast seemed lost to undo. Each turn was an undo step, and its undo laid the frame's face back in the settings without turning the store's face, so the first undos changed nothing the panel showed. The face is now a view, never a step (EditorStore::turn): the step under way is recorded on its own face, then the open frame and the frames together take the new face, written as an opening writes it. An undo or a redo turns the view to the face its step was taken on, the frames together with it, so what it lays back shows; the app keeps that face for the next launch as the bar's and the phone's turns do (Ctl::faced, shared by the three). The face-alone rule of #1063 goes with the step it served. Checks: store scanner the_face_is_no_step_and_an_undo_turns_to_the_face_of_its_step (twin: turns as steps leave more to undo), store together the_face_turned_reaches_every_frame_together_and_is_no_step (twin: nothing left to undo), window face_turn (the undo still names Contrast after two turns, and a Scanner key's undo shows on the Scanner face; run on the former store, it fails)."
+  },
+  {
+    "id": 1415,
+    "type": "change",
+    "title": "Prepare the Roll ends on one frame alone; the whole roll together is its key's",
+    "status": "done",
+    "detail": "UX evaluation s-c82a3414 (Obvious without a tutorial, major): the measure landed on the whole roll together (#1037), so a newcomer's first Auto White Balance and edits silently reached 14 frames. land_measure now opens the open frame when it was measured, else the roll's first, alone; the bar's Whole Roll key lays the roll together on demand, the status bar then saying how many frames and the panel 'Acts on N photos'. The 1.5 welcome sheet's point now names that key, in French and Spanish too. Reverses #1037. Checks: window prepare (the first frame alone once measured; twin: no 'frames together' status), window slides (one frame picked)."
+  },
+  {
+    "id": 1416,
+    "type": "fix",
+    "title": "Frames together leave a frame the grid stops showing: the whole roll ends when another roll opens",
+    "status": "done",
+    "detail": "UX evaluation s-c82a3414 (Trust, minor): with Roll #10 together in the editor, opening Roll #8 kept Roll #10's 24 frames together under an unlit Whole Roll key, so a step would reach a roll no longer shown. lay_grid kept the selection to the bands shown but not the group, which beside a photo is that selection; a group holding a frame the selection lost now follows it (follow_selection), so another roll opened, a medal filter or the projects leave the open frame alone, or the frames still shown together. Checks: window whole_roll the_whole_roll_together_ends_when_another_roll_opens (twin: together, the step reaches B; without the rule the check waits in vain for the open frame alone)."
   }
 ]

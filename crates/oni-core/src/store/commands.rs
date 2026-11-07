@@ -21,6 +21,15 @@ impl EditorStore {
         }
     }
 
+    /// The step under way recorded as it stands, a hand still down holding on: what comes next, a
+    /// face turned or frames regrouped, is never part of it.
+    pub(super) fn settle_under_way(&mut self) {
+        if self.held || self.deferred.is_some() {
+            let now = self.now();
+            self.settle(now);
+        }
+    }
+
     /// The hand lifts and the step waits `SETTLE_DELAY` past the last change, so a press landing
     /// sooner, a double click's second, joins it (`EditorScene+Effects.swift:59-62`).
     pub fn release_deferred(&mut self) {
@@ -71,7 +80,7 @@ impl EditorStore {
     /// Applies a command as at `now`, seconds on the store's own clock.
     pub fn apply_at(&mut self, command: Command, now: f64) -> Applied {
         match command {
-            Command::Face(face) => self.scanner_face = face == Face::Scanner,
+            Command::Face(face) => return Applied { changed: self.turn(face), walk: None },
             Command::Undo => return Applied { changed: self.undo(), walk: None },
             Command::Redo => return Applied { changed: self.redo(), walk: None },
             _ => {}
@@ -138,11 +147,11 @@ impl EditorStore {
             Command::Write(next) => *next,
             Command::Finish(next) => self.stored_by_face(*next),
             Command::Each(each) => each.on(s),
-            Command::Face(face) => PipelineSettings { face, ..s.clone() },
             Command::Mode(mode) => adapted(s, mode),
             Command::Reset => parameters::reset_blank(s, self.scanner_face),
             Command::Scan(scan) => scanned(s, scan),
-            Command::Undo | Command::Redo => s.clone(),
+            // Taken before: a face is turned, an undo or a redo laid, never commanded.
+            Command::Face(_) | Command::Undo | Command::Redo => s.clone(),
         }
     }
 
