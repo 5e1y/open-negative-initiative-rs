@@ -84,6 +84,7 @@ mod prepare_frames;
 mod slides;
 mod project_steps;
 mod project_filing;
+mod project_placeholder;
 mod project_rolls;
 mod project_walk;
 mod projects_tab;
@@ -212,6 +213,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("project_steps::a_redo_never_makes_again_a_project_deleted_since", project_steps::a_redo_never_makes_again_a_project_deleted_since),
     ("project_filing::new_project_is_made_and_named_in_its_tab_and_a_double_click_opens", project_filing::new_project_is_made_and_named_in_its_tab_and_a_double_click_opens),
     ("project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole", project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole),
+    ("project_placeholder::a_placeholder_hidden_by_a_print_counts_nothing_and_its_prompt_says_so", project_placeholder::a_placeholder_hidden_by_a_print_counts_nothing_and_its_prompt_says_so),
     ("project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid", project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid),
     ("project_rolls::the_rating_filter_keeps_the_trees_roll_order", project_rolls::the_rating_filter_keeps_the_trees_roll_order),
     ("project_rolls::a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand", project_rolls::a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand),

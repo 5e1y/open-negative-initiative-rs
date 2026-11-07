@@ -4939,6 +4939,12 @@ msgid_plural "It stops grouping its {n} photos. The photos, their settings and e
 msgstr[0] "Il ne regroupera plus son unique photo. Cette photo, ses réglages et tous les autres projets ou pellicules dont elle fait partie restent intacts."
 msgstr[1] "Il ne regroupera plus ses {n} photos. Les photos, leurs réglages et tous les autres projets ou pellicules dont elles font partie restent intacts."
 
+#: crates/oni-library/src/project.rs
+msgid "It shows no photo: the one it names stands in another project, which keeps it. Nothing else is affected."
+msgid_plural "It shows no photo: the {n} it names stand in other projects, which keep them. Nothing else is affected."
+msgstr[0] "Il ne montre aucune photo : celle qu’il nomme figure dans un autre projet, qui la garde. Rien d’autre n’est touché."
+msgstr[1] "Il ne montre aucune photo : les {n} qu’il nomme figurent dans d’autres projets, qui les gardent. Rien d’autre n’est touché."
+
 #: crates/oni-library/src/refusal.rs
 msgid "The original cannot be found, its disk disconnected or the file moved. Nothing was changed."
 msgstr "L’original est introuvable : son disque est débranché ou le fichier a été déplacé. Rien n’a été modifié."

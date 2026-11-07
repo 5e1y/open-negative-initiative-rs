@@ -108,7 +108,7 @@ fn only_a_change_writes_and_each_former_file_is_kept_beside_it_once() {
 }
 
 /// Builds before #1550 took 1.5.6's placeholder for a print and wrote it as an exact member, with its
-/// path or without: each reads at its path with no print, and the next write keeps both.
+/// path or without: each reads as that placeholder at its path, and the next write keeps both texts.
 #[test]
 fn an_exact_member_holding_a_placeholder_stands_at_its_path() {
     let scratch = Scratch::new("projects-exact-placeholder");
@@ -119,13 +119,17 @@ fn an_exact_member_holding_a_placeholder_stands_at_its_path() {
     let exact = serde_json::json!([{"print": wa}, {"path": b, "print": wb}]);
     let project = serde_json::json!({"id": Id::new().to_string(), "name": "Trip", "description": "", "createdAt": 8e8, "members": [wa, wb], "paths": paths, "exactMembers": exact});
     std::fs::write(file_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [project]})).unwrap()).unwrap();
+    let original = std::fs::read(file_path(support)).unwrap();
     let read = load(support).projects;
-    let standing = [Member::new(Some(a), None), Member::new(Some(b), None)];
-    assert_eq!(read[0].members, standing, "each at its path, no print");
+    let standing = [Member::new(Some(a), Some(&wa)), Member::new(Some(b), Some(&wb))];
+    assert_eq!(read[0].members, standing, "each its placeholder, at its path");
     let mut renamed = read.clone();
     renamed[0].name = "Porto".into();
     merge::save_projects(support, &read, &renamed).unwrap();
     assert_eq!(load(support).projects[0].members, standing, "the next write keeps both");
+    let text: serde_json::Value = serde_json::from_slice(&std::fs::read(file_path(support)).unwrap()).unwrap();
+    assert_eq!(text["projects"][0]["members"], serde_json::json!([wa, wb]), "as 1.5.6 names them");
+    assert_eq!(std::fs::read(former_path(support, 3)).unwrap(), original, "the version 3 file kept beside, its builds reading this one only");
     // Twin: a member left with neither path nor print, as a's was, is dropped by that write.
     save(support, &ProjectsFile { version: FORMAT, projects: vec![Project::new("Lost", stamp(), vec![Member::new(None, None)])] }).unwrap();
     assert!(load(support).projects[0].members.is_empty());
@@ -152,7 +156,7 @@ fn a_placeholder_recorded_elsewhere_than_its_mark_stands_where_recorded() {
     let exact = project("Client", &wb, b, Some(serde_json::json!([{"path": b, "print": wb}])));
     std::fs::write(file_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [former, exact]})).unwrap()).unwrap();
     let read: Vec<Vec<Member>> = load(support).projects.into_iter().map(|p| p.members).collect();
-    assert_eq!(read, [vec![Member::new(Some(a), None)], vec![Member::new(Some(b), None)]], "each at its recorded path");
+    assert_eq!(read, [vec![Member::new(Some(a), Some(&wa))], vec![Member::new(Some(b), Some(&wb))]], "each at its recorded path");
     // Twin: the path after each mark is the folder's old name.
     let after = |w: &str| w.strip_prefix(crate::library::WAITING_MARK).map(str::to_owned);
     assert_eq!((after(&wa), after(&wb)), (Some("/Roll 8/a.NEF".into()), Some("/Roll 8/b.NEF".into())));

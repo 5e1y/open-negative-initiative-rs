@@ -176,36 +176,39 @@ fn a_file_from_a_newer_build_is_never_set_aside_or_written() {
 }
 
 /// 1.5.6 names a photo added while its tile was read by its placeholder, its path beside: this build
-/// reads a member with no print there, which stands at its file and learns the print it carries.
+/// reads a member by that text, which stands at its file, learns no print and is written back as given.
 #[test]
-fn a_member_1_5_6_named_by_its_placeholder_learns_its_real_print() {
+fn a_member_1_5_6_named_by_its_placeholder_stands_at_its_file_as_given() {
     let scratch = Scratch::new("projects-placeholder");
     let support = scratch.path();
     let (a, b) = ("/r/a.NEF", "/r/b.NEF");
     let waiting = format!("{}{a}", crate::library::WAITING_MARK);
     let recorded = BTreeMap::from([(waiting.clone(), a.to_owned()), ("1-b".to_owned(), b.to_owned())]);
     let trip = shipped::Project { id: Id::new(), name: "Trip".into(), description: String::new(), created_at: stamp(), manual_order: None, members: vec![waiting.clone(), "1-b".into()], paths: Some(recorded) };
-    let file = shipped::ProjectsFile { version: 1, projects: vec![trip] };
+    let file = shipped::ProjectsFile { version: 1, projects: vec![trip.clone()] };
     std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
     let mut read = load(support).projects;
-    assert_eq!(read[0].members, [Member::new(Some(a), None), Member::new(Some(b), Some("1-b"))], "the placeholder is no print");
+    assert_eq!(read[0].members, [Member::new(Some(a), Some(&waiting)), Member::new(Some(b), Some("1-b"))], "the placeholder is its text");
     let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
     for r in [row(a, "1-a"), row(b, "1-b")] {
         index.upsert(&r).unwrap();
     }
     let found = project_standing::standing(&read, &[], &index, &Found::new());
     assert!(found.found.is_empty() && found.rows.iter().all(|e| Member::of(e, None).print.is_some()), "each stands at its own file, none missing");
-    assert!(project_standing::learn(&mut read, &[], &index));
-    assert_eq!(read[0].members[0], Member::new(Some(a), Some("1-a")), "its real print learned off its file");
-    // Twin: the placeholder kept as a print disagrees with the file, which then stands missing, and learns nothing.
-    let mut kept = vec![Project::new("Trip", stamp(), vec![Member::new(Some(a), Some(&waiting))])];
-    let lost = project_standing::standing(&kept, &[], &index, &Found::new());
-    assert!(lost.rows.iter().all(|e| Member::of(e, None).print.is_none()), "a missing tile stands for it");
-    assert!(!project_standing::learn(&mut kept, &[], &index));
+    assert!(!project_standing::learn(&mut read, &[], &index), "it learns no print");
+    let mut renamed = read.clone();
+    renamed[0].name = "Porto".into();
+    crate::merge::save_projects(support, &read, &renamed).unwrap();
+    let text: shipped::ProjectsFile = serde_json::from_slice(&std::fs::read(file_path(support)).unwrap()).unwrap();
+    assert_eq!((&text.projects[0].members, &text.projects[0].paths), (&trip.members, &trip.paths), "written back as given");
+    // Twin: read as a member with no print, as builds before this format did, it takes the print and loses its text.
+    let mut printless = vec![Project::new("Trip", stamp(), vec![Member::new(Some(a), None)])];
+    assert!(project_standing::learn(&mut printless, &[], &index));
+    assert_eq!(printless[0].members, [Member::new(Some(a), Some("1-a"))]);
 }
 
 /// 1.5.6 leaves by text, so Trip's placeholder for a and Portfolio's print 1-a both held it: whatever the
-/// dates, the placeholder waits apart, then Portfolio keeps a while the file there carries 1-a, else Trip.
+/// dates, the load keeps both, and the file at a tells, at each read, which one shows it.
 #[test]
 fn the_file_at_its_place_tells_a_placeholder_from_a_print() {
     let scratch = Scratch::new("projects-placeholder-moved");
@@ -222,30 +225,30 @@ fn the_file_at_its_place_tells_a_placeholder_from_a_print() {
         paths: Some(BTreeMap::from([(text.to_owned(), a.to_owned())])),
     };
     let members = |projects: &[Project]| projects.iter().map(|p| p.members.clone()).collect::<Vec<_>>();
-    let (old, new) = (Member::new(Some(a), Some("1-a")), Member::new(Some(a), Some("2-a")));
-    // Portfolio joined a once its tile was read; or held 1-a before a was scanned again, Trip taking the new scan.
-    for (carried, kept, holding) in [("1-a", [vec![], vec![old.clone()]], "Portfolio"), ("2-a", [vec![new], vec![old.clone()]], "Trip")] {
+    let both = [vec![Member::new(Some(a), Some(&waiting))], vec![Member::new(Some(a), Some("1-a"))]];
+    // Portfolio joined a once its tile was read; or held 1-a before a was scanned again, Trip naming the new
+    // scan; or a not read yet, where the print recorded there stands.
+    for (carried, holding) in [(Some("1-a"), "Portfolio"), (Some("2-a"), "Trip"), (None, "Portfolio")] {
         let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
-        index.upsert(&row(a, carried)).unwrap();
+        if let Some(print) = carried {
+            index.upsert(&row(a, print)).unwrap();
+        }
         for (trip, portfolio) in [(9e8, 8e8), (8e8, 9e8)] {
             let file = shipped::ProjectsFile { version: 1, projects: vec![made("Trip", trip, &waiting), made("Portfolio", portfolio, "1-a")] };
             std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
-            let loaded = load(support).projects;
-            assert_eq!(members(&loaded), [vec![], vec![old.clone()]], "the file alone tells nothing: one member, Portfolio's");
-            let apart = Unsettled { text: waiting.clone(), path: a.into(), against: vec!["1-a".into()], at: 0 };
-            assert_eq!(loaded[0].unsettled, [apart], "the placeholder waits apart, as 1.5.6 gave it");
-            let mut read = loaded.clone();
-            assert!(project_standing::learn(&mut read, &[], &index), "the launch settles it, and saves");
-            assert_eq!(members(&read), kept, "{carried} at a");
-            assert!(read[0].unsettled.is_empty());
+            let mut read = load(support).projects;
+            assert_eq!(members(&read), both, "the file alone tells nothing: both kept");
+            assert!(!project_standing::learn(&mut read, &[], &index), "nothing learned, nothing saved");
             let standing = project_standing::standing(&read, &[], &index, &Found::new());
             let at_a: Vec<String> = grouped(&read, &Reach::new(&standing.rows, &standing.found)).into_iter().filter(|g| g.entries.iter().any(|e| e.path == a)).map(|g| g.project.name).collect();
-            assert_eq!(at_a, [holding], "the file at a stands in one project");
-            crate::merge::save_projects(support, &loaded, &read).unwrap();
-            assert_eq!(members(&load(support).projects), kept, "the next save keeps it");
+            assert_eq!(at_a, [holding], "{carried:?} at a: the photo there stands in one project");
+            let mut renamed = read.clone();
+            renamed[0].name = "Tour".into();
+            crate::merge::save_projects(support, &read, &renamed).unwrap();
+            assert_eq!(members(&load(support).projects), both, "the next save keeps both");
         }
     }
     // Twin: once Trip's member has learned its print, the dates alone give a to the newer Trip.
-    let printed = |name: &str, at: f64| Project::new(name, Date::since_reference_date(at), vec![old.clone()]);
+    let printed = |name: &str, at: f64| Project::new(name, Date::since_reference_date(at), vec![Member::new(Some(a), Some("1-a"))]);
     assert!(exclusive(&[printed("Trip", 9e8), printed("Portfolio", 8e8)])[1].members.is_empty());
 }

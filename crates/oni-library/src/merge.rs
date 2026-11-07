@@ -67,7 +67,6 @@ fn project(base: &Project, ours: &Project, theirs: &Project) -> Project {
         created_at: pick(&base.created_at, &ours.created_at, &theirs.created_at),
         manual_order: pick(&base.manual_order, &ours.manual_order, &theirs.manual_order),
         members: project::distinct(list(&side(base), &side(ours), &side(theirs))),
-        unsettled: pick(&base.unsettled, &ours.unsettled, &theirs.unsettled),
     }
 }
 

@@ -1,5 +1,6 @@
 //! Each member matched to the row it stands for: at its path while the row there carries its print,
 //! else where the last read of the index found it by that print. Reading never rewrites a member.
+//! A placeholder stands at the file at its path where no other member does, worked out at each read.
 
 use super::member::Member;
 use super::{Project, root_order};
@@ -30,7 +31,7 @@ impl<'a> Reach<'a> {
 }
 
 /// Each project's members, in order, with the row each stands for; a row a member stands at by its
-/// own path is never also where another was found.
+/// own path is never also where another was found, nor where a placeholder stands.
 pub fn resolve<'a>(projects: &[Project], reach: &Reach<'a>) -> Vec<Vec<Option<&'a Entry>>> {
     let mut by_path: HashMap<&str, &'a Entry> = HashMap::new();
     for row in reach.rows {
@@ -38,24 +39,43 @@ pub fn resolve<'a>(projects: &[Project], reach: &Reach<'a>) -> Vec<Vec<Option<&'
     }
     let mut claimed: HashSet<&str> = HashSet::new();
     let mut out: Vec<Vec<Option<&'a Entry>>> = projects.iter().map(|p| vec![None; p.members.len()]).collect();
-    for (p, project) in projects.iter().enumerate() {
-        for (m, member) in project.members.iter().enumerate() {
-            let Some(row) = member.path.as_deref().and_then(|path| by_path.get(path)) else { continue };
-            if !reach.found.contains_key(member) && member.agrees(&row.fingerprint) {
-                claimed.insert(row.path.as_str());
-                out[p][m] = Some(*row);
-            }
+    let placed = || projects.iter().enumerate().flat_map(|(p, project)| project.members.iter().enumerate().map(move |(m, member)| (p, m, member)));
+    for (p, m, member) in placed().filter(|(_, _, member)| member.placeholder().is_none()) {
+        let Some(row) = member.path.as_deref().and_then(|path| by_path.get(path)) else { continue };
+        if !reach.found.contains_key(member) && member.agrees(&row.fingerprint) {
+            claimed.insert(row.path.as_str());
+            out[p][m] = Some(*row);
         }
     }
-    for (p, project) in projects.iter().enumerate() {
-        for (m, member) in project.members.iter().enumerate() {
-            let Some(row) = reach.found.get(member).and_then(|path| by_path.get(path.as_str())) else { continue };
-            if claimed.insert(row.path.as_str()) {
-                out[p][m] = Some(*row);
-            }
+    for (p, m, member) in placed().filter(|(_, _, member)| member.placeholder().is_none()) {
+        let Some(row) = reach.found.get(member).and_then(|path| by_path.get(path.as_str())) else { continue };
+        if claimed.insert(row.path.as_str()) {
+            out[p][m] = Some(*row);
+        }
+    }
+    // The newest project's placeholder first, as the newest keeps a photo.
+    let mut waiting: Vec<(usize, usize, &Member)> = placed().filter(|(_, _, member)| member.placeholder().is_some()).collect();
+    let made = |p: usize| projects[p].created_at.time_interval_since_reference_date();
+    waiting.sort_by(|a, b| made(b.0).total_cmp(&made(a.0)));
+    for (p, m, member) in waiting {
+        let Some(row) = place(member, reach).and_then(|path| by_path.get(path)) else { continue };
+        if claimed.insert(row.path.as_str()) {
+            out[p][m] = Some(*row);
         }
     }
     out
+}
+
+/// Where a placeholder stands: the row the read found at its path, else its path.
+pub(super) fn place<'m>(member: &'m Member, reach: &'m Reach) -> Option<&'m str> {
+    reach.found.get(member).map(String::as_str).or(member.path.as_deref())
+}
+
+/// Each project's placeholders another member stands in for, the file at their path shown at that member alone.
+pub fn shadowed(projects: &[Project], reach: &Reach) -> Vec<usize> {
+    let rows: HashSet<&str> = reach.rows.iter().map(|row| row.path.as_str()).collect();
+    let hidden = |member: &Member, row: &Option<&Entry>| row.is_none() && member.placeholder().is_some() && place(member, reach).is_some_and(|path| rows.contains(path));
+    projects.iter().zip(resolve(projects, reach)).map(|(project, rows)| project.members.iter().zip(&rows).filter(|(m, row)| hidden(m, row)).count()).collect()
 }
 
 /// The member each row shown stands for, by the row's path: its project's place and its own.

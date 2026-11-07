@@ -1,5 +1,6 @@
 //! A project's photo, held by its path and its print: the path tells two copies of one file apart,
 //! the print finds the photo again where its path went stale and tells another file standing there.
+//! A placeholder 1.5.6 wrote for a print not read yet is a member by that text alone.
 
 use super::Project;
 use crate::index::Entry;
@@ -15,7 +16,7 @@ pub struct Member {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
     /// The file's fingerprint; none for a photo still being read when it joined, or one a version 1
-    /// file named by its path alone.
+    /// file named by its path alone; 1.5.6's placeholder text for one it named while its tile loaded.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub print: Option<String>,
 }
@@ -34,16 +35,26 @@ impl Member {
         }
     }
 
+    /// 1.5.6's placeholder text, which stands at the file at its path whatever print that carries.
+    pub fn placeholder(&self) -> Option<&str> {
+        self.print.as_deref().filter(|print| print.starts_with(WAITING_MARK))
+    }
+
     /// Whether a row's print could be this photo's: the same, or one side not read yet.
     pub fn agrees(&self, print: &str) -> bool {
-        match (self.print.as_deref(), read(print)) {
+        match (self.print.as_deref().and_then(read), read(print)) {
             (Some(mine), Some(theirs)) => mine == theirs,
             _ => true,
         }
     }
 
-    /// Whether two members are one photo: one path, their prints agreeing; one print, neither placed.
+    /// Whether two members are one photo: one path, their prints agreeing; one print, neither placed;
+    /// two placeholders of one text, as 1.5.6 takes them, a placeholder never one with another member.
     pub fn same(&self, other: &Member) -> bool {
+        match (self.placeholder(), other.placeholder()) {
+            (None, None) => {}
+            (mine, theirs) => return mine == theirs,
+        }
         match (&self.path, &other.path) {
             (Some(a), Some(b)) => paths::same(a, b) && other.print.as_deref().is_none_or(|p| self.agrees(p)),
             (None, None) => self.print == other.print,
@@ -53,9 +64,10 @@ impl Member {
 
     /// The text two members that may be one photo share, which `same` then settles.
     pub(super) fn slot(&self) -> String {
-        match &self.path {
-            Some(path) => paths::normal(path).to_lowercase(),
-            None => format!("\0{}", self.print.as_deref().unwrap_or_default()),
+        match (self.placeholder(), &self.path) {
+            (Some(text), _) => text.to_owned(),
+            (None, Some(path)) => paths::normal(path).to_lowercase(),
+            (None, None) => format!("\0{}", self.print.as_deref().unwrap_or_default()),
         }
     }
 }
@@ -92,17 +104,17 @@ pub fn printed(members: &[Member], known: &[Member]) -> Vec<Member> {
 }
 
 /// The member of `known` holding its print and path that is one photo with the member asked, sought
-/// among the few sharing its slot.
+/// among the few sharing its slot; a placeholder holds no print to lend.
 pub fn holder<'a>(known: &'a [Member]) -> impl Fn(&Member) -> Option<&'a Member> + 'a {
     let mut slots: HashMap<String, Vec<&'a Member>> = HashMap::new();
-    for k in known.iter().filter(|k| k.path.is_some() && k.print.is_some()) {
+    for k in known.iter().filter(|k| k.path.is_some() && k.print.as_deref().and_then(read).is_some()) {
         slots.entry(k.slot()).or_default().push(k);
     }
     move |m| slots.get(&m.slot()).and_then(|ks| ks.iter().copied().find(|k| m.same(k)))
 }
 
-/// One project per photo, the most recently created keeping it. A member with no print at a place a
-/// print holds is never among them: the read holds it apart until the file there tells (`Unsettled`).
+/// One project per photo, the most recently created keeping it: a placeholder by its text alone, as
+/// 1.5.6 keeps one, never weighed against a print, which `resolve` lets stand in for it.
 pub fn exclusive(projects: &[Project]) -> Vec<Project> {
     let mut slots: HashMap<String, Vec<(Member, Id, Date)>> = HashMap::new();
     for project in projects {

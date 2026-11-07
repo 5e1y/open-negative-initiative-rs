@@ -2,8 +2,8 @@
 //! for, so a member found by its print moves, joins or leaves as the photo shown does.
 
 use super::member::{Member, distinct, printed};
-use super::resolve::{Reach, holders, resolve};
-use super::{Project, Unsettled, root_order, untitled};
+use super::resolve::{Reach, holders, place, resolve};
+use super::{Project, root_order, untitled};
 use crate::index::Entry;
 use crate::paths::{self, holds};
 use crate::project_tree::rolls;
@@ -20,17 +20,35 @@ fn picked<'a>(reach: &Reach<'a>, paths: &HashSet<String>) -> Vec<&'a Entry> {
     reach.rows.iter().filter(|e| paths.contains(&e.path) && seen.insert(e.path.as_str())).collect()
 }
 
-/// The members `rows` bring, each leaving the project its row stood in, a photo sitting in one.
-fn taken(projects: &mut [Project], rows: &[&Entry], holders: &HashMap<String, (usize, usize)>) -> Vec<Member> {
+/// Each placeholder by the path it stands at: the photo's own there, unless another member stands in for it.
+fn waiting<'a>(projects: &'a [Project], reach: &'a Reach) -> HashMap<&'a str, Vec<(usize, usize)>> {
+    let mut out: HashMap<&str, Vec<(usize, usize)>> = HashMap::new();
+    for (p, project) in projects.iter().enumerate() {
+        for (m, member) in project.members.iter().enumerate().filter(|(_, member)| member.placeholder().is_some()) {
+            out.entry(place(member, reach).unwrap_or_default()).or_default().push((p, m));
+        }
+    }
+    out
+}
+
+/// The members `rows` bring, and the place of every member standing for their photos: the one each
+/// row shows, and each placeholder at its path, so none brings the photo back where it left.
+fn taking(projects: &[Project], reach: &Reach, rows: &[&Entry], holders: &HashMap<String, (usize, usize)>) -> (Vec<Member>, HashSet<(usize, usize)>) {
+    let waiting = waiting(projects, reach);
     let mut leaving: HashSet<(usize, usize)> = HashSet::new();
     let brought = rows
         .iter()
         .map(|row| {
             let held = holders.get(&row.path).copied();
             leaving.extend(held);
+            leaving.extend(waiting.get(row.path.as_str()).into_iter().flatten());
             Member::of(row, held.map(|(p, m)| &projects[p].members[m]))
         })
         .collect();
+    (brought, leaving)
+}
+
+fn leave(projects: &mut [Project], leaving: &HashSet<(usize, usize)>) {
     for (p, project) in projects.iter_mut().enumerate() {
         let mut m = 0;
         project.members.retain(|_| {
@@ -38,6 +56,12 @@ fn taken(projects: &mut [Project], rows: &[&Entry], holders: &HashMap<String, (u
             !leaving.contains(&(p, m - 1))
         });
     }
+}
+
+/// The members `rows` bring, each photo leaving every project it stood in, as a photo sits in one.
+fn taken(projects: &mut [Project], reach: &Reach, rows: &[&Entry], holders: &HashMap<String, (usize, usize)>) -> Vec<Member> {
+    let (brought, leaving) = taking(projects, reach, rows, holders);
+    leave(projects, &leaving);
     brought
 }
 
@@ -49,7 +73,7 @@ pub fn new_from(projects: &mut Vec<Project>, reach: &Reach, paths: &HashSet<Stri
         return None;
     }
     let holders = holders(projects, reach);
-    let members = taken(projects, &rows, &holders);
+    let members = taken(projects, reach, &rows, &holders);
     let made = Project::new(&untitled(projects), now, members);
     let id = made.id;
     projects.push(made);
@@ -106,7 +130,7 @@ pub fn add_to(projects: &mut [Project], reach: &Reach, paths: &HashSet<String>, 
     let (already, joining): (Vec<&Entry>, Vec<&Entry>) = picked(reach, paths).into_iter().partition(|row| holders.get(&row.path).is_some_and(|(p, _)| *p == at));
     let done = Joined { added: joining.len(), already: already.len() };
     if !joining.is_empty() {
-        let members = taken(projects, &joining, &holders);
+        let members = taken(projects, reach, &joining, &holders);
         let mut joined = std::mem::take(&mut projects[at].members);
         joined.extend(members);
         projects[at].members = distinct(joined);
@@ -114,15 +138,15 @@ pub fn add_to(projects: &mut [Project], reach: &Reach, paths: &HashSet<String>, 
     done
 }
 
-/// `removeFromProject`: the photos leave it, how many said; a project left empty stays, named, until deleted.
+/// `removeFromProject`: the photos leave it, how many said, with its placeholders at their files; one
+/// in another project stays, and shows there now. A project left empty stays, named, until deleted.
 pub fn remove_from(projects: &mut [Project], reach: &Reach, paths: &HashSet<String>, id: Id) -> usize {
     let Some(at) = projects.iter().position(|p| p.id == id) else { return 0 };
-    let gone: HashSet<usize> = holders(projects, reach).into_iter().filter(|(path, (p, _))| *p == at && paths.contains(path)).map(|(_, (_, m))| m).collect();
-    let mut m = 0;
-    projects[at].members.retain(|_| {
-        m += 1;
-        !gone.contains(&(m - 1))
-    });
+    let gone: Vec<(String, usize)> = holders(projects, reach).into_iter().filter(|(path, (p, _))| *p == at && paths.contains(path)).map(|(path, (_, m))| (path, m)).collect();
+    let waiting = waiting(projects, reach);
+    let mut leaving: HashSet<(usize, usize)> = gone.iter().map(|(_, m)| (at, *m)).collect();
+    leaving.extend(gone.iter().flat_map(|(path, _)| waiting.get(path.as_str()).into_iter().flatten()).filter(|(p, _)| *p == at));
+    leave(projects, &leaving);
     gone.len()
 }
 
@@ -153,20 +177,23 @@ pub fn reorder_drop(projects: &mut [Project], reach: &Reach, dragged: &HashSet<S
     let shown: Vec<(usize, &Entry)> = resolve(projects, reach).swap_remove(at).into_iter().enumerate().filter_map(|(m, row)| Some((m, row?))).collect();
     let order: Vec<usize> = rolls(shown, |(_, row)| paths::parent(&row.path)).into_iter().flat_map(|(_, photos)| photos).map(|(m, _)| m).collect();
     let Some(aimed) = order.iter().position(|m| *m == aim) else { return false };
-    let joining = taken(projects, &outside, &holders);
+    let (joining, leaving) = taking(projects, reach, &outside, &holders);
     let members = &projects[at].members;
     let end = aimed + usize::from(past);
     let place = end - order[..end].iter().filter(|m| moving.contains(m)).count();
     let mut laid: Vec<Member> = order.iter().filter(|m| !moving.contains(m)).map(|m| members[*m].clone()).collect();
     let brought: Vec<Member> = order.iter().filter(|m| moving.contains(m)).map(|m| members[*m].clone()).chain(joining).collect();
     laid.splice(place..place, brought);
-    // Each place a photo shows takes the next of the order laid; a member none shows keeps its own.
+    // Each place a photo shows takes the next of the order laid; a member none shows keeps its own,
+    // but a placeholder at a joining photo's file.
     let placed: HashSet<usize> = order.iter().copied().collect();
     let mut next = laid.into_iter();
-    let mut written: Vec<Member> = members.iter().enumerate().filter_map(|(m, member)| if placed.contains(&m) { next.next() } else { Some(member.clone()) }).collect();
+    let kept = members.iter().enumerate().filter(|(m, _)| !leaving.contains(&(at, *m)));
+    let mut written: Vec<Member> = kept.filter_map(|(m, member)| if placed.contains(&m) { next.next() } else { Some(member.clone()) }).collect();
     written.extend(next);
     let written = distinct(written);
     let moved = !outside.is_empty() || written != projects[at].members;
+    leave(projects, &leaving);
     projects[at].members = written;
     moved
 }
@@ -207,12 +234,11 @@ pub fn moved_member(member: &Member, moves: &[(String, String)]) -> Member {
     Member { path: member.path.as_deref().map(|p| carried(p, moves)), print: member.print.clone() }
 }
 
-/// A folder or a file moved in ONI carries the members under it, each keeping its print, and the path
-/// recorded beside each one held apart, its text kept as 1.5.6 keeps it; two that land on one photo become one.
+/// A folder or a file moved in ONI carries the members under it, each keeping its print, a placeholder
+/// its text as 1.5.6 keeps it; two that land on one photo become one.
 pub fn moved(projects: &[Project], moves: &[(String, String)]) -> Vec<Project> {
     let carry = |project: &Project| distinct(project.members.iter().map(|m| moved_member(m, moves)).collect());
-    let held = |project: &Project| project.unsettled.iter().map(|u| Unsettled { path: carried(&u.path, moves), ..u.clone() }).collect();
-    projects.iter().map(|project| Project { members: carry(project), unsettled: held(project), ..project.clone() }).collect()
+    projects.iter().map(|project| Project { members: carry(project), ..project.clone() }).collect()
 }
 
 pub fn rosters(projects: &[Project]) -> Rosters {

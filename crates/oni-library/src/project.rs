@@ -8,7 +8,6 @@ mod file;
 mod gestures;
 mod member;
 mod resolve;
-mod unsettled;
 
 pub(crate) use file::read;
 pub use file::{FORMAT, ProjectsFile, encode, file_path, former_path, is_path, load, save};
@@ -17,8 +16,7 @@ pub use gestures::{
     rename, reorder_drop, reorder_root, rosters, set_description,
 };
 pub use member::{Member, distinct, exclusive, holder, printed};
-pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve};
-pub use unsettled::{Unsettled, settle};
+pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve, shadowed};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Project {
@@ -29,13 +27,11 @@ pub struct Project {
     pub manual_order: Option<f64>,
     /// Ordered photos, each by its path and its print: two copies of one file in two rolls are two.
     pub members: Vec<Member>,
-    /// What 1.5.6 named while a tile loaded at a path a print also holds: no member until that file is read.
-    pub unsettled: Vec<Unsettled>,
 }
 
 impl Project {
     pub fn new(name: &str, created_at: Date, members: Vec<Member>) -> Project {
-        Project { id: Id::new(), name: name.to_owned(), description: String::new(), created_at, manual_order: None, members, unsettled: Vec::new() }
+        Project { id: Id::new(), name: name.to_owned(), description: String::new(), created_at, manual_order: None, members }
     }
 
     /// The paths its members were last seen at, in order; a member never placed has none.
@@ -60,14 +56,21 @@ pub fn root_order(project: &Project) -> f64 {
     project.manual_order.unwrap_or_else(|| project.created_at.time_interval_since_reference_date())
 }
 
-/// `deleteProjectRequested`: the confirmation's title, message and key.
-pub fn delete_prompt(project: &Project) -> (String, String, &'static str) {
-    let count = project.members.len();
+/// `deleteProjectRequested`: the confirmation's title, message and key; its `shadowed` placeholders,
+/// whose photos another project shows, are told apart, as no photo of its own.
+pub fn delete_prompt(project: &Project, shadowed: usize) -> (String, String, &'static str) {
+    let count = project.members.len().saturating_sub(shadowed);
     let message = if count > 0 {
         oni_i18n::trn(
             "It stops grouping its {n} photo. The photos, their settings and every other project or roll they belong to are untouched.",
             "It stops grouping its {n} photos. The photos, their settings and every other project or roll they belong to are untouched.",
             count as u64,
+        )
+    } else if shadowed > 0 {
+        oni_i18n::trn(
+            "It shows no photo: the one it names stands in another project, which keeps it. Nothing else is affected.",
+            "It shows no photo: the {n} it names stand in other projects, which keep them. Nothing else is affected.",
+            shadowed as u64,
         )
     } else {
         oni_i18n::tr("It holds no photos. Nothing else is affected.").to_owned()
@@ -84,4 +87,4 @@ mod shipped_tests;
 #[cfg(test)]
 mod drop_tests;
 #[cfg(test)]
-mod unsettled_tests;
+mod placeholder_tests;
