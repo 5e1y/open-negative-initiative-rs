@@ -137,9 +137,9 @@ export component MainWindow inherits AppWindow {
         Menu {
             title: @tr("Labels");
             MenuItem { title: @tr("None"); shortcut: @keys("0"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-none); } }
-            MenuItem { title: @tr("Bronze"); shortcut: @keys("1"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-bronze); } }
+            MenuItem { title: @tr("Gold"); shortcut: @keys("1"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-gold); } }
             MenuItem { title: @tr("Silver"); shortcut: @keys("2"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-silver); } }
-            MenuItem { title: @tr("Gold"); shortcut: @keys("3"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-gold); } }
+            MenuItem { title: @tr("Bronze"); shortcut: @keys("3"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-bronze); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.filter; shortcut: @keys(Control + "l"); enabled: Menus.live.cycle-filter; activated => { App.menu(Act.cycle-filter); } }
         }

@@ -125,15 +125,6 @@ pub enum Medal {
 }
 
 impl Medal {
-    pub fn shortcut(self) -> char {
-        match self {
-            Self::None => '0',
-            Self::Bronze => '1',
-            Self::Silver => '2',
-            Self::Gold => '3',
-        }
-    }
-
     pub fn label(self) -> &'static str {
         match self {
             Self::None => "None",

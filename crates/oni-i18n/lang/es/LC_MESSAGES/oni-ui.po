@@ -74,16 +74,16 @@ msgid "None"
 msgstr "Ninguna"
 
 #: crates/oni-app/src/library.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
-msgid "Bronze"
-msgstr "Bronce"
+msgid "Gold"
+msgstr "Oro"
 
 #: crates/oni-app/src/library.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Silver"
 msgstr "Plata"
 
 #: crates/oni-app/src/library.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
-msgid "Gold"
-msgstr "Oro"
+msgid "Bronze"
+msgstr "Bronce"
 
 #: crates/oni-ui/ui/app.slint
 msgid "Rolls"
@@ -342,16 +342,16 @@ msgid "No Medal (0)"
 msgstr "Sin medalla (0)"
 
 #: crates/oni-ui/ui/ds/organise.slint
-msgid "Bronze (1)"
-msgstr "Bronce (1)"
+msgid "Gold (1)"
+msgstr "Oro (1)"
 
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "Silver (2)"
 msgstr "Plata (2)"
 
 #: crates/oni-ui/ui/ds/organise.slint
-msgid "Gold (3)"
-msgstr "Oro (3)"
+msgid "Bronze (3)"
+msgstr "Bronce (3)"
 
 #: crates/oni-ui/ui/ds/readout.slint
 msgid "Click to type a value"
@@ -2170,16 +2170,16 @@ msgid "Show every photo, whatever its medal"
 msgstr "Mostrar todas las fotos, sea cual sea su medalla"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "Show the Bronze photos alone"
-msgstr "Mostrar solo las fotos de Bronce"
+msgid "Show the Gold photos alone"
+msgstr "Mostrar solo las fotos de Oro"
 
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "Show the Silver photos alone"
 msgstr "Mostrar solo las fotos de Plata"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "Show the Gold photos alone"
-msgstr "Mostrar solo las fotos de Oro"
+msgid "Show the Bronze photos alone"
+msgstr "Mostrar solo las fotos de Bronce"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"

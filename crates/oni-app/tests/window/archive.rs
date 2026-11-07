@@ -103,14 +103,17 @@ pub(crate) fn a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once() 
     rig.until("the redrawn file", Duration::from_secs(120), || files[1].exists() && ctl.state.borrow().loaded() >= 3);
     assert_eq!((modified(&files[0]), modified(&files[2])), (stamped[0], stamped[2]));
 
-    // A medal key labels the selection's sidecar and its index row.
+    // A medal key labels the selection's sidecar and its index row, by podium place: 1 lays gold.
     w.global::<Library>().invoke_tile_clicked(1, false, false);
-    rig.key("2");
+    rig.key("1");
     let b = oni_library::paths::canonical(&folder.join("B.tif"));
     let row = |p: &str| LibraryIndex::open(&LibraryIndex::default_path(&caches)).unwrap().all().into_iter().find(|e| e.path == p).unwrap();
-    assert_eq!(row(&b).label, oni_settings::Medal::Silver);
+    assert_eq!(row(&b).label, oni_settings::Medal::Gold, "the key 1 lays gold");
     let a = oni_library::paths::canonical(&folder.join("A.tif"));
     assert_eq!(row(&a).label, oni_settings::Medal::None, "twin: the unselected photo keeps its label");
+    // Twin: the key 3 lays bronze, so the medal follows the key pressed.
+    rig.key("3");
+    assert_eq!(row(&b).label, oni_settings::Medal::Bronze, "the key 3 lays bronze");
 
     // A file dropped opens its folder, then itself in the editor once found.
     shell.add(&folder.join("C.tif"));

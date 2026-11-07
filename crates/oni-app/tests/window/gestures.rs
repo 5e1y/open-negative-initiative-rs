@@ -233,7 +233,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     };
     assert_eq!(picked(2), vec!["B".to_string()]);
     assert_eq!(menus.get_titles().filter.as_str(), "Filter: Silver", "the menu's title follows the bar");
-    assert!(picked(3).is_empty(), "twin: gold keeps no silver photo");
+    assert!(picked(1).is_empty(), "twin: gold keeps no silver photo");
     assert_eq!(picked(0).len(), 3);
 
     // ⇧⌘G moves the selection into a dated roll folder beside it, one gallery step ⌘Z walks back.

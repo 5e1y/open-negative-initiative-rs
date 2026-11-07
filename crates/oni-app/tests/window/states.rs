@@ -1,7 +1,7 @@
 //! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
 //! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit
 //! only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the photo, each
-//! medal told by its figure without its colour.
+//! medal told by its figure without its colour, gold striking 1 as on a podium.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -31,6 +31,10 @@ const TRAVEL: usize = 24;
 const TEXT: f64 = 5.0;
 /// The pixels two figures must differ by, of the 64 inside a 16 pt medal's ring at one pixel a point.
 const FIGURES_APART: usize = 6;
+/// DSFoil's gold face told by its inks: green over 0.7 of its red (bronze's under 0.62), blue under
+/// half of it (silver's about its red).
+const GOLD_GREEN: f64 = 0.7;
+const GOLD_BLUE: f64 = 0.5;
 
 /// An sRGB channel of 0 to 255, linearised.
 fn linear(c: f64) -> f64 {
@@ -158,23 +162,33 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     // Twin: at rest nothing rings the tile.
     assert!(contrast(still, ground) < NON_TEXT, "the measure sees the bare ground: {:.2}:1", contrast(still, ground));
 
-    // A medal's middle inside its ruled ring, its colour dropped: the pixels under half its face's light.
+    // A medal's middle inside its ruled ring, its colour dropped: the pixels under half its face's
+    // light; its face, the pixel of median light. Slot `i` of row `j`, a medal and a half apart.
     let m = width(probe.get_medal());
-    let shape = |i: usize| -> Vec<bool> {
-        let (x0, y0) = (300 + i * m * 3 / 2 + m / 4, 260 + m / 4);
-        let light: Vec<f64> = (y0..y0 + m / 2).flat_map(|y| (x0..x0 + m / 2).map(move |x| luminance(at(x, y)))).collect();
-        let mut sorted = light.clone();
-        sorted.sort_by(f64::total_cmp);
+    let shape = |i: usize, j: usize| -> (Vec<bool>, (f64, f64, f64)) {
+        let (x0, y0) = (300 + i * m * 3 / 2 + m / 4, 260 + j * m * 3 / 2 + m / 4);
+        let pixels: Vec<u16> = (y0..y0 + m / 2).flat_map(|y| (x0..x0 + m / 2).map(move |x| at(x, y))).collect();
+        let mut sorted = pixels.clone();
+        sorted.sort_by(|a, b| luminance(*a).total_cmp(&luminance(*b)));
         let face = sorted[sorted.len() / 2];
-        light.iter().map(|l| *l < face / 2.0).collect()
+        (pixels.iter().map(|p| luminance(*p) < luminance(face) / 2.0).collect(), rgb(face))
     };
     let apart = |a: &[bool], b: &[bool]| a.iter().zip(b).filter(|(a, b)| a != b).count();
-    let (bronze, silver, gold, twin) = (shape(0), shape(1), shape(2), shape(3));
+    let golden = |(r, g, b): (f64, f64, f64)| g > GOLD_GREEN * r && b < GOLD_BLUE * r;
+    let ((gold, gold_face), (silver, silver_face), (bronze, bronze_face)) = (shape(0, 0), shape(1, 0), shape(2, 0));
+    let (twin, one) = (shape(3, 0).0, shape(0, 1).0);
     let least = apart(&bronze, &silver).min(apart(&bronze, &gold)).min(apart(&silver, &gold));
     eprintln!("medals' figures at least {least} pixels apart, two golds {}", apart(&gold, &twin));
     assert!(least >= FIGURES_APART, "bronze, silver and gold differ by their figures alone: {least} pixels");
     // Twin: two golds read alike, so the measure counts the figure, never where it stands.
     assert!(apart(&gold, &twin) < FIGURES_APART, "the measure sees two like medals alike: {}", apart(&gold, &twin));
+    // The first place is gold and strikes a 1, as on a podium and as the key that lays it.
+    eprintln!("faces {gold_face:?} {silver_face:?} {bronze_face:?}; gold {} and bronze {} from a 1", apart(&gold, &one), apart(&bronze, &one));
+    assert!(golden(gold_face), "the first medal is gold: {gold_face:?}");
+    assert!(apart(&gold, &one) < FIGURES_APART, "gold strikes a 1: {} pixels from it", apart(&gold, &one));
+    // Twin: silver and bronze are no gold, and bronze's 3 reads apart from a 1.
+    assert!(!golden(silver_face) && !golden(bronze_face), "the measure tells gold's inks: {silver_face:?} {bronze_face:?}");
+    assert!(apart(&bronze, &one) >= FIGURES_APART, "the measure sees a 3 apart from a 1: {}", apart(&bronze, &one));
 }
 
 /// A readout's unit stands in a column of its own: one number bare, in percent and in stops ends its

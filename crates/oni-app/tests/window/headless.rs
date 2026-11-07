@@ -232,12 +232,12 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert_eq!(label_of(&fourth), oni_settings::Medal::Silver, "a key typed into a field never labels");
     let typed: Vec<usize> = (0..5).filter(|&i| fields()[i] != before[i]).collect();
     assert_eq!(typed.len(), 1, "the key landed in one field: {:?}", fields());
-    // Twin: the same key with the key scope focused does label.
+    // Twin: the same key with the key scope focused does label, gold on 1 and bronze on 3.
     w.invoke_refocus();
     rig.key("1");
-    assert_eq!(label_of(&fourth), oni_settings::Medal::Bronze);
-    rig.key("3");
     assert_eq!(label_of(&fourth), oni_settings::Medal::Gold);
+    rig.key("3");
+    assert_eq!(label_of(&fourth), oni_settings::Medal::Bronze);
     rig.settle();
     println!("shot {}", rig.shot("gallery-labelled").display());
 

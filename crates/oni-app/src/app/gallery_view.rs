@@ -201,9 +201,9 @@ impl Ctl {
     }
 
     /// `applyMedal`: the selection's sidecars and index rows, in the gallery and the editor alike.
-    pub(super) fn label(self: &Rc<Self>, medal: i32) {
+    pub(super) fn label(self: &Rc<Self>, medal: Medal) {
         let targets = self.state.borrow().selected();
-        self.label_paths(&targets, library::medal_of(medal));
+        self.label_paths(&targets, medal);
     }
 
     /// One gallery step, as every gesture on photos: Undo takes the medals back.

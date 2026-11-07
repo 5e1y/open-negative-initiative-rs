@@ -87,7 +87,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     rig.pump();
     // The medal filter keeps the gallery, never the roll: no photo gold, the card and Prepare stay
     // on the folder opened.
-    lib.invoke_filter_picked(3);
+    lib.invoke_filter_picked(1);
     rig.pump();
     assert!(ctl.state.borrow().order().is_empty(), "no photo is gold");
     assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "{}", lib.get_info_empty());

@@ -317,20 +317,22 @@ pub fn medal(label: Medal) -> String {
     }
 }
 
+/// The medal's place on the podium, the figure struck in it and the key that lays it: gold 1, silver
+/// 2, bronze 3, none 0.
 pub fn medal_index(label: Medal) -> i32 {
     match label {
         Medal::None => 0,
-        Medal::Bronze => 1,
+        Medal::Gold => 1,
         Medal::Silver => 2,
-        Medal::Gold => 3,
+        Medal::Bronze => 3,
     }
 }
 
 pub fn medal_of(index: i32) -> Medal {
     match index {
-        1 => Medal::Bronze,
+        1 => Medal::Gold,
         2 => Medal::Silver,
-        3 => Medal::Gold,
+        3 => Medal::Bronze,
         _ => Medal::None,
     }
 }

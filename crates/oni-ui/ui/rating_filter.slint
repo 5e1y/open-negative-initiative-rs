@@ -13,7 +13,7 @@ export component RatingFilter inherits ButtonGroup {
     for medal in [1, 2, 3]: Button {
         square: true;
         on: Library.filter-medal == medal;
-        help: [@tr("Show the Bronze photos alone"), @tr("Show the Silver photos alone"), @tr("Show the Gold photos alone")][medal - 1];
+        help: [@tr("Show the Gold photos alone"), @tr("Show the Silver photos alone"), @tr("Show the Bronze photos alone")][medal - 1];
         clicked => { Library.filter-picked(medal); }
         Medal {
             rank: medal;

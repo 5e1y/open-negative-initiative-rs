@@ -6885,5 +6885,12 @@
     "title": "A selection changed under the hand keeps the drag held; a measure's writes refresh the frames shown together",
     "status": "done",
     "detail": "Changing the frames together recorded the step under way by releasing the hand, after which the drag recorded and wrote every sidecar at each notch; it now records the step and keeps the hold. A measure's sidecars, written directly, refresh the frames shown together, and a frame together that moves bumps the store's revision so the sheet draws it. Check: store one_path a selection changed under the hand writes nothing per notch (twin: the joined frame takes its notch at release)."
+  },
+  {
+    "id": 1402,
+    "type": "fix",
+    "title": "The medals are numbered as a podium: gold 1, silver 2, bronze 3",
+    "status": "done",
+    "detail": "Owner: the figures were inverted, bronze 1 and gold 3. The number the interface passes for a medal is now its podium place, which is also the figure struck in it and the key that lays it: gold 1, silver 2, bronze 3, none 0 (library::medal_index and medal_of, MedalStyle's ramps in that order). The Labels menu reads None 0, Gold 1, Silver 2, Bronze 3; the status bar's picker and the rating filter list gold, silver, bronze; the picker's tips say Gold (1) and Bronze (3), French and Spanish filled in. A menu line lays its Medal directly, and the unused Medal::shortcut, which named the old keys, goes. What a sidecar stores does not change. Checks: window states reads the gold face striking a 1, against a 1 alone on a flat disc (twin: silver and bronze are no gold, bronze's 3 reads apart from a 1); window archive the key 1 lays gold (twin: the key 3 lays bronze); the picker, filter and headless key checks follow the places."
   }
 ]
