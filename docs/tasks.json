@@ -7473,5 +7473,19 @@
     "title": "The roll card warns of dyes off the film stock's and offers the stock's beside the warning",
     "status": "done",
     "detail": "Evaluation s-f5b562fe (UX Language, UI Clarity): 'Dyes: Kodak; this film stock calls for Fuji' was quiet grey text and a riddle with no way out. Frames unmixing other dyes than their stock's now raise the warning band, 'Frames set to Kodak dyes, but this film stock has Fuji dyes', with a flat Use Fuji Dyes key under it: one gallery step writing the stock's family on every frame of the roll, each frame's dose kept, as picking the stock does (lay_dyes, shared with New Roll's dyes). Matching dyes keep the quiet 'Dyes: Fuji'. The Dye Separation block's note takes the same verb: 'Not the film stock's: Fujifilm Fujicolor has Fuji dyes', and 'Not from a film stock' where no stock names any. No render moves until the key is pressed. Checks: roll_card the_card_warns_of_dyes_off_the_stocks_and_offers_the_stocks (twin: mixed frames name only those off the stock's), roll_tab the_dyes_say_whether_they_are_the_film_stocks, window roll_card clicks the key, sees the card fall quiet and one undo bring the warning back."
+  },
+  {
+    "id": 1513,
+    "type": "fix",
+    "title": "The canvas's band keys start and end on the card's content inset",
+    "status": "done",
+    "detail": "UI evaluation s-f5b562fe (Spacing and density): the Library's key and the zoom's group stood 40 pt in, on the picture's padding (CardStyle.padding), while the deck's Presets tab, the status line and the gallery's grid start 24 pt in. Both ends of the canvas's band now sit on StatusStyle.inset, the card's one content inset; the band's height and the picture's padding are unchanged, so no render moves. Check: window canvas_layout, the Library's key starts where the status line's Rating does and the Panel's key ends as far in, the column keys pressed where they now lie (twin: not on the picture's 40-point padding)."
+  },
+  {
+    "id": 1514,
+    "type": "change",
+    "title": "The colour space's select shows its face at rest on the canvas's band",
+    "status": "done",
+    "detail": "UI evaluation s-f5b562fe (Clarity): the Working Space chip had no ground until hovered and read as the canvas's title. Picker's chip face now wears a flat key's face within its own edge (ButtonStyle.face, ButtonStyle.edge), as tall and as round as the mini keys beside it and centred in the band as they are, lit by the hand's veil as a flat key; its chevron stays and its popover drops under it. One corner per face (Picker.corner) serves the face, its veil and its focus ring; the field and pill faces are unchanged. Check: window canvas_layout, the select's face drawn inside its edge at rest (twin: the band's ground beside it); space_chip and panel_bindings still open its popover where it lies."
   }
 ]

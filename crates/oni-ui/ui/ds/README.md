@@ -195,7 +195,8 @@ field lies flat, as a text field.
   slot lit up to it in a lit lamp's phosphor (`ToggleStyle.lit`); off, a `Lamp` at rest in the hollow. The knob
   grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
-  under the hand as a flat key's face; the pill and chip faces keep the hover ground. A pill that only names
+  under the hand as a flat key's face; the pill face keeps the hover ground, and the chip, the colour space's
+  among the canvas band's mini keys, wears their flat face within its own edge. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink.
 - **`Medal`**: a foil disc of its metal, an icon's size on a tile and in the rating filter, its podium place sunk
   in the middle as the key that lays it (gold 1, silver 2, bronze 3), in the ruled ring's ink over a lip lit a rule
