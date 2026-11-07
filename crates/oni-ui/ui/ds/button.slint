@@ -88,6 +88,8 @@ export component Button inherits Rectangle {
     in property <bool> on;
     in property <bool> enabled: true;
     in property <string> help;
+    // The help stands over the key, not under it: a slider's step key, whose neighbour lies under it.
+    in property <bool> rises;
     // The widest word the key ever shows, so it keeps that width as its word changes.
     in property <string> widest;
     in property <length> fixed-width: 0px;
@@ -263,15 +265,19 @@ export component Button inherits Rectangle {
             accept
         }
     }
-    // The help shown under the hand or while the key holds the keyboard; hidden once it no longer says
-    // what the key does.
+    // The help shown under the hand or while the key holds the keyboard, over the key if it `rises`;
+    // hidden once it no longer says what the key does.
     property <string> told;
     changed help => { if (touch.has-hover || keys.has-focus) { Tips.hover(false, root.told, 0px, 0px); } }
     function tell() {
         let shown = touch.has-hover || keys.has-focus;
         // Left, it hides the tooltip it showed, whatever its help says since.
         if (shown) { root.told = root.help; }
-        Tips.hover(shown, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
+        if (root.rises) {
+            Tips.rise(shown, root.told, root.absolute-position.x, root.absolute-position.y);
+        } else {
+            Tips.hover(shown, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
+        }
     }
     function sink() {
         root.down = true;

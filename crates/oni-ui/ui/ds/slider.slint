@@ -18,6 +18,7 @@ export global Typing {
 // sign names no slider, so assistive tools read its help, which names the slider and the way.
 component StepKey inherits Button {
     keycap: true;
+    rises: true;
     square: true;
     height: SliderStyle.step-key;
     width: self.height;
@@ -198,7 +199,7 @@ export component Slider inherits VerticalLayout {
                     in-out property <bool> scrolling;
                     out property <bool> over-knob: self.has-hover && (root.dial || abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2);
                     mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                    changed has-hover => { Tips.hover(self.has-hover, root.help, track.absolute-position.x, track.absolute-position.y + track.height); }
+                    changed has-hover => { Tips.rise(self.has-hover, root.help, track.absolute-position.x, track.absolute-position.y); }
                     double-clicked => {
                         if (root.stepped) { root.reset(); }
                     }

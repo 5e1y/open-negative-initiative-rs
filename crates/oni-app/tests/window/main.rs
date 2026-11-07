@@ -205,6 +205,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),
     ("tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed", tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed),
     ("tooltip::a_slider_s_tooltip_stays_down_through_its_drag", tooltip::a_slider_s_tooltip_stays_down_through_its_drag),
+    ("tooltip::a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key", tooltip::a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key),
+    ("tooltip::a_slider_s_tooltip_covers_no_neighbour", tooltip::a_slider_s_tooltip_covers_no_neighbour),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one", picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one),
