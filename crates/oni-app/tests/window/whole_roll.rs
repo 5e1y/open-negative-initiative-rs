@@ -57,7 +57,7 @@ pub(crate) fn the_whole_roll_together_ends_when_another_roll_opens() {
     open(&rolls[0]);
     w.global::<Library>().invoke_tile_opened(0);
     rig.pump();
-    common::click(&rig, w, common::the(w, Role::Button, "Whole Roll").middle());
+    common::click(&rig, w, common::the(w, Role::Button, "Select All").middle());
     rig.until("the roll together", Duration::from_secs(30), || canvas.get_status().as_str() == "3 frames together");
     let b = rolls[0].join("B.tif");
     let rest = exposure(&b);

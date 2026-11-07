@@ -1,8 +1,8 @@
 //! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
-//! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit,
-//! blooming, only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the
-//! photo, each medal told by its figure without its colour, gold striking 1 as on a podium, one not given the
-//! same disc in the shade, its figure lit; readouts on one edge.
+//! flat key keeping its plate and a keycap its relief there, a destructive glyph red only while reached, a lamp
+//! that reads at rest and lit, blooming, only while on, a switch's slot lit as a lamp while on, the hand's ring
+//! round a tile, whatever the photo, each medal told by its figure without its colour, gold striking 1 as on a
+//! podium, one not given the same disc in the shade, its figure lit; readouts on one edge.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -20,6 +20,10 @@ const CAP: usize = 40;
 const LAMP_ROOM: usize = 10;
 /// WCAG 1.4.11's floor for a control's state against what lies beside it.
 const NON_TEXT: f64 = 3.0;
+/// A legend out of reach on its key's face: about 3:1, as its thin strokes draw it.
+const DISABLED: f64 = 2.7;
+/// Two inks a glance tells apart, as a lit lamp's bloom on its face: an idle label and a legend out of reach.
+const APART: f64 = 1.3;
 /// The luminance above which a lamp, or a switch's slot, reads lit.
 const LIT: f64 = 0.5;
 /// A lit lamp's light on the face just past its glass, against the face itself.
@@ -99,16 +103,28 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     let idle = peak(16 + 100 + 8, 16 + 8, 16 + 200 - 8, 16 + tabs_h - 8);
     let off = peak(16 + 4, 72 + 4, 16 + width(probe.get_off_width()) - 4, 72 + KEY - 4);
     let was = peak(200 + 4, 72 + 4, 200 + width(probe.get_was_width()) - 4, 72 + KEY - 4);
-    eprintln!("idle {idle:.3}, out of reach {off:.3}, at the missing depth {was:.3}");
-    assert!(contrast(idle, off) >= 1.5, "a key out of reach reads apart from an idle tab: {:.2}:1", contrast(idle, off));
-    // Twin: at a missing photo's fade, the key's word stands as bright as the idle label.
-    assert!(contrast(idle, was) < 1.5, "the measure sees two inks alike: {:.2}:1", contrast(idle, was));
+    eprintln!("idle {idle:.3}, out of reach {off:.3}, faded to an idle label {was:.3}");
+    assert!(contrast(idle, off) >= APART, "a key out of reach reads apart from an idle tab: {:.2}:1", contrast(idle, off));
+    // Twin: a key faded whole to an idle label's own ink stands as bright as that label.
+    assert!(contrast(idle, was) < APART, "the measure sees two inks alike: {:.2}:1", contrast(idle, was));
     // The idle label on the hollow beside it, left of its words: AA's 4.5:1 with a margin.
     let hollow = luminance(at(16 + 100 + 8, 16 + tabs_h / 2));
     eprintln!("idle label on its hollow {:.2}:1", contrast(idle, hollow));
     assert!(contrast(idle, hollow) >= TEXT, "an idle tab's label reads on its hollow: {:.2}:1", contrast(idle, hollow));
     // Twin: the out-of-reach word, far fainter, falls under it.
     assert!(contrast(off, hollow) < TEXT, "the measure sees a faint word: {:.2}:1", contrast(off, hollow));
+    // Out of reach, a flat key keeps its plate, its edge on the ground as an able key's, its legend about
+    // 3:1 on its face; its twin, faded whole, sinks into the ground with its legend.
+    let edge = |x: usize, y: usize| contrast(peak(x, y + 8, x + 3, y + KEY - 8), luminance(at(x - 3, y + KEY / 2)));
+    let legend = |x: usize, y: usize, w: f32| contrast(peak(x + 4, y + 4, x + width(w) - 4, y + KEY - 4), luminance(at(x + 4, y + KEY / 2)));
+    let faded = width(probe.get_faded_x());
+    let (able_edge, off_edge, faded_edge) = (edge(16, 168), edge(16, 72), edge(faded, 72));
+    let (off_legend, faded_legend) = (legend(16, 72, probe.get_off_width()), legend(faded, 72, probe.get_off_width()));
+    eprintln!("edge able {able_edge:.2}:1, out of reach {off_edge:.2}:1, faded whole {faded_edge:.2}:1; legend {off_legend:.2}:1, faded whole {faded_legend:.2}:1");
+    assert!((off_edge - able_edge).abs() < 0.05, "a key out of reach keeps its edge: {off_edge:.2}:1 against {able_edge:.2}:1");
+    assert!(off_legend >= DISABLED, "its legend reads about 3:1 on its face: {off_legend:.2}:1");
+    assert!(able_edge - faded_edge > 0.1, "twin: the measure sees a plate faded whole: {faded_edge:.2}:1");
+    assert!(faded_legend < DISABLED, "twin: the measure sees a legend faded with its plate: {faded_legend:.2}:1");
 
     let (rest, reached, away, worn) = (red(16, 120), red(64, 120), red(112, 120), red(160, 120));
     eprintln!("red at rest {rest:.0}, reached {reached:.0}, out of reach {away:.0}, worn at rest {worn:.0}");

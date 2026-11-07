@@ -1,7 +1,7 @@
-// The top bar, one layout in every mode: the mode key and the history, the mode's own keys centred, Reset
-// and Trash last among them, then the app's glyphs and the screen's commit; every key is a menu's gesture.
+// The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and
+// ended past a rule by Reset and Trash, then the app's glyphs and the screen's commit; each a menu's gesture.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -82,11 +82,11 @@ component Tool inherits Word {
     has-icon: root.compact;
 }
 
-// ⌘A from the bar, a latch lit while it holds: every photo the gallery shows picked, or beside a photo
-// the whole roll shown together, each named for what it does there; pressed lit, one photo again.
+// ⌘A from the bar, one name and the first key of the centre in both modes, a latch lit while it holds:
+// every photo the gallery shows picked, or beside a photo the whole roll together; pressed lit, one again.
 component SelectAll inherits Tool {
     action: Act.select-all;
-    word: Bar.editing ? @tr("Whole Roll") : @tr("Select All");
+    word: @tr("Select All");
     icon: Icons.contact-sheet;
     latch: true;
     on: Bar.whole;
@@ -101,41 +101,45 @@ component History inherits ButtonGroup {
     Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
 }
 
-// A mode's groups a bar's gap apart, then the key that resets and the key that trashes, each a group
-// of its own: Reset names the photos it reaches, Trash wears its can, so neither reads as the other.
+// A mode's groups a bar's gap apart, then past a rule the keys that reset and remove, one group, Trash last:
+// Reset names the photos it reaches, Trash wears its can, so neither reads as the other.
 component Centre inherits HorizontalLayout {
     in property <bool> compact;
     spacing: ShellStyle.bar-gap;
     cross-axis-alignment: center;
     @children
-    Tool {
-        compact: root.compact;
-        action: Act.reset;
-        word: @tr("Reset Photo" | "Reset {n} Photos" % max(1, Bar.targets));
-        // As wide as a roll's count, so the bar holds still while the count changes under the hand.
-        widest: @tr("Reset Photo" | "Reset {n} Photos" % 88);
-        icon: Icons.reset;
-        kind: ButtonKind.destructive;
-        help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
-        enabled: Bar.can-reset;
-    }
-    Tool {
-        compact: root.compact;
-        action: Act.remove;
-        word: @tr("Trash");
-        icon: Icons.remove;
-        has-icon: true;
-        kind: ButtonKind.destructive;
-        help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash ({})", Bar.targets, KeyWords.command + KeyWords.delete)
-            : @tr("Move to ONI Trash ({})", KeyWords.command + KeyWords.delete);
-        enabled: Bar.targets > 0;
+    Divider { vertical: true; height: ButtonStyle.height; }
+    ButtonGroup {
+        Tool {
+            compact: root.compact;
+            action: Act.reset;
+            word: @tr("Reset Photo" | "Reset {n} Photos" % max(1, Bar.targets));
+            // As wide as a roll's count, so the bar holds still while the count changes under the hand.
+            widest: @tr("Reset Photo" | "Reset {n} Photos" % 88);
+            icon: Icons.reset;
+            kind: ButtonKind.destructive;
+            help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
+            enabled: Bar.can-reset;
+        }
+        Tool {
+            compact: root.compact;
+            action: Act.remove;
+            word: @tr("Trash");
+            icon: Icons.remove;
+            has-icon: true;
+            kind: ButtonKind.destructive;
+            help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash ({})", Bar.targets, KeyWords.command + KeyWords.delete)
+                : @tr("Move to ONI Trash ({})", KeyWords.command + KeyWords.delete);
+            enabled: Bar.targets > 0;
+        }
     }
 }
 
 component EditorKeys inherits Centre {
-    // `centreKeys`: each family a group of its own; every key that latches wears a lamp, lit while it is on.
-    // The canvas's tools and views, one family of latches.
+    // `centreKeys` by job: the canvas's views and tools, one family of latches each wearing its lamp, the
+    // faces, then the settings carried from photo to photo.
     ButtonGroup {
+        SelectAll { compact: root.compact; }
         Tool {
             compact: root.compact;
             action: Act.framing;
@@ -157,7 +161,6 @@ component EditorKeys inherits Centre {
             enabled: Bar.has-photo && Bar.single;
         }
         Tool { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; latch: true; enabled: Bar.has-photo; }
-        SelectAll { compact: root.compact; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
     Tabs {
@@ -180,22 +183,24 @@ component EditorKeys inherits Centre {
             help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, KeyWords.command-shift + "V") : @tr("Paste settings ({})", KeyWords.command-shift + "V");
             enabled: Bar.can-paste;
         }
-    }
-    // Apart from Copy and Paste: it rewrites every frame of the roll at once, as the menu's title counts them.
-    Tool {
-        compact: root.compact;
-        action: Act.paste-to-roll;
-        word: @tr("Paste to Roll");
-        icon: Icons.film-roll;
-        help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
-        enabled: Bar.can-paste;
+        // Every frame of the roll rewritten at once, as the menu's title counts them, its notice's Undo after.
+        Tool {
+            compact: root.compact;
+            action: Act.paste-to-roll;
+            word: @tr("Paste to Roll");
+            icon: Icons.film-roll;
+            help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
+            enabled: Bar.can-paste;
+        }
     }
 }
 
 component GalleryKeys inherits Centre {
-    // The editor's first group holds the select-all key alone here, as in Swift's `centreKeys`.
-    SelectAll { compact: root.compact; }
-    RatingFilter { }
+    // The photos picked and the photos shown, one group, opening on the key the editor's first opens on.
+    ButtonGroup {
+        SelectAll { compact: root.compact; }
+        RatingFilter { }
+    }
     Word {
         action: Act.prepare-roll;
         text: @tr("PREPARE ROLL");

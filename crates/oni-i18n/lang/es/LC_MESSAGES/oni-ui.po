@@ -2334,10 +2334,6 @@ msgid "Window"
 msgstr "Ventana"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Whole Roll"
-msgstr "Todo el rollo"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Select All"
 msgstr "Seleccionar todo"
 
@@ -2818,6 +2814,12 @@ msgstr "Volviendo a mover las fotos al rollo"
 #: crates/oni-app/src/app/gestures/busy.rs
 msgid "“{gesture}” is still under way: try again once it is done."
 msgstr "«{gesture}» sigue en curso: inténtalo de nuevo cuando termine."
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "One photo moved to the ONI Trash."
+msgid_plural "{n} photos moved to the ONI Trash."
+msgstr[0] "Una foto movida a la Papelera de ONI."
+msgstr[1] "{n} fotos movidas a la Papelera de ONI."
 
 #: crates/oni-app/src/app/gestures/busy.rs
 msgid "One photo of “{folder}” is back in its folder."
