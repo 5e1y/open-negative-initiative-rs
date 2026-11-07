@@ -7599,5 +7599,12 @@
     "title": "An expandable key tells its state again: the help mark and the block's fold say open or closed",
     "status": "done",
     "detail": "The help mark ('Help on Lighting') and the block's fold ('Hide Lighting') set accessible-expandable and accessible-expanded at their use of Button, and Slint 1.18's interpreter, which dev builds and the checks run, read neither once #1491 took the opacity off Button's root: that opacity made Slint inline every Button; a Button is now a component of its own, and the interpreter reads a nested component's accessible-* from its root alone, never from its use site (the compiled interface reads the use site first and kept them). Bisected: the check passes at the seventh wave's second merge (59940e7a) and fails at its third (ecb384f2, #1491). Button now carries expandable and expanded and binds its own accessible-expandable and accessible-expanded, as it does accessible-checked; HelpMark and FoldMark set them. Check: window help_card::a_help_card_opens_in_its_block_and_pushes_it_down (the mark closed then open; the fold open then folded; twin: a key that opens nothing, Reset, claims no fold, which a Button stating every key expandable fails)."
+  },
+  {
+    "id": 1547,
+    "type": "chore",
+    "title": "The scrolled surfaces leave collections.slint for scroller.slint",
+    "status": "done",
+    "detail": "collections.slint had grown to 419 lines, past the architecture check's 400. Its scrolled surfaces (ScrollKnob, Scroller, ListView) stand in scroller.slint, 181 lines, its tiles and their headings (TileMarks, TileView, TileHeading) stay, 242 lines; collections.slint re-exports the three, as controls.slint does its split parts, so ds.slint's exports are unchanged; containers.slint reads Scroller from its own file. Checks: oni-core architecture, window scroll::*, gallery_cell::*, design_system::*, visible::a_missing_tile_is_grey_on_its_own_layer, visible::a_triplet_with_a_pass_gone_is_marked, oni-i18n catalogue."
   }
 ]
