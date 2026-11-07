@@ -1,6 +1,6 @@
 use super::*;
 use crate::index::Entry;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 fn stamp() -> Date {
     Date::since_reference_date(8e8)
@@ -231,14 +231,61 @@ fn an_undo_turns_back_what_its_step_changed_and_nothing_else() {
     assert_eq!(find(&projects, q_id), members(&["/r/a", "/r/c"]), "only X leaves");
     // Twin: Q's list from before the add laid whole, as a step's end once was, loses a from every project.
     let mut laid = projects.clone();
-    laid.iter_mut().filter(|p| p.id == q_id).for_each(|p| p.members = add_from[&q_id].clone());
+    laid.iter_mut().filter(|p| p.id == q_id).for_each(|p| p.members = add_from[&q_id].members.clone());
     assert!(!laid.iter().any(|p| p.members.contains(&of("/r/a"))));
-    // A project the step made held none before it: its undo empties it, its name kept.
-    let none: BTreeMap<Id, Vec<Member>> = BTreeMap::new();
-    let mut made = vec![Project::new("Made", stamp(), members(&["/r/b"]))];
-    let held = rosters(&made);
-    regroup(&mut made, &held, &none);
-    assert!(made[0].members.is_empty() && made[0].name == "Made");
+}
+
+/// New Project from a and b, which sat in P: its undo gives them back to P and takes the project
+/// away, its redo makes it again, the same project; one holding a photo since stays.
+#[test]
+fn an_undo_of_new_project_takes_the_project_away_and_its_redo_brings_it_back() {
+    let library = rows(&["/r/a", "/r/b", "/r/c"]);
+    let reach = Reach::rows(&library);
+    let p = Project::new("P", stamp(), members(&["/r/a", "/r/b"]));
+    let p_id = p.id;
+    let mut projects = vec![p];
+    let before = rosters(&projects);
+    let made = new_from(&mut projects, &reach, &picked(&["/r/a", "/r/b"]), stamp()).unwrap();
+    let after = rosters(&projects);
+    let step = |r: &Rosters, ids: &[Id]| -> Rosters { r.iter().filter(|(id, _)| ids.contains(id)).map(|(id, p)| (*id, p.clone())).collect() };
+    let (from, to) = (step(&before, &[p_id, made]), step(&after, &[p_id, made]));
+    regroup(&mut projects, &to, &from);
+    assert_eq!(projects.len(), 1, "the project the step made is gone");
+    assert_eq!(projects[0].members, members(&["/r/a", "/r/b"]));
+    regroup(&mut projects, &from, &to);
+    let back = projects.iter().find(|p| p.id == made).expect("the redo brings it back");
+    assert_eq!((back.name.as_str(), back.members.clone()), ("Project 1", members(&["/r/a", "/r/b"])));
+    assert!(projects.iter().find(|p| p.id == p_id).unwrap().members.is_empty());
+    // Twin: a step holding the project at both ends, as its members alone did, leaves it empty.
+    let mut both = from.clone();
+    both.insert(made, Project { members: Vec::new(), ..to[&made].clone() });
+    let mut left = projects.clone();
+    regroup(&mut left, &to, &both);
+    assert!(left.iter().any(|p| p.id == made && p.members.is_empty()));
+    // A photo joining it since keeps it through the undo.
+    add_to(&mut projects, &reach, &picked(&["/r/c"]), made);
+    regroup(&mut projects, &to, &from);
+    assert_eq!(projects.iter().find(|p| p.id == made).map(|p| p.members.clone()), Some(members(&["/r/c"])));
+}
+
+/// a dragged from P to Q, then Q deleted by hand: the drag's redo leaves a in P, never in no project.
+#[test]
+fn a_redo_toward_a_project_deleted_since_leaves_the_photo_where_it_stands() {
+    let library = rows(&["/r/a", "/r/b", "/r/c"]);
+    let reach = Reach::rows(&library);
+    let p = Project::new("P", stamp(), members(&["/r/a", "/r/b"]));
+    let q = Project::new("Q", stamp(), members(&["/r/c"]));
+    let (p_id, q_id) = (p.id, q.id);
+    let mut projects = vec![p, q];
+    let before = rosters(&projects);
+    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/c"));
+    let after = rosters(&projects);
+    regroup(&mut projects, &after, &before);
+    delete(&mut projects, q_id);
+    regroup(&mut projects, &before, &after);
+    assert_eq!(projects.iter().find(|p| p.id == p_id).unwrap().members, members(&["/r/a", "/r/b"]), "a stays in P");
+    // Twin: P's end laid alone takes a out of every project.
+    assert!(!after[&p_id].members.contains(&of("/r/a")));
 }
 
 #[test]

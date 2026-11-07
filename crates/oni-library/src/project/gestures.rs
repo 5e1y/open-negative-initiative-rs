@@ -1,7 +1,7 @@
 //! The gestures on projects' members, each on the rows a hand saw: a row is the member it stands
 //! for, so a member found by its print moves, joins or leaves as the photo shown does.
 
-use super::member::{Member, distinct};
+use super::member::{Member, distinct, printed};
 use super::resolve::{Reach, holders};
 use super::{Project, root_order, untitled};
 use crate::index::Entry;
@@ -9,8 +9,9 @@ use crate::paths::holds;
 use oni_settings::{Date, Id};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-/// Each project's members by id, what an Undo step holds at either end of a gesture on them.
-pub type Rosters = BTreeMap<Id, Vec<Member>>;
+/// Each project a gesture changed, by id, as it stood at one end: what an Undo step holds. One
+/// absent at an end did not stand there, as a project New Project makes.
+pub type Rosters = BTreeMap<Id, Project>;
 
 /// The rows picked, in library order, each once.
 fn picked<'a>(reach: &Reach<'a>, paths: &HashSet<String>) -> Vec<&'a Entry> {
@@ -191,19 +192,29 @@ pub fn moved(projects: &[Project], moves: &[(String, String)]) -> Vec<Project> {
 }
 
 pub fn rosters(projects: &[Project]) -> Rosters {
-    projects.iter().map(|p| (p.id, p.members.clone())).collect()
+    projects.iter().map(|p| (p.id, p.clone())).collect()
 }
 
-/// An undo or a redo of a step that took projects `from` to `to`: what it changed, laid on each as it
-/// stands, a member it never touched kept; a project absent at one end held none there.
-pub fn regroup(projects: &mut [Project], from: &Rosters, to: &Rosters) {
-    let none = Vec::new();
+/// An undo or a redo of a step from `from` to `to`, laid on the projects as they stand: a project it
+/// made goes while empty and comes back, a photo bound for a project deleted since stays where it is.
+pub fn regroup(projects: &mut Vec<Project>, from: &Rosters, to: &Rosters) {
+    for (id, made) in to.iter().filter(|(id, _)| !from.contains_key(*id)) {
+        if !projects.iter().any(|p| p.id == *id) {
+            projects.push(Project { members: Vec::new(), ..made.clone() });
+        }
+    }
+    let ends = from.values().chain(to.values()).flat_map(|p| &p.members);
+    let known: Vec<Member> = projects.iter().flat_map(|p| &p.members).chain(ends).cloned().collect();
+    let side = |end: &Rosters, id: &Id| end.get(id).map(|p| printed(&p.members, &known));
+    let homeless: Vec<Member> = to.keys().filter(|id| !projects.iter().any(|p| p.id == **id)).flat_map(|id| side(to, id).unwrap_or_default()).collect();
     for project in projects.iter_mut() {
-        let (base, ours) = (from.get(&project.id), to.get(&project.id));
+        let (base, ours) = (side(from, &project.id), side(to, &project.id));
         if base.is_none() && ours.is_none() {
             continue;
         }
-        let laid = crate::merge::list(base.unwrap_or(&none), ours.unwrap_or(&none), &project.members);
+        let base: Vec<Member> = base.unwrap_or_default().into_iter().filter(|m| !homeless.contains(m)).collect();
+        let laid = crate::merge::list(&base, &ours.unwrap_or_default(), &printed(&project.members, &known));
         project.members = distinct(laid);
     }
+    projects.retain(|p| !(from.contains_key(&p.id) && !to.contains_key(&p.id) && p.members.is_empty()));
 }

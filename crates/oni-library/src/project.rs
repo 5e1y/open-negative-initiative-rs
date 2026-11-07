@@ -2,7 +2,6 @@
 //! `projects.json`, not in a sidecar: an ordered member list cannot fit one sidecar field.
 
 use oni_settings::{Date, Id};
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 mod file;
@@ -10,23 +9,21 @@ mod gestures;
 mod member;
 mod resolve;
 
+pub(crate) use file::read;
 pub use file::{FORMAT, ProjectsFile, encode, file_path, former_path, is_path, load, save};
 pub use gestures::{
     Joined, Rosters, add_to, carried, delete, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from, rename,
     reorder_drop, reorder_root, rosters, set_description,
 };
-pub use member::{Member, distinct, exclusive};
+pub use member::{Member, distinct, exclusive, printed};
 pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(from = "file::Written")]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Project {
     pub id: Id,
     pub name: String,
     pub description: String,
-    #[serde(rename = "createdAt", with = "crate::reference_date")]
     pub created_at: Date,
-    #[serde(rename = "manualOrder", skip_serializing_if = "Option::is_none", default)]
     pub manual_order: Option<f64>,
     /// Ordered photos, each by its path and its print: two copies of one file in two rolls are two.
     pub members: Vec<Member>,
@@ -78,3 +75,5 @@ pub fn delete_prompt(project: &Project) -> (String, String, &'static str) {
 mod tests;
 #[cfg(test)]
 mod file_tests;
+#[cfg(test)]
+mod shipped_tests;

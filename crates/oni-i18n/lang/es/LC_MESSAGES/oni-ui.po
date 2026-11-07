@@ -4873,6 +4873,10 @@ msgstr "Vídeos"
 msgid "Computer"
 msgstr "Ordenador"
 
+#: crates/oni-library/src/project/file.rs
+msgid "their file comes from a newer version of ONI, which this one never overwrites"
+msgstr "su archivo viene de una versión más reciente de ONI, que esta nunca sobrescribe"
+
 #: crates/oni-library/src/project.rs
 msgid "It holds no photos. Nothing else is affected."
 msgstr "No contiene fotos. No se ve afectado nada más."

@@ -75,10 +75,18 @@ impl Ctl {
     }
 
     /// An undo or a redo of a gesture on the projects: what its step changed, turned on the members
-    /// as they stand, saved.
+    /// as they stand, saved; where they stand read again, as one it brings back may lie beyond the folder.
     pub(in crate::app) fn regrouped(self: &Rc<Self>, from: &project::Rosters, to: &project::Rosters) {
-        project::regroup(&mut self.state.borrow_mut().org.projects, from, to);
+        {
+            let mut s = self.state.borrow_mut();
+            project::regroup(&mut s.org.projects, from, to);
+            let ringed = |id: &Id| s.org.projects.iter().any(|p| p.id == *id);
+            if matches!(&s.org.project_ring, Some(NodeId::Project(r)) if !ringed(r)) {
+                s.org.project_ring = None;
+            }
+        }
         self.save_projects();
+        self.read_standing();
         self.lay_grid();
         self.publish_bar();
     }

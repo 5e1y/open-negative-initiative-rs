@@ -92,18 +92,19 @@ fn a_medal_step_keeps_what_each_photo_wore_and_one_that_changed_nothing_opens_no
 fn a_members_step_keeps_the_projects_it_changed_and_follows_a_rename() {
     let (client, other) = (Id::new(), Id::new());
     let list = |items: &[&str]| items.iter().map(|s| crate::project::Member::new(Some(s), Some("print"))).collect::<Vec<_>>();
-    let before = BTreeMap::from([(client, list(&["/r10/a"])), (other, list(&["/r8/b"]))]);
-    let after = BTreeMap::from([(client, list(&["/r10/a", "/r8/a"])), (other, list(&["/r8/b"]))]);
+    let roster = |id: Id, items: &[&str]| (id, crate::project::Project { id, ..crate::project::Project::new("P", oni_settings::Date::since_reference_date(8e8), list(items)) });
+    let before = BTreeMap::from([roster(client, &["/r10/a"]), roster(other, &["/r8/b"])]);
+    let after = BTreeMap::from([roster(client, &["/r10/a", "/r8/a"]), roster(other, &["/r8/b"])]);
     let mut h = History::default();
     h.record_members(Members { before, after }, "Add to Project");
     assert_eq!((h.undo_label(), h.undo_paths()), (Some("Add to Project"), BTreeSet::new()));
     h.follow(&[Move { from: "/r8".into(), to: "/Roll 8".into() }]);
     let step = h.undo_step().and_then(|s| s.members).expect("a members step");
-    assert_eq!(step.before, BTreeMap::from([(client, list(&["/r10/a"]))]), "a project left as it was stays out");
-    assert_eq!(step.after[&client], list(&["/r10/a", "/Roll 8/a"]));
+    assert_eq!(step.before, BTreeMap::from([roster(client, &["/r10/a"])]), "a project left as it was stays out");
+    assert_eq!(step.after[&client].members, list(&["/r10/a", "/Roll 8/a"]));
     // Twin: a gesture that changed no project's members opens no step.
     let mut idle = History::default();
-    let same = BTreeMap::from([(client, list(&["/r10/a"]))]);
+    let same = BTreeMap::from([roster(client, &["/r10/a"])]);
     idle.record_members(Members { before: same.clone(), after: same }, "Add to Project");
     assert!(!idle.can_undo());
 }
@@ -113,7 +114,8 @@ fn a_members_step_keeps_the_projects_it_changed_and_follows_a_rename() {
 #[test]
 fn each_step_bears_a_mark_no_other_does() {
     let id = Id::new();
-    let list = |items: &[&str]| BTreeMap::from([(id, items.iter().map(|s| crate::project::Member::new(Some(s), None)).collect::<Vec<_>>())]);
+    let made = crate::project::Project { id, ..crate::project::Project::new("P", oni_settings::Date::since_reference_date(8e8), Vec::new()) };
+    let list = |items: &[&str]| BTreeMap::from([(id, crate::project::Project { members: items.iter().map(|s| crate::project::Member::new(Some(s), None)).collect(), ..made.clone() })]);
     let mut h = History::default();
     h.record_members(Members { before: list(&[]), after: list(&["/a"]) }, "Add to Project");
     let told = h.undo_mark();

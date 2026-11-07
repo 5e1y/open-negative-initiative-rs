@@ -345,14 +345,14 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
     let named: Vec<project::Member> =
         ORACLE.iter().rev().map(|(f, _)| project::Member::new(None, relink::fingerprint(&copy.staged.join(f)).as_deref())).collect();
     let trip = project::Project::new("Roll #8 picks", Date::since_reference_date(8e8), named);
-    let standing = project_standing::standing(std::slice::from_ref(&trip), &[], &index);
+    let standing = project_standing::standing(std::slice::from_ref(&trip), &[], &index, &Default::default());
     let resolved = project::grouped(std::slice::from_ref(&trip), &project::Reach::new(&standing.rows, &standing.found));
     let picked: Vec<String> = resolved[0].entries.iter().map(|e| name(&e.path)).collect();
     assert_eq!(picked, ORACLE.iter().rev().map(|(f, _)| f.to_string()).collect::<Vec<_>>());
     // Twin: a print stamped off another size of the same frame is found nowhere.
     let stale = relink::fingerprint(&copy.staged.join(ORACLE[0].0)).unwrap().replacen("30005388", "30005389", 1);
     let lost = project::Project::new("Stale", Date::since_reference_date(8e8), vec![project::Member::new(None, Some(&stale))]);
-    assert!(project_standing::standing(std::slice::from_ref(&lost), &[], &index).found.is_empty());
+    assert!(project_standing::standing(std::slice::from_ref(&lost), &[], &index, &Default::default()).found.is_empty());
 }
 
 /// `CaptureExposure.offsets` on the NEFs present: each frame's stops past the roll's common settings

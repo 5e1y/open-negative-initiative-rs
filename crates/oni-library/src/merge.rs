@@ -37,7 +37,7 @@ pub fn projects(base: &[Project], ours: &[Project], theirs: &[Project]) -> Vec<P
     for mine in ours {
         match (find(base, mine.id), find(theirs, mine.id)) {
             (None, _) => out.push(mine.clone()),
-            (Some(read), None) if read == *mine => {}
+            (Some(read), None) if unchanged(&read, mine) => {}
             (Some(_), None) => out.push(mine.clone()),
             (Some(read), Some(other)) => out.push(project(&read, mine, &other)),
         }
@@ -51,21 +51,29 @@ pub fn projects(base: &[Project], ours: &[Project], theirs: &[Project]) -> Vec<P
     out
 }
 
+/// Whether this side left a project as it read it, a print it learned since aside.
+fn unchanged(read: &Project, mine: &Project) -> bool {
+    Project { members: project::printed(&read.members, &mine.members), ..read.clone() } == *mine
+}
+
+/// Each field merged on its own; a print either side learned for a member is that member's on all three.
 fn project(base: &Project, ours: &Project, theirs: &Project) -> Project {
+    let known: Vec<project::Member> = ours.members.iter().chain(&theirs.members).cloned().collect();
+    let side = |p: &Project| project::printed(&p.members, &known);
     Project {
         id: ours.id,
         name: pick(&base.name, &ours.name, &theirs.name),
         description: pick(&base.description, &ours.description, &theirs.description),
         created_at: pick(&base.created_at, &ours.created_at, &theirs.created_at),
         manual_order: pick(&base.manual_order, &ours.manual_order, &theirs.manual_order),
-        members: project::distinct(list(&base.members, &ours.members, &theirs.members)),
+        members: project::distinct(list(&side(base), &side(ours), &side(theirs))),
     }
 }
 
 /// `projects.json` read again, merged with what this side changed since `base` and written unless it
 /// holds that already, in any format; the list is the next save's base. An unreadable file takes ours.
 pub fn save_projects(support: &Path, base: &[Project], ours: &[Project]) -> std::io::Result<Vec<Project>> {
-    let theirs = crate::read_json::<ProjectsFile>(&project::file_path(support));
+    let theirs = project::read(&project::file_path(support));
     let merged = match &theirs {
         Some(file) => project::exclusive(&projects(base, ours, &project::exclusive(&file.projects))),
         None => ours.to_vec(),

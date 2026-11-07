@@ -37,8 +37,8 @@ pub struct Medals {
     pub after: Medal,
 }
 
-/// The projects whose members a gesture changed, each one's list as the step found it and left it.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+/// The projects whose members a gesture changed, each as the step found it and left it.
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Members {
     pub before: crate::project::Rosters,
     pub after: crate::project::Rosters,
@@ -307,7 +307,7 @@ impl History {
                 medals.before = std::mem::take(&mut medals.before).into_iter().map(|(p, m)| (moved(&p), m)).collect();
             }
             if let Some(members) = &mut step.members {
-                for member in members.before.values_mut().chain(members.after.values_mut()).flatten() {
+                for member in members.before.values_mut().chain(members.after.values_mut()).flat_map(|p| &mut p.members) {
                     member.path = member.path.as_deref().map(moved);
                 }
             }
