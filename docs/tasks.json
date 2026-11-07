@@ -7879,5 +7879,26 @@
     "title": "Choosing a preset never moves the rows under the picker: the space's notes keep one room, both formats' rows and the profile's are always laid",
     "status": "done",
     "detail": "Reported flaw: a colour-space note appeared as a preset changed the space and pushed every row under it. The source is each note sized to the words it says now and rows laid only for some states. The note under the space's tabs and the one naming the space the photos were edited in are now SteadyNote (design system): its room is the tallest of every text it may say (notes::space_notes, notes::edited_in_notes, published with each), so a preset or a tab changes the words, never the place of what follows. The edited-in note is said in every space ('This photo was edited in Display P3, the space the export writes.'), and in another one says the canvas and the preview now show it in the space the export writes. The format's own row stays one row, Compression's field as tall as Quality's slider, which the check guards; the Profile field always stands, the built-in space's own out of reach, Custom's profile or the choice still to make, so a saved preset bringing a profile moves nothing. ProPhoto's purpose is tightened to two lines in English, so the note's room is two lines there. The spaces' purposes and the chip's hints move from oni-colour to the app's notes, translated (they read English in French and Spanish), ProPhoto's in the app's spelling of colour. Closing the name sheet hands the keyboard back to the key monitor, as every sheet with a field does. Checks: window export_panel reads the format's tabs, the space's tabs, the profile keys, Compression, Quality, HDR and Pixels at the same height through No preset, Web, Print, Instagram and Display (twins: Adobe RGB's purpose takes another height than Display P3's, the edited-in note says another sentence in sRGB in the same room, and under Print the format's row holds Compression in place of Quality); Custom keeps the keys and Quality where they stood; unit notes every_note_the_field_says_is_among_those_its_room_is_fitted_to (twin: a list without the notes waiting for a profile misses one the field says), the_edited_in_note_is_said_in_every_space_and_its_room_holds_each (twin: one photo's room is not fitted to a batch's words)."
+  },
+  {
+    "id": 1595,
+    "type": "fix",
+    "title": "Rotate & Mirror's keys are named by their axis",
+    "status": "done",
+    "detail": "Evaluation: the block's two mirror keys both read “Mirror”, told apart by their help alone. Fix: they read “Mirror Horizontally” and “Mirror Vertically”, as the menus name the move (the menus' own text, so one translation: “Retourner horizontalement”, “Reflejar horizontalmente”; “Mirror Vertically” new: “Retourner verticalement”, “Reflejar verticalmente”). Words that long share no row in French or Spanish, so Rotate and the two mirrors stand one a row across the block, as Paste Crop to Roll stands under Copy and Paste Crop. Checks: window panel_bindings (each key pressed by its own words, the window 1100 pt tall so the Measuring Window's keys stay in sight; twin: no key reads Mirror alone), sidebars (each of the three alone spans the block, inside it, its glyph and word centred, the window 1000 pt tall; twins: three keys on one row with the last past the edge, a word left on its key)."
+  },
+  {
+    "id": 1596,
+    "type": "fix",
+    "title": "A mode's name is translated in the roll's default stock note",
+    "status": "done",
+    "detail": "Evaluation: “Default, from this roll's {mode} mode” took ConversionMode::label(), English only, into the French and Spanish sentence. Fix: label() removed from oni-settings (this note was its one caller); roll_tab::mode_name names a mode as the Film Type tabs do, translated (Négatif, Positif, N&B), and the note takes it. Check: window stocks (in French the note reads “Par défaut, d’après le mode Négatif de cette pellicule”; twin: it holds no “Negative”; English again after). lab.rs keeps its own translated match for the Scanner face's screen, another corrector's file."
+  },
+  {
+    "id": 1597,
+    "type": "fix",
+    "title": "The info column names the ONI Trash while it is selected",
+    "status": "done",
+    "detail": "Evaluation: with the ONI Trash selected, the column's head still showed the last roll's name (“Roll #8”), as an editable title. Fix: publish_info sets info_title to “ONI Trash” in the trash's branch; the column types over a roll's or a project's name only, the trash's a plain title of the same role; its count, note and Restore key sit under it in the head's block, as a roll's warning does, the separate block titled ONI Trash gone. Checks: window gallery (twin: before the trash the column's title reads Roll 7; with it, ONI Trash heads the column and no Roll 7 stands there; shot gallery-trash-info); library_wide the_trash_inspector_counts_and_its_key_restores_what_it_names unchanged and green."
   }
 ]

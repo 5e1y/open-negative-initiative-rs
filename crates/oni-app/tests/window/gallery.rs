@@ -270,8 +270,13 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(hand.shown(), ["A", "B", "D"]);
     let trash = lib.get_trash_rows();
     assert_eq!((trash.row_data(0).unwrap().title.as_str(), trash.row_data(0).unwrap().count.as_str()), ("ONI Trash", "1"));
+    // What is selected names the info column, 340 pt at the window's right: the roll, then the trash.
+    let heading = |name: &str| common::placed(w, i_slint_backend_testing::AccessibleRole::Text, name).iter().filter(|t| t.x >= 1280.0 - 340.0).count();
+    assert_eq!((heading("Roll 7"), heading("ONI Trash")), (1, 0), "twin: the roll heads the column before the trash");
     lib.invoke_trash_row_clicked(0);
     rig.pump();
+    assert_eq!((heading("Roll 7"), heading("ONI Trash")), (0, 1), "the ONI Trash heads the column, not the roll last shown");
+    rig.shot("gallery-trash-info");
     assert!(lib.get_trash_rows().row_data(0).unwrap().opened);
     assert_eq!(lib.get_trash_rows().row_count(), 1, "the click opens, never folds");
     lib.invoke_trash_row_folded(0);

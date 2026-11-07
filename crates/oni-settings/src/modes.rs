@@ -28,14 +28,6 @@ impl ConversionMode {
         Self::ALL.into_iter().find(|m| m.raw_value() == raw)
     }
 
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Negative => "Negative",
-            Self::Positive => "Positive",
-            Self::Monochrome => "B&W",
-        }
-    }
-
     pub fn invert_flag(self) -> f32 {
         if self == Self::Positive { 0.0 } else { 1.0 }
     }

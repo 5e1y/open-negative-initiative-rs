@@ -193,7 +193,7 @@ export component Button inherits Rectangle {
     property <float> fade: root.live ? 1 : State.disabled;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
-    // A worded key's help tells two keys of one word apart, as the mirrors' axes.
+    // A worded key's help says what its word leaves out, as the sides a mirror swaps.
     accessible-description: root.worded ? root.help : "";
     accessible-enabled: root.live;
     accessible-checked: root.on;

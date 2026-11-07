@@ -58,14 +58,11 @@ export component CropPane inherits Pane {
     Section {
         title: @tr("Rotate & Mirror");
         help: @tr("Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs.");
-        // Worded keys sharing the row alike, each glyph drawing its move: a quarter turn, a flip across an
-        // upright axis, a flip across a level one; none of them ever lights.
-        ButtonGroup {
-            align: GroupAlign.fill;
-            Button { text: @tr("Rotate"); has-icon: true; icon: Icons.rotate; help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
-            Button { text: @tr("Mirror"); has-icon: true; icon: Icons.mirror; help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
-            Button { text: @tr("Mirror"); has-icon: true; icon: Icons.mirror-vertically; help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
-        }
+        // One key a row, so a longer language still fits the name the menus give each move; each glyph
+        // draws it: a quarter turn, a flip across an upright axis, a flip across a level one; none lights.
+        Button { text: @tr("Rotate"); has-icon: true; icon: Icons.rotate; help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
+        Button { text: @tr("Mirror Horizontally"); has-icon: true; icon: Icons.mirror; help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
+        Button { text: @tr("Mirror Vertically"); has-icon: true; icon: Icons.mirror-vertically; help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
     }
     Section {
         title: @tr("Measuring Window");
