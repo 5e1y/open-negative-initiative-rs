@@ -244,16 +244,17 @@ impl Ctl {
         if joined.added > 0 { self.told_step(tr("Add to Project"), &message) } else { self.told(tr("Add to Project"), &message) }
     }
 
-    /// Remove from Project, said with Undo, as a photo leaving a project leaves no other trace.
+    /// Remove from Project, said with Undo, as a photo leaving a project leaves no other trace, and
+    /// where one still shows, so a filing it reveals is never news later.
     fn remove_from_project(self: &Rc<Self>, scope: &HashSet<String>, id: Id) {
         let name = self.state.borrow().org.projects.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default();
-        let mut removed = 0;
+        let mut said = String::new();
         if self.regroup(tr("Remove from Project"), |projects, reach| {
-            removed = project::remove_from(projects, reach, scope, id);
-            removed > 0
+            let gone = project::remove_from(projects, reach, scope, id);
+            said = project::removed_said(&name, gone.len(), &project::shown_in(projects, reach, &gone.iter().cloned().collect()));
+            !gone.is_empty()
         }) {
-            let said = trn("One photo removed from “{project}”.", "{n} photos removed from “{project}”.", removed as u64);
-            self.told_step(tr("Remove from Project"), &said.replace("{project}", &name));
+            self.told_step(tr("Remove from Project"), &said);
         }
     }
 

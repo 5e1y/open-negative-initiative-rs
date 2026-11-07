@@ -1,7 +1,7 @@
 //! 1.5.6's placeholder beside a print of the same photo, as 1.5.6 leaves it when a photo that joined while
 //! its tile loaded is filed elsewhere once read: the photo shows once, at the print, the placeholder kept as given.
 
-use super::shipped_tests::{row, shipped, shown, written_back};
+use super::shipped_tests::{learned_off, row, shipped, shown, written_back};
 use super::*;
 use crate::index::LibraryIndex;
 use crate::library::WAITING_MARK;
@@ -89,17 +89,19 @@ fn printless(projects: &[Project]) -> Vec<Project> {
 }
 
 /// Review 4: a dragged to Portfolio after 1.5.6 put it in the newer Trip while its tile loaded stays in
-/// Portfolio, read or not, and nothing is learned, so the launch writes nothing.
+/// Portfolio once read, shows in both before, and nothing is learned, so the launch writes nothing.
 #[test]
 fn a_later_move_to_portfolio_stands_over_the_placeholder() {
     let scratch = Scratch::new("projects-pair-later");
     pair(scratch.path());
     let read = load(scratch.path()).projects;
     assert_eq!(members(&read), [vec![of(B, "1-b"), of(A, "1-a")], vec![of(A, &mark()), of(C, "1-c")]], "both kept, the placeholder as given");
-    for index in [index(&[]), read_roll()] {
-        assert_eq!(showing(&read, &index, A), [("Portfolio".to_string(), index.row(A).map_or(format!("{WAITING_MARK}{A}"), |r| r.fingerprint))]);
+    let waits = format!("{WAITING_MARK}{A}");
+    for (index, shown) in [(index(&[]), vec!["Trip", "Portfolio"]), (read_roll(), vec!["Portfolio"])] {
+        let print = index.row(A).map_or(waits.clone(), |r| r.fingerprint);
+        assert_eq!(showing(&read, &index, A), shown.into_iter().map(|name| (name.to_string(), print.clone())).collect::<Vec<_>>());
         let mut learned = read.clone();
-        assert!(!project_standing::learn(&mut learned, &[], &index), "a placeholder learns nothing");
+        assert!(!learned_off(&mut learned, &index), "a placeholder beside a print learns nothing");
     }
     // Twin: read as a member with no print, the newer Trip keeps a and Portfolio loses it.
     assert!(!exclusive(&printless(&read))[0].paths().contains(&A));
@@ -155,31 +157,37 @@ fn a_rescan_shows_in_trip_and_the_stale_print_as_a_missing_tile() {
     let portfolio = &grouped(&read, &Reach::new(&st.rows, &st.found))[1];
     assert_eq!(portfolio.project.name, "Portfolio");
     assert_eq!(portfolio.entries.iter().map(|e| (e.path.as_str(), Member::of(e, None).print)).collect::<Vec<_>>(), [("/Roll 9/12.tif/12.tif", None)], "a missing tile");
-    // Unread, the print recorded at its path stands; the placeholder waits behind it.
-    assert_eq!(showing(&read, &index(&[]), twelve), [("Portfolio".to_string(), w.clone())]);
+    // Unread, nothing proves Portfolio's print there: both show it, so neither prompt says the other keeps it.
+    let unread = index(&[]);
+    assert_eq!(showing(&read, &unread, twelve), [("Trip".to_string(), w.clone()), ("Portfolio".to_string(), w.clone())]);
+    let st = standing(&read, &unread);
+    assert_eq!(shadowed(&read, &Reach::new(&st.rows, &st.found)), [0, 0]);
+    // Twin: by the row each member holds alone, as before, Portfolio's print hides Trip's photo unread.
+    assert_eq!(holders(&read, &Reach::new(&st.rows, &st.found)).get(twelve), Some(&(0, 0)));
     // Twin: a print standing at its path whatever its file carries would take the new scan from Trip.
     let blind: Vec<Project> = read.iter().map(|p| Project { members: p.members.iter().map(|m| if m.placeholder().is_some() { m.clone() } else { Member::new(m.path.as_deref(), None) }).collect(), ..p.clone() }).collect();
     assert_eq!(showing(&blind, &rescanned, twelve), [("Portfolio".to_string(), "2-12".to_string())]);
 }
 
-/// Review 6: before Roll 9 is read, a shows once, in Portfolio, and b dropped past it lands there.
+/// Review 6: before Roll 9 is read, a shows in Portfolio and in Trip, so a drop beside it lands in neither;
+/// once read, a shows once, in Portfolio, and b dropped past it lands there.
 #[test]
-fn a_drop_beside_the_pair_before_its_file_is_read_stays_in_portfolio() {
+fn a_drop_beside_the_pair_waits_for_its_file_then_lands_in_portfolio() {
     let scratch = Scratch::new("projects-pair-drop");
     pair(scratch.path());
     let unread = index(&[]);
     let mut read = load(scratch.path()).projects;
-    assert_eq!(showing(&read, &unread, A).len(), 1, "one tile for a");
+    assert_eq!(showing(&read, &unread, A).len(), 2, "a tile for a in each");
     let st = standing(&read, &unread);
     let reach = Reach::new(&st.rows, &st.found);
-    assert_eq!(member_projects(&read, &reach, &picked(&[A])).iter().map(|p| p.name.as_str()).collect::<Vec<_>>(), ["Portfolio"]);
-    assert!(reorder_drop(&mut read, &reach, &picked(&[B]), A, true));
+    assert_eq!(member_projects(&read, &reach, &picked(&[A])).iter().map(|p| p.name.as_str()).collect::<Vec<_>>(), ["Portfolio", "Trip"]);
+    assert!(!reorder_drop(&mut read.clone(), &reach, &picked(&[B]), A, true), "no one project to land in");
+    // Twin: by its holder alone, the drop would land in Portfolio though the line stood at Trip's tile too.
+    assert_eq!(holders(&read, &reach).get(A), Some(&(0, 1)));
+    let roll = read_roll();
+    let st = standing(&read, &roll);
+    assert!(reorder_drop(&mut read, &Reach::new(&st.rows, &st.found), &picked(&[B]), A, true));
     assert_eq!(members(&read), [vec![of(A, "1-a"), of(B, "1-b")], vec![of(A, &mark()), of(C, "1-c")]], "b past a in Portfolio, Trip as given");
-    // Twin: the placeholder a member with no print, as read before, holds a for Trip, and b leaves Portfolio for it.
-    let mut before = printless(&load(scratch.path()).projects);
-    let st = standing(&before, &unread);
-    assert!(reorder_drop(&mut before, &Reach::new(&st.rows, &st.found), &picked(&[B]), A, true));
-    assert!(before[1].paths().contains(&B) && !before[0].paths().contains(&B));
 }
 
 /// Review 6: an undo of a step in Trip holds its placeholder as it was, lent no print, so a stays in Portfolio.
@@ -193,7 +201,7 @@ fn an_undo_in_the_placeholders_project_holds_it_as_read() {
     let st = standing(&ours, &index(&[]));
     let reach = Reach::new(&st.rows, &st.found);
     let before = rosters(&ours);
-    assert_eq!(remove_from(&mut ours, &reach, &picked(&[C]), read[1].id), 1);
+    assert_eq!(remove_from(&mut ours, &reach, &picked(&[C]), read[1].id), [C]);
     let after = rosters(&ours);
     let base = merge::save_projects(support, &read, &ours).unwrap();
     let mut undone = base.clone();
@@ -233,7 +241,7 @@ fn a_merge_keeps_a_placeholder_1_5_6_added_since() {
     let merged = merge::save_projects(support, &base, &ours).unwrap();
     assert_eq!(merged[1].members, [of(A, &mark()), of(D, &wd)], "c gone, 1.5.6's placeholder for d kept");
     assert_eq!(load(support).projects[1].members, merged[1].members);
-    assert_eq!(showing(&merged, &index(&[]), D), [("Client".to_string(), wd.clone())], "d shows once, at Client's print");
+    assert_eq!(showing(&merged, &read_roll(), D), [("Client".to_string(), "1-d".to_string())], "d shows once, at Client's print");
     wrote(support, theirs.projects);
     assert!(merge::save_projects(support, &base, &renamed).unwrap()[1].members.contains(&of(D, &wd)), "kept through the rename too");
     // Twin: Trip's members picked whole from this side, which changed them, as a field is, lose d's placeholder.
@@ -286,12 +294,15 @@ fn adding_the_photo_to_client_takes_the_hidden_placeholder_with_it() {
     assert_eq!(add_to(&mut added, &reach, &picked(&[A]), id), Joined { added: 1, already: 0 });
     assert_eq!(members(&added), [vec![of(B, "1-b")], vec![of(C, "1-c")], vec![of(A, "1-a")]], "Trip's placeholder left with it");
     let mut removed = added.clone();
-    assert_eq!(remove_from(&mut removed, &reach, &picked(&[A]), id), 1);
+    let gone = remove_from(&mut removed, &reach, &picked(&[A]), id);
     assert!(showing(&removed, &roll, A).is_empty(), "a in no project");
-    // Removed from Portfolio alone, a shows in Trip, by its placeholder, as 1.5.6 shows it.
+    assert_eq!(removed_said("Client", gone.len(), &shown_in(&removed, &reach, &picked(&[A]))), "One photo removed from \u{201c}Client\u{201d}.");
+    // Removed from Portfolio alone, a shows in Trip, by its placeholder, as 1.5.6 shows it, and the notice says so.
     let mut left = read.clone();
-    assert_eq!(remove_from(&mut left, &reach, &picked(&[A]), read[0].id), 1);
+    let gone = remove_from(&mut left, &reach, &picked(&[A]), read[0].id);
     assert_eq!(showing(&left, &roll, A), [("Trip".to_string(), "1-a".to_string())]);
+    let said = removed_said("Portfolio", gone.len(), &shown_in(&left, &reach, &picked(&[A])));
+    assert_eq!(said, "One photo removed from \u{201c}Portfolio\u{201d}. It now shows in \u{201c}Trip\u{201d}.");
     // Twin: the placeholder left in Trip, as a gesture on the member shown alone leaves it, brings a back.
     removed[1].members.insert(0, of(A, &mark()));
     assert_eq!(showing(&removed, &roll, A), [("Trip".to_string(), "1-a".to_string())]);
@@ -309,7 +320,7 @@ fn a_gesture_in_one_project_takes_its_own_hidden_placeholder_with_the_photo() {
     let st = standing(&read, &roll);
     let reach = Reach::new(&st.rows, &st.found);
     let mut removed = read.clone();
-    assert_eq!(remove_from(&mut removed, &reach, &picked(&[A]), read[1].id), 1);
+    assert_eq!(remove_from(&mut removed, &reach, &picked(&[A]), read[1].id), [A]);
     assert_eq!(removed[1].members, [of(B, "1-b")]);
     assert!(showing(&removed, &roll, A).is_empty(), "a in no project");
     // Twin: the member shown removed alone leaves a in Portfolio, by its placeholder.
@@ -344,4 +355,15 @@ fn a_project_holding_only_a_hidden_placeholder_claims_no_photo_and_says_so() {
     assert_eq!(delete_prompt(&read[0], 0).1, "It stops grouping its 1 photo. The photos, their settings and every other project or roll they belong to are untouched.");
     // Twin: counted as a member, Trip's prompt claims a photo the person cannot see in it.
     assert!(delete_prompt(&read[1], 0).1.starts_with("It stops grouping its 1 photo."));
+    // Its file unread, nothing proves Portfolio's print there: Trip shows a too, counts it and says so.
+    let st = standing(&read, &index(&[]));
+    let reach = Reach::new(&st.rows, &st.found);
+    assert_eq!(grouped(&read, &reach).iter().map(|g| (g.project.name.as_str(), g.entries.len())).collect::<Vec<_>>(), [("Trip", 1), ("Portfolio", 1)]);
+    assert_eq!(shadowed(&read, &reach), [0, 0]);
+    assert_eq!(member_projects(&read, &reach, &picked(&[A])).len(), 2, "Remove from Project offers both");
+    let mut out = read.clone();
+    assert_eq!(remove_from(&mut out, &reach, &picked(&[A]), read[1].id), [A], "out of Trip, its own placeholder goes");
+    assert!(out[1].members.is_empty() && out[0].members == read[0].members);
+    // Twin: by the holders alone, as before, Trip holds no member at a to remove.
+    assert!(holders(&read, &reach).values().all(|(p, _)| *p == 0));
 }

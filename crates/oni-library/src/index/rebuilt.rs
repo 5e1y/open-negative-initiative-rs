@@ -1,5 +1,5 @@
-//! When the index's rows were last thrown away, in a table of its own the Swift app never reads: an
-//! index rebuilt in an old file claims only what was read since.
+//! When the index's rows were last thrown away, the file made anew included, in a table of its own:
+//! an index rebuilt claims only what was read since.
 
 use super::LibraryIndex;
 use rusqlite::{Connection, params};
@@ -9,7 +9,7 @@ pub(super) fn prepare(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch("CREATE TABLE IF NOT EXISTS rebuilt (at REAL NOT NULL);")
 }
 
-/// Whether the photos table is still to make: a file new, or its rows just dropped.
+/// Whether the photos table is still to make: a file new.
 pub(super) fn lacks_photos(connection: &Connection) -> rusqlite::Result<bool> {
     connection.query_row("SELECT NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'photos')", [], |r| r.get(0))
 }

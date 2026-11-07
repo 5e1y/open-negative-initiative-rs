@@ -4,7 +4,7 @@
 use crate::index::{Entry, LibraryIndex};
 use crate::library::WAITING_MARK;
 use crate::paths;
-use crate::project::{self, Found, Member, Project};
+use crate::project::{self, Found, Member, Project, Reach};
 use std::collections::{HashMap, HashSet};
 
 /// The rows `project::grouped` needs beyond the opened folder's, and where each member its path no
@@ -127,16 +127,24 @@ fn lost(file: &str, name: &str, taken: &HashSet<String>) -> String {
     at
 }
 
-/// Each member with a path and no print takes the print its file there carries, or gives the photo up
-/// to a member holding that print there, as that print was read after it was named. Whether any changed.
-pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> bool {
+/// Each member with a path and no print, and each placeholder alone at a read file in `stood`, this read's
+/// standing, takes the print its file carries; one with no print gives the photo up to a member holding it there.
+pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex, stood: &Standing) -> bool {
     let held_at: HashMap<&str, &Entry> = held.iter().map(|e| (e.path.as_str(), e)).collect();
     let carried = |path: &str| held_at.get(path).map(|e| (*e).clone()).or_else(|| index.row(path)).and_then(|row| Member::of(&row, None).print);
+    let alone = alone(projects, held, stood);
     let printed: Vec<Member> = projects.iter().flat_map(|p| &p.members).filter(|m| m.print.is_some()).cloned().collect();
     let holder = project::holder(&printed);
     let mut changed = false;
-    for project in projects.iter_mut() {
+    for (p, project) in projects.iter_mut().enumerate() {
+        let mut m = 0;
         project.members.retain_mut(|member| {
+            m += 1;
+            if let Some(print) = alone.get(&(p, m - 1)) {
+                *member = Member::new(member.path.as_deref(), Some(print));
+                changed = true;
+                return true;
+            }
             let Some(path) = member.path.as_deref().filter(|_| member.print.is_none()) else { return true };
             let Some(print) = carried(path) else { return true };
             let learned = Member::new(Some(path), Some(&print));
@@ -149,6 +157,19 @@ pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> 
         });
     }
     changed
+}
+
+/// Each placeholder no other member stands beside at a read file, by its project's place and its own,
+/// with that file's print: the photo is its own there, so it learns the print as a member with none does.
+fn alone(projects: &[Project], held: &[Entry], stood: &Standing) -> HashMap<(usize, usize), String> {
+    let rows: Vec<Entry> = held.iter().chain(&stood.rows).cloned().collect();
+    let shown = project::resolve(projects, &Reach::new(&rows, &stood.found));
+    let lone = |member: &Member, row: Option<&Entry>| row.filter(|_| member.placeholder().is_some()).and_then(|row| Member::of(row, None).print);
+    let mut out = HashMap::new();
+    for (p, (project, rows)) in projects.iter().zip(shown).enumerate() {
+        out.extend(project.members.iter().zip(rows).enumerate().filter_map(|(m, (member, row))| Some(((p, m), lone(member, row)?))));
+    }
+    out
 }
 
 /// `LibraryIndex.shown`'s cut on one row: out of the ONI Trash, and no pass whose lead is held.

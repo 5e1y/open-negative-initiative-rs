@@ -128,7 +128,7 @@ fn a_member_no_file_shows_stands_missing_where_it_can_be_removed() {
     assert_eq!(shown(&projects, &[], &Standing { rows: found.rows.clone(), found: Found::new() })[0], Vec::<String>::new());
     let reach: Vec<Entry> = found.rows.clone();
     let id = projects[0].id;
-    assert_eq!(project::remove_from(&mut projects, &Reach::new(&reach, &found.found), &HashSet::from([lost[0].to_string()]), id), 1);
+    assert_eq!(project::remove_from(&mut projects, &Reach::new(&reach, &found.found), &HashSet::from([lost[0].to_string()]), id), [lost[0]]);
     assert_eq!(projects[0].members, [Member::new(None, Some("1-13"))], "the rescanned frame's member gone, nothing else");
     // A stand-in moved to another project carries its member whole, never the stand-in's place.
     let moved = Member::of(&found.rows.iter().find(|e| e.path == lost[1]).unwrap().clone(), Some(&projects[0].members[0]));
@@ -170,10 +170,13 @@ fn a_member_without_a_print_learns_it_from_its_file() {
     let mut trip = vec![Project::new("Trip", Date::since_reference_date(8e8), vec![Member::new(Some(a), None), of(b, "1-b")])];
     let unlearned = trip.clone();
     let held = [row(a, "waiting-/Roll/a.tif")];
-    assert!(!learn(&mut trip, &held, &index), "a tile still being read teaches nothing");
-    assert!(learn(&mut trip, &[], &index));
+    let stood = standing(&trip, &held, &index, &Found::new());
+    assert!(!learn(&mut trip, &held, &index, &stood), "a tile still being read teaches nothing");
+    let stood = standing(&trip, &[], &index, &Found::new());
+    assert!(learn(&mut trip, &[], &index, &stood));
     assert_eq!(trip[0].members, [of(a, "1-a"), of(b, "1-b")], "b keeps its print over the other file at its place");
-    assert!(!learn(&mut trip, &[], &index), "learnt once");
+    let stood = standing(&trip, &[], &index, &Found::new());
+    assert!(!learn(&mut trip, &[], &index, &stood), "learnt once");
     // Moved outside ONI, the photo is found by its print.
     let moved = "/Roll moved/a.tif";
     index.upsert(&row(moved, "1-a")).unwrap();

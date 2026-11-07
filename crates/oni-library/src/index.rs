@@ -1,5 +1,5 @@
 //! A cache, disposable without loss: rebuildable from the sidecars, which stay the only truth.
-//! Bumping the schema version throws the table away and rebuilds it, never a migration.
+//! Each schema keeps a file of its own, so no build drops a table another is filling: a bump starts a new one.
 
 use crate::paths::normal;
 use oni_settings::{ConversionMode, Date, Film, Id, Medal};
@@ -7,7 +7,7 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 use std::path::{Path, PathBuf};
 
 pub const SCHEMA_VERSION: i32 = 10;
-/// How long a write waits for the other app's to end; theirs last milliseconds.
+/// How long a write waits for another process's on the same file to end; theirs last milliseconds.
 pub const BUSY: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// One member of the library as the gallery cuts it, cached from its file and its sidecar.
@@ -77,9 +77,10 @@ const COLUMNS: &str = "path, imported_at, captured_at, fingerprint, label, film_
     leads_passes, trashed_at, sheet";
 
 impl LibraryIndex {
-    /// Lives in the caches folder, which the system may purge; `ONI_INDEX` gives a probe its own.
+    /// Lives in the caches folder, which the system may purge, named by its schema: 1.5.6 and the Swift
+    /// app keep schema 9 in `index.sqlite`. `ONI_INDEX` gives a probe its own.
     pub fn default_path(caches: &Path) -> PathBuf {
-        std::env::var_os("ONI_INDEX").map(PathBuf::from).unwrap_or_else(|| caches.join("index.sqlite"))
+        std::env::var_os("ONI_INDEX").map(PathBuf::from).unwrap_or_else(|| caches.join(format!("index-{SCHEMA_VERSION}.sqlite")))
     }
 
     /// Opens or creates the index at `path` (`:memory:` for one in memory); `None` when SQLite refuses.
@@ -89,23 +90,26 @@ impl LibraryIndex {
             let _ = std::fs::create_dir_all(folder);
         }
         let connection = if memory { Connection::open_in_memory() } else { Connection::open(path) }.ok()?;
-        // The Swift app writes the same file: a write meeting its lock waits for it, never fails at once.
+        // Another build of this schema may write the same file: a write meeting its lock waits for it.
         connection.busy_timeout(BUSY).ok()?;
+        // Read before any write: a file another schema keeps is left as its build wrote it; 0 is a file new.
+        let version: i32 = connection.query_row("PRAGMA user_version", [], |r| r.get(0)).ok()?;
+        if version != 0 && version != SCHEMA_VERSION {
+            return None;
+        }
         // WAL lets background thumbnail writes proceed without blocking gallery reads.
         let _ = connection.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(()));
         let _ = connection.execute_batch("PRAGMA synchronous = NORMAL");
         let index = LibraryIndex { connection };
-        index.prepare_schema().ok()?;
+        index.prepare_schema(version == 0).ok()?;
         // A busy database is respelt at the next open; meanwhile each write names both spellings.
         let _ = spelling::respell(&index.connection);
         Some(index)
     }
 
-    fn prepare_schema(&self) -> rusqlite::Result<()> {
-        // A version that does not read is no reason to drop the table another app may be filling.
-        let version: i32 = self.connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        if version != SCHEMA_VERSION {
-            self.connection.execute_batch("DROP TABLE IF EXISTS photos; DROP TABLE IF EXISTS stamps")?;
+    /// The tables made in a file `new`, as at a first launch; a file of this schema kept as it is.
+    fn prepare_schema(&self, new: bool) -> rusqlite::Result<()> {
+        if new {
             self.connection.execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION}"))?;
         }
         let made = rebuilt::lacks_photos(&self.connection)?;
@@ -374,3 +378,5 @@ pub use stamps::Stamped;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod file_tests;

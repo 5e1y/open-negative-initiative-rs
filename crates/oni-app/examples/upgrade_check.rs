@@ -187,8 +187,11 @@ fn support_folder(support: &Path, index: &Path) -> usize {
     check("library.json", library.files.len() == raw, format!("{} of {raw}", library.files.len()));
     let bookmarks = oni_library::bookmarks::Bookmarks::load(support);
     check("bookmarks", true, format!("{} places", bookmarks.places.len()));
+    // Another schema's file, as the Swift app's, is never opened: this build makes its own beside it.
+    let given = std::fs::read(index).ok();
     let opened = oni_library::LibraryIndex::open(index);
-    check("library index", opened.is_some(), format!("{:?} rows", opened.as_ref().map(|i| i.count())));
+    let left = std::fs::read(index).ok() == given;
+    check("library index", opened.is_some() || left, format!("{:?} rows, left as given: {left}", opened.as_ref().map(|i| i.count())));
     let fresh = support.join("fresh-index.sqlite");
     let rebuilt = oni_library::LibraryIndex::open(&fresh).is_some_and(|i| i.rebuild(&[]).is_ok());
     check("library index rebuilt", rebuilt, String::new());

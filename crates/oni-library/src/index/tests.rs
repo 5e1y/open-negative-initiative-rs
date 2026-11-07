@@ -162,7 +162,7 @@ fn every_column_reads_back_into_its_own_field() {
 }
 
 #[test]
-fn a_schema_of_another_version_is_thrown_away() {
+fn a_file_of_another_schema_is_never_opened_nor_written() {
     let scratch = Scratch::new("index-version");
     let path = scratch.path().join("index.sqlite");
     {
@@ -172,7 +172,11 @@ fn a_schema_of_another_version_is_thrown_away() {
     // Twin: reopened at the same version, the row is still there.
     assert_eq!(LibraryIndex::open(&path).unwrap().count(), 1);
     Connection::open(&path).unwrap().execute_batch("PRAGMA user_version = 99").unwrap();
-    assert_eq!(LibraryIndex::open(&path).unwrap().count(), 0);
+    let written = std::fs::read(&path).unwrap();
+    assert!(LibraryIndex::open(&path).is_none());
+    assert_eq!(std::fs::read(&path).unwrap(), written, "left as its build wrote it");
+    let rows: i64 = Connection::open(&path).unwrap().query_row("SELECT COUNT(*) FROM photos", [], |r| r.get(0)).unwrap();
+    assert_eq!(rows, 1);
 }
 
 /// Rows an earlier build keyed as the disk listed them take the archive's spelling at the next open:
@@ -207,7 +211,7 @@ fn an_index_row_keyed_in_another_spelling_is_respelt_and_never_lost() {
     assert_eq!(index.all().iter().find(|e| e.path == spelt("c.NEF")).unwrap().label, Medal::Bronze);
 }
 
-/// The Swift app shares the file and sets no busy handler: a write of ours meeting its lock waits.
+/// Another process of this schema may write the file: a write of ours meeting its lock waits.
 #[test]
 fn a_write_waits_for_the_other_apps_write() {
     let scratch = Scratch::new("index-busy");
@@ -229,7 +233,7 @@ fn a_write_waits_for_the_other_apps_write() {
     assert_eq!(index.count(), 2);
     let check: String = Connection::open(&path).unwrap().query_row("PRAGMA integrity_check", [], |r| r.get(0)).unwrap();
     assert_eq!(check, "ok");
-    // Twin: with no busy handler, as Swift opens it, the same write is refused at once.
+    // Twin: with no busy handler, the same write is refused at once.
     let (held, taken) = std::sync::mpsc::channel();
     let raw = Connection::open(&path).unwrap();
     raw.execute_batch("DELETE FROM photos").unwrap();
@@ -271,7 +275,7 @@ fn the_trash_lists_a_triplet_once_whichever_folder_holds_it() {
 }
 
 #[test]
-fn a_schema_drop_dates_the_rebuild_and_a_plain_open_keeps_its_date() {
+fn a_file_made_anew_dates_the_rebuild_and_a_plain_open_keeps_its_date() {
     let scratch = Scratch::new("rebuilt");
     let at = scratch.path().join("index.sqlite");
     let index = LibraryIndex::open(&at).unwrap();
@@ -284,8 +288,4 @@ fn a_schema_drop_dates_the_rebuild_and_a_plain_open_keeps_its_date() {
     let index = LibraryIndex::open(&at).unwrap();
     let kept = index.rebuilt().unwrap();
     assert!(kept.duration_since(long_ago).unwrap_or_default() < std::time::Duration::from_secs(1), "{kept:?}");
-    index.connection.execute_batch(&format!("PRAGMA user_version = {}", SCHEMA_VERSION - 1)).unwrap();
-    drop(index);
-    let index = LibraryIndex::open(&at).unwrap();
-    assert!(index.rebuilt().unwrap().elapsed().unwrap() < std::time::Duration::from_secs(60), "the drop is dated now");
 }

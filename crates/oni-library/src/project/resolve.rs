@@ -1,8 +1,9 @@
 //! Each member matched to the row it stands for: at its path while the row there carries its print,
 //! else where the last read of the index found it by that print. Reading never rewrites a member.
-//! A placeholder stands at the file at its path where no other member does, worked out at each read.
+//! A placeholder stands at the file at its path where no other member does, shows it beside one there
+//! until the file is read, and is hidden behind it once read: worked out at each read.
 
-use super::member::Member;
+use super::member::{Member, read};
 use super::{Project, root_order};
 use crate::index::Entry;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -31,26 +32,32 @@ impl<'a> Reach<'a> {
 }
 
 /// Each project's members, in order, with the row each stands for; a row a member stands at by its
-/// own path is never also where another was found, nor where a placeholder stands.
+/// own path is never also where another was found, nor where a placeholder stands once read.
 pub fn resolve<'a>(projects: &[Project], reach: &Reach<'a>) -> Vec<Vec<Option<&'a Entry>>> {
+    stands(projects, reach).into_iter().map(|rows| rows.into_iter().map(|r| r.map(|(row, _)| row)).collect()).collect()
+}
+
+/// `resolve`, each row marked whether its member holds it: a placeholder in another project shows a
+/// file not read yet beside its holder, as nothing proves the holder's print there yet.
+pub(super) fn stands<'a>(projects: &[Project], reach: &Reach<'a>) -> Vec<Vec<Option<(&'a Entry, bool)>>> {
     let mut by_path: HashMap<&str, &'a Entry> = HashMap::new();
     for row in reach.rows {
         by_path.entry(row.path.as_str()).or_insert(row);
     }
     let mut claimed: HashSet<&str> = HashSet::new();
-    let mut out: Vec<Vec<Option<&'a Entry>>> = projects.iter().map(|p| vec![None; p.members.len()]).collect();
+    let mut out: Vec<Vec<Option<(&'a Entry, bool)>>> = projects.iter().map(|p| vec![None; p.members.len()]).collect();
     let placed = || projects.iter().enumerate().flat_map(|(p, project)| project.members.iter().enumerate().map(move |(m, member)| (p, m, member)));
     for (p, m, member) in placed().filter(|(_, _, member)| member.placeholder().is_none()) {
         let Some(row) = member.path.as_deref().and_then(|path| by_path.get(path)) else { continue };
         if !reach.found.contains_key(member) && member.agrees(&row.fingerprint) {
             claimed.insert(row.path.as_str());
-            out[p][m] = Some(*row);
+            out[p][m] = Some((*row, true));
         }
     }
     for (p, m, member) in placed().filter(|(_, _, member)| member.placeholder().is_none()) {
         let Some(row) = reach.found.get(member).and_then(|path| by_path.get(path.as_str())) else { continue };
         if claimed.insert(row.path.as_str()) {
-            out[p][m] = Some(*row);
+            out[p][m] = Some((*row, true));
         }
     }
     // The newest project's placeholder first, as the newest keeps a photo.
@@ -59,8 +66,11 @@ pub fn resolve<'a>(projects: &[Project], reach: &Reach<'a>) -> Vec<Vec<Option<&'
     waiting.sort_by(|a, b| made(b.0).total_cmp(&made(a.0)));
     for (p, m, member) in waiting {
         let Some(row) = place(member, reach).and_then(|path| by_path.get(path)) else { continue };
+        let shown = |out: &[Option<(&Entry, bool)>]| out.iter().flatten().any(|(r, _)| r.path == row.path);
         if claimed.insert(row.path.as_str()) {
-            out[p][m] = Some(*row);
+            out[p][m] = Some((*row, true));
+        } else if read(&row.fingerprint).is_none() && !shown(&out[p]) {
+            out[p][m] = Some((*row, false));
         }
     }
     out
@@ -81,11 +91,23 @@ pub fn shadowed(projects: &[Project], reach: &Reach) -> Vec<usize> {
 /// The member each row shown stands for, by the row's path: its project's place and its own.
 pub fn holders(projects: &[Project], reach: &Reach) -> HashMap<String, (usize, usize)> {
     let mut out = HashMap::new();
-    for (p, rows) in resolve(projects, reach).into_iter().enumerate() {
+    for (p, rows) in stands(projects, reach).into_iter().enumerate() {
         for (m, row) in rows.into_iter().enumerate() {
-            if let Some(row) = row {
+            if let Some((row, true)) = row {
                 out.insert(row.path.clone(), (p, m));
             }
+        }
+    }
+    out
+}
+
+/// Every member each row shown stands for or beside, by the row's path, its holder first.
+pub(super) fn showing(projects: &[Project], reach: &Reach) -> HashMap<String, Vec<(usize, usize)>> {
+    let mut out: HashMap<String, Vec<(usize, usize)>> = HashMap::new();
+    for (p, rows) in stands(projects, reach).into_iter().enumerate() {
+        for (m, (row, holds)) in rows.into_iter().enumerate().filter_map(|(m, row)| Some((m, row?))) {
+            let at = out.entry(row.path.clone()).or_default();
+            if holds { at.insert(0, (p, m)) } else { at.push((p, m)) }
         }
     }
     out

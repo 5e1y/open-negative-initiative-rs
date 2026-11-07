@@ -49,8 +49,10 @@ impl Ctl {
             let s = &mut *guard;
             let (learned, standing) = match &s.index {
                 Some(index) if !s.org.projects.is_empty() => {
-                    let learned = oni_library::project_standing::learn(&mut s.org.projects, &s.rows, index);
-                    (learned, oni_library::project_standing::standing(&s.org.projects, &s.rows, index, &s.org.found))
+                    let stood = oni_library::project_standing::standing(&s.org.projects, &s.rows, index, &s.org.found);
+                    let learned = oni_library::project_standing::learn(&mut s.org.projects, &s.rows, index, &stood);
+                    // A member that learned its print is found by it: the read looks again.
+                    (learned, if learned { oni_library::project_standing::standing(&s.org.projects, &s.rows, index, &s.org.found) } else { stood })
                 }
                 _ => (false, Default::default()),
             };

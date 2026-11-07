@@ -173,7 +173,7 @@ fn adding_to_a_project_never_drops_another_silently() {
     let mut dropped = projects.clone();
     dropped.retain(|p| !p.members.is_empty());
     assert!(!dropped.iter().any(|p| p.id == first_id));
-    assert_eq!(remove_from(&mut projects, &reach, &picked(&["/r/a", "/r/c"]), target_id), 1, "only the member there is counted");
+    assert_eq!(remove_from(&mut projects, &reach, &picked(&["/r/a", "/r/c"]), target_id).len(), 1, "only the member there is counted");
 }
 
 #[test]

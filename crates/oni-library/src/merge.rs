@@ -51,9 +51,9 @@ pub fn projects(base: &[Project], ours: &[Project], theirs: &[Project]) -> Vec<P
     out
 }
 
-/// Whether this side left a project as it read it, a print it learned since aside.
+/// Whether this side left a project as it read it, a print it learned since aside, a placeholder's included.
 fn unchanged(read: &Project, mine: &Project) -> bool {
-    Project { members: project::printed(&read.members, &mine.members), ..read.clone() } == *mine
+    Project { members: project::learnt(&project::printed(&read.members, &mine.members), &mine.members), ..read.clone() } == *mine
 }
 
 /// Each field merged on its own; a print either side learned for a member is that member's on all three.
