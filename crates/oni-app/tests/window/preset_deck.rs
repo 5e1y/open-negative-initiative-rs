@@ -20,8 +20,8 @@ use crate::common;
 
 /// `DS.Control.cardLift`, `PresetCarousel.cardWidth` and `cardHeight`, `DS.Space.sm`.
 const LIFT: f32 = 6.0;
-const CARD_W: f32 = 72.0;
-const CARD_H: f32 = 104.0;
+const CARD_W: f32 = 96.0;
+const CARD_H: f32 = 64.0;
 const GAP: f32 = 8.0;
 const LOOKS: usize = 16;
 
@@ -105,7 +105,21 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     let (x0, rest_y) = first();
     let x = x0 + CARD_W / 2.0;
     let plus = x0 - GAP - CARD_W / 2.0;
-    let tab = common::the(w, Role::Button, "Presets").middle();
+    let tab_at = common::the(w, Role::Button, "Presets");
+    let tab = tab_at.middle();
+    let mid = LIFT + CARD_H / 2.0;
+
+    // The tab is a 24 pt target: its foot opens the deck, the canvas just above it does not.
+    assert!(tab_at.height >= 24.0, "{tab_at:?}");
+    click(&rig, tab.0, tab_at.y - 3.0);
+    rig.settle();
+    assert_eq!(first().1, rest_y, "twin: a click above the tab opens nothing");
+    click(&rig, tab.0, tab_at.y + tab_at.height - 2.0);
+    rig.settle();
+    assert!(first().1 < rest_y - CARD_H, "the tab's foot opens the deck");
+    click(&rig, tab.0, tab.1);
+    rig.settle();
+    assert_eq!(first().1, rest_y);
 
     // The tab alone answers while the deck is closed: neither the canvas's edge nor the tab's hover opens it.
     move_to(&rig, x, rest_y - 200.0);
@@ -115,7 +129,7 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     click(&rig, tab.0, tab.1);
     rig.settle();
     let up_y = first().1;
-    assert!(up_y < rest_y - 80.0, "twin: a click on the tab opens it: {up_y} against {rest_y}");
+    assert!(up_y < rest_y - CARD_H, "twin: a click on the tab opens it: {up_y} against {rest_y}");
     assert_eq!(common::the(w, Role::Button, "Presets").middle(), tab, "the tab stays under the pointer");
     assert!(!deck.get_saving(), "the tab saves nothing");
     click(&rig, tab.0, tab.1);
@@ -123,7 +137,7 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     assert_eq!(first().1, rest_y, "a second click on the tab closes it");
     click(&rig, tab.0, tab.1);
     rig.settle();
-    move_to(&rig, x, up_y + 52.0);
+    move_to(&rig, x, up_y + mid);
     assert_eq!(first().1, up_y, "the pointer onto the cards keeps it open");
     move_to(&rig, x, up_y - 200.0);
     assert_eq!(first().1, rest_y, "the pointer off the deck closes it");
@@ -142,26 +156,26 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     move_to(&rig, x, rest_y - 200.0);
     click(&rig, tab.0, tab.1);
     rig.settle();
-    move_to(&rig, x0 - GAP / 2.0, up_y + 52.0);
-    click(&rig, x0 - GAP / 2.0, up_y + 52.0);
+    move_to(&rig, x0 - GAP / 2.0, up_y + mid);
+    click(&rig, x0 - GAP / 2.0, up_y + mid);
     rig.settle();
     assert!(!deck.get_saving(), "twin: the gap beside the card opens nothing");
 
     // A wheel over a card keeps the deck up and the card hovered; a vertical one scrolls the roll.
-    move_to(&rig, x, up_y + 52.0);
+    move_to(&rig, x, up_y + mid);
     assert_eq!(deck.get_hovered(), 0);
-    wheel(&rig, x, up_y + 52.0, 0.0, 40.0);
+    wheel(&rig, x, up_y + mid, 0.0, 40.0);
     assert_eq!(first(), (x0, up_y), "twin: the roll's start holds against a wheel towards it");
     assert_eq!(deck.get_hovered(), 0, "the wheel keeps the card hovered");
-    wheel(&rig, x, up_y + 52.0, 0.0, -40.0);
+    wheel(&rig, x, up_y + mid, 0.0, -40.0);
     assert_eq!(first().1, up_y, "the wheel keeps the deck up");
     assert!(first().0 < x0 - 20.0, "a vertical wheel scrolls the roll: {} against {x0}", first().0);
-    wheel(&rig, x, up_y + 52.0, 0.0, 400.0);
+    wheel(&rig, x, up_y + mid, 0.0, 400.0);
     assert_eq!(first().0, x0);
-    wheel(&rig, x, up_y + 52.0, -40.0, 0.0);
+    wheel(&rig, x, up_y + mid, -40.0, 0.0);
     assert!(first().0 < x0 - 20.0, "a sideways wheel still scrolls the roll: {} against {x0}", first().0);
     assert_eq!(first().1, up_y, "and keeps the deck up");
-    wheel(&rig, x, up_y + 52.0, 400.0, 0.0);
+    wheel(&rig, x, up_y + mid, 400.0, 0.0);
     move_to(&rig, x, rest_y - 200.0);
     assert_eq!(first().1, rest_y);
 
@@ -208,11 +222,13 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     assert!(Tint::ALL.iter().any(|t| t.wants_dark_ink()) && Tint::ALL.iter().any(|t| !t.wants_dark_ink()), "twin: one ink for all would miss a tint");
     assert_eq!(deck.get_form_balance(), 0, "the photo's own balance proposes Not carried");
     // The menu drops under its field: its third line, Automatic, is where the pointer finds it.
-    // The sheet is centred in the window, the field under Settings' three switches and Colour's title.
-    click(&rig, 640.0, 561.0);
+    let field = common::the(w, Role::Button, "Not carried").middle();
+    click(&rig, field.0, field.1);
     rig.settle();
     println!("shot {}", rig.shot("preset-balance-menu").display());
-    click(&rig, 600.0, 649.0);
+    let automatic = common::in_popup(w, Role::Button, "Automatic WB (Temperature, Tint)");
+    assert!(automatic.y > field.1, "the menu drops under its field: {automatic:?}");
+    click(&rig, automatic.middle().0, automatic.middle().1);
     rig.settle();
     assert_eq!(deck.get_form_balance(), 2, "Automatic picked under the field");
     deck.invoke_save_cancelled();
@@ -228,8 +244,8 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     rig.pump();
     assert!(deck.get_rows() == rows, "a keystroke keeps the rows' model");
     assert_eq!(deck.get_rows().row_data(0).unwrap().name.as_str(), "Renamed", "twin: the row shows the name typed");
-    // The editor is centred in the window, 146 px lower than a margin under its top.
-    click(&rig, 745.0, 278.0);
+    let name = common::the(w, Role::TextInput, "Preset name").middle();
+    click(&rig, name.0, name.1);
     rig.key("\n");
     assert!(!deck.get_editing(), "Return in a field is Done");
     let _ = std::fs::remove_dir_all(&root);

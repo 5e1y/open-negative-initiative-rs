@@ -7011,5 +7011,26 @@
     "title": "Every DONE is the accent keycap: the crop's and De-dust's as a sheet's, EXPORT laying its accent down while a tool is open",
     "status": "done",
     "detail": "UI evaluation (Consistency minor): DONE was a dark keycap in Crop and De-dust and in the stock board's bar, a blue one in Settings and the sheets. The tools' DONE (ModeHeader) and a sheet bar's exit key now wear the accent as every SheetFooter commit does; while the crop or De-dust stands open its DONE is the view's one primary, so the bar's EXPORT (or update) slot shows plain until the tool is left. Checks: window toolbar_accent the_accent_lands_on_each_screens_own_commit (the accent checks moved out of toolbar.rs) reads, in the crop and in De-dust, DONE in the accent and EXPORT without it (twin: the tool left, EXPORT takes it back and no DONE shows; the old panel fails)."
+  },
+  {
+    "id": 1430,
+    "type": "interface",
+    "title": "The preset sheets fit what they carry, under one heading order",
+    "status": "done",
+    "detail": "Evaluation r4: the Save a Preset sheet cut a row mid-line at a fixed 540 pt and the editor's settings scrolled under its footer at 420 pt, while the window had room; a small grey Carries sat over larger bold block titles. Both sheets now take their content's height, which the window's room caps, the form scrolling over a footer that stays once it runs short. The blocks stand in two columns (Colour alone in the first), the white balance, a choice and no box, over them at the sheet's width so its menu reads whole, and the name beside the colour; the save sheet fits a 1280 x 800 window and the editor the evaluation's 1728 x 1017. Carries is the section heading with its note, the block titles a step under it as the form's other labels. Only the sheets move: what a preset or a copy carries, and every render, stay. Checks: app presets each_column_opens_on_a_title_that_leads_it_alone (twin: a second lead in a column fails), window presets fits (the last box above the footer, a footer's step from it; twin: a card taller than its content fails), the editor's footer held in an 800 pt window (twin: its form's foot scrolled out of sight), no balance choice on the copy sheet (twin: the save sheet shows it)."
+  },
+  {
+    "id": 1431,
+    "type": "interface",
+    "title": "A preset card is its colour and its name on one line; the deck's tab a 24 pt target",
+    "status": "done",
+    "detail": "Evaluation r4: the card broke its name over two lines under a large PRE monogram that read as a placeholder, and the Presets tab was 72 x 16 pt. The card is now the preset's tint at the 35 mm frame's 3:2 (96 x 64), its name on one line at its foot, elided past its width; the editor's list keeps the monogram in its badge. The tab is 96 x 24 and the cards' band is laid on it rather than centred in the deck, so a card's foot stays clear of the tab. Checks: window preset_deck the tab is 24 pt and its foot opens the deck (twin: a click just above it opens nothing), the card and the \"+\" card answer at their new size; lab the_lab_and_its_pages_compile."
+  },
+  {
+    "id": 1432,
+    "type": "interface",
+    "title": "Copy Settings can stop asking until the app quits",
+    "status": "done",
+    "detail": "Owner's decision after evaluation r4: Copy kept its sheet and gained Don't ask again this session; ticked and committed, Copy, the bar's, the menu's and a cell's alike, takes the last chosen boxes at once until the app quits, without opening the sheet. Escape or Cancel drops the choice. The choice lives in the session, never in preferences. Checks: window presets clicks the toggle through the pointer, Escape keeps the sheet asking (twin), then Return; the next Copy opens nothing and the paste lays the vignette moved since and leaves Lighting, the box left out."
   }
 ]

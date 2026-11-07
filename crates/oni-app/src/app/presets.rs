@@ -30,6 +30,8 @@ pub(super) struct Shelf {
     measuring: bool,
     menu: Option<Id>,
     form: Option<Form>,
+    /// Copy Settings told not to ask again: until the app quits, Copy takes the last boxes at once.
+    copy_at_once: bool,
     /// Raised by every edit in the editor; a write armed under an older count is dropped.
     serial: u64,
     /// The deck and the menu's list as last handed over: a new model would drop the hovered card.
@@ -38,8 +40,9 @@ pub(super) struct Shelf {
 
 enum Form {
     Saving(Preset),
-    /// Copy Settings: the boxes of the look the copy carries, of the photo `from` or the open one.
-    Copying { draft: Preset, from: Option<String> },
+    /// Copy Settings: the boxes of the look the copy carries, of the photo `from` or the open one,
+    /// and whether its commit stops the asking.
+    Copying { draft: Preset, from: Option<String>, at_once: bool },
     Editing { working: Vec<Preset>, selected: Option<usize> },
 }
 
@@ -97,47 +100,52 @@ fn card(p: &Preset) -> PresetCard {
     }
 }
 
-/// One line of the Carries picker.
+/// One line of the Carries picker: a block's title or one of its boxes.
 enum Line {
     Title(&'static str),
-    Balance,
     Box(&'static carries::Entry),
 }
 
-/// Each block's title, the balance choice under Colour, then its boxes; a copy shows the boxes of
-/// the look alone, which hold no balance.
-fn layout(copying: bool) -> Vec<Line> {
+/// The column a block stands in: Colour, the longest, alone in the first, the others beside it.
+fn column(block: &carries::Block) -> usize {
+    usize::from(block.id != "Colour")
+}
+
+/// Each block's title then its boxes, each with its column; a copy shows the boxes of the look alone.
+/// The white balance, a choice and no box, stands over them all.
+fn layout(copying: bool) -> Vec<(usize, Line)> {
     let mut lines = Vec::new();
     for block in &carries::BLOCKS {
         let boxes: Vec<Line> = block.entries.iter().filter(|e| !copying || carries::pasted(e)).map(Line::Box).collect();
         if boxes.is_empty() {
             continue;
         }
-        lines.push(Line::Title(block.title));
-        if block.id == "Colour" && !copying {
-            lines.push(Line::Balance);
-        }
-        lines.extend(boxes);
+        let at = column(block);
+        lines.push((at, Line::Title(block.title)));
+        lines.extend(boxes.into_iter().map(|b| (at, b)));
     }
     lines
 }
 
 fn carries_lines(parameters: &BTreeSet<String>, copying: bool) -> Vec<CarriesLine> {
+    let mut started = [false; 2];
     layout(copying)
         .into_iter()
-        .map(|line| match line {
-            Line::Title(title) => CarriesLine { kind: 0, text: tr(title).into(), on: false },
-            Line::Balance => CarriesLine { kind: 1, text: carries::white_balance(parameters).label().into(), on: false },
-            Line::Box(entry) => CarriesLine { kind: 2, text: tr(entry.label).into(), on: carries::is_on(entry, parameters) },
+        .map(|(at, line)| {
+            let (column, lead) = (at as i32, !std::mem::replace(&mut started[at], true));
+            match line {
+                Line::Title(title) => CarriesLine { title: true, text: tr(title).into(), on: false, column, lead },
+                Line::Box(entry) => CarriesLine { title: false, text: tr(entry.label).into(), on: carries::is_on(entry, parameters), column, lead },
+            }
         })
         .collect()
 }
 
-/// The box a Carries line stands for, `None` for a title or the balance choice.
+/// The box a Carries line stands for, `None` for a title.
 fn entry_at(line: usize, copying: bool) -> Option<&'static carries::Entry> {
-    match layout(copying).into_iter().nth(line)? {
+    match layout(copying).into_iter().nth(line)?.1 {
         Line::Box(entry) => Some(entry),
-        _ => None,
+        Line::Title(_) => None,
     }
 }
 
@@ -184,17 +192,33 @@ mod tests {
         let parameters = carries::proposed(&PipelineSettings::default());
         for copying in [false, true] {
             let lines = carries_lines(&parameters, copying);
-            let boxes: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.kind == 2).map(|(i, _)| i).collect();
+            let boxes: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| !l.title).map(|(i, _)| i).collect();
             let offered: Vec<&carries::Entry> = carries::entries().filter(|e| !copying || carries::pasted(e)).collect();
             assert_eq!(boxes.len(), offered.len());
             for (i, entry) in boxes.iter().zip(offered) {
                 assert_eq!(entry_at(*i, copying).map(|e| e.id), Some(entry.id));
                 assert_eq!(lines[*i].text.as_str(), entry.label);
             }
-            // Twin: a title or the balance choice is no box.
-            assert!(lines.iter().enumerate().filter(|(_, l)| l.kind != 2).all(|(i, _)| entry_at(i, copying).is_none()));
-            assert_eq!(lines.iter().any(|l| l.kind == 1), !copying, "a copy holds no balance choice");
+            // Twin: a title is no box.
+            assert!(lines.iter().enumerate().filter(|(_, l)| l.title).all(|(i, _)| entry_at(i, copying).is_none()));
         }
         assert!(carries_lines(&parameters, true).len() < carries_lines(&parameters, false).len(), "a copy offers fewer boxes");
+    }
+
+    #[test]
+    fn each_column_opens_on_a_title_that_leads_it_alone() {
+        let parameters = carries::proposed(&PipelineSettings::default());
+        for copying in [false, true] {
+            let lines = carries_lines(&parameters, copying);
+            for column in [0, 1] {
+                let own: Vec<&CarriesLine> = lines.iter().filter(|l| l.column == column).collect();
+                assert!(own.first().is_some_and(|l| l.title && l.lead), "column {column} opens on its leading title");
+                // Twin: no later line leads, or its block would stand flush against the one above.
+                assert!(own.iter().skip(1).all(|l| !l.lead), "column {column} has one lead");
+            }
+            let colour = lines.iter().find(|l| l.title && l.text == "Colour").unwrap();
+            assert_eq!(colour.column, 0, "Colour stands alone in the first column");
+            assert!(lines.iter().filter(|l| l.column == 0).all(|l| !l.title || l.text == "Colour"));
+        }
     }
 }

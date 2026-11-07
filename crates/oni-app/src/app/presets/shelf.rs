@@ -44,6 +44,13 @@ impl Ctl {
             }
         });
         let p = me.clone();
+        g.on_copy_at_once_toggled(move |on| {
+            if let Some(Form::Copying { at_once, .. }) = p.state.borrow_mut().shelf.form.as_mut() {
+                *at_once = on;
+            }
+            p.publish_form(false);
+        });
+        let p = me.clone();
         g.on_save_cancelled(move || p.close_preset_form());
         let p = me.clone();
         g.on_save_confirmed(move || p.save_preset_confirmed());

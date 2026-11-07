@@ -34,8 +34,9 @@ export component PresetDeck inherits Rectangle {
             root.roll-by(abs(event.delta-y) > abs(event.delta-x) ? event.delta-y : event.delta-x);
             accept
         }
-        // The cards rise out of the tab's top edge and sink back behind it.
+        // The cards rise out of the tab's top edge and sink back behind it, their band on the tab.
         Rectangle {
+            y: 0;
             height: root.band;
             clip: true;
             HorizontalLayout {
@@ -82,7 +83,6 @@ export component PresetDeck inherits Rectangle {
                             PresetFace {
                                 y: PresetStyle.lift - (Presets.hovered == i ? PresetStyle.lift : 0px);
                                 lifted: Presets.hovered == i;
-                                abbreviation: card.abbreviation;
                                 name: card.name;
                                 fill: card.fill;
                                 ink: card.ink;

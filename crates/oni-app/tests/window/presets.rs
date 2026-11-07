@@ -20,6 +20,18 @@ fn exposure_of(path: &Path) -> f32 {
     Field::Exposure.knob().get(&loaded.settings)
 }
 
+/// A sheet sized to its content: the last box of each column shows above the footer's `commit`, a
+/// footer's step from it, the footer inside the window.
+fn fits(w: &oni_app::MainWindow, commit: &str) {
+    let key = common::the(w, AccessibleRole::Button, commit);
+    let size = w.window().size().to_logical(w.window().scale_factor());
+    assert!(key.y + key.height <= size.height, "{commit} in the window: {key:?}");
+    let lowest = ["Saturation Curve", "Scanner Keypad"].map(|name| common::the(w, AccessibleRole::Checkbox, name)).into_iter().fold(0.0, |y: f32, b| y.max(b.y + b.height));
+    assert!(lowest < key.y, "every box above {commit}: {lowest} against {key:?}");
+    // Twin: a card taller than its content would leave the boxes far above its footer.
+    assert!(key.y - lowest < 100.0, "the card ends with its content: {lowest} against {key:?}");
+}
+
 pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
@@ -83,12 +95,14 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert!(presets.get_saving());
     assert_eq!(presets.get_form_name().as_str(), "Preset 01");
     let lines = presets.get_form_carries();
-    let ticked: Vec<String> = (0..lines.row_count()).filter_map(|i| lines.row_data(i)).filter(|l| l.kind == 2 && l.on).map(|l| l.text.to_string()).collect();
+    let ticked: Vec<String> = (0..lines.row_count()).filter_map(|i| lines.row_data(i)).filter(|l| !l.title && l.on).map(|l| l.text.to_string()).collect();
     assert_eq!(ticked, ["Lighting"], "the rows Exposure moved, and only those");
-    let balance = (0..lines.row_count()).filter_map(|i| lines.row_data(i)).find(|l| l.kind == 1).unwrap();
-    assert_eq!(balance.text.as_str(), "Not carried");
+    assert_eq!(presets.get_form_balance(), 0, "Not carried");
     rig.settle();
     println!("shot {}", rig.shot("presets-save-sheet").display());
+    fits(w, "Save");
+    // The balance choice over the blocks, which a copy goes without.
+    common::the(w, AccessibleRole::Button, "Not carried");
     presets.invoke_form_named("Bright".into());
     presets.invoke_form_tinted(2);
     presets.invoke_save_confirmed();
@@ -107,7 +121,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.settle();
     // A frame drawn first: the card's place is known once it has been laid out.
     rig.shot("presets-deck-rest");
-    let first = || (presets.get_first_x() + 36.0, presets.get_first_y());
+    let first = || (presets.get_first_x() + 48.0, presets.get_first_y());
     let (x, rest_y) = first();
     let move_to = |x: f32, y: f32| {
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x, y) });
@@ -120,8 +134,8 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     common::click(&rig, w, tab);
     rig.settle();
     let (_, up_y) = first();
-    assert!(up_y < rest_y - 80.0, "the tab opens the deck: {up_y} against {rest_y}");
-    move_to(x, up_y + 52.0);
+    assert!(up_y < rest_y - 64.0, "the tab opens the deck: {up_y} against {rest_y}");
+    move_to(x, up_y + 38.0);
     assert_eq!(presets.get_hovered(), 0, "the pointer on the card hovers it");
     println!("shot {}", rig.shot("presets-deck").display());
     move_to(x, rest_y - 200.0);
@@ -149,16 +163,16 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     g.invoke_step(Field::Exposure.index(), 5);
     g.invoke_step(Field::Vignette.index(), -5);
     rig.pump();
-    let vignetted = ctl.state.borrow().store().get(Field::Vignette);
     ctl.act(oni_app::Act::Copy);
     rig.pump();
     assert!(presets.get_copying() && presets.get_saving(), "Copy opens its sheet");
     let boxes = || {
         let lines = presets.get_form_carries();
-        (0..lines.row_count()).filter_map(|i| lines.row_data(i).map(|l| (i, l))).filter(|(_, l)| l.kind == 2).map(|(i, l)| (i, l.text.to_string(), l.on)).collect::<Vec<_>>()
+        (0..lines.row_count()).filter_map(|i| lines.row_data(i).map(|l| (i, l))).filter(|(_, l)| !l.title).map(|(i, l)| (i, l.text.to_string(), l.on)).collect::<Vec<_>>()
     };
     assert!(boxes().iter().all(|b| b.2), "the look whole at first");
-    assert!(!boxes().iter().any(|b| b.1 == "Flat-Field") && !presets.get_form_carries().iter().any(|l| l.kind == 1), "no roll box, no balance choice");
+    assert!(!boxes().iter().any(|b| b.1 == "Flat-Field"), "no roll box");
+    assert!(common::placed(w, AccessibleRole::Button, "Not carried").is_empty(), "twin: no balance choice");
     let lighting = boxes().iter().find(|b| b.1 == "Lighting").unwrap().0;
     presets.invoke_form_ticked(lighting as i32, false);
     rig.settle();
@@ -168,8 +182,26 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     ctl.act(oni_app::Act::Copy);
     rig.pump();
     assert_eq!(boxes().iter().filter(|b| !b.2).map(|b| b.1.as_str()).collect::<Vec<_>>(), ["Lighting"], "the next copy opens on the last one's choice");
+
+    // "Don't ask again" holds through a copy alone: Escape drops it, and the sheet asks again.
+    let at_once = || common::the(w, AccessibleRole::Checkbox, "Don\u{2019}t ask again this session").middle();
+    common::click(&rig, w, at_once());
+    assert!(presets.get_copy_at_once(), "the click ticks it");
     rig.key("\u{1b}");
     assert!(!presets.get_saving());
+    ctl.act(oni_app::Act::Copy);
+    rig.pump();
+    assert!(presets.get_saving() && !presets.get_copy_at_once(), "twin: a sheet cancelled asks again, the choice off");
+    common::click(&rig, w, at_once());
+    rig.key("\r");
+    assert!(!presets.get_saving());
+    // Then Copy takes the last boxes at once: the vignette moved since reaches the board, Lighting not.
+    g.invoke_step(Field::Vignette.index(), -5);
+    rig.pump();
+    let vignetted = ctl.state.borrow().store().get(Field::Vignette);
+    ctl.act(oni_app::Act::Copy);
+    rig.pump();
+    assert!(!presets.get_saving(), "Copy asks no more");
 
     // To the gallery, B and C picked, a click on the card applies to both as one gallery step.
     rig.chord(Key::Control, "g");
@@ -208,6 +240,15 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert!(presets.get_editing() && presets.get_form_shown());
     rig.settle();
     println!("shot {}", rig.shot("presets-editor").display());
+    // Short of room, the form scrolls under a footer that stays; the evaluator's window holds it whole.
+    let done = common::the(w, AccessibleRole::Button, "Done");
+    assert!(done.y + done.height <= 800.0, "the footer stays in the window: {done:?}");
+    assert!(common::placed(w, AccessibleRole::Checkbox, "Saturation Curve").is_empty(), "twin: the form's foot scrolled out of sight");
+    rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
+    rig.settle();
+    fits(w, "Done");
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    rig.settle();
     assert_eq!(presets.get_selected(), 0);
     presets.invoke_form_named("Brighter".into());
     presets.invoke_form_noted("For thin negatives".into());

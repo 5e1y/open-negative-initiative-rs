@@ -1,19 +1,17 @@
 // The gauges of single views: the preset deck, the Help menu's windows, the stock picker.
 import { DS } from "tokens.slint";
-import { Motion } from "theme.slint";
+import { Motion, SheetStyle } from "theme.slint";
 
-// `PresetCarousel`'s gauge: a card, the strip left showing at rest, the fade at each end, the lift.
+// `PresetCarousel`'s gauge: a card at the 35 mm frame's 3:2, wide enough for a name on one line;
+// the tab, a 24 pt target; the lift; the sheets, the editor's list beside the save sheet's form.
 export global PresetStyle {
-    out property <length> card-width: 72px;
-    out property <length> card-height: 104px;
-    out property <length> peek: DS.space-md;
+    out property <length> card-width: 96px;
+    out property <length> card-height: 64px;
+    out property <length> peek: DS.space-lg;
     out property <length> lift: DS.control-card-lift;
     out property <length> swatch: DS.control-swatch-size;
-    out property <length> save-width: DS.control-preset-save-width;
-    out property <length> save-height: DS.control-preset-save-height;
-    out property <length> editor-width: DS.control-preset-editor-width;
-    out property <length> editor-height: DS.control-preset-editor-height;
     out property <length> editor-list: DS.control-preset-editor-list-width;
+    out property <length> editor-width: DS.control-preset-editor-list-width + SheetStyle.wide-width;
     out property <length> mark: DS.typo-mark-size;
     out property <duration> rise: Motion.quick;
     // The description's three lines at the label's leading, the multiline field's padding around them.

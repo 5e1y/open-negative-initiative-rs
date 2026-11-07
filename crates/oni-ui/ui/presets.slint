@@ -1,11 +1,13 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, Depth, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm, SheetFooter } from "ds/ds.slint";
+import { Space, Depth, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, TextField, Toggle, Picker, Divider, Scroller, Sheet, MenuLine, Field, Row, RowForm, SheetFooter, SectionStyle, SheetStyle, Engraved, Section } from "ds/ds.slint";
 
-// A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
+// A card as the deck and the editor's list draw it: the name on the tint, in its own ink; the
+// list's badge wears the monogram.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
 
-// One line of the Carries picker: 0 a block's title, 1 the white balance choice, 2 a box.
-export struct CarriesLine { kind: int, text: string, on: bool }
+// One line of the Carries picker: a block's title or a box, the column it stands in, and whether
+// it leads that column.
+export struct CarriesLine { title: bool, text: string, on: bool, column: int, lead: bool }
 
 export global Presets {
     in property <[PresetCard]> cards;
@@ -52,6 +54,9 @@ export global Presets {
     callback form-tinted(int);
     callback form-ticked(int, bool);
     callback form-balanced(int);
+    // Copy Settings' "Don't ask again this session", which its commit takes.
+    in property <bool> copy-at-once;
+    callback copy-at-once-toggled(bool);
     callback save-cancelled();
     callback save-confirmed();
 
@@ -114,8 +119,6 @@ component TintPicker inherits HorizontalLayout {
     }
 }
 
-// `PresetCarriesPicker`: the blocks' boxes, the white balance a choice of three, and the note
-// when nothing is ticked.
 // `DSPicker` for the white balance: its menu drops under the field, the current choice ticked.
 component BalancePicker inherits Picker {
     entries: Presets.balance-names;
@@ -123,28 +126,49 @@ component BalancePicker inherits Picker {
     chosen(i) => { Presets.form-balanced(i); }
 }
 
-component CarriesPicker inherits VerticalLayout {
-    spacing: Space.xs;
+// One column of the Carries picker: every line passes, its own laid; a block's title stands a step
+// further from the rows before it than they stand apart.
+component CarriesColumn inherits VerticalLayout {
+    in property <int> column;
+    alignment: start;
+    horizontal-stretch: 1;
+    min-width: 0px;
+    preferred-width: 0px;
     for line[i] in Presets.form-carries: VerticalLayout {
-        spacing: Space.xs;
-        // The blocks stand a step further apart than their rows.
-        if line.kind == 0 && i > 0: Rectangle { height: Space.m - 2 * Space.xs; }
-        if line.kind == 0: Label { text: line.text; role: TextRole.section; }
-        if line.kind == 1: Field {
-            label: @tr("White balance");
-            help: Presets.balance-help;
-            BalancePicker { value: line.text; }
+        if line.column == root.column: VerticalLayout {
+            padding-top: line.lead ? 0px : line.title ? Space.m : Space.xs;
+            // A step under Carries, as the form's other labels: the boxes under it carry the ink.
+            if line.title: Label { text: line.text; tone: Tone.secondary; }
+            if !line.title: Toggle {
+                on: line.on;
+                label: line.text;
+                wrap: true;
+                toggled(on) => { Presets.form-ticked(i, on); }
+            }
         }
-        if line.kind == 2: Toggle {
-            on: line.on;
-            label: line.text;
-            toggled(on) => { Presets.form-ticked(i, on); }
-        }
+    }
+}
+
+// `PresetCarriesPicker`: the white balance, a choice of three over the blocks, a copy's alone without
+// it; the blocks' boxes in two columns, so the sheet holds them whole; the note when none is ticked.
+component CarriesPicker inherits VerticalLayout {
+    in property <bool> copying;
+    spacing: Space.m;
+    if !root.copying: Field {
+        label: @tr("White balance");
+        help: Presets.balance-help;
+        BalancePicker { value: Presets.balance-names[Presets.form-balance]; }
+    }
+    HorizontalLayout {
+        spacing: Space.l;
+        CarriesColumn { column: 0; }
+        CarriesColumn { column: 1; }
     }
     if Presets.form-empty: Label { role: TextRole.note; text: Presets.carries-nothing; }
 }
 
-// The fields of both sheets; the description is the editor's alone, the boxes a copy's alone.
+// The fields of both sheets, then what the preset carries under its own heading; the description is
+// the editor's alone, the boxes alone a copy's, which may stop asking.
 component PresetForm inherits VerticalLayout {
     in property <bool> noted;
     in property <bool> copying;
@@ -152,18 +176,32 @@ component PresetForm inherits VerticalLayout {
     in property <bool> focused;
     callback named(string);
     spacing: Space.l;
-    if !root.copying: Field {
-        label: @tr("Name");
-        TextField {
-            text: Presets.form-name;
-            placeholder: @tr("Preset name");
-            edited(t) => { Presets.form-named(t); }
-            accepted(t) => { root.named(t); }
-            init => {
-                if (root.focused) {
-                    self.take-focus-selecting();
+    // The name and the colour side by side, over the two columns of what the preset carries.
+    if !root.copying: HorizontalLayout {
+        spacing: Space.l;
+        Field {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            preferred-width: 0px;
+            label: @tr("Name");
+            TextField {
+                text: Presets.form-name;
+                placeholder: @tr("Preset name");
+                edited(t) => { Presets.form-named(t); }
+                accepted(t) => { root.named(t); }
+                init => {
+                    if (root.focused) {
+                        self.take-focus-selecting();
+                    }
                 }
             }
+        }
+        Field {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            preferred-width: 0px;
+            label: @tr("Colour");
+            TintPicker { }
         }
     }
     // Three lines, wrapped, as `lineLimit(3, reservesSpace: true)`.
@@ -178,105 +216,125 @@ component PresetForm inherits VerticalLayout {
             edited(t) => { Presets.form-noted(t); }
         }
     }
-    if !root.copying: Field {
-        label: @tr("Colour");
-        TintPicker { }
-    }
-    Field {
-        label: @tr("Carries");
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        separated: !root.copying;
+        before: root.copying ? SectionStyle.flush : SectionStyle.sheet-before;
+        title: @tr("Carries");
         help: Presets.carries-help;
-        CarriesPicker { }
+        CarriesPicker { copying: root.copying; }
+    }
+    if root.copying: Toggle {
+        label: @tr("Don’t ask again this session");
+        on: Presets.copy-at-once;
+        toggled(on) => { Presets.copy-at-once-toggled(on); }
     }
 }
 
-// `PresetSaveSheet`: a name, a colour, the rows it carries; Save stays dark on a blank name. As
-// Copy Settings, the boxes alone, Copy dark while none is ticked.
+// `PresetSaveSheet`: a name, a colour, the rows it carries, or a copy's boxes alone, its commit dark
+// while blank or bare; as tall as its content, the form scrolling over the footer once room runs short.
 export component PresetSaveSheet inherits Sheet {
-    title: Presets.copying ? @tr("Copy Settings") : @tr("Save a Preset");
-    card-width: PresetStyle.save-width;
-    card-height: PresetStyle.save-height;
+    wide: true;
+    bleed: true;
+    card-height: body.preferred-height;
     dismissed => { Presets.save-cancelled(); }
-    Scroller {
-        vertical-stretch: 1;
-        content-height: form.preferred-height;
-        form := PresetForm {
-            width: parent.width;
-            copying: Presets.copying;
-            focused: true;
-            // A toggle's or a picker's lip ends the form, kept at the scroll's end.
-            padding-bottom: Depth.lip-reach;
-            named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
+    body := VerticalLayout {
+        padding: SheetStyle.padding;
+        spacing: SheetStyle.gap;
+        Engraved {
+            role: TextRole.title;
+            text: Presets.copying ? @tr("Copy Settings") : @tr("Save a Preset");
+            wrap: word-wrap;
+        }
+        Scroller {
+            vertical-stretch: 1;
+            preferred-height: form.preferred-height;
+            content-height: form.preferred-height;
+            form := PresetForm {
+                width: parent.width;
+                copying: Presets.copying;
+                focused: true;
+                // A toggle's or a picker's lip ends the form, kept at the scroll's end.
+                padding-bottom: Depth.lip-reach;
+                named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
+            }
+        }
+        Divider { }
+        SheetFooter {
+            cancel: @tr("Cancel");
+            commit: Presets.copying ? @tr("Copy") : @tr("Save");
+            commit-enabled: Presets.form-valid;
+            cancelled => { Presets.save-cancelled(); }
+            committed => { Presets.save-confirmed(); }
         }
     }
-    Divider { }
-    SheetFooter {
-        cancel: @tr("Cancel");
-        commit: Presets.copying ? @tr("Copy") : @tr("Save");
-        commit-enabled: Presets.form-valid;
-        cancelled => { Presets.save-cancelled(); }
-        committed => { Presets.save-confirmed(); }
-    }
 }
 
-// `PresetEditor`: the presets in a list, the selected one's form, and the footer's keys; an edit
-// is written once the hand rests, and at once when another row or Done takes over.
+// `PresetEditor`: the list, the selected preset's form, the footer's keys, an edit written once the
+// hand rests or another row or Done takes over; as tall as the form, which scrolls once room runs short.
 export component PresetEditorSheet inherits Sheet {
     card-width: PresetStyle.editor-width;
-    card-height: PresetStyle.editor-height;
+    card-height: body.preferred-height;
     bleed: true;
     dismissed => { Presets.done(); }
-    HorizontalLayout {
-        vertical-stretch: 1;
-        Scroller {
-            width: PresetStyle.editor-list;
-            content-height: list.preferred-height;
-            list := VerticalLayout {
-                padding: Space.s;
-                spacing: Space.xxs;
-                alignment: start;
-                for card[i] in Presets.rows: Row {
-                    form: RowForm.sidebar;
-                    badge: card.abbreviation;
-                    title: card.name;
-                    detail: card.carries;
-                    badge-fill: card.fill;
-                    badge-ink: card.ink;
-                    selected: i == Presets.selected;
-                    clicked => { Presets.picked(i); }
+    body := VerticalLayout {
+        HorizontalLayout {
+            vertical-stretch: 1;
+            Scroller {
+                width: PresetStyle.editor-list;
+                preferred-height: 0px;
+                content-height: list.preferred-height;
+                list := VerticalLayout {
+                    padding: Space.s;
+                    spacing: Space.xxs;
+                    alignment: start;
+                    for card[i] in Presets.rows: Row {
+                        form: RowForm.sidebar;
+                        badge: card.abbreviation;
+                        title: card.name;
+                        detail: card.carries;
+                        badge-fill: card.fill;
+                        badge-ink: card.ink;
+                        selected: i == Presets.selected;
+                        clicked => { Presets.picked(i); }
+                    }
                 }
             }
-        }
-        Divider { vertical: true; hairline: true; }
-        // One instance per selected preset: its fields start from that preset's values.
-        for instance in Presets.form-instance: Scroller {
-            horizontal-stretch: 1;
-            content-height: form.preferred-height + 2 * Space.l;
-            form := PresetForm {
-                x: Space.l;
-                y: Space.l;
-                width: parent.width - 2 * Space.l;
-                noted: true;
-                named => { Presets.done(); }
+            Divider { vertical: true; hairline: true; }
+            // One instance per selected preset: its fields start from that preset's values.
+            for instance in Presets.form-instance: Scroller {
+                horizontal-stretch: 1;
+                preferred-height: form.preferred-height + 2 * Space.l;
+                content-height: form.preferred-height + 2 * Space.l;
+                form := PresetForm {
+                    x: Space.l;
+                    y: Space.l;
+                    width: parent.width - 2 * Space.l;
+                    noted: true;
+                    named => { Presets.done(); }
+                }
+            }
+            if !Presets.form-shown: VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                padding: Space.l;
+                Label { text: @tr("No preset selected"); role: TextRole.section; centred: true; }
+                Label { role: TextRole.note; text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
             }
         }
-        if !Presets.form-shown: VerticalLayout {
-            horizontal-stretch: 1;
-            alignment: center;
-            Label { text: @tr("No preset selected"); role: TextRole.section; centred: true; }
-            Label { role: TextRole.note; text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
+        Divider { }
+        // Delete alone at the left end, the keys that keep the preset beside DONE.
+        SheetFooter {
+            padding: Space.m;
+            remove: @tr("Delete");
+            remove-enabled: Presets.form-shown;
+            removed => { Presets.delete(); }
+            commit: @tr("Done");
+            committed => { Presets.done(); }
+            Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
+            Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
+            Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
         }
-    }
-    Divider { }
-    // Delete alone at the left end, the keys that keep the preset beside DONE.
-    SheetFooter {
-        padding: Space.m;
-        remove: @tr("Delete");
-        remove-enabled: Presets.form-shown;
-        removed => { Presets.delete(); }
-        commit: @tr("Done");
-        committed => { Presets.done(); }
-        Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
-        Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
-        Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
     }
 }

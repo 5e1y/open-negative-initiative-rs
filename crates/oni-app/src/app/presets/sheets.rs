@@ -21,34 +21,32 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// Copy Settings: the sheet opens on the boxes the last copy carried, the look's all at first,
-    /// for the photo `from` or the open one; never over an open sheet.
+    /// Copy Settings: the sheet on the boxes the last copy carried, the look's all at first, for the
+    /// photo `from` or the open one, never over an open sheet; told not to ask again, those at once.
     pub(in crate::app) fn ask_copy(self: &Rc<Self>, from: Option<String>) {
         if (from.is_none() && self.state.borrow().open.is_none()) || self.state.borrow().shelf_form_open() {
             return;
         }
-        self.clear_hover();
-        {
-            let mut s = self.state.borrow_mut();
+        let (rows, at_once) = {
+            let s = self.state.borrow();
             let whole = carries::pasted_rows();
             let rows = s.preferences.value(crate::preferences::COPY_CARRIES).and_then(serde_json::Value::as_array);
             let remembered: BTreeSet<String> =
                 rows.into_iter().flatten().filter_map(serde_json::Value::as_str).filter(|r| whole.contains(*r)).map(str::to_string).collect();
-            let draft = Preset::new("", if remembered.is_empty() { whole } else { remembered }, Tint::default(), PipelineSettings::default());
-            s.shelf.form = Some(Form::Copying { draft, from });
+            (if remembered.is_empty() { whole } else { remembered }, s.shelf.copy_at_once)
+        };
+        if at_once {
+            return self.copy(rows, from);
         }
+        self.clear_hover();
+        let draft = Preset::new("", rows, Tint::default(), PipelineSettings::default());
+        self.state.borrow_mut().shelf.form = Some(Form::Copying { draft, from, at_once: false });
         self.publish_form(true);
         self.publish_bar();
     }
 
-    /// The copy laid on the board with the boxes ticked, which the next copy opens on.
-    fn copy_confirmed(self: &Rc<Self>, rows: BTreeSet<String>, from: Option<String>) {
-        if rows.is_empty() {
-            return;
-        }
-        self.state.borrow_mut().shelf.form = None;
-        self.publish_form(false);
-        self.refocus();
+    /// The copy laid on the board with `rows`, which the next copy opens on.
+    fn copy(self: &Rc<Self>, rows: BTreeSet<String>, from: Option<String>) {
         self.remember(crate::preferences::COPY_CARRIES, rows.iter().cloned().collect::<Vec<_>>().into());
         let failure = {
             let mut s = self.state.borrow_mut();
@@ -64,15 +62,30 @@ impl Ctl {
         self.publish_bar();
     }
 
+    /// The copy sheet's commit: nothing while no box is ticked; its "Don't ask again" kept till quit.
+    fn copy_confirmed(self: &Rc<Self>, rows: BTreeSet<String>, from: Option<String>, at_once: bool) {
+        if rows.is_empty() {
+            return;
+        }
+        {
+            let mut s = self.state.borrow_mut();
+            s.shelf.form = None;
+            s.shelf.copy_at_once = at_once;
+        }
+        self.publish_form(false);
+        self.refocus();
+        self.copy(rows, from);
+    }
+
     /// The sheet's commit: one preset, one file, one write, laid on the settings the photo has now;
     /// or the copy.
     pub(super) fn save_preset_confirmed(self: &Rc<Self>) {
         let copy = match self.state.borrow().shelf.form.as_ref() {
-            Some(Form::Copying { draft, from }) => Some((draft.parameters.clone(), from.clone())),
+            Some(Form::Copying { draft, from, at_once }) => Some((draft.parameters.clone(), from.clone(), *at_once)),
             _ => None,
         };
-        if let Some((rows, from)) = copy {
-            return self.copy_confirmed(rows, from);
+        if let Some((rows, from, at_once)) = copy {
+            return self.copy_confirmed(rows, from, at_once);
         }
         let draft = match self.state.borrow().shelf.form.as_ref() {
             Some(Form::Saving(d)) => d.clone(),
@@ -241,6 +254,7 @@ impl Ctl {
             None => (false, false),
         };
         let copying = s.shelf.form.as_ref().is_some_and(Form::copying);
+        g.set_copy_at_once(matches!(s.shelf.form, Some(Form::Copying { at_once: true, .. })));
         g.set_saving(saving);
         g.set_editing(editing);
         g.set_copying(copying);
