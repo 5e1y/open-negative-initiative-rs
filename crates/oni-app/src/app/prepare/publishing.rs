@@ -36,15 +36,7 @@ impl Ctl {
         }
         let fresh = std::mem::take(&mut s.prepare.fresh_tiles);
         let laid = std::mem::replace(&mut s.prepare.laid_cells, sources.clone());
-        let shown_frame = s.prepare.shown_frame().cloned();
-        let card = shown_frame.as_ref().map(|f| match &s.prepare.card {
-            Some((path, image)) if *path == f.path => image.clone(),
-            _ => s.prepare.tiles.get(&f.path).cloned().unwrap_or_default(),
-        });
-        let card = match (card, &shown_frame) {
-            (Some(c), Some(f)) if c.size().width == 0 => s.thumbs.get(&f.fingerprint).unwrap_or_default(),
-            (c, _) => c.unwrap_or_default(),
-        };
+        let (shown_path, card) = card::card_picture(&s);
         let r = &s.prepare;
         let (_, apart) = apart(&frames);
         let ticked = r.ticked();
@@ -107,7 +99,6 @@ impl Ctl {
         let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, walked)).collect();
         let done: Vec<bool> = Step::ALL.iter().map(|s| done(*s, step, r.capture, walked, &r.flat, r.base.is_some())).collect();
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
-        let shown_path = shown_frame.as_ref().map(|f| f.path.clone());
         let show_card = shown_path != r.shown_path;
         let base_path = (step == Step::Base).then(|| r.base_shown().map(|f| f.path.clone())).flatten();
         let ask_scan = base_path.is_some() && base_path != r.asked_scan;
@@ -121,7 +112,7 @@ impl Ctl {
             }
         }
         if show_card {
-            s.prepare.shown_path = shown_path;
+            s.prepare.shown_path = shown_path.clone();
         }
         if ask_scan {
             s.prepare.asked_scan = base_path;
@@ -166,26 +157,23 @@ impl Ctl {
         p.set_action_title(key(step).into());
         p.set_skippable(!holds);
         p.set_action_enabled(holds && (step != Step::Window || measured > 0));
-        p.set_card_picture(card);
+        self.lay_card(shown_path, card);
         self.publish_passes(&p);
         self.publish_card();
         self.publish_base();
     }
 
-    /// The card's picture where its crop lies in the turned scan, the window on its own step.
+    /// The card's layers where their frames lie, the window on its own step.
     pub(in crate::app) fn publish_card(&self) {
         let Some(w) = self.window() else { return };
         let Some(b) = self.card_box() else { return };
-        let (crop, window, on_window) = {
+        let (window, on_window) = {
             let r = &self.state.borrow().prepare;
-            (r.shown_frame().map_or(Rect::UNIT, |f| f.crop), r.window, r.step == Step::Window)
+            (r.window, r.step == Step::Window)
         };
         let p = w.global::<Preparing>();
-        let (x, y, pw, ph) = frames::shown(crop, b);
-        p.set_picture_x(x as f32);
-        p.set_picture_y(y as f32);
-        p.set_picture_width(pw as f32);
-        p.set_picture_height(ph as f32);
+        let boxes = self.layer_boxes((f64::from(p.get_card_width()), f64::from(p.get_card_height())));
+        p.set_card_boxes(ModelRc::new(VecModel::from(boxes)));
         p.set_window_shown(on_window);
         let (x, y, ww, wh) = frames::shown(window, b);
         p.set_window_x(x as f32);

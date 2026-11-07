@@ -172,8 +172,6 @@ export component RollPanel inherits Surface {
                         name: Preparing.frame-name; can-previous: Preparing.can-previous && !Preparing.measuring; can-next: Preparing.can-next && !Preparing.measuring;
                         previous => { Preparing.previous(); } next => { Preparing.next(); }
                     }
-                    // Told under the slider it concerns, a note below the step's own text.
-                    Label { role: TextRole.note; text: @tr("Epilepsy warning: scrubbing flashes the frames quickly."); }
                 }
                 // The step's demo under the controls its text names, only once asked: nothing moves beside the scan unasked.
                 if Preparing.has-tutorial: HorizontalLayout {

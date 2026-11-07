@@ -1,16 +1,123 @@
-//! The card: each frame in its scan's shape, and the base picked on its scan.
+//! The card: each frame in its scan's shape, dissolving into the next, and the base picked on its scan.
 
 use super::*;
+use std::time::Duration;
+
+/// A dissolve's length: two make a flash, so the card flashes under three times a second (WCAG 2.3.1).
+pub(super) const FADE: Duration = Duration::from_millis(200);
+
+/// The card's two layers: the frame each holds, whether the second lies on top, and when the last
+/// dissolve began; a frame asked during one waits for its end, the latest asked laid.
+#[derive(Default)]
+pub(super) struct Layers {
+    paths: [Option<String>; 2],
+    second: bool,
+    began: Option<Instant>,
+    waiting: slint::Timer,
+}
+
+impl Layers {
+    /// The frame on top, by path.
+    pub(super) fn top(&self) -> Option<&str> {
+        self.paths[usize::from(self.second)].as_deref()
+    }
+}
+
+/// What a frame asked does to the layers.
+#[derive(Debug, PartialEq)]
+enum Lay {
+    /// Its picture set on the top layer, which shows that frame or none yet.
+    InPlace,
+    /// Dissolved in once the dissolve under way ends, this long from now.
+    After(Duration),
+    Dissolve,
+}
+
+fn lay(l: &Layers, path: Option<&str>, now: Instant) -> Lay {
+    let top = l.top();
+    if top.is_none() || top == path {
+        return Lay::InPlace;
+    }
+    match l.began.map(|b| FADE.saturating_sub(now.duration_since(b))) {
+        Some(left) if !left.is_zero() => Lay::After(left),
+        _ => Lay::Dissolve,
+    }
+}
+
+/// The frame the card shows, by path, and its picture: the preview, else the tile, else the thumbnail.
+pub(super) fn card_picture(s: &State) -> (Option<String>, Image) {
+    let Some(f) = s.prepare.shown_frame() else { return (None, Image::default()) };
+    let picture = match &s.prepare.card {
+        Some((path, image)) if *path == f.path => image.clone(),
+        _ => s.prepare.tiles.get(&f.path).cloned().unwrap_or_default(),
+    };
+    let picture = if picture.size().width == 0 { s.thumbs.get(&f.fingerprint).unwrap_or_default() } else { picture };
+    (Some(f.path.clone()), picture)
+}
 
 impl Ctl {
     // MARK: - The card and the base's scan
 
+    /// The frame on the card's top layer fitted in the card, so the window lies over the frame shown.
     pub(in crate::app) fn card_box(&self) -> Option<(f64, f64, f64, f64)> {
         let w = self.window()?;
         let p = w.global::<Preparing>();
         let r = &self.state.borrow().prepare;
-        let aspect = r.shown_frame().and_then(|f| f.aspect).unwrap_or(r.aspect);
+        let top = r.layers.top().and_then(|t| r.frames.iter().find(|f| f.path == t));
+        let aspect = top.or(r.shown_frame()).and_then(|f| f.aspect).unwrap_or(r.aspect);
         Some(fitted(aspect, (f64::from(p.get_card_width()), f64::from(p.get_card_height()))))
+    }
+
+    /// Each layer's frame where its crop lies in its own turned scan, in the card.
+    pub(super) fn layer_boxes(&self, size: (f64, f64)) -> Vec<f32> {
+        let r = &self.state.borrow().prepare;
+        let laid = |path: &Option<String>| {
+            let f = r.frames.iter().find(|f| Some(&f.path) == path.as_ref());
+            let (x, y, w, h) = frames::shown(f.map_or(Rect::UNIT, |f| f.crop), fitted(f.and_then(|f| f.aspect).unwrap_or(r.aspect), size));
+            [x as f32, y as f32, w as f32, h as f32]
+        };
+        r.layers.paths.iter().flat_map(laid).collect()
+    }
+
+    /// The shown frame's picture laid on the card: in place, or dissolving in over the frame shown.
+    pub(super) fn lay_card(&self, path: Option<String>, picture: Image) {
+        let Some(w) = self.window() else { return };
+        let p = w.global::<Preparing>();
+        let (layer, cleared, second) = {
+            let mut s = self.state.borrow_mut();
+            let l = &mut s.prepare.layers;
+            let now = Instant::now();
+            let (layer, cleared) = match lay(l, path.as_deref(), now) {
+                Lay::After(left) => {
+                    l.waiting.start(slint::TimerMode::SingleShot, left, || with_shell(|c| c.relay_card()));
+                    return;
+                }
+                Lay::InPlace => (usize::from(l.second), l.top().is_none()),
+                Lay::Dissolve => {
+                    l.second = !l.second;
+                    l.began = Some(now);
+                    (usize::from(l.second), false)
+                }
+            };
+            l.paths[layer] = path;
+            if cleared {
+                l.paths[1 - layer] = None;
+            }
+            (layer, cleared, l.second)
+        };
+        let set = |layer: usize, picture: Image| if layer == 0 { p.set_card_a(picture) } else { p.set_card_b(picture) };
+        set(layer, picture);
+        if cleared {
+            set(1 - layer, Image::default());
+        }
+        p.set_card_second(second);
+    }
+
+    /// The latest frame asked, laid once the dissolve it waited on has ended.
+    fn relay_card(&self) {
+        let (path, picture) = card_picture(&self.state.borrow());
+        self.lay_card(path, picture);
+        self.publish_card();
     }
 
     pub(in crate::app) fn window_grabbed(self: &Rc<Self>, handle: i32) {
@@ -101,7 +208,24 @@ fn disc_mean(rgba: &[u8], width: usize, height: usize, unit: (f64, f64), radius:
 
 #[cfg(test)]
 mod tests {
-    use super::disc_mean;
+    use super::{FADE, Lay, Layers, disc_mean, lay};
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn a_frame_dissolves_in_only_once_the_last_dissolve_has_ended() {
+        let now = Instant::now();
+        let mut l = Layers::default();
+        assert_eq!(lay(&l, Some("a"), now), Lay::InPlace, "the first frame is laid as it comes");
+        l.paths[0] = Some("a".into());
+        assert_eq!(lay(&l, Some("a"), now), Lay::InPlace, "a sharper picture of the frame shown");
+        assert_eq!(lay(&l, Some("b"), now), Lay::Dissolve);
+        l.began = Some(now);
+        let soon = now + Duration::from_millis(50);
+        assert_eq!(lay(&l, Some("b"), soon), Lay::After(FADE - Duration::from_millis(50)), "the next waits for the end");
+        // Twin: once the dissolve has ended, the next one begins at once.
+        assert_eq!(lay(&l, Some("b"), now + FADE), Lay::Dissolve);
+        assert!(FADE * 2 > Duration::from_millis(1000) / 3, "two dissolves, a flash, last over a third of a second");
+    }
 
     #[test]
     fn a_pick_reads_the_mean_of_its_own_disc_alone() {

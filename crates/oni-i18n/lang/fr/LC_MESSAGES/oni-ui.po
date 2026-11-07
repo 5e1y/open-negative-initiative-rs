@@ -374,12 +374,12 @@ msgid "Click to type a value"
 msgstr "Cliquez pour saisir une valeur"
 
 #: crates/oni-ui/ui/ds/roll.slint
-msgid "Previous"
-msgstr "Précédent"
+msgid "Previous Frame"
+msgstr "Vue précédente"
 
 #: crates/oni-ui/ui/ds/roll.slint
-msgid "Next"
-msgstr "Suivant"
+msgid "Next Frame"
+msgstr "Vue suivante"
 
 #: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "Not prepared yet"
@@ -2080,10 +2080,6 @@ msgstr "Effacer les marques"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Frame"
 msgstr "Vue"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Epilepsy warning: scrubbing flashes the frames quickly."
-msgstr "Avertissement épilepsie : le défilement fait clignoter les vues rapidement."
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Hide"
@@ -3826,8 +3822,12 @@ msgid "Draw the window inside the picture, clear of the holder and the film's ed
 msgstr "Tracez la fenêtre à l’intérieur de l’image, à l’écart du passe-vue et des bords du film, et vérifiez-la sur chaque scan avec le curseur. Un bord pris dedans fausse toute la pellicule."
 
 #: crates/oni-app/src/app/prepare/model.rs
-msgid "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll."
-msgstr "Vues marquées ({apart} sur {count}) : numérisées avec d’autres réglages que ceux de la pellicule ({capture}). Leur exposition est alignée sur ceux-ci ; une ouverture différente modifie aussi le vignetage mesuré par le flat-field, alors refaites-les en manuel pour une pellicule plus propre."
+msgid "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it: nothing to do."
+msgstr "Vues marquées ({apart} sur {count}) : numérisées avec d’autres réglages que ceux de la pellicule ({capture}). Leur exposition est alignée sur ceux-ci : rien à faire."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it. Shoot the light panel at {aperture}, as most of the roll; a frame at another aperture may keep slightly uneven corners."
+msgstr "Vues marquées ({apart} sur {count}) : numérisées avec d’autres réglages que ceux de la pellicule ({capture}). Leur exposition est alignée sur ceux-ci. Photographiez la table lumineuse à {aperture}, comme la plupart de la pellicule ; une vue prise à une autre ouverture peut garder des coins légèrement inégaux."
 
 #: crates/oni-app/src/app/prepare/model.rs
 msgid "{n} frame of this folder, prepared with another roll, is left out."

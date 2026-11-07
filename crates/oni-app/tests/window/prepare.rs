@@ -104,7 +104,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
 
     // The card shows the frame as its scan, as the base step will: one look across the steps.
     rig.until("the previews", Duration::from_secs(60), || ctl.state.borrow().roll_previewed() == 3);
-    let card = p.get_card_picture().to_rgba8().expect("the card holds pixels");
+    let card = if p.get_card_second() { p.get_card_b() } else { p.get_card_a() };
+    let card = card.to_rgba8().expect("the card holds pixels");
     let (cw, ch) = (card.width() as usize, card.height() as usize);
     assert!(as_scanned(card.as_bytes(), cw, ch), "the card reads as the scan, never inverted");
     let inverted: Vec<u8> = card.as_bytes().chunks(4).flat_map(|p| [255 - p[0], 255 - p[1], 255 - p[2], p[3]]).collect();

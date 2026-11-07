@@ -7242,5 +7242,33 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1497,
+    "type": "fix",
+    "title": "Prepare's frame keys are arrows either side of the frame's name, never Back's and NEXT's words",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Clarity, major): the Base step showed Previous and Next over the scan and Back and NEXT in the footer, two pairs of the same words for two objects. The pager, the Base and Window steps' alike, now lays a square key with a chevron each side of the frame's name, named Previous Frame and Next Frame for the hand that hovers and for assistive tools; the footer keeps the step's Back and NEXT. Icons.chevron-left is chevron-right mirrored. Window check prepare_frames: one key each named Previous Frame and Next Frame, none named Previous or Next, a click on each walks the base frame through the real event path (twin: the step stays, and the footer's Back and NEXT are found under them)."
+  },
+  {
+    "id": 1498,
+    "type": "fix",
+    "title": "The base loupe's disc shows the film it reads: a guide ring's halo is a border, not a shadow",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Obvious): the bare film was hard to hit at 35% and no loupe confirmed the pick. The loupe was there under the pointer, but its ring's drop shadow, which the renderer draws as a filled box, darkened the whole disc it bounded, the very pixels being picked; De-dust's rings and the brush wore the same dark fill. Ring now draws its dark halo as a border either side of its white line, so the disc shows what lies inside it. The pick itself stays the person's. Window check prepare_frames: in the loupe the disc's middle reads as the film beside the ring, the white line and its darker halo drawn (twin: the shadowed ring of before leaves no halo in the check's renderer and fails)."
+  },
+  {
+    "id": 1499,
+    "type": "fix",
+    "title": "The Flat-Field step says what the roll's mixed settings ask of the light panel, never to re-shoot",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Task fit): the step told a newcomer to re-shoot 9 of 14 frames in manual, a detour off the step. The note now says their exposure is evened out to the roll's settings, nothing to do; and when an aperture differs, to shoot the light panel at the aperture most of the roll shares, as a frame at another may keep slightly uneven corners. CaptureExposure::f_number writes the aperture as the label does. Unit check the_rolls_settings_differ_note_counts_the_frames_shot_apart (twins: a frame apart at the roll's aperture asks nothing of the panel; one without EXIF is never apart)."
+  },
+  {
+    "id": 1500,
+    "type": "fix",
+    "title": "The card dissolves each frame in, one dissolve at a time, so a scrub never flashes and its epilepsy warning goes",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Language): an epilepsy warning about scrubbing sat in the Window step's instructions. The card swapped whole frames as fast as the hand asked them. It now holds two layers: a frame asked dissolves in over the one shown in 200 ms, and one asked during a dissolve waits for its end, the latest asked laid (prepare::card::Layers), so the card changes under three flashes a second (WCAG 2.3.1) and nothing moves, which a reduced motion setting asks. Each layer keeps its frame's own box and the window lies over the frame on top. The warning text goes. Unit check a_frame_dissolves_in_only_once_the_last_dissolve_has_ended; window check prepare_frames: a scrub asking a frame every 31 ms dissolves at most once in 200 ms and ends on the frame asked last (twin: the hand asked frames well under 100 ms apart)."
   }
 ]

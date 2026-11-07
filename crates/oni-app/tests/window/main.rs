@@ -78,6 +78,7 @@ mod prepare_leftovers;
 mod prepare_masks;
 mod prepare_measure;
 mod prepare_loupe;
+mod prepare_frames;
 mod slides;
 mod project_walk;
 mod projects_tab;
@@ -246,6 +247,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan", prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan),
     ("prepare_loupe::an_unreadable_scan_says_why_on_the_base_step", prepare_loupe::an_unreadable_scan_says_why_on_the_base_step),
+    ("prepare_frames::the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scrub_dissolves", prepare_frames::the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scrub_dissolves),
     ("dng::high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up", dng::high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up),
     ("slides::a_slide_roll_takes_the_gains_of_the_white_picked_through_one_window", slides::a_slide_roll_takes_the_gains_of_the_white_picked_through_one_window),
     ("preset_deck::the_deck_opens_on_its_tab_and_answers_the_pointer", preset_deck::the_deck_opens_on_its_tab_and_answers_the_pointer),

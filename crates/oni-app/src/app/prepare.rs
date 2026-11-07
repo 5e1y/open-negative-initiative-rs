@@ -95,6 +95,7 @@ pub(crate) struct Roll {
     serial: Option<mpsc::Sender<Job>>,
     tiles: HashMap<String, Image>,
     card: Option<(String, Image)>,
+    layers: card::Layers,
     /// The base's scan, its size, and its size at full resolution.
     scan: Option<(String, Image, (usize, usize), (usize, usize))>,
     /// The base frame whose scan cannot be read, and why.
@@ -161,6 +162,7 @@ impl Default for Roll {
             serial: None,
             tiles: HashMap::new(),
             card: None,
+            layers: card::Layers::default(),
             scan: None,
             unreadable: None,
             fulls: Vec::new(),
@@ -193,6 +195,10 @@ impl Roll {
     /// The frames whose preview has landed, which a check waits for before reading one.
     pub fn previewed(&self) -> usize {
         self.tiles.len()
+    }
+
+    pub fn card_shown(&self) -> Option<&str> {
+        self.layers.top()
     }
 
     /// The roll shown, by its frames' paths.
