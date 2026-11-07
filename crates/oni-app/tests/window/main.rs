@@ -213,6 +213,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole", project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole),
     ("project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid", project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid),
     ("project_rolls::the_rating_filter_keeps_the_trees_roll_order", project_rolls::the_rating_filter_keeps_the_trees_roll_order),
+    ("project_rolls::a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand", project_rolls::a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand),
     ("missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas", missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas),
     ("missing_original::a_heic_says_format_not_supported", missing_original::a_heic_says_format_not_supported),
     ("presence::lay_grid_touches_no_disk", presence::lay_grid_touches_no_disk),

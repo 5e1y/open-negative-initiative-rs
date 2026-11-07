@@ -204,15 +204,14 @@ fn a_member_1_5_6_named_by_its_placeholder_learns_its_real_print() {
     assert!(!project_standing::learn(&mut kept, &[], &index));
 }
 
-/// In 1.5.6 Trip took a while its tile was read, then a joined Portfolio by its print; 1.5.6 leaves by
-/// text, so Trip kept the placeholder. Portfolio keeps a whatever the dates, through the launch and the next save.
+/// 1.5.6 leaves by text, so Trip's placeholder for a and Portfolio's print 1-a both held it: whatever the
+/// dates, Portfolio keeps a while the file there carries 1-a, else Trip, through the launch and the next save.
 #[test]
-fn a_placeholder_never_takes_a_photo_from_the_project_naming_its_print() {
+fn the_file_at_its_place_tells_a_placeholder_from_a_print() {
     let scratch = Scratch::new("projects-placeholder-moved");
     let support = scratch.path();
     let a = "/r/a.NEF";
     let waiting = format!("{}{a}", crate::library::WAITING_MARK);
-    let recorded = |text: &str| Some(BTreeMap::from([(text.to_owned(), a.to_owned())]));
     let made = |name: &str, at: f64, text: &str| shipped::Project {
         id: Id::new(),
         name: name.into(),
@@ -220,24 +219,30 @@ fn a_placeholder_never_takes_a_photo_from_the_project_naming_its_print() {
         created_at: Date::since_reference_date(at),
         manual_order: None,
         members: vec![text.into()],
-        paths: recorded(text),
+        paths: Some(BTreeMap::from([(text.to_owned(), a.to_owned())])),
     };
-    let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
-    index.upsert(&row(a, "1-a")).unwrap();
-    for (trip, portfolio) in [(9e8, 8e8), (8e8, 9e8)] {
-        let file = shipped::ProjectsFile { version: 1, projects: vec![made("Trip", trip, &waiting), made("Portfolio", portfolio, "1-a")] };
-        std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
-        let original = std::fs::read(file_path(support)).unwrap();
-        let mut read = load(support).projects;
-        assert_eq!(read.iter().map(|p| p.members.clone()).collect::<Vec<_>>(), [vec![], vec![Member::new(Some(a), Some("1-a"))]], "Portfolio keeps a");
-        assert!(!project_standing::learn(&mut read, &[], &index), "no print left to learn, so the launch saves nothing");
-        assert_eq!(std::fs::read(file_path(support)).unwrap(), original);
-        let mut renamed = read.clone();
-        renamed[0].name = "Lisbon".into();
-        crate::merge::save_projects(support, &read, &renamed).unwrap();
-        assert_eq!(load(support).projects[1].members, [Member::new(Some(a), Some("1-a"))], "the next save keeps the move");
+    let members = |projects: &[Project]| projects.iter().map(|p| p.members.clone()).collect::<Vec<_>>();
+    let (old, new) = (Member::new(Some(a), Some("1-a")), Member::new(Some(a), Some("2-a")));
+    // Portfolio joined a once its tile was read; or held 1-a before a was scanned again, Trip taking the new scan.
+    for (carried, kept, holding) in [("1-a", [vec![], vec![old.clone()]], "Portfolio"), ("2-a", [vec![new], vec![old.clone()]], "Trip")] {
+        let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
+        index.upsert(&row(a, carried)).unwrap();
+        for (trip, portfolio) in [(9e8, 8e8), (8e8, 9e8)] {
+            let file = shipped::ProjectsFile { version: 1, projects: vec![made("Trip", trip, &waiting), made("Portfolio", portfolio, "1-a")] };
+            std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
+            let loaded = load(support).projects;
+            assert_eq!(members(&loaded), [vec![Member::new(Some(a), None)], vec![old.clone()]], "the file alone tells nothing, both kept");
+            let mut read = loaded.clone();
+            assert!(project_standing::learn(&mut read, &[], &index), "the launch settles it, and saves");
+            assert_eq!(members(&read), kept, "{carried} at a");
+            let standing = project_standing::standing(&read, &[], &index, &Found::new());
+            let at_a: Vec<String> = grouped(&read, &Reach::new(&standing.rows, &standing.found)).into_iter().filter(|g| g.entries.iter().any(|e| e.path == a)).map(|g| g.project.name).collect();
+            assert_eq!(at_a, [holding], "the file at a stands in one project");
+            crate::merge::save_projects(support, &loaded, &read).unwrap();
+            assert_eq!(members(&load(support).projects), kept, "the next save keeps it");
+        }
     }
     // Twin: once Trip's member has learned its print, the dates alone give a to the newer Trip.
-    let printed = |name: &str, at: f64| Project::new(name, Date::since_reference_date(at), vec![Member::new(Some(a), Some("1-a"))]);
+    let printed = |name: &str, at: f64| Project::new(name, Date::since_reference_date(at), vec![old.clone()]);
     assert!(exclusive(&[printed("Trip", 9e8), printed("Portfolio", 8e8)])[1].members.is_empty());
 }

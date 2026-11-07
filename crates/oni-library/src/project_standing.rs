@@ -4,7 +4,7 @@
 use crate::index::{Entry, LibraryIndex};
 use crate::library::WAITING_MARK;
 use crate::paths;
-use crate::project::{Found, Member, Project};
+use crate::project::{self, Found, Member, Project};
 use std::collections::{HashMap, HashSet};
 
 /// The rows `project::grouped` needs beyond the opened folder's, and where each member its path no
@@ -125,20 +125,28 @@ fn lost(file: &str, name: &str, taken: &HashSet<String>) -> String {
     at
 }
 
-/// Each member with a path and no print takes the one its file there was read with, so a later read
-/// finds it by that print where its path goes stale; a member holding a print keeps it. Whether any did.
+/// Each member with a path and no print takes the print its file there carries, or gives the photo up
+/// to a member holding that print there, as that print was read after it was named. Whether any changed.
 pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> bool {
     let held_at: HashMap<&str, &Entry> = held.iter().map(|e| (e.path.as_str(), e)).collect();
-    let mut learned = false;
-    for member in projects.iter_mut().flat_map(|p| p.members.iter_mut()).filter(|m| m.print.is_none()) {
-        let Some(path) = member.path.clone() else { continue };
-        let row = held_at.get(path.as_str()).map(|e| (*e).clone()).or_else(|| index.row(&path));
-        if let Some(print) = row.and_then(|row| Member::of(&row, None).print) {
-            member.print = Some(print);
-            learned = true;
-        }
+    let carried = |path: &str| held_at.get(path).map(|e| (*e).clone()).or_else(|| index.row(path)).and_then(|row| Member::of(&row, None).print);
+    let printed: Vec<Member> = projects.iter().flat_map(|p| &p.members).filter(|m| m.print.is_some()).cloned().collect();
+    let holder = project::holder(&printed);
+    let mut changed = false;
+    for project in projects.iter_mut() {
+        project.members.retain_mut(|member| {
+            let Some(path) = member.path.as_deref().filter(|_| member.print.is_none()) else { return true };
+            let Some(print) = carried(path) else { return true };
+            let learned = Member::new(Some(path), Some(&print));
+            changed = true;
+            let kept = holder(&learned).is_none();
+            if kept {
+                *member = learned;
+            }
+            kept
+        });
     }
-    learned
+    changed
 }
 
 /// `LibraryIndex.shown`'s cut on one row: out of the ONI Trash, and no pass whose lead is held.

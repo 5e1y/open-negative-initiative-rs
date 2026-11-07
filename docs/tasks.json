@@ -7669,5 +7669,40 @@
     "title": "Checks for the grid's line where no drop lands and the roll order under the rating filter",
     "status": "done",
     "detail": "Fourth review of the projects (point 5): removing the grid's line filter passed every check, as its twin asserted the members alone, and the bands' roll order under the rating filter was untested. Window project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid asserts the line itself as the hand lets go (Hand::drag tells it): shown past A, none for Roll 8's A beside Roll 10's D, none past C itself (mutations: the line unweighed, or weighed by roll alone as before #1557, fail it). project_rolls::the_rating_filter_keeps_the_trees_roll_order: Client stores Roll 10's A, Roll 8's A, Roll 10's D; under Gold the grid shows D, then Roll 8's A (twin: Gold's photos in the stored order put Roll 8's A first; mutation: the filter applied before grouping fails it)."
+  },
+  {
+    "id": 1559,
+    "type": "fix",
+    "title": "The file at its place decides between a 1.5.6 placeholder and a print, never a rank at load",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 1): #1554 ranked a member holding a print over one with none at the same path at load, before any file is known, so a print 1.5.6 left stale by a new scan saved over the file beat the placeholder 1.5.6 recorded later for that new scan: the new scan stood in no project and the next save wrote Trip without it. The file alone cannot tell the two cases, so project::exclusive no longer settles a member with no print against one holding a print at its place (both stay, the most recent project keeping a photo among members alike), and project_standing::learn, at the launch's read where the file at that path is known, settles it: a member with no print takes the print its file carries, or gives the photo up to a member holding that print there, as that print was read after it was named. So Portfolio keeps a while the file at a carries its print (review 4's case), and Trip keeps the new scan otherwise, Portfolio's stale print standing as a missing tile whose place holds another file, as after any rescan; a pair whose file is not read yet stays in both until it is. project::holder is the slot lookup printed and learn share. Check: project shipped_tests::the_file_at_its_place_tells_a_placeholder_from_a_print, both files at a, both date orders, through load, the launch's learn, where the photo stands, and the next save (twin: once Trip's member has learned the print, the dates alone give a to the newer Trip; mutations: exclusive settling by same alone, or learn never giving way, fail it)."
+  },
+  {
+    "id": 1560,
+    "type": "test",
+    "title": "The check that a file in this format is never set aside writes over one",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 4): the twin meant to stop former-file copies multiplying asserted projects-v1.json and projects-v2.json absent, where a file in this format would be copied to projects-v3.json, and the round trip saved once over no file; deleting keep_former's guard for this format passed every check. project file_tests::a_file_round_trips_through_the_disk_saying_its_format now saves twice, the second over a file in this format, and only_a_change_writes_and_each_former_file_is_kept_beside_it_once ends asserting former_path(support, FORMAT) absent after a change written over this format (mutation: keep_former without its guard fails both)."
+  },
+  {
+    "id": 1561,
+    "type": "test",
+    "title": "A check that a placeholder stands at its recorded path, not at its mark's",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 5): every placeholder in the checks was recorded at its own mark's path, so nothing proved the recorded path wins over the one after the mark (file.rs spelt and former), which 1.5.6 produces: renaming a folder moves the recorded paths, never the member texts. project file_tests::a_placeholder_recorded_elsewhere_than_its_mark_stands_where_recorded reads a version 1 text and an exact member, both marked /Roll 8 and recorded at /Roll 8b, each at /Roll 8b (twin: the path after each mark is /Roll 8; mutations: spelt or former preferring the mark's path fail it)."
+  },
+  {
+    "id": 1562,
+    "type": "fix",
+    "title": "A tree drop lands where its mark stands when the tree changes under the held hand",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 2): #1557 kept a tree drop's landing per row number, so an undo or a folder read laying the tree anew under a held drag left the landing worked out for the row's former node while the line was drawn at that number's new row: D held on the line above C, then ⌘Z putting back C A D, released D before C (D C A) under a line above A. A landing now holds for the tree as laid when it was worked out: each lay of the projects' tree (tree_column::lay_column) aims the held drag again at its pointer (Ctl::aim_project_drag, also each move's), working its landing out afresh and drawing its mark, so the line, the ring and the release always read the same rows, a node's neighbours and the projects included. Check: window project_rolls::a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand, D held on the line above C, ⌘Z, a pixel's move, released: C D A (twin: before the undo the row under the line holds C; mutations: no aim at a lay, or a lay keeping the landing, read D C A and fail it)."
+  },
+  {
+    "id": 1563,
+    "type": "perf",
+    "title": "A drop's trial weighs each place against the whole library, measured; a cost by the photos carried is left to do",
+    "status": "todo",
+    "detail": "Fifth review of the projects (point 3): the tree (project_drop::landing) and the grid (State::reorders) weigh each place the pointer enters by laying the drop on a copy of every project against the reach cloned whole, every member resolved, once more for a reorder. Measured in the test profile (workspace at opt-level 1), on 30 to 60 projects of 100 members over rolls of 36 with 300 to 600 rows of the opened folder: the reach's clone alone 0.23 ms at 3,000 members and 0.43 ms at 6,000; a tree place that aims (a project's row, a line beside the carried roll) 1.6 ms mean, 2.1 ms max at 3,000, 3.0 ms mean, 4.0 ms max at 6,000; a grid cell 1.25 ms mean, 1.9 ms max at 3,000, 2.5 ms mean, 3.8 ms max at 6,000; the same with 1 or 20 photos carried, so the cost is the library's, about 0.5 ms a thousand members, once per place entered and once per lay of the tree under a held drag (#1562), negligible at the owner's 172 members, within the 8.3 ms frame below about 10,000. Left: resolve the holders and each project's shown order once per layout and weigh a place against them at a cost of the photos carried, without a second rule that could part from the gesture the release runs (#1557)."
   }
 ]

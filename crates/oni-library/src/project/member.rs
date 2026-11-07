@@ -87,31 +87,36 @@ pub fn distinct(members: Vec<Member>) -> Vec<Member> {
 /// `members`, each with a path and no print taking the print its photo carries in `known`: a print
 /// read since, so each side of a merge or an undo names the same member alike.
 pub fn printed(members: &[Member], known: &[Member]) -> Vec<Member> {
-    let mut prints: HashMap<String, Vec<&Member>> = HashMap::new();
-    for k in known.iter().filter(|k| k.path.is_some() && k.print.is_some()) {
-        prints.entry(k.slot()).or_default().push(k);
-    }
-    let learned = |m: &Member| prints.get(&m.slot()).and_then(|ks| ks.iter().find(|k| m.same(k))).and_then(|k| k.print.clone());
-    members.iter().map(|m| if m.path.is_some() && m.print.is_none() { Member { print: learned(m), ..m.clone() } } else { m.clone() }).collect()
+    let holder = holder(known);
+    members.iter().map(|m| if m.path.is_some() && m.print.is_none() { Member { print: holder(m).and_then(|k| k.print.clone()), ..m.clone() } } else { m.clone() }).collect()
 }
 
-/// One project per photo: a member holding its print keeps it over one with none, as that print was
-/// read after the other was named and so marks the later gesture; else the most recently created.
+/// The member of `known` holding its print and path that is one photo with the member asked, sought
+/// among the few sharing its slot.
+pub fn holder<'a>(known: &'a [Member]) -> impl Fn(&Member) -> Option<&'a Member> + 'a {
+    let mut slots: HashMap<String, Vec<&'a Member>> = HashMap::new();
+    for k in known.iter().filter(|k| k.path.is_some() && k.print.is_some()) {
+        slots.entry(k.slot()).or_default().push(k);
+    }
+    move |m| slots.get(&m.slot()).and_then(|ks| ks.iter().copied().find(|k| m.same(k)))
+}
+
+/// One project per photo, the most recently created keeping it. A member with no print and one holding
+/// a print at its place stay apart: only the file there tells whether they are one photo (`learn`).
 pub fn exclusive(projects: &[Project]) -> Vec<Project> {
-    let rank = |(m, _, at): &(Member, Id, Date)| (m.print.is_some(), *at);
+    let one = |a: &Member, b: &Member| a.same(b) && a.print.is_some() == b.print.is_some();
     let mut slots: HashMap<String, Vec<(Member, Id, Date)>> = HashMap::new();
     for project in projects {
         for member in &project.members {
             let slot = slots.entry(member.slot()).or_default();
-            let claim = (member.clone(), project.id, project.created_at);
-            match slot.iter_mut().find(|(m, _, _)| m.same(member)) {
-                Some(keeper) if rank(keeper) < rank(&claim) => *keeper = claim,
+            match slot.iter_mut().find(|(m, _, _)| one(m, member)) {
+                Some(keeper) if keeper.2 < project.created_at => (keeper.1, keeper.2) = (project.id, project.created_at),
                 Some(_) => {}
-                None => slot.push(claim),
+                None => slot.push((member.clone(), project.id, project.created_at)),
             }
         }
     }
-    let keeper = |member: &Member| slots.get(&member.slot()).and_then(|s| s.iter().find(|(m, _, _)| m.same(member))).map(|(_, id, _)| *id);
+    let keeper = |member: &Member| slots.get(&member.slot()).and_then(|s| s.iter().find(|(m, _, _)| one(m, member))).map(|(_, id, _)| *id);
     projects
         .iter()
         .map(|project| {

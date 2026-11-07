@@ -85,8 +85,6 @@ impl Ctl {
     /// A press on row `i` moved from `from` to `at`: past the drag distance it carries the pick when
     /// the row is in it, else the row (`dragged()`); each move resolves where it would land.
     pub(super) fn project_row_dragged(&self, i: usize, from: (f32, f32), at: (f32, f32)) {
-        let Some(w) = self.window() else { return };
-        let strip = w.global::<crate::DS>().get_space_md() / 2.0;
         {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
@@ -107,18 +105,33 @@ impl Ctl {
                     .collect();
                 s.org.project_drag = Some(Drag { items, at, target: None });
             }
-            let l = &s.project_tree;
-            let pointed = sidebar::drop_target(at.0, at.1, &l.frames, &l.photos, &l.depths, true, strip);
+            if let Some(d) = s.org.project_drag.as_mut() {
+                d.at = at;
+            }
+        }
+        self.aim_project_drag(false);
+    }
+
+    /// Where a release under the held drag's pointer lands on the tree as laid now, its mark drawn: the
+    /// place pointed at keeps its landing until the tree is `laid` anew, an undo or a read changing its rows.
+    pub(super) fn aim_project_drag(&self, laid: bool) {
+        let Some(w) = self.window() else { return };
+        let strip = w.global::<crate::DS>().get_space_md() / 2.0;
+        {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
             let Some(d) = s.org.project_drag.as_ref() else { return };
+            let l = &s.project_tree;
+            let pointed = sidebar::drop_target(d.at.0, d.at.1, &l.frames, &l.photos, &l.depths, true, strip);
             let target = match &d.target {
-                Some((t, landed)) if Some(*t) == pointed => Some((*t, landed.clone())),
+                Some((t, landed)) if !laid && Some(*t) == pointed => Some((*t, landed.clone())),
                 _ => pointed.map(|t| {
                     let rows = s.reach();
                     (t, landing(&s.org.project_nodes, &s.org.projects, &project::Reach::new(&rows, &s.org.found), &d.items, t))
                 }),
             };
             if let Some(d) = s.org.project_drag.as_mut() {
-                (d.at, d.target) = (at, target);
+                d.target = target;
             }
         }
         self.publish_project_drag();
