@@ -1,5 +1,5 @@
 // The picker: a field naming the value chosen, whose menu drops under it.
-import { Colour, Radius, Space, State, ButtonStyle, MenuStyle, CardStyle, FieldStyle } from "theme.slint";
+import { Colour, Radius, Space, Stroke, State, ButtonStyle, MenuStyle, FieldStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
 import { Outside } from "outside.slint";
 import { Look } from "button.slint";
@@ -10,12 +10,12 @@ import { MenuLine, FolderChoice, Menu } from "menu.slint";
 import { KeyScope } from "keyboard.slint";
 
 // A picker's face: `field` set in the panel as a text field is, `pill` a column header's name on the
-// canvas's dark, `chip` the Working Space's words on no ground.
+// canvas's dark, `chip` the Working Space's select among the canvas band's mini keys, in their flat face.
 export enum PickerFace { field, pill, chip }
 
 // A field naming the value chosen, a chevron at its end; its words, lines or folders drop under it as a
-// menu. The field wears a text field's flat face, lit under the hand as a flat key is; a pill or a chip
-// lights the hover ground. Every face dims when it is out of reach.
+// menu. The field wears a text field's flat face and the chip a flat key's within its own edge, both lit
+// under the hand as a flat key is; a pill lights the hover ground. Every face dims when it is out of reach.
 export component Picker inherits HorizontalLayout {
     in property <PickerFace> face: PickerFace.field;
     in property <string> label;
@@ -43,6 +43,8 @@ export component Picker inherits HorizontalLayout {
     property <bool> chip: root.face == PickerFace.chip;
     property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
     property <bool> as-field: root.face == PickerFace.field;
+    // Each face's corner: its face's, its veil's and its focus ring's.
+    property <length> corner: root.as-field ? FieldStyle.radius : root.chip ? ButtonStyle.small-radius : Radius.badge;
     // A pill wears the chevron only while it has a menu to drop.
     property <bool> drops: root.pressable && (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0);
     // The press its field last took, and the one that closed its menu: a release whose press never
@@ -59,13 +61,15 @@ export component Picker inherits HorizontalLayout {
         }
     }
     spacing: Space.s;
-    // A pill as tall as the mini keys beside it.
-    height: root.pill ? ButtonStyle.small-height : root.chip ? CardStyle.padding : ButtonStyle.height;
+    // A pill or a chip as tall as the mini keys beside it.
+    height: root.pill || root.chip ? ButtonStyle.small-height : ButtonStyle.height;
     if root.label != "": Label { text: root.label; }
     field := Rectangle {
         horizontal-stretch: 1;
-        border-radius: Radius.badge;
-        background: root.as-field || (root.chip && !root.hovered) ? Colour.hover.transparentize(1) : root.hovered ? Colour.hover : Colour.canvas;
+        border-radius: root.corner;
+        background: root.as-field ? Colour.hover.transparentize(1) : root.chip ? ButtonStyle.face : root.hovered ? Colour.hover : Colour.canvas;
+        border-width: root.chip ? Stroke.line : 0px;
+        border-color: ButtonStyle.edge;
         opacity: root.enabled ? 1 : State.disabled;
         accessible-role: button;
         accessible-label: root.note != "" ? root.value + " · " + root.note : root.value;
@@ -73,8 +77,8 @@ export component Picker inherits HorizontalLayout {
         // As wide as its words on a chip, eliding them once its room is short.
         preferred-width: row.preferred-width;
         if root.as-field: FieldFace { }
-        if root.as-field && root.hovered: Rectangle {
-            border-radius: FieldStyle.radius;
+        if (root.as-field || root.chip) && root.hovered: Rectangle {
+            border-radius: root.corner;
             background: area.pressed || root.look == Look.pressed ? ButtonStyle.veil-pressed : ButtonStyle.veil;
         }
         row := HorizontalLayout {
@@ -104,7 +108,7 @@ export component Picker inherits HorizontalLayout {
         // Space, Return or ↓ drops its menu while it holds the keyboard.
         KeyScope {
             enabled: root.enabled && root.pressable;
-            radius: root.as-field ? FieldStyle.radius : Radius.badge;
+            radius: root.corner;
             key-pressed(event) => {
                 if ((event.text != " " && event.text != Key.Return && event.text != Key.DownArrow) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
                     return reject;

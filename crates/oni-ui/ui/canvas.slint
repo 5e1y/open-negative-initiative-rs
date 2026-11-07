@@ -307,7 +307,7 @@ export component CanvasCard inherits Card {
     SpaceChip {
         property <length> start: library-key.x + library-key.width + Space.s;
         property <length> end: zoom.x - Space.s;
-        y: 0;
+        y: (CardStyle.padding - self.height) / 2;
         width: min(self.preferred-width, self.end - self.start);
         x: max(self.start, min((parent.width - self.width) / 2, self.end - self.width));
     }
