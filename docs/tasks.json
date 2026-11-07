@@ -7634,5 +7634,19 @@
     "title": "The curves check leaves the store's wait to the held clock that can prove it",
     "status": "done",
     "detail": "editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step failed two runs in three on 'the store waits for the hand's cadence': it read the store right after the first move and needed that move within the hand's interval (8.3 ms) of the press, but a debug build's press alone took 8.5 to 9.3 ms measured (10.6 ms with its frame), after which the store rightly takes the move. Asserted only when fast enough, the wait was never exercised, which proves nothing. The wait inside the interval is proven on a held clock by editors::tests::a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step and track's hand tests; the window check keeps what only the window shows: the dot follows the pointer at once, thirty fast moves reach the store at the hand's pace (twin: a write per move), and one undo takes the drag back."
+  },
+  {
+    "id": 1554,
+    "type": "fix",
+    "title": "A member named by a 1.5.6 loading placeholder never takes a photo from the project naming its print; every former file is kept",
+    "status": "done",
+    "detail": "Fourth review of the projects (point 1): 1.5.6 names a photo added while its tile loads by its placeholder and leaves other projects by text, so a photo put in Trip while loading, then joined to Portfolio by its print, stood in both; this build read the placeholder as a print-less member at the photo's path, project::exclusive gave the photo to the newer project, and the print learned at launch saved that, undoing the person's last move. One rule in exclusive: of two members that are one photo, the one holding its print keeps it over one with none, whatever the projects' dates, as that print was read after the other was named and so marks the later gesture; else the newest project. It holds before any print is learned, so the launch learns nothing and writes nothing. A former format's file is now kept each time this format replaces it, the first as projects-v1.json, each later one numbered (projects-v1-2.json, ...), never written over and none twice: 1.5.6's newer file was lost once projects-v1.json existed. Checks: project shipped_tests::a_placeholder_never_takes_a_photo_from_the_project_naming_its_print, in both date orders, through the launch and the next save (twin: printed on both sides, the dates give the photo to the newer Trip; mutation: ranked by date alone it fails), file_tests::only_a_change_writes_and_each_former_file_is_kept_beside_it_once (twins: a file a copy holds sets no third aside, a change in this format sets nothing aside; mutation: one copy a version fails it)."
+  },
+  {
+    "id": 1555,
+    "type": "fix",
+    "title": "An exact member holding a placeholder print stands at the path after its mark",
+    "status": "done",
+    "detail": "Fourth review of the projects (point 2): builds from ad672e6a to before #1550 wrote 1.5.6's placeholder into exactMembers as a print, without its path where another member was named by it; #1550 dropped that print but took no path after the mark, so the member read with neither, showed nothing and was dropped at the next save. One reading for every text that is no print (file.rs place): a path names itself, a placeholder the path after its mark; a version 1 text and an exact or version 2 member's print both take it where they hold no path. Check: project file_tests::an_exact_member_holding_a_placeholder_stands_at_its_path, a version 3 file with such members with and without a path, read then saved (twin: a member with neither path nor print is dropped by the write; mutations: spelt taking no place, or keeping a placeholder print as builds before #1550 did, fail it)."
   }
 ]
