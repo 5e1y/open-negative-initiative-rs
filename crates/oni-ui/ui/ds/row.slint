@@ -31,7 +31,7 @@ export component Row inherits Rectangle {
     in property <string> caption;
     // Before the title in the tertiary ink: the folder a trashed photo came from, a frame's number.
     in property <string> trail;
-    // A second line under the title, as what a preset carries.
+    // Under the title, wrapped and read whole, as what a preset carries.
     in property <string> detail;
     // The tooltip, as a folder's whole path.
     in property <string> help;
@@ -228,7 +228,15 @@ export component Row inherits Rectangle {
                 Label { text: root.head; tone: root.ink; overflow: elide; }
                 Label { text: root.tail; tone: root.ink; horizontal-stretch: 0; }
             }
-            if root.detail != "": Label { text: root.detail; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }
+            // Slint reads the row's height with a wrapped text at its one-line width; the text's own
+            // height, read at the width it is laid at, keeps every line inside the row.
+            if root.detail != "": Label {
+                text: root.detail;
+                role: TextRole.value;
+                tone: Tone.tertiary;
+                wrap: word-wrap;
+                height: self.preferred-height;
+            }
         }
         if root.renaming: RenameField {
             horizontal-stretch: 1;
