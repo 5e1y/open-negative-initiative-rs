@@ -5,7 +5,7 @@ import { Label, Engraved, Icon, Divider, TextRole, Tone, Tip, Tips, Raised, Lift
 import { HelpCard } from "tip.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
-import { Scroller } from "collections.slint";
+import { Scroller } from "scroller.slint";
 import { Icons } from "icons.slint";
 import { Reach, Reaches } from "reach.slint";
 import { Keyboard } from "keyboard.slint";
@@ -32,8 +32,8 @@ export component HelpMark inherits Rectangle {
         glyph-size: SectionStyle.help-mark;
         glyph-ink: root.open ? Colour.ink : transparent;
         help: @tr("Help on {}", root.subject);
-        accessible-expandable: true;
-        accessible-expanded: root.open;
+        expandable: true;
+        expanded: root.open;
         clicked => { Tips.help(root.note, root.demo); }
     }
 }
@@ -57,8 +57,8 @@ component FoldMark inherits Rectangle {
         // In the primary ink, as the tree's: its line is a single pixel, which a quieter ink leaves under 3:1.
         glyph-ink: Colour.ink;
         help: root.folded ? @tr("Show {}", root.subject) : @tr("Hide {}", root.subject);
-        accessible-expandable: true;
-        accessible-expanded: !root.folded;
+        expandable: true;
+        expanded: !root.folded;
         clicked => { root.toggled(); }
     }
 }
