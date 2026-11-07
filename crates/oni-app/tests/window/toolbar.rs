@@ -1,6 +1,6 @@
 //! The top bar as the window widens: its keys keep their widths and only the room between them grows;
 //! one layout in every mode, whatever the selection, the picture's right click opening its menu; its
-//! groups, and the gallery's Export opening the sheet on what is picked.
+//! groups, the mode key naming its action, and the gallery's Export opening the sheet on what is picked.
 
 use oni_app::app::{Options, Shell, export_card};
 use i_slint_backend_testing::AccessibleRole as Role;
@@ -28,8 +28,8 @@ fn drawn(rig: &common::Rig, w: u32) -> (usize, Vec<u16>) {
 }
 
 /// Along the first row under the top edges of the bar's last four keys, a keycap and the flat keys
-/// standing on its middle, from the window's right edge leftwards, the runs of key and of ground: four
-/// keys with their gaps, then the room before them.
+/// beside it, from the window's right edge leftwards, the runs of key and of ground: four keys with
+/// their gaps, then the room before them.
 fn runs(w: usize, px: &[u16]) -> Vec<usize> {
     let at = |x: usize, y: usize| px[y * w + x];
     let x = w - 30;
@@ -73,7 +73,7 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
         shell
     };
     let shell = bar(true);
-    // ADD FOLDER, the gear, the phone and the feedback key with their gaps, then the room before them.
+    // ADD FOLDER, Settings, Phone and Feedback with their gaps, then the room before them.
     let keys = |w: u32| {
         let (w, px) = drawn(&rig, w);
         runs(w, &px)
@@ -82,7 +82,8 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
     let (narrow, wide) = (keys(1728), keys(1990));
     println!("shot {}", rig.shot("toolbar-1990").display());
     assert_eq!(narrow[..7], wide[..7], "the keys and their gaps keep their widths: {narrow:?} {wide:?}");
-    assert_eq!((narrow[2], narrow[4]), (narrow[2], narrow[2]), "the gear and the phone are square keys alike");
+    // Each worded, so as wide as its word: Settings' longer than Phone's.
+    assert!(narrow[2] > narrow[4], "Settings and Phone sized by their words: {narrow:?}");
     // Twin: the room before them does grow with the window.
     assert!(wide[7] > narrow[7] + 100, "the room before the keys grows: {narrow:?} {wide:?}");
     drop(shell);
@@ -101,8 +102,8 @@ fn spans(w: usize, px: &[u16]) -> Vec<(usize, usize)> {
     let at = |x: usize, y: usize| px[y * w + x];
     let ground = at(30, 44);
     let top = (44..120).find(|&y| at(30, y) != ground).expect("the mode key");
-    // The cap's last row within its 40 pt: a dished face's top may match the ground.
-    let foot = (top..top + 40).rev().find(|&y| at(30, y) != ground).map_or(top + 20, |y| y + 1);
+    // The cap's last row within its 48 pt: a dished face's top may match the ground.
+    let foot = (top..top + 48).rev().find(|&y| at(30, y) != ground).map_or(top + 24, |y| y + 1);
     let row = (top + foot) / 2;
     let ground = at(2, row);
     let mut out: Vec<(usize, usize)> = Vec::new();
@@ -205,21 +206,12 @@ const GROUP_GAP: f32 = 8.0;
 const BAR_GAP: f32 = 24.0;
 /// The rule before Reset and Trash: an engraved groove and its lit edge, a bar's gap either side.
 const RULED: f32 = 2.0 * BAR_GAP + 2.0;
-/// The glyph a key shows before its word.
-const GLYPH: f32 = 16.0;
 
 /// The one key of the bar so named, where the layout put it.
 fn bar_key(w: &oni_app::MainWindow, label: &str) -> common::Placed {
     let keys: Vec<_> = common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < w.global::<Bar>().get_height()).collect();
     assert_eq!(keys.len(), 1, "one {label:?} on the bar: {keys:?}");
     keys[0]
-}
-
-/// How far into its key a key's word starts.
-fn word_at(w: &oni_app::MainWindow, key: common::Placed, text: &str) -> f32 {
-    let words: Vec<_> = common::placed(w, Role::Text, text).into_iter().filter(|t| key.level_with(t) && t.x >= key.x && t.x < key.x + key.width).collect();
-    assert_eq!(words.len(), 1, "{text:?} written once on its key {key:?}: {words:?}");
-    words[0].x - key.x
 }
 
 /// Whether the bar draws anything at `x` on the middle row of `key`, the window as it stands.
@@ -262,29 +254,28 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let gap = |a: common::Placed, b: common::Placed| b.x - right(a);
     let near = |g: f32, want: f32| (g - want).abs() <= 1.0;
 
-    // The gallery: Select All opening the filter's group, PREPARE ROLL and Export on the photos picked, then
-    // past a rule Reset naming the photo it reaches and Trash last, one group.
-    let (select, all) = (bar_key(w, "Select All"), bar_key(w, "All Photos"));
+    // The gallery: EDIT, Select All, PREPARE ROLL and Export on the photos picked, then past a rule Reset
+    // naming the photo it reaches and Trash last, one group; the rating filter is the library's, off the bar.
+    let (edit, select) = (bar_key(w, "EDIT"), bar_key(w, "Select All"));
     let (prepare, export, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Export\u{2026}"), bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-gallery").display());
-    assert!(near(gap(select, all), GROUP_GAP), "Select All and the filter one group: {select:?} {all:?}");
-    assert!(near(gap(prepare, export), BAR_GAP), "PREPARE ROLL and Export a bar's gap apart: {prepare:?} {export:?}");
+    let on_bar = |label: &str| common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).count();
+    assert_eq!((on_bar("All Photos"), on_bar("EDITOR"), on_bar("BACK")), (0, 0, 0), "no filter on the bar; EDIT names the action");
+    assert!(edit.x < select.x, "twin: the measure finds the bar's keys");
+    assert!(near(gap(select, prepare), BAR_GAP) && near(gap(prepare, export), BAR_GAP), "{select:?} {prepare:?} {export:?}");
     assert!(near(gap(export, reset), RULED) && near(gap(reset, trash), GROUP_GAP), "a rule, then one group: {export:?} {reset:?} {trash:?}");
     assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between Export and Reset");
     // Twin: the room between two groups with no rule is bare ground.
     assert!(!inked(&rig, prepare, prepare.x - BAR_GAP / 2.0), "the measure sees bare room");
-    // Trash wears its can before its word; a key of a word alone starts it at its edge's padding.
-    let (can, bare) = (word_at(w, trash, "Trash"), word_at(w, select, "Select All"));
-    assert!(can >= bare + GLYPH, "Trash's word after its can: {can} against {bare}");
-    // The app's glyphs one group, the commit's slot a bar's gap after them.
-    let (report, settings, add) = (bar_key(w, "Report a Bug / Give Feedback"), bar_key(w, "Settings"), bar_key(w, "ADD FOLDER\u{2026}"));
+    // The app's keys one group, the commit's slot a bar's gap after them.
+    let (report, settings, add) = (bar_key(w, "Feedback"), bar_key(w, "Settings"), bar_key(w, "ADD FOLDER\u{2026}"));
     assert!(near(gap(report, settings), GROUP_GAP) && near(gap(settings, add), BAR_GAP), "{report:?} {settings:?} {add:?}");
 
-    // Select All latches with its lamp; Reset then names both photos, the bar holding still.
+    // Select All holds pressed in; Reset then names both photos, the bar holding still.
     assert!(!bar.get_whole());
     bar.invoke_act(Act::SelectAll);
     rig.settle();
-    assert!(bar.get_whole() && bar.get_targets() == 2, "every photo picked, the lamp lit");
+    assert!(bar.get_whole() && bar.get_targets() == 2, "every photo picked, the key pressed in");
     let (both, sent) = (bar_key(w, "Reset 2 Photos"), bar_key(w, "Export 2 Photos\u{2026}"));
     assert!(common::placed(w, Role::Button, "Reset Photo").is_empty(), "twin: the one photo's Reset is gone");
     let menu_on = |name: &str| {
@@ -301,11 +292,11 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let line_width = |text: &str| common::placed(w, Role::Button, text).first().unwrap_or_else(|| panic!("{text}")).width;
     let two = line_width("Move into a New Roll\u{2026} (2 photos)");
     rig.key("\u{1b}");
-    assert_eq!((bar_key(w, "Select All").x, both.x, both.width), (select.x, reset.x, reset.width), "the lamp lights in place, Reset keeps its room");
+    assert_eq!((bar_key(w, "Select All").x, both.x, both.width), (select.x, reset.x, reset.width), "the key sinks in place, Reset keeps its room");
     assert_eq!((sent.x, sent.width), (export.x, export.width), "Export keeps its room as its count changes");
     bar.invoke_act(Act::SelectAll);
     rig.settle();
-    assert!(!bar.get_whole() && bar.get_targets() == 1, "twin: one photo again, the lamp dark");
+    assert!(!bar.get_whole() && bar.get_targets() == 1, "twin: one photo again, the key risen");
 
     // The photo's menu: Reset in a section of its own, the ONI Trash last and alone, each with the menu bar's chord.
     menu_on("A");
@@ -343,7 +334,8 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     lib.invoke_tile_opened(tile("A"));
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     rig.settle();
-    let (select, crop, de_dust, compare) = (bar_key(w, "Select All"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
+    let (back, select, crop, de_dust, compare) = (bar_key(w, "BACK"), bar_key(w, "Select All"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
+    assert_eq!((back.x, back.width, on_bar("EDIT"), on_bar("GALLERY")), (edit.x, edit.width, 0, 0), "BACK in EDIT's place, as wide");
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
     let (reset, trash) = (bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-editor").display());
@@ -354,8 +346,6 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between Paste to Roll and Reset");
     // Twin: the faces stand between the views and the settings, a bar's gap either side.
     assert!(gap(compare, copy) > 2.0 * BAR_GAP + 100.0, "{compare:?} {copy:?}");
-    let (can, bare) = (word_at(w, trash, "Trash"), word_at(w, copy, "Copy"));
-    assert!(can >= bare + GLYPH, "twin of the gallery's: Trash's can, Copy's word alone: {can} {bare}");
     assert!(common::placed(w, Role::Button, "Whole Roll").is_empty(), "one name in both modes");
     let _ = std::fs::remove_dir_all(&root);
 }

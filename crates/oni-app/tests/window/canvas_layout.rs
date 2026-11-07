@@ -14,9 +14,9 @@ use crate::common;
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 800.0;
-/// The headless window draws the menu bar in its first points, then the 56-point bar (40 pt keys).
+/// The headless window draws the menu bar in its first points, then the 64-point bar (48 pt keys).
 const MENU: f32 = 40.0;
-const CARD_TOP: f32 = MENU + 56.0;
+const CARD_TOP: f32 = MENU + 64.0;
 /// The card's content inset, where its band's keys, the deck's tab and the status line start.
 const INSET: f32 = 24.0;
 
@@ -99,7 +99,7 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     rig.settle();
     assert!(!app.get_gallery());
     click(&rig, 40.0, MENU + 20.0);
-    assert!(app.get_gallery(), "the GALLERY key took its press");
+    assert!(app.get_gallery(), "the BACK key took its press");
     assert_eq!(room.get(), 1, "twin: a key's press never reaches the room");
     open(&rig, w, "A00");
     rig.settle();

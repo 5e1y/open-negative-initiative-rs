@@ -3,8 +3,9 @@
 import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, Tone, Tones, Tips, Clicks } from "base.slint";
 
-import { Keycap, KeycapVariant, Depth } from "depth.slint";
+import { Keycap, KeycapVariant, Depth, Inward } from "depth.slint";
 import { Lamp } from "surfaces.slint";
+import { BarFace } from "bar_face.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 
 // `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
@@ -93,6 +94,9 @@ export component Button inherits Rectangle {
     in property <bool> enabled: true;
     // A key of the window's bar: out of reach while a sheet covers the window, as AppKit's toolbar.
     in property <bool> in-bar;
+    // The bar's form: the glyph over the word at the bar's one key height, the accent on the glyph alone;
+    // `on` presses the key in, a flat key sunk into the bar, a keycap held down, never a lamp.
+    in property <bool> stacked;
     // The key Return presses on its sheet: it takes the keyboard once the sheet covers the window, a
     // field the sheet opens on aside, so an assistive tool lands on it. A panel's key never asks.
     in property <bool> default;
@@ -136,16 +140,20 @@ export component Button inherits Rectangle {
     // Within reach: enabled, and no sheet over a key of the bar.
     property <bool> live: root.enabled && !(root.in-bar && Keyboard.covered);
     // The primary's face only while it can act: out of reach, it is a key like any other.
-    property <color> tint: root.swatch ? root.fill : root.kind == ButtonKind.accent && root.live ? ButtonStyle.primary : transparent;
-    // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
-    property <color> face: root.tint.alpha > 0 ? root.tint : root.on ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
+    property <bool> primary: root.kind == ButtonKind.accent && root.live;
+    property <color> tint: root.swatch ? root.fill : root.primary && !root.stacked ? ButtonStyle.primary : transparent;
+    // A flat bar key that is on lies sunk into the bar, the well's ground its face.
+    property <bool> sunk: root.stacked && root.on && !root.keycap && !root.ghost;
+    // The tint, the sunk or lit face while on, else the plain one: the keycap's grey or a flat key's.
+    property <color> face: root.tint.alpha > 0 ? root.tint : root.sunk ? ButtonStyle.sunk
+        : root.on && !root.stacked ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
     property <bool> waiting;
     // Lifted while still hovered: going back up to the hover depth is a release, not a press.
     property <bool> lifted;
     property <bool> hovered: root.live && (touch.has-hover || root.look == Look.hover);
     property <bool> pressed: root.live && (root.look == Look.pressed || root.down);
-    property <float> target: root.pressed ? 1 : root.hovered ? Depth.hover-press : 0;
+    property <float> target: root.pressed || (root.stacked && root.on) ? 1 : root.hovered ? Depth.hover-press : 0;
     property <bool> sinking: root.down || (touch.has-hover && !root.lifted);
     property <float> depth: root.keycap ? root.target : 0;
     animate depth {
@@ -153,7 +161,7 @@ export component Button inherits Rectangle {
         easing: root.sinking ? cubic-bezier(0, 0, 0, 1) : cubic-bezier(0.79, 0.03, 0.43, 1);
     }
     property <length> radius: root.mini ? ButtonStyle.small-radius : ButtonStyle.radius;
-    property <length> pad: root.mini ? ButtonStyle.small-padding : ButtonStyle.padding;
+    property <length> pad: root.mini ? ButtonStyle.small-padding : root.stacked && !root.keycap ? ButtonStyle.bar-key-padding : ButtonStyle.padding;
     property <length> glyph: root.glyph-size > 0 ? root.glyph-size : root.mini ? ButtonStyle.mini-glyph : ButtonStyle.icon;
     property <length> legend: root.legend-size > 0 ? root.legend-size : root.mini && root.keycap ? ButtonStyle.mini-legend : ButtonStyle.legend;
     // Capitals, bold and spaced, are the keycap's: a flat key or a ghost shows its word as written.
@@ -170,10 +178,12 @@ export component Button inherits Rectangle {
         : root.ghost ? Tones.ink(root.hovered || (root.live && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
-    height: root.mini ? ButtonStyle.small-height : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
-    // Never narrower than tall, so a sign's key stays a square the hand can find.
+    height: root.mini ? ButtonStyle.small-height : root.stacked ? ButtonStyle.bar-key : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
+    // Never narrower than tall, so a sign's key stays a square the hand can find; a bar's glyph alone
+    // keeps a flat key's square width under its taller face.
     min-width: root.square ? self.height
         : root.fixed-width > 0 ? root.fixed-width
+        : root.stacked ? (root.worded ? max(self.height, max(word-measure.preferred-width, measure.preferred-width, root.glyph) + 2 * root.pad) : ButtonStyle.bar-glyph-key)
         : root.worded ? max(self.height, max(word-measure.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room)
         : self.height;
     preferred-width: self.min-width;
@@ -209,12 +219,18 @@ export component Button inherits Rectangle {
         font-weight: root.weight;
         letter-spacing: root.tracking;
     }
-    // A flat key's face inside its own edge, so it shows its extent at rest beside any other key.
-    if !root.keycap && !root.ghost: Rectangle {
+    // A flat key's face inside its own edge, so it shows its extent at rest beside any other key; on,
+    // a bar's key is a well in the bar, its own extent still drawn.
+    if !root.keycap && !root.ghost && !root.sunk: Rectangle {
         border-radius: root.radius;
         background: root.face;
         border-width: Stroke.line;
         border-color: ButtonStyle.edge;
+    }
+    if root.sunk: Inward {
+        radius: root.radius;
+        ground: root.face;
+        shade: ButtonStyle.sunk-shade;
     }
     // A flat key and a ghost lie bare, their glyph on the whole key, unmoved.
     cap := Keycap {
@@ -230,7 +246,7 @@ export component Button inherits Rectangle {
             border-radius: root.keycap ? Depth.face-corner * parent.factor : root.radius;
             background: root.pressed ? ButtonStyle.veil-pressed : root.hovered ? ButtonStyle.veil : transparent;
         }
-        Face {
+        if !root.stacked: Face {
             opacity: root.fade;
             word: root.word;
             worded: root.worded;
@@ -245,6 +261,22 @@ export component Button inherits Rectangle {
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px) : 0px;
             lamp-shown: root.latch;
             lamp-lit: root.on;
+        }
+        // Pressed in, the legend sinks with the face, as a held keycap's does.
+        if root.stacked: BarFace {
+            y: root.sunk ? Depth.travel : 0px;
+            opacity: root.fade;
+            word: root.word;
+            worded: root.worded;
+            icon: root.icon;
+            turned: root.turned;
+            glyph: root.glyph;
+            ink: root.ink;
+            glyph-ink: root.primary && root.glyph-ink.alpha == 0 ? ButtonStyle.primary-glyph : root.ink;
+            legend: root.legend;
+            weight: root.weight;
+            tracking: root.tracking;
+            word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad : 0px;
         }
     }
     // Out of reach, the key still tells its help under the hand, so it can say why; it takes no press.

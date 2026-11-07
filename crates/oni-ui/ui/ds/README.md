@@ -16,7 +16,7 @@ and every screen picks it up.
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
 | `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
-| `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
@@ -57,7 +57,7 @@ width as it changes, on screen and on a contact sheet's numbers.
 Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face`) inside its own edge, the
 dividers' line (`ButtonStyle.edge`), its glyph and word on it, so every key shows its extent at rest and two
 keys side by side read apart before the hand reaches either. A `Keycap` stands only where the use site sets
-`keycap: true`: the mode switch (EDITOR, GALLERY), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
+`keycap: true`: the mode switch (EDIT, BACK), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
 PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE, GOT IT, GET STARTED, SEND), the
 automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the Scanner
 face's step keys, − and + beside each of its rails. A question's answers and a passing notice's OK stay
@@ -69,6 +69,11 @@ oni-lab) draws a still key once and a pressed one once a frame.
 
 - **Sizes** (`ButtonSize`): `regular` the 32 pt flat key (40 pt as a keycap), `mini` the 24 pt key of a
   section's header, a row or the canvas's header. A worded key is never narrower than tall.
+- **The bar's form** (`stacked`): every key of the window's bar, flat or keycap, its glyph over its word at
+  `ButtonStyle.bar-key` (48 pt), the bar's tab bars as tall; short of room a flat key keeps its glyph alone
+  on a `bar-glyph-key`-wide key. Its accent is the glyph's alone (`ButtonStyle.primary-glyph`) on the bar's
+  grey keycap, never a fill; `on` presses it in, a flat key a hollow in the bar (`ButtonStyle.sunk`, the
+  tab bar's ground and shade) with its legend sunk a travel, a keycap held down: no lamp on the bar.
 - **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent sunk into the
   keycap's grey (`ButtonStyle.primary`), calm beside the photo, and grey while out of reach; `destructive`,
   a plain key whose glyph or word takes a light red (`Colour.destructive-ink`) while the hand or the keyboard
@@ -77,8 +82,8 @@ oni-lab) draws a still key once and a pressed one once a frame.
 - **States**: the hand lights the face (`ButtonStyle.veil`), a press a step more and, on a keycap, sinks
   the cap (`KeycapPress`: `Depth.hover-press` under the hand, the whole way in `Depth.press-time`, held
   `Depth.min-hold`, risen in `Depth.release-time`); `on` lights the face as a selected row is lit, never
-  tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`). A `latch` key, a mode's
-  as the crop, compare, De-dust and the measuring window, carries a `Lamp` after its word on its middle
+  tinted (`ButtonStyle.on`), and keeps the key's glyph, or rings a swatch (`fill`). A `latch` key off the
+  bar, a mode's as the measuring window, carries a `Lamp` after its word on its middle
   line, dark glass in a light rim at rest (over 3:1 on the face, `SurfaceStyle.lamp-rim`) until `on` lights
   it in the LCD's phosphor (`ButtonStyle.latch`), its light blooming on the face around it (`SurfaceStyle.lamp-glow`
   past the glass, `lamp-bloom` at the middle), so it tells it latches before the press and reads on at a glance. Out of reach, every

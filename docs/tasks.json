@@ -7767,5 +7767,40 @@
     "title": "Remove from Project says where a removed photo still shows",
     "status": "done",
     "detail": "Eighth review of the projects, point 4: Remove from Project leaves another project's placeholder, which then shows the photo there, often a filing made in 1.5.6 and never seen in this build, while the notice said only that the photo was removed. Fix: remove_from returns the paths that left, sorted, and project::removed_said appends, for each project still showing any of them after the gesture (gestures::shown_in on the same reach), \"It now shows in “Trip”.\" for one photo, else \"One of them now shows in “Trip”.\" or \"{n} of them now show in “Trip”.\"; the cell menu's notice says it, with Undo as before. French and Spanish translated. Checks: placeholder_tests adding_the_photo_to_client_takes_the_hidden_placeholder_with_it (a removed from Portfolio alone: \"One photo removed from “Portfolio”. It now shows in “Trip”.\"; twin: removed from Client with nothing else showing it, the plain sentence); window project_placeholder (Remove A from Portfolio says it now shows in Trip; twin: B out of Tour shows nowhere else, Portfolio's stale print a missing tile elsewhere, the plain sentence; both undone through the notice, the column back to Tour 1, Trip 0, Portfolio 2)."
+  },
+  {
+    "id": 1573,
+    "type": "design",
+    "title": "Every key of the bar stands vertical, its glyph over its word, all at one height",
+    "status": "done",
+    "detail": "Owner: the bar's keys read as words with a small mark; an icon comes back on every key, set over its title. Button gains the bar's form (`stacked`): glyph over word (ds/bar_face.slint) at ButtonStyle.bar-key, 48 pt, flat keys and keycaps alike; the bar grows to 64 pt (ShellStyle.bar-height) and its tab bars, the faces and Prepare's steps, stand as tall, so the bar's line holds end to end. Undo, Redo, Feedback, Phone and Settings take a word as every other key; short of room every flat key keeps its glyph alone on a 32 pt key, decided once the bar is laid (a binding would feed the history's widths back into the width that decides them). New icons in the Trinil stroke: back, edit, gauge (Prepare Roll), folder-add (Add Folder), update. Checks: window toolbar_keys every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_is_pressed_in (every key of both bars 48 pt tall, each word centred under its key's middle with its glyph drawn over it; twins: the window's other keys are of other heights, nothing drawn beside the glyph); toolbar (Settings wider than Phone, sized by their words), canvas_layout (the card under the 64 pt bar)."
+  },
+  {
+    "id": 1574,
+    "type": "design",
+    "title": "A bar key that holds a state is pressed in while it holds, no lamp",
+    "status": "done",
+    "detail": "Owner: the ○ lamps of Select All, Crop, De-dust and Compare are ugly; the key itself says it is on. A stacked flat key that is on lies as a hollow in the bar (the DS's Inward on ButtonStyle.sunk, the tab bar's ground and shade), its legend sunk one travel, white on the dark ground; a stacked keycap on is held down; plain while off; the lamp stays for latches off the bar. Checks: toolbar_keys (Crop, De-dust, Compare and Select All each sink under the bar's ground while on and rise over it off, as wide; twins: Copy beside them stays raised, each let go reads plain again; with `sunk` undone the check fails)."
+  },
+  {
+    "id": 1575,
+    "type": "design",
+    "title": "EXPORT is the bar's grey keycap, its accent on its glyph alone",
+    "status": "done",
+    "detail": "Owner: unconvinced by EXPORT's blue fill. On the bar the primary keeps the keycap's grey and wears the accent on its glyph alone (ButtonStyle.primary-glyph, 3.5:1 on the cap), never a fill: EXPORT, ADD FOLDER… on the archive, PREPARE ROLL beside an unmeasured roll, the update's face; its place at the right end and its keycap make it the main action. A DONE off the bar keeps its accent face. Checks: toolbar_accent rewritten (each screen's commit draws some tens of accent pixels with under 5 % of its face blue; BACK, Copy and Settings none; under a tool EXPORT none; twin: the DONE's face over half blue; with the fill restored the check fails)."
+  },
+  {
+    "id": 1576,
+    "type": "design",
+    "title": "The mode key names its action: EDIT in the gallery, BACK with its chevron beside a photo or a roll",
+    "status": "done",
+    "detail": "Owner: EDITOR and GALLERY read as the place. The keycap reads EDIT with a pencil in the gallery, BACK with a back chevron in the editor and while a roll is prepared, as wide as the wider of the two so the bar holds still. French MODIFIER, RETOUR; Spanish EDITAR, VOLVER. Checks: toolbar groups (EDIT on the gallery's bar, BACK in its place and as wide in the editor, no EDITOR, GALLERY or BACK beside them); canvas_layout (the BACK key takes its press)."
+  },
+  {
+    "id": 1577,
+    "type": "change",
+    "title": "The rating filter leaves the gallery's bar",
+    "status": "done",
+    "detail": "The filter gets one place in the library sidebar for both screens (another lot); the bar drops it, Select All standing alone before PREPARE ROLL a bar's gap apart. Checks: toolbar groups (no All Photos on the bar, Select All, PREPARE ROLL and Export a bar's gap apart; twin: the measure finds the bar's keys)."
   }
 ]

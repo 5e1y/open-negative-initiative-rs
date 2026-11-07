@@ -1,0 +1,46 @@
+// A bar key's face: the glyph over its word, both centred on the key; short of room, the glyph alone.
+import { ButtonStyle } from "theme.slint";
+import { Label, Icon } from "base.slint";
+
+export component BarFace inherits Rectangle {
+    in property <string> word;
+    in property <bool> worded;
+    in property <image> icon;
+    in property <bool> turned;
+    in property <length> glyph;
+    in property <color> ink;
+    // The glyph's own ink, the view's primary wearing its accent there alone.
+    in property <color> glyph-ink: root.ink;
+    in property <length> legend;
+    in property <int> weight;
+    in property <length> tracking;
+    // A fixed key elides a word longer than its room rather than spill past its edge.
+    in property <length> word-room;
+    VerticalLayout {
+        alignment: center;
+        spacing: root.worded ? ButtonStyle.bar-legend-gap : 0px;
+        HorizontalLayout {
+            alignment: center;
+            Icon {
+                source: root.icon;
+                width: root.glyph;
+                height: root.glyph;
+                transform-rotation: root.turned ? 90deg : 0deg;
+                ink: root.glyph-ink;
+            }
+        }
+        if root.worded: HorizontalLayout {
+            alignment: center;
+            Label {
+                width: root.word-room > 0 ? min(self.preferred-width, root.word-room) : self.preferred-width;
+                overflow: elide;
+                centred: true;
+                ink: root.ink;
+                text: root.word;
+                font-size: root.legend;
+                font-weight: root.weight;
+                letter-spacing: root.tracking;
+            }
+        }
+    }
+}
