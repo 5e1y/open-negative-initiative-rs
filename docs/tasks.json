@@ -6906,5 +6906,19 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1418,
+    "type": "fix",
+    "title": "A press on a photo gives the photos the keyboard by itself, as a press on the open photo does",
+    "status": "done",
+    "detail": "Evaluation s-c82a3414 (UX Expert efficiency, Consistency and Accessibility, major, two rounds): once a photo was clicked the arrows and Return did nothing in the gallery. Cause: only the window's pointer hook took the keyboard back from a folder's row or a control, so a press Slint alone sees, as the evaluation's tool sends, left the rows holding it, their arrows walking the folders and Return renaming one. The grid's own left press now gives the photos the keyboard (`Grid.refocused`, the canvas's `refocused` way), whatever the hook does: the arrows move the pick, ⇧ and an arrow extend it, Return or Space opens the photo the keys reached, nothing ringed by the click. Space keeps opening, the gallery's and the editor's round trip key (#1246), as the arrows already pick. Check: window gallery_keys, a click on a photo that skips the hook hands ⇧→, → and Return to the photos (twin: a press beside the photos that skips it leaves the rows the arrows; run: the grid without its own press fails with the rows holding the keyboard)."
+  },
+  {
+    "id": 1419,
+    "type": "interface",
+    "title": "A slider worked by hand leaves the keyboard to the photos; Tab alone gives it the keys, ringed",
+    "status": "done",
+    "detail": "Evaluation s-c82a3414 (UX Expert efficiency, minor): after a slider was pressed, the arrows nudged it instead of walking the frames, with no ring to say so (#1159, #1237). A press, a drag or a typed value no longer gives the slider the keyboard: the `pressed` mark and its unringed hold are gone, so the arrows walk the frames and the digits rate them after any work by hand, as AppKit's sliders do without full keyboard access; Return or Escape on a typed value hands the keyboard back to the photos (`Outside.released`), even a key that skips the window's hook. Tab still reaches every slider, Tab from the photo the panel first (#1159), and a slider holding the keyboard is always ringed. Checks: window keyboard a_slider_worked_by_hand_leaves_the_arrows_to_the_photos (twin: Tab gives it the keyboard, ringed, its arrows step it) and a_number_typed_over_a_slider_readout_steps_it_there (Return hands the arrow to the photos; twin: Tab steps on from the number typed), escape (one Escape leaves the crop after a pressed slider), scanner (the photos keep the keyboard after D's slide); run: the former slider fails both keyboard checks."
   }
 ]

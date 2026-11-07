@@ -250,7 +250,7 @@ export component MainWindow inherits AppWindow {
                         width: parent.width;
                         height: parent.height - parent.status;
                         visible: root.grid-shown;
-                        Gallery { }
+                        Gallery { refocused => { root.refocus(); } }
                         CardCorners { width: parent.width; height: parent.height; }
                     }
                     // On export the card floats in the ground, all four corners showing, with no status bar.

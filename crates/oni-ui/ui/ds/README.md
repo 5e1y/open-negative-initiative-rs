@@ -108,8 +108,9 @@ One model for every control, as macOS draws it with full keyboard access:
   editable title, the grid (its photo ringed) and the open photo. Space or Return presses a key or flips a switch.
 - **One ring** (`FocusRing`, `FocusStyle`): the accent around what holds the keyboard, a gap off its edge;
   a control shows it once Tab gives it the keyboard, a field while it is typed in (`FieldFace { lit }`).
-- **A click gives the keyboard to a slider alone**: any other press gives it back to the photos, a field's own
-  aside (the window's pointer hook counts each press in `Outside`); Escape on a slider gives it back too.
+- **A click gives the keyboard to a folder's row alone**: any other press gives it back to the photos, a field's
+  own aside (the window's pointer hook counts each press in `Outside`), and a press on the grid or the open photo
+  hands it to them itself; a slider dragged or typed into leaves it with them; Escape on a control gives it back too.
 - **Tab from the photo enters the editor's panel** at its tab bar (`Keyboard.inward`), the short way to its
   sliders; the walk goes on from there through the window. A key whose holder vanished goes to the monitor
   (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the keyboard back.

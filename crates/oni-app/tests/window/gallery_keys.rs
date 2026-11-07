@@ -1,6 +1,6 @@
 //! The gallery's keyboard through the window's real event path, its pointer hook first: a click on a
-//! folder's row gives the rows the keys unringed and a key rings them, a click on a photo hands the
-//! arrows and Return to the grid, and ⌘ and ⇧ gather photos in the filmstrip beside a photo.
+//! folder's row gives the rows the keys unringed and a key rings them, a photo's own press hands the
+//! arrows and Return to the photos, and ⌘ and ⇧ gather photos in the filmstrip beside a photo.
 
 use i_slint_backend_testing::{AccessibleRole, ElementHandle};
 use oni_app::app::{Options, Shell};
@@ -128,25 +128,28 @@ pub(crate) fn a_photo_clicked_hands_the_grid_its_keys_and_a_ring_follows_the_key
     rig.settle();
     println!("shot {}", rig.shot("gallery-keys-rows").display());
 
-    // Twin: a click on a photo that Slint alone sees, as the evaluation's tool sent it, leaves the
-    // rows the arrows; the window's pointer hook is what gives them back to the photos.
+    // Twin: a press beside the photos that Slint alone sees, as the evaluation's tool sends it, leaves
+    // the rows the arrows; the window's pointer hook or the photos' own press takes them back.
+    rest(&rig);
+    let before = selected(w);
+    click(&rig, w, (1280.0 - 100.0, 740.0), None, false);
+    rig.key(&SharedString::from(Key::DownArrow));
+    assert_eq!((picked(w).as_deref(), selected(w)), (Some("Roll 2"), before), "unhooked, the rows keep the arrows");
+
+    // A press on a photo, even one Slint alone sees, gives the photos the keyboard and rings nothing:
+    // ⇧→ extends the pick, → walks the photos, Return opens the photo the keys reached.
     rest(&rig);
     click(&rig, w, tile(w, "A"), None, false);
     assert_eq!(selected(w), ["A"]);
-    key(&rig, w, Key::DownArrow);
-    assert_eq!((picked(w).as_deref(), selected(w)), (Some("Roll 2"), vec!["A".to_string()]), "unhooked, the rows keep the arrows");
-
-    // Through the hook, a click on a photo gives the grid the arrows and Return, and no ring.
-    rest(&rig);
-    click(&rig, w, tile(w, "B"), None, true);
-    assert_eq!(selected(w), ["B"]);
     assert_ne!(common::focused_label(w), "Folders", "the rows no longer hold the keyboard");
     assert_eq!(rings(w), 0, "the click rings neither the rows nor the photo");
-    key(&rig, w, Key::RightArrow);
+    rig.chord(Key::Shift, &SharedString::from(Key::RightArrow));
+    assert_eq!(selected(w), ["A", "B"], "⇧→ extends the pick");
+    rig.key(&SharedString::from(Key::RightArrow));
     assert_eq!((selected(w), picked(w).as_deref()), (vec!["C".to_string()], Some("Roll 2")), "→ walks the photos, not the rows");
     rig.settle();
     println!("shot {}", rig.shot("gallery-keys-grid").display());
-    key(&rig, w, Key::Return);
+    rig.key(&SharedString::from(Key::Return));
     rig.until("C in the editor", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("C.tif")));
     assert!(!w.global::<App>().get_gallery(), "Return opens the photo");
 

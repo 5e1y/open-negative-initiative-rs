@@ -227,6 +227,8 @@ export global Library {
 export component Grid inherits Surface {
     ground: Ground.canvas;
     clip: true;
+    // A press on the photos gives them the keyboard, as the open photo's does.
+    callback refocused();
     property <length> menu-x;
     property <length> menu-y;
     function placed() {
@@ -249,6 +251,7 @@ export component Grid inherits Surface {
         }
         pointer-event(event) => {
             if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                root.refocused();
                 Library.pointer-down(self.mouse-x, self.mouse-y + Library.scroll, event.modifiers.control || event.modifiers.meta, event.modifiers.shift);
             } else if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) {
                 Library.pointer-up(self.mouse-x, self.mouse-y + Library.scroll, event.modifiers.control || event.modifiers.meta, event.modifiers.shift);
@@ -359,6 +362,7 @@ export component Grid inherits Surface {
 
 // The gallery: the banner of an opened folder out of reach over the grid of what is kept of it.
 export component Gallery inherits VerticalLayout {
+    callback refocused();
     if Library.banner-shown: VerticalLayout {
         padding: Space.l;
         padding-bottom: 0px;
@@ -370,5 +374,8 @@ export component Gallery inherits VerticalLayout {
             acted(i) => { Library.banner-acted(i); }
         }
     }
-    Grid { vertical-stretch: 1; }
+    Grid {
+        vertical-stretch: 1;
+        refocused => { root.refocused(); }
+    }
 }
