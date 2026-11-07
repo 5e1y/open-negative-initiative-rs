@@ -49,7 +49,7 @@ impl Engine {
             image = image.lanczos(side as f64 / long);
         }
         let preview = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
-        Ok(Negative { preview, full_width: negative.full_width, undeclared: negative.undeclared })
+        Ok(Negative { preview, full_width: negative.full_width, full_height: negative.full_height, undeclared: negative.undeclared })
     }
 
     /// A picture in linear Rec. 2020 laid on the GPU as it is, for a sheet to show.

@@ -205,6 +205,10 @@ msgstr "Ocultar el panel ({})"
 msgid "Settings saved"
 msgstr "Ajustes guardados"
 
+#: crates/oni-ui/ui/card_status.slint crates/oni-ui/ui/prepare.slint
+msgid "Stop"
+msgstr "Detener"
+
 #: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Cancelar"
@@ -233,7 +237,7 @@ msgstr "Conservar los archivos NEF incompatibles"
 msgid "The best option if you already opened them in another software."
 msgstr "La mejor opción si ya los abrió en otro programa."
 
-#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "OK"
 msgstr "Aceptar"
 
@@ -312,10 +316,6 @@ msgstr "AAAA"
 #: crates/oni-ui/ui/ds/fields.slint
 msgid "Year"
 msgstr "Año"
-
-#: crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/prepare.slint
-msgid "Stop"
-msgstr "Detener"
 
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
@@ -589,7 +589,23 @@ msgstr "Cargar un perfil…"
 msgid "Get Paper Profiles…"
 msgstr "Obtener perfiles de papel…"
 
-#: crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+msgid "Preset name"
+msgstr "Nombre del preajuste"
+
+#: crates/oni-ui/ui/export.slint
+msgid "e.g. Client TIFF"
+msgstr "p. ej. TIFF cliente"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Save as Preset"
+msgstr "Guardar como preajuste"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Remove"
+msgstr "Quitar"
+
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
 msgid "Export"
 msgstr "Exportar"
 
@@ -614,20 +630,8 @@ msgid "Presets"
 msgstr "Preajustes"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit."
-msgstr "Cada uno rellena de una vez todos los ajustes de abajo, que puedes seguir cambiando. El que coincide con los ajustes queda encendido."
-
-#: crates/oni-ui/ui/export.slint
-msgid "Instagram"
-msgstr "Instagram"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Display"
-msgstr "Pantalla"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Print"
-msgstr "Impresión"
+msgid "Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit. Name the settings to save them as a key of your own: its name renames it, Remove takes it off."
+msgstr "Cada uno rellena de una vez todos los ajustes de abajo, que puedes seguir cambiando. Queda encendido aquel al que equivalen los ajustes. Pon nombre a los ajustes para guardarlos como una tecla propia: su nombre la renombra y Quitar la elimina."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Format"
@@ -684,6 +688,14 @@ msgstr "Escribe un mapa de ganancia para que las pantallas HDR muestren la image
 #: crates/oni-ui/ui/export.slint
 msgid "Brighter on HDR screens"
 msgstr "Más brillante en pantallas HDR"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Pixels"
+msgstr "Píxeles"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Bit depth"
+msgstr "Profundidad"
 
 #: crates/oni-ui/ui/export.slint
 msgid "EXIF as set beside each photo; nothing of the scanner unless left there"
@@ -2134,10 +2146,6 @@ msgid "White balance"
 msgstr "Balance de blancos"
 
 #: crates/oni-ui/ui/presets.slint
-msgid "Preset name"
-msgstr "Nombre del preajuste"
-
-#: crates/oni-ui/ui/presets.slint
 msgid "What this look is for"
 msgstr "Para qué sirve este aspecto"
 
@@ -2673,13 +2681,13 @@ msgid_plural "{n} NEF files could not be moved to the Trash."
 msgstr[0] "Un archivo NEF no pudo ir a la Papelera."
 msgstr[1] "{n} archivos NEF no pudieron ir a la Papelera."
 
-#: crates/oni-app/src/app/export_card/job.rs
-msgid "Stopping after this photo…"
-msgstr "Deteniendo tras esta foto…"
-
 #: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/writing.rs
 msgid "Export Failed"
 msgstr "No se pudo exportar"
+
+#: crates/oni-app/src/app/export_card/job.rs
+msgid "Stopping after this photo…"
+msgstr "Deteniendo tras esta foto…"
 
 #: crates/oni-app/src/app/export_card/job.rs
 msgid "{n} photo exported"
@@ -2692,6 +2700,18 @@ msgid "Stopped after {n} file was written."
 msgid_plural "Stopped after {n} files were written."
 msgstr[0] "Detenido tras escribir {n} archivo."
 msgstr[1] "Detenido tras escribir {n} archivos."
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Instagram"
+msgstr "Instagram"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Display"
+msgstr "Pantalla"
+
+#: crates/oni-app/src/app/export_card/kept.rs
+msgid "Print"
+msgstr "Impresión"
 
 #: crates/oni-app/src/app/export_card/paper_sheet.rs
 msgid "Nothing to install: the file held no RGB printer profile (CMYK profiles are not supported)."
@@ -4296,12 +4316,12 @@ msgid "{refused} left out: Custom takes RGB printer and paper profiles. CMYK pro
 msgstr "{refused} omitidos: Perfil admite perfiles RGB de impresora y de papel. Los perfiles CMYK no son compatibles, y sRGB, Display P3, Adobe RGB y ProPhoto tienen sus propias pestañas."
 
 #: crates/oni-app/src/export.rs
-msgid "These images were edited in {edited}. The previews show them in {space}."
-msgstr "Estas imágenes se editaron en {edited}. Las vistas previas las muestran en {space}."
+msgid "These photos were edited in {edited}. The canvas and these previews now show them in {space}, the space the export writes."
+msgstr "Estas fotos se editaron en {edited}. El lienzo y estas vistas previas las muestran ahora en {space}, el espacio que escribe la exportación."
 
 #: crates/oni-app/src/export.rs
-msgid "This image was edited in {edited}. The previews show them in {space}."
-msgstr "Esta imagen se editó en {edited}. Las vistas previas la muestran en {space}."
+msgid "This photo was edited in {edited}. The canvas and this preview now show it in {space}, the space the export writes."
+msgstr "Esta foto se editó en {edited}. El lienzo y esta vista previa la muestran ahora en {space}, el espacio que escribe la exportación."
 
 #: crates/oni-app/src/export.rs
 msgid "{n} Profile Installed"

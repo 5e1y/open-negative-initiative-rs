@@ -104,7 +104,7 @@ impl Ctl {
                     export::batch::End::Stopped => return with_shell(|c| c.export_ended(job::End::Stopped)),
                     export::batch::End::Failed(i, e) => {
                         let name = jobs[i].target.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                        let message = format!("{name}: {e}");
+                        let message = format!("{}: {e}", oni_i18n::named(&name));
                         return with_shell(move |c| c.export_ended(job::End::Failed(message)));
                     }
                 }

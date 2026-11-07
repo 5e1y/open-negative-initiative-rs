@@ -36,10 +36,16 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     assert_eq!(gap(note, keys), STEP, "the keys one step under the note: {note:?} {keys:?}");
     assert_eq!(gap(keys, quality), STEP, "Quality one step under the keys: {keys:?} {quality:?}");
 
-    // The summary in the panel's words; twin: the subtitle, a note with its lines opened, measures
-    // taller, so the check tells the two faces apart.
-    let summary = common::the(w, Role::Text, &e.get_bits());
-    assert_eq!(summary.height, label.height, "the summary as large as a field's label");
+    // The summary one fact a row, in the panel's words, at the panel's foot; twin: the subtitle, a
+    // note with its lines opened, measures taller, so the check tells the two faces apart.
+    let over = slint::LogicalPosition::new(quality.x + quality.width / 2.0, quality.y);
+    rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -400.0 });
+    rig.settle();
+    let rows = ["Pixels", "Bit depth", &e.get_weight_label()].map(|r| common::the(w, Role::Text, r));
+    assert!(rows.iter().all(|r| r.height == label.height), "the summary as large as a field's label: {rows:?}");
+    assert!(rows.windows(2).all(|p| p[1].y > p[0].y + p[0].height / 2.0), "each fact on a row of its own: {rows:?}");
+    rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: 400.0 });
+    rig.settle();
     let subtitle = common::the(w, Role::Text, &e.get_subtitle());
     assert!(subtitle.height > label.height, "{subtitle:?} against {label:?}");
 
@@ -85,6 +91,33 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     e.invoke_quality_step(-1);
     rig.pump();
     assert!(!lit("Instagram"), "a row set by hand lights no preset");
+
+    // Named and saved, the settings become a key of their own, lit at once; Save waits for a name.
+    let save = || common::the(w, Role::Button, "Save as Preset").middle();
+    common::click(&rig, w, save());
+    assert!(export_card::kept(&ctl).is_empty(), "twin: no name, nothing saved");
+    common::click(&rig, w, common::the(w, Role::TextInput, "Preset name").middle());
+    rig.key("Web 1080");
+    common::click(&rig, w, save());
+    rig.settle();
+    let kept = export_card::kept(&ctl);
+    assert_eq!(kept.iter().map(|k| k.name.as_str()).collect::<Vec<_>>(), ["Web 1080"]);
+    assert!(lit("Web 1080") && !lit("Instagram"), "the saved key lit");
+    rig.shot("export-presets");
+    // Another key writes its own state; the saved one's key writes every setting back in one press.
+    common::click(&rig, w, common::the(w, Role::Button, "Print").middle());
+    assert!(lit("Print") && common::placed(w, Role::TextInput, "Preset name").is_empty(), "a built-in key lit hides the name line");
+    common::click(&rig, w, common::the(w, Role::Button, "Web 1080").middle());
+    assert_eq!(export_card::card(&ctl).settings, kept[0].settings, "the saved settings back whole");
+    assert_eq!((e.get_format(), e.get_chip_title().as_str()), (1, "sRGB"));
+    // Its name renames it; Remove takes the key off and leaves the settings as they are.
+    common::click(&rig, w, common::the(w, Role::TextInput, "Preset name").middle());
+    rig.key("Client JPEG");
+    rig.settle();
+    assert!(lit("Client JPEG") && common::placed(w, Role::Button, "Web 1080").is_empty(), "the key follows its name");
+    common::click(&rig, w, common::the(w, Role::Button, "Remove").middle());
+    assert!(export_card::kept(&ctl).is_empty() && common::placed(w, Role::Button, "Client JPEG").is_empty());
+    assert_eq!(export_card::card(&ctl).settings, kept[0].settings, "Remove changes no setting");
     rig.shot("export-panel");
     let _ = std::fs::remove_dir_all(&root);
 }

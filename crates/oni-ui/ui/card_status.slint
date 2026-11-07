@@ -1,8 +1,9 @@
-// `DSStatusBar`, the one bar under the card in every mode: what loads, else the mode's own line.
+// `DSStatusBar`, the one bar under the card in every mode: what loads or exports, else the mode's own line.
 import { StatusBar, MedalPicker, Space, StatusStyle } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { Preparing } from "prepare.slint";
 import { Canvas } from "canvas_state.slint";
+import { Exporting } from "export_state.slint";
 
 export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
@@ -14,6 +15,8 @@ export component CardStatus inherits HorizontalLayout {
     in property <string> editor-line;
     property <string> saved: Canvas.saved ? " · " + @tr("Settings saved") : "";
     property <bool> loading: Library.loading != "" && !Preparing.shown;
+    // The export under way once its surface closed: its count, its progress and its Stop.
+    property <bool> exporting: Exporting.job-shown && !root.loading && !Preparing.shown;
     // `statusMedalTarget`: beside a photo with nothing selected, the open frame takes the medal. The group
     // leads the line, by the photo's name, so the line's words changing never move it under the hand.
     if !root.loading && !Preparing.shown && (root.gallery ? Library.medal-shown : Library.editor-medal-shown): MedalPicker {
@@ -26,10 +29,13 @@ export component CardStatus inherits HorizontalLayout {
     }
     StatusBar {
         horizontal-stretch: 1;
-        busy: root.loading;
-        text: root.loading ? Library.loading : Preparing.shown ? Preparing.status : root.gallery ? Library.status : root.editor-line + root.saved;
-        count: Library.loading-count;
-        fraction: Library.loading-fraction;
+        busy: root.loading || root.exporting;
+        text: root.loading ? Library.loading : root.exporting ? Exporting.job-title : Preparing.shown ? Preparing.status : root.gallery ? Library.status : root.editor-line + root.saved;
+        count: root.exporting ? Exporting.job-count : Library.loading-count;
+        fraction: root.exporting ? Exporting.job-fraction : Library.loading-fraction;
         seal: Preparing.shown ? "" : root.gallery ? Library.status-seal : Library.editor-seal;
+        key: root.exporting ? @tr("Stop") : "";
+        key-enabled: !Exporting.job-stopping;
+        key-clicked => { Exporting.job-stop(); }
     }
 }

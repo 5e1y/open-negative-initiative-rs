@@ -1,10 +1,11 @@
-//! An export from the editor unfolds beside it: the surface closes, the destination folder is shown,
-//! a card at the canvas's top-left counts the frames to the last and leaves; a failure stays in it.
+//! An export from the editor unfolds beside it: the surface closes, the status bar counts the frames
+//! to the last with its Stop, then the notice says how it ended and shows the files written.
 //! Under a rating filter Export opens on the photos it keeps, and the estimate weighs the file written.
 
 use oni_app::app::export_card::{self, job::End};
 use oni_app::app::{Options, Shell};
-use oni_app::{App, Confirm, Exporting, Library, Menus};
+use i_slint_backend_testing::AccessibleRole as Role;
+use oni_app::{App, Confirm, Exporting, Library, Menus, Told};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
@@ -17,15 +18,7 @@ use crate::common;
 
 const LONG: Duration = Duration::from_secs(120);
 
-fn click(rig: &common::Rig, x: f32, y: f32) {
-    let position = LogicalPosition::new(x, y);
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
-    rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
-    rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
-    rig.pump();
-}
-
-pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner() {
+pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the export's card is not exercised"),
@@ -86,21 +79,21 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     let chosen = Rc::new(RefCell::new(out.clone()));
     let answer = chosen.clone();
     export_card::answer_with(&ctl, Rc::new(move |_| vec![answer.borrow().clone()]));
-    let shown: Rc<RefCell<Vec<PathBuf>>> = Rc::default();
-    let record = shown.clone();
-    export_card::job::reveal_with(&ctl, Rc::new(move |p| record.borrow_mut().push(p.to_path_buf())));
     let targets = || names.iter().map(|n| oni_app::export::Target { path: folder.join(n), settings: Default::default() }).collect::<Vec<_>>();
+    let told = w.global::<Told>();
 
-    // The key pressed: the surface closes onto the editor at once and the folder is shown.
+    // The key pressed: the surface closes onto the editor at once, the status bar counts and offers Stop.
     ctl.enter_export(targets());
     rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
     assert!(e.get_shown());
     e.invoke_export();
     assert!(!e.get_shown() && !w.global::<App>().get_gallery(), "the surface closed onto the editor");
-    assert!(e.get_job_shown() && e.get_job_running(), "the card follows the export");
-    assert_eq!(*shown.borrow(), [out.clone()], "the destination folder itself is shown");
+    assert!(e.get_job_shown(), "the status bar follows the export");
     assert_eq!(e.get_job_count(), "0 of 3");
-    assert!(e.get_job_name().starts_with("A."), "the file under way: {}", e.get_job_name());
+    assert_eq!(common::placed(w, Role::Button, "Stop").len(), 1, "the status bar's Stop shows");
+    assert_eq!(common::placed(w, Role::Text, "Exporting…").len(), 1, "the status bar says what runs");
+    assert!(!told.get_shown(), "nothing told while it runs");
+    rig.shot("export-status-bar");
 
     // One at a time: the surface reopened meanwhile says so and its key starts nothing.
     ctl.enter_export(targets());
@@ -108,7 +101,6 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     assert!(e.get_subtitle().starts_with("An export is under way, 0 of 3"), "{}", e.get_subtitle());
     e.invoke_export();
     assert_eq!(export_card::job::job(&ctl).map(|j| j.1), Some(3), "no second export began");
-    assert_eq!(shown.borrow().len(), 1, "twin: nor showed its folder");
     ctl.leave_export();
 
     // Quitting meanwhile asks first; Cancel keeps the export going.
@@ -117,7 +109,8 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     assert!(confirm.get_shown() && confirm.get_title() == "An export is under way", "quitting mid-export asks");
     confirm.invoke_answered(false);
 
-    // The count advances to the last frame, then the card says so and leaves on its own.
+    // The count advances to the last frame, then the bar goes back to its line and the notice offers
+    // the files written.
     let mut seen = Vec::new();
     let start = Instant::now();
     while export_card::job::job(&ctl).is_some_and(|j| j.2.is_none()) {
@@ -126,21 +119,18 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
         seen.push(e.get_job_count().to_string());
         std::thread::sleep(Duration::from_millis(5));
     }
-    seen.push(e.get_job_count().to_string());
     seen.dedup();
     assert_eq!(seen.last().map(String::as_str), Some("3 of 3"), "{seen:?}");
     assert_eq!(export_card::job::job(&ctl), Some((3, 3, Some(End::Written))));
-    assert_eq!(e.get_job_title(), "3 photos exported");
-    assert!((e.get_job_fraction() - 1.0).abs() < 1e-6 && !e.get_job_running());
+    assert!(!e.get_job_shown(), "the status bar is the editor's again");
     assert_eq!(std::fs::read_dir(&out).unwrap().count(), 3, "every frame written");
-    // Drawn as the event loop draws, which starts the card's stay.
-    let ended = Instant::now();
-    rig.until("the card gone", Duration::from_secs(10), || {
-        rig.drawn();
-        !e.get_job_shown()
-    });
-    assert!(ended.elapsed() > Duration::from_millis(1500), "the card said so for its stay before leaving");
-    assert!(export_card::job::job(&ctl).is_none());
+    rig.settle();
+    assert!(common::placed(w, Role::Button, "Stop").is_empty(), "no Stop once it ended");
+    assert_eq!((told.get_title().as_str(), told.get_message().as_str()), ("Export", "3 photos exported"));
+    assert_eq!(told.get_action(), "Show in Finder");
+    assert_eq!(common::placed(w, Role::Button, "Show in Finder").len(), 1, "its key shows over the editor");
+    rig.shot("export-told");
+    told.invoke_closed();
 
     // A folder named but missing is made and written into, as a save makes it.
     let made = root.join("Gone").join("Here");
@@ -151,7 +141,31 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     rig.until("the export into the folder made", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert_eq!(export_card::job::job(&ctl), Some((3, 3, Some(End::Written))));
     assert_eq!(std::fs::read_dir(&made).unwrap().count(), 3, "every frame written in the folder made");
-    e.invoke_job_closed();
+    told.invoke_closed();
+
+    // Stop, clicked in the status bar, finishes the frame under way and begins none after it: frames
+    // large enough that the click lands while the first is written.
+    *chosen.borrow_mut() = root.join("Stopped");
+    let large: Vec<_> = (0..3).map(|i| root.join("Large").join(format!("L{i}.tif"))).collect();
+    for path in &large {
+        common::linear_tiff(path, 3000, 2000, 0.5);
+    }
+    ctl.enter_export(large.iter().map(|path| oni_app::export::Target { path: path.clone(), settings: Default::default() }).collect());
+    rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
+    e.invoke_export();
+    rig.drawn();
+    let stop = common::the(w, Role::Button, "Stop").middle();
+    for event in [WindowEvent::PointerPressed { position: LogicalPosition::new(stop.0, stop.1), button: PointerEventButton::Left }, WindowEvent::PointerReleased { position: LogicalPosition::new(stop.0, stop.1), button: PointerEventButton::Left }] {
+        rig.window.dispatch_event(event);
+    }
+    assert!(e.get_job_stopping() && e.get_job_title() == "Stopping after this photo…", "the click reached Stop");
+    rig.until("the export stopped", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
+    let (done, _, end) = export_card::job::job(&ctl).unwrap();
+    assert_eq!(end, Some(End::Stopped));
+    assert!(done < 3, "a frame after the stop was begun: {done}");
+    assert!(told.get_message().starts_with("Stopped after"), "{}", told.get_message());
+    told.invoke_closed();
+
     // Twin: a folder that cannot be made, in a read-only one, says why over the surface, which stays.
     let locked = root.join("Locked");
     std::fs::create_dir_all(&locked).unwrap();
@@ -163,42 +177,19 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_th
     rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
     e.invoke_export();
     assert!(e.get_notice_shown() && e.get_notice_title() == "Export Failed", "{}", e.get_notice_message());
-    assert!(e.get_shown() && export_card::job::job(&ctl).is_none(), "no export began; the surface waits");
+    assert!(e.get_shown() && export_card::job::job(&ctl).is_some_and(|j| j.2 == Some(End::Stopped)), "no export began; the surface waits");
     e.invoke_notice_closed();
 
-    // A folder that cannot be written fails in the card, which keeps the failure past its stay.
+    // A folder that cannot be written fails in the notice, naming the frame, with nothing to show.
     *chosen.borrow_mut() = locked.clone();
     e.invoke_export();
-    rig.until("the failure", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
+    rig.until("the failure", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some() && j.2 != Some(End::Stopped)));
     assert!(matches!(export_card::job::job(&ctl).and_then(|j| j.2), Some(End::Failed(_))));
-    assert!(e.get_job_failed() && e.get_job_title() == "Export Failed");
-    assert!(e.get_job_message().starts_with("A.tif: "), "the failure names its frame: {}", e.get_job_message());
-    assert!(!e.get_notice_shown(), "the failure is the card's, no sheet over the window");
-    let held = Instant::now();
-    while held.elapsed() < Duration::from_secs(3) {
-        rig.drawn();
-        rig.pump();
-        std::thread::sleep(Duration::from_millis(20));
-    }
-    assert!(e.get_job_shown(), "a failure outlasts a success's stay");
-    rig.settle();
-    println!("shot {}", rig.shot("export-card-failed").display());
-
-    // Its OK key lies at the canvas's top-left: bar 56, library 260, the canvas 40 in, the card 16 more.
-    let (left, top) = (260.0 + 40.0 + 16.0, 56.0 + 40.0 + 16.0);
-    let mut hit = None;
-    'sweep: for y in ((top as i32 - 16)..(wh as i32 - 40)).step_by(5) {
-        for x in (260..(ww as i32 - 340)).step_by(10) {
-            click(&rig, x as f32, y as f32);
-            if !e.get_job_shown() {
-                hit = Some((x as f32, y as f32));
-                break 'sweep;
-            }
-        }
-    }
-    let (x, y) = hit.expect("the card's key closes it");
-    assert!(x > left && x < left + 360.0, "the key within the card's width from the canvas's left: {x}");
-    assert!(y > top && y < top + 240.0, "the key within the card's height from the canvas's top: {y}");
+    assert_eq!(told.get_title(), "Export Failed");
+    assert!(told.get_message().starts_with("A.tif: "), "the failure names its frame: {}", told.get_message());
+    assert_eq!(told.get_action(), "", "no file written, none to show");
+    assert!(!e.get_notice_shown(), "the failure is the notice's, no sheet over the window");
+    told.invoke_closed();
     // Twin: once no export runs, quitting asks nothing.
     rig.window.dispatch_event(WindowEvent::CloseRequested);
     assert!(!confirm.get_shown(), "no export, no question on quitting");
@@ -233,7 +224,6 @@ pub(crate) fn the_estimate_weighs_the_file_the_export_writes() {
     let e = shell.window.global::<Exporting>();
     let answer = out.clone();
     export_card::answer_with(&ctl, Rc::new(move |_| vec![answer.clone()]));
-    export_card::job::reveal_with(&ctl, Rc::new(|_| {}));
 
     ctl.enter_export(vec![oni_app::export::Target { path: scan, settings: Default::default() }]);
     e.invoke_preset(0);

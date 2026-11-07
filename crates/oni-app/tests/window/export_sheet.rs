@@ -61,7 +61,6 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
         record.borrow_mut().push(ask.clone());
         vec![answer.borrow().clone()]
     }));
-    export_card::job::reveal_with(&ctl, Rc::new(|_| {}));
     // B, a 4:3 scan cropped as a roll's frame was: its row grows to its height, the file to the size said.
     let mut cropped = oni_settings::PipelineSettings::default();
     cropped.geometry.crop = oni_settings::cg::Rect { x: 0.151131, y: 0.159713, width: 0.730397, height: 0.729485 };

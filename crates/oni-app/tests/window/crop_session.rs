@@ -199,16 +199,17 @@ pub(crate) fn the_arrows_move_the_crop_and_every_readout_says_one_kept_size() {
     }
     c.invoke_frame_released(false);
     let kept = framing.get_kept().to_string();
-    assert_eq!(kept, format!("{:.0} × 64 px", width().round()), "the crop's readout rounds the crop");
+    assert_eq!(kept, format!("{:.0} × 64 px", width().floor()), "the crop's readout says the whole pixels the cut keeps");
     let rendered = ctl.state.borrow().renders();
     rig.key("\r");
     rig.until("the cropped render", Duration::from_secs(60), || ctl.state.borrow().renders() > rendered);
     rig.settle();
     let status = c.get_status().to_string();
     assert!(status.ends_with(kept.trim_end_matches(" px")), "the status bar says the crop's size: {status} against {kept}");
-    // Twin: the render's own extent, which the status bar once scaled back, is a pixel short.
+    // The render's own extent is the size every readout says; twin: the crop rounded read a pixel more.
     let full = ctl.state.borrow().placed().expect("a placed render").full;
-    assert_ne!(format!("{:.0} × {:.0} px", full.0, full.1), kept, "the render's extent rounds otherwise");
+    assert_eq!(format!("{:.0} × {:.0} px", full.0, full.1), kept, "the render cuts what the readouts say");
+    assert_ne!(format!("{:.0} × 64 px", width().round()), kept);
     assert_eq!(panel.get_tab(), 2);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);

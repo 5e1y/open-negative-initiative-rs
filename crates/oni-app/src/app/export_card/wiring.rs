@@ -33,19 +33,13 @@ impl Ctl {
             p.publish_sheet_view();
         });
         let p = me.clone();
-        e.on_preset(move |i| {
-            let Some(preset) = Preset::ALL.get(i as usize).copied() else { return };
-            let before = p.export.borrow().settings.space().clone();
-            {
-                let mut c = p.export.borrow_mut();
-                c.settings = preset.applied(&c.settings);
-            }
-            if *p.export.borrow().settings.space() != before {
-                p.space_changed();
-            } else {
-                p.export_changed(true);
-            }
-        });
+        e.on_preset(move |i| p.preset_chosen(i.max(0) as usize));
+        let p = me.clone();
+        e.on_preset_typed(move |text| p.preset_typed(&text));
+        let p = me.clone();
+        e.on_preset_save(move || p.preset_save());
+        let p = me.clone();
+        e.on_preset_remove(move || p.preset_remove());
         let p = me.clone();
         e.on_format_picked(move |i| {
             let Some(format) = Format::ALL.get(i as usize).copied() else { return };
@@ -203,8 +197,6 @@ impl Ctl {
         e.on_confirmed(move |replace| p.confirmed(replace));
         let p = me.clone();
         e.on_job_stop(move || p.stop_job());
-        let p = me.clone();
-        e.on_job_closed(move || p.close_job());
         // `PaperCorrection.automatic`: the paper's own white, read off its profile alone.
         let p = me.clone();
         e.on_auto_paper(move || {

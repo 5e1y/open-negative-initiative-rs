@@ -17,10 +17,7 @@ impl Ctl {
 
     /// The open frame's raw size in full-resolution pixels; `Geometry` alone applies the quarter turns.
     pub(super) fn image_size(&self) -> Option<(f64, f64)> {
-        let s = self.state.borrow();
-        let (_, n) = s.negative.as_ref()?;
-        let (w, h) = n.size();
-        Some((n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1))))
+        Some(self.state.borrow().negative.as_ref()?.1.full())
     }
 
     /// The open frame's kept size in whole pixels, which the crop's readout, its badge and the status

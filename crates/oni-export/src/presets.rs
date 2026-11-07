@@ -35,8 +35,8 @@ impl Preset {
             Preset::Instagram => {
                 out.set_format(Format::Jpeg);
                 out.set_space(Space::Srgb);
-                // 1440 across the narrow way clears the feed's 1080 re-encode on every ratio it takes.
-                out.resize = Resize::ShortestEdge(1440);
+                // The feed's own 1080 on the long side: a 3:2 frame lands at 1080 × 720, posted as written.
+                out.resize = Resize::LongestEdge(1080);
                 out.compress_tiff = true;
                 out.jpeg_quality = 0.92;
                 out.hdr = false;

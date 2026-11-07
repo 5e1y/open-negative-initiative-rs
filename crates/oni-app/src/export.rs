@@ -82,7 +82,7 @@ pub fn cropped_size(full: (f64, f64), settings: &PipelineSettings) -> (f64, f64)
     settings.geometry.kept_pixels(full)
 }
 
-/// The panel's first summary line.
+/// The summary's bit depth, a row of its own.
 pub fn bits(format: Format) -> &'static str {
     if format == Format::Tiff16 { tr("16 bits per channel") } else { tr("8 bits per channel") }
 }
@@ -206,13 +206,19 @@ pub fn import_report(installed: usize, refused: usize) -> Option<(String, String
     Some((title, message))
 }
 
-/// The note under the space when the previews show another space than the one edited in.
+/// The note under the space once it differs from the one edited in: the canvas shares it, so it says so.
 pub fn edited_in_note(edited_in: Option<&Space>, space: &Space, batch: bool) -> String {
     match edited_in {
-        Some(e) if e != space && batch => {
-            tr!("These images were edited in {edited}. The previews show them in {space}.", edited = e.title(), space = space.title())
-        }
-        Some(e) if e != space => tr!("This image was edited in {edited}. The previews show them in {space}.", edited = e.title(), space = space.title()),
+        Some(e) if e != space && batch => tr!(
+            "These photos were edited in {edited}. The canvas and these previews now show them in {space}, the space the export writes.",
+            edited = e.title(),
+            space = space.title()
+        ),
+        Some(e) if e != space => tr!(
+            "This photo was edited in {edited}. The canvas and this preview now show it in {space}, the space the export writes.",
+            edited = e.title(),
+            space = space.title()
+        ),
         _ => String::new(),
     }
 }
@@ -307,7 +313,10 @@ mod tests {
         let (title, message) = import_report(1, 2).unwrap();
         assert_eq!(title, "1 Profile Installed");
         assert!(message.starts_with("2 left out: Custom takes RGB printer and paper profiles."));
-        assert_eq!(edited_in_note(Some(&Space::Srgb), &Space::DisplayP3, true), "These images were edited in sRGB. The previews show them in Display P3.");
+        assert_eq!(
+            edited_in_note(Some(&Space::Srgb), &Space::DisplayP3, true),
+            "These photos were edited in sRGB. The canvas and these previews now show them in Display P3, the space the export writes."
+        );
         // Twin: the same space says nothing.
         assert_eq!(edited_in_note(Some(&Space::DisplayP3), &Space::DisplayP3, false), "");
     }

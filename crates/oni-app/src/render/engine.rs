@@ -14,10 +14,12 @@ mod tiles;
 pub use tiles::Laid;
 mod view;
 
-/// A frame's preview, resident on the GPU, and the full width it was reduced from.
+/// A frame's preview, resident on the GPU, and the full frame it was reduced from.
 pub struct Negative {
     pub preview: Source,
     pub full_width: f64,
+    /// Read off the decode, as the reduction rounds the preview's height to its own grid.
+    pub full_height: f64,
     pub undeclared: Option<bool>,
 }
 
@@ -25,6 +27,11 @@ impl Negative {
     pub fn size(&self) -> (u32, u32) {
         let e = self.preview.extent();
         (e.w, e.h)
+    }
+
+    /// The full-resolution frame the preview stands for.
+    pub fn full(&self) -> (f64, f64) {
+        (self.full_width, self.full_height)
     }
 }
 
@@ -290,7 +297,8 @@ impl Engine {
         let preview = self.graph.materialise_half(&rebuilt_edge(image)).map_err(|e| e.to_string())?;
         drop(source);
         self.graph.purge();
-        Ok(Negative { preview, full_width, undeclared })
+        let full_height = full_width * size.1 as f64 / size.0.max(1) as f64;
+        Ok(Negative { preview, full_width, full_height, undeclared })
     }
 
     /// `RawDecode.linear` at the preview's side as pixels: the decode reduced and its edge rebuilt

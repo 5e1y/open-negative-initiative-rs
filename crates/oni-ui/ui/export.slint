@@ -2,9 +2,9 @@
 // the colour space shared with the canvas's chip, and the dialogs the export raises.
 import { News } from "help.slint";
 import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, FieldStyle, SheetFooter } from "ds/ds.slint";
-import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
+import { ExportLine, PaperRow, SheetTile, PresetKey, PresetRow, Exporting } from "export_state.slint";
 import { Canvas } from "canvas_state.slint";
-export { ExportLine, PaperRow, SheetTile, Exporting }
+export { ExportLine, PaperRow, SheetTile, PresetKey, PresetRow, Exporting }
 
 // `FrameFields`: the file name with its extension, then the EXIF the file will carry, in two columns
 // of four under the picture, on the panel's ground: on the canvas's, no field's face would show.
@@ -209,6 +209,33 @@ component SpaceField inherits VerticalLayout {
     }
 }
 
+// The presets' plate, the built-in keys then the saved ones, three a row at a third of `room` each;
+// under them the name that saves the settings as they stand, or renames the saved preset lit.
+component PresetPlate inherits VerticalLayout {
+    in property <length> room;
+    property <length> column: (root.room - 2 * ButtonStyle.group-gap) / 3;
+    spacing: ButtonStyle.group-gap;
+    for row in Exporting.preset-rows: HorizontalLayout {
+        spacing: ButtonStyle.group-gap;
+        alignment: start;
+        for key in row.keys: Button { fixed-width: root.column; text: key.name; on: key.on; clicked => { Exporting.preset(key.at); } }
+    }
+    // Remove stands apart from the keys that keep, beside the name it takes off.
+    if Exporting.preset-line: HorizontalLayout {
+        padding-top: FormStyle.row-gap;
+        spacing: Space.s;
+        TextField {
+            name: @tr("Preset name");
+            value: Exporting.preset-name;
+            placeholder: @tr("e.g. Client TIFF");
+            edited(t) => { Exporting.preset-typed(t); }
+            accepted => { if (!Exporting.preset-saved) { Exporting.preset-save(); } }
+        }
+        if !Exporting.preset-saved: Button { text: @tr("Save as Preset"); enabled: Exporting.can-save-preset; clicked => { Exporting.preset-save(); } }
+        if Exporting.preset-saved: Button { text: @tr("Remove"); kind: ButtonKind.destructive; clicked => { Exporting.preset-remove(); } }
+    }
+}
+
 // `ExportPanel`: presets, rows, what the file will be, the two exits.
 export component ExportPanel inherits Surface {
     width: FormStyle.panel-width;
@@ -242,13 +269,8 @@ export component ExportPanel inherits Surface {
                 // and the one the rows equal stays lit.
                 Field {
                     label: @tr("Presets");
-                    help: @tr("Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit.");
-                    ButtonGroup {
-                        align: GroupAlign.fill;
-                        Button { text: @tr("Instagram"); fills: true; on: Exporting.lit-preset == 0; clicked => { Exporting.preset(0); } }
-                        Button { text: @tr("Display"); fills: true; on: Exporting.lit-preset == 1; clicked => { Exporting.preset(1); } }
-                        Button { text: @tr("Print"); fills: true; on: Exporting.lit-preset == 2; clicked => { Exporting.preset(2); } }
-                    }
+                    help: @tr("Each fills every setting below at once, all of them still yours to change. The one the settings equal stays lit. Name the settings to save them as a key of your own: its name renames it, Remove takes it off.");
+                    PresetPlate { room: fields.width; }
                 }
                 Field {
                     label: @tr("Format");
@@ -300,10 +322,11 @@ export component ExportPanel inherits Surface {
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
                     Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
-                // What the file will be, its figures on the glass the crop's kept size reads on.
+                // What the file will be, one fact a row, its figures on the glass the crop's kept size reads on.
                 VerticalLayout {
                     spacing: FormStyle.row-gap;
-                    Field { layout: FieldLayout.spread; label: Exporting.bits; LcdReadout { text: Exporting.dims; } }
+                    Field { layout: FieldLayout.spread; label: @tr("Pixels"); LcdReadout { text: Exporting.dims; } }
+                    Field { layout: FieldLayout.spread; label: @tr("Bit depth"); LcdReadout { text: Exporting.bits; } }
                     Field { layout: FieldLayout.spread; label: Exporting.weight-label; LcdReadout { text: Exporting.weight; } }
                     if Exporting.low-precision != "": Label { role: TextRole.note; tone: Tone.warning; text: Exporting.low-precision; }
                     Label { role: TextRole.note; text: @tr("EXIF as set beside each photo; nothing of the scanner unless left there"); }
