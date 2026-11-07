@@ -20,7 +20,7 @@ const PANEL: f32 = 340.0;
 const INSET: f32 = 16.0;
 
 /// The Colour tab's blocks, each with its fold key on its title's row.
-const BLOCKS: [&str; 6] = ["Lighting", "Colour", "Effects", "Curves", "Colour Mixer", "Saturation Curve"];
+const BLOCKS: [&str; 6] = ["Colour", "Lighting", "Effects", "Curves", "Colour Mixer", "Saturation Curve"];
 
 /// A block's fold key, named by what it does: open, it hides the block; folded, it shows it.
 fn fold_key(w: &oni_app::MainWindow, title: &str) -> common::Placed {

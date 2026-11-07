@@ -92,20 +92,26 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.until("A open", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some());
     rig.pump();
     assert_eq!((panel.get_roll_state(), panel.get_roll_measured(), panel.get_roll_unmeasured()), (1, 2, 2));
-    // Balance strength, under the balance key, says it is the roll's two photos', and moved on A it
-    // reaches B, while C, left out of the roll, keeps its own.
+    // Balance strength, behind the balance key's settings, says it is the roll's two photos', and moved
+    // on A it reaches B, while C, left out of the roll, keeps its own.
     panel.set_tab(2);
     panel.invoke_tab_picked(2);
     rig.settle();
     let shared = "Shared by the 2 photos of this roll.";
-    // The Colour block lies under Lighting: the wheel brings it up.
-    let over = slint::LogicalPosition::new(w.get_panel_x() + 120.0, 500.0);
-    for _ in 0..3 {
-        rig.window.dispatch_event(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -150.0 });
-        rig.pump();
-    }
+    // Closed at first, out of a beginner's way; its settings key, beside the balance key, opens it.
+    let hidden = || common::placed(w, Role::Text, "Balance strength").is_empty() && common::placed(w, Role::Text, shared).is_empty();
+    assert!(hidden(), "Balance strength waits behind its settings key");
+    let key = common::the(w, Role::Button, "Show Balance strength");
+    let balance = common::the(w, Role::Button, "AUTO WHITE BALANCE");
+    let beside = |k: &common::Placed| k.x > balance.x + balance.width && k.y + k.height <= balance.y + balance.height;
+    assert!(beside(&key), "the settings key beside the balance key, never under it: {key:?} {balance:?}");
+    assert!(!beside(&common::Placed { y: balance.y + balance.height, ..key }), "twin: a key laid under it is refused");
+    common::click(&rig, w, key.middle());
     rig.settle();
     rig.shot("rolls-strength");
+    // Twin: open, the dose and its note show, and the key now hides them.
+    assert!(!hidden());
+    assert_eq!(common::placed(w, Role::Button, "Hide Balance strength").len(), 1);
     let (named, note) = (common::the(w, Role::Text, "Balance strength"), common::the(w, Role::Text, shared));
     assert!(note.y > named.y && note.x == named.x, "the note under Balance strength: {named:?} {note:?}");
     let strength = |name: &str| settings_of(&canonical(name)).balance_strength;

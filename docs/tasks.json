@@ -6885,5 +6885,19 @@
     "title": "A selection changed under the hand keeps the drag held; a measure's writes refresh the frames shown together",
     "status": "done",
     "detail": "Changing the frames together recorded the step under way by releasing the hand, after which the drag recorded and wrote every sidecar at each notch; it now records the step and keeps the hold. A measure's sidecars, written directly, refresh the frames shown together, and a frame together that moves bumps the store's revision so the sheet draws it. Check: store one_path a selection changed under the hand writes nothing per notch (twin: the joined frame takes its notch at release)."
+  },
+  {
+    "id": 1405,
+    "type": "interface",
+    "title": "Both faces lay the colour first: Colour, then Lighting with its Contrast; C, M, Y and TEMP, then D",
+    "status": "done",
+    "detail": "Owner's call: the Colour tab opens on the colour, against the light-first order #1318 set. On the Pro face Colour leads, then Lighting with Contrast, Paper Correction and Effects as before; on the Scanner face the colour keys and TEMP's look stand before the density key, the keypad's news at its new head. Without the colour block, on black and white, the light leads with no rule above it. Only the panel and the phone remote's mirror move: the reset groups, the pipeline and every render stay. Checks: fields both_faces_lay_the_colour_first_contrast_with_the_light (twin: the light-first and density-first orders fail), phone_link each_face_lists_the_sliders_its_tabs_show, window help_card and panel_frame read the colour first."
+  },
+  {
+    "id": 1406,
+    "type": "interface",
+    "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
+    "status": "done",
+    "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
   }
 ]
