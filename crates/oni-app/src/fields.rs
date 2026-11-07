@@ -104,8 +104,6 @@ impl Block {
 pub struct Spec {
     pub label: &'static str,
     pub range: (f32, f32),
-    /// The double click's rest, in the stored value's sense.
-    pub base: f32,
     /// `DSSlider.centre`: the value at the middle of a bent track.
     pub centre: Option<f32>,
     pub readout: Readout,
@@ -203,90 +201,67 @@ impl Field {
 
     /// The panel's spec for this value on a mosaic colour negative, the only mode the shell opens.
     pub fn spec(self) -> Spec {
-        let s = |label, range, base, readout| Spec { label, range, base, centre: None, readout, axis: None, inverted: false };
+        let s = |label, range, readout| Spec { label, range, centre: None, readout, axis: None, inverted: false };
         let warmth = |spec: Spec| Spec { axis: Some(Axis::Warmth), ..spec };
         let tint = |spec: Spec| Spec { axis: Some(Axis::Tint), ..spec };
         match self {
             // The print filters' gap in stops: red against blue, then magenta against green.
-            Field::Temperature => warmth(s("Temperature", Print::TEMPERATURE_RANGE, 0.0, Readout::Stops)),
-            Field::Tint => tint(s("Tint", Print::TINT_RANGE, 0.0, Readout::Stops)),
-            Field::ColorDensity => s("Saturation", color_density::RANGE, color_density::BASE, Readout::SignedPercent),
-            Field::Exposure => s("Exposure", Print::EXPOSURE_RANGE, 0.0, Readout::Stops),
-            Field::Highlights => s("Highlights", Print::QUARTER_RANGE, 0.0, Readout::SignedPercent),
-            Field::Shadows => s("Shadows", Print::QUARTER_RANGE, 0.0, Readout::SignedPercent),
-            Field::WhitePoint => s("White point", Print::POINT_RANGE, 0.0, Readout::SignedPercent),
+            Field::Temperature => warmth(s("Temperature", Print::TEMPERATURE_RANGE, Readout::Stops)),
+            Field::Tint => tint(s("Tint", Print::TINT_RANGE, Readout::Stops)),
+            Field::ColorDensity => s("Saturation", color_density::RANGE, Readout::SignedPercent),
+            Field::Exposure => s("Exposure", Print::EXPOSURE_RANGE, Readout::Stops),
+            Field::Highlights => s("Highlights", Print::QUARTER_RANGE, Readout::SignedPercent),
+            Field::Shadows => s("Shadows", Print::QUARTER_RANGE, Readout::SignedPercent),
+            Field::WhitePoint => s("White point", Print::POINT_RANGE, Readout::SignedPercent),
             Field::BlackPoint => Spec {
                 inverted: true,
-                ..s("Black point", Print::BLACK_POINT_RANGE, Print::RESTING_BLACK_POINT, Readout::SignedPercent)
+                ..s("Black point", Print::BLACK_POINT_RANGE, Readout::SignedPercent)
             },
-            Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, 0.0, Readout::SignedPercent),
-            Field::Vignette => s("Vignette", Vignette::RANGE, 0.0, Readout::Stops),
-            Field::Chrome => s("Chrome", SAUCE_RANGE, 0.0, Readout::Percent),
-            Field::BalanceStrength => s(
-                "Balance strength",
-                oni_settings::blocks::filter_balance::STRENGTH_RANGE,
-                oni_settings::blocks::filter_balance::RESTING_STRENGTH,
-                Readout::Percent),
+            Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
+            Field::Vignette => s("Vignette", Vignette::RANGE, Readout::Stops),
+            Field::Chrome => s("Chrome", SAUCE_RANGE, Readout::Percent),
+            Field::BalanceStrength => s("Balance strength", oni_settings::blocks::filter_balance::STRENGTH_RANGE, Readout::Percent),
             Field::DensityCeiling => {
                 let range = oni_settings::axis::density_axis::mosaic_range();
-                s(
-                    "Ceiling",
-                    (*range.start(), *range.end()),
-                    oni_settings::axis::density_axis::MOSAIC_REST,
-                    Readout::Ceiling)
+                s("Ceiling", (*range.start(), *range.end()), Readout::Ceiling)
             }
-            Field::DyeSeparation => s("Dye separation", separation::RANGE, separation::BASE, Readout::Percent),
-            Field::Angle => s("Angle", oni_settings::frame::Geometry::ANGLE_RANGE, 0.0, Readout::Degrees),
-            Field::SharpenAmount => s("Amount", Sharpen::AMOUNT_RANGE, 0.0, Readout::Times),
+            Field::DyeSeparation => s("Dye separation", separation::RANGE, Readout::Percent),
+            Field::Angle => s("Angle", oni_settings::frame::Geometry::ANGLE_RANGE, Readout::Degrees),
+            Field::SharpenAmount => s("Amount", Sharpen::AMOUNT_RANGE, Readout::Times),
             Field::SharpenRadius => Spec {
                 centre: Some(Sharpen::RADIUS_ANCHOR),
-                ..s("Radius", Sharpen::radius_range(), Sharpen::RADIUS_ANCHOR, Readout::Pixels)
+                ..s("Radius", Sharpen::radius_range(), Readout::Pixels)
             },
-            Field::SharpenHalo => s("Halo suppression", Sharpen::HALO_RANGE, Sharpen::default().halo, Readout::Percent),
-            Field::ChromaAmount => s("Amount", CHROMA_FORCE_RANGE, ChromaDenoise::default().force, Readout::Percent),
-            Field::ChromaRadius => {
-                s("Radius", ChromaDenoise::RADIUS_RANGE, ChromaDenoise::default().radius, Readout::Pixels)
-            }
-            Field::Texture => s("Texture", Texture::RANGE, 0.0, Readout::SignedTimes),
+            Field::SharpenHalo => s("Halo suppression", Sharpen::HALO_RANGE, Readout::Percent),
+            Field::ChromaAmount => s("Amount", CHROMA_FORCE_RANGE, Readout::Percent),
+            Field::ChromaRadius => s("Radius", ChromaDenoise::RADIUS_RANGE, Readout::Pixels),
+            Field::Texture => s("Texture", Texture::RANGE, Readout::SignedTimes),
             // `GainPanel` titled by its channel alone, as the Paper Correction block names them.
-            Field::PaperRed => s("Red", PaperCorrection::RANGE, 0.0, Readout::Stops),
-            Field::PaperGreen => s("Green", PaperCorrection::RANGE, 0.0, Readout::Stops),
-            Field::PaperBlue => s("Blue", PaperCorrection::RANGE, 0.0, Readout::Stops),
+            Field::PaperRed => s("Red", PaperCorrection::RANGE, Readout::Stops),
+            Field::PaperGreen => s("Green", PaperCorrection::RANGE, Readout::Stops),
+            Field::PaperBlue => s("Blue", PaperCorrection::RANGE, Readout::Stops),
             // `GainPanel`'s rows, named by the ends the mode gives them, which the panel lays.
-            Field::GainRed => s("Red", Gains::RANGE, 0.0, Readout::Stops),
-            Field::GainGreen => s("Green", Gains::RANGE, 0.0, Readout::Stops),
-            Field::GainBlue => s("Blue", Gains::RANGE, 0.0, Readout::Stops),
-            Field::GainTemperature => s("Temperature", Gains::RANGE, 0.0, Readout::Stops),
-            Field::GainTint => s("Tint", Gains::RANGE, 0.0, Readout::Stops),
-            Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, 1.0, Readout::Percent),
-            Field::FlatTemperature => warmth(s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent)),
-            Field::FlatTint => tint(s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::SignedPercent)),
+            Field::GainRed => s("Red", Gains::RANGE, Readout::Stops),
+            Field::GainGreen => s("Green", Gains::RANGE, Readout::Stops),
+            Field::GainBlue => s("Blue", Gains::RANGE, Readout::Stops),
+            Field::GainTemperature => s("Temperature", Gains::RANGE, Readout::Stops),
+            Field::GainTint => s("Tint", Gains::RANGE, Readout::Stops),
+            Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, Readout::Percent),
+            Field::FlatTemperature => warmth(s("Temperature", FlatField::COLOUR_RANGE, Readout::SignedPercent)),
+            Field::FlatTint => tint(s("Tint", FlatField::COLOUR_RANGE, Readout::SignedPercent)),
         }
     }
 
-    /// Where a double click lands on this frame: the slider's `base`, which the ceiling's reads off
-    /// the frame's mode and decode as `SettingsPane` does.
+    /// The value's one rest on this frame: where its track's tick stands, where a double click lands
+    /// and what its block's reset writes, the frame's import state in its own mode and decode.
     pub fn base(self, settings: &oni_settings::PipelineSettings) -> f32 {
-        match self {
-            Field::DensityCeiling => oni_settings::axis::density_axis::rest(settings.decoded_from_mosaic, settings.mode),
-            // `restingGains`: a measured roll is the frame's rest, its window's stops; a slide's, its own measure's.
-            Field::GainRed | Field::GainGreen | Field::GainBlue | Field::GainTemperature | Field::GainTint => {
-                let rest = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
-                let mut at = settings.clone();
-                at.gains.stops = rest;
-                self.knob().get(&at)
-            }
-            _ => self.spec().base,
+        let mut rest = oni_settings::PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic);
+        if self.block() == Some(Block::SourceBalance) {
+            // `restingGains`: a measured roll rests on its window's stops; a slide, on its own measure's.
+            rest = settings.clone();
+            rest.gains.stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
         }
-    }
-
-    /// Where a double click lands, `DSSlider`'s base: a gain goes to `Gains.base`, 0, while its block's
-    /// reset goes to the roll's stops (`base`).
-    pub fn double_click_base(self, settings: &oni_settings::PipelineSettings) -> f32 {
-        match self {
-            Field::GainRed | Field::GainGreen | Field::GainBlue | Field::GainTemperature | Field::GainTint => self.spec().base,
-            _ => self.base(settings),
-        }
+        self.knob().get(&rest)
     }
 
     /// The store's knob this slider moves.

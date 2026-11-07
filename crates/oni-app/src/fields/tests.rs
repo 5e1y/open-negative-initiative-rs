@@ -97,26 +97,27 @@ fn each_slider_spans_its_knobs_range_on_a_mosaic_negative() {
 }
 
 #[test]
-fn a_double_click_on_the_ceiling_lands_on_the_frames_own_rest() {
+fn a_value_rests_on_the_frames_own_import_state_and_measure() {
     use oni_settings::{ConversionMode, PipelineSettings};
     let slide = PipelineSettings::rest(ConversionMode::Positive, true);
     assert_eq!(Field::DensityCeiling.base(&slide), slide.density_ceiling);
     let negative = PipelineSettings::rest(ConversionMode::Negative, true);
     assert_eq!(Field::DensityCeiling.base(&negative), negative.density_ceiling);
     // Twin: the two rests differ, so a base read for the negative alone fails on the slide.
-    assert_ne!(slide.density_ceiling, Field::DensityCeiling.spec().base);
-    assert_eq!(Field::Exposure.base(&slide), 0.0, "Exposure's base is `Tone.neutral`, never the mode's rest");
+    assert_ne!(slide.density_ceiling, negative.density_ceiling);
+    // A negative's exposure rests where it came in, its window's brightest frame; a slide's at zero.
+    assert_eq!((Field::Exposure.base(&negative), Field::Exposure.base(&slide)), (1.5, 0.0));
     let mut measured = negative.clone();
     let id = oni_settings::Id::new();
     measured.roll_reference = Some(oni_settings::frame::RollReference { id, stops: [0.3, 0.0, -0.2], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
-    assert_eq!(Field::GainRed.double_click_base(&measured), 0.0, "a double click lands on Gains.base");
-    // Twin: the block's reset lands on the roll's stops.
+    assert_eq!(Field::GainRed.base(&measured), 0.3, "a gain rests on the roll's stops");
+    // Twin: the frame's own stops are not its rest.
+    measured.gains.stops = [0.5, 0.0, 0.0];
     assert_eq!(Field::GainRed.base(&measured), 0.3);
-    // A slide's temperature and tint rest on its measured gains', a double click on Gains.base.
+    // A slide's temperature and tint rest on its measured gains'.
     let mut gained = slide.clone();
     gained.measured_gains = Some([0.4, 0.1, -0.2]);
     assert!((Field::GainTemperature.base(&gained) - 0.3).abs() < 1e-6 && (Field::GainTint.base(&gained) - 0.0).abs() < 1e-6);
-    assert_eq!(Field::GainTemperature.double_click_base(&gained), 0.0);
     assert!(Field::GainTint.base(&PipelineSettings { measured_gains: Some([0.0, 0.3, 0.0]), ..slide }) > 0.29, "twin: green raised reads as tint");
 }
 
