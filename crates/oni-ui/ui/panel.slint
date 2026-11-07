@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand, Keyboard, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
@@ -19,9 +19,6 @@ export component Panel inherits Surface {
     property <length> header: rule.y + rule.height;
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
-    // Tab from the photo enters here, at the tab bar.
-    property <int> inward: Keyboard.inward;
-    changed inward => { if tabs.visible { tabs.take-keyboard(); } }
     VerticalLayout {
         // The readout, one glass inset as the panel's rows, alike on both faces: Pro's histogram, Lighting's
         // curves over it on the Colour tab; the scanner's screen on the Scanner face; the loupe under Details.

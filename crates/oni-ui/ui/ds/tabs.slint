@@ -24,8 +24,6 @@ export component Tabs inherits Rectangle {
     // The tab a check or the lab shows hovered; -1 follows the pointer alone.
     in property <int> hover-tab: -1;
     callback picked(int);
-    // The keyboard given to the bar, as Tab gives it.
-    public function take-keyboard() { keys.focus(); }
     // A selection outside the tabs shows no pill; it waits where it stood, so it never slides out.
     out property <bool> pill-shown: root.selected >= 0 && root.selected < root.tabs.length;
     // The held tab's place, written by that tab once laid, and the room either side of its label.

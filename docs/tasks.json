@@ -7249,5 +7249,19 @@
     "title": "The canvas takes the keyboard: its arrows place the crop, the measuring window and the base's picker, Return keeps them",
     "status": "done",
     "detail": "Evaluation s-f5b562fe (UX Accessibility, major): the canvas had no accessible name or action, and picking the base or cropping needed a pointer. The canvas's place in Tab's order is one element, `CanvasKeys`, the editor's and Prepare's alike: read as the photo (the status line, the scan's or the frame's name in Prepare), its description and a badge on it saying what its keys do. Holding the keyboard, its arrows place what it draws: the measuring window while it shows, on Colour too, else the crop, ⇧ ten times as far, ⌥ its right and bottom edges (one `framing::arrow`, laid through the drag's own `apply`); in Prepare the base's picker, its loupe with it, Return picking the film under it, and the measuring window. Return and the canvas's accessible default action keep the frame as the photos' Return does. The photos' own keys stay: their arrows walk the photos and Prepare's frames, and beside the crop move its frame, ⌥ resizing it there too, which the crop's help now says. Checks: window canvas_keys::the_canvas_holding_the_keyboard_places_the_window_the_crop_and_their_edges (twins: the photos' arrow moves no window; the bare arrow moves the left edge with it) and canvas_keys::prepares_floor_places_the_base_picker_and_the_window_by_the_keyboard (twins: the photos' arrow moves no picker, and walks the frames); unit framing::an_arrow_moves_the_body_and_with_option_the_right_and_bottom_edges."
+  },
+  {
+    "id": 1502,
+    "type": "fix",
+    "title": "Tab from the photos walks the bar, the sidebar, the canvas, then the panel",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (UX Accessibility, minor): three Tabs from the photo landed on a section's fold key, the bar and the canvas passed over. Tab from the photo no longer jumps into the panel (`Keyboard.inward` and the tab bar's `take-keyboard` removed, #1159): it walks the window in reading order from its top, the editor as the gallery, the canvas one stop read as the photo between the sidebar and the panel (#1501). Check: window canvas_keys::tab_walks_the_bar_the_sidebar_the_canvas_then_the_panel (twin: ⇧Tab walks the same round backwards); editor_routes no longer expects the jump."
+  },
+  {
+    "id": 1503,
+    "type": "research",
+    "title": "Lighting's sliders stay in the tree four frames together; the evaluation's tree stopped at 1000 elements",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (UX Accessibility, minor) found Lighting's sliders missing from the accessibility tree with four frames together until the library hid. Slint's MCP server caps get_element_tree at 1000 elements, the evaluation's driver asks 20000 and never reads `truncated`, and the panel comes last in the walk: the library's rows and tiles pushed it past the cap, hiding them brought it back. In the evaluation's 1728 x 1017 window, four frames together beside the library, the Exposure slider is in the tree, 756 elements on with four tiles; the driver should page with query_element_descendants. Nothing in the app changes. Check: in canvas_keys::tab_walks_the_bar_the_sidebar_the_canvas_then_the_panel (twin: on Details, Colour's sliders leave the tree)."
   }
 ]

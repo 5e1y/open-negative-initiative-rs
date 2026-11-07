@@ -116,9 +116,12 @@ One model for every control, as macOS draws it with full keyboard access:
 - **A click gives the keyboard to a folder's row alone**: any other press gives it back to the photos, a field's
   own aside (the window's pointer hook counts each press in `Outside`), and a press on the grid or the open photo
   hands it to them itself; a slider dragged or typed into leaves it with them; Escape on a control gives it back too.
-- **Tab from the photo enters the editor's panel** at its tab bar (`Keyboard.inward`), the short way to its
-  sliders; the walk goes on from there through the window. A key whose holder vanished goes to the monitor
-  (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the keyboard back.
+- **Tab from the photos walks the window from its top**, the gallery as the editor: the bar, the sidebar, the
+  canvas, the panel. The canvas is one stop read as the photo (`CanvasKeys`, the editor's and Prepare's): holding
+  the keyboard, its arrows place what it draws (the crop, the measuring window, the base's picker), ⌥ the right
+  and bottom edges, ⇧ ten times as far, Return confirms, and a badge on it says so. A key whose holder vanished
+  goes to the monitor (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the
+  keyboard back.
 - **A sheet keeps Tab inside it**: the monitor's two walls, Tab stops only while `Keyboard.covered`, hand the
   keyboard to the sheet's first control going forward and to its last going back.
 - **A sheet's default key holds the keyboard** (`Button { default }`): a footer's commit, a question's

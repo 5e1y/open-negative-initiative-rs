@@ -197,11 +197,6 @@ export component MainWindow inherits AppWindow {
             }
         }
         key-pressed(event) => {
-            // Tab from the photo enters the panel beside it, its tab bar first.
-            if (event.text == Key.Tab && self.has-focus && root.beside-photo && !App.panel-hidden && !Keyboard.covered) {
-                Keyboard.inward += 1;
-                return EventResult.accept;
-            }
             if (event.text == " " && Canvas.painting) {
                 Canvas.space-held = true;
                 return EventResult.accept;

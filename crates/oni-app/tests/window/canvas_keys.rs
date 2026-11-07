@@ -1,6 +1,7 @@
-//! The canvas by the keyboard: holding it, the canvas is read as the photo, its arrows place the
-//! measuring window, the crop and their right and bottom edges, Return keeps them; Prepare's floor
-//! places the base's picker and the measuring window alike.
+//! The canvas by the keyboard: Tab from the photos walks the bar, the sidebar, the canvas, then the
+//! panel, whose sliders stay in the tree four frames together; the canvas holding the keyboard is read
+//! as the photo, its arrows place the measuring window, the crop and their right and bottom edges,
+//! Return keeps them; Prepare's floor places the base's picker and the measuring window alike.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::app::{Options, Shell};
@@ -22,6 +23,14 @@ fn arrow(key: Key) -> SharedString {
 fn press(rig: &common::Rig, w: &oni_app::MainWindow, text: &str) {
     oni_app::outside::keyed(w.window(), || w.invoke_refocus());
     rig.key(text);
+}
+
+/// The middle of what holds the keyboard, in window points.
+fn focused_middle(w: &oni_app::MainWindow) -> Option<(f32, f32)> {
+    let inner = i_slint_core::window::WindowInner::from_pub(w.window());
+    let item = inner.focus_item.borrow().upgrade()?;
+    let (at, size) = (item.map_to_window(Default::default()), item.geometry().size);
+    Some((at.x + size.width / 2.0, at.y + size.height / 2.0))
 }
 
 /// Tab from the photos until the canvas holds the keyboard, read as the photo it shows.
@@ -64,6 +73,67 @@ fn editor(name: &str, count: usize) -> Option<(common::Rig, Shell, PathBuf)> {
     }
     rig.settle();
     Some((rig, shell, root))
+}
+
+/// The regions Tab walks from the photos, each named as it is entered, until it comes round; and
+/// whether the canvas itself took the keyboard, read as the photo.
+fn walk(rig: &common::Rig, w: &oni_app::MainWindow, back: bool) -> (Vec<&'static str>, bool) {
+    let photo = w.global::<Canvas>().get_status().to_string();
+    // The canvas's own place, in the points the focus is mapped to: the bar above it, the columns beside.
+    let canvas = common::the(w, Role::Image, &photo);
+    let (mut regions, mut read) = (Vec::new(), false);
+    w.invoke_refocus();
+    for _ in 0..160 {
+        oni_app::outside::keyed(w.window(), || w.invoke_refocus());
+        if back { rig.chord(Key::Shift, "\t") } else { rig.key("\t") }
+        let Some((x, y)) = focused_middle(w) else { continue };
+        read |= common::focused_label(w) == photo;
+        let region = if y < canvas.y { "bar" } else if x < canvas.x { "sidebar" } else if x >= canvas.x + canvas.width { "panel" } else { "canvas" };
+        if regions.last() != Some(&region) {
+            regions.push(region);
+        }
+        if regions.len() == 5 {
+            break;
+        }
+    }
+    (regions, read)
+}
+
+pub(crate) fn tab_walks_the_bar_the_sidebar_the_canvas_then_the_panel() {
+    let Some((rig, shell, root)) = editor("canvas-tab", 4) else { return };
+    let w = &shell.window;
+    let (forward, read) = walk(&rig, w, false);
+    assert_eq!(forward, ["bar", "sidebar", "canvas", "panel", "bar"], "Tab from the photos walks the window from its top");
+    assert!(read, "the canvas takes the keyboard, read as the photo");
+    // Twin: ⇧Tab walks the same round the other way, so the order read is the walk's own.
+    let (back, _) = walk(&rig, w, true);
+    assert_eq!(back[..4], ["panel", "canvas", "sidebar", "bar"]);
+
+    // Four frames together beside the library, in the evaluation's window: Lighting's sliders on screen
+    // stay in the tree, however many elements come before them.
+    rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
+    w.invoke_refocus();
+    rig.chord(Key::Control, "a");
+    rig.until("four frames together", Duration::from_secs(60), || w.global::<Canvas>().get_together());
+    rig.settle();
+    let exposure = common::placed(w, Role::Slider, "Exposure");
+    assert_eq!(exposure.len(), 1, "Lighting's Exposure is in the tree, the library shown");
+    println!("elements shown before Lighting's Exposure: {}", before_exposure(w));
+    // Twin: Details shown, Colour's sliders leave the tree.
+    let panel = w.global::<PanelState>();
+    panel.set_tab(3);
+    panel.invoke_tab_picked(3);
+    rig.settle();
+    assert!(common::placed(w, Role::Slider, "Exposure").is_empty(), "twin: a hidden pane's slider is not read");
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// How many elements a walk of the whole tree meets before the panel's Exposure slider.
+fn before_exposure(w: &oni_app::MainWindow) -> usize {
+    use i_slint_backend_testing::ElementRoot;
+    let all = w.root_element().query_descendants().match_descendants().find_all();
+    all.iter().position(|e| e.accessible_role() == Some(Role::Slider) && e.accessible_label().is_some_and(|l| l == "Exposure")).unwrap_or(all.len())
 }
 
 pub(crate) fn the_canvas_holding_the_keyboard_places_the_window_the_crop_and_their_edges() {
