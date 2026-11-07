@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1525,
+    "type": "design",
+    "title": "A slider's relief is light at rest and deepens under the hand",
+    "status": "done",
+    "detail": "An evaluation found fifteen raised knobs over inset tracks per panel reading as texture rather than a few reminders. The rail laid dsRecessed's edge and lit rim twice, its own over Inward's: it keeps Inward's alone, and its opaque body, there only for its rim, goes. One state, the hand on the row or holding the knob (a demo's look too), now grows the knob and deepens the relief: at rest the hollow's shade and the knob's black edge stand at SliderStyle.idle-relief, half, and reach a well's whole shade and a black edge under the hand and through a drag, on the rise spring. Half keeps a white knob's edge 3:1 against the lit stretch it ends; the colours, the bipolar hues and the Scanner keys are untouched. The levels' rail deepens under the hand as a slider's. Check: slider_relief drives the pointer over, onto and off a slider: half a well at rest, a whole one and a black edge under the hand and while held off the row, at rest again once let go (twins: a whole well at rest is caught; the panel beside the rail never moves)."
   }
 ]

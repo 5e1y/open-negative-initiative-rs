@@ -151,11 +151,11 @@ fade and the chrome stays. The picker's field wears the same face.
 
 - **Rail** (`DSRail` in `dsRecessed`): 8 pt, round at its ends, thin so a bipolar rail keeps its full hues
   beside the photo; `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient, the fill
-  (`SliderStyle.lit`) on its own round, then `Inward`'s shade, the black edge and the lit rim (`SliderStyle.rim`)
-  over an opaque `under`; `vertical` runs low to high upwards.
+  (`SliderStyle.lit`) on its own round, then `Inward`'s shade, edge and lit lip, the shade at
+  `SliderStyle.idle-relief` of a well's at rest and whole under the hand (`deep`); `vertical` runs low to high upwards.
 - **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls, no shadow, edged in
   black, two grip lines centred on its face, white, or the on-light ink on a light cap (`grip-turn`). It grows by
-  a scale on the rise spring, so its raster is drawn once.
+  a scale on the rise spring, so its raster is drawn once, its edge darkening from `idle-relief` to whole.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
   the hand; the stepped slider's knob carries its grip too, its − and + keycaps as tall as the knob
   (`SliderStyle.step-key`), each in the colour of the rail's end beside it, a step a press and three with ⇧;

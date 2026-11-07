@@ -77,6 +77,8 @@ export component Slider inherits VerticalLayout {
     callback held(bool);
     // The step under the hand while it slides, ahead of the value the store answers.
     property <int> hand;
+    // The hand on the row or holding the knob, as a demo shows it: the knob grows, the rail deepens.
+    property <bool> handled: root.enabled && (area.has-hover || area.held || root.look != Look.live);
     // ⇧'s step with an arrow: three on a stepped slider, as its keys take, ten on a continuous one.
     property <int> big: root.stepped ? 3 : 10;
     property <int> span: max(1, root.highest - root.lowest);
@@ -181,11 +183,12 @@ export component Slider inherits VerticalLayout {
                     low: root.low;
                     high: root.high;
                     rest: root.rest;
+                    deep: root.handled;
                 }
                 if !root.dial: Knob {
                     centre: parent.width * root.shown;
                     fill: root.knob;
-                    grown: root.enabled && (area.has-hover || area.held || root.look != Look.live);
+                    grown: root.handled;
                 }
                 area := TouchArea {
                     enabled: root.enabled;

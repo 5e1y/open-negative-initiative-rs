@@ -25,11 +25,14 @@ export global SliderStyle {
     out property <color> grip-ink: DS.palette-text-on-fill;
     out property <color> grip-ink-on-light: DS.palette-text-on-light;
     out property <float> grip-turn: 0.6;
-    // The 1 pt `trackLine` edge round the knob, and round the rail and a plot screen as every well
-    // (`Depth.well-edge`), as opacities.
+    // The 1 pt `trackLine` edge round the knob, and round a plot screen as every well (`Depth.well-edge`),
+    // as opacities.
     in-out property <float> edge: 1;
     in-out property <float> well-edge: 0.35;
-    // `dsRecessed`'s lit lower rim outside the hollow, under a third of Swift's 0.4: blurred 0.7, dropped 1.
+    // At rest, the knob's edge and the rail's hollow at this share of their depth under the hand, so a panel
+    // of sliders reads calm; half still sets a white knob's edge 3:1 against the lit stretch it ends.
+    in-out property <float> idle-relief: 0.5;
+    // `dsRecessed`'s lit lower rim outside a plot screen, under a third of Swift's 0.4: blurred 0.7, dropped 1.
     in-out property <float> rim: 0.12;
     in-out property <length> rim-blur: 0.7px;
     in-out property <length> rim-drop: 1px;
