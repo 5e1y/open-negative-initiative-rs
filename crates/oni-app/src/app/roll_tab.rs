@@ -9,7 +9,7 @@ use oni_core::Command;
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::film::{FilmStockKind, dye_family};
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{PipelineSettings, SourceEncoding};
+use oni_settings::{ConversionMode, PipelineSettings, SourceEncoding};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
@@ -25,6 +25,15 @@ pub(super) fn family_name(family: SeparationFamily) -> &'static str {
         SeparationFamily::GenericC41 => tr("Generic"),
         SeparationFamily::Ecn2 => tr("ECN-2"),
         SeparationFamily::E6 => tr("E-6"),
+    }
+}
+
+/// The name the Film Type tabs give a mode, wherever a sentence names it.
+pub(super) fn mode_name(mode: ConversionMode) -> &'static str {
+    match mode {
+        ConversionMode::Negative => tr("Negative"),
+        ConversionMode::Positive => tr("Positive"),
+        ConversionMode::Monochrome => tr("B&W"),
     }
 }
 

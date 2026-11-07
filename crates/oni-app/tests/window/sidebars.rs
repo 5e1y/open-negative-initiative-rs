@@ -1,6 +1,6 @@
 //! The sidebars' keys read off the pointer's notes: beside a photo the column's header is a select in
-//! words, a filling group spans its block with its words evenly apart, and a black and white photo has
-//! no Color block.
+//! words, a filling group spans its block with its words evenly apart, a key alone on its row spans
+//! it too, and a black and white photo has no Color block.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Tip};
@@ -24,7 +24,7 @@ fn note_at(rig: &common::Rig, tip: &Tip, x: f32, y: f32) -> Option<String> {
 fn row_of(rig: &common::Rig, tip: &Tip, x: f32, note: &str) -> Option<f32> {
     // A key removed under the pointer never says it was left: its note is cleared by hand.
     tip.set_shown(false);
-    (0..400).map(|i| i as f32 * 2.0).find(|&y| note_at(rig, tip, x, y).as_deref() == Some(note))
+    (0..500).map(|i| i as f32 * 2.0).find(|&y| note_at(rig, tip, x, y).as_deref() == Some(note))
 }
 
 /// Each note met along a line, in order, with the span it covers.
@@ -53,9 +53,14 @@ fn fills_block(met: &[(String, f32, f32)], start: f32, edge: f32) -> bool {
     met.len() > 1 && met[0].1 - start <= 4.0 && met.last().is_some_and(|last| edge - last.2 <= 4.0)
 }
 
-/// A row of keys ending inside the block, none pushed past its edge.
-fn within(met: &[(String, f32, f32)], edge: f32) -> bool {
-    met.last().is_some_and(|last| last.2 <= edge)
+/// One key across the row, from the block's one edge to the other and not past it.
+fn spans_alone(met: &[(String, f32, f32)], start: f32, edge: f32) -> bool {
+    matches!(met, [(_, from, to)] if from - start <= 4.0 && *to <= edge && edge - to <= 4.0)
+}
+
+/// One span of ink, the glyph and its word, centred on a key across the block, to within a few points.
+fn centred(words: &[(f32, f32)], start: f32, edge: f32) -> bool {
+    matches!(words, [(from, to)] if ((from + to) / 2.0 - (start + edge) / 2.0).abs() <= 3.0)
 }
 
 /// The sum of a 565 pixel's three channels, each scaled to 8 bits.
@@ -157,16 +162,24 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     // Twin: keys hugging their words, the last centred in the rest of the group.
     assert!(!evenly_apart(&[(968.0, 1000.0), (1024.0, 1059.0), (1124.0, 1210.0)], start, edge));
 
-    // Rotate & Mirror's group alike: its worded keys span the block and stop at its edge.
-    let y = row_of(&rig, &tip, left + 20.0, "Rotate 90° Clockwise").expect("Rotate at the block's left");
-    let met = notes_along(&rig, &tip, left, right, y);
-    assert!(fills_block(&met, start, edge) && within(&met, edge), "the group spans the block, inside it: {met:?}");
-    // Twin: keys running past the block's edge, as words too wide for the column push them.
-    let past = [(met[0].0.clone(), start, 1040.0), ("m".to_string(), 1041.0, 1150.0), ("v".to_string(), 1151.0, edge + 12.0)];
-    assert!(!within(&past, edge));
-    tip.set_shown(false);
-    let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
-    assert!(evenly_apart(&words, start, edge), "Rotate and both Mirrors evenly apart, each glyph with its word: {words:?}");
+    // Rotate & Mirror's keys one a row, as words naming an axis need: each alone spans the block,
+    // inside it, its glyph and word centred; the window taller, so the three stand in sight.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1000));
+    rig.settle();
+    for help in ["Rotate 90° Clockwise", "Mirror left for right", "Mirror top for bottom"] {
+        let y = row_of(&rig, &tip, left + 20.0, help).unwrap_or_else(|| panic!("{help} at the block's left"));
+        let met = notes_along(&rig, &tip, left, right, y);
+        assert!(spans_alone(&met, start, edge), "{help}: its key alone spans the block: {met:?}");
+        tip.set_shown(false);
+        let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
+        assert!(centred(&words, start, edge), "{help}: its glyph and word centred on the key: {words:?}");
+    }
+    // Twins: three keys sharing one row, the last pushed past the edge; a word left on its key.
+    let row = [("r".to_string(), start, 1040.0), ("m".to_string(), 1041.0, 1150.0), ("v".to_string(), 1151.0, edge + 12.0)];
+    assert!(!spans_alone(&row, start, edge) && !spans_alone(&row[2..], start, edge));
+    assert!(!centred(&[(start + 12.0, start + 90.0)], start, edge));
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    rig.settle();
 
     // `ColorPane`: a colour photo offers Auto White Balance; a black and white one has no Color block.
     let balance = "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";

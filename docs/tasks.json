@@ -7767,5 +7767,26 @@
     "title": "Remove from Project says where a removed photo still shows",
     "status": "done",
     "detail": "Eighth review of the projects, point 4: Remove from Project leaves another project's placeholder, which then shows the photo there, often a filing made in 1.5.6 and never seen in this build, while the notice said only that the photo was removed. Fix: remove_from returns the paths that left, sorted, and project::removed_said appends, for each project still showing any of them after the gesture (gestures::shown_in on the same reach), \"It now shows in “Trip”.\" for one photo, else \"One of them now shows in “Trip”.\" or \"{n} of them now show in “Trip”.\"; the cell menu's notice says it, with Undo as before. French and Spanish translated. Checks: placeholder_tests adding_the_photo_to_client_takes_the_hidden_placeholder_with_it (a removed from Portfolio alone: \"One photo removed from “Portfolio”. It now shows in “Trip”.\"; twin: removed from Client with nothing else showing it, the plain sentence); window project_placeholder (Remove A from Portfolio says it now shows in Trip; twin: B out of Tour shows nowhere else, Portfolio's stale print a missing tile elsewhere, the plain sentence; both undone through the notice, the column back to Tour 1, Trip 0, Portfolio 2)."
+  },
+  {
+    "id": 1595,
+    "type": "fix",
+    "title": "Rotate & Mirror's keys are named by their axis",
+    "status": "done",
+    "detail": "Evaluation: the block's two mirror keys both read “Mirror”, told apart by their help alone. Fix: they read “Mirror Horizontally” and “Mirror Vertically”, as the menus name the move (the menus' own text, so one translation: “Retourner horizontalement”, “Reflejar horizontalmente”; “Mirror Vertically” new: “Retourner verticalement”, “Reflejar verticalmente”). Words that long share no row in French or Spanish, so Rotate and the two mirrors stand one a row across the block, as Paste Crop to Roll stands under Copy and Paste Crop. Checks: window panel_bindings (each key pressed by its own words, the window 1100 pt tall so the Measuring Window's keys stay in sight; twin: no key reads Mirror alone), sidebars (each of the three alone spans the block, inside it, its glyph and word centred, the window 1000 pt tall; twins: three keys on one row with the last past the edge, a word left on its key)."
+  },
+  {
+    "id": 1596,
+    "type": "fix",
+    "title": "A mode's name is translated in the roll's default stock note",
+    "status": "done",
+    "detail": "Evaluation: “Default, from this roll's {mode} mode” took ConversionMode::label(), English only, into the French and Spanish sentence. Fix: label() removed from oni-settings (this note was its one caller); roll_tab::mode_name names a mode as the Film Type tabs do, translated (Négatif, Positif, N&B), and the note takes it. Check: window stocks (in French the note reads “Par défaut, d’après le mode Négatif de cette pellicule”; twin: it holds no “Negative”; English again after). lab.rs keeps its own translated match for the Scanner face's screen, another corrector's file."
+  },
+  {
+    "id": 1597,
+    "type": "fix",
+    "title": "The info column names the ONI Trash while it is selected",
+    "status": "done",
+    "detail": "Evaluation: with the ONI Trash selected, the column's head still showed the last roll's name (“Roll #8”), as an editable title. Fix: publish_info sets info_title to “ONI Trash” in the trash's branch; the column types over a roll's or a project's name only, the trash's a plain title of the same role; its count, note and Restore key sit under it in the head's block, as a roll's warning does, the separate block titled ONI Trash gone. Checks: window gallery (twin: before the trash the column's title reads Roll 7; with it, ONI Trash heads the column and no Roll 7 stands there; shot gallery-trash-info); library_wide the_trash_inspector_counts_and_its_key_restores_what_it_names unchanged and green."
   }
 ]

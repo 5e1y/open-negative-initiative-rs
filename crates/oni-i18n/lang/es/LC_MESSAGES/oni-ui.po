@@ -1029,10 +1029,6 @@ msgstr "Aún no hay emulsión definida"
 msgid "Description"
 msgstr "Descripción"
 
-#: crates/oni-app/src/app/organising/oni_trash.rs crates/oni-ui/ui/info_sidebar.slint
-msgid "ONI Trash"
-msgstr "Papelera de ONI"
-
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-ui/ui/info_sidebar.slint
 msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
 msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
@@ -1133,7 +1129,7 @@ msgstr "Ocultar el panel"
 msgid "Remove Dust & Scratches"
 msgstr "Eliminar polvo y arañazos"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Mirror Horizontally"
 msgstr "Reflejar horizontalmente"
 
@@ -1610,16 +1606,16 @@ msgid "Rotate 90° Clockwise"
 msgstr "Girar 90° a la derecha"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Mirror"
-msgstr "Espejo"
-
-#: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Unmirror left for right"
 msgstr "Quitar el reflejo horizontal"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Mirror left for right"
 msgstr "Reflejar horizontalmente"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Mirror Vertically"
+msgstr "Reflejar verticalmente"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Unmirror top for bottom"
@@ -1817,15 +1813,15 @@ msgstr "Tipo de película"
 msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
 msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara."
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
 msgstr "Negativo"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Positive"
 msgstr "Positivo"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "B&W"
 msgstr "B/N"
 
@@ -3534,6 +3530,10 @@ msgstr "Sin fotos de {medal}"
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Select a project"
 msgstr "Selecciona un proyecto"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/oni_trash.rs
+msgid "ONI Trash"
+msgstr "Papelera de ONI"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Select a roll"

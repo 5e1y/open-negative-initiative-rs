@@ -1,8 +1,8 @@
-//! Select Film Stock on the headless window: the stocks by brand with their artwork, a click picking
-//! the roll's stock and closing, Done and Escape changing nothing.
+//! Select Film Stock on the headless window: the default's note naming the mode in the app's language,
+//! the stocks by brand with their artwork, a click picking the roll's stock, Done and Escape changing nothing.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Library, Stocks};
+use oni_app::{AppSettings, Library, Stocks};
 use oni_core::{Archive, EditorStore};
 use oni_settings::Film;
 use oni_settings::film::FILM_STOCKS;
@@ -44,6 +44,16 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     // None picked: the first photo's mode's default, said so.
     assert_eq!(lib.get_stock().as_str(), "Generic Colour Negative");
     assert!(lib.get_stock_note().starts_with("Default, from this roll's"), "{}", lib.get_stock_note());
+    // In French the mode is named as its tabs name it, never in English inside a French sentence.
+    let settings = w.global::<AppSettings>();
+    settings.invoke_language_picked(2);
+    rig.pump();
+    assert_eq!(lib.get_stock_note().as_str(), "Par défaut, d’après le mode Négatif de cette pellicule");
+    // Twin: the mode's English name inside the French sentence.
+    assert!(!lib.get_stock_note().contains("Negative"));
+    settings.invoke_language_picked(1);
+    rig.pump();
+    assert_eq!(lib.get_stock_note().as_str(), "Default, from this roll's Negative mode", "English again");
 
     // The sheet: the brands in the catalogue's order, nothing marked.
     lib.invoke_select_roll_type();

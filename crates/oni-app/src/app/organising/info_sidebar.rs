@@ -51,6 +51,7 @@ impl Ctl {
             let (count, key) = oni_trash::inspector(s.org.trashed.len(), s.trash_picks.selection.len());
             lib.set_roll_unmeasured(false);
             lib.set_info_kind(3);
+            lib.set_info_title(tr("ONI Trash").into());
             lib.set_trash_count(count.into());
             lib.set_trash_key(key.into());
             s.org.info_loaded = None;
@@ -72,7 +73,7 @@ impl Ctl {
         let fallback = mode.and_then(|m| film_stock(Some(default_stock_id(m))));
         let (stock, note) = match (explicit, fallback, mode) {
             (Some(k), _, _) => (k.display_name.to_string(), String::new()),
-            (None, Some(k), Some(m)) => (k.display_name.to_string(), tr!("Default, from this roll's {mode} mode", mode = m.label())),
+            (None, Some(k), Some(m)) => (k.display_name.to_string(), tr!("Default, from this roll's {mode} mode", mode = crate::app::roll_tab::mode_name(m))),
             _ => (String::new(), tr("No film stock set").to_string()),
         };
         let artwork = explicit.or(fallback).and_then(|k| crate::stocks::icon(k.icon_name));

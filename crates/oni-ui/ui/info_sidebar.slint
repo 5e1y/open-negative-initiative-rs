@@ -15,18 +15,24 @@ export component Info inherits Surface {
                 padding: Space.m;
                 Label { text: Library.info-empty; tone: Tone.secondary; }
             }
-            // The roll's or the project's name heads the column, typed over where it stands.
+            // What is selected names the column: a roll's or a project's name typed over where it
+            // stands, the ONI Trash's never.
             if Library.info-kind != 0: Section {
                 separated: false;
-                EditableTitle {
+                if Library.info-kind != 3: EditableTitle {
                     text: Library.info-title;
                     placeholder: Library.info-kind == 2 ? @tr("Project name") : @tr("Roll name");
                     edited(t) => { Library.title-edited(t); }
                     committed(t) => { Library.title-committed(t); }
                 }
+                if Library.info-kind == 3: Label { role: TextRole.title; text: Library.info-title; wrap: word-wrap; }
                 if Library.roll-unmeasured: WarningBand { text: @tr("Not prepared yet"); }
                 // Words, no key: the bar's Prepare Roll stays the gallery's one commit.
                 if Library.roll-unmeasured: Label { role: TextRole.note; text: @tr("Prepare Roll, in the bar above, measures the roll before its frames are edited."); }
+                // Under the trash's name, a plain key, as Restore keeps: no key here deletes a file.
+                if Library.info-kind == 3: Label { text: Library.trash-count; }
+                if Library.info-kind == 3: Label { role: TextRole.note; text: @tr("A photo deleted in ONI waits here, its file untouched, until it is restored."); }
+                if Library.info-kind == 3 && Library.trash-key != "": Button { text: Library.trash-key; clicked => { Library.trash-restore(); } }
             }
             if Library.info-kind == 1: VerticalLayout {
                 Section {
@@ -103,14 +109,6 @@ export component Info inherits Surface {
                         left(t) => { Library.description-committed(t); }
                     }
                 }
-            }
-            // A plain key, as Restore keeps: no key here deletes a file, the trash only hides.
-            if Library.info-kind == 3: Section {
-                title: @tr("ONI Trash");
-                separated: false;
-                Label { text: Library.trash-count; }
-                Label { role: TextRole.note; text: @tr("A photo deleted in ONI waits here, its file untouched, until it is restored."); }
-                if Library.trash-key != "": Button { text: Library.trash-key; clicked => { Library.trash-restore(); } }
             }
         }
     }

@@ -111,26 +111,20 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     assert!(settings().geometry.portrait, "the switch followed the undo, so its click turns it on");
 
-    // Rotate & Mirror's keys, found by their words, the two mirrors by their help: each turns or flips
-    // the photo its own way.
-    rig.window.set_size(slint::PhysicalSize::new(1280, 1000));
+    // Rotate & Mirror's keys, found by their own words as the menus name them: each turns or flips the
+    // photo its own way; the window taller, so the keys under them stay in sight.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1100));
     rig.settle();
-    let mirror = |help: &str| {
-        let keys: Vec<_> = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "Mirror")
-            .filter(|e| e.accessible_role() == Some(Role::Button) && e.accessible_description().is_some_and(|d| d == help))
-            .collect();
-        assert_eq!(keys.len(), 1, "one Mirror key helped {help:?}");
-        let (at, size) = (keys[0].absolute_position(), keys[0].size());
-        click(&rig, at.x + size.width / 2.0, at.y + size.height / 2.0);
-    };
     press(&rig, w, Role::Button, "Rotate");
-    mirror("Mirror top for bottom");
+    press(&rig, w, Role::Button, "Mirror Vertically");
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.quarter_turns != 0, g.mirrored, g.mirrored_vertically), (true, false, true), "a quarter turn and a flip top for bottom");
-    mirror("Mirror left for right");
+    press(&rig, w, Role::Button, "Mirror Horizontally");
     rig.settle();
     assert!(settings().geometry.mirrored, "a flip left for right");
+    // Twin: no key says Mirror alone, a word both axes shared.
+    assert!(common::placed(w, Role::Button, "Mirror").is_empty(), "a key reads Mirror alone");
 
     // The crop's Reset, on the row of its kept size: all of the geometry but the measuring window.
     framing.invoke_act(oni_app::Act::WindowArm);
