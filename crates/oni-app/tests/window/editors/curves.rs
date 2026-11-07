@@ -19,14 +19,14 @@ pub(crate) fn a_point_dragged_on_the_curves_reaches_the_store_as_one_step() {
     press(&rig, start);
     let curves = || ctl.state.borrow().store().settings().manual_curves.linked.clone();
     assert_eq!(curves().points.len(), 3, "the press added a point");
-    // The editor draws the hand's value at once, ahead of the store's cadence.
+    // The editor draws the hand's value at once; the store's wait inside the hand's interval is proven
+    // on a held clock (editors::tests), as a debug build's press alone outlasts the interval (8.3 ms).
     let lift = size.h / 5.0;
     rig.window.dispatch_event(WindowEvent::PointerMoved {
         position: LogicalPosition::new(start.0 as f32, (start.1 - lift / 2.0) as f32),
     });
     let drawn = g.get_curve_dots().row_data(1).unwrap();
     assert!((f64::from(drawn.y) - (size.h / 2.0 - lift / 2.0)).abs() < 0.5, "the dot follows the pointer: {}", drawn.y);
-    assert!((curves().points[1].y - 0.5).abs() < 1e-3, "the store waits for the hand's cadence");
     // Thirty moves as fast as the pointer sends them: the store takes one per hand interval.
     let moves = 30;
     let began = std::time::Instant::now();

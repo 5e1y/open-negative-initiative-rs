@@ -7627,5 +7627,12 @@
     "title": "A project's name and place are no undo step; New Project is one, and its redo keeps the name typed",
     "status": "done",
     "detail": "Third review of the projects (point 6 and its minor points on undo): a project dragged among the others recorded a step whose undo laid back members alone, so ⌘Z did nothing; the Projects tab's New Project key recorded none, so ⌘Z after it undid the step before; an undo then a redo of New Project brought the project back under 'Project N', the name typed since lost. One rule: a step holds the projects' members and the projects a gesture made; a project's name, description and place are its own, which no step records or lays back. History::record_members opens a step only where members change or a project is made, so a reorder opens none; the key makes its project through Ctl::regroup, one step named New Project; a walk that takes a project away keeps it in its step as it went (History::keep_taken, from Ctl::regrouped), so the walk back brings it under the name it bore. Checks: history a_reorder_opens_no_step_and_a_redo_of_new_project_keeps_the_name_typed_since (twins: compared whole the reordered projects differ; the step as recorded brings back 'Project 1'), window project_steps::the_new_project_key_is_one_step_and_its_redo_keeps_the_name_typed (twin: a drag recorded as a step leaves Client; mutations: without keep_taken the redo reads 'Project 2', compared whole the drag takes the ⌘Z)."
+  },
+  {
+    "id": 1548,
+    "type": "fix",
+    "title": "The curves check leaves the store's wait to the held clock that can prove it",
+    "status": "done",
+    "detail": "editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step failed two runs in three on 'the store waits for the hand's cadence': it read the store right after the first move and needed that move within the hand's interval (8.3 ms) of the press, but a debug build's press alone took 8.5 to 9.3 ms measured (10.6 ms with its frame), after which the store rightly takes the move. Asserted only when fast enough, the wait was never exercised, which proves nothing. The wait inside the interval is proven on a held clock by editors::tests::a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step and track's hand tests; the window check keeps what only the window shows: the dot follows the pointer at once, thirty fast moves reach the store at the hand's pace (twin: a write per move), and one undo takes the drag back."
   }
 ]
