@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1529,
+    "type": "ui",
+    "title": "The gallery's inspector is headed by the roll's name, its first block Film Stock",
+    "status": "done",
+    "detail": "An evaluation found the inspector spending its first block, 'Roll', on the roll's name alone, which pushed Film Stock down. The name is now the column's own title, in the title face and typed over where it stands, with the not-prepared warning under it; Film Stock opens the blocks. A project's name heads its column the same way, the 'Project' block gone. The window check clicks the title, types the name and presses Return."
   }
 ]

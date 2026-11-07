@@ -15,24 +15,20 @@ export component Info inherits Surface {
                 padding: Space.m;
                 Label { text: Library.info-empty; tone: Tone.secondary; }
             }
+            // The roll's or the project's name heads the column, typed over where it stands.
+            if Library.info-kind != 0: Section {
+                separated: false;
+                EditableTitle {
+                    text: Library.info-title;
+                    placeholder: Library.info-kind == 2 ? @tr("Project name") : @tr("Roll name");
+                    edited(t) => { Library.title-edited(t); }
+                    committed(t) => { Library.title-committed(t); }
+                }
+                if Library.roll-unmeasured: WarningBand { text: @tr("Not prepared yet"); }
+                // Words, no key: the bar's Prepare Roll stays the gallery's one commit.
+                if Library.roll-unmeasured: Label { role: TextRole.note; text: @tr("Prepare Roll, in the bar above, measures the roll before its frames are edited."); }
+            }
             if Library.info-kind == 1: VerticalLayout {
-                if Library.roll-unmeasured: VerticalLayout {
-                    padding: Space.m;
-                    spacing: Space.s;
-                    WarningBand { text: @tr("Not prepared yet"); }
-                    // Words, no key: the bar's Prepare Roll stays the gallery's one commit.
-                    Label { role: TextRole.note; text: @tr("Prepare Roll, in the bar above, measures the roll before its frames are edited."); }
-                }
-                Section {
-                    title: @tr("Roll");
-                    separated: false;
-                    EditableTitle {
-                        text: Library.info-title;
-                        placeholder: @tr("Roll name");
-                        edited(t) => { Library.title-edited(t); }
-                        committed(t) => { Library.title-committed(t); }
-                    }
-                }
                 Section {
                     title: @tr("Film Stock");
                     help: @tr("What this roll was shot on — never guessed, only ever what a hand picks.");
@@ -79,16 +75,6 @@ export component Info inherits Surface {
                 }
             }
             if Library.info-kind == 2: VerticalLayout {
-                Section {
-                    title: @tr("Project");
-                    separated: false;
-                    EditableTitle {
-                        text: Library.info-title;
-                        placeholder: @tr("Project name");
-                        edited(t) => { Library.title-edited(t); }
-                        committed(t) => { Library.title-committed(t); }
-                    }
-                }
                 CardStack { pictures: Library.stack; }
                 Section {
                     title: @tr("Film Stocks");

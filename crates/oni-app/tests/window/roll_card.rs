@@ -1,7 +1,9 @@
 //! The info sidebar's roll card on the headless window: the folder shown is a roll with nothing
-//! picked, its first field written makes its marker as one undoable step, a focus passing through
-//! the date writes nothing, and the stock's dyes land on every frame of the roll as one step.
+//! picked, headed by its name typed over in place; its first field written makes its marker as one
+//! undoable step, a focus passing through the date writes nothing, and the stock's dyes land on
+//! every frame of the roll as one step.
 
+use i_slint_backend_testing::AccessibleRole;
 use oni_app::app::{Options, Shell};
 use oni_app::{Library, Menus, Stocks};
 use oni_core::{Archive, EditorStore};
@@ -11,7 +13,7 @@ use oni_settings::film::FILM_STOCKS;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::PipelineSettings;
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
+use slint::platform::{Key, WindowEvent};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -121,8 +123,21 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert_eq!(marker(), None, "one undo takes the marker away");
     assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "the folder stays the roll shown");
 
+    // The roll's name heads the column, the warning under it, and Film Stock is its first block.
+    let first = common::the(w, AccessibleRole::Text, "Film Stock");
+    let in_column = |words: &str| common::placed(w, AccessibleRole::Text, words).into_iter().filter(|p| p.x >= first.x - 1.0).collect::<Vec<_>>();
+    let (named, warned) = (in_column("Scans"), in_column("Not prepared yet"));
+    assert!(named.len() == 1 && warned.len() == 1, "{named:?} {warned:?}");
+    assert!(named[0].y < warned[0].y && warned[0].y < first.y, "{named:?} over {warned:?} over {first:?}");
+    assert!(in_column("Roll").is_empty(), "no block stands for the name alone");
+    assert_eq!(in_column("Film Stock").len(), 1, "twin: the same search finds a block's title");
+
     // A name typed over the title makes the roll under it, the folder keeping its own name.
-    lib.invoke_title_committed("Portra Trip".into());
+    common::click(&rig, w, named[0].middle());
+    for c in "Portra Trip".chars() {
+        rig.key(&c.to_string());
+    }
+    rig.key(&slint::SharedString::from(Key::Return));
     rig.landed(&ctl);
     assert_eq!(marker().map(|f| f.name), Some("Portra Trip".to_string()));
     assert_eq!(lib.get_info_title().as_str(), "Portra Trip");
