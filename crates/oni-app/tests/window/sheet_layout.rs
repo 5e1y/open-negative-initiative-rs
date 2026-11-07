@@ -4,7 +4,7 @@
 //! Settings sheet one height whichever section is open, and Cancel set apart from a sheet's commit.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::{Advice, AppSettings, Confirm, Help, MainWindow, OutsideProbe, Stocks};
+use oni_app::{Advice, AppSettings, Confirm, Help, MainWindow, OutsideProbe, Presets, Stocks};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
 use std::cell::Cell;
@@ -252,7 +252,7 @@ const FOOTER_GAP: f32 = 12.0;
 const GROUP_GAP: f32 = 8.0;
 
 /// A sheet's footer: Cancel flat at its left, the commit a keycap alone at its right, a clear gap between;
-/// a question's Cancel and its key a group's gap apart, a destructive key twice that.
+/// a question's destructive key twice a group's gap from Cancel; a preset's Delete alone at the left end.
 pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
@@ -291,5 +291,22 @@ pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     assert!(removing >= 2.0 * GROUP_GAP - 1.0, "a destructive key apart from Cancel: {removing} pt");
     // Twin: the measure reads a group's gap as less than the destructive key's.
     assert!(kept < removing, "twin: Cancel beside a key that keeps stands nearer: {kept} {removing}");
+    confirm.set_shown(false);
+
+    // The preset editor: Delete alone at the left end, the keys that keep the preset one group beside DONE.
+    let presets = window.global::<Presets>();
+    presets.set_form_shown(true);
+    presets.set_editing(true);
+    rig.settle();
+    rig.shot("footer-preset-editor");
+    let key = |label: &str| common::the(&window, Role::Button, label);
+    let (delete, duplicate, share, code, done) = (key("Delete"), key("Duplicate"), key("Share\u{2026}"), key("Copy Preset Code"), key("Done"));
+    let gap = |a: common::Placed, b: common::Placed| b.x - (a.x + a.width);
+    let (kept, beside, alone) = ([gap(duplicate, share), gap(share, code)], gap(code, done), gap(delete, duplicate));
+    assert!(kept.iter().all(|g| (g - GROUP_GAP).abs() < 1.0), "Duplicate, Share… and Copy Preset Code one group: {kept:?}");
+    assert!((beside - 2.0 * GROUP_GAP).abs() < 1.0 && done.level_with(&code), "the group beside DONE: {beside} pt");
+    assert!(alone > 4.0 * GROUP_GAP, "Delete alone at the left end: {alone} pt from Duplicate");
+    // Twin: Delete stands further from the keys that keep than they stand from DONE.
+    assert!(alone > beside, "twin: {alone} {beside}");
     window.hide().unwrap();
 }

@@ -1,6 +1,5 @@
 //! The top bar as the window widens: its keys keep their widths and only the room between them grows;
-//! one layout in every mode, whatever the selection, the picture's right click opening its menu; and the
-//! accent on each screen's own commit alone.
+//! one layout in every mode, whatever the selection, the picture's right click opening its menu; its groups.
 
 use oni_app::app::{Options, Shell};
 use i_slint_backend_testing::AccessibleRole as Role;
@@ -200,80 +199,11 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// The share of a key's face drawn in the accent's blue, in the window drawn now.
-fn blue(rig: &common::Rig, key: common::Placed) -> f32 {
-    let (w, px) = rig.drawn();
-    let (xs, ys) = (key.x as usize..(key.x + key.width) as usize, key.y as usize..(key.y + key.height) as usize);
-    let total = xs.len() * ys.len();
-    let lit = ys
-        .flat_map(|y| xs.clone().map(move |x| (x, y)))
-        .filter(|&(x, y)| {
-            let v = px[y * w + x].0;
-            let (r, b) = (((v >> 11) & 0x1f) * 255 / 31, (v & 0x1f) * 255 / 31);
-            b > r + 80
-        })
-        .count();
-    lit as f32 / total.max(1) as f32
-}
-
-pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the bar's accent is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-toolbar-accent-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
-    for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
-        common::graded_tiff(&folder.join(name), 120, 80, tone);
-    }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1728, 900));
-    shell.window.show().unwrap();
-    let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
-    // The bar's key so named.
-    let face = |label: &str| {
-        rig.settle();
-        let keys: Vec<_> = common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).collect();
-        assert_eq!(keys.len(), 1, "one {label:?} on the bar: {keys:?}");
-        blue(&rig, keys[0])
-    };
-    // An empty archive: a folder to add is all there is to do.
-    let add = face("ADD FOLDER…");
-    assert!(add > 0.5, "ADD FOLDER… wears the accent on the archive: {add}");
-    // A roll never measured: Prepare Roll takes it, and the slot keeps its cap without it.
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    rig.until("the roll found unmeasured", Duration::from_secs(10), || lib.get_roll_unmeasured());
-    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
-    println!("shot {}", rig.shot("toolbar-accent-unmeasured").display());
-    assert!(prepare > 0.5 && add < 0.05, "PREPARE ROLL alone wears the accent: {prepare} {add}");
-    // One Prepare Roll on screen: the info column's notice points to the bar's, with no key of its own.
-    let keys = |label: &str| common::placed(w, Role::Button, label).len();
-    assert_eq!((keys("PREPARE ROLL"), keys("Prepare Roll")), (1, 0), "the bar's key alone prepares the roll");
-    assert_eq!(common::placed(w, Role::Text, "Not prepared yet").len(), 1, "twin: the notice the key stood under shows");
-    // The projects and the ONI Trash, where neither key is the screen's: no accent.
-    lib.invoke_surface_picked(1);
-    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
-    assert!(prepare < 0.05 && add < 0.05, "no accent on the projects: {prepare} {add}");
-    lib.invoke_surface_picked(0);
-    lib.invoke_trash_row_clicked(0);
-    let (prepare, add) = (face("PREPARE ROLL"), face("ADD FOLDER…"));
-    println!("shot {}", rig.shot("toolbar-accent-trash").display());
-    assert!(prepare < 0.05 && add < 0.05, "no accent in the ONI Trash: {prepare} {add}");
-    let _ = std::fs::remove_dir_all(&root);
-}
-
-/// Swift's `DS.Space.sm` between the keys of one group.
+/// Swift's `DS.Space.sm` between the keys of one group, and twice that between the bar's groups.
 const GROUP_GAP: f32 = 8.0;
+const BAR_GAP: f32 = 16.0;
+/// The glyph a key shows before its word.
+const GLYPH: f32 = 16.0;
 
 /// The one key of the bar so named, where the layout put it.
 fn bar_key(w: &oni_app::MainWindow, label: &str) -> common::Placed {
@@ -282,12 +212,19 @@ fn bar_key(w: &oni_app::MainWindow, label: &str) -> common::Placed {
     keys[0]
 }
 
-pub(crate) fn the_keys_that_reset_or_remove_stand_last_and_apart() {
+/// How far into its key a key's word starts.
+fn word_at(w: &oni_app::MainWindow, key: common::Placed, text: &str) -> f32 {
+    let words: Vec<_> = common::placed(w, Role::Text, text).into_iter().filter(|t| key.level_with(t) && t.x >= key.x && t.x < key.x + key.width).collect();
+    assert_eq!(words.len(), 1, "{text:?} written once on its key {key:?}: {words:?}");
+    words[0].x - key.x
+}
+
+pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the bar's groups are not exercised"),
     };
-    let root = std::env::temp_dir().join(format!("oni-app-toolbar-apart-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("oni-app-toolbar-groups-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
@@ -311,19 +248,30 @@ pub(crate) fn the_keys_that_reset_or_remove_stand_last_and_apart() {
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.settle();
     let right = |k: common::Placed| k.x + k.width;
+    // Two gaps on the bar alone: a group's between its keys, a bar's between groups.
+    let gap = |a: common::Placed, b: common::Placed| b.x - right(a);
+    let near = |g: f32, want: f32| (g - want).abs() <= 1.0;
 
-    // The gallery: Reset and Trash one group, a group's gap apart, last, a wide gap after PREPARE ROLL.
-    let (prepare, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Reset"), bar_key(w, "Trash"));
-    println!("shot {}", rig.shot("toolbar-apart-gallery").display());
-    assert!(reset.x - right(prepare) >= 47.0, "Reset stands apart from PREPARE ROLL: {prepare:?} {reset:?}");
-    assert!((trash.x - right(reset) - GROUP_GAP).abs() <= 1.0, "Trash a group's gap after Reset: {reset:?} {trash:?}");
-
-    // Select All latches with its lamp; a second press leaves one photo again, its lamp dark.
+    // The gallery: PREPARE ROLL, Reset naming the photo it reaches, then Trash, a group each.
+    let (prepare, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
+    println!("shot {}", rig.shot("toolbar-groups-gallery").display());
+    assert!(near(gap(prepare, reset), BAR_GAP) && near(gap(reset, trash), BAR_GAP), "a bar's gap apart: {prepare:?} {reset:?} {trash:?}");
+    assert!(!near(gap(reset, trash), GROUP_GAP), "twin: Reset and Trash are no one group");
+    // Trash wears its can before its word; a key of a word alone starts it at its edge's padding.
     let select = bar_key(w, "Select All");
+    let (can, bare) = (word_at(w, trash, "Trash"), word_at(w, select, "Select All"));
+    assert!(can >= bare + GLYPH, "Trash's word after its can: {can} against {bare}");
+    // The app's glyphs one group, the commit's slot a bar's gap after them.
+    let (report, settings, add) = (bar_key(w, "Report a Bug / Give Feedback"), bar_key(w, "Settings"), bar_key(w, "ADD FOLDER\u{2026}"));
+    assert!(near(gap(report, settings), GROUP_GAP) && near(gap(settings, add), BAR_GAP), "{report:?} {settings:?} {add:?}");
+
+    // Select All latches with its lamp; Reset then names both photos, the bar holding still.
     assert!(!bar.get_whole());
     bar.invoke_act(Act::SelectAll);
     rig.settle();
     assert!(bar.get_whole() && bar.get_targets() == 2, "every photo picked, the lamp lit");
+    let both = bar_key(w, "Reset 2 Photos");
+    assert!(common::placed(w, Role::Button, "Reset Photo").is_empty(), "twin: the one photo's Reset is gone");
     let menu_on = |name: &str| {
         let t = oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap();
         let position = LogicalPosition::new(lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
@@ -334,43 +282,47 @@ pub(crate) fn the_keys_that_reset_or_remove_stand_last_and_apart() {
     };
     // The photo's menu on both: as wide as its widest line, word and chord, which never elides.
     menu_on("A");
-    println!("shot {}", rig.shot("toolbar-apart-menu-two").display());
+    println!("shot {}", rig.shot("toolbar-groups-menu-two").display());
     let line_width = |text: &str| common::placed(w, Role::Button, text).first().unwrap_or_else(|| panic!("{text}")).width;
     let two = line_width("Move into a New Roll\u{2026} (2 photos)");
     rig.key("\u{1b}");
-    assert_eq!(bar_key(w, "Select All").x, select.x, "the lamp lights in place");
+    assert_eq!((bar_key(w, "Select All").x, both.x, both.width), (select.x, reset.x, reset.width), "the lamp lights in place, Reset keeps its room");
     bar.invoke_act(Act::SelectAll);
     rig.settle();
     assert!(!bar.get_whole() && bar.get_targets() == 1, "twin: one photo again, the lamp dark");
 
-    // The photo's menu: Reset and the ONI Trash in the foot's section, each line with the menu bar's chord.
+    // The photo's menu: Reset in a section of its own, the ONI Trash last and alone, each with the menu bar's chord.
     menu_on("A");
-    println!("shot {}", rig.shot("toolbar-apart-menu").display());
+    println!("shot {}", rig.shot("toolbar-groups-menu").display());
     let one = line_width("Move into a New Roll\u{2026}");
     assert!(two > one, "twin: the one photo's menu, its lines fitting, keeps its rest width: {one} {two}");
     let lines: Vec<_> = lib.get_menu_lines().iter().collect();
-    let foot: Vec<&str> = lines[lines.len() - 2..].iter().map(|l| l.text.as_str()).collect();
-    assert_eq!(foot, ["Reset Settings", "Move to ONI Trash"]);
-    assert!(lines[lines.len() - 2].rule && !lines[lines.len() - 1].rule, "the foot ruled off from the verbs that keep");
+    let reveal = oni_app::platform::reveal(oni_app::platform::Platform::THIS);
+    let foot: Vec<(&str, bool)> = lines[lines.len() - 3..].iter().map(|l| (l.text.as_str(), l.rule)).collect();
+    assert_eq!(foot, [(reveal, false), ("Reset Settings", true), ("Move to ONI Trash", true)], "a rule above Reset and above the ONI Trash");
     let k = oni_app::platform::keys(oni_app::platform::Platform::THIS);
     let keys = |text: &str| lines.iter().find(|l| l.text == text).map(|l| l.keys.to_string()).unwrap_or_else(|| panic!("{text}"));
     assert_eq!((keys("Reset Settings"), keys("Move to ONI Trash")), (format!("{}R", k.command_shift), format!("{}{}", k.command, k.delete)));
     assert_eq!(keys("Copy Settings\u{2026}"), format!("{}C", k.command_shift));
-    assert!(keys(oni_app::platform::reveal(oni_app::platform::Platform::THIS)).is_empty(), "twin: a line with no chord prints none");
+    assert!(keys(reveal).is_empty(), "twin: a line with no chord prints none");
     rig.key("\u{1b}");
 
-    // The editor: Paste to Roll a family of its own, apart from Copy and Paste's group, and Whole Roll's lamp.
+    // The editor: the canvas's tools and views one group, Copy and Paste one, Paste to Roll, Reset and Trash one each.
     lib.invoke_tile_opened(tile("A"));
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     rig.settle();
+    let (crop, de_dust, compare, whole) = (bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"), bar_key(w, "Whole Roll"));
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
-    let (de_dust, reset) = (bar_key(w, "De-dust"), bar_key(w, "Reset"));
-    println!("shot {}", rig.shot("toolbar-apart-editor").display());
-    assert!((paste.x - right(copy) - GROUP_GAP).abs() <= 1.0, "Copy and Paste a group's gap apart: {copy:?} {paste:?}");
-    assert!(to_roll.x - right(paste) >= 2.0 * GROUP_GAP, "Paste to Roll twice that from Paste: {paste:?} {to_roll:?}");
-    assert!(reset.x - right(de_dust) >= 2.0 * (to_roll.x - right(paste)), "the removing keys stand further apart: {de_dust:?} {reset:?}");
-    bar_key(w, "Trash");
-    bar_key(w, "Whole Roll");
+    let (reset, trash) = (bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
+    println!("shot {}", rig.shot("toolbar-groups-editor").display());
+    for (a, b) in [(crop, de_dust), (de_dust, compare), (compare, whole), (copy, paste)] {
+        assert!(near(gap(a, b), GROUP_GAP), "one group, a group's gap apart: {a:?} {b:?}");
+    }
+    for (a, b) in [(paste, to_roll), (to_roll, reset), (reset, trash)] {
+        assert!(near(gap(a, b), BAR_GAP), "a group each, a bar's gap apart: {a:?} {b:?}");
+    }
+    let (can, bare) = (word_at(w, trash, "Trash"), word_at(w, copy, "Copy"));
+    assert!(can >= bare + GLYPH, "twin of the gallery's: Trash's can, Copy's word alone: {can} {bare}");
     assert!(common::placed(w, Role::Button, "Select All").into_iter().all(|k| k.y >= bar.get_height()), "the editor's key says Whole Roll");
     let _ = std::fs::remove_dir_all(&root);
 }

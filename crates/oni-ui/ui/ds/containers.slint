@@ -202,7 +202,7 @@ export component Sheet inherits Rectangle {
                         padding-left: SheetStyle.padding;
                         padding-right: SheetStyle.padding;
                         Engraved { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
-                        Button { text: root.exit; keycap: true; default: true; clicked => { root.dismissed(); } }
+                        Button { text: root.exit; keycap: true; kind: ButtonKind.accent; default: true; clicked => { root.dismissed(); } }
                     }
                     if root.header == SheetHeader.bar: Divider { }
                     @children
@@ -225,15 +225,22 @@ export component SheetFooter inherits HorizontalLayout {
     in property <bool> default-commit: true;
     // A commit that writes nothing, as the prepare's Skip past an empty step or a failure's OK: a flat key.
     in property <bool> passes;
+    // A key that removes, as a preset's Delete: alone at the left end, what the sheet adds then beside
+    // the commit, so it never shares a group with a key that keeps.
+    in property <string> remove;
+    in property <bool> remove-enabled: true;
     callback cancelled();
     callback backed();
     callback committed();
+    callback removed();
     spacing: ButtonStyle.group-gap;
     cross-axis-alignment: center;
+    if root.remove != "": Button { text: root.remove; kind: ButtonKind.destructive; enabled: root.remove-enabled; clicked => { root.removed(); } }
+    if root.remove != "": Rectangle { horizontal-stretch: 1; }
     if root.cancel != "": Button { text: root.cancel; clicked => { root.cancelled(); } }
     @children
     // Two gaps at the least, so what leaves never reads as one group with what commits.
-    Rectangle { horizontal-stretch: 1; }
+    Rectangle { horizontal-stretch: root.remove == "" ? 1 : 0; }
     if root.back != "": Button { text: root.back; clicked => { root.backed(); } }
     if root.commit != "": Button {
         text: root.commit;

@@ -257,7 +257,7 @@ msgstr "Nombre del rollo"
 msgid "Help on {}"
 msgstr "Ayuda sobre {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Reset"
 msgstr "Restablecer"
 
@@ -2149,6 +2149,10 @@ msgstr "Ningún preajuste seleccionado"
 msgid "Save a photo's settings to create your first preset."
 msgstr "Guarda los ajustes de una foto para crear tu primer preajuste."
 
+#: crates/oni-app/src/app/presets.rs crates/oni-app/src/app/presets/gestures.rs crates/oni-ui/ui/presets.slint
+msgid "Delete"
+msgstr "Eliminar"
+
 #: crates/oni-app/src/app/presets.rs crates/oni-ui/ui/presets.slint
 msgid "Duplicate"
 msgstr "Duplicar"
@@ -2164,10 +2168,6 @@ msgstr "Copiar código del preajuste"
 #: crates/oni-ui/ui/presets.slint
 msgid "Copies the preset as one line of text, to paste in a message."
 msgstr "Copia el preajuste como una línea de texto para pegarla en un mensaje."
-
-#: crates/oni-app/src/app/presets.rs crates/oni-app/src/app/presets/gestures.rs crates/oni-ui/ui/presets.slint
-msgid "Delete"
-msgstr "Eliminar"
 
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "All"
@@ -2333,6 +2333,12 @@ msgstr "Mostrar todo el rollo junto ({})"
 msgid "Select All ({})"
 msgstr "Seleccionar todo ({})"
 
+#: crates/oni-app/src/app/rolls.rs crates/oni-ui/ui/toolbar.slint
+msgid "Reset Photo"
+msgid_plural "Reset {n} Photos"
+msgstr[0] "Restablecer foto"
+msgstr[1] "Restablecer {n} fotos"
+
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Reset Settings ({})"
 msgstr "Restablecer ajustes ({})"
@@ -2358,6 +2364,10 @@ msgid "Crop and Straighten ({})"
 msgstr "Recortar y enderezar ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Select one photo to de-dust it"
+msgstr "Selecciona una sola foto para quitarle el polvo"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Compare"
 msgstr "Comparar"
 
@@ -2380,10 +2390,6 @@ msgstr "Pegar ajustes en {} fotos ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings ({})"
 msgstr "Pegar ajustes ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Select one photo to de-dust it"
-msgstr "Selecciona una sola foto para quitarle el polvo"
 
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
@@ -4044,12 +4050,6 @@ msgid "Reset the Roll of This Photo?"
 msgid_plural "Reset the Roll of {n} Photos?"
 msgstr[0] "¿Restablecer el rollo de esta foto?"
 msgstr[1] "¿Restablecer el rollo de {n} fotos?"
-
-#: crates/oni-app/src/app/rolls.rs
-msgid "Reset Photo"
-msgid_plural "Reset {n} Photos"
-msgstr[0] "Restablecer foto"
-msgstr[1] "Restablecer {n} fotos"
 
 #: crates/oni-app/src/app/settings_sheet.rs
 msgid "Version {version}"

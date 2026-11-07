@@ -6983,5 +6983,33 @@
     "title": "Behind a sheet the window's bar reads out of reach, to the eye and to assistive tools",
     "status": "done",
     "detail": "The bar's keys followed two rules: Undo, Redo, Paste, Reset and the mode key read the menus' state, which a sheet blanks, while Crop, Compare, Copy, De-dust, Trash, the report and settings keys, EXPORT or ADD FOLDER… and the gallery's medals read the photo alone, so they stayed lit behind the scrim and an assistive tool could press them through it. The bar's own key types, the rating filter and the face and step tabs now say they belong to the bar (`in-bar`), out of reach while `Keyboard.covered`, faded as any key out of reach, the scrim unchanged. Checks: window sheet_keys (twin: the sheet closed, the bar is live again, and Settings pressed by an assistive tool opens only then; a passing notice leaves the bar live)."
+  },
+  {
+    "id": 1426,
+    "type": "interface",
+    "title": "Both bars read by groups: one gap within a group, a bar's gap between; Reset names its photos, Trash stands last with its can",
+    "status": "done",
+    "detail": "UI evaluation (Hierarchy major, Trust, Spacing): Reset and Trash stood as twin keys in one group, 48 pt past the rest, and De-dust floated alone, so the bar's gaps varied and a reset read as a deletion. The bar now has two gaps alone, ButtonStyle.group-gap inside a group and ShellStyle.bar-gap between groups (ShellStyle.bar-apart and the Removing group go): De-dust joins Crop, Compare and Whole Roll as one family of latches; Reset and Trash are a group each, last of the centre in both modes; Reset says its scope in its word, Reset Photo or Reset {n} Photos (the plural the roll's reset already speaks), its key as wide as a roll's count so the bar holds still as the selection changes; Trash shows its can before its word at rest, red still under the hand alone; the app's glyphs (feedback, phone, settings) are one group, and the bar's full width reads that group whole. Nothing a key does changes. Checks: window toolbar the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last (a group's gap within, a bar's between, Trash's word after its can against Select All's and Copy's at their padding, Reset Photo then Reset 2 Photos in the same room; twin: Reset and Trash are no one group, the one photo's Reset gone), the bar's widths and modes checks unchanged."
+  },
+  {
+    "id": 1427,
+    "type": "interface",
+    "title": "The preset editor's Delete stands alone at the footer's left end, the keys that keep beside DONE",
+    "status": "done",
+    "detail": "UI evaluation (Hierarchy major): Delete sat in the row and style of Duplicate, Share… and Copy Preset Code, 16 pt past them. SheetFooter gains a remove slot: a key that removes stands alone at the left end, and what the sheet adds then stands beside the commit; the preset editor's Delete takes it, so Duplicate, Share… and Copy Preset Code are one group a pair of gaps from DONE. Sheets without it lay out as before. Checks: window sheet_layout a_footer_sets_cancel_apart_from_the_commit reads the three keepers a group's gap apart, beside DONE, and Delete over four gaps from them (twin: Delete further from them than they stand from DONE; the old footer fails)."
+  },
+  {
+    "id": 1428,
+    "type": "interface",
+    "title": "The photo's menu sets Move to ONI Trash last and alone, below Reset Settings",
+    "status": "done",
+    "detail": "UI evaluation (Hierarchy minor): Reset Settings and Move to ONI Trash shared the foot's section. A rule now stands above the ONI Trash too, so it is last and alone, Reset in a section of its own after every verb that keeps; chords and scopes unchanged. Checks: cells the_cell_menu_acts_on_the_selection_it_points_into_and_counts_each_verbs_own_scope reads the rules at 1, 3, 7, 9 and 10; window toolbar reads Show in Finder unruled, then Reset Settings and Move to ONI Trash each ruled."
+  },
+  {
+    "id": 1429,
+    "type": "interface",
+    "title": "Every DONE is the accent keycap: the crop's and De-dust's as a sheet's, EXPORT laying its accent down while a tool is open",
+    "status": "done",
+    "detail": "UI evaluation (Consistency minor): DONE was a dark keycap in Crop and De-dust and in the stock board's bar, a blue one in Settings and the sheets. The tools' DONE (ModeHeader) and a sheet bar's exit key now wear the accent as every SheetFooter commit does; while the crop or De-dust stands open its DONE is the view's one primary, so the bar's EXPORT (or update) slot shows plain until the tool is left. Checks: window toolbar_accent the_accent_lands_on_each_screens_own_commit (the accent checks moved out of toolbar.rs) reads, in the crop and in De-dust, DONE in the accent and EXPORT without it (twin: the tool left, EXPORT takes it back and no DONE shows; the old panel fails)."
   }
 ]
