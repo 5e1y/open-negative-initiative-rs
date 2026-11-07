@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips, KeyScope } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Colour, Type, Menu, Tips, KeyScope, StatusStyle } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
@@ -311,10 +311,11 @@ export component CanvasCard inherits Card {
         width: min(self.preferred-width, self.end - self.start);
         x: max(self.start, min((parent.width - self.width) / 2, self.end - self.width));
     }
-    // `columnKey(.leading)`: the Library's key in the canvas's top-left band.
+    // `columnKey(.leading)`: the Library's key in the canvas's top-left band, on the card's content inset
+    // where the deck's tab and the status line start, as the zoom's keys end on it at the right.
     library-key := HorizontalLayout {
         // Centred in the band over the image: a row stretched to it lays its keys at its top.
-        x: CardStyle.padding;
+        x: StatusStyle.inset;
         y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
         height: self.preferred-height;
@@ -331,7 +332,7 @@ export component CanvasCard inherits Card {
     }
     zoom := HorizontalLayout {
         // Its own width: a layout left unsized spans the card and centres its keys off it.
-        x: parent.width - self.preferred-width - CardStyle.padding;
+        x: parent.width - self.preferred-width - StatusStyle.inset;
         y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
         height: self.preferred-height;

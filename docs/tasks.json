@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1513,
+    "type": "fix",
+    "title": "The canvas's band keys start and end on the card's content inset",
+    "status": "done",
+    "detail": "UI evaluation s-f5b562fe (Spacing and density): the Library's key and the zoom's group stood 40 pt in, on the picture's padding (CardStyle.padding), while the deck's Presets tab, the status line and the gallery's grid start 24 pt in. Both ends of the canvas's band now sit on StatusStyle.inset, the card's one content inset; the band's height and the picture's padding are unchanged, so no render moves. Check: window canvas_layout, the Library's key starts where the status line's Rating does and the Panel's key ends as far in, the column keys pressed where they now lie (twin: not on the picture's 40-point padding)."
   }
 ]
