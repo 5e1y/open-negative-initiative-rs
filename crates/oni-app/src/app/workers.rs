@@ -61,8 +61,10 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                 let next = {
                     let (lock, wake) = &*painter;
                     let mut paint = lock.lock().expect("painter");
+                    paint.drawing = None;
                     loop {
                         if let Some((path, known)) = paint.redraws.pop_front() {
+                            paint.drawing = Some(path.clone());
                             break Next::Redraw(path, known);
                         }
                         if let Some((g, rows, gone)) = paint.pass.take() {

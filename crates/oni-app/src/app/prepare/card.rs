@@ -62,3 +62,59 @@ impl Ctl {
         self.publish_prepare();
     }
 }
+
+/// The colour the pick sampled, as the scan shows it: its pixels' mean inside the disc.
+pub(super) fn sampled(scan: &Image, unit: (f64, f64), radius: f64) -> slint::Color {
+    let Some(pixels) = scan.to_rgba8() else { return slint::Color::default() };
+    let [r, g, b] = disc_mean(pixels.as_bytes(), pixels.width() as usize, pixels.height() as usize, unit, radius);
+    slint::Color::from_rgb_u8(r, g, b)
+}
+
+/// The mean of an RGBA picture's pixels whose centres lie in the disc at `unit`, `radius` pixels
+/// wide; the pixel under its centre when the disc holds none.
+fn disc_mean(rgba: &[u8], width: usize, height: usize, unit: (f64, f64), radius: f64) -> [u8; 3] {
+    if width == 0 || height == 0 || rgba.len() < width * height * 4 {
+        return [0; 3];
+    }
+    let (cx, cy) = (unit.0 * width as f64, unit.1 * height as f64);
+    let span = |c: f64, end: usize| ((c - radius).floor().max(0.0) as usize, ((c + radius).ceil().max(0.0) as usize).min(end));
+    let ((x0, x1), (y0, y1)) = (span(cx, width), span(cy, height));
+    let (mut sum, mut count) = ([0u64; 3], 0u64);
+    for y in y0..y1 {
+        for x in x0..x1 {
+            if (x as f64 + 0.5 - cx).powi(2) + (y as f64 + 0.5 - cy).powi(2) > radius * radius {
+                continue;
+            }
+            let at = (y * width + x) * 4;
+            for (s, v) in sum.iter_mut().zip(&rgba[at..at + 3]) {
+                *s += u64::from(*v);
+            }
+            count += 1;
+        }
+    }
+    if count == 0 {
+        let at = ((cy as usize).min(height - 1) * width + (cx as usize).min(width - 1)) * 4;
+        return [rgba[at], rgba[at + 1], rgba[at + 2]];
+    }
+    sum.map(|s| ((s + count / 2) / count) as u8)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::disc_mean;
+
+    #[test]
+    fn a_pick_reads_the_mean_of_its_own_disc_alone() {
+        // A 20 x 10 picture: orange film at the left half, a blue picture at the right.
+        let (w, h) = (20, 10);
+        let rgba: Vec<u8> = (0..w * h).flat_map(|i| if i % w < 10 { [200, 120, 60, 255] } else { [20, 40, 220, 255] }).collect();
+        assert_eq!(disc_mean(&rgba, w, h, (0.2, 0.5), 3.0), [200, 120, 60], "a disc on the film reads the film");
+        // Twin: the same disc on the picture reads the picture, and one across both reads neither.
+        assert_eq!(disc_mean(&rgba, w, h, (0.8, 0.5), 3.0), [20, 40, 220]);
+        let across = disc_mean(&rgba, w, h, (0.5, 0.5), 3.0);
+        assert!(across != [200, 120, 60] && across != [20, 40, 220], "{across:?}");
+        // A disc too small to hold a pixel's centre reads the pixel under it; one past the edge, its share.
+        assert_eq!(disc_mean(&rgba, w, h, (0.01, 0.01), 0.1), [200, 120, 60]);
+        assert_eq!(disc_mean(&rgba, w, h, (1.0, 1.0), 4.0), [20, 40, 220]);
+    }
+}

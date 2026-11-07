@@ -2085,6 +2085,10 @@ msgstr "Atrás"
 msgid "Measuring…"
 msgstr "Midiendo…"
 
+#: crates/oni-ui/ui/prepare.slint
+msgid "Skip"
+msgstr "Omitir"
+
 #: crates/oni-ui/ui/prepare_floor.slint
 msgid "Reading the Scan"
 msgstr "Lectura del escaneo"
@@ -3804,10 +3808,6 @@ msgstr "Marca las fugas de luz, el primer fotograma cortado y las tomas extremas
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Draw the window inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."
 msgstr "Dibuja la ventana dentro de la imagen, lejos del soporte y de los bordes de la película, y usa el control deslizante para comprobarla en cada escaneo. Un borde que quede dentro desvía todo el rollo."
-
-#: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Skip"
-msgstr "Omitir"
 
 #: crates/oni-app/src/app/prepare/model.rs
 msgid "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll."

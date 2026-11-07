@@ -51,10 +51,11 @@ export global Preparing {
     in property <bool> can-next;
     in property <[RollCell]> cells;
     in property <bool> back-shown;
+    // The step's keycap, in one place on every step, lit once the step holds its value.
     in property <string> action-title: @tr("NEXT");
     in property <bool> action-enabled: true;
-    // The key only passes a step that holds no value yet: flat, the keycap kept for the step's commit.
-    in property <bool> action-skips;
+    // The step holds no value yet and may go on without one: Skip, a key apart from the keycap.
+    in property <bool> skippable;
     // The card: where the picture and the window stand in it.
     in-out property <length> card-width;
     in-out property <length> card-height;
@@ -102,6 +103,8 @@ export global Preparing {
     in property <length> ring-x;
     in property <length> ring-y;
     in property <length> ring-diameter;
+    // The colour the pick sampled, as the scan shows it.
+    in property <color> ring-colour;
     in property <bool> loupe-shown;
     in property <length> loupe-x;
     in property <length> loupe-y;

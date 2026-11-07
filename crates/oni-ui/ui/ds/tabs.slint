@@ -1,6 +1,6 @@
 // `DSTabBar`, the segmented tabs.
 import { Colour, State, TabsStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tips, Clicks } from "base.slint";
+import { Label, Icon, TextRole, Tone, Tips, Clicks } from "base.slint";
 import { Icons } from "icons.slint";
 import { Dot } from "marks.slint";
 import { Inward, Outward } from "depth.slint";
@@ -108,7 +108,8 @@ export component Tabs inherits Rectangle {
                                 width: TabsStyle.step-check;
                                 height: TabsStyle.step-check;
                                 source: Icons.done;
-                                ink: Colour.accent;
+                                // The number's ink: on the dimmed disc an accent check would read under 3:1.
+                                tone: Tone.primary;
                             }
                         }
                     }
