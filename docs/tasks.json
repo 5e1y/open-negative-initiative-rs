@@ -6906,5 +6906,12 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1446,
+    "type": "interface",
+    "title": "Film canisters wear black caps and spool again, as the real ones do",
+    "status": "done",
+    "detail": "Owner's call: #1195 turned every canister's caps and spool to grey metal, so none matched a real canister. They are black lacquer again, as the owner's artworks drew them: the same lit ramp across the barrel in black, the lamp's sheen a mid grey on its side, the rims rolled more softly and the spool's knurls lit ribs. What else served stays: the soft label inks, the barrel's round shade and gleam, the cap's shade on the label and the contact shadow. Check: stocks every_canister_wears_black_caps_and_spool_as_the_real_one (twin: the silver ramp fails)."
   }
 ]
