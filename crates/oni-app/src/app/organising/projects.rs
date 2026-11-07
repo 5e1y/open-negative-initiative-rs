@@ -39,7 +39,8 @@ impl Ctl {
         made
     }
 
-    /// The empty Projects tab's key: a project with no photo yet, ringed, its name open to type.
+    /// The Projects tab's New Project, in its column and on its empty grid: a project with no photo
+    /// yet, ringed, its name open to type.
     pub(super) fn new_empty_project(self: &Rc<Self>) {
         let id = project::new_empty(&mut self.state.borrow_mut().org.projects, Date::now());
         self.save_projects();

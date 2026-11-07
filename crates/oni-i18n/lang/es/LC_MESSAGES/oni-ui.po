@@ -1041,6 +1041,10 @@ msgstr "Archivo"
 msgid "Projects"
 msgstr "Proyectos"
 
+#: crates/oni-app/src/app/organising/grid.rs crates/oni-app/src/app/organising/projects.rs crates/oni-ui/ui/library_tree.slint
+msgid "New Project"
+msgstr "Nuevo proyecto"
+
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Select photos in the Archive, then choose New Project."
 msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
@@ -3089,7 +3093,7 @@ msgstr "Añadir a favoritos"
 msgid "Locate…"
 msgstr "Localizar…"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
 msgid "Rename…"
 msgstr "Renombrar…"
 
@@ -3395,7 +3399,7 @@ msgstr "Elige una carpeta: todas las fotos que contiene aparecen en el archivo. 
 msgid "Add to Project"
 msgstr "Añadir al proyecto"
 
-#: crates/oni-app/src/app/organising/cell_menu.rs
+#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/app/organising/pointer.rs crates/oni-app/src/app/project_drop.rs
 msgid "Move"
 msgstr "Mover"
 
@@ -3452,10 +3456,6 @@ msgstr "Ninguna foto en un proyecto"
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "Make a project here, then add photos to it in the Archive: Add to Project is in their right-click menu."
 msgstr "Crea un proyecto aquí y añádele fotos desde la pestaña Archivo: Añadir al proyecto está en su menú contextual."
-
-#: crates/oni-app/src/app/organising/grid.rs
-msgid "New Project"
-msgstr "Nuevo proyecto"
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "ONI Trash Is Empty"

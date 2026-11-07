@@ -122,7 +122,7 @@ export component RowTree inherits HorizontalLayout {
                     clicked => { root.row-clicked(row.index, self.command, self.shift); }
                     double-clicked => { root.row-double-clicked(row.index); }
                 }
-                // `rename`: a double click types over a folder's or a project's name.
+                // `rename`: Rename… or Return types over a folder's or a project's name.
                 if row.renaming: Row {
                     renaming: true;
                     width: parent.width;

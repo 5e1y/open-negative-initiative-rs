@@ -7298,5 +7298,26 @@
     "title": "A project shows its photos roll by roll, under each roll's name, in the tree and the grid",
     "status": "done",
     "detail": "Evaluation s-f5b562fe (Robustness, major): a project's rows read 'DSC_6432.NEF · Rol…', so two rolls' copies of one file looked alike once cut. A project opens into its rolls (project_tree::by_roll: the folder each photo lies in, the rolls in the order their first photo takes in the project, each keeping the project's order): a row per roll, named as the archive heads it (its marker's name, else its folder's), above its photos, which read their file name alone; the grid lays a band per roll headed 'Project / Roll'. A roll's row selects its photos, opens their menu and carries them in a drag; a drop on it joins its project, before it lands before its first photo. The arrows and the editor's walk follow the order shown, across the project's rolls. A project's heading takes no rename (several bands name it; the tree and the inspector rename it), so a heading's naming is its folder alone. Checks: project_tree two_rolls_copies_of_one_file_stand_under_their_own_roll_in_the_project_s_order (twin: grouped by name the copies share one roll), project_drop a_photo_dropped_on_a_project_joins_it_and_before_a_photo_lands_there (a roll's row joins its project), window projects_tab::two_rolls_copies_join_one_project_said_with_undo (rows and headings by roll, a roll's row selecting its photos; twin: the photos' rows alone read alike), project_walk (the walk roll by roll), sidebar_reveal, gallery_leftovers (twin: a project's heading opens no field)."
+  },
+  {
+    "id": 1533,
+    "type": "fix",
+    "title": "New Project stands in the Projects tab, the project named as it is made",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Task fit, major): filing rolls for a client took a right-click New Project, a default 'Project 1' and a hidden rename. The Projects tab's column holds a flat mini New Project key beside its view select, in the gallery and beside a photo, whatever the projects hold: it makes an empty project, ringed, its name field open (new_empty_project, the empty grid's key too), to fill with Add to Project. Left: rolls dragged from the sidebar onto a project. The column shows the Archive or the Projects, never both, so no project stands beside a roll to take it, and a press carried across the tab switch would lose its row as the Archive's column is unmade; a roll is filed whole by Select All then Add to Project. Check: window project_filing::new_project_is_made_and_named_in_its_tab_and_a_double_click_opens (the key pressed through the pointer makes the project with its name open, and stays beside its photos; twin: the Archive's column has no such key)."
+  },
+  {
+    "id": 1535,
+    "type": "fix",
+    "title": "A double click opens everywhere; a project is renamed by Return or Rename…",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Consistency, minor): a double click opened a photo in the gallery but renamed a project in the column. A project's or a roll's row double-clicked is its click again, as a folder's; a photo's row opens its photo, as its tile does. A project is renamed by its menu's Rename… (beside Delete Project, a rule between them), by Return in the gallery on the project ringed with no photo picked (as the Finder renames the item selected; a photo picked, Return opens it as before), or by its name in the inspector. Checks: window project_filing::new_project_is_made_and_named_in_its_tab_and_a_double_click_opens (twin: with a photo picked Return opens it), tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift (twin: a double click types over nothing)."
+  },
+  {
+    "id": 1536,
+    "type": "fix",
+    "title": "A tab opens at its top; a long project name wraps in the inspector and shows whole where it is cut",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Craft and Robustness, minor): after Add to Project the project grid opened scrolled, its first row under the title, and a long name was cut mid-word in the inspector. A surface switched to (Archive, Projects, the ONI Trash) opens at its top; the open photo lands only back from the editor (land_gallery). The inspector's name wraps over as many lines as it takes (EditableTitle); a row's title and a band's heading cut short by their ellipsis show whole under the pointer, and a tip whose words change under the hand is taken down, as a key's. Check: window project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole (twins: back from the editor the open photo lands down the grid; a short name is one line and shows no tip; mutations: no wrap fails at the wrap, no cut tip at the row)."
   }
 ]

@@ -31,7 +31,7 @@ impl Ctl {
     }
 
     /// `projectContextMenu` (`EditorScene+Rolls.swift:179`): photos and rolls alone take the cell
-    /// menu on their photos; a project alone, Delete Project; several projects open nothing.
+    /// menu on their photos; a project alone, Rename… and Delete Project; several open nothing.
     pub(in crate::app) fn project_row_menu(self: &Rc<Self>, i: usize) -> bool {
         let can_paste = self.can_paste();
         let (items, path) = {
@@ -47,7 +47,10 @@ impl Ctl {
                     let scope: HashSet<String> = photos.into_iter().collect();
                     (self.cell_items(&s, &first, &scope, true, can_paste), Some(first))
                 }
-                [project] => (vec![Item { line: menu_line(tr("Delete Project"), true, false, false), act: Act::DeleteProject(*project) }], None),
+                [project] => {
+                    let rename = Item { line: menu_line(tr("Rename…"), true, false, false), act: Act::RenameProject(*project) };
+                    (vec![rename, Item { line: menu_line(tr("Delete Project"), true, true, false), act: Act::DeleteProject(*project) }], None)
+                }
                 _ => return false,
             }
         };

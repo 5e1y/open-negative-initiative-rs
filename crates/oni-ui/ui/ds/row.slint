@@ -120,8 +120,14 @@ export component Row inherits Rectangle {
     accessible-role: list-item;
     accessible-label: root.title;
     accessible-description: root.unprepared ? @tr("Not prepared yet") : "";
-    // Under the pointer, an unprepared roll's state before the row's own words, as its path.
-    property <string> tip: root.unprepared && root.help != "" ? @tr("Not prepared yet") + "\n" + root.help : root.unprepared ? @tr("Not prepared yet") : root.help;
+    // A title cut short shows whole under the pointer, where the row says nothing else there.
+    property <bool> cut;
+    property <string> said: root.help != "" ? root.help : root.cut ? root.title : "";
+    // Under the pointer, an unprepared roll's state before the row's own words, as its path; the
+    // words shown, which leaving or new words take down, as a key's help.
+    property <string> tip: root.unprepared && root.said != "" ? @tr("Not prepared yet") + "\n" + root.said : root.unprepared ? @tr("Not prepared yet") : root.said;
+    property <string> told;
+    changed tip => { if (area.has-hover) { Tips.hover(false, root.told, 0px, 0px); } }
     if root.pinned: Rectangle { background: root.band; }
     if root.raised: Outward { fill: TabsStyle.pill; radius: Radius.badge; }
     area := TouchArea {
@@ -152,7 +158,10 @@ export component Row inherits Rectangle {
             }
         }
         moved => { if (self.pressed) { root.dragged(self.pressed-x, self.pressed-y, self.mouse-x, self.mouse-y); } }
-        changed has-hover => { Tips.hover(self.has-hover, root.tip, root.absolute-position.x, root.absolute-position.y + root.height); }
+        changed has-hover => {
+            if (self.has-hover) { root.told = root.tip; }
+            Tips.hover(self.has-hover, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
+        }
     }
     if root.focused: FocusRing { radius: Radius.badge; }
     // A sheet's side list is a few choices, each its own place in Tab's order, Space or Return taking it.
@@ -220,12 +229,22 @@ export component Row inherits Rectangle {
                 text: root.title;
                 tone: root.ink;
                 overflow: elide;
+                property <bool> short: self.preferred-width > self.width;
+                init => { root.cut = self.short; }
+                changed short => { root.cut = self.short; }
             }
             // The head shrinks first, so the ellipsis falls before the tail.
             if root.tail != "": HorizontalLayout {
                 opacity: root.away ? State.missing : 1;
                 alignment: start;
-                Label { text: root.head; tone: root.ink; overflow: elide; }
+                Label {
+                    text: root.head;
+                    tone: root.ink;
+                    overflow: elide;
+                    property <bool> short: self.preferred-width > self.width;
+                    init => { root.cut = self.short; }
+                    changed short => { root.cut = self.short; }
+                }
                 Label { text: root.tail; tone: root.ink; horizontal-stretch: 0; }
             }
             if root.detail != "": Label { text: root.detail; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }

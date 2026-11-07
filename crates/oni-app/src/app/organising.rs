@@ -57,6 +57,7 @@ pub struct Band {
 enum Act {
     Cell(CellLine),
     Edit(String),
+    RenameProject(Id),
     DeleteProject(Id),
     Restore(Vec<String>),
     Reveal(Vec<String>),
@@ -342,6 +343,8 @@ impl Ctl {
         lib.on_menu_sub_chosen(move |i| p.menu_sub_chosen(index(i)));
         let p = me.clone();
         lib.on_empty_acted(move || if p.state.borrow().org.projects_surface { p.new_empty_project() } else { p.act(crate::Act::Open) });
+        let p = me.clone();
+        lib.on_new_project(move || p.new_empty_project());
         let p = me.clone();
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();

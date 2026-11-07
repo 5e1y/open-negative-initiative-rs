@@ -207,20 +207,15 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `takeOff` on a photo row's double click; on a project's, `rename` types over its name.
+    /// `takeOff` on a photo row's double click, as in the grid; a project's or a roll's is its first
+    /// click again, as a folder's: Return or Rename… types over a project's name.
     pub(super) fn project_row_double_clicked(self: &Rc<Self>, i: usize) {
         if self.project_dragging() {
             return;
         }
         let id = self.state.borrow().org.project_nodes.get(i).cloned();
-        match id {
-            Some(ProjectNode::Photo { path, .. }) => self.open_in_editor(&path),
-            Some(ProjectNode::Project(project)) => {
-                self.exit_tree_editing();
-                self.state.borrow_mut().org.project_renaming = Some(project);
-                self.publish_projects();
-            }
-            Some(ProjectNode::Roll { .. }) | None => {}
+        if let Some(ProjectNode::Photo { path, .. }) = id {
+            self.open_in_editor(&path);
         }
     }
 }

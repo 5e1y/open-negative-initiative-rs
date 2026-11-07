@@ -20,7 +20,7 @@ impl Ctl {
         self.publish_tiles();
     }
 
-    /// `land(through:)` as the grid mounts: the open photo centred, else the top; the ONI Trash
+    /// `land(through:)` back from the editor: the open photo centred, else the top; the ONI Trash
     /// names no open photo.
     pub(super) fn land_gallery(&self) {
         {

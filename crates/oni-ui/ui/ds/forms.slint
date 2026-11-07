@@ -249,7 +249,7 @@ export component StatusBar inherits Rectangle {
 }
 
 // A name that reads as a label until clicked, then typed over as a `RenameField`: a value under its
-// block's title, never larger than it.
+// block's title, never larger than it, wrapped whole over as many lines as it takes.
 export component EditableTitle inherits VerticalLayout {
     in property <string> text;
     in property <string> placeholder;
@@ -259,6 +259,7 @@ export component EditableTitle inherits VerticalLayout {
     property <bool> renaming;
     if !root.renaming: Label {
         text: root.text;
+        wrap: word-wrap;
         TouchArea { clicked => { root.renaming = true; } }
         // Space or Return types it over while it holds the keyboard.
         KeyScope {

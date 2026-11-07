@@ -232,9 +232,9 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     lib.invoke_title_committed("   ".into());
     assert_eq!(oni_library::project::load(&support).projects[0].name, "Coast trip", "a blank name is refused");
 
-    // Delete Project asks, then the photos stay and the project goes.
+    // Delete Project, apart from Rename…, asks, then the photos stay and the project goes.
     assert!(lib.invoke_project_row_menu(0));
-    assert_eq!(hand.menu(), ["Delete Project"]);
+    assert_eq!(hand.menu(), ["Rename…", "Delete Project"]);
     hand.choose("Delete Project");
     let confirm = w.global::<Confirm>();
     assert!(confirm.get_shown());

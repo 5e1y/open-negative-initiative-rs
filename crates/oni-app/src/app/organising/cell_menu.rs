@@ -165,6 +165,7 @@ impl Ctl {
             }
             Act::Cell(line) => self.cell_act(line),
             Act::Edit(path) => self.open_in_editor(&path),
+            Act::RenameProject(id) => self.rename_project(id),
             Act::DeleteProject(id) => self.ask_delete_project(id),
             Act::Restore(paths) => {
                 self.state.borrow_mut().trash_picks.selection = paths.iter().cloned().collect();
