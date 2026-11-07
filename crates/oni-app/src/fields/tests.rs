@@ -179,8 +179,9 @@ fn the_roll_tab_lays_its_blocks_in_the_swift_order() {
             .map(String::from)
             .to_vec(),
     };
-    // Three blocks are named for a photographer, each read under Swift's title.
+    // Four blocks are named for a photographer, each read under Swift's title.
     let swift_title = |t: String| match t.as_str() {
+        "Prepared Roll" => "Measured Roll".to_string(),
         "Filtration" => "Source Balance".to_string(),
         "Highlight Detail" => "Density Ceiling".to_string(),
         "Scan Profile" => "Source Encoding".to_string(),

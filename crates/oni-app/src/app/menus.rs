@@ -92,7 +92,7 @@ impl Ctl {
                 panel: if panel_hidden { tr("Show the Panel") } else { tr("Hide the Panel") }.into(),
                 correcting: if dedust { tr("Done Correcting") } else { tr("Remove Dust & Scratches") }.into(),
                 mirror: if settings.geometry.mirrored { tr("Unmirror") } else { tr("Mirror Horizontally") }.into(),
-                filter: filter.map_or(tr("Filter: All").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
+                filter: filter.map_or(tr("Filter: All Photos").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
                 roll: if count > 1 { tr!("Move {count} Photos into a New Roll…", count = count) } else { tr("Move into a New Roll…").into() }.into(),
                 ungroup: if members > 1 { tr!("Ungroup {count} Photos", count = members) } else { tr("Ungroup").into() }.into(),
                 project: crate::organise::new_project(count).into(),

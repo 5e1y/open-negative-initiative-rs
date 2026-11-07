@@ -132,7 +132,7 @@ export component JobCard inherits Rectangle {
             }
             if root.detail != "": Label { role: TextRole.note; text: root.detail; overflow: elide; }
             Progress { fraction: root.fraction; }
-            if root.message != "": Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
+            if root.message != "": Label { role: TextRole.note; text: root.message; }
             ButtonGroup { align: GroupAlign.end;
                 if root.running: Button { text: @tr("Stop"); enabled: !root.stopping; clicked => { root.stop(); } }
                 if !root.running: Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { root.closed(); } }

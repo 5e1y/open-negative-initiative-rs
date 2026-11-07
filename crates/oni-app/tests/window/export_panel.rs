@@ -36,12 +36,12 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     assert_eq!(gap(note, keys), STEP, "the keys one step under the note: {note:?} {keys:?}");
     assert_eq!(gap(keys, quality), STEP, "Quality one step under the keys: {keys:?} {quality:?}");
 
-    // The summary in the panel's words; twin: the subtitle's smaller face measures smaller, so the
-    // check tells the two sizes apart.
+    // The summary in the panel's words; twin: the subtitle, a note with its lines opened, measures
+    // taller, so the check tells the two faces apart.
     let summary = common::the(w, Role::Text, &e.get_bits());
     assert_eq!(summary.height, label.height, "the summary as large as a field's label");
     let subtitle = common::the(w, Role::Text, &e.get_subtitle());
-    assert!(subtitle.height < label.height, "{subtitle:?} against {label:?}");
+    assert!(subtitle.height > label.height, "{subtitle:?} against {label:?}");
 
     // Custom: its note under the tabs, and the keys one step above what follows them.
     e.invoke_space_picked(4);

@@ -62,7 +62,7 @@ impl Ctl {
         let (title, detail, action) = if !s.order.is_empty() {
             (String::new(), String::new(), String::new())
         } else if let Some(m) = s.filter.filter(|_| !s.trash_shown()) {
-            (tr!("No {medal} Photos", medal = library::medal(m)), tr("All in the rating filter shows every photo.").into(), String::new())
+            (tr!("No {medal} Photos", medal = library::medal(m)), tr("Choose All Photos in the rating filter to show every photo.").into(), String::new())
         } else if s.org.projects_surface {
             (tr("No Photos in a Project").into(), tr("Make a project here, then add photos to it in the Archive: Add to Project is in their right-click menu.").into(), tr("New Project").into())
         } else if s.org.trash_open {

@@ -67,7 +67,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     // The gallery's face of every dynamic title; nothing picked, the editor opens on the first photo.
     let t = menus.get_titles();
     assert_eq!((t.mode.as_str(), t.smaller.as_str(), t.larger.as_str()), ("Editor", "Smaller Thumbnails", "Larger Thumbnails"));
-    assert_eq!((t.undo.as_str(), t.filter.as_str(), t.paste.as_str()), ("Undo", "Filter: All", "Paste Settings"));
+    assert_eq!((t.undo.as_str(), t.filter.as_str(), t.paste.as_str()), ("Undo", "Filter: All Photos", "Paste Settings"));
     assert!(menus.get_live().toggle_mode && !menus.get_live().medal && !menus.get_live().copy_settings);
     // ⌘G takes the ringed photo into the editor, where the titles change face.
     lib.invoke_tile_clicked(0, false, false);
@@ -193,7 +193,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     w.global::<Framing>().invoke_act(oni_app::Act::PasteFraming);
     rig.pump();
     assert!(settings_of(&b).geometry.mirrored && settings_of(&c).geometry.mirrored);
-    assert_eq!(menus.get_titles().undo.as_str(), "Undo Paste framing to 2 photos");
+    assert_eq!(menus.get_titles().undo.as_str(), "Undo Paste crop to 2 photos");
 
     // ⌘⌫ marks C in the ONI Trash: it leaves the gallery and the index's listing; ⌘Z brings it back.
     lib.invoke_tile_clicked(2, false, false);
@@ -223,7 +223,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert!(filtered("Bronze").is_empty());
     assert_eq!(filtered("Silver"), vec!["B".to_string()]);
     assert!(filtered("Gold").is_empty(), "twin: a silver photo is not a gold one");
-    assert_eq!(filtered("All").len(), 3);
+    assert_eq!(filtered("All Photos").len(), 3);
     // The bar's rating filter reaches each medal in one press, lit on the one it keeps.
     let picked = |medal: i32| {
         lib.invoke_filter_picked(medal);

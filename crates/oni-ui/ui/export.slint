@@ -225,7 +225,7 @@ export component ExportPanel inherits Surface {
                 VerticalLayout {
                     spacing: Space.xs;
                     Engraved { text: @tr("Export"); role: TextRole.section; }
-                    Label { text: Exporting.subtitle; role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
+                    Label { text: Exporting.subtitle; role: TextRole.note; }
                 }
                 // First, the one place the choice is made: every photo its own file, or all on one sheet.
                 if Exporting.count > 1: Field {
@@ -337,7 +337,7 @@ export component SpaceChip inherits Picker {
         VerticalLayout {
             spacing: Space.xs;
             Label { text: @tr("Colour space"); role: TextRole.section; }
-            Label { text: @tr("Shared by the canvas and the export."); role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
+            Label { text: @tr("Shared by the canvas and the export."); role: TextRole.note; }
         }
         VerticalLayout {
             spacing: FormStyle.row-gap;

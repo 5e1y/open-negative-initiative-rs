@@ -1,4 +1,4 @@
-// The Roll tab: the measured roll, the film type and the settings the roll shares.
+// The Roll tab: the prepared roll, the film type and the settings the roll shares.
 import { Colour, Space, SliderFill, Tabs, Button, Field, Label, TextRole, Tone, ButtonGroup, GroupAlign, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
@@ -8,15 +8,15 @@ import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint"
 export component RollPane inherits Pane {
     property <bool> flat-settings;
     Block {
-        title: @tr("Measured Roll");
+        title: @tr("Prepared Roll");
         demo: "measured-roll";
-        help: @tr("Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own.");
+        help: @tr("Every setting here is the roll's: moved on this photo, it reaches every photo prepared with the roll, each keeping its own look. A photo left out when the roll was prepared can be included, or the prepared ones moved into a roll of their own.");
         separated: false;
         // `rollBlock`: the rows a small gap apart, as Swift stacks them; its state a line of words, so
         // nothing beside the photo outweighs it, and its keys one a row, whatever the language's length.
         VerticalLayout {
             spacing: Space.s;
-            if PanelState.roll-state == 0 && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
+            if PanelState.roll-state == 0 && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never prepared with its roll, so these settings act on it alone."); }
             if PanelState.roll-state == 0: Button {
                 text: @tr("Prepare the Roll…");
                 enabled: PanelState.can-prepare;
@@ -26,19 +26,19 @@ export component RollPane inherits Pane {
                 text: PanelState.roll-measured == 1 ? @tr("Acts on this photo, the only one of its roll.") : @tr("Acts on the {} photos of this roll.", PanelState.roll-measured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Label { role: TextRole.note; tone: Tone.warning;
-                text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this roll was left out of its measurement, so these settings do not reach it.") : @tr("{} photos of this roll were left out of its measurement, so these settings do not reach them.", PanelState.roll-unmeasured);
+                text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this roll was left out when it was prepared, so these settings do not reach it.") : @tr("{} photos of this roll were left out when it was prepared, so these settings do not reach them.", PanelState.roll-unmeasured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
                 text: PanelState.roll-unmeasured == 1 ? @tr("Include It") : @tr("Include Them");
-                help: @tr("Gives the photos left out this roll's measurement and settings, their own look kept.");
+                help: @tr("Gives the photos left out this roll's preparation and settings, their own look kept.");
                 clicked => { PanelState.join-roll(); }
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
                 text: @tr("Move into a New Roll…");
-                help: @tr("Moves the photos measured with this roll into a roll folder of their own.");
+                help: @tr("Moves the photos prepared with this roll into a roll folder of their own.");
                 clicked => { PanelState.make-roll(); }
             }
-            if PanelState.roll-state == 2: Label { role: TextRole.note; text: @tr("Finding the photos measured with this roll…"); }
+            if PanelState.roll-state == 2: Label { role: TextRole.note; text: @tr("Finding the photos prepared with this roll…"); }
         }
     }
     Block {
@@ -163,7 +163,7 @@ export component RollPane inherits Pane {
     }
     EditorBlock {
         title: @tr("Per-Channel Levels");
-        help: @tr("Each channel's own window on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone.");
+        help: @tr("Each channel's own range on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone.");
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;

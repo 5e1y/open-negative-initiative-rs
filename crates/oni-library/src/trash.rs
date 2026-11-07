@@ -4,7 +4,8 @@
 use crate::film_group::{self, FilmGroup, FilmKey};
 use crate::folders;
 use crate::index::Entry;
-use crate::paths::{self, holds};
+use crate::navigator::{Computer, trails};
+use crate::paths;
 use crate::refusal;
 use oni_i18n::{tr, trn};
 use oni_settings::{Date, sidecar};
@@ -129,12 +130,14 @@ pub fn frames(folder: &str, trashed: &[Entry]) -> HashSet<String> {
     trashed.iter().map(|e| e.path.clone()).filter(|p| folders::parent(p) == folder).collect()
 }
 
-pub fn groups(trashed: &[Entry], home: &str) -> Vec<FilmGroup> {
+pub fn groups(trashed: &[Entry], computer: &Computer) -> Vec<FilmGroup> {
     let mut by_folder: HashMap<String, Vec<Entry>> = HashMap::new();
     for entry in trashed {
         by_folder.entry(folders::parent(&entry.path)).or_default().push(entry.clone());
     }
-    folders(trashed)
+    let listed = folders(trashed);
+    let mut named = headings(&listed, computer);
+    listed
         .into_iter()
         .map(|folder| {
             let mut frames = by_folder.remove(&folder.path).unwrap_or_default();
@@ -149,26 +152,26 @@ pub fn groups(trashed: &[Entry], home: &str) -> Vec<FilmGroup> {
                 film: None,
                 start,
                 entries: frames,
-                heading: Some(heading(&folder.path, home)),
+                heading: named.remove(&folder.path).map(|(trail, name)| trail + &name),
             }
         })
         .collect()
 }
 
-/// A folder by its path from the home or its volume; a Windows drive by its letter, `D: › Scans/One`.
-pub fn heading(folder: &str, home: &str) -> String {
-    if holds(home, folder) {
-        let tail = if folder == home { String::new() } else { format!("/{}", paths::relative(folder, home)) };
-        return format!("{}{tail}", paths::name(home));
-    }
-    if let Some(on_volume) = folder.strip_prefix("/Volumes/") {
-        return on_volume.to_owned();
-    }
-    if folder.get(..3).is_some_and(crate::navigator::is_drive_root) {
-        let rest = folder[3..].trim_matches('/');
-        return if rest.is_empty() { folder[..2].to_owned() } else { format!("{} › {rest}", &folder[..2]) };
-    }
-    folder.trim_start_matches('/').to_owned()
+/// Each folder's name as the navigator gives it, and the folders above it only where another folder
+/// bears the same name, as the navigator's favourites: the account's folders title nothing, the path is the tooltip's.
+pub fn headings(listed: &[Folder], computer: &Computer) -> HashMap<String, (String, String)> {
+    let places: Vec<String> = listed.iter().map(|f| f.path.clone()).collect();
+    let mut trails = trails(&places);
+    places
+        .into_iter()
+        .map(|path| {
+            let name = computer.name(&path);
+            // A drive's root keeps its letter alone, the disk's root its slash.
+            let name = if name.len() > 1 { name.trim_end_matches('/').to_owned() } else { name };
+            (path.clone(), (trails.remove(&path).unwrap_or_default(), name))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -205,14 +208,16 @@ mod tests {
             frames("/Users/a/Scans/One", &nested),
             HashSet::from(["/Users/a/Scans/One/1.RW2".to_owned(), "/Users/a/Scans/One/3.RW2".to_owned()])
         );
-        let headings: Vec<String> = groups(&rows, "/Users/a").iter().map(FilmGroup::display_title).collect();
-        assert_eq!(headings, ["T7/Two", "a/Scans/One"]);
-        // Twin: read from another home, the same folder heads from the root.
-        assert_eq!(heading("/Users/a/Scans/One", "/Users/b"), "Users/a/Scans/One");
-        assert_eq!(heading("D:/Scans/One", "C:/Users/a"), "D: › Scans/One");
-        assert_eq!(heading("D:/", "C:/Users/a"), "D:");
-        // Twin: a folder whose name only starts like a drive keeps its path.
-        assert_eq!(heading("/D:x/One", "/Users/a"), "D:x/One");
+        let mac = Computer { home: "/Users/a".into(), volumes: "/Volumes".into() };
+        let titles = |rows: &[Entry]| groups(rows, &mac).iter().map(FilmGroup::display_title).collect::<Vec<_>>();
+        assert_eq!(titles(&rows), ["Two", "One"], "each band by its folder's name, no account's folder in it");
+        // Twin: two folders of one name take the folders above them, as far as tells them apart.
+        let alike = [row("/Users/a/Scans/One/1.RW2", older), row("/Volumes/T7/One/2.RW2", when)];
+        assert_eq!(titles(&alike), ["T7/One", "Scans/One"]);
+        let named = headings(&folders(&alike), &mac);
+        assert_eq!(named["/Volumes/T7/One"], ("T7/".to_owned(), "One".to_owned()));
+        // A standard folder of the home in the reader's words, a disk's root by its slash.
+        assert_eq!(titles(&[row("/Users/a/Pictures/1.RW2", when), row("/2.RW2", older)]), ["Pictures", "/"]);
     }
 
     #[test]

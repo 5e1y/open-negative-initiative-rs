@@ -39,7 +39,7 @@ export component DngSheet inherits Sheet {
     dismissed => {
         if (Converting.stage == DngStage.failed) { Converting.closed(); } else if (Converting.stage != DngStage.choice) { Converting.cancelled(); }
     }
-    Label { text: Converting.message; tone: Tone.secondary; wrap: word-wrap; }
+    Label { role: TextRole.note; text: Converting.message; }
     if root.working: Progress { fraction: Converting.fraction; }
     if root.working && Converting.count != "": Label { role: TextRole.note; tone: Tone.secondary; text: Converting.count; }
     if Converting.stage == DngStage.choice: VerticalLayout {

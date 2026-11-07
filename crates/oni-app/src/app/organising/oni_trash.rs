@@ -29,20 +29,19 @@ impl Ctl {
                 // Empty, the ONI Trash is still there to open, never greyed as a folder away.
                 present: true,
                 restore_help: if count > 0 { tr("Restore every photo in the ONI Trash") } else { "" }.into(),
+                help: SharedString::new(),
             }];
             let mut shown = vec![String::new()];
             if unfolded {
-                let home = home();
-                for folder in oni_library::trash::folders(&s.org.trashed) {
+                let folders = oni_library::trash::folders(&s.org.trashed);
+                let mut named = oni_library::trash::headings(&folders, &s.nav.computer);
+                for folder in folders {
                     shown.push(folder.path.clone());
-                    let heading = oni_library::trash::heading(&folder.path, &home);
-                    let (trail, title) = match heading.rfind('/') {
-                        Some(cut) => (format!("{}/", &heading[..cut]), heading[cut + 1..].to_string()),
-                        None => (String::new(), heading.clone()),
-                    };
+                    let (trail, title) = named.remove(&folder.path).unwrap_or_default();
                     lines.push(TrashLine {
                         title: title.into(),
                         trail: trail.into(),
+                        help: folder.path.as_str().into(),
                         count: folder.count.to_string().into(),
                         depth: 1,
                         foldable: false,

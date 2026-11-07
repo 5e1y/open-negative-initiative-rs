@@ -135,7 +135,7 @@ impl EditorStore {
                 }
                 PipelineSettings { geometry, ..s.clone() }
             },
-            |n| trn("Paste framing", "Paste framing to {n} photos", n as u64),
+            |n| trn("Paste crop", "Paste crop to {n} photos", n as u64),
         )
     }
 

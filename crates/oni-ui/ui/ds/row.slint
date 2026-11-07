@@ -296,5 +296,5 @@ export component RowsEmpty inherits VerticalLayout {
     padding-bottom: Space.s;
     spacing: Space.xxs;
     Label { text: root.title; tone: Tone.secondary; wrap: word-wrap; }
-    if root.detail != "": Label { role: TextRole.caption; tone: Tone.secondary; text: root.detail; wrap: word-wrap; }
+    if root.detail != "": Label { role: TextRole.note; text: root.detail; }
 }

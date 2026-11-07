@@ -1,5 +1,5 @@
 //! The Roll tab's marks play their own demos: Film Type's card plays the film type's clip, frame
-//! after frame, and Measured Roll's another one, so each card shows the topic it names.
+//! after frame, and Prepared Roll's another one, so each card shows the topic it names.
 
 use oni_app::{PanelState, Tip};
 use slint::ComponentHandle;
@@ -10,7 +10,7 @@ use crate::help_demo::{clip_pixels, press_help};
 use crate::panel_bindings::opened;
 
 const FILM_TYPE: &str = "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K.";
-const MEASURED_ROLL: &str = "Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own.";
+const PREPARED_ROLL: &str = "Every setting here is the roll's: moved on this photo, it reaches every photo prepared with the roll, each keeping its own look. A photo left out when the roll was prepared can be included, or the prepared ones moved into a roll of their own.";
 
 /// The card's first frame, then one after `span` of watching.
 fn played(rig: &common::Rig, tip: &Tip, span: Duration) -> (Vec<u8>, Vec<u8>) {
@@ -44,8 +44,8 @@ pub(crate) fn the_roll_tabs_marks_play_each_its_own_demo() {
     // Twin: another mark of the tab plays another clip, so the card above showed its own topic's.
     press_help(&rig, w, "Film Type");
     assert!(clip_pixels(&tip).is_none(), "its mark again stops the clip");
-    press_help(&rig, w, "Measured Roll");
-    assert_eq!(tip.get_open(), MEASURED_ROLL, "the Measured Roll mark opens its card");
+    press_help(&rig, w, "Prepared Roll");
+    assert_eq!(tip.get_open(), PREPARED_ROLL, "the Prepared Roll mark opens its card");
     assert_eq!(tip.get_demo(), "measured-roll");
     let (measured, _) = played(&rig, &tip, Duration::ZERO);
     assert_ne!(film_type, measured, "two topics show two clips");

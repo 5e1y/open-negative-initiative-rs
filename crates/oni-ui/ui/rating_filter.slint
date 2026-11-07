@@ -6,7 +6,7 @@ import { Library } from "library.slint";
 export component RatingFilter inherits ButtonGroup {
     Button {
         in-bar: true;
-        text: @tr("All");
+        text: @tr("All Photos");
         on: Library.filter-medal == 0;
         help: @tr("Show every photo, whatever its medal");
         clicked => { Library.filter-picked(0); }

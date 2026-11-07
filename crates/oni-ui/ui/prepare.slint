@@ -138,7 +138,7 @@ export component RollPanel inherits Surface {
                     }
                     if Preparing.grouped: HorizontalLayout {
                         spacing: Space.s;
-                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
+                        Label { role: TextRole.note; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
                         Button { text: @tr("Shift by One File"); enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
                     }
                     if Preparing.grouped && Preparing.grouping-remark != "": Caution { title: @tr("Check the grouping"); text: Preparing.grouping-remark; }
@@ -155,14 +155,14 @@ export component RollPanel inherits Surface {
                     // As tall with its Clear key as without, so the slider below never jumps.
                     HorizontalLayout {
                         spacing: Space.s; min-height: ButtonStyle.height;
-                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-note; horizontal-stretch: 1; overflow: elide; }
+                        Label { role: TextRole.note; text: Preparing.base-note; horizontal-stretch: 1; wrap: no-wrap; overflow: elide; }
                         if Preparing.has-base: Button { text: @tr("Clear"); enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
                     }
                     RollSlider { field: 3; label: @tr("Picker size"); enabled: !Preparing.measuring; }
                 }
                 if Preparing.step == 3: HorizontalLayout {
                     spacing: Space.s;
-                    Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.flags-note; horizontal-stretch: 1; }
+                    Label { role: TextRole.note; text: Preparing.flags-note; horizontal-stretch: 1; }
                     Button { text: @tr("Clear Flags"); enabled: Preparing.can-clear-flags && !Preparing.measuring; clicked => { Preparing.clear-flags(); } }
                 }
                 if Preparing.step == 4: VerticalLayout {
@@ -172,8 +172,8 @@ export component RollPanel inherits Surface {
                         name: Preparing.frame-name; can-previous: Preparing.can-previous && !Preparing.measuring; can-next: Preparing.can-next && !Preparing.measuring;
                         previous => { Preparing.previous(); } next => { Preparing.next(); }
                     }
-                    // Told under the slider it concerns, a caption below the step's own text.
-                    Label { role: TextRole.caption; tone: Tone.secondary; wrap: word-wrap; text: @tr("Epilepsy warning: scrubbing flashes the frames quickly."); }
+                    // Told under the slider it concerns, a note below the step's own text.
+                    Label { role: TextRole.note; text: @tr("Epilepsy warning: scrubbing flashes the frames quickly."); }
                 }
                 // The step's demo under the controls its text names, only once asked: nothing moves beside the scan unasked.
                 if Preparing.has-tutorial: HorizontalLayout {

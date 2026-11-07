@@ -33,7 +33,7 @@ export component CropPane inherits Pane {
             Button { text: @tr("Copy Crop"); help: @tr("Copies this photo's crop: its frame, ratio, angle, turns, mirrors and measuring window."); clicked => { Framing.act(Act.copy-framing); } }
             Button { text: @tr("Paste Crop"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
         }
-        Button { text: @tr("Paste Crop to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
+        Button { text: @tr("Paste Crop to Roll"); enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo prepared with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
     }
     Section {
         title: @tr("Aspect Ratio");

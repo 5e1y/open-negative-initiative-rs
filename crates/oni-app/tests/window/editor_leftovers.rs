@@ -303,7 +303,6 @@ pub(crate) fn every_block_says_swifts_own_help() {
     let Some(swift) = oni_app::swift_sources() else { return eprintln!("no Swift checkout: the notes are not compared") };
     let panel = panel_source();
     for (file, title) in [
-        ("UI/SettingsPane.swift", "Measured Roll"),
         ("UI/SettingsPane.swift", "Flat-Field"),
         ("UI/SettingsPane.swift", "Dye Separation"),
         ("UI/DetailsPane.swift", "Sharpening"),

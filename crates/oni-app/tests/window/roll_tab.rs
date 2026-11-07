@@ -65,9 +65,9 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     assert_eq!(settings().source_encoding, None, "twin: sRGB is no encoding written");
 
     // The dye family names its make; the block's reset clears it with the dose. The tabs read the
-    // frame's family after every write, an undo and a reset included, and say no stock names it.
+    // frame's family after every write, an undo and a reset included, and say no stock calls for it.
     assert_eq!(panel.get_dye_family(), 2, "a negative rests on Generic");
-    assert_eq!(panel.get_dye_source().as_str(), "No film stock names these dyes");
+    assert_eq!(panel.get_dye_source().as_str(), "No film stock calls for these dyes");
     panel.invoke_dye_family_picked(0);
     rig.pump();
     assert_eq!(settings().separation_family, Some(SeparationFamily::KodakC41));

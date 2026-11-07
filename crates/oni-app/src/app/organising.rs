@@ -198,10 +198,6 @@ fn uptime() -> f64 {
     START.get_or_init(Instant::now).elapsed().as_secs_f64()
 }
 
-fn home() -> String {
-    oni_library::navigator::home_folder().to_string_lossy().into_owned()
-}
-
 fn menu_line(text: &str, enabled: bool, rule: bool, opens: bool) -> MenuLine {
     MenuLine { text: text.into(), enabled, rule, opens, ..MenuLine::default() }
 }
@@ -267,11 +263,13 @@ impl State {
                 .collect();
         }
         if self.org.trash_open {
-            let home = home();
-            return oni_library::trash::groups(&self.org.trashed, &home)
+            return oni_library::trash::groups(&self.org.trashed, &self.nav.computer)
                 .into_iter()
                 .map(|g| Band {
-                    key: g.heading.clone().unwrap_or_default(),
+                    key: match &g.id {
+                        oni_library::film_group::FilmKey::Folder(path) => path.clone(),
+                        _ => String::new(),
+                    },
                     title: g.heading_title(),
                     caption: g.trail().unwrap_or_default(),
                     entries: g.entries,

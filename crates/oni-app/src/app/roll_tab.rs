@@ -28,12 +28,12 @@ pub(super) fn family_name(family: SeparationFamily) -> &'static str {
     }
 }
 
-/// Where the Dyes tabs' family comes from: the roll's stock, or another than the one it names.
+/// Where the Dyes tabs' family comes from: the roll's stock, or another than the one it calls for.
 pub(super) fn dye_source(family: SeparationFamily, stock: Option<&FilmStockKind>) -> String {
     match stock.and_then(|k| dye_family(k.id).map(|named| (k, named))) {
         Some((k, named)) if named == family => tr!("From the film stock, {stock}", stock = k.display_name),
-        Some((k, named)) => tr!("Not the film stock's: {stock} names {family}", stock = k.display_name, family = family_name(named)),
-        None => tr("No film stock names these dyes").to_string(),
+        Some((k, named)) => tr!("Not the film stock's: {stock} calls for {family}", stock = k.display_name, family = family_name(named)),
+        None => tr("No film stock calls for these dyes").to_string(),
     }
 }
 
@@ -209,11 +209,11 @@ mod tests {
     fn the_dyes_say_whether_they_are_the_film_stocks() {
         let fujicolor = oni_settings::film::film_stock(Some("fujifilm-fujicolor"));
         assert_eq!(dye_source(SeparationFamily::FujiC41, fujicolor), "From the film stock, Fujifilm Fujicolor");
-        // Twin: another family than the stock's is flagged with the one the stock names.
-        assert_eq!(dye_source(SeparationFamily::KodakC41, fujicolor), "Not the film stock's: Fujifilm Fujicolor names Fuji");
-        assert_eq!(dye_source(SeparationFamily::GenericC41, None), "No film stock names these dyes");
+        // Twin: another family than the stock's is flagged with the one the stock calls for.
+        assert_eq!(dye_source(SeparationFamily::KodakC41, fujicolor), "Not the film stock's: Fujifilm Fujicolor calls for Fuji");
+        assert_eq!(dye_source(SeparationFamily::GenericC41, None), "No film stock calls for these dyes");
         let hp5 = oni_settings::film::film_stock(Some("ilford-hp5"));
-        assert_eq!(dye_source(SeparationFamily::KodakC41, hp5), "No film stock names these dyes", "black and white names none");
+        assert_eq!(dye_source(SeparationFamily::KodakC41, hp5), "No film stock calls for these dyes", "black and white calls for none");
     }
 
     #[test]
