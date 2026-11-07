@@ -216,47 +216,85 @@ fn frames_together_read_as_their_span_in_the_slider_s_sense() {
     assert_ne!(Field::BlackPoint.span_readout(-0.1, 0.2), Field::WhitePoint.span_readout(-0.1, 0.2));
 }
 
-/// The `field:` indices wired in the Store block titled `title`, up to the next block's title.
-fn wired_in(panel: &str, title: &str) -> Vec<i32> {
-    let body = &panel[panel.find(&format!(": Block {{\n        title: @tr(\"{title}\");")).expect("the block") + 1..];
+/// The Store block titled `title`, up to the next block's title.
+fn block_body<'a>(panel: &'a str, title: &str) -> &'a str {
+    let body = &panel[panel.find(&format!(" Block {{\n        title: @tr(\"{title}\");")).expect("the block") + 1..];
     let next = body.find("title: @tr(\"").and_then(|t| body[t + 1..].find("title: @tr(\"").map(|i| t + 1 + i));
-    let body = &body[..next.unwrap_or(body.len())];
-    body.split("field: ").skip(1).filter_map(|t| t.split(';').next()?.parse().ok()).collect()
+    &body[..next.unwrap_or(body.len())]
 }
 
-/// Whether the Pro face lays the light, then the colour and the paper's, then the effects.
-fn light_first(titles: &[String]) -> bool {
-    titles.windows(4).any(|w| w == ["Lighting", "Colour", "Paper Correction", "Effects"])
+/// The `field:` index a line of Slint wires, if any.
+fn field_of(line: &str) -> Option<i32> {
+    line.split("field: ").nth(1)?.split(';').next()?.parse().ok()
+}
+
+/// The `field:` indices wired in the Store block titled `title`.
+fn wired_in(panel: &str, title: &str) -> Vec<i32> {
+    block_body(panel, title).lines().filter_map(field_of).collect()
+}
+
+/// The `field:` indices the block titled `title` lays only while its settings key is open.
+fn behind_the_settings_key(panel: &str, title: &str) -> Vec<i32> {
+    let body = block_body(panel, title);
+    let Some(open) = body.split("open <=> root.").nth(1).and_then(|t| t.split(';').next()) else { return Vec::new() };
+    let mut guarded = false;
+    let mut out = Vec::new();
+    for line in body.lines().map(str::trim) {
+        if line.contains("Slider {") {
+            guarded = line.starts_with(&format!("if root.{open}"));
+        }
+        out.extend(field_of(line).filter(|_| guarded));
+    }
+    out
+}
+
+/// Whether the Pro face lays the colour, then the light, the paper's and the effects.
+fn colour_first(titles: &[String]) -> bool {
+    titles.windows(4).any(|w| w == ["Colour", "Lighting", "Paper Correction", "Effects"])
+}
+
+/// Whether the Scanner face lays its colour keys and its look, then its density key.
+fn keypad_colour_first(titles: &[String]) -> bool {
+    titles.windows(4).any(|w| w == ["Machine", "Colour", "Look", "Density"])
 }
 
 #[test]
-fn the_pro_face_lays_the_light_first_contrast_with_it() {
+fn both_faces_lay_the_colour_first_contrast_with_the_light() {
     let panel = panel_source();
     let titles = pane_titles(&panel, "ColorPane");
-    assert!(light_first(&titles), "{titles:?}");
+    assert!(colour_first(&titles), "Pro: {titles:?}");
+    assert!(keypad_colour_first(&titles), "Scanner: {titles:?}");
     // Contrast is drawn, and reset, with the light; the effects keep the rest.
     let indices = |b: Block| b.fields().iter().map(|f| f.index()).collect::<Vec<_>>();
     assert_eq!(wired_in(&panel, "Lighting"), indices(Block::Lighting));
     assert_eq!(wired_in(&panel, "Effects"), indices(Block::Effects));
     assert_eq!(Field::Contrast.block(), Some(Block::Lighting));
-    // Twin: the colour ahead of the light, Contrast among the effects, are both caught.
-    let colour_first = ["Machine", "Colour", "Lighting", "Colour", "Paper Correction", "Lighting", "Effects"].map(String::from);
-    assert!(!light_first(&colour_first));
+    // Twin: the light ahead of the colour, the density ahead of the keypad's colour, Contrast among the
+    // effects, are each caught.
+    let light_first = ["Machine", "Density", "Colour", "Look", "Lighting", "Colour", "Paper Correction", "Effects"].map(String::from);
+    assert!(!colour_first(&light_first) && !keypad_colour_first(&light_first));
     let old = ": Block {\n        title: @tr(\"Effects\");\n        StoreSlider { field: 8; }\n        StoreSlider { field: 9; }\n        StoreSlider { field: 10; }\n";
     assert_ne!(wired_in(old, "Effects"), indices(Block::Effects));
 }
 
 #[test]
-fn balance_strength_stands_under_its_key_alone_in_the_panel() {
+fn balance_strength_stands_behind_its_keys_settings_alone_in_the_panel() {
     let panel = panel_source();
-    let colour = wired_in(&panel, "Colour");
-    assert_eq!(colour.first(), Some(&Field::BalanceStrength.index()), "the dose right under the key: {colour:?}");
-    let wired = |text: &str| text.matches(&format!("field: {}; ", Field::BalanceStrength.index())).count();
+    // Behind the Colour block's settings key, as the flat-field's settings stand behind theirs.
+    let strength = Field::BalanceStrength.index();
+    assert_eq!(behind_the_settings_key(&panel, "Colour"), [strength], "only the dose behind the key's settings");
+    let flat = [Field::FlatAmount, Field::FlatTemperature, Field::FlatTint].map(|f| f.index());
+    assert_eq!(behind_the_settings_key(&panel, "Flat-Field"), flat);
+    // Closed until the hand opens it.
+    assert!(panel.contains("    property <bool> balance-settings;\n"), "the key's settings open closed");
+    let wired = |text: &str| text.matches(&format!("field: {strength}; ")).count();
     assert_eq!(wired(&panel), 1, "one Balance strength in the whole panel");
     // Its reset is the slider's own: the Colour block's reset leaves the roll's share alone.
     assert_eq!(Field::BalanceStrength.block(), None);
     assert_eq!(Field::Temperature.block(), Some(Block::Color));
-    // Twin: a second one, as the Roll tab laid it, is counted.
+    // Twin: the dose at the surface, right under the key, is caught, and so is a second one.
+    let surface = panel.replace("if root.balance-settings: StoreSlider { field: 11;", "StoreSlider { field: 11;");
+    assert_eq!(behind_the_settings_key(&surface, "Colour"), [] as [i32; 0]);
     assert_eq!(wired(&format!("{panel}StoreSlider {{ field: 11; label: @tr(\"Strength\"); }}")), 2);
 }
 

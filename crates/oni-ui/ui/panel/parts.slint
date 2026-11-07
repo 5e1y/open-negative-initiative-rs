@@ -1,6 +1,6 @@
 // The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
 // store, the scrolled pane, the Scanner's sliders, and a tool's header.
-import { Slider, SliderFill, Section, Scroller, Label, Button, TextRole, TabsStyle, Space, HelpMark } from "../ds/ds.slint";
+import { Icons, Slider, SliderFill, Section, Scroller, Label, Button, ButtonSize, TextRole, TabsStyle, Space, HelpMark } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
 import { PanelState, Lab } from "state.slint";
@@ -57,6 +57,21 @@ export component Block inherits Section {
     folded: PanelState.folds-read ? PanelState.fold-of(self.title, self.folded-by-default) : self.folded-by-default;
     reset(b) => { Store.reset(b); }
     fold-toggled(f) => { PanelState.fold-changed(self.title, f); }
+}
+
+// A block's row with its settings key at the far right, which shows or hides the advanced settings
+// laid under it: closed until the hand opens them, out of a beginner's way and one click from reach.
+export component SettingsRow inherits HorizontalLayout {
+    in-out property <bool> open;
+    in property <string> show-help;
+    in property <string> hide-help;
+    spacing: Space.s;
+    @children
+    Rectangle { horizontal-stretch: 1; }
+    VerticalLayout {
+        alignment: center;
+        Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.settings; help: root.open ? root.hide-help : root.show-help; clicked => { root.open = !root.open; } }
+    }
 }
 
 // A block whose reset an editor owns, numbered as `Editors.reset` reads it.

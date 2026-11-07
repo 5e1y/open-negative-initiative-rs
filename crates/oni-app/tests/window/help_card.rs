@@ -54,7 +54,7 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     // Each mark is named with its block, none with what any block does.
     assert!(common::placed(w, Role::Button, "What this block does").is_empty(), "no mark is named for every block");
     let (lighting, colour) = (mark(w, "Lighting"), mark(w, "Colour"));
-    assert!(lighting.y < colour.y, "twin: two marks, two names, the light's first");
+    assert!(colour.y < lighting.y, "twin: two marks, two names, the colour's first");
     let expanded = || {
         let found: Vec<_> = ElementHandle::find_by_accessible_label(w, "Help on Lighting").filter(|e| e.accessible_role() == Some(Role::Button)).collect();
         found[0].accessible_expanded()

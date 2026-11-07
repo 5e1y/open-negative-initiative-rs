@@ -84,7 +84,8 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
+    // Tall enough for the keypad's Density block, laid under its colour keys.
+    rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 1000));
 
     let first = shell(&gpu, &support);
     first.window.show().unwrap();

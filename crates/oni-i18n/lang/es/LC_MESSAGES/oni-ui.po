@@ -1253,26 +1253,6 @@ msgstr "ONI"
 msgid "Frontier"
 msgstr "Frontier"
 
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Density"
-msgstr "Densidad"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
-msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto por paso, y la pantalla de arriba cuenta los puntos."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D"
-msgstr "D"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −: toward dark"
-msgstr "D −: hacia oscuro"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light"
-msgstr "D +: hacia claro"
-
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
 msgstr "Color"
@@ -1337,33 +1317,37 @@ msgstr "Temperatura −: hacia frío"
 msgid "Temperature +: toward warm"
 msgstr "Temperatura +: hacia cálido"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Lighting"
-msgstr "Luz"
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Density"
+msgstr "Densidad"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
-msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo."
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
+msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto por paso, y la pantalla de arriba cuenta los puntos."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Exposure"
-msgstr "Exposición"
+msgid "D"
+msgstr "D"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast"
-msgstr "Contraste"
+msgid "D −: toward dark"
+msgstr "D −: hacia oscuro"
 
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Highlights"
-msgstr "Luces"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shadows"
-msgstr "Sombras"
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D +: toward light"
+msgstr "D +: hacia claro"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Balance strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
 msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras, y la lleva hacia el gris con Temperatura y Matiz. Intensidad del balance es la parte de esa corrección que asumen: cada foto conserva su propia corrección, la proporción es la del rollo.\n\nTemperatura mueve el color entre el azul y el amarillo, Matiz entre el verde y el magenta; ninguno cambia la luminosidad de la fotografía.\n\nLa saturación hace todos los colores más intensos o más grises a la vez."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Show Balance strength"
+msgstr "Mostrar intensidad del balance"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Hide Balance strength"
+msgstr "Ocultar intensidad del balance"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Crop before using the automatic balance"
@@ -1388,6 +1372,30 @@ msgstr "Común a las {} fotos de este rollo."
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Tint"
 msgstr "Matiz"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Lighting"
+msgstr "Luz"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
+msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Exposure"
+msgstr "Exposición"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast"
+msgstr "Contraste"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Highlights"
+msgstr "Luces"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shadows"
+msgstr "Sombras"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper Correction"
@@ -1790,16 +1798,16 @@ msgid "Evens out uneven lighting from the scanner, whatever you crop to."
 msgstr "Corrige la iluminación desigual del escáner, sea cual sea el recorte."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Flat-field"
-msgstr "Flat-field"
+msgid "Show Amount and Colour"
+msgstr "Mostrar cantidad y color"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Hide Amount and Colour"
 msgstr "Ocultar cantidad y color"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Show Amount and Colour"
-msgstr "Mostrar cantidad y color"
+msgid "Flat-field"
+msgstr "Flat-field"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Mask"
