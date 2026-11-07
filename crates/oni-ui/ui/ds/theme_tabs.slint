@@ -42,8 +42,15 @@ export global ToggleStyle {
 
 // `DSMedal`: a foil disc, its podium place struck at `figure` of its side; `press` is the scale a pressed one shrinks to.
 export global MedalStyle {
-    // An icon's size on a tile, in the filter and in the status bar: its figure reads, inside the bar's row.
+    // An icon's size on a tile and in the filter.
     out property <length> size: DS.control-icon-size;
+    // The status bar's, keys the hand aims at: a small key's square but a rule round, its figure read as the key.
+    out property <length> picker: DS.control-icon-button-size - 2 * DS.space-xxs;
+    // A medal not given, its rim and its place alone: at `blank` on its ramp at rest, bronze's 3 at 5.6:1
+    // on the panel, at `reached` under the hand.
+    out property <float> blank: 1.2;
+    out property <float> reached: 1.6;
+    out property <length> rim: DS.stroke-trace;
     out property <float> figure: 0.6;
     in-out property <float> press: DS.control-medal-press;
     // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.

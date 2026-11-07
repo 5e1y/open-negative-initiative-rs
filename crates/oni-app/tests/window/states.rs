@@ -1,7 +1,8 @@
 //! The states read off the drawn window: out of reach far under an idle tab, whose label reads on its hollow, a
 //! keycap keeping its relief there, a destructive glyph red only while reached, a lamp that reads at rest and lit
 //! only while on, a switch's slot lit as a lamp while on, the hand's ring round a tile, whatever the photo, each
-//! medal told by its figure without its colour, gold striking 1 as on a podium.
+//! medal told by its figure without its colour, gold striking 1 as on a podium, one not given a rim and a
+//! figure that reads.
 
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
@@ -29,6 +30,8 @@ const KNOB: usize = 20;
 const TRAVEL: usize = 24;
 /// AA's 4.5:1 for small text, with the margin a quiet label keeps.
 const TEXT: f64 = 5.0;
+/// The most a box may differ from the ground and still read as bare ground.
+const EMPTY: f64 = 1.2;
 /// The pixels two figures must differ by, of the 64 inside a 16 pt medal's ring at one pixel a point.
 const FIGURES_APART: usize = 6;
 /// DSFoil's gold face told by its inks: green over 0.7 of its red (bronze's under 0.62), blue under
@@ -189,6 +192,29 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
     // Twin: silver and bronze are no gold, and bronze's 3 reads apart from a 1.
     assert!(!golden(silver_face) && !golden(bronze_face), "the measure tells gold's inks: {silver_face:?} {bronze_face:?}");
     assert!(apart(&bronze, &one) >= FIGURES_APART, "the measure sees a 3 apart from a 1: {}", apart(&bronze, &one));
+
+    // The status bar's medals on its ground, a small key apart: gold given, gold and bronze not, a 3 in
+    // bronze's body. Each one's middle half: its median light (its face) and its brightest (its figure).
+    let (p, key) = (width(probe.get_picker()), 24);
+    let middle = |i: usize| (300 + i * key + p / 4, 302 + p / 4, 300 + i * key + p * 3 / 4, 302 + p * 3 / 4);
+    let face = |i: usize| {
+        let (x0, y0, x1, y1) = middle(i);
+        let mut light: Vec<f64> = (y0..y1).flat_map(|y| (x0..x1).map(move |x| luminance(at(x, y)))).collect();
+        light.sort_by(f64::total_cmp);
+        light[light.len() / 2]
+    };
+    let figure = |i: usize| {
+        let (x0, y0, x1, y1) = middle(i);
+        peak(x0, y0, x1, y1)
+    };
+    let bar = luminance(at(300 + 3 * key - 2, 302 + key - 1));
+    eprintln!("on the bar's ground {bar:.3}: faces given {:.3}, blank {:.3}; figures blank {:.3}, bronze's body {:.3}", face(0), face(1), figure(2), figure(3));
+    assert!(contrast(face(1), bar) < EMPTY, "a medal not given is a rim alone: {:.2}:1 in its middle", contrast(face(1), bar));
+    // Twin: the given one reads filled.
+    assert!(contrast(face(0), bar) >= NON_TEXT, "the measure sees a struck face: {:.2}:1", contrast(face(0), bar));
+    assert!(contrast(figure(2), bar) >= TEXT, "a blank bronze's 3 reads as text: {:.2}:1", contrast(figure(2), bar));
+    // Twin: in bronze's own body the figure is too dim to read.
+    assert!(contrast(figure(3), bar) < TEXT, "the measure sees a dim 3: {:.2}:1", contrast(figure(3), bar));
 }
 
 /// A readout's unit stands in a column of its own: one number bare, in percent and in stops ends its
