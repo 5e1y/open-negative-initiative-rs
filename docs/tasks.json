@@ -6913,5 +6913,12 @@
     "title": "The status bar's medals at 20 pt: the given one struck, the others blank rims",
     "status": "done",
     "detail": "Evaluation: 16 pt coins with tiny figures, the given one and the others alike but for a fade. The picker's medals are a small key's square less a rule round, 20 pt (MedalStyle.picker); the given one stays the struck foil with its shadows, the others are blank: their rim lit on top and their figure alone in their metal, at 1.2 on its ramp (bronze's 3 at 5.6:1 on the panel), brighter under the hand yet never struck, so a click that takes a medal off shows at once under the hand. The podium and its figures as keys stay; tiles and the rating filter keep the 16 pt struck medal. Checks: window states a blank medal's middle is the bar's ground (twin: the given one reads filled), its bronze 3 reads as text (twin: a 3 in bronze's own body falls short)."
+  },
+  {
+    "id": 1451,
+    "type": "interface",
+    "title": "The status bar's medals lead its line, named Rating, by the photo's name",
+    "status": "done",
+    "detail": "Evaluation: the coins sat unlabelled in the bar's far corner, and nothing said the keys 1 to 3 rate. The picker opens on its name, Rating (Note, Valoración), and leads the status bar's row where the line starts, the photo's name right after the bronze, in the gallery as beside a photo. At the start it never moves under the hand as the line's words change (Settings saved coming and going, a selection's count); each tip still names its key (Gold (1)). The row's far end is the status inset, as its start. Checks: window gallery the group's name starts the line on the grid's column, gold, silver and bronze in one row with the name at most the bar's inset after the bronze (twin: from the group's start the name stands the whole group away), the medals still while the line's words change (twin: the line did change)."
   }
 ]

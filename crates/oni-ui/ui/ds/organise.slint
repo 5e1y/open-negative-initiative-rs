@@ -10,15 +10,17 @@ import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 import { MedalStyle, TabsStyle } from "theme.slint";
 
-// `DSMedalPicker`: gold, silver and bronze at a key's size, the given one (-1 none) struck, the others
-// blank and lit under the hand, a pressed one shrunk on the spring; each catches the hand over a small
-// key's square, overhanging the status bar.
+// `DSMedalPicker`: the group's name, then gold, silver and bronze at a key's size, the given one (-1 none)
+// struck, the others blank and lit under the hand, a pressed one shrunk on the spring; each catches the
+// hand over a small key's square, overhanging the status bar.
 export component MedalPicker inherits HorizontalLayout {
     in property <int> current: -1;
     // The medal the lab shows pressed; -1 follows the hand alone.
     in property <int> pressed-rank: -1;
     callback picked(int);
-    alignment: center;
+    alignment: start;
+    spacing: Space.xs;
+    Label { role: TextRole.value; tone: Tone.secondary; text: @tr("Rating"); }
     for medal[i] in [1, 2, 3]: Rectangle {
         width: ButtonStyle.small-height;
         property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;

@@ -8,13 +8,20 @@ export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
     padding-top: Space.s;
     padding-bottom: Space.s;
-    // The medal's own inset in its cell makes up the rest, so both ends sit the status inset from the card.
-    padding-right: StatusStyle.inset - Space.xxs;
+    padding-right: StatusStyle.inset;
     // The editor's line, the open frame, its place on the roll and its size, then whether its sidecar
     // holds its settings.
     in property <string> editor-line;
     property <string> saved: Canvas.saved ? " · " + @tr("Settings saved") : "";
     property <bool> loading: Library.loading != "" && !Preparing.shown;
+    // `statusMedalTarget`: beside a photo with nothing selected, the open frame takes the medal. The group
+    // leads the line, by the photo's name, so the line's words changing never move it under the hand.
+    if !root.loading && !Preparing.shown && (root.gallery ? Library.medal-shown : Library.editor-medal-shown): MedalPicker {
+        padding-left: StatusStyle.inset;
+        horizontal-stretch: 0;
+        current: root.gallery ? Library.medal-current : Library.editor-medal-current;
+        picked(m) => { Library.medal-picked(m); }
+    }
     StatusBar {
         horizontal-stretch: 1;
         busy: root.loading;
@@ -22,11 +29,5 @@ export component CardStatus inherits HorizontalLayout {
         count: Library.loading-count;
         fraction: Library.loading-fraction;
         seal: Preparing.shown ? "" : root.gallery ? Library.status-seal : Library.editor-seal;
-    }
-    // `statusMedalTarget`: beside a photo with nothing selected, the open frame takes the medal.
-    if !root.loading && !Preparing.shown && (root.gallery ? Library.medal-shown : Library.editor-medal-shown): MedalPicker {
-        horizontal-stretch: 0;
-        current: root.gallery ? Library.medal-current : Library.editor-medal-current;
-        picked(m) => { Library.medal-picked(m); }
     }
 }
