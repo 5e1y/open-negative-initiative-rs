@@ -46,17 +46,10 @@ pub struct Band {
     pub title: String,
     pub caption: String,
     pub entries: Vec<Entry>,
-    /// What renaming the heading renames, `None` where a heading takes no name.
-    pub naming: Option<Naming>,
+    /// The folder renaming the heading renames, `None` where a heading takes no name.
+    pub naming: Option<String>,
     /// `explicitName`: the name the field opens on, empty for a folder no roll names.
     pub explicit: String,
-}
-
-/// `GalleryGroup.id` as a rename reaches it: a folder on the disk, or a project.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Naming {
-    Folder(String),
-    Project(Id),
 }
 
 /// What a line of the open context menu does.
@@ -64,6 +57,7 @@ pub enum Naming {
 enum Act {
     Cell(CellLine),
     Edit(String),
+    RenameProject(Id),
     DeleteProject(Id),
     Restore(Vec<String>),
     Reveal(Vec<String>),
@@ -167,8 +161,8 @@ pub struct Organising {
     title_draft: Option<(String, String)>,
     /// The surface last laid: 0 the archive, 1 the projects, 2 the ONI Trash.
     laid_surface: Option<u8>,
-    /// `renaming` and `draft`: the heading typed over, and what its field holds now.
-    pub(in crate::app) renaming: Option<(Naming, String)>,
+    /// `renaming` and `draft`: the folder whose heading is typed over, and what its field holds now.
+    pub(in crate::app) renaming: Option<(String, String)>,
     /// The heading last clicked and when, which tells a double click's second.
     heading_click: Option<(usize, Instant)>,
     /// `TreeEngine`'s own picks on the archive and on the projects, apart from the ring.
@@ -249,21 +243,7 @@ impl State {
 
     fn bands(&self) -> Vec<Band> {
         if self.org.projects_surface {
-            // The rating filter keeps one medal as in the archive; the tree keeps every member.
-            let kept = |e: &Entry| self.filter.is_none_or(|m| e.label == m);
-            return self
-                .project_groups()
-                .into_iter()
-                .map(|g| Band {
-                    key: g.id.to_string(),
-                    title: g.project.name.clone(),
-                    caption: String::new(),
-                    entries: g.entries.into_iter().filter(kept).collect(),
-                    naming: Some(Naming::Project(g.id)),
-                    explicit: g.project.name.clone(),
-                })
-                .filter(|b| !b.entries.is_empty())
-                .collect();
+            return self.project_bands();
         }
         if self.org.trash_open {
             return oni_library::trash::groups(&self.org.trashed, &self.nav.computer)
@@ -292,7 +272,7 @@ impl State {
                         title: g.header.clone(),
                         caption: g.caption.clone(),
                         entries: g.entries.clone(),
-                        naming: g.folder.clone().map(Naming::Folder),
+                        naming: g.folder.clone(),
                         explicit: g.film.as_ref().map(|f| f.name.clone()).unwrap_or_default(),
                     })
                     .collect()
@@ -365,6 +345,8 @@ impl Ctl {
         lib.on_menu_sub_chosen(move |i| p.menu_sub_chosen(index(i)));
         let p = me.clone();
         lib.on_empty_acted(move || if p.state.borrow().org.projects_surface { p.new_empty_project() } else { p.act(crate::Act::Open) });
+        let p = me.clone();
+        lib.on_new_project(move || p.new_empty_project());
         let p = me.clone();
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();

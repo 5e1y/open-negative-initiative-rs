@@ -187,7 +187,8 @@ impl Ctl {
         let (was_open, neighbour, carried) = {
             let s = self.state.borrow();
             let was_open = s.open.as_deref() == Some(path);
-            let frames: Vec<&str> = s.lab_frames().iter().map(|e| e.path.as_str()).collect();
+            let walked = s.lab_frames();
+            let frames: Vec<&str> = walked.iter().map(|e| e.path.as_str()).collect();
             let at = frames.iter().position(|p| *p == path);
             let neighbour = at.and_then(|i| frames.get(i + 1).or_else(|| i.checked_sub(1).and_then(|j| frames.get(j)))).map(|p| p.to_string());
             (was_open, neighbour, s.store.settings().flat_field.clone())

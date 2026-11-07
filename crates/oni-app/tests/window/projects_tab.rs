@@ -16,7 +16,7 @@ use crate::common;
 pub(crate) struct Hand {
     pub(crate) rig: common::Rig,
     pub(crate) shell: Shell,
-    root: PathBuf,
+    pub(crate) root: PathBuf,
 }
 
 impl Hand {
@@ -27,7 +27,7 @@ impl Hand {
     }
 
     /// `new`, with `before` laying what the support folder holds when the app starts, on the root.
-    fn made(label: &str, files: &[(&str, f32)], before: impl FnOnce(&std::path::Path)) -> Hand {
+    pub(crate) fn made(label: &str, files: &[(&str, f32)], before: impl FnOnce(&std::path::Path)) -> Hand {
         let root = std::env::temp_dir().join(format!("oni-app-projects-{label}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         for (file, tone) in files {
@@ -96,7 +96,7 @@ impl Hand {
         }
     }
 
-    fn told(&self) -> Option<(String, String, String)> {
+    pub(crate) fn told(&self) -> Option<(String, String, String)> {
         let t = self.shell.window.global::<Told>();
         t.get_shown().then(|| (t.get_title().to_string(), t.get_message().to_string(), t.get_action().to_string()))
     }
@@ -106,7 +106,7 @@ impl Hand {
     }
 
     /// A hand pressing on `path`'s tile, moving in steps to `to`, and letting go there.
-    fn drag(&self, path: &str, to: (f32, f32)) {
+    pub(crate) fn drag(&self, path: &str, to: (f32, f32)) {
         let lib = self.lib();
         let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
         let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
@@ -126,7 +126,7 @@ impl Hand {
     }
 
     /// Where a drop lands before `path`'s tile, a little left of its middle.
-    fn before(&self, path: &str) -> (f32, f32) {
+    pub(crate) fn before(&self, path: &str) -> (f32, f32) {
         let lib = self.lib();
         let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
         let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
@@ -134,7 +134,7 @@ impl Hand {
     }
 
     /// The projects' tree row titled `title` dragged onto the middle of the row titled `onto`.
-    fn tree_drop(&self, title: &str, onto: &str) {
+    pub(crate) fn tree_drop(&self, title: &str, onto: &str) {
         let rows: Vec<oni_app::TreeRow> = self.lib().get_project_rows().iter().collect();
         let at = |t: &str| rows.iter().position(|r| r.title == t).unwrap_or_else(|| panic!("{t} has a row"));
         let middle = |i: usize| (rows[i].x + rows[i].width / 2.0, rows[i].y + rows[i].height / 2.0);
@@ -158,7 +158,7 @@ impl Drop for Hand {
 }
 
 /// Roll 10 holds a copy of Roll 8's A: Add to Project files Roll 8's A and B beside it, said with
-/// Undo, each named with its roll where their names meet; the stocks come from Roll 8's marker.
+/// Undo, each under its roll's heading; the stocks come from Roll 8's marker.
 pub(crate) fn two_rolls_copies_join_one_project_said_with_undo() {
     let hand = Hand::new("copies", &[("Roll 10/A.tif", 0.3), ("Roll 8/A.tif", 0.3), ("Roll 8/B.tif", 0.6)]);
     let mut gold = Film::new("Roll 8");
@@ -183,12 +183,27 @@ pub(crate) fn two_rolls_copies_join_one_project_said_with_undo() {
     hand.menu(&r8a, "Add to Project", Some("Project 1"));
     assert_eq!(hand.told(), Some(("Add to Project".into(), "The 2 photos are already in “Project 1”.".into(), String::new())));
 
-    // The Projects tab names each copy with its roll; its stocks come off Roll 8's marker alone.
+    // The Projects tab heads each copy with its roll, in the tree and in the grid; a roll's row
+    // selects its photos. Its stocks come off Roll 8's marker alone.
     hand.lib().invoke_surface_picked(1);
     hand.rig.pump();
     hand.lib().invoke_project_row_folded(0);
     hand.rig.pump();
-    assert_eq!(hand.project_titles(), ["Project 1", "A.tif \u{b7} Roll 10", "A.tif \u{b7} Roll 8", "B.tif"]);
+    let titles = hand.project_titles();
+    assert_eq!(titles, ["Project 1", "Roll 10", "A.tif", "Roll 8", "A.tif", "B.tif"]);
+    // Twin: the photos' rows alone name the two copies alike.
+    assert_eq!(titles[2], titles[4]);
+    let headings: Vec<(String, String)> = hand.lib().get_headings().iter().map(|h| (h.caption.into(), h.title.into())).collect();
+    let heading = |roll: &str| ("Project 1".to_string(), roll.to_string());
+    assert_eq!(headings, [heading("Roll 10"), heading("Roll 8")], "a band for each roll, under the project's name");
+    assert_eq!(hand.shown(), [r10a.clone(), r8a.clone(), r8b.clone()]);
+    let selected = |hand: &Hand| app::tiles(&hand.shell.window).iter().filter(|t| t.selected).count();
+    hand.lib().invoke_project_row_clicked(3, false, false);
+    hand.rig.pump();
+    assert_eq!(selected(&hand), 2, "Roll 8's row selects its two photos");
+    hand.lib().invoke_project_row_clicked(1, false, false);
+    hand.rig.pump();
+    assert_eq!(selected(&hand), 1, "twin: Roll 10's, its one");
     hand.lib().invoke_project_row_clicked(0, false, false);
     hand.rig.pump();
     let stocks = |hand: &Hand| {

@@ -220,7 +220,8 @@ export component StatusBar inherits Rectangle {
     }
 }
 
-// A column's name heading it, typed over in the same face as a `RenameField` once clicked.
+// A column's name heading it, wrapped whole over as many lines as it takes, typed over in the same face as a
+// `RenameField` once clicked.
 export component EditableTitle inherits VerticalLayout {
     in property <string> text;
     in property <string> placeholder;
@@ -231,7 +232,7 @@ export component EditableTitle inherits VerticalLayout {
     if !root.renaming: Label {
         role: TextRole.title;
         text: root.text;
-        overflow: elide;
+        wrap: word-wrap;
         TouchArea { clicked => { root.renaming = true; } }
         // Space or Return types it over while it holds the keyboard.
         KeyScope {

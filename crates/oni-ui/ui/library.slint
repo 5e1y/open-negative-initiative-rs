@@ -175,9 +175,11 @@ export global Library {
     callback project-row-rename-committed(int, string);
     callback project-row-rename-cancelled();
     callback project-row-menu(int) -> bool;
-    // `SidebarKeys` on the projects: whether a row is open, and the key folding or opening them all.
+    // `SidebarKeys` on the projects: whether a row is open, and the key folding or opening them all;
+    // New Project's key beside them, a project its name open to type.
     in property <bool> projects-any-open;
     callback project-fold-all();
+    callback new-project();
     callback project-centre();
     // The projects' tree laid as the archive's, its scroll as the archive's, a click under its rows.
     in property <length> project-content-height;
@@ -280,6 +282,7 @@ export component Grid inherits Surface {
                 x: Space.l;
                 y: h.y;
                 width: root.width - 2 * Space.l;
+                hovered: pointer.has-hover && pointer.mouse-y + Library.scroll >= h.y && pointer.mouse-y + Library.scroll < h.y + self.height;
                 title: h.title;
                 caption: h.caption;
                 renaming: h.renaming;
@@ -329,6 +332,7 @@ export component Grid inherits Surface {
         if Library.pinned-shown: TileHeading { pinned: true;
             y: Library.pinned-y - Library.scroll;
             width: parent.width;
+            hovered: pointer.has-hover && pointer.mouse-y >= self.y && pointer.mouse-y < self.y + self.height;
             title: Library.pinned-title;
             caption: Library.pinned-caption;
             renaming: Library.pinned-renaming;

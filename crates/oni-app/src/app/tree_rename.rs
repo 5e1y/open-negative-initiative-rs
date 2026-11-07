@@ -59,6 +59,27 @@ impl Ctl {
         self.publish_tree();
     }
 
+    /// Rename… on a project's row, or Return on the project ringed: its row typed over in place.
+    pub(in crate::app) fn rename_project(self: &Rc<Self>, id: oni_settings::Id) {
+        self.exit_tree_editing();
+        self.state.borrow_mut().org.project_renaming = Some(id);
+        self.publish_projects();
+    }
+
+    /// Return in the gallery on the Projects tab: the project ringed alone, no photo picked, is
+    /// typed over, as the Finder renames the item selected; whether one was.
+    pub(super) fn rename_ringed(self: &Rc<Self>) -> bool {
+        let ringed = {
+            let s = self.state.borrow();
+            let lone = s.org.projects_surface && s.picks.selection.is_empty() && s.org.project_pick.selection.is_empty();
+            match &s.org.project_ring {
+                Some(oni_library::project_tree::NodeId::Project(id)) if lone => Some(*id),
+                _ => None,
+            }
+        };
+        ringed.inspect(|id| self.rename_project(*id)).is_some()
+    }
+
     /// `exitEditing()`: a click, a fold or another rename in a tree commits what the field holds.
     pub(super) fn exit_tree_editing(self: &Rc<Self>) {
         let (archive, project, draft) = {

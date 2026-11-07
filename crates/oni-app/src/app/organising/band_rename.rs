@@ -1,5 +1,5 @@
 //! `GalleryEngine`'s renaming: a band's heading double-clicked is typed over in place; Return, a
-//! click on the grid or the focus leaving commits through `renameGroup` or `renameProject`.
+//! click on the grid or the focus leaving commits through `renameGroup`; a project's heading takes none.
 
 use super::*;
 
@@ -93,21 +93,13 @@ impl Ctl {
     }
 
     /// `commit(_:)`: the field closes; a name trimmed, not empty and not the explicit one renames
-    /// the folder or the project, and a band gone meanwhile renames nothing.
+    /// the folder, and a band gone meanwhile renames nothing.
     fn commit_heading(self: &Rc<Self>, draft: &str) {
-        let Some((naming, _)) = self.state.borrow_mut().org.renaming.take() else { return };
-        let explicit = self.state.borrow().org.bands.iter().find(|b| b.naming.as_ref() == Some(&naming)).map(|b| b.explicit.clone());
+        let Some((folder, _)) = self.state.borrow_mut().org.renaming.take() else { return };
+        let explicit = self.state.borrow().org.bands.iter().find(|b| b.naming.as_ref() == Some(&folder)).map(|b| b.explicit.clone());
         self.publish_tiles();
-        let Some(name) = explicit.and_then(|was| picking::named(draft, &was)) else { return };
-        match naming {
-            Naming::Folder(path) => self.rename_folder(&path, &name),
-            Naming::Project(id) => {
-                let renamed = project::rename(&mut self.state.borrow_mut().org.projects, id, &name);
-                if renamed {
-                    self.save_projects();
-                    self.lay_grid();
-                }
-            }
+        if let Some(name) = explicit.and_then(|was| picking::named(draft, &was)) {
+            self.rename_folder(&folder, &name);
         }
     }
 }

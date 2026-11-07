@@ -6,7 +6,7 @@ impl Ctl {
     /// The bands the surface shows, the selection and the frames together kept to them, then the
     /// tiles, the tree's other rows, the status bar, the sidebar and the empty state.
     pub(in crate::app) fn lay_grid(self: &Rc<Self>) {
-        let (remounted, unknown) = {
+        let unknown = {
             let mut s = self.state.borrow_mut();
             let bands = s.bands();
             let order: Vec<String> = bands.iter().flat_map(|b| b.entries.iter().map(|e| e.path.clone())).collect();
@@ -29,9 +29,14 @@ impl Ctl {
                 .map(|e| (e.path.clone(), (library::medal_index(e.label), s.org.missing.contains(&e.path), e.leads_passes)))
                 .collect();
             s.org.bands = bands;
-            // Each surface is its own `GalleryEngine`, which lands afresh when switched to.
+            // Each surface is its own `GalleryEngine`, which opens at its top when switched to: the open
+            // photo lands only back from the editor (`land_gallery`).
             let surface = if s.org.projects_surface { 1 } else { u8::from(s.trash_shown()) * 2 };
-            (s.org.laid_surface.replace(surface) != Some(surface), unknown)
+            let remounted = s.org.laid_surface.replace(surface) != Some(surface);
+            if remounted {
+                s.scroll = 0.0;
+            }
+            unknown
         };
         // The frames together are the selection: one the grid stops showing, another roll's or one a
         // filter hides, leaves it, and the group follows what is left.
@@ -41,9 +46,6 @@ impl Ctl {
         }
         self.probe(unknown);
         self.relayout();
-        if remounted {
-            self.land_gallery();
-        }
         self.publish_organising();
     }
 

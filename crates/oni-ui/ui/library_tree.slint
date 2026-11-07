@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection } from "navigator.slint";
-import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
+import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 
@@ -53,13 +53,14 @@ export component Tree inherits Surface {
                 if (Library.trash-row-menu(i)) { menu.show(); }
             }
         }
-        // The tree's view in words: a select naming its layout, its menu the layouts, the photo selected
-        // shown and, on the projects, every folder opened or folded; under the tab bar its padding stands above.
+        // The tree's view in words, a select of its layouts, the photo selected and, on the projects, every
+        // folder opened or folded, New Project beside it; under the tab bar its padding stands above.
         if Library.surface == 1 || root.beside-photo: HorizontalLayout {
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
             padding-top: Library.surface == 1 ? 0 : Space.s;
             padding-bottom: Space.s;
+            spacing: Space.s;
             Picker {
                 face: PickerFace.pill;
                 horizontal-stretch: 1;
@@ -76,6 +77,11 @@ export component Tree inherits Surface {
                         Library.project-centre();
                     }
                 }
+            }
+            if Library.surface == 1: Button {
+                size: ButtonSize.mini;
+                text: @tr("New Project");
+                clicked => { Library.new-project(); }
             }
         }
         if Library.surface == 0 && root.beside-photo: RowTree {

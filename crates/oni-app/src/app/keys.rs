@@ -100,6 +100,9 @@ impl Ctl {
             self.column_select_all();
             return true;
         }
+        if w.global::<App>().get_gallery() && bare && !repeat && matches!(text, "\r" | "\n") && self.rename_ringed() {
+            return true;
+        }
         if w.global::<App>().get_gallery() && self.grid_key(text, command, shift, bare, repeat) {
             return true;
         }

@@ -1,5 +1,5 @@
 //! Navigation inside a project of photos from two folders, as on the archive: the gallery's
-//! arrows, ⌘G and the editor's walk follow the project's own order and stay inside it.
+//! arrows, ⌘G and the editor's walk follow the project's order, roll by roll, and stay inside it.
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::{App, Lab, Library};
@@ -118,39 +118,41 @@ pub(crate) fn a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_th
 
     lib.invoke_surface_picked(1);
     rig.pump();
-    assert_eq!(hand.shown(), ["B02", "A03", "B04", "A01", "A00", "B00"], "Trip, the newer, then Other, each in its own order");
+    // Each project heads its rolls in the order its first photo of each takes, each roll in the
+    // project's order.
+    assert_eq!(hand.shown(), ["B02", "B04", "A03", "A01", "A00", "B00"], "Trip, the newer, then Other, roll by roll");
 
-    // The gallery's arrows walk the project's order across both folders; ⇧ extends.
+    // The gallery's arrows walk the project across both rolls; ⇧ extends.
     hand.pick("B02");
     hand.arrow(Key::RightArrow);
-    assert_eq!(hand.selected(), ["A03"], "→ from B02 lands on Trip's next, A03");
+    assert_eq!(hand.selected(), ["B04"], "→ from B02 lands on Roll B's next in Trip, B04");
     hand.arrow(Key::RightArrow);
-    assert_eq!(hand.selected(), ["B04"]);
+    assert_eq!(hand.selected(), ["A03"], "then on into Roll A");
     hand.arrow(Key::LeftArrow);
-    assert_eq!(hand.selected(), ["A03"], "← walks back");
+    assert_eq!(hand.selected(), ["B04"], "← walks back");
     rig.chord(Key::Shift, &SharedString::from(Key::RightArrow));
-    assert_eq!(hand.selected(), ["A03", "B04"], "⇧→ extends to B04");
+    assert_eq!(hand.selected(), ["B04", "A03"], "⇧→ extends to A03");
 
     // ⌘G opens the ringed photo, and the editor's → walks Trip, never Roll A.
-    hand.pick("A03");
+    hand.pick("B04");
     rig.chord(Key::Control, "g");
     assert!(!hand.gallery());
-    assert_eq!(hand.open(), "A03", "⌘G opens the ringed A03");
-    assert_eq!(hand.frame(), "FRAME 02/04", "the screen counts A03 in Trip");
+    assert_eq!(hand.open(), "B04", "⌘G opens the ringed B04");
+    assert_eq!(hand.frame(), "FRAME 02/04", "the screen counts B04 in Trip");
     hand.arrow(Key::RightArrow);
-    assert_eq!(hand.open(), "B04", "→ walks to Trip's next, B04 in Roll B");
+    assert_eq!(hand.open(), "A03", "→ walks to Trip's next, A03 in Roll A");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A01");
     assert_eq!(hand.frame(), "FRAME 04/04");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A01", "Trip's end stops the walk: Other's A00 follows it in the grid only");
     hand.arrow(Key::UpArrow);
-    assert_eq!(hand.open(), "B04", "↑ walks back as ←");
+    assert_eq!(hand.open(), "A03", "↑ walks back as ←");
 
     // Back to the gallery, the photo walked to is the selection.
     rig.chord(Key::Control, "g");
     assert!(hand.gallery());
-    assert_eq!(hand.selected(), ["B04"], "the gallery comes back on the photo walked to");
+    assert_eq!(hand.selected(), ["A03"], "the gallery comes back on the photo walked to");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.selected(), ["A01"]);
 

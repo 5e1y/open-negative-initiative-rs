@@ -1,6 +1,6 @@
 //! The hand in the library column's trees, as `TreeEngine` reads it: ⌘ and ⇧ gather rows into the
-//! selection, a right click opens Swift's menu on the pick or the row, a project's double click
-//! types over its name, a click on no row drops the picks.
+//! selection, a right click opens Swift's menu on the pick or the row, a project's Rename… types
+//! over its name where a double click never does, a click on no row drops the picks.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Library, Navigator, TreeRow};
@@ -206,7 +206,8 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(marked(&lib).is_empty(), "nothing is marked: {:?}", marked(&lib));
     assert_eq!(open(), opened);
 
-    // The projects: a double click types over a project's name, written trimmed to the file.
+    // The projects: a double click is a click again, as a folder's; Rename… types over a project's
+    // name, written trimmed to the file.
     lib.invoke_surface_picked(1);
     rig.pump();
     let trip = project_row(&lib, "Trip");
@@ -214,6 +215,10 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     lib.invoke_project_row_clicked(trip, false, false);
     lib.invoke_project_row_clicked(trip, false, false);
     lib.invoke_project_row_double_clicked(trip);
+    rig.pump();
+    assert!(project_rows(&lib).iter().all(|r| !r.renaming), "twin: a double click types over nothing");
+    assert!(lib.invoke_project_row_menu(trip));
+    choose(&lib, "Rename…");
     rig.pump();
     let typed = project_rows(&lib).into_iter().find(|r| r.renaming).expect("the project typed over");
     assert_eq!(typed.title, "Trip");
@@ -223,13 +228,13 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(names().contains(&"Holiday".to_string()) && project_rows(&lib).iter().any(|r| r.title == "Holiday"), "{:?}", names());
     let walk = project_row(&lib, "Walk");
     rest(&rig);
-    lib.invoke_project_row_clicked(walk, false, false);
-    lib.invoke_project_row_double_clicked(walk);
+    assert!(lib.invoke_project_row_menu(walk));
+    choose(&lib, "Rename…");
     lib.invoke_project_row_rename_committed(walk, "   ".into());
     rig.pump();
     assert!(names().contains(&"Walk".to_string()), "twin: an empty name keeps the project's");
 
-    // ⌘ on the projects' photos picks them; their menu acts on both, a project's is Delete Project.
+    // ⌘ on the projects' photos picks them; their menu acts on both, a project's renames or deletes it.
     let holiday = project_row(&lib, "Holiday");
     if !project_rows(&lib)[holiday as usize].expanded {
         lib.invoke_project_row_folded(holiday);
@@ -243,7 +248,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(lib.invoke_project_row_menu(project_row(&lib, "B01.tif")));
     assert!(lines(&lib).contains(&"Paste Settings (2 photos)".to_string()), "{:?}", lines(&lib));
     assert!(lib.invoke_project_row_menu(project_row(&lib, "Holiday")));
-    assert_eq!(lines(&lib), ["Delete Project"]);
+    assert_eq!(lines(&lib), ["Rename…", "Delete Project"]);
     rest(&rig);
     lib.invoke_project_row_clicked(project_row(&lib, "Holiday"), false, false);
     lib.invoke_project_row_clicked(project_row(&lib, "Walk"), true, false);

@@ -12,7 +12,7 @@ export component RowTree inherits HorizontalLayout {
     // which removes the Flickable's bindings.
     in property <length> viewport-y;
     in property <int> asks;
-    // The projects' tree: a row's kind 1 a project, else a photo; the archive's 0 a folder, 1 a roll, 2 a photo.
+    // The projects' tree: a row's kind 1 a project, 3 a roll, else a photo; the archive's 0 a folder, 1 a roll, 2 a photo.
     in property <bool> projects;
     // A row's left press moved carries the pick, as the projects' rows do.
     in property <bool> draggable;
@@ -38,7 +38,7 @@ export component RowTree inherits HorizontalLayout {
     callback rename-edited(string);
     callback pin-clicked(bool, bool);
     pure function kind(k: int) -> RowKind {
-        root.projects ? (k == 1 ? RowKind.project : RowKind.photo) : k == 0 ? RowKind.folder : k == 1 ? RowKind.roll : RowKind.photo
+        root.projects ? (k == 1 ? RowKind.project : k == 3 ? RowKind.roll : RowKind.photo) : k == 0 ? RowKind.folder : k == 1 ? RowKind.roll : RowKind.photo
     }
     changed asks => { scroller.content-y = root.viewport-y; }
     padding-left: ShellStyle.column-inset;
@@ -122,7 +122,7 @@ export component RowTree inherits HorizontalLayout {
                     clicked => { root.row-clicked(row.index, self.command, self.shift); }
                     double-clicked => { root.row-double-clicked(row.index); }
                 }
-                // `rename`: a double click types over a folder's or a project's name.
+                // `rename`: Rename… or Return types over a folder's or a project's name.
                 if row.renaming: Row {
                     renaming: true;
                     width: parent.width;
