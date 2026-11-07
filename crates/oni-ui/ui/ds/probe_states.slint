@@ -1,6 +1,6 @@
 // The states a check reads off the drawn window, each at a fixed place: a key and a keycap out of reach, an
 // idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals.
-import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal } from "ds.slint";
+import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal } from "ds.slint";
 import { MedalStyle } from "theme.slint";
 import { Figure } from "marks.slint";
 
@@ -136,5 +136,73 @@ export component StateProbe inherits AppWindow {
         width: 200px;
         height: self.preferred-height;
         for readout in root.readouts: Slider { label: root.word; readout: readout; fraction: 0.5; }
+    }
+}
+
+// Rails of hues and a grey one as the panels lay them: Pro's Temperature, then the Scanner's C and D
+// between their keys, and the twin of a key worn in its end's red. A check reads them off the window.
+export component HueProbe inherits AppWindow {
+    in-out property <int> c;
+    // Each rail's middle row and its two ends, a key's middle beside C's and D's, the twin key's middle.
+    out property <length> temperature-y: temperature.absolute-position.y + temperature.height - SliderStyle.row / 2;
+    out property <length> c-y: cyan.absolute-position.y + cyan.height - SliderStyle.row / 2;
+    out property <length> d-y: dark.absolute-position.y + dark.height - SliderStyle.row / 2;
+    out property <length> from: temperature.absolute-position.x;
+    out property <length> to: temperature.absolute-position.x + temperature.width;
+    out property <length> keyed-from: root.from + SliderStyle.step-key + Space.s;
+    out property <length> keyed-to: root.to - SliderStyle.step-key - Space.s;
+    out property <length> minus-x: root.from + SliderStyle.step-key / 2;
+    out property <length> plus-x: root.to - SliderStyle.step-key / 2;
+    out property <length> twin-x: twin.absolute-position.x + twin.width / 2;
+    out property <length> twin-y: twin.absolute-position.y + twin.height / 2;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 400px;
+    preferred-height: 400px;
+    VerticalLayout {
+        x: 16px;
+        y: 16px;
+        width: 300px;
+        height: self.preferred-height;
+        spacing: Space.l;
+        temperature := Slider {
+            label: "T";
+            readout: "0";
+            fraction: 0.5;
+            rest: 0.5;
+            fill: SliderFill.bipolar;
+            low: Colour.channel-blue;
+            high: Colour.channel-yellow;
+        }
+        cyan := Slider {
+            label: "C";
+            readout: root.c;
+            stepped: true;
+            value: root.c;
+            lowest: -48;
+            highest: 48;
+            rest: 0.5;
+            fill: SliderFill.bipolar;
+            low: ScannerStyle.band-red;
+            high: ScannerStyle.band-cyan;
+            minus-help: "C −";
+            plus-help: "C +";
+            step(f, by) => { root.c += by; }
+        }
+        dark := Slider {
+            label: "D";
+            readout: "0";
+            stepped: true;
+            lowest: -48;
+            highest: 48;
+            rest: 0.5;
+            fill: SliderFill.bipolar;
+            low: ScannerStyle.band-dark;
+            high: ScannerStyle.band-light;
+        }
+        HorizontalLayout {
+            alignment: start;
+            twin := Button { keycap: true; square: true; height: SliderStyle.step-key; legend-size: SliderStyle.step-legend; text: "−"; fill: ScannerStyle.band-red; }
+        }
     }
 }

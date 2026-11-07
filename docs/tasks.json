@@ -7823,5 +7823,26 @@
     "title": "Under a rating filter Select All picks every photo it shows, beside a photo as in the gallery, and Export takes exactly those",
     "status": "done",
     "detail": "Select All (the bar's key and ⌘A) completes the roll the selection touches; under a filter the set it was turned on to find is the unit: State::filter_shows, the gallery's order under a filter outside the ONI Trash, is what column_whole picks beside a photo and the one group grid_whole and the grid's ⌘A complete (whole_groups), so the latch reads it whole and a second press goes back to one photo as before. Export already opens on the selection, so filter on Gold, Select All, Export takes every Gold frame shown, across rolls, shown together beside a photo. Checks: window sidebar_filter, beside B and in the gallery: A and C Gold on two rolls, Gold, Select All, ⌘E opens on A and C; twins: with Select All undone to the roll rule each takes A alone or C alone (asserted failing by hand); every photo shown, Select All takes the four beside a photo and C's roll alone (C, D) in the gallery."
+  },
+  {
+    "id": 1579,
+    "type": "design",
+    "title": "A rail of hues is faint at rest and whole under the hand, dragged or stepped",
+    "status": "done",
+    "detail": "Owner's direction: the coloured sliders may be coloured on hover. Rail: a bipolar rail whose end passes SliderStyle.hued (0.2) in HSV saturation (Temperature, Tint, C, M, Y, the Scanner's Temperature, the paper and roll gains, the mixer's hue and saturation) lies on the grey ground at rest with its hues at SliderStyle.hue-rest (0.2) opacity at its ends, clear by hue-reach (0.3) of its length, and shows its full gradient when `vivid`, eased on SliderStyle.rise as the hollow's shade; a grey bipolar rail (D, Contrast, Vignette, Chrome, the mixer's light) is drawn whole as before. Slider: vivid under the hand or a drag, while a step key is held, for Motion.settle after any step (its keys, an arrow, accessibility, a typed value, `nudge`) and while a scroll runs. The 2.5D lab's upright slider passes it too; the DS README says the rule. Check: window slider_hues (HueProbe in probe_states.slint): at rest Temperature's ends read a faint hue on their own side (chroma 8 to 60, blue at the cool end, yellow at the warm), the ground's grey between; under the hand both ends past 150; C's + key steps it and its red and cyan show whole while it moves, then rest faint; twin: the hand's whole hues are not taken for a rest's; D's rail keeps its dark-to-light spread at rest as under the hand (twin: Temperature's faded ends read alike). The scanner window check shoots the Scanner face with the hand on C's rail."
+  },
+  {
+    "id": 1580,
+    "type": "design",
+    "title": "The Scanner face's step keys are the interface's grey keycaps",
+    "status": "done",
+    "detail": "Owner's direction: the Scanner keycaps go to interface grey but stay keycaps. StepKey no longer takes its rail end's colour: the keycap grey (ButtonStyle.cap) with the neutral on-fill legend, its press and its depth kept. Check: window slider_hues reads C's − and + keys down their middle, face and legend, at most 6 of chroma; twin: a keycap worn in band red, as they were, reads past 60 by the same measure. The scanner window check's words follow."
+  },
+  {
+    "id": 1581,
+    "type": "change",
+    "title": "On the Scanner face each letter's slider reads the points its keypad and screen count",
+    "status": "done",
+    "detail": "Decision left to us by the owner: the Pro face keeps EV with its warm/cool and green/magenta cue; on the Scanner face every readout speaks the keypad's and the LCD's unit. lab::sliders: D, C, M, Y and Temperature read spelled(count), the screen's own spelling (+1.5, −1, 0), one press half a point (per_step 1/STEPS_PER_UNIT, re-exported by oni_link::scanner), so a number typed over a readout finds its presses; the effects keep Pro's readouts (%, EV); values, steps and the conversion are unchanged. Checks: lab::sliders a_letter_reads_the_points_its_keypad_and_screen_count (the five readouts equal the screen's cells; twins: Pro's stops +0.17 EV and the bare steps +3 are not what D reads), a_number_typed_over_a_scanner_readout_finds_its_steps (+2 over 0 is four presses; twin: counted in the last digit it would be two); window scanner (the readouts equal the LCD's cells, Pro's Temperature still in EV, the drag lands +0.5 and −1.5; twin: D does not read +0.17 EV)."
   }
 ]

@@ -4,7 +4,7 @@ import { DS } from "tokens.slint";
 import { Type } from "theme_type.slint";
 
 export global SliderStyle {
-    // A thin rail, round at its ends, so a bipolar rail keeps its full hues and stays calm beside the photo.
+    // A thin rail, round at its ends, so a bipolar rail stays calm beside the photo even in its full hues.
     in-out property <length> track: 8px;
     in-out property <length> track-radius: SliderStyle.track / 2;
     // Along the travel and across it, smaller than Swift's handle so the panel's sliders sit close; the
@@ -43,6 +43,12 @@ export global SliderStyle {
     out property <color> rest-ink: DS.palette-text-secondary;
     out property <float> ramp-start: 0.45;
     out property <float> ramp-end: 0.9;
+    // A bipolar rail carries hues when an end's HSV saturation passes this; the scanner's greys stay under 0.1.
+    out property <float> hued: 0.2;
+    // At rest a rail of hues lays them at this opacity at its ends, clear by `hue-reach` of its length in,
+    // the ground's grey between: enough to tell its warm end from its cool one.
+    in-out property <float> hue-rest: 0.2;
+    in-out property <float> hue-reach: 0.3;
     // The rail's bare ground, 3:1 against the panel as a control's edge asks, and its lit stretch
     // laid over it, a step further toward white.
     out property <color> ground: #ffffff5d;
