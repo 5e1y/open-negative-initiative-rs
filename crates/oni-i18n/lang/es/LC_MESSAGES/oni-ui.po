@@ -2334,10 +2334,6 @@ msgid "Window"
 msgstr "Ventana"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Whole Roll"
-msgstr "Todo el rollo"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Select All"
 msgstr "Seleccionar todo"
 

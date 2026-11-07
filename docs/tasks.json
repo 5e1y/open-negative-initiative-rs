@@ -7242,5 +7242,19 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1489,
+    "type": "interface",
+    "title": "The bar reads by job: Reset and Trash end it as one group past a rule",
+    "status": "done",
+    "detail": "UI and UX evaluation s-f5b562fe (Trust and Hierarchy major, raised again; Hierarchy and Overall major): Reset Photo and Trash stood a bar's gap apart, as Paste to Roll and PREPARE ROLL did, and the editor's thirteen keys read as one flat row of single-key groups. The centre now groups by job: the canvas's views and tools (Select All, Crop, De-dust, Compare), the faces, then the settings carried from photo to photo (Copy, Paste, Paste to Roll, one group again); past an engraved vertical Divider, Reset Photo and Trash end it as one group, Trash last. The gallery's Select All and rating filter are one group, then PREPARE ROLL, then the same rule and end group. ShellStyle.bar-gap goes from Space.m to Space.l, three times a group's gap, so the groups read at a glance; the bar still has two gaps alone. Nothing a key does changes. Checks: window toolbar the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last (a group's gap within each group, a rule and a bar's gap either side before Reset, the rule drawn; twin: the room between two groups with no rule is bare), the widths and modes checks."
+  },
+  {
+    "id": 1490,
+    "type": "interface",
+    "title": "Select All has one name and one place in both modes",
+    "status": "done",
+    "detail": "UI and UX evaluation s-f5b562fe (Consistency, minor): the bar's ⌘A key read Select All in the gallery and Whole Roll in the editor, first in one bar and last of the tools in the other. It is one action (Act::SelectAll, the ⌘A key path completing the selection with every photo of the rolls it touches); it now reads Select All in both and opens the centre's first group in both, its help still saying what it does beside a photo (Show the Whole Roll Together). The Whole Roll text leaves the catalogues. Checks: window toolbar (the editor's Select All a group's gap before Crop; no Whole Roll on the bar), window whole_roll presses it by its name."
   }
 ]

@@ -305,8 +305,8 @@ export global ShellStyle {
     out property <length> min-width: DS.control-min-window-width;
     out property <length> min-height: DS.control-min-window-height;
     out property <length> bar-padding: Space.s;
-    // Between the bar's groups, twice a group's own gap between its keys.
-    out property <length> bar-gap: Space.m;
+    // Between the bar's groups, three times a group's own gap between its keys, so they read at a glance.
+    out property <length> bar-gap: Space.l;
     out property <length> bar-height: DS.control-app-bar-keycap-height + 2 * Space.s;
     // The export slot a hair narrower than `AppBar`'s (owner's call).
     out property <length> export-width: DS.control-app-bar-export-width - Space.m;

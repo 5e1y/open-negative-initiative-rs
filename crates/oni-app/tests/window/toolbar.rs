@@ -199,9 +199,11 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// Swift's `DS.Space.sm` between the keys of one group, and twice that between the bar's groups.
+/// Swift's `DS.Space.sm` between the keys of one group, and three times that between the bar's groups.
 const GROUP_GAP: f32 = 8.0;
-const BAR_GAP: f32 = 16.0;
+const BAR_GAP: f32 = 24.0;
+/// The rule before Reset and Trash: an engraved groove and its lit edge, a bar's gap either side.
+const RULED: f32 = 2.0 * BAR_GAP + 2.0;
 /// The glyph a key shows before its word.
 const GLYPH: f32 = 16.0;
 
@@ -217,6 +219,13 @@ fn word_at(w: &oni_app::MainWindow, key: common::Placed, text: &str) -> f32 {
     let words: Vec<_> = common::placed(w, Role::Text, text).into_iter().filter(|t| key.level_with(t) && t.x >= key.x && t.x < key.x + key.width).collect();
     assert_eq!(words.len(), 1, "{text:?} written once on its key {key:?}: {words:?}");
     words[0].x - key.x
+}
+
+/// Whether the bar draws anything at `x` on the middle row of `key`, the window as it stands.
+fn inked(rig: &common::Rig, key: common::Placed, x: f32) -> bool {
+    let (w, px) = rig.drawn();
+    let y = (key.y + key.height / 2.0) as usize;
+    px[y * w + x as usize].0 != px[y * w + 2].0
 }
 
 pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last() {
@@ -252,13 +261,17 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let gap = |a: common::Placed, b: common::Placed| b.x - right(a);
     let near = |g: f32, want: f32| (g - want).abs() <= 1.0;
 
-    // The gallery: PREPARE ROLL, Reset naming the photo it reaches, then Trash, a group each.
+    // The gallery: Select All opening the filter's group, PREPARE ROLL, then past a rule Reset naming the
+    // photo it reaches and Trash last, one group.
+    let (select, all) = (bar_key(w, "Select All"), bar_key(w, "All Photos"));
     let (prepare, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-gallery").display());
-    assert!(near(gap(prepare, reset), BAR_GAP) && near(gap(reset, trash), BAR_GAP), "a bar's gap apart: {prepare:?} {reset:?} {trash:?}");
-    assert!(!near(gap(reset, trash), GROUP_GAP), "twin: Reset and Trash are no one group");
+    assert!(near(gap(select, all), GROUP_GAP), "Select All and the filter one group: {select:?} {all:?}");
+    assert!(near(gap(prepare, reset), RULED) && near(gap(reset, trash), GROUP_GAP), "a rule, then one group: {prepare:?} {reset:?} {trash:?}");
+    assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between PREPARE ROLL and Reset");
+    // Twin: the room between two groups with no rule is bare ground.
+    assert!(!inked(&rig, prepare, prepare.x - BAR_GAP / 2.0), "the measure sees bare room");
     // Trash wears its can before its word; a key of a word alone starts it at its edge's padding.
-    let select = bar_key(w, "Select All");
     let (can, bare) = (word_at(w, trash, "Trash"), word_at(w, select, "Select All"));
     assert!(can >= bare + GLYPH, "Trash's word after its can: {can} against {bare}");
     // The app's glyphs one group, the commit's slot a bar's gap after them.
@@ -307,22 +320,24 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(keys(reveal).is_empty(), "twin: a line with no chord prints none");
     rig.key("\u{1b}");
 
-    // The editor: the canvas's tools and views one group, Copy and Paste one, Paste to Roll, Reset and Trash one each.
+    // The editor by job: Select All opening the canvas's views and tools, the faces, the settings carried
+    // from photo to photo, then past a rule Reset and Trash, one group, Trash last.
     lib.invoke_tile_opened(tile("A"));
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     rig.settle();
-    let (crop, de_dust, compare, whole) = (bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"), bar_key(w, "Whole Roll"));
+    let (select, crop, de_dust, compare) = (bar_key(w, "Select All"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
     let (reset, trash) = (bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-editor").display());
-    for (a, b) in [(crop, de_dust), (de_dust, compare), (compare, whole), (copy, paste)] {
+    for (a, b) in [(select, crop), (crop, de_dust), (de_dust, compare), (copy, paste), (paste, to_roll), (reset, trash)] {
         assert!(near(gap(a, b), GROUP_GAP), "one group, a group's gap apart: {a:?} {b:?}");
     }
-    for (a, b) in [(paste, to_roll), (to_roll, reset), (reset, trash)] {
-        assert!(near(gap(a, b), BAR_GAP), "a group each, a bar's gap apart: {a:?} {b:?}");
-    }
+    assert!(near(gap(to_roll, reset), RULED), "a rule before Reset and Trash: {to_roll:?} {reset:?}");
+    assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between Paste to Roll and Reset");
+    // Twin: the faces stand between the views and the settings, a bar's gap either side.
+    assert!(gap(compare, copy) > 2.0 * BAR_GAP + 100.0, "{compare:?} {copy:?}");
     let (can, bare) = (word_at(w, trash, "Trash"), word_at(w, copy, "Copy"));
     assert!(can >= bare + GLYPH, "twin of the gallery's: Trash's can, Copy's word alone: {can} {bare}");
-    assert!(common::placed(w, Role::Button, "Select All").into_iter().all(|k| k.y >= bar.get_height()), "the editor's key says Whole Roll");
+    assert!(common::placed(w, Role::Button, "Whole Roll").is_empty(), "one name in both modes");
     let _ = std::fs::remove_dir_all(&root);
 }
