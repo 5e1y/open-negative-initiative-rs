@@ -344,7 +344,6 @@ export component MiscPage inherits Rectangle {
                             y: pc-touch.has-hover ? 0 : PresetStyle.lift;
                             animate y { duration: 160ms; easing: ease-out-back; }
                             lifted: pc-touch.has-hover;
-                            abbreviation: "P4";
                             name: "Portra 400";
                             fill: DS.tint-correction;
                             ink: DS.palette-text-on-fill;
@@ -352,8 +351,8 @@ export component MiscPage inherits Rectangle {
                         pc-touch := TouchArea { }
                     }
                 }
-                Cell { caption: "rest"; PresetFace { abbreviation: "B2"; name: "Balance"; fill: DS.tint-unaligned-balance; ink: DS.palette-text-on-fill; } }
-                Cell { caption: "lifted"; PresetFace { abbreviation: "B2"; name: "Balance"; fill: DS.tint-unaligned-balance; ink: DS.palette-text-on-fill; lifted: true; } }
+                Cell { caption: "rest"; PresetFace { name: "Balance"; fill: DS.tint-unaligned-balance; ink: DS.palette-text-on-fill; } }
+                Cell { caption: "lifted"; PresetFace { name: "Balance"; fill: DS.tint-unaligned-balance; ink: DS.palette-text-on-fill; lifted: true; } }
                 Cell { caption: "the new card"; PresetFace { new: true; } }
                 Cell {
                     caption: "separator (Divider), both ways";

@@ -2129,6 +2129,10 @@ msgstr "Para qué sirve este aspecto"
 msgid "Carries"
 msgstr "Incluye"
 
+#: crates/oni-ui/ui/presets.slint
+msgid "Don’t ask again this session"
+msgstr "No volver a preguntar en esta sesión"
+
 #: crates/oni-app/src/app/presets/sheets.rs crates/oni-ui/ui/presets.slint
 msgid "Copy Settings"
 msgstr "Copiar ajustes"

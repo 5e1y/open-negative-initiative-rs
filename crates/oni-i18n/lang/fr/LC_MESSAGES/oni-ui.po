@@ -2129,6 +2129,10 @@ msgstr "À quoi sert ce look"
 msgid "Carries"
 msgstr "Contient"
 
+#: crates/oni-ui/ui/presets.slint
+msgid "Don’t ask again this session"
+msgstr "Ne plus demander pendant cette session"
+
 #: crates/oni-app/src/app/presets/sheets.rs crates/oni-ui/ui/presets.slint
 msgid "Copy Settings"
 msgstr "Copier les réglages"

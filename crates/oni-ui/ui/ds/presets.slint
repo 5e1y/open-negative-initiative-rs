@@ -6,10 +6,9 @@ import { Label, TextRole, Tone, Tips } from "base.slint";
 import { Look } from "controls.slint";
 import { Outward } from "depth.slint";
 
-// `PresetCarousel.card`: the monogram on the tint, the name under it, both in the tint's own ink, the
-// card standing out of the deck (`dsFloating`), its shadow lengthened while it is `lifted`.
+// `PresetCarousel.card`: the tint, the name on one line at its foot in the tint's own ink, the card
+// standing out of the deck (`dsFloating`), its shadow lengthened while it is `lifted`.
 export component PresetFace inherits Rectangle {
-    in property <string> abbreviation;
     in property <string> name;
     in property <color> fill;
     in property <color> ink;
@@ -38,21 +37,11 @@ export component PresetFace inherits Rectangle {
         lift: root.lifted ? 1 : 0;
         VerticalLayout {
             padding: Space.s;
-            spacing: Space.xxs;
-            Label {
-                text: root.abbreviation;
-                font-size: PresetStyle.mark;
-                ink: root.ink;
-                overflow: elide;
-                vertical-alignment: top;
-            }
-            Rectangle { vertical-stretch: 1; }
+            alignment: end;
             Label {
                 text: root.name;
                 ink: root.ink;
-                wrap: word-wrap;
                 overflow: elide;
-                vertical-alignment: top;
             }
         }
     }
