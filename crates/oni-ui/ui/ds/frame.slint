@@ -1,5 +1,6 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
+import { DS } from "tokens.slint";
 import { Colour, CropStyle, Space, Stroke, Type, DustStyle, PlotStyle } from "theme.slint";
 import { Badge } from "badge.slint";
 import { TextRole, Label } from "base.slint";
@@ -119,7 +120,9 @@ export component FrameOverlay inherits Rectangle {
     // Clamped by the frame shown, so corners never cover a small frame's edges and body.
     property <length> corner: min(CropStyle.corner, min(root.frame-width, root.frame-height) / 3);
     property <length> edge: min(CropStyle.edge, max(min(root.frame-width, root.frame-height) - 2 * root.corner, CropStyle.stroke * 4));
-    property <length> grip: CropStyle.stroke * 4;
+    // A grab's reach across its line, the hand's least target, its drawn handle kept slim; never deeper
+    // into the frame than a corner, so a small frame's middle third stays the body's.
+    property <length> grip: min(DS.control-grab-size, 2 * root.corner);
     property <int> held: -1;
     if root.crop: Rectangle {
         y: 0;
@@ -184,16 +187,18 @@ export component FrameOverlay inherits Rectangle {
         dragged(h, dx, dy) => { root.dragged(h, dx, dy); }
         released => { root.held = -1; root.released(); }
     }
+    // An edge's grab, its slim bar at its middle. The list holds no geometry: one that moved with the
+    // frame would rebuild the grabs at every step of a drag and drop the hand's hold.
     for e[i] in [
-        { handle: 5, x: root.frame-x - root.grip / 2, y: root.frame-y + root.frame-height / 2 - root.edge / 2, w: root.grip, h: root.edge, across: true },
-        { handle: 6, x: root.frame-x + root.frame-width - root.grip / 2, y: root.frame-y + root.frame-height / 2 - root.edge / 2, w: root.grip, h: root.edge, across: true },
-        { handle: 7, x: root.frame-x + root.frame-width / 2 - root.edge / 2, y: root.frame-y - root.grip / 2, w: root.edge, h: root.grip, across: false },
-        { handle: 8, x: root.frame-x + root.frame-width / 2 - root.edge / 2, y: root.frame-y + root.frame-height - root.grip / 2, w: root.edge, h: root.grip, across: false },
+        { handle: 5, across: true, far: false },
+        { handle: 6, across: true, far: true },
+        { handle: 7, across: false, far: false },
+        { handle: 8, across: false, far: true },
     ]: Rectangle {
-        x: e.x;
-        y: e.y;
-        width: e.w;
-        height: e.h;
+        x: e.across ? root.frame-x + (e.far ? root.frame-width : 0px) - root.grip / 2 : root.frame-x + (root.frame-width - root.edge) / 2;
+        y: e.across ? root.frame-y + (root.frame-height - root.edge) / 2 : root.frame-y + (e.far ? root.frame-height : 0px) - root.grip / 2;
+        width: e.across ? root.grip : root.edge;
+        height: e.across ? root.edge : root.grip;
         Rectangle {
             width: e.across ? CropStyle.stroke + CropStyle.halo : parent.width;
             height: e.across ? parent.height : CropStyle.stroke + CropStyle.halo;
@@ -212,20 +217,27 @@ export component FrameOverlay inherits Rectangle {
             released => { root.held = -1; root.released(); }
         }
     }
+    // A corner's grab: its bracket inside the frame, and outside the edges' reach past the line.
     for c[i] in [
         { handle: 1, right: false, bottom: false },
         { handle: 2, right: true, bottom: false },
         { handle: 3, right: false, bottom: true },
         { handle: 4, right: true, bottom: true },
-    ]: Bracket {
-        x: c.right ? root.frame-x + root.frame-width - root.corner : root.frame-x;
-        y: c.bottom ? root.frame-y + root.frame-height - root.corner : root.frame-y;
-        width: root.corner;
-        height: root.corner;
-        right: c.right;
-        bottom: c.bottom;
-        rest: root.rest;
-        active: corner-grab.has-hover || root.held == c.handle;
+    ]: Rectangle {
+        x: c.right ? root.frame-x + root.frame-width - root.corner : root.frame-x - root.grip / 2;
+        y: c.bottom ? root.frame-y + root.frame-height - root.corner : root.frame-y - root.grip / 2;
+        width: root.corner + root.grip / 2;
+        height: root.corner + root.grip / 2;
+        Bracket {
+            x: c.right ? 0 : root.grip / 2;
+            y: c.bottom ? 0 : root.grip / 2;
+            width: root.corner;
+            height: root.corner;
+            right: c.right;
+            bottom: c.bottom;
+            rest: root.rest;
+            active: corner-grab.has-hover || root.held == c.handle;
+        }
         corner-grab := Grab {
             handle: c.handle;
             mouse-cursor: (c.right == c.bottom) ? nwse-resize : nesw-resize;

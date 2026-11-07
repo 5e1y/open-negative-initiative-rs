@@ -6906,5 +6906,12 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1462,
+    "type": "fix",
+    "title": "The frame's handles take a hand 12 points past their slim lines and follow it to the end of a drag",
+    "status": "done",
+    "detail": "UX evaluation (Micro-interactions): the crop's corner grabs were 22 x 22 pt and its edge grabs 12 pt thick, under the 24 pt a hand needs. Every grab of the frame overlay, the crop's and the measuring window's on the canvas and in Prepare Roll, now reaches DS.control-grab-size (24 pt) across its line: an edge 12 pt each side, a corner its 22 pt bracket inside and 12 pt outside, never deeper into the frame than a corner, so a small frame's middle third stays the body's; the drawn brackets and bars keep their slim lines. Found on the way: the edges' list carried the frame's geometry, so each step of a drag built the edge grabs anew and dropped the hand's hold after the first move (5 of 30 pt followed); the list now says only which edge, its place bound in the element as the corners' always was. Check: window crop_session::the_crops_handles_take_a_hand_past_their_slim_lines, presses 10 pt outside a corner and an edge hold them and follow a six-step drag to 30 pt, the badge gone once let go; twins: 16 pt outside holds nothing, the former overlay fails at the corner's press and, with the geometry back in the edges' list, follows 5 pt of 30."
   }
 ]

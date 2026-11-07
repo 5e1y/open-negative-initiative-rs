@@ -136,6 +136,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("escape::escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_done", escape::escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_done),
     ("crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it", crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it),
     ("crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size", crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size),
+    ("crop_session::the_crops_handles_take_a_hand_past_their_slim_lines", crop_session::the_crops_handles_take_a_hand_past_their_slim_lines),
     ("editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step", editors::curves::a_point_dragged_on_the_curves_reaches_the_store_as_one_step),
     ("editors::a_double_click_on_a_point_removes_it_with_its_move_as_one_step", editors::curves::a_double_click_on_a_point_removes_it_with_its_move_as_one_step),
     ("editors::a_folded_curves_block_takes_no_press", editors::curves::a_folded_curves_block_takes_no_press),
