@@ -37,11 +37,11 @@ pub fn targets(order: &[String], selection: &BTreeSet<usize>, open: Option<&str>
 
 /// The four places an export names its count, each as the Swift app words it.
 pub mod label {
-    use oni_i18n::tr;
+    use oni_i18n::{tr, trn};
 
-    /// `exportLabel`, the File menu's item.
+    /// `exportLabel`, the File menu's item and the gallery bar's key, which keeps the width of its plural.
     pub fn menu(count: usize) -> String {
-        if count > 1 { tr!("Export {count} Photos…", count = count) } else { tr("Export…").into() }
+        if count > 1 { trn("Export Photo…", "Export {n} Photos…", count as u64) } else { tr("Export…").into() }
     }
 
     /// `AppBar.ExportButton.title`, which the card's own key reads; the bar's key keeps one word.

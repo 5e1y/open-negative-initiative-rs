@@ -1,7 +1,8 @@
 //! The top bar as the window widens: its keys keep their widths and only the room between them grows;
-//! one layout in every mode, whatever the selection, the picture's right click opening its menu; its groups.
+//! one layout in every mode, whatever the selection, the picture's right click opening its menu; its
+//! groups, and the gallery's Export opening the sheet on what is picked.
 
-use oni_app::app::{Options, Shell};
+use oni_app::app::{Options, Shell, export_card};
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Act, App, Bar, Library, Preparing};
 use oni_core::{Archive, EditorStore};
@@ -252,10 +253,12 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let gap = |a: common::Placed, b: common::Placed| b.x - right(a);
     let near = |g: f32, want: f32| (g - want).abs() <= 1.0;
 
-    // The gallery: PREPARE ROLL, Reset naming the photo it reaches, then Trash, a group each.
-    let (prepare, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
+    // The gallery: PREPARE ROLL, Export and Reset on the photo picked, then Trash, a group each.
+    let (prepare, export, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "Export\u{2026}"), bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-gallery").display());
-    assert!(near(gap(prepare, reset), BAR_GAP) && near(gap(reset, trash), BAR_GAP), "a bar's gap apart: {prepare:?} {reset:?} {trash:?}");
+    for (a, b) in [(prepare, export), (export, reset), (reset, trash)] {
+        assert!(near(gap(a, b), BAR_GAP), "a bar's gap apart: {a:?} {b:?}");
+    }
     assert!(!near(gap(reset, trash), GROUP_GAP), "twin: Reset and Trash are no one group");
     // Trash wears its can before its word; a key of a word alone starts it at its edge's padding.
     let select = bar_key(w, "Select All");
@@ -270,7 +273,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     bar.invoke_act(Act::SelectAll);
     rig.settle();
     assert!(bar.get_whole() && bar.get_targets() == 2, "every photo picked, the lamp lit");
-    let both = bar_key(w, "Reset 2 Photos");
+    let (both, sent) = (bar_key(w, "Reset 2 Photos"), bar_key(w, "Export 2 Photos\u{2026}"));
     assert!(common::placed(w, Role::Button, "Reset Photo").is_empty(), "twin: the one photo's Reset is gone");
     let menu_on = |name: &str| {
         let t = oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap();
@@ -287,6 +290,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let two = line_width("Move into a New Roll\u{2026} (2 photos)");
     rig.key("\u{1b}");
     assert_eq!((bar_key(w, "Select All").x, both.x, both.width), (select.x, reset.x, reset.width), "the lamp lights in place, Reset keeps its room");
+    assert_eq!((sent.x, sent.width), (export.x, export.width), "Export keeps its room as its count changes");
     bar.invoke_act(Act::SelectAll);
     rig.settle();
     assert!(!bar.get_whole() && bar.get_targets() == 1, "twin: one photo again, the lamp dark");
@@ -306,6 +310,21 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert_eq!(keys("Copy Settings\u{2026}"), format!("{}C", k.command_shift));
     assert!(keys(reveal).is_empty(), "twin: a line with no chord prints none");
     rig.key("\u{1b}");
+    // A click on Export opens the sheet on what is picked, the one photo, then both.
+    let exported = |key: common::Placed| {
+        common::click(&rig, w, key.middle());
+        let names: Vec<String> = export_card::card(&ctl).targets.iter().map(|t| t.path.file_name().unwrap().to_string_lossy().into_owned()).collect();
+        assert!(export_card::card(&ctl).shown, "the sheet opened");
+        ctl.leave_export();
+        rig.settle();
+        names
+    };
+    assert_eq!(exported(bar_key(w, "Export\u{2026}")), ["A.tif"], "twin: Export sends the one photo picked");
+    bar.invoke_act(Act::SelectAll);
+    rig.settle();
+    assert_eq!(exported(bar_key(w, "Export 2 Photos\u{2026}")), ["A.tif", "B.tif"]);
+    bar.invoke_act(Act::SelectAll);
+    rig.settle();
 
     // The editor: the canvas's tools and views one group, Copy and Paste one, Paste to Roll, Reset and Trash one each.
     lib.invoke_tile_opened(tile("A"));
