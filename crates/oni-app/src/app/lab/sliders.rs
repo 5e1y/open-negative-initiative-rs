@@ -1,13 +1,10 @@
 //! The Scanner face's sliders, letters then effects: each one's value and range in steps, and its
-//! readout in a true unit, a letter's in what it moves, an effect as Pro's slider of the same quantity.
+//! readout, a letter's in the points its keypad and screen count, an effect as Pro's slider of the same quantity.
 
-use super::{EFFECTS, field, same};
-use crate::fields::{Axis, Readout};
+use super::{EFFECTS, field, same, spelled};
 use slint::{ModelRc, SharedString, VecModel};
-use oni_link::scanner::Letter;
-use oni_pipeline::scanner::MACHINE;
+use oni_link::scanner::{Letter, STEPS_PER_UNIT};
 use oni_settings::PipelineSettings;
-use oni_settings::scanner::ScannerClicks;
 
 pub struct Slider {
     pub steps: i32,
@@ -18,39 +15,14 @@ pub struct Slider {
     pub per_step: f32,
 }
 
-/// What a letter's `steps` move, signed as the key: D, C, M and Y the light in stops, the measured
-/// click's density on the key's channel, D's the mean of three; TEMP the share of the machine's look.
-fn moved(letter: Letter, steps: i64) -> f32 {
-    let sign = steps.signum() as f32;
-    let mut keys = ScannerClicks::default();
-    let (key, channel) = match letter {
-        Letter::D => (&mut keys.d, None),
-        Letter::C => (&mut keys.c, Some(0)),
-        Letter::M => (&mut keys.m, Some(1)),
-        Letter::Y => (&mut keys.y, Some(2)),
-        Letter::W => return sign * MACHINE.warmth(steps).map_or(0.0, |(_, share)| share),
-    };
-    *key = steps;
-    let density = MACHINE.offset(&keys);
-    let on = channel.map_or(density.iter().sum::<f32>() / 3.0, |c| density[c]);
-    sign * on.abs() / 2f32.log10()
-}
-
-/// How a letter writes what it moves: stops, or TEMP's share in percent after the side it leans to.
-fn readout(letter: Letter) -> (Readout, Option<Axis>) {
-    match letter {
-        Letter::W => (Readout::SignedPercent, Some(Axis::Warmth)),
-        _ => (Readout::Stops, None),
-    }
-}
-
 /// Every slider of `settings`, D, C, M, Y and Temperature, then Contrast, Vignette and Chrome.
 pub fn sliders(settings: &PipelineSettings) -> Vec<Slider> {
     let s = &settings.scanner;
+    // A press is half a point, as the screen spells it.
+    let per_step = 1.0 / STEPS_PER_UNIT as f32;
     let letters = Letter::ALL.into_iter().zip([s.d, s.c, s.m, s.y, s.w]).map(|(letter, count)| {
-        let ((low, high), (kind, axis)) = (letter.range(), readout(letter));
-        let per_step = kind.scaled(moved(letter, 1)) as f32;
-        Slider { steps: count as i32, low: low.into(), high: high.into(), readout: kind.along(axis, moved(letter, count)), per_step }
+        let (low, high) = letter.range();
+        Slider { steps: count as i32, low: low.into(), high: high.into(), readout: spelled(count), per_step }
     });
     let f = &settings.scanner_finish;
     let channel = oni_core::store::channel(settings.mode);
@@ -88,6 +60,7 @@ pub fn publish(lab: &crate::Lab, settings: &PipelineSettings) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oni_settings::scanner::ScannerClicks;
 
     #[test]
     fn each_slider_reads_its_value_and_range_in_steps() {
@@ -110,18 +83,19 @@ mod tests {
     }
 
     #[test]
-    fn a_letter_reads_what_it_moves_in_a_true_unit() {
+    fn a_letter_reads_the_points_its_keypad_and_screen_count() {
         let mut settings = PipelineSettings::default();
         settings.scanner = ScannerClicks::new(3, 4, 0, -2, -4);
         let all = sliders(&settings);
         let read: Vec<&str> = all[..5].iter().map(|s| s.readout.as_str()).collect();
-        // C's whole click lifts red 0.039 in density, 0.13 stop; D's three quarters move the three 0.051.
-        assert_eq!(read, ["+0.17 EV", "+0.13 EV", "0.00 EV", "\u{2212}0.08 EV", "Cool \u{2212}20%"]);
-        // Twin: the screen's count, the one the Lab's glass shows, says neither unit nor size.
-        assert_eq!(oni_link::scanner::spelled(settings.scanner.c), "+2");
-        // Twin: C read on green, the channel it barely touches, would read nothing.
-        let c = MACHINE.offset(&ScannerClicks::new(0, 4, 0, 0, 0));
-        assert_eq!(Readout::Stops.format(c[1] / 2f32.log10()), "0.00 EV");
+        assert_eq!(read, ["+1.5", "+2", "0", "\u{2212}1", "\u{2212}2"]);
+        let screen: Vec<String> = super::super::screen(&settings, None).cells.into_iter().map(|(_, v)| v).collect();
+        assert_eq!(read, screen, "each slider reads the number the Lab's glass shows");
+        // Twin: D read as the light it moves, Pro's unit, says another number than the screen beside it.
+        assert_ne!(all[0].readout, "+0.17 EV");
+        // Twin: the steps read bare would count a press a whole point.
+        assert_ne!(all[0].readout, settings.scanner.d.to_string());
+        assert_eq!(all[1].readout, "+2", "a whole point at four presses");
     }
 
     #[test]
@@ -129,11 +103,13 @@ mod tests {
         let all = sliders(&PipelineSettings::default());
         let per: Vec<f32> = all.iter().map(|s| s.per_step).collect();
         let near = |a: f32, b: f32| (a - b).abs() < 5e-4;
-        // A press moves D 0.057 EV, C 0.033, M 0.027, Y 0.039, TEMP 5% of the look; an effect 5% or 0.1 EV.
-        let expected = [0.0568, 0.0325, 0.0265, 0.0387, 5.0, 5.0, 0.1, 5.0];
+        // A letter's press is half a point; an effect's 5% or 0.1 EV.
+        let expected = [0.5, 0.5, 0.5, 0.5, 0.5, 5.0, 0.1, 5.0];
         assert!(per.iter().zip(expected).all(|(a, b)| near(*a, b)), "{per:?}");
         let typed = |i: usize, text: &str| crate::slider_track::typed_steps(&all[i].readout, text, all[i].per_step);
-        assert_eq!((typed(1, "+0.26"), typed(4, "-15"), typed(5, "-15"), typed(6, "0.4")), (8, -3, -3, 4));
+        assert_eq!((typed(1, "+2"), typed(4, "-1.5"), typed(5, "-15"), typed(6, "0.4")), (4, -3, -3, 4));
+        // Twin: counted in the readout's last digit, two points would be two presses, not four.
+        assert_eq!(crate::slider_track::typed_steps(&all[1].readout, "+2", 0.0), 2);
         // Twin: counted in the readout's last digit, Contrast's 15% would be fifteen steps, not three.
         assert_eq!(crate::slider_track::typed_steps(&all[5].readout, "15", 0.0), 15);
     }

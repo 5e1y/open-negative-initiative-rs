@@ -136,12 +136,17 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!(phone.settings().scanner, settings().scanner, "the phone's presses and the desktop's keys are one command");
     assert_eq!(cells(w), ["+1.5", "+1.5", "−1", "0", "+2"], "the Lab screen reads every letter back, a step half a unit");
     let readout = |i: usize| lab.get_readouts().row_data(i).unwrap().to_string();
-    // The screen counts the keypad's points; each slider reads what its key moves, light in stops, TEMP's look in percent.
-    assert_eq!((readout(0), readout(4), lab.get_lows().row_data(0), lab.get_highs().row_data(4)), ("+0.17 EV".into(), "Warm +20%".into(), Some(-48), Some(20)));
+    // Each letter's slider reads the points its keypad and the screen count, beside them.
+    assert_eq!((0..5).map(readout).collect::<Vec<_>>(), cells(w));
+    assert_eq!((lab.get_lows().row_data(0), lab.get_highs().row_data(4)), (Some(-48), Some(20)));
+    // Twin: D read in Pro's stops, the light its key moves, says another number than the screen.
+    assert_ne!(readout(0), "+0.17 EV");
+    // Pro's Temperature keeps its stops.
+    assert!(w.global::<oni_app::Store>().get_temperature_readout().ends_with(" EV"));
     // A key moves half a unit, ⇧ one and a half; twin: whole steps would read +1 and +3.
     lab.invoke_press(3, 1);
     rig.pump();
-    assert_eq!((cells(w)[3].as_str(), readout(3).as_str()), ("+0.5", "+0.04 EV"));
+    assert_eq!((cells(w)[3].as_str(), readout(3).as_str()), ("+0.5", "+0.5"));
     lab.invoke_press(3, 3);
     rig.pump();
     assert_eq!(cells(w)[3], "+2");
@@ -187,8 +192,13 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     // The RAW notice is modal: closed first, so the keys reach the Lab.
     w.global::<oni_app::Notice>().invoke_close();
     rig.pump();
+    // The hand on C's rail shows its red and cyan whole; the other rails rest faint.
+    let c = common::the(w, i_slint_backend_testing::AccessibleRole::Slider, "C");
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(c.x + c.width / 3.0, c.y + c.height - 13.0) });
+    rig.settle();
+    println!("shot {}", rig.shot("scanner-face-hand").display());
     // D's rail slid by the hand, a pixel a move: it lands on every step, half a unit apart, and never
-    // jumps a whole unit; the readout follows each step in stops.
+    // jumps a whole unit; the readout follows each step in the screen's points.
     // The rail is the slider's lowest row, its knob's height; the hand runs past both its ends.
     let d = common::the(w, i_slint_backend_testing::AccessibleRole::Slider, "D");
     let y = d.y + d.height - 13.0;
@@ -207,7 +217,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!((steps[0], *steps.last().unwrap()), (-48, 48), "the rail's ends are ±24 units");
     assert!(steps.windows(2).all(|p| p[1] - p[0] == 0 || p[1] - p[0] == 1), "every move lands on the next step at most");
     assert_eq!(steps.iter().collect::<std::collections::BTreeSet<_>>().len(), 97, "97 places, half a unit apart");
-    assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.06 EV") && landed.iter().any(|(d, r)| *d == -3 && r == "−0.17 EV"));
+    assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.5") && landed.iter().any(|(d, r)| *d == -3 && r == "−1.5"));
     // Twin: a rail on whole units would skip the odd steps.
     assert!(steps.iter().any(|d| d % 2 != 0));
     // The rail holds at rest as Pro's do: twelve points of the hand more than a step beside it.
@@ -219,7 +229,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.pump();
     // The rail slid by the hand leaves the keyboard with the photos, whose arrows walk the frames.
     assert!(w.get_keys_focused(), "the photos hold the keyboard after the slide");
-    // D's keys stand at its rail's ends, keycaps in their ends' colours: a press steps once, ⇧ three times.
+    // D's keys stand at its rail's ends, grey keycaps: a press steps once, ⇧ three times.
     let (minus, plus) = (common::the(w, Role::Button, "D −: toward dark"), common::the(w, Role::Button, "D +: toward light"));
     let row = |k: &common::Placed| (k.middle().1 - y).abs() < 1.0;
     assert!(row(&minus) && row(&plus) && (minus.x - d.x).abs() < 1.0 && (plus.x + plus.width - d.x - d.width).abs() < 1.0, "{minus:?} {plus:?} {d:?}");

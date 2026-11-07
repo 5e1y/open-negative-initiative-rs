@@ -155,16 +155,19 @@ fade and the chrome stays. The picker's field wears the same face.
 
 ## Sliders and plots
 
-- **Rail** (`DSRail` in `dsRecessed`): 8 pt, round at its ends, thin so a bipolar rail keeps its full hues
-  beside the photo; `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient, the fill
+- **Rail** (`DSRail` in `dsRecessed`): 8 pt, round at its ends, thin so a bipolar rail stays calm beside the
+  photo even in its full hues; `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient, the fill
   (`SliderStyle.lit`) on its own round, then `Inward`'s shade, edge and lit lip, the shade at
   `SliderStyle.idle-relief` of a well's at rest and whole under the hand (`deep`); `vertical` runs low to high upwards.
+  A bipolar rail of hues (an end past `SliderStyle.hued` in saturation: Temperature, Tint, C, M, Y, the gains)
+  lies on the grey ground at rest, a faint hue at each end (`hue-rest`, fading out by `hue-reach`), and shows its
+  full gradient under the hand, dragged or stepped (`vivid`), on the rise; a grey one (D, Contrast) stays whole.
 - **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls, no shadow, edged in
   black, two grip lines centred on its face, white, or the on-light ink on a light cap (`grip-turn`). It grows by
   a scale on the rise spring, so its raster is drawn once, its edge darkening from `idle-relief` to whole.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
   the hand; the stepped slider's knob carries its grip too, its − and + keycaps as tall as the knob
-  (`SliderStyle.step-key`), each in the colour of the rail's end beside it, a step a press and three with ⇧;
+  (`SliderStyle.step-key`), in the interface's keycap grey and neutral ink, a step a press and three with ⇧;
   a continuous slider has none. AppKit's press, continuous or stepped: the knob pressed is
   grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put; a press gives it
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights

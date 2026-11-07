@@ -24,8 +24,25 @@ export component Rail inherits Rectangle {
     in property <bool> vertical;
     // Under the hand, the hollow sinks to a well's whole shade, as the knob's edge darkens.
     in property <bool> deep;
+    // Under the hand, dragged or stepped, a bipolar rail of hues shows them whole; else a faint hue at each
+    // end over the bare ground, so a panel of them stays neutral beside the photo. A grey one stays whole.
+    in property <bool> vivid;
+    property <bool> hued: root.fill == SliderFill.bipolar && max(root.low.to-hsv().saturation, root.high.to-hsv().saturation) > SliderStyle.hued;
+    property <float> hue: root.vivid ? 1 : 0;
+    animate hue { duration: SliderStyle.rise; easing: ease-out; }
+    property <float> ends: SliderStyle.hue-rest + (1 - SliderStyle.hue-rest) * root.hue;
     property <float> shade: Depth.well-shade * (root.deep ? 1 : SliderStyle.idle-relief);
     animate shade { duration: SliderStyle.rise; easing: ease-out; }
+    // The gradient from `low` to `high` at its stops, its middle as clear as `hue` leaves it.
+    property <float> near: SliderStyle.hue-reach;
+    property <float> far: 1 - SliderStyle.hue-reach;
+    pure function hues(angle: angle) -> brush {
+        @linear-gradient(angle,
+            root.low.with-alpha(root.ends) 0%,
+            root.low.mix(root.high, root.far).with-alpha(root.hue) root.near,
+            root.low.mix(root.high, root.near).with-alpha(root.hue) root.far,
+            root.high.with-alpha(root.ends) 100%)
+    }
     property <length> along: root.vertical ? self.height : self.width;
     property <length> travel: root.along - 2 * root.overhang;
     property <length> lit: root.overhang + root.at * root.travel;
@@ -33,9 +50,13 @@ export component Rail inherits Rectangle {
     height: SliderStyle.track;
     Rectangle {
         border-radius: SliderStyle.track-radius;
-        background: root.fill != SliderFill.bipolar ? SliderStyle.ground
+        background: root.fill != SliderFill.bipolar || root.hued ? SliderStyle.ground
             : root.vertical ? @linear-gradient(0deg, root.low 0%, root.high 100%)
             : @linear-gradient(90deg, root.low 0%, root.high 100%);
+    }
+    if root.hued: Rectangle {
+        border-radius: SliderStyle.track-radius;
+        background: root.hues(root.vertical ? 0deg : 90deg);
     }
     // Its own round, no clip: a clipping rail renders each slider apart.
     if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {

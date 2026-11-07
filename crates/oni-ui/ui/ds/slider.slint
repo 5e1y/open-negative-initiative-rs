@@ -15,7 +15,7 @@ export global Typing {
     pure callback steps(readout: string, typed: string, per: float) -> int;
 }
 
-// A stepped slider's keycap beside its rail, in its end's colour: one step a press, three with ⇧. Its
+// A stepped slider's keycap beside its rail, the interface's grey: one step a press, three with ⇧. Its
 // sign names no slider, so assistive tools read its help, which names the slider and the way.
 component StepKey inherits Button {
     keycap: true;
@@ -79,6 +79,15 @@ export component Slider inherits VerticalLayout {
     property <int> hand;
     // The hand on the row or holding the knob, as a demo shows it: the knob grows, the rail deepens.
     property <bool> handled: root.enabled && (area.has-hover || area.held || root.look != Look.live);
+    // A step key held, or a step a moment ago: with the hand's, these show a rail of hues whole.
+    property <bool> keyed;
+    property <bool> stepping;
+    // Every step but a drag's, the hand's own: each keeps the rail's hues whole for `Motion.settle`.
+    function nudge(by: int) {
+        root.stepping = true;
+        lull.restart();
+        root.step(root.field, by);
+    }
     // ⇧'s step with an arrow: three on a stepped slider, as its keys take, ten on a continuous one.
     property <int> big: root.stepped ? 3 : 10;
     property <int> span: max(1, root.highest - root.lowest);
@@ -112,8 +121,8 @@ export component Slider inherits VerticalLayout {
     accessible-label: root.label;
     accessible-value: root.value-text;
     accessible-enabled: root.enabled;
-    accessible-action-increment => { root.step(root.field, 1); }
-    accessible-action-decrement => { root.step(root.field, -1); }
+    accessible-action-increment => { root.nudge(1); }
+    accessible-action-decrement => { root.nudge(-1); }
     property <float> at: root.stepped ? ((area.held ? root.hand : root.value) - root.lowest) / root.span : clamp(root.fraction, 0, 1);
     // What the rail and the knob show: sprung on `settle` for a value from elsewhere, never under the hand.
     property <float> shown: root.at;
@@ -131,7 +140,7 @@ export component Slider inherits VerticalLayout {
         let by = Readouts.steps(root.readout, text, root.stepped ? root.step-reads : 0);
         let reach = root.stepped ? clamp(root.value + by, root.lowest, root.highest) - root.value : by;
         if (reach != 0) {
-            root.step(root.field, reach);
+            root.nudge(reach);
         }
         if (!Keyboard.held) {
             Outside.released += 1;
@@ -152,10 +161,10 @@ export component Slider inherits VerticalLayout {
         spacing: Space.s;
         if root.stepped: StepKey {
             text: "−";
-            fill: root.low;
             help: root.minus-help;
             enabled: root.enabled;
-            clicked => { root.step(root.field, self.shift ? -3 : -1); }
+            changed down => { root.keyed = self.down; }
+            clicked => { root.nudge(self.shift ? -3 : -1); }
         }
         HorizontalLayout {
             padding-left: SliderStyle.knob-width / 2;
@@ -184,6 +193,7 @@ export component Slider inherits VerticalLayout {
                     high: root.high;
                     rest: root.rest;
                     deep: root.handled;
+                    vivid: root.handled || root.keyed || root.stepping || area.scrolling;
                 }
                 if !root.dial: Knob {
                     centre: parent.width * root.shown;
@@ -265,6 +275,11 @@ export component Slider inherits VerticalLayout {
                     running: area.scrolling;
                     triggered => { area.scrolling = false; }
                 }
+                lull := Timer {
+                    interval: Motion.settle;
+                    running: root.stepping;
+                    triggered => { root.stepping = false; }
+                }
                 // Over the rail's whole length, past the knob's travel as the rail runs. Tab alone gives it the
                 // keyboard, ringed: after the hand's work the arrows walk the photos and the digits rate them.
                 KeyScope {
@@ -277,7 +292,7 @@ export component Slider inherits VerticalLayout {
                         if (by == 0 || event.modifiers.control || event.modifiers.meta || event.modifiers.alt || !root.enabled) {
                             return reject;
                         }
-                        root.step(root.field, event.modifiers.shift ? by * root.big : by);
+                        root.nudge(event.modifiers.shift ? by * root.big : by);
                         accept
                     }
                 }
@@ -285,10 +300,10 @@ export component Slider inherits VerticalLayout {
         }
         if root.stepped: StepKey {
             text: "+";
-            fill: root.high;
             help: root.plus-help;
             enabled: root.enabled;
-            clicked => { root.step(root.field, self.shift ? 3 : 1); }
+            changed down => { root.keyed = self.down; }
+            clicked => { root.nudge(self.shift ? 3 : 1); }
         }
     }
 }

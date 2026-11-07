@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::panel::{Face, Panel, Param};
 
-pub use oni_keys::{Channel, Effect, Letter, Machine, spelled};
+pub use oni_keys::{Channel, Effect, Letter, Machine, STEPS_PER_UNIT, spelled};
 
 /// What a key asks for. A step is relative, so two hands on two devices add up.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
