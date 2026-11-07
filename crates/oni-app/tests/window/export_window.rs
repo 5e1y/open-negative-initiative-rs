@@ -247,9 +247,9 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(line.caption, e.get_dims(), "the cell and the summary name one size");
     assert!(e.get_dims().contains(" × ") && e.get_weight().starts_with("≈ "), "{} {}", e.get_dims(), e.get_weight());
     assert!(!line.camera.is_empty(), "the line opens on the sidecar's box or the scan's camera");
-    // Another space for the previews says which one the frame was edited in.
+    // Another space says, under the tabs, that the canvas follows it as the previews do.
     e.invoke_space_picked(0);
-    assert_eq!(e.get_edited_in(), "This image was edited in Display P3. The previews show them in sRGB.");
+    assert_eq!(e.get_edited_in(), "This photo was edited in Display P3. The canvas and this preview now show it in sRGB, the space the export writes.");
     e.invoke_space_picked(1);
     assert_eq!(e.get_edited_in(), "");
     rig.until("the preview again", LONG, || export_card::lines(w)[0].state == oni_app::PreviewState::Shown);

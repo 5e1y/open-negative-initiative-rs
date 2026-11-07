@@ -31,9 +31,11 @@ mod dated;
 mod sheet_view;
 mod publishing;
 mod wiring;
+mod kept;
 
 pub mod job;
 pub mod paper_sheet;
+pub use kept::{Kept, kept};
 
 pub const PROOF_COLOUR_ONLY: &str = "proofColourOnly";
 pub const SCREEN_GAMUT: &str = "screenGamutWarning";
@@ -106,6 +108,10 @@ pub struct Card {
     weighed: Arc<AtomicUsize>,
     /// The settings kept on a thread of its own, the latest asked written once.
     saver: crate::latest::Worker<String>,
+    /// The presets the hand saved, kept as the settings are, and the name typed for the next one.
+    kept: Vec<Kept>,
+    kept_saver: crate::latest::Worker<Value>,
+    draft: String,
     artist: String,
     copyright: String,
     last_profile: String,
@@ -122,11 +128,10 @@ pub struct Card {
     quality: QualityHand,
     film_row: Option<usize>,
     pub notice: Option<(String, String)>,
-    /// The export under way or just ended, which the modal over the canvas follows.
+    /// The export under way or the last one ended, which the status bar follows.
     pub job: Option<job::Job>,
     /// The engine exports render on, apart from the editor's.
     apart: Option<Shared>,
-    reveal: Option<job::Reveal>,
     model: Rc<VecModel<ExportLine>>,
     pub papers: paper_sheet::Sheet,
 }
@@ -151,6 +156,10 @@ impl Card {
         let kept = support.to_path_buf();
         let saver = crate::latest::Worker::spawn("export settings", move |raw: String| {
             let _ = Preferences::load(&kept).set(oni_export::settings::PREFERENCE_KEY, Value::from(raw));
+        });
+        let folder = support.to_path_buf();
+        let kept_saver = crate::latest::Worker::spawn("export presets", move |presets: Value| {
+            let _ = Preferences::load(&folder).set(kept::KEPT, presets);
         });
         Card {
             shown: false,
@@ -184,6 +193,9 @@ impl Card {
             weigher: targets::weigher(weighed.clone()),
             weighed,
             saver,
+            kept: kept::from_value(prefs.value(kept::KEPT)),
+            kept_saver,
+            draft: String::new(),
             installed: OutputProfile::last_installed(),
             pending: false,
             prefs,
@@ -196,7 +208,6 @@ impl Card {
             notice: None,
             job: None,
             apart: None,
-            reveal: None,
             model: Rc::new(VecModel::default()),
             papers: paper_sheet::Sheet::default(),
         }

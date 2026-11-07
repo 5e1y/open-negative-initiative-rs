@@ -228,7 +228,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     let (pw, ph, icc, paper_pixels) = jpeg(&on_paper);
     assert_eq!(icc, std::fs::read(&pearl).unwrap(), "the file declares the paper's profile");
 
-    // Instagram writes every row: a JPEG in sRGB, 1440 across the narrow way, the proof following.
+    // Instagram writes every row: a JPEG in sRGB, 1080 on the long side, the proof following.
     ctl.act(oni_app::Act::Export);
     let n = renders();
     e.invoke_preset(0);
@@ -239,7 +239,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     let srgb_corrected = frame(w);
     let in_srgb = export("srgb.jpg", false);
     let (sw, sh, srgb_icc, srgb_pixels) = jpeg(&in_srgb);
-    assert_eq!(sw.min(sh), 1440);
+    assert_eq!(sw.max(sh), 1080);
     assert_eq!(Some(srgb_icc), oni_colour::Space::Srgb.icc_data());
 
     // The correction undone: the sRGB canvas and file stay as they were, the paper's move.

@@ -163,8 +163,13 @@ fn every_key_writes_a_distinct_complete_state() {
     let insta = Preset::Instagram.applied(&hand);
     assert_eq!(
         (insta.resize, insta.space().clone(), insta.jpeg_quality),
-        (Resize::ShortestEdge(1440), Space::Srgb, 0.92)
+        (Resize::LongestEdge(1080), Space::Srgb, 0.92)
     );
+    // Feed-ready: a 3:2 landscape at 1080 × 720 and a 2:3 portrait at 720 × 1080; twin: the narrow
+    // edge's ceiling wrote 2160 × 1440.
+    assert_eq!(insta.resize.output_size(6048.0, 4032.0), (1080.0, 720.0));
+    assert_eq!(insta.resize.output_size(4032.0, 6048.0), (720.0, 1080.0));
+    assert_eq!(Resize::ShortestEdge(1440).output_size(6048.0, 4032.0), (2160.0, 1440.0));
     let mut print_as_jpeg = Preset::FullPrint.applied(&hand);
     print_as_jpeg.set_format(Format::Jpeg);
     print_as_jpeg.set_space(Space::DisplayP3);

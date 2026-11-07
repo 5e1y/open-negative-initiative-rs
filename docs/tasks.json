@@ -7242,5 +7242,26 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1493,
+    "type": "feature",
+    "title": "Export settings saved as named presets beside Instagram, Display and Print",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Expert efficiency): every client delivery set format, space, size and quality again by hand. The presets' plate now lays the built-in keys and the saved ones three to a row at equal thirds; under them, unless a built-in key is lit, one name field: with nothing lit it names the settings and Save as Preset keeps them (a key lit at once), with a saved preset lit it renames it and Remove takes it off, apart from the keys that keep. A saved key writes every setting back in one press and lights while the settings equal it. Kept in the preferences under exportPresets, each preset's settings in their own preference's words, read back tolerantly. Window check export_panel saves, recalls, renames and removes through clicks (twin: Save with no name keeps nothing); unit check reads back what it writes (twin: a nameless item is left out)."
+  },
+  {
+    "id": 1494,
+    "type": "fix",
+    "title": "Instagram writes 1080 on the long side; the summary one fact a row; the shared space said where it changes",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe. Task fit: the Instagram key wrote 2160 x 1440; it now writes the feed's 1080 on the long side in sRGB, a 3:2 frame at 1080 x 720, the framing the preview and its caption show (twin: the narrow edge's ceiling wrote 2160 x 1440). Clarity: the summary paired '8 bits per channel' with the pixel size; it reads Pixels, Bit depth and Estimated size, one row each. Trust: the colour space stays shared by the canvas and the export (owner's decision); the note under it, shown as soon as the space differs from the one edited in, now says the canvas and the previews show the new space, the one the export writes."
+  },
+  {
+    "id": 1495,
+    "type": "fix",
+    "title": "An export's progress and Stop in the status bar, its end told with Show in Finder",
+    "status": "done",
+    "detail": "Evaluation s-f5b562fe (Hierarchy, Task fit): the progress card covered the image's corner for a whole export and its end offered only OK. The card (JobCard, ExportProgress) is gone: the status bar's busy line counts the frames on its glass with its progress and a Stop key, the status bar's own key; the end is told in the app's one notice, the number written or where it stopped, with Show in Finder selecting the first file written, or the frame that failed. The Finder no longer opens by itself as an export starts. Window check export_flow clicks Stop in the bar (frames large enough that it lands mid-export) and reads the notice and its key."
   }
 ]

@@ -53,7 +53,7 @@ impl Ctl {
                     Ok(false) => with_shell(|c| c.export_ended(job::End::Stopped)),
                     Err(e) => {
                         let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                        let message = format!("{name}: {e}");
+                        let message = format!("{}: {e}", oni_i18n::named(&name));
                         with_shell(move |c| c.export_ended(job::End::Failed(message)));
                     }
                 }

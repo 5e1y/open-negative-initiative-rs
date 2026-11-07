@@ -22,7 +22,6 @@ import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSh
 import { PresetDeck } from "preset_deck.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperRow, SheetTile } from "export.slint";
 import { PaperSheet } from "export_papers.slint";
-import { ExportProgress } from "export_progress.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 import { Confirm, ConfirmSheet } from "confirm.slint";
 import { Absent, Unsaved, UnsavedSheet } from "missing.slint";
@@ -306,11 +305,6 @@ export component MainWindow inherits AppWindow {
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.panel-width + 2 * Space.s; height: card.height;
                         Panel { }
-                    }
-                    // The export under way at the canvas's top-left corner, the editor and the gallery free beside it.
-                    if Exporting.job-shown && !Exporting.shown: ExportProgress {
-                        x: CardStyle.padding + Space.m;
-                        y: CardStyle.padding + Space.m;
                     }
                 }
                 if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { cache-rendering-hint: true; }
