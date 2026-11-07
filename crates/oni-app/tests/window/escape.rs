@@ -1,6 +1,7 @@
 //! Escape on the headless window steps out of one thing at a time: a field's typing, a control's hold,
 //! Compare, a tool, the editor; each tool ends by its DONE or Return, and the grid's Return opens a photo.
-//! A paste on the roll says how many photos it rewrote, its Undo beside.
+//! A press on Compare's key takes a slider's hold away, so one Escape leaves Compare. A paste on the
+//! roll says how many photos it rewrote, its Undo beside.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::fields::Field;
@@ -16,6 +17,42 @@ fn click(rig: &common::Rig, (x, y): (f32, f32)) {
     rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
     rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
     rig.pump();
+}
+
+/// A key as winit hands it over: the window's key hook first, then Slint.
+fn key(rig: &common::Rig, w: &oni_app::MainWindow, text: &str) {
+    oni_app::outside::keyed(w.window(), || w.invoke_refocus());
+    rig.key(text);
+}
+
+pub(crate) fn one_escape_leaves_compare_its_key_turned_on_after_a_slider_held_the_keyboard() {
+    let Some((rig, shell, root)) = crate::panel_bindings::opened("escape-compare") else { return };
+    let w = &shell.window;
+    let canvas = w.global::<Canvas>();
+    let escape: SharedString = Key::Escape.into();
+    // Its word, or its glyph and help on a bar short of room.
+    let compare = || {
+        let worded = common::placed(w, Role::Button, "Compare");
+        if worded.is_empty() { common::the(w, Role::Button, "Compare Before/After") } else { worded[0] }
+    };
+    // Twin first: a press the window's hook never sees, as an evaluation tool's, leaves the dragged
+    // slider its hold, which takes the first Escape; the hand's press, through the hook, takes it away.
+    for hooked in [false, true] {
+        let rail = common::the(w, Role::Slider, "Exposure");
+        common::click(&rig, w, (rail.x + rail.width / 2.0, rail.y + rail.height - 4.0));
+        assert!(!w.get_keys_focused() && w.get_keys_held(), "the pressed slider holds the keyboard");
+        if hooked { common::click(&rig, w, compare().middle()) } else { click(&rig, compare().middle()) }
+        assert!(canvas.get_split() >= 0.0, "Compare's key turns it on");
+        key(&rig, w, &escape);
+        assert_eq!(canvas.get_split() < 0.0, hooked, "one Escape leaves Compare only after the hand's press");
+        if !hooked {
+            key(&rig, w, &escape);
+            assert!(canvas.get_split() < 0.0, "a second Escape leaves it");
+        }
+        assert!(!w.global::<App>().get_gallery(), "and only Compare");
+    }
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_done() {
