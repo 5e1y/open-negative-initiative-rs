@@ -1,4 +1,5 @@
-//! The info sidebar: the roll's or the project's name, stock, date, body and description.
+//! The info sidebar: the roll's or the project's name, stock, date, body and description; the ONI
+//! Trash's count and its Restore key.
 
 use super::*;
 use oni_library::history::Marker;
@@ -44,6 +45,15 @@ impl Ctl {
                 lib.set_description(group.project.description.clone().into());
                 s.org.info_loaded = Some(key);
             }
+            return;
+        }
+        if s.trash_shown() {
+            let (count, key) = oni_trash::inspector(s.org.trashed.len(), s.trash_picks.selection.len());
+            lib.set_roll_unmeasured(false);
+            lib.set_info_kind(3);
+            lib.set_trash_count(count.into());
+            lib.set_trash_key(key.into());
+            s.org.info_loaded = None;
             return;
         }
         let Some(roll) = s.roll() else {

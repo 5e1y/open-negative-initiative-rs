@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1517,
+    "type": "feature",
+    "title": "The ONI Trash has its own inspector: its count, what it keeps, and its Restore key",
+    "status": "done",
+    "detail": "The fifth evaluation found the inspector reading 'Select a roll' over the trashed photos, with no Restore beside them. The sidebar now lays the trash as its own kind: the photos it holds, the note that a file stays untouched, and one plain key naming its reach, Restore Photo or Restore N Photos on the picks, as the menu bar's Restore does, else Restore All…, asked as the row's menu asks; an empty trash shows no key. No Empty Trash key: ONI never deletes a library member's file (the trash only marks the sidecar), so emptying would delete originals, the owner's call alone."
   }
 ]

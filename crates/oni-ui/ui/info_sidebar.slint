@@ -1,5 +1,5 @@
 // `InfoSidebar` beside the gallery: the roll the gallery stands on, a folder of photos being one,
-// or the project.
+// the project, or the ONI Trash.
 import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack, WarningBand } from "ds/ds.slint";
 import { Library } from "library.slint";
 
@@ -110,6 +110,14 @@ export component Info inherits Surface {
                         left(t) => { Library.description-committed(t); }
                     }
                 }
+            }
+            // A plain key, as Restore keeps: no key here deletes a file, the trash only hides.
+            if Library.info-kind == 3: Section {
+                title: @tr("ONI Trash");
+                separated: false;
+                Label { text: Library.trash-count; }
+                Label { role: TextRole.note; text: @tr("A photo deleted in ONI waits here, its file untouched, until it is restored."); }
+                if Library.trash-key != "": Button { text: Library.trash-key; clicked => { Library.trash-restore(); } }
             }
         }
     }
