@@ -119,7 +119,7 @@ impl Ctl {
             (touched, store.failure.take(), store.walking.take(), store.marked.take(), store.regrouped.take(), store.face())
         };
         if let Some((from, to)) = regrouped {
-            self.regrouped(&from, &to);
+            self.regrouped(&from, &to, undo);
         }
         // The view turns to the face the step was taken on.
         self.faced(face);

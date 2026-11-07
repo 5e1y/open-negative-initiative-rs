@@ -20,7 +20,7 @@ fn past(hand: &Hand, path: &str) -> (f32, f32) {
 
 /// Row `from` of the projects' tree, as last drawn, pressed and moved onto the top strip of row
 /// `onto`: whether its line showed there, the drop then let go.
-fn tree_line(hand: &Hand, from: usize, onto: usize) -> bool {
+pub(crate) fn tree_line(hand: &Hand, from: usize, onto: usize) -> bool {
     hand.rig.drawn();
     let rows: Vec<oni_app::TreeRow> = hand.lib().get_project_rows().iter().collect();
     let start = (rows[from].x + rows[from].width / 2.0, rows[from].y + rows[from].height / 2.0);

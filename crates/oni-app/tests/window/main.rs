@@ -207,6 +207,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("projects_tab::a_swift_file_is_read_without_a_write_and_kept_at_the_first_change", projects_tab::a_swift_file_is_read_without_a_write_and_kept_at_the_first_change),
     ("project_steps::an_undo_of_new_project_leaves_no_project_and_its_redo_makes_it_again", project_steps::an_undo_of_new_project_leaves_no_project_and_its_redo_makes_it_again),
     ("project_steps::an_undo_shows_a_member_beyond_the_folder_at_once", project_steps::an_undo_shows_a_member_beyond_the_folder_at_once),
+    ("project_steps::the_new_project_key_is_one_step_and_its_redo_keeps_the_name_typed", project_steps::the_new_project_key_is_one_step_and_its_redo_keeps_the_name_typed),
     ("project_filing::new_project_is_made_and_named_in_its_tab_and_a_double_click_opens", project_filing::new_project_is_made_and_named_in_its_tab_and_a_double_click_opens),
     ("project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole", project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole),
     ("project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid", project_rolls::a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid),

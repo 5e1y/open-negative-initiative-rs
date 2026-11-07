@@ -247,6 +247,11 @@ impl EditorStore {
         self.release();
         self.history.record_members(members, label);
     }
+
+    /// The projects the last undo or redo took away, kept by its step as they went.
+    pub fn keep_taken(&mut self, undone: bool, taken: &[oni_library::project::Project]) {
+        self.history.keep_taken(undone, taken);
+    }
 }
 
 /// Re-exported for the host, which records disk and project gestures on the same history.

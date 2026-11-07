@@ -40,10 +40,14 @@ impl Ctl {
     }
 
     /// The Projects tab's New Project, in its column and on its empty grid: a project with no photo
-    /// yet, ringed, its name open to type.
+    /// yet, ringed, its name open to type; one step of the Undo key.
     pub(super) fn new_empty_project(self: &Rc<Self>) {
-        let id = project::new_empty(&mut self.state.borrow_mut().org.projects, Date::now());
-        self.save_projects();
+        let mut made = None;
+        self.regroup(tr("New Project"), |projects, _| {
+            made = Some(project::new_empty(projects, Date::now()));
+            true
+        });
+        let Some(id) = made else { return };
         {
             let mut s = self.state.borrow_mut();
             s.org.project_ring = Some(NodeId::Project(id));
@@ -77,10 +81,16 @@ impl Ctl {
 
     /// An undo or a redo of a gesture on the projects: what its step changed, turned on the members
     /// as they stand, saved; where they stand read again, as one it brings back may lie beyond the folder.
-    pub(in crate::app) fn regrouped(self: &Rc<Self>, from: &project::Rosters, to: &project::Rosters) {
+    pub(in crate::app) fn regrouped(self: &Rc<Self>, from: &project::Rosters, to: &project::Rosters, undone: bool) {
         {
-            let mut s = self.state.borrow_mut();
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            let was = s.org.projects.clone();
             project::regroup(&mut s.org.projects, from, to);
+            let taken: Vec<Project> = was.into_iter().filter(|p| !s.org.projects.iter().any(|q| q.id == p.id)).collect();
+            if let Some(store) = s.store.editor() {
+                store.keep_taken(undone, &taken);
+            }
             let ringed = |id: &Id| s.org.projects.iter().any(|p| p.id == *id);
             if matches!(&s.org.project_ring, Some(NodeId::Project(r)) if !ringed(r)) {
                 s.org.project_ring = None;
