@@ -138,6 +138,9 @@ impl Ctl {
             Which::Projects => lib.set_project_content_height(total),
         }
         self.publish_layout_key();
+        if which == Which::Projects {
+            self.aim_project_drag(true);
+        }
     }
 
     pub(super) fn column_model(&self, which: Which) -> Option<ModelRc<TreeRow>> {

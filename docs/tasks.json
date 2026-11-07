@@ -7690,5 +7690,12 @@
     "title": "A check that a placeholder stands at its recorded path, not at its mark's",
     "status": "done",
     "detail": "Fifth review of the projects (point 5): every placeholder in the checks was recorded at its own mark's path, so nothing proved the recorded path wins over the one after the mark (file.rs spelt and former), which 1.5.6 produces: renaming a folder moves the recorded paths, never the member texts. project file_tests::a_placeholder_recorded_elsewhere_than_its_mark_stands_where_recorded reads a version 1 text and an exact member, both marked /Roll 8 and recorded at /Roll 8b, each at /Roll 8b (twin: the path after each mark is /Roll 8; mutations: spelt or former preferring the mark's path fail it)."
+  },
+  {
+    "id": 1562,
+    "type": "fix",
+    "title": "A tree drop lands where its mark stands when the tree changes under the held hand",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 2): #1557 kept a tree drop's landing per row number, so an undo or a folder read laying the tree anew under a held drag left the landing worked out for the row's former node while the line was drawn at that number's new row: D held on the line above C, then ⌘Z putting back C A D, released D before C (D C A) under a line above A. A landing now holds for the tree as laid when it was worked out: each lay of the projects' tree (tree_column::lay_column) aims the held drag again at its pointer (Ctl::aim_project_drag, also each move's), working its landing out afresh and drawing its mark, so the line, the ring and the release always read the same rows, a node's neighbours and the projects included. Check: window project_rolls::a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand, D held on the line above C, ⌘Z, a pixel's move, released: C D A (twin: before the undo the row under the line holds C; mutations: no aim at a lay, or a lay keeping the landing, read D C A and fail it)."
   }
 ]

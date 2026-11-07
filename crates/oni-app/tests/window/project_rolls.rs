@@ -121,3 +121,46 @@ pub(crate) fn the_rating_filter_keeps_the_trees_roll_order() {
     let stored: Vec<String> = hand.members()[0].iter().filter(|p| *p == &a8 || *p == &d).cloned().collect();
     assert_eq!(stored, [a8, d]);
 }
+
+/// Client's Roll 10 reads A C D once A moved before C; D held on the line above C, row 3, then ⌘Z
+/// puts back C A D under the held hand: the line stands above A, and the release lands D there.
+pub(crate) fn a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand() {
+    let files = [("Roll 10/A.tif", 0.2), ("Roll 10/C.tif", 0.3), ("Roll 10/D.tif", 0.4)];
+    let hand = Hand::made("rolls-held", &files, |root| {
+        let at = |f: &str| paths::join(&paths::canonical(&root.join("Scans")), f);
+        let members: Vec<String> = ["Roll 10/C.tif", "Roll 10/A.tif", "Roll 10/D.tif"].map(at).to_vec();
+        let client = serde_json::json!({"id": oni_settings::Id::new().to_string(), "name": "Client", "description": "", "createdAt": 8e8, "members": members});
+        std::fs::create_dir_all(root.join("Support")).unwrap();
+        std::fs::write(oni_library::project::file_path(&root.join("Support")), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+    });
+    let [a, c, d] = files.map(|(f, _)| hand.at(f));
+    hand.open("");
+    let lib = hand.lib();
+    lib.invoke_surface_picked(1);
+    hand.rig.pump();
+    lib.invoke_project_row_folded(0);
+    hand.rig.pump();
+    assert_eq!(hand.project_titles(), ["Client", "Roll 10", "C.tif", "A.tif", "D.tif"]);
+    assert!(tree_line(&hand, 3, 2), "A moves before C");
+    assert_eq!(hand.members(), [vec![a.clone(), c.clone(), d.clone()]]);
+
+    hand.rig.drawn();
+    let rows: Vec<oni_app::TreeRow> = lib.get_project_rows().iter().collect();
+    let start = (rows[4].x + rows[4].width / 2.0, rows[4].y + rows[4].height / 2.0);
+    let to = (rows[3].x + rows[3].width / 2.0, rows[3].y + 1.0);
+    lib.invoke_project_row_dragged(4, start.0, start.1, to.0, to.1);
+    hand.rig.pump();
+    let held = lib.get_project_drag();
+    // Twin: before the undo, the row under the line holds C, where a landing kept from then puts D.
+    assert!(held.line && hand.project_titles()[3] == "C.tif");
+    hand.shell.ctl.act(oni_app::Act::Undo);
+    hand.rig.pump();
+    assert_eq!(hand.project_titles()[2..], ["C.tif", "A.tif", "D.tif"], "the undo puts back C A D, the hand still held");
+    let undone = lib.get_project_drag();
+    assert!(undone.line && undone.mark_y == held.mark_y, "the line stays on row 3, now above A");
+    lib.invoke_project_row_dragged(4, start.0, start.1, to.0, to.1 + 1.0);
+    hand.rig.pump();
+    lib.invoke_project_drag_ended(true);
+    hand.rig.pump();
+    assert_eq!(hand.members(), [vec![c, d, a]], "D lands above A, where its line stood");
+}
