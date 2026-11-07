@@ -185,14 +185,14 @@ fn a_drop_lands_before_its_target_members_first_then_the_joining_ones() {
     let trip_id = trip.id;
     let mut projects = vec![other, trip];
     // d and x dragged before b: d already a member moves first, x joins after it and leaves Other.
-    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/x", "/r/d"]), "/r/b"));
+    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/x", "/r/d"]), "/r/b", false));
     assert!(projects[0].name == "Other" && projects[0].members.is_empty(), "Other held only x and stays, empty");
     assert_eq!(projects[1].id, trip_id);
     assert_eq!(projects[1].members, members(&["/r/a", "/r/d", "/r/x", "/r/b", "/r/c"]));
     // Twin: the target dragged onto itself moves nothing.
-    assert!(!reorder_drop(&mut projects, &reach, &picked(&["/r/b"]), "/r/b"));
+    assert!(!reorder_drop(&mut projects, &reach, &picked(&["/r/b"]), "/r/b", false));
     // A drop on a photo in no project lands nowhere.
-    assert!(!reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/loose"));
+    assert!(!reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/loose", false));
 }
 
 /// P holds a and b, Q holds c; X joins Q, then a is dragged before c. Undoing the drag puts a back
@@ -214,7 +214,7 @@ fn an_undo_turns_back_what_its_step_changed_and_nothing_else() {
     add_to(&mut projects, &reach, &picked(&["/r/x"]), q_id);
     let (add_from, add_to_) = changed(&start, &rosters(&projects));
     let added = rosters(&projects);
-    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/c"));
+    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/c", false));
     let (drag_from, drag_to) = changed(&added, &rosters(&projects));
     assert_eq!(drag_from.len(), 2, "the drag's step names both projects it changed");
     let find = |projects: &[Project], id: Id| projects.iter().find(|p| p.id == id).unwrap().members.clone();
@@ -278,7 +278,7 @@ fn a_redo_toward_a_project_deleted_since_leaves_the_photo_where_it_stands() {
     let (p_id, q_id) = (p.id, q.id);
     let mut projects = vec![p, q];
     let before = rosters(&projects);
-    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/c"));
+    assert!(reorder_drop(&mut projects, &reach, &picked(&["/r/a"]), "/r/c", false));
     let after = rosters(&projects);
     regroup(&mut projects, &after, &before);
     delete(&mut projects, q_id);

@@ -2,10 +2,11 @@
 //! for, so a member found by its print moves, joins or leaves as the photo shown does.
 
 use super::member::{Member, distinct, printed};
-use super::resolve::{Reach, holders};
+use super::resolve::{Reach, holders, resolve};
 use super::{Project, root_order, untitled};
 use crate::index::Entry;
-use crate::paths::holds;
+use crate::paths::{self, holds};
+use crate::project_tree::rolls;
 use oni_settings::{Date, Id};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -131,26 +132,43 @@ pub fn member_projects<'a>(projects: &'a [Project], reach: &Reach, paths: &HashS
     projects.iter().enumerate().filter(|(p, _)| held.contains(p)).map(|(_, project)| project).collect()
 }
 
-/// `reorderProjectDrop`: the dragged photos land before `target` in the target's project, those
-/// already members first in their own order, the rest joining from other projects.
-pub fn reorder_drop(projects: &mut [Project], reach: &Reach, dragged: &HashSet<String>, target: &str) -> bool {
+/// Whether photos dropped beside `target` stand there: a project shows each roll apart, so only
+/// photos of the target's roll land beside it.
+pub fn lands_beside<'a>(dragged: impl IntoIterator<Item = &'a String>, target: &str) -> bool {
+    let roll = paths::parent(target);
+    dragged.into_iter().all(|path| paths::parent(path) == roll)
+}
+
+/// `reorderProjectDrop`: the dragged photos land before `target`, or past it, in its project's
+/// order as shown, roll by roll, which is written back; those already members first, in that order.
+pub fn reorder_drop(projects: &mut [Project], reach: &Reach, dragged: &HashSet<String>, target: &str, past: bool) -> bool {
     let holders = holders(projects, reach);
     let Some(&(at, aim)) = holders.get(target) else { return false };
-    let target_member = projects[at].members[aim].clone();
-    let rows: Vec<&Entry> = picked(reach, dragged).into_iter().filter(|row| row.path != target).collect();
-    if rows.is_empty() {
+    let rows = picked(reach, dragged);
+    if rows.is_empty() || !lands_beside(rows.iter().map(|row| &row.path), target) {
         return false;
     }
     let (inside, outside): (Vec<&Entry>, Vec<&Entry>) = rows.into_iter().partition(|row| holders.get(&row.path).is_some_and(|(p, _)| *p == at));
-    let mut own: Vec<usize> = inside.iter().filter_map(|row| holders.get(&row.path).map(|(_, m)| *m)).collect();
-    own.sort_unstable();
-    let already: Vec<Member> = own.iter().map(|m| projects[at].members[*m].clone()).collect();
+    let moving: HashSet<usize> = inside.iter().filter_map(|row| holders.get(&row.path).map(|(_, m)| *m)).collect();
+    let shown: Vec<(usize, &Entry)> = resolve(projects, reach).swap_remove(at).into_iter().enumerate().filter_map(|(m, row)| Some((m, row?))).collect();
+    let order: Vec<usize> = rolls(shown, |(_, row)| paths::parent(&row.path)).into_iter().flat_map(|(_, photos)| photos).map(|(m, _)| m).collect();
+    let Some(aimed) = order.iter().position(|m| *m == aim) else { return false };
     let joining = taken(projects, &outside, &holders);
-    let mut members: Vec<Member> = projects[at].members.iter().filter(|m| !already.contains(m)).cloned().collect();
-    let Some(insert) = members.iter().position(|m| *m == target_member) else { return false };
-    members.splice(insert..insert, already.into_iter().chain(joining));
-    projects[at].members = distinct(members);
-    true
+    let members = &projects[at].members;
+    let end = aimed + usize::from(past);
+    let place = end - order[..end].iter().filter(|m| moving.contains(m)).count();
+    let mut laid: Vec<Member> = order.iter().filter(|m| !moving.contains(m)).map(|m| members[*m].clone()).collect();
+    let brought: Vec<Member> = order.iter().filter(|m| moving.contains(m)).map(|m| members[*m].clone()).chain(joining).collect();
+    laid.splice(place..place, brought);
+    // Each place a photo shows takes the next of the order laid; a member none shows keeps its own.
+    let placed: HashSet<usize> = order.iter().copied().collect();
+    let mut next = laid.into_iter();
+    let mut written: Vec<Member> = members.iter().enumerate().filter_map(|(m, member)| if placed.contains(&m) { next.next() } else { Some(member.clone()) }).collect();
+    written.extend(next);
+    let written = distinct(written);
+    let moved = !outside.is_empty() || written != projects[at].members;
+    projects[at].members = written;
+    moved
 }
 
 /// `reorderProjectsRoot`: projects sort newest first, so the dragged ones take orders stepping

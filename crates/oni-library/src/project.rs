@@ -12,8 +12,8 @@ mod resolve;
 pub(crate) use file::read;
 pub use file::{FORMAT, ProjectsFile, encode, file_path, former_path, is_path, load, save};
 pub use gestures::{
-    Joined, Rosters, add_to, carried, delete, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from, rename,
-    reorder_drop, reorder_root, rosters, set_description,
+    Joined, Rosters, add_to, carried, delete, lands_beside, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from,
+    rename, reorder_drop, reorder_root, rosters, set_description,
 };
 pub use member::{Member, distinct, exclusive, printed};
 pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve};
@@ -77,3 +77,5 @@ mod tests;
 mod file_tests;
 #[cfg(test)]
 mod shipped_tests;
+#[cfg(test)]
+mod drop_tests;

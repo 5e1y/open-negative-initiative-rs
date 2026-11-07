@@ -225,13 +225,16 @@ fn roll_title(markers: &HashMap<String, Film>, folder: &str) -> String {
 
 impl State {
     /// The Projects tab's bands: each project's photos by roll, a band each, headed by the project
-    /// and the roll; the rating filter keeps one medal as in the archive, the tree every member.
+    /// and the roll; the rating filter keeps one medal as in the archive, the rolls in the tree's order.
     pub(super) fn project_bands(&self) -> Vec<Band> {
         let markers = self.roll_markers();
         let mut bands = Vec::new();
         for g in self.project_groups() {
-            let kept: Vec<Entry> = g.entries.into_iter().filter(|e| self.filter.is_none_or(|m| e.label == m)).collect();
-            for (folder, entries) in project_tree::by_roll(&kept) {
+            for (folder, entries) in project_tree::by_roll(&g.entries) {
+                let entries: Vec<Entry> = entries.into_iter().filter(|e| self.filter.is_none_or(|m| e.label == m)).collect();
+                if entries.is_empty() {
+                    continue;
+                }
                 let (title, caption) = (roll_title(&markers, &folder), g.project.name.clone());
                 bands.push(Band { key: g.id.to_string(), title, caption, entries, naming: None, explicit: String::new() });
             }
