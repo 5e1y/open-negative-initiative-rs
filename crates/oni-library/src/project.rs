@@ -8,6 +8,7 @@ mod file;
 mod gestures;
 mod member;
 mod resolve;
+mod unsettled;
 
 pub(crate) use file::read;
 pub use file::{FORMAT, ProjectsFile, encode, file_path, former_path, is_path, load, save};
@@ -17,6 +18,7 @@ pub use gestures::{
 };
 pub use member::{Member, distinct, exclusive, holder, printed};
 pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve};
+pub use unsettled::{Unsettled, settle};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Project {
@@ -27,11 +29,13 @@ pub struct Project {
     pub manual_order: Option<f64>,
     /// Ordered photos, each by its path and its print: two copies of one file in two rolls are two.
     pub members: Vec<Member>,
+    /// What 1.5.6 named while a tile loaded at a path a print also holds: no member until that file is read.
+    pub unsettled: Vec<Unsettled>,
 }
 
 impl Project {
     pub fn new(name: &str, created_at: Date, members: Vec<Member>) -> Project {
-        Project { id: Id::new(), name: name.to_owned(), description: String::new(), created_at, manual_order: None, members }
+        Project { id: Id::new(), name: name.to_owned(), description: String::new(), created_at, manual_order: None, members, unsettled: Vec::new() }
     }
 
     /// The paths its members were last seen at, in order; a member never placed has none.
@@ -79,3 +83,5 @@ mod file_tests;
 mod shipped_tests;
 #[cfg(test)]
 mod drop_tests;
+#[cfg(test)]
+mod unsettled_tests;

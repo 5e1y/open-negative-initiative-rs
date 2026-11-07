@@ -52,7 +52,7 @@ impl Member {
     }
 
     /// The text two members that may be one photo share, which `same` then settles.
-    fn slot(&self) -> String {
+    pub(super) fn slot(&self) -> String {
         match &self.path {
             Some(path) => paths::normal(path).to_lowercase(),
             None => format!("\0{}", self.print.as_deref().unwrap_or_default()),
@@ -101,22 +101,21 @@ pub fn holder<'a>(known: &'a [Member]) -> impl Fn(&Member) -> Option<&'a Member>
     move |m| slots.get(&m.slot()).and_then(|ks| ks.iter().copied().find(|k| m.same(k)))
 }
 
-/// One project per photo, the most recently created keeping it. A member with no print and one holding
-/// a print at its place stay apart: only the file there tells whether they are one photo (`learn`).
+/// One project per photo, the most recently created keeping it. A member with no print at a place a
+/// print holds is never among them: the read holds it apart until the file there tells (`Unsettled`).
 pub fn exclusive(projects: &[Project]) -> Vec<Project> {
-    let one = |a: &Member, b: &Member| a.same(b) && a.print.is_some() == b.print.is_some();
     let mut slots: HashMap<String, Vec<(Member, Id, Date)>> = HashMap::new();
     for project in projects {
         for member in &project.members {
             let slot = slots.entry(member.slot()).or_default();
-            match slot.iter_mut().find(|(m, _, _)| one(m, member)) {
+            match slot.iter_mut().find(|(m, _, _)| m.same(member)) {
                 Some(keeper) if keeper.2 < project.created_at => (keeper.1, keeper.2) = (project.id, project.created_at),
                 Some(_) => {}
                 None => slot.push((member.clone(), project.id, project.created_at)),
             }
         }
     }
-    let keeper = |member: &Member| slots.get(&member.slot()).and_then(|s| s.iter().find(|(m, _, _)| one(m, member))).map(|(_, id, _)| *id);
+    let keeper = |member: &Member| slots.get(&member.slot()).and_then(|s| s.iter().find(|(m, _, _)| m.same(member))).map(|(_, id, _)| *id);
     projects
         .iter()
         .map(|project| {

@@ -126,7 +126,7 @@ fn lost(file: &str, name: &str, taken: &HashSet<String>) -> String {
 }
 
 /// Each member with a path and no print takes the print its file there carries, or gives the photo up
-/// to a member holding that print there, as that print was read after it was named. Whether any changed.
+/// to a member holding that print there; each held apart then settles on its file. Whether any changed.
 pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> bool {
     let held_at: HashMap<&str, &Entry> = held.iter().map(|e| (e.path.as_str(), e)).collect();
     let carried = |path: &str| held_at.get(path).map(|e| (*e).clone()).or_else(|| index.row(path)).and_then(|row| Member::of(&row, None).print);
@@ -146,7 +146,7 @@ pub fn learn(projects: &mut [Project], held: &[Entry], index: &LibraryIndex) -> 
             kept
         });
     }
-    changed
+    project::settle(projects, carried) || changed
 }
 
 /// `LibraryIndex.shown`'s cut on one row: out of the ONI Trash, and no pass whose lead is held.
