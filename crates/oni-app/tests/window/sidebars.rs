@@ -158,7 +158,7 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     assert!(!evenly_apart(&[(968.0, 1000.0), (1024.0, 1059.0), (1124.0, 1210.0)], start, edge));
 
     // Rotate & Mirror's group alike: its worded keys span the block and stop at its edge.
-    let y = row_of(&rig, &tip, left + 20.0, "Rotate 90° Clockwise").expect("Rotate ↻ at the block's left");
+    let y = row_of(&rig, &tip, left + 20.0, "Rotate 90° Clockwise").expect("Rotate at the block's left");
     let met = notes_along(&rig, &tip, left, right, y);
     assert!(fills_block(&met, start, edge) && within(&met, edge), "the group spans the block, inside it: {met:?}");
     // Twin: keys running past the block's edge, as words too wide for the column push them.
@@ -166,7 +166,7 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     assert!(!within(&past, edge));
     tip.set_shown(false);
     let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
-    assert!(evenly_apart(&words, start, edge), "Rotate ↻, Mirror ↔ and Mirror ↕ evenly apart: {words:?}");
+    assert!(evenly_apart(&words, start, edge), "Rotate and both Mirrors evenly apart, each glyph with its word: {words:?}");
 
     // `ColorPane`: a colour photo offers Auto White Balance; a black and white one has no Color block.
     let balance = "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";

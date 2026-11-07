@@ -1,7 +1,7 @@
 // The crop's pane: what it keeps, its reset and the keys that carry it, then its ratio, straightening,
 // turns and mirrors, and the photo's measuring window.
 import { Act } from "../act.slint";
-import { Space, Section, Tabs, Button, ButtonSize, ButtonGroup, GroupAlign, Toggle, LcdReadout, Field, FieldLayout, Label, TextRole } from "../ds/ds.slint";
+import { Icons, Space, Section, Tabs, Button, ButtonSize, ButtonGroup, GroupAlign, Toggle, LcdReadout, Field, FieldLayout, Label, TextRole } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
@@ -58,13 +58,13 @@ export component CropPane inherits Pane {
     Section {
         title: @tr("Rotate & Mirror");
         help: @tr("Turns the photo a quarter clockwise at each press, or flips it left for right or top for bottom, as a negative scanned from its back needs.");
-        // Worded keys sharing the row alike, the sign after each word showing how the photo moves;
-        // none of them ever lights.
+        // Worded keys sharing the row alike, each glyph drawing its move: a quarter turn, a flip across an
+        // upright axis, a flip across a level one; none of them ever lights.
         ButtonGroup {
             align: GroupAlign.fill;
-            Button { text: @tr("Rotate ↻"); help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
-            Button { text: @tr("Mirror ↔"); help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
-            Button { text: @tr("Mirror ↕"); help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
+            Button { text: @tr("Rotate"); has-icon: true; icon: Icons.rotate; help: @tr("Rotate 90° Clockwise"); clicked => { Framing.act(Act.rotate); } }
+            Button { text: @tr("Mirror"); has-icon: true; icon: Icons.mirror; help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
+            Button { text: @tr("Mirror"); has-icon: true; icon: Icons.mirror-vertically; help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
         }
     }
     Section {

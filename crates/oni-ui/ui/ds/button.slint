@@ -173,6 +173,8 @@ export component Button inherits Rectangle {
     opacity: root.keycap ? 1 : root.fade;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
+    // A worded key's help tells two keys of one word apart, as the mirrors' axes.
+    accessible-description: root.worded ? root.help : "";
     accessible-enabled: root.live;
     accessible-checked: root.on;
     accessible-action-default => { if (root.live) { root.clicked(); } }

@@ -140,8 +140,8 @@ mod tests {
         ROW_ICONS.with(|c| assert!(c.borrow().contains_key(&("kodak-portra", 44)), "kept for the next row"));
     }
 
-    /// OKLab chroma of a `#RRGGBB` ink.
-    fn chroma(ink: &str) -> f64 {
+    /// OKLab lightness and chroma of a `#RRGGBB` ink.
+    fn oklab(ink: &str) -> (f64, f64) {
         let lin = |i: usize| {
             let c = f64::from(u8::from_str_radix(&ink[i..i + 2], 16).unwrap()) / 255.0;
             if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
@@ -150,7 +150,12 @@ mod tests {
         let l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b).cbrt();
         let m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b).cbrt();
         let s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b).cbrt();
-        (1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s).hypot(0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
+        let lightness = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+        (lightness, (1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s).hypot(0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s))
+    }
+
+    fn chroma(ink: &str) -> f64 {
+        oklab(ink).1
     }
 
     #[test]
@@ -169,5 +174,29 @@ mod tests {
         // Twin: the full-chroma green a Fujifilm label wore is caught, a grey is not.
         assert!(chroma("#10C61F") > SOFT);
         assert!(chroma("#9E9E9E") < 0.01);
+    }
+
+    /// The inks of the ramp the spool and both caps wear.
+    fn shell(svg: &str) -> Vec<&str> {
+        let ramp = svg.split(r#"<linearGradient id="oni-metal""#).nth(1).and_then(|r| r.split("</linearGradient>").next()).unwrap_or("");
+        ramp.split(r#"stop-color=""#).skip(1).map(|r| &r[..7]).collect()
+    }
+
+    /// Black lacquer: most of the ramp near black, the lamp's sheen a mid grey at most.
+    fn black(inks: &[&str]) -> bool {
+        let mut lightness: Vec<f64> = inks.iter().map(|ink| oklab(ink).0).collect();
+        lightness.sort_by(f64::total_cmp);
+        !lightness.is_empty() && lightness[lightness.len() / 2] < 0.3 && lightness[lightness.len() - 1] < 0.5
+    }
+
+    #[test]
+    fn every_canister_wears_black_caps_and_spool_as_the_real_one() {
+        for (id, data) in ARTWORK {
+            let svg = std::str::from_utf8(data).unwrap();
+            assert_eq!(svg.matches(r#"fill="url(#oni-metal)""#).count(), 3, "{id}: the spool and both caps wear the ramp");
+            assert!(black(&shell(svg)), "{id}: {:?}", shell(svg));
+        }
+        // Twin: a silver ramp, caps and spool turned grey, is caught.
+        assert!(!black(&["#5F6368", "#7F8288", "#C6CAD0", "#9DA1A7", "#7B7F85", "#686B70", "#5F6368"]));
     }
 }

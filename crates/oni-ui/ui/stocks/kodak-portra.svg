@@ -1,7 +1,7 @@
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 <ellipse cx="24" cy="45" rx="14" ry="2.5" fill="url(#oni-ground)"/>
 <path d="M19 3C19 2.44772 19.4477 2 20 2H28C28.5523 2 29 2.44772 29 3V7H19V3Z" fill="url(#oni-metal)"/>
-<path d="M20.5 3V7M22 3V7M23.5 3V7M25 3V7M26.5 3V7M28 3V7" stroke="#000000" stroke-opacity="0.3" stroke-width="0.5"/>
+<path d="M20.5 3V7M22 3V7M23.5 3V7M25 3V7M26.5 3V7M28 3V7" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="0.5"/>
 <path d="M19 3C19 2.44772 19.4477 2 20 2H28C28.5523 2 29 2.44772 29 3V7H19V3Z" fill="url(#oni-roll)"/>
 <rect x="12" y="11" width="24" height="30" fill="#E3BF7D"/>
 <rect x="21" y="11" width="15" height="30" fill="#000000"/>
@@ -25,16 +25,16 @@
 <stop offset="1" stop-color="#000000" stop-opacity="0"/>
 </radialGradient>
 <linearGradient id="oni-metal" x1="0" y1="0" x2="1" y2="0">
-<stop offset="0" stop-color="#5F6368"/>
-<stop offset="0.1" stop-color="#7F8288"/>
-<stop offset="0.28" stop-color="#C6CAD0"/>
-<stop offset="0.4" stop-color="#9DA1A7"/>
-<stop offset="0.65" stop-color="#7B7F85"/>
-<stop offset="0.88" stop-color="#686B70"/>
-<stop offset="1" stop-color="#5F6368"/>
+<stop offset="0" stop-color="#050505"/>
+<stop offset="0.1" stop-color="#151516"/>
+<stop offset="0.28" stop-color="#525356"/>
+<stop offset="0.4" stop-color="#262628"/>
+<stop offset="0.65" stop-color="#151516"/>
+<stop offset="0.88" stop-color="#0C0C0D"/>
+<stop offset="1" stop-color="#050505"/>
 </linearGradient>
 <linearGradient id="oni-roll" x1="0" y1="0" x2="0" y2="1">
-<stop stop-color="#FFFFFF" stop-opacity="0.45"/>
+<stop stop-color="#FFFFFF" stop-opacity="0.3"/>
 <stop offset="0.2" stop-color="#FFFFFF" stop-opacity="0"/>
 <stop offset="0.75" stop-color="#000000" stop-opacity="0"/>
 <stop offset="1" stop-color="#000000" stop-opacity="0.45"/>
