@@ -7221,5 +7221,12 @@
     "title": "A latching key's lit lamp blooms on its face, so on reads at a glance",
     "status": "done",
     "detail": "UI evaluation s-c82a3414 (Clarity): a latching key told on by its lit face, a selected row's grey the hand's light resembles, and a 6 pt lamp turning from ringed to filled. A lit lamp now spreads its phosphor on the face around it, a radial bloom SurfaceStyle.lamp-glow (6 pt) past the glass at lamp-bloom 0.5 in the middle, kept on the key's face where a glyph's square key holds the lamp 3 pt from its edge; it replaces the drop shadow, which the software renderer never drew. Window check states: the face two points past a lit lamp reads 1.5:1 over the face, a lamp at rest none (twin: a lit disc with no bloom leaves the face bare)."
+  },
+  {
+    "id": 1470,
+    "type": "fix",
+    "title": "A prepared roll opens whole again, as the owner decided (#1037); #1415 withdrawn pending his word",
+    "status": "done",
+    "detail": "The fourth evaluation asked that Prepare end on one frame alone, so a newcomer's first edit never reaches the whole roll unseen (#1415). That reversed the owner's own call (#1037): a measured roll opens with every frame together on its contact sheet. Back to #1037 until the owner decides; the Whole Roll key and the panel's 'Acts on N photos' say how many frames an edit reaches."
   }
 ]

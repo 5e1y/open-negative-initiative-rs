@@ -129,7 +129,7 @@ impl Ctl {
     }
 
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
-    /// gallery step, the editor on the open frame or the first alone, what was left out named.
+    /// gallery step, the whole roll shown together led by the open frame or the first, what was left out named.
     pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: &[String], blank: &[String]) {
         let prepared: Vec<String> = {
             let mut s = self.state.borrow_mut();
@@ -187,13 +187,13 @@ impl Ctl {
         touched.extend(passes.iter().cloned());
         self.landed(&touched);
         self.index_passes(&written, &passes);
-        // The roll lands on one frame alone, the open one or its first: the whole roll together is
-        // the person's own choice, its key saying so, never where a first edit lands unseen.
-        let lead = open.clone().filter(|o| written.iter().any(|(p, _, _)| p == o)).unwrap_or_else(|| written[0].0.clone());
-        self.state.borrow_mut().designate(&lead);
-        if open.as_ref() != Some(&lead) {
-            self.open_photo(&lead);
+        if open.is_none() || !written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
+            let first = written[0].0.clone();
+            self.state.borrow_mut().designate(&first);
+            self.open_photo(&first);
         }
+        // The whole roll picked and shown together at once, the open frame leading (owner's call).
+        self.state.borrow_mut().picks.selection = prepared.into_iter().collect();
         self.follow_selection();
         self.publish_tiles();
         self.publish_organising();
