@@ -19,8 +19,12 @@ impl CaptureExposure {
     /// As a photographer writes it: `1/50 s, f/5.6, ISO 100`.
     pub fn label(&self) -> String {
         let speed = if self.shutter >= 1.0 { format!("{:.1} s", self.shutter) } else { format!("1/{} s", (1.0 / self.shutter).round() as i64) };
-        let aperture = if self.aperture < 10.0 { format!("{:.1}", self.aperture) } else { format!("{:.0}", self.aperture) };
-        format!("{speed}, f/{aperture}, ISO {}", self.iso.round() as i64)
+        format!("{speed}, {}, ISO {}", self.f_number(), self.iso.round() as i64)
+    }
+
+    /// The aperture as a photographer writes it: `f/5.6`, `f/11`.
+    pub fn f_number(&self) -> String {
+        if self.aperture < 10.0 { format!("f/{:.1}", self.aperture) } else { format!("f/{:.0}", self.aperture) }
     }
 
     pub fn read(path: &Path) -> Option<CaptureExposure> {

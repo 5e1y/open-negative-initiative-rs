@@ -45,7 +45,7 @@ component FlagSheet inherits Scroller {
     }
 }
 
-// `RollBaseSurface`: Previous, the frame's name, Next, then its whole scan to click the bare film on.
+// `RollBaseSurface`: the frame's name between its arrows, then its whole scan to click the bare film on.
 component BaseSurface inherits VerticalLayout {
     padding: CardStyle.padding;
     spacing: Space.s;
@@ -150,14 +150,17 @@ component FrameCard inherits Rectangle {
         y: CardStyle.padding;
         width: parent.width - 2 * CardStyle.padding;
         height: parent.height - 2 * CardStyle.padding;
-        Picture {
-            x: Preparing.picture-x;
-            y: Preparing.picture-y;
-            width: Preparing.picture-width;
-            height: Preparing.picture-height;
+        // The frame shown, and the next dissolving over it: a scrub through the roll never flashes.
+        for layer in 2: Picture {
+            x: Preparing.card-boxes[4 * layer];
+            y: Preparing.card-boxes[4 * layer + 1];
+            width: Preparing.card-boxes[4 * layer + 2];
+            height: Preparing.card-boxes[4 * layer + 3];
             ground: Ground.canvas;
             fit: Fit.fill;
-            source: Preparing.card-picture;
+            source: layer == 0 ? Preparing.card-a : Preparing.card-b;
+            opacity: layer == 0 || Preparing.card-second ? 1 : 0;
+            animate opacity { duration: Preparing.card-fade; }
         }
         if Preparing.window-shown: FrameOverlay {
             width: parent.width;

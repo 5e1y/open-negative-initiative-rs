@@ -7,6 +7,7 @@ import { Label, Picture, Ground, TextRole, Tone, Clicks } from "base.slint";
 import { Button } from "controls.slint";
 import { Ring } from "marks.slint";
 import { Inward } from "depth.slint";
+import { Icons } from "icons.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -15,7 +16,7 @@ export global RollStyle {
     // `GalleryView.tile`'s well: a 3:2 frame on its side.
     out property <float> well-ratio: 2 / 3;
     out property <length> hollow: DS.control-tab-bar-height;
-    // The frame's name between Previous and Next, wide enough that the keys never move with it.
+    // The frame's name between its arrows, wide enough that the keys never move with it.
     out property <length> name-width: 10 * Space.m;
     // A step's demo, square: whole under the window step's controls in a window 680 points tall.
     out property <length> demo: 14 * Space.m;
@@ -27,8 +28,8 @@ export global RollStyle {
     out property <length> pick: 2 * Space.s;
 }
 
-// `RollReferenceSurface`'s pager: Previous, a frame's name, Next. A `name-width` holds the keys still,
-// centred; without one the name takes the row's room between them.
+// `RollReferenceSurface`'s pager: a frame's name between the arrows to the frame before and after, so
+// its keys never read as a step's Back and NEXT. A `name-width` holds the keys still, centred.
 export component Pager inherits HorizontalLayout {
     in property <string> name;
     in property <bool> can-previous;
@@ -38,10 +39,10 @@ export component Pager inherits HorizontalLayout {
     callback next();
     spacing: Space.s;
     alignment: root.name-width > 0 ? LayoutAlignment.center : LayoutAlignment.stretch;
-    Button { text: @tr("Previous"); widest: @tr("Previous"); enabled: root.can-previous; clicked => { root.previous(); } }
+    Button { has-icon: true; square: true; icon: Icons.chevron-left; help: @tr("Previous Frame"); enabled: root.can-previous; clicked => { root.previous(); } }
     if root.name-width > 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; width: root.name-width; horizontal-alignment: center; overflow: elide; }
     if root.name-width == 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; horizontal-stretch: 1; horizontal-alignment: center; overflow: elide; }
-    Button { text: @tr("Next"); widest: @tr("Previous"); enabled: root.can-next; clicked => { root.next(); } }
+    Button { has-icon: true; square: true; icon: Icons.chevron-right; help: @tr("Next Frame"); enabled: root.can-next; clicked => { root.next(); } }
 }
 
 // The base picked on its scan: the ring of the disc it read, filled with the colour it sampled and

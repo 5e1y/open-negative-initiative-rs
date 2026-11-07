@@ -103,6 +103,11 @@ impl State {
         self.prepare.previewed()
     }
 
+    /// The frame on the card's top layer, the one it shows once its dissolve ends.
+    pub fn roll_card(&self) -> Option<&str> {
+        self.prepare.card_shown()
+    }
+
     /// The frames whose full resolution the base step's loupe holds ready.
     pub fn roll_fulls(&self) -> Vec<String> {
         self.prepare.fulls.iter().map(|(p, _, _)| p.clone()).collect()

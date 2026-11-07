@@ -155,12 +155,12 @@ export component SelectionRing inherits Rectangle {
     }
 }
 
-// `guide` the base pick's and the brush's ring, `DSGuide.width(true)` over its shadow; `sharpen` a
+// `guide` the base pick's and the brush's ring, `DSGuide.width(true)` on its dark halo; `sharpen` a
 // correction's, `DSGuide.width(false)` in the sharpen tint with none.
 export enum RingTone { guide, sharpen }
 
 // A circle's `stroke`, never `strokeBorder`: centred on the disc's edge, so the rim never eats the
-// pixels it bounds.
+// pixels it bounds. The halo is a border: a drop shadow fills the whole disc it bounds.
 export component Ring inherits Rectangle {
     in property <length> centre-x;
     in property <length> centre-y;
@@ -168,15 +168,23 @@ export component Ring inherits Rectangle {
     in property <RingTone> tone: RingTone.guide;
     property <bool> guide: root.tone == RingTone.guide;
     property <length> line: root.guide ? Stroke.line + DS.control-guide-grow : Stroke.line;
-    x: root.centre-x - (root.diameter + root.line) / 2;
-    y: root.centre-y - (root.diameter + root.line) / 2;
-    width: root.diameter + root.line;
+    property <length> halo: root.guide ? Stroke.line : 0px;
+    x: root.centre-x - (root.diameter + root.line) / 2 - root.halo;
+    y: root.centre-y - (root.diameter + root.line) / 2 - root.halo;
+    width: root.diameter + root.line + 2 * root.halo;
     height: self.width;
     border-radius: self.width / 2;
-    border-width: root.line;
-    border-color: root.guide ? Colour.handle-active : Colour.sharpen;
-    drop-shadow-color: root.guide ? Colour.contrast-edge : Colour.contrast-edge.transparentize(1);
-    drop-shadow-blur: root.guide ? Stroke.emphasis : 0px;
+    border-width: root.line + 2 * root.halo;
+    border-color: root.guide ? Colour.contrast-edge : Colour.contrast-edge.transparentize(1);
+    Rectangle {
+        x: root.halo;
+        y: root.halo;
+        width: root.diameter + root.line;
+        height: self.width;
+        border-radius: self.width / 2;
+        border-width: root.line;
+        border-color: root.guide ? Colour.handle-active : Colour.sharpen;
+    }
 }
 
 // `live` the stroke being painted, `source` a patch's: its copied stroke, and the line to it `dashed`.

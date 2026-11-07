@@ -114,15 +114,26 @@ pub fn apart(frames: &[Frame]) -> (Option<CaptureExposure>, HashSet<String>) {
     (Some(common), apart)
 }
 
-/// `DSWarning`'s text when the roll mixes captures, empty when it does not.
+/// `DSWarning`'s text when the roll mixes captures, empty when it does not: their exposure evened out,
+/// and the light panel's aperture once an aperture differs, the one choice the step leaves the hand.
 pub fn differ_text(frames: &[Frame]) -> String {
     let (common, apart) = apart(frames);
     let Some(common) = common.filter(|_| !apart.is_empty()) else { return String::new() };
+    let (apart, count, capture) = (apart.len(), frames.len(), common.label());
+    if frames.iter().all(|f| f.capture.is_none_or(|c| c.aperture == common.aperture)) {
+        return tr!(
+            "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it: nothing to do.",
+            apart = apart,
+            count = count,
+            capture = capture,
+        );
+    }
     tr!(
-        "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll.",
-        apart = apart.len(),
-        count = frames.len(),
-        capture = common.label(),
+        "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it. Shoot the light panel at {aperture}, as most of the roll; a frame at another aperture may keep slightly uneven corners.",
+        apart = apart,
+        count = count,
+        capture = capture,
+        aperture = common.f_number(),
     )
 }
 
@@ -326,7 +337,13 @@ mod tests {
         frames[2].capture = Some(CaptureExposure { aperture: 8.0, ..c });
         assert_eq!(
             differ_text(&frames),
-            "1 of 3 frames, marked, were digitised with other settings than the roll's 1/50 s, f/5.6, ISO 100. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll."
+            "1 of 3 frames, marked, were digitised with other settings than the roll's 1/50 s, f/5.6, ISO 100. Their exposure is evened out to it. Shoot the light panel at f/5.6, as most of the roll; a frame at another aperture may keep slightly uneven corners."
+        );
+        // Twin: a frame apart at the roll's aperture leaves the light panel as it is.
+        frames[2].capture = Some(CaptureExposure { shutter: 1.0 / 25.0, ..c });
+        assert_eq!(
+            differ_text(&frames),
+            "1 of 3 frames, marked, were digitised with other settings than the roll's 1/50 s, f/5.6, ISO 100. Their exposure is evened out to it: nothing to do."
         );
         // Twin: a frame whose EXIF reads nothing is never apart.
         frames[2].capture = None;

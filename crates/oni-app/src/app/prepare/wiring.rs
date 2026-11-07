@@ -19,6 +19,7 @@ impl Ctl {
             s.prepare.previews = Some(Previews::start(|session, out| with_shell(move |c| c.preview_landed(session, out))));
         }
         let p = window.global::<Preparing>();
+        p.set_card_fade(card::FADE.as_millis() as i64);
         Self::wire_passes(me, &p);
         let c = me.clone();
         p.on_step_picked(move |i| c.step_to(Step::ALL.get(usize::try_from(i).unwrap_or(0)).copied().unwrap_or_default()));
