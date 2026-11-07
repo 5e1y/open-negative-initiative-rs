@@ -26,14 +26,14 @@ impl Ctl {
                 let sources = if s.picks.selection.contains(&lead) { s.picks.selection.clone() } else { HashSet::from([lead.clone()]) };
                 let width = s.layout.frame(start).map_or(0.0, |f| f.width);
                 let size = (width, s.layout.tile.1);
-                s.org.reorder = Some(Reorder { sources, lead, size, boundary: Some(start), at: (x, y) });
+                s.org.reorder = Some(Reorder { sources, lead, size, boundary: None, at: (x, y) });
             }
-            let boundary = s.layout.boundary(x, y);
+            // The line shows only where the photos would stand: beside a photo of their own roll.
+            let sources = s.org.reorder.as_ref().map(|r| &r.sources);
+            let lands = |cell: usize| s.order.get(cell).zip(sources).is_some_and(|(target, sources)| project::lands_beside(sources, target));
+            let boundary = s.layout.boundary(x, y).filter(|(cell, _)| lands(*cell));
             if let Some(r) = s.org.reorder.as_mut() {
-                r.at = (x, y);
-                if boundary.is_some() {
-                    r.boundary = boundary;
-                }
+                (r.at, r.boundary) = ((x, y), boundary);
             }
         }
         self.publish_reorder();
@@ -94,15 +94,11 @@ impl Ctl {
         }
     }
 
-    /// `commitReorder`: the boundary past the last cell reads back the last one; one step of the Undo key.
+    /// `commitReorder`: beside the cell the line stood at, in its project; one step of the Undo key.
     pub(super) fn commit_reorder(self: &Rc<Self>, r: Reorder) {
-        let target = {
-            let s = self.state.borrow();
-            let Some(boundary) = r.boundary else { return };
-            let Some(last) = s.order.len().checked_sub(1) else { return };
-            s.order[boundary.min(last)].clone()
-        };
-        self.regroup(tr("Move"), |projects, reach| project::reorder_drop(projects, reach, &r.sources, &target));
+        let Some((cell, past)) = r.boundary else { return };
+        let Some(target) = self.state.borrow().order.get(cell).cloned() else { return };
+        self.regroup(tr("Move"), |projects, reach| project::reorder_drop(projects, reach, &r.sources, &target, past));
     }
 
     /// `click(_:)` on a cell: the picks, then the second plain click within the system's interval opens.

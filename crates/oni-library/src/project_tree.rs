@@ -43,12 +43,17 @@ impl Node {
 /// A project's photos by roll, the folder each lies in: the rolls in the order their first photo
 /// takes in the project, each keeping the project's order; two copies of one file stay apart.
 pub fn by_roll(entries: &[Entry]) -> Vec<(String, Vec<Entry>)> {
-    let mut rolls: Vec<(String, Vec<Entry>)> = Vec::new();
-    for entry in entries {
-        let folder = paths::parent(&entry.path);
-        match rolls.iter_mut().find(|(f, _)| *f == folder) {
-            Some((_, photos)) => photos.push(entry.clone()),
-            None => rolls.push((folder, vec![entry.clone()])),
+    rolls(entries.iter().cloned(), |e| paths::parent(&e.path))
+}
+
+/// `by_roll` on any items, `folder` naming the roll each lies in.
+pub fn rolls<T>(items: impl IntoIterator<Item = T>, folder: impl Fn(&T) -> String) -> Vec<(String, Vec<T>)> {
+    let mut rolls: Vec<(String, Vec<T>)> = Vec::new();
+    for item in items {
+        let at = folder(&item);
+        match rolls.iter_mut().find(|(f, _)| *f == at) {
+            Some((_, photos)) => photos.push(item),
+            None => rolls.push((at, vec![item])),
         }
     }
     rolls

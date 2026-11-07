@@ -22,26 +22,54 @@ fn photos(items: &HashSet<NodeId>) -> HashSet<String> {
     items.iter().filter_map(|n| if let NodeId::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect()
 }
 
-/// `addToProjectDrop`: photos dropped onto a project, or a roll's heading in it, join it and leave
-/// every other.
-fn join(projects: &mut [project::Project], reach: &project::Reach, items: &HashSet<NodeId>, target: &NodeId) -> bool {
-    let (NodeId::Project(id) | NodeId::Roll { project: id, .. }) = target else { return false };
-    project::add_to(projects, reach, &photos(items), *id).added > 0
+/// What a release does: photos join a project, or a roll's heading of their own roll, or land beside
+/// a photo of their roll, past it when it ends the run above the line; projects land before a project.
+#[derive(Clone, Debug, PartialEq)]
+enum Landing {
+    Join(oni_settings::Id),
+    Beside(String, bool),
+    Before(oni_settings::Id),
 }
 
-/// `reorderProjectTreeDrop`: before a photo the photos land in its project; before a project the
-/// projects take their places among the others.
-fn reorder(projects: &mut [project::Project], reach: &project::Reach, items: &HashSet<NodeId>, target: &NodeId) -> bool {
+/// Where a release at `target` lands `items` among the tree's `nodes`, none where it does nothing,
+/// so no mark promises it: a line above a heading or a project ends the roll above it.
+fn landing(nodes: &[NodeId], items: &HashSet<NodeId>, target: DropTarget) -> Option<Landing> {
+    let paths = photos(items);
+    let roll_of = |folder: &str| !paths.is_empty() && paths.iter().all(|p| oni_library::paths::parent(p) == folder);
+    let photo = |j: usize| match nodes.get(j) {
+        Some(NodeId::Photo { path, .. }) => Some(path.clone()),
+        _ => None,
+    };
+    match (target, nodes.get(target_row(target))?) {
+        (DropTarget::Join(_), node) if items.contains(node) => None,
+        (DropTarget::Join(_), NodeId::Project(id)) => (!paths.is_empty()).then_some(Landing::Join(*id)),
+        (DropTarget::Join(_), NodeId::Roll { folder, project }) => roll_of(folder).then_some(Landing::Join(*project)),
+        (DropTarget::Join(_), NodeId::Photo { .. }) => None,
+        (DropTarget::Before(_), NodeId::Project(id)) if items.iter().any(|n| matches!(n, NodeId::Project(_))) => Some(Landing::Before(*id)),
+        (DropTarget::Before(_), _) if paths.is_empty() => None,
+        (DropTarget::Before(i), node) => {
+            let under = || matches!(node, NodeId::Roll { .. }).then(|| photo(i + 1)).flatten().map(|p| (p, false));
+            let (path, past) = photo(i).map(|p| (p, false)).or_else(|| i.checked_sub(1).and_then(photo).map(|p| (p, true))).or_else(under)?;
+            project::lands_beside(&paths, &path).then_some(Landing::Beside(path, past))
+        }
+    }
+}
+
+fn target_row(target: DropTarget) -> usize {
     match target {
-        NodeId::Photo { path, .. } => {
-            let paths = photos(items);
-            !paths.is_empty() && project::reorder_drop(projects, reach, &paths, path)
-        }
-        NodeId::Project(id) => {
+        DropTarget::Join(i) | DropTarget::Before(i) => i,
+    }
+}
+
+/// `addToProjectDrop` and `reorderProjectTreeDrop` on the projects: what the landing changed.
+fn land(projects: &mut Vec<project::Project>, reach: &project::Reach, items: &HashSet<NodeId>, landing: &Landing) -> bool {
+    match landing {
+        Landing::Join(id) => project::add_to(projects, reach, &photos(items), *id).added > 0,
+        Landing::Beside(path, past) => project::reorder_drop(projects, reach, &photos(items), path, *past),
+        Landing::Before(id) => {
             let ids: HashSet<oni_settings::Id> = items.iter().filter_map(|n| if let NodeId::Project(p) = n { Some(*p) } else { None }).collect();
-            !ids.is_empty() && project::reorder_root(projects, &ids, *id)
+            project::reorder_root(projects, &ids, *id)
         }
-        NodeId::Roll { .. } => false,
     }
 }
 
@@ -73,6 +101,8 @@ impl Ctl {
             }
             let l = &s.project_tree;
             let target = sidebar::drop_target(at.0, at.1, &l.frames, &l.photos, &l.depths, true, strip);
+            let items = s.org.project_drag.as_ref().map(|d| &d.items);
+            let target = target.filter(|t| items.is_some_and(|items| landing(&s.org.project_nodes, items, *t).is_some()));
             if let Some(d) = s.org.project_drag.as_mut() {
                 (d.at, d.target) = (at, target);
             }
@@ -85,22 +115,10 @@ impl Ctl {
     pub(super) fn project_drag_ended(self: &Rc<Self>, dropped: bool) {
         let Some(drag) = self.state.borrow_mut().org.project_drag.take() else { return };
         self.publish_project_drag();
-        let node = |i: usize| self.state.borrow().org.project_nodes.get(i).cloned();
-        match drag.target.filter(|_| dropped) {
-            Some(DropTarget::Join(i)) => {
-                if let Some(id) = node(i).filter(|id| !drag.items.contains(id)) {
-                    self.regroup(tr("Add to Project"), |projects, reach| join(projects, reach, &drag.items, &id));
-                }
-            }
-            // Before a roll's heading is before its first photo, the row under it.
-            Some(DropTarget::Before(i)) => {
-                let i = if matches!(node(i), Some(NodeId::Roll { .. })) { i + 1 } else { i };
-                if let Some(id) = node(i) {
-                    self.regroup(tr("Move"), |projects, reach| reorder(projects, reach, &drag.items, &id));
-                }
-            }
-            None => {}
-        }
+        let target = drag.target.filter(|_| dropped);
+        let Some(landed) = target.and_then(|t| landing(&self.state.borrow().org.project_nodes, &drag.items, t)) else { return };
+        let label = if matches!(landed, Landing::Join(_)) { tr("Add to Project") } else { tr("Move") };
+        self.regroup(label, |projects, reach| land(projects, reach, &drag.items, &landed));
     }
 
     /// Whether a press on the projects' tree became a drag, whose release is no click.
@@ -192,6 +210,20 @@ mod tests {
         Member::new(Some(path), Some(&format!("f-{path}")))
     }
 
+    /// The tree's rows as `flatten` lays every project open: its row, each roll's heading, its photos.
+    fn nodes(projects: &[Project], reach: &Reach) -> Vec<NodeId> {
+        let tops = oni_library::project_tree::roots(projects, reach);
+        let open: HashSet<NodeId> = tops.iter().map(|n| n.id()).collect();
+        oni_library::project_tree::flatten(&tops, &open, 0).into_iter().map(|(n, _)| n.id()).collect()
+    }
+
+    /// A release at `target` of the row `node` stands at, as the tree lays the projects now.
+    fn dropped(projects: &mut Vec<Project>, reach: &Reach, items: &HashSet<NodeId>, target: fn(usize) -> DropTarget, node: &NodeId) -> bool {
+        let rows = nodes(projects, reach);
+        let at = rows.iter().position(|n| n == node).expect("the row laid");
+        landing(&rows, items, target(at)).is_some_and(|l| land(projects, reach, items, &l))
+    }
+
     #[test]
     fn a_photo_dropped_on_a_project_joins_it_and_before_a_photo_lands_there() {
         let rows: Vec<_> = ["/r/a", "/r/b", "/r/c"].iter().map(|p| entry(p)).collect();
@@ -202,17 +234,56 @@ mod tests {
         let photo = |p: &str, project| NodeId::Photo { path: p.into(), project };
         let c = HashSet::from([photo("/r/c", two)]);
         // Twin: a photo dropped onto a photo joins nothing; only a project takes a member.
-        assert!(!join(&mut projects, &reach, &c, &photo("/r/a", one)));
-        assert!(join(&mut projects, &reach, &c, &NodeId::Project(one)));
+        assert!(!dropped(&mut projects, &reach, &c, DropTarget::Join, &photo("/r/a", one)));
+        assert!(dropped(&mut projects, &reach, &c, DropTarget::Join, &NodeId::Project(one)));
         assert!(projects.len() == 2 && projects[1].members.is_empty(), "Two, emptied, stays with its name");
         assert_eq!(projects[0].paths(), ["/r/a", "/r/b", "/r/c"]);
-        assert!(reorder(&mut projects, &reach, &c, &photo("/r/a", one)));
+        let c = HashSet::from([photo("/r/c", one)]);
+        assert!(dropped(&mut projects, &reach, &c, DropTarget::Before, &photo("/r/a", one)));
         assert_eq!(projects[0].paths(), ["/r/c", "/r/a", "/r/b"], "before a photo, in its place");
         // Twin: a project dropped before a photo moves nothing.
-        assert!(!reorder(&mut projects, &reach, &HashSet::from([NodeId::Project(one)]), &photo("/r/b", one)));
-        // A roll's heading takes a photo into its project, as the project's row does.
+        assert!(!dropped(&mut projects, &reach, &HashSet::from([NodeId::Project(two)]), DropTarget::Before, &photo("/r/b", one)));
+        // A roll's heading takes a photo of its roll into its project, as the project's row does.
+        projects[1].members.push(of("/r/b2"));
+        let rows: Vec<_> = ["/r/a", "/r/b", "/r/c", "/r/b2"].iter().map(|p| entry(p)).collect();
+        let reach = Reach::rows(&rows);
+        let heading = NodeId::Roll { folder: "/r".into(), project: two };
         let b = HashSet::from([photo("/r/b", one)]);
-        assert!(join(&mut projects, &reach, &b, &NodeId::Roll { folder: "/r".into(), project: two }));
-        assert_eq!(projects[1].paths(), ["/r/b"]);
+        assert!(dropped(&mut projects, &reach, &b, DropTarget::Join, &heading));
+        assert_eq!(projects[1].paths(), ["/r/b2", "/r/b"]);
+    }
+
+    /// Roll 10 shows A C D above Roll 8's A B: the line above Roll 8's heading ends Roll 10, so A
+    /// dragged there reads C D A; a photo of Roll 8 lands nowhere there, nor a heading of another roll.
+    #[test]
+    fn the_line_above_a_roll_s_heading_ends_the_roll_above_it() {
+        let paths = ["/s/Roll 10/A", "/s/Roll 10/C", "/s/Roll 8/A", "/s/Roll 8/B", "/s/Roll 10/D", "/s/Roll 8/Z"];
+        let rows: Vec<_> = paths.iter().map(|p| entry(p)).collect();
+        let reach = Reach::rows(&rows);
+        let client = Project::new("Client", Date::since_reference_date(8e8), paths[..5].iter().map(|p| of(p)).collect());
+        let other = Project::new("Other", Date::since_reference_date(7e8), vec![of(paths[5])]);
+        let (id, other_id) = (client.id, other.id);
+        let mut projects = vec![client, other];
+        let row = |projects: &[Project], node: NodeId| nodes(projects, &reach).iter().position(|n| *n == node).unwrap();
+        let heading = |folder: &str, project| NodeId::Roll { folder: folder.into(), project };
+        let photo = |p: &str, project| NodeId::Photo { path: p.into(), project };
+        let a = HashSet::from([photo(paths[0], id)]);
+        let above = DropTarget::Before(row(&projects, heading("/s/Roll 8", id)));
+        assert_eq!(landing(&nodes(&projects, &reach), &a, above), Some(Landing::Beside(paths[4].into(), true)));
+        assert!(dropped(&mut projects, &reach, &a, DropTarget::Before, &heading("/s/Roll 8", id)));
+        assert_eq!(projects[0].paths(), ["/s/Roll 10/C", "/s/Roll 10/D", "/s/Roll 10/A", "/s/Roll 8/A", "/s/Roll 8/B"], "Roll 10 reads C D A");
+        // Twin: the line beside Roll 8's first photo takes no photo of Roll 10.
+        let first = DropTarget::Before(row(&projects, photo(paths[2], id)));
+        assert_eq!(landing(&nodes(&projects, &reach), &a, first), None);
+        // The line above Other's row ends Client's last roll for a photo of it; it never joins Other.
+        let b = HashSet::from([photo(paths[2], id)]);
+        assert!(dropped(&mut projects, &reach, &b, DropTarget::Before, &NodeId::Project(other_id)));
+        assert_eq!(projects[0].paths()[3..], ["/s/Roll 8/B", "/s/Roll 8/A"]);
+        assert_eq!(projects[1].paths(), [paths[5]], "Other unchanged");
+        // Roll 10's heading takes no photo of Roll 8; Other's Roll 8 heading does.
+        let laid = nodes(&projects, &reach);
+        let z = HashSet::from([photo(paths[5], other_id)]);
+        assert_eq!(landing(&laid, &z, DropTarget::Join(row(&projects, heading("/s/Roll 10", id)))), None);
+        assert_eq!(landing(&laid, &b, DropTarget::Join(row(&projects, heading("/s/Roll 8", other_id)))), Some(Landing::Join(other_id)));
     }
 }

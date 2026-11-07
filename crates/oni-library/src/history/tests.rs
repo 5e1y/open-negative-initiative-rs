@@ -109,6 +109,40 @@ fn a_members_step_keeps_the_projects_it_changed_and_follows_a_rename() {
     assert!(!idle.can_undo());
 }
 
+/// A project's name and place are no step: a reorder opens none, so ⌘Z after it takes back New
+/// Project, whose undo keeps the project it took away as it went; the redo brings back the name typed.
+#[test]
+fn a_reorder_opens_no_step_and_a_redo_of_new_project_keeps_the_name_typed_since() {
+    use crate::project::{self, Project};
+    let day = oni_settings::Date::since_reference_date(8e8);
+    let mut projects = vec![Project::new("Old", day, Vec::new())];
+    let old = projects[0].id;
+    let mut h = History::default();
+    let before = project::rosters(&projects);
+    let made = project::new_empty(&mut projects, crate::later(day, 60.0));
+    h.record_members(Members { before, after: project::rosters(&projects) }, "New Project");
+    let before = project::rosters(&projects);
+    assert!(project::reorder_root(&mut projects, &std::collections::HashSet::from([old]), made));
+    h.record_members(Members { before: before.clone(), after: project::rosters(&projects) }, "Move");
+    assert_eq!(h.undo_label(), Some("New Project"), "the reorder opened no step");
+    // Twin: compared whole, the reordered projects differ.
+    assert_ne!(before, project::rosters(&projects));
+    project::rename(&mut projects, made, "Client");
+    let step = h.undo_step().and_then(|s| s.members).expect("New Project's step");
+    let was = projects.clone();
+    project::regroup(&mut projects, &step.after, &step.before);
+    let taken: Vec<Project> = was.into_iter().filter(|p| !projects.iter().any(|q| q.id == p.id)).collect();
+    assert_eq!(taken.iter().map(|p| p.name.as_str()).collect::<Vec<_>>(), ["Client"], "the undo takes it away");
+    // Twin: the step as recorded brings it back under the name it was made with.
+    let mut recorded = projects.clone();
+    project::regroup(&mut recorded, &step.before, &step.after);
+    assert_eq!(recorded.iter().find(|p| p.id == made).map(|p| p.name.as_str()), Some("Project 1"));
+    h.keep_taken(true, &taken);
+    let step = h.redo_step().and_then(|s| s.members).expect("New Project's step");
+    project::regroup(&mut projects, &step.before, &step.after);
+    assert_eq!(projects.iter().find(|p| p.id == made).map(|p| p.name.as_str()), Some("Client"));
+}
+
 /// Two steps of one name and no photo, Add to Project then a drop onto a project: each bears its
 /// own mark, so a notice naming the first never walks back the second.
 #[test]

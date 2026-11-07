@@ -72,14 +72,14 @@ struct Item {
     act: Act,
 }
 
-/// A reorder under way: the photos it carries, the one under the pointer, the boundary it would
-/// land before, the ghost's place in document coordinates.
+/// A reorder under way: the photos it carries, the one under the pointer, the cell it would land
+/// beside and whether past it, none where it lands nowhere, the ghost's place in document coordinates.
 #[derive(Clone, Debug)]
 struct Reorder {
     sources: HashSet<String>,
     lead: String,
     size: (f32, f32),
-    boundary: Option<usize>,
+    boundary: Option<(usize, bool)>,
     at: (f32, f32),
 }
 

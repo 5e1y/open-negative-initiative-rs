@@ -265,16 +265,30 @@ impl History {
         self.push(Step { label: label.to_owned(), medals: Some(medals), ..Step::default() });
     }
 
-    /// Records the projects' members a gesture changed, already saved; a project left as it was is
-    /// left out, and a gesture that changed none opens no step.
+    /// Records the projects' members a gesture changed, already saved, a project it made included; a
+    /// project's name and place are no step, so one only reordered opens none.
     pub fn record_members(&mut self, mut members: Members, label: &str) {
-        let changed: Vec<Id> = members.after.iter().filter(|(id, after)| members.before.get(*id) != Some(*after)).map(|(id, _)| *id).collect();
+        let changed: Vec<Id> =
+            members.after.iter().filter(|(id, after)| members.before.get(*id).is_none_or(|before| before.members != after.members)).map(|(id, _)| *id).collect();
         members.before.retain(|id, _| changed.contains(id));
         members.after.retain(|id, _| changed.contains(id));
         if changed.is_empty() {
             return;
         }
         self.push(Step { label: label.to_owned(), members: Some(members), ..Step::default() });
+    }
+
+    /// The step just walked holds each project its walk took away as the walk found it, its members
+    /// aside, so the walk back brings it again under the name it bore.
+    pub fn keep_taken(&mut self, undone: bool, taken: &[crate::project::Project]) {
+        let at = if undone { self.cursor } else { self.cursor.wrapping_sub(1) };
+        let Some(members) = self.steps.get_mut(at).and_then(|s| s.members.as_mut()) else { return };
+        let end = if undone { &mut members.after } else { &mut members.before };
+        for project in taken {
+            if let Some(kept) = end.get_mut(&project.id) {
+                *kept = crate::project::Project { members: std::mem::take(&mut kept.members), ..project.clone() };
+            }
+        }
     }
 
     /// A walk refused before anything moved gives its step back, so the same key offers it again.
