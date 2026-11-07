@@ -191,7 +191,9 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     let at = trip();
     assert!(project_rows()[at].expanded, "opening B05 unfolds Trip");
     // Beside a photo the projects' tree is laid as the archive's, a photo as a thumbnail by its stem.
-    let b05 = project_rows()[at + 1].clone();
+    // Its roll's heading stands between Trip and its photos.
+    assert_eq!(project_rows()[at + 1].kind, 3, "Roll B heads Trip's photos");
+    let b05 = project_rows()[at + 2].clone();
     assert!(b05.title == "B05" && b05.thumb && b05.selected, "B05 is ringed under Trip as a thumbnail");
     let offset = -lib.get_project_viewport_y();
     assert!(offset > 0.0, "Trip's photo sits below the list's first screen, so it scrolls");
@@ -201,7 +203,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
 
     // A photo row clicked in the projects opens it and leaves the list where it is.
     rest(&rig);
-    lib.invoke_project_row_clicked(at as i32 + 2, false, false);
+    lib.invoke_project_row_clicked(at as i32 + 3, false, false);
     rig.pump();
     rig.drawn();
     assert_eq!(open_name(&ctl), "B06");

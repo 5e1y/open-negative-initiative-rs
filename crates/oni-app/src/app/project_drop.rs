@@ -22,9 +22,10 @@ fn photos(items: &HashSet<NodeId>) -> HashSet<String> {
     items.iter().filter_map(|n| if let NodeId::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect()
 }
 
-/// `addToProjectDrop`: photos dropped onto a project join it, and leave every other.
+/// `addToProjectDrop`: photos dropped onto a project, or a roll's heading in it, join it and leave
+/// every other.
 fn join(projects: &mut [project::Project], reach: &project::Reach, items: &HashSet<NodeId>, target: &NodeId) -> bool {
-    let NodeId::Project(id) = target else { return false };
+    let (NodeId::Project(id) | NodeId::Roll { project: id, .. }) = target else { return false };
     project::add_to(projects, reach, &photos(items), *id).added > 0
 }
 
@@ -40,6 +41,7 @@ fn reorder(projects: &mut [project::Project], reach: &project::Reach, items: &Ha
             let ids: HashSet<oni_settings::Id> = items.iter().filter_map(|n| if let NodeId::Project(p) = n { Some(*p) } else { None }).collect();
             !ids.is_empty() && project::reorder_root(projects, &ids, *id)
         }
+        NodeId::Roll { .. } => false,
     }
 }
 
@@ -58,7 +60,15 @@ impl Ctl {
                 }
                 let Some(id) = s.org.project_nodes.get(i).cloned() else { return };
                 let pick = &s.org.project_pick.selection;
-                let items = if pick.contains(&id) { pick.clone() } else { HashSet::from([id]) };
+                let rows = if pick.contains(&id) { pick.clone() } else { HashSet::from([id]) };
+                // A roll's heading carries its photos.
+                let items = rows
+                    .iter()
+                    .flat_map(|row| match row {
+                        NodeId::Roll { project, .. } => s.row_photos([row]).into_iter().map(|path| NodeId::Photo { path, project: *project }).collect(),
+                        _ => vec![row.clone()],
+                    })
+                    .collect();
                 s.org.project_drag = Some(Drag { items, at, target: None });
             }
             let l = &s.project_tree;
@@ -82,7 +92,9 @@ impl Ctl {
                     self.regroup(tr("Add to Project"), |projects, reach| join(projects, reach, &drag.items, &id));
                 }
             }
+            // Before a roll's heading is before its first photo, the row under it.
             Some(DropTarget::Before(i)) => {
+                let i = if matches!(node(i), Some(NodeId::Roll { .. })) { i + 1 } else { i };
                 if let Some(id) = node(i) {
                     self.regroup(tr("Move"), |projects, reach| reorder(projects, reach, &drag.items, &id));
                 }
@@ -198,5 +210,9 @@ mod tests {
         assert_eq!(projects[0].paths(), ["/r/c", "/r/a", "/r/b"], "before a photo, in its place");
         // Twin: a project dropped before a photo moves nothing.
         assert!(!reorder(&mut projects, &reach, &HashSet::from([NodeId::Project(one)]), &photo("/r/b", one)));
+        // A roll's heading takes a photo into its project, as the project's row does.
+        let b = HashSet::from([photo("/r/b", one)]);
+        assert!(join(&mut projects, &reach, &b, &NodeId::Roll { folder: "/r".into(), project: two }));
+        assert_eq!(projects[1].paths(), ["/r/b"]);
     }
 }

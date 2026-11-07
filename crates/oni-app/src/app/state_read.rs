@@ -219,20 +219,23 @@ impl State {
     }
 
     /// `labFrames`: the open frame's group, which the arrows walk: its project on the Projects tab,
-    /// read off the bands laid, else its roll or day.
-    pub(super) fn lab_frames(&self) -> &[oni_library::Entry] {
-        let Some(open) = self.open_path() else { return &[] };
-        let project = self.org.editing_project.filter(|_| self.org.projects_surface);
-        if let Some(band) = project.and_then(|id| self.org.bands.iter().find(|b| b.naming == Some(organising::Naming::Project(id)))) {
-            return &band.entries;
+    /// read off its rolls' bands laid, else its roll or day.
+    pub(super) fn lab_frames(&self) -> std::borrow::Cow<'_, [oni_library::Entry]> {
+        let Some(open) = self.open_path() else { return Default::default() };
+        let project = self.org.editing_project.filter(|_| self.org.projects_surface).map(|id| id.to_string());
+        let bands = self.org.bands.iter().filter(|b| project.as_ref() == Some(&b.key));
+        let frames: Vec<oni_library::Entry> = bands.flat_map(|b| b.entries.iter().cloned()).collect();
+        if !frames.is_empty() {
+            return frames.into();
         }
         let group = self.archive.as_ref().and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open)));
-        group.map_or(&[], |g| &g.entries)
+        group.map_or(&[][..], |g| &g.entries).into()
     }
 
     /// The frame the editor goes on to once `leaving` goes to the ONI Trash with the open one.
     pub(super) fn after_trash(&self, leaving: &[String]) -> Option<String> {
-        let paths: Vec<&str> = self.lab_frames().iter().map(|e| e.path.as_str()).collect();
+        let frames = self.lab_frames();
+        let paths: Vec<&str> = frames.iter().map(|e| e.path.as_str()).collect();
         after_trash(&paths, self.open_path()?, leaving)
     }
 

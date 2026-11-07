@@ -124,7 +124,8 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `TreeEngine` on the projects: the rows laid as the archive's, a photo as a name or a thumbnail.
+    /// `TreeEngine` on the projects: the rows laid as the archive's, each roll heading its photos,
+    /// a photo as a name or a thumbnail.
     pub(in crate::app) fn publish_projects(&self) {
         let Some(w) = self.window() else { return };
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
@@ -135,7 +136,7 @@ impl Ctl {
             };
             let nodes = project_tree::flatten(&roots, &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
-            let titles = photo_titles(&roots);
+            let markers = s.roll_markers();
             let mut paths = Vec::with_capacity(nodes.len());
             for (node, _) in &nodes {
                 let Node::Photo { entry, .. } = node else {
@@ -152,9 +153,10 @@ impl Ctl {
                 .map(|(node, depth)| {
                     let id = node.id();
                     let ringed = s.org.project_ring.as_ref() == Some(&id) || s.org.project_pick.selection.contains(&id);
+                    let depth = *depth as i32;
                     match node {
                         Node::Project(g) => TreeRow {
-                            depth: *depth as i32,
+                            depth,
                             title: g.project.name.clone().into(),
                             caption: g.entries.len().to_string().into(),
                             kind: 1,
@@ -164,15 +166,16 @@ impl Ctl {
                             renaming: s.org.project_renaming == Some(g.id),
                             ..TreeRow::default()
                         },
-                        Node::Photo { entry, project } => TreeRow {
-                            depth: *depth as i32,
-                            title: titles.get(&(*project, entry.path.clone())).cloned().unwrap_or_default().into(),
+                        Node::Roll { folder, entries, .. } => {
+                            let (title, caption) = (roll_title(&markers, folder).into(), entries.len().to_string().into());
+                            TreeRow { depth, title, caption, kind: 3, selected: ringed, ..TreeRow::default() }
+                        }
+                        Node::Photo { entry, .. } => TreeRow {
+                            depth,
+                            title: oni_library::paths::name(&entry.path).into(),
                             caption: library::medal(entry.label).into(),
                             kind: 2,
-                            expandable: false,
-                            expanded: false,
                             selected: ringed || s.picks.selection.contains(&entry.path),
-                            renaming: false,
                             medal: library::medal_index(entry.label),
                             missing: s.org.missing.contains(&entry.path),
                             rgb: entry.leads_passes,
@@ -205,21 +208,45 @@ impl Ctl {
     }
 }
 
-/// `ProjectRow.title`: the photo's whole file name, its roll's folder beside it where another photo
-/// of the project bears the same, as two rolls' copies of one file do.
-fn photo_titles(roots: &[Node]) -> HashMap<(Id, String), String> {
-    let mut titles = HashMap::new();
-    for root in roots {
-        let Node::Project(group) = root else { continue };
-        let named: Vec<(&Entry, String)> = group.entries.iter().map(|e| (e, oni_library::paths::name(&e.path))).collect();
-        let mut seen: HashMap<&str, usize> = HashMap::new();
-        for (_, name) in &named {
-            *seen.entry(name.as_str()).or_default() += 1;
+/// A roll's name as the archive heads it: its marker's, else its folder's.
+fn roll_title(markers: &HashMap<String, Film>, folder: &str) -> String {
+    let named = markers.get(folder).map(|f| f.name.trim()).filter(|n| !n.is_empty());
+    named.map_or_else(|| oni_library::paths::name(folder), str::to_owned)
+}
+
+impl State {
+    /// The Projects tab's bands: each project's photos by roll, a band each, headed by the project
+    /// and the roll; the rating filter keeps one medal as in the archive, the tree every member.
+    pub(super) fn project_bands(&self) -> Vec<Band> {
+        let markers = self.roll_markers();
+        let mut bands = Vec::new();
+        for g in self.project_groups() {
+            let kept: Vec<Entry> = g.entries.into_iter().filter(|e| self.filter.is_none_or(|m| e.label == m)).collect();
+            for (folder, entries) in project_tree::by_roll(&kept) {
+                let (title, caption) = (roll_title(&markers, &folder), g.project.name.clone());
+                bands.push(Band { key: g.id.to_string(), title, caption, entries, naming: None, explicit: String::new() });
+            }
         }
-        for (e, name) in &named {
-            let title = if seen[name.as_str()] > 1 { format!("{name} \u{b7} {}", oni_library::paths::name(&oni_library::paths::parent(&e.path))) } else { name.clone() };
-            titles.insert((group.id, e.path.clone()), title);
-        }
+        bands
     }
-    titles
+
+    /// The photos the projects' tree rows stand for, in the order given, each once: a photo itself,
+    /// a roll its project's photos in that folder, a project none.
+    pub(in crate::app) fn row_photos<'a>(&self, rows: impl IntoIterator<Item = &'a NodeId>) -> Vec<String> {
+        let groups = self.project_groups();
+        let mut seen = HashSet::new();
+        let mut out = Vec::new();
+        for row in rows {
+            let paths: Vec<String> = match row {
+                NodeId::Photo { path, .. } => vec![path.clone()],
+                NodeId::Roll { folder, project } => {
+                    let entries = groups.iter().filter(|g| g.id == *project).flat_map(|g| &g.entries);
+                    entries.filter(|e| oni_library::paths::parent(&e.path) == *folder).map(|e| e.path.clone()).collect()
+                }
+                NodeId::Project(_) => Vec::new(),
+            };
+            out.extend(paths.into_iter().filter(|p| seen.insert(p.clone())));
+        }
+        out
+    }
 }

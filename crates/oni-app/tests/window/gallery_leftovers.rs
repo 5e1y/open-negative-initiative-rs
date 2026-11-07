@@ -142,7 +142,8 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
 
     assert!(app.get_gallery(), "the click that commits picks its cell, opening nothing");
 
-    // A project's heading renames the project, trimmed; an empty name keeps it.
+    // A project's heading names the project over each of its rolls: a double click types over
+    // neither, the project being renamed in its tree and its inspector.
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
@@ -156,20 +157,12 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     rig.pump();
     assert_eq!(lib.get_scroll(), 0.0, "the projects' grid lands afresh");
     let project = lib.get_headings().row_data(0).expect("the project's heading");
+    assert_eq!(project.caption, "Project 1", "the project's name over its roll's");
     let on_project = (lib.get_grid_x() + 200.0, lib.get_grid_y() + project.y - lib.get_scroll() + 12.0);
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     click(&rig, on_project);
     click(&rig, on_project);
-    assert_eq!(lib.get_heading_draft(), project.title, "a project's field opens on its name");
-    lib.invoke_heading_committed("   ".into());
-    rig.pump();
-    assert!(heading(&project.title).is_some(), "twin: an empty name keeps the project's");
-    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    click(&rig, on_project);
-    click(&rig, on_project);
-    lib.invoke_heading_committed("  Portraits ".into());
-    rig.pump();
-    assert!(heading("Portraits").is_some(), "{:?}", lib.get_headings().row_data(0).map(|h| h.title));
+    assert!(lib.get_headings().iter().all(|h| !h.renaming), "twin of a roll's heading: a project's opens no field");
     lib.invoke_surface_picked(0);
     rig.pump();
 

@@ -30,8 +30,8 @@ impl Ctl {
         self.open_menu(items, path)
     }
 
-    /// `projectContextMenu` (`EditorScene+Rolls.swift:179`): photos alone take the cell menu; a
-    /// project alone, Delete Project; several projects open nothing.
+    /// `projectContextMenu` (`EditorScene+Rolls.swift:179`): photos and rolls alone take the cell
+    /// menu on their photos; a project alone, Delete Project; several projects open nothing.
     pub(in crate::app) fn project_row_menu(self: &Rc<Self>, i: usize) -> bool {
         let can_paste = self.can_paste();
         let (items, path) = {
@@ -41,15 +41,8 @@ impl Ctl {
             let projects: Vec<Id> = targets.iter().filter_map(|t| if let NodeId::Project(p) = t { Some(*p) } else { None }).collect();
             match projects.as_slice() {
                 [] => {
-                    // A photo shown under two projects is one photo.
-                    let mut photos: Vec<String> = Vec::new();
-                    for t in &targets {
-                        if let NodeId::Photo { path, .. } = t
-                            && !photos.contains(path)
-                        {
-                            photos.push(path.clone());
-                        }
-                    }
+                    // A photo shown under two projects is one photo; a roll's heading stands for its photos.
+                    let photos = s.row_photos(&targets);
                     let Some(first) = photos.first().cloned() else { return false };
                     let scope: HashSet<String> = photos.into_iter().collect();
                     (self.cell_items(&s, &first, &scope, true, can_paste), Some(first))

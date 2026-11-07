@@ -133,8 +133,8 @@ impl Ctl {
     }
 
     /// `selectProject`, then `openFromTree(project:)` beside a photo: a project row rings it and
-    /// clears the photos, a photo row selects it; beside a photo either opens its photo. With ⌘
-    /// or ⇧ the row joins the tree's pick, whose photos become the selection.
+    /// clears the photos, a roll's or a photo's row selects its photos; beside a photo each opens its
+    /// first. With ⌘ or ⇧ the row joins the tree's pick, whose photos become the selection.
     pub(super) fn project_row_clicked(self: &Rc<Self>, i: usize, command: bool, shift: bool) {
         // A press that became a drag lets go on its row: the drop, never a click.
         if self.project_dragging() {
@@ -151,8 +151,7 @@ impl Ctl {
             if !s.org.project_pick.click(&id, &s.org.project_nodes, command, shift) {
                 false
             } else {
-                let pick = &s.org.project_pick.selection;
-                s.picks.selection = pick.iter().filter_map(|n| if let ProjectNode::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect();
+                s.picks.selection = s.row_photos(&s.org.project_pick.selection).into_iter().collect();
                 true
             }
         };
@@ -182,11 +181,13 @@ impl Ctl {
                         s.org.project_ring = Some(ProjectNode::Photo { path: path.clone(), project: *project });
                     })
                 }
-                ProjectNode::Photo { path, .. } => {
-                    s.picks.selection = HashSet::from([path.clone()]);
-                    s.picks.cursor = Some(path.clone());
-                    s.picks.anchor = Some(path.clone());
-                    beside.then(|| path.clone())
+                // A roll's heading selects its photos in the project, as the photo's row selects it.
+                ProjectNode::Roll { .. } | ProjectNode::Photo { .. } => {
+                    let photos = s.row_photos([&id]);
+                    let first = photos.first().cloned();
+                    s.picks.selection = photos.into_iter().collect();
+                    (s.picks.cursor, s.picks.anchor) = (first.clone(), first.clone());
+                    first.filter(|_| beside)
                 }
             };
             if let Some(path) = &path {
@@ -219,7 +220,7 @@ impl Ctl {
                 self.state.borrow_mut().org.project_renaming = Some(project);
                 self.publish_projects();
             }
-            None => {}
+            Some(ProjectNode::Roll { .. }) | None => {}
         }
     }
 }
