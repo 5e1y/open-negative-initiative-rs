@@ -87,13 +87,13 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 60.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.65 + i as f32 / 100.0);
     }
-    let member = |name: &str| oni_library::paths::canonical(&scans.join(name));
+    let member = |name: &str| project::Member::new(Some(&oni_library::paths::canonical(&scans.join(name))), None);
     let at = |minutes: f64| Date::since_reference_date(8e8 + minutes * 60.0);
     let projects = vec![
         Project::new("Trip", at(2.0), vec![member("Roll B/B00.tif"), member("Roll B/B01.tif")]),
         Project::new("Walk", at(1.0), vec![member("Roll A/A04.tif")]),
     ];
-    project::save(&support, &ProjectsFile { version: 1, projects }).unwrap();
+    project::save(&support, &ProjectsFile { version: project::FORMAT, projects }).unwrap();
 
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();

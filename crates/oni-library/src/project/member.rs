@@ -1,0 +1,106 @@
+//! A project's photo, held by its path and its print: the path tells two copies of one file apart,
+//! the print finds the photo again where its path went stale and tells another file standing there.
+
+use super::Project;
+use crate::index::Entry;
+use crate::library::WAITING_MARK;
+use crate::paths;
+use oni_settings::{Date, Id};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Member {
+    /// Where the photo was last seen; none for a Swift print no gesture has placed yet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    /// The file's fingerprint; none for a photo still being read when it joined, or one a version 1
+    /// file named by its path alone.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub print: Option<String>,
+}
+
+impl Member {
+    pub fn new(path: Option<&str>, print: Option<&str>) -> Member {
+        Member { path: path.map(str::to_owned), print: print.map(str::to_owned) }
+    }
+
+    /// The member a row makes, its print taken from `known` while the row's is still being read.
+    pub fn of(row: &Entry, known: Option<&Member>) -> Member {
+        let print = read(&row.fingerprint).map(str::to_owned).or_else(|| known.and_then(|m| m.print.clone()));
+        Member { path: Some(row.path.clone()), print }
+    }
+
+    /// Whether a row's print could be this photo's: the same, or one side not read yet.
+    pub fn agrees(&self, print: &str) -> bool {
+        match (self.print.as_deref(), read(print)) {
+            (Some(mine), Some(theirs)) => mine == theirs,
+            _ => true,
+        }
+    }
+
+    /// Whether two members are one photo: one path, their prints agreeing; one print, neither placed.
+    pub fn same(&self, other: &Member) -> bool {
+        match (&self.path, &other.path) {
+            (Some(a), Some(b)) => paths::same(a, b) && other.print.as_deref().is_none_or(|p| self.agrees(p)),
+            (None, None) => self.print == other.print,
+            _ => false,
+        }
+    }
+
+    /// The text two members that may be one photo share, which `same` then settles.
+    fn slot(&self) -> String {
+        match &self.path {
+            Some(path) => paths::normal(path).to_lowercase(),
+            None => format!("\0{}", self.print.as_deref().unwrap_or_default()),
+        }
+    }
+}
+
+/// A print as read, none for a row still waiting for its own.
+pub fn read(print: &str) -> Option<&str> {
+    (!print.is_empty() && !print.starts_with(WAITING_MARK)).then_some(print)
+}
+
+/// Each photo once: of two members that are one photo the first keeps its place, and its print
+/// where it had none, so nothing either recorded is lost.
+pub fn distinct(members: Vec<Member>) -> Vec<Member> {
+    let mut out: Vec<Member> = Vec::with_capacity(members.len());
+    let mut slots: HashMap<String, Vec<usize>> = HashMap::new();
+    for member in members {
+        let slot = slots.entry(member.slot()).or_default();
+        match slot.iter().copied().find(|&i| out[i].same(&member)) {
+            Some(i) if out[i].print.is_none() => out[i].print = member.print,
+            Some(_) => {}
+            None => {
+                slot.push(out.len());
+                out.push(member);
+            }
+        }
+    }
+    out
+}
+
+/// One project per photo: the most recently created keeps it.
+pub fn exclusive(projects: &[Project]) -> Vec<Project> {
+    let mut slots: HashMap<String, Vec<(Member, Id, Date)>> = HashMap::new();
+    for project in projects {
+        for member in &project.members {
+            let slot = slots.entry(member.slot()).or_default();
+            match slot.iter_mut().find(|(m, _, _)| m.same(member)) {
+                Some(keeper) if keeper.2 < project.created_at => (keeper.1, keeper.2) = (project.id, project.created_at),
+                Some(_) => {}
+                None => slot.push((member.clone(), project.id, project.created_at)),
+            }
+        }
+    }
+    let keeper = |member: &Member| slots.get(&member.slot()).and_then(|s| s.iter().find(|(m, _, _)| m.same(member))).map(|(_, id, _)| *id);
+    projects
+        .iter()
+        .map(|project| {
+            let mut kept = project.clone();
+            kept.members.retain(|m| keeper(m) == Some(project.id));
+            kept
+        })
+        .collect()
+}

@@ -7,15 +7,15 @@ use std::path::Path;
 
 /// `ours` against `base`, laid over `theirs`: what this side removed goes, what it added comes
 /// last, in its order; either side unchanged gives the other whole, its order included.
-pub fn list(base: &[String], ours: &[String], theirs: &[String]) -> Vec<String> {
+pub fn list<T: PartialEq + Clone>(base: &[T], ours: &[T], theirs: &[T]) -> Vec<T> {
     if theirs == base {
         return ours.to_vec();
     }
     if ours == base {
         return theirs.to_vec();
     }
-    let removed = |p: &String| base.contains(p) && !ours.contains(p);
-    let mut out: Vec<String> = theirs.iter().filter(|p| !removed(p)).cloned().collect();
+    let removed = |p: &T| base.contains(p) && !ours.contains(p);
+    let mut out: Vec<T> = theirs.iter().filter(|p| !removed(p)).cloned().collect();
     for added in ours.iter().filter(|p| !base.contains(p)) {
         if !out.contains(added) {
             out.push(added.clone());
@@ -58,19 +58,22 @@ fn project(base: &Project, ours: &Project, theirs: &Project) -> Project {
         description: pick(&base.description, &ours.description, &theirs.description),
         created_at: pick(&base.created_at, &ours.created_at, &theirs.created_at),
         manual_order: pick(&base.manual_order, &ours.manual_order, &theirs.manual_order),
-        members: list(&base.members, &ours.members, &theirs.members),
+        members: project::distinct(list(&base.members, &ours.members, &theirs.members)),
     }
 }
 
-/// `projects.json` read again and merged with what this side changed since `base`, then written;
-/// the list written comes back, the next save's base. A file absent or unreadable takes ours whole.
+/// `projects.json` read again, merged with what this side changed since `base` and written unless it
+/// holds that already, in any format; the list is the next save's base. An unreadable file takes ours.
 pub fn save_projects(support: &Path, base: &[Project], ours: &[Project]) -> std::io::Result<Vec<Project>> {
     let theirs = crate::read_json::<ProjectsFile>(&project::file_path(support));
-    let merged = match theirs {
+    let merged = match &theirs {
         Some(file) => project::exclusive(&projects(base, ours, &project::exclusive(&file.projects))),
         None => ours.to_vec(),
     };
-    project::save(support, &ProjectsFile { version: 1, projects: merged.clone() })?;
+    if theirs.is_some_and(|file| file.projects == merged) {
+        return Ok(merged);
+    }
+    project::save(support, &ProjectsFile { version: project::FORMAT, projects: merged.clone() })?;
     Ok(merged)
 }
 

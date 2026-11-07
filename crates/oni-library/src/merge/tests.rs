@@ -52,7 +52,7 @@ fn a_favourite_added_by_another_app_survives_our_save() {
 }
 
 fn project(name: &str, members: &[&str]) -> Project {
-    Project::new(name, Date::since_reference_date(8e8), strings(members))
+    Project::new(name, Date::since_reference_date(8e8), members.iter().map(|m| project::Member::new(Some(m), None)).collect())
 }
 
 fn names(projects: &[Project]) -> Vec<String> {
@@ -62,29 +62,29 @@ fn names(projects: &[Project]) -> Vec<String> {
 }
 
 fn other_app_writes(support: &Path, projects: &[Project]) {
-    project::save(support, &ProjectsFile { version: 1, projects: projects.to_vec() }).unwrap();
+    project::save(support, &ProjectsFile { version: project::FORMAT, projects: projects.to_vec() }).unwrap();
 }
 
 #[test]
 fn a_project_added_by_another_app_survives_our_save() {
     let scratch = Scratch::new("merge-projects");
     let support = scratch.path();
-    let trip = project("Trip", &["f1"]);
+    let trip = project("Trip", &["/f1"]);
     other_app_writes(support, std::slice::from_ref(&trip));
     let mut ours = project::load(support).projects;
     let read = ours.clone();
     // Meanwhile the other app adds a project and a member to Trip.
-    let added = project("Portraits", &["f9"]);
+    let added = project("Portraits", &["/f9"]);
     let mut grown = trip.clone();
-    grown.members.push("f2".into());
+    grown.members.push(project::Member::new(Some("/f2"), None));
     other_app_writes(support, &[grown, added.clone()]);
     ours[0].name = "Iceland".into();
-    let mine = project("Mine", &["f5"]);
+    let mine = project("Mine", &["/f5"]);
     ours.push(mine.clone());
     let read = save_projects(support, &read, &ours).unwrap();
     let file = project::load(support).projects;
     assert_eq!(names(&file), ["Iceland", "Mine", "Portraits"]);
-    assert_eq!(file.iter().find(|p| p.id == trip.id).unwrap().members, ["f1", "f2"], "both sides' changes kept");
+    assert_eq!(file.iter().find(|p| p.id == trip.id).unwrap().paths(), ["/f1", "/f2"], "both sides' changes kept");
     // A project deleted here stays deleted; one deleted there, untouched here, stays deleted too.
     let mut ours = read.clone();
     ours.retain(|p| p.id != added.id);
@@ -94,15 +94,15 @@ fn a_project_added_by_another_app_survives_our_save() {
     // Twin: the whole save from memory loses the other app's project.
     let read = project::load(support).projects;
     other_app_writes(support, &[read[0].clone(), added.clone()]);
-    project::save(support, &ProjectsFile { version: 1, projects: read.clone() }).unwrap();
+    project::save(support, &ProjectsFile { version: project::FORMAT, projects: read.clone() }).unwrap();
     assert_eq!(names(&project::load(support).projects), ["Iceland"], "the plain save drops Portraits");
 }
 
 #[test]
 fn a_project_the_other_app_deleted_survives_an_edit_here() {
-    let (base, mut ours) = (vec![project("Trip", &["f1"])], Vec::new());
+    let (base, mut ours) = (vec![project("Trip", &["/f1"])], Vec::new());
     ours.push(base[0].clone());
-    ours[0].members.push("f2".into());
+    ours[0].members.push(project::Member::new(Some("/f2"), None));
     assert_eq!(projects(&base, &ours, &[]).len(), 1, "an edit here is not thrown away");
     // Twin: untouched here, the deletion holds.
     assert!(projects(&base, &base, &[]).is_empty());

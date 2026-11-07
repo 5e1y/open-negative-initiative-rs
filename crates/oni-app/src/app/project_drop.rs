@@ -17,24 +17,28 @@ pub(super) struct Drag {
     target: Option<DropTarget>,
 }
 
+/// The photos a drag carries, its projects' rows left out.
+fn photos(items: &HashSet<NodeId>) -> HashSet<String> {
+    items.iter().filter_map(|n| if let NodeId::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect()
+}
+
 /// `addToProjectDrop`: photos dropped onto a project join it, and leave every other.
-fn join(projects: &mut Vec<oni_library::project::Project>, rows: &[oni_library::Entry], items: &HashSet<NodeId>, target: &NodeId) -> bool {
+fn join(projects: &mut [project::Project], reach: &project::Reach, items: &HashSet<NodeId>, target: &NodeId) -> bool {
     let NodeId::Project(id) = target else { return false };
-    let paths: HashSet<String> = items.iter().filter_map(|n| if let NodeId::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect();
-    project::add_to(projects, rows, &paths, *id).added > 0
+    project::add_to(projects, reach, &photos(items), *id).added > 0
 }
 
 /// `reorderProjectTreeDrop`: before a photo the photos land in its project; before a project the
 /// projects take their places among the others.
-fn reorder(projects: &mut Vec<oni_library::project::Project>, rows: &[oni_library::Entry], items: &HashSet<NodeId>, target: &NodeId) -> bool {
+fn reorder(projects: &mut [project::Project], reach: &project::Reach, items: &HashSet<NodeId>, target: &NodeId) -> bool {
     match target {
         NodeId::Photo { path, .. } => {
-            let paths: HashSet<String> = items.iter().filter_map(|n| if let NodeId::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect();
-            !paths.is_empty() && project::reorder_drop(projects, rows, &paths, path)
+            let paths = photos(items);
+            !paths.is_empty() && project::reorder_drop(projects, reach, &paths, path)
         }
         NodeId::Project(id) => {
             let ids: HashSet<oni_settings::Id> = items.iter().filter_map(|n| if let NodeId::Project(p) = n { Some(*p) } else { None }).collect();
-            !ids.is_empty() && project::reorder_root(projects, rows, &ids, *id)
+            !ids.is_empty() && project::reorder_root(projects, &ids, *id)
         }
     }
 }
@@ -66,8 +70,8 @@ impl Ctl {
         self.publish_project_drag();
     }
 
-    /// The press let go: `performDrop` on where the drag would land; a cancel drops nothing. Photos
-    /// joining a project are one step of the Undo key, as Add to Project is.
+    /// The press let go: `performDrop` on where the drag would land; a cancel drops nothing. What
+    /// the drop changes in the projects' members is one step of the Undo key, as Add to Project is.
     pub(super) fn project_drag_ended(self: &Rc<Self>, dropped: bool) {
         let Some(drag) = self.state.borrow_mut().org.project_drag.take() else { return };
         self.publish_project_drag();
@@ -75,19 +79,12 @@ impl Ctl {
         match drag.target.filter(|_| dropped) {
             Some(DropTarget::Join(i)) => {
                 if let Some(id) = node(i).filter(|id| !drag.items.contains(id)) {
-                    self.regroup(tr("Add to Project"), |projects, rows| join(projects, rows, &drag.items, &id));
+                    self.regroup(tr("Add to Project"), |projects, reach| join(projects, reach, &drag.items, &id));
                 }
             }
             Some(DropTarget::Before(i)) => {
-                let moved = node(i).is_some_and(|id| {
-                    let mut guard = self.state.borrow_mut();
-                    let s = &mut *guard;
-                    let rows = s.reach().into_owned();
-                    reorder(&mut s.org.projects, &rows, &drag.items, &id)
-                });
-                if moved {
-                    self.save_projects();
-                    self.lay_grid();
+                if let Some(id) = node(i) {
+                    self.regroup(tr("Move"), |projects, reach| reorder(projects, reach, &drag.items, &id));
                 }
             }
             None => {}
@@ -172,29 +169,34 @@ impl Ctl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oni_library::project::Project;
+    use oni_library::project::{Member, Project, Reach};
     use oni_settings::Date;
 
     fn entry(path: &str) -> oni_library::Entry {
         oni_library::Entry::new(path, Date::since_reference_date(8e8), &format!("f-{path}"))
     }
 
+    fn of(path: &str) -> Member {
+        Member::new(Some(path), Some(&format!("f-{path}")))
+    }
+
     #[test]
     fn a_photo_dropped_on_a_project_joins_it_and_before_a_photo_lands_there() {
         let rows: Vec<_> = ["/r/a", "/r/b", "/r/c"].iter().map(|p| entry(p)).collect();
+        let reach = Reach::rows(&rows);
         let at = |m: f64| Date::since_reference_date(8e8 + m);
-        let mut projects = vec![Project::new("One", at(2.0), vec!["/r/a".into(), "/r/b".into()]), Project::new("Two", at(1.0), vec!["/r/c".into()])];
+        let mut projects = vec![Project::new("One", at(2.0), vec![of("/r/a"), of("/r/b")]), Project::new("Two", at(1.0), vec![of("/r/c")])];
         let (one, two) = (projects[0].id, projects[1].id);
         let photo = |p: &str, project| NodeId::Photo { path: p.into(), project };
         let c = HashSet::from([photo("/r/c", two)]);
         // Twin: a photo dropped onto a photo joins nothing; only a project takes a member.
-        assert!(!join(&mut projects, &rows, &c, &photo("/r/a", one)));
-        assert!(join(&mut projects, &rows, &c, &NodeId::Project(one)));
+        assert!(!join(&mut projects, &reach, &c, &photo("/r/a", one)));
+        assert!(join(&mut projects, &reach, &c, &NodeId::Project(one)));
         assert!(projects.len() == 2 && projects[1].members.is_empty(), "Two, emptied, stays with its name");
-        assert_eq!(projects[0].members, ["/r/a", "/r/b", "/r/c"]);
-        assert!(reorder(&mut projects, &rows, &c, &photo("/r/a", one)));
-        assert_eq!(projects[0].members, ["/r/c", "/r/a", "/r/b"], "before a photo, in its place");
+        assert_eq!(projects[0].paths(), ["/r/a", "/r/b", "/r/c"]);
+        assert!(reorder(&mut projects, &reach, &c, &photo("/r/a", one)));
+        assert_eq!(projects[0].paths(), ["/r/c", "/r/a", "/r/b"], "before a photo, in its place");
         // Twin: a project dropped before a photo moves nothing.
-        assert!(!reorder(&mut projects, &rows, &HashSet::from([NodeId::Project(one)]), &photo("/r/b", one)));
+        assert!(!reorder(&mut projects, &reach, &HashSet::from([NodeId::Project(one)]), &photo("/r/b", one)));
     }
 }

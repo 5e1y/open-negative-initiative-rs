@@ -1,12 +1,13 @@
-//! Projects as a hand meets them: two rolls' copies of one file in one project, Add to Project said
-//! with Undo, stocks off each member's roll, the rating filter as in the archive, the empty tab.
+//! Projects as a hand meets them: two rolls' copies in one project, Add to Project said with Undo,
+//! stocks off each roll, the rating filter, the empty tab, every drag a step, a Swift file read.
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::{Library, Told};
 use oni_core::{Archive, EditorStore};
 use oni_library::{paths, project};
 use oni_settings::Film;
-use slint::{ComponentHandle, Model};
+use slint::platform::{PointerEventButton, WindowEvent};
+use slint::{ComponentHandle, LogicalPosition, Model};
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -22,12 +23,18 @@ impl Hand {
     /// A scans folder holding each of `files`, a TIFF of the tone given: one tone twice is one file
     /// twice, byte for byte.
     fn new(label: &str, files: &[(&str, f32)]) -> Hand {
+        Hand::made(label, files, |_| {})
+    }
+
+    /// `new`, with `before` laying what the support folder holds when the app starts, on the root.
+    fn made(label: &str, files: &[(&str, f32)], before: impl FnOnce(&std::path::Path)) -> Hand {
         let root = std::env::temp_dir().join(format!("oni-app-projects-{label}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         for (file, tone) in files {
             common::linear_tiff(&root.join("Scans").join(file), 48, 32, *tone);
         }
         let root = PathBuf::from(paths::canonical(&root));
+        before(&root);
         let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
         std::fs::create_dir_all(&shots).unwrap();
         let rig = common::rig(shots);
@@ -95,7 +102,47 @@ impl Hand {
     }
 
     fn members(&self) -> Vec<Vec<String>> {
-        project::load(&self.root.join("Support")).projects.into_iter().map(|p| p.members).collect()
+        project::load(&self.root.join("Support")).projects.iter().map(|p| p.paths().into_iter().map(str::to_owned).collect()).collect()
+    }
+
+    /// A hand pressing on `path`'s tile, moving in steps to `to`, and letting go there.
+    fn drag(&self, path: &str, to: (f32, f32)) {
+        let lib = self.lib();
+        let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
+        let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
+        let from = (lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
+        let event = |e: WindowEvent| {
+            self.rig.window.dispatch_event(e);
+            self.rig.pump();
+        };
+        let (button, at) = (PointerEventButton::Left, |(x, y): (f32, f32)| LogicalPosition::new(x, y));
+        event(WindowEvent::PointerMoved { position: at(from) });
+        event(WindowEvent::PointerPressed { position: at(from), button });
+        for k in 1..=8 {
+            let f = k as f32 / 8.0;
+            event(WindowEvent::PointerMoved { position: at((from.0 + (to.0 - from.0) * f, from.1 + (to.1 - from.1) * f)) });
+        }
+        event(WindowEvent::PointerReleased { position: at(to), button });
+    }
+
+    /// Where a drop lands before `path`'s tile, a little left of its middle.
+    fn before(&self, path: &str) -> (f32, f32) {
+        let lib = self.lib();
+        let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
+        let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
+        (lib.get_grid_x() + t.x + t.width / 2.0 - 30.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0)
+    }
+
+    /// The projects' tree row titled `title` dragged onto the middle of the row titled `onto`.
+    fn tree_drop(&self, title: &str, onto: &str) {
+        let rows: Vec<oni_app::TreeRow> = self.lib().get_project_rows().iter().collect();
+        let at = |t: &str| rows.iter().position(|r| r.title == t).unwrap_or_else(|| panic!("{t} has a row"));
+        let middle = |i: usize| (rows[i].x + rows[i].width / 2.0, rows[i].y + rows[i].height / 2.0);
+        let (from, to) = (middle(at(title)), middle(at(onto)));
+        self.lib().invoke_project_row_dragged(at(title) as i32, from.0, from.1, to.0, to.1);
+        self.rig.pump();
+        self.lib().invoke_project_drag_ended(true);
+        self.rig.pump();
     }
 
     fn project_titles(&self) -> Vec<String> {
@@ -180,6 +227,11 @@ pub(crate) fn the_empty_tab_makes_a_project_and_the_filter_acts_in_it() {
     let (a, b) = (hand.at("Roll/A.tif"), hand.at("Roll/B.tif"));
     hand.open("Roll");
     let lib = hand.lib();
+    // File > New Project with nothing picked stays dark, and its act makes nothing.
+    assert!(!hand.shell.window.global::<oni_app::Menus>().get_live().new_project);
+    hand.shell.ctl.act(oni_app::Act::NewProject);
+    hand.rig.pump();
+    assert!(hand.members().is_empty(), "no project from no photo");
     lib.invoke_surface_picked(1);
     hand.rig.pump();
     assert_eq!((lib.get_empty_title().as_str(), lib.get_empty_action().as_str()), ("No Photos in a Project", "New Project"));
@@ -212,4 +264,94 @@ pub(crate) fn the_empty_tab_makes_a_project_and_the_filter_acts_in_it() {
     lib.invoke_filter_picked(0);
     hand.rig.pump();
     assert_eq!(hand.shown(), [a, b]);
+}
+
+/// P holds A and B, Q holds C; X joins Q, then the grid drags A before C: ⌘Z takes back the drag,
+/// then the add. A tree drop after Y's notice is a step of its own, which that notice never undoes.
+pub(crate) fn every_drag_is_one_step_and_the_notice_undoes_its_own() {
+    let tones = [("Roll/A.tif", 0.2), ("Roll/B.tif", 0.32), ("Roll/C.tif", 0.44), ("Roll/X.tif", 0.56), ("Roll/Y.tif", 0.68)];
+    let hand = Hand::new("undo", &tones);
+    let [a, b, c, x, y] = tones.map(|(f, _)| hand.at(f));
+    hand.open("Roll");
+    let ctl = hand.shell.ctl.clone();
+    hand.click(&a, false);
+    hand.click(&b, true);
+    hand.menu(&a, "New Project from", None);
+    hand.click(&c, false);
+    hand.menu(&c, "New Project from", None);
+    hand.click(&x, false);
+    hand.menu(&x, "Add to Project", Some("Project 2"));
+    assert_eq!(hand.members(), [vec![a.clone(), b.clone()], vec![c.clone(), x.clone()]]);
+
+    hand.lib().invoke_surface_picked(1);
+    hand.rig.pump();
+    assert_eq!(hand.shown(), [c.clone(), x.clone(), a.clone(), b.clone()], "Project 2, the newer, first");
+    hand.drag(&a, hand.before(&c));
+    let dragged = [vec![b.clone()], vec![a.clone(), c.clone(), x.clone()]];
+    assert_eq!(hand.members(), dragged, "A leaves P for Q, before C");
+    ctl.act(oni_app::Act::Undo);
+    hand.rig.pump();
+    // Twin: an undo of the add laid over the drag would leave A in no project.
+    assert_eq!(hand.members(), [vec![a.clone(), b.clone()], vec![c.clone(), x.clone()]], "the drag taken back, A in P again");
+    ctl.act(oni_app::Act::Undo);
+    hand.rig.pump();
+    assert_eq!(hand.members(), [vec![a.clone(), b.clone()], vec![c.clone()]], "then the add, X alone leaving");
+    ctl.act(oni_app::Act::Redo);
+    ctl.act(oni_app::Act::Redo);
+    hand.rig.pump();
+    assert_eq!(hand.members(), dragged);
+
+    // Y joins Q, said with Undo; then B is dropped onto Q in the tree, a step of the same name.
+    hand.lib().invoke_surface_picked(0);
+    hand.rig.pump();
+    hand.click(&y, false);
+    hand.menu(&y, "Add to Project", Some("Project 2"));
+    assert_eq!(hand.told().map(|t| t.2), Some("Undo".to_string()));
+    hand.lib().invoke_surface_picked(1);
+    hand.rig.pump();
+    if !hand.lib().get_project_rows().iter().any(|r| r.title == "B.tif") {
+        let at = hand.lib().get_project_rows().iter().position(|r| r.title == "Project 1").unwrap();
+        hand.lib().invoke_project_row_folded(at as i32);
+        hand.rig.pump();
+    }
+    hand.tree_drop("B.tif", "Project 2");
+    let dropped = [vec![], vec![a.clone(), c.clone(), x.clone(), y.clone(), b.clone()]];
+    assert_eq!(hand.members(), dropped, "B joins Q");
+    assert!(hand.told().is_some(), "the notice still offers its Undo");
+    hand.shell.window.global::<Told>().invoke_acted();
+    hand.rig.pump();
+    assert_eq!(hand.members(), dropped, "the drop is not the step the notice named");
+    // Twin: the drop was a step, which the bar's key walks back.
+    ctl.act(oni_app::Act::Undo);
+    hand.rig.pump();
+    assert_eq!(hand.members(), [vec![b], vec![a, c, x, y]]);
+}
+
+/// A Swift-era file names its photos by print: the app finds each at launch and writes nothing; the
+/// first gesture writes this format, the former file kept beside it as it was.
+pub(crate) fn a_swift_file_is_read_without_a_write_and_kept_at_the_first_change() {
+    let tones = [("Roll/A.tif", 0.3), ("Roll/B.tif", 0.6)];
+    let hand = Hand::made("swift", &tones, |root| {
+        let prints: Vec<String> = tones.iter().map(|(f, _)| oni_library::relink::fingerprint(&root.join("Scans").join(f)).unwrap()).collect();
+        let file = serde_json::json!({"version": 1, "projects": [{"id": oni_settings::Id::new().to_string(), "name": "Swift", "description": "", "createdAt": 8e8, "members": prints}]});
+        std::fs::create_dir_all(root.join("Support")).unwrap();
+        std::fs::write(project::file_path(&root.join("Support")), serde_json::to_vec(&file).unwrap()).unwrap();
+    });
+    let support = hand.root.join("Support");
+    let original = std::fs::read(project::file_path(&support)).unwrap();
+    let [a, b] = tones.map(|(f, _)| hand.at(f));
+    hand.open("Roll");
+    hand.lib().invoke_surface_picked(1);
+    hand.rig.pump();
+    assert_eq!(hand.shown(), [a.clone(), b.clone()], "each print found on its photo");
+    assert_eq!(std::fs::read(project::file_path(&support)).unwrap(), original, "a read writes nothing");
+    assert!(!project::former_path(&support, 1).exists());
+
+    hand.click(&b, false);
+    hand.menu(&b, "Remove from Project", Some("Swift"));
+    assert_eq!(hand.shown(), [a]);
+    assert_eq!(std::fs::read(project::former_path(&support, 1)).unwrap(), original, "the Swift file kept beside, as it was");
+    let text = std::fs::read_to_string(project::file_path(&support)).unwrap();
+    // Twin: the file written is this format's, no longer the one kept.
+    assert!(text.contains("\"version\" : 2") && text.contains("\"print\""), "{text}");
 }

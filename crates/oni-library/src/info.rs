@@ -3,7 +3,7 @@
 
 use crate::film_group::FilmGroup;
 use crate::index::Entry;
-use crate::project::{self, Project, ProjectGroup};
+use crate::project::{self, Project, ProjectGroup, Reach};
 use chrono::{Datelike, Local, NaiveDate, TimeZone};
 use oni_settings::film::{FilmStockKind, film_stock};
 use oni_settings::{Date, Film, Id};
@@ -62,8 +62,8 @@ pub fn resolved_roll<'a>(groups: &'a [FilmGroup], selected: Option<&crate::FilmK
 }
 
 /// `resolvedProjectGroup`: the project a click on its row named, else the anchor photo's.
-pub fn resolved_project(projects: &[Project], entries: &[Entry], selected: Option<Id>, anchor: Option<&str>) -> Option<ProjectGroup> {
-    let made = project::grouped(projects, entries);
+pub fn resolved_project(projects: &[Project], reach: &Reach, selected: Option<Id>, anchor: Option<&str>) -> Option<ProjectGroup> {
+    let made = project::grouped(projects, reach);
     match selected {
         Some(id) => made.into_iter().find(|g| g.id == id),
         None => {
@@ -136,8 +136,9 @@ mod tests {
         assert_eq!(resolved_roll(&groups, None, Some("/r/a")).map(|g| g.id.clone()), Some(roll.id.clone()));
         assert!(resolved_roll(&groups, None, Some("/d/a")).is_none(), "a day is no roll");
         assert_eq!(resolved_roll(&groups, Some(&roll.id), Some("/d/a")).map(|g| g.id.clone()), Some(roll.id.clone()), "the ring wins");
-        let trip = Project::new("Trip", Date::since_reference_date(0.0), vec!["/d/a".into()]);
+        let trip = Project::new("Trip", Date::since_reference_date(0.0), vec![project::Member::new(Some("/d/a"), None)]);
         let entries = [shot("/d/a", None)];
+        let entries = Reach::rows(&entries);
         assert_eq!(resolved_project(std::slice::from_ref(&trip), &entries, None, Some("/d/a")).map(|g| g.id), Some(trip.id));
         // Twin: an anchor in no project resolves to none.
         assert!(resolved_project(std::slice::from_ref(&trip), &entries, None, Some("/r/a")).is_none());

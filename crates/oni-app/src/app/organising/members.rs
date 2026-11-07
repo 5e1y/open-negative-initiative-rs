@@ -13,6 +13,12 @@ impl State {
         Cow::Owned(self.rows.iter().chain(&self.org.standing).cloned().collect())
     }
 
+    /// Every project with the rows its members stand for this read, newest first.
+    pub(in crate::app) fn project_groups(&self) -> Vec<project::ProjectGroup> {
+        let rows = self.reach();
+        project::grouped(&self.org.projects, &project::Reach::new(&rows, &self.org.found))
+    }
+
     /// Every roll marker known, by folder: the opened folder's survey, then those read for the
     /// projects' members beyond it.
     pub(in crate::app) fn roll_markers(&self) -> HashMap<String, Film> {
@@ -28,22 +34,16 @@ fn surveyed(opened: Option<&str>, folder: &str) -> bool {
 
 impl Ctl {
     /// `checkProjectPhotos`: the members beyond the opened folder read again off the index, one look
-    /// per member, the originals' states looked at behind; a Swift print found is written as its path.
+    /// per member, the originals' states looked at behind; where one is found stays this read's.
     pub(in crate::app) fn read_standing(&self) {
-        let found = {
+        {
             let mut s = self.state.borrow_mut();
             let standing = match &s.index {
                 Some(index) if !s.org.projects.is_empty() => oni_library::project_standing::standing(&s.org.projects, &s.rows, index),
                 _ => Default::default(),
             };
             s.org.standing = standing.rows;
-            if !standing.found.is_empty() {
-                s.org.projects = project::moved(&s.org.projects, &standing.found);
-            }
-            !standing.found.is_empty()
-        };
-        if found {
-            self.save_projects();
+            s.org.found = standing.found;
         }
         self.read_member_rolls();
     }
@@ -56,8 +56,9 @@ impl Ctl {
             let s = &mut *guard;
             let opened = s.opened.as_deref();
             s.org.member_rolls.retain(|folder, _| !surveyed(opened, folder));
-            let members = s.org.projects.iter().flat_map(|p| &p.members).filter(|m| !project::is_print(m));
-            let folders: HashSet<String> = members.map(|m| oni_library::paths::parent(m)).collect();
+            let members = s.org.projects.iter().flat_map(|p| &p.members);
+            let standing = members.filter_map(|m| s.org.found.get(m).or(m.path.as_ref()));
+            let folders: HashSet<String> = standing.map(|path| oni_library::paths::parent(path)).collect();
             folders.into_iter().filter(|f| !surveyed(opened, f) && !s.org.member_rolls.contains_key(f)).collect()
         };
         if unread.is_empty() {

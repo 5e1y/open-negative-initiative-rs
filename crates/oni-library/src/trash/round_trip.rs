@@ -143,10 +143,10 @@ fn every_listing_leaves_a_trashed_frame_out_and_a_project_keeps_it_a_member() {
     assert_eq!(paths(&index.shown()), [kept], "the gallery's rows leave out a trashed frame and a trashed triplet");
     let groups = crate::folders::groups("/roll", &index.shown(), &HashMap::new(), &HashMap::new());
     assert_eq!(groups.iter().flat_map(|g| paths(&g.entries)).collect::<Vec<_>>(), [kept], "and so do the folder's groups");
-    let trip = Project::new("Trip", day, vec![gone.into(), kept.into()]);
-    let resolved = project::grouped(std::slice::from_ref(&trip), &index.shown());
+    let trip = Project::new("Trip", day, vec![project::Member::new(Some(gone), Some(gone)), project::Member::new(Some(kept), Some(kept))]);
+    let resolved = project::grouped(std::slice::from_ref(&trip), &project::Reach::rows(&index.shown()));
     assert_eq!(paths(&resolved[0].entries), [kept], "a project hides it");
-    assert!(trip.members.iter().any(|m| m == gone), "and keeps it a member");
+    assert!(trip.paths().contains(&gone), "and keeps it a member");
     let binned: HashSet<String> = index::trashed(&index.all()).into_iter().map(|e| e.path).collect();
     assert_eq!(binned, HashSet::from([gone.to_owned(), "/roll/p-r.ARW".to_owned()]), "a triplet listed once, as its lead");
 
@@ -155,7 +155,7 @@ fn every_listing_leaves_a_trashed_frame_out_and_a_project_keeps_it_a_member() {
     let mut shown = paths(&index.shown());
     shown.sort();
     assert_eq!(shown, [gone, kept]);
-    assert_eq!(project::grouped(std::slice::from_ref(&trip), &index.shown())[0].entries.len(), 2);
+    assert_eq!(project::grouped(std::slice::from_ref(&trip), &project::Reach::rows(&index.shown()))[0].entries.len(), 2);
 
     // A rebuild from the sidecars carries the mark back in, as it travels with the entry.
     let marked = Entry { trashed_at: Some(when()), ..Entry::new(gone, day, gone) };

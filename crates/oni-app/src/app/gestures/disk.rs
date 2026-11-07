@@ -195,12 +195,15 @@ impl Ctl {
             s.org.project_ring = s.org.project_ring.take().map(|id| project_moved(id, &moved));
             // The folders a hand folded stay folded under their new names.
             let folded: HashSet<TreeId> = s.archive.as_ref().map(|a| a.folded().into_iter().map(|id| tree_moved(id, &moved)).collect()).unwrap_or_default();
-            // `Project.moved` then `saveProjects`: a member is found at its new path.
+            // `Project.moved` then `saveProjects`: a member is found at its new path, its print kept.
             let pairs: Vec<(String, String)> = moves.iter().map(|m| (m.from.clone(), m.to.clone())).collect();
             let carried = oni_library::project::moved(&s.org.projects, &pairs);
             let recorded = carried != s.org.projects;
             s.org.projects = carried;
-            (s.open.as_deref().and_then(|p| moved(p)), folded, recorded)
+            let found = std::mem::take(&mut s.org.found).into_iter();
+            s.org.found = found.map(|(m, at)| (oni_library::project::moved_member(&m, &pairs), oni_library::project::carried(&at, &pairs))).collect();
+            // A photo that stays where it was is not opened again.
+            (s.open.as_deref().and_then(|p| moved(p).filter(|to| to != p)), folded, recorded)
         };
         if recorded {
             self.save_projects();

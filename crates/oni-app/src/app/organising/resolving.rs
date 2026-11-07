@@ -87,6 +87,7 @@ impl State {
             Some(NodeId::Photo { project, .. }) => Some(*project),
             None => None,
         };
-        oni_library::info::resolved_project(&self.org.projects, &self.reach(), ring, self.picks.anchor.as_deref())
+        let rows = self.reach();
+        oni_library::info::resolved_project(&self.org.projects, &project::Reach::new(&rows, &self.org.found), ring, self.picks.anchor.as_deref())
     }
 }

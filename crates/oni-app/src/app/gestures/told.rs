@@ -47,15 +47,14 @@ impl Ctl {
         }
     }
 
-    /// The notice saying a gesture's step landed, its key walking that step back while it is the last;
-    /// an edit of the open frame, a roll's paste among them, is a step with no name.
+    /// The notice saying a gesture's step landed, its key walking that very step back while it is the
+    /// last, told by its mark: two steps may share a name and name no photo, as two project gestures do.
     pub(in crate::app) fn told_step(&self, title: &str, message: &str) {
         self.told(title, message);
         let step = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
-            let history = store.history();
-            history.can_undo().then(|| (history.undo_label().unwrap_or_default().to_owned(), history.undo_paths()))
+            store.history().undo_mark()
         };
         self.state.borrow_mut().org.told_step = step;
         if let Some(w) = self.window() {
@@ -75,15 +74,9 @@ impl Ctl {
         if let Some(favourite) = unstarred {
             self.star(&favourite);
         }
-        if let Some((label, paths)) = step {
+        if let Some(mark) = step {
             // A step taken since stands on top: Undo here would walk back that one instead.
-            let last = {
-                let mut s = self.state.borrow_mut();
-                s.store.editor().is_some_and(|store| {
-                    let history = store.history();
-                    history.can_undo() && history.undo_label().unwrap_or_default() == label && history.undo_paths() == paths
-                })
-            };
+            let last = self.state.borrow_mut().store.editor().is_some_and(|store| store.history().undo_mark() == Some(mark));
             if last {
                 self.history_step(true);
             }

@@ -87,11 +87,11 @@ fn a_medal_step_keeps_what_each_photo_wore_and_one_that_changed_nothing_opens_no
 }
 
 /// Add to Project is one step: the projects it changed, each with its members before and after,
-/// carried by a folder renamed since; it names no photo, so an undo redraws none.
+/// carried by a folder renamed since, their prints kept; it names no photo, so an undo redraws none.
 #[test]
 fn a_members_step_keeps_the_projects_it_changed_and_follows_a_rename() {
     let (client, other) = (Id::new(), Id::new());
-    let list = |items: &[&str]| items.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+    let list = |items: &[&str]| items.iter().map(|s| crate::project::Member::new(Some(s), Some("print"))).collect::<Vec<_>>();
     let before = BTreeMap::from([(client, list(&["/r10/a"])), (other, list(&["/r8/b"]))]);
     let after = BTreeMap::from([(client, list(&["/r10/a", "/r8/a"])), (other, list(&["/r8/b"]))]);
     let mut h = History::default();
@@ -106,6 +106,29 @@ fn a_members_step_keeps_the_projects_it_changed_and_follows_a_rename() {
     let same = BTreeMap::from([(client, list(&["/r10/a"]))]);
     idle.record_members(Members { before: same.clone(), after: same }, "Add to Project");
     assert!(!idle.can_undo());
+}
+
+/// Two steps of one name and no photo, Add to Project then a drop onto a project: each bears its
+/// own mark, so a notice naming the first never walks back the second.
+#[test]
+fn each_step_bears_a_mark_no_other_does() {
+    let id = Id::new();
+    let list = |items: &[&str]| BTreeMap::from([(id, items.iter().map(|s| crate::project::Member::new(Some(s), None)).collect::<Vec<_>>())]);
+    let mut h = History::default();
+    h.record_members(Members { before: list(&[]), after: list(&["/a"]) }, "Add to Project");
+    let told = h.undo_mark();
+    h.record_members(Members { before: list(&["/a"]), after: list(&["/a", "/b"]) }, "Add to Project");
+    assert_ne!(h.undo_mark(), told, "the drop's step is not the one the notice named");
+    // Twin: by name and photos the two steps are one.
+    let named = |h: &History| (h.undo_label().map(str::to_owned), h.undo_paths());
+    let second = named(&h);
+    h.undo_step();
+    assert_eq!(named(&h), second);
+    assert_eq!(h.undo_mark(), told, "undone, the first is on top again, its mark its own");
+    h.redo_step();
+    h.undo_step();
+    h.undo_step();
+    assert_eq!(h.undo_mark(), None);
 }
 
 #[test]

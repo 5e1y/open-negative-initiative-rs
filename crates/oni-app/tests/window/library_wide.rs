@@ -208,7 +208,7 @@ pub(crate) fn a_project_from_a_still_lists_after_b_opens() {
     // Twin: the members resolved against B's rows alone list nothing.
     let file = project::load(&support);
     let b_rows = oni_app::library::shown_under(&d.index(), &d.at("Home/B"));
-    assert!(project::grouped(&file.projects, &b_rows)[0].entries.is_empty());
+    assert!(project::grouped(&file.projects, &project::Reach::rows(&b_rows))[0].entries.is_empty());
     let _ = std::fs::remove_dir_all(&d.root);
 }
 
@@ -259,7 +259,7 @@ pub(crate) fn a_rename_moves_the_projects_recorded_path() {
     rest(&rig);
     click(&rig, &shell, "A", false);
     cell_menu(&rig, &shell, "A", "New Project from");
-    let recorded = || project::load(&support).projects[0].members.clone();
+    let recorded = || -> Vec<String> { project::load(&support).projects[0].paths().into_iter().map(str::to_owned).collect() };
     assert_eq!(recorded(), [d.at("Home/Scans/Roll 1/A.tif")]);
     // A hand folds Sub, and A stays selected.
     let lib = shell.window.global::<Library>();

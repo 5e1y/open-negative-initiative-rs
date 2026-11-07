@@ -123,6 +123,8 @@ pub struct Organising {
     pub projects_read: Vec<Project>,
     /// The projects' members the index holds beyond the opened folder's rows.
     pub standing: Vec<Entry>,
+    /// Where the last read found each member its own path no longer shows.
+    pub found: project::Found,
     /// The roll marker of each member's folder beyond the opened one, `None` for a plain folder.
     pub member_rolls: HashMap<String, Option<Film>>,
     pub project_ring: Option<NodeId>,
@@ -181,8 +183,8 @@ pub struct Organising {
     pub(in crate::app) project_drag: Option<super::project_drop::Drag>,
     /// The folder the notice's Show in Finder key reveals.
     pub(in crate::app) told_folder: Option<String>,
-    /// The gallery step the notice's Undo key walks back, by its label and photos, while it is the last.
-    pub(in crate::app) told_step: Option<(String, std::collections::BTreeSet<String>)>,
+    /// The mark of the gallery step the notice's Undo key walks back, while it is the last.
+    pub(in crate::app) told_step: Option<u64>,
     /// The ONI Trash folder whose Restore, once landed, says what came back, with Undo; with its photos.
     pub(in crate::app) restore_told: Option<(String, Vec<String>)>,
     /// The gesture whose writes or moves run off this thread, named; the others wait for it.
@@ -249,7 +251,8 @@ impl State {
         if self.org.projects_surface {
             // The rating filter keeps one medal as in the archive; the tree keeps every member.
             let kept = |e: &Entry| self.filter.is_none_or(|m| e.label == m);
-            return project::grouped(&self.org.projects, &self.reach())
+            return self
+                .project_groups()
                 .into_iter()
                 .map(|g| Band {
                     key: g.id.to_string(),
