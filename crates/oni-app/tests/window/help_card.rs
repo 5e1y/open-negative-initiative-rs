@@ -1,6 +1,7 @@
 //! A help mark, named with its block, opens its note as a card in the block's flow under the title: the
 //! sliders pushed down, never covered, and still in reach; the card padded alike on its four sides. Its
-//! mark again closes it, another block's takes its place. A block's Reset keeps one place, apart from its fold key.
+//! mark again closes it, another block's takes its place. A block folds by a chevron before its title; its
+//! Reset shows only once the block moves, at the row's far end, the title between it and the fold.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::{PanelState, Tip};
@@ -14,8 +15,6 @@ const LIGHTING: &str = "The negative back to light along a straight line: the bl
 /// The card's padding, `Gap.m`, and the step under the title row, `SectionStyle.gap`.
 const PAD: f32 = 16.0;
 const GAP: f32 = 8.0;
-/// The room between a block's Reset and its fold key: the row's step and the step set apart.
-const APART: f32 = 24.0;
 
 /// The card's insets round what it holds: left, top, right, bottom.
 fn insets(card: &Placed, first: &Placed, last: &Placed) -> [f32; 4] {
@@ -26,19 +25,12 @@ fn even(insets: [f32; 4]) -> bool {
     insets.iter().all(|i| (i - PAD).abs() < 0.5)
 }
 
-/// The block's Reset, on the row of its "?", and whether it can be pressed.
-pub(crate) fn reset_of(w: &oni_app::MainWindow, subject: &str) -> (Placed, bool) {
+/// The block's Reset on the row of its "?", none while the block stands at its rest.
+pub(crate) fn reset_of(w: &oni_app::MainWindow, subject: &str) -> Option<Placed> {
     let row = mark(w, subject);
-    let found: Vec<_> = ElementHandle::find_by_accessible_label(w, "Reset")
-        .filter(|e| e.accessible_role() == Some(Role::Button))
-        .map(|e| {
-            let (at, size) = (e.absolute_position(), e.size());
-            (Placed { x: at.x, y: at.y, width: size.width, height: size.height }, e.accessible_enabled().unwrap_or(true))
-        })
-        .filter(|(p, _)| p.level_with(&row))
-        .collect();
-    assert_eq!(found.len(), 1, "one Reset on {subject}'s row: {found:?}");
-    found[0]
+    let found: Vec<Placed> = common::placed(w, Role::Button, "Reset").into_iter().filter(|p| p.level_with(&row)).collect();
+    assert!(found.len() <= 1, "one Reset at most on {subject}'s row: {found:?}");
+    found.first().copied()
 }
 
 pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
@@ -61,13 +53,11 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     };
     assert_eq!(expanded(), Some(false), "the mark tells its card is closed");
 
-    // A block's Reset stands in its place at rest, out of reach, a step apart from its fold key.
-    let (reset, live) = reset_of(w, "Lighting");
-    assert!(!live, "nothing moved: the Reset is dimmed");
+    // At rest a block shows no Reset; its fold's chevron leads its title, the tree's disclosure.
+    assert!(reset_of(w, "Lighting").is_none(), "nothing moved: no Reset");
     let fold = common::the(w, Role::Button, "Hide Lighting");
-    let apart = |reset: &Placed| fold.x - (reset.x + reset.width) >= APART - 0.5;
-    assert!(apart(&reset), "the Reset stands apart from the fold key: {reset:?} {fold:?}");
-    assert!(!apart(&Placed { x: fold.x - 8.0 - reset.width, ..reset }), "twin: a step away is one cluster");
+    let title = common::placed(w, Role::Text, "Lighting").into_iter().find(|t| t.level_with(&fold)).expect("the block's title");
+    assert!(fold.x + fold.width / 2.0 < title.x, "the chevron before the title: {fold:?} {title:?}");
 
     // Open, the card lies under its mark across the block's column, the sliders pushed down below it.
     let before = common::the(w, Role::Slider, "Exposure");
@@ -99,9 +89,11 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     rig.settle();
     assert!(exposure() > rested, "the press reached the slider: {rested} to {}", exposure());
     assert_eq!(tip.get_open(), LIGHTING, "the card stays open while the hand works");
-    let (moved, live) = reset_of(w, "Lighting");
-    assert!(live, "something moved: the Reset is in reach");
-    assert!((moved.x - reset.x).abs() < 0.5 && (moved.width - reset.width).abs() < 0.5, "the Reset kept its place");
+    let moved = reset_of(w, "Lighting").expect("something moved: the Reset shows");
+    // At the column's far end, the whole title between it and the fold.
+    let end = |reset: &Placed| (reset.x + reset.width - (1280.0 - PAD)).abs() < 0.5 && reset.x > title.x + title.width;
+    assert!(end(&moved), "the Reset at the row's far end: {moved:?} {title:?}");
+    assert!(!end(&Placed { x: fold.x + fold.width, ..moved }), "twin: a Reset beside the fold is refused");
 
     // Another block's mark takes its place; its own mark again closes it, the sliders back where they stood.
     press_help(&rig, w, "Colour");

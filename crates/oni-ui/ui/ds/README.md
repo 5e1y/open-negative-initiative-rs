@@ -221,9 +221,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
   (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
   alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line
-  below. Capitals belong to the keycaps alone. On a short row a `Section`'s title yields, so the reset and
-  fold keys keep to the column's edge; the reset stands there always, dimmed at rest, a step apart from the
-  fold key. A help mark, named with its block, opens its card in the block's flow under the title, pushing the
+  below. Capitals belong to the keycaps alone. A `Section` folds by the tree's own bare chevron before its
+  title, the app's one look for folding; its Reset shows only while the block stands off its rest, at the
+  row's far end, the title between it and the fold. On a short row the title yields. A help mark, named with its block, opens its card in the block's flow under the title, pushing the
   block down, one card at a time; its note comes in short parts a blank line apart.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.

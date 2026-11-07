@@ -7249,5 +7249,12 @@
     "title": "A slider's tick, its double click and its block's Reset share one rest",
     "status": "done",
     "detail": "A freshly prepared negative read Exposure +1.50 EV with its knob away from the tick, and Lighting's Reset dimmed: the tick and the double click took the slider spec's own base (0 EV, Sharpening's amount 0, a gain's 0) while the block's Reset wrote the frame's import state (+1.50 EV on a negative, amount 1, the roll's measured stops). The spec's base is gone: Field::base reads the frame's import state in its own mode and decode, a gain the roll's measure, and the tick, the double click, the block's Reset and its lit state all read it. No render moves; only what a double click writes and where the tick stands."
+  },
+  {
+    "id": 1506,
+    "type": "interface",
+    "title": "A block folds by the tree's chevron before its title; its Reset shows only off rest, at the row's end",
+    "status": "done",
+    "detail": "Both evaluators found a block's Reset beside its boxed fold key, and the boxed › of a folded block read as a key that opens a sub-page. A Section now folds by the library tree's own bare chevron leading its title, the app's one look for folding, and its Reset shows only while the block stands off its rest, alone at the row's far end, the whole title between it and the fold. The title row keeps a key's height, so nothing moves as the Reset comes and goes; the panel's right edge no longer holds a chevron beside the scroll knob."
   }
 ]
