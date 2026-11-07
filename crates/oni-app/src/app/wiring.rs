@@ -282,7 +282,7 @@ impl Ctl {
         let p = me.clone();
         d.on_act(move |action| p.act(action));
         let p = me.clone();
-        d.on_detect(move || p.toggle_detection());
+        d.on_detect(move || p.detect());
         let p = me.clone();
         d.on_remove_found(move || p.remove_found());
         let p = me.clone();

@@ -86,14 +86,14 @@ export global Canvas {
     // Each patch's source: the lines to them, and the copied strokes with their widths.
     in property <string> source-lines;
     in property <[{commands: string, width: length}]> source-shapes;
-    // Auto De-dust's reading: the picture veiled, its pixels past the roll's window lit, a ring on each speck kept.
+    // Auto De-dust's reading: the picture veiled but for its pixels past the roll's window, a ring on each speck kept.
     in property <bool> dust-shown;
     in property <image> dust-mask;
     // `Picture.revision` for `dust-mask`, a texture each notch rewrites in place.
     in property <int> dust-revision;
     in property <[Mark]> dust-marks;
-    // The colour the mask's kernel writes.
-    out property <color> dust-lit: DustStyle.lit;
+    // The veil the mask's kernel writes where the reading does not reach.
+    out property <color> dust-veil: DustStyle.veil;
     // Space held in De-dust: the drag pans instead of painting.
     in-out property <bool> space-held;
     // The crop's size while a handle is held, above the frame.

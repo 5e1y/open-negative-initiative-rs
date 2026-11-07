@@ -1,4 +1,4 @@
-//! Auto De-dust: on a click the frame's pixels past its window's dense end under a veil, the dust among
+//! Auto De-dust: on a click the frame under a veil but for its pixels past its window's dense end, the dust among
 //! them ringed; on another, one correction on each speck ringed. Neither runs unasked, and the second writes what the first shows.
 
 use super::*;
@@ -39,7 +39,7 @@ pub(in crate::app) struct Shown {
 }
 
 impl Shown {
-    /// The map on the GPU, its copy here let go, and the texture Slint samples; one refused shows the veil alone.
+    /// The map on the GPU, its copy here let go, and the texture Slint samples; one refused shows the rings alone.
     fn new(gpu: &Gpu, read: Read, mut reading: dust::Reading) -> Shown {
         let map = std::mem::take(&mut reading.map);
         let kernel = display::DustKernel::new(&gpu.device, &gpu.queue, (map.width, map.height), &map.texels);
@@ -56,8 +56,8 @@ impl Shown {
     }
 
     /// The mask at `sensitivity`: one dispatch, nothing read or uploaded; a window that cannot take the GPU's texture reads it back.
-    fn draw(&mut self, gpu: &Gpu, sensitivity: f32, lit: [f32; 3]) {
-        self.kernel.run(&gpu.device, &gpu.queue, dust::notch(sensitivity), lit, &self.target);
+    fn draw(&mut self, gpu: &Gpu, sensitivity: f32, veil: [f32; 4]) {
+        self.kernel.run(&gpu.device, &gpu.queue, dust::notch(sensitivity), veil, &self.target);
         if gpu.reads_back {
             let (w, h) = (self.target.width(), self.target.height());
             if let Some(bytes) = display::read_back(&gpu.device, &gpu.queue, &self.target, w, h) {
@@ -99,11 +99,8 @@ fn corrections(dust: &[&dust::Speck], width: usize, height: usize) -> Vec<Correc
 }
 
 impl Ctl {
-    /// The Detect key: a reading shown goes, else one is asked, once the full resolution is there.
-    pub(in crate::app) fn toggle_detection(self: &Rc<Self>) {
-        if self.state.borrow_mut().dust.found.take().is_some() {
-            return self.publish_dedust();
-        }
+    /// The Detect key: a reading asked, once the full resolution is there; it stays until Remove, a stroke or another photo.
+    pub(in crate::app) fn detect(self: &Rc<Self>) {
         self.state.borrow_mut().dust.detect_asked = true;
         self.detection_due();
         self.publish_dedust();
@@ -269,11 +266,11 @@ impl Ctl {
         let sensitivity = s.dust.sensitivity;
         d.set_sensitivity(sensitivity);
         d.set_sensitivity_text(crate::fields::Readout::Percent.format(sensitivity).into());
-        let lit = c.get_dust_lit();
-        let lit = [lit.red(), lit.green(), lit.blue()].map(|v| f32::from(v) / 255.0);
+        let veil = c.get_dust_veil();
+        let veil = [veil.red(), veil.green(), veil.blue(), veil.alpha()].map(|v| f32::from(v) / 255.0);
         let mut ringed = whole;
         if let Some(f) = s.dust.found.as_mut() {
-            f.draw(&s.gpu, sensitivity, lit);
+            f.draw(&s.gpu, sensitivity, veil);
             if c.get_dust_mask() != f.mask {
                 c.set_dust_mask(f.mask.clone());
             }

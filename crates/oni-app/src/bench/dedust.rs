@@ -164,7 +164,6 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     for _ in 0..corrections().len() {
                         d.invoke_remove(0);
                     }
-                    d.invoke_detect();
                     lines.borrow_mut().push(format!("taken back: {} corrections, veil {}", corrections().len(), c.get_dust_shown()));
                     ctl.act(crate::Act::Correction);
                     ctl.flush();

@@ -6906,5 +6906,19 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1434,
+    "type": "interface",
+    "title": "De-dust's reading dims what it leaves out and rings the dust in white on a dark halo",
+    "status": "done",
+    "detail": "Evaluation s-c82a3414 (UI, Color and contrast, major; Overall): Detect laid amber at 43 % over every pixel past the window and the specks at full amber, on a black veil at 65 % over the whole picture, and drew its rings in the same amber: on a light frame at a high sensitivity the photo drowned and the rings vanished. The veil now dims only what the reading leaves out, with the crop's own scrim (DustStyle.veil is Colour.scrim), and the pixels past the window show as they are, the specks' own pixels no longer painted over; the kernel writes that one colour (display/dust.wgsl, dust_mask its CPU reference) and the reading's map loses its dust channel (R8Uint, half the memory), which the display alone read. Found rings are the brush's white on a dark halo (Ring, guide tone), seen on any photo; a correction laid keeps its numbered orange ring, the one colour on the canvas. No found ring can be selected, so none is marked as such. Nothing rendered or written changes. Checks: oni-measure a_speck_ringed_stands_clear_of_the_veil_on_the_map (twin: the ground beside it stays veiled) and the map tests on one channel; display::dust the kernel against its reference (twin: another notch) and a texel's veil (twin: before its notch); window auto_dust, the speck's white ring left of the panel and the picture darker under the veil, back once the reading goes."
+  },
+  {
+    "id": 1435,
+    "type": "interface",
+    "title": "DETECT only reads: its reading and its count stay until REMOVE, a stroke or another photo",
+    "status": "done",
+    "detail": "Evaluation s-c82a3414 (UX, Expert efficiency): after a first Detect the evaluator raised Sensitivity and pressed DETECT again, which hid the reading and its count, the key doubling as Hide since #1232; the count then said nothing. DETECT now only reads, and is out of reach while its reading shows, since that reading answers every sensitivity and the slider recounts it live; the reading and its note stay until REMOVE, a stroke, a crop or another photo. The bench's hiding press goes. The rest stays at 0 %, as measured in #1076: 0 and 25 % ring nothing on the clean roll #8 and keep the one real speck of P1073201, 50 % rings up to 3 shapes of image and 100 % up to 82, so a default that finds something on a clean roll invites REMOVE to patch the picture; no dusty frame yet shows a speck a higher rest would find. Checks: window auto_dust, DETECT taking a press with nothing shown (twin) and out of reach while its reading shows, a click on it leaving the reading and '1 speck of dust ringed', the reading over the patch saying 'No dust at this sensitivity', and Undo past the patch taking that reading away."
   }
 ]

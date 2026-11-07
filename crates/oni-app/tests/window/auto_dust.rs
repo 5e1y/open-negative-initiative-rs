@@ -8,6 +8,7 @@ use oni_settings::levels::Levels;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
 use slint::platform::{PointerEventButton, WindowEvent};
+use i_slint_backend_testing::AccessibleRole;
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -26,13 +27,20 @@ fn dragged(rig: &common::Rig, x: f32, y: f32, by: f32) {
     rig.pump();
 }
 
-/// The window's pixels the lit colour holds, and their mean brightness, each channel at 0 to 1.
-fn on_screen(rig: &common::Rig) -> (usize, f64) {
-    let (_, pixels) = rig.drawn();
+/// Left of the panel, whose keys and note change with the reading: the white pixels, and the mean brightness, each channel at 0 to 1.
+fn on_screen(rig: &common::Rig, right: usize) -> (usize, f64) {
+    let (w, pixels) = rig.drawn();
     let channels = |v: u16| (f64::from(v >> 11) / 31.0, f64::from((v >> 5) & 63) / 63.0, f64::from(v & 31) / 31.0);
-    let lit = pixels.iter().filter(|p| matches!(channels(p.0), (r, g, b) if r > 0.9 && (0.4..0.8).contains(&g) && b < 0.25)).count();
-    let sum: f64 = pixels.iter().map(|p| { let (r, g, b) = channels(p.0); r + g + b }).sum();
-    (lit, sum / 3.0 / pixels.len().max(1) as f64)
+    let left: Vec<(f64, f64, f64)> = pixels.iter().enumerate().filter(|(i, _)| i % w < right).map(|(_, p)| channels(p.0)).collect();
+    let white = left.iter().filter(|&&(r, g, b)| r > 0.9 && g > 0.9 && b > 0.9).count();
+    let sum: f64 = left.iter().map(|(r, g, b)| r + g + b).sum();
+    (white, sum / 3.0 / left.len().max(1) as f64)
+}
+
+/// Whether the DETECT key takes a press, as assistive tools read it.
+fn detect_reachable(w: &oni_app::MainWindow) -> Option<bool> {
+    let key = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "DETECT").find(|e| e.accessible_role() == Some(AccessibleRole::Button));
+    key.and_then(|k| k.accessible_enabled())
 }
 
 /// A key pressed while the frame decodes, its thumbnail kept: the opening itself brings the full resolution, as
@@ -137,9 +145,11 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     assert!(canvas.get_painting());
     assert!(!canvas.get_dust_shown(), "nothing shows until the key is pressed");
     rig.settle();
-    let bare = on_screen(&rig);
+    let right = (1280.0 - w.global::<oni_app::DetailLoupe>().get_band_width() - 40.0) as usize;
+    let bare = on_screen(&rig, right);
 
-    d.invoke_detect();
+    assert_eq!(detect_reachable(w), Some(true), "twin: with nothing shown, DETECT takes a press");
+    common::click(&rig, w, common::the(w, AccessibleRole::Button, "DETECT").middle());
     rig.until("the reading", Duration::from_secs(60), || {
         rig.pump();
         d.get_found_shown()
@@ -188,9 +198,14 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     d.invoke_sensitivity_drag(-300.0, 300.0, false);
     d.invoke_sensitivity_release();
     rig.pump();
+    // DETECT pressed again once the slider moved: its reading stays, and so does its count.
+    assert_eq!(detect_reachable(w), Some(false), "the reading answers every sensitivity: nothing to read again");
+    common::click(&rig, w, common::the(w, AccessibleRole::Button, "DETECT").middle());
+    assert!(d.get_found_shown() && !d.get_detecting(), "the reading stays up, none asked again");
+    assert_eq!((d.get_found(), d.get_found_note().as_str()), (1, "1 speck of dust ringed"));
     rig.settle();
-    let veiled = on_screen(&rig);
-    assert!(veiled.0 > bare.0, "the speck lit on the canvas: {veiled:?} against {bare:?}");
+    let veiled = on_screen(&rig, right);
+    assert!(veiled.0 > bare.0, "the speck's ring white on the canvas: {veiled:?} against {bare:?}");
     assert!(veiled.1 < bare.1, "the picture darker under the veil: {veiled:?} against {bare:?}");
 
     d.invoke_remove_found();
@@ -215,15 +230,14 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     });
     assert_eq!(d.get_found(), 0, "the patch healed what the first reading showed");
     assert!(canvas.get_dust_shown(), "the veil shows even with no dust");
-    d.invoke_detect();
-    rig.pump();
-    assert!(!canvas.get_dust_shown(), "twin: the key takes it away");
-    rig.settle();
-    assert!(on_screen(&rig).1 > veiled.1, "twin: the veil gone, the picture is back");
+    assert_eq!(d.get_found_note().as_str(), "No dust at this sensitivity", "and says what it found");
 
     ctl.act(Act::Undo);
     rig.pump();
     assert!(corrections().is_empty(), "the removal is one undo step");
+    assert!(!canvas.get_dust_shown() && !d.get_found_shown(), "twin: a reading made over the patch no longer holds");
+    rig.settle();
+    assert!(on_screen(&rig, right).1 > veiled.1, "twin: the veil gone, the picture is back");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

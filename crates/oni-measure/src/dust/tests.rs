@@ -141,7 +141,7 @@ fn a_sharp_neutral_speck_is_dust_and_noise_a_glint_or_a_highlight_are_not() {
     assert_eq!(dust(&with_block(4, 3, [0.01; 3])), 0, "twin: at the frame's edge is the holder");
     // Clearer than the window: a scratch or the scene's shadows, never read.
     assert_eq!(dust(&with_block(100, 3, [10.0; 3])), 0, "twin: past the clear end shows nothing");
-    assert!(read(&with_block(100, 3, [10.0; 3]), 200, &limits(), SIDE).map.texels.iter().all(|t| t[0] != 0));
+    assert!(read(&with_block(100, 3, [10.0; 3]), 200, &limits(), SIDE).map.texels.iter().all(|&t| t != 0));
 }
 
 #[test]
@@ -197,6 +197,23 @@ fn sensitivity_reads_further_inside_the_window() {
 }
 
 #[test]
+fn a_speck_ringed_stands_clear_of_the_veil_on_the_map() {
+    // The same speck inside the window: the display veils what the map has not reached, never a speck ringed.
+    let mut pixels = vec![grey(0.5); 40_000];
+    with_speck_at(100, 100, 0.2, &mut pixels);
+    let reading = read(&pixels, 200, &limits(), SIDE);
+    assert_eq!(reading.at(0.5).len(), 1);
+    for s in [0.5, 0.74, 1.0] {
+        for speck in reading.at(s) {
+            for run in &speck.runs {
+                assert!((run.start..run.end).all(|x| u32::from(reading.map.texels[run.row as usize * 200 + x as usize]) <= notch(s)), "at {s}");
+            }
+        }
+    }
+    assert!(u32::from(reading.map.texels[50 * 200 + 50]) > notch(0.74), "twin: the ground beside it stays veiled");
+}
+
+#[test]
 fn a_speck_once_found_stays_found_as_sensitivity_rises() {
     // A speck past the window, in a band that a deeper inset reads too: there the two merge into one
     // shape far too wide to be a speck.
@@ -246,14 +263,13 @@ fn the_map_holds_what_shows_at_every_notch_with_no_pixel_read_again() {
     let at = |x: usize, y: usize| reading.map.texels[y * 200 + x];
     assert_eq!((reading.map.width, reading.map.height), (200, 200));
     assert_eq!(reading.past, 16, "the speck alone is past the window itself");
-    assert_eq!(at(101, 101)[0], 0, "past at rest");
-    assert_eq!(at(101, 101)[1], 0, "and dust at rest");
+    assert_eq!(at(101, 101), 0, "past at rest");
     // Density 0.7 under a white at 1.0: 0.3 of a reach of 0.8.
     let expected = (0.3 / REACH * NOTCHES).ceil() as i32;
-    assert!((i32::from(at(30, 30)[0]) - expected).abs() <= 1, "{:?} against {expected}", at(30, 30));
-    assert_eq!(at(150, 150), [NEVER, NEVER], "twin: beyond the reach, never");
+    assert!((i32::from(at(30, 30)) - expected).abs() <= 1, "{:?} against {expected}", at(30, 30));
+    assert_eq!(at(150, 150), NEVER, "twin: beyond the reach, never");
     // The map answers as the reading does.
-    assert!(u32::from(at(30, 30)[0]) > notch(0.0) && u32::from(at(30, 30)[0]) <= notch(0.5));
+    assert!(u32::from(at(30, 30)) > notch(0.0) && u32::from(at(30, 30)) <= notch(0.5));
 }
 
 #[test]
@@ -263,7 +279,7 @@ fn a_lone_pixel_of_a_large_frame_stays_lit_in_the_reduced_map() {
     pixels[(h - 1) * w + w - 1] = grey(0.01);
     let reading = read(&pixels, w, &limits(), 300);
     assert_eq!((reading.map.width, reading.map.height), (300, 240));
-    let lit: Vec<usize> = reading.map.texels.iter().enumerate().filter(|(_, t)| t[0] == 0).map(|(i, _)| i).collect();
+    let lit: Vec<usize> = reading.map.texels.iter().enumerate().filter(|&(_, &t)| t == 0).map(|(i, _)| i).collect();
     assert_eq!(lit, vec![300 * 240 - 1], "twin: rounding would have lost the last cell");
     // Every source pixel reads once, each cell's rows being its own.
     assert_eq!(reading.past, 1);
@@ -276,7 +292,7 @@ fn a_map_reduced_keeps_the_earliest_notch_of_its_pixels() {
     pixels[100 * w + 100] = grey(0.2);
     pixels[100 * w + 101] = grey(0.01);
     let reading = read(&pixels, w, &limits(), 200);
-    assert_eq!(reading.map.texels[50 * 200 + 50][0], 0, "the darkest of the cell's pixels sets it");
+    assert_eq!(reading.map.texels[50 * 200 + 50], 0, "the darkest of the cell's pixels sets it");
 }
 
 fn pixels_of(runs: &[(u32, u32, u32)]) -> Speck {
