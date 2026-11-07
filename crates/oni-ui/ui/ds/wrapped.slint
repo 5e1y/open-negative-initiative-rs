@@ -92,7 +92,7 @@ export component WrappedCard inherits Outward {
             horizontal-alignment: center;
             wrap: word-wrap;
         }
-        Label { text: root.caption; tone: Tone.secondary; centred: true; wrap: word-wrap; }
+        Label { role: TextRole.note; text: root.caption; centred: true; }
         if root.photos.length > 0: Rectangle {
             height: ceil(root.photos.length / 3) * (root.side + Space.s) - Space.s;
             for photo[i] in root.photos: Picture {

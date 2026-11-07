@@ -259,6 +259,13 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.pump();
     assert_eq!(lib.get_trash_rows().row_count(), 2, "twin: the chevron unfolds the trash on its folder");
     assert_eq!(hand.shown(), ["C"]);
+    // The folder it left titles its row and its band by its name, no account's folder in either;
+    // its whole path is the row's tooltip.
+    let left = oni_library::paths::parent(&canonical("C.tif"));
+    let line = lib.get_trash_rows().row_data(1).unwrap();
+    assert_eq!((line.title.to_string(), line.trail.to_string(), line.help.to_string()), (oni_library::paths::name(&left), String::new(), left.clone()));
+    let band = lib.get_headings().row_data(0).unwrap();
+    assert_eq!((band.title.to_string(), band.caption.to_string()), (oni_library::paths::name(&left), String::new()));
     assert_eq!(hand.status(), "1 photo in the ONI Trash");
     hand.click("C", &[]);
     hand.click("C", &[]);

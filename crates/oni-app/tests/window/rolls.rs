@@ -1,4 +1,4 @@
-//! The roll gestures on the headless window: the Measured Roll block counts the roll and the folder's
+//! The roll gestures on the headless window: the Prepared Roll block counts the roll and the folder's
 //! frames it missed, its two keys reach them, Balance strength says it reaches the roll and does,
 //! Reset the Roll asks then reaches the whole roll, Ungroup takes the roll off the targets, and the
 //! balance key asks Each or Average.

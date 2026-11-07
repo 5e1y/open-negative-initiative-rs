@@ -89,7 +89,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     w.global::<Bar>().invoke_act(oni_app::Act::PrepareRoll);
     rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && names() == 3);
     rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
-    assert_eq!(p.get_left_out().as_str(), "1 frame of this folder, measured on another roll, is left out.");
+    assert_eq!(p.get_left_out().as_str(), "1 frame of this folder, prepared with another roll, is left out.");
     assert_eq!(p.get_heading().as_str(), "Select the Film Type");
     assert!(!p.get_has_tutorial(), "the film step offers no demo");
     assert!(p.get_skipped().row_data(1).unwrap(), "a scanner's roll skips the flat-field");
@@ -308,7 +308,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(loaded(&canonical("D.tif")).settings.roll_reference.map(|r| r.id) != ids[0], "twin: D keeps its own roll");
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
-    assert_eq!(menus.get_titles().undo.as_str(), "Undo Measure the roll of 3 photos");
+    assert_eq!(menus.get_titles().undo.as_str(), "Undo Prepare the roll of 3 photos");
     ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert!(loaded(&canonical("B.tif")).settings.roll_reference.is_none(), "one undo takes the whole measure back");

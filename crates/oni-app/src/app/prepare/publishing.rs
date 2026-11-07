@@ -99,7 +99,7 @@ impl Ctl {
             None => step.title(r.film).to_string(),
         };
         let passes_note = if r.capture == Capture::RgbPasses && r.grouping.is_none() {
-            tr!("{count} frames, grouped when the roll was last measured.", count = frames.len())
+            tr!("{count} frames, grouped when the roll was last prepared.", count = frames.len())
         } else {
             String::new()
         };

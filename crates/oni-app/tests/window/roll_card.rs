@@ -202,11 +202,11 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     panel.invoke_dye_family_picked(0);
     rig.pump();
     assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::KodakC41));
-    assert_eq!(panel.get_dye_source().as_str(), "Not the film stock's: Fujifilm Superia names Fuji");
+    assert_eq!(panel.get_dye_source().as_str(), "Not the film stock's: Fujifilm Superia calls for Fuji");
     assert!(g.get_dye_separation_modified(), "twin: off the stock's dyes, the reset key shows");
     rig.until("the card reads the frame's Kodak beside the stock's Fuji", Duration::from_secs(10), || {
         rig.pump();
-        lib.get_stock_dyes().as_str() == "Dyes: Kodak, Fuji; the stock names Fuji"
+        lib.get_stock_dyes().as_str() == "Dyes: Kodak, Fuji; this film stock calls for Fuji"
     });
     g.invoke_reset(4);
     rig.pump();

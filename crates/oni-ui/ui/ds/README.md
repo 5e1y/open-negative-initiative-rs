@@ -46,8 +46,9 @@ the states they read off the drawn window (out of reach, a destructive key, a la
 `caption` 11 for a caption, a value or a key's legend, `label` 13 for the words read, `section` 15
 semibold for a block's title, `title` 17 bold for a mode's or a sheet's, `heading` 24; `Roles` gives a role's
 size and weight to a label and to a field typed over it alike. A value never outsizes its block's title; a
-note is a label's size in the secondary ink, its lines opened (`Type.leading`); the tertiary ink stands
-at AA's 4.5:1 on the panel's ground. `fonts/Inter.ttf` maps
+note is a label's size in the secondary ink, its lines opened (`Type.leading`), and every helper line is
+one, never a caption: an empty list's words, a step's status, a warning, a notice's message; the tertiary ink
+stands at AA's 4.5:1 on the panel's ground. `fonts/Inter.ttf` maps
 its digits and its + − × to their tabular forms (the cmap edited once, offline), so a value keeps its
 width as it changes, on screen and on a contact sheet's numbers.
 

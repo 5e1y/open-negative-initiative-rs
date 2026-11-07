@@ -1,4 +1,4 @@
-//! Roll › Measured Roll: this photo over three framings of it, its roll's others; the hand drags
+//! Roll › Prepared Roll: this photo over three framings of it, its roll's others; the hand drags
 //! Source Balance's Blue ↔ Yellow and every photo turns with it, then back.
 
 use oni_app::fields::Field;

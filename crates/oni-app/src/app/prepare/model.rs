@@ -102,7 +102,7 @@ pub fn fitted_image(image: (f64, f64), size: (f64, f64)) -> (f64, f64, f64, f64)
 pub fn left_out_text(n: usize) -> String {
     match n {
         0 => String::new(),
-        n => trn("{n} frame of this folder, measured on another roll, is left out.", "{n} frames of this folder, measured on another roll, are left out.", n as u64),
+        n => trn("{n} frame of this folder, prepared with another roll, is left out.", "{n} frames of this folder, prepared with another roll, are left out.", n as u64),
     }
 }
 

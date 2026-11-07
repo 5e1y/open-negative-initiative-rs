@@ -17,7 +17,7 @@ export component AbsentNote inherits Inset {
     pad: Gap.m;
     gap: Gap.s;
     Label { role: TextRole.section; text: Absent.title; wrap: word-wrap; }
-    if Absent.detail != "": Label { tone: Tone.secondary; text: Absent.detail; wrap: word-wrap; }
+    if Absent.detail != "": Label { role: TextRole.note; text: Absent.detail; }
     ButtonGroup { align: GroupAlign.end;
         if Absent.folder != "": Button { text: @tr("Show the Folder"); clicked => { Absent.show-folder(); } }
         Button { text: @tr("Back to the Gallery"); clicked => { Absent.back(); } }

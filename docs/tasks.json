@@ -6906,5 +6906,33 @@
     "title": "Balance strength waits behind the balance key's settings, as the flat-field's settings do",
     "status": "done",
     "detail": "Owner's call, after live feedback from beginners: an advanced dose right under AUTO WHITE BALANCE raised questions and blocked them. The key's row now carries a settings key at its far right, the flat-field's own mechanism made one SettingsRow both blocks share; closed by default, one click shows Balance strength and its roll note, its value and reset unchanged. Checks: fields balance_strength_stands_behind_its_keys_settings_alone_in_the_panel (twin: the dose at the surface fails), window rolls the dose hidden until its key opens it (twin: open, it shows)."
+  },
+  {
+    "id": 1454,
+    "type": "interface",
+    "title": "One word per concept: the crop, the measuring window, the prepared roll, and the All Photos filter",
+    "status": "done",
+    "detail": "Evaluation r4: one concept carried several names. The crop is the crop everywhere: the undo step reads Paste crop, never framing, and so do the help's release note and the balance question. Window now means the measuring window alone: Per-Channel Levels speaks of each channel's range, De-dust of the roll's ends, and Reset the Roll of the measuring window drawn; the step tab and the block's keys keep the short Window, which names nothing else. The roll that PREPARE ROLL makes is the prepared roll in every word: the Roll tab's block is Prepared Roll, its notes, keys, undo step (Prepare the roll of N photos), Prepare's notes and the scanner's note say prepared, while Measuring the roll stays the run's progress. The gallery's rating filter key is All Photos (Filter: All Photos in the menu), apart from Select All. The Auto White Balance question over several frames, untranslated since its words lived in oni-measure, moves its words to the app and reads in French and Spanish, colour spelt as everywhere and no sidecar named. Checks: fields the_roll_tab_lays_its_blocks_in_the_swift_order (Prepared Roll read as Swift's Measured Roll), rolls balance_words every_wording_carries_the_count (twin: another count), window gestures (Undo Paste crop, Filter: All Photos), prepare (Undo Prepare the roll), help_demo_roll, catalogue."
+  },
+  {
+    "id": 1455,
+    "type": "interface",
+    "title": "The roll card's dyes say what the film stock calls for, as a photographer would",
+    "status": "done",
+    "detail": "Evaluation r4: Dyes: Kodak; the stock names Fuji read as a riddle. The roll card now reads Dyes: Kodak; this film stock calls for Fuji, under the stock it names, and the Dye Separation block's note says the same verb: Not the film stock's: Fujifilm Fujicolor calls for Fuji, No film stock calls for these dyes. Only words move. Checks: roll_card the_card_names_the_frames_dyes_and_the_stocks_when_they_differ (twin: matching dyes say no stock), roll_tab the_dyes_say_whether_they_are_the_film_stocks, window roll_card and roll_tab."
+  },
+  {
+    "id": 1456,
+    "type": "interface",
+    "title": "The ONI Trash titles each band and row by its folder's name, the whole path on hover",
+    "status": "done",
+    "detail": "Evaluation r4: the ONI Trash titled a photo's band with its path from the home, the account's folders included. The trash's folders are now named as the navigator names a folder (a standard home folder in the reader's words), with the folders above only where two of them share a name, as the favourites do; the folder row's tooltip holds the whole path. The path-from-home heading is removed, its last caller gone. Checks: trash the_trash_lists_its_folders_latest_deletion_first (twin: two folders of one name take their parents), window gallery reads the row's and the band's title, no trail, the path as the row's tooltip."
+  },
+  {
+    "id": 1457,
+    "type": "interface",
+    "title": "Every helper line takes the note: one size and one leading",
+    "status": "done",
+    "detail": "Evaluation r4: empty-state and status captions fell to the 11 pt caption with tight leading. Every helper line is now the design system's note, a label's size in the secondary ink with its lines opened: an empty list's hint, Prepare's base, flags and grouping status, the epilepsy warning, the navigator's first-run steps and welcome, an empty grid's detail, the export's subtitle and space note, and the messages of asks, notices, progress cards, a missing original and the DNG conversion. The caption stays for tiles, values and key legends. The design system's README says so. No render moves. Checks: window export_panel (the subtitle, now a note, measures taller than a label's line; the summary keeps the label's), column_edges, sheet_layout, told, sheets."
   }
 ]

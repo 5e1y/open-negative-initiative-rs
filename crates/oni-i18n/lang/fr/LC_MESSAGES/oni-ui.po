@@ -754,8 +754,8 @@ msgid "Contact sheets, slides, and the whole roll at a glance."
 msgstr "Planches contact, diapositives, et toute la pellicule d'un coup d'œil."
 
 #: crates/oni-ui/ui/help.slint
-msgid "The whole roll, once measured"
-msgstr "Toute la pellicule, une fois mesurée"
+msgid "The whole roll, once prepared"
+msgstr "Toute la pellicule, une fois préparée"
 
 #: crates/oni-ui/ui/help.slint
 msgid "After Prepare the Roll, every frame shows together, numbered by its place on the film."
@@ -806,8 +806,8 @@ msgid "RESET SCAN keeps your crop"
 msgstr "RÉINITIALISER LE SCAN garde votre recadrage"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Everything goes back to rest but the framing and the conversion."
-msgstr "Tout revient au repos, sauf le cadrage et la conversion."
+msgid "Everything goes back to rest but the crop and the conversion."
+msgstr "Tout revient au repos, sauf le recadrage et la conversion."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Trash from the editor"
@@ -1090,8 +1090,8 @@ msgid "Mirror Horizontally"
 msgstr "Retourner horizontalement"
 
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
-msgid "Filter: All"
-msgstr "Filtre : Toutes"
+msgid "Filter: All Photos"
+msgstr "Filtre : Toutes les photos"
 
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Move into a New Roll…"
@@ -1514,8 +1514,8 @@ msgid "Paste Crop to Roll"
 msgstr "Coller le recadrage sur la pellicule"
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
-msgid "Pastes the copied crop on every photo measured with this roll."
-msgstr "Colle le recadrage copié sur chaque photo mesurée avec cette pellicule."
+msgid "Pastes the copied crop on every photo prepared with this roll."
+msgstr "Colle le recadrage copié sur chaque photo préparée avec cette pellicule."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Aspect Ratio"
@@ -1638,8 +1638,8 @@ msgid "Automatic"
 msgstr "Automatique"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Detect shows, under a veil, every pixel past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
-msgstr "Détecter montre, sous un voile, chaque pixel au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin dans la fenêtre et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
+msgid "Detect shows, under a veil, every pixel past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further in from those ends and asks less of a speck. Remove lays one patch on each speck ringed."
+msgstr "Détecter montre, sous un voile, chaque pixel au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin en deçà de ces extrémités et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "DETECT"
@@ -1722,16 +1722,16 @@ msgid "Double-click to bring it back to rest; {} with − or + moves three steps
 msgstr "Double-cliquez pour revenir au repos ; {} avec − ou + avance de trois crans."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Measured Roll"
-msgstr "Pellicule mesurée"
+msgid "Prepared Roll"
+msgstr "Pellicule préparée"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Every setting here is the roll's: moved on this photo, it reaches every photo measured with the roll, each keeping its own look. A photo left out of that measurement can be included, or the measured ones moved into a roll of their own."
-msgstr "Chaque réglage ici appartient à la pellicule : modifié sur cette photo, il s’applique à toutes les photos mesurées avec elle, chacune gardant son propre look. Une photo restée hors de cette mesure peut y être incluse, ou les photos mesurées déplacées dans une pellicule à part."
+msgid "Every setting here is the roll's: moved on this photo, it reaches every photo prepared with the roll, each keeping its own look. A photo left out when the roll was prepared can be included, or the prepared ones moved into a roll of their own."
+msgstr "Chaque réglage ici appartient à la pellicule : modifié sur cette photo, il s’applique à toutes les photos préparées avec elle, chacune gardant son propre look. Une photo laissée de côté lors de la préparation peut y être incluse, ou les photos préparées déplacées dans une pellicule à part."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "This photo was never measured with its roll, so these settings act on it alone."
-msgstr "Cette photo n’a jamais été mesurée avec sa pellicule : ces réglages n’agissent que sur elle."
+msgid "This photo was never prepared with its roll, so these settings act on it alone."
+msgstr "Cette photo n’a jamais été préparée avec sa pellicule : ces réglages n’agissent que sur elle."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Acts on this photo, the only one of its roll."
@@ -1742,12 +1742,12 @@ msgid "Acts on the {} photos of this roll."
 msgstr "Agit sur les {} photos de cette pellicule."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "1 photo of this roll was left out of its measurement, so these settings do not reach it."
-msgstr "1 photo de cette pellicule est restée hors de sa mesure : ces réglages ne l’atteignent pas."
+msgid "1 photo of this roll was left out when it was prepared, so these settings do not reach it."
+msgstr "1 photo de cette pellicule a été laissée de côté lors de sa préparation : ces réglages ne l’atteignent pas."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "{} photos of this roll were left out of its measurement, so these settings do not reach them."
-msgstr "{} photos de cette pellicule sont restées hors de sa mesure : ces réglages ne les atteignent pas."
+msgid "{} photos of this roll were left out when it was prepared, so these settings do not reach them."
+msgstr "{} photos de cette pellicule ont été laissées de côté lors de sa préparation : ces réglages ne les atteignent pas."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Include It"
@@ -1758,16 +1758,16 @@ msgid "Include Them"
 msgstr "Les inclure"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Gives the photos left out this roll's measurement and settings, their own look kept."
-msgstr "Donne aux photos laissées de côté la mesure et les réglages de cette pellicule, en gardant leur propre look."
+msgid "Gives the photos left out this roll's preparation and settings, their own look kept."
+msgstr "Donne aux photos laissées de côté la préparation et les réglages de cette pellicule, en gardant leur propre look."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Moves the photos measured with this roll into a roll folder of their own."
-msgstr "Déplace les photos mesurées avec cette pellicule dans un dossier de pellicule à part."
+msgid "Moves the photos prepared with this roll into a roll folder of their own."
+msgstr "Déplace les photos préparées avec cette pellicule dans un dossier de pellicule à part."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Finding the photos measured with this roll…"
-msgstr "Recherche des photos mesurées avec cette pellicule…"
+msgid "Finding the photos prepared with this roll…"
+msgstr "Recherche des photos préparées avec cette pellicule…"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Film Type"
@@ -1918,8 +1918,8 @@ msgid "Per-Channel Levels"
 msgstr "Niveaux par canal"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Each channel's own window on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone."
-msgstr "La fenêtre propre à chaque canal du scan, choisi par R, G ou B : ses extrémités noire et blanche, que Préparer la pellicule place, et ses ombres, son point médian et ses hautes lumières entre elles. Un double-clic sur une poignée la ramène seule."
+msgid "Each channel's own range on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone."
+msgstr "La plage propre à chaque canal du scan, choisi par R, G ou B : ses extrémités noire et blanche, que Préparer la pellicule place, et ses ombres, son point médian et ses hautes lumières entre elles. Un double-clic sur une poignée la ramène seule."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
@@ -1974,8 +1974,8 @@ msgid "Drag the frame's corners or edges on the photo to crop it, or move it wit
 msgstr "Faites glisser les coins ou les bords du cadre sur la photo pour la recadrer, ou déplacez-le avec les flèches, dix fois plus loin avec Maj. Échap ou Annuler rend la photo telle que le recadrage l’a trouvée ; Retour ou TERMINÉ garde le recadrage."
 
 #: crates/oni-ui/ui/panel.slint
-msgid "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess."
-msgstr "Cette pellicule a été mesurée avant que le scanner ne conserve sa médiane : mesurez-la de nouveau dans Préparer la pellicule, sinon le scanner se centre sur une estimation."
+msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
+msgstr "Cette pellicule a été préparée avant que le scanner ne conserve sa médiane : préparez-la de nouveau, sinon le scanner se centre sur une estimation."
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab."
@@ -2170,8 +2170,8 @@ msgid "Delete"
 msgstr "Supprimer"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "All"
-msgstr "Toutes"
+msgid "All Photos"
+msgstr "Toutes les photos"
 
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "Show every photo, whatever its medal"
@@ -3400,8 +3400,8 @@ msgid "A photo deleted in ONI waits here, its file untouched, until it is restor
 msgstr "Une photo supprimée dans ONI attend ici, son fichier intact, jusqu’à ce qu’elle soit restaurée."
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "All in the rating filter shows every photo."
-msgstr "Toutes, dans le filtre des médailles, affiche chaque photo."
+msgid "Choose All Photos in the rating filter to show every photo."
+msgstr "Choisissez Toutes les photos dans le filtre des médailles pour afficher chaque photo."
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
@@ -3616,8 +3616,8 @@ msgid "Set Film Stock"
 msgstr "Définir l’émulsion"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Dyes: {family}; the stock names {named}"
-msgstr "Colorants : {family} ; ceux de l’émulsion : {named}"
+msgid "Dyes: {family}; this film stock calls for {named}"
+msgstr "Colorants : {family} ; cette émulsion demande {named}"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Dyes: {family}"
@@ -3682,8 +3682,8 @@ msgstr[0] "Un téléphone jumelé, aucun connecté."
 msgstr[1] "{n} téléphones jumelés, aucun connecté."
 
 #: crates/oni-app/src/app/prepare/entering.rs
-msgid "The base picked, the frames flagged and the window drawn are dropped, and the roll opens again on its first step."
-msgstr "La base prélevée, les vues marquées et la fenêtre tracée sont abandonnées, et la pellicule rouvre sur sa première étape."
+msgid "The base picked, the frames flagged and the measuring window drawn are dropped, and the roll opens again on its first step."
+msgstr "La base prélevée, les vues marquées et la fenêtre de mesure tracée sont abandonnées, et la pellicule rouvre sur sa première étape."
 
 #: crates/oni-app/src/app/prepare/entering.rs
 msgid "Discard This Roll's Preparation?"
@@ -3772,10 +3772,10 @@ msgid "{apart} of {count} frames, marked, were digitised with other settings tha
 msgstr "Vues marquées ({apart} sur {count}) : numérisées avec d’autres réglages que ceux de la pellicule ({capture}). Leur exposition est alignée sur ceux-ci ; une ouverture différente modifie aussi le vignetage mesuré par le flat-field, alors refaites-les en manuel pour une pellicule plus propre."
 
 #: crates/oni-app/src/app/prepare/model.rs
-msgid "{n} frame of this folder, measured on another roll, is left out."
-msgid_plural "{n} frames of this folder, measured on another roll, are left out."
-msgstr[0] "{n} vue de ce dossier, mesurée avec une autre pellicule, est écartée."
-msgstr[1] "{n} vues de ce dossier, mesurées avec une autre pellicule, sont écartées."
+msgid "{n} frame of this folder, prepared with another roll, is left out."
+msgid_plural "{n} frames of this folder, prepared with another roll, are left out."
+msgstr[0] "{n} vue de ce dossier, préparée avec une autre pellicule, est écartée."
+msgstr[1] "{n} vues de ce dossier, préparées avec une autre pellicule, sont écartées."
 
 #: crates/oni-app/src/app/prepare/passes.rs
 msgid "Shift the grouping by one file, or leave a stray file out of the selection before preparing the roll."
@@ -3826,8 +3826,8 @@ msgid "Measuring {done} of {total}…"
 msgstr "Mesure : {done} sur {total}…"
 
 #: crates/oni-app/src/app/prepare/publishing.rs
-msgid "{count} frames, grouped when the roll was last measured."
-msgstr "{count} vues, regroupées lors de la dernière mesure de la pellicule."
+msgid "{count} frames, grouped when the roll was last prepared."
+msgstr "{count} vues, regroupées lors de la dernière préparation de la pellicule."
 
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "{measured} measured, {flagged} flagged"
@@ -3968,8 +3968,8 @@ msgid "Frame {number} of {count}"
 msgstr "Vue {number} sur {count}"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "No film stock names these dyes"
-msgstr "Aucune émulsion ne désigne ces colorants"
+msgid "No film stock calls for these dyes"
+msgstr "Aucune émulsion ne demande ces colorants"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
@@ -3980,16 +3980,36 @@ msgid "From the film stock, {stock}"
 msgstr "D’après l’émulsion, {stock}"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "Not the film stock's: {stock} names {family}"
-msgstr "Pas ceux de l’émulsion : {stock} désigne {family}"
+msgid "Not the film stock's: {stock} calls for {family}"
+msgstr "Pas ceux de l’émulsion : {stock} demande {family}"
+
+#: crates/oni-app/src/app/rolls/balance_words.rs
+msgid "Balance Each of the {count}"
+msgstr "Équilibrer chacune des {count}"
+
+#: crates/oni-app/src/app/rolls/balance_words.rs
+msgid "Average the {count} Balances"
+msgstr "Moyenner les {count} balances"
+
+#: crates/oni-app/src/app/rolls/balance_words.rs
+msgid "Auto White Balance on {count} photos"
+msgstr "Balance des blancs auto sur {count} photos"
+
+#: crates/oni-app/src/app/rolls/balance_words.rs
+msgid "Balance Each corrects the colour of all {count} photos, each for itself: right when the light changed between frames.\n\nAverage balances all {count}, then gives every one the mean of their corrections: right on a series shot in one light, which should match.\n\n⌘Z only takes back the photo that is open; the others keep their new balance. The crop is never touched."
+msgstr "Équilibrer chacune corrige la couleur des {count} photos, chacune pour elle-même : juste quand la lumière a changé d’une vue à l’autre.\n\nMoyenner équilibre les {count}, puis donne à chacune la moyenne de leurs corrections : juste sur une série prise sous une même lumière, qui doit se ressembler.\n\n⌘Z ne reprend que la photo ouverte ; les autres gardent leur nouvelle balance. Le recadrage n’est jamais touché."
+
+#: crates/oni-app/src/app/rolls/balance_words.rs
+msgid "Reading {done} of {total}…"
+msgstr "Lecture de {done} sur {total}…"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on the selected photo, not the one on screen."
 msgstr "Agit sur la photo sélectionnée, pas sur celle affichée."
 
 #: crates/oni-app/src/app/rolls.rs
-msgid "Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back."
-msgstr "Chaque photo de la pellicule revient telle qu’elle a été numérisée : la mesure de la pellicule, les recadrages et tous les réglages du look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises. Corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler les rétablit."
+msgid "Every photo of the roll goes back as it was scanned: the roll's preparation, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back."
+msgstr "Chaque photo de la pellicule revient telle qu’elle a été numérisée : la préparation de la pellicule, les recadrages et tous les réglages du look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises. Corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler les rétablit."
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Reset the Roll"
@@ -4684,16 +4704,16 @@ msgstr[0] "Coller les réglages"
 msgstr[1] "Coller les réglages sur {n} photos"
 
 #: crates/oni-core/src/store/paste.rs
-msgid "Paste framing"
-msgid_plural "Paste framing to {n} photos"
-msgstr[0] "Coller le cadrage"
-msgstr[1] "Coller le cadrage sur {n} photos"
+msgid "Paste crop"
+msgid_plural "Paste crop to {n} photos"
+msgstr[0] "Coller le recadrage"
+msgstr[1] "Coller le recadrage sur {n} photos"
 
 #: crates/oni-core/src/store/roll.rs
-msgid "Measure the roll"
-msgid_plural "Measure the roll of {n} photos"
-msgstr[0] "Mesurer la pellicule"
-msgstr[1] "Mesurer la pellicule de {n} photos"
+msgid "Prepare the roll"
+msgid_plural "Prepare the roll of {n} photos"
+msgstr[0] "Préparer la pellicule"
+msgstr[1] "Préparer la pellicule de {n} photos"
 
 #: crates/oni-core/src/store/roll.rs
 msgid "Reset the Roll · {n} photo"

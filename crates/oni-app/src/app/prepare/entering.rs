@@ -197,7 +197,7 @@ impl Ctl {
         if !holds {
             return leave(self);
         }
-        let message = tr("The base picked, the frames flagged and the window drawn are dropped, and the roll opens again on its first step.");
+        let message = tr("The base picked, the frames flagged and the measuring window drawn are dropped, and the roll opens again on its first step.");
         self.ask(tr("Discard This Roll's Preparation?"), message, tr("Discard"), true, Pending::Run(Box::new(leave)));
     }
 

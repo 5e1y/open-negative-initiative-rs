@@ -1,5 +1,5 @@
 //! The roll gestures the core already carries, reached from the window: Reset the Roll…, Ungroup,
-//! the Measured Roll block's two keys, and Auto White Balance over several frames with its Each or
+//! the Prepared Roll block's two keys, and Auto White Balance over several frames with its Each or
 //! Average choice and its progress on the key.
 
 
@@ -17,10 +17,12 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
+mod balance_words;
+
 /// Frames balanced at once: each holds a preview decode, about 100 MB, until its copy is made.
 const BALANCERS: usize = 3;
 
-/// What the Measured Roll block shows: `RollScope`.
+/// What the Prepared Roll block shows: `RollScope`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(super) struct RollScope {
     pub measured: Option<usize>,
@@ -77,7 +79,7 @@ impl Ctl {
         window.global::<Choice>().on_chosen(move |i| p.balance_chosen(usize::try_from(i).ok()));
     }
 
-    /// The Measured Roll block and the balance key's note, from the open frame and the targets.
+    /// The Prepared Roll block and the balance key's note, from the open frame and the targets.
     pub(super) fn publish_rolls(&self) {
         let Some(w) = self.window() else { return };
         let (scope, count, open_alone) = {
@@ -169,7 +171,7 @@ impl Ctl {
             return;
         }
         let title = trn("Reset the Roll of This Photo?", "Reset the Roll of {n} Photos?", count as u64);
-        let message = tr("Every photo of the roll goes back as it was scanned: the roll's measurement, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back.");
+        let message = tr("Every photo of the roll goes back as it was scanned: the roll's preparation, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back.");
         let key = trn("Reset Photo", "Reset {n} Photos", count as u64);
         self.ask(&title, &message, &key, true, Pending::ResetToDefault(reach));
     }
@@ -195,11 +197,11 @@ impl Ctl {
             return self.run_auto_balance(Strategy::Each);
         }
         let Some(w) = self.window() else { return };
-        let wording = choice::wording(count);
+        let (title, detail) = balance_words::asked(count);
         let c = w.global::<Choice>();
-        c.set_title(wording.title.into());
-        c.set_message(wording.detail.into());
-        let keys = wording.options.iter().map(|(_, t)| crate::AskKey { text: t.as_str().into(), role: crate::AskRole::Option });
+        c.set_title(title.into());
+        c.set_message(detail.into());
+        let keys = choice::STRATEGIES.iter().map(|&s| crate::AskKey { text: balance_words::label(s, count).into(), role: crate::AskRole::Option });
         c.set_keys(ModelRc::new(VecModel::from(keys.collect::<Vec<_>>())));
         c.set_shown(true);
         w.invoke_refocus();
@@ -321,7 +323,7 @@ impl Ctl {
         panel.set_balancing(batch.is_some());
         if let Some(b) = batch {
             panel.set_balance_fraction(b.done as f32 / b.total.max(1) as f32);
-            panel.set_balance_progress(choice::progress(b.done, b.total).into());
+            panel.set_balance_progress(balance_words::progress(b.done, b.total).into());
         }
     }
 }

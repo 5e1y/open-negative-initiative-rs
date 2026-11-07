@@ -14,6 +14,8 @@ export struct TrashLine {
     opened: bool,
     present: bool,
     restore-help: string,
+    // A folder's whole path, said under the pointer; its title is its name alone.
+    help: string,
 }
 
 // A folder's row: `kind` 0 a folder, 1 a roll, 2 the opened folder.
@@ -172,6 +174,7 @@ component Rows inherits Scroller {
                 form: RowForm.navigator;
                 title: line.title;
                 trail: line.trail;
+                help: line.help;
                 caption: line.count;
                 depth: line.depth;
                 expandable: line.foldable;
@@ -219,7 +222,7 @@ component Rows inherits Scroller {
 component Welcome inherits VerticalLayout {
     padding: Space.m;
     spacing: Space.s;
-    Label { text: @tr("The archive shows a folder of your disk and everything under it."); tone: Tone.secondary; wrap: word-wrap; }
+    Label { text: @tr("The archive shows a folder of your disk and everything under it."); role: TextRole.note; }
     if Navigator.welcome.length > 0: Label { text: @tr("Your photos were in:"); }
     for line[i] in Navigator.welcome: Button {
         text: line.title;
@@ -345,7 +348,7 @@ export component RootsCatchUpSheet inherits Sheet {
                 spacing: Space.xxs;
                 horizontal-stretch: 1;
                 Label { text: step.title; wrap: word-wrap; }
-                Label { text: step.detail; role: TextRole.caption; tone: Tone.secondary; wrap: word-wrap; }
+                Label { text: step.detail; role: TextRole.note; }
             }
         }
     }

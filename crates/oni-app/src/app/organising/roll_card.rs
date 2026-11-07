@@ -70,7 +70,7 @@ pub(super) fn dyes_note(stock: Option<&str>, held: Option<&[SeparationFamily]>) 
     let Some(held) = held.filter(|h| !h.is_empty()) else { return String::new() };
     let family = held.iter().map(|f| family_name(*f)).collect::<Vec<_>>().join(", ");
     match stock.and_then(dye_family) {
-        Some(named) if held != [named] => tr!("Dyes: {family}; the stock names {named}", family = family, named = family_name(named)),
+        Some(named) if held != [named] => tr!("Dyes: {family}; this film stock calls for {named}", family = family, named = family_name(named)),
         _ => tr!("Dyes: {family}", family = family),
     }
 }
@@ -196,8 +196,8 @@ mod tests {
         let fujicolor = Some("fujifilm-fujicolor");
         assert_eq!(dyes_note(fujicolor, Some(&[FujiC41])), "Dyes: Fuji");
         // Twin: frames on Kodak under a Fuji stock say both, never the stock's alone.
-        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41])), "Dyes: Kodak; the stock names Fuji");
-        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41, FujiC41])), "Dyes: Kodak, Fuji; the stock names Fuji");
+        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41])), "Dyes: Kodak; this film stock calls for Fuji");
+        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41, FujiC41])), "Dyes: Kodak, Fuji; this film stock calls for Fuji");
         assert_eq!(dyes_note(None, Some(&[GenericC41])), "Dyes: Generic");
         assert_eq!(dyes_note(fujicolor, None), "", "nothing is said while the frames read");
         assert_eq!(dyes_note(fujicolor, Some(&[])), "", "nor when no frame unmixes");

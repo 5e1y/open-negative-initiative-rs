@@ -60,7 +60,7 @@ impl Ctl {
         } else if s.org.trash_open {
             (tr("ONI Trash Is Empty").into(), tr("A photo deleted in ONI waits here, its file untouched, until it is restored.").into(), String::new())
         } else if let Some(m) = s.filter {
-            (tr!("No {medal} Photos", medal = library::medal(m)), tr("All in the rating filter shows every photo.").into(), String::new())
+            (tr!("No {medal} Photos", medal = library::medal(m)), tr("Choose All Photos in the rating filter to show every photo.").into(), String::new())
         } else if s.opened.is_none() {
             (
                 tr("No Folder Open").into(),

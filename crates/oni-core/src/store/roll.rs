@@ -36,7 +36,7 @@ fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> Pipeline
 
 /// The undo label of a measure, counting frames, never the passes riding with them.
 pub fn measure_label(frames: usize) -> String {
-    trn("Measure the roll", "Measure the roll of {n} photos", frames as u64)
+    trn("Prepare the roll", "Prepare the roll of {n} photos", frames as u64)
 }
 
 pub fn reset_label(frames: usize) -> String {
