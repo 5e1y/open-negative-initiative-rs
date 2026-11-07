@@ -39,8 +39,14 @@ pub struct Row {
 
 /// `TreeRowChrome.defaultStock`: the stock a hand picked for the roll, else its first photo's mode's.
 pub fn default_stock(group: &FilmGroup) -> &'static str {
-    let picked = group.film.as_ref().and_then(|f| film_stock(f.stock.as_deref())).map(|k| k.id);
-    let mode = group.entries.first().and_then(|e| e.mode).unwrap_or(oni_settings::ConversionMode::Negative);
+    roll_stock(group.film.as_ref(), group.entries.first())
+}
+
+/// A roll's stock as its line draws it: the one picked on `film`, else the generic stock of `first`'s
+/// mode, the negative's while that photo has none.
+pub fn roll_stock(film: Option<&oni_settings::Film>, first: Option<&Entry>) -> &'static str {
+    let picked = film.and_then(|f| film_stock(f.stock.as_deref())).map(|k| k.id);
+    let mode = first.and_then(|e| e.mode).unwrap_or(oni_settings::ConversionMode::Negative);
     picked.unwrap_or_else(|| oni_settings::film::default_stock_id(mode))
 }
 

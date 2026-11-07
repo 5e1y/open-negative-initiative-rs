@@ -7914,5 +7914,33 @@
     "title": "The tree checks read the projects' list's top off a row it shows, no longer a literal 188 pt",
     "status": "done",
     "detail": "Merge of w24 to w29: tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift found Trip still heading the projects after Walk was dropped on its top strip. Cause: da582057 (#1573), the bar 8 pt taller (theme.slint ShellStyle.bar-height), lowers the list, which at the merge starts at 192 pt (the column's header row 4 pt shorter since 27c7f588 put the rating filter's pill where New Project stood); the check's LIST_TOP 188 aimed Walk's drop 2 pt above Trip's row, in the list's top margin, no strip of any row. The app is right (the old check passes with the old bar height at the merge; a drop on the strip lands); the check was wrong. Fix: common::projects_top reads the list's top off a project row shown, its place in the window less its place in the list and the scroll, which tree_leftovers and tree_hand (the same stale 188, its presses 4 pt off their rows' middles) aim from. Checks: window tree_leftovers and tree_hand green; twin: Landing::Before made to land nothing (project_drop.rs) fails tree_leftovers at Walk now heads the projects."
+  },
+  {
+    "id": 1607,
+    "type": "design",
+    "title": "A selected row is flat: a band, no raised pill and no shadow",
+    "status": "done",
+    "detail": "Owner, round 6: on a selected item, no 2.5D with a shadow, flat only. A rounded row selected (the navigator's opened folder, the settings' sections, the presets' list) drew the tab bar's raised pill (Outward: sheen, edge, cast shadow); a list's lines a flat band. Row now lays one flat band, Colour.row-selected, in every form, rounded where its form is; the Outward under it goes. The segmented tab bars keep their pill (owner's dose). Checks: window row_marks (the navigator's opened row and the settings' section shown: no Outward lies on them, their band one shade top to foot, lit apart from the ground beside, nothing cast under; twins: the same search finds the Archive tab's raised pill, and a row at rest reads as no band)."
+  },
+  {
+    "id": 1608,
+    "type": "design",
+    "title": "Every mark at a row's end in one column on the row's right edge",
+    "status": "done",
+    "detail": "Owner, round 6: in list items the icons on the right were not aligned, between the warning, the stars and the rest. Cause: the end marks were laid one after the other, the star (a 24 pt key) only shown on a favourite or under the hand, so it pushed the warning left on hover and a warning stood at the edge on one row, a star's width in on another; the reach's glyph was 10 pt, the warning 12.8. Row now ends on fixed columns a mark wide (RowStyle.mark, 12.8 pt), Space.s apart: the state's (the warning, a reach's glyph, its words before it) then the end's (the star, a menu choice's check), whose column a starrable or menu row keeps even bare; the star's 24 pt catch overhangs its column. The hovered row's key (Restore) stands before the count, which keeps its edge. NavigatorStyle.star goes for RowStyle.mark. Checks: window row_marks (two warnings, on a favourite and on a deeper row with its title cut, share one x; the stars share one centre a mark from the row's edge; the hovered row's offered star stands in the stars' column and its warning stays put; the trash's line keeps its count's edge under the hand with Restore before it; twins: the deeper title starts further in, the star's column is not the warning's, no key at rest)."
+  },
+  {
+    "id": 1609,
+    "type": "design",
+    "title": "A roll's line shows its stock's canister artwork, the generic negative's with none picked",
+    "status": "done",
+    "detail": "Owner, round 6: do not use the canister icons but the canister SVGs we already have; with no film stock chosen, the generic negative. StockIcon drew the film-roll glyph below the picker's size (#1090), so every roll's row showed the glyph though Rust already handed it the artwork drawn at the row's side. StockIcon now draws the artwork at any size and nothing without one; a roll's line always shows its canister and never the glyph. The projects' roll lines get theirs too (library::roll_stock, shared with the archive's default_stock): the stock picked on the roll's marker, else its first photo's mode's generic stock, which is Generic Colour Negative for a negative and for a photo with no mode yet (the navigator's default too); a slide or a monochrome roll shows Generic Colour Positive or Generic Black & White, as its card already names. The roll card's hero with neither shows the generic negative's canister. Checks: window row_marks (each navigator roll's pixels match its stock's artwork within RGB565's steps: Portra, the generic negative for none, Foma 401; beside the photo, the archive tree's roll line too; twins: another stock's artwork lies far off each); project_rolls (a project's roll line carries the generic negative's pixels; twin: the project's own line none)."
+  },
+  {
+    "id": 1610,
+    "type": "feature",
+    "title": "Foma 401 no longer offered in Select Film Stock; a roll already on it still reads",
+    "status": "done",
+    "detail": "Owner, round 6: remove Foma 401 from the list. FilmStockKind gains `offered`; Foma Fomapan 401 is `withdrawn`, still in FILM_STOCKS so a marker or sidecar naming it reads, names it and draws its canister, its dyes and indices unchanged; stocks::by_brand lists offered_stocks() alone, so neither the roll's picker nor the export's film field offers it. Nothing is rewritten. Checks: oni-settings film::foma_401_is_no_longer_offered_yet_a_roll_on_it_still_reads, oni-app stocks::the_picker_lists_no_foma_401_yet_its_artwork_still_draws, window stocks (40 cells, no Foma 401; twin: Foma 400 listed) and row_marks (a roll marked Foma 401 shows its name and canister; its picker lists no Foma 401; twin: Foma 400)."
   }
 ]

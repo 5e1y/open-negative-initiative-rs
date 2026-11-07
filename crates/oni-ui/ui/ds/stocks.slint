@@ -1,26 +1,18 @@
-// A film stock: its artwork in its own colours, or the film-roll glyph for a stock without any, and
-// the picker's cell with the name under it, grown under the pointer and filled when picked.
+// A film stock: its artwork in its own colours, at any size, and the picker's cell with the name under
+// it, grown under the pointer and filled when picked.
 import { Colour, Space, Radius, Motion } from "theme.slint";
 import { StockStyle } from "theme_views.slint";
-import { Label, TextRole, Tone, Icon } from "base.slint";
-import { Icons } from "icons.slint";
+import { Label, TextRole, Tone } from "base.slint";
 
-// `FilmStockIcon`: the artwork in its own colours where the stock itself is shown, a picker's cell or a
-// roll's hero; at a row's size, among the line glyphs, the film-roll glyph, as for a stock without any.
+// `FilmStockIcon`: the canister in its own colours wherever a stock is shown, a picker's cell, a roll's
+// hero or a line of a list; no artwork, nothing, as every stock and every roll's default has one.
 export component StockIcon inherits Rectangle {
     in property <image> artwork;
     in property <bool> has-artwork;
     in property <length> side: StockStyle.icon;
-    property <bool> shown: root.has-artwork && root.side >= StockStyle.icon;
     width: root.side;
     height: root.side;
-    if root.shown: Image { width: root.side; height: root.side; source: root.artwork; }
-    if !root.shown: Icon {
-        width: root.side >= StockStyle.icon ? root.side : StockStyle.row;
-        height: self.width;
-        source: Icons.film-roll;
-        tone: Tone.secondary;
-    }
+    if root.has-artwork: Image { width: root.side; height: root.side; source: root.artwork; }
 }
 
 export component StockCellView inherits Rectangle {

@@ -1,5 +1,5 @@
 //! `FilmStockIcon`: each stock's own artwork in its colours, decoded once from the SVG shipped with
-//! the app; a stock without artwork has none, and the caller draws the film-roll glyph instead.
+//! the app, at a picker's size or drawn once at a row's.
 
 use slint::Image;
 use std::cell::RefCell;
@@ -97,10 +97,11 @@ fn sized(data: &[u8], side: u32) -> Option<Vec<u8>> {
     Some(format!(r#"<svg width="{side}" height="{side}"{rest}"#).into_bytes())
 }
 
-/// `FilmStockCatalog.byBrand`: the brands in the catalogue's order, each with its stocks, as indices.
+/// `FilmStockCatalog.byBrand`: the brands in the catalogue's order, each with the stocks it offers, as
+/// indices into the catalogue.
 pub fn by_brand() -> Vec<(&'static str, Vec<usize>)> {
     let mut out: Vec<(&'static str, Vec<usize>)> = Vec::new();
-    for (i, kind) in oni_settings::film::FILM_STOCKS.iter().enumerate() {
+    for (i, kind) in oni_settings::film::offered_stocks() {
         match out.iter_mut().find(|(b, _)| *b == kind.brand) {
             Some((_, list)) => list.push(i),
             None => out.push((kind.brand, vec![i])),
@@ -122,7 +123,18 @@ mod tests {
         assert!(icon("no-such-stock").is_none(), "twin: an unknown stock has no artwork");
         let brands: Vec<&str> = by_brand().iter().map(|(b, _)| *b).collect();
         assert_eq!(&brands[..3], ["Generic", "AgfaPhoto", "CineStill"]);
-        assert_eq!(by_brand().iter().map(|(_, l)| l.len()).sum::<usize>(), oni_settings::film::FILM_STOCKS.len());
+        assert_eq!(by_brand().iter().map(|(_, l)| l.len()).sum::<usize>(), oni_settings::film::offered_stocks().count());
+    }
+
+    #[test]
+    fn the_picker_lists_no_foma_401_yet_its_artwork_still_draws() {
+        let listed: Vec<&str> = by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::FILM_STOCKS[i].id).collect();
+        assert!(!listed.contains(&"foma-fomapan401"), "Foma 401 is not offered");
+        assert!(row_icon("foma-fomapan401", 44).is_some() && icon("foma-fomapan401").is_some(), "a roll on it still draws its canister");
+        // Twin: Foma 400 stays among Foma's stocks.
+        let foma = by_brand().into_iter().find(|(b, _)| *b == "Foma").map(|(_, l)| l).unwrap_or_default();
+        let names: Vec<&str> = foma.iter().map(|&i| oni_settings::film::FILM_STOCKS[i].display_name).collect();
+        assert_eq!(names, ["Foma Fomapan 200", "Foma Fomapan 400"]);
     }
 
     #[test]

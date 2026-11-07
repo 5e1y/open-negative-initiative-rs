@@ -76,7 +76,9 @@ impl Ctl {
             (None, Some(k), Some(m)) => (k.display_name.to_string(), tr!("Default, from this roll's {mode} mode", mode = crate::app::roll_tab::mode_name(m))),
             _ => (String::new(), tr("No film stock set").to_string()),
         };
-        let artwork = explicit.or(fallback).and_then(|k| crate::stocks::icon(k.icon_name));
+        // With no stock nor mode to name, the generic negative's canister stands in the hero's place.
+        let shown = explicit.or(fallback).or_else(|| film_stock(Some(default_stock_id(oni_settings::ConversionMode::Negative))));
+        let artwork = shown.and_then(|k| crate::stocks::icon(k.icon_name));
         lib.set_stock_has_artwork(artwork.is_some());
         lib.set_stock_artwork(artwork.unwrap_or_default());
         lib.set_stock(stock.into());

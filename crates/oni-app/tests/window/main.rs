@@ -95,6 +95,7 @@ mod presence;
 mod quit;
 mod rgb_passes;
 mod roll_card;
+mod row_marks;
 mod roll_tab;
 mod rolls;
 mod scanner;
@@ -325,6 +326,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::the_preset_name_sheet_holds_the_keys_and_answers_them", sheets::the_preset_name_sheet_holds_the_keys_and_answers_them),
     ("roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes", roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
+    ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),
     ("tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click", tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click),
     ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),

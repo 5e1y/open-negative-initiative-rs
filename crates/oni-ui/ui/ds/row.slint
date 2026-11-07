@@ -1,6 +1,6 @@
 // Every line of a list or a tree, its glyph, chevron, caption, badge, star, key and states, its title
 // typed over while renamed; and what an empty list says in place of its lines.
-import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle, TabsStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tips, Divider } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Icons } from "icons.slint";
@@ -10,7 +10,6 @@ import { FormStyle } from "forms.slint";
 import { StockIcon } from "stocks.slint";
 import { Reach, Reaches } from "reach.slint";
 import { KeyScope, FocusRing } from "keyboard.slint";
-import { Outward } from "depth.slint";
 
 // `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders;
 // `heading` names the lines under it, in the tertiary ink, out of reach.
@@ -40,7 +39,7 @@ export component Row inherits Rectangle {
     in property <RowForm> form: RowForm.list;
     in property <bool> expandable;
     in property <bool> expanded;
-    // `TreeRowChrome.RowIcon.stock`: a roll's stock artwork in place of its glyph.
+    // `TreeRowChrome.RowIcon.stock`: a roll's stock artwork, which a roll's line always shows.
     in property <image> stock;
     in property <bool> has-stock;
     // A list line's mark before its title, as the papers' download or link.
@@ -103,14 +102,17 @@ export component Row inherits Rectangle {
     // The title in the secondary ink unless selected or picked.
     property <bool> quiet: root.navigator;
     property <bool> badged: root.badge != "";
+    property <bool> canister: root.has-stock || root.kind == RowKind.roll;
+    // The state's mark, a roll to prepare or a folder out of reach; the end's, a star or a check.
+    property <bool> stated: root.unprepared || root.away;
+    property <bool> ended: root.starrable || root.choice;
     property <length> indent: root.depth * RowStyle.indent;
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
     height: root.choice ? ButtonStyle.small-height : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
     border-radius: root.form != RowForm.list ? Radius.badge : 0px;
-    // A rounded row selected is the tab bar's raised pill; a list's lines keep a flat band, which
-    // several selected side by side join into one.
-    property <bool> raised: root.selected && root.form != RowForm.list;
-    property <brush> band: root.heading || root.raised ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
+    // Selected, every form lays a flat band, no relief and no shadow; a list's, square, joins the
+    // bands of several selected side by side into one.
+    property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
     property <bool> away: root.reach != Reach.here;
@@ -129,7 +131,6 @@ export component Row inherits Rectangle {
     property <string> told;
     changed tip => { if (area.has-hover) { Tips.hover(false, root.told, 0px, 0px); } }
     if root.pinned: Rectangle { background: root.band; }
-    if root.raised: Outward { fill: TabsStyle.pill; radius: Radius.badge; }
     area := TouchArea {
         property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
         enabled: !root.renaming && !root.heading;
@@ -199,18 +200,18 @@ export component Row inherits Rectangle {
                 tone: root.faint ? Tone.tertiary : Tone.primary;
             }
         }
-        // A menu holds no stock, so its glyph takes only its own width.
+        // A menu holds no stock, so its glyph takes only its own width; a roll shows its stock's canister.
         if root.tree && !root.renaming: Rectangle {
             width: root.choice ? RowStyle.icon : RowStyle.slot;
             opacity: root.away ? State.missing : 1;
-            if root.has-stock: StockIcon {
+            if root.canister: StockIcon {
                 artwork: root.stock;
-                has-artwork: true;
+                has-artwork: root.has-stock;
                 side: RowStyle.slot;
             }
-            if !root.has-stock: Icon {
+            if !root.canister: Icon {
                 source: root.kind == RowKind.photo ? Icons.film : root.kind == RowKind.project ? Icons.sticky-note
-                    : root.kind == RowKind.roll ? Icons.film-roll : root.kind == RowKind.trash ? (root.depth == 0 ? Icons.remove : Icons.folder)
+                    : root.kind == RowKind.trash ? (root.depth == 0 ? Icons.remove : Icons.folder)
                     : root.kind == RowKind.opened || (root.kind == RowKind.folder && root.open) ? Icons.folder-open : Icons.folder;
                 width: RowStyle.icon;
                 height: RowStyle.icon;
@@ -265,34 +266,10 @@ export component Row inherits Rectangle {
             committed(t) => { root.committed(t); }
             cancelled => { root.cancelled(); }
         }
-        if root.unprepared && !root.renaming: VerticalLayout {
-            alignment: center;
-            Icon { source: Icons.warning; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.warning; }
-        }
-        if root.away && !root.renaming: VerticalLayout {
-            alignment: center;
-            Icon { source: Reaches.glyph(root.reach); width: RowStyle.chevron; height: RowStyle.chevron; tone: Tone.tertiary; }
-        }
-        if root.caption != "" && !root.renaming: Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
-        if root.starrable && (root.favourite || root.hovered): VerticalLayout {
-            alignment: center;
-            Button {
-                kind: ButtonKind.ghost;
-                has-icon: true;
-                square: true;
-                icon: Icons.favourite;
-                width: ButtonStyle.small-height;
-                height: ButtonStyle.small-height;
-                glyph-size: NavigatorStyle.star;
-                glyph-ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
-                help: root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites");
-                clicked => { root.starred(); }
-            }
-        }
-        // A count an `xs` further off the key, so the two never read as one.
+        // The key the hovered row shows stands before the count, which keeps its edge under the hand.
         if root.action != "" && root.hovered: VerticalLayout {
             alignment: center;
-            padding-left: root.caption != "" ? Space.xs : 0px;
+            padding-right: root.caption != "" ? Space.xs : 0px;
             Button {
                 text: root.action;
                 size: ButtonSize.mini;
@@ -300,9 +277,39 @@ export component Row inherits Rectangle {
                 clicked => { root.acted(); }
             }
         }
-        if root.choice && root.checked: VerticalLayout {
-            alignment: center;
-            Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
+        if root.caption != "" && !root.renaming: Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
+        // Each end mark in a column a mark wide, on the row's right edge: the state's before the star's
+        // or the check's, whose column a row that may show one keeps bare, so no mark moves under the hand.
+        if (root.stated || root.ended) && !root.renaming: HorizontalLayout {
+            spacing: Space.s;
+            if root.stated: Rectangle {
+                width: RowStyle.mark;
+                accessible-role: image;
+                accessible-label: root.unprepared ? @tr("Not prepared yet") : root.caption;
+                Icon {
+                    source: root.unprepared ? Icons.warning : Reaches.glyph(root.reach);
+                    width: RowStyle.mark;
+                    height: RowStyle.mark;
+                    tone: root.unprepared ? Tone.warning : Tone.tertiary;
+                }
+            }
+            // The star's catch, a small key's square, overhangs its column into the room either side.
+            if root.ended: Rectangle {
+                width: RowStyle.mark;
+                if root.starrable && (root.favourite || root.hovered): Button {
+                    kind: ButtonKind.ghost;
+                    has-icon: true;
+                    square: true;
+                    icon: Icons.favourite;
+                    width: ButtonStyle.small-height;
+                    height: ButtonStyle.small-height;
+                    glyph-size: RowStyle.mark;
+                    glyph-ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
+                    help: root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites");
+                    clicked => { root.starred(); }
+                }
+                if root.choice && root.checked: Icon { source: Icons.done; width: RowStyle.mark; height: RowStyle.mark; tone: Tone.primary; }
+            }
         }
     }
     if root.pinned: Divider {

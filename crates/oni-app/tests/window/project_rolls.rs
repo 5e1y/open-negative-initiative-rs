@@ -141,6 +141,13 @@ pub(crate) fn a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand
     lib.invoke_project_row_folded(0);
     hand.rig.pump();
     assert_eq!(hand.project_titles(), ["Client", "Roll 10", "C.tif", "A.tif", "D.tif"]);
+    // Roll 10's line draws the generic negative's canister, its folder naming no stock.
+    let side = (22.0 * hand.rig.window.scale_factor()) as u32;
+    let generic = oni_app::stocks::row_icon("generic-color-negative", side).unwrap().to_rgba8().unwrap();
+    let roll = lib.get_project_rows().iter().find(|r| r.kind == 3).expect("Roll 10 heads its photos");
+    assert!(roll.has_stock && roll.stock.to_rgba8().unwrap().as_slice() == generic.as_slice(), "a project's roll draws its canister");
+    // Twin: the project's own line draws none.
+    assert!(lib.get_project_rows().iter().any(|r| r.kind == 1 && !r.has_stock));
     assert!(tree_line(&hand, 3, 2), "A moves before C");
     assert_eq!(hand.members(), [vec![a.clone(), c.clone(), d.clone()]]);
 

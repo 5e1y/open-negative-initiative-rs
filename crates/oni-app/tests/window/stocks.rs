@@ -67,7 +67,10 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
         .flat_map(|b| (0..b.rows.row_count()).filter_map(move |r| b.rows.row_data(r)))
         .flat_map(|r| (0..r.cells.row_count()).filter_map(move |c| r.cells.row_data(c)))
         .collect();
-    assert_eq!(cells.len(), FILM_STOCKS.len());
+    // Every stock but Foma 401, which the picker no longer offers.
+    assert_eq!(cells.len(), FILM_STOCKS.len() - 1);
+    assert!(!cells.iter().any(|c| c.name == "Foma Fomapan 401"), "Foma 401 is not offered");
+    assert!(cells.iter().any(|c| c.name == "Foma Fomapan 400"), "twin: Foma 400 still is");
     assert!(cells.iter().all(|c| c.has_artwork && !c.picked));
     rig.settle();
     println!("shot {}", rig.shot("stock-picker").display());
