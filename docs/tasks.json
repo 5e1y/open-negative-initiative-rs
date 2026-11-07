@@ -7676,5 +7676,19 @@
     "title": "The file at its place decides between a 1.5.6 placeholder and a print, never a rank at load",
     "status": "done",
     "detail": "Fifth review of the projects (point 1): #1554 ranked a member holding a print over one with none at the same path at load, before any file is known, so a print 1.5.6 left stale by a new scan saved over the file beat the placeholder 1.5.6 recorded later for that new scan: the new scan stood in no project and the next save wrote Trip without it. The file alone cannot tell the two cases, so project::exclusive no longer settles a member with no print against one holding a print at its place (both stay, the most recent project keeping a photo among members alike), and project_standing::learn, at the launch's read where the file at that path is known, settles it: a member with no print takes the print its file carries, or gives the photo up to a member holding that print there, as that print was read after it was named. So Portfolio keeps a while the file at a carries its print (review 4's case), and Trip keeps the new scan otherwise, Portfolio's stale print standing as a missing tile whose place holds another file, as after any rescan; a pair whose file is not read yet stays in both until it is. project::holder is the slot lookup printed and learn share. Check: project shipped_tests::the_file_at_its_place_tells_a_placeholder_from_a_print, both files at a, both date orders, through load, the launch's learn, where the photo stands, and the next save (twin: once Trip's member has learned the print, the dates alone give a to the newer Trip; mutations: exclusive settling by same alone, or learn never giving way, fail it)."
+  },
+  {
+    "id": 1560,
+    "type": "test",
+    "title": "The check that a file in this format is never set aside writes over one",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 4): the twin meant to stop former-file copies multiplying asserted projects-v1.json and projects-v2.json absent, where a file in this format would be copied to projects-v3.json, and the round trip saved once over no file; deleting keep_former's guard for this format passed every check. project file_tests::a_file_round_trips_through_the_disk_saying_its_format now saves twice, the second over a file in this format, and only_a_change_writes_and_each_former_file_is_kept_beside_it_once ends asserting former_path(support, FORMAT) absent after a change written over this format (mutation: keep_former without its guard fails both)."
+  },
+  {
+    "id": 1561,
+    "type": "test",
+    "title": "A check that a placeholder stands at its recorded path, not at its mark's",
+    "status": "done",
+    "detail": "Fifth review of the projects (point 5): every placeholder in the checks was recorded at its own mark's path, so nothing proved the recorded path wins over the one after the mark (file.rs spelt and former), which 1.5.6 produces: renaming a folder moves the recorded paths, never the member texts. project file_tests::a_placeholder_recorded_elsewhere_than_its_mark_stands_where_recorded reads a version 1 text and an exact member, both marked /Roll 8 and recorded at /Roll 8b, each at /Roll 8b (twin: the path after each mark is /Roll 8; mutations: spelt or former preferring the mark's path fail it)."
   }
 ]

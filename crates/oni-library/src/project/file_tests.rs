@@ -23,11 +23,12 @@ fn a_file_round_trips_through_the_disk_saying_its_format() {
     portraits.manual_order = Some(3.0);
     let file = ProjectsFile { version: FORMAT, projects: vec![iceland, portraits] };
     save(scratch.path(), &file).unwrap();
+    save(scratch.path(), &file).unwrap();
     assert_eq!(load(scratch.path()), file);
     let text = std::fs::read_to_string(file_path(scratch.path())).unwrap();
     assert!(text.contains(&format!("\"version\" : {FORMAT}")) && text.contains("\"print\" : \"fa\""), "{text}");
     assert!(text.contains("\"createdAt\" : 800000000") && text.contains("\"manualOrder\" : 3"));
-    assert!(!former_path(scratch.path(), FORMAT).exists(), "a file in this format is never set aside");
+    assert!(!former_path(scratch.path(), FORMAT).exists(), "a file in this format, written over, is never set aside");
     // Twin: the sidecar's ISO spelling of the same date is not what a project writes.
     assert!(!text.contains(&stamp().iso8601()));
 }
@@ -103,7 +104,7 @@ fn only_a_change_writes_and_each_former_file_is_kept_beside_it_once() {
     let mut third = load(support).projects;
     third[0].description = "Coast".into();
     merge::save_projects(support, &seen, &third).unwrap();
-    assert!(!former_path(support, 1).exists() && !former_path(support, 2).exists());
+    assert!(!former_path(support, 1).exists() && !former_path(support, FORMAT).exists());
 }
 
 /// Builds before #1550 took 1.5.6's placeholder for a print and wrote it as an exact member, with its
@@ -128,6 +129,33 @@ fn an_exact_member_holding_a_placeholder_stands_at_its_path() {
     // Twin: a member left with neither path nor print, as a's was, is dropped by that write.
     save(support, &ProjectsFile { version: FORMAT, projects: vec![Project::new("Lost", stamp(), vec![Member::new(None, None)])] }).unwrap();
     assert!(load(support).projects[0].members.is_empty());
+}
+
+/// A folder renamed in 1.5.6 moves the paths recorded beside its placeholders, never their texts: a
+/// version 1 text and an exact member each read at the path recorded, not at the one after the mark.
+#[test]
+fn a_placeholder_recorded_elsewhere_than_its_mark_stands_where_recorded() {
+    let scratch = Scratch::new("projects-renamed-placeholder");
+    let support = scratch.path();
+    let mark = |file: &str| format!("{}/Roll 8/{file}", crate::library::WAITING_MARK);
+    let (wa, wb) = (mark("a.NEF"), mark("b.NEF"));
+    let (a, b) = ("/Roll 8b/a.NEF", "/Roll 8b/b.NEF");
+    let project = |name: &str, text: &str, path: &str, exact: Option<serde_json::Value>| {
+        let paths: serde_json::Map<String, serde_json::Value> = [(text.to_owned(), path.into())].into_iter().collect();
+        let mut p = serde_json::json!({"id": Id::new().to_string(), "name": name, "description": "", "createdAt": 8e8, "members": [text], "paths": paths});
+        if let Some(exact) = exact {
+            p["exactMembers"] = exact;
+        }
+        p
+    };
+    let former = project("Trip", &wa, a, None);
+    let exact = project("Client", &wb, b, Some(serde_json::json!([{"path": b, "print": wb}])));
+    std::fs::write(file_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [former, exact]})).unwrap()).unwrap();
+    let read: Vec<Vec<Member>> = load(support).projects.into_iter().map(|p| p.members).collect();
+    assert_eq!(read, [vec![Member::new(Some(a), None)], vec![Member::new(Some(b), None)]], "each at its recorded path");
+    // Twin: the path after each mark is the folder's old name.
+    let after = |w: &str| w.strip_prefix(crate::library::WAITING_MARK).map(str::to_owned);
+    assert_eq!((after(&wa), after(&wb)), (Some("/Roll 8/a.NEF".into()), Some("/Roll 8/b.NEF".into())));
 }
 
 /// A former file whose recorded paths went stale, decomposed or backslashed: every member found
