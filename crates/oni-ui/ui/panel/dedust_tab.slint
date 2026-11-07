@@ -34,16 +34,16 @@ component SensitivitySlider inherits Slider {
 export component DedustPane inherits Pane {
     Section {
         title: @tr("Automatic");
-        help: @tr("Detect shows, under a veil, every pixel past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed.");
+        help: @tr("Detect veils the photo but for its pixels past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed.");
         separated: false;
         SensitivitySlider { }
         // Two keycaps a gap apart, as keys stand, never one plate.
         ButtonGroup {
             align: GroupAlign.fill;
-            // Lit while what it found shows, which a second press hides.
+            // Out of reach while its reading shows: the reading answers every sensitivity, its count below.
             Button {
-                text: @tr("DETECT"); keycap: true; on: Dedust.found-shown; fills: true; enabled: !Dedust.detecting;
-                help: Dedust.found-shown ? @tr("Hides the dust found, changing nothing.") : @tr("Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it.");
+                text: @tr("DETECT"); keycap: true; fills: true; enabled: !Dedust.detecting && !Dedust.found-shown;
+                help: @tr("Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it.");
                 clicked => { Dedust.detect(); }
             }
             Button { text: @tr("REMOVE"); keycap: true; fills: true; enabled: Dedust.found > 0; help: @tr("Lays one patch on each speck of dust ringed."); clicked => { Dedust.remove-found(); } }

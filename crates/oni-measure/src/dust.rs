@@ -118,12 +118,12 @@ struct Candidate {
 }
 
 /// What each pixel shows from, reduced so that nothing fades, for the display's kernel: a texel holds the
-/// first notch at which its pixels are past the window, then the first at which they are dust.
+/// first notch at which its pixels are past the window.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Map {
     pub width: u32,
     pub height: u32,
-    pub texels: Vec<[u8; 2]>,
+    pub texels: Vec<u8>,
 }
 
 /// A frame read once for every sensitivity.
@@ -296,7 +296,7 @@ fn past_notches(pixels: &[[f32; 4]], width: usize, limits: &Limits, side: usize)
     let height = pixels.len() / width.max(1);
     let (w, h, scale) = reduced(width, height, side);
     let deep = limits.closed_in(REACH);
-    let mut texels = vec![[NEVER; 2]; w as usize * h as usize];
+    let mut texels = vec![NEVER; w as usize * h as usize];
     let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
     let per = (h as usize).div_ceil(threads).max(1);
     let past: u64 = std::thread::scope(|scope| {
@@ -317,7 +317,7 @@ fn past_notches(pixels: &[[f32; 4]], width: usize, limits: &Limits, side: usize)
                                 let s = limits.shows_from(p, deep);
                                 if s.is_finite() {
                                     let t = &mut line[((x as f64 * scale) as usize).min(w as usize - 1)];
-                                    t[0] = t[0].min(texel(s));
+                                    *t = (*t).min(texel(s));
                                     past += u64::from(s == 0.0);
                                 }
                             }
@@ -332,27 +332,10 @@ fn past_notches(pixels: &[[f32; 4]], width: usize, limits: &Limits, side: usize)
     (Map { width: w, height: h, texels }, past)
 }
 
-/// Each shape's pixels on the map from the notch it shows at: dust never goes dark once lit.
-fn lay_dust(map: &mut Map, candidates: &[Candidate], width: usize, height: usize, side: usize) {
-    let (w, h, scale) = reduced(width, height, side);
-    for c in candidates {
-        let t = texel(c.from);
-        for run in &c.speck.runs {
-            let row = ((f64::from(run.row) * scale) as usize).min(h as usize - 1);
-            let from = ((f64::from(run.start) * scale) as usize).min(w as usize - 1);
-            let to = ((f64::from(run.end) * scale).ceil() as usize).clamp(from + 1, w as usize);
-            for x in from..to {
-                let cell = &mut map.texels[row * w as usize + x];
-                cell[1] = cell[1].min(t);
-            }
-        }
-    }
-}
-
 /// A framed frame read for every sensitivity, on a map of long side `side`; `pixels` hold its rows top first.
 pub fn read(pixels: &[[f32; 4]], width: usize, limits: &Limits, side: usize) -> Reading {
     let height = pixels.len() / width.max(1);
-    let (mut map, past) = past_notches(pixels, width, limits, side);
+    let (map, past) = past_notches(pixels, width, limits, side);
     let levels: Vec<Vec<Candidate>> = (0..LEVELS.len()).map(|level| candidates(pixels, width, limits, level)).collect();
     let mut found: Vec<Candidate> = levels.concat();
     let held: Vec<f32> = found
@@ -367,7 +350,6 @@ pub fn read(pixels: &[[f32; 4]], width: usize, limits: &Limits, side: usize) -> 
     for (c, until) in found.iter_mut().zip(held) {
         c.until = until;
     }
-    lay_dust(&mut map, &found, width, height, side);
     Reading { width, height, map, past, candidates: found }
 }
 

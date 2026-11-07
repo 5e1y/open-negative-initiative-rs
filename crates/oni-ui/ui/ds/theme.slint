@@ -280,10 +280,9 @@ export global CropStyle {
     out property <length> dust-original: 56px;
 }
 
-// Auto De-dust's reading on the canvas: the veil over the picture, the pixels lit, a speck's least ring.
+// Auto De-dust's reading on the canvas: the crop's dim over what it leaves out, a speck's least ring.
 export global DustStyle {
-    out property <color> veil: Colour.black.with-alpha(0.65);
-    out property <color> lit: Colour.edge-print;
+    out property <color> veil: Colour.scrim;
     out property <length> ring: 20px;
 }
 
