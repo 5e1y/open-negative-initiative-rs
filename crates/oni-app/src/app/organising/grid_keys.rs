@@ -9,7 +9,7 @@ impl Ctl {
         if s.trash_shown() || s.picks.selection.len() < 2 {
             return false;
         }
-        let keys = s.band_keys();
+        let keys = s.whole_groups();
         let focus = s.open.as_deref().and_then(|c| keys.iter().find(|(_, p)| p.iter().any(|x| x == c))).map(|(k, _)| k.clone());
         crate::picking::select_all(&keys, &s.picks.selection, focus.as_ref()) == s.picks.selection
     }
@@ -27,7 +27,7 @@ impl Ctl {
         };
         let (outcome, trash) = {
             let mut s = self.state.borrow_mut();
-            let keys = s.band_keys();
+            let keys = if matches!(key, GridKey::SelectAll) { s.whole_groups() } else { s.band_keys() };
             let order = s.order.clone();
             let shown = Shown { order: &order, groups: &keys, columns: s.layout.columns };
             let current = s.open.clone();
@@ -51,5 +51,12 @@ impl Ctl {
         self.publish_organising();
         self.publish_bar();
         true
+    }
+}
+
+impl State {
+    /// The groups ⌘A completes: the grid's bands, or under a rating filter everything it shows as one.
+    fn whole_groups(&self) -> Vec<(String, Vec<String>)> {
+        self.filter_shows().map_or_else(|| self.band_keys(), |shown| vec![(String::new(), shown)])
     }
 }

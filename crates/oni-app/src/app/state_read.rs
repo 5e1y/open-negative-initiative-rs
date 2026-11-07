@@ -121,6 +121,12 @@ impl State {
         self.filter
     }
 
+    /// Under a rating filter, every photo it shows, in the gallery's order: the set it was turned on
+    /// to find, which Select All picks whole; none in the ONI Trash, which no filter cuts.
+    pub(super) fn filter_shows(&self) -> Option<Vec<String>> {
+        (self.filter.is_some() && !self.trash_shown()).then(|| self.order.clone())
+    }
+
     /// The thumbnails in memory dropped, as a long scroll drops them, so a check sees a tile read
     /// back from the folder.
     pub fn forget_tiles(&mut self) {

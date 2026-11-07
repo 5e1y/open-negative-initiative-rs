@@ -1,26 +1,22 @@
-// The gallery's rating filter: every photo, or the photos wearing one medal, each a press away and
-// shown by the medal itself, as the tiles and the status bar show it.
-import { Button, ButtonGroup, Medal } from "ds/ds.slint";
+// The rating filter, the photos' one in the grid and the column alike: every photo, or the photos
+// wearing one medal, named in words on a select with the medal's figure struck as the tiles wear it.
+import { Picker, PickerFace } from "ds/ds.slint";
 import { Library } from "library.slint";
 
-export component RatingFilter inherits ButtonGroup {
-    Button {
-        in-bar: true;
-        text: @tr("All Photos");
-        on: Library.filter-medal == 0;
-        help: @tr("Show every photo, whatever its medal");
-        clicked => { Library.filter-picked(0); }
-    }
-    for medal in [1, 2, 3]: Button {
-        in-bar: true;
-        square: true;
-        on: Library.filter-medal == medal;
-        help: [@tr("Show the Gold photos alone"), @tr("Show the Silver photos alone"), @tr("Show the Bronze photos alone")][medal - 1];
-        clicked => { Library.filter-picked(medal); }
-        Medal {
-            rank: medal;
-            x: (parent.width - self.width) / 2;
-            y: (parent.height - self.height) / 2;
-        }
-    }
+export component RatingFilter inherits Picker {
+    // Beside the layouts' select, whose longest words in French leave it little room: All, or the medal
+    // kept alone, its lines still in words.
+    in property <bool> compact;
+    property <[string]> kept: [@tr("All Photos"), @tr("Gold"), @tr("Silver"), @tr("Bronze")];
+    face: PickerFace.pill;
+    value: root.compact && Library.filter-medal == 0 ? @tr("All") : root.kept[Library.filter-medal];
+    medal: Library.filter-medal;
+    bare: root.compact;
+    lines: [
+        { text: root.kept[0], enabled: true },
+        { text: root.kept[1], enabled: true, medal: 1 },
+        { text: root.kept[2], enabled: true, medal: 2 },
+        { text: root.kept[3], enabled: true, medal: 3 },
+    ];
+    chosen(i) => { Library.filter-picked(i); }
 }

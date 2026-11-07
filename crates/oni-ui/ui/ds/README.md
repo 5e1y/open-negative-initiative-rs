@@ -199,7 +199,9 @@ field lies flat, as a text field.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill face keeps the hover ground, and the chip, the colour space's
   among the canvas band's mini keys, wears their flat face within its own edge. A pill that only names
-  what its column lists is `pressable: false`, never disabled, so its words keep the primary ink.
+  what its column lists is `pressable: false`, never disabled, so its words keep the primary ink. A value
+  naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
+  menu line names one the same way, every line's words then starting past the medal's room.
 - **`Medal`**: a foil disc of its metal, an icon's size on a tile and in the rating filter, its podium place sunk
   in the middle as the key that lays it (gold 1, silver 2, bronze 3), in the ruled ring's ink over a lip lit a rule
   below, so no medal is told by its colour alone. One drawing everywhere: `blank`, one not given, is the same disc

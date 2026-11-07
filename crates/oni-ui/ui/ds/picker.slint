@@ -1,5 +1,5 @@
 // The picker: a field naming the value chosen, whose menu drops under it.
-import { Colour, Radius, Space, Stroke, State, ButtonStyle, MenuStyle, FieldStyle } from "theme.slint";
+import { Colour, Radius, Space, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, MedalStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
 import { Outside } from "outside.slint";
 import { Look } from "button.slint";
@@ -8,6 +8,7 @@ import { FormStyle } from "forms.slint";
 import { FieldFace } from "fields.slint";
 import { MenuLine, FolderChoice, Menu } from "menu.slint";
 import { KeyScope } from "keyboard.slint";
+import { Medal } from "marks.slint";
 
 // A picker's face: `field` set in the panel as a text field is, `pill` a column header's name on the
 // canvas's dark, `chip` the Working Space's select among the canvas band's mini keys, in their flat face.
@@ -22,6 +23,10 @@ export component Picker inherits HorizontalLayout {
     // Words in the secondary ink after the value, a middle dot between: the chip's gloss on its space.
     in property <string> note;
     in property <string> value;
+    // The medal the value names, struck before its words, or alone in their place when `bare`, the words
+    // still what assistive tools read; 0 none.
+    in property <int> medal;
+    in property <bool> bare;
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
@@ -85,8 +90,15 @@ export component Picker inherits HorizontalLayout {
             padding-left: root.as-field ? FieldStyle.across : Space.s;
             padding-right: root.as-field ? FieldStyle.across : Space.s;
             spacing: root.chip ? Space.xs : Space.s;
+            // Alone, the medal's room stretches as the words' would, so a pill spanning its row still spans it.
+            if root.medal > 0: Rectangle {
+                horizontal-stretch: root.bare ? 1 : 0;
+                min-width: MedalStyle.size;
+                preferred-width: MedalStyle.size;
+                Medal { rank: root.medal; x: 0; y: (parent.height - self.height) / 2; }
+            }
             // Short of room, the gloss gives way before the value.
-            Label { text: root.value; horizontal-stretch: root.note != "" ? 0 : 1; overflow: elide; }
+            if root.medal == 0 || !root.bare: Label { text: root.value; horizontal-stretch: root.note != "" ? 0 : 1; overflow: elide; }
             if root.note != "": Label { text: "·"; tone: Tone.secondary; }
             if root.note != "": Label { text: root.note; tone: Tone.secondary; horizontal-stretch: 1; overflow: elide; }
             if root.chip || root.as-field || (root.pill && root.drops): VerticalLayout {

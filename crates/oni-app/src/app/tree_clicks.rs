@@ -3,7 +3,7 @@
 
 use super::organising::Column;
 use super::*;
-use oni_library::archive_tree::{self, NodeId};
+use oni_library::archive_tree::NodeId;
 use oni_library::project_tree::NodeId as ProjectNode;
 
 impl Ctl {
@@ -39,7 +39,8 @@ impl Ctl {
             let Some(id) = s.org.tree_ids.get(i).cloned() else { return };
             // Beside a photo, frames shown together are the pick a ⌘ or ⇧ click starts from, whoever
             // chose them (⌘A, the gallery, the contact-sheet key); else the frame on screen joins it.
-            if beside && s.picks.selection.len() > 1 && crate::tree_pick::picked_photos(&s.org.tree_pick.selection, &s.survey.images) != s.picks.selection {
+            let members = s.filter_shows().unwrap_or_else(|| s.survey.images.clone());
+            if beside && s.picks.selection.len() > 1 && crate::tree_pick::picked_photos(&s.org.tree_pick.selection, &members) != s.picks.selection {
                 s.org.tree_pick.selection = s.picks.selection.iter().cloned().map(NodeId::Photo).collect();
             }
             if beside && s.org.tree_pick.selection.is_empty()
@@ -50,7 +51,7 @@ impl Ctl {
             if !s.org.tree_pick.click(&id, &s.org.tree_ids, command, shift) {
                 false
             } else {
-                s.picks.selection = crate::tree_pick::picked_photos(&s.org.tree_pick.selection, &s.survey.images);
+                s.picks.selection = crate::tree_pick::picked_photos(&s.org.tree_pick.selection, &members);
                 true
             }
         };
@@ -72,7 +73,7 @@ impl Ctl {
             let Some(row) = archive.row(i) else { return };
             match row.id.clone() {
                 NodeId::Photo(path) => (Some(path), true),
-                id => (archive_tree::find(&archive.nodes, &id).and_then(archive_tree::first_path).map(str::to_owned), false),
+                id => (archive.first_shown(&id), false),
             }
         };
         let Some(path) = path.filter(|_| photo || self.beside_photo()) else { return self.publish_tree() };

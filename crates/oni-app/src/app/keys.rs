@@ -114,9 +114,8 @@ impl Ctl {
         false
     }
 
-    /// `columnKeys`' ⌘A beside a photograph: every photo of the folders the selection touches, else
-    /// the open photo's folder, shown together as a selection by ⌘ or ⇧ is; no ring is passed, as the
-    /// tree rings no folder.
+    /// `columnKeys`' ⌘A beside a photograph: `column_whole`, shown together as a selection by ⌘ or ⇧
+    /// is; no ring is passed, as the tree rings no folder.
     fn column_select_all(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
@@ -199,8 +198,11 @@ impl Ctl {
 }
 
 /// What ⌘A beside a photograph picks: every photo of the folders the selection touches, else the
-/// open photo's folder.
+/// open photo's folder; under a rating filter, every photo it shows, as in the gallery.
 fn column_whole(s: &State) -> HashSet<String> {
+    if let Some(shown) = s.filter_shows() {
+        return shown.into_iter().collect();
+    }
     let groups: Vec<(String, Vec<String>)> = s
         .archive
         .as_ref()
