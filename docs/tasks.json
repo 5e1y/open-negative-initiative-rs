@@ -6913,5 +6913,12 @@
     "title": "Film canisters wear black caps and spool again, as the real ones do",
     "status": "done",
     "detail": "Owner's call: #1195 turned every canister's caps and spool to grey metal, so none matched a real canister. They are black lacquer again, as the owner's artworks drew them: the same lit ramp across the barrel in black, the lamp's sheen a mid grey on its side, the rims rolled more softly and the spool's knurls lit ribs. What else served stays: the soft label inks, the barrel's round shade and gleam, the cap's shade on the label and the contact shadow. Check: stocks every_canister_wears_black_caps_and_spool_as_the_real_one (twin: the silver ramp fails)."
+  },
+  {
+    "id": 1447,
+    "type": "interface",
+    "title": "A roll's glyph is a film canister, told from a folder at a glance",
+    "status": "done",
+    "detail": "Evaluation s-c82a3414: a prepared roll and a plain folder differed by a subtle folder-like glyph. The roll glyph is now a 35 mm canister drawn in the Trinil set's stroke, knob, flanged caps and leader with its holes, wherever a roll is drawn as a line glyph: the navigator's and the tree's rows, a stock at a row's size, a project card without pictures and Paste to Roll. Folders keep the folder glyphs; an unprepared roll keeps the warning mark its card shows, in the same ink."
   }
 ]
