@@ -95,7 +95,7 @@ impl Archive {
 
     /// The tree and groups of `folder`'s photos: `entries` are what the index shows, the survey the
     /// folders and rolls on the disk, so a folder made in the app shows before it holds a photo.
-    /// `filter` keeps exactly one medal in the gallery, never a tier above, and leaves the tree whole.
+    /// `filter` keeps exactly one medal, never a tier above, in the gallery and the tree's rows alike.
     pub fn from_rows(folder: &str, entries: &[Entry], survey: &Arc<Survey>, filter: Option<Medal>) -> Archive {
         let root = Some(oni_library::paths::parent(folder)).filter(|p| p != folder).unwrap_or_else(|| folder.to_string());
         let (paired, companions) = folders::paired(entries, &survey.images, &survey.sidecars);
@@ -233,10 +233,47 @@ impl Archive {
         self.laid().to_vec()
     }
 
+    /// Whether the filter shows `entry`: every photo, or those wearing its one medal.
+    pub fn shows(&self, entry: &Entry) -> bool {
+        self.basis.filter.is_none_or(|m| entry.label == m)
+    }
+
+    /// The first photo a node's row stands for under the filter: a photo itself, a folder's own
+    /// first shown before its children's.
+    pub fn first_shown(&self, id: &NodeId) -> Option<String> {
+        fn first(a: &Archive, node: &Node) -> Option<String> {
+            match node {
+                Node::Photo(e) => a.shows(e).then(|| e.path.clone()),
+                Node::Folder { group, children, .. } => group
+                    .iter()
+                    .flat_map(|g| &g.entries)
+                    .find(|e| a.shows(e))
+                    .map(|e| e.path.clone())
+                    .or_else(|| children.iter().find_map(|c| first(a, c))),
+            }
+        }
+        first(self, archive_tree::find(&self.nodes, id)?)
+    }
+
+    /// The photos under `node` the filter shows, summed as `Node::count` sums them all.
+    fn shown_count(&self, node: &Node) -> usize {
+        match node {
+            Node::Photo(e) => usize::from(self.shows(e)),
+            Node::Folder { group, children, .. } => {
+                children.iter().map(|c| self.shown_count(c)).sum::<usize>() + group.iter().flat_map(|g| &g.entries).filter(|e| self.shows(e)).count()
+            }
+        }
+    }
+
     fn lay(&self) -> Vec<Row> {
         ROW_LISTS.fetch_add(1, Ordering::Relaxed);
         let mut rows = Vec::new();
         archive_tree::walk(&self.nodes, &self.expanded, 0, &mut |laid, depth| {
+            if let archive_tree::Laid::Photo(e, _) = laid
+                && !self.shows(e)
+            {
+                return;
+            }
             // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
             rows.push(match laid {
                 archive_tree::Laid::Photo(e, number) => Row {
@@ -253,7 +290,7 @@ impl Archive {
                 archive_tree::Laid::Folder(node) => {
                     let id = node.id();
                     let Node::Folder { path, group, .. } = node else { unreachable!("a folder's row lends its folder") };
-                    let count = node.count();
+                    let count = self.shown_count(node);
                     let roll = group.as_ref().filter(|g| g.film.is_some());
                     let title = roll.and_then(|g| g.film.as_ref()).map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
                     let expanded = self.expanded.contains(&id);
@@ -346,5 +383,7 @@ pub mod tidy;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod filtered;
 #[cfg(test)]
 mod bench;

@@ -1,5 +1,5 @@
 // The menus: one popup for every list a key or a click opens, a context menu's submenu beside it.
-import { Colour, Space, State, ButtonStyle, MenuStyle } from "theme.slint";
+import { Colour, Space, State, ButtonStyle, MenuStyle, MedalStyle } from "theme.slint";
 import { Label, Icon, Tone, Divider, Gap } from "base.slint";
 import { Bounds } from "outside.slint";
 import { Popover } from "surfaces.slint";
@@ -7,10 +7,11 @@ import { Look } from "button.slint";
 import { Icons } from "icons.slint";
 import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
+import { Medal } from "marks.slint";
 
-// A line of a context menu: a rule above it, out of reach, opening a submenu beside it, or printing the
-// chord the menu bar answers for it, as AppKit's menus do.
-export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string }
+// A line of a context menu: a rule above it, out of reach, opening a submenu beside it, printing the
+// chord the menu bar answers for it as AppKit's menus do, or the medal it names struck before its words.
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int }
 
 export struct FolderChoice { title: string, current: bool }
 
@@ -25,6 +26,9 @@ export component MenuEntry inherits Rectangle {
     in property <string> shortcut;
     in property <bool> enabled: true;
     in property <bool> checked;
+    // The medal a line names, 0 none, struck where a check would stand, whose room its menu sets.
+    in property <int> medal;
+    in property <length> lead: ButtonStyle.small-icon;
     in property <Look> look: Look.live;
     in property <bool> held;
     in property <bool> by-hand: true;
@@ -44,8 +48,9 @@ export component MenuEntry inherits Rectangle {
         padding-right: Space.s;
         spacing: Space.s;
         Rectangle {
-            width: ButtonStyle.small-icon;
+            width: root.lead;
             if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
+            if root.medal > 0: Medal { rank: root.medal; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
         }
         Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
         Label { text: root.shortcut; tone: Tone.secondary; }
@@ -232,10 +237,17 @@ export component Menu inherits PopupWindow {
             reject
         }
     }
+    // The room before the lines' words: a check's, or a medal's once any line names one, so words align;
+    // the medals' widths, unseen, give it.
+    property <length> lead: max(ButtonStyle.small-icon, struck.preferred-width);
+    struck := VerticalLayout {
+        visible: false;
+        for line in root.lines: Rectangle { width: line.medal > 0 ? MedalStyle.size : 0px; }
+    }
     // The lines at their own widths, unseen, which `span` reads.
     widest := VerticalLayout {
         visible: false;
-        for line in root.lines: MenuEntry { text: line.text; shortcut: line.opens ? "›" : line.keys; }
+        for line in root.lines: MenuEntry { text: line.text; shortcut: line.opens ? "›" : line.keys; medal: line.medal; lead: root.lead; }
     }
     // A press on the popup's bare ground, beside a short submenu, closes the menu as one outside it does.
     TouchArea {
@@ -261,6 +273,8 @@ export component Menu inherits PopupWindow {
             entry := MenuEntry {
                 text: line.text;
                 shortcut: line.opens ? "›" : line.keys;
+                medal: line.medal;
+                lead: root.lead;
                 enabled: line.enabled;
                 by-hand: false;
                 held: i == root.lit || i == root.open;

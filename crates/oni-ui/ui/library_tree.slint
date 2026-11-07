@@ -3,6 +3,7 @@ import { NavigatorSection } from "navigator.slint";
 import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
+import { RatingFilter } from "rating_filter.slint";
 
 // `librarySidebar`: in the gallery the navigator takes the archive's column; beside a photo the
 // navigator keeps its height over the opened folder's tree with its photos.
@@ -40,6 +41,13 @@ export component Tree inherits Surface {
                 picked(i) => { Library.surface = i; Library.surface-picked(i); }
             }
         }
+        // In the gallery the filter alone heads the archive's column, as it heads the projects'.
+        if Library.surface == 0 && !root.beside-photo: HorizontalLayout {
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
+            padding-bottom: Space.s;
+            RatingFilter { horizontal-stretch: 1; }
+        }
         if Library.surface == 0: NavigatorSection {
             vertical-stretch: root.beside-photo ? 0 : 1;
             beside-photo: root.beside-photo;
@@ -53,8 +61,8 @@ export component Tree inherits Surface {
                 if (Library.trash-row-menu(i)) { menu.show(); }
             }
         }
-        // The tree's view in words, a select of its layouts, the photo selected and, on the projects, every
-        // folder opened or folded, New Project beside it; under the tab bar its padding stands above.
+        // The photos' header, the tree's view in words beside the rating filter; under the tab bar its
+        // padding stands above.
         if Library.surface == 1 || root.beside-photo: HorizontalLayout {
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
@@ -78,12 +86,9 @@ export component Tree inherits Surface {
                     }
                 }
             }
-            if Library.surface == 1: Button {
-                size: ButtonSize.mini;
-                text: @tr("New Project");
-                clicked => { Library.new-project(); }
-            }
+            RatingFilter { compact: true; horizontal-stretch: 0; }
         }
+
         if Library.surface == 0 && root.beside-photo: RowTree {
             vertical-stretch: 1;
             rows: Library.near-rows;
@@ -158,6 +163,19 @@ export component Tree inherits Surface {
                 x: Library.project-drag.x - self.width / 2;
                 y: Library.project-drag.y - self.height / 2;
                 text: Library.project-drag.chip;
+            }
+        }
+        // New Project at the projects' foot, where a macOS sidebar adds to its own list.
+        if Library.surface == 1: HorizontalLayout {
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
+            padding-top: Space.s;
+            padding-bottom: Space.s;
+            alignment: start;
+            Button {
+                size: ButtonSize.mini;
+                text: @tr("New Project");
+                clicked => { Library.new-project(); }
             }
         }
     }

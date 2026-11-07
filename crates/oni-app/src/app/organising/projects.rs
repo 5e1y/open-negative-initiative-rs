@@ -153,10 +153,16 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
-            let roots = {
+            let mut roots = {
                 let reached = s.reach();
                 project_tree::roots(&s.org.projects, &project::Reach::new(&reached, &s.org.found))
             };
+            // The rating filter keeps its one medal in the tree as in the grid, a project with none still shown.
+            for root in &mut roots {
+                if let Node::Project(g) = root {
+                    g.entries.retain(|e| s.filter.is_none_or(|m| e.label == m));
+                }
+            }
             let nodes = project_tree::flatten(&roots, &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
             let markers = s.roll_markers();
@@ -257,7 +263,7 @@ impl State {
     }
 
     /// The photos the projects' tree rows stand for, in the order given, each once: a photo itself,
-    /// a roll its project's photos in that folder, a project none.
+    /// a roll its project's photos in that folder the filter shows, a project none.
     pub(in crate::app) fn row_photos<'a>(&self, rows: impl IntoIterator<Item = &'a NodeId>) -> Vec<String> {
         let groups = self.project_groups();
         let mut seen = HashSet::new();
@@ -267,7 +273,8 @@ impl State {
                 NodeId::Photo { path, .. } => vec![path.clone()],
                 NodeId::Roll { folder, project } => {
                     let entries = groups.iter().filter(|g| g.id == *project).flat_map(|g| &g.entries);
-                    entries.filter(|e| oni_library::paths::parent(&e.path) == *folder).map(|e| e.path.clone()).collect()
+                    let shown = entries.filter(|e| self.filter.is_none_or(|m| e.label == m));
+                    shown.filter(|e| oni_library::paths::parent(&e.path) == *folder).map(|e| e.path.clone()).collect()
                 }
                 NodeId::Project(_) => Vec::new(),
             };

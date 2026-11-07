@@ -106,6 +106,7 @@ mod sheets;
 mod sheet_keys;
 mod sidebar_reveal;
 mod sidebars;
+mod sidebar_filter;
 mod space_chip;
 mod states;
 mod stocks;
@@ -296,6 +297,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("help_demo_details::the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip", help_demo_details::the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip),
     ("help_demo_language::a_worded_demo_plays_in_the_app_s_language", help_demo_language::a_worded_demo_plays_in_the_app_s_language),
     ("sidebars::the_sidebars_lay_their_keys_in_groups_as_swift", sidebars::the_sidebars_lay_their_keys_in_groups_as_swift),
+    ("sidebar_filter::the_column_s_filter_keeps_gold_beside_a_photo_and_select_all_exports_it", sidebar_filter::the_column_s_filter_keeps_gold_beside_a_photo_and_select_all_exports_it),
+    ("sidebar_filter::the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_exports_it", sidebar_filter::the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_exports_it),
     ("space_chip::the_space_chips_tabs_take_the_pointer", space_chip::the_space_chips_tabs_take_the_pointer),
     ("states::every_state_reads_apart_from_its_neighbour", states::every_state_reads_apart_from_its_neighbour),
     ("states::readouts_end_at_one_edge", states::readouts_end_at_one_edge),

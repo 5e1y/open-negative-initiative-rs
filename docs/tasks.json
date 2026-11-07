@@ -7802,5 +7802,26 @@
     "title": "The rating filter leaves the gallery's bar",
     "status": "done",
     "detail": "The filter gets one place in the library sidebar for both screens (another lot); the bar drops it, Select All standing alone before PREPARE ROLL a bar's gap apart. Checks: toolbar groups (no All Photos on the bar, Select All, PREPARE ROLL and Export a bar's gap apart; twin: the measure finds the bar's keys)."
+  },
+  {
+    "id": 1591,
+    "type": "interface",
+    "title": "The rating filter lives in the library column: a select beside the layouts' one, alone under the tabs in the gallery, its menu striking each medal before its name",
+    "status": "done",
+    "detail": "Owner's idea: exporting one's best frames from the editor needs no trip to the gallery. RatingFilter (rating_filter.slint) is now a pill Picker reading Library.filter-medal, the one state the grid and the trees share, its menu lines All Photos, Gold, Silver, Bronze with the medal's figure struck before each name; ⌘L still cycles it and the arrows and Return walk its menu. Beside a photo and on the projects it shares the photos' header with the layouts' select in a compact form (All, or the medal alone), as French's longest layout words leave it about 80 pt; in the gallery's archive it heads the column alone under the tabs, in words (All Photos, Gold), apart from the status bar's rating keys. The design system gains it: MenuLine.medal, struck in the check's room, every line's words then starting past the medal's room (Menu.lead), and Picker.medal before the value's words or alone in their place (bare), the words still its accessible label. New Project leaves the projects' header for the projects' foot, where a macOS sidebar adds to its own list: the three no longer fit one row. The gallery bar's own filter is removed by w24 (toolbar.slint); until that lands, toolbar::the_bar_reads_by_groups finds no All Photos key on the bar of this branch. French and Spanish: All, Toutes, Todas. Checks: window sidebar_filter (the select picked by a click on its pill and on the Gold line, beside B and in the gallery; the gallery's under the tabs above the folders; All Photos picked by the arrows and Return), column_edges (the layouts' select and the filter span the column beside a photo; the empty lists hang a row at most under their header row), sidebars (the header row needs no note)."
+  },
+  {
+    "id": 1592,
+    "type": "feature",
+    "title": "The rating filter keeps its one medal in the column's trees as in the grid: the archive's beside a photo and the projects'",
+    "status": "done",
+    "detail": "Archive::lay skips a photo the filter does not show and each folder counts the photos it shows (shown_count), a folder with none counting 0 and not opening; regroup lays the rows again, so a medal laid under a filter or the filter changed moves the tree's rows as it moves the grid's. A folder's row opens its first photo shown (first_shown), a ⌘ or ⇧ pick in the tree stands for the photos the filter shows (State::filter_shows as the members), and the projects' tree keeps each project's photos of that medal, a roll heading with none gone and a roll heading's menu reaching the photos it shows (row_photos). The tree itself, the rolls' cards, Prepare and every band a roll is numbered on stay whole. Checks: library::filtered (Gold lays b2 alone, Roll A counting 0 and opening none, Roll B 1 opening on b2; twin: every photo lays six, Roll B 3 opening on b1; a medal laid under Gold brings a1's row, Silver lays a2 alone; twin: Gold's rows kept are refused); library::tests (Gold's tree five rows shorter); window sidebar_filter (beside B, the strip reads A and C under Gold, all four again under All Photos)."
+  },
+  {
+    "id": 1593,
+    "type": "feature",
+    "title": "Under a rating filter Select All picks every photo it shows, beside a photo as in the gallery, and Export takes exactly those",
+    "status": "done",
+    "detail": "Select All (the bar's key and ⌘A) completes the roll the selection touches; under a filter the set it was turned on to find is the unit: State::filter_shows, the gallery's order under a filter outside the ONI Trash, is what column_whole picks beside a photo and the one group grid_whole and the grid's ⌘A complete (whole_groups), so the latch reads it whole and a second press goes back to one photo as before. Export already opens on the selection, so filter on Gold, Select All, Export takes every Gold frame shown, across rolls, shown together beside a photo. Checks: window sidebar_filter, beside B and in the gallery: A and C Gold on two rolls, Gold, Select All, ⌘E opens on A and C; twins: with Select All undone to the roll rule each takes A alone or C alone (asserted failing by hand); every photo shown, Select All takes the four beside a photo and C's roll alone (C, D) in the gallery."
   }
 ]

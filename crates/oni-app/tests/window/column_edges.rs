@@ -120,10 +120,12 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     rig.settle();
     rig.shot("column-edges-beside-photo");
 
-    // Beside a photo the tree's select spans the column, and every row and thumbnail meets its edges.
+    // Beside a photo the tree's select and the rating filter span the column, and every row and
+    // thumbnail meets its edges.
     let edges = bar(w);
     let select = common::the(w, AccessibleRole::Button, "Two per row");
-    assert!((select.x - edges.0).abs() < 0.5 && (select.x + select.width - edges.1).abs() < 0.5, "the select {select:?} across {edges:?}");
+    let filter = common::the(w, AccessibleRole::Button, "All");
+    assert!((select.x - edges.0).abs() < 0.5 && (filter.x + filter.width - edges.1).abs() < 0.5 && select.level_with(&filter), "the select {select:?} and the filter {filter:?} across {edges:?}");
     let items = listed(w);
     assert!(items.iter().all(|e| lines_up(e, edges)), "rows and thumbnails on the edges: {items:?} {edges:?}");
     assert!(items.iter().any(|e| (e.x - edges.0).abs() < 0.5 && e.width < span / 2.0), "a thumbnail on the left edge: {items:?}");
@@ -184,12 +186,13 @@ pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
     rig.until("Scans read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened().is_some());
     let text = |words: &str| common::the(w, AccessibleRole::Text, words);
     let margin = w.global::<oni_app::DS>().get_space_sm();
-    // On the rows' text inset, and close under the bar and the header row, never mid column.
-    let at_top_on_inset = |e: &Placed| {
-        let (left, _) = bar(w);
-        let tabs = common::the(w, AccessibleRole::Tab, "Archive");
-        (e.x - (left + margin)).abs() < 0.5 && e.y > tabs.y + tabs.height && e.y < tabs.y + tabs.height + 80.0
+    // On the rows' text inset, a row at most under the header row its list hangs from, never mid column.
+    let under = |e: &Placed, header: &str| {
+        let (left, right) = bar(w);
+        let row = common::placed(w, AccessibleRole::Button, header).into_iter().find(|k| k.x + k.width <= right + 0.5).expect("the header row's key");
+        (e.x - (left + margin)).abs() < 0.5 && e.y > row.y + row.height && e.y < row.y + 2.0 * row.height
     };
+    let at_top_on_inset = |e: &Placed| under(e, "All");
 
     w.global::<Library>().invoke_surface_picked(1);
     rig.settle();
@@ -213,7 +216,7 @@ pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
     rig.settle();
     assert!(checked("Show every folder"), "the favourites alone, the key is lit");
     let none = text("No Favourites");
-    assert!(at_top_on_inset(&none), "the favourites' empty list alike: {none:?}");
+    assert!(under(&none, "Show every folder"), "the favourites' empty list alike: {none:?}");
     assert!(text("Star a folder to keep it here, ready to open.").y >= none.y + none.height);
     drop(shell);
     let _ = std::fs::remove_dir_all(&made);

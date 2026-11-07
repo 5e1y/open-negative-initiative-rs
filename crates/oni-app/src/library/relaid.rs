@@ -32,7 +32,7 @@ pub enum Relaid {
     Kept,
     /// Only medals moved: set on its photos and rows, nothing cut again.
     Medals,
-    /// The gallery's groups cut again under a filter, the tree kept.
+    /// The gallery's groups cut again under a filter and the tree's rows laid again, the tree kept.
     Regrouped,
     /// Cut whole from the rows and the survey.
     Cut,
@@ -97,9 +97,10 @@ impl Archive {
         (archive, if medals.is_empty() { Relaid::Kept } else { Relaid::Medals })
     }
 
-    /// The gallery's groups cut again under `filter`, the tree as it is.
+    /// The gallery's groups cut again under `filter`, the tree as it is, its rows laid again.
     fn regroup(&mut self, filter: Option<Medal>) {
         self.basis.filter = filter;
+        self.laid.take();
         let survey = &self.basis.survey;
         let (paired, _) = folders::paired(&self.basis.rows, &survey.images, &survey.sidecars);
         self.groups = self.cut_groups(&paired);
