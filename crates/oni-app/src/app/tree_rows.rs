@@ -11,6 +11,9 @@ use std::cell::{Cell, RefCell};
 use std::ops::Range;
 use std::rc::Rc;
 
+mod relaid;
+pub(super) use relaid::Relaid;
+
 struct Inner {
     rows: RefCell<Vec<TreeRow>>,
     /// The rows near the view, as indices into `rows`.
@@ -43,26 +46,43 @@ impl TreeRows {
         (ModelRc::new(self.clone()), ModelRc::new(NearRows(self.0.clone())))
     }
 
-    /// The rows laid again: only those that changed are told when the count holds, so a click or a
-    /// newly opened photo remakes no row; a count changed tells every row.
-    pub(super) fn replace(&self, rows: Vec<TreeRow>) {
+    /// The rows laid again: rows come or gone are told where the old rows and the new part, the rest
+    /// only when they changed, so every row kept keeps its element and a press it holds.
+    pub(super) fn replace(&self, rows: Vec<TreeRow>) -> Relaid {
         let inner = &self.0;
-        let count = inner.rows.borrow().len();
-        if count != rows.len() {
-            *inner.rows.borrow_mut() = rows;
-            let (start, end) = inner.near.get();
-            let len = inner.rows.borrow().len();
-            inner.near.set((start.min(len), end.min(len)));
-            inner.all_notify.reset();
-            inner.near_notify.reset();
-            return;
-        }
-        for (i, row) in rows.into_iter().enumerate() {
-            let changed = !same(&inner.rows.borrow()[i], &row);
-            if changed {
-                self.set_row_data(i, row);
+        let old = std::mem::replace(&mut *inner.rows.borrow_mut(), rows);
+        let (relaid, changed) = {
+            let new = inner.rows.borrow();
+            let relaid = Relaid::between(&old, &new);
+            // A row past the change carries another index, so it is told even when it draws alike.
+            let changed: Vec<usize> = (0..new.len()).filter(|&j| relaid.was(j).is_some_and(|i| i != j || !same(&old[i], &new[j]))).collect();
+            (relaid, changed)
+        };
+        let (a, b) = inner.near.get();
+        let (c, d) = (relaid.bound(a), relaid.bound(b));
+        inner.near.set((c, d));
+        let Relaid { at, removed, added } = relaid;
+        if removed > 0 {
+            inner.all_notify.row_removed(at, removed);
+            let (lo, hi) = (a.max(at), b.min(at + removed));
+            if lo < hi {
+                inner.near_notify.row_removed(lo - a, hi - lo);
             }
         }
+        if added > 0 {
+            inner.all_notify.row_added(at, added);
+            let (lo, hi) = (c.max(at), d.min(at + added));
+            if lo < hi {
+                inner.near_notify.row_added(lo - c, hi - lo);
+            }
+        }
+        for j in changed {
+            inner.all_notify.row_changed(j);
+            if (c..d).contains(&j) {
+                inner.near_notify.row_changed(j - c);
+            }
+        }
+        relaid
     }
 
     /// The rows near the view become `range`: rows leaving it are dropped and rows entering it made,
@@ -192,10 +212,13 @@ impl Ctl {
     }
 
     /// Rows laid by `lay_column` reach Slint: only the rows that changed are told, and only the rows
-    /// near the view are made.
+    /// near the view are made; a drag held on the projects' tree follows its row.
     pub(super) fn deliver_column(&self, which: Which, rows: Vec<TreeRow>) {
         let Some(model) = self.column_rows(which) else { return };
-        model.replace(rows);
+        let relaid = model.replace(rows);
+        if which == Which::Projects {
+            self.follow_project_drag(relaid);
+        }
         self.show_near(which);
     }
 

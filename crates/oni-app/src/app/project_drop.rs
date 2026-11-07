@@ -9,12 +9,13 @@ use crate::sidebar::{self, DropTarget};
 use oni_library::project;
 use oni_library::project_tree::NodeId;
 
-/// A drag under way: the rows it carries, the pointer in the tree's coordinates, the place last
-/// pointed at with where a release there lands, none where it changes nothing.
+/// A drag under way: the rows it carries, the pointer in the tree's coordinates, the row whose press
+/// it is, the place last pointed at with where a release there lands, none where it changes nothing.
 #[derive(Clone, Debug)]
 pub(super) struct Drag {
     items: HashSet<NodeId>,
     at: (f32, f32),
+    row: usize,
     target: Option<(DropTarget, Option<Landing>)>,
 }
 
@@ -103,7 +104,7 @@ impl Ctl {
                         _ => vec![row.clone()],
                     })
                     .collect();
-                s.org.project_drag = Some(Drag { items, at, target: None });
+                s.org.project_drag = Some(Drag { items, at, row: i, target: None });
             }
             if let Some(d) = s.org.project_drag.as_mut() {
                 d.at = at;
@@ -133,6 +134,21 @@ impl Ctl {
             if let Some(d) = s.org.project_drag.as_mut() {
                 d.target = target;
             }
+        }
+        self.publish_project_drag();
+    }
+
+    /// The tree laid again under a held drag: its row follows its place, and a row the re-lay removed
+    /// took its press along, so the drag ends there, dropping nothing.
+    pub(super) fn follow_project_drag(&self, relaid: super::tree_rows::Relaid) {
+        {
+            let mut s = self.state.borrow_mut();
+            let Some(d) = s.org.project_drag.as_mut() else { return };
+            if let Some(row) = relaid.kept(d.row) {
+                d.row = row;
+                return;
+            }
+            s.org.project_drag = None;
         }
         self.publish_project_drag();
     }

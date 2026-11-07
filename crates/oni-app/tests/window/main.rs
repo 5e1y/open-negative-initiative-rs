@@ -119,6 +119,7 @@ mod toolbar;
 mod toolbar_accent;
 mod tooltip;
 mod tree_hand;
+mod tree_held;
 mod tree_cost;
 mod tree_leftovers;
 mod updates;
@@ -325,6 +326,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("toolbar_accent::the_accent_lands_on_each_screens_own_commit", toolbar_accent::the_accent_lands_on_each_screens_own_commit),
     ("toolbar::the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last", toolbar::the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
+    ("tree_held::a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows", tree_held::a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows),
     ("tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree", tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree),
     ("tree_cost::the_tree_s_cost_on_a_big_folder", tree_cost::the_tree_s_cost_on_a_big_folder),
     ("tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift", tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift),
