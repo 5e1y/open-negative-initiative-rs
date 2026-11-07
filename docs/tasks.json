@@ -7592,5 +7592,12 @@
     "title": "A tab opens at its top; a long project name wraps in the inspector and shows whole where it is cut",
     "status": "done",
     "detail": "Evaluation s-f5b562fe (Craft and Robustness, minor): after Add to Project the project grid opened scrolled, its first row under the title, and a long name was cut mid-word in the inspector. A surface switched to (Archive, Projects, the ONI Trash) opens at its top; the open photo lands only back from the editor (land_gallery). The inspector's name wraps over as many lines as it takes (EditableTitle); a row's title and a band's heading cut short by their ellipsis show whole under the pointer, and a tip whose words change under the hand is taken down, as a key's. Check: window project_filing::a_project_opens_at_its_top_and_a_long_name_reads_whole (twins: back from the editor the open photo lands down the grid; a short name is one line and shows no tip; mutations: no wrap fails at the wrap, no cut tip at the row)."
+  },
+  {
+    "id": 1546,
+    "type": "fix",
+    "title": "An expandable key tells its state again: the help mark and the block's fold say open or closed",
+    "status": "done",
+    "detail": "The help mark ('Help on Lighting') and the block's fold ('Hide Lighting') set accessible-expandable and accessible-expanded at their use of Button, and Slint 1.18's interpreter, which dev builds and the checks run, read neither once #1491 took the opacity off Button's root: that opacity made Slint inline every Button; a Button is now a component of its own, and the interpreter reads a nested component's accessible-* from its root alone, never from its use site (the compiled interface reads the use site first and kept them). Bisected: the check passes at the seventh wave's second merge (59940e7a) and fails at its third (ecb384f2, #1491). Button now carries expandable and expanded and binds its own accessible-expandable and accessible-expanded, as it does accessible-checked; HelpMark and FoldMark set them. Check: window help_card::a_help_card_opens_in_its_block_and_pushes_it_down (the mark closed then open; the fold open then folded; twin: a key that opens nothing, Reset, claims no fold, which a Button stating every key expandable fails)."
   }
 ]

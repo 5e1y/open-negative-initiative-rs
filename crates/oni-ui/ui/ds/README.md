@@ -86,6 +86,8 @@ oni-lab) draws a still key once and a pressed one once a frame.
   `State.disabled` (0.36), about 3:1 on its face and a glance's step under an idle tab's label (`State.idle`), so a key
   that cannot act still reads as a key and never as one merely not chosen; a missing
   original, a folder away or a frame left out fades less (`State.missing`), its picture and name still read.
+  A key that shows or hides what it governs, a "?"'s card or a block's fold, sets `expandable`, and
+  `expanded` while it stands open: the key tells assistive tools itself, never its use site.
 - **Groups**: related keys stand in a `ButtonGroup`, `ButtonStyle.group-gap` (`Space.s`) apart as Swift's
   `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A key unrelated to its
   neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`

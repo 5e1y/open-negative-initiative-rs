@@ -121,6 +121,10 @@ export component Button inherits Rectangle {
     in property <length> glyph-size: 0px;
     // A legend at this size instead of the key's, as a step key's larger sign.
     in property <length> legend-size: 0px;
+    // A key that shows or hides what it governs, a "?"'s card or a block, open while `expanded`. The key
+    // tells it itself: Slint 1.18's interpreter drops the `accessible-*` a use site sets on a nested key.
+    in property <bool> expandable;
+    in property <bool> expanded;
     // Whether ⇧ held the last press, which a stepper reads as three steps.
     out property <bool> shift;
     // `KeycapPress`: the key is down from the press until the release, and `Depth.min-hold` at least.
@@ -183,6 +187,8 @@ export component Button inherits Rectangle {
     accessible-description: root.worded ? root.help : "";
     accessible-enabled: root.live;
     accessible-checked: root.on;
+    accessible-expandable: root.expandable;
+    accessible-expanded: root.expanded;
     accessible-action-default => { if (root.live) { root.clicked(); } }
     // The sheet may cover the window before the key is built or after: either way the key ends holding it.
     property <bool> holding: root.default && Keyboard.covered;

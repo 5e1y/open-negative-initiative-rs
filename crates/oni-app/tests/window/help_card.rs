@@ -33,6 +33,13 @@ pub(crate) fn reset_of(w: &oni_app::MainWindow, subject: &str) -> Option<Placed>
     found.first().copied()
 }
 
+/// The key an assistive tool reaches by its name: whether it folds anything, and whether that stands open.
+fn told(w: &oni_app::MainWindow, label: &str) -> (Option<bool>, Option<bool>) {
+    let key = ElementHandle::find_by_accessible_label(w, label).find(|e| e.accessible_role() == Some(Role::Button));
+    let key = key.unwrap_or_else(|| panic!("a key named {label}"));
+    (key.accessible_expandable(), key.accessible_expanded())
+}
+
 pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     let Some((rig, shell, root)) = opened("help-card") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
@@ -58,6 +65,7 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     let fold = common::the(w, Role::Button, "Hide Lighting");
     let title = common::placed(w, Role::Text, "Lighting").into_iter().find(|t| t.level_with(&fold)).expect("the block's title");
     assert!(fold.x + fold.width / 2.0 < title.x, "the chevron before the title: {fold:?} {title:?}");
+    assert_eq!(told(w, "Hide Lighting"), (Some(true), Some(true)), "the fold tells its block stands open");
 
     // Open, the card lies under its mark across the block's column, the sliders pushed down below it.
     let before = common::the(w, Role::Slider, "Exposure");
@@ -90,6 +98,7 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     assert!(exposure() > rested, "the press reached the slider: {rested} to {}", exposure());
     assert_eq!(tip.get_open(), LIGHTING, "the card stays open while the hand works");
     let moved = reset_of(w, "Lighting").expect("something moved: the Reset shows");
+    assert_eq!(told(w, "Reset").0, Some(false), "twin: a key that opens nothing claims no fold");
     // At the column's far end, the whole title between it and the fold.
     let end = |reset: &Placed| (reset.x + reset.width - (1280.0 - PAD)).abs() < 0.5 && reset.x > title.x + title.width;
     assert!(end(&moved), "the Reset at the row's far end: {moved:?} {title:?}");
@@ -103,5 +112,11 @@ pub(crate) fn a_help_card_opens_in_its_block_and_pushes_it_down() {
     assert!(tip.get_open().is_empty() && common::placed(w, Role::Groupbox, "Help on Colour").is_empty(), "its mark again closes it");
     let back = common::the(w, Role::Slider, "Exposure");
     assert!((back.y - before.y).abs() < 0.5, "the block back in its place: {back:?} {before:?}");
+
+    // Folded, its fold tells it as plainly.
+    let hide = ElementHandle::find_by_accessible_label(w, "Hide Lighting").find(|e| e.accessible_role() == Some(Role::Button));
+    hide.expect("the fold").invoke_accessible_default_action();
+    rig.settle();
+    assert_eq!(told(w, "Show Lighting"), (Some(true), Some(false)), "the fold tells its block is folded");
     let _ = std::fs::remove_dir_all(&root);
 }
