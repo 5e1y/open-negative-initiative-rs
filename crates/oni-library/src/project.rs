@@ -13,9 +13,9 @@ pub(crate) use file::read;
 pub use file::{FORMAT, ProjectsFile, encode, file_path, former_path, is_path, load, save};
 pub use gestures::{
     Joined, Rosters, add_to, carried, delete, lands_beside, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from,
-    rename, reorder_drop, reorder_root, rosters, set_description,
+    rename, reorder_drop, reorder_root, rosters, set_description, shown_in,
 };
-pub use member::{Member, distinct, exclusive, holder, printed};
+pub use member::{Member, distinct, exclusive, holder, learnt, printed};
 pub use resolve::{Found, ProjectGroup, Reach, grouped, holders, resolve, shadowed};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -76,6 +76,20 @@ pub fn delete_prompt(project: &Project, shadowed: usize) -> (String, String, &'s
         oni_i18n::tr("It holds no photos. Nothing else is affected.").to_owned()
     };
     (oni_i18n::tr!("Delete \u{201c}{name}\u{201d}?", name = project.name), message, oni_i18n::tr("Delete Project"))
+}
+
+/// What Remove from Project says: how many photos left `project`, then each project any still shows in,
+/// so none seems gone that another project shows.
+pub fn removed_said(project: &str, removed: usize, showing: &[(&Project, usize)]) -> String {
+    let said = oni_i18n::trn("One photo removed from \u{201c}{project}\u{201d}.", "{n} photos removed from \u{201c}{project}\u{201d}.", removed as u64);
+    let shows = showing.iter().map(|(other, n)| {
+        let line = match removed {
+            1 => oni_i18n::tr("It now shows in \u{201c}{project}\u{201d}.").to_owned(),
+            _ => oni_i18n::trn("One of them now shows in \u{201c}{project}\u{201d}.", "{n} of them now show in \u{201c}{project}\u{201d}.", *n as u64),
+        };
+        line.replace("{project}", &other.name)
+    });
+    std::iter::once(said.replace("{project}", project)).chain(shows).collect::<Vec<_>>().join(" ")
 }
 
 #[cfg(test)]

@@ -2,7 +2,7 @@
 //! for, so a member found by its print moves, joins or leaves as the photo shown does.
 
 use super::member::{Member, distinct, printed};
-use super::resolve::{Reach, holders, place, resolve};
+use super::resolve::{Reach, holders, place, resolve, showing};
 use super::{Project, root_order, untitled};
 use crate::index::Entry;
 use crate::paths::{self, holds};
@@ -104,11 +104,19 @@ pub fn delete(projects: &mut Vec<Project>, id: Id) {
     projects.retain(|p| p.id != id);
 }
 
-/// The projects `add_to` would take photos from, each with how many: what the ask names first.
+/// The projects `add_to` would take photos from, each with how many: what the ask names first. A photo
+/// the project already holds takes nothing; another leaves every project showing it.
 pub fn leaving<'a>(projects: &'a [Project], reach: &Reach, paths: &HashSet<String>, id: Id) -> Vec<(&'a Project, usize)> {
+    let joining = |path: &String, members: &[(usize, usize)]| paths.contains(path) && members.first().is_some_and(|(p, _)| projects[*p].id != id);
+    let shown = showing(projects, reach).into_iter().filter(|(path, members)| joining(path, members));
+    counted(projects, shown.map(|(_, members)| members.into_iter().filter(|(p, _)| projects[*p].id != id).collect()))
+}
+
+/// Each project with how many of the photos show in it, `members` naming each photo's, in the file's order.
+fn counted(projects: &[Project], members: impl Iterator<Item = Vec<(usize, usize)>>) -> Vec<(&Project, usize)> {
     let mut counts: HashMap<usize, usize> = HashMap::new();
-    for (path, (p, _)) in holders(projects, reach) {
-        if paths.contains(&path) && projects[p].id != id {
+    for shown in members {
+        for p in shown.into_iter().map(|(p, _)| p).collect::<HashSet<usize>>() {
             *counts.entry(p).or_default() += 1;
         }
     }
@@ -138,22 +146,32 @@ pub fn add_to(projects: &mut [Project], reach: &Reach, paths: &HashSet<String>, 
     done
 }
 
-/// `removeFromProject`: the photos leave it, how many said, with its placeholders at their files; one
-/// in another project stays, and shows there now. A project left empty stays, named, until deleted.
-pub fn remove_from(projects: &mut [Project], reach: &Reach, paths: &HashSet<String>, id: Id) -> usize {
-    let Some(at) = projects.iter().position(|p| p.id == id) else { return 0 };
-    let gone: Vec<(String, usize)> = holders(projects, reach).into_iter().filter(|(path, (p, _))| *p == at && paths.contains(path)).map(|(path, (_, m))| (path, m)).collect();
+/// `removeFromProject`: the photos it shows leave it, with its placeholders at their files; the paths
+/// gone, sorted. One another project shows stays there. A project left empty stays, named, until deleted.
+pub fn remove_from(projects: &mut [Project], reach: &Reach, paths: &HashSet<String>, id: Id) -> Vec<String> {
+    let Some(at) = projects.iter().position(|p| p.id == id) else { return Vec::new() };
     let waiting = waiting(projects, reach);
-    let mut leaving: HashSet<(usize, usize)> = gone.iter().map(|(_, m)| (at, *m)).collect();
-    leaving.extend(gone.iter().flat_map(|(path, _)| waiting.get(path.as_str()).into_iter().flatten()).filter(|(p, _)| *p == at));
+    let (mut gone, mut leaving) = (Vec::new(), HashSet::new());
+    for (path, members) in showing(projects, reach).into_iter().filter(|(path, _)| paths.contains(path)) {
+        let mine: Vec<(usize, usize)> = members.into_iter().filter(|(p, _)| *p == at).collect();
+        if !mine.is_empty() {
+            leaving.extend(mine.into_iter().chain(waiting.get(path.as_str()).into_iter().flatten().copied().filter(|(p, _)| *p == at)));
+            gone.push(path);
+        }
+    }
     leave(projects, &leaving);
-    gone.len()
+    gone.sort();
+    gone
 }
 
-/// The projects holding any of `paths`, in the file's order.
+/// The projects showing any of `paths`, in the file's order.
 pub fn member_projects<'a>(projects: &'a [Project], reach: &Reach, paths: &HashSet<String>) -> Vec<&'a Project> {
-    let held: HashSet<usize> = holders(projects, reach).into_iter().filter(|(path, _)| paths.contains(path)).map(|(_, (p, _))| p).collect();
-    projects.iter().enumerate().filter(|(p, _)| held.contains(p)).map(|(_, project)| project).collect()
+    shown_in(projects, reach, paths).into_iter().map(|(project, _)| project).collect()
+}
+
+/// The projects showing any of `paths`, each with how many, in the file's order.
+pub fn shown_in<'a>(projects: &'a [Project], reach: &Reach, paths: &HashSet<String>) -> Vec<(&'a Project, usize)> {
+    counted(projects, showing(projects, reach).into_iter().filter(|(path, _)| paths.contains(path)).map(|(_, members)| members))
 }
 
 /// Whether photos dropped beside `target` stand there: a project shows each roll apart, so only
@@ -166,14 +184,16 @@ pub fn lands_beside<'a>(dragged: impl IntoIterator<Item = &'a String>, target: &
 /// `reorderProjectDrop`: the dragged photos land before `target`, or past it, in its project's
 /// order as shown, roll by roll, which is written back; those already members first, in that order.
 pub fn reorder_drop(projects: &mut [Project], reach: &Reach, dragged: &HashSet<String>, target: &str, past: bool) -> bool {
-    let holders = holders(projects, reach);
-    let Some(&(at, aim)) = holders.get(target) else { return false };
+    let (holders, shown) = (holders(projects, reach), showing(projects, reach));
+    // A tile two projects show, as one whose file is not read yet, names no one project to land in.
+    let Some(&[(at, aim)]) = shown.get(target).map(Vec::as_slice) else { return false };
     let rows = picked(reach, dragged);
     if rows.is_empty() || !lands_beside(rows.iter().map(|row| &row.path), target) {
         return false;
     }
-    let (inside, outside): (Vec<&Entry>, Vec<&Entry>) = rows.into_iter().partition(|row| holders.get(&row.path).is_some_and(|(p, _)| *p == at));
-    let moving: HashSet<usize> = inside.iter().filter_map(|row| holders.get(&row.path).map(|(_, m)| *m)).collect();
+    let mine: HashMap<&str, usize> = shown.iter().filter_map(|(path, members)| Some((path.as_str(), members.iter().find(|(p, _)| *p == at)?.1))).collect();
+    let (inside, outside): (Vec<&Entry>, Vec<&Entry>) = rows.into_iter().partition(|row| mine.contains_key(row.path.as_str()));
+    let moving: HashSet<usize> = inside.iter().filter_map(|row| mine.get(row.path.as_str()).copied()).collect();
     let shown: Vec<(usize, &Entry)> = resolve(projects, reach).swap_remove(at).into_iter().enumerate().filter_map(|(m, row)| Some((m, row?))).collect();
     let order: Vec<usize> = rolls(shown, |(_, row)| paths::parent(&row.path)).into_iter().flat_map(|(_, photos)| photos).map(|(m, _)| m).collect();
     let Some(aimed) = order.iter().position(|m| *m == aim) else { return false };

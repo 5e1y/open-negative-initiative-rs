@@ -103,6 +103,16 @@ pub fn printed(members: &[Member], known: &[Member]) -> Vec<Member> {
     members.iter().map(|m| if m.path.is_some() && m.print.is_none() { Member { print: holder(m).and_then(|k| k.print.clone()), ..m.clone() } } else { m.clone() }).collect()
 }
 
+/// `members`, each placeholder `now` no longer holds taking the member `now` holds in its stead at its path
+/// with a print read and `members` lacks: the print it learned there, so learning it reads as no change.
+pub fn learnt(members: &[Member], now: &[Member]) -> Vec<Member> {
+    let stead = |m: &Member| {
+        let path = m.path.as_deref().filter(|_| m.placeholder().is_some() && !now.contains(m))?;
+        now.iter().find(|k| k.print.as_deref().and_then(read).is_some() && k.path.as_deref().is_some_and(|p| paths::same(p, path)) && !members.contains(k))
+    };
+    members.iter().map(|m| stead(m).cloned().unwrap_or_else(|| m.clone())).collect()
+}
+
 /// The member of `known` holding its print and path that is one photo with the member asked, sought
 /// among the few sharing its slot; a placeholder holds no print to lend.
 pub fn holder<'a>(known: &'a [Member]) -> impl Fn(&Member) -> Option<&'a Member> + 'a {

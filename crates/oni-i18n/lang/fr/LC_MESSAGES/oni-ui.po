@@ -3491,12 +3491,6 @@ msgid_plural "{n} photos added to “{project}”."
 msgstr[0] "Une photo ajoutée à « {project} »."
 msgstr[1] "{n} photos ajoutées à « {project} »."
 
-#: crates/oni-app/src/app/organising/cell_menu.rs
-msgid "One photo removed from “{project}”."
-msgid_plural "{n} photos removed from “{project}”."
-msgstr[0] "Une photo retirée de « {project} »."
-msgstr[1] "{n} photos retirées de « {project} »."
-
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "Choose All Photos in the rating filter to show every photo."
 msgstr "Choisissez Toutes les photos dans le filtre des médailles pour afficher chaque photo."
@@ -4930,6 +4924,10 @@ msgid "It holds no photos. Nothing else is affected."
 msgstr "Il ne contient aucune photo. Rien d’autre n’est touché."
 
 #: crates/oni-library/src/project.rs
+msgid "It now shows in “{project}”."
+msgstr "Elle figure désormais dans « {project} »."
+
+#: crates/oni-library/src/project.rs
 msgid "Delete “{name}”?"
 msgstr "Supprimer « {name} » ?"
 
@@ -4944,6 +4942,18 @@ msgid "It shows no photo: the one it names stands in another project, which keep
 msgid_plural "It shows no photo: the {n} it names stand in other projects, which keep them. Nothing else is affected."
 msgstr[0] "Il ne montre aucune photo : celle qu’il nomme figure dans un autre projet, qui la garde. Rien d’autre n’est touché."
 msgstr[1] "Il ne montre aucune photo : les {n} qu’il nomme figurent dans d’autres projets, qui les gardent. Rien d’autre n’est touché."
+
+#: crates/oni-library/src/project.rs
+msgid "One photo removed from “{project}”."
+msgid_plural "{n} photos removed from “{project}”."
+msgstr[0] "Une photo retirée de « {project} »."
+msgstr[1] "{n} photos retirées de « {project} »."
+
+#: crates/oni-library/src/project.rs
+msgid "One of them now shows in “{project}”."
+msgid_plural "{n} of them now show in “{project}”."
+msgstr[0] "L’une d’elles figure désormais dans « {project} »."
+msgstr[1] "{n} d’entre elles figurent désormais dans « {project} »."
 
 #: crates/oni-library/src/refusal.rs
 msgid "The original cannot be found, its disk disconnected or the file moved. Nothing was changed."

@@ -3491,12 +3491,6 @@ msgid_plural "{n} photos added to “{project}”."
 msgstr[0] "Una foto añadida a «{project}»."
 msgstr[1] "{n} fotos añadidas a «{project}»."
 
-#: crates/oni-app/src/app/organising/cell_menu.rs
-msgid "One photo removed from “{project}”."
-msgid_plural "{n} photos removed from “{project}”."
-msgstr[0] "Una foto quitada de «{project}»."
-msgstr[1] "{n} fotos quitadas de «{project}»."
-
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "Choose All Photos in the rating filter to show every photo."
 msgstr "Elige Todas las fotos en el filtro de medallas para mostrar cada foto."
@@ -4930,6 +4924,10 @@ msgid "It holds no photos. Nothing else is affected."
 msgstr "No contiene fotos. No se ve afectado nada más."
 
 #: crates/oni-library/src/project.rs
+msgid "It now shows in “{project}”."
+msgstr "Ahora aparece en «{project}»."
+
+#: crates/oni-library/src/project.rs
 msgid "Delete “{name}”?"
 msgstr "¿Eliminar “{name}”?"
 
@@ -4944,6 +4942,18 @@ msgid "It shows no photo: the one it names stands in another project, which keep
 msgid_plural "It shows no photo: the {n} it names stand in other projects, which keep them. Nothing else is affected."
 msgstr[0] "No muestra ninguna foto: la que nombra está en otro proyecto, que la conserva. No se ve afectado nada más."
 msgstr[1] "No muestra ninguna foto: las {n} que nombra están en otros proyectos, que las conservan. No se ve afectado nada más."
+
+#: crates/oni-library/src/project.rs
+msgid "One photo removed from “{project}”."
+msgid_plural "{n} photos removed from “{project}”."
+msgstr[0] "Una foto quitada de «{project}»."
+msgstr[1] "{n} fotos quitadas de «{project}»."
+
+#: crates/oni-library/src/project.rs
+msgid "One of them now shows in “{project}”."
+msgid_plural "{n} of them now show in “{project}”."
+msgstr[0] "Una de ellas aparece ahora en «{project}»."
+msgstr[1] "{n} de ellas aparecen ahora en «{project}»."
 
 #: crates/oni-library/src/refusal.rs
 msgid "The original cannot be found, its disk disconnected or the file moved. Nothing was changed."
