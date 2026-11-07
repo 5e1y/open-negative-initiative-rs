@@ -13,7 +13,7 @@ export component Tree inherits Surface {
     // `sidebarLayout` follows the mode: the projects' tree is laid again by the other one.
     changed beside-photo => { Library.tree-moded(); }
     // `SidebarLayout`'s names, in its order, then the view's lines on each tree.
-    property <[string]> layouts: [@tr("Names only"), @tr("Two thumbnails a line"), @tr("One thumbnail a line")];
+    property <[string]> layouts: [@tr("Names only"), @tr("Two per row"), @tr("One per row")];
     property <[MenuLine]> archive-view: [
         { text: root.layouts[0], enabled: true, rule: false, opens: false },
         { text: root.layouts[1], enabled: true, rule: false, opens: false },

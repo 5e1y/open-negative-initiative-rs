@@ -122,7 +122,7 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
 
     // Beside a photo the tree's select spans the column, and every row and thumbnail meets its edges.
     let edges = bar(w);
-    let select = common::the(w, AccessibleRole::Button, "Two thumbnails a line");
+    let select = common::the(w, AccessibleRole::Button, "Two per row");
     assert!((select.x - edges.0).abs() < 0.5 && (select.x + select.width - edges.1).abs() < 0.5, "the select {select:?} across {edges:?}");
     let items = listed(w);
     assert!(items.iter().all(|e| lines_up(e, edges)), "rows and thumbnails on the edges: {items:?} {edges:?}");
@@ -134,19 +134,19 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     common::click(&rig, w, select.middle());
     rig.settle();
     common::in_popup(w, AccessibleRole::Button, "Show the Selected Photo");
-    common::click(&rig, w, common::in_popup(w, AccessibleRole::Button, "One thumbnail a line").middle());
+    common::click(&rig, w, common::in_popup(w, AccessibleRole::Button, "One per row").middle());
     rig.settle();
-    assert_eq!(lib.get_tree_layout(), 2, "one thumbnail a line picked");
-    assert_eq!(common::placed(w, AccessibleRole::Button, "One thumbnail a line").len(), 1, "the select names the layout picked");
+    assert_eq!(lib.get_tree_layout(), 2, "one per row picked");
+    assert_eq!(common::placed(w, AccessibleRole::Button, "One per row").len(), 1, "the select names the layout picked");
     // Twin: the layout left is no longer named.
-    assert!(common::placed(w, AccessibleRole::Button, "Two thumbnails a line").is_empty());
+    assert!(common::placed(w, AccessibleRole::Button, "Two per row").is_empty());
 
     // Back in the gallery the editor's controls are out of the tree, and the arrows walk the photos.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     let kept = folds(w);
     assert!(common::placed_all(w, AccessibleRole::Slider).is_empty(), "no slider of the editor is listed in the gallery");
-    assert!(common::placed(w, AccessibleRole::Button, "One thumbnail a line").is_empty(), "nor the tree's select");
+    assert!(common::placed(w, AccessibleRole::Button, "One per row").is_empty(), "nor the tree's select");
     assert_ne!(common::focused_label(w), "Folders", "the screen changed, the photos hold the keyboard");
     let before = selected(&lib);
     rig.key(&right);

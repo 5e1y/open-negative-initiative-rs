@@ -64,15 +64,21 @@ pub(super) fn dyed(settings: &mut PipelineSettings, family: Option<SeparationFam
     }
 }
 
-/// The quiet note under a roll's stock: the dyes its frames unmix, and the stock's when they differ;
-/// empty while the frames read or when none unmixes.
-pub(super) fn dyes_note(stock: Option<&str>, held: Option<&[SeparationFamily]>) -> String {
-    let Some(held) = held.filter(|h| !h.is_empty()) else { return String::new() };
-    let family = held.iter().map(|f| family_name(*f)).collect::<Vec<_>>().join(", ");
+/// The card's words under a roll's stock, then its fix key's: the dyes the frames unmix, else a warning
+/// and the stock's dyes offered when they differ; both empty while the frames read or none unmixes.
+pub(super) fn dyes_note(stock: Option<&str>, held: Option<&[SeparationFamily]>) -> (String, String) {
+    let Some(held) = held.filter(|h| !h.is_empty()) else { return Default::default() };
     match stock.and_then(dye_family) {
-        Some(named) if held != [named] => tr!("Dyes: {family}; this film stock calls for {named}", family = family, named = family_name(named)),
-        _ => tr!("Dyes: {family}", family = family),
+        Some(named) if held != [named] => (
+            tr!("Frames set to {family} dyes, but this film stock has {named} dyes", family = names(held.iter().filter(|f| **f != named)), named = family_name(named)),
+            tr!("Use {named} Dyes", named = family_name(named)),
+        ),
+        _ => (tr!("Dyes: {family}", family = names(held.iter())), String::new()),
     }
+}
+
+fn names<'a>(families: impl Iterator<Item = &'a SeparationFamily>) -> String {
+    families.map(|f| family_name(*f)).collect::<Vec<_>>().join(", ")
 }
 
 impl Ctl {
@@ -86,8 +92,23 @@ impl Ctl {
     pub(in crate::app) fn dyes_follow(self: &Rc<Self>, folder: &str, stock: &str) {
         let Some(family) = dye_family(stock) else { return };
         let members = self.state.borrow().folder_frames(folder);
-        let label = tr("Set Film Stock");
-        self.gesture_as(label, &members, |store| store.lay_roll(&members, None, |s| dyed(s, Some(family)), label));
+        self.lay_dyes(&members, family, tr("Set Film Stock"));
+    }
+
+    /// The card's fix: the dyes the roll's stock names written again on every frame of the roll.
+    pub(in crate::app) fn stock_dyes_laid(self: &Rc<Self>) {
+        let Some(roll) = self.state.borrow().roll() else { return };
+        let Some(family) = roll.film.stock.as_deref().and_then(dye_family) else { return };
+        let members = match &roll.marker {
+            Some(folder) => self.state.borrow().folder_frames(folder),
+            None => roll.paths,
+        };
+        self.lay_dyes(&members, family, &tr!("Use {named} Dyes", named = family_name(family)));
+    }
+
+    /// `family` written on `members` as one gallery step, a family picked by hand overwritten, the dose kept.
+    fn lay_dyes(self: &Rc<Self>, members: &[String], family: SeparationFamily, label: &str) {
+        self.gesture_as(label, members, |store| store.lay_roll(members, None, |s| dyed(s, Some(family)), label));
     }
 
     /// A roll marker a gesture, an undo or a redo wrote: the folder's roll in the gallery and the navigator.
@@ -192,15 +213,17 @@ mod tests {
     }
 
     #[test]
-    fn the_card_names_the_frames_dyes_and_the_stocks_when_they_differ() {
+    fn the_card_warns_of_dyes_off_the_stocks_and_offers_the_stocks() {
         let fujicolor = Some("fujifilm-fujicolor");
-        assert_eq!(dyes_note(fujicolor, Some(&[FujiC41])), "Dyes: Fuji");
-        // Twin: frames on Kodak under a Fuji stock say both, never the stock's alone.
-        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41])), "Dyes: Kodak; this film stock calls for Fuji");
-        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41, FujiC41])), "Dyes: Kodak, Fuji; this film stock calls for Fuji");
-        assert_eq!(dyes_note(None, Some(&[GenericC41])), "Dyes: Generic");
-        assert_eq!(dyes_note(fujicolor, None), "", "nothing is said while the frames read");
-        assert_eq!(dyes_note(fujicolor, Some(&[])), "", "nor when no frame unmixes");
+        let quiet = |text: &str| (text.to_string(), String::new());
+        assert_eq!(dyes_note(fujicolor, Some(&[FujiC41])), quiet("Dyes: Fuji"));
+        // Twin: frames on Kodak under a Fuji stock warn, naming both, and offer the stock's.
+        let warned = ("Frames set to Kodak dyes, but this film stock has Fuji dyes".to_string(), "Use Fuji Dyes".to_string());
+        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41])), warned);
+        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41, FujiC41])), warned, "only the frames off the stock's are named");
+        assert_eq!(dyes_note(None, Some(&[GenericC41])), quiet("Dyes: Generic"));
+        assert_eq!(dyes_note(fujicolor, None), quiet(""), "nothing is said while the frames read");
+        assert_eq!(dyes_note(fujicolor, Some(&[])), quiet(""), "nor when no frame unmixes");
     }
 
     #[test]

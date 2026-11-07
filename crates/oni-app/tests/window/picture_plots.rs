@@ -29,7 +29,7 @@ pub(crate) fn the_readout_names_its_curves_under_the_histogram() {
     let tab_label = |name: &str| common::placed(w, Role::Text, name).into_iter().min_by(|a, b| a.y.total_cmp(&b.y)).unwrap();
     pick(2);
     rig.shot("readout-legend-colour");
-    let names = ["Histogram", "Print curve", "Its inverse"].map(|n| common::placed(w, Role::Text, n));
+    let names = ["Histogram", "Print curve", "Inverse curve"].map(|n| common::placed(w, Role::Text, n));
     assert!(names.iter().all(|n| n.len() == 1), "the legend names the histogram and both lines once: {names:?}");
     let [histogram, curve, inverse] = names.map(|n| n[0]);
     assert!(histogram.level_with(&curve) && curve.level_with(&inverse), "one row: {histogram:?} {curve:?} {inverse:?}");
@@ -40,7 +40,7 @@ pub(crate) fn the_readout_names_its_curves_under_the_histogram() {
 
     // The Roll tab draws no line: the histogram alone is named, on the same row, the bar unmoved.
     pick(0);
-    assert_eq!(common::placed(w, Role::Text, "Print curve").len() + common::placed(w, Role::Text, "Its inverse").len(), 0, "no line, no name");
+    assert_eq!(common::placed(w, Role::Text, "Print curve").len() + common::placed(w, Role::Text, "Inverse curve").len(), 0, "no line, no name");
     let alone = common::the(w, Role::Text, "Histogram");
     assert_eq!((alone.x, alone.y), (histogram.x, histogram.y), "the legend keeps its place");
     assert_eq!(tab_label("Roll").y, colour.y, "the tab bar keeps its place");

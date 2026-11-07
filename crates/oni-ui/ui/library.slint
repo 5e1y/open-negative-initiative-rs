@@ -43,7 +43,7 @@ export struct StockCount {
 }
 
 export global Library {
-    // `SidebarLayout`: 0 names only, 1 two thumbnails a line, 2 one, which the column's select picks.
+    // `SidebarLayout`: 0 names only, 1 two thumbnails per row, 2 one, which the column's select picks.
     in property <int> tree-layout;
     in property <length> tree-content-height;
     // The column's scroll as it last stood, which Rust alone writes: a wheel unlinks a two-way binding.
@@ -149,8 +149,10 @@ export global Library {
     in-out property <string> description;
     in property <[StockCount]> stocks;
     in property <[image]> stack;
-    // The dyes the roll's stock writes on its frames, and whether no frame of the roll is measured.
+    // The dyes the roll's frames unmix, the key's words laying the stock's when they differ, and
+    // whether no frame of the roll is measured.
     in property <string> stock-dyes;
+    in property <string> stock-dyes-fix;
     in property <bool> roll-unmeasured;
     callback surface-picked(int);
     // A row's click with ⌘ and ⇧, its right click answering whether a menu opens, a click on no row.
@@ -218,6 +220,7 @@ export global Library {
     // The roll's or project's name as it is typed, empty once the field ends.
     callback title-edited(string);
     callback select-roll-type();
+    callback stock-dyes-laid();
     callback shot-date-committed(string, string, string);
     callback shot-date-cleared();
     callback camera-body-committed(string);

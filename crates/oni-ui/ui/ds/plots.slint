@@ -333,7 +333,7 @@ export component PlotLegend inherits HorizontalLayout {
         Rectangle { y: (Space.s - self.height) / 2; width: PlotStyle.sample; height: Stroke.line; background: Colour.guide; }
     }
     if root.curves: LegendEntry {
-        text: @tr("Its inverse");
+        text: @tr("Inverse curve");
         for i in 2: Rectangle {
             x: i * 2 * PlotStyle.dash;
             y: (Space.s - self.height) / 2;

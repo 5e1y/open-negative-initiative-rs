@@ -66,7 +66,7 @@ impl Ctl {
         self.window().is_none_or(|w| w.global::<App>().get_gallery())
     }
 
-    /// `sidebarLayout`: beside a photo the editor's, two thumbnails a line until one is picked; the
+    /// `sidebarLayout`: beside a photo the editor's, two thumbnails per row until one is picked; the
     /// projects in the gallery the gallery's, names until one is picked.
     pub(super) fn column_layout(&self, which: Which) -> Layout {
         let gallery = which == Which::Projects && self.in_gallery();

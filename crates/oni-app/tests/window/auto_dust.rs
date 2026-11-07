@@ -230,7 +230,7 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     });
     assert_eq!(d.get_found(), 0, "the patch healed what the first reading showed");
     assert!(canvas.get_dust_shown(), "the veil shows even with no dust");
-    assert_eq!(d.get_found_note().as_str(), "No dust at this sensitivity", "and says what it found");
+    assert_eq!(d.get_found_note().as_str(), "No dust found: raise Sensitivity to catch fainter specks", "and says which way to look further");
 
     ctl.act(Act::Undo);
     rig.pump();

@@ -43,7 +43,14 @@ export component Info inherits Surface {
                     }
                     if Library.stock != "": Label { text: Library.stock; centred: true; }
                     if Library.stock-note != "": Label { text: Library.stock-note; role: TextRole.note; centred: true; }
-                    if Library.stock-dyes != "": Label { text: Library.stock-dyes; role: TextRole.note; centred: true; }
+                    if Library.stock-dyes != "" && Library.stock-dyes-fix == "": Label { text: Library.stock-dyes; role: TextRole.note; centred: true; }
+                    // Dyes other than the stock's warn, the key laying the stock's right under the warning.
+                    if Library.stock-dyes-fix != "": WarningBand { text: Library.stock-dyes; }
+                    if Library.stock-dyes-fix != "": Button {
+                        text: Library.stock-dyes-fix;
+                        help: @tr("Sets every frame of this roll to the film stock's dyes, leaving each frame's Dye separation amount as it is.");
+                        clicked => { Library.stock-dyes-laid(); }
+                    }
                     Button { text: @tr("Select Film Stock"); clicked => { Library.select-roll-type(); } }
                 }
                 Section {

@@ -197,16 +197,36 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
         lib.get_stock_dyes().as_str() == "Dyes: Fuji"
     });
 
-    // Kodak picked on the photo open: the block flags it against the stock, the card says both, and
-    // the block's reset lands back on the stock's dyes.
+    // Kodak picked on the photo open: the block flags it against the stock, the card warns with the
+    // stock's dyes offered, and the block's reset lands back on the stock's dyes.
     panel.invoke_dye_family_picked(0);
     rig.pump();
     assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::KodakC41));
-    assert_eq!(panel.get_dye_source().as_str(), "Not the film stock's: Fujifilm Superia calls for Fuji");
+    assert_eq!(panel.get_dye_source().as_str(), "Not the film stock's: Fujifilm Superia has Fuji dyes");
     assert!(g.get_dye_separation_modified(), "twin: off the stock's dyes, the reset key shows");
-    rig.until("the card reads the frame's Kodak beside the stock's Fuji", Duration::from_secs(10), || {
+    let warned = || (lib.get_stock_dyes().to_string(), lib.get_stock_dyes_fix().to_string());
+    let warning = ("Frames set to Kodak dyes, but this film stock has Fuji dyes".to_string(), "Use Fuji Dyes".to_string());
+    rig.until("the card warns of the frame's Kodak under the stock's Fuji", Duration::from_secs(10), || {
         rig.pump();
-        lib.get_stock_dyes().as_str() == "Dyes: Kodak, Fuji; this film stock calls for Fuji"
+        warned() == warning
+    });
+    rig.settle();
+    println!("shot {}", rig.shot("roll-card-dyes-warned").display());
+
+    // The warning's key, clicked: the stock's dyes on every frame as one step, the open photo's with them.
+    common::click(&rig, w, common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Use Fuji Dyes").middle());
+    rig.landed(&ctl);
+    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
+    rig.until("the card quiet on Fuji, its key gone", Duration::from_secs(10), || {
+        rig.pump();
+        warned() == ("Dyes: Fuji".to_string(), String::new())
+    });
+    ctl.act(oni_app::Act::Undo);
+    rig.landed(&ctl);
+    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::KodakC41), "twin: one undo gives the hand's Kodak back");
+    rig.until("the card warning again", Duration::from_secs(10), || {
+        rig.pump();
+        warned() == warning
     });
     g.invoke_reset(4);
     rig.pump();
