@@ -774,8 +774,8 @@ msgid "The whole roll, once prepared"
 msgstr "Todo el rollo, una vez preparado"
 
 #: crates/oni-ui/ui/help.slint
-msgid "After Prepare the Roll, the Whole Roll key shows every frame together, numbered by its place on the film."
-msgstr "Tras Preparar el rollo, la tecla Todo el rollo muestra todos los fotogramas juntos, numerados según su lugar en la película."
+msgid "After Prepare the Roll, every frame shows together, numbered by its place on the film."
+msgstr "Tras Preparar el rollo, todos los fotogramas se muestran juntos, numerados según su lugar en la película."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Contact sheets"
@@ -1656,9 +1656,6 @@ msgstr "Automático"
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Detect veils the photo but for its pixels past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
 msgstr "Detectar cubre la foto con un velo salvo sus píxeles más allá de los blancos del rollo en un negativo, de sus negros en un positivo; el polvo entre ellos queda rodeado. La sensibilidad lee más adentro de la ventana y exige menos a una mota. Quitar coloca un parche sobre cada mota rodeada."
-
-msgid "Detect shows, under a veil, every pixel past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further in from those ends and asks less of a speck. Remove lays one patch on each speck ringed."
-msgstr "Detectar muestra, bajo un velo, cada píxel más allá de los blancos del rollo en un negativo, de sus negros en un positivo; el polvo entre ellos queda rodeado. La sensibilidad lee más adentro de esos extremos y exige menos a una mota. Quitar coloca un parche sobre cada mota rodeada."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "DETECT"
@@ -3445,8 +3442,8 @@ msgstr[0] "Una foto quitada de «{project}»."
 msgstr[1] "{n} fotos quitadas de «{project}»."
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "All in the rating filter shows every photo."
-msgstr "Todas, en el filtro de medallas, muestra cada foto."
+msgid "Choose All Photos in the rating filter to show every photo."
+msgstr "Elige Todas las fotos en el filtro de medallas para mostrar cada foto."
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Photos in a Project"
@@ -3467,10 +3464,6 @@ msgstr "La Papelera de ONI está vacía"
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
 msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
-
-#: crates/oni-app/src/app/organising/grid.rs
-msgid "Choose All Photos in the rating filter to show every photo."
-msgstr "Elige Todas las fotos en el filtro de medallas para mostrar cada foto."
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
