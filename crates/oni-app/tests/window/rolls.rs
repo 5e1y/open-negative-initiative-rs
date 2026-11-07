@@ -148,7 +148,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     assert!(settings_of(&canonical("A.tif")).roll_reference.is_some(), "twin: Cancel resets nothing");
     ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the reach", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
-    rig.key("\r");
+    rig.key("\n");
     assert!(w.global::<Confirm>().get_shown(), "Reset is destructive: Return does not reach it");
     w.global::<Confirm>().invoke_answered(true);
     rig.pump();

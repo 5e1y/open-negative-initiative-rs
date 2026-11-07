@@ -83,6 +83,7 @@ export component WelcomeSheet inherits Sheet {
         Point { title: @tr("A scan that cannot be read says why"); text: @tr("Prepare the Roll no longer waits on it."); }
         Point { title: @tr("Nikon High Efficiency RAW"); text: @tr("A click converts a folder’s HE and HE* NEF files to lossless DNGs through Adobe DNG Converter, which ONI downloads and installs when it is missing."); }
         SheetFooter {
+            default-commit: false;
             commit: @tr("GET STARTED");
             committed => { Help.welcome-closed(); }
             Button { text: @tr("Website"); clicked => { Help.website(); } }

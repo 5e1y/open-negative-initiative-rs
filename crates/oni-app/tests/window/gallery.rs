@@ -171,7 +171,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert!(live("Copy Settings\u{2026}"));
     hand.choose("Copy Settings\u{2026}");
     assert!(w.global::<Presets>().get_copying(), "the copy sheet asks first");
-    rig.key("\r");
+    rig.key("\n");
     assert!(!w.global::<Presets>().get_saving(), "Return copies");
     hand.right_click("A");
     assert!(live("Paste Settings"), "{:?}", hand.menu());

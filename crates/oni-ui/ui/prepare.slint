@@ -204,6 +204,7 @@ export component RollPanel inherits Surface {
             changed width => { self.laid(); }
             changed y => { self.laid(); }
             init => { self.laid(); }
+            default-commit: false;
             cancel: Preparing.measuring ? @tr("Stop") : @tr("Cancel");
             back: Preparing.back-shown ? @tr("Back") : "";
             commit: Preparing.measuring ? @tr("Measuring…") : Preparing.action-title;

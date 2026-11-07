@@ -2,7 +2,7 @@
 // centred, the keys that reset or remove last and apart, feedback, settings and the screen's commit at the
 // right; every key there is a menu's gesture.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -20,7 +20,7 @@ export component RollStepKeys inherits Tabs {
     preferred-width: self.tabs.length * RollStyle.step-tab;
     selected: Preparing.step;
     marked: Preparing.done;
-    disabled: Preparing.measuring ? [true, true, true, true, true] : Preparing.skipped;
+    disabled: Preparing.measuring || Keyboard.covered ? [true, true, true, true, true] : Preparing.skipped;
     picked(i) => { Preparing.step-picked(i); }
 }
 
@@ -63,7 +63,7 @@ export global Bar {
 }
 
 // `AppBar.item`: a glyph key that names its gesture.
-component Item inherits Button { has-icon: true; square: true;
+component Item inherits Button { has-icon: true; square: true; in-bar: true;
     in property <Act> action;
     clicked => { Bar.act(root.action); }
 }
@@ -71,6 +71,7 @@ component Item inherits Button { has-icon: true; square: true;
 // `AppBar.word`: a word key.
 component Word inherits Button {
     in property <Act> action;
+    in-bar: true;
     clicked => { Bar.act(root.action); }
 }
 
@@ -163,6 +164,7 @@ component EditorKeys inherits Apart {
         tabs: [@tr("Pro"), @tr("Scanner")];
         helps: [@tr("Pro: every setting by hand, the place to start"), @tr("Scanner: a minilab's density and colour, in steps")];
         marked: [false, false];
+        disabled: Keyboard.covered ? [true, true] : [false, false];
         selected: Bar.face;
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }

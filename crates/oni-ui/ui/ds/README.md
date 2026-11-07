@@ -115,6 +115,11 @@ One model for every control, as macOS draws it with full keyboard access:
   (the window's key hook, `oni_app::outside::keyed`), and a new screen or a sheet takes the keyboard back.
 - **A sheet keeps Tab inside it**: the monitor's two walls, Tab stops only while `Keyboard.covered`, hand the
   keyboard to the sheet's first control going forward and to its last going back.
+- **A sheet's default key holds the keyboard** (`Button { default }`): a footer's commit, a question's
+  confirming answer, a bar's exit, so Return presses it and an assistive tool lands on it; a field the sheet
+  opens on keeps it, a question whose key removes has none, nor has a panel's footer or the welcome's, read
+  from its top (`default-commit: false`), as a sheet scrolls to what holds the keyboard. Escape reaches the
+  sheet from any of its keys. Behind a sheet the window's bar (`in-bar`) is out of reach.
 - **`Keyboard.held`**: the keyboard is the window's, not a field's; the menus' bare keys (the medals, the
   brush) answer only then.
 

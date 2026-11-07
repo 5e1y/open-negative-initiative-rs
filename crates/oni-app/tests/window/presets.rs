@@ -163,7 +163,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     presets.invoke_form_ticked(lighting as i32, false);
     rig.settle();
     println!("shot {}", rig.shot("presets-copy-sheet").display());
-    rig.key("\r");
+    rig.key("\n");
     assert!(!presets.get_saving(), "Return copies");
     ctl.act(oni_app::Act::Copy);
     rig.pump();
@@ -230,7 +230,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.pump();
     assert!(w.global::<Advice>().get_shown());
     assert_eq!(w.global::<Advice>().get_title().as_str(), "\u{201c}Brighter\u{201d} Is Already in Your Presets");
-    rig.key("\r");
+    rig.key("\n");
     assert!(!w.global::<Advice>().get_shown());
     ctl.adopt_preset_code("ONI1:garbled");
     assert_eq!(w.global::<Advice>().get_message().as_str(), "The code is incomplete or was changed on the way. Ask for it to be copied again.");
@@ -239,7 +239,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     // An import of the preset's own file is left out; a deck Duplicate makes a second file.
     ctl.import_preset_files(&[oni_core::presets::files(&shelf)[0].clone()]);
     assert_eq!(w.global::<Advice>().get_title().as_str(), "No Preset Imported");
-    rig.key("\r");
+    rig.key("\n");
     assert!(presets.invoke_card_menu(0));
     let menu: Vec<String> = (0..presets.get_menu_lines().row_count()).filter_map(|i| presets.get_menu_lines().row_data(i)).map(|l| l.text.to_string()).collect();
     assert_eq!(menu, ["Edit…", "Update with Current Settings", "Duplicate", "Share Preset…", "Copy Preset Code", "Delete \u{201c}Brighter\u{201d}"]);
@@ -257,7 +257,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert_eq!(oni_core::presets::files(&shelf).len(), 2, "twin: Cancel deletes nothing");
     menus.invoke_delete_preset(1);
     assert!(w.global::<Confirm>().get_destructive(), "Delete is the red key");
-    rig.key("\r");
+    rig.key("\n");
     assert_eq!(oni_core::presets::files(&shelf).len(), 2, "a destructive key takes no Return");
     w.global::<Confirm>().invoke_answered(true);
     rig.pump();

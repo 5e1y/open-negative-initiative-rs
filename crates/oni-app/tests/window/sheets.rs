@@ -102,7 +102,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     assert!(help.get_welcome_shown());
     click(&rig, 12.0, 400.0);
     assert!(help.get_welcome_shown(), "a click beside the welcome leaves it open");
-    rig.key("\r");
+    rig.key("\n");
     assert!(!help.get_welcome_shown(), "twin: its default key closes it");
 
     // A post answered after its sheet closed and opened again does not thank the new report.
@@ -195,7 +195,7 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     println!("shot {}", rig.shot("export-replace").display());
     // The prompt is centred in the window, its keys at its right: the pointer sweeps them, Cancel
     // asked again; Return replaces nothing, as the key is destructive.
-    rig.key("\r");
+    rig.key("\n");
     assert!(e.get_confirm_shown(), "Return does not replace files");
     let (mut cancelled, mut replaced) = (0, false);
     'sweep: for y in (24..776).step_by(4) {
@@ -277,7 +277,7 @@ pub(crate) fn a_clash_with_an_original_offers_rename_and_keeps_it() {
     assert_eq!(std::fs::read_dir(&batch).unwrap().count(), 1);
     e.invoke_export();
     rig.pump();
-    rig.key("\r");
+    rig.key("\n");
     assert!(!e.get_confirm_shown(), "Return renames, as Rename replaces nothing");
     rig.until("the batch written", Duration::from_secs(120), || !export_card::card(&ctl).exporting && !e.get_shown());
     assert_eq!(std::fs::read(&original).unwrap(), b"the camera's own", "the original kept byte for byte");
