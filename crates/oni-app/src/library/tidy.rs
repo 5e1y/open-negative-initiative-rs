@@ -36,7 +36,7 @@ pub fn tidy(index: &LibraryIndex, support: &Path, computer: &Computer, kept: &[S
     Tidied { pruned, swept }
 }
 
-/// Whether the index's rows were last thrown away more than `SETTLED` ago, a schema drop included;
+/// Whether the index's rows were last thrown away more than `SETTLED` ago, its file made anew included;
 /// the file's birth stands in for an index never dated, and unknown is not settled.
 pub fn settled(index: &LibraryIndex, index_path: &Path) -> bool {
     let made = index.rebuilt().or_else(|| std::fs::metadata(index_path).and_then(|m| m.created()).ok());
@@ -88,7 +88,7 @@ mod tests {
         let index = LibraryIndex::open(&at).unwrap();
         index.note_rebuilt(SystemTime::now() - 2 * SETTLED).unwrap();
         assert!(settled(&index, &at), "rows kept since long ago settle, whatever the file's birth");
-        // Twin: dated now, as a schema drop dates it, the index claims too little to sweep on.
+        // Twin: dated now, as a file made anew dates it, the index claims too little to sweep on.
         index.note_rebuilt(SystemTime::now()).unwrap();
         assert!(!settled(&index, &at));
         let _ = std::fs::remove_dir_all(&root);

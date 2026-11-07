@@ -62,7 +62,7 @@ impl Disk {
     }
 
     fn index(&self) -> LibraryIndex {
-        LibraryIndex::open(&self.root.join("Caches/index.sqlite")).unwrap()
+        LibraryIndex::open(&LibraryIndex::default_path(&self.root.join("Caches"))).unwrap()
     }
 
     fn favourites(&self) -> Vec<String> {
