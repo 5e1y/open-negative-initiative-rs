@@ -2419,6 +2419,16 @@ msgstr "PRÉPARER LA PELLICULE"
 msgid "Prepare the Roll"
 msgstr "Préparer la pellicule"
 
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/toolbar.slint
+msgid "Export Photo…"
+msgid_plural "Export {n} Photos…"
+msgstr[0] "Exporter la photo…"
+msgstr[1] "Exporter {n} photos…"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Export ({})"
+msgstr "Exporter ({})"
+
 #: crates/oni-ui/ui/toolbar.slint
 msgid "GALLERY"
 msgstr "GALERIE"
@@ -2448,16 +2458,12 @@ msgid "ADD FOLDER…"
 msgstr "AJOUTER UN DOSSIER…"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Star a folder of scans and open it · export stays on {}"
-msgstr "Mettre un dossier de scans en favori et l’ouvrir · l’export reste sur {}"
+msgid "Star a folder of scans and open it"
+msgstr "Mettre un dossier de scans en favori et l’ouvrir"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Export {} photos ({})"
 msgstr "Exporter {} photos ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Export ({})"
-msgstr "Exporter ({})"
 
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Click or press → to turn · ← to go back · Esc to leave"
@@ -4254,10 +4260,6 @@ msgstr "Aucun profil installé"
 #: crates/oni-app/src/export.rs
 msgid "No ICC profile was found in what you chose."
 msgstr "Aucun profil ICC n’a été trouvé dans votre sélection."
-
-#: crates/oni-app/src/export.rs
-msgid "Export {count} Photos…"
-msgstr "Exporter {count} photos…"
 
 #: crates/oni-app/src/export.rs
 msgid "EXPORT {count} PHOTOS"

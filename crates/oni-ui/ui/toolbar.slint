@@ -204,6 +204,16 @@ component GalleryKeys inherits Centre {
         help: @tr("Prepare the Roll");
         enabled: Bar.can-prepare;
     }
+    // ⌘E from the bar, on what the menu's Export names: its title and its rule, so the two cannot disagree.
+    Tool {
+        compact: root.compact;
+        action: Act.export;
+        word: Menus.titles.export;
+        widest: @tr("Export Photo…" | "Export {n} Photos…" % 88);
+        icon: Icons.export;
+        help: @tr("Export ({})", KeyWords.command + "E");
+        enabled: Menus.live.export;
+    }
 }
 
 export component Toolbar inherits Surface {
@@ -283,7 +293,7 @@ export component Toolbar inherits Surface {
             kind: !Bar.prepare-first && !root.tool && (self.update || Bar.editing || Bar.archive) ? ButtonKind.accent : ButtonKind.plain;
             fixed-width: ShellStyle.export-width;
             help: self.update ? Bar.update-help
-                : !Bar.editing ? @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E")
+                : !Bar.editing ? @tr("Star a folder of scans and open it")
                 : Bar.targets > 1 ? @tr("Export {} photos ({})", Bar.targets, KeyWords.command + "E") : @tr("Export ({})", KeyWords.command + "E");
             enabled: self.update ? !Bar.updating : !Bar.editing || Bar.has-photo || Bar.targets > 0;
         }

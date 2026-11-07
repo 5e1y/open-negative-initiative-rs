@@ -7242,5 +7242,12 @@
     "title": "A click's modifiers from Slint's MCP server are taken as sent",
     "status": "done",
     "detail": "Three evaluations reported that shift- and cmd-clicks never extended a selection. The app checks a click's Command and Shift against the keys the system says are down, so a release another app took never sticks; the MCP server, an evaluation's driver, presses no real key, so its modifiers were dropped. While the server is on (SLINT_MCP_PORT), the check is skipped, as the window checks skip it; the shipped app never runs that server."
+  },
+  {
+    "id": 1481,
+    "type": "feature",
+    "title": "The gallery's bar exports what is picked",
+    "status": "done",
+    "detail": "An evaluator with three Gold frames picked found no export in the gallery's bar: only the photo's menu or an unseen cmd-E delivered them. A flat key now stands after PREPARE ROLL, before Reset and Trash: it reads the File menu's own title and rule ('Export 3 Photos…'), so the two cannot disagree, keeps the width of a roll's count so the bar holds still, gives way to a glyph drawn in the Trinil stroke when the bar is narrow, and opens the export sheet on the selection. ADD FOLDER… stays the gallery's keycap, its help no longer pointing at cmd-E."
   }
 ]
