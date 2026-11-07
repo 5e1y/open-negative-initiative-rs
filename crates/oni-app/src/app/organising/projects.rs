@@ -85,11 +85,10 @@ impl Ctl {
         {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
-            let was = s.org.projects.clone();
+            let found = s.org.projects.clone();
             project::regroup(&mut s.org.projects, from, to);
-            let taken: Vec<Project> = was.into_iter().filter(|p| !s.org.projects.iter().any(|q| q.id == p.id)).collect();
             if let Some(store) = s.store.editor() {
-                store.keep_taken(undone, &taken);
+                store.walked(undone, &found, &s.org.projects);
             }
             let ringed = |id: &Id| s.org.projects.iter().any(|p| p.id == *id);
             if matches!(&s.org.project_ring, Some(NodeId::Project(r)) if !ringed(r)) {

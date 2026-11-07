@@ -129,18 +129,47 @@ fn a_reorder_opens_no_step_and_a_redo_of_new_project_keeps_the_name_typed_since(
     assert_ne!(before, project::rosters(&projects));
     project::rename(&mut projects, made, "Client");
     let step = h.undo_step().and_then(|s| s.members).expect("New Project's step");
-    let was = projects.clone();
+    let found = projects.clone();
     project::regroup(&mut projects, &step.after, &step.before);
-    let taken: Vec<Project> = was.into_iter().filter(|p| !projects.iter().any(|q| q.id == p.id)).collect();
-    assert_eq!(taken.iter().map(|p| p.name.as_str()).collect::<Vec<_>>(), ["Client"], "the undo takes it away");
+    assert!(projects.iter().all(|p| p.id != made), "the undo takes it away");
     // Twin: the step as recorded brings it back under the name it was made with.
     let mut recorded = projects.clone();
     project::regroup(&mut recorded, &step.before, &step.after);
     assert_eq!(recorded.iter().find(|p| p.id == made).map(|p| p.name.as_str()), Some("Project 1"));
-    h.keep_taken(true, &taken);
+    h.walked(true, &found, &projects);
     let step = h.redo_step().and_then(|s| s.members).expect("New Project's step");
     project::regroup(&mut projects, &step.before, &step.after);
     assert_eq!(projects.iter().find(|p| p.id == made).map(|p| p.name.as_str()), Some("Client"));
+}
+
+/// New Project from a, which sat in Old, renamed then deleted by hand: ⌘Z gives a back to Old, and
+/// ⌘⇧Z, whose project that undo found gone, makes none and leaves a where it stands.
+#[test]
+fn a_redo_never_makes_again_a_project_deleted_since() {
+    use crate::project::{self, Member, Project};
+    let day = oni_settings::Date::since_reference_date(8e8);
+    let a = Member::new(Some("/r/a"), Some("1-a"));
+    let mut projects = vec![Project::new("Old", day, vec![a.clone()])];
+    let rows = [crate::index::Entry::new("/r/a", day, "1-a")];
+    let mut h = History::default();
+    let before = project::rosters(&projects);
+    let made = project::new_from(&mut projects, &project::Reach::rows(&rows), &std::collections::HashSet::from(["/r/a".to_string()]), crate::later(day, 60.0));
+    h.record_members(Members { before, after: project::rosters(&projects) }, "New Project");
+    project::rename(&mut projects, made.expect("a project from a"), "Client");
+    project::delete(&mut projects, made.unwrap());
+    let step = h.undo_step().and_then(|s| s.members).expect("New Project's step");
+    let found = projects.clone();
+    project::regroup(&mut projects, &step.after, &step.before);
+    let held = |projects: &[Project]| projects.iter().map(|p| (p.name.clone(), p.members.clone())).collect::<Vec<_>>();
+    assert_eq!(held(&projects), [("Old".to_string(), vec![a.clone()])], "a back in Old");
+    // Twin: the step as recorded makes the project again and takes a out of Old.
+    let mut recorded = projects.clone();
+    project::regroup(&mut recorded, &step.before, &step.after);
+    assert_eq!(held(&recorded), [("Old".to_string(), vec![]), ("Project 1".to_string(), vec![a.clone()])]);
+    h.walked(true, &found, &projects);
+    let step = h.redo_step().and_then(|s| s.members).expect("New Project's step");
+    project::regroup(&mut projects, &step.before, &step.after);
+    assert_eq!(held(&projects), [("Old".to_string(), vec![a])], "no project made, a where it stands");
 }
 
 /// Two steps of one name and no photo, Add to Project then a drop onto a project: each bears its

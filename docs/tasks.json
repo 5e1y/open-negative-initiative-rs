@@ -7648,5 +7648,12 @@
     "title": "An exact member holding a placeholder print stands at the path after its mark",
     "status": "done",
     "detail": "Fourth review of the projects (point 2): builds from ad672e6a to before #1550 wrote 1.5.6's placeholder into exactMembers as a print, without its path where another member was named by it; #1550 dropped that print but took no path after the mark, so the member read with neither, showed nothing and was dropped at the next save. One reading for every text that is no print (file.rs place): a path names itself, a placeholder the path after its mark; a version 1 text and an exact or version 2 member's print both take it where they hold no path. Check: project file_tests::an_exact_member_holding_a_placeholder_stands_at_its_path, a version 3 file with such members with and without a path, read then saved (twin: a member with neither path nor print is dropped by the write; mutations: spelt taking no place, or keeping a placeholder print as builds before #1550 did, fail it)."
+  },
+  {
+    "id": 1556,
+    "type": "fix",
+    "title": "A redo never makes again a project deleted since its undo",
+    "status": "done",
+    "detail": "Fourth review of the projects (point 3): New Project, the project renamed then deleted, then ⌘Z found it gone and ⌘⇧Z made it again under the name it was made with, pulling the photos it was made from out of their projects again. A redo remakes only what its undo took away: the step just walked is told the projects as its walk found and left them (History::walked, from Ctl::regrouped, in place of keep_taken); one it took away is held as found, so the walk back brings the name it bore; one it found gone is put at the step's other end too, so no walk makes it again and its photos stay where they stand. Checks: history a_redo_never_makes_again_a_project_deleted_since (twin: the step as recorded makes 'Project 1' again and takes a out of Old; mutation: without the rule it fails), window project_steps::a_redo_never_makes_again_a_project_deleted_since (twin: before the delete, ⌘Z then ⌘⇧Z brings Client back; mutation fails it)."
   }
 ]

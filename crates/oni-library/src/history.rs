@@ -278,15 +278,21 @@ impl History {
         self.push(Step { label: label.to_owned(), members: Some(members), ..Step::default() });
     }
 
-    /// The step just walked holds each project its walk took away as the walk found it, its members
-    /// aside, so the walk back brings it again under the name it bore.
-    pub fn keep_taken(&mut self, undone: bool, taken: &[crate::project::Project]) {
+    /// The step just walked, told the projects as its walk found and left them: one it took away is held
+    /// as found, members aside, so the walk back brings its name; one found gone stands at both ends, never made again.
+    pub fn walked(&mut self, undone: bool, found: &[crate::project::Project], left: &[crate::project::Project]) {
+        use crate::project::Project;
         let at = if undone { self.cursor } else { self.cursor.wrapping_sub(1) };
         let Some(members) = self.steps.get_mut(at).and_then(|s| s.members.as_mut()) else { return };
-        let end = if undone { &mut members.after } else { &mut members.before };
-        for project in taken {
-            if let Some(kept) = end.get_mut(&project.id) {
-                *kept = crate::project::Project { members: std::mem::take(&mut kept.members), ..project.clone() };
+        let (end, other) = if undone { (&mut members.after, &mut members.before) } else { (&mut members.before, &mut members.after) };
+        let stands = |list: &[Project], id: &Id| list.iter().find(|p| p.id == *id).cloned();
+        for (id, kept) in end.iter_mut() {
+            match stands(found, id) {
+                Some(project) if stands(left, id).is_none() => *kept = Project { members: std::mem::take(&mut kept.members), ..project },
+                Some(_) => {}
+                None => {
+                    other.entry(*id).or_insert_with(|| Project { members: Vec::new(), ..kept.clone() });
+                }
             }
         }
     }

@@ -1,8 +1,9 @@
-//! A step on the projects' members undone and done again as a hand meets it: the project New
-//! Project made goes and comes back, and a member brought back beyond the folder shows at once.
+//! A step on the projects' members undone and done again as a hand meets it: the project New Project
+//! made goes and comes back, never once deleted, and a member brought back beyond the folder shows at once.
 
 use crate::projects_tab::Hand;
 use oni_library::project;
+use slint::ComponentHandle;
 
 /// New Project from A and B, then ⌘Z: no project is left behind, and ⌘⇧Z makes the same one again.
 pub(crate) fn an_undo_of_new_project_leaves_no_project_and_its_redo_makes_it_again() {
@@ -89,4 +90,37 @@ pub(crate) fn the_new_project_key_is_one_step_and_its_redo_keeps_the_name_typed(
     hand.rig.pump();
     // Twin: had the drag been a step, this ⌘Z would have taken it back and left Client.
     assert_eq!(names(&hand), ["Project 1"], "the drag no step, ⌘Z takes back the key's project");
+}
+
+/// New Project from A, renamed Client: ⌘Z then ⌘⇧Z brings Client back, its undo having taken it away.
+/// Once Client is deleted by hand, ⌘Z finds it gone and ⌘⇧Z makes no project.
+pub(crate) fn a_redo_never_makes_again_a_project_deleted_since() {
+    let tones = [("Roll/A.tif", 0.3)];
+    let hand = Hand::new("redo-deleted", &tones);
+    let [a] = tones.map(|(f, _)| hand.at(f));
+    hand.open("Roll");
+    let (ctl, lib) = (hand.shell.ctl.clone(), hand.lib());
+    hand.click(&a, false);
+    hand.menu(&a, "New Project from", None);
+    lib.invoke_surface_picked(1);
+    hand.rig.pump();
+    lib.invoke_project_row_rename_committed(0, "Client".into());
+    hand.rig.pump();
+    let walk = |act: oni_app::Act| {
+        ctl.act(act);
+        hand.rig.pump();
+    };
+    // Twin: a redo whose undo took the project away makes it again.
+    walk(oni_app::Act::Undo);
+    walk(oni_app::Act::Redo);
+    assert_eq!(hand.members(), [vec![a.clone()]], "Client back");
+    assert!(lib.invoke_project_row_menu(0));
+    lib.invoke_menu_chosen(1);
+    hand.rig.pump();
+    hand.shell.window.global::<oni_app::Confirm>().invoke_answered(true);
+    hand.rig.pump();
+    assert!(hand.members().is_empty(), "Client deleted");
+    walk(oni_app::Act::Undo);
+    walk(oni_app::Act::Redo);
+    assert!(hand.members().is_empty(), "the redo makes no project");
 }
