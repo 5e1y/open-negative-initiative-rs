@@ -3,7 +3,7 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, CardStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, CardStyle, ScannerStyle } from "theme.slint";
 import { Outward, Inward } from "depth.slint";
 
 // `note` is a block's wrapped line in the secondary ink, a label's size, its lines opened; `section` a
@@ -28,8 +28,10 @@ export struct TipBox {
 // open in its block, one at a time.
 export global Tip {
     in-out property <string> text;
+    // The control's corner the note hangs from: its foot, or its head when the note stands `above` it.
     in-out property <length> x;
     in-out property <length> y;
+    in-out property <bool> above;
     in-out property <bool> shown;
     // The note of the help card open, none for no card; `demo` its help topic, Rust's key to its clip.
     in-out property <string> open;
@@ -316,7 +318,8 @@ export global Clicks {
     callback release();
 }
 
-// Shows `text` under `anchor` while it is hovered, and hides it when the pointer leaves; opens a help card.
+// Shows `text` under its control while it is hovered, or over it (`rise`), and hides it when the pointer
+// leaves; opens a help card.
 export global Tips {
     // `DSHelpPlacement.place`: the note at its anchor, held a margin in from each of the room's four
     // edges; larger than that room it is cut down to it rather than allowed to leave.
@@ -328,15 +331,22 @@ export global Tips {
             height: min(height, room-height - 2 * min(Space.s, room-height / 2)),
         }
     }
+    // `y` the control's foot.
     public function hover(over: bool, text: string, x: length, y: length) {
         if (over && text != "") {
             Tip.text = text;
             Tip.x = x;
-            Tip.y = y + TipStyle.offset;
+            Tip.y = y;
+            Tip.above = false;
             Tip.shown = true;
         } else if (Tip.text == text) {
             Tip.shown = false;
         }
+    }
+    // `y` the control's head: a slider's note stands over its own name, never over the next slider's.
+    public function rise(over: bool, text: string, x: length, y: length) {
+        Tips.hover(over, text, x, y);
+        if (over && text != "") { Tip.above = true; }
     }
     // A help mark's press: its note opens in its block, closing the one open; its own again closes it.
     public function help(note: string, demo: string) {

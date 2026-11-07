@@ -7165,5 +7165,19 @@
     "title": "Every helper line takes the note: one size and one leading",
     "status": "done",
     "detail": "Evaluation r4: empty-state and status captions fell to the 11 pt caption with tight leading. Every helper line is now the design system's note, a label's size in the secondary ink with its lines opened: an empty list's hint, Prepare's base, flags and grouping status, the epilepsy warning, the navigator's first-run steps and welcome, an empty grid's detail, the export's subtitle and space note, and the messages of asks, notices, progress cards, a missing original and the DNG conversion. The caption stays for tiles, values and key legends. The design system's README says so. No render moves. Checks: window export_panel (the subtitle, now a note, measures taller than a label's line; the summary keeps the label's), column_edges, sheet_layout, told, sheets."
+  },
+  {
+    "id": 1458,
+    "type": "interface",
+    "title": "A tooltip goes with the screen or the sheet that replaced or covered its key",
+    "status": "done",
+    "detail": "Evaluation: a toolbar key's tooltip stayed over the export and over a sheet after the hand left. Measured through the window: the menu's Export under a resting hand removes the bar, and Slint tells a key removed or covered under a resting pointer nothing, so its tooltip stood until the next press. A new screen or a sheet shown or closed now takes the tooltip down where it already gives the keyboard back to the photos (app.slint), as a press does; a pointer leaving a key already hid it. Checks: window tooltip a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key (failed before: the mode key's tooltip stood over the export; twins: back beside the photo and once Settings closed, the key hovered again tells its help)."
+  },
+  {
+    "id": 1459,
+    "type": "interface",
+    "title": "A slider's tooltips stand over its own name, never over the next slider's",
+    "status": "done",
+    "detail": "Evaluation: a rail's tooltip, hung under the rail, covered the next slider's name (Shadows over White point). The rail's tooltip and a stepped slider's minus and plus keys' now rise over their own slider's name and value (Tips.rise, Tip.above, Button.rises), as the name's falls over its rail; every other tooltip still hangs under its control. Checks: window tooltip a_slider_s_tooltip_covers_no_neighbour, Tint's rail and M's two keys on their own slider and clear of the ones above and below (failed before; twin: the same box under the control lies over the next slider)."
   }
 ]

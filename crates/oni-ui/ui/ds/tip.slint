@@ -25,7 +25,8 @@ export component TipLayer inherits TipCard {
     in property <length> room;
     in property <length> room-height;
     text: Tip.text;
-    out property <TipBox> box: Tips.place(Tip.x, Tip.y, root.natural-width, root.natural-height, root.room, root.room-height);
+    out property <TipBox> box: Tips.place(Tip.x, Tip.above ? Tip.y - TipStyle.offset - root.natural-height : Tip.y + TipStyle.offset,
+        root.natural-width, root.natural-height, root.room, root.room-height);
     x: root.box.x;
     y: root.box.y;
     width: root.box.width;
