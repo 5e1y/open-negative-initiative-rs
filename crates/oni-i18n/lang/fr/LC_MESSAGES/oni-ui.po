@@ -2121,10 +2121,6 @@ msgstr "Retour"
 msgid "Measuring…"
 msgstr "Mesure en cours…"
 
-#: crates/oni-ui/ui/prepare.slint
-msgid "Skip"
-msgstr "Passer"
-
 #: crates/oni-ui/ui/prepare_floor.slint
 msgid "Reading the Scan"
 msgstr "Lecture du scan"
@@ -3940,7 +3936,7 @@ msgid "Draw the window inside the picture, clear of the holder and the film's ed
 msgstr "Tracez la fenêtre dans l’image, à l’écart du support et des bords du film, et vérifiez-la sur chaque scan avec le curseur. Chaque diapositive la garde comme fenêtre de mesure."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; skipped, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."
+msgid "Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; with nothing picked, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."
 msgstr "Choisissez un scan, puis cliquez sur quelque chose de blanc ou de gris : un nuage, un mur, une route grise, ou la lumière nue à travers une perforation. Les gains de la pellicule rendent sa couleur neutre et gardent sa luminosité ; sans clic, les diapositives gardent les 5500 K de l’appareil. Évitez les noirs : ceux d’une diapositive sont rarement neutres."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
@@ -3948,8 +3944,8 @@ msgid "Choose the film type and what the roll was digitised with. The wrong film
 msgstr "Choisissez le type de film et ce avec quoi la pellicule a été numérisée. Un mauvais type de film fausse la conversion de toutes les vues de la pellicule."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."
-msgstr "Cliquez sur la vue de la table lumineuse vide, ou choisissez-en une chargée auparavant. Passez cette étape si votre éclairage est uniforme ; sinon, un éclairage inégal assombrit ou teinte les coins de chaque vue."
+msgid "Click the shot of the empty light panel, or pick one you loaded before. If your light is even, go on with NEXT; otherwise uneven light darkens or tints the corners of every frame."
+msgstr "Cliquez sur la vue de la table lumineuse vide, ou choisissez-en une chargée auparavant. Si votre éclairage est uniforme, continuez avec SUIVANT ; sinon, un éclairage inégal assombrit ou teinte les coins de chaque vue."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."

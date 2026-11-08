@@ -22,8 +22,6 @@ export global RollStyle {
     out property <length> demo: 14 * Space.m;
     // A step's tab in the bar: its number's disc and the longest step's name clear of the pill's round ends.
     out property <length> step-tab: 7 * Space.m;
-    // The base's ring at a pick: this many times its size, settling onto it as a key comes to rest.
-    out property <float> landing: 1.6;
     // The base's pick on its scan at least this wide, so a disc of a few pixels still shows where it lies.
     out property <length> pick: 2 * Space.s;
 }
@@ -49,9 +47,8 @@ export component Pager inherits HorizontalLayout {
 // never under `pick` wide; the loupe keeps the disc's true size.
 export component Pick inherits Ring {
     in property <length> sampled;
-    in property <float> landing: 1;
     in property <color> colour;
-    diameter: max(root.sampled, RollStyle.pick) * root.landing;
+    diameter: max(root.sampled, RollStyle.pick);
     background: root.colour;
 }
 

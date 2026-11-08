@@ -7991,5 +7991,33 @@
     "title": "The header's tab bars stand as tall as the panel's",
     "status": "done",
     "detail": "Owner's feedback: the Pro|Scanner tabs and Prepare's step tabs had been made as tall as the bar's keys (#1573); they take the Tabs' own height again, the panel's Roll|Colour|Details height, centred on the bar's line. Proof: window toolbar_keys compares the Pro and Colour tabs and their line (twin: a key of the bar is taller than a tab)."
+  },
+  {
+    "id": 1618,
+    "type": "ui",
+    "title": "No Trash key on the bar while editing a photo; the gallery's bar keeps it",
+    "status": "done",
+    "detail": "Owner, after using the app: no trash in the header in edit mode. `Centre` takes `trash`, off in `EditorKeys`, so the editor's centre ends past its rule on Reset Photo alone, where the group stood, and the gallery's keeps Reset and Trash. Trashing stays reachable beside a photo by its chord, the menu bar and the photo's context menus; nothing else moves. Checks: window toolbar the_bar_reads_by_groups (no Trash on the editor's bar, bare room past Reset, the rule before it; twin: the gallery's bar has it; ⌘⌫ in the editor marks the frame open alone and goes on to the next, twin: nothing marked before the chord; undone in the slint, it fails at 'no Trash on the editor's bar'); sheet_keys' list of the editor's bar keys loses it."
+  },
+  {
+    "id": 1619,
+    "type": "interface",
+    "title": "Prepare the Roll has no Skip key: NEXT goes on past a step left empty",
+    "status": "done",
+    "detail": "Owner, after using the app: no separate skip button, a step not completed is passed by NEXT. The owner's call reverses the footers of #1248 and #1438. The keycap is live on every step that may go on (`action-enabled` false only on the window with nothing to measure) and raises the same `advance`; a step passed empty keeps no mark on the bar, as under Skip. `skippable` and the Skip key go, and the flat-field's help and a slide's white name NEXT and 'nothing picked' instead, in English, French and Spanish. Checks: window prepare_walk (a DSLR roll's empty flat-field and empty base each passed by the key found by its label, no Skip on any step, no mark left, Back returns; every frame flagged, PREPARE ROLL stays dark, twin: a frame to measure lights it; undone in Rust, it fails at 'an empty flat-field may go on'; a Skip key put back fails at 'NEXT alone goes on'), prepare's footer and its click at the keycap's place, slides' unpicked white; the prepare bench walks by the key."
+  },
+  {
+    "id": 1620,
+    "type": "interface",
+    "title": "A pick on the film base goes straight on to the next step",
+    "status": "done",
+    "detail": "Owner, after using the app: on the pick in the dark, go straight to the next step. This is Prepare's Base step (`Step::Base`, 'Pick the Film Base', the film's own black; 'Pick a White or Grey' on a slide roll, the same step and gesture). `base_clicked`, which a click and the floor's Return share, lays the pick, gives a key's click and walks on as NEXT would; a pick landing nowhere, or on a scan that cannot be read, stays with its reason shown. The value stays visible and reachable: the step's mark on the bar, and back on the step its ring, its colour and its note, where another pick replaces it (hard rule 1). The click moves from the slint to Rust, as the surface goes with the step; the ring's landing, never seen now, goes with `base-picks` and `RollStyle.landing`. `step_to` lets the scan's pointer go on a step change, or the loupe came back at the old place with no hand over it. Checks: window prepare_walk (a pick by the hand reaches the flags with one click and rides in every draft; the Base tab shows it, no loupe until the hand returns; a second pick replaces it and goes on; a pick outside the scan stays silent; undone, it fails at 'a pick goes straight on', the pointer kept fails at 'the hand left with the step'), prepare_loupe (an unreadable scan: a pick stays, its reason said, twin: NEXT goes on), canvas_keys (Return), slides, prepare."
+  },
+  {
+    "id": 1621,
+    "type": "interface",
+    "title": "The card's dissolve under a scrub lasts a third as long: 200 ms to 67 ms",
+    "status": "done",
+    "detail": "Owner, after using the app: divide the transition by three on the slide at the last step. That transition is the frame card's dissolve while the Frame slider of 'Place the Measuring Window' walks the roll (#1500); no slide runs between steps. Its length is now the design system's `Motion.dissolve`, 67 ms, in place of the 200 ms Rust handed over in `card-fade`. The same 200 ms also paced the dissolves, and two dissolves make a flash (WCAG 2.3.1), so the pace stands apart as `prepare::card::PACE`, unchanged: the card still changes at most 5 times a second, under three flashes. Checks: window prepare_frames (a frame asked lies whole on the card 100 ms after, its luma that of the settled frame, twin: the two frames read apart by over 60; the token a third of the pace; a scrub still dissolves once a pace; undone to 200 ms, it fails at 'the dissolve over within 100 ms'), unit card a_frame_dissolves_in_only_once_the_pace_allows (twin: past the pace, at once; two dissolves over a third of a second)."
   }
 ]

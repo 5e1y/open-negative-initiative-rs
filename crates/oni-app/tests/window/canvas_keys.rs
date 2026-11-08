@@ -206,8 +206,12 @@ pub(crate) fn prepares_floor_places_the_base_picker_and_the_window_by_the_keyboa
     rig.chord(Key::Shift, &right);
     assert!((p.get_loupe_x() - x - 10.0).abs() < 0.01, "⇧ moves it ten times as far");
     assert!(!p.get_ring_shown());
+    let picker = p.get_loupe_x();
     press(&rig, w, "\n");
-    assert!(p.get_ring_shown() && (p.get_ring_x() - p.get_loupe_x()).abs() < 0.01, "Return picks the film under the picker");
+    assert_eq!(p.get_step(), 3, "Return picks the film under the picker and goes on");
+    p.invoke_step_picked(2);
+    rig.pump();
+    assert!(p.get_ring_shown() && (p.get_ring_x() - picker).abs() < 0.01, "the pick lies where the picker stood");
     rig.shot("canvas-keys-base");
 
     // On the window step its arrows move the window, ⌥ its right edge; the photos' arrow walks the frames.

@@ -3,11 +3,12 @@
 use super::*;
 use std::time::Duration;
 
-/// A dissolve's length: two make a flash, so the card flashes under three times a second (WCAG 2.3.1).
-pub(super) const FADE: Duration = Duration::from_millis(200);
+/// The least time from one dissolve's start to the next's, however short `Motion.dissolve`: two dissolves
+/// make a flash, so the card flashes under three times a second (WCAG 2.3.1).
+pub(super) const PACE: Duration = Duration::from_millis(200);
 
 /// The card's two layers: the frame each holds, whether the second lies on top, and when the last
-/// dissolve began; a frame asked during one waits for its end, the latest asked laid.
+/// dissolve began; a frame asked within the pace waits for its end, the latest asked laid.
 #[derive(Default)]
 pub(super) struct Layers {
     paths: [Option<String>; 2],
@@ -28,7 +29,7 @@ impl Layers {
 enum Lay {
     /// Its picture set on the top layer, which shows that frame or none yet.
     InPlace,
-    /// Dissolved in once the dissolve under way ends, this long from now.
+    /// Dissolved in once the pace allows, this long from now.
     After(Duration),
     Dissolve,
 }
@@ -38,7 +39,7 @@ fn lay(l: &Layers, path: Option<&str>, now: Instant) -> Lay {
     if top.is_none() || top == path {
         return Lay::InPlace;
     }
-    match l.began.map(|b| FADE.saturating_sub(now.duration_since(b))) {
+    match l.began.map(|b| PACE.saturating_sub(now.duration_since(b))) {
         Some(left) if !left.is_zero() => Lay::After(left),
         _ => Lay::Dissolve,
     }
@@ -113,7 +114,7 @@ impl Ctl {
         p.set_card_second(second);
     }
 
-    /// The latest frame asked, laid once the dissolve it waited on has ended.
+    /// The latest frame asked, laid once the pace it waited on has passed.
     fn relay_card(&self) {
         let (path, picture) = card_picture(&self.state.borrow());
         self.lay_card(path, picture);
@@ -196,8 +197,8 @@ impl Ctl {
         Some((rect, *size))
     }
 
-    /// A click inside the scan picks the bare film there; the step stays, its ring landing on the
-    /// pick, so the hand sees and checks it before NEXT.
+    /// A click inside the scan picks the bare film there, with a key's click, and the walk goes on by
+    /// itself; the step, back to it, shows the pick and takes another. One landing nowhere stays.
     pub(in crate::app) fn base_clicked(self: &Rc<Self>, x: f64, y: f64) {
         let Some((rect, _)) = self.scan_rect() else { return };
         // A scan not laid yet has no size: a click there would pick a point of none.
@@ -212,10 +213,9 @@ impl Ctl {
             r.base = Some(BasePick { path, unit: ((x - rect.0) / rect.2, (y - rect.1) / rect.3), radius });
         }
         if let Some(w) = self.window() {
-            let p = w.global::<Preparing>();
-            p.set_base_picks(p.get_base_picks() + 1);
+            w.global::<crate::Clicks>().invoke_press();
         }
-        self.publish_prepare();
+        self.roll_advance();
     }
 }
 
@@ -257,11 +257,11 @@ fn disc_mean(rgba: &[u8], width: usize, height: usize, unit: (f64, f64), radius:
 
 #[cfg(test)]
 mod tests {
-    use super::{FADE, Lay, Layers, disc_mean, lay};
+    use super::{Lay, Layers, PACE, disc_mean, lay};
     use std::time::{Duration, Instant};
 
     #[test]
-    fn a_frame_dissolves_in_only_once_the_last_dissolve_has_ended() {
+    fn a_frame_dissolves_in_only_once_the_pace_allows() {
         let now = Instant::now();
         let mut l = Layers::default();
         assert_eq!(lay(&l, Some("a"), now), Lay::InPlace, "the first frame is laid as it comes");
@@ -270,10 +270,10 @@ mod tests {
         assert_eq!(lay(&l, Some("b"), now), Lay::Dissolve);
         l.began = Some(now);
         let soon = now + Duration::from_millis(50);
-        assert_eq!(lay(&l, Some("b"), soon), Lay::After(FADE - Duration::from_millis(50)), "the next waits for the end");
-        // Twin: once the dissolve has ended, the next one begins at once.
-        assert_eq!(lay(&l, Some("b"), now + FADE), Lay::Dissolve);
-        assert!(FADE * 2 > Duration::from_millis(1000) / 3, "two dissolves, a flash, last over a third of a second");
+        assert_eq!(lay(&l, Some("b"), soon), Lay::After(PACE - Duration::from_millis(50)), "the next waits for the pace");
+        // Twin: once the pace has passed, the next one begins at once.
+        assert_eq!(lay(&l, Some("b"), now + PACE), Lay::Dissolve);
+        assert!(PACE * 2 > Duration::from_millis(1000) / 3, "two dissolves, a flash, take over a third of a second");
     }
 
     #[test]

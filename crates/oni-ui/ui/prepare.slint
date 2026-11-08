@@ -193,8 +193,8 @@ export component RollPanel inherits Surface {
             }
           }
         }
-        // Cancel at the left, Skip beside it while the step is empty; Back and the step's keycap at the
-        // right, the same on every step, so a hand at the keycap's place never passes a pick unseen.
+        // Cancel at the left; Back and the step's keycap at the right, the same on every step: the keycap
+        // goes on past a step left empty, dark only where a step may not go on.
         footer := SheetFooter {
             function laid() {
                 Preparing.footer-x = self.absolute-position.x;
@@ -213,7 +213,6 @@ export component RollPanel inherits Surface {
             cancelled => { Preparing.cancel(); }
             backed => { Preparing.back(); }
             committed => { Preparing.advance(); }
-            if Preparing.skippable && !Preparing.measuring: Button { text: @tr("Skip"); clicked => { Preparing.advance(); } }
         }
     }
 }

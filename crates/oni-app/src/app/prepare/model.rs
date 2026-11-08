@@ -299,7 +299,7 @@ mod tests {
     #[test]
     fn a_roll_holds_a_choice_once_a_base_is_picked_a_frame_flagged_or_its_window_drawn() {
         let mut r = Roll { frames: vec![frame("a"), frame("b")], ..Roll::default() };
-        assert!(!r.holds_choices(), "a roll walked by Skip and NEXT alone holds nothing to lose");
+        assert!(!r.holds_choices(), "a roll walked by NEXT alone holds nothing to lose");
         r.base = Some(BasePick { path: "a".into(), unit: (0.1, 0.1), radius: 2.0 });
         assert!(r.holds_choices());
         r.base = None;

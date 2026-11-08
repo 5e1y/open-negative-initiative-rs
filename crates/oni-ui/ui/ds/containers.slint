@@ -241,7 +241,7 @@ export component SheetFooter inherits HorizontalLayout {
     // The commit is its sheet's default key, holding the keyboard as it opens: never a panel's, under the
     // sheets, nor one at the foot of a sheet read from its top, which the keyboard would scroll away.
     in property <bool> default-commit: true;
-    // A commit that writes nothing, as the prepare's Skip past an empty step or a failure's OK: a flat key.
+    // A commit that writes nothing, as a failure's OK: a flat key.
     in property <bool> passes;
     // A key that removes, as a preset's Delete: alone at the left end, what the sheet adds then beside
     // the commit, so it never shares a group with a key that keeps.

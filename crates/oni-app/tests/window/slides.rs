@@ -101,7 +101,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     p.invoke_advance();
     rig.pump();
     assert_eq!(p.get_step(), 2, "the film leads to the white");
-    assert!(p.get_skippable() && !p.get_action_enabled(), "no white yet: Skip offered, NEXT waiting");
+    assert!(!p.get_has_base() && p.get_action_enabled(), "no white yet: NEXT goes on without one");
     // A white picked on a slide's warm ramp: its colour alone goes to grey on every slide.
     rig.until("the scan read", Duration::from_secs(60), || p.get_scan_ready());
     // Drawn first, so the base step's area has its size and the scan its place in it.
@@ -109,10 +109,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     rig.pump();
     p.invoke_base_clicked(p.get_scan_x() + p.get_scan_width() * 0.5, p.get_scan_y() + p.get_scan_height() * 0.5);
     rig.pump();
-    assert_eq!((p.get_step(), p.get_action_title().as_str(), p.get_action_enabled(), p.get_skippable()), (2, "NEXT", true, false), "the white picked stays shown until NEXT");
-    p.invoke_advance();
-    rig.pump();
-    assert_eq!(p.get_step(), 4, "the white leads to the window");
+    assert_eq!((p.get_step(), p.get_has_base()), (4, true), "the white picked leads straight to the window");
     assert_eq!(p.get_readouts().row_data(4).unwrap().as_str(), "1 / 3", "every slide measured");
     assert!(p.get_window_shown());
     let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
@@ -155,7 +152,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     rig.pump();
     rig.until("every slide balanced again", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains != rest.gains));
 
-    // Twin: the white skipped, the slides keep the camera's 5500 K, their gains at rest.
+    // Twin: the white passed by NEXT, the slides keep the camera's 5500 K, their gains at rest.
     lib.invoke_tile_clicked(first(), false, false);
     rig.pump();
     ctl.act(oni_app::Act::PrepareRoll);
@@ -167,7 +164,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
         p.invoke_clear_base();
         rig.pump();
     }
-    assert!(p.get_skippable());
+    assert!(!p.get_has_base() && p.get_action_enabled());
     p.invoke_advance();
     rig.pump();
     p.invoke_advance();

@@ -114,6 +114,8 @@ export global Motion {
     out property <duration> slide: DS.motion-reveal-response * 1s;
     // `DS.Motion.settle`'s response: a value arriving from elsewhere, a reset or an undo, eases in.
     out property <duration> settle: DS.motion-settle-response * 1s;
+    // A frame of the roll dissolving in over the last under a scrub, whole well before the next may begin.
+    out property <duration> dissolve: 67ms;
     // The system tooltip's delay before it shows.
     out property <duration> tip-delay: 1000ms;
 }

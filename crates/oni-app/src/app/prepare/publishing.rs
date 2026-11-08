@@ -85,7 +85,6 @@ impl Ctl {
         let base_note = r.base.as_ref().map_or(unpicked.to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
         // A slide roll walks no flags step: every slide ticked is measured.
         let measured = if r.film == ConversionMode::Positive { ticked } else { ticked - flagged };
-        let holds = filled(step, &r.flat, r.base.is_some());
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title(r.film).to_string(),
@@ -155,8 +154,7 @@ impl Ctl {
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
         p.set_action_title(key(step).into());
-        p.set_skippable(!holds);
-        p.set_action_enabled(holds && (step != Step::Window || measured > 0));
+        p.set_action_enabled(step != Step::Window || measured > 0);
         self.lay_card(shown_path, card);
         self.publish_passes(&p);
         self.publish_card();
