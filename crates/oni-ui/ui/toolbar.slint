@@ -1,5 +1,5 @@
-// The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and
-// ended past a rule by Reset and Trash, then the app's keys and the screen's commit, each a glyph over its word.
+// The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
+// past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
@@ -120,6 +120,8 @@ component Own inherits ButtonGroup {
 // Reset names the photos it reaches, Trash wears its can, so neither reads as the other.
 component Centre inherits HorizontalLayout {
     in property <bool> compact;
+    // The key of the ONI Trash; beside a photo its menus and its chord alone reach it.
+    in property <bool> trash: true;
     spacing: ShellStyle.bar-gap;
     cross-axis-alignment: center;
     @children
@@ -137,7 +139,7 @@ component Centre inherits HorizontalLayout {
             help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
             enabled: Bar.can-reset;
         }
-        Key {
+        if root.trash: Key {
             compact: root.compact;
             action: Act.remove;
             word: @tr("Trash");
@@ -151,6 +153,7 @@ component Centre inherits HorizontalLayout {
 }
 
 component EditorKeys inherits Centre {
+    trash: false;
     // `centreKeys` by job: the canvas's views and tools, each lit while it holds, the faces,
     // then the settings carried from photo to photo.
     ButtonGroup {

@@ -69,7 +69,7 @@ pub(crate) fn a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_i
     rig.settle();
     // Return as the window hands it over, Slint's own key.
     let ret = SharedString::from(Key::Return);
-    let bar = ["Crop", "Compare", "Copy", "De-dust", "Trash", "Settings", "EXPORT"];
+    let bar = ["Crop", "Compare", "Copy", "De-dust", "Settings", "EXPORT"];
     // Twin: no sheet, the window's monitor holds the keyboard and the bar is in reach.
     assert_eq!(common::focused_label(w), "", "the photos hold the keyboard");
     assert!(bar_live(w, &bar).iter().all(|l| *l), "with no sheet, the bar's keys are live");

@@ -155,10 +155,7 @@ pub(crate) fn the_base_loupe_shows_the_full_resolution_first_never_the_scan() {
     // Past the base step, every full resolution is let go.
     let pick = (p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
     click(&rig, pick.0, pick.1);
-    assert_eq!(p.get_step(), 2, "a pick stays on its step");
-    p.invoke_advance();
-    rig.pump();
-    assert_eq!(p.get_step(), 3);
+    assert_eq!(p.get_step(), 3, "a pick goes on by itself");
     assert!(held().is_empty(), "the flags step holds no full resolution: {:?}", held());
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
@@ -201,6 +198,11 @@ pub(crate) fn an_unreadable_scan_says_why_on_the_base_step() {
     rig.until("the unreadable scan's reason", Duration::from_secs(60), || p.get_base_name() == "B.tif" && !p.get_scan_failure().is_empty());
     assert!(!p.get_scan_ready());
     println!("B.tif: {}", p.get_scan_failure());
+    // A pick here gives no value: the step stays, its reason still said.
+    p.invoke_base_clicked(10.0, 10.0);
+    rig.pump();
+    assert!(p.get_step() == 2 && !p.get_has_base() && !p.get_scan_failure().is_empty(), "a pick of no value stays on its step");
+    assert!(p.get_action_enabled(), "twin: NEXT goes on without it");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

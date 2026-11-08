@@ -81,9 +81,6 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     phase.set(Prep::Window);
                 } else if p.get_step() == 2 {
                     phase.set(Prep::Base);
-                } else if p.get_skippable() {
-                    // An empty flat-field: its Skip key's own callback, the keycap waiting for a value.
-                    p.invoke_advance();
                 } else {
                     click_at(&w, action_key(&p));
                 }

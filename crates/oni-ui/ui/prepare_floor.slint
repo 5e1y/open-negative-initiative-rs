@@ -56,18 +56,6 @@ component BaseSurface inherits VerticalLayout {
         previous => { Preparing.base-previous(); } next => { Preparing.base-next(); }
     }
     area := Rectangle {
-        // Each pick lands its ring, on the scan and in the loupe, from wider with a key's click.
-        property <int> picks: Preparing.base-picks;
-        property <float> landing: 1;
-        property <bool> springing;
-        changed picks => {
-            self.springing = false;
-            self.landing = RollStyle.landing;
-            self.springing = true;
-            self.landing = 1;
-            Clicks.press();
-        }
-        animate landing { duration: self.springing ? Motion.settle : 0ms; easing: ease-out-back; }
         vertical-stretch: 1;
         function laid() {
             Preparing.base-width = self.width;
@@ -100,7 +88,6 @@ component BaseSurface inherits VerticalLayout {
             centre-x: Preparing.ring-x;
             centre-y: Preparing.ring-y;
             sampled: Preparing.ring-diameter;
-            landing: area.landing;
             colour: Preparing.ring-colour;
         }
         if Preparing.scan-ready: TouchArea {
@@ -129,7 +116,7 @@ component BaseSurface inherits VerticalLayout {
             picked-shown: Preparing.loupe-picked;
             picked-x: Preparing.loupe-rings[3];
             picked-y: Preparing.loupe-rings[4];
-            picked-disc: Preparing.loupe-rings[5] * area.landing;
+            picked-disc: Preparing.loupe-rings[5];
         }
     }
 }
@@ -162,7 +149,7 @@ component FrameCard inherits Rectangle {
             fit: Fit.fill;
             source: layer == 0 ? Preparing.card-a : Preparing.card-b;
             opacity: layer == 0 || Preparing.card-second ? 1 : 0;
-            animate opacity { duration: Preparing.card-fade; }
+            animate opacity { duration: Motion.dissolve; }
         }
         if Preparing.window-shown: FrameOverlay {
             width: parent.width;

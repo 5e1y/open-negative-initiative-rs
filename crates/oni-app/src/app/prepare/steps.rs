@@ -13,6 +13,10 @@ impl Ctl {
             }
             let changed = r.step != step;
             r.step = step;
+            // The scan goes with its step, its surface telling no pointer's leaving.
+            if changed {
+                r.pointer = None;
+            }
             changed
         };
         if changed {

@@ -1,9 +1,10 @@
 //! Prepare's frames by the hand: the keys between frames named by their frame, never Back's and
-//! NEXT's words; the loupe's disc showing the film it reads; a scrub dissolving each frame in.
+//! NEXT's words; the loupe's disc showing the film it reads; a scrub dissolving each frame in, within a third
+//! of the pace that keeps it from flashing.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
-use oni_app::{Bar, Library, Preparing};
+use oni_app::{Bar, Library, Motion, Preparing};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, LogicalPosition, Model};
@@ -11,8 +12,8 @@ use std::time::{Duration, Instant};
 
 use crate::common;
 
-/// A dissolve's length, `prepare::card::FADE`: two make a flash, under three a second.
-const FADE: Duration = Duration::from_millis(200);
+/// The least time between two dissolves' starts, `prepare::card::PACE`: two make a flash, under three a second.
+const PACE: Duration = Duration::from_millis(200);
 
 /// The luma of the drawn window's pixel holding a point, out of 255 per channel summed.
 fn luma(drawn: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), (x, y): (f32, f32)) -> u32 {
@@ -94,11 +95,11 @@ pub(crate) fn the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scr
     // Twin: inside the disc, past the halo's inner edge, the film again, never darkened.
     assert!(luma(&drawn, (cx + r - 3.5, cy)).abs_diff(film) < 40);
 
-    // The window step: a scrub asks a frame at every move, the card dissolving each in once the last
-    // has ended, so it changes at most once a dissolve and ends on the frame asked last.
+    // The window step: a scrub asks a frame at every move, the card dissolving each in once the pace
+    // allows, so it changes at most once a pace and ends on the frame asked last.
     p.invoke_step_picked(4);
     rig.until("the card on the first frame", Duration::from_secs(60), || ctl.state.borrow().roll_card().is_some_and(|c| c.ends_with("A.tif")));
-    std::thread::sleep(FADE);
+    std::thread::sleep(PACE);
     let (mut flips, mut asked) = (Vec::new(), Vec::new());
     let (mut second, mut name) = (p.get_card_second(), p.get_frame_name());
     let start = Instant::now();
@@ -117,11 +118,36 @@ pub(crate) fn the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scr
     }
     println!("scrub of {:.0} ms: {} frames asked, {} dissolves", start.elapsed().as_secs_f64() * 1000.0, asked.len(), flips.len());
     let least = |t: &[Instant]| t.windows(2).map(|w| w[1] - w[0]).min().unwrap_or(Duration::MAX);
-    assert!(flips.len() >= 3 && least(&flips) + Duration::from_millis(10) >= FADE, "one dissolve at a time: {:?}", least(&flips));
+    assert!(flips.len() >= 3 && least(&flips) + Duration::from_millis(10) >= PACE, "one dissolve a pace: {:?}", least(&flips));
     // Twin: the hand asked frames far faster, which a card following it would flash.
-    assert!(asked.len() > 2 * flips.len() && least(&asked) < FADE / 2, "{:?}", least(&asked));
+    assert!(asked.len() > 2 * flips.len() && least(&asked) < PACE / 2, "{:?}", least(&asked));
     let last = name.to_string();
     rig.until("the frame asked last on the card", Duration::from_secs(10), || ctl.state.borrow().roll_card().is_some_and(|c| c.ends_with(&last)));
+
+    // A dissolve lasts a third of the pace: a frame asked lies whole on the card within half of it.
+    rig.until("every preview", Duration::from_secs(60), || ctl.state.borrow().roll_previewed() == names.len());
+    std::thread::sleep(PACE);
+    // Drawn first, so the frame card is laid and its window placed.
+    let _ = rig.drawn();
+    rig.pump();
+    let on_card = (p.get_card_origin_x() + p.get_window_x() + p.get_window_width() / 2.0, p.get_card_origin_y() + p.get_window_y() + p.get_window_height() / 2.0);
+    let shown = luma(&rig.drawn(), on_card);
+    let second = p.get_card_second();
+    p.invoke_slider_step(4, if p.get_can_next() { 1 } else { -1 });
+    rig.pump();
+    assert_ne!(p.get_card_second(), second, "the pace long past, the frame dissolves in at once");
+    // Drawn at once, as a dissolve starts counting when it is first read.
+    let _ = rig.drawn();
+    std::thread::sleep(Duration::from_millis(100));
+    rig.pump();
+    let soon = luma(&rig.drawn(), on_card);
+    std::thread::sleep(PACE);
+    rig.pump();
+    let whole = luma(&rig.drawn(), on_card);
+    println!("the card's luma: {shown} before, {soon} at 100 ms, {whole} whole");
+    assert!(soon.abs_diff(whole) <= 6, "the dissolve over within 100 ms: {soon} against {whole}");
+    assert!(shown.abs_diff(whole) > 60, "twin: the two frames read apart, so a dissolve under way would show: {shown} {whole}");
+    assert_eq!(w.global::<Motion>().get_dissolve() as u128, (PACE.as_millis() + 1) / 3, "the token, a third of the pace");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

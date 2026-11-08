@@ -58,7 +58,7 @@ Every `Button` is flat: a face of the keycap's grey laid flat (`ButtonStyle.face
 glyph and word on it; two keys side by side read apart by the ground between them. A key of the window's bar
 is its glyph and word alone, its ground shown only under the hand. A `Keycap` stands only where the use site sets
 `keycap: true`: the mode switch (EDIT, BACK), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
-PREPARE ROLL, the prepare footer's NEXT, never its Skip, every DONE, GOT IT, GET STARTED, SEND), the
+PREPARE ROLL, the prepare footer's NEXT, every DONE, GOT IT, GET STARTED, SEND), the
 automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the Scanner
 face's step keys, − and + beside each of its rails. A question's answers and a passing notice's OK stay
 flat. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
@@ -100,14 +100,14 @@ oni-lab) draws a still key once and a pressed one once a frame.
   neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`
   (twice the group's gap) from it: an `AskSheet` sets its destructive answer so. The bar has two gaps
   alone, none within a group (`ButtonGroup { joined: true }`, its flat keys touching) and `ShellStyle.bar-gap`
-  between groups, its groups by job; its Reset and Trash end the centre as one group past a vertical
-  `Divider`, Reset naming the photos it reaches and Trash, last, wearing its can.
+  between groups, its groups by job; its Reset, with Trash in the gallery, ends the centre as one group past a
+  vertical `Divider`, Reset naming the photos it reaches and Trash, last, wearing its can.
 - **Plates**: `ButtonGroup { plate: true }` is a socket of keycaps alone, the one place keys share a face:
   its caps flush on one face rounded as a key, as the panel's AUTO WHITE BALANCE with the crop's warning
   over it. Flat keys never stand on a plate.
 - **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the flat key that
   leaves (Cancel) at the left with what the sheet adds beside it, then apart at the right a step back and
-  the commit alone, the accent keycap, a flat key while it writes nothing (Skip, a failure's OK). A key that
+  the commit alone, the accent keycap, a flat key while it writes nothing (a failure's OK). A key that
   removes (`remove`, a preset's Delete) stands alone at the left end, what the sheet adds then beside the
   commit. Every DONE is that accent keycap, a tool's in the panel as a sheet's, the bar's export laying its
   accent down while a tool is open. A question's answers (`AskSheet`) keep their own row.

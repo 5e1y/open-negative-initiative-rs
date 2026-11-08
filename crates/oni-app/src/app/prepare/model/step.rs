@@ -34,9 +34,9 @@ impl Step {
     pub fn detail(self, film: ConversionMode) -> &'static str {
         match self {
             Step::Window if film == ConversionMode::Positive => tr("Draw the window inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Every slide keeps it as its measuring window."),
-            Step::Base if film == ConversionMode::Positive => tr("Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; skipped, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."),
+            Step::Base if film == ConversionMode::Positive => tr("Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; with nothing picked, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."),
             Step::Film => tr("Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."),
-            Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."),
+            Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. If your light is even, go on with NEXT; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
             Step::Flags => tr("Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."),
             Step::Window => tr("Draw the window inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."),
@@ -90,13 +90,13 @@ pub fn filled(step: Step, flat: &FlatField, base: bool) -> bool {
     }
 }
 
-/// A step behind the current one that holds its value; one passed by SKIP, or not walked, holds none.
+/// A step behind the current one that holds its value; one passed empty, or not walked, holds none.
 pub fn done(step: Step, current: Step, capture: Capture, film: ConversionMode, flat: &FlatField, base: bool) -> bool {
     step.index() < current.index() && !step.skipped(capture, film) && filled(step, flat, base)
 }
 
-/// The step's keycap, in one place on every step and lit once the step holds its value: PREPARE ROLL
-/// ends the walk, NEXT goes on. A step still empty is passed by Skip alone, a key apart from it.
+/// The step's keycap, in one place on every step: PREPARE ROLL ends the walk, NEXT goes on, past a step
+/// left empty too, which then holds no mark.
 pub fn key(step: Step) -> &'static str {
     if step == Step::Window { tr("PREPARE ROLL") } else { tr("NEXT") }
 }

@@ -156,7 +156,7 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
 
 /// Three times Swift's `DS.Space.sm` between the bar's groups, whose keys touch.
 const BAR_GAP: f32 = 24.0;
-/// The rule before Reset and Trash: an engraved groove and its lit edge, a bar's gap either side.
+/// The rule before Reset: an engraved groove and its lit edge, a bar's gap either side.
 const RULED: f32 = 2.0 * BAR_GAP + 2.0;
 
 /// The one key of the bar so named, where the layout put it.
@@ -282,22 +282,35 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     rig.settle();
 
     // The editor by job: Select All opening the canvas's views and tools, the faces, the settings carried
-    // from photo to photo, then past a rule Reset and Trash, one group, Trash last.
+    // from photo to photo, then past a rule Reset alone, the ONI Trash off the bar beside a photo.
+    assert_eq!(on_bar("Trash"), 1, "twin: the gallery's bar keeps its Trash");
     lib.invoke_tile_opened(tile("A"));
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     rig.settle();
     let (back, select, crop, de_dust, compare) = (bar_key(w, "BACK"), bar_key(w, "Select All"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
     assert_eq!((back.x, back.width, on_bar("EDIT"), on_bar("GALLERY")), (edit.x, edit.width, 0, 0), "BACK in EDIT's place, as wide");
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
-    let (reset, trash) = (bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
+    let reset = bar_key(w, "Reset Photo");
     println!("shot {}", rig.shot("toolbar-groups-editor").display());
-    for (a, b) in [(select, crop), (crop, de_dust), (de_dust, compare), (copy, paste), (paste, to_roll), (reset, trash)] {
+    for (a, b) in [(select, crop), (crop, de_dust), (de_dust, compare), (copy, paste), (paste, to_roll)] {
         assert!(near(gap(a, b), 0.0), "one group, its keys touching: {a:?} {b:?}");
     }
-    assert!(near(gap(to_roll, reset), RULED), "a rule before Reset and Trash: {to_roll:?} {reset:?}");
+    assert_eq!(on_bar("Trash"), 0, "no Trash on the editor's bar");
+    assert!(near(gap(to_roll, reset), RULED), "a rule before Reset, alone where the group stood: {to_roll:?} {reset:?}");
     assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between Paste to Roll and Reset");
+    // Beside Reset, where Trash stood, bare room up to the app's keys.
+    assert!(!inked(&rig, reset, right(reset) + 12.0), "nothing drawn past Reset");
     // Twin: the faces stand between the views and the settings, a bar's gap either side.
     assert!(gap(compare, copy) > 2.0 * BAR_GAP + 100.0, "{compare:?} {copy:?}");
     assert!(common::placed(w, Role::Button, "Whole Roll").is_empty(), "one name in both modes");
+
+    // Off the bar the ONI Trash stays in reach: the menu bar's chord trashes the frame open, the editor going on.
+    let trashed = |name: &str| oni_settings::sidecar::read(&folder.join(name), false, true).unwrap().trashed_at.is_some();
+    assert!(!trashed("A.tif"), "twin: nothing trashed before the chord");
+    let backspace: slint::SharedString = slint::platform::Key::Backspace.into();
+    rig.chord(slint::platform::Key::Control, &backspace);
+    rig.landed(&ctl);
+    assert!(trashed("A.tif") && !trashed("B.tif"), "the frame open alone moved to the ONI Trash");
+    assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("B.tif")), "the editor goes on to B");
     let _ = std::fs::remove_dir_all(&root);
 }
