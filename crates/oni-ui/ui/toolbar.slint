@@ -13,7 +13,6 @@ import { Library } from "library.slint";
 // `rollStepKeys`, the faces' bar for the steps, numbered in their order: the current one held, a check on
 // each done, a step the roll does not walk out of reach, and all of them while it measures.
 export component RollStepKeys inherits Tabs {
-    height: ButtonStyle.bar-key;
     tabs: [@tr("Film Type"), @tr("Flat-Field"), @tr("Base"), @tr("Flags"), @tr("Window")];
     ordered: true;
     preferred-width: self.tabs.length * RollStyle.step-tab;
@@ -178,9 +177,7 @@ component EditorKeys inherits Centre {
         Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; enabled: Bar.has-photo; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
-    // As tall as the bar's keys, so the bar's line holds from end to end.
     Tabs {
-        height: ButtonStyle.bar-key;
         preferred-width: ScannerStyle.face-bar;
         max-width: ScannerStyle.face-bar;
         tabs: [@tr("Pro"), @tr("Scanner")];

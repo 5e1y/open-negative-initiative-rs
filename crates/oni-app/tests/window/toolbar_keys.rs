@@ -94,6 +94,12 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     rig.settle();
     let (keys, _) = heights();
     assert!(keys.len() >= 13 && keys.iter().all(|k| k.height == KEY), "every key of the editor's bar {KEY} pt tall: {keys:?}");
+    // The faces' tabs stand as tall as the panel's, centred on the bar's line; twin: the keys beside them are taller.
+    let tab = |label: &str| common::placed(w, Role::Tab, label)[0];
+    let (face, panel, back) = (tab("Pro"), tab("Colour"), bar_key(w, "BACK"));
+    assert_eq!(face.height, panel.height, "the faces' tabs as tall as the panel's: {face:?} {panel:?}");
+    assert!((face.middle().1 - back.middle().1).abs() <= 0.5, "the faces' tabs centred on the bar's line: {face:?} {back:?}");
+    assert!(back.height > panel.height, "twin: a key of the bar is taller than a tab: {back:?} {panel:?}");
     for (label, word) in [("BACK", "BACK"), ("Undo", "Undo"), ("Crop", "Crop"), ("De-dust", "De-dust"), ("Compare", "Compare"), ("Copy", "Copy"), ("Paste to Roll", "Paste to Roll"), ("EXPORT", "EXPORT")] {
         stacked(&rig, w, label, word);
     }
