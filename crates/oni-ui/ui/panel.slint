@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand, Tip, HelpCard, SectionStyle } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
@@ -116,11 +116,6 @@ export component Panel inherits Surface {
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.
         rule := Divider { }
-        // A mode's help opens under its header, pushing the pane down, as a block's opens in its own flow.
-        if PanelState.tab == 1 && Tip.open == root.crop-note: VerticalLayout {
-            padding: SectionStyle.inset;
-            HelpCard { note: root.crop-note; subject: @tr("Crop"); }
-        }
         Rectangle {
             vertical-stretch: 1;
             RollPane { shown: PanelState.tab == 0; }

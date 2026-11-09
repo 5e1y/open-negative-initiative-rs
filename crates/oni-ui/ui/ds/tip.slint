@@ -1,7 +1,7 @@
 // The notes a control gives: a hovered control's tooltip, the layer that holds it, and a help mark's card.
 import { Colour, Space, Motion, TipStyle } from "theme.slint";
 import { Outward } from "depth.slint";
-import { Tip, Tips, TipBox, Label, TextRole, Tone, Picture, Ground, Inset, Gap } from "base.slint";
+import { Tip, Tips, TipBox, Label, TextRole, Tone, Picture, Ground, Raised, Lift, Gap } from "base.slint";
 
 // What a hovered control says: a line of text. `natural-width` and `-height`: its unheld size.
 export component TipCard inherits Outward {
@@ -43,16 +43,17 @@ export component TipLayer inherits TipCard {
     }
 }
 
-// A help mark's card, laid in its block's flow under the mark: the topic's demo, square, over the note,
-// one padding all round. It asks the demo for its frames while it stands, so a closed card costs nothing.
-export component HelpCard inherits Inset {
+// A help mark's card: the topic's demo, square, over the note, one padding all round. It asks the demo
+// for its frames while it stands, so a closed card costs nothing.
+export component HelpCard inherits Raised {
     in property <string> note;
     // Named as its mark, for assistive tools: the region the mark opened.
     in property <string> subject;
+    lift: Lift.float;
+    pad: Gap.m;
     gap: Gap.m;
     accessible-role: groupbox;
     accessible-label: @tr("Help on {}", root.subject);
-    init => { Tip.play(Tip.demo); }
     Timer {
         interval: Tip.delay;
         running: Tip.has-clip;
@@ -69,5 +70,27 @@ export component HelpCard inherits Inset {
         role: TextRole.note;
         tone: Tone.primary;
         text: root.note;
+    }
+}
+
+// The card open, left of the column holding its mark, its top at `top`, held inside the window by
+// `Tips.place`: never over the block it explains. A press on it closes it and reaches nothing under it.
+export component HelpLayer {
+    in property <length> column-x;
+    in property <length> top;
+    property <TipBox> box: Tips.place(root.column-x - TipStyle.card-gap - TipStyle.card-width, root.top, TipStyle.card-width, card.height, root.width, root.height);
+    TouchArea {
+        x: root.box.x;
+        y: root.box.y;
+        width: card.width;
+        height: card.height;
+        clicked => { Tips.close(); }
+    }
+    card := HelpCard {
+        x: root.box.x;
+        y: root.box.y;
+        width: TipStyle.card-width;
+        note: Tip.open;
+        subject: Tip.subject;
     }
 }

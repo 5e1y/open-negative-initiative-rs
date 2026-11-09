@@ -275,6 +275,9 @@ export global TipStyle {
     out property <length> padding-y: Space.xs;
     out property <length> offset: Space.xs;
     out property <length> max-width: 320px;
+    // A help mark's card, and how far it stands from the column holding its mark.
+    out property <length> card-width: 300px;
+    out property <length> card-gap: Space.s;
 }
 
 export global CardStyle {
@@ -377,11 +380,10 @@ export global CrtStyle {
     // The roll's ends: their line and what lies past them, dimmed as the levels clip it.
     out property <float> end: 0.85;
     out property <float> clipped: 0.5;
-    // The bank: never wider than this, its screens apart, their glass rounded as a track.
+    // The bank: never wider than this, its screens apart.
     out property <length> bank: 720px;
     out property <length> gap: Space.s;
     out property <length> padding: Space.s;
-    out property <length> radius: Radius.track;
     // The negative's screen takes this share of the bank's width, 3:2 as a 35 mm frame.
     out property <float> negative-share: 0.6;
     out property <float> negative-ratio: 2 / 3;

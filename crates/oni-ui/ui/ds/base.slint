@@ -33,9 +33,11 @@ export global Tip {
     in-out property <length> y;
     in-out property <bool> above;
     in-out property <bool> shown;
-    // The note of the help card open, none for no card; `demo` its help topic, Rust's key to its clip.
+    // The note of the help card open, none for no card; `demo` its help topic, Rust's key to its clip;
+    // `subject` what it explains, as its mark's title says it.
     in-out property <string> open;
     in-out property <string> demo;
+    in-out property <string> subject;
     // Starts the topic's clip, a topic without one or none stopping it; `advance` lays its next frame.
     callback play(string);
     callback advance();
@@ -242,15 +244,14 @@ export component Surface inherits Rectangle {
 // a rounded clip renders the whole card into a texture of its own, so `CardCorners` covers it instead.
 export component Card inherits Rectangle {
     in property <bool> dimmed;
-    // Corners left square against a square neighbour: the top right one, or both of a side.
-    in property <bool> square-top-right;
+    // Both corners of a side left square against a column folded there.
     in property <bool> square-left;
     in property <bool> square-right;
     // The screen's pixels to a point, which a move to a screen of another density changes.
     out property <float> density: 1px / 1phx;
     background: root.dimmed ? Colour.canvas-cropping : Colour.canvas;
     border-top-left-radius: root.square-left ? 0px : CardStyle.radius;
-    border-top-right-radius: root.square-right || root.square-top-right ? 0px : CardStyle.radius;
+    border-top-right-radius: root.square-right ? 0px : CardStyle.radius;
     border-bottom-right-radius: root.square-right ? 0px : CardStyle.radius;
     border-bottom-left-radius: root.square-left ? 0px : CardStyle.radius;
 }
@@ -261,11 +262,10 @@ export component CardCorners {
     in property <length> r: CardStyle.radius;
     in property <color> ground: Colour.ground;
     // The card's square corners, which keep their content.
-    in property <bool> square-top-right;
     in property <bool> square-left;
     in property <bool> square-right;
     if !root.square-left: Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
-    if !root.square-right && !root.square-top-right: Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
+    if !root.square-right: Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
     if !root.square-right: Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
     if !root.square-left: Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
 }
@@ -348,11 +348,24 @@ export global Tips {
         Tips.hover(over, text, x, y);
         if (over && text != "") { Tip.above = true; }
     }
-    // A help mark's press: its note opens in its block, closing the one open; its own again closes it.
-    public function help(note: string, demo: string) {
-        let opening = note != Tip.open;
-        Tip.open = opening ? note : "";
-        Tip.demo = opening ? demo : "";
-        if (!opening) { Tip.play(""); }
+    // A help mark's press: its note's card opens in place of the one open; its own again closes it.
+    public function help(note: string, demo: string, subject: string) {
+        if (note == Tip.open) {
+            Tips.close();
+        } else {
+            Tip.open = note;
+            Tip.demo = demo;
+            Tip.subject = subject;
+            Tip.play(demo);
+        }
+    }
+    // The card down and its demo stopped, whatever stood open.
+    public function close() {
+        if (Tip.open != "") {
+            Tip.open = "";
+            Tip.demo = "";
+            Tip.subject = "";
+            Tip.play("");
+        }
     }
 }

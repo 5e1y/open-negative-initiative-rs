@@ -1,5 +1,5 @@
 //! A help mark naming a demo plays it on its card, frame after frame, while the card stands; its mark
-//! pressed again stops the clip, the next mark plays its own, and a card gone with its panel asks no frame.
+//! pressed again stops the clip, the next mark plays its own, and a card closed with its panel asks no frame.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{PanelState, Tip};
@@ -55,19 +55,18 @@ pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
     assert_ne!(first, later, "the demo's frame advances while the card stands");
     rig.shot("help-demo-sharpening");
 
-    // Gone with the panel, in the gallery, the card asks no frame; back, it plays on. A frame drawn
-    // lays each view out, as the window does after each change.
+    // Closed with the panel, in the gallery, the card asks no frame; back, its mark plays it again.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     let _ = rig.drawn();
-    let held = clip_pixels(&tip);
+    assert!(tip.get_open().is_empty() && clip_pixels(&tip).is_none(), "no card stands: no clip");
     watch(&rig, Duration::from_millis(600));
-    assert_eq!(held, clip_pixels(&tip), "no card stands: the clip waits");
+    assert!(clip_pixels(&tip).is_none(), "no card stands: no frame asked");
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     let _ = rig.drawn();
-    watch(&rig, Duration::from_millis(600));
-    assert_ne!(held, clip_pixels(&tip), "twin: the card back, its frames advance again");
+    press_help(&rig, w, "Sharpening");
+    rig.until("twin: its mark again, its frames", Duration::from_secs(5), || clip_pixels(&tip).is_some());
 
     // Pressed again, the mark stops the clip, and another mark plays its own demo.
     press_help(&rig, w, "Sharpening");

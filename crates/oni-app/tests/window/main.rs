@@ -50,6 +50,7 @@ mod gallery_leftovers;
 mod gestures;
 mod headless;
 mod help;
+mod corners;
 mod help_card;
 mod help_demo;
 mod help_demo_roll;
@@ -299,7 +300,10 @@ const CHECKS: &[(&str, fn())] = &[
     ("slider_rest::a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back", slider_rest::a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back),
     ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
-    ("help_card::a_help_card_opens_in_its_block_and_pushes_it_down", help_card::a_help_card_opens_in_its_block_and_pushes_it_down),
+    ("help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing", help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing),
+    ("help_card::a_help_card_closes_by_hand_and_goes_with_its_mark", help_card::a_help_card_closes_by_hand_and_goes_with_its_mark),
+    ("help_card::a_help_card_stands_inside_a_short_window_and_beside_every_column", help_card::a_help_card_stands_inside_a_short_window_and_beside_every_column),
+    ("corners::the_canvas_keeps_its_round_and_the_readout_a_lower_one", corners::the_canvas_keeps_its_round_and_the_readout_a_lower_one),
     ("panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys", panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys),
     ("help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo", help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo),
     ("help_demo_color::the_color_tabs_marks_play_their_own_demos", help_demo_color::the_color_tabs_marks_play_their_own_demos),

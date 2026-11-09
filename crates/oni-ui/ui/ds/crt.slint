@@ -1,6 +1,6 @@
 // `LabScreen`'s glass, shared by the Scanner face and the measure's bank: the phosphor's ink and its
 // glow on the dark glass, scanlines over everything.
-import { Space, Stroke, ScannerStyle, CrtStyle, Type } from "theme.slint";
+import { Space, Stroke, ScannerStyle, CrtStyle, PlotStyle, Type } from "theme.slint";
 import { Label, Tone } from "base.slint";
 
 // One histogram on a screen, in its points: the area under it and its edge; the roll's ends too.
@@ -8,12 +8,11 @@ export struct CrtCurve { area: string, edge: string, black: length, white: lengt
 // A frame before, fading on its channel's screen as a phosphor's afterglow; `fade` 1 is the latest.
 export struct CrtEcho { channel: int, edge: string, fade: float }
 
-// The glass: what it holds, then `LabScreen`'s scanlines, laid once per size in a layer of their own.
+// The glass at the plots' corner: what it holds, then `LabScreen`'s scanlines, laid once per size in a
+// layer of their own.
 export component CrtScreen inherits Rectangle {
-    // Rounded as a track in the measure's bank; `LabScreen` gives it the readout's corner.
-    in property <bool> rounded;
     background: ScannerStyle.glass;
-    border-radius: root.rounded ? CrtStyle.radius : 0px;
+    border-radius: PlotStyle.radius;
     clip: true;
     @children
     Rectangle {

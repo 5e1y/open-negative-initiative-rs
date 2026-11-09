@@ -2,7 +2,6 @@
 // asks, the notice that passes and the banner that stays.
 import { Colour, Space, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Engraved, Icon, Divider, TextRole, Tone, Tip, Tips, Raised, Lift, Gap, Tones } from "base.slint";
-import { HelpCard } from "tip.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
 import { Scroller } from "scroller.slint";
@@ -10,7 +9,7 @@ import { Icons } from "icons.slint";
 import { Reach, Reaches } from "reach.slint";
 import { Keyboard } from "keyboard.slint";
 
-// The "?" beside a title: a ghost key, lit while its note stands open as a card in the flow under it,
+// The "?" beside a title: a ghost key, lit while its note stands open as a card beside the column,
 // named with what it explains. It lays out at its glyph's size, the hand caught over a small key's square.
 export component HelpMark inherits Rectangle {
     in property <string> note;
@@ -34,7 +33,7 @@ export component HelpMark inherits Rectangle {
         help: @tr("Help on {}", root.subject);
         expandable: true;
         expanded: root.open;
-        clicked => { Tips.help(root.note, root.demo); }
+        clicked => { Tips.help(root.note, root.demo, root.subject); }
     }
 }
 
@@ -64,7 +63,7 @@ component FoldMark inherits Rectangle {
 }
 
 // `DSSection`: a rule above every block, then a title row, its fold's chevron first and its reset at
-// the far end, the "?"'s card under it, then the block. Every block of the editor's panel has a note.
+// the far end, then the block. Every block of the editor's panel has a note.
 export component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> help;
@@ -128,11 +127,6 @@ export component Section inherits VerticalLayout {
                 text: @tr("Reset");
                 clicked => { root.reset(root.block); }
             }
-        }
-        // Open or folded, the card follows its "?": it pushes the block down rather than lie over it.
-        if root.help != "" && Tip.open == root.help: VerticalLayout {
-            padding-top: SectionStyle.gap;
-            HelpCard { note: root.help; subject: root.title; }
         }
         // Folded, the content keeps its place in the tree at zero height, so its state survives. Clipped
         // only then: a well's lit lip and a raised face's shadow lie past the last child's bounds.

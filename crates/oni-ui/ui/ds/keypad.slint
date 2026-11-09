@@ -1,5 +1,5 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Space, PlotStyle } from "theme.slint";
+import { Space } from "theme.slint";
 import { Tips } from "base.slint";
 import { CrtScreen, CrtLine as Lcd } from "crt.slint";
 
@@ -15,9 +15,7 @@ export component LabScreen inherits Rectangle {
     in property <[LabCell]> cells;
     in property <string> balance;
     in property <string> balance-help;
-    // The readout's corner, the plots' own.
     CrtScreen {
-        border-radius: PlotStyle.radius;
         VerticalLayout {
             padding: Space.m;
             HorizontalLayout {

@@ -5,7 +5,7 @@ use super::*;
 
 impl Ctl {
     /// The keys no menu item carries, ⌘= apart from the menu's ⌘+ included: Escape leaves the innermost
-    /// sheet, typing, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
+    /// sheet, typing, help card, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
     pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, option: bool, bare: bool, repeat: bool) -> bool {
         // Tab and ⇧Tab are Slint's walk through the controls, a sheet's included: no branch takes them.
         if matches!(text, "\t" | "\u{19}") {
@@ -81,6 +81,10 @@ impl Ctl {
         // monitor ends a control's hold before the key reaches here.
         if text == "\u{1b}" && !w.get_keys_held() {
             w.invoke_refocus();
+            return true;
+        }
+        if text == "\u{1b}" && !w.global::<crate::Tip>().get_open().is_empty() {
+            w.global::<crate::Tips>().invoke_close();
             return true;
         }
         if text == "\u{1b}" && self.export_escape() {

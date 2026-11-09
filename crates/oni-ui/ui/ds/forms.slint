@@ -1,11 +1,10 @@
 // The forms of export and colour management: a labelled field, a note, a preview slot, progress,
 // the status bar and a title typed over.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, SurfaceStyle, ScannerStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone, Tip } from "base.slint";
+import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, SurfaceStyle, ScannerStyle, PlotStyle } from "theme.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
-import { HelpCard } from "tip.slint";
 import { RenameField, Button, ButtonSize } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Inward } from "depth.slint";
@@ -32,7 +31,7 @@ export global FormStyle {
 // width before it as an EXIF line, `spread` in the primary ink taking the room before it.
 export enum FieldLayout { stacked, column, spread }
 
-// `DSField`: a label, its "?" when it has a note and the note's card while open, then the control.
+// `DSField`: a label, its "?" when it has a note, then the control.
 export component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> help;
@@ -50,7 +49,6 @@ export component Field inherits VerticalLayout {
             HelpMark { note: root.help; subject: root.label; }
         }
     }
-    if root.stacked && root.help != "" && Tip.open == root.help: HelpCard { note: root.help; subject: root.label; }
     HorizontalLayout {
         spacing: Space.s;
         if root.layout == FieldLayout.column: Label { text: root.label; tone: Tone.secondary; width: FormStyle.label-width; }
@@ -159,11 +157,11 @@ export component PreviewSlot inherits Rectangle {
     }
 }
 
-// `DSLCD`: a count on the scanner's glass, in a track's recess, its ink glowing.
+// `DSLCD`: a count on the scanner's glass, in a recess at the plots' corner, its ink glowing.
 export component LcdReadout inherits Inward {
     in property <string> text;
     ground: ScannerStyle.glass;
-    radius: Radius.track;
+    radius: PlotStyle.radius;
     width: readout.preferred-width + 2 * Space.s;
     height: readout.preferred-height + 2 * Space.xxs;
     Label {

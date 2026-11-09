@@ -156,7 +156,7 @@ fade and the chrome stays. The picker's field wears the same face.
   the face led out by its padding so the name typed stays where the title stood.
 - **`SizeFields`, `DateFields`**: two or three centred entries on one face a field tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
-- **`Field`** lays a label above (`stacked`, with its help mark and the mark's card), beside (`column`) or spread
+- **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread
   before it. A help mark lays out at its glyph's size and catches the hand over a small key's square, so a line
   keeps its height.
 - **`SteadyNote`**: a note as tall as the tallest of the texts it may say, measured unseen, so what it says
@@ -242,15 +242,15 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   falls around it, as Swift's. A `Section` clips only while folded; a scrolled column ending on a well
   leaves `Depth.lip-reach` under it.
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
-  `TipCard` (a tooltip) are `Outward`s; `HelpCard` is an `Inset`; the canvas card stays flat, as Swift's.
+  `TipCard` (a tooltip) are `Outward`s; `HelpCard` is a floating `Raised`; the canvas card stays flat, as Swift's.
   The deck opens on `PresetTab`, a flat outline the canvas's edge cuts open, lit while the deck is open.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
   (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
   alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line
   below. Capitals belong to the keycaps alone. A `Section` folds by the tree's own bare chevron before its
   title, the app's one look for folding; its Reset shows only while the block stands off its rest, at the
-  row's far end, the title between it and the fold. On a short row the title yields. A help mark, named with its block, opens its card in the block's flow under the title, pushing the
-  block down, one card at a time; its note comes in short parts a blank line apart.
+  row's far end, the title between it and the fold. On a short row the title yields. A help mark, named with its block, opens its card (`HelpLayer`) left of the column, under the tab bar in
+  the editor, over the photo and never over the block, one card at a time; its note comes in short parts a blank line apart.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no

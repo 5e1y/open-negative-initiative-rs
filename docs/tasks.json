@@ -8019,5 +8019,26 @@
     "title": "The card's dissolve under a scrub lasts a third as long: 200 ms to 67 ms",
     "status": "done",
     "detail": "Owner, after using the app: divide the transition by three on the slide at the last step. That transition is the frame card's dissolve while the Frame slider of 'Place the Measuring Window' walks the roll (#1500); no slide runs between steps. Its length is now the design system's `Motion.dissolve`, 67 ms, in place of the 200 ms Rust handed over in `card-fade`. The same 200 ms also paced the dissolves, and two dissolves make a flash (WCAG 2.3.1), so the pace stands apart as `prepare::card::PACE`, unchanged: the card still changes at most 5 times a second, under three flashes. Checks: window prepare_frames (a frame asked lies whole on the card 100 ms after, its luma that of the settled frame, twin: the two frames read apart by over 60; the token a third of the pace; a scrub still dissolves once a pace; undone to 200 ms, it fails at 'the dissolve over within 100 ms'), unit card a_frame_dissolves_in_only_once_the_pace_allows (twin: past the pace, at once; two dissolves over a third of a second)."
+  },
+  {
+    "id": 1622,
+    "type": "change",
+    "title": "A help mark's card stands left of the column holding its mark, under the editor's tab bar",
+    "status": "done",
+    "detail": "Owner's call, back to #640's place against #1115 and #1322: a card in the block's flow took the place of the sliders it explains. HelpLayer, drawn by the window under its sheets, stands the card TipStyle.card-gap left of the column at the window's right, at the tab bar's foot in the editor, under the bar in the gallery and Prepare, at the top in the export, held inside the window by Tips.place. It floats (Raised, Lift.float), 300 pt wide; nothing in the column moves. Toggled by its mark as before; Escape closes it again (after sheets and typing), a press on it closes it and reaches nothing under it, and it goes with its mark: another pane, face, Info kind, screen or sheet, the hidden panel sliding off. Tips.help starts the demo and Tips.close stops it, so a card kept across marks plays the new topic, and the clip player loses its 'same clip' branch. Section, Field and the panel's Crop note lay no card any more. Window checks help_card (three), help_demo, help_demo_details."
+  },
+  {
+    "id": 1623,
+    "type": "change",
+    "title": "The canvas's top right corner is round again",
+    "status": "done",
+    "detail": "Owner's call: #1064 squared it against a plot that ran flush to it, and #1315 has since inset the readout. Card and CardCorners lose square-top-right; a folded column still squares both corners of its side. Window check corners (twin: the panel folded, the same probe reads a square corner)."
+  },
+  {
+    "id": 1624,
+    "type": "design",
+    "title": "Every histogram and scanner screen takes one lower round",
+    "status": "done",
+    "detail": "Owner's call: PlotStyle.radius from 12 to 6 pt (the track's), for the main readout, the editors' plots and the Details loupe in its place. CrtScreen, the Scanner face's screen and the measure's bank alike, and LcdReadout read that token, so the glass follows the plots by construction; CrtScreen's `rounded`, its override in LabScreen and CrtStyle.radius are gone. Window check corners (twin: a 12 pt round leaves the probed pixel out)."
   }
 ]

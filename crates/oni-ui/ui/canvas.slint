@@ -21,8 +21,7 @@ export component CanvasCard inherits Card {
     // A column key pressed: true for the Library's, so the shell drops that column's reveal.
     callback column-toggled(bool);
     dimmed: Canvas.cropping;
-    // Against the panel's plot, square; a column folded squares both corners of its side.
-    square-top-right: true;
+    // A column folded squares both corners of its side.
     square-left: root.library-hidden;
     square-right: root.panel-hidden;
     changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
@@ -371,7 +370,7 @@ export component CanvasCard inherits Card {
             }
         }
     }
-    CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square-left: root.square-left; square-right: root.square-right; }
+    CardCorners { width: parent.width; height: parent.height; square-left: root.square-left; square-right: root.square-right; }
     // The open photo's place in Tab's order, read as the photo: its arrows place the frame drawn on it.
     CanvasKeys {
         label: Canvas.status;

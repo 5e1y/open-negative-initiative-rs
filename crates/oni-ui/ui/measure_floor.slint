@@ -51,7 +51,6 @@ export component MeasureFloor inherits Rectangle {
                 width: root.bank;
                 spacing: CrtStyle.gap;
                 CrtScreen {
-                    rounded: true;
                     HorizontalLayout {
                         padding: CrtStyle.padding;
                         spacing: CrtStyle.padding;
@@ -64,7 +63,6 @@ export component MeasureFloor inherits Rectangle {
                     spacing: CrtStyle.gap;
                     CrtScreen {
                         width: root.negative-width;
-                        rounded: true;
                         CrtPicture {
                             x: CrtStyle.padding; y: CrtStyle.padding;
                             width: parent.width - 2 * CrtStyle.padding; height: parent.height - 2 * CrtStyle.padding;
@@ -75,14 +73,13 @@ export component MeasureFloor inherits Rectangle {
                     }
                     VerticalLayout {
                         spacing: CrtStyle.gap;
-                        ChannelScreen { rounded: true; channel: 0; name: @tr("R"); resized(w, h) => { Preparing.trace-resized(w, h); } }
-                        ChannelScreen { rounded: true; channel: 1; name: @tr("G"); }
-                        ChannelScreen { rounded: true; channel: 2; name: @tr("B"); }
+                        ChannelScreen { channel: 0; name: @tr("R"); resized(w, h) => { Preparing.trace-resized(w, h); } }
+                        ChannelScreen { channel: 1; name: @tr("G"); }
+                        ChannelScreen { channel: 2; name: @tr("B"); }
                     }
                 }
                 CrtScreen {
                     height: root.negative-height * CrtStyle.roll-share;
-                    rounded: true;
                     VerticalLayout {
                         padding: CrtStyle.padding;
                         spacing: CrtStyle.padding;

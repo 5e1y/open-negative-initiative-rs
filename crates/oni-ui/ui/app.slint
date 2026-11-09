@@ -1,6 +1,6 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
 import { Act } from "act.slint";
-import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, LabCell, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
@@ -61,9 +61,12 @@ export component MainWindow inherits AppWindow {
     out property <bool> keys-held: keys.held;
     // Where the shown note lands.
     out property <TipBox> tip-box: tips.box;
-    // The editor panel's left edge and its tab bar's foot, where the window's checks aim in it.
+    // The editor panel's left edge and its tab bar's foot, where the window's checks aim and a help card tops.
     out property <length> panel-x: root.width - ShellStyle.panel-width - (App.panel-hidden ? Space.s : 0px);
     out property <length> tabs-foot: ShellStyle.bar-height + PanelState.header + (App.panel-hidden ? Space.s : 0px);
+    // The column holding the help marks, at the window's right, and where a mark's card tops beside it.
+    property <length> column-x: root.width - (Exporting.shown ? FormStyle.panel-width : ShellStyle.panel-width) - (root.beside-photo && App.panel-hidden ? Space.s : 0px);
+    property <length> card-top: root.beside-photo ? root.tabs-foot : (Exporting.shown ? 0px : ShellStyle.bar-height) + Space.s;
     // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer.
     out property <bool> revealed-library;
     out property <bool> revealed-panel;
@@ -72,8 +75,17 @@ export component MainWindow inherits AppWindow {
     out property <bool> grid-shown: App.gallery && !Exporting.shown && !Preparing.shown;
     // A new screen gives the keyboard to its photos and takes the tooltip down, a key of the last one gone
     // with them: Slint tells a key removed or covered under a resting hand nothing.
-    changed grid-shown => { keys.focus(); Tip.shown = false; if (self.grid-shown) { Library.gallery-shown(); } }
-    changed beside-photo => { keys.focus(); Tip.shown = false; }
+    changed grid-shown => { keys.focus(); Tip.shown = false; Tips.close(); if (self.grid-shown) { Library.gallery-shown(); } }
+    changed beside-photo => { keys.focus(); Tip.shown = false; Tips.close(); }
+    // A help card goes with its mark: the pane, the face, what Info stands on, the hidden panel sliding off.
+    property <int> pane: PanelState.tab;
+    property <bool> face: Lab.shown;
+    property <int> info: Library.info-kind;
+    property <bool> panel-seen: !App.panel-hidden || root.revealed-panel;
+    changed pane => { Tips.close(); }
+    changed face => { Tips.close(); }
+    changed info => { Tips.close(); }
+    changed panel-seen => { Tips.close(); }
     // Any sheet over the window, every flag that lays one below.
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || AppSettings.shown || Notice.shown
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Exporting.naming-shown || Stocks.shown
@@ -85,6 +97,7 @@ export component MainWindow inherits AppWindow {
         App.sheet-changed();
         Keyboard.covered = self.sheet-shown;
         Tip.shown = false;
+        Tips.close();
         if (!TextInputInterface.text-input-focused) { keys.focus(); }
     }
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
@@ -309,6 +322,8 @@ export component MainWindow inherits AppWindow {
             }
         }
     }
+
+    if Tip.open != "": HelpLayer { width: root.width; height: root.height; column-x: root.column-x; top: root.card-top; }
 
     if Presets.saving: PresetSaveSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Presets.editing: PresetEditorSheet { x: 0; y: 0; width: root.width; height: root.height; }

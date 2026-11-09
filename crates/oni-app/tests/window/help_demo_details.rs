@@ -17,9 +17,14 @@ use crate::help_demo::{clip_pixels, press_help};
 const DUST: &str = "Paint over a defect; the tool duplicates a matching patch of the same photo over it.";
 const FILM_STOCK: &str = "What this roll was shot on — never guessed, only ever what a hand picks.";
 
-/// The card a mark opened, where its block laid it.
+/// The card a mark opened, where the window stands it.
 fn card(w: &oni_app::MainWindow, subject: &str) -> common::Placed {
     common::the(w, Role::Groupbox, &format!("Help on {subject}"))
+}
+
+/// Whether the mark of `subject` lies wholly right of `c`.
+fn mark_is_right_of(w: &oni_app::MainWindow, subject: &str, c: &common::Placed) -> bool {
+    crate::help_demo::mark(w, subject).x >= c.x + c.width
 }
 
 pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip() {
@@ -57,6 +62,11 @@ pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip
     assert_eq!(tip.get_demo(), "", "the mark names no topic");
     assert!(!tip.get_has_clip() && clip_pixels(&tip).is_none(), "a note without a demo has no clip box");
     let without = card(w, "Film Stock");
+    // Left of the Info column, under the bar, as the panel's cards stand left of the panel.
+    assert!((without.x + without.width - (w.get_panel_x() - 8.0)).abs() < 0.5, "left of Info: {without:?}");
+    // The menu bar a check's window draws, the bar's height and the card's step under it.
+    assert!((without.y - (40.0 + 64.0 + 8.0)).abs() < 0.5, "under the bar: {without:?}");
+    assert!(mark_is_right_of(w, "Film Stock", &without), "twin: its mark stands in the column, not under the card");
 
     // The editor's De-dust tab, by a double click: the Dust & Scratches mark's card plays its demo.
     lib.invoke_tile_clicked(0, false, false);
