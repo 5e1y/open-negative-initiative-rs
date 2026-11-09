@@ -1,5 +1,5 @@
 // `DSSlider`, continuous or in whole steps: the readout above a rail and its knob.
-import { Space, Motion, SliderStyle, DialStyle } from "theme.slint";
+import { Space, Motion, ButtonStyle, SliderStyle, DialStyle } from "theme.slint";
 import { Look, Button } from "button.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 import { Knob } from "knob.slint";
@@ -23,6 +23,8 @@ component StepKey inherits Button {
     square: true;
     height: SliderStyle.step-key;
     width: self.height;
+    // A mini key's glyph: the sign stays small on its key, as the typed one stood.
+    glyph-size: ButtonStyle.mini-glyph;
     horizontal-stretch: 0;
     accessible-label: self.help;
 }

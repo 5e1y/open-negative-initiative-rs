@@ -8117,5 +8117,12 @@
     "title": "Frames edited together stand on one face",
     "status": "done",
     "detail": "Owner's report: editing several photos together, each kept its own face until a step touched it, so a group could hold Pro and Scanner frames edited as one. A group forming takes the open frame's face on every frame, as a view and no step, as turning the face already reaches them all. Check: store together frames_together_take_the_open_frames_face_when_the_group_forms (twin: the face turned, the group follows)."
+  },
+  {
+    "id": 1636,
+    "type": "design",
+    "title": "The Scanner's step keys draw a smaller sign",
+    "status": "done",
+    "detail": "Owner's call: Trinil's minus and plus on the Scanner face's step keys drew at an icon's 16 pt; they take a mini key's glyph, ButtonStyle.mini-glyph (12 pt), centred as before. The owner's look; window check slider_hues keeps the keys grey."
   }
 ]
