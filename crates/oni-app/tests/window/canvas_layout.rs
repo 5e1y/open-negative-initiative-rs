@@ -17,8 +17,10 @@ const HEIGHT: f32 = 800.0;
 /// The headless window draws the menu bar in its first points, then the 64-point bar (48 pt keys).
 const MENU: f32 = 40.0;
 const CARD_TOP: f32 = MENU + 64.0;
-/// The card's content inset, where its band's keys, the deck's tab and the status line start.
+/// The card's content inset, where the deck's tab and the status line start.
 const INSET: f32 = 24.0;
+/// A column key's step in from the card's side, as from its top: half the band less the key's 24 pt.
+const KEY: f32 = (40.0 - 24.0) / 2.0;
 
 fn click(rig: &common::Rig, x: f32, y: f32) {
     let position = LogicalPosition::new(x, y);
@@ -107,20 +109,21 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     rig.shot("layout-editor");
     // `zoomBubble`: its keys centred in the band over the image, clear of the bar above.
     let (pw, px) = rig.drawn();
-    let x = (WIDTH - 340.0 - INSET - 12.0) as usize;
+    let x = (WIDTH - 340.0 - KEY - 12.0) as usize;
     let ground = px[(CARD_TOP as usize + 1) * pw + x].0;
     let key: Vec<usize> = (CARD_TOP as usize..CARD_TOP as usize + 40).filter(|&y| px[y * pw + x].0 != ground).collect();
     let (above, below) = (key[0] - CARD_TOP as usize, CARD_TOP as usize + 40 - 1 - key[key.len() - 1]);
     assert!(above.abs_diff(below) <= 1, "the panel key centred in the band: {above} above, {below} below");
     assert!(above >= 6, "twin: not hung at the band's top edge: {above}");
-    // The band's keys start and end on the card's content inset, where the status line's Rating starts.
-    let rating = common::placed(w, AccessibleRole::Text, "Rating").into_iter().find(|r| r.y > CARD_TOP + 40.0).expect("the status line's Rating");
+    // The column keys stand as far from the card's side, the column each folds, as from its top.
     let band: Vec<common::Placed> = common::placed_all(w, AccessibleRole::Button).into_iter().filter(|b| b.y >= CARD_TOP && b.y + b.height <= CARD_TOP + 40.0).collect();
     let first = band.iter().min_by(|a, b| a.x.total_cmp(&b.x)).expect("the Library's key");
     let last = band.iter().max_by(|a, b| a.x.total_cmp(&b.x)).expect("the Panel's key");
-    assert!((first.x - rating.x).abs() < 0.5 && (rating.x - 260.0 - INSET).abs() < 0.5, "the Library's key at {}, Rating at {}", first.x, rating.x);
-    assert!((WIDTH - 340.0 - last.x - last.width - INSET).abs() < 0.5, "the Panel's key ends {} in", WIDTH - 340.0 - last.x - last.width);
-    assert!((first.x - 260.0 - 40.0).abs() > 8.0, "twin: not on the picture's padding");
+    let above = first.y - CARD_TOP;
+    assert!((first.x - 260.0 - above).abs() < 0.5, "the Library's key {} in, {above} under the top", first.x - 260.0);
+    assert!((WIDTH - 340.0 - last.x - last.width - above).abs() < 0.5, "the Panel's key ends {} in", WIDTH - 340.0 - last.x - last.width);
+    // Twin: on the status line's inset, as the keys stood, the measure sees them apart.
+    assert!((first.x - 260.0 - INSET).abs() > 4.0, "the Library's key off the status line's inset");
     // The colour space's select is its words alone at rest, the band's ground in its padding; under the
     // hand it wears a flat key's face, edgeless, the band's own ground beside it.
     let chip = *band.iter().max_by(|a, b| a.width.total_cmp(&b.width)).expect("the colour space's select");
@@ -142,7 +145,7 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
 
     // The canvas's leading key hides the Library; the same key, now at the card's edge, brings it back.
     let tab_y = CARD_TOP + 8.0 + 4.0;
-    click(&rig, 260.0 + INSET + 12.0, CARD_TOP + 20.0);
+    click(&rig, 260.0 + KEY + 12.0, CARD_TOP + 20.0);
     assert!(app.get_library_hidden(), "the column key hid the Library");
     rig.settle();
     let hidden_width = canvas.get_width();
@@ -172,7 +175,7 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     // Back beside the photo, the column key brings the Library back.
     open(&rig, w, "A00");
     rig.settle();
-    click(&rig, INSET + 12.0, CARD_TOP + 20.0);
+    click(&rig, KEY + 12.0, CARD_TOP + 20.0);
     assert!(!app.get_library_hidden(), "the key shows the Library again");
 
     // A file that never decodes says so on the canvas; a fine one says nothing.

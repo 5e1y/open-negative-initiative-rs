@@ -253,12 +253,12 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
   `TipCard` (a tooltip) are `Outward`s; `HelpCard` is a floating `Raised`; the canvas card stays flat, as Swift's.
   The deck opens on `PresetTab`, a flat outline the canvas's edge cuts open, lit while the deck is open.
-- **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
-  (a menu's rule) keeps a flat line. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
+- **Divider** is one flat line a point thick in the one separator tint (`Colour.separator`), everywhere: a
+  block's rule, a bar's, a menu's, a pinned row's, no relief. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`
   alike, a camera's marking in its own case: the groove's shade a line above its letters, the lit edge a line
   below. Capitals belong to the keycaps alone. A `Section` folds by the tree's own bare chevron before its
   title, the app's one look for folding; its Reset shows only while the block stands off its rest, at the
-  row's far end, the title between it and the fold. On a short row the title yields. A help mark, named with its block, opens its card (`HelpLayer`) left of the column, under the tab bar in
+  row's far end, the title between it and the fold. On a short row the title yields. A help mark, always shown and named with its block, opens its card (`HelpLayer`) while the hand rests on it, and the card goes as the hand leaves; it stands left of the column, under the tab bar in
   the editor, over the photo and never over the block, one card at a time; its note comes in short parts a blank line apart.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.

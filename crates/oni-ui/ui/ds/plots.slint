@@ -60,6 +60,7 @@ export component Plot inherits Rectangle {
     in property <bool> screen: true;
     // Out of its hollow, on the scanner screen's black glass rather than the ground beneath, at its corner.
     in property <bool> glass;
+    in property <length> radius: PlotStyle.radius;
     in property <bool> interactive: true;
     in property <bool> focusable;
     in property <[PlotLine]> lines;
@@ -76,7 +77,7 @@ export component Plot inherits Rectangle {
     callback key(int, string, bool, bool) -> bool;
     callback focus-changed(int, bool);
     background: root.screen ? Colour.canvas : root.glass ? ScannerStyle.glass : transparent;
-    border-radius: root.screen || root.glass ? PlotStyle.radius : 0px;
+    border-radius: root.screen || root.glass ? root.radius : 0px;
     clip: true;
     drop-shadow-color: root.screen ? Colour.white.with-alpha(SliderStyle.rim) : transparent;
     drop-shadow-blur: SliderStyle.rim-blur;
@@ -141,10 +142,10 @@ export component Plot inherits Rectangle {
     if root.screen: Inward {
         ground: transparent;
         hollow: true;
-        radius: PlotStyle.radius;
+        radius: root.radius;
     }
     if root.screen: Rectangle {
-        border-radius: PlotStyle.radius;
+        border-radius: root.radius;
         border-width: Stroke.line;
         border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.well-edge);
     }

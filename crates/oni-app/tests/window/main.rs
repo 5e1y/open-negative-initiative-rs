@@ -306,7 +306,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing", help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing),
     ("help_card::a_help_card_closes_by_hand_and_goes_with_its_mark", help_card::a_help_card_closes_by_hand_and_goes_with_its_mark),
     ("help_card::a_help_card_stands_inside_a_short_window_and_beside_every_column", help_card::a_help_card_stands_inside_a_short_window_and_beside_every_column),
-    ("corners::the_canvas_keeps_its_round_and_the_readout_a_lower_one", corners::the_canvas_keeps_its_round_and_the_readout_a_lower_one),
+    ("corners::the_canvas_squares_its_corner_against_a_readout_run_edge_to_edge", corners::the_canvas_squares_its_corner_against_a_readout_run_edge_to_edge),
     ("panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys", panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys),
     ("help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo", help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo),
     ("help_demo_color::the_color_tabs_marks_play_their_own_demos", help_demo_color::the_color_tabs_marks_play_their_own_demos),

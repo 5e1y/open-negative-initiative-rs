@@ -118,6 +118,8 @@ pub(crate) struct Roll {
     landed_alone: bool,
     pub require: bool,
     tutorial: Option<tutorial::Playing>,
+    /// The steps' clips put away by Hide, until Show How or the next time the roll is prepared.
+    tutorial_hidden: bool,
     trace: trace::Trace,
     /// What the scan and the loupe were last given, by path and size: a 24 MP picture set again
     /// would be compared pixel by pixel at every move of the pointer.
@@ -181,6 +183,7 @@ impl Default for Roll {
             landed_alone: false,
             require: false,
             tutorial: None,
+            tutorial_hidden: false,
             trace: trace::Trace::default(),
             laid_scan: None,
             laid_loupe: None,

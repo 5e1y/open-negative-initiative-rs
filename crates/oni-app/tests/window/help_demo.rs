@@ -1,5 +1,5 @@
-//! A help mark naming a demo plays it on its card, frame after frame, while the card stands; its mark
-//! pressed again stops the clip, the next mark plays its own, and a card closed with its panel asks no frame.
+//! A help mark naming a demo plays it on its card, frame after frame, while the hand rests on the mark;
+//! the hand leaving stops the clip, the next mark plays its own, and a card closed with its panel asks no frame.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{PanelState, Tip};
@@ -17,9 +17,16 @@ pub(crate) fn mark(w: &oni_app::MainWindow, subject: &str) -> common::Placed {
     common::the(w, Role::Button, &format!("Help on {subject}"))
 }
 
-/// Presses the help mark of the block titled `subject`.
+/// Rests the hand on the help mark of the block titled `subject` and presses it, as the keyboard would.
 pub(crate) fn press_help(rig: &common::Rig, w: &oni_app::MainWindow, subject: &str) {
     common::click(rig, w, mark(w, subject).middle());
+    rig.settle();
+}
+
+/// Takes the hand off every help mark, onto the canvas, as a person moving on.
+pub(crate) fn leave_help(rig: &common::Rig, w: &oni_app::MainWindow) {
+    let position = slint::LogicalPosition::new(w.get_panel_x() - 300.0, 400.0);
+    rig.window.dispatch_event(slint::platform::WindowEvent::PointerMoved { position });
     rig.settle();
 }
 
@@ -68,9 +75,9 @@ pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
     press_help(&rig, w, "Sharpening");
     rig.until("twin: its mark again, its frames", Duration::from_secs(5), || clip_pixels(&tip).is_some());
 
-    // Pressed again, the mark stops the clip, and another mark plays its own demo.
-    press_help(&rig, w, "Sharpening");
-    assert!(tip.get_open().is_empty() && !tip.get_has_clip() && clip_pixels(&tip).is_none(), "its mark again stops the clip");
+    // The hand leaving the mark stops the clip, and another mark plays its own demo.
+    leave_help(&rig, w);
+    assert!(tip.get_open().is_empty() && !tip.get_has_clip() && clip_pixels(&tip).is_none(), "the hand leaving its mark stops the clip");
     press_help(&rig, w, "Chroma Denoise");
     assert_eq!(tip.get_demo(), "chroma-denoise", "the next mark names its own topic");
     rig.until("its own demo", Duration::from_secs(5), || clip_pixels(&tip).is_some_and(|p| p != later));

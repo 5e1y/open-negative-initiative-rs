@@ -1,5 +1,5 @@
-//! The step's demo under its controls, on the hand's request: its clip's frames written into one
-//! texture at the clip's own pace, the picture redrawn by a revision as the canvas is.
+//! The step's demo under its controls, played on every step that has one unless put away: its clip's
+//! frames written into one texture at the clip's own pace, the picture redrawn by a revision as the canvas is.
 
 use super::super::SHELL;
 use super::*;
@@ -15,20 +15,27 @@ pub(in crate::app) struct Playing {
 }
 
 impl Ctl {
-    /// Show How: the step's clip from its first frame, played once and resting on its last; pressed
-    /// again, the clip shown is put away. Nothing moves beside the scan unasked.
+    /// Hide: the clip shown is put away, and the next steps show none; Show How plays the step's
+    /// clip from its first frame again, and the next steps their own.
     pub(in crate::app) fn toggle_tutorial(&self) {
         let (step, shown) = {
             let r = &self.state.borrow().prepare;
             (r.step.index(), r.tutorial.is_some())
         };
+        self.state.borrow_mut().prepare.tutorial_hidden = shown;
         self.play_tutorial((!shown).then_some(step));
     }
 
-    /// A clip stays on its own step while nothing is measured; on another step, or none, it goes.
+    /// Each step plays its own clip from its start, played once and resting on its last, unless the
+    /// clips are put away; on another step, or none, the clip shown goes.
     pub(in crate::app) fn keep_tutorial(&self, step: Option<usize>) {
-        if self.state.borrow().prepare.tutorial.as_ref().is_some_and(|p| Some(p.step) != step) {
-            self.play_tutorial(None);
+        let (playing, hidden) = {
+            let r = &self.state.borrow().prepare;
+            (r.tutorial.as_ref().map(|p| p.step), r.tutorial_hidden)
+        };
+        let wanted = step.filter(|_| !hidden);
+        if playing != wanted {
+            self.play_tutorial(wanted);
         }
     }
 

@@ -79,6 +79,7 @@ impl Ctl {
             r.laid_window = r.window;
             r.draft_id = None;
             r.draftless.clear();
+            r.tutorial_hidden = false;
             r.shown = true;
             if let Some(p) = &r.previews {
                 p.reset(r.session);

@@ -73,6 +73,12 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     assert_ne!(face, at(artist.x - 20.0, middle), "the Artist field's face shows beside its label");
     let caption = common::the(w, Role::Text, &export_card::lines(w)[0].caption);
     assert_eq!(at(caption.x - 20.0, caption.y + caption.height / 2.0), face, "the canvas is the face's own ground");
+    // A lone photo stands in the middle of its room, as much above its fields as under its caption,
+    // between the panel's title and its keys; twin: from the top it would stand level with the title.
+    let (head, cancel, name) = (common::the(w, Role::Text, "Export"), common::the(w, Role::Button, "Cancel"), common::the(w, Role::TextInput, "Name"));
+    let (above, below) = (name.y - head.y, cancel.y + cancel.height - caption.y - caption.height);
+    assert!((above - below).abs() < 48.0, "the lone photo centred: {above} above, {below} below");
+    assert!(above > 48.0, "the lone photo off the head's level: {above}");
 
     // An empty field shows an example, never what reads as a value; twin: a name typed hides it.
     let example = "e.g. Jane Doe";

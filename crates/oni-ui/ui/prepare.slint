@@ -178,7 +178,7 @@ export component RollPanel inherits Surface {
                         previous => { Preparing.previous(); } next => { Preparing.next(); }
                     }
                 }
-                // The step's demo under the controls its text names, only once asked: nothing moves beside the scan unasked.
+                // The step's demo under the controls its text names, played on every step that has one; Hide puts them away.
                 if Preparing.has-tutorial: HorizontalLayout {
                     alignment: start;
                     Button { text: Preparing.tutorial.width > 0 ? @tr("Hide") : @tr("Show How"); clicked => { Preparing.tutorial-toggled(); } }

@@ -1,12 +1,13 @@
-//! A help mark opens its note as a card left of the column holding it, nothing in the column moved or covered; its mark,
-//! Escape or a press closes it, and it goes with its mark. A block folds by a chevron; its Reset shows once the block moves.
+//! A help mark opens its note as a card left of the column holding it while the hand rests on it, nothing in the column
+//! moved or covered; the hand leaving or Escape closes it, and it goes with its mark. A block folds by a chevron; its Reset
+//! shows once the block moves.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::{Act, App, Bar, Canvas, Exporting, PanelState, Tip};
 use slint::ComponentHandle;
 
 use crate::common::{self, Placed};
-use crate::help_demo::{mark, press_help};
+use crate::help_demo::{leave_help, mark, press_help};
 use crate::panel_bindings::opened;
 
 const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.";
@@ -89,14 +90,15 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
     assert!(!even([PAD, PAD, PAD, PAD / 2.0]), "twin: a foot half as deep is refused");
     rig.shot("help-card-open");
 
-    // The slider in reach while the card plays: a press on its rail moves Exposure, the Reset wakes in place.
+    // The slider in reach beside the card: a press on its rail moves Exposure, the Reset wakes in place, and
+    // the hand gone from the mark takes the card.
     assert!(after.x >= card.x + card.width, "the card leaves the slider uncovered: {after:?} {card:?}");
     let exposure = || ctl.state.borrow().store().settings().print.exposure;
     let rested = exposure();
     common::click(&rig, w, (after.x + after.width * 0.95, after.y + after.height - 8.0));
     rig.settle();
     assert!(exposure() > rested, "the press reached the slider: {rested} to {}", exposure());
-    assert_eq!(tip.get_open(), LIGHTING, "the card stays open while the hand works");
+    assert!(tip.get_open().is_empty(), "the hand off its mark, the card goes");
     let moved = reset_of(w, "Lighting").expect("something moved: the Reset shows");
     assert_eq!(told(w, "Reset").0, Some(false), "twin: a key that opens nothing claims no fold");
     // At the column's far end, the whole title between it and the fold.
@@ -104,13 +106,14 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
     assert!(end(&moved), "the Reset at the row's far end: {moved:?} {title:?}");
     assert!(!end(&Placed { x: fold.x + fold.width, ..moved }), "twin: a Reset beside the fold is refused");
 
-    // Another block's mark takes its place at the same spot; its own mark again closes it.
+    // Another block's mark takes its place at the same spot; the hand leaving it closes it.
+    press_help(&rig, w, "Lighting");
     press_help(&rig, w, "Colour");
     assert!(common::placed(w, Role::Groupbox, "Help on Lighting").is_empty(), "one card at a time");
     assert_eq!(common::placed(w, Role::Groupbox, "Help on Colour").len(), 1);
     assert!(beside(&common::the(w, Role::Groupbox, "Help on Colour")), "the same place for every block");
-    press_help(&rig, w, "Colour");
-    assert!(tip.get_open().is_empty() && common::placed(w, Role::Groupbox, "Help on Colour").is_empty(), "its mark again closes it");
+    leave_help(&rig, w);
+    assert!(tip.get_open().is_empty() && common::placed(w, Role::Groupbox, "Help on Colour").is_empty(), "the hand leaving its mark closes it");
 
     // Folded, its fold tells it as plainly.
     let hide = ElementHandle::find_by_accessible_label(w, "Hide Lighting").find(|e| e.accessible_role() == Some(Role::Button));
@@ -145,17 +148,18 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
     closed("Escape");
     assert!(!app.get_gallery(), "Escape took the card, not the editor");
 
-    // A press on the card closes it and reaches nothing under it; twin: there, with no card, the canvas hears it.
+    // The hand leaving the mark takes the card, and the canvas where it stood hears the next presses; twin:
+    // with the hand on the mark, the card stands.
     let doubles = std::rc::Rc::new(std::cell::Cell::new(0));
     let heard = doubles.clone();
     w.global::<Canvas>().on_double_clicked(move || heard.set(heard.get() + 1));
     let spot = lighting_card(&rig, w).middle();
+    assert!(!tip.get_open().is_empty(), "the hand on its mark, the card stands");
     common::click(&rig, w, spot);
-    closed("a press on it");
-    assert_eq!(doubles.get(), 0, "the press stayed on the card");
+    closed("the hand off its mark");
     common::click(&rig, w, spot);
     common::click(&rig, w, spot);
-    assert_eq!(doubles.get(), 1, "twin: the canvas lies under that spot");
+    assert_eq!(doubles.get(), 1, "the canvas lies under that spot");
     rig.settle();
 
     // Whatever takes its mark away takes the card: the pane, the face, the panel hidden, a sheet, the gallery.

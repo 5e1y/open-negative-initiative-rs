@@ -20,12 +20,9 @@ export component Panel inherits Surface {
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
     VerticalLayout {
-        // The readout, one glass inset as the panel's rows, alike on both faces: Pro's histogram, Lighting's
-        // curves over it on the Colour tab; the scanner's screen on the Scanner face; the loupe under Details.
+        // The readout, one glass edge to edge from the canvas card's top, alike on both faces: Pro's histogram,
+        // Lighting's curves over it on the Colour tab; the scanner's screen on the Scanner face; the loupe under Details.
         HorizontalLayout {
-            padding-left: Space.m;
-            padding-right: Space.m;
-            padding-top: Space.m;
             Rectangle {
                 height: PlotStyle.main;
                 // The plot over its legend, one height on every tab, so the tab bar never moves.
@@ -40,6 +37,7 @@ export component Panel inherits Surface {
                         glass: true;
                         grid: false;
                         interactive: false;
+                        radius: PlotStyle.readout-radius;
                         histogram: Plots.output;
                         histogram-revision: Plots.output-revision;
                         lines: PanelState.tab == 2 ? Editors.print-lines : [];
@@ -48,12 +46,18 @@ export component Panel inherits Surface {
                         property <int> epoch: Editors.epoch;
                         changed epoch => { Editors.resized(self.plot, self.width, self.height); }
                     }
-                    PlotLegend { vertical-stretch: 0; curves: PanelState.tab == 2; }
+                    HorizontalLayout {
+                        vertical-stretch: 0;
+                        padding-left: Space.m;
+                        padding-right: Space.m;
+                        PlotLegend { curves: PanelState.tab == 2; }
+                    }
                 }
                 // Under Details the output histogram cannot move, so the readout holds the loupe.
                 if PanelState.tab == 3: LoupeBand {
                     width: parent.width;
                     height: parent.height;
+                    radius: PlotStyle.readout-radius;
                     source: DetailLoupe.source;
                     revision: DetailLoupe.revision;
                     shown-width: DetailLoupe.shown-width;
@@ -65,6 +69,7 @@ export component Panel inherits Surface {
                 if Lab.shown && PanelState.tab != 3: LabScreen {
                     width: parent.width;
                     height: parent.height;
+                    radius: PlotStyle.readout-radius;
                     frame: Lab.frame;
                     machine: Lab.machine-line;
                     remeasure: Lab.remeasure;

@@ -8180,5 +8180,75 @@
     "title": "The primary key's blue is the accent whole",
     "status": "done",
     "detail": "Owner's call: the primary keycap (EXPORT, DONE, the screen's commit) wears the system's vivid blue again, ButtonStyle.primary set to the accent rather than the accent sunk into the keycap's grey. Window check toolbar_accent keeps reading the blue fill."
+  },
+  {
+    "id": 1645,
+    "type": "design",
+    "title": "The panel's readout runs edge to edge, the canvas card square against it",
+    "status": "done",
+    "detail": "Owner's call: the main histogram, the Scanner's Lab screen and the Details loupe span the panel's whole width, square (PlotStyle.readout-radius), and the canvas card's top-right corner is square again where it meets them (Card and CardCorners square-top-right). The readout starts on the card's top, so the card and the glass meet corner to corner, and the loupe's band reads the panel's whole width (DetailLoupe.band-width). The histogram's legend keeps the panel's inset. Plot, LoupeBand, CrtScreen and LabScreen take a radius; the panel passes the readout's. Window check corners (renamed): the top right corner square, the top left round (twin), the glass at its very corners."
+  },
+  {
+    "id": 1646,
+    "type": "design",
+    "title": "The library column's tab bar stands on the canvas card's top",
+    "status": "done",
+    "detail": "Owner's call: the Archive and Projects tab bar loses the 8 pt above it, its top on the canvas card's top."
+  },
+  {
+    "id": 1647,
+    "type": "design",
+    "title": "A tree's line opens on its chevron",
+    "status": "done",
+    "detail": "Owner's report (a navigator row): 17 pt stood before a tree line's chevron and 16 pt between the chevron and the folder. A tree line now starts its chevron Space.xs in (RowStyle.lead), the chevron's zone its own 10 pt, so 4 pt lead to the chevron and 7 pt to the glyph; the fold's catch reaches a gap past the chevron. Window check tree_leftovers aims its fold press at the new place."
+  },
+  {
+    "id": 1648,
+    "type": "fix",
+    "title": "A pinned row covers what scrolls under it",
+    "status": "done",
+    "detail": "Owner's report: the roll line pinned at the top of the lower tree rounded its ground with its band, so the lines scrolled under it showed in its corners. Its ground is square under its rounded band, and its rule under it."
+  },
+  {
+    "id": 1649,
+    "type": "design",
+    "title": "The column keys stand as far from the card's side as from its top",
+    "status": "done",
+    "detail": "Owner's call: the Library's and the Panel's keys in the canvas card's band stand (band - key) / 2, 8 pt, from the card's side as from its top, beside the column each folds, off the status line's inset. Window check canvas_layout measures both against the band's top (twin: on the status line's inset they stood apart)."
+  },
+  {
+    "id": 1650,
+    "type": "design",
+    "title": "A lone export stands in the middle of its room",
+    "status": "done",
+    "detail": "Owner's call: one photo exported, its fields and preview stand centred in the export's column instead of at its top; several still start from the top. Window check export_panel: as much room above its fields as under its caption (twin: off the panel title's level)."
+  },
+  {
+    "id": 1651,
+    "type": "design",
+    "title": "A slider's value edits on one face, its minus and plus beside the figure",
+    "status": "done",
+    "detail": "Owner's report: the typed value's field took the label's face and ink, ran past the row's right edge and showed its keys only once typed. Under the hand the value now opens on one field face ending on the row's edge: Trinil's minus, the figure alone in the value's face and the primary ink, Trinil's plus, each key a step of one shown unit; a click on the figure types over it (the entry exists only while typed in, so Tab never stops on it), Return or a press elsewhere hands it over, Escape gives it back. Window checks keyboard (typed value, Escape, Tab order, the figure's tooltip) and slider_hues."
+  },
+  {
+    "id": 1652,
+    "type": "design",
+    "title": "One flat separator everywhere",
+    "status": "done",
+    "detail": "Owner's call: every separator is one flat line a point thick in Colour.separator: the engraved groove and lit edge (two lines, 2 pt) and the half-point hairline go from Divider, with its hairline and engraved switches; blocks, the bar, menus, sheets, the pinned row and the settings' columns share it. The bar's ruled gap is 2 gaps and 1 pt (window check toolbar)."
+  },
+  {
+    "id": 1653,
+    "type": "design",
+    "title": "The help mark always shows; its card stands while the hand rests on it",
+    "status": "done",
+    "detail": "Owner's correction of #1631: the \"?\" shows at rest again, beside every titled block, field and tool; its card opens as the hand rests on the mark and goes as it leaves, Space or Return opening it from the keyboard and Escape closing it; the mark's tooltip goes, its name kept for assistive tools. Tips.help opens without toggling, Tips.unhelp closes its own card. Window checks help_card and help_demo*: the hand leaving closes the card and stops its clip."
+  },
+  {
+    "id": 1654,
+    "type": "design",
+    "title": "Prepare the Roll plays each step's demo",
+    "status": "done",
+    "detail": "Owner's call: a step with a demo plays it as the step shows, once, resting on its last frame; Hide puts the demos away until Show How or the next time a roll is prepared. Window check prepare: played unasked, Hide puts it away, Show How plays it again, the next step plays its own."
   }
 ]

@@ -6,7 +6,7 @@ use slint::ComponentHandle;
 use std::time::{Duration, Instant};
 
 use crate::common;
-use crate::help_demo::{clip_pixels, press_help};
+use crate::help_demo::{clip_pixels, leave_help, press_help};
 use crate::panel_bindings::opened;
 
 const FILM_TYPE: &str = "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K.";
@@ -42,8 +42,8 @@ pub(crate) fn the_roll_tabs_marks_play_each_its_own_demo() {
     rig.shot("help-demo-film-type");
 
     // Twin: another mark of the tab plays another clip, so the card above showed its own topic's.
-    press_help(&rig, w, "Film Type");
-    assert!(clip_pixels(&tip).is_none(), "its mark again stops the clip");
+    leave_help(&rig, w);
+    assert!(clip_pixels(&tip).is_none(), "the hand leaving its mark stops the clip");
     press_help(&rig, w, "Prepared Roll");
     assert_eq!(tip.get_open(), PREPARED_ROLL, "the Prepared Roll mark opens its card");
     assert_eq!(tip.get_demo(), "measured-roll");

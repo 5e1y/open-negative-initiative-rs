@@ -378,16 +378,16 @@ msgid "Inverse curve"
 msgstr "Courbe inverse"
 
 #: crates/oni-ui/ui/ds/readout.slint
+msgid "Click to type a value"
+msgstr "Cliquez pour saisir une valeur"
+
+#: crates/oni-ui/ui/ds/readout.slint
 msgid "One step lower"
 msgstr "Un cran plus bas"
 
 #: crates/oni-ui/ui/ds/readout.slint
 msgid "One step higher"
 msgstr "Un cran plus haut"
-
-#: crates/oni-ui/ui/ds/readout.slint
-msgid "Click to type a value"
-msgstr "Cliquez pour saisir une valeur"
 
 #: crates/oni-ui/ui/ds/roll.slint
 msgid "Previous Frame"

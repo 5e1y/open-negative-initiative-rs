@@ -1,5 +1,5 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Space, ScannerStyle } from "theme.slint";
+import { Space, ScannerStyle, PlotStyle } from "theme.slint";
 import { Tips } from "base.slint";
 import { CrtScreen, CrtLine as Lcd } from "crt.slint";
 
@@ -15,10 +15,12 @@ export component LabScreen inherits Rectangle {
     in property <[LabCell]> cells;
     // The widest count a letter reaches: every count takes the size that holds it whole in its column.
     in property <string> widest;
+    in property <length> radius: PlotStyle.radius;
     property <length> column: (root.width - 2 * Space.m) / max(1, root.cells.length);
     property <float> fit: min(1, (root.column - Space.xs) / max(1px, measure.preferred-width));
     measure := Lcd { text: root.widest; large: true; visible: false; }
     CrtScreen {
+        radius: root.radius;
         VerticalLayout {
             padding: Space.m;
             HorizontalLayout {

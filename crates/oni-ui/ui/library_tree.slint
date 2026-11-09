@@ -30,10 +30,10 @@ export component Tree inherits Surface {
     ];
     // Each part pads itself by the column's one inset: the tab bar, the headers, the rows.
     VerticalLayout {
+        // The tab bar's top on the canvas card's.
         HorizontalLayout {
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
-            padding-top: Space.s;
             padding-bottom: Space.s;
             Tabs {
                 tabs: [@tr("Archive"), @tr("Projects")];

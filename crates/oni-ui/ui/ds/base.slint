@@ -149,26 +149,16 @@ export component Picture inherits Rectangle {
     }
 }
 
-// A rule across a layout, or `vertical` between two columns: `DSSeparator`'s engraved groove and its
-// lit edge, or flat (`hairline` the half-point one). Bounded across alone, so a layout stretches it.
+// A rule across a layout, or `vertical` between two columns: one flat line a point thick in the app's one
+// separator tint. Bounded across alone, so a layout stretches it.
 export component Divider inherits Rectangle {
     in property <bool> vertical;
-    in property <bool> hairline;
-    in property <bool> engraved: !root.hairline;
-    property <length> thickness: root.hairline ? Stroke.hairline : root.engraved ? 2 * Stroke.line : Stroke.line;
     property <length> unbounded: 100000px;
-    min-width: root.vertical ? root.thickness : 0px;
-    max-width: root.vertical ? root.thickness : root.unbounded;
-    min-height: root.vertical ? 0px : root.thickness;
-    max-height: root.vertical ? root.unbounded : root.thickness;
-    background: root.engraved ? DS.palette-groove : Colour.separator;
-    if root.engraved: Rectangle {
-        x: root.vertical ? Stroke.line : 0px;
-        y: root.vertical ? 0px : Stroke.line;
-        width: root.vertical ? Stroke.line : parent.width;
-        height: root.vertical ? parent.height : Stroke.line;
-        background: DS.palette-groove-light;
-    }
+    min-width: root.vertical ? Stroke.line : 0px;
+    max-width: root.vertical ? Stroke.line : root.unbounded;
+    min-height: root.vertical ? 0px : Stroke.line;
+    max-height: root.vertical ? root.unbounded : Stroke.line;
+    background: Colour.separator;
 }
 
 // A title engraved as the rule above it, a camera's marking: the groove's shade a line above its letters,
@@ -244,14 +234,15 @@ export component Surface inherits Rectangle {
 // a rounded clip renders the whole card into a texture of its own, so `CardCorners` covers it instead.
 export component Card inherits Rectangle {
     in property <bool> dimmed;
-    // Both corners of a side left square against a column folded there.
+    // Corners left square against a square neighbour: the top right one, or both of a side.
+    in property <bool> square-top-right;
     in property <bool> square-left;
     in property <bool> square-right;
     // The screen's pixels to a point, which a move to a screen of another density changes.
     out property <float> density: 1px / 1phx;
     background: root.dimmed ? Colour.canvas-cropping : Colour.canvas;
     border-top-left-radius: root.square-left ? 0px : CardStyle.radius;
-    border-top-right-radius: root.square-right ? 0px : CardStyle.radius;
+    border-top-right-radius: root.square-right || root.square-top-right ? 0px : CardStyle.radius;
     border-bottom-right-radius: root.square-right ? 0px : CardStyle.radius;
     border-bottom-left-radius: root.square-left ? 0px : CardStyle.radius;
 }
@@ -262,10 +253,11 @@ export component CardCorners {
     in property <length> r: CardStyle.radius;
     in property <color> ground: Colour.ground;
     // The card's square corners, which keep their content.
+    in property <bool> square-top-right;
     in property <bool> square-left;
     in property <bool> square-right;
     if !root.square-left: Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
-    if !root.square-right: Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
+    if !root.square-right && !root.square-top-right: Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
     if !root.square-right: Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
     if !root.square-left: Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
 }
@@ -348,16 +340,18 @@ export global Tips {
         Tips.hover(over, text, x, y);
         if (over && text != "") { Tip.above = true; }
     }
-    // A help mark's press: its note's card opens in place of the one open; its own again closes it.
+    // A help mark under the hand, or pressed from the keyboard: its note's card opens in place of the one open.
     public function help(note: string, demo: string, subject: string) {
-        if (note == Tip.open) {
-            Tips.close();
-        } else {
+        if (note != Tip.open) {
             Tip.open = note;
             Tip.demo = demo;
             Tip.subject = subject;
             Tip.play(demo);
         }
+    }
+    // The hand leaving a help mark: its own card goes, another's stays.
+    public function unhelp(note: string) {
+        if (note == Tip.open) { Tips.close(); }
     }
     // The card down and its demo stopped, whatever stood open.
     public function close() {

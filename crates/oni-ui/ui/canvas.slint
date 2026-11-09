@@ -21,7 +21,9 @@ export component CanvasCard inherits Card {
     // A column key pressed: true for the Library's, so the shell drops that column's reveal.
     callback column-toggled(bool);
     dimmed: Canvas.cropping;
-    // A column folded squares both corners of its side.
+    // Square against the panel's readout, which runs edge to edge beside it; a column folded squares
+    // both corners of its side.
+    square-top-right: true;
     square-left: root.library-hidden;
     square-right: root.panel-hidden;
     changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
@@ -311,9 +313,11 @@ export component CanvasCard inherits Card {
     }
     // `columnKey(.leading)`: the Library's key in the canvas's top-left band, on the card's content inset
     // where the deck's tab and the status line start, as the zoom's keys end on it at the right.
+    // The column keys as far from the card's side as from its top, beside the column each folds.
+    property <length> key-margin: (CardStyle.padding - ButtonStyle.small-height) / 2;
     library-key := HorizontalLayout {
         // Centred in the band over the image: a row stretched to it lays its keys at its top.
-        x: StatusStyle.inset;
+        x: root.key-margin;
         y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
         height: self.preferred-height;
@@ -330,7 +334,7 @@ export component CanvasCard inherits Card {
     }
     zoom := HorizontalLayout {
         // Its own width: a layout left unsized spans the card and centres its keys off it.
-        x: parent.width - self.preferred-width - StatusStyle.inset;
+        x: parent.width - self.preferred-width - root.key-margin;
         y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
         height: self.preferred-height;
@@ -370,7 +374,7 @@ export component CanvasCard inherits Card {
             }
         }
     }
-    CardCorners { width: parent.width; height: parent.height; square-left: root.square-left; square-right: root.square-right; }
+    CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square-left: root.square-left; square-right: root.square-right; }
     // The open photo's place in Tab's order, read as the photo: its arrows place the frame drawn on it.
     CanvasKeys {
         label: Canvas.status;

@@ -343,11 +343,11 @@ export component KeyboardProbe inherits AppWindow {
     // Where the tabs' first tab lies, which a press lands on.
     out property <length> tabs-x: tabs.absolute-position.x + Space.l;
     out property <length> tabs-y: tabs.absolute-position.y + tabs.height / 2;
-    // The slider's knob at rest in the middle, its value at the readout's right end, and a spot of the
-    // window where no control lies.
+    // The slider's knob at rest in the middle, its value's figure between the keys its face opens on, and
+    // a spot of the window where no control lies.
     out property <length> knob-x: slider.absolute-position.x + slider.width / 2;
     out property <length> knob-y: slider.absolute-position.y + slider.height - SliderStyle.row / 2;
-    out property <length> value-x: slider.absolute-position.x + slider.width - Space.xs;
+    out property <length> value-x: slider.absolute-position.x + slider.width - ButtonStyle.small-height - SliderStyle.figure / 2;
     out property <length> value-y: slider.absolute-position.y + Space.s;
     // The slider's name, at the readout's left end.
     out property <length> name-x: slider.absolute-position.x + Space.s;

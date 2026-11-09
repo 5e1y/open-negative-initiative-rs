@@ -156,8 +156,8 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
 
 /// Three times Swift's `DS.Space.sm` between the bar's groups, whose keys touch.
 const BAR_GAP: f32 = 24.0;
-/// The rule before Reset: an engraved groove and its lit edge, a bar's gap either side.
-const RULED: f32 = 2.0 * BAR_GAP + 2.0;
+/// The rule before Reset: one flat line a point thick, a bar's gap either side.
+const RULED: f32 = 2.0 * BAR_GAP + 1.0;
 
 /// The one key of the bar so named, where the layout put it.
 fn bar_key(w: &oni_app::MainWindow, label: &str) -> common::Placed {
@@ -233,12 +233,12 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(edit.x < select.x, "twin: the measure finds the bar's keys");
     assert!(near(gap(select, prepare), BAR_GAP) && near(gap(prepare, add), BAR_GAP), "{select:?} {prepare:?} {add:?}");
     assert!(near(gap(add, reset), RULED) && near(gap(reset, trash), 0.0), "a rule, then one group, touching: {add:?} {reset:?} {trash:?}");
-    assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between ADD FOLDER… and Reset");
+    assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between ADD FOLDER… and Reset");
     // Twin: the room between two groups with no rule is bare ground.
     assert!(!inked(&rig, prepare, prepare.x - BAR_GAP / 2.0), "the measure sees bare room");
-    // Under the hand Reset lights as any key, in the neutral ink; twin: Trash shows its danger's red.
-    let (reset_lit, trash_lit) = (reached_chroma(&rig, reset), reached_chroma(&rig, trash));
-    assert!(reset_lit <= 12 && trash_lit > 80, "Reset neutral under the hand, Trash red: {reset_lit} {trash_lit}");
+    // Under the hand Reset lights as any key, PREPARE ROLL's neutral ink; twin: Trash shows its danger's red.
+    let (plain_lit, reset_lit, trash_lit) = (reached_chroma(&rig, prepare), reached_chroma(&rig, reset), reached_chroma(&rig, trash));
+    assert!(reset_lit <= plain_lit + 6 && trash_lit > 80, "Reset as PREPARE ROLL under the hand, Trash red: {plain_lit} {reset_lit} {trash_lit}");
     // The app's keys one group, touching, EXPORT a bar's gap after them at the bar's end.
     let (report, settings, export) = (bar_key(w, "Feedback"), bar_key(w, "Settings"), bar_key(w, "EXPORT"));
     assert!(near(gap(report, settings), 0.0) && near(gap(settings, export), BAR_GAP), "{report:?} {settings:?} {export:?}");
@@ -324,7 +324,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     }
     assert_eq!(on_bar("Trash"), 0, "no Trash on the editor's bar");
     assert!(near(gap(to_roll, reset), RULED), "a rule before Reset, alone where the group stood: {to_roll:?} {reset:?}");
-    assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between Paste to Roll and Reset");
+    assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between Paste to Roll and Reset");
     // Beside Reset, where Trash stood, bare room up to the app's keys.
     assert!(!inked(&rig, reset, right(reset) + 12.0), "nothing drawn past Reset");
     // Twin: the faces stand between the views and the settings, a bar's gap either side.

@@ -161,7 +161,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     rest(&rig);
-    let chevron = (left + ds.get_space_sm() + ds.get_control_film_sidebar_chevron_zone_width() / 2.0, list_top + h / 2.0);
+    let chevron = (left + ds.get_space_xs() + ds.get_control_film_sidebar_chevron_zone_width() / 2.0, list_top + h / 2.0);
     drag(&rig, chevron, chevron);
     release(&rig, chevron);
     assert!(!project_rows(&lib)[at(&lib, "Trip")].expanded && pin().row.title != "Trip", "the chevron folds Trip, held no more");

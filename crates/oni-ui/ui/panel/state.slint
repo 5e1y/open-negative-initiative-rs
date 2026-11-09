@@ -1,6 +1,6 @@
 // The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
 import { Act } from "../act.slint";
-import { Space, PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
+import { PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
@@ -199,8 +199,8 @@ export global DetailLoupe {
     in property <length> shown-height;
     in property <string> ratio;
     in property <bool> ratio-shown;
-    // The panel's readout, inset by its rows' inset either side, at the main plot's height.
-    out property <length> band-width: ShellStyle.panel-width - 2 * Space.m;
+    // The panel's readout, edge to edge, at the main plot's height.
+    out property <length> band-width: ShellStyle.panel-width;
     out property <length> band-height: PlotStyle.main;
     callback toggled();
 }

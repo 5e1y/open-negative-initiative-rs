@@ -307,9 +307,10 @@ export component LoupeBand inherits Rectangle {
     in property <length> shown-height;
     in property <string> ratio;
     in property <bool> ratio-shown;
+    in property <length> radius: PlotStyle.radius;
     callback toggled();
     background: Colour.canvas;
-    border-radius: PlotStyle.radius;
+    border-radius: root.radius;
     clip: true;
     Image {
         x: (parent.width - root.shown-width) / 2;

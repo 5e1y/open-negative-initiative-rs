@@ -255,7 +255,9 @@ pub(crate) fn a_slider_tells_its_double_click_on_its_name_and_its_typed_value_an
     // The rail under the hand tells nothing, so no note covers the slider while it is worked.
     hover(p.get_knob_x(), p.get_knob_y());
     assert!(!tip.get_shown(), "rail: {}", tip.get_text());
+    // The value's face opens under the hand; its figure tells the click at the hand's next move.
     hover(p.get_value_x(), p.get_value_y());
+    hover(p.get_value_x() + 1.0, p.get_value_y());
     assert!(tip.get_shown() && tip.get_text() == "Click to type a value", "value: {}", tip.get_text());
     // Twin: beside the slider, nothing is told.
     hover(p.get_value_x(), p.get_bare_y());

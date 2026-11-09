@@ -11,8 +11,9 @@ export struct CrtEcho { channel: int, edge: string, fade: float }
 // The glass at the plots' corner: what it holds, then `LabScreen`'s scanlines, laid once per size in a
 // layer of their own.
 export component CrtScreen inherits Rectangle {
+    in property <length> radius: PlotStyle.radius;
     background: ScannerStyle.glass;
-    border-radius: PlotStyle.radius;
+    border-radius: root.radius;
     clip: true;
     @children
     Rectangle {

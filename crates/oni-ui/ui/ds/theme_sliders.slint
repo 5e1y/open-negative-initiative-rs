@@ -60,6 +60,8 @@ export global SliderStyle {
     in-out property <length> detent: 6px;
     // A stepped slider's − and + keycaps as tall as its knob, their sign larger than a word.
     in-out property <length> step-key: SliderStyle.knob-height;
+    // A value typed between its minus and plus: room for its widest figure alone, as −100.0.
+    out property <length> figure: 52px;
     in-out property <length> step-legend: Type.section;
 }
 
@@ -90,6 +92,8 @@ export global PlotStyle {
     out property <length> main: DS.control-main-histogram-height;
     out property <length> block: DS.control-histogram-height;
     in-out property <length> radius: DS.radius-track;
+    // The panel's readout runs edge to edge, square against the canvas card it meets.
+    out property <length> readout-radius: 0px;
     // The quarter lines' white, `separator` as the lab reads it.
     in-out property <float> grid: 0.12;
     // `DSHandle`, a curve point: 9 pt, grown when active, its shadow blurred 1 pt (2 when active), dropped 0.5.

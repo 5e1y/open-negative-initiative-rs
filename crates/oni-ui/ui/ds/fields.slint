@@ -27,7 +27,7 @@ global FieldFocus {
 
 // The words typed and, while there are none, the placeholder under them, focused or not as SwiftUI
 // shows it. Entered by a click, Tab or its owner, it selects its whole value, as AppKit's field does.
-component Entry inherits Rectangle {
+export component Entry inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <string> placeholder;
     // What assistive technology calls it, its placeholder where it has no name of its own.

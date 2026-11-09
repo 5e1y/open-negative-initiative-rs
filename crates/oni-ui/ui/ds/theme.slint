@@ -206,6 +206,8 @@ export { FieldStyle } from "theme_fields.slint";
 export global RowStyle {
     out property <length> height: DS.control-film-sidebar-row-height;
     out property <length> padding: Space.s;
+    // A tree's line opens on its chevron a breath from the band's edge, the chevron its own width.
+    out property <length> lead: Space.xs;
     out property <length> indent: Space.m;
     out property <length> gap: Space.xs;
     out property <length> chevron-zone: DS.control-film-sidebar-chevron-zone-width;

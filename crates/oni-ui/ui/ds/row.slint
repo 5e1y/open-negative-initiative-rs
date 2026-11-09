@@ -112,8 +112,8 @@ export component Row inherits Rectangle {
     border-radius: root.choice ? ButtonStyle.small-radius : Radius.badge;
     // Selected or under the hand, every form lays a flat rounded band, no relief and no shadow.
     property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : root.choice && root.hovered ? MenuStyle.lit : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
-    // A pinned row covers the rows scrolled under it, its band laid over the ground.
-    background: root.pinned ? Colour.ground : root.band;
+    // A pinned row covers the rows scrolled under it with a square ground, its rounded band laid over it.
+    background: root.pinned ? Colour.ground.transparentize(1) : root.band;
     property <bool> away: root.reach != Reach.here;
     // A folder not on the disk yet, as an empty ONI Trash, reads in the quietest ink, still legible.
     property <bool> faint: !root.present && !root.away;
@@ -129,7 +129,8 @@ export component Row inherits Rectangle {
     property <string> tip: root.unprepared && root.said != "" ? @tr("Not prepared yet") + "\n" + root.said : root.unprepared ? @tr("Not prepared yet") : root.said;
     property <string> told;
     changed tip => { if (area.has-hover) { Tips.hover(false, root.told, 0px, 0px); } }
-    if root.pinned: Rectangle { background: root.band; }
+    if root.pinned: Rectangle { background: Colour.ground; }
+    if root.pinned: Rectangle { background: root.band; border-radius: Radius.badge; }
     // A sheet's side list is a few choices, each its own place in Tab's order, Space or Return taking it.
     if root.form == RowForm.sidebar: KeyScope {
         radius: Radius.badge;
@@ -142,7 +143,7 @@ export component Row inherits Rectangle {
         }
     }
     area := TouchArea {
-        property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
+        property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.lead + root.indent + root.fold-zone + RowStyle.gap;
         enabled: !root.renaming && !root.heading;
         clicked => {
             if (self.folding) {
@@ -179,8 +180,8 @@ export component Row inherits Rectangle {
             height: parent.height;
             // Renamed, the typed name starts where the title stood.
             padding-left: root.badged ? Space.xs
-                : root.renaming ? RowStyle.padding + root.indent + RowStyle.chevron-zone + RowStyle.slot + 2 * RowStyle.gap - FieldStyle.across
-                : RowStyle.padding + root.indent;
+                : root.renaming ? RowStyle.lead + root.indent + RowStyle.chevron-zone + RowStyle.slot + 2 * RowStyle.gap - FieldStyle.across
+                : (root.tree ? RowStyle.lead : RowStyle.padding) + root.indent;
             padding-right: root.badged ? Space.xs : root.renaming ? FieldStyle.across : RowStyle.padding;
             padding-top: root.badged ? Space.xs : 0px;
             // `PaperProfilesSheet.group`: a heading an `xs` above its first line.
@@ -319,11 +320,7 @@ export component Row inherits Rectangle {
         }
     }
     if root.focused: FocusRing { radius: Radius.badge; }
-    if root.pinned: Divider {
-        hairline: true;
-        y: parent.height - self.height;
-        height: Stroke.hairline;
-    }
+    if root.pinned: Divider { y: parent.height - self.height; }
 }
 
 // An empty list's words where its lines would stand: at its top, on the lines' inset, in their quiet
