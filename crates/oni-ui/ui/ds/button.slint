@@ -8,9 +8,9 @@ import { Lamp } from "surfaces.slint";
 import { BarFace } from "bar_face.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 
-// `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `caution` one
-// whose glyph turns the caution's yellow, for what undo takes back; `ghost` a glyph alone on no face.
-export enum ButtonKind { plain, accent, destructive, caution, ghost }
+// `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
+// glyph alone on no face.
+export enum ButtonKind { plain, accent, destructive, ghost }
 // `regular` the standard key, `mini` the small key of a section's header, a row or the canvas's header.
 export enum ButtonSize { regular, mini }
 // What a check forces a control to look like; `live` follows the pointer.
@@ -178,7 +178,6 @@ export component Button inherits Rectangle {
     property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
         : root.ghost ? Tones.ink(root.hovered || (root.live && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
-        : root.kind == ButtonKind.caution && root.reached ? Colour.caution
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
     height: root.mini ? ButtonStyle.small-height : root.stacked ? ButtonStyle.bar-key : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
     // Never narrower than tall, so a sign's key stays a square the hand can find; a bar's glyph alone

@@ -121,12 +121,17 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     assert!((first.x - rating.x).abs() < 0.5 && (rating.x - 260.0 - INSET).abs() < 0.5, "the Library's key at {}, Rating at {}", first.x, rating.x);
     assert!((WIDTH - 340.0 - last.x - last.width - INSET).abs() < 0.5, "the Panel's key ends {} in", WIDTH - 340.0 - last.x - last.width);
     assert!((first.x - 260.0 - 40.0).abs() > 8.0, "twin: not on the picture's padding");
-    // The colour space's select wears a flat key's face at rest, edgeless, the band's own ground beside it.
-    let chip = band.iter().max_by(|a, b| a.width.total_cmp(&b.width)).expect("the colour space's select");
-    let at = |x: f32| px[(chip.y + chip.height / 2.0) as usize * pw + x as usize].0;
-    assert_ne!(at(chip.x + 3.0), ground, "the select's own face");
-    assert_eq!(at(chip.x), at(chip.x + 3.0), "no edge around the select: its first column is its face");
-    assert_eq!(at(chip.x - 3.0), ground, "twin: the band's ground beside the select");
+    // The colour space's select is its words alone at rest, the band's ground in its padding; under the
+    // hand it wears a flat key's face, edgeless, the band's own ground beside it.
+    let chip = *band.iter().max_by(|a, b| a.width.total_cmp(&b.width)).expect("the colour space's select");
+    let at = |px: &[slint::platform::software_renderer::Rgb565Pixel], x: f32| px[(chip.y + chip.height / 2.0) as usize * pw + x as usize].0;
+    assert_eq!(at(&px, chip.x + 3.0), ground, "the select bare at rest");
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(chip.x + chip.width / 2.0, chip.y + chip.height / 2.0) });
+    rig.settle();
+    let (_, lit) = rig.drawn();
+    assert_ne!(at(&lit, chip.x + 3.0), ground, "twin: the select's own face under the hand");
+    assert_eq!(at(&lit, chip.x), at(&lit, chip.x + 3.0), "no edge around the select: its first column is its face");
+    assert_eq!(at(&lit, chip.x - 3.0), ground, "the band's ground beside the select");
     // `card`: flush with the library and the panel, so the canvas is the column less its padding.
     let flush = WIDTH - 260.0 - 340.0 - 2.0 * 40.0;
     assert_eq!(canvas.get_width(), flush, "the card spans the column, no gutter");

@@ -1,8 +1,9 @@
 // The states a check reads off the drawn window, each at a fixed place: a key and a keycap out of reach, an
 // idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals.
-import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal } from "ds.slint";
+import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal, Section, SectionStyle } from "ds.slint";
 import { MedalStyle } from "theme.slint";
 import { Figure } from "marks.slint";
+import { LabScreen } from "keypad.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
@@ -147,6 +148,8 @@ export component HueProbe inherits AppWindow {
     out property <length> temperature-y: temperature.absolute-position.y + temperature.height - SliderStyle.row / 2;
     out property <length> c-y: cyan.absolute-position.y + cyan.height - SliderStyle.row / 2;
     out property <length> d-y: dark.absolute-position.y + dark.height - SliderStyle.row / 2;
+    // The middle of the title of the block C and D lie in, off every rail.
+    out property <length> block-y: block.absolute-position.y + SectionStyle.before + ButtonStyle.small-height / 2;
     out property <length> from: temperature.absolute-position.x;
     out property <length> to: temperature.absolute-position.x + temperature.width;
     out property <length> keyed-from: root.from + SliderStyle.step-key + Space.s;
@@ -174,35 +177,63 @@ export component HueProbe inherits AppWindow {
             low: Colour.channel-blue;
             high: Colour.channel-yellow;
         }
-        cyan := Slider {
-            label: "C";
-            readout: root.c;
-            stepped: true;
-            value: root.c;
-            lowest: -48;
-            highest: 48;
-            rest: 0.5;
-            fill: SliderFill.bipolar;
-            low: ScannerStyle.band-red;
-            high: ScannerStyle.band-cyan;
-            minus-help: "C −";
-            plus-help: "C +";
-            step(f, by) => { root.c += by; }
-        }
-        dark := Slider {
-            label: "D";
-            readout: "0";
-            stepped: true;
-            lowest: -48;
-            highest: 48;
-            rest: 0.5;
-            fill: SliderFill.bipolar;
-            low: ScannerStyle.band-dark;
-            high: ScannerStyle.band-light;
+        block := Section {
+            title: "K";
+            separated: false;
+            foldable: false;
+            inset: 0;
+            cyan := Slider {
+                near: block.hovered;
+                label: "C";
+                readout: root.c;
+                stepped: true;
+                value: root.c;
+                lowest: -48;
+                highest: 48;
+                rest: 0.5;
+                fill: SliderFill.bipolar;
+                low: ScannerStyle.band-red;
+                high: ScannerStyle.band-cyan;
+                minus-help: "C −";
+                plus-help: "C +";
+                step(f, by) => { root.c += by; }
+            }
+            dark := Slider {
+                label: "D";
+                readout: "0";
+                stepped: true;
+                lowest: -48;
+                highest: 48;
+                rest: 0.5;
+                fill: SliderFill.bipolar;
+                low: ScannerStyle.band-dark;
+                high: ScannerStyle.band-light;
+            }
         }
         HorizontalLayout {
             alignment: start;
             twin := Button { keycap: true; square: true; height: SliderStyle.step-key; legend-size: SliderStyle.step-legend; text: "−"; fill: ScannerStyle.band-red; }
         }
+    }
+}
+
+// The Lab screen, narrow, every count at the widest a letter reaches; its columns' edges for the check.
+export component ScreenProbe inherits AppWindow {
+    in property <string> widest: "+23.5";
+    out property <length> left: screen.x + Space.m;
+    out property <length> column: (screen.width - 2 * Space.m) / 5;
+    out property <length> top: screen.y;
+    out property <length> bottom: screen.y + screen.height;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 240px;
+    preferred-height: 140px;
+    screen := LabScreen {
+        x: 16px;
+        y: 16px;
+        width: 200px;
+        height: 108px;
+        widest: root.widest;
+        cells: [{ title: "D", value: "−23.5" }, { title: "C", value: "+23.5" }, { title: "M", value: "−23.5" }, { title: "Y", value: "+23.5" }, { title: "T", value: "−23.5" }];
     }
 }

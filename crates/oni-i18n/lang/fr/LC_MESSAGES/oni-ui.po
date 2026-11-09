@@ -345,10 +345,6 @@ msgstr "Après"
 msgid "REMEASURE ROLL"
 msgstr "REMESURER LA PELLICULE"
 
-#: crates/oni-ui/ui/ds/keypad.slint
-msgid "BALANCE"
-msgstr "BALANCE"
-
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Aucune médaille (0)"
@@ -1290,8 +1286,8 @@ msgid "Machine"
 msgstr "Machine"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own."
-msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion de la pellicule sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre.\n\nL’onglet Pellicule et la correction de la Balance des blancs auto agissent sur les deux faces ; les curseurs Lumière, Couleur et Effets de Pro restent propres à Pro."
+msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
+msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion de la pellicule sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre.\n\nL’onglet Pellicule agit sur les deux faces ; la Balance des blancs auto, la Lumière, la Couleur et les Effets de Pro restent propres à Pro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
@@ -1300,6 +1296,26 @@ msgstr "ONI"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Frontier"
 msgstr "Frontier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Density"
+msgstr "Densité"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
+msgstr "D, la touche de densité d’un minilab : + tire la photo plus claire et − plus sombre, d’un demi-point par cran, l’écran au-dessus comptant les points."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D"
+msgstr "D"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D −: toward dark"
+msgstr "D − : plus sombre"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D +: toward light"
+msgstr "D + : plus clair"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
@@ -1364,26 +1380,6 @@ msgstr "Température − : plus froid"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Temperature +: toward warm"
 msgstr "Température + : plus chaud"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Density"
-msgstr "Densité"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
-msgstr "D, la touche de densité d’un minilab : + tire la photo plus claire et − plus sombre, d’un demi-point par cran, l’écran au-dessus comptant les points."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D"
-msgstr "D"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −: toward dark"
-msgstr "D − : plus sombre"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light"
-msgstr "D + : plus clair"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
@@ -2016,10 +2012,6 @@ msgstr "Faites glisser les coins ou les bords du cadre sur la photo pour la reca
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
 msgstr "Cette pellicule a été préparée avant que le scanner ne conserve sa médiane : préparez-la de nouveau, sinon le scanner se centre sur une estimation."
-
-#: crates/oni-ui/ui/panel.slint
-msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Auto White Balance Strength sits under the key's settings, on Pro's Colour tab."
-msgstr "La correction de la balance des blancs auto à l’intensité de la pellicule, tirée sur les deux faces ; son intensité se règle sous les réglages de la touche, dans l’onglet Couleur de Pro."
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Roll"

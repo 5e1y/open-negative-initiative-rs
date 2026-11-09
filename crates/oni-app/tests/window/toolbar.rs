@@ -173,6 +173,23 @@ fn inked(rig: &common::Rig, key: common::Placed, x: f32) -> bool {
     px[y * w + x as usize].0 != px[y * w + 2].0
 }
 
+/// The most colour on a key under the hand: its face, its glyph and its word.
+fn reached_chroma(rig: &common::Rig, key: common::Placed) -> i32 {
+    let position = LogicalPosition::new(key.x + key.width / 2.0, key.y + key.height / 2.0);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
+    rig.settle();
+    let (w, drawn) = rig.drawn();
+    let px = &drawn;
+    let (xs, ys) = (key.x as usize..(key.x + key.width) as usize, key.y as usize..(key.y + key.height) as usize);
+    ys.flat_map(|y| xs.clone().map(move |x| px[y * w + x].0))
+        .map(|v| {
+            let (r, g, b) = (((v >> 11) & 0x1f) as i32 * 255 / 31, ((v >> 5) & 0x3f) as i32 * 255 / 63, (v & 0x1f) as i32 * 255 / 31);
+            r.max(g).max(b) - r.min(g).min(b)
+        })
+        .max()
+        .unwrap_or(0)
+}
+
 pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
@@ -219,6 +236,9 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(inked(&rig, reset, reset.x - BAR_GAP - 1.0), "the rule drawn between ADD FOLDER… and Reset");
     // Twin: the room between two groups with no rule is bare ground.
     assert!(!inked(&rig, prepare, prepare.x - BAR_GAP / 2.0), "the measure sees bare room");
+    // Under the hand Reset lights as any key, in the neutral ink; twin: Trash shows its danger's red.
+    let (reset_lit, trash_lit) = (reached_chroma(&rig, reset), reached_chroma(&rig, trash));
+    assert!(reset_lit <= 12 && trash_lit > 80, "Reset neutral under the hand, Trash red: {reset_lit} {trash_lit}");
     // The app's keys one group, touching, EXPORT a bar's gap after them at the bar's end.
     let (report, settings, export) = (bar_key(w, "Feedback"), bar_key(w, "Settings"), bar_key(w, "EXPORT"));
     assert!(near(gap(report, settings), 0.0) && near(gap(settings, export), BAR_GAP), "{report:?} {settings:?} {export:?}");

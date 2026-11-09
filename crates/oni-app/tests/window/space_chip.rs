@@ -55,8 +55,26 @@ pub(crate) fn the_space_chips_tabs_take_the_pointer() {
         let label = if hint.is_empty() { title.to_string() } else { format!("{title} · {hint}") };
         common::the(w, Role::Button, &label).middle()
     };
-    // The chip's title opens the popover, which stays open while its tabs are picked.
+    // At rest the chip is its words alone on the band; under the hand its flat face shows. Read inside
+    // its padding, off the words, against the band just beside it.
+    let label = || {
+        let (title, hint) = (e.get_chip_title(), e.get_chip_hint());
+        if hint.is_empty() { title.to_string() } else { format!("{title} · {hint}") }
+    };
+    let bare = || {
+        let placed = common::the(w, Role::Button, &label());
+        let (width, px) = rig.drawn();
+        let y = (placed.y + placed.height / 2.0) as usize;
+        px[y * width + (placed.x + 2.0) as usize].0 == px[y * width + (placed.x - 4.0) as usize].0
+    };
+    assert!(bare(), "the chip bare at rest");
     let (x, y) = chip();
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
+    rig.settle();
+    // Twin: the face under the hand is seen by the same reading.
+    assert!(!bare(), "the chip's face under the hand");
+
+    // The chip's title opens the popover, which stays open while its tabs are picked.
     click(&rig, x, y);
     rig.settle();
     // The export panel's name, and the choice said to be the export's; twin: the former name is gone.

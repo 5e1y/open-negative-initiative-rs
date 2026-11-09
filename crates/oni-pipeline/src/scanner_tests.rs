@@ -95,3 +95,21 @@ fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     // Twin: Pro leaves the settings alone.
     assert!(on_oni_machine(&PipelineSettings { face: Face::Pro, ..s.clone() }).is_none());
 }
+
+#[test]
+fn the_scanner_face_prints_without_pros_auto_white_balance() {
+    // The face prints what its keys show: Auto White Balance's correction, Pro's, leaves its print alone.
+    let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+    s.face = Face::Scanner;
+    s.balance_filters = Some([0.4, -0.2, -0.4]);
+    s.balance_strength = 1.0;
+    let bare = on_oni_machine(&PipelineSettings { balance_filters: None, ..s.clone() }).unwrap();
+    for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {
+        let corrected = on_oni_machine(&PipelineSettings { scanner_machine: machine, ..s.clone() }).unwrap();
+        assert!(corrected.print == bare.print, "{machine:?}: {:?} {:?}", corrected.print, bare.print);
+    }
+    // Twin: the correction laid on the print moves it, so a face that took it would be seen.
+    let mut laid = bare.print.clone();
+    laid.set_filters([0.4, -0.2, -0.4]);
+    assert!(laid != bare.print);
+}

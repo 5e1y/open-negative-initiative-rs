@@ -52,29 +52,34 @@ component Caution inherits VerticalLayout {
     Label { role: TextRole.note; text: root.text; }
 }
 
-component FlatFieldBlock inherits VerticalLayout {
+// The hand anywhere on the block lights its rails of hues whole, as a panel block does.
+component FlatFieldBlock inherits TouchArea {
     property <bool> settings;
-    spacing: Space.s;
-    // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
-    HorizontalLayout {
+    VerticalLayout {
         spacing: Space.s;
-        Toggle { label: @tr("Flat-field"); on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } }
-        Rectangle { horizontal-stretch: 1; }
-        Button { has-icon: true; square: true; icon: Icons.options; help: root.settings ? @tr("Hide Amount and Colour") : @tr("Show Amount and Colour"); clicked => { root.settings = !root.settings; } }
+        // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
+        HorizontalLayout {
+            spacing: Space.s;
+            Toggle { label: @tr("Flat-field"); on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } }
+            Rectangle { horizontal-stretch: 1; }
+            Button { has-icon: true; square: true; icon: Icons.options; help: root.settings ? @tr("Hide Amount and Colour") : @tr("Show Amount and Colour"); clicked => { root.settings = !root.settings; } }
+        }
+        if Preparing.flat-on: Picker { label: @tr("Mask"); value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
+        if Preparing.flat-on && Preparing.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
+        Button { text: Preparing.taking-flat ? @tr("Setting…") : @tr("Use This Frame as Flat-Field"); horizontal-stretch: 1; enabled: Preparing.can-take-flat && !Preparing.taking-flat; clicked => { Preparing.take-flat(); } }
+        if root.settings: RollSlider { field: 0; label: @tr("Amount"); enabled: Preparing.flat-masked; }
+        if root.settings && !Preparing.monochrome: RollSlider {
+            near: root.has-hover;
+            field: 1; label: @tr("Temperature"); enabled: Preparing.flat-masked;
+            fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
+        }
+        if root.settings && !Preparing.monochrome: RollSlider {
+            near: root.has-hover;
+            field: 2; label: @tr("Tint"); enabled: Preparing.flat-masked;
+            fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
+        }
+        if root.settings: Button { text: Preparing.loading-flat ? @tr("Loading…") : @tr("Load…"); horizontal-stretch: 1; enabled: !Preparing.loading-flat; clicked => { Preparing.load-flat(); } }
     }
-    if Preparing.flat-on: Picker { label: @tr("Mask"); value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
-    if Preparing.flat-on && Preparing.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
-    Button { text: Preparing.taking-flat ? @tr("Setting…") : @tr("Use This Frame as Flat-Field"); horizontal-stretch: 1; enabled: Preparing.can-take-flat && !Preparing.taking-flat; clicked => { Preparing.take-flat(); } }
-    if root.settings: RollSlider { field: 0; label: @tr("Amount"); enabled: Preparing.flat-masked; }
-    if root.settings && !Preparing.monochrome: RollSlider {
-        field: 1; label: @tr("Temperature"); enabled: Preparing.flat-masked;
-        fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
-    }
-    if root.settings && !Preparing.monochrome: RollSlider {
-        field: 2; label: @tr("Tint"); enabled: Preparing.flat-masked;
-        fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
-    }
-    if root.settings: Button { text: Preparing.loading-flat ? @tr("Loading…") : @tr("Load…"); horizontal-stretch: 1; enabled: !Preparing.loading-flat; clicked => { Preparing.load-flat(); } }
 }
 
 // `RollPanel`: the step's title and detail, its body scrolling, then Cancel, Back and the step's key.

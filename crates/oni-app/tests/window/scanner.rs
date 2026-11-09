@@ -84,7 +84,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    // Tall enough for the keypad's Density block, laid under its colour keys.
+    // Tall enough for every block of the keypad, Density's first.
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 1000));
 
     let first = shell(&gpu, &support);
@@ -111,9 +111,8 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(common::placed(w, i_slint_backend_testing::AccessibleRole::Text, pro_caption).is_empty());
     assert_eq!(settings().face, Face::Scanner);
     assert_eq!(std::fs::read_to_string(support.join("lastFaceScanner")).unwrap(), "1");
-    // Dye Separation and Auto White Balance act on this face's render too: its Roll tab holds them.
+    // Dye Separation acts on this face's render too: its Roll tab holds it.
     assert!(panel.get_separation_shown(), "the Scanner face's Roll tab hides Dye Separation");
-    assert_eq!(lab.get_balance(), "0.00 EV · 0.00 EV", "no Auto White Balance ran on this frame");
     assert_eq!(lab.get_frame(), "FRAME 01/02");
     assert_eq!(lab.get_machine_line(), "ONI · NEGATIVE");
 
@@ -186,6 +185,8 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.pump();
     assert_eq!(settings().scanner_machine, ScannerMachine::Frontier);
     assert_eq!((lab.get_machine(), lab.get_machine_line().to_string()), (1, "FRONTIER · NEGATIVE".to_string()));
+    // The screen sizes its counts for the widest a letter reaches, which the app gives it.
+    assert!(["+23.5", "−23.5"].contains(&lab.get_widest().as_str()), "{}", lab.get_widest());
     rig.settle();
     println!("shot {}", rig.shot("scanner-face").display());
 
@@ -297,4 +298,35 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert_eq!(second.ctl.state.borrow().store().settings().face, Face::Scanner);
     drop(second);
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The Lab screen, narrow, every count at the widest a letter reaches: glass at each column's edges, each
+/// count whole; sized for a one-glyph count, at the screen's full size, the same counts run over them.
+pub(crate) fn the_lab_screen_holds_its_widest_count_whole() {
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let probe = oni_app::ScreenProbe::new().unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
+    rig.window.set_size(slint::PhysicalSize::new(2 * 240, 2 * 140));
+    probe.show().unwrap();
+    rig.settle();
+    // Ink over the glass, on the screen's every row, half a point either side of each column's edge.
+    let inked = || {
+        let (width, px) = rig.drawn();
+        let lit = |x: f32, y: f32| {
+            let v = px[(y * 2.0) as usize * width + (x * 2.0) as usize].0;
+            ((v >> 11) & 0x1f) * 255 / 31 + ((v >> 5) & 0x3f) * 255 / 63 + (v & 0x1f) * 255 / 31 > 150
+        };
+        let edges: Vec<f32> = (0..=5).map(|i| probe.get_left() + i as f32 * probe.get_column()).collect();
+        let rows = (probe.get_top() * 2.0) as i32..(probe.get_bottom() * 2.0) as i32;
+        rows.map(|r| r as f32 / 2.0).any(|y| edges.iter().any(|x| lit(x - 0.5, y) || lit(x + 0.5, y)))
+    };
+    println!("shot {}", rig.shot("lab-screen-widest").display());
+    assert!(!inked(), "every count stands whole in its column");
+    // Twin: sized for a one-glyph count, the counts at the screen's full size run over their edges.
+    probe.set_widest("0".into());
+    rig.settle();
+    println!("shot {}", rig.shot("lab-screen-full-size").display());
+    assert!(inked(), "a count at full size would be seen cut");
 }

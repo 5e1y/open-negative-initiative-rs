@@ -1,20 +1,23 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Space } from "theme.slint";
+import { Space, ScannerStyle } from "theme.slint";
 import { Tips } from "base.slint";
 import { CrtScreen, CrtLine as Lcd } from "crt.slint";
 
 export struct LabCell { title: string, value: string }
 
-// `LabScreen`: the scanner's screen in the readout, its frame, its machine, every letter's count and
-// the balance it prints with, glowing behind scanlines.
+// `LabScreen`: the scanner's screen in the readout, its frame, its machine and every letter's count,
+// glowing behind scanlines.
 export component LabScreen inherits Rectangle {
     in property <string> frame;
     in property <string> machine;
     in property <bool> remeasure;
     in property <string> remeasure-help;
     in property <[LabCell]> cells;
-    in property <string> balance;
-    in property <string> balance-help;
+    // The widest count a letter reaches: every count takes the size that holds it whole in its column.
+    in property <string> widest;
+    property <length> column: (root.width - 2 * Space.m) / max(1, root.cells.length);
+    property <float> fit: min(1, (root.column - Space.xs) / max(1px, measure.preferred-width));
+    measure := Lcd { text: root.widest; large: true; visible: false; }
     CrtScreen {
         VerticalLayout {
             padding: Space.m;
@@ -37,20 +40,10 @@ export component LabScreen inherits Rectangle {
                     width: parent.width / max(1, root.cells.length);
                     spacing: Space.xxs;
                     Lcd { text: cell.title; horizontal-alignment: center; }
-                    Lcd { text: cell.value; large: true; horizontal-alignment: center; }
+                    Lcd { text: cell.value; large: true; font-size: ScannerStyle.screen-value * root.fit; horizontal-alignment: center; }
                 }
             }
             Rectangle { min-height: Space.xs; vertical-stretch: 1; }
-            HorizontalLayout {
-                Lcd {
-                    text: @tr("BALANCE");
-                    TouchArea {
-                        changed has-hover => { Tips.hover(self.has-hover, root.balance-help, self.absolute-position.x, self.absolute-position.y + self.height); }
-                    }
-                }
-                Rectangle { horizontal-stretch: 1; }
-                Lcd { text: root.balance; }
-            }
         }
     }
 }

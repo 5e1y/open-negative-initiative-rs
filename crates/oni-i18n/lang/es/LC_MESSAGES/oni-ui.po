@@ -345,10 +345,6 @@ msgstr "Después"
 msgid "REMEASURE ROLL"
 msgstr "VOLVER A MEDIR"
 
-#: crates/oni-ui/ui/ds/keypad.slint
-msgid "BALANCE"
-msgstr "BALANCE"
-
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Sin medalla (0)"
@@ -1290,8 +1286,8 @@ msgid "Machine"
 msgstr "Máquina"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own."
-msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión del rollo con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Rollo y la corrección del Balance de blancos automático actúan en ambas caras; los deslizadores Luz, Color y Efectos de Pro siguen siendo solo de Pro."
+msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
+msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión del rollo con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Rollo actúa en ambas caras; el Balance de blancos automático, la Luz, el Color y los Efectos de Pro siguen siendo solo de Pro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "ONI"
@@ -1300,6 +1296,26 @@ msgstr "ONI"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Frontier"
 msgstr "Frontier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Density"
+msgstr "Densidad"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
+msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto por paso, y la pantalla de arriba cuenta los puntos."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D"
+msgstr "D"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D −: toward dark"
+msgstr "D −: hacia oscuro"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D +: toward light"
+msgstr "D +: hacia claro"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Colour"
@@ -1364,26 +1380,6 @@ msgstr "Temperatura −: hacia frío"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Temperature +: toward warm"
 msgstr "Temperatura +: hacia cálido"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Density"
-msgstr "Densidad"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points."
-msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, medio punto por paso, y la pantalla de arriba cuenta los puntos."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D"
-msgstr "D"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −: toward dark"
-msgstr "D −: hacia oscuro"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light"
-msgstr "D +: hacia claro"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
@@ -2016,10 +2012,6 @@ msgstr "Arrastra las esquinas o los bordes del marco sobre la foto para recortar
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
 msgstr "Este rollo se preparó antes de que el escáner guardara su mediana: vuelve a prepararlo, o el escáner se centrará en una estimación."
-
-#: crates/oni-ui/ui/panel.slint
-msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Auto White Balance Strength sits under the key's settings, on Pro's Colour tab."
-msgstr "La corrección del Balance de blancos automático a la intensidad del rollo, que se imprime en ambas caras; su intensidad se ajusta en los ajustes de la tecla, en la pestaña Color de Pro."
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Roll"

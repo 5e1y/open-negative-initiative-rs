@@ -136,7 +136,6 @@ component Centre inherits HorizontalLayout {
             word: Bar.face == 1 ? @tr("Reset Scanner") : @tr("Reset Pro");
             widest: @tr("Reset Scanner");
             icon: Icons.reset;
-            kind: ButtonKind.caution;
             help: Bar.face == 1 ? @tr("Reset the Scanner settings ({})", KeyWords.command-shift + "R") : @tr("Reset the Pro settings ({})", KeyWords.command-shift + "R");
             enabled: Bar.can-reset;
         }

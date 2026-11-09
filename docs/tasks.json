@@ -8131,5 +8131,54 @@
     "title": "A slider's knob: circular corners under its edge, a concentric face",
     "status": "done",
     "detail": "Owner's report on the knobs' radii. The raster drew a key's continuous corner (radius held to 6.5 pt, reaching 10 pt along the edges) under the 1 pt edge the interface strokes at a circular 8.4 pt, so the edge cut into the cap and thickened at the corners; the face's 7.35 pt corner, under 3.36 pt walls, thinned the walls there. A handle (the slider's, the toggle's, the split's and the levels' knob) now draws circular corners and a face concentric with them (8.4 - 3.36 pt). Check: oni-keycap look a_handle_draws_circular_corners_as_the_edge_stroked_round_it, the corner pixels against the circle at 2 px a point (twins: a key's continuous corners stray, its face is not concentric)."
+  },
+  {
+    "id": 1638,
+    "type": "design",
+    "title": "A block's hover lights its rails of hues",
+    "status": "done",
+    "detail": "Owner's call: a rail of hues showed whole only with the hand on its own line; the hand anywhere on its block, title, keys and gaps included, now shows every rail of hues it holds whole, as the Scanner's C, M and Y together. The Section reports its hover (`hovered`, a TouchArea round its body), and each coloured slider takes it as `near`: Pro's Colour and Paper Correction, the Colour Mixer's bands, the Roll tab's Flat-Field and Filtration, the Scanner's Colour and Look, Prepare's flat-field. Window check slider_hues: the hand on C's block, off every rail, shows C whole (twin: the hand on another block's rail left it faint)."
+  },
+  {
+    "id": 1639,
+    "type": "fix",
+    "title": "Auto White Balance stays Pro's: the Scanner face prints without it",
+    "status": "done",
+    "detail": "Owner's report: Auto White Balance moved the Scanner face's print, which shows only its keys. Beyond Swift, the owner's call: on_oni_machine no longer lays the balance's filters, so both machines print what the keypad shows; Pro keeps its correction in Temperature and Tint. The Lab screen's BALANCE line, which read that correction, goes, and the Machine block's note says Auto White Balance stays Pro's. Check: oni-pipeline scanner_tests the_scanner_face_prints_without_pros_auto_white_balance, on ONI and the Frontier (twin: the correction laid on the print moves it); parity row in hidden.md."
+  },
+  {
+    "id": 1640,
+    "type": "design",
+    "title": "The Lab screen holds its widest count whole",
+    "status": "done",
+    "detail": "Owner's report: a count with a half (+1.5) filled its column and a wider one (-23.5) was cut. Every count now takes the size at which the widest count any letter reaches, measured in the screen's own face, fits its column; the screen keeps one row of D, C, M, Y and TEMP, centred under the frame line, with no balance line. lab::widest gives that count. Checks: lab tests the_widest_count_is_a_density_letter_at_its_last_half_unit (twin: TEMP stops a glyph short); window check scanner, C at -23.5 inked clear of its column's edges (twin: sized for a one-glyph count, it is cut)."
+  },
+  {
+    "id": 1641,
+    "type": "design",
+    "title": "The Scanner face sets the density first",
+    "status": "done",
+    "detail": "Owner's call: a minilab's operator sets the density, then the colour; the Scanner face's Colour tab now lays Machine, Density, Colour, Look, then the effects, while Pro keeps the colour before the light."
+  },
+  {
+    "id": 1642,
+    "type": "design",
+    "title": "Reset is a plain key",
+    "status": "done",
+    "detail": "Owner's call: Reset Pro and Reset Scanner light under the hand as every other key of the bar, in the neutral ink; the caution kind, which only Reset wore, goes from ButtonKind. Window check toolbar: Reset's ink under the hand stays neutral (twin: Trash shows its red)."
+  },
+  {
+    "id": 1643,
+    "type": "design",
+    "title": "The colour-space chip is bare at rest",
+    "status": "done",
+    "detail": "Owner's call: the chip at the canvas's top centre shows its words alone at rest and its flat key's face only under the hand or while its popover is open. Window check space_chip: the chip's padding reads as the band beside it at rest (twin: under the hand its face is seen)."
+  },
+  {
+    "id": 1644,
+    "type": "design",
+    "title": "The primary key's blue is the accent whole",
+    "status": "done",
+    "detail": "Owner's call: the primary keycap (EXPORT, DONE, the screen's commit) wears the system's vivid blue again, ButtonStyle.primary set to the accent rather than the accent sunk into the keycap's grey. Window check toolbar_accent keeps reading the blue fill."
   }
 ]

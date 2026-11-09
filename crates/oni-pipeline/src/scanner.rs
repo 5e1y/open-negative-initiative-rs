@@ -217,8 +217,8 @@ pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
     Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
 }
 
-/// `onOniMachine`: Pro's conversion with Lighting and Color Density at rest, but for the balance's
-/// filters and the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
+/// `onOniMachine`: Pro's conversion with Lighting, Color Density and Auto White Balance at rest, but for
+/// the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
     // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's.
     if s.face != Face::Scanner {
@@ -226,9 +226,6 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
     }
     let mut out = s.as_scanner();
     out.print = Print { contrast: s.scanner_finish.contrast, exposure: look_entry_exposure(s.mode), ..Print::default() };
-    if let Some(full) = s.balance_filters {
-        out.print.set_filters(full.map(|f| f * s.balance_strength));
-    }
     out.density = 0.0;
     let stops = gain_stops(s);
     out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);

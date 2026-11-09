@@ -76,8 +76,8 @@ oni-lab) draws a still key once and a pressed one once a frame.
   shade, a step over the veil so the two never read alike; a keycap `on` is held down: no lamp on the bar.
   Its primary is the accent keycap as anywhere else (`ButtonStyle.primary`): EXPORT at the bar's right end in
   both screens.
-- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent at 60 % on the
-  keycap's grey (`ButtonStyle.primary`), blue yet calm beside the photo, and grey while out of reach; `destructive`,
+- **Kinds** (`ButtonKind`): `plain`; `accent`, the one primary of a view, its face the accent whole, the
+  system's vivid blue (`ButtonStyle.primary`), and grey while out of reach; `destructive`,
   a plain key whose glyph or word takes a light red (`Colour.destructive-ink`) while the hand or the keyboard
   is on it, the plain ink at rest and out of reach, so no red stands beside the photo; `ghost`, a glyph alone on
   no face. Colour says a meaning, never which key it is: no other tint.
@@ -170,9 +170,11 @@ fade and the chrome stays. The picker's field wears the same face.
   `SliderStyle.idle-relief` of a well's at rest and whole under the hand (`deep`); `vertical` runs low to high upwards.
   A bipolar rail of hues (an end past `SliderStyle.hued` in saturation: Temperature, Tint, C, M, Y, the gains)
   lies on the grey ground at rest, a faint hue at each end (`hue-rest`, fading out by `hue-reach`), and shows its
-  full gradient under the hand, dragged or stepped (`vivid`), on the rise; a grey one (D, Contrast) stays whole.
-- **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls, no shadow, edged in
-  black, two grip lines centred on its face, white, or the on-light ink on a light cap (`grip-turn`). It grows by
+  full gradient under the hand, dragged or stepped, or with the hand anywhere on its block (`vivid`, `near` from
+  the `Section`'s `hovered`), on the rise; a grey one (D, Contrast) stays whole.
+- **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, 20 by 26 pt, level walls round a concentric
+  face, circular corners under its edge, no shadow, edged in black, two grip lines centred on its face, white, or
+  the on-light ink on a light cap (`grip-turn`). It grows by
   a scale on the rise spring, so its raster is drawn once, its edge darkening from `idle-relief` to whole.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
   the hand; the stepped slider's knob carries its grip too, its − and + keycaps as tall as the knob
@@ -210,7 +212,8 @@ field lies flat, as a text field.
   grows under the hand.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill face keeps the hover ground, and the chip, the colour space's
-  among the canvas band's mini keys, wears their flat face, edgeless. A pill that only names
+  among the canvas band's mini keys, is its words alone at rest and wears their flat face, edgeless, under the
+  hand or while its popover is open. A pill that only names
   what its column lists is `pressable: false`, never disabled, so its words keep the primary ink. A value
   naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
   menu line names one the same way, every line's words then starting past the medal's room. A menu's line

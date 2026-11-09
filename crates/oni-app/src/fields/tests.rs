@@ -250,26 +250,26 @@ fn colour_first(titles: &[String]) -> bool {
     titles.windows(4).any(|w| w == ["Colour", "Lighting", "Paper Correction", "Effects"])
 }
 
-/// Whether the Scanner face lays its colour keys and its look, then its density key.
-fn keypad_colour_first(titles: &[String]) -> bool {
-    titles.windows(4).any(|w| w == ["Machine", "Colour", "Look", "Density"])
+/// Whether the Scanner face lays its density key, then its colour keys and its look, as a minilab's operator sets them.
+fn keypad_density_first(titles: &[String]) -> bool {
+    titles.windows(4).any(|w| w == ["Machine", "Density", "Colour", "Look"])
 }
 
 #[test]
-fn both_faces_lay_the_colour_first_contrast_with_the_light() {
+fn pro_lays_the_colour_first_the_scanner_its_density_contrast_with_the_light() {
     let panel = panel_source();
     let titles = pane_titles(&panel, "ColorPane");
     assert!(colour_first(&titles), "Pro: {titles:?}");
-    assert!(keypad_colour_first(&titles), "Scanner: {titles:?}");
+    assert!(keypad_density_first(&titles), "Scanner: {titles:?}");
     // Contrast is drawn, and reset, with the light; the effects keep the rest.
     let indices = |b: Block| b.fields().iter().map(|f| f.index()).collect::<Vec<_>>();
     assert_eq!(wired_in(&panel, "Lighting"), indices(Block::Lighting));
     assert_eq!(wired_in(&panel, "Effects"), indices(Block::Effects));
     assert_eq!(Field::Contrast.block(), Some(Block::Lighting));
-    // Twin: the light ahead of the colour, the density ahead of the keypad's colour, Contrast among the
+    // Twin: the light ahead of Pro's colour, the density after the keypad's colour, Contrast among the
     // effects, are each caught.
-    let light_first = ["Machine", "Density", "Colour", "Look", "Lighting", "Colour", "Paper Correction", "Effects"].map(String::from);
-    assert!(!colour_first(&light_first) && !keypad_colour_first(&light_first));
+    let swapped = ["Machine", "Colour", "Look", "Density", "Lighting", "Colour", "Paper Correction", "Effects"].map(String::from);
+    assert!(!colour_first(&swapped) && !keypad_density_first(&swapped));
     let old = ": Block {\n        title: @tr(\"Effects\");\n        StoreSlider { field: 8; }\n        StoreSlider { field: 9; }\n        StoreSlider { field: 10; }\n";
     assert_ne!(wired_in(old, "Effects"), indices(Block::Effects));
 }

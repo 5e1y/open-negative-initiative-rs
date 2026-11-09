@@ -140,6 +140,8 @@ component BandSlider inherits Slider {
 
 // `SpectrogramPanel` and `SpectrogramBands`: the wheel, the bands' tabs and the chosen band's sliders.
 export component SpectrogramEditor inherits VerticalLayout {
+    // The hand on the block it is laid in: the band's rails of hues show whole.
+    in property <bool> near;
     spacing: Space.s;
     EditorPlot {
         plot: 2;
@@ -157,10 +159,12 @@ export component SpectrogramEditor inherits VerticalLayout {
         picked(i) => { Editors.band = i; Editors.pick(2, i); }
     }
     BandSlider {
+        near: root.near;
         field: 0; label: @tr("Hue"); fraction: Editors.band-fractions[0]; readout: Editors.band-readouts[0]; value-text: Editors.band-readouts[0];
         fill: SliderFill.bipolar; low: Editors.hue-low; high: Editors.hue-high;
     }
     BandSlider {
+        near: root.near;
         field: 1; label: @tr("Saturation"); fraction: Editors.band-fractions[1]; readout: Editors.band-readouts[1]; value-text: Editors.band-readouts[1];
         fill: SliderFill.bipolar; low: PlotStyle.grey-half; high: PlotStyle.bands[Editors.band];
     }

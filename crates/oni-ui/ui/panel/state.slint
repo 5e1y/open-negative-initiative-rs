@@ -105,8 +105,8 @@ export global Lab {
     in property <string> machine-line;
     in property <bool> remeasure;
     in property <[LabCell]> cells;
-    // The balance Pro's Auto White Balance left acting on this face, as its Temperature and Tint read.
-    in property <string> balance;
+    // The widest count any letter reaches, which sets the size the screen shows every count at.
+    in property <string> widest;
     // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
     in property <[bool]> modified: [false, false, false, false];
     // The sliders, letters (D, C, M, Y, TEMP) then effects (Contrast, Vignette, Chrome): each one's

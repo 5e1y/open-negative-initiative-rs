@@ -1,5 +1,5 @@
 //! A rail of hues through the window's pointer: at rest a faint hue at each end over the grey ground,
-//! its full gradient under the hand and while its keys step it, the step keys grey, a grey rail whole.
+//! its full gradient under the hand, on its block and while its keys step it, the step keys grey, a grey rail whole.
 
 use oni_app::HueProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -86,7 +86,7 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
 
     // Under the hand Temperature shows its blue and its yellow whole.
     to(p.get_from() + 0.25 * (p.get_to() - p.get_from()), p.get_temperature_y());
-    let hand = temperature();
+    let (hand, beside) = (temperature(), cyan());
     println!("shot {}", rig.shot("slider-hues-hand").display());
     println!("rest {rest:?}\nhand {hand:?}");
     assert!(chroma(hand.low) > 150 && chroma(hand.high) > 150, "under the hand the hues are whole: {hand:?}");
@@ -137,4 +137,12 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
     assert!(spread(&d_rest) > 250 && (spread(&d_rest) - spread(&d_hand)).abs() < 40, "D stays whole: {} {}", spread(&d_rest), spread(&d_hand));
     // Twin: a rail laid on the ground at rest, as Temperature's, holds no such spread.
     assert!(spread(&rest).abs() < 100, "a faded rail's ends read alike: {}", spread(&rest));
+
+    // The hand on C's block, on its title off every rail: C's hues show whole, as on its own line.
+    to(p.get_from() + 10.0, p.get_block_y());
+    let block = cyan();
+    println!("shot {}", rig.shot("slider-hues-block").display());
+    assert!(chroma(block.low) > 100 && chroma(block.high) > 100, "the hand on C's block shows its hues whole: {block:?}");
+    // Twin: the hand on Temperature, another block's rail, left C faint.
+    assert!(faint(&beside), "the hand off C's block leaves it faint: {beside:?}");
 }

@@ -82,6 +82,8 @@ export component Slider inherits VerticalLayout {
     // the slider's whole line, its keys and the room between them, its hues show whole.
     property <bool> handled: root.enabled && (area.has-hover || area.held || root.look != Look.live);
     property <bool> on-line: root.enabled && line.has-hover;
+    // The hand on the block the slider is laid in, which the block's `hovered` gives: its hues show whole.
+    in property <bool> near;
     // A step key held, or a step a moment ago: with the hand's, these show a rail of hues whole.
     property <bool> keyed;
     property <bool> stepping;
@@ -199,7 +201,7 @@ export component Slider inherits VerticalLayout {
                     high: root.high;
                     rest: root.rest;
                     deep: root.handled;
-                    vivid: root.handled || root.on-line || root.keyed || root.stepping || area.scrolling;
+                    vivid: root.handled || root.on-line || (root.enabled && root.near) || root.keyed || root.stepping || area.scrolling;
                 }
                 if !root.dial: Knob {
                     centre: parent.width * root.shown;

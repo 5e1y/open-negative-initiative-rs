@@ -22,7 +22,7 @@ export component ColorPane inherits Pane {
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");
-        help: @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab and Auto White Balance's correction act on both faces; Pro's Lighting, Colour and Effects sliders stay Pro's own.");
+        help: @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own.");
         separated: false;
         news: News.machine;
         news-note: News.machine-note;
@@ -34,32 +34,33 @@ export component ColorPane inherits Pane {
             picked(i) => { Lab.machine = i; Lab.machine-picked(i); }
         }
     }
-    if Lab.shown: LabBlock {
-        title: @tr("Colour");
-        help: @tr("C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points.");
-        block: 1;
-        news: News.keypad;
-        news-note: News.keypad-note;
-        news-read => { News.read("keypad.1.3.1"); }
-        LabSlider { index: 1; label: @tr("C"); low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; minus-help: @tr("C −: toward red"); plus-help: @tr("C +: toward cyan"); }
-        LabSlider { index: 2; label: @tr("M"); low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; minus-help: @tr("M −: toward green"); plus-help: @tr("M +: toward magenta"); }
-        LabSlider { index: 3; label: @tr("Y"); low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; minus-help: @tr("Y −: toward blue"); plus-help: @tr("Y +: toward yellow"); }
-    }
-    if Lab.shown: LabBlock {
-        title: @tr("Look");
-        help: @tr("TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it.");
-        block: 2;
-        LabSlider { index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; minus-help: @tr("Temperature −: toward cool"); plus-help: @tr("Temperature +: toward warm"); }
-    }
+    // The Scanner sets the density first, as a minilab's operator does, then the colour.
     if Lab.shown: LabBlock {
         title: @tr("Density");
         help: @tr("D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points.");
         block: 0;
         LabSlider { index: 0; label: @tr("D"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("D −: toward dark"); plus-help: @tr("D +: toward light"); }
     }
-    // Both faces lay the colour first, then the light with its contrast, then the effects.
+    if Lab.shown: cmy-block := LabBlock {
+        title: @tr("Colour");
+        help: @tr("C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points.");
+        block: 1;
+        news: News.keypad;
+        news-note: News.keypad-note;
+        news-read => { News.read("keypad.1.3.1"); }
+        LabSlider { near: cmy-block.hovered; index: 1; label: @tr("C"); low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; minus-help: @tr("C −: toward red"); plus-help: @tr("C +: toward cyan"); }
+        LabSlider { near: cmy-block.hovered; index: 2; label: @tr("M"); low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; minus-help: @tr("M −: toward green"); plus-help: @tr("M +: toward magenta"); }
+        LabSlider { near: cmy-block.hovered; index: 3; label: @tr("Y"); low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; minus-help: @tr("Y −: toward blue"); plus-help: @tr("Y +: toward yellow"); }
+    }
+    if Lab.shown: look-block := LabBlock {
+        title: @tr("Look");
+        help: @tr("TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it.");
+        block: 2;
+        LabSlider { near: look-block.hovered; index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; minus-help: @tr("Temperature −: toward cool"); plus-help: @tr("Temperature +: toward warm"); }
+    }
+    // Pro lays the colour first, then the light with its contrast, then the effects.
     // `ColorPane`: a black and white film has no colour for this block to move.
-    if !Lab.shown && !PanelState.monochrome: Block {
+    if !Lab.shown && !PanelState.monochrome: colour-block := Block {
         title: @tr("Colour");
         separated: false;
         block: 0;
@@ -103,10 +104,12 @@ export component ColorPane inherits Pane {
             text: @tr("Shared by the {} photos of this roll.", PanelState.roll-measured);
         }
         StoreSlider {
+            near: colour-block.hovered;
             field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
         StoreSlider {
+            near: colour-block.hovered;
             field: 1; label: @tr("Tint"); fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
@@ -137,7 +140,7 @@ export component ColorPane inherits Pane {
         }
     }
     // Only on a paper: in any other working space the gains do nothing.
-    if Exporting.on-paper: Block {
+    if Exporting.on-paper: paper-block := Block {
         title: @tr("Paper Correction");
         demo: "paper-correction";
         block: 8;
@@ -152,14 +155,17 @@ export component ColorPane inherits Pane {
             }
         }
         StoreSlider {
+            near: paper-block.hovered;
             field: 21; label: @tr("Red"); fraction: Store.paper-red-fraction; readout: Store.paper-red-readout; value-text: Store.paper-red-value;
             fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
         StoreSlider {
+            near: paper-block.hovered;
             field: 22; label: @tr("Green"); fraction: Store.paper-green-fraction; readout: Store.paper-green-readout; value-text: Store.paper-green-value;
             fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
         }
         StoreSlider {
+            near: paper-block.hovered;
             field: 23; label: @tr("Blue"); fraction: Store.paper-blue-fraction; readout: Store.paper-blue-readout; value-text: Store.paper-blue-value;
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
@@ -198,14 +204,14 @@ export component ColorPane inherits Pane {
         CurvesEditor { histogram: Plots.curves; revision: Plots.curves-revision; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.
-    if !Editors.monochrome: EditorBlock {
+    if !Editors.monochrome: bands-block := EditorBlock {
         title: @tr("Colour Mixer");
         demo: "spectrogram";
         block: 2;
         modified: Editors.spectrogram-modified;
         folded <=> Editors.spectrogram-folded;
         help: @tr("Spectrogram finishing: shifts one colour range at a time without touching the others.\n\nTurn a point around the wheel to move that colour's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.");
-        SpectrogramEditor { }
+        SpectrogramEditor { near: bands-block.hovered; }
     }
     if !Editors.monochrome: EditorBlock {
         title: @tr("Saturation Curve");

@@ -74,7 +74,8 @@ export component Picker inherits HorizontalLayout {
     field := Rectangle {
         horizontal-stretch: 1;
         border-radius: root.corner;
-        background: root.as-field ? Colour.hover.transparentize(1) : root.chip ? ButtonStyle.face : root.hovered ? Colour.hover : Colour.canvas;
+        // A chip shows its flat key's face only under the hand or while its popup is open, bare at rest.
+        background: root.as-field ? Colour.hover.transparentize(1) : root.chip ? (root.hovered || root.dropped ? ButtonStyle.face : ButtonStyle.face.transparentize(1)) : root.hovered ? Colour.hover : Colour.canvas;
         opacity: root.enabled ? 1 : State.disabled;
         accessible-role: button;
         accessible-label: root.note != "" ? root.value + " · " + root.note : root.value;

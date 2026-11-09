@@ -99,8 +99,12 @@ export component Section inherits VerticalLayout {
         root.folded = !root.folded;
         root.fold-toggled(root.folded);
     }
+    // The hand anywhere on the block, its title, its controls and the room between: its rails of hues
+    // show whole, read by the sliders laid in it.
+    out property <bool> hovered: body.has-hover;
     if root.separated: Divider { }
-    VerticalLayout {
+    body := TouchArea {
+      VerticalLayout {
         padding-left: root.inset;
         padding-right: root.inset;
         padding-top: root.before;
@@ -150,6 +154,7 @@ export component Section inherits VerticalLayout {
                 @children
             }
         }
+      }
     }
 }
 

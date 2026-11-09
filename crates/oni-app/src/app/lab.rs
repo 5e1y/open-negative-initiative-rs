@@ -8,7 +8,6 @@ use oni_core::{Command, Each};
 use oni_i18n::tr;
 use oni_link::Command as Link;
 use oni_link::scanner::{Effect, Letter, Machine};
-use oni_pipeline::scanner::on_oni_machine;
 use oni_settings::blocks::Vignette;
 use oni_settings::{ConversionMode, Face, PipelineSettings, ScannerMachine};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
@@ -48,6 +47,15 @@ pub(super) fn remember(support: &Path, face: Face) {
 
 pub use oni_link::scanner::spelled;
 
+/// The widest count any letter reaches on the screen, which sets the size every count is shown at.
+pub fn widest() -> String {
+    let counts = Letter::ALL.iter().flat_map(|l| {
+        let (low, high) = l.range();
+        (low..=high).map(|n| spelled(i64::from(n)))
+    });
+    counts.max_by_key(|c| c.chars().count()).unwrap_or_default()
+}
+
 /// The Pro slider moving the same quantity, whose readout an effect shares on both faces.
 pub fn field(effect: Effect) -> Field {
     match effect {
@@ -64,15 +72,6 @@ pub struct Screen {
     pub machine: String,
     pub remeasure: bool,
     pub cells: Vec<(String, String)>,
-    pub balance: String,
-}
-
-/// The balance the face prints with, read off its own render's filters: Auto White Balance's
-/// correction at the roll's strength, the one Pro value its keys leave acting, in Pro's readouts.
-pub fn balance(s: &PipelineSettings) -> String {
-    let machine = on_oni_machine(&PipelineSettings { face: Face::Scanner, ..s.clone() }).unwrap_or_default();
-    let read = |f: Field| f.readout(f.knob().get(&machine));
-    format!("{} · {}", read(Field::Temperature), read(Field::Tint))
 }
 
 /// The screen's words are the panel's own, in the machine's capitals.
@@ -90,7 +89,6 @@ pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
         machine: format!("{} · {}", s.scanner_machine.title().to_uppercase(), channel.to_uppercase()),
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
         cells: Letter::ALL.iter().zip(counts).map(|(l, n)| (l.title().to_string(), spelled(n))).collect(),
-        balance: balance(s).to_uppercase(),
     }
 }
 
@@ -271,7 +269,7 @@ impl Ctl {
         if !same(&lab.get_cells(), &cells) {
             lab.set_cells(ModelRc::new(VecModel::from(cells)));
         }
-        lab.set_balance(screen.balance.into());
+        lab.set_widest(widest().into());
         sliders::publish(&lab, &settings);
         if !same(&lab.get_modified(), &modified) {
             lab.set_modified(ModelRc::new(VecModel::from(modified)));
