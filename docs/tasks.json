@@ -8040,5 +8040,12 @@
     "title": "Every histogram and scanner screen takes one lower round",
     "status": "done",
     "detail": "Owner's call: PlotStyle.radius from 12 to 6 pt (the track's), for the main readout, the editors' plots and the Details loupe in its place. CrtScreen, the Scanner face's screen and the measure's bank alike, and LcdReadout read that token, so the glass follows the plots by construction; CrtScreen's `rounded`, its override in LabScreen and CrtStyle.radius are gone. Window check corners (twin: a 12 pt round leaves the probed pixel out)."
+  },
+  {
+    "id": 1625,
+    "type": "design",
+    "title": "A figure the app reports lies flat on its glass",
+    "status": "done",
+    "detail": "Owner's call: LcdReadout, the crop's and the export's sizes, the bit depth, the export's weight, the version and the status bar's count, loses its recess (Inward's shade, edge and lit lip) and the glow round its figures; it is a plain Rectangle on ScannerStyle.glass at PlotStyle.radius, its figures in the same ink. SurfaceStyle's lcd-glow and lcd-glow-width go with it. The owner's look: no check reads a relief."
   }
 ]

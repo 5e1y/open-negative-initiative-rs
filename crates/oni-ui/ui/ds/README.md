@@ -234,9 +234,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   cast shade; `sheet` lengthens the shadow (`Outward.lift` 1). The sheets, the notices, the banners, the
   slid columns and the popups stand on it. **Popover** hangs a `Raised` under its tail (`DSPopoverShape`),
   `tail-x` below zero centring it; `PopupPanel` draws one, a menu without a tail.
-- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (a figure the app reports: the crop's and the
-  export's sizes, the export's weight, the version, a count; in the words' own ink) and
-  the passes' reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
+- **Flat**: `LcdReadout`, a figure the app reports (the crop's and the export's sizes, the export's weight, the
+  version, a count), on the scanner's glass at the plots' corner, with no relief and no glow.
+- **Inward**: `Inset`, `Progress` (its fill glowing) and the passes' reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
   gallery's many tiles keep their flat well.
 - **Past the bounds**: an `Inward`'s lit lip reaches `Depth.lip-reach` under it and an `Outward`'s shadow
   falls around it, as Swift's. A `Section` clips only while folded; a scrolled column ending on a well

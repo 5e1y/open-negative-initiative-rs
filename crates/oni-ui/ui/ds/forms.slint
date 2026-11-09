@@ -157,23 +157,13 @@ export component PreviewSlot inherits Rectangle {
     }
 }
 
-// `DSLCD`: a count on the scanner's glass, in a recess at the plots' corner, its ink glowing.
-export component LcdReadout inherits Inward {
+// `DSLCD`: a figure the app reports, flat on the scanner's glass at the plots' corner.
+export component LcdReadout inherits Rectangle {
     in property <string> text;
-    ground: ScannerStyle.glass;
-    radius: PlotStyle.radius;
+    background: ScannerStyle.glass;
+    border-radius: PlotStyle.radius;
     width: readout.preferred-width + 2 * Space.s;
     height: readout.preferred-height + 2 * Space.xxs;
-    Label {
-        x: readout.x;
-        y: readout.y;
-        text: root.text;
-        role: TextRole.value;
-        ink: ScannerStyle.lcd-ink.with-alpha(SurfaceStyle.lcd-glow);
-        stroke: ScannerStyle.lcd-ink.with-alpha(SurfaceStyle.lcd-glow * 0.5);
-        stroke-width: SurfaceStyle.lcd-glow-width;
-        stroke-style: outside;
-    }
     readout := Label {
         x: Space.s;
         y: Space.xxs;

@@ -3,9 +3,6 @@
 import { DS } from "tokens.slint";
 
 export global SurfaceStyle {
-    // `DSLCD`'s ink glow (`lcdInk`, radius `rimBlur` 0.7), drawn as an outer stroke.
-    in-out property <float> lcd-glow: 0.35;
-    in-out property <length> lcd-glow-width: 1.2px;
     // How far a lit lamp's light reaches past its glass, and its strength at the middle.
     in-out property <length> lamp-glow: 3 * DS.space-xxs;
     in-out property <float> lamp-bloom: 0.5;
