@@ -152,63 +152,66 @@ mod tests {
         ROW_ICONS.with(|c| assert!(c.borrow().contains_key(&("kodak-portra", 44)), "kept for the next row"));
     }
 
-    /// OKLab lightness and chroma of a `#RRGGBB` ink.
-    fn oklab(ink: &str) -> (f64, f64) {
-        let lin = |i: usize| {
-            let c = f64::from(u8::from_str_radix(&ink[i..i + 2], 16).unwrap()) / 255.0;
-            if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
-        };
-        let (r, g, b) = (lin(1), lin(3), lin(5));
-        let l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b).cbrt();
-        let m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b).cbrt();
-        let s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b).cbrt();
-        let lightness = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
-        (lightness, (1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s).hypot(0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s))
+    /// FNV-1a over an artwork's bytes.
+    fn fnv(data: &[u8]) -> u64 {
+        data.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3))
     }
 
-    fn chroma(ink: &str) -> f64 {
-        oklab(ink).1
-    }
+    /// The owner's own artworks, as 1.5.6 shipped them and the site shows them: a stock's canister is
+    /// never redrawn here; a new one comes from the owner, its line added below.
+    const ORIGINAL: [(&str, u64); 41] = [
+        ("generic-azure", 0xe5b9ddefcbbbf16e),
+        ("generic-black-and-white", 0x86243de8f26df732),
+        ("generic-color-negative", 0xf6f28336b3522056),
+        ("generic-color-positive", 0x5fd6fff2118caf2f),
+        ("generic-redscale", 0xa9ae41ca9f053c77),
+        ("agfaphoto-apx", 0x740fd82587c10707),
+        ("cinestill-400d", 0x38465f5f75bf98a7),
+        ("cinestill-50d", 0x9101619774a6367b),
+        ("cinestill-800t", 0xc7c9a5b325390a82),
+        ("foma-fomapan200", 0xb73440c5cf23c91a),
+        ("foma-fomapan400", 0xa00b38c7944cb65a),
+        ("foma-fomapan401", 0x8a7966dacf724681),
+        ("fujifilm-acros", 0x13c15dd1df6b0683),
+        ("fujifilm-fujicolor", 0x34f5e3f9cff589e8),
+        ("fujifilm-fujicolor-pro", 0x28ead441b2e2700d),
+        ("fujifilm-provia100", 0x9a8e6086328b8a0b),
+        ("fujifilm-superia", 0x9d91d655c41a47d6),
+        ("fujifilm-velvia100", 0x09fe65b2450bd3f5),
+        ("fujifilm-velvia50", 0x4955efb137ae8308),
+        ("harman-phoenix", 0xf1e9044ff46a9081),
+        ("harman-phoenixII", 0x084f04319fa97c6a),
+        ("harman-red", 0xf79fd2af7ee569c0),
+        ("ilford-delta100", 0xd9e9a2ddc24b2e43),
+        ("ilford-delta3200", 0x0f5f3013545801d7),
+        ("ilford-delta400", 0xa710f3c955ca8430),
+        ("ilford-fp4", 0x3130019319f259de),
+        ("ilford-hp5", 0x24cc54097b67dd73),
+        ("ilford-ortho", 0x7ea35ce2af4e399e),
+        ("ilford-panf", 0xbec50c93f7a944c8),
+        ("ilford-sfx", 0xd2217db2be5d78ca),
+        ("ilford-xp2", 0xfabb2c8aee9f158c),
+        ("kodak-400tx", 0x208bafdb52ae11f8),
+        ("kodak-colorplus", 0xb059b10a1d19e37b),
+        ("kodak-ektachrome", 0xc97a6203db1764ca),
+        ("kodak-gold", 0x913b1003f34ae2e0),
+        ("kodak-portra", 0xa1a54c69338816d3),
+        ("kodak-ultramax", 0x3588e36a6777b053),
+        ("lomography-lomo-turquoise", 0xdc1ebf9910c73708),
+        ("lucky-color200", 0x0915466f940ab916),
+        ("mira-color400", 0x607a0d4bf47a937e),
+        ("mira-color800", 0xff728fefb330f751),
+    ];
 
     #[test]
-    fn no_canister_ink_is_more_chromatic_than_the_soft_hues_beside_the_photo() {
-        // Each brand keeps its hue, softened so no canister competes with the photo beside it.
-        const SOFT: f64 = 0.10;
+    fn every_canister_is_the_owners_own_artwork() {
         for (id, data) in ARTWORK {
-            let svg = std::str::from_utf8(data).unwrap();
-            for (at, _) in svg.match_indices('#') {
-                let ink = &svg[at..(at + 7).min(svg.len())];
-                if ink.len() == 7 && ink[1..].bytes().all(|b| b.is_ascii_hexdigit()) {
-                    assert!(chroma(ink) <= SOFT, "{id}: {ink} at chroma {:.3}", chroma(ink));
-                }
-            }
+            let kept = ORIGINAL.iter().find(|(k, _)| *k == id).map(|(_, h)| *h);
+            assert_eq!(kept, Some(fnv(data)), "{id}: not the owner's artwork, 0x{:016x}", fnv(data));
         }
-        // Twin: the full-chroma green a Fujifilm label wore is caught, a grey is not.
-        assert!(chroma("#10C61F") > SOFT);
-        assert!(chroma("#9E9E9E") < 0.01);
-    }
-
-    /// The inks of the ramp the spool and both caps wear.
-    fn shell(svg: &str) -> Vec<&str> {
-        let ramp = svg.split(r#"<linearGradient id="oni-metal""#).nth(1).and_then(|r| r.split("</linearGradient>").next()).unwrap_or("");
-        ramp.split(r#"stop-color=""#).skip(1).map(|r| &r[..7]).collect()
-    }
-
-    /// Black lacquer: most of the ramp near black, the lamp's sheen a mid grey at most.
-    fn black(inks: &[&str]) -> bool {
-        let mut lightness: Vec<f64> = inks.iter().map(|ink| oklab(ink).0).collect();
-        lightness.sort_by(f64::total_cmp);
-        !lightness.is_empty() && lightness[lightness.len() / 2] < 0.3 && lightness[lightness.len() - 1] < 0.5
-    }
-
-    #[test]
-    fn every_canister_wears_black_caps_and_spool_as_the_real_one() {
-        for (id, data) in ARTWORK {
-            let svg = std::str::from_utf8(data).unwrap();
-            assert_eq!(svg.matches(r#"fill="url(#oni-metal)""#).count(), 3, "{id}: the spool and both caps wear the ramp");
-            assert!(black(&shell(svg)), "{id}: {:?}", shell(svg));
-        }
-        // Twin: a silver ramp, caps and spool turned grey, is caught.
-        assert!(!black(&["#5F6368", "#7F8288", "#C6CAD0", "#9DA1A7", "#7B7F85", "#686B70", "#5F6368"]));
+        // Twin: one byte changed in an artwork is seen.
+        let mut touched = ARTWORK[0].1.to_vec();
+        touched[60] ^= 1;
+        assert_ne!(fnv(&touched), ORIGINAL[0].1);
     }
 }

@@ -8068,5 +8068,12 @@
     "title": "Every glyph is Trinil's own again",
     "status": "done",
     "detail": "Owner's call: ten glyphs drawn for this build 'in the Trinil set's stroke' and nine older copies were not Trinil as its author knows it. Each takes Trinil's own glyph from the set as it stands: back arrow-left, canister film-roll, edit pencil, export share-ios, folder-add folder-plus, gauge speed, options sliders-horizontal, reset history, reveal folder-search, update download; bug, the chevrons, filter, offline, paste, phone and rotate-90 refreshed under their names. Trinil draws no vertical mirror, so Mirror Vertically turns its mirror a quarter. Only the ONI logo is not Trinil's."
+  },
+  {
+    "id": 1629,
+    "type": "design",
+    "title": "Every film stock wears the owner's own artwork again",
+    "status": "done",
+    "detail": "Owner's call: #1195 turned the canisters in metal with soft label inks, #1446 blackened their caps and spool again; neither was the owner's artwork. The 41 SVGs are back byte for byte as 1.5.6 shipped them (eac39604), 33 of them identical to the site's own copies, the 8 the site lacks from that release. The checks of the restyle (label chroma, the oni-metal ramp) go; every_canister_is_the_owners_own_artwork holds each file's FNV-1a against the shipped one (twin: one byte changed is seen), so a stock is never redrawn here."
   }
 ]
