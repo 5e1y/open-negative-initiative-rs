@@ -1,7 +1,8 @@
 // What a line of a right-click menu does, drawn before its words; a select's lines wear none.
 export enum MenuGlyph { none, edit, copy, paste, reset, roll, folder, ungroup, project, add, remove, export, reveal, parent, trash, restore, open, favourite, new-folder, update, code, warning }
 
-// The Trinil glyphs the shell draws, named by what they mean here as `DSIcon.Name` does.
+// The Trinil glyphs the shell draws (MIT, its LICENSE beside them), named by what they mean here as
+// `DSIcon.Name` does; Mirror Vertically turns Trinil's mirror a quarter, the set drawing no vertical one.
 export global Icons {
     out property <image> framing: @image-url("../icons/crop.svg");
     out property <image> compare: @image-url("../icons/arrow-expand-vertical.svg");
@@ -9,65 +10,44 @@ export global Icons {
     out property <image> undo: @image-url("../icons/undo.svg");
     out property <image> redo: @image-url("../icons/redo.svg");
     out property <image> copy: @image-url("../icons/copy.svg");
-    // Drawn for this build in the Trinil set's stroke: a clipboard, apart from copy's pages.
     out property <image> paste: @image-url("../icons/paste.svg");
     out property <image> correction: @image-url("../icons/bandage.svg");
     out property <image> done: @image-url("../icons/check.svg");
     out property <image> remove: @image-url("../icons/trash.svg");
-    // Drawn for this build in the Trinil set's stroke: an arrow rising out of a tray, photos sent out.
-    out property <image> export: @image-url("../icons/export.svg");
+    out property <image> export: @image-url("../icons/share-ios.svg");
     out property <image> question: @image-url("../icons/question.svg");
-    // Drawn for this build in the Trinil set's stroke: a disc struck through, a disk away.
     out property <image> offline: @image-url("../icons/offline.svg");
-    // Drawn for this build: chevron-right mirrored, the frame before.
     out property <image> chevron-left: @image-url("../icons/chevron-left.svg");
     out property <image> chevron-right: @image-url("../icons/chevron-right.svg");
-    // Drawn for this build in the Trinil set's stroke: the bar's chevron back, a step out of the editor.
-    out property <image> back: @image-url("../icons/back.svg");
-    // Drawn for this build in the Trinil set's stroke: a pencil, a photo opened to be edited.
-    out property <image> edit: @image-url("../icons/edit.svg");
-    // Drawn for this build in the Trinil set's stroke: a gauge, the roll measured before it converts.
-    out property <image> prepare: @image-url("../icons/gauge.svg");
-    // Drawn for this build in the Trinil set's stroke: export's arrow coming down into the tray.
-    out property <image> update: @image-url("../icons/update.svg");
+    out property <image> back: @image-url("../icons/arrow-left.svg");
+    out property <image> edit: @image-url("../icons/pencil.svg");
+    out property <image> prepare: @image-url("../icons/speed.svg");
+    out property <image> update: @image-url("../icons/download.svg");
     out property <image> chevron-down: @image-url("../icons/chevron-down.svg");
     out property <image> folder: @image-url("../icons/folder.svg");
     out property <image> folder-open: @image-url("../icons/folder-open.svg");
-    // Drawn for this build in the Trinil set's stroke: the folder with a plus, a folder added.
-    out property <image> add-folder: @image-url("../icons/folder-add.svg");
+    out property <image> add-folder: @image-url("../icons/folder-plus.svg");
     out property <image> favourite: @image-url("../icons/star.svg");
-    // Drawn for this build in the Trinil set's stroke: a funnel, a view narrowed, apart from the star it shows.
     out property <image> filter: @image-url("../icons/filter.svg");
     out property <image> parent: @image-url("../icons/arrow-up.svg");
-    // Drawn for this build in the Trinil set's stroke: a 35 mm canister, its flanges and leader out,
-    // a roll told from a folder at a glance.
-    out property <image> film-roll: @image-url("../icons/canister.svg");
+    out property <image> film-roll: @image-url("../icons/film-roll.svg");
     out property <image> film: @image-url("../icons/film.svg");
     out property <image> sticky-note: @image-url("../icons/sticky-note.svg");
-    // Drawn for this build in the Trinil set's stroke: a photo under a clockwise arrow, read as a turn.
     out property <image> rotate: @image-url("../icons/rotate-90.svg");
     out property <image> mirror: @image-url("../icons/mirror.svg");
-    // Drawn for this build in the Trinil set's stroke: mirror's flip turned across a level axis.
     out property <image> mirror-vertically: @image-url("../icons/mirror-vertical.svg");
     out property <image> warning: @image-url("../icons/warning.svg");
-    // Drawn for this build in the Trinil set's stroke: an arrow back to its stop, the rest; the circular
-    // arrows stay rotation's and the history's.
-    out property <image> reset: @image-url("../icons/reset.svg");
-    // Drawn for this build in the Trinil set's stroke: a bug, the report the key opens, never a chat.
+    out property <image> reset: @image-url("../icons/history.svg");
     out property <image> feedback: @image-url("../icons/bug.svg");
     out property <image> archive: @image-url("../icons/archive.svg");
     out property <image> arrow-right: @image-url("../icons/arrow-right.svg");
     // The app's Settings alone; a block's own options wear `options`.
     out property <image> settings: @image-url("../icons/gear.svg");
-    // Drawn for this build in the Trinil set's stroke: two sliders, a block's further settings, apart
-    // from the app's gear.
-    out property <image> options: @image-url("../icons/options.svg");
-    // Drawn for this build in the Trinil set's stroke, which has no phone.
+    out property <image> options: @image-url("../icons/sliders-horizontal.svg");
     out property <image> phone: @image-url("../icons/phone.svg");
     // The white balance key the help card's demo presses; one meaning, so no other key draws it.
     out property <image> target: @image-url("../icons/target.svg");
-    // Drawn for this build in the Trinil set's stroke: a frame between brackets, the photo brought into view.
-    out property <image> reveal: @image-url("../icons/reveal.svg");
+    out property <image> reveal: @image-url("../icons/folder-search.svg");
     out property <image> list: @image-url("../icons/list.svg");
     out property <image> gallery: @image-url("../icons/layout-grid.svg");
     out property <image> single: @image-url("../icons/square-rounded.svg");
