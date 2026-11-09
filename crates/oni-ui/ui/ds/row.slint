@@ -238,15 +238,19 @@ export component Row inherits Rectangle {
                 if root.tail != "": HorizontalLayout {
                     opacity: root.away ? State.missing : 1;
                     alignment: start;
+                    // It gives way first and whole, the tail kept, so a row short of room shows one ellipsis.
                     Label {
                         text: root.head;
                         tone: root.ink;
                         overflow: elide;
+                        min-width: 0;
+                        // Narrower than an ellipsis, it draws none rather than a cut one.
+                        visible: self.width >= Space.m;
                         property <bool> short: self.preferred-width > self.width;
                         init => { root.cut = self.short; }
                         changed short => { root.cut = self.short; }
                     }
-                    Label { text: root.tail; tone: root.ink; horizontal-stretch: 0; overflow: elide; }
+                    Label { text: root.tail; tone: root.ink; horizontal-stretch: 0; }
                 }
                 // Slint reads the row's height with a wrapped text at its one-line width; the text's own
                 // height, read at the width it is laid at, keeps every line inside the row.
