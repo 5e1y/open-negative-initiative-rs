@@ -8124,5 +8124,12 @@
     "title": "The Scanner's step keys draw a smaller sign",
     "status": "done",
     "detail": "Owner's call: Trinil's minus and plus on the Scanner face's step keys drew at an icon's 16 pt; they take a mini key's glyph, ButtonStyle.mini-glyph (12 pt), centred as before. The owner's look; window check slider_hues keeps the keys grey."
+  },
+  {
+    "id": 1637,
+    "type": "fix",
+    "title": "A slider's knob: circular corners under its edge, a concentric face",
+    "status": "done",
+    "detail": "Owner's report on the knobs' radii. The raster drew a key's continuous corner (radius held to 6.5 pt, reaching 10 pt along the edges) under the 1 pt edge the interface strokes at a circular 8.4 pt, so the edge cut into the cap and thickened at the corners; the face's 7.35 pt corner, under 3.36 pt walls, thinned the walls there. A handle (the slider's, the toggle's, the split's and the levels' knob) now draws circular corners and a face concentric with them (8.4 - 3.36 pt). Check: oni-keycap look a_handle_draws_circular_corners_as_the_edge_stroked_round_it, the corner pixels against the circle at 2 px a point (twins: a key's continuous corners stray, its face is not concentric)."
   }
 ]

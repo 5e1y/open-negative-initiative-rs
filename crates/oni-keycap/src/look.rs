@@ -82,9 +82,12 @@ impl Look {
         style.face_radius = self.face_radius;
         let [r, g, b, a] = self.albedo;
         style.albedo = Rgba::from_u8(r, g, b, a);
-        // `DSBarHandle`: seen head-on, equal walls; caught rather than pressed, no shadow and no rim.
+        // `DSBarHandle`: seen head-on, equal walls round a concentric face; circular corners, as the edge the
+        // interface strokes round it, which would cut into continuous ones; caught, so no shadow and no rim.
         if self.level {
             style.wall_bottom = style.wall_top;
+            style.face_radius = (style.corner_radius - style.wall_left).max(0.0);
+            style.squircle = false;
         }
         if !self.shadow {
             style.shadow_opacity = 0.0;
@@ -181,6 +184,29 @@ mod tests {
             socket_rest: 2.0, socket_pressed: 6.0, socket_softness: 0.5, scale_pressed: 0.95, travel: 1.0,
             shadow_blur: 8.0, shadow_y: 10.0, bottom_lift: 0.4, ..Look::default()
         }
+    }
+
+    #[test]
+    fn a_handle_draws_circular_corners_as_the_edge_stroked_round_it() {
+        // The slider's knob at 2 px a point: a pixel clear of its radius's circle is wholly in or wholly out,
+        // so the edge stroked round it neither cuts into the cap nor leaves a gap at the corners.
+        let knob = Look { width: 20.0, height: 26.0, level: true, shadow: false, rim: false, ..small() };
+        let strays = |look: &Look| {
+            let drawn = render_in(&look.style(), Frame { width: 20.0, height: 26.0, scale: 2.0, margin: 0.0 }, 0.0);
+            let (w, r) = (drawn.width as usize, 2.0 * look.radius);
+            (0..16).flat_map(|y| (0..16).map(move |x| (x, y))).filter(|&(x, y)| {
+                let off = (x as f64 + 0.5 - r).hypot(y as f64 + 0.5 - r) - r;
+                let alpha = drawn.pixels[(y * w + x) * 4 + 3];
+                (off < -1.0 && alpha < 250) || (off > 1.0 && alpha > 5)
+            }).count()
+        };
+        assert_eq!(strays(&knob), 0, "the knob's corners stray from the circle its edge follows");
+        // The face concentric with the corners: the walls keep one width round them.
+        let (handle, key) = (knob.style(), small().style());
+        assert!((handle.corner_radius - handle.face_radius - handle.wall_left).abs() < 1e-9);
+        // Twins: a key's continuous corners stray from that circle, and its face is Swift's, not concentric.
+        assert!(strays(&Look { level: false, ..knob }) > 0);
+        assert!((key.corner_radius - key.face_radius - key.wall_left).abs() > 1.0);
     }
 
     #[test]
