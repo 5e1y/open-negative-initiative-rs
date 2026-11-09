@@ -254,7 +254,11 @@ export global SheetStyle {
 }
 
 export global MenuStyle {
-    out property <length> width: DS.control-export-fields-width;
+    // A right-click menu's and a submenu's least width, each as wide as its widest line past it.
+    out property <length> width: 180px;
+    // The band under the hand or the arrows, the flat keys' veil at its firmest, and a line's glyph.
+    out property <color> lit: ButtonStyle.veil-pressed;
+    out property <length> glyph: 14px;
     // A line over its note: a label's line and a caption's in a small key's padding.
     out property <length> noted-height: 40px;
     // How long the pointer rests on a line before its submenu opens or the open one closes, as AppKit's.

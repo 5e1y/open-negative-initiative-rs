@@ -1,3 +1,6 @@
+// What a line of a right-click menu does, drawn before its words; a select's lines wear none.
+export enum MenuGlyph { none, edit, copy, paste, reset, roll, folder, ungroup, project, add, remove, export, reveal, parent, trash, restore, open, favourite, new-folder, update, code, warning }
+
 // The Trinil glyphs the shell draws, named by what they mean here as `DSIcon.Name` does.
 export global Icons {
     out property <image> framing: @image-url("../icons/crop.svg");
@@ -74,4 +77,27 @@ export global Icons {
     out property <image> menu-right: @image-url("../icons/menu-right.svg");
     out property <image> zoom-out: @image-url("../icons/minus.svg");
     out property <image> zoom-in: @image-url("../icons/plus.svg");
+    public pure function line(glyph: MenuGlyph) -> image {
+        if (glyph == MenuGlyph.edit) { return Icons.edit; }
+        if (glyph == MenuGlyph.copy) { return Icons.copy; }
+        if (glyph == MenuGlyph.paste) { return Icons.paste; }
+        if (glyph == MenuGlyph.reset) { return Icons.reset; }
+        if (glyph == MenuGlyph.roll) { return Icons.film-roll; }
+        if (glyph == MenuGlyph.folder) { return Icons.folder; }
+        if (glyph == MenuGlyph.ungroup) { return Icons.expand-all; }
+        if (glyph == MenuGlyph.project) { return Icons.sticky-note; }
+        if (glyph == MenuGlyph.add) { return Icons.zoom-in; }
+        if (glyph == MenuGlyph.remove) { return Icons.zoom-out; }
+        if (glyph == MenuGlyph.export) { return Icons.export; }
+        if (glyph == MenuGlyph.reveal) { return Icons.reveal; }
+        if (glyph == MenuGlyph.parent) { return Icons.parent; }
+        if (glyph == MenuGlyph.trash) { return Icons.remove; }
+        if (glyph == MenuGlyph.restore) { return Icons.undo; }
+        if (glyph == MenuGlyph.open) { return Icons.folder-open; }
+        if (glyph == MenuGlyph.favourite) { return Icons.favourite; }
+        if (glyph == MenuGlyph.new-folder) { return Icons.add-folder; }
+        if (glyph == MenuGlyph.update) { return Icons.update; }
+        if (glyph == MenuGlyph.code) { return Icons.list; }
+        Icons.warning
+    }
 }

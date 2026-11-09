@@ -112,10 +112,10 @@ impl Ctl {
         let count = self.state.borrow().org.trashed.len();
         // A folder's line opens the whole ONI Trash, and says so.
         let open = if i == 0 { tr("Open") } else { tr("Open the ONI Trash") };
-        let mut items = vec![Item { line: menu_line(open, true, false, false), act: Act::OpenTrash }];
+        let mut items = vec![Item { line: menu_line(MenuGlyph::Open, open, true, false, false), act: Act::OpenTrash }];
         if i == 0 {
             if count > 0 {
-                items.push(Item { line: menu_line(tr("Restore All…"), true, false, false), act: Act::RestoreAll });
+                items.push(Item { line: menu_line(MenuGlyph::Restore, tr("Restore All…"), true, false, false), act: Act::RestoreAll });
             }
         } else if let Some((folder, n)) = self.trash_folder(i) {
             let frames: Vec<String> = {
@@ -123,10 +123,10 @@ impl Ctl {
                 oni_library::trash::frames(&folder, &s.org.trashed).into_iter().collect()
             };
             let word = trn("Restore Photo", "Restore {n} Photos", n as u64);
-            items.push(Item { line: menu_line(&word, true, false, false), act: Act::Restore(frames) });
+            items.push(Item { line: menu_line(MenuGlyph::Restore, &word, true, false, false), act: Act::Restore(frames) });
             // Its volume mounted, from the path alone, as Swift tells a trash folder's row.
             let present = self.state.borrow().present(&folder);
-            items.push(Item { line: menu_line(crate::app::navigator::reveal_word(), present, true, false), act: Act::Reveal(vec![folder]) });
+            items.push(Item { line: menu_line(MenuGlyph::Reveal, crate::app::navigator::reveal_word(), present, true, false), act: Act::Reveal(vec![folder]) });
         }
         self.open_menu(items, None)
     }

@@ -1,13 +1,12 @@
 // The forms of export and colour management: a labelled field, a note, a preview slot, progress,
 // the status bar and a title typed over.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, SurfaceStyle, ScannerStyle, PlotStyle } from "theme.slint";
+import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle, PlotStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
 import { RenameField, Button, ButtonSize } from "controls.slint";
 import { Icons } from "icons.slint";
-import { Inward } from "depth.slint";
 import { KeyScope } from "keyboard.slint";
 
 export global FormStyle {
@@ -19,6 +18,7 @@ export global FormStyle {
     out property <length> caption: DS.control-export-caption-height;
     out property <length> preview-floor: DS.control-export-preview-floor;
     out property <length> progress: DS.control-inline-progress-width;
+    out property <length> progress-height: 3px;
     out property <length> chip-icon: DS.control-icon-size * 0.7;
     out property <length> paper-width: DS.control-paper-sheet-width;
     out property <length> paper-height: DS.control-paper-sheet-height;
@@ -101,25 +101,25 @@ export component WarningBand inherits HorizontalLayout {
     Label { text: root.text; wrap: word-wrap; horizontal-stretch: 1; }
 }
 
-// `DSProgress`: a track's recess lit up to the fraction done, glowing; below zero, no total, a lit
-// segment sweeps it, so a wait that cannot be counted still reads as moving.
-export component Progress inherits Inward {
+// `DSProgress`: a thin flat track lit up to the fraction done; below zero, no total, a lit segment
+// sweeps it, so a wait that cannot be counted still reads as moving.
+export component Progress inherits Rectangle {
     in property <float> fraction;
     property <bool> counted: root.fraction >= 0;
     // Read only while sweeping, so a counted bar asks no frame of its own.
     property <float> swing: root.counted ? 0 : Math.mod(animation-tick() / DS.motion-sweep-duration, 2);
     property <float> eased: (1 - cos((root.swing < 1 ? root.swing : 2 - root.swing) * 180deg)) / 2;
-    ground: Colour.track;
-    radius: Radius.track;
-    height: DS.control-track-height;
+    background: Colour.track;
+    border-radius: self.height / 2;
+    clip: true;
+    height: FormStyle.progress-height;
     Rectangle {
         x: root.counted ? 0 : (root.width - self.width) * root.eased;
         width: root.counted ? root.width * clamp(root.fraction, 0, 1) : root.width * DS.control-progress-segment;
         // `Motion.settle`, a spring of 0.38 s damped 0.72: a slight overshoot.
         animate width { duration: Motion.settle; easing: ease-out-back; }
+        border-radius: self.height / 2;
         background: Colour.selected;
-        drop-shadow-color: Colour.selected;
-        drop-shadow-blur: SurfaceStyle.progress-glow;
     }
 }
 

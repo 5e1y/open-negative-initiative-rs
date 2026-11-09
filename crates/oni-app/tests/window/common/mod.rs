@@ -349,3 +349,8 @@ pub fn projects_top(window: &impl slint::ComponentHandle, lib: &oni_app::Library
     let row = lib.get_project_rows().iter().find(|r| r.title == title).unwrap_or_else(|| panic!("{title} has a project row"));
     the(window, i_slint_backend_testing::AccessibleRole::ListItem, title).y - row.y - lib.get_project_viewport_y()
 }
+
+/// Whether every line of a menu wears a glyph before its words, as a right-click menu's do.
+pub fn glyphed(lines: impl IntoIterator<Item = oni_app::MenuLine>) -> bool {
+    lines.into_iter().all(|l| l.glyph != oni_app::MenuGlyph::None)
+}

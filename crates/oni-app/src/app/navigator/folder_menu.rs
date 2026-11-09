@@ -36,23 +36,28 @@ impl State {
         let favourite = self.nav.favourites.contains(path);
         let roll = self.nav.rolls().contains(path);
         // Out of reach, Open shows its state, and the folder above it stands in for it in the Finder.
-        let shown = if present { (reveal_word(), FolderAct::Reveal) } else { (tr("Show the Parent Folder"), FolderAct::RevealParent) };
+        let shown = if present {
+            (MenuGlyph::Reveal, reveal_word(), FolderAct::Reveal)
+        } else {
+            (MenuGlyph::Parent, tr("Show the Parent Folder"), FolderAct::RevealParent)
+        };
         let mut items = vec![
-            (line(tr("Open"), true, false), FolderAct::Open),
-            (line(if favourite { tr("Remove from Favourites") } else { tr("Add to Favourites") }, true, false), FolderAct::Favourite),
+            (line(MenuGlyph::Open, tr("Open"), true, false), FolderAct::Open),
+            (line(MenuGlyph::Favourite, if favourite { tr("Remove from Favourites") } else { tr("Add to Favourites") }, true, false), FolderAct::Favourite),
         ];
         if gone {
-            items.push((line(tr("Locate…"), true, false), FolderAct::Locate));
+            items.push((line(MenuGlyph::Reveal, tr("Locate…"), true, false), FolderAct::Locate));
         }
+        let (glyph, word) = if roll { (MenuGlyph::Folder, tr("Back to a Folder")) } else { (MenuGlyph::Roll, tr("Make a Roll")) };
         items.extend([
-            (line(tr("Rename…"), present, true), FolderAct::Rename),
-            (line(if roll { tr("Back to a Folder") } else { tr("Make a Roll") }, present, false), FolderAct::Roll(!roll)),
-            (line(tr("New Folder Inside"), present, false), FolderAct::NewFolder),
-            (line(shown.0, true, true), shown.1),
+            (line(MenuGlyph::Edit, tr("Rename…"), present, true), FolderAct::Rename),
+            (line(glyph, word, present, false), FolderAct::Roll(!roll)),
+            (line(MenuGlyph::NewFolder, tr("New Folder Inside"), present, false), FolderAct::NewFolder),
+            (line(shown.0, shown.1, true, true), shown.2),
         ]);
         // A disk away keeps its folders whatever: only a folder gone from a disk that answers is forgotten.
         if gone {
-            items.push((line(tr("Remove from Library…"), true, true), FolderAct::Forget));
+            items.push((line(MenuGlyph::Remove, tr("Remove from Library…"), true, true), FolderAct::Forget));
         }
         items
     }

@@ -4,7 +4,7 @@
 
 use super::{Ctl, Pending, WRITE_DELAY, stem};
 use crate::preferences::Preferences;
-use crate::{Advice, CarriesLine, MenuLine, Menus, PresetCard, Presets, system};
+use crate::{Advice, CarriesLine, MenuGlyph, MenuLine, Menus, PresetCard, Presets, system};
 use oni_core::balance::{self, Outcome};
 use oni_core::preset_parameters::{self as carries, WhiteBalance};
 use oni_core::presets::{self, Preset, Tint};
@@ -70,13 +70,13 @@ enum CardAct {
     Delete,
 }
 
-const CARD_MENU: [(CardAct, &str); 6] = [
-    (CardAct::Edit, marked("Edit…")),
-    (CardAct::Update, marked("Update with Current Settings")),
-    (CardAct::Duplicate, marked("Duplicate")),
-    (CardAct::Share, marked("Share Preset…")),
-    (CardAct::CopyCode, marked("Copy Preset Code")),
-    (CardAct::Delete, marked("Delete")),
+const CARD_MENU: [(CardAct, MenuGlyph, &str); 6] = [
+    (CardAct::Edit, MenuGlyph::Edit, marked("Edit…")),
+    (CardAct::Update, MenuGlyph::Update, marked("Update with Current Settings")),
+    (CardAct::Duplicate, MenuGlyph::Copy, marked("Duplicate")),
+    (CardAct::Share, MenuGlyph::Export, marked("Share Preset…")),
+    (CardAct::CopyCode, MenuGlyph::Code, marked("Copy Preset Code")),
+    (CardAct::Delete, MenuGlyph::Trash, marked("Delete")),
 ];
 
 fn colour(c: [f64; 3]) -> Color {
@@ -149,8 +149,8 @@ fn entry_at(line: usize, copying: bool) -> Option<&'static carries::Entry> {
     }
 }
 
-fn line(text: &str, enabled: bool, rule: bool) -> MenuLine {
-    MenuLine { text: text.into(), enabled, rule, ..MenuLine::default() }
+fn line(glyph: MenuGlyph, text: &str, enabled: bool, rule: bool) -> MenuLine {
+    MenuLine { glyph, text: text.into(), enabled, rule, ..MenuLine::default() }
 }
 
 

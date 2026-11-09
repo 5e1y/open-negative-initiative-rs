@@ -4,14 +4,14 @@ import { Label, Icon, Tone, TextRole, Divider, Gap } from "base.slint";
 import { Bounds } from "outside.slint";
 import { Popover } from "surfaces.slint";
 import { Look } from "button.slint";
-import { Icons } from "icons.slint";
+import { Icons, MenuGlyph } from "icons.slint";
 import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
 import { Medal } from "marks.slint";
 
 // A line of a menu: a rule above it, out of reach, a submenu beside it, the chord the menu bar answers
-// for it as AppKit's menus print it, a medal struck before its words, or a picker's note under them.
-export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int, note: string }
+// for it as AppKit's menus print it, a medal or a glyph before its words, or a picker's note under them.
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int, note: string, glyph: MenuGlyph }
 
 export struct FolderChoice { title: string, current: bool }
 
@@ -19,8 +19,8 @@ export struct FolderChoice { title: string, current: bool }
 // shows, the submenu turned left and where it lies, and how far left of its anchor the popup starts.
 export struct MenuState { lit: int, open: int, sub-lit: int, turned: bool, lead-x: length, sub-x: length, sub-y: length }
 
-// One line of a menu: its check, its word, its shortcut, the accent's band under the pointer, or on
-// the line its menu holds lit (`held`) when it does not follow the pointer alone (`by-hand`).
+// One line of a menu: its check, glyph or medal, its word, its shortcut, a soft band under the pointer,
+// or on the line its menu holds lit (`held`) when it does not follow the pointer alone (`by-hand`).
 export component MenuEntry inherits Rectangle {
     in property <string> text;
     // Words under the line's own, in the secondary ink: what a preset writes.
@@ -30,6 +30,7 @@ export component MenuEntry inherits Rectangle {
     in property <bool> checked;
     // The medal a line names, 0 none, struck where a check would stand, whose room its menu sets.
     in property <int> medal;
+    in property <MenuGlyph> glyph;
     in property <length> lead: ButtonStyle.small-icon;
     in property <Look> look: Look.live;
     in property <bool> held;
@@ -41,7 +42,7 @@ export component MenuEntry inherits Rectangle {
     // A small key's height, AppKit's rhythm for a menu of a dozen lines; a line over its note, two.
     height: root.note != "" ? MenuStyle.noted-height : ButtonStyle.small-height;
     border-radius: ButtonStyle.small-radius;
-    background: root.hovered ? Colour.accent : Colour.raised.transparentize(1);
+    background: root.hovered ? MenuStyle.lit : Colour.raised.transparentize(1);
     opacity: root.enabled ? 1 : State.disabled;
     accessible-role: button;
     accessible-label: root.text;
@@ -49,10 +50,11 @@ export component MenuEntry inherits Rectangle {
         padding-left: Space.s;
         padding-right: Space.s;
         spacing: Space.s;
-        Rectangle {
+        if root.lead > 0: Rectangle {
             width: root.lead;
             if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
             if root.medal > 0: Medal { rank: root.medal; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+            if root.glyph != MenuGlyph.none && !root.checked: Icon { source: Icons.line(root.glyph); tone: Tone.secondary; width: MenuStyle.glyph; height: MenuStyle.glyph; }
         }
         VerticalLayout {
             alignment: center;
@@ -60,7 +62,7 @@ export component MenuEntry inherits Rectangle {
             Label { text: root.text; overflow: elide; }
             if root.note != "": Label { text: root.note; role: TextRole.caption; tone: Tone.secondary; overflow: elide; }
         }
-        Label { text: root.shortcut; tone: Tone.secondary; }
+        if root.shortcut != "": Label { text: root.shortcut; tone: Tone.secondary; }
     }
     // Live on an out-of-reach line too, so resting on it still closes an open submenu.
     area := TouchArea {
@@ -102,9 +104,10 @@ export component PopupPanel inherits PopupWindow {
 // Words with the current one checked, a context menu's lines, or the folder pill's choices; a choice
 // closes it. An opener's submenu opens beside it as AppKit's, at rest, on a click or on →.
 export component Menu inherits PopupWindow {
-    // A menu dropped under a field is as wide as it; a submenu as wide as its menu; a context menu as wide
-    // as its widest line, word and chord, so neither elides.
-    in property <length> span: max(MenuStyle.width, widest.preferred-width + 2 * Space.xs);
+    // As wide as its widest line, word and chord, so neither elides: `natural`, which a select's menu
+    // takes when its field is narrower.
+    out property <length> natural: widest.preferred-width + 2 * Space.xs;
+    in property <length> span: max(MenuStyle.width, root.natural);
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
@@ -120,13 +123,17 @@ export component Menu inherits PopupWindow {
     // Where its owner anchors it: a submenu turned left starts the popup `lead-x` left of it.
     in property <length> anchor-x;
     callback state-changed(MenuState);
+    // The width it dropped at, told its owner, which cannot read into a popup.
+    callback dropped(length);
+    init => { root.dropped(root.span); }
     // The line lit by the pointer or the arrows, the opener whose submenu shows, and its own lit line.
     property <int> lit: -1;
     property <int> open: -1;
     property <int> sub-lit: -1;
     // A submenu turns to the menu's left when the window's edge leaves it no room on the right.
-    property <bool> turned: Bounds.width > 0 && root.left + 2 * root.span > Bounds.width && root.left >= root.span;
-    property <length> lead-x: root.shown && root.turned ? root.span : 0px;
+    property <length> sub-span: max(MenuStyle.width, sub-widest.preferred-width + 2 * Space.xs);
+    property <bool> turned: Bounds.width > 0 && root.left + root.span + root.sub-span > Bounds.width && root.left >= root.sub-span;
+    property <length> lead-x: root.shown && root.turned ? root.sub-span : 0px;
     property <bool> shown: root.open >= 0 && root.sub-lines.length > 0;
     property <MenuState> state: { lit: root.lit, open: root.shown ? root.open : -1, sub-lit: root.sub-lit, turned: root.turned, lead-x: root.lead-x, sub-x: sub.x, sub-y: sub.y };
     changed state => { root.state-changed(self.state); }
@@ -141,7 +148,7 @@ export component Menu inherits PopupWindow {
     close-policy: close-on-click-outside;
     forward-focus: keys;
     x: root.anchor-x - root.lead-x;
-    width: root.shown ? 2 * root.span : root.span;
+    width: root.shown ? root.span + root.sub-span : root.span;
     height: root.shown ? max(panel.height, sub.y + sub.height) : panel.height;
 
     // A step towards the submenu, inside the cone from the last point to its near corners: the lines it
@@ -244,17 +251,22 @@ export component Menu inherits PopupWindow {
             reject
         }
     }
-    // The room before the lines' words: a check's, or a medal's once any line names one, so words align;
-    // the medals' widths, unseen, give it.
-    property <length> lead: max(ButtonStyle.small-icon, struck.preferred-width);
+    // The room before the lines' words: a check's while one stands checked, or a medal's or a glyph's once
+    // any line names one, so words align; their widths, unseen, give it. None, the words start at the edge.
+    property <length> lead: max(root.current >= 0 ? ButtonStyle.small-icon : 0px, struck.preferred-width);
     struck := VerticalLayout {
         visible: false;
-        for line in root.lines: Rectangle { width: line.medal > 0 ? MedalStyle.size : 0px; }
+        for line in root.lines: Rectangle { width: line.medal > 0 ? MedalStyle.size : line.glyph != MenuGlyph.none ? MenuStyle.glyph : 0px; }
     }
-    // The lines at their own widths, unseen, which `span` reads.
+    // The lines at their own widths, unseen, which `natural` and `sub-span` read.
     widest := VerticalLayout {
         visible: false;
-        for line in root.lines: MenuEntry { text: line.text; note: line.note; shortcut: line.opens ? "›" : line.keys; medal: line.medal; lead: root.lead; }
+        for word in root.entries: MenuEntry { text: word; }
+        for line in root.lines: MenuEntry { text: line.text; note: line.note; shortcut: line.opens ? "›" : line.keys; medal: line.medal; glyph: line.glyph; lead: root.lead; }
+    }
+    sub-widest := VerticalLayout {
+        visible: false;
+        for line in root.sub-lines: MenuEntry { text: line.text; glyph: line.glyph; lead: MenuStyle.glyph; }
     }
     // A press on the popup's bare ground, beside a short submenu, closes the menu as one outside it does.
     TouchArea {
@@ -282,6 +294,7 @@ export component Menu inherits PopupWindow {
                 note: line.note;
                 shortcut: line.opens ? "›" : line.keys;
                 medal: line.medal;
+                glyph: line.glyph;
                 lead: root.lead;
                 checked: i == root.current;
                 enabled: line.enabled;
@@ -304,7 +317,7 @@ export component Menu inherits PopupWindow {
         visible: root.shown;
         x: root.turned ? 0px : root.span;
         y: Bounds.height > 0 ? max(0px, min(root.open-y - Space.xs, Bounds.height - root.top - self.height)) : root.open-y - Space.xs;
-        width: root.span;
+        width: root.sub-span;
         menu: true;
         tail: false;
         pad: Gap.xs;
@@ -313,6 +326,8 @@ export component Menu inherits PopupWindow {
             if line.rule: Divider { engraved: false; }
             MenuEntry {
                 text: line.text;
+                glyph: line.glyph;
+                lead: MenuStyle.glyph;
                 enabled: line.enabled;
                 by-hand: false;
                 held: j == root.sub-lit;

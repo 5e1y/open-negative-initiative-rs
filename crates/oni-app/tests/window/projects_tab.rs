@@ -91,6 +91,7 @@ impl Hand {
         self.rig.pump();
         if let Some(sub) = sub {
             assert!(opens, "{line} opens its submenu");
+            assert!(common::glyphed(lib.get_menu_sub_lines().iter()), "every line of {line}'s submenu wears its glyph");
             lib.invoke_menu_sub_chosen(find(lib.get_menu_sub_lines(), sub) as i32);
             self.rig.pump();
         }

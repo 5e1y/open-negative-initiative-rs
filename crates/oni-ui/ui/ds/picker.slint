@@ -1,5 +1,5 @@
 // The picker: a field naming the value chosen, whose menu drops under it.
-import { Colour, Radius, Space, State, ButtonStyle, MenuStyle, FieldStyle, MedalStyle } from "theme.slint";
+import { Colour, Radius, Space, State, ButtonStyle, FieldStyle, MedalStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
 import { Outside } from "outside.slint";
 import { Look } from "button.slint";
@@ -39,6 +39,8 @@ export component Picker inherits HorizontalLayout {
     // Where the field starts, which a menu dropped under it aligns on.
     out property <length> field-x: field.x;
     out property <length> field-width: field.width;
+    // The width its menu last dropped at, which the window's checks read.
+    out property <length> menu-width;
     // A popup the owner drops itself on `open`, as the Working Space chip's, held as its menu.
     in property <bool> own-popup;
     out property <bool> dropped: menu.is-open || root.own-popup;
@@ -130,9 +132,10 @@ export component Picker inherits HorizontalLayout {
     }
     menu := Menu {
         x: root.field-x;
-        y: root.height;
-        // A folder's list as wide as its pill; words at least the menu's own width.
-        span: root.choices.length > 0 ? root.field-width : root.lines.length > 0 ? MenuStyle.width : max(MenuStyle.width, root.field-width);
+        y: root.height + Space.xxs;
+        // As wide as its select; past it only where a word would otherwise be cut, a folder's list never.
+        span: root.choices.length > 0 ? root.field-width : max(root.field-width, self.natural);
+        dropped(width) => { root.menu-width = width; }
         entries: root.entries;
         current: root.current;
         lines: root.lines;

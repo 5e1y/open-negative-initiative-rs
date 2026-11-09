@@ -3,7 +3,7 @@
 
 use super::{Ctl, Pending, State};
 use crate::organise::{self, CellAction, CellFacts, CellLine, GridKey, Outcome, Picks, Shown};
-use crate::{App, Confirm, Library, MenuLine, StockCount, TrashLine, TreeRow};
+use crate::{App, Confirm, Library, MenuGlyph, MenuLine, StockCount, TrashLine, TreeRow};
 use crate::{library, picking, system};
 use crate::tree_pick::TreePick;
 use oni_library::Entry;
@@ -196,8 +196,8 @@ fn uptime() -> f64 {
     START.get_or_init(Instant::now).elapsed().as_secs_f64()
 }
 
-fn menu_line(text: &str, enabled: bool, rule: bool, opens: bool) -> MenuLine {
-    MenuLine { text: text.into(), enabled, rule, opens, ..MenuLine::default() }
+fn menu_line(glyph: MenuGlyph, text: &str, enabled: bool, rule: bool, opens: bool) -> MenuLine {
+    MenuLine { glyph, text: text.into(), enabled, rule, opens, ..MenuLine::default() }
 }
 
 impl State {

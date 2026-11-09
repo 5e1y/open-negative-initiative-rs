@@ -8047,5 +8047,19 @@
     "title": "A figure the app reports lies flat on its glass",
     "status": "done",
     "detail": "Owner's call: LcdReadout, the crop's and the export's sizes, the bit depth, the export's weight, the version and the status bar's count, loses its recess (Inward's shade, edge and lit lip) and the glow round its figures; it is a plain Rectangle on ScannerStyle.glass at PlotStyle.radius, its figures in the same ink. SurfaceStyle's lcd-glow and lcd-glow-width go with it. The owner's look: no check reads a relief."
+  },
+  {
+    "id": 1626,
+    "type": "design",
+    "title": "Boxes lie flat and the progress bar is a thin line",
+    "status": "done",
+    "detail": "Owner's call, after #1625: Inset (the corrections' list, a missing original's note, the paper profiles' card) loses Inward's shade, edge and lit lip and stays the canvas's dark at its round; Progress is a 3 pt flat track, its fill rounded with no glow, 14 pt and a recess before. SurfaceStyle.progress-glow and the lab's knob for it go. The lip check's probe now stands on Inward, the well the plots, tabs and switch still use. Window check depth_lip."
+  },
+  {
+    "id": 1627,
+    "type": "design",
+    "title": "Menus: a soft band under the hand, a select's menu as wide as the select, a glyph before every right-click line",
+    "status": "done",
+    "detail": "Owner's call: the full accent under the pointer was too loud, the drop-downs did not match their select, the right-click lines had no icon. A menu line under the hand or the arrows takes MenuStyle.lit, the flat keys' firmest veil, as a folder pill's choice does. A select's menu drops 2 pt under its field and as wide as it, wider only where a line would be cut (Menu.natural); the export's presets drop through Picker's own menu, PresetPicker's copy gone. A context menu and its submenu are each as wide as their widest line, MenuStyle.width (180 pt, 260 before) at least, so a submenu no longer takes its menu's width. MenuLine carries a MenuGlyph, drawn by Icons.line before the words in the secondary ink: every right-click builder passes one (the cell's exhaustively by CellAction, the folder, trash, project and preset-card menus by their acts), a select's lines none. Window checks outside (a wide select's menu as wide; twin: a narrow one's past it), submenus (a grey band; twin: the accent reads as a colour), gallery, navigator, presets and projects_tab (every right-click and submenu line wears its glyph; twin: one without is seen)."
   }
 ]

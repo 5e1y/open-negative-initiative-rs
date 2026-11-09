@@ -1,7 +1,7 @@
 // Pieces at fixed places for the window checks that click or read them: fields and a tab bar, a scrolled
 // page, a step keycap, a well's lip three ways, a plate, fields and pickers to press beside, a submenu,
 // the keyboard's controls.
-import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Keyboard, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle, Slider, SliderStyle, Toggle, Sheet, Inset } from "ds.slint";
+import { Space, FieldStyle, RowStyle, ShellStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Keyboard, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle, Slider, SliderStyle, Toggle, Sheet, Inward } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -71,17 +71,17 @@ export component DepthProbe inherits AppWindow {
         padding: Space.l;
         spacing: Space.l;
         alignment: start;
-        free := Inset { height: ButtonStyle.height; }
+        free := Inward { height: ButtonStyle.height; }
         Rectangle {
             height: ButtonStyle.height;
             clip: true;
-            cut := Inset { }
+            cut := Inward { }
         }
         section := Section {
             title: "Section";
             separated: false;
             inset: SectionStyle.flush;
-            ending := Inset { height: ButtonStyle.height; }
+            ending := Inward { height: ButtonStyle.height; }
         }
     }
 }
@@ -204,6 +204,14 @@ export component OutsideProbe inherits AppWindow {
     out property <length> first-x: first.absolute-position.x + first.width / 2;
     out property <length> second-x: second.absolute-position.x + second.width / 2;
     out property <length> pickers-y: first.absolute-position.y + first.height / 2;
+    // A select wider than its words and one narrower, side by side, and the widths their menus drop at.
+    out property <length> sizes-y: wide.absolute-position.y + wide.height / 2;
+    out property <length> narrow-x: narrow.absolute-position.x + narrow.width / 2;
+    out property <length> wide-x: wide.absolute-position.x + wide.width / 2;
+    out property <length> narrow-field: narrow.field-width;
+    out property <length> narrow-menu: narrow.menu-width;
+    out property <length> wide-field: wide.field-width;
+    out property <length> wide-menu: wide.menu-width;
     // The second line of the first picker's menu, dropped under its field.
     out property <length> line-x: first.absolute-position.x + Space.l;
     out property <length> line-y: first.absolute-position.y + first.height + Space.xs + 1.5 * ButtonStyle.small-height;
@@ -239,6 +247,11 @@ export component OutsideProbe inherits AppWindow {
                 spacing: Space.l;
                 first := Picker { value: "One"; entries: ["One", "Two", "Three"]; chosen(i) => { root.first-chosen = i; } }
                 second := Picker { value: "Red"; entries: ["Red", "Green"]; }
+            }
+            HorizontalLayout {
+                spacing: Space.l;
+                narrow := Picker { value: "A"; entries: ["A", "A line far longer than its select"]; }
+                wide := Picker { horizontal-stretch: 1; value: "Wide"; entries: ["Wide", "Narrow"]; }
             }
             date := DateFields {
                 month: "2";

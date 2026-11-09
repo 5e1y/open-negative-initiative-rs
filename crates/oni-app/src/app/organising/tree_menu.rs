@@ -24,7 +24,7 @@ impl Ctl {
                 let paths: Vec<String> = targets.iter().map(|t| match t {
                     ArchiveNode::Photo(p) | ArchiveNode::Folder(p) => p.clone(),
                 }).collect();
-                (vec![Item { line: menu_line(crate::app::navigator::reveal_word(), true, false, false), act: Act::Reveal(paths) }], None)
+                (vec![Item { line: menu_line(MenuGlyph::Reveal, crate::app::navigator::reveal_word(), true, false, false), act: Act::Reveal(paths) }], None)
             }
         };
         self.open_menu(items, path)
@@ -48,8 +48,8 @@ impl Ctl {
                     (self.cell_items(&s, &first, &scope, true, can_paste), Some(first))
                 }
                 [project] => {
-                    let rename = Item { line: menu_line(tr("Rename…"), true, false, false), act: Act::RenameProject(*project) };
-                    (vec![rename, Item { line: menu_line(tr("Delete Project"), true, true, false), act: Act::DeleteProject(*project) }], None)
+                    let rename = Item { line: menu_line(MenuGlyph::Edit, tr("Rename…"), true, false, false), act: Act::RenameProject(*project) };
+                    (vec![rename, Item { line: menu_line(MenuGlyph::Trash, tr("Delete Project"), true, true, false), act: Act::DeleteProject(*project) }], None)
                 }
                 _ => return false,
             }

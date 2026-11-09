@@ -1,5 +1,5 @@
-// The raised and sunken surfaces' own gauges: the lamp's glow, the foil seals' light and the progress's
-// phosphor. In-out, so the 2.5D lab tunes the app's own values live.
+// The raised and sunken surfaces' own gauges: the lamp's glow and the foil seals' light. In-out, so the
+// 2.5D lab tunes the app's own values live.
 import { DS } from "tokens.slint";
 
 export global SurfaceStyle {
@@ -14,8 +14,6 @@ export global SurfaceStyle {
     in-out property <float> seal-rule: 0.6;
     in-out property <float> seal-emboss: 0.35;
     in-out property <float> seal-shadow: 1;
-    // `DSProgress`'s lit fill glow, `phosphorGlow` (CSS blur twice the radius).
-    in-out property <length> progress-glow: 2 * DS.scanner-phosphor-glow;
 }
 
 // `DSGoldSealView`'s print: the dark ink, its weight, the rule inside the edge, the two shadows under it.

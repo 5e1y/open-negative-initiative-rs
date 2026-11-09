@@ -157,3 +157,16 @@ pub(crate) fn a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing() 
     assert_eq!((p.get_commits(), p.get_date_committed().as_str()), (1, "4/15/1999"));
     rig.shot("outside-date");
 }
+
+pub(crate) fn a_dropped_menu_is_as_wide_as_its_select() {
+    let (rig, p) = probe();
+    // A select wider than its words drops a menu exactly as wide.
+    click(&rig, &p, p.get_wide_x(), p.get_sizes_y());
+    assert!(p.get_wide_field() > 150.0, "the wide select spans its row: {}", p.get_wide_field());
+    assert_eq!(p.get_wide_menu(), p.get_wide_field(), "the menu as wide as its select");
+    click(&rig, &p, 390.0, 390.0);
+    pause(&rig);
+    // Twin: a select narrower than a line drops a menu past it, so no word is cut.
+    click(&rig, &p, p.get_narrow_x(), p.get_sizes_y());
+    assert!(p.get_narrow_menu() > p.get_narrow_field() + 40.0, "a long line widens the menu: {} for {}", p.get_narrow_menu(), p.get_narrow_field());
+}

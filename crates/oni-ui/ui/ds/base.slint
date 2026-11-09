@@ -4,7 +4,7 @@ import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, CardStyle, ScannerStyle } from "theme.slint";
-import { Outward, Inward } from "depth.slint";
+import { Outward } from "depth.slint";
 
 // `note` is a block's wrapped line in the secondary ink, a label's size, its lines opened; `section` a
 // block's title, a step larger and heavier than the words under it; `title` a mode's or a sheet's, a step over that.
@@ -297,13 +297,13 @@ export component Raised inherits Rectangle {
     }
 }
 
-// A box sunk in the panel (`dsRecessed`): the canvas's dark, rounded, its lines in a column; the
-// export's summary, the paper profiles' card and the corrections' list (`Radius.control`).
-export component Inset inherits Inward {
+// A box on the panel (`dsRecessed` laid flat): the canvas's dark, rounded, its lines in a column.
+export component Inset inherits Rectangle {
     in property <Gap> pad: Gap.m;
     in property <Gap> gap: Gap.xxs;
-    ground: Colour.canvas;
-    radius: Radius.card;
+    in property <length> radius: Radius.card;
+    background: Colour.canvas;
+    border-radius: root.radius;
     VerticalLayout {
         padding: Tones.gap(root.pad);
         spacing: Tones.gap(root.gap);

@@ -105,10 +105,10 @@ impl Ctl {
         self.state.borrow_mut().shelf.menu = Some(id);
         let lines: Vec<MenuLine> = CARD_MENU
             .iter()
-            .map(|(act, text)| match act {
-                CardAct::Update => line(tr(*text), open, false),
-                CardAct::Delete => line(&tr!("Delete \u{201c}{name}\u{201d}", name = name), true, true),
-                _ => line(tr(*text), true, false),
+            .map(|(act, glyph, text)| match act {
+                CardAct::Update => line(*glyph, tr(*text), open, false),
+                CardAct::Delete => line(*glyph, &tr!("Delete \u{201c}{name}\u{201d}", name = name), true, true),
+                _ => line(*glyph, tr(*text), true, false),
             })
             .collect();
         w.global::<Presets>().set_menu_lines(ModelRc::new(VecModel::from(lines)));
@@ -117,7 +117,7 @@ impl Ctl {
 
     pub(super) fn preset_menu_chosen(self: &Rc<Self>, i: Option<usize>) {
         let id = self.state.borrow_mut().shelf.menu.take();
-        let (Some(id), Some((act, _))) = (id, i.and_then(|i| CARD_MENU.get(i))) else { return };
+        let (Some(id), Some((act, _, _))) = (id, i.and_then(|i| CARD_MENU.get(i))) else { return };
         match act {
             CardAct::Edit => self.edit_presets(Some(id)),
             CardAct::Update => self.ask_update_preset(id),

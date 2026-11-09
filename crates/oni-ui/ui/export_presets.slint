@@ -1,25 +1,15 @@
 // The export's presets: one picker listing them all, and the sheet naming the ones the hand keeps.
-import { Picker, Menu, Sheet, TextField, Label, TextRole, SheetFooter } from "ds/ds.slint";
+import { Picker, Sheet, TextField, Label, TextRole, SheetFooter } from "ds/ds.slint";
 import { Exporting } from "export_state.slint";
 
 // Each line a preset's name over what it writes, the one the settings equal checked and named at rest
-// with its summary; what renames, removes and saves ends the list, as wide as the field it drops from.
+// with its summary; what renames, removes and saves ends the list.
 export component PresetPicker inherits Picker {
     value: Exporting.preset-title;
     note: Exporting.preset-summary;
-    own-popup: menu.is-open;
-    open => { menu.show(); }
-    menu := Menu {
-        x: root.field-x;
-        y: root.height;
-        span: root.field-width;
-        lines: Exporting.preset-lines;
-        current: Exporting.lit-preset;
-        chosen(i) => {
-            self.close();
-            Exporting.preset(i);
-        }
-    }
+    lines: Exporting.preset-lines;
+    current: Exporting.lit-preset;
+    chosen(i) => { Exporting.preset(i); }
 }
 
 // The name the settings are saved under, or the lit preset's new one, typed over at once; its commit

@@ -188,3 +188,30 @@ pub(crate) fn a_click_or_the_arrow_opens_a_submenu_at_once_and_it_turns_at_the_w
     assert!(!p.get_turned());
     assert_eq!(p.get_sub_left(), 200.0 + p.get_span());
 }
+
+/// The three channels of a 565 pixel, each scaled to 8 bits.
+fn rgb(p: slint::platform::software_renderer::Rgb565Pixel) -> [u32; 3] {
+    let v = p.0 as u32;
+    [((v >> 11) & 0x1f) * 255 / 31, ((v >> 5) & 0x3f) * 255 / 63, (v & 0x1f) * 255 / 31]
+}
+
+/// A grey, its channels within a few steps of one another.
+fn neutral(c: [u32; 3]) -> bool {
+    c.iter().max().unwrap() - c.iter().min().unwrap() <= 12
+}
+
+pub(crate) fn a_menu_lights_its_line_in_a_soft_grey() {
+    let (rig, p) = probe();
+    drop(&rig, &p, 40.0, 40.0);
+    to(&rig, line(&p, 0));
+    let (w, px) = rig.drawn();
+    // Right of the words, on the line under the hand and on one at rest.
+    let x = 40.0 + p.get_span() - 16.0;
+    let at = |i: usize| rgb(px[line(&p, i).1 as usize * w + x as usize]);
+    let (lit, rest) = (at(0), at(2));
+    assert!(lit.iter().sum::<u32>() > rest.iter().sum::<u32>() + 30, "the line under the hand stands out: {lit:?} {rest:?}");
+    assert!(neutral(lit), "a grey band, never the accent: {lit:?}");
+    let accent = p.global::<oni_app::DS>().get_palette_accent();
+    let accent = [u32::from(accent.red()), u32::from(accent.green()), u32::from(accent.blue())];
+    assert!(!neutral(accent), "twin: the accent's band reads as a colour: {accent:?}");
+}

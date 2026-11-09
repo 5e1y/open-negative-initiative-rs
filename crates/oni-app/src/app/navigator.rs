@@ -3,7 +3,7 @@
 
 use super::{Ctl, Pending, State, with_shell};
 use super::organising::reach;
-use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
+use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuGlyph, MenuLine, WelcomeLine};
 use oni_i18n::tr;
 use oni_library::favourites::{self, Favourites};
 use oni_library::history::Move;
@@ -173,8 +173,8 @@ impl Nav {
     }
 }
 
-fn line(text: &str, enabled: bool, rule: bool) -> MenuLine {
-    MenuLine { text: text.into(), enabled, rule, ..MenuLine::default() }
+fn line(glyph: MenuGlyph, text: &str, enabled: bool, rule: bool) -> MenuLine {
+    MenuLine { glyph, text: text.into(), enabled, rule, ..MenuLine::default() }
 }
 
 /// `.whitespaces`: spaces and tabs, never a line's end.

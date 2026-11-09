@@ -14,7 +14,7 @@ and every screen picks it up.
 | `theme_sliders.slint` | `SliderStyle`, `DialStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
 | `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
-| `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
+| `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
 | `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
 | `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
@@ -215,7 +215,11 @@ field lies flat, as a text field.
   naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
   menu line names one the same way, every line's words then starting past the medal's room. A menu's line
   may carry a `note` under its words in the caption's secondary ink, two lines tall
-  (`MenuStyle.noted-height`), as the export's presets over their summaries; the `current` line is checked.
+  (`MenuStyle.noted-height`), as the export's presets over their summaries; the `current` line is checked. Its
+  menu drops as wide as the field, past it only where a word would be cut (`Menu.natural`).
+- **`Menu`**: the line under the hand or the arrows takes a soft band (`MenuStyle.lit`), never the accent. A
+  right-click menu's every line wears a `MenuGlyph` before its words, the medals in their place; a select's
+  wear none. A context menu and its submenu are each as wide as their widest line, `MenuStyle.width` at least.
 - **`Medal`**: a foil disc of its metal, an icon's size on a tile and in the rating filter, its podium place sunk
   in the middle as the key that lays it (gold 1, silver 2, bronze 3), in the ruled ring's ink over a lip lit a rule
   below, so no medal is told by its colour alone. One drawing everywhere: `blank`, one not given, is the same disc
@@ -235,8 +239,10 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   slid columns and the popups stand on it. **Popover** hangs a `Raised` under its tail (`DSPopoverShape`),
   `tail-x` below zero centring it; `PopupPanel` draws one, a menu without a tail.
 - **Flat**: `LcdReadout`, a figure the app reports (the crop's and the export's sizes, the export's weight, the
-  version, a count), on the scanner's glass at the plots' corner, with no relief and no glow.
-- **Inward**: `Inset`, `Progress` (its fill glowing) and the passes' reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
+  version, a count), on the scanner's glass at the plots' corner, with no relief and no glow; `Inset`, a box
+  on the canvas's dark (the paper profiles' card, the corrections' list, a missing original's note); `Progress`,
+  a thin track lit up to the fraction done.
+- **Inward**: the passes' reorder hollow, the plots, the tabs, the switch and the rails. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
   gallery's many tiles keep their flat well.
 - **Past the bounds**: an `Inward`'s lit lip reaches `Depth.lip-reach` under it and an `Outward`'s shadow
   falls around it, as Swift's. A `Section` clips only while folded; a scrolled column ending on a well

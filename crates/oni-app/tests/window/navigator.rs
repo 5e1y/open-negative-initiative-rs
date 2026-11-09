@@ -48,6 +48,7 @@ fn menu(w: &oni_app::MainWindow, title: &str) -> Vec<(String, bool, bool)> {
     let n = w.global::<Navigator>();
     assert!(n.invoke_row_menu(at(w, title) as i32));
     let m = n.get_menu_lines();
+    assert!(common::glyphed(m.iter()), "every line of {title}'s menu wears its glyph");
     (0..m.row_count()).filter_map(|i| m.row_data(i)).map(|l| (l.text.to_string(), l.enabled, l.rule)).collect()
 }
 

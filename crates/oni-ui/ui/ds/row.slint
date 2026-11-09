@@ -1,6 +1,6 @@
 // Every line of a list or a tree, its glyph, chevron, caption, badge, star, key and states, its title
 // typed over while renamed; and what an empty list says in place of its lines.
-import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tips, Divider } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Icons } from "icons.slint";
@@ -109,10 +109,10 @@ export component Row inherits Rectangle {
     property <length> indent: root.depth * RowStyle.indent;
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
     height: root.choice ? ButtonStyle.small-height : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
-    border-radius: root.form != RowForm.list ? Radius.badge : 0px;
+    border-radius: root.choice ? ButtonStyle.small-radius : root.form != RowForm.list ? Radius.badge : 0px;
     // Selected, every form lays a flat band, no relief and no shadow; a list's, square, joins the
     // bands of several selected side by side into one.
-    property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
+    property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : root.choice && root.hovered ? MenuStyle.lit : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
     property <bool> away: root.reach != Reach.here;

@@ -162,6 +162,11 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.right_click("B");
     assert_eq!(hand.selected(), ["A", "B"], "a right click inside the selection keeps it whole");
     let menu = hand.menu();
+    // Every line of a right click wears its glyph; twin: one line without it is seen.
+    let lines: Vec<oni_app::MenuLine> = lib.get_menu_lines().iter().collect();
+    assert!(common::glyphed(lines.clone()), "a line without its glyph: {menu:?}");
+    let bare = lines.iter().enumerate().map(|(i, l)| if i == 1 { oni_app::MenuLine { glyph: oni_app::MenuGlyph::None, ..l.clone() } } else { l.clone() });
+    assert!(!common::glyphed(bare), "twin: a line without its glyph is seen");
     let live = |text: &str| lib.get_menu_lines().iter().find(|l| l.text == text).is_some_and(|l| l.enabled);
     assert_eq!(menu[..2], ["Copy Settings\u{2026}", "Paste Settings (2 photos)"]);
     assert!(!live("Copy Settings\u{2026}") && !live("Paste Settings (2 photos)"), "Copy takes one photo, and nothing is copied yet");

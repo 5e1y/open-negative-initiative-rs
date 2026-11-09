@@ -306,6 +306,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert!(presets.invoke_card_menu(0));
     let menu: Vec<String> = (0..presets.get_menu_lines().row_count()).filter_map(|i| presets.get_menu_lines().row_data(i)).map(|l| l.text.to_string()).collect();
     assert_eq!(menu, ["Edit…", "Update with Current Settings", "Duplicate", "Share Preset…", "Copy Preset Code", "Delete \u{201c}Brighter\u{201d}"]);
+    assert!(common::glyphed(presets.get_menu_lines().iter()), "every line of the card's menu wears its glyph");
     presets.invoke_menu_chosen(2);
     rig.pump();
     assert_eq!(oni_core::presets::files(&shelf).len(), 2);

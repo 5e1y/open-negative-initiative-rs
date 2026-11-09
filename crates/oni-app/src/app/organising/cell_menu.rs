@@ -2,6 +2,24 @@
 
 use super::*;
 
+/// What a cell's line does, drawn before its words; a project's lines wear the projects' glyph.
+fn cell_glyph(action: &CellAction) -> MenuGlyph {
+    match action {
+        CellAction::Missing => MenuGlyph::Warning,
+        CellAction::Copy => MenuGlyph::Copy,
+        CellAction::Paste => MenuGlyph::Paste,
+        CellAction::Reset => MenuGlyph::Reset,
+        CellAction::NewRoll => MenuGlyph::Roll,
+        CellAction::Ungroup => MenuGlyph::Ungroup,
+        CellAction::NewProject | CellAction::AddToProject(_) | CellAction::RemoveFromProject(_) => MenuGlyph::Project,
+        CellAction::AddTo => MenuGlyph::Add,
+        CellAction::RemoveFrom => MenuGlyph::Remove,
+        CellAction::Export => MenuGlyph::Export,
+        CellAction::Reveal => MenuGlyph::Reveal,
+        CellAction::Trash => MenuGlyph::Trash,
+    }
+}
+
 impl Ctl {
     /// The menu a right click opens on the cell under it, selected alone first when outside the
     /// selection, so the photos the menu acts on are the ones marked; the ground opens none.
@@ -36,9 +54,9 @@ impl Ctl {
                 organise::trash_menu(&scope, &s.order)
                     .into_iter()
                     .enumerate()
-                    .map(|(i, (text, rule, paths))| Item {
-                        line: menu_line(&text, true, rule, false),
-                        act: if i == 0 { Act::Restore(paths) } else { Act::Reveal(paths) },
+                    .map(|(i, (text, rule, paths))| {
+                        let (glyph, act) = if i == 0 { (MenuGlyph::Restore, Act::Restore(paths)) } else { (MenuGlyph::Reveal, Act::Reveal(paths)) };
+                        Item { line: menu_line(glyph, &text, true, rule, false), act }
                     })
                     .collect()
             } else {
@@ -75,13 +93,14 @@ impl Ctl {
         let facts = CellFacts { missing: &s.org.missing, rolled: &rolled, can_paste, projects, member_of };
         let mut items = Vec::new();
         if edit && scope.len() == 1 {
-            items.push(Item { line: menu_line(tr("Edit"), true, false, false), act: Act::Edit(path.to_owned()) });
+            items.push(Item { line: menu_line(MenuGlyph::Edit, tr("Edit"), true, false, false), act: Act::Edit(path.to_owned()) });
         }
         for (i, line) in organise::cell_menu(scope, &s.order, &facts).into_iter().enumerate() {
             let opens = matches!(line.action, CellAction::AddTo | CellAction::RemoveFrom);
             let rule = line.rule || (edit && scope.len() == 1 && i == 0);
             let keys = line.action.chord(crate::platform::Platform::THIS).into();
-            items.push(Item { line: MenuLine { keys, ..menu_line(&line.text, line.enabled, rule, opens) }, act: Act::Cell(line) });
+            let glyph = cell_glyph(&line.action);
+            items.push(Item { line: MenuLine { keys, ..menu_line(glyph, &line.text, line.enabled, rule, opens) }, act: Act::Cell(line) });
         }
         items
     }
@@ -130,7 +149,7 @@ impl Ctl {
                 let facts = CellFacts { missing: &none, rolled: &none, can_paste: false, projects, member_of: member };
                 organise::submenu(&line, &facts)
                     .into_iter()
-                    .map(|l| Item { line: menu_line(&l.text, true, false, false), act: Act::Cell(l) })
+                    .map(|l| Item { line: menu_line(cell_glyph(&l.action), &l.text, true, false, false), act: Act::Cell(l) })
                     .collect()
             }
             _ => Vec::new(),
