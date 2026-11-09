@@ -81,7 +81,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     let (keys, others) = heights();
     assert!(keys.len() >= 9 && keys.iter().all(|k| k.height == KEY), "every key of the gallery's bar {KEY} pt tall: {keys:?}");
     assert!(others.iter().any(|k| k.height != KEY), "twin: the measure tells a key of another height");
-    for (label, word) in [("EDIT", "EDIT"), ("Select All", "Select All"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset Photo", "Reset Photo"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
+    for (label, word) in [("EDIT", "EDIT"), ("Select All", "Select All"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset Pro", "Reset Pro"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
         stacked(&rig, w, label, word);
     }
     // Twin: beside the glyph, within the key's padding, nothing is drawn but its face.

@@ -220,7 +220,7 @@ impl Field {
             Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             Field::Vignette => s("Vignette", Vignette::RANGE, Readout::Stops),
             Field::Chrome => s("Chrome", SAUCE_RANGE, Readout::Percent),
-            Field::BalanceStrength => s("Balance strength", oni_settings::blocks::filter_balance::STRENGTH_RANGE, Readout::Percent),
+            Field::BalanceStrength => s("Auto White Balance Strength", oni_settings::blocks::filter_balance::STRENGTH_RANGE, Readout::Percent),
             Field::DensityCeiling => {
                 let range = oni_settings::axis::density_axis::mosaic_range();
                 s("Ceiling", (*range.start(), *range.end()), Readout::Ceiling)

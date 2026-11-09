@@ -9,21 +9,29 @@ import { Icons } from "icons.slint";
 import { Reach, Reaches } from "reach.slint";
 import { Keyboard } from "keyboard.slint";
 
-// The "?" beside a title: a ghost key, lit while its note stands open as a card beside the column,
-// named with what it explains. It lays out at its glyph's size, the hand caught over a small key's square.
+// The "?" beside a title: a ghost key shown only while the hand is on the title it explains (`near`),
+// on itself, or the keyboard on it, and lit while its card stands open; named with what it explains.
 export component HelpMark inherits Rectangle {
     in property <string> note;
     // The help topic whose demo the card plays, none for a note alone.
     in property <string> demo;
     // What the note explains, as its title says it.
     in property <string> subject;
+    in property <bool> near;
     property <bool> open: Tip.open == root.note;
     width: SectionStyle.help-mark;
     height: self.width;
-    Button {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2;
-        width: self.height;
+    // It lays out at its glyph's size whether shown or not, so the title never moves.
+    opacity: root.near || root.open || hand.has-hover || mark.focused ? 1 : 0;
+    // As large as the key's catch, a small key's square round the glyph.
+    hand := TouchArea {
+      x: (parent.width - self.width) / 2;
+      y: (parent.height - self.height) / 2;
+      width: ButtonStyle.small-height;
+      height: self.width;
+      mark := Button {
+        width: parent.width;
+        height: parent.height;
         size: ButtonSize.mini;
         kind: ButtonKind.ghost;
         has-icon: true;
@@ -34,6 +42,7 @@ export component HelpMark inherits Rectangle {
         expandable: true;
         expanded: root.open;
         clicked => { Tips.help(root.note, root.demo, root.subject); }
+      }
     }
 }
 
@@ -109,11 +118,12 @@ export component Section inherits VerticalLayout {
                 role: TextRole.section;
                 text: root.title;
                 overflow: elide;
-                if root.foldable: TouchArea { clicked => { root.fold(); } }
+                // The hand on the title shows its "?"; a click folds the block where it folds.
+                heading := TouchArea { clicked => { if (root.foldable) { root.fold(); } } }
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
-                HelpMark { note: root.help; demo: root.demo; subject: root.title; }
+                HelpMark { note: root.help; demo: root.demo; subject: root.title; near: heading.has-hover; }
             }
             if root.news != "": VerticalLayout {
                 alignment: center;

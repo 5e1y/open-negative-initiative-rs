@@ -235,23 +235,26 @@ pub(crate) fn a_number_typed_over_a_slider_readout_steps_it_there() {
     rig.key("x");
     rig.key("\n");
     assert_eq!(p.get_steps(), -3);
-    // The target is the typed number's box, a field tall: a click above the number's line opens it.
-    press(&rig, &p, x, y - 20.0, true);
+    // The target is the typed number's box, a small key tall: a click just above the number's line opens it.
+    press(&rig, &p, x, y - 16.0, true);
     assert!(!p.get_entering(), "twin: a click past the box opens nothing");
-    press(&rig, &p, x, y - 12.0, true);
+    press(&rig, &p, x, y - 6.0, true);
     assert!(p.get_entering(), "a click above the number, within its box, opens it");
 }
 
-pub(crate) fn a_slider_tells_its_double_click_and_its_typed_value_under_the_hand() {
+pub(crate) fn a_slider_tells_its_double_click_on_its_name_and_its_typed_value_and_nothing_on_its_rail() {
     let (rig, p) = probe();
     let tip = p.global::<oni_app::Tip>();
     let hover = |x: f32, y: f32| {
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
         rig.pump();
     };
-    // The rail tells the double click that brings it back to rest, the value the click that types it.
+    // The name tells the double click that brings it back to rest, the value the click that types it.
+    hover(p.get_name_x(), p.get_value_y());
+    assert!(tip.get_shown() && tip.get_text() == "Double-click to bring it back to rest", "name: {}", tip.get_text());
+    // The rail under the hand tells nothing, so no note covers the slider while it is worked.
     hover(p.get_knob_x(), p.get_knob_y());
-    assert!(tip.get_shown() && tip.get_text() == "Double-click to bring it back to rest", "rail: {}", tip.get_text());
+    assert!(!tip.get_shown(), "rail: {}", tip.get_text());
     hover(p.get_value_x(), p.get_value_y());
     assert!(tip.get_shown() && tip.get_text() == "Click to type a value", "value: {}", tip.get_text());
     // Twin: beside the slider, nothing is told.

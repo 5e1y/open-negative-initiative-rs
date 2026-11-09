@@ -5,9 +5,9 @@ import { KeyScope, Keyboard } from "keyboard.slint";
 import { Knob } from "knob.slint";
 import { SliderFill, Rail } from "rail.slint";
 import { ValueHeader, Readouts } from "readout.slint";
-import { Tips } from "base.slint";
 import { Outside } from "outside.slint";
 import { Dial } from "dial.slint";
+import { Icons } from "icons.slint";
 
 // A number typed over a slider's readout, which Rust reads: the steps that reach it from the readout,
 // `per` readout units a step or, at 0, one unit of its last digit; 0 when either holds no number.
@@ -16,14 +16,13 @@ export global Typing {
 }
 
 // A stepped slider's keycap beside its rail, the interface's grey: one step a press, three with ⇧. Its
-// sign names no slider, so assistive tools read its help, which names the slider and the way.
+// glyph, Trinil's minus or plus, names no slider, so assistive tools read its help, which names the way.
 component StepKey inherits Button {
     keycap: true;
     rises: true;
     square: true;
     height: SliderStyle.step-key;
     width: self.height;
-    legend-size: SliderStyle.step-legend;
     horizontal-stretch: 0;
     accessible-label: self.help;
 }
@@ -77,8 +76,10 @@ export component Slider inherits VerticalLayout {
     callback held(bool);
     // The step under the hand while it slides, ahead of the value the store answers.
     property <int> hand;
-    // The hand on the row or holding the knob, as a demo shows it: the knob grows, the rail deepens.
+    // The hand on the rail or holding the knob, as a demo shows it: the knob grows, the rail deepens; on
+    // the slider's whole line, its keys and the room between them, its hues show whole.
     property <bool> handled: root.enabled && (area.has-hover || area.held || root.look != Look.live);
+    property <bool> on-line: root.enabled && line.has-hover;
     // A step key held, or a step a moment ago: with the hand's, these show a rail of hues whole.
     property <bool> keyed;
     property <bool> stepping;
@@ -153,14 +154,17 @@ export component Slider inherits VerticalLayout {
         resets: root.rest >= 0;
         help: root.help;
         typeable: true;
-        lit: area.has-hover || area.held;
+        lit: area.has-hover || area.held || root.on-line;
         reset => { root.reset(); }
         typed(t) => { root.type-in(t); }
+        stepped(by) => { root.nudge(by); }
     }
-    HorizontalLayout {
+    line := TouchArea {
+      HorizontalLayout {
         spacing: Space.s;
         if root.stepped: StepKey {
-            text: "−";
+            has-icon: true;
+            icon: Icons.zoom-out;
             help: root.minus-help;
             enabled: root.enabled;
             changed down => { root.keyed = self.down; }
@@ -193,7 +197,7 @@ export component Slider inherits VerticalLayout {
                     high: root.high;
                     rest: root.rest;
                     deep: root.handled;
-                    vivid: root.handled || root.keyed || root.stepping || area.scrolling;
+                    vivid: root.handled || root.on-line || root.keyed || root.stepping || area.scrolling;
                 }
                 if !root.dial: Knob {
                     centre: parent.width * root.shown;
@@ -213,7 +217,6 @@ export component Slider inherits VerticalLayout {
                     in-out property <bool> scrolling;
                     out property <bool> over-knob: self.has-hover && (root.dial || abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2);
                     mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                    changed has-hover => { Tips.rise(self.has-hover, root.help, track.absolute-position.x, track.absolute-position.y); }
                     double-clicked => {
                         if (root.stepped) { root.reset(); }
                     }
@@ -299,11 +302,13 @@ export component Slider inherits VerticalLayout {
             }
         }
         if root.stepped: StepKey {
-            text: "+";
+            has-icon: true;
+            icon: Icons.zoom-in;
             help: root.plus-help;
             enabled: root.enabled;
             changed down => { root.keyed = self.down; }
             clicked => { root.nudge(self.shift ? 3 : 1); }
         }
+      }
     }
 }

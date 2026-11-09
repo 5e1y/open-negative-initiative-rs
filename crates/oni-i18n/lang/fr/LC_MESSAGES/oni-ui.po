@@ -382,6 +382,14 @@ msgid "Inverse curve"
 msgstr "Courbe inverse"
 
 #: crates/oni-ui/ui/ds/readout.slint
+msgid "One step lower"
+msgstr "Un cran plus bas"
+
+#: crates/oni-ui/ui/ds/readout.slint
+msgid "One step higher"
+msgstr "Un cran plus haut"
+
+#: crates/oni-ui/ui/ds/readout.slint
 msgid "Click to type a value"
 msgstr "Cliquez pour saisir une valeur"
 
@@ -1378,16 +1386,16 @@ msgid "D +: toward light"
 msgstr "D + : plus clair"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Balance strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
-msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant le plus, et la ramène vers le gris avec Température et Teinte. Intensité de la balance est la part de cette correction qu’elles prennent : chaque photo garde sa propre correction, la part est celle de la pellicule.\n\nTempérature déplace la couleur entre le bleu et le jaune, Teinte entre le vert et le magenta ; aucune ne change la luminosité de la photo.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
+msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant le plus, et la ramène vers le gris avec Température et Teinte. L’intensité de la balance des blancs auto est la part de cette correction qu’elles prennent : chaque photo garde sa propre correction, la part est celle de la pellicule.\n\nTempérature déplace la couleur entre le bleu et le jaune, Teinte entre le vert et le magenta ; aucune ne change la luminosité de la photo.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Show Balance strength"
-msgstr "Afficher Intensité de la balance"
+msgid "Show Auto White Balance Strength"
+msgstr "Afficher l’intensité de la balance des blancs auto"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Hide Balance strength"
-msgstr "Masquer Intensité de la balance"
+msgid "Hide Auto White Balance Strength"
+msgstr "Masquer l’intensité de la balance des blancs auto"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Crop before using the automatic balance"
@@ -1398,12 +1406,12 @@ msgid "AUTO WHITE BALANCE"
 msgstr "BALANCE DES BLANCS AUTO"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The frame's light toward grey with Temperature and Tint, scaled by Balance strength"
-msgstr "Amène la lumière de la vue vers le gris avec Température et Teinte, dosée par Intensité de la balance"
+msgid "The frame's light toward grey with Temperature and Tint, scaled by Auto White Balance Strength"
+msgstr "Amène la lumière de la vue vers le gris avec Température et Teinte, dosée par l’intensité de la balance des blancs auto"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Balance strength"
-msgstr "Intensité de la balance"
+msgid "Auto White Balance Strength"
+msgstr "Intensité de la balance des blancs auto"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Shared by the {} photos of this roll."
@@ -2010,8 +2018,8 @@ msgid "This roll was prepared before the scanner kept its median: prepare it aga
 msgstr "Cette pellicule a été préparée avant que le scanner ne conserve sa médiane : préparez-la de nouveau, sinon le scanner se centre sur une estimation."
 
 #: crates/oni-ui/ui/panel.slint
-msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Strength sits on the Roll tab."
-msgstr "La correction de la Balance des blancs auto à l’intensité de la pellicule, tirée sur les deux faces ; Intensité se trouve dans l’onglet Pellicule."
+msgid "Auto White Balance's correction at the roll's strength, which prints on both faces; Auto White Balance Strength sits under the key's settings, on Pro's Colour tab."
+msgstr "La correction de la balance des blancs auto à l’intensité de la pellicule, tirée sur les deux faces ; son intensité se règle sous les réglages de la touche, dans l’onglet Couleur de Pro."
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -2365,15 +2373,21 @@ msgstr "Afficher toute la pellicule ensemble ({})"
 msgid "Select All ({})"
 msgstr "Tout sélectionner ({})"
 
-#: crates/oni-app/src/app/rolls.rs crates/oni-ui/ui/toolbar.slint
-msgid "Reset Photo"
-msgid_plural "Reset {n} Photos"
-msgstr[0] "Réinitialiser la photo"
-msgstr[1] "Réinitialiser {n} photos"
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Reset Scanner"
+msgstr "Réinitialiser Scanner"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Reset Settings ({})"
-msgstr "Réinitialiser les réglages ({})"
+msgid "Reset Pro"
+msgstr "Réinitialiser Pro"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Reset the Scanner settings ({})"
+msgstr "Réinitialiser les réglages Scanner ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Reset the Pro settings ({})"
+msgstr "Réinitialiser les réglages Pro ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Trash"
@@ -3227,10 +3241,6 @@ msgstr "Ajouter aux favoris"
 msgid "Locate…"
 msgstr "Le retrouver…"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
-msgid "Rename…"
-msgstr "Renommer…"
-
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Back to a Folder"
 msgstr "Reconvertir en dossier"
@@ -3238,6 +3248,10 @@ msgstr "Reconvertir en dossier"
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Make a Roll"
 msgstr "Convertir en pellicule"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+msgid "Rename…"
+msgstr "Renommer…"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "New Folder Inside"
@@ -4224,6 +4238,12 @@ msgid "Reset the Roll of This Photo?"
 msgid_plural "Reset the Roll of {n} Photos?"
 msgstr[0] "Réinitialiser la pellicule de cette photo ?"
 msgstr[1] "Réinitialiser la pellicule de {n} photos ?"
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Reset Photo"
+msgid_plural "Reset {n} Photos"
+msgstr[0] "Réinitialiser la photo"
+msgstr[1] "Réinitialiser {n} photos"
 
 #: crates/oni-app/src/app/settings_sheet.rs
 msgid "Version {version}"

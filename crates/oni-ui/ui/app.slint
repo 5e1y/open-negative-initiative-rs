@@ -230,6 +230,13 @@ export component MainWindow inherits AppWindow {
             // The columns and the bar drawn once into a texture each, kept while nothing in them changes:
             // femtovg redraws the whole window at every frame a pan moves, every row of the tree included.
             if !Exporting.shown: Toolbar { cache-rendering-hint: true; }
+            // Without the bar, the export keeps its room under the traffic lights, which drags the window.
+            if Exporting.shown && Bar.traffic-lights > 0: TouchArea {
+                height: ShellStyle.bar-height;
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { Bar.room-pressed(); }
+                }
+            }
             HorizontalLayout {
                 vertical-stretch: 1;
                 // The gallery always lists the library; beside a photo the column can be hidden.

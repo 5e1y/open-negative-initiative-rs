@@ -49,6 +49,17 @@ pub fn read(text: &str) -> Option<(f64, u32)> {
     Some((if negative { -value } else { value }, places))
 }
 
+/// The figure a readout shows, its sign and places as shown, the side it names and its unit left aside:
+/// what a field typed over it starts from.
+pub fn number(readout: &str) -> &str {
+    let text = readout.trim_start_matches(|c: char| c.is_alphabetic() || c.is_whitespace());
+    let end = text
+        .char_indices()
+        .find(|&(i, c)| !(c.is_ascii_digit() || matches!(c, '.' | ',') || (i == 0 && matches!(c, '+' | '-' | '\u{2212}'))))
+        .map_or(text.len(), |(i, _)| i);
+    &text[..end]
+}
+
 /// The steps from a readout to a number typed over it: `per` readout units a step, or one unit of
 /// the readout's last digit where `per` is 0, an arrow's step; none when either holds no number.
 pub fn typed_steps(readout: &str, typed: &str, per: f32) -> i32 {
@@ -64,6 +75,7 @@ where
     for<'a> crate::Readouts<'a>: slint::Global<'a, C>,
 {
     window.global::<crate::Readouts>().on_steps(|readout, typed, per| typed_steps(&readout, &typed, per));
+    window.global::<crate::Readouts>().on_number(|readout| number(&readout).into());
 }
 
 pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {
@@ -130,6 +142,19 @@ mod tests {
         let lifted = stepped(Field::BlackPoint, 0.0, 1, &black);
         assert!(lifted < 0.0 && Field::BlackPoint.readout(lifted) == "+1%", "{}", Field::BlackPoint.readout(lifted));
         assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 1, &track_range(Field::Exposure))), "+0.51 EV");
+    }
+
+    #[test]
+    fn a_field_typed_over_a_readout_starts_from_its_figure_alone() {
+        assert_eq!(number("Warm +0.46 EV"), "+0.46");
+        assert_eq!(number("\u{2212}0.06 EV"), "\u{2212}0.06");
+        assert_eq!(number("85%"), "85");
+        assert_eq!(number("2.1 px"), "2.1");
+        assert_eq!(number("1.00\u{d7}"), "1.00");
+        // The figure read back is the readout's own: typed unchanged, it moves nothing.
+        assert_eq!(typed_steps("Warm +0.46 EV", number("Warm +0.46 EV"), 0.0), 0);
+        // Twin: the readout whole would carry its side and unit into the field.
+        assert_ne!(number("Warm +0.46 EV"), "Warm +0.46 EV");
     }
 
     #[test]

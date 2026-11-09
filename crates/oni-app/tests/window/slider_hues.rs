@@ -98,8 +98,8 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
     // Twin: the hand's whole hues passed off as the rest's are caught.
     assert!(!faint(&hand), "whole hues at rest would be seen: {hand:?}");
 
-    // The hand gone, the rail rests again; C's + key steps it and its hues show while it moves, the hand
-    // on the key, not the rail; a moment later they rest.
+    // The hand gone, the rail rests again; C's + key steps it and its hues show whole while the hand
+    // stays on C's line, the key included; once the hand leaves the line they rest.
     to(p.get_to() + 40.0, 380.0);
     let plus = LogicalPosition::new(p.get_plus_x(), p.get_c_y());
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: plus });
@@ -114,8 +114,12 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
     assert_eq!(p.get_c(), 1, "the key stepped C once");
     assert!(chroma(stepped.low) > 100 && chroma(stepped.high) > 100, "a step shows C's red and cyan whole: {stepped:?}");
     rig.settle();
+    let held = cyan();
+    assert!(!faint(&held), "the hand still on C's line, its hues stay whole: {held:?}");
+    to(p.get_to() + 40.0, 380.0);
+    rig.settle();
     let after = cyan();
-    assert!(faint(&after) && faint(&c_rest), "the step done, C rests faint again: {after:?} {c_rest:?}");
+    assert!(faint(&after) && faint(&c_rest), "the hand off C's line, C rests faint again: {after:?} {c_rest:?}");
     assert!(after.low.r > after.low.b && after.high.b > after.high.r, "red at C's − end, cyan at its +: {after:?}");
 
     // The step keys are the interface's grey keycaps, legends in the neutral ink, at rest and under the hand.

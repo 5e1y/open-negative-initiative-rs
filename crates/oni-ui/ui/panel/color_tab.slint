@@ -65,11 +65,11 @@ export component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         demo: "white-balance";
-        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Balance strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
+        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
         SettingsRow {
             open <=> root.balance-settings;
-            show-help: @tr("Show Balance strength");
-            hide-help: @tr("Hide Balance strength");
+            show-help: @tr("Show Auto White Balance Strength");
+            hide-help: @tr("Hide Auto White Balance Strength");
             // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key. A run keeps
             // the key in place, idle, and counts in the status bar, so the panel never jumps.
             ButtonGroup { plate: true;
@@ -87,7 +87,7 @@ export component ColorPane inherits Pane {
                     Button {
                         text: @tr("AUTO WHITE BALANCE");
                         keycap: true;
-                        help: @tr("The frame's light toward grey with Temperature and Tint, scaled by Balance strength");
+                        help: @tr("The frame's light toward grey with Temperature and Tint, scaled by Auto White Balance Strength");
                         enabled: !PanelState.balancing;
                         clicked => { PanelState.auto-balance(); }
                     }
@@ -97,7 +97,7 @@ export component ColorPane inherits Pane {
         if PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
         // The key's dose, behind its settings key; the roll's, so it says which photos it reaches. Its
         // reset is its own double click: the block's would rewrite every photo of the roll.
-        if root.balance-settings: StoreSlider { field: 11; label: @tr("Balance strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
+        if root.balance-settings: StoreSlider { field: 11; label: @tr("Auto White Balance Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
         if root.balance-settings && PanelState.roll-state == 1 && PanelState.roll-measured > 1: Label {
             role: TextRole.note;
             text: @tr("Shared by the {} photos of this roll.", PanelState.roll-measured);

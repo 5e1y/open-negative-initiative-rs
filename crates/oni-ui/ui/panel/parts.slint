@@ -110,8 +110,9 @@ export component ModeHeader inherits HorizontalLayout {
     height: TabsStyle.height;
     spacing: Space.s;
     cross-axis-alignment: center;
-    Label { text: root.title; role: TextRole.title; overflow: elide; min-width: 0; horizontal-stretch: 0; }
-    if root.note != "": HelpMark { note: root.note; demo: root.demo; subject: root.title; }
+    // The hand on the name shows its "?".
+    Label { text: root.title; role: TextRole.title; overflow: elide; min-width: 0; horizontal-stretch: 0; name := TouchArea { } }
+    if root.note != "": HelpMark { note: root.note; demo: root.demo; subject: root.title; near: name.has-hover; }
     Rectangle { horizontal-stretch: 1; }
     Button { text: @tr("Cancel"); help: root.cancel-help; clicked => { root.cancel(); } }
     Button { text: @tr("DONE"); keycap: true; kind: ButtonKind.accent; help: root.help; clicked => { root.done(); } }

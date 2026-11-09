@@ -99,9 +99,9 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.settle();
     let shared = "Shared by the 2 photos of this roll.";
     // Closed at first, out of a beginner's way; its settings key, beside the balance key, opens it.
-    let hidden = || common::placed(w, Role::Text, "Balance strength").is_empty() && common::placed(w, Role::Text, shared).is_empty();
+    let hidden = || common::placed(w, Role::Text, "Auto White Balance Strength").is_empty() && common::placed(w, Role::Text, shared).is_empty();
     assert!(hidden(), "Balance strength waits behind its settings key");
-    let key = common::the(w, Role::Button, "Show Balance strength");
+    let key = common::the(w, Role::Button, "Show Auto White Balance Strength");
     let balance = common::the(w, Role::Button, "AUTO WHITE BALANCE");
     let beside = |k: &common::Placed| k.x > balance.x + balance.width && k.y + k.height <= balance.y + balance.height;
     assert!(beside(&key), "the settings key beside the balance key, never under it: {key:?} {balance:?}");
@@ -111,8 +111,8 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.shot("rolls-strength");
     // Twin: open, the dose and its note show, and the key now hides them.
     assert!(!hidden());
-    assert_eq!(common::placed(w, Role::Button, "Hide Balance strength").len(), 1);
-    let (named, note) = (common::the(w, Role::Text, "Balance strength"), common::the(w, Role::Text, shared));
+    assert_eq!(common::placed(w, Role::Button, "Hide Auto White Balance Strength").len(), 1);
+    let (named, note) = (common::the(w, Role::Text, "Auto White Balance Strength"), common::the(w, Role::Text, shared));
     assert!(note.y > named.y && note.x == named.x, "the note under Balance strength: {named:?} {note:?}");
     let strength = |name: &str| settings_of(&canonical(name)).balance_strength;
     let resting = oni_settings::blocks::filter_balance::RESTING_STRENGTH;

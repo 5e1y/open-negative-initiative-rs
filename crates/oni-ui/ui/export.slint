@@ -177,10 +177,10 @@ component SpaceField inherits VerticalLayout {
     // Asked before a key opens a window of its own, so a popover holding the field closes first.
     callback dismiss();
     spacing: FormStyle.gap;
-    Field {
+    // Shown only where it can change: a space that names its own profile shows none.
+    if Exporting.on-profile || Exporting.pending: Field {
         label: @tr("Profile");
         Picker {
-            enabled: Exporting.on-profile || Exporting.pending;
             value: Exporting.on-profile ? Exporting.profiles[Exporting.profile] : Exporting.pending ? @tr("Choose a profile…") : Exporting.chip-title;
             entries: Exporting.on-profile ? Exporting.profiles : Exporting.pending ? [@tr("Choose a profile…"), @tr("Load a Profile…")] : [];
             current: Exporting.on-profile ? Exporting.profile : 0;

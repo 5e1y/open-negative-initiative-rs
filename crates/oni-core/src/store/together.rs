@@ -175,8 +175,13 @@ impl Step<'_> {
 impl EditorStore {
     /// The frames edited with the open one, in their order; none for the open frame alone. A step
     /// still waiting is recorded first, on the frames it was taken with; a hand still down holds on.
+    /// Every frame together takes the open frame's face, as a view and no step: one face edits them all.
     pub fn set_together(&mut self, paths: Vec<String>) {
         self.settle_under_way();
+        let face = self.face();
+        if self.open.is_some() && !self.inert() {
+            self.modify(&paths, |_, s| (s.face != face).then(|| PipelineSettings { face, ..s.clone() }));
+        }
         let held = paths
             .iter()
             .map(|p| sidecar::read(Path::new(p), self.mosaic(p), true).map(|l| l.settings).unwrap_or_default())

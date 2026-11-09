@@ -31,13 +31,13 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     common::the(w, Role::Text, "Colour space");
 
     // Display P3's note runs on two lines, the case that ran the keys under it over Quality; its room
-    // holds the tallest note it may say, the profile one step under that room, the keys one under it.
+    // holds the tallest note it may say. A space naming its own profile shows no Profile select: the
+    // keys stand a step under that room.
     let note = common::the(w, Role::Text, &e.get_space_note());
     assert!(note.height > 1.5 * label.height, "the note wraps: {note:?}");
-    let (profile, chosen) = (common::the(w, Role::Text, "Profile"), common::the(w, Role::Button, &e.get_chip_title()));
+    assert!(common::placed(w, Role::Text, "Profile").is_empty(), "no Profile select where it cannot change");
     let (keys, quality) = (common::the(w, Role::Button, "Load a Profile…"), common::the(w, Role::Slider, "Quality"));
-    assert!(gap(note, profile) >= STEP, "the profile at least one step under the note: {note:?} {profile:?}");
-    assert_eq!(gap(chosen, keys), STEP, "the keys one step under the profile: {chosen:?} {keys:?}");
+    assert!(gap(note, keys) >= STEP, "the keys at least one step under the note: {note:?} {keys:?}");
     let edited = common::the(w, Role::Text, &e.get_edited_in());
     assert_eq!(gap(keys, edited), STEP, "the edited-in note one step under the keys: {keys:?} {edited:?}");
     assert!(gap(edited, quality) >= STEP, "Quality at least one step under the note: {edited:?} {quality:?}");
@@ -55,13 +55,14 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     let subtitle = common::the(w, Role::Text, &e.get_subtitle());
     assert!(subtitle.height > label.height, "{subtitle:?} against {label:?}");
 
-    // Custom: its note under the tabs, and every row where it stood on Display P3.
+    // Custom: its note under the tabs, and its Profile select, one step above the keys it pushes down.
     e.invoke_space_picked(4);
     rig.settle();
     assert_eq!(common::placed(w, Role::Text, &e.get_space_note()).len(), 1, "Custom's note shows under the tabs");
+    let profile = common::the(w, Role::Text, "Profile");
     let moved = common::the(w, Role::Button, "Load a Profile…");
-    assert_eq!(moved.y, keys.y, "the keys stay where they stood on Display P3");
-    assert_eq!(common::the(w, Role::Slider, "Quality").y, quality.y, "and Quality too");
+    assert!(profile.y > note.y && moved.y > profile.y, "the Profile select between the note and the keys: {note:?} {profile:?} {moved:?}");
+    assert!(moved.y > keys.y, "twin: the select takes room the fixed profile left free: {keys:?} {moved:?}");
 
     // Each field's face shows on its ground; twin: on the canvas, where the fields stood, it would not.
     let (width, drawn) = rig.drawn();

@@ -8075,5 +8075,47 @@
     "title": "Every film stock wears the owner's own artwork again",
     "status": "done",
     "detail": "Owner's call: #1195 turned the canisters in metal with soft label inks, #1446 blackened their caps and spool again; neither was the owner's artwork. The 41 SVGs are back byte for byte as 1.5.6 shipped them (eac39604), 33 of them identical to the site's own copies, the 8 the site lacks from that release. The checks of the restyle (label chroma, the oni-metal ramp) go; every_canister_is_the_owners_own_artwork holds each file's FNV-1a against the shipped one (twin: one byte changed is seen), so a stock is never redrawn here."
+  },
+  {
+    "id": 1630,
+    "type": "fix",
+    "title": "A sidebar row never runs past its column, holds its hover over its own keys and wears a rounded band",
+    "status": "done",
+    "detail": "Owner's round: a long favourite's tail and caption pushed the star and the state's mark past the column (a disk away's star cut off); the star and RESTORE flickered under the hand; the editor's tree rows lit a square band. The title's tail and the caption elide once the head is gone, so the marks keep their columns; the row lies inside the area that tells its hover, so a key on it keeps it lit; every form's band takes Radius.badge, the navigator's. Window checks navigator, rolls, library_column."
+  },
+  {
+    "id": 1631,
+    "type": "change",
+    "title": "A help mark shows only while the hand is on its title",
+    "status": "done",
+    "detail": "Owner's call: the clickable \"?\" marks no longer stand at rest. A Section's, a stacked Field's and a mode's header mark shows while the hand is on the title it explains, on the mark itself, or the keyboard on it, and while its card is open; it keeps its room, so nothing moves. The title's own catch tells it: a TouchArea wrapping a section's whole title row took the curves plot's drag from under the hand once its Reset key appeared. Window checks help_card, help_demo*, editors (curves)."
+  },
+  {
+    "id": 1632,
+    "type": "change",
+    "title": "A slider's value types its figure alone, beside a minus and a plus; the Scanner's keys wear Trinil's signs; the rail tells nothing",
+    "status": "done",
+    "detail": "Owner's round: a click on a slider's value opens a field a small key tall holding the figure alone (Readouts.number: '+0.46' for 'Warm +0.46 EV'), with a joined minus and plus beside it stepping one shown unit while the hand stays, out of Tab's walk (Button.tabbed). The Scanner face's step keys draw Trinil's minus and plus, centred, in place of typed signs. A rail of hues shows whole while the hand is anywhere on its line, keys and gaps included. The rail's 'Double-click to bring it back to rest' tooltip goes; the name keeps it. SliderStyle.entry goes. Checks: slider_track a_field_typed_over_a_readout_starts_from_its_figure_alone (twin: the readout whole), window keyboard (the box a small key tall; the rail silent, the name telling), slider_hues (whole on the line, faint once the hand leaves it)."
+  },
+  {
+    "id": 1633,
+    "type": "change",
+    "title": "Auto White Balance Strength by its name; the bar's Reset names the face it resets, in the caution's yellow",
+    "status": "done",
+    "detail": "Owner's round: Balance strength reads Auto White Balance Strength everywhere it is named, its notes too, the Scanner screen's help pointing to it on Pro's Colour tab. The bar's Reset key turned red under the hand as Trash does; it resets what undo takes back, so a new ButtonKind.caution turns its glyph the caution's yellow. As the reset keeps the other face's settings, the key says which it resets: Reset Pro or Reset Scanner by the face the photos are edited on, as wide as the longer word so the bar holds still. Window checks toolbar, toolbar_accent, toolbar_keys, rolls, sidebars."
+  },
+  {
+    "id": 1634,
+    "type": "change",
+    "title": "The export shows no fixed profile, keeps a room under the traffic lights, and the lights stand further in",
+    "status": "done",
+    "detail": "Owner's round: the Profile select shows only where it can change (Custom, or a profile asked for); in export, with no bar, a band the bar's height stays at the top on macOS, where the traffic lights sit, and drags the window; the lights stand 20 pt from the window's edge, AppKit's spacing between them kept, laid from that edge at every call so they never drift. Window check export_panel (no Profile on Display P3; twin: Custom's pushes the keys down)."
+  },
+  {
+    "id": 1635,
+    "type": "fix",
+    "title": "Frames edited together stand on one face",
+    "status": "done",
+    "detail": "Owner's report: editing several photos together, each kept its own face until a step touched it, so a group could hold Pro and Scanner frames edited as one. A group forming takes the open frame's face on every frame, as a view and no step, as turning the face already reaches them all. Check: store together frames_together_take_the_open_frames_face_when_the_group_forms (twin: the face turned, the group follows)."
   }
 ]

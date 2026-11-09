@@ -155,6 +155,8 @@ export component TextField inherits HorizontalLayout {
     // The edge lit as if focused, a state shown without the keyboard.
     in property <bool> focused-look;
     in property <bool> enabled: true;
+    // One line's height: a field's, or a small key's beside the keys of a slider's value.
+    in property <length> line-height: FieldStyle.height;
     out property <bool> editing: entry.editing;
     callback edited(string);
     // Return; and the focus leaving the field, which a typed value also commits on.
@@ -167,7 +169,7 @@ export component TextField inherits HorizontalLayout {
     FieldFace {
         horizontal-stretch: 1;
         min-width: row.min-width;
-        height: root.multiline ? root.lines-height + 2 * FieldStyle.down : FieldStyle.height;
+        height: root.multiline ? root.lines-height + 2 * FieldStyle.down : root.line-height;
         lit: entry.editing || root.focused-look;
         // The face's padding enters the field as its words do, and keeps it while it is edited.
         rim := TouchArea {
@@ -203,6 +205,7 @@ export component TextField inherits HorizontalLayout {
 // focus leaving commits it, Escape gives the old one back.
 export component RenameField inherits FocusScope {
     in property <string> text;
+    in property <length> line-height: FieldStyle.height;
     in property <string> placeholder;
     in property <TextRole> role: TextRole.label;
     // The face led out by its padding, so the typed name starts where the title stood.
@@ -211,7 +214,7 @@ export component RenameField inherits FocusScope {
     callback committed(string);
     callback cancelled();
     property <bool> done;
-    min-height: FieldStyle.height;
+    min-height: root.line-height;
     key-pressed(event) => {
         if (event.text == Key.Escape) {
             root.done = true;
@@ -224,7 +227,8 @@ export component RenameField inherits FocusScope {
         x: root.outdent ? -FieldStyle.across : 0px;
         y: (root.height - self.height) / 2;
         width: root.width - self.x;
-        height: FieldStyle.height;
+        height: root.line-height;
+        line-height: root.line-height;
         text: root.text;
         placeholder: root.placeholder;
         role: root.role;

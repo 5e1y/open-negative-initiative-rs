@@ -8,9 +8,9 @@ import { Lamp } from "surfaces.slint";
 import { BarFace } from "bar_face.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 
-// `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
-// glyph alone on no face, its tone lifting under the hand, as a help mark or a star.
-export enum ButtonKind { plain, accent, destructive, ghost }
+// `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `caution` one
+// whose glyph turns the caution's yellow, for what undo takes back; `ghost` a glyph alone on no face.
+export enum ButtonKind { plain, accent, destructive, caution, ghost }
 // `regular` the standard key, `mini` the small key of a section's header, a row or the canvas's header.
 export enum ButtonSize { regular, mini }
 // What a check forces a control to look like; `live` follows the pointer.
@@ -133,6 +133,10 @@ export component Button inherits Rectangle {
     out property <bool> shift;
     // `KeycapPress`: the key is down from the press until the release, and `Depth.min-hold` at least.
     out property <bool> down;
+    // The keyboard on the key, which a key shown only under the hand stays shown for; `tabbed` false
+    // leaves it out of Tab's walk, a key the hand alone reaches beside a control the keyboard has.
+    out property <bool> focused: keys.has-focus;
+    in property <bool> tabbed: true;
     callback clicked();
     property <bool> mini: root.size == ButtonSize.mini;
     property <bool> ghost: root.kind == ButtonKind.ghost;
@@ -174,6 +178,7 @@ export component Button inherits Rectangle {
     property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
         : root.ghost ? Tones.ink(root.hovered || (root.live && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
+        : root.kind == ButtonKind.caution && root.reached ? Colour.caution
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
     height: root.mini ? ButtonStyle.small-height : root.stacked ? ButtonStyle.bar-key : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
     // Never narrower than tall, so a sign's key stays a square the hand can find; a bar's glyph alone
@@ -288,7 +293,7 @@ export component Button inherits Rectangle {
     }
     // Space or Return on the key holding the keyboard presses it as a click does.
     keys := KeyScope {
-        enabled: root.live;
+        enabled: root.live && root.tabbed;
         radius: cap.radius;
         changed has-focus => { root.tell(); }
         key-pressed(event) => {

@@ -182,7 +182,7 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     rig.settle();
 
     // `ColorPane`: a colour photo offers Auto White Balance; a black and white one has no Color block.
-    let balance = "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";
+    let balance = "The frame's light toward grey with Temperature and Tint, scaled by Auto White Balance Strength";
     panel.set_tab(2);
     panel.invoke_tab_picked(2);
     rig.settle();

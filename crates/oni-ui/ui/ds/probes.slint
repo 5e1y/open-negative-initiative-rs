@@ -248,11 +248,7 @@ export component OutsideProbe inherits AppWindow {
                 first := Picker { value: "One"; entries: ["One", "Two", "Three"]; chosen(i) => { root.first-chosen = i; } }
                 second := Picker { value: "Red"; entries: ["Red", "Green"]; }
             }
-            HorizontalLayout {
-                spacing: Space.l;
-                narrow := Picker { value: "A"; entries: ["A", "A line far longer than its select"]; }
-                wide := Picker { horizontal-stretch: 1; value: "Wide"; entries: ["Wide", "Narrow"]; }
-            }
+            HorizontalLayout { spacing: Space.l; narrow := Picker { value: "A"; entries: ["A", "A line far longer than its select"]; } wide := Picker { horizontal-stretch: 1; value: "Wide"; entries: ["Wide", "Narrow"]; } }
             date := DateFields {
                 month: "2";
                 day: "31";
@@ -353,6 +349,8 @@ export component KeyboardProbe inherits AppWindow {
     out property <length> knob-y: slider.absolute-position.y + slider.height - SliderStyle.row / 2;
     out property <length> value-x: slider.absolute-position.x + slider.width - Space.xs;
     out property <length> value-y: slider.absolute-position.y + Space.s;
+    // The slider's name, at the readout's left end.
+    out property <length> name-x: slider.absolute-position.x + Space.s;
     out property <length> bare-y: root.height - Space.s;
     // A number being typed over the slider's value, which holds the keyboard as a field does.
     out property <bool> entering: TextInputInterface.text-input-focused && !field.editing;
@@ -378,7 +376,7 @@ export component KeyboardProbe inherits AppWindow {
                 if root.keyed: Button { text: "Key"; clicked => { root.clicks += 1; } }
             }
             tabs := Tabs { tabs: ["One", "Two", "Three"]; selected: root.tab; picked(i) => { root.tab = i; } }
-            slider := Slider { label: "Value"; readout: root.steps; fraction: 0.5; step(f, by) => { root.steps += by; } }
+            slider := Slider { label: "Value"; readout: root.steps; fraction: 0.5; rest: 0.5; step(f, by) => { root.steps += by; } }
             Toggle { label: "Switch"; on: root.on; toggled(on) => { root.on = on; } }
             field := TextField { name: "Field"; }
         }

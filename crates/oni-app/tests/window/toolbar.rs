@@ -206,10 +206,10 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let gap = |a: common::Placed, b: common::Placed| b.x - right(a);
     let near = |g: f32, want: f32| (g - want).abs() <= 1.0;
 
-    // The gallery: EDIT, Select All, PREPARE ROLL and ADD FOLDER…, then past a rule Reset naming the photo
-    // it reaches and Trash last, one group; the rating filter is the library's, off the bar.
+    // The gallery: EDIT, Select All, PREPARE ROLL and ADD FOLDER…, then past a rule Reset naming the face
+    // it resets and Trash last, one group; the rating filter is the library's, off the bar.
     let (edit, select) = (bar_key(w, "EDIT"), bar_key(w, "Select All"));
-    let (prepare, add, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "ADD FOLDER\u{2026}"), bar_key(w, "Reset Photo"), bar_key(w, "Trash"));
+    let (prepare, add, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "ADD FOLDER\u{2026}"), bar_key(w, "Reset Pro"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-gallery").display());
     let on_bar = |label: &str| common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).count();
     assert_eq!((on_bar("All Photos"), on_bar("EDITOR"), on_bar("BACK")), (0, 0, 0), "no filter on the bar; EDIT names the action");
@@ -223,13 +223,12 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let (report, settings, export) = (bar_key(w, "Feedback"), bar_key(w, "Settings"), bar_key(w, "EXPORT"));
     assert!(near(gap(report, settings), 0.0) && near(gap(settings, export), BAR_GAP), "{report:?} {settings:?} {export:?}");
 
-    // Select All holds lit; Reset then names both photos, the bar holding still.
+    // Select All holds lit; Reset still names the face, whatever the count, the bar holding still.
     assert!(!bar.get_whole());
     bar.invoke_act(Act::SelectAll);
     rig.settle();
     assert!(bar.get_whole() && bar.get_targets() == 2, "every photo picked, the key lit");
-    let (both, sent) = (bar_key(w, "Reset 2 Photos"), bar_key(w, "EXPORT"));
-    assert!(common::placed(w, Role::Button, "Reset Photo").is_empty(), "twin: the one photo's Reset is gone");
+    let (both, sent) = (bar_key(w, "Reset Pro"), bar_key(w, "EXPORT"));
     let menu_on = |name: &str| {
         let t = oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap();
         let position = LogicalPosition::new(lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
@@ -290,8 +289,16 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let (back, select, crop, de_dust, compare) = (bar_key(w, "BACK"), bar_key(w, "Select All"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
     assert_eq!((back.x, back.width, on_bar("EDIT"), on_bar("GALLERY")), (edit.x, edit.width, 0, 0), "BACK in EDIT's place, as wide");
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
-    let reset = bar_key(w, "Reset Photo");
+    let reset = bar_key(w, "Reset Pro");
     println!("shot {}", rig.shot("toolbar-groups-editor").display());
+    // On the Scanner face the key names the Scanner, in the same room; twin: Pro's word is gone.
+    bar.invoke_act(Act::FaceScanner);
+    rig.settle();
+    let scanner = bar_key(w, "Reset Scanner");
+    assert_eq!((scanner.x, scanner.width), (reset.x, reset.width), "Reset names the face in the same room");
+    assert!(common::placed(w, Role::Button, "Reset Pro").is_empty(), "twin: Pro's Reset is gone on the Scanner face");
+    bar.invoke_act(Act::FacePro);
+    rig.settle();
     for (a, b) in [(select, crop), (crop, de_dust), (de_dust, compare), (copy, paste), (paste, to_roll)] {
         assert!(near(gap(a, b), 0.0), "one group, its keys touching: {a:?} {b:?}");
     }

@@ -128,6 +128,25 @@ fn the_face_turned_reaches_every_frame_together_and_is_no_step() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// A group formed with frames left on the other face takes the open frame's face, as a view and no
+/// step: the frames together are edited on one face, never each on its own.
+#[test]
+fn frames_together_take_the_open_frames_face_when_the_group_forms() {
+    use oni_settings::Face::{Pro, Scanner};
+    let scanner = PipelineSettings { face: Scanner, ..PipelineSettings::default() };
+    let (mut store, dir, [_, b, c]) = three("together-one-face", scanner.clone(), PipelineSettings::default());
+    assert_eq!((read(&b).face, store.face()), (Scanner, Pro), "b was left on the Scanner face");
+    store.set_together(vec![b.clone(), c.clone()]);
+    let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
+    assert_eq!([read(&b).face, read(&c).face], [Pro; 2], "every frame together on the open frame's face");
+    assert_eq!(live, [Pro; 2], "and shown on it");
+    assert!(!store.can_undo(), "a view, no step");
+    // Twin: the open frame turned, the group follows it whole.
+    store.apply_at(Command::Face(Scanner), 1.0);
+    assert_eq!([read(&b).face, read(&c).face], [Scanner; 2]);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// Frame settings at a temperature and a tint, as a balance measured on that frame leaves them.
 fn balanced(temperature: f32, tint: f32) -> PipelineSettings {
     Knob::Tint.set(&Knob::Temperature.set(&PipelineSettings::default(), temperature), tint)

@@ -128,15 +128,16 @@ component Centre inherits HorizontalLayout {
     Divider { vertical: true; height: ButtonStyle.height; }
     ButtonGroup {
         joined: true;
+        // It resets the face the photos are edited on, Pro's settings or the Scanner's, the other's kept,
+        // and says which; as wide as the longer word, so the bar holds still when the face turns.
         Key {
             compact: root.compact;
             action: Act.reset;
-            word: @tr("Reset Photo" | "Reset {n} Photos" % max(1, Bar.targets));
-            // As wide as a roll's count, so the bar holds still while the count changes under the hand.
-            widest: @tr("Reset Photo" | "Reset {n} Photos" % 88);
+            word: Bar.face == 1 ? @tr("Reset Scanner") : @tr("Reset Pro");
+            widest: @tr("Reset Scanner");
             icon: Icons.reset;
-            kind: ButtonKind.destructive;
-            help: @tr("Reset Settings ({})", KeyWords.command-shift + "R");
+            kind: ButtonKind.caution;
+            help: Bar.face == 1 ? @tr("Reset the Scanner settings ({})", KeyWords.command-shift + "R") : @tr("Reset the Pro settings ({})", KeyWords.command-shift + "R");
             enabled: Bar.can-reset;
         }
         if root.trash: Key {

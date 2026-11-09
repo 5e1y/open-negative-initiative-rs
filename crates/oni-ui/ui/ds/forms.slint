@@ -38,15 +38,15 @@ export component Field inherits VerticalLayout {
     in property <FieldLayout> layout: FieldLayout.stacked;
     property <bool> stacked: root.layout == FieldLayout.stacked;
     spacing: FormStyle.row-gap;
-    // As tall without its "?" as with it, so every field keeps one rhythm.
+    // As tall without its "?" as with it, so every field keeps one rhythm; the hand on the label shows its "?".
     if root.stacked: HorizontalLayout {
         spacing: Space.xs;
         alignment: start;
         min-height: SectionStyle.help-mark;
-        Label { text: root.label; tone: Tone.secondary; }
+        Label { text: root.label; tone: Tone.secondary; named := TouchArea { } }
         if root.help != "": VerticalLayout {
             alignment: center;
-            HelpMark { note: root.help; subject: root.label; }
+            HelpMark { note: root.help; subject: root.label; near: named.has-hover; }
         }
     }
     HorizontalLayout {

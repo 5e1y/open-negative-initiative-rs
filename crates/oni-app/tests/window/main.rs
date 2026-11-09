@@ -245,7 +245,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window", keyboard::a_sheet_keeps_tab_inside_it_while_it_covers_the_window),
     ("keyboard::a_slider_worked_by_hand_leaves_the_arrows_to_the_photos", keyboard::a_slider_worked_by_hand_leaves_the_arrows_to_the_photos),
     ("keyboard::a_number_typed_over_a_slider_readout_steps_it_there", keyboard::a_number_typed_over_a_slider_readout_steps_it_there),
-    ("keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand", keyboard::a_slider_tells_its_double_click_and_its_typed_value_under_the_hand),
+    ("keyboard::a_slider_tells_its_double_click_on_its_name_and_its_typed_value_and_nothing_on_its_rail", keyboard::a_slider_tells_its_double_click_on_its_name_and_its_typed_value_and_nothing_on_its_rail),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
     ("outside::a_dropped_menu_is_as_wide_as_its_select", outside::a_dropped_menu_is_as_wide_as_its_select),
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),

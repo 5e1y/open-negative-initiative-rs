@@ -93,6 +93,9 @@ mod platform {
         unsafe { objc2_app_kit::NSApplication::sharedApplication(mtm).setApplicationIconImage(Some(&image)) };
     }
 
+    /// The close key's distance from the window's left edge, as AppKit sets it beside a tall toolbar.
+    const LEAD: f64 = 20.0;
+
     /// AppKit lays the lights again on every resize, so each call lays them back; the room is the zoom
     /// key's right edge plus the close key's margin, as far from the lights as they sit from the edge.
     pub fn traffic_lights(window: &Window, bar: f64) -> f32 {
@@ -114,10 +117,12 @@ mod platform {
             frame.origin.y = ns_window.frame().size.height - bar;
             row.setFrame(frame);
         }
-        for key in [NSWindowButton::CloseButton, NSWindowButton::MiniaturizeButton, NSWindowButton::ZoomButton] {
+        // AppKit's spacing between the keys, laid from `LEAD` whatever x they stand at now.
+        let gap = ns_window.standardWindowButton(NSWindowButton::MiniaturizeButton).map_or(20.0, |m| m.frame().origin.x - close.frame().origin.x);
+        for (i, key) in [NSWindowButton::CloseButton, NSWindowButton::MiniaturizeButton, NSWindowButton::ZoomButton].into_iter().enumerate() {
             if let Some(key) = ns_window.standardWindowButton(key) {
                 let at = key.frame();
-                key.setFrameOrigin(NSPoint::new(at.origin.x, ((bar - at.size.height) / 2.0).round()));
+                key.setFrameOrigin(NSPoint::new(LEAD + gap * i as f64, ((bar - at.size.height) / 2.0).round()));
             }
         }
         let (close, zoom) = (close.frame(), zoom.frame());
