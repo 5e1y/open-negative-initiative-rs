@@ -79,6 +79,7 @@ impl Ctl {
             r.laid_window = r.window;
             r.draft_id = None;
             r.draftless.clear();
+            r.draft_waiting = false;
             r.tutorial_hidden = false;
             r.shown = true;
             if let Some(p) = &r.previews {
@@ -125,7 +126,7 @@ impl Ctl {
 
     /// `landRollFrame`: the frame's framing, its preview asked, the roll's values off the first.
     pub(in crate::app) fn land_frame(self: &Rc<Self>, session: u64, path: &str, read: PipelineSettings, draft: Option<RollDraft>, first: bool, aspect: Option<f64>) {
-        {
+        let waited = {
             let kept = self.remembered_flat_field();
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
@@ -170,6 +171,10 @@ impl Ctl {
                 };
             }
             r.resume(draft.as_ref(), index);
+            r.draft_landed()
+        };
+        if waited {
+            self.save_draft();
         }
         self.publish_prepare();
     }
@@ -266,4 +271,9 @@ impl Ctl {
             }
         });
     }
+}
+
+/// The scan's pixel size, read off its container's header.
+fn scan_size(path: &str) -> Option<(usize, usize)> {
+    oni_decode::container::pixel_size(Path::new(path))
 }

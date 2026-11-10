@@ -8348,5 +8348,26 @@
     "title": "Three window checks read what is drawn the way each build draws it",
     "status": "done",
     "detail": "From the Windows CI's pictures: the Lab screen cuts a count too wide just short of its column's edge where the interface is compiled, where the live preview lets it overflow, so the screen check looks within a point and a half of each edge, which a count that fits keeps clear by over two (scanner). The status bar gives its room to work under way and then shows the frame's line again, so the line is read as it is drawn rather than at one instant (filmstrip). The press with every balance kept is bounded tenfold on a software adapter, like every wait (balance_kept)."
+  },
+  {
+    "id": 1690,
+    "type": "fix",
+    "title": "An export stopped before any frame reached its writer ends stopped",
+    "status": "done",
+    "detail": "Seen on the Windows runner: Stop clicked while the first large frame was still decoding ended the batch as written, 0 photos exported. The writer marked a batch stopped only when a frame reached it after the stop, so a stop that held every frame back in the decoders or on the GPU stage left it Done. staged() now ends Stopped whenever the stop is set and fewer frames were written than asked. Check export::batch: a stop before any frame reaches the writer is a stop (it read Done before the fix)."
+  },
+  {
+    "id": 1691,
+    "type": "fix",
+    "title": "The tree's cost check counts the open photo's thumbnail from the open",
+    "status": "done",
+    "detail": "On the Windows runner the open photo's thumbnail was drawn from its sidecar 2 s after the open, while the photo's own render took 11 s on the software adapter, so the check, counting from that render, waited for a second landing that never comes. Both waits in tree_cost count from the open."
+  },
+  {
+    "id": 1692,
+    "type": "fix",
+    "title": "A step taken before every frame is read writes its draft once the last one lands",
+    "status": "done",
+    "detail": "Prepare the Roll writes a step's draft only once every frame is read; a step taken earlier wrote nothing until the next step or the window's close, so a roll left then lost that step. Seen on the Windows runner, where the frames read slowly. The roll remembers a step that waited (Roll::step_drafts) and writes it as the last frame lands (Roll::draft_landed). Check prepare::model: a frame still unread keeps the step waiting, the last one writes it once."
   }
 ]

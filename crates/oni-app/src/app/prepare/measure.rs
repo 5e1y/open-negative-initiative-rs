@@ -239,7 +239,7 @@ impl Ctl {
         self.flush_open();
         let job = {
             let r = &mut self.state.borrow_mut().prepare;
-            let Some(drafts) = r.drafts() else { return };
+            let Some(drafts) = r.step_drafts() else { return };
             let job: Job = Box::new(move || {
                 let refused: Vec<String> =
                     drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(Some(draft), Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
