@@ -99,7 +99,7 @@ pub fn record(support: PathBuf, favourites: Vec<String>, identify: Identify) {
 /// The volume and file id of `path` as the system reports them now, `None` when it does not answer.
 pub fn place(path: &str, identify: &Identify) -> Option<Place> {
     let metadata = std::fs::metadata(path).ok()?;
-    Some(Place { volume: identify(path), file_id: file_id(&metadata) })
+    Some(Place { volume: identify(path), file_id: file_id(path, &metadata) })
 }
 
 /// Where a folder out of reach seems to be now, by an identity kept here: offered, never followed
@@ -171,7 +171,19 @@ fn found_by_id(near: &str, id: u64) -> Option<String> {
     beside.or_else(|| by_volume_id(device, id))
 }
 
-#[cfg(not(unix))]
+/// As on the Mac: among `near`'s folders, else where the volume opens the id, by its final path.
+#[cfg(windows)]
+fn found_by_id(near: &str, id: u64) -> Option<String> {
+    let serial = win32::by_handle(near)?.dwVolumeSerialNumber;
+    let beside = std::fs::read_dir(near).ok()?.flatten().find_map(|entry| {
+        let path = entry.path();
+        let info = win32::by_handle(&path.to_string_lossy())?;
+        (path.is_dir() && win32::index(&info) == id && info.dwVolumeSerialNumber == serial).then(|| paths::canonical(&path))
+    });
+    beside.or_else(|| win32::by_volume_id(near, id))
+}
+
+#[cfg(not(any(unix, windows)))]
 fn found_by_id(_: &str, _: u64) -> Option<String> {
     None
 }
@@ -205,12 +217,17 @@ fn by_volume_id(_: u64, _: u64) -> Option<String> {
 }
 
 #[cfg(unix)]
-fn file_id(metadata: &std::fs::Metadata) -> Option<u64> {
+fn file_id(_: &str, metadata: &std::fs::Metadata) -> Option<u64> {
     Some(std::os::unix::fs::MetadataExt::ino(metadata))
 }
 
-#[cfg(not(unix))]
-fn file_id(_: &std::fs::Metadata) -> Option<u64> {
+#[cfg(windows)]
+fn file_id(path: &str, _: &std::fs::Metadata) -> Option<u64> {
+    win32::by_handle(path).map(|info| win32::index(&info))
+}
+
+#[cfg(not(any(unix, windows)))]
+fn file_id(_: &str, _: &std::fs::Metadata) -> Option<u64> {
     None
 }
 
@@ -269,8 +286,44 @@ fn volume(_: &str) -> Option<Volume> {
 mod win32 {
     use super::Volume;
     use std::os::windows::fs::OpenOptionsExt;
-    use std::os::windows::io::AsRawHandle;
-    use windows_sys::Win32::Storage::FileSystem::{BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, GetFileInformationByHandle, GetVolumePathNameW};
+    use std::os::windows::io::{AsRawHandle, FromRawHandle};
+    use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, FILE_ID_DESCRIPTOR, FILE_ID_DESCRIPTOR_0, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, FileIdType,
+        GetFileInformationByHandle, GetFinalPathNameByHandleW, GetVolumePathNameW, OpenFileById,
+    };
+
+    /// The index NTFS keeps for a file or a folder through a rename or a move on its volume.
+    pub(super) fn index(info: &BY_HANDLE_FILE_INFORMATION) -> u64 {
+        (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow)
+    }
+
+    /// The folder holding `id` on `near`'s volume, opened by its id and named by its final path.
+    pub(super) fn by_volume_id(near: &str, id: u64) -> Option<String> {
+        let hint = std::fs::OpenOptions::new().access_mode(0).custom_flags(FILE_FLAG_BACKUP_SEMANTICS).open(near).ok()?;
+        let descriptor = FILE_ID_DESCRIPTOR {
+            dwSize: std::mem::size_of::<FILE_ID_DESCRIPTOR>() as u32,
+            Type: FileIdType,
+            Anonymous: FILE_ID_DESCRIPTOR_0 { FileId: id as i64 },
+        };
+        let share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+        // SAFETY: the hint handle lives as long as `hint`; the descriptor is read during the call alone.
+        let opened = unsafe { OpenFileById(hint.as_raw_handle(), &descriptor, 0, share, std::ptr::null(), FILE_FLAG_BACKUP_SEMANTICS) };
+        if opened == INVALID_HANDLE_VALUE {
+            return None;
+        }
+        // SAFETY: a handle just opened and owned by no one else, closed when `found` drops.
+        let found = unsafe { std::fs::File::from_raw_handle(opened) };
+        let mut name = vec![0u16; 32_768];
+        // SAFETY: the buffer's length is handed with it; the answer counts what was written.
+        let written = unsafe { GetFinalPathNameByHandleW(found.as_raw_handle(), name.as_mut_ptr(), name.len() as u32, 0) } as usize;
+        if written == 0 || written >= name.len() {
+            return None;
+        }
+        let text = String::from_utf16_lossy(&name[..written]);
+        let path = std::path::Path::new(text.strip_prefix(r"\\?\").unwrap_or(&text));
+        path.is_dir().then(|| crate::paths::canonical(path))
+    }
 
     /// The file's index and its volume's serial number; a folder opens only with backup semantics.
     pub(super) fn by_handle(path: &str) -> Option<BY_HANDLE_FILE_INFORMATION> {

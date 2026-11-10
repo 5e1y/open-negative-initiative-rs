@@ -220,6 +220,8 @@ export component HueProbe inherits AppWindow {
 // The Lab screen, narrow, every count at the widest a letter reaches; its columns' edges for the check.
 export component ScreenProbe inherits AppWindow {
     in property <string> widest: "+23.5";
+    // Every count shown, signed by its letter's place: a check makes it longer than any font fits.
+    in property <string> count: "23.5";
     out property <length> left: screen.x + Space.m;
     out property <length> column: (screen.width - 2 * Space.m) / 5;
     out property <length> top: screen.y;
@@ -234,6 +236,6 @@ export component ScreenProbe inherits AppWindow {
         width: 200px;
         height: 108px;
         widest: root.widest;
-        cells: [{ title: "D", value: "−23.5" }, { title: "C", value: "+23.5" }, { title: "M", value: "−23.5" }, { title: "Y", value: "+23.5" }, { title: "T", value: "−23.5" }];
+        cells: [{ title: "D", value: "−" + root.count }, { title: "C", value: "+" + root.count }, { title: "M", value: "−" + root.count }, { title: "Y", value: "+" + root.count }, { title: "T", value: "−" + root.count }];
     }
 }

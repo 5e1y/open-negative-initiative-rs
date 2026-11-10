@@ -305,7 +305,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert!(!titled().1, "twin: the ONI Trash makes no project");
     assert_eq!(menus.get_titles().restore.as_str(), "Restore");
     hand.right_click("C");
-    assert_eq!(hand.menu(), ["Restore", "Show in Finder"]);
+    assert_eq!(hand.menu(), ["Restore", common::reveal()]);
     hand.choose("Restore");
     rig.landed(&ctl);
     assert!(row(&canonical("C.tif")).trashed_at.is_none() && Path::new(&canonical("C.tif")).exists());

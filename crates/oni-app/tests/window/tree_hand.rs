@@ -153,9 +153,9 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     // A pick holding a folder and a photo shows in the Finder only; a folder alone takes the
     // navigator's folder menu, one menu for a folder wherever it is right-clicked.
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll B")));
-    assert_eq!(lines(&lib), ["Show in Finder"]);
+    assert_eq!(lines(&lib), [common::reveal()]);
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));
-    assert_eq!(lines(&lib), ["Open", "Add to Favourites", "Rename…", "Make a Roll", "New Folder Inside", "Show in Finder"], "twin: a folder outside the pick");
+    assert_eq!(lines(&lib), ["Open", "Add to Favourites", "Rename…", "Make a Roll", "New Folder Inside", common::reveal()], "twin: a folder outside the pick");
     let ruled: Vec<bool> = lib.get_menu_lines().iter().map(|l| l.rule).collect();
     assert_eq!(ruled, [false, false, true, false, false, true], "dividers before Rename… and Show in Finder, as the navigator's");
 

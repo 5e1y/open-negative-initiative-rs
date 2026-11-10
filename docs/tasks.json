@@ -8285,5 +8285,47 @@
     "title": "The Windows CI's window checks see the interface again",
     "status": "done",
     "detail": "The Windows CI builds and tests in release, where the interface is compiled without its element names: every window check that finds an element by its role and label (common::the, placed) found none, 80 962 warnings in one run and most of its 97 failures. SLINT_EMIT_DEBUG_INFO is set for the whole job, so the compiled interface keeps the names the checks read, as the live preview does on the Mac."
+  },
+  {
+    "id": 1660,
+    "type": "fix",
+    "title": "The window checks read each system's own words and paths",
+    "status": "done",
+    "detail": "Of the Windows CI's 28 failures, the checks expected the Mac's words and spellings where the app rightly answers Windows' own: Show in Explorer and Ctrl+E through common::reveal and common::command (export_flow, gallery, navigator, told, tree_hand, updates, visible); paths spelt as the archive spells them, `/` between names, through common::spelt and paths::normal (balance_kept, oni-core's kept and oni_trash, made_roll); a field Tab brings the keyboard to selecting its text outside the Mac, as Slint does after Windows' own fields (keyboard); a help mark found in the app's language where the interface is compiled, as in the CI (help_demo); the Lab screen's twin overflowing with counts twice as long, whatever the system's monospaced font (scanner, ScreenProbe's count); the gallery's tile lookup naming the tiles it saw when one is missing (canvas_layout)."
+  },
+  {
+    "id": 1661,
+    "type": "fix",
+    "title": "Every file checks out byte for byte as committed",
+    "status": "done",
+    "detail": "Windows' CRLF checkout changed the lines the checks parse and hash: the Mac words check never found its tests' module, fields' block reader and the French catalogue's lines missed their `\\n`, the canisters' hashes moved. `.gitattributes` holds every file as committed, `* -text`, so no system converts a line end."
+  },
+  {
+    "id": 1662,
+    "type": "feature",
+    "title": "A favourite renamed in the Explorer is found by its file id on Windows",
+    "status": "done",
+    "detail": "bookmarks.json kept no file id on Windows, so a favourite renamed or moved outside the app was never offered back there. Windows now keeps NTFS's file index, read with GetFileInformationByHandle, and finds the folder holding it among the nearest folder's own, else opens it by id on its volume (OpenFileById) and names it by its final path, as the Mac's /.vol does; the volume's serial must match. The Mac's rename check runs on Windows too."
+  },
+  {
+    "id": 1663,
+    "type": "fix",
+    "title": "On Windows a watched folder can be renamed and its disk ejected",
+    "status": "done",
+    "detail": "ReadDirectoryChangesW holds each watched folder open, and Windows then refuses to rename it or a folder above it, or to eject its disk, and the watcher lets its handles go only later on its own thread, so even the app's own Rename raced it. Windows now watches by polling every two seconds, holding nothing open, as FSEvents holds nothing on the Mac; the watches' release around a rename is gone with its reason. Check: a watched folder and the folders above it rename while watched, and, on Windows, a ReadDirectoryChangesW watch is refused the same rename (twin)."
+  },
+  {
+    "id": 1664,
+    "type": "check",
+    "title": "The window checks' waits stretch on a software adapter",
+    "status": "done",
+    "detail": "A runner with no GPU renders on WARP or lavapipe, 20 to 50 times slower: a roll's drafts and an open photo's thumbnail missed waits sized for a GPU. Rig::until stretches its limit tenfold when the adapter is a CPU one, a cause outside the app named where the checks answer it; what the window times is left as it is."
+  },
+  {
+    "id": 1665,
+    "type": "fix",
+    "title": "The report sheet says this computer, not this Mac",
+    "status": "done",
+    "detail": "On Windows the feedback sheet said the log is encrypted on this Mac. It says this computer, in English, French and Spanish."
   }
 ]

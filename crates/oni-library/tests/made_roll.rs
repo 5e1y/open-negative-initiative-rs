@@ -83,7 +83,8 @@ fn an_index_rebuilt_from_the_sidecars_finds_every_frame_and_a_disk_away_invents_
 
     // The roll is the folder's marker, read off the disk, never the index.
     let rolls = folders::rolls(&members);
-    let film = rolls.get(&*made.roll.to_string_lossy()).expect("the folder carries its roll");
+    // Keyed in the archive's own spelling, `/` between names on every system.
+    let film = rolls.get(&*oni_library::paths::normal(&made.roll.to_string_lossy())).expect("the folder carries its roll");
     assert_eq!((film.id, film.name.as_str(), film.stock.as_deref()), (made.film.id, "Roll A", Some("fujifilm-fujicolor")));
     let groups = folders::groups(&root, &index.shown(), &rolls, &Default::default());
     assert_eq!((groups.len(), groups[0].display_title(), groups[0].entries.len()), (1, "Roll A".to_owned(), FRAMES));

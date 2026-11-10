@@ -184,7 +184,7 @@ impl Ctl {
             return self.publish_navigator();
         }
         let target = paths::join(&paths::parent(path), trimmed);
-        if let Err(e) = self.unwatched(|| renamed_on_disk(path, &target)) {
+        if let Err(e) = renamed_on_disk(path, &target) {
             self.told(tr("Rename"), &renamed_refused(&e, Platform::THIS));
             return self.publish_navigator();
         }

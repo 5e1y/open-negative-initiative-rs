@@ -85,7 +85,7 @@ fn a_volume_known_by_its_uuid_under_another_name_is_a_lead() {
     assert_eq!(known.lead(&scans, &computer, &both, &fake(&computer, &[("T7", "A"), ("T7 1", "A")])), None);
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", windows))]
 #[test]
 fn a_favourite_renamed_in_the_finder_is_found_by_its_file_id_and_one_thrown_away_is_not() {
     let scratch = Scratch::new("bookmarks-id");

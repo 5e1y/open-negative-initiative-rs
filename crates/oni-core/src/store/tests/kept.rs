@@ -107,8 +107,9 @@ fn a_frame_trashed_after_a_refused_write_keeps_its_edits_unsaved() {
 #[test]
 fn edits_kept_unsaved_and_the_open_frame_follow_a_move() {
     let (mut store, dir, a, _) = edited_then_switched("follow", true);
-    let moved = dir.join("T7 away/Roll/A.tif").to_string_lossy().into_owned();
-    let away = Move { from: dir.join("T7").to_string_lossy().into_owned(), to: dir.join("T7 away").to_string_lossy().into_owned() };
+    let spelt = |p: std::path::PathBuf| oni_library::paths::normal(&p.to_string_lossy()).into_owned();
+    let moved = spelt(dir.join("T7 away/Roll/A.tif"));
+    let away = Move { from: spelt(dir.join("T7")), to: spelt(dir.join("T7 away")) };
     store.follow(std::slice::from_ref(&away));
     assert_eq!(store.unsaved()[0].path, moved);
     store.open(&moved).unwrap();
@@ -123,7 +124,7 @@ fn edits_kept_unsaved_and_the_open_frame_follow_a_move() {
     let _ = std::fs::remove_dir_all(&dir);
     // Twin: unfollowed, the moved photo opens without them, kept under the old path.
     let (mut store, dir, _, _) = edited_then_switched("unfollowed", true);
-    let moved = dir.join("T7 away/Roll/A.tif").to_string_lossy().into_owned();
+    let moved = spelt(dir.join("T7 away/Roll/A.tif"));
     store.open(&moved).unwrap();
     assert_eq!(Knob::Vignette.get(store.settings()), 0.0);
     assert_eq!(store.unsaved().len(), 1);

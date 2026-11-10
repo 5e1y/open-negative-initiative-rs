@@ -87,7 +87,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     let bar = first.window.global::<Bar>();
     rig.until("the scheduled check", Duration::from_secs(10), || bar.get_update_title() != "");
     assert_eq!(bar.get_update_title().as_str(), "UPDATE TO 9.1.0");
-    assert_eq!(bar.get_update_help().as_str(), "Download version 9.1.0 · export stays on ⌘E");
+    assert_eq!(bar.get_update_help().as_str(), format!("Download version 9.1.0 · export stays on {}E", common::command()));
     // A copy never reported names its version alone, a first installation, and keeps it once answered.
     let installed = oni_app::updates::installed_url(oni_app::updates::version(), None, oni_app::updates::os());
     rig.until("the installation reported", Duration::from_secs(10), || Preferences::load(&support).string("lastLaunchedVersion").is_some());

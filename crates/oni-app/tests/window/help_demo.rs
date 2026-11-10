@@ -11,14 +11,18 @@ use crate::panel_bindings::opened;
 
 const SHARPENING: &str = "Sharpens edges without adding colour fringing.\n\nHalo suppression keeps a sharpened edge within the light of its neighbours, clamping the overshoot that draws a bright or dark rim along it.";
 const CHROMA: &str = "Smooths colour noise from the scan without touching the film grain.";
-/// The help mark of the block titled `subject`, named as assistive tools read it; a check's build
-/// keeps the interface's words English.
-pub(crate) fn mark(w: &oni_app::MainWindow, subject: &str) -> common::Placed {
-    common::the(w, Role::Button, &format!("Help on {subject}"))
+/// The help mark of the block titled `subject`, named as assistive tools read it: in English where the
+/// interface is read live, as on the Mac, in the app's language where it is compiled, as in the CI.
+pub(crate) fn mark(w: &oni_app::MainWindow, subject: &'static str) -> common::Placed {
+    let english = format!("Help on {subject}");
+    if !common::placed(w, Role::Button, &english).is_empty() {
+        return common::the(w, Role::Button, &english);
+    }
+    common::the(w, Role::Button, &oni_i18n::tr("Help on {}").replace("{}", oni_i18n::tr(subject)))
 }
 
 /// Rests the hand on the help mark of the block titled `subject` and presses it, as the keyboard would.
-pub(crate) fn press_help(rig: &common::Rig, w: &oni_app::MainWindow, subject: &str) {
+pub(crate) fn press_help(rig: &common::Rig, w: &oni_app::MainWindow, subject: &'static str) {
     common::click(rig, w, mark(w, subject).middle());
     rig.settle();
 }

@@ -100,7 +100,9 @@ pub(crate) fn tab_walks_every_control_in_reading_order_each_answering_its_own_ke
     assert!(p.get_held(), "a key holding the keyboard lets the bare keys through");
     backtab(&rig, &p);
     key(&rig, &p, "b");
-    assert_eq!(p.get_text().as_str(), "ab", "⇧Tab walks back to the field");
+    // Outside the Mac a field Tab brings the keyboard to selects its text, as Windows' own fields do.
+    let typed = if cfg!(target_vendor = "apple") { "ab" } else { "b" };
+    assert_eq!(p.get_text().as_str(), typed, "⇧Tab walks back to the field");
 }
 
 pub(crate) fn a_press_gives_the_keyboard_back_to_the_photos_and_a_key_whose_holder_is_gone_reaches_them() {

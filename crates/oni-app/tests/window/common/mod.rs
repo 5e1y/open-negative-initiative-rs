@@ -62,7 +62,7 @@ impl Rig {
     }
 
     pub fn until(&self, what: &str, limit: Duration, done: impl Fn() -> bool) {
-        let start = Instant::now();
+        let (start, limit) = (Instant::now(), limit * stretch());
         while !done() {
             assert!(start.elapsed() < limit, "timed out waiting for {what}");
             self.pump();
@@ -308,6 +308,31 @@ pub fn focused_label(window: &impl slint::ComponentHandle) -> String {
     let item = inner.focus_item.borrow().upgrade().map(i_slint_core::accessibility::nearest_accessible_item);
     let label = item.and_then(|i| i.accessible_string_property(i_slint_core::accessibility::AccessibleStringProperty::Label));
     label.map(|l| l.to_string()).unwrap_or_default()
+}
+
+/// A runner with no GPU renders on a software adapter (WARP, lavapipe), 20 to 50 times slower than a GPU:
+/// every wait stretches tenfold there, what the window itself times left as it is.
+pub fn stretch() -> u32 {
+    static STRETCH: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    *STRETCH.get_or_init(|| match oni_app::render::Device::open() {
+        Ok(gpu) if gpu.adapter.get_info().device_type == wgpu::DeviceType::Cpu => 10,
+        _ => 1,
+    })
+}
+
+/// A path in the archive's own spelling, `/` between names on every system, as the app hands paths round.
+pub fn spelt(path: &std::path::Path) -> String {
+    oni_library::paths::normal(&path.to_string_lossy()).into_owned()
+}
+
+/// The file manager's verb this system's menus write: Show in Finder, or Show in Explorer.
+pub fn reveal() -> &'static str {
+    oni_app::platform::reveal(oni_app::platform::Platform::THIS)
+}
+
+/// The command modifier this system's labels write before a key: ⌘, or Ctrl+.
+pub fn command() -> &'static str {
+    oni_app::platform::keys(oni_app::platform::Platform::THIS).command
 }
 
 /// The one element shown with this role and label; the live preview's interpreter carries the

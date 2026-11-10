@@ -70,7 +70,7 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     assert_eq!(g.get_vignette_readout().as_str(), Field::Vignette.readout(open(Knob::Vignette)), "twin: one value where the frames agree");
 
     // B at rest beside A and C balanced each its own way: Colour's Reset is live for them alone.
-    let live = |block: &str| crate::help_card::reset_of(w, block).is_some();
+    let live = |block: &'static str| crate::help_card::reset_of(w, block).is_some();
     assert!(open(Knob::Temperature) == 0.0 && live("Colour"), "the open frame at rest, the others not");
 
     let field = Field::Temperature.index();

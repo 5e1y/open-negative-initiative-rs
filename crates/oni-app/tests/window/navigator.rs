@@ -266,7 +266,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
         ("Rename…".to_string(), true, true),
         ("Make a Roll".to_string(), true, false),
         ("New Folder Inside".to_string(), true, false),
-        ("Show in Finder".to_string(), true, true),
+        (common::reveal().to_string(), true, true),
     ]);
     // New Folder Inside, numbered once taken; the new row is named at once.
     choose(&rig, w, "Scans", "New Folder Inside");

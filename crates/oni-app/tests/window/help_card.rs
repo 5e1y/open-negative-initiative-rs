@@ -28,7 +28,7 @@ fn even(insets: [f32; 4]) -> bool {
 }
 
 /// The block's Reset on the row of its "?", none while the block stands at its rest.
-pub(crate) fn reset_of(w: &oni_app::MainWindow, subject: &str) -> Option<Placed> {
+pub(crate) fn reset_of(w: &oni_app::MainWindow, subject: &'static str) -> Option<Placed> {
     let row = mark(w, subject);
     let found: Vec<Placed> = common::placed(w, Role::Button, "Reset").into_iter().filter(|p| p.level_with(&row)).collect();
     assert!(found.len() <= 1, "one Reset at most on {subject}'s row: {found:?}");

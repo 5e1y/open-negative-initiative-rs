@@ -127,8 +127,8 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
     rig.settle();
     assert!(common::placed(w, Role::Button, "Stop").is_empty(), "no Stop once it ended");
     assert_eq!((told.get_title().as_str(), told.get_message().as_str()), ("Export", "3 photos exported"));
-    assert_eq!(told.get_action(), "Show in Finder");
-    assert_eq!(common::placed(w, Role::Button, "Show in Finder").len(), 1, "its key shows over the editor");
+    assert_eq!(told.get_action(), common::reveal());
+    assert_eq!(common::placed(w, Role::Button, common::reveal()).len(), 1, "its key shows over the editor");
     rig.shot("export-told");
     told.invoke_closed();
 

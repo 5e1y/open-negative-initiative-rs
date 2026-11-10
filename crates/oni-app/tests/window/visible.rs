@@ -135,7 +135,7 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
     let k = row(w, "Keep").unwrap();
     assert_eq!((k.reach, k.caption.as_str(), k.help.as_str()), (Reach::Here, "", ""));
     assert!(menu(w, "Keep").iter().all(|(_, enabled)| *enabled));
-    assert_eq!(menu(w, "Keep").last().unwrap().0, "Show in Finder");
+    assert_eq!(menu(w, "Keep").last().unwrap().0, common::reveal());
     rig.settle();
     rig.shot("visible-favourite-gone");
 

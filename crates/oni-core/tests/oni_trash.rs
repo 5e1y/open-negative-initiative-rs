@@ -41,7 +41,8 @@ fn trashed(paths: &[String]) -> Vec<bool> {
 #[test]
 fn a_triplet_goes_whole_in_one_step_and_undo_and_redo_hand_it_back() {
     let dir = folder("triplet");
-    let at = |n: &str| dir.0.join(n).to_string_lossy().into_owned();
+    // The archive's own spelling, `/` between names on every system, as the app hands paths in.
+    let at = |n: &str| oni_library::paths::normal(&dir.0.join(n).to_string_lossy()).into_owned();
     let (lead, green, blue, neighbour) = (at("t-r.ARW"), at("t-g.ARW"), at("t-b.ARW"), at("n.ARW"));
     for (i, p) in [&lead, &green, &blue, &neighbour].iter().enumerate() {
         std::fs::write(p, format!("original {i}")).unwrap();

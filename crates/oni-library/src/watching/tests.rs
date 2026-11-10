@@ -154,38 +154,23 @@ fn a_deep_watch_holds_no_descriptor_per_file() {
 }
 
 #[test]
-fn a_release_lets_every_watch_go_and_its_end_watches_what_was_asked_meanwhile() {
-    let (a, b) = (vec!["/A".to_owned()], vec!["/B".to_owned()]);
-    let mut asked = Asked::default();
-    assert_eq!(asked.set(a.clone(), Vec::new()), Some((a.clone(), Vec::new())));
-    assert_eq!(asked.release(), (Vec::new(), Vec::new()));
-    assert_eq!(asked.set(b.clone(), Vec::new()), None, "nothing is watched while a rename runs");
-    assert_eq!(asked.release(), (Vec::new(), Vec::new()));
-    assert_eq!(asked.resume(), None, "an inner release's end leaves the outer one standing");
-    assert_eq!(asked.resume(), Some((b.clone(), Vec::new())));
-    // Twin: a resume with no release standing changes nothing.
-    assert_eq!(asked.resume(), None);
-    assert_eq!(asked.set(a.clone(), Vec::new()), Some((a, Vec::new())));
-}
-
-#[test]
-fn a_photo_dropped_while_the_watches_are_released_is_not_told() {
-    let (_scratch, computer, root) = rig("watch-released");
+fn a_watched_folder_and_the_folders_above_it_rename_while_watched() {
+    let (_scratch, computer, root) = rig("watch-renamed");
     let (roll, scans) = (paths::join(&root, "Home/Scans/Roll 8"), paths::join(&root, "Home/Scans"));
-    let (watch, calls) = live(&computer, &roll, &scans);
-    let released = watch.released();
-    std::fs::write(Path::new(&roll).join("C.nef"), b"x").unwrap();
-    std::thread::sleep(Duration::from_millis(1500));
-    assert!(calls.lock().unwrap().is_empty(), "{:?}", calls.lock().unwrap());
-    // Twin: once the release ends, a photo dropped is told again.
-    drop(released);
-    let mut n = 0;
-    until("the watch back", Duration::from_secs(30), || {
-        n += 1;
-        std::fs::write(Path::new(&roll).join(format!("D-{n}.nef")), b"x").unwrap();
-        std::thread::sleep(Duration::from_millis(100));
-        !calls.lock().unwrap().is_empty()
-    });
+    let (watch, _) = live(&computer, &roll, &scans);
+    // A disk leaving or a folder renamed in the file manager: nothing the watch holds stands in the way.
+    let (home, away) = (Path::new(&root).join("Home"), Path::new(&root).join("Home away"));
+    std::fs::rename(&home, &away).unwrap();
+    std::fs::rename(&away, &home).unwrap();
+    std::fs::rename(&roll, paths::join(&scans, "Roll 9")).unwrap();
+    drop(watch);
+    // Twin: Windows' own watch holds its folder open, and the folder above it is refused.
+    #[cfg(windows)]
+    {
+        let mut held = notify::ReadDirectoryChangesWatcher::new(|_| {}, notify::Config::default()).unwrap();
+        notify::Watcher::watch(&mut held, Path::new(&scans), notify::RecursiveMode::Recursive).unwrap();
+        assert!(std::fs::rename(&home, &away).is_err(), "a ReadDirectoryChangesW watch holds the folders above it");
+    }
 }
 
 #[test]

@@ -86,14 +86,14 @@ impl Rigged {
     /// The settings a press reads: the open frame's live ones, the others' sidecars.
     fn settings(&self, path: &Path) -> PipelineSettings {
         let s = self.shell.ctl.state.borrow();
-        if s.open_path() == Some(path.to_string_lossy().as_ref()) {
+        if s.open_path() == Some(common::spelt(path).as_str()) {
             return s.store().settings().clone();
         }
         sidecar::read(path, oni_decode::decodes_via_mosaic(path), true).map(|l| l.settings).unwrap_or_default()
     }
 
     fn kept(&self, paths: &[PathBuf]) -> bool {
-        paths.iter().all(|p| measuring::kept(&p.to_string_lossy(), &self.settings(p)).is_some())
+        paths.iter().all(|p| measuring::kept(&common::spelt(p), &self.settings(p)).is_some())
     }
 
     fn balanced(&self, path: &Path) -> bool {
@@ -106,7 +106,7 @@ impl Rigged {
         self.rig.until(&format!("{what}: every balance read ahead"), Duration::from_secs(120), || self.kept(paths));
         for p in paths {
             let s = self.settings(p);
-            let kept = || measuring::kept(&p.to_string_lossy(), &s).unwrap().reference.expect("a negative is read on a roll");
+            let kept = || measuring::kept(&common::spelt(p), &s).unwrap().reference.expect("a negative is read on a roll");
             match &s.roll_reference {
                 // A roll of one is a roll of its own at each press, as Swift measures it afresh.
                 None => assert_ne!(kept().id, kept().id, "{what}: a kept roll of one gave its id twice"),

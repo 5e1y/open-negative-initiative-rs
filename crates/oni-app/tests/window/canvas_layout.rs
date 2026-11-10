@@ -36,7 +36,9 @@ fn hover(rig: &common::Rig, x: f32, y: f32) {
 }
 
 fn open(rig: &common::Rig, w: &oni_app::MainWindow, caption: &str) {
-    let tile = app::tiles(w).into_iter().find(|t| t.caption == caption).unwrap_or_else(|| panic!("{caption} is shown"));
+    let tiles = app::tiles(w);
+    let shown = || tiles.iter().map(|t| t.caption.to_string()).collect::<Vec<_>>();
+    let tile = tiles.iter().find(|t| t.caption == caption).unwrap_or_else(|| panic!("{caption} is shown among {:?}", shown()));
     w.global::<Library>().invoke_tile_opened(tile.index);
     rig.pump();
 }

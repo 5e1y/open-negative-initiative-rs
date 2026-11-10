@@ -324,8 +324,9 @@ pub(crate) fn the_lab_screen_holds_its_widest_count_whole() {
     };
     println!("shot {}", rig.shot("lab-screen-widest").display());
     assert!(!inked(), "every count stands whole in its column");
-    // Twin: sized for a one-glyph count, the counts at the screen's full size run over their edges.
+    // Twin: sized for a one-glyph count, counts twice as long run over their edges whatever the font.
     probe.set_widest("0".into());
+    probe.set_count("23.523.5".into());
     rig.settle();
     println!("shot {}", rig.shot("lab-screen-full-size").display());
     assert!(inked(), "a count at full size would be seen cut");

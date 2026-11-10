@@ -23,7 +23,7 @@ fn card(w: &oni_app::MainWindow, subject: &str) -> common::Placed {
 }
 
 /// Whether the mark of `subject` lies wholly right of `c`.
-fn mark_is_right_of(w: &oni_app::MainWindow, subject: &str, c: &common::Placed) -> bool {
+fn mark_is_right_of(w: &oni_app::MainWindow, subject: &'static str, c: &common::Placed) -> bool {
     crate::help_demo::mark(w, subject).x >= c.x + c.width
 }
 

@@ -273,8 +273,9 @@ fn edited_then_switched(label: &str, unplug: bool) -> (EditorStore, std::path::P
     let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(dir.join("T7/Roll")).unwrap();
-    let a = dir.join("T7/Roll/A.tif").to_string_lossy().into_owned();
-    let b = dir.join("B.tif").to_string_lossy().into_owned();
+    // The archive's own spelling, `/` between names on every system, as a move is followed in.
+    let a = oni_library::paths::normal(&dir.join("T7/Roll/A.tif").to_string_lossy()).into_owned();
+    let b = oni_library::paths::normal(&dir.join("B.tif").to_string_lossy()).into_owned();
     std::fs::write(&a, b"a").unwrap();
     std::fs::write(&b, b"b").unwrap();
     let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));

@@ -170,7 +170,7 @@ pub(crate) fn an_undo_that_cannot_put_every_photo_back_says_how_many() {
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
     let (title, message, action) = told(&shell).expect("the shortfall is told");
-    assert_eq!((title.as_str(), action.as_str()), ("Undo", "Show in Finder"));
+    assert_eq!((title.as_str(), action.as_str()), ("Undo", common::reveal()));
     assert_eq!(message, "2 of the items could not be put back: their folder moved or a file took their name.");
     assert!(scans.join("C.tif").exists() && roll.join("A.tif").exists() && roll.join("B.tif").exists(), "C back, A and B kept in the roll");
     assert_eq!(std::fs::read(scans.join("A.tif")).unwrap(), b"another file", "the file that took A's name is untouched");

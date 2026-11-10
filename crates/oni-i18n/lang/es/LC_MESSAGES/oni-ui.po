@@ -273,11 +273,11 @@ msgstr "Nombre del rollo"
 msgid "Help on {}"
 msgstr "Ayuda sobre {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/navigator.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/folders.slint
 msgid "Show {}"
 msgstr "Mostrar {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/navigator.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/folders.slint
 msgid "Hide {}"
 msgstr "Ocultar {}"
 
@@ -918,8 +918,8 @@ msgid "Your message is on its way to the people who make ONI. It shows with the 
 msgstr "Tu mensaje va de camino a quienes hacen ONI. Aparece con los demás en GitHub, donde puedes seguirlo."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."
-msgstr "Tu mensaje y la versión de la app se convierten en una incidencia pública en GitHub, así que no incluyas nada personal. El registro se cifra en este Mac antes de enviarse."
+msgid "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this computer before it leaves."
+msgstr "Tu mensaje y la versión de la app se convierten en una incidencia pública en GitHub, así que no incluyas nada personal. El registro se cifra en este ordenador antes de enviarse."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Encrypted diagnostic log, readable by ONI's maintainers only"
