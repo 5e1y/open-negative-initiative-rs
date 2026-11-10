@@ -114,7 +114,6 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
     let shell = d.launch(&gpu);
     let w = &shell.window;
     let n = w.global::<Navigator>();
-    n.invoke_favourites_toggled();
     rig.pump();
     rig.until("the favourite found gone", Duration::from_secs(10), || row(w, "Roll 12").is_some_and(|r| r.reach == Reach::Missing));
     let r = row(w, "Roll 12").unwrap();

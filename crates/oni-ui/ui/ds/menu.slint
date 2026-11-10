@@ -5,7 +5,6 @@ import { Bounds } from "outside.slint";
 import { Popover } from "surfaces.slint";
 import { Look } from "button.slint";
 import { Icons, MenuGlyph } from "icons.slint";
-import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
 import { Medal } from "marks.slint";
 
@@ -13,7 +12,6 @@ import { Medal } from "marks.slint";
 // for it as AppKit's menus print it, a medal or a glyph before its words, or a picker's note under them.
 export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int, note: string, glyph: MenuGlyph }
 
-export struct FolderChoice { title: string, current: bool }
 
 // What a menu shows its owner, which cannot read into a popup: the lines lit, the opener whose submenu
 // shows, the submenu turned left and where it lies, and how far left of its anchor the popup starts.
@@ -101,8 +99,8 @@ export component PopupPanel inherits PopupWindow {
     }
 }
 
-// Words with the current one checked, a context menu's lines, or the folder pill's choices; a choice
-// closes it. An opener's submenu opens beside it as AppKit's, at rest, on a click or on →.
+// Words with the current one checked, or a context menu's lines; a choice closes it. An opener's
+// submenu opens beside it as AppKit's, at rest, on a click or on →.
 export component Menu inherits PopupWindow {
     // As wide as its widest line, word and chord, so neither elides: `natural`, which a select's menu
     // takes when its field is narrower.
@@ -111,7 +109,6 @@ export component Menu inherits PopupWindow {
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
-    in property <[FolderChoice]> choices;
     // The submenu its owner lays on `opened`, and where the menu's corner stands in the window.
     in property <[MenuLine]> sub-lines;
     in property <length> window-x;
@@ -303,13 +300,6 @@ export component Menu inherits PopupWindow {
                 pointed(x, y) => { root.pointed(i, x, y); }
                 activated => { if (line.opens) { root.open-sub(i); } else { root.chosen(i); } }
             }
-        }
-        for choice[i] in root.choices: Row {
-            form: RowForm.menu;
-            kind: RowKind.folder;
-            title: choice.title;
-            checked: choice.current;
-            clicked => { root.chosen(i); }
         }
     }
     // Its first line level with its opener's, held inside the window's bottom.

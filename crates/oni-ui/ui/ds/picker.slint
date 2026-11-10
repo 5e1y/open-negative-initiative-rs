@@ -6,7 +6,7 @@ import { Look } from "button.slint";
 import { Icons } from "icons.slint";
 import { FormStyle } from "forms.slint";
 import { FieldFace } from "fields.slint";
-import { MenuLine, FolderChoice, Menu } from "menu.slint";
+import { MenuLine, Menu } from "menu.slint";
 import { KeyScope } from "keyboard.slint";
 import { Medal } from "marks.slint";
 
@@ -30,10 +30,7 @@ export component Picker inherits HorizontalLayout {
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
-    in property <[FolderChoice]> choices;
     in property <bool> enabled: true;
-    // A pill that only names what its column lists takes no click, its note still shown.
-    in property <bool> pressable: true;
     in property <string> help;
     in property <Look> look: Look.live;
     // Where the field starts, which a menu dropped under it aligns on.
@@ -48,23 +45,21 @@ export component Picker inherits HorizontalLayout {
     callback chosen(int);
     property <bool> pill: root.face == PickerFace.pill;
     property <bool> chip: root.face == PickerFace.chip;
-    property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
+    property <bool> hovered: root.enabled && (area.has-hover || root.look != Look.live);
     property <bool> as-field: root.face == PickerFace.field;
     // Each face's corner: its face's, its veil's and its focus ring's.
     property <length> corner: root.as-field ? FieldStyle.radius : root.chip ? ButtonStyle.small-radius : Radius.badge;
     // A pill wears the chevron only while it has a menu to drop.
-    property <bool> drops: root.pressable && (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0);
+    property <bool> drops: root.entries.length > 0 || root.lines.length > 0;
     // The press its field last took, and the one that closed its menu: a release whose press never
     // came is a click a menu swallowed, which opens this picker, as AppKit's does, unless it closed its own.
     property <int> down-at: -1;
     property <int> closed-at: -1;
     changed dropped => { if (!self.dropped) { root.closed-at = Outside.presses; } }
     function drop() {
-        if (root.pressable) {
-            root.open();
-            if (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0) {
-                menu.show();
-            }
+        root.open();
+        if (root.drops) {
+            menu.show();
         }
     }
     spacing: Space.s;
@@ -120,7 +115,7 @@ export component Picker inherits HorizontalLayout {
         }
         // Space, Return or ↓ drops its menu while it holds the keyboard.
         KeyScope {
-            enabled: root.enabled && root.pressable;
+            enabled: root.enabled;
             radius: root.corner;
             key-pressed(event) => {
                 if ((event.text != " " && event.text != Key.Return && event.text != Key.DownArrow) || event.modifiers.control || event.modifiers.meta || event.modifiers.alt) {
@@ -134,13 +129,12 @@ export component Picker inherits HorizontalLayout {
     menu := Menu {
         x: root.field-x;
         y: root.height + Space.xxs;
-        // As wide as its select; past it only where a word would otherwise be cut, a folder's list never.
-        span: root.choices.length > 0 ? root.field-width : max(root.field-width, self.natural);
+        // As wide as its select; past it only where a word would otherwise be cut.
+        span: max(root.field-width, self.natural);
         dropped(width) => { root.menu-width = width; }
         entries: root.entries;
         current: root.current;
         lines: root.lines;
-        choices: root.choices;
         chosen(i) => { root.chosen(i); self.close(); }
     }
 }

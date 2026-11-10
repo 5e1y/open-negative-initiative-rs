@@ -3,7 +3,7 @@
 
 use super::{Ctl, Pending, State, with_shell};
 use super::organising::reach;
-use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuGlyph, MenuLine, WelcomeLine};
+use crate::{App, CatchUpLine, FolderLine, MenuGlyph, MenuLine, WelcomeLine};
 use oni_i18n::tr;
 use oni_library::favourites::{self, Favourites};
 use oni_library::history::Move;
@@ -31,10 +31,11 @@ pub(in crate::app) use locate::{Asked, lead_words};
 mod freshness;
 mod keys;
 
-/// `FolderNavigation`'s preference keys, as Swift's `UserDefaults` holds them.
-pub const BASE: &str = "navigatorBase";
-pub const FAVOURITES_ONLY: &str = "navigatorFavouritesOnly";
+/// `FolderNavigation`'s preference keys: the unfolded rows and the height as Swift's `UserDefaults` holds
+/// them, the sections' own beside them.
+pub const FOLDED: &str = "navigatorFoldedSections";
 pub const UNFOLDED: &str = "navigatorUnfolded";
+pub const UNFOLDED_FAVOURITES: &str = "navigatorUnfoldedFavourites";
 pub const EDITOR_HEIGHT: &str = "navigatorEditorHeight";
 /// `EditorScene.rootsCatchUpShown`: the catch-up sheet was dismissed once.
 pub const ROOTS_CATCH_UP_SHOWN: &str = "rootsCatchUpShown";
@@ -67,13 +68,14 @@ pub(super) struct Nav {
     pub favourites: Favourites,
     /// `favourites.json` as last read or written, which tells this app's changes from another's.
     pub favourites_read: Favourites,
-    remembered: Option<(Option<String>, bool, Vec<String>)>,
+    remembered: Option<(Vec<String>, Vec<String>, Vec<String>)>,
     /// The last click: its row, when, and the count it reached, as AppKit's `clickCount` keeps it.
     clicks: Option<(String, Instant, usize)>,
     /// The rows as published, each one's path.
     rows: Vec<String>,
     menu: Vec<FolderAct>,
-    menu_path: Option<String>,
+    /// The folder the menu was asked on, and the section of its row.
+    menu_path: Option<(String, &'static str)>,
     /// The open photo's folder last revealed beside it.
     current: Option<String>,
     /// `RootWelcome`'s folders, and the former library's photos `RootsCatchUp` counts.
@@ -236,10 +238,11 @@ impl State {
         if self.nav.remembered.as_ref() == Some(&now) {
             return;
         }
-        let (base, favourites_only, unfolded) = now.clone();
-        let _ = self.preferences.set(BASE, base.map(Value::String).unwrap_or(Value::Null));
-        let _ = self.preferences.set(FAVOURITES_ONLY, Value::Bool(favourites_only));
-        let _ = self.preferences.set(UNFOLDED, Value::Array(unfolded.into_iter().map(Value::String).collect()));
+        let (folded, unfolded, favourites) = now.clone();
+        let strings = |list: Vec<String>| Value::Array(list.into_iter().map(Value::String).collect());
+        let _ = self.preferences.set(FOLDED, strings(folded));
+        let _ = self.preferences.set(UNFOLDED, strings(unfolded));
+        let _ = self.preferences.set(UNFOLDED_FAVOURITES, strings(favourites));
         self.nav.remembered = Some(now);
     }
 

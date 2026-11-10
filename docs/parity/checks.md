@@ -10,7 +10,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **blocked**: the check guards a behaviour the port does not have yet, named beside it.
 - **departed**: the check guards a behaviour the owner chose to leave; not counted.
 
-Of 161 checks: 103 twin, 36 partial, 9 none, 12 blocked; two departed.
+Of 162 checks: 103 twin, 36 partial, 9 none, 12 blocked; two departed.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -40,7 +40,7 @@ Of 161 checks: 103 twin, 36 partial, 9 none, 12 blocked; two departed.
 | 24 | `RollFrameView.selfCheck` | `Checks/UI/RollReferenceSurface+Checks.swift:5` | Prepare the Roll's card shows every frame in its own scan's shape | twin | `oni-app/src/app/prepare.rs::a_quarter_turned_frame_shows_in_its_own_scans_shape` |
 | 25 | `OniLook.selfCheck` | `Checks/Pipeline/OniLook+Checks.swift:7` | ONI's scanner look is frozen into its cube and its machine sets Lighting at rest | twin | `oni-pipeline/src/oni_look.rs::the_look_lifts_a_mid_grey_and_keeps_it_grey`, `oni-pipeline/src/scanner.rs::the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks` |
 | 26 | `ScannerFinish.selfCheck` | `Checks/Pipeline/ScannerFinish+Checks.swift:5` | the Scanner face keeps its own finishing, apart from Pro's | twin | `oni-core/tests/scanner.rs::a_gesture_on_one_face_never_moves_the_other`, `oni-settings/tests/swift_checks.rs::a_scanner_edit_lands_in_its_own_finishing_and_leaves_pros` |
-| 27 | `Navigator.selfCheck` | `Checks/Pipeline/Navigator+Checks.swift:4` | the navigator walks folders one level at a time, up to Computer | twin | `oni-library/src/navigator.rs::the_navigator_climbs_one_folder_at_a_time_up_to_computer`, `::computer_lists_the_home_first_then_every_volume_but_the_boot_one`, `::a_folder_lists_its_subfolders_alone_in_the_finders_order` |
+| 27 | `Navigator.selfCheck` | `Checks/Pipeline/Navigator+Checks.swift:4` | the navigator walks folders one level at a time, up to Computer | partial: the walk and Computer's rows; the climb up to Computer left with the base (owner's call, #1656) | `oni-library/src/navigator.rs::computer_lists_the_home_first_then_every_volume_but_the_boot_one`, `::a_folder_lists_its_subfolders_alone_in_the_finders_order`, `::a_path_lies_on_a_volume_only_under_the_volumes_folder` |
 | 28 | `Folders.selfCheck` | `Checks/Pipeline/Folders+Checks.swift:4` | the archive follows the disk's folders | twin | `oni-library/src/folders.rs::folders_lay_newest_first_subfolders_before_their_parent` |
 | 29 | `ArchiveTree.selfCheck` | `Checks/Pipeline/ArchiveTree+Checks.swift:6` | the archive tree unfolds its folders | twin | `oni-library/src/archive_tree.rs::a_folder_opens_on_its_subfolders_then_its_photos` |
 | 30 | `Project.selfCheck` | `Checks/Pipeline/Project+Checks.swift:6` | projects hold their own identity, round-trip through disk and resolve members newest-first | twin | `oni-library/src/project/tests.rs::projects_order_newest_first_and_follow_a_move_made_in_oni` |

@@ -75,18 +75,17 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    let (lib, n) = (w.global::<Library>(), w.global::<Navigator>());
+    let lib = w.global::<Library>();
     shell.add(&home.join("Scans/Roll 1"));
     rig.until("Roll 1 read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened().is_some());
     rig.until("Roll 1 among the rows", Duration::from_secs(10), || folders(w).iter().any(|l| l.title == "Roll 1"));
     rig.settle();
     rig.shot("column-edges-gallery");
 
-    // In the gallery the tab bar, the navigator's header and its rows' bands share the column's edges.
+    // In the gallery the tab bar, the sections' headings and the rows' bands share the column's edges.
     let edges = bar(w);
-    let parent = common::the(w, AccessibleRole::Button, "Parent Folder");
-    let pill = common::the(w, AccessibleRole::Button, n.get_pill_title().as_str());
-    assert!((parent.x - edges.0).abs() < 0.5 && (pill.x + pill.width - edges.1).abs() < 0.5, "the header {parent:?} {pill:?} on the bar's edges {edges:?}");
+    let heading = common::the(w, AccessibleRole::Button, "Hide Computer");
+    assert!(lines_up(&heading, edges), "Computer's heading {heading:?} on the bar's edges {edges:?}");
     let rows = listed(w);
     let span = edges.1 - edges.0;
     assert!(!rows.is_empty() && rows.iter().all(|r| lines_up(r, edges) && (r.width - span).abs() < 0.5), "every band edge to edge: {rows:?} {edges:?}");
@@ -203,21 +202,19 @@ pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
     // Twin: the grid's empty state, centred in the canvas, is neither.
     assert!(!at_top_on_inset(&text("No Photos in a Project")));
 
-    // The favourites' view is a key lit while on, its funnel apart from the star a folder wears.
-    let checked = |label: &str| {
+    // Each section folds under its heading, a key saying what it does and whether its rows show.
+    let told = |label: &str| {
         let keys: Vec<_> = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, label).filter(|e| e.accessible_role() == Some(AccessibleRole::Button)).collect();
         assert_eq!(keys.len(), 1, "one key {label:?}");
-        keys[0].accessible_checked().unwrap_or(false)
+        (keys[0].accessible_expanded(), keys[0].clone())
     };
     w.global::<Library>().invoke_surface_picked(0);
     rig.settle();
-    assert!(!checked("Show the favourites alone"), "twin: every folder shown, the key is off");
-    w.global::<Navigator>().invoke_favourites_toggled();
+    let (open, key) = told("Hide Computer");
+    assert_eq!(open, Some(true), "Computer's section stands open");
+    key.invoke_accessible_default_action();
     rig.settle();
-    assert!(checked("Show every folder"), "the favourites alone, the key is lit");
-    let none = text("No Favourites");
-    assert!(under(&none, "Show every folder"), "the favourites' empty list alike: {none:?}");
-    assert!(text("Star a folder to keep it here, ready to open.").y >= none.y + none.height);
+    assert_eq!(told("Show Computer").0, Some(false), "folded, its heading says it shows them again");
     drop(shell);
     let _ = std::fs::remove_dir_all(&made);
 }

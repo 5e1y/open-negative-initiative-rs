@@ -1,5 +1,6 @@
 //! The navigator from the keyboard, as the Finder's sidebar answers it while its rows hold it: the
-//! arrows walk and fold the rows, Space folds, Return renames, ⌘↓ opens and ⌘↑ climbs to the parent.
+//! arrows walk the folders over the sections' headings and fold them, Space folds, Return renames,
+//! ⌘↓ opens and ⌘↑ climbs to the folder holding the picked one.
 
 use super::*;
 
@@ -39,29 +40,38 @@ impl Ctl {
         let open = {
             let mut s = self.state.borrow_mut();
             let rows = s.nav.rows.clone();
-            let at = s.nav.model.selected.as_ref().and_then(|p| rows.iter().position(|r| r == p));
+            let at = s.nav.model.picked_row(&rows);
             let picked = at.and_then(|i| rows.get(i).cloned());
-            let pick = |s: &mut State, i: usize| s.nav.model.selected = rows.get(i).cloned();
+            let pick = |s: &mut State, i: usize| s.nav.model.pick(&rows, i);
+            // The picked row's section, whose chevron the keys fold.
+            let heading = at.map_or(walk::COMPUTER_ROW, |i| walk::heading_above(&rows, i));
+            let folder = |i: &usize| rows.get(*i).is_some_and(|r| !walk::is_heading(r));
+            let first = (0..rows.len()).find(folder);
             let mut open = None;
             match (key, picked) {
-                (RowKey::Up, _) => pick(&mut *s, at.map_or(0, |i| i.saturating_sub(1))),
-                (RowKey::Down, _) => pick(&mut *s, at.map_or(0, |i| (i + 1).min(rows.len().saturating_sub(1)))),
-                (RowKey::Unfold, Some(p)) if !s.nav.model.unfolded.contains(&p) => s.nav.model.toggle(&p),
-                (RowKey::Fold, Some(p)) if s.nav.model.unfolded.contains(&p) => s.nav.model.toggle(&p),
-                // Folded already, ← climbs to the row holding it, as the Finder's outline does.
-                (RowKey::Fold, Some(p)) => {
-                    let up = paths::parent(&p);
-                    if let Some(i) = rows.iter().position(|r| *r == up) {
+                (RowKey::Up, _) => {
+                    if let Some(i) = at.map_or(first, |at| (0..at).rev().find(folder).or(Some(at))) {
                         pick(&mut *s, i);
                     }
                 }
-                (RowKey::Toggle, Some(p)) => s.nav.model.toggle(&p),
+                (RowKey::Down, _) => {
+                    if let Some(i) = at.map_or(first, |at| (at + 1..rows.len()).find(folder).or(Some(at))) {
+                        pick(&mut *s, i);
+                    }
+                }
+                (RowKey::Unfold, Some(p)) if !s.nav.model.is_unfolded(heading, &p) => s.nav.model.toggle_in(heading, &p),
+                (RowKey::Fold, Some(p)) if s.nav.model.is_unfolded(heading, &p) => s.nav.model.toggle_in(heading, &p),
+                // Folded already, ← climbs to the row holding it, as the Finder's outline does; ⌘↑ alike.
+                (RowKey::Fold | RowKey::Parent, Some(p)) => {
+                    let up = paths::parent(&p);
+                    let at = at.unwrap_or_default();
+                    if let Some(i) = (0..at).rev().take_while(|&j| !walk::is_heading(&rows[j])).find(|&j| rows[j] == up) {
+                        pick(&mut *s, i);
+                    }
+                }
+                (RowKey::Toggle, Some(p)) => s.nav.model.toggle_in(heading, &p),
                 (RowKey::Rename, Some(p)) if s.row_presence(&p).is_present() => s.nav.model.renaming = Some(p),
                 (RowKey::Open, Some(p)) => open = Some(p),
-                (RowKey::Parent, _) => {
-                    let computer = s.nav.computer.clone();
-                    s.nav.model.go_up(&computer);
-                }
                 _ => {}
             }
             open

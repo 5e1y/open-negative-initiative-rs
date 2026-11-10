@@ -137,7 +137,10 @@ impl Ctl {
         let folder = remembered.or_else(|| oni_library::roots::Roots::load(&support).current().map(str::to_owned));
         match folder {
             Some(folder) => {
-                self.open_spelt(paths::normal(&folder).into_owned());
+                let folder = paths::normal(&folder).into_owned();
+                // Opened by the launch, never by a row, it is shown as a folder opened from elsewhere is.
+                self.navigator_reveal(&folder);
+                self.open_spelt(folder);
                 true
             }
             None => false,

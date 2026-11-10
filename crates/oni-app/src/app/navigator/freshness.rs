@@ -52,8 +52,8 @@ impl Ctl {
         }
         let deep: Vec<String> = s.opened.iter().filter(|_| !s.org.trash_open).cloned().collect();
         let model = &s.nav.model;
-        let mut flat: Vec<String> = model.base.iter().cloned().collect();
-        flat.extend(s.nav.rows.iter().filter(|r| model.unfolded.contains(*r)).cloned());
+        let unfolded = |r: &String| model.unfolded.contains(r) || model.unfolded_favourites.contains(r);
+        let mut flat: Vec<String> = s.nav.rows.iter().filter(|r| unfolded(r)).cloned().collect();
         flat.retain(|f| !deep.iter().any(|d| holds(d, f)));
         flat.sort();
         flat.dedup();

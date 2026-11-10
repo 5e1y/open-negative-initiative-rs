@@ -223,6 +223,7 @@ impl Ctl {
                     }
                     let failure = if s.nav.favourites.forget(folder) > 0 { s.save_favourites() } else { None };
                     s.nav.model.unfolded.retain(|p| !holds(folder, p));
+                    s.nav.model.unfolded_favourites.retain(|p| !holds(folder, p));
                     s.remember();
                     s.nav.presence.retain(|p, _| !holds(folder, p));
                     s.nav.leads.looked = None;

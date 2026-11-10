@@ -1,99 +1,33 @@
-//! The navigator's walk of the disk, folders only and one level at a time, and where it stands:
-//! the base (`None` is Computer), the unfolded rows, the favourites view and the picked row.
+//! The navigator's walk of the disk, folders only and one level at a time: the favourites' section,
+//! then Computer's (the home, the volumes, a folder opened beyond them), the unfolded rows and the picked one.
 
 use crate::paths::{self, holds, same};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
+mod computer;
 mod names;
 mod probe;
+pub use computer::{Computer, DRIVES, home_folder, is_drive_root};
 pub use names::{split_end, trails};
 
 /// The ONI Trash's row in `selected` and `unfolded`: never a folder's path, which starts with `/`.
 pub const TRASH_ROW: &str = "oni-trash";
 
-/// The home folder and the folder volumes are mounted in, so a check walks a disk of its own.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Computer {
-    pub home: String,
-    pub volumes: String,
+/// The sections' heading rows in `rows` and `folded`, never a folder's path.
+pub const FAVOURITES_ROW: &str = "oni-favourites";
+pub const COMPUTER_ROW: &str = "oni-computer";
+
+/// Whether a row is a section's heading rather than a folder.
+pub fn is_heading(row: &str) -> bool {
+    row == FAVOURITES_ROW || row == COMPUTER_ROW
 }
 
-/// `volumes` on Windows, which mounts no disk in one folder: each drive's root is a volume.
-pub const DRIVES: &str = "*";
-
-/// Whether `path` names a drive's root, `C:\` or `C:/`.
-pub fn is_drive_root(path: &str) -> bool {
-    let b = path.as_bytes();
-    b.len() == 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && (b[2] == b'\\' || b[2] == b'/')
-}
-
-/// The person's home folder as the system names it: on Windows `USERPROFILE`, as a `HOME` that Git
-/// Bash or MSYS2 sets reads `/c/Users/a`, which no Windows call takes.
-pub fn home_folder() -> std::path::PathBuf {
-    let (first, second) = if cfg!(windows) { ("USERPROFILE", "HOME") } else { ("HOME", "USERPROFILE") };
-    std::env::var_os(first).filter(|h| !h.is_empty()).or_else(|| std::env::var_os(second)).unwrap_or_default().into()
-}
-
-impl Computer {
-    /// This machine's: `NSHomeDirectory()` resolved, and `/Volumes`, or the drives on Windows.
-    pub fn system() -> Computer {
-        let home = home_folder();
-        let volumes = if cfg!(windows) { DRIVES } else { "/Volumes" };
-        Computer { home: paths::canonical(Path::new(&home)), volumes: volumes.into() }
-    }
-
-    /// No disk at all: what a check gets unless it hands one, so no test reads the person's folders.
-    pub fn none() -> Computer {
-        Computer { home: String::new(), volumes: String::new() }
-    }
-
-    /// The home folder, then every volume but the boot one, in the Finder's order. Reads the disk,
-    /// each drive or mount on a thread of its own: one that does not answer is left out until it does.
-    pub fn computer(&self) -> Vec<String> {
-        let home = Some(self.home.clone()).filter(|h| !h.is_empty());
-        let volumes = if self.volumes == DRIVES { probe::drives() } else { probe::mounted(&self.volumes) };
-        home.into_iter().chain(volumes).collect()
-    }
-
-    pub fn is_volume_root(&self, path: &str) -> bool {
-        if self.volumes == DRIVES {
-            return is_drive_root(path);
-        }
-        same(&paths::parent(path), &self.volumes)
-    }
-
-    /// On a disk that may come and go: under `/Volumes` in any spelling of it, or on Windows a drive
-    /// other than the home's; never with no volumes' folder known, which would hold every path.
-    pub fn is_on_volume(&self, path: &str) -> bool {
-        if self.volumes.is_empty() {
-            return false;
-        }
-        if self.volumes == DRIVES {
-            let drive = |p: &str| p.get(..2).map(str::to_ascii_uppercase);
-            return path.as_bytes().get(1) == Some(&b':') && drive(path) != drive(&self.home);
-        }
-        holds(&self.volumes, path) && !same(&self.volumes, path)
-    }
-
-    /// One level up; `None` is Computer.
-    pub fn parent(&self, base: &str) -> Option<String> {
-        let up = paths::parent(base);
-        if same(base, &self.home) || self.is_volume_root(base) || up == "/" || same(&up, &self.volumes) || up.is_empty() || up == base {
-            return None;
-        }
-        Some(up)
-    }
-
-    /// The base, then each folder above it, nearest first, up to the home or the volume.
-    pub fn ancestors(&self, base: &str) -> Vec<String> {
-        let mut out = vec![base.to_owned()];
-        let mut at = base.to_owned();
-        while let Some(up) = self.parent(&at) {
-            out.push(up.clone());
-            at = up;
-        }
-        out
+/// The section a row of `rows` lies in: the heading above it, Computer's when none is.
+pub fn heading_above(rows: &[String], i: usize) -> &'static str {
+    match rows.iter().take(i + 1).rev().find(|r| is_heading(r)).map(String::as_str) {
+        Some(FAVOURITES_ROW) => FAVOURITES_ROW,
+        _ => COMPUTER_ROW,
     }
 }
 
@@ -148,26 +82,25 @@ fn linked(folder: &str, path: &Path, kind: &std::fs::FileType, name: &str) -> Op
     (!holds(&real, &paths::canonical(Path::new(folder)))).then_some(real)
 }
 
-/// `Navigator.title`: Computer for none, else the folder's name as the system words it.
-pub fn title(path: Option<&str>, computer: &Computer) -> String {
-    match path {
-        None => oni_i18n::tr("Computer").into(),
-        Some(path) => computer.name(path),
-    }
-}
-
-/// `FolderNavigation`: where the navigator stands and the folders listed. A listing is asked
-/// through `wanted` and lands through `listed`, so the disk is read off the interface thread.
+/// `FolderNavigation`: the sections, the folders unfolded and listed. A listing is asked through
+/// `wanted` and lands through `listed`, so the disk is read off the interface thread.
 #[derive(Debug, Clone, Default)]
 pub struct Navigation {
-    pub base: Option<String>,
-    pub favourites_only: bool,
+    /// The sections folded by their heading, `FAVOURITES_ROW` or `COMPUTER_ROW`.
+    pub folded: BTreeSet<String>,
+    /// Computer's unfolded rows and the ONI Trash's; a favourite's own, apart, so a folder in both
+    /// sections unfolds where the hand unfolds it alone.
     pub unfolded: BTreeSet<String>,
+    pub unfolded_favourites: BTreeSet<String>,
     pub selected: Option<String>,
+    /// The section the pick lies in, so a folder both sections show is picked in one alone.
+    pub picked_in: &'static str,
     pub listings: HashMap<String, Vec<String>>,
     pub renaming: Option<String>,
     /// The home folder and the mounted volumes, Computer's rows.
     pub volumes: Vec<String>,
+    /// Folders opened beyond the home and the volumes, each laid under them as itself.
+    pub beyond: BTreeSet<String>,
     listing: HashSet<String>,
     wanted: Vec<String>,
     /// Folders the disk refused, left unlisted rather than empty until `retry` or a click.
@@ -183,16 +116,42 @@ pub enum Landed {
 }
 
 impl Navigation {
-    /// The remembered base and rows in the archive's spelling, which an earlier build kept as the disk listed them.
-    pub fn new(base: Option<String>, favourites_only: bool, unfolded: BTreeSet<String>, volumes: Vec<String>) -> Navigation {
-        let base = base.map(|b| paths::normal(&b).into_owned());
-        let unfolded = unfolded.iter().map(|p| paths::normal(p).into_owned()).collect();
-        Navigation { base, favourites_only, unfolded, volumes, ..Navigation::default() }
+    /// The remembered sections and rows in the archive's spelling, which an earlier build kept as the disk listed them.
+    pub fn new(folded: BTreeSet<String>, unfolded: BTreeSet<String>, unfolded_favourites: BTreeSet<String>, volumes: Vec<String>) -> Navigation {
+        let normal = |set: BTreeSet<String>| set.iter().map(|p| paths::normal(p).into_owned()).collect();
+        Navigation { folded, unfolded: normal(unfolded), unfolded_favourites: normal(unfolded_favourites), volumes, ..Navigation::default() }
     }
 
-    /// What `remember()` writes: the base, the favourites view and the unfolded rows.
-    pub fn remembered(&self) -> (Option<String>, bool, Vec<String>) {
-        (self.base.clone(), self.favourites_only, self.unfolded.iter().cloned().collect())
+    /// What `remember()` writes: the sections folded, Computer's unfolded rows and the favourites'.
+    pub fn remembered(&self) -> (Vec<String>, Vec<String>, Vec<String>) {
+        let list = |set: &BTreeSet<String>| set.iter().cloned().collect();
+        (list(&self.folded), list(&self.unfolded), list(&self.unfolded_favourites))
+    }
+
+    fn unfolded_in(&mut self, heading: &str) -> &mut BTreeSet<String> {
+        if heading == FAVOURITES_ROW { &mut self.unfolded_favourites } else { &mut self.unfolded }
+    }
+
+    /// Whether `folder` stands unfolded in the section under `heading`.
+    pub fn is_unfolded(&self, heading: &str, folder: &str) -> bool {
+        if heading == FAVOURITES_ROW { self.unfolded_favourites.contains(folder) } else { self.unfolded.contains(folder) }
+    }
+
+    /// The row `folder` stands on: in the pick's section where both sections show it, else the first.
+    pub fn row_of(&self, rows: &[String], folder: &str) -> Option<usize> {
+        let shown = |i: &usize| rows[*i] == folder;
+        (0..rows.len()).find(|i| shown(i) && heading_above(rows, *i) == self.picked_in).or_else(|| (0..rows.len()).find(shown))
+    }
+
+    /// The picked row among `rows`.
+    pub fn picked_row(&self, rows: &[String]) -> Option<usize> {
+        self.row_of(rows, self.selected.as_deref()?)
+    }
+
+    /// Row `i` of `rows` picked, in its own section.
+    pub fn pick(&mut self, rows: &[String], i: usize) {
+        self.selected = rows.get(i).cloned();
+        self.picked_in = heading_above(rows, i);
     }
 
     /// The folders to list, each asked once until it lands.
@@ -231,32 +190,56 @@ impl Navigation {
         }
     }
 
-    pub fn top(&mut self, favourites: &[String]) -> Vec<String> {
-        if self.favourites_only {
-            return favourites.to_vec();
-        }
-        let Some(base) = self.base.clone() else { return self.volumes.clone() };
-        self.list(&base, false);
-        self.listings.get(&base).cloned().unwrap_or_default()
+    /// Computer's rows: the home and the volumes, then the folders opened beyond them.
+    pub fn computer_tops(&self) -> Vec<String> {
+        self.volumes.iter().chain(self.beyond.iter()).cloned().collect()
     }
 
-    /// The rows laid flat with their depth, each unfolded row's children under it.
+    /// The home and the volumes as the disk lists them now, the former returned: a folder beyond them
+    /// that one now holds is unfolded down to under it, so a reveal outlives the volumes listed after it.
+    pub fn set_volumes(&mut self, volumes: Vec<String>) -> Vec<String> {
+        let before = std::mem::replace(&mut self.volumes, volumes);
+        let held: Vec<(String, String)> = self.beyond.iter().filter_map(|b| self.volumes.iter().find(|v| holds(v, b)).map(|v| (v.clone(), b.clone()))).collect();
+        for (volume, folder) in held {
+            self.beyond.remove(&folder);
+            self.unfold(COMPUTER_ROW, &volume, &folder);
+        }
+        before
+    }
+
+    /// The rows laid flat with their depth, each unfolded row's children under it: the favourites'
+    /// heading and rows while there are any, then Computer's; a folded section keeps its heading alone.
     pub fn rows(&mut self, favourites: &[String]) -> Vec<(String, usize)> {
-        let top = self.top(favourites);
         let mut out = Vec::new();
-        self.walk(&top, 0, &mut out, &mut Vec::new());
+        let sections = [(FAVOURITES_ROW, favourites.to_vec()), (COMPUTER_ROW, self.computer_tops())];
+        for (heading, tops) in sections {
+            if heading == FAVOURITES_ROW && tops.is_empty() {
+                continue;
+            }
+            out.push((heading.to_owned(), 0));
+            if !self.folded.contains(heading) {
+                self.walk(heading, &tops, 0, &mut out, &mut Vec::new());
+            }
+        }
         out
     }
 
+    /// A section's heading clicked: its rows fold away, or come back.
+    pub fn toggle_section(&mut self, heading: &str) {
+        if !self.folded.remove(heading) {
+            self.folded.insert(heading.to_owned());
+        }
+    }
+
     /// `chain` holds the rows above: a link back to one of them shows, and never unfolds again.
-    fn walk(&mut self, folders: &[String], depth: usize, out: &mut Vec<(String, usize)>, chain: &mut Vec<String>) {
+    fn walk(&mut self, heading: &str, folders: &[String], depth: usize, out: &mut Vec<(String, usize)>, chain: &mut Vec<String>) {
         for path in folders {
             out.push((path.clone(), depth));
-            if self.unfolded.contains(path) && !chain.iter().any(|c| same(c, path)) {
+            if self.is_unfolded(heading, path) && !chain.iter().any(|c| same(c, path)) {
                 self.list(path, false);
                 let children = self.listings.get(path).cloned().unwrap_or_default();
                 chain.push(path.clone());
-                self.walk(&children, depth + 1, out, chain);
+                self.walk(heading, &children, depth + 1, out, chain);
                 chain.pop();
             }
         }
@@ -272,12 +255,20 @@ impl Navigation {
         (count == 1).then(|| folder.to_owned())
     }
 
-    pub fn toggle(&mut self, folder: &str) {
+    /// A row's chevron in the section under `heading`: the row picked, folded or unfolded there alone.
+    pub fn toggle_in(&mut self, heading: &'static str, folder: &str) {
         self.selected = Some(folder.to_owned());
-        if !self.unfolded.remove(folder) {
-            self.unfolded.insert(folder.to_owned());
+        self.picked_in = heading;
+        let set = self.unfolded_in(heading);
+        if !set.remove(folder) {
+            set.insert(folder.to_owned());
             self.list(folder, true);
         }
+    }
+
+    /// A Computer row's chevron.
+    pub fn toggle(&mut self, folder: &str) {
+        self.toggle_in(COMPUTER_ROW, folder);
     }
 
     pub fn toggle_trash(&mut self) {
@@ -287,76 +278,55 @@ impl Navigation {
         }
     }
 
-    pub fn go(&mut self, folder: Option<String>) {
-        self.base = folder.clone();
-        self.favourites_only = false;
-        if let Some(folder) = folder {
-            self.list(&folder, true);
-        }
-    }
-
-    pub fn go_up(&mut self, computer: &Computer) {
-        if self.favourites_only {
-            if let Some(selected) = self.selected.clone() {
-                self.go(computer.parent(&selected));
-            }
-            return;
-        }
-        if let Some(base) = self.base.clone() {
-            self.go(computer.parent(&base));
-        }
-    }
-
-    pub fn can_go_up(&self) -> bool {
-        if self.favourites_only { self.selected.is_some() } else { self.base.is_some() }
-    }
-
-    pub fn show_favourites(&mut self, on: bool) {
-        self.favourites_only = on;
-    }
-
-    /// A folder renamed or moved: the base, the pick and the unfolded rows follow it.
+    /// A folder renamed or moved: the pick, the unfolded rows and the folders beyond follow it.
     pub fn follow(&mut self, old: &str, new: &str) {
         let moved = |path: &str| paths::moved(path, old, new);
-        self.base = self.base.as_deref().map(moved);
+        self.beyond = self.beyond.iter().map(|p| moved(p)).collect();
         self.selected = self.selected.as_deref().map(moved);
         self.unfolded = self.unfolded.iter().map(|p| moved(p)).collect();
+        self.unfolded_favourites = self.unfolded_favourites.iter().map(|p| moved(p)).collect();
         self.listings.retain(|key, _| !holds(old, key));
         self.list(&paths::parent(new), true);
     }
 
-    /// A folder made inside another: its parent unfolds, and the new row is picked and named.
+    /// A folder made inside another: its parent unfolds in the pick's section, and the new row is
+    /// picked and named there.
     pub fn made(&mut self, folder: &str) {
         let parent = paths::parent(folder);
-        self.unfolded.insert(parent.clone());
+        self.unfolded_in(self.picked_in).insert(parent.clone());
         self.list(&parent, true);
         self.selected = Some(folder.to_owned());
         self.renaming = Some(folder.to_owned());
     }
 
-    /// The open photo's folder beside it: unfolded down to from a row on screen, else the base moved.
-    pub fn show(&mut self, folder: &str, favourites: &[String], computer: &Computer) {
-        let tops: Vec<String> = if self.favourites_only {
-            favourites.to_vec()
-        } else if self.base.is_none() {
-            self.volumes.clone()
-        } else {
-            Vec::new()
+    /// The open photo's folder, or one opened from elsewhere: its section open and unfolded down to it
+    /// under a favourite holding it, else under Computer, where a folder beyond the home and the volumes
+    /// comes as itself, so nothing above it is listed.
+    pub fn show(&mut self, folder: &str, favourites: &[String]) {
+        let favourite = favourites.iter().find(|t| holds(t, folder)).cloned();
+        let (heading, top) = match favourite {
+            Some(top) => (FAVOURITES_ROW, top),
+            None => {
+                let held = self.computer_tops().into_iter().find(|t| holds(t, folder));
+                let top = held.unwrap_or_else(|| {
+                    self.beyond.retain(|b| !holds(folder, b));
+                    self.beyond.insert(folder.to_owned());
+                    folder.to_owned()
+                });
+                (COMPUTER_ROW, top)
+            }
         };
-        if let Some(top) = tops.iter().find(|t| holds(t, folder)).cloned() {
-            self.unfold(&top, folder, true);
-        } else if let Some(base) = self.base.clone().filter(|b| !same(b, folder) && holds(b, folder)) {
-            self.unfold(&base, folder, false);
-        } else {
-            self.go(computer.parent(folder));
-        }
+        self.folded.remove(heading);
+        self.unfold(heading, &top, folder);
         self.selected = Some(folder.to_owned());
+        self.picked_in = heading;
     }
 
-    fn unfold(&mut self, top: &str, folder: &str, including: bool) {
+    /// Every folder from `top` down to the one holding `folder` unfolded in the section under `heading`.
+    fn unfold(&mut self, heading: &str, top: &str, folder: &str) {
         let mut at = paths::parent(folder);
         while !same(&at, top) && holds(top, &at) {
-            self.unfolded.insert(at.clone());
+            self.unfolded_in(heading).insert(at.clone());
             self.list(&at, false);
             let up = paths::parent(&at);
             if up == at {
@@ -364,22 +334,21 @@ impl Navigation {
             }
             at = up;
         }
-        if including && !same(top, folder) {
-            self.unfolded.insert(top.to_owned());
+        if !same(top, folder) {
+            self.unfolded_in(heading).insert(top.to_owned());
             self.list(top, false);
         }
     }
 
-    /// A folder opened from elsewhere: picked where it shows, else the base moved to its parent.
-    pub fn reveal(&mut self, folder: &str, computer: &Computer) {
-        if !self.favourites_only
-            && let Some((row, _)) = self.rows(&[]).into_iter().find(|(p, _)| same(p, folder))
-        {
-            self.selected = Some(row);
-            return;
+    /// A folder opened from elsewhere: picked where a row shows it, in the pick's section first, else
+    /// shown as `show` lays it.
+    pub fn reveal(&mut self, folder: &str, favourites: &[String]) {
+        let rows: Vec<String> = self.rows(favourites).into_iter().map(|(p, _)| p).collect();
+        let shown = self.row_of(&rows, folder).or_else(|| rows.iter().position(|p| !is_heading(p) && same(p, folder)));
+        match shown {
+            Some(i) => self.pick(&rows, i),
+            None => self.show(folder, favourites),
         }
-        self.go(computer.parent(folder));
-        self.selected = Some(folder.to_owned());
     }
 }
 

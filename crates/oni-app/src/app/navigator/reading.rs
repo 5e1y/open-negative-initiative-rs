@@ -110,19 +110,14 @@ impl Ctl {
                 return;
             }
             s.nav.current = current.clone();
-            let Some(folder) = current else { return };
-            let favourites = s.nav.favourites.paths.clone();
-            let computer = s.nav.computer.clone();
-            s.nav.model.show(&folder, &favourites, &computer);
+            if let Some(folder) = current {
+                let favourites = s.nav.favourites.paths.clone();
+                s.nav.model.show(&folder, &favourites);
+            }
         }
         self.publish_navigator();
-        let row = {
-            let s = self.state.borrow();
-            s.nav.current.as_ref().and_then(|c| s.nav.rows.iter().position(|r| r == c))
-        };
-        if let Some(row) = row {
+        if self.state.borrow().nav.current.is_some() {
             let n = w.global::<crate::Navigator>();
-            n.set_reveal_row(row as i32);
             n.set_reveal_serial(n.get_reveal_serial() + 1);
         }
     }

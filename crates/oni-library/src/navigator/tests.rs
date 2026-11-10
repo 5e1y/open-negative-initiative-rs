@@ -10,14 +10,9 @@ fn mac() -> Computer {
 }
 
 #[test]
-fn the_navigator_climbs_one_folder_at_a_time_up_to_computer() {
+fn a_path_lies_on_a_volume_only_under_the_volumes_folder() {
     let c = mac();
-    assert_eq!(c.parent("/Users/someone/Scans/2026").as_deref(), Some("/Users/someone/Scans"));
-    assert_eq!((c.parent("/Users/someone"), c.parent("/Volumes/T7")), (None, None));
-    assert_eq!(c.parent("/tmp"), None, "the boot volume's top reaches Computer, never `/`");
-    // Twin: a folder named like a volume but one level deeper climbs to the volume.
-    assert_eq!(c.parent("/Volumes/T7/Scans").as_deref(), Some("/Volumes/T7"));
-    assert_eq!(c.ancestors("/Volumes/T7/Scans/2026"), ["/Volumes/T7/Scans/2026", "/Volumes/T7/Scans", "/Volumes/T7"]);
+    assert!(c.is_volume_root("/Volumes/T7") && !c.is_volume_root("/Volumes/T7/Scans"));
     assert!(c.is_on_volume("/Volumes/T7/a") && !c.is_on_volume("/Volumesque/a") && !c.is_on_volume("/Users/someone"));
     // Twin: no volumes' folder known, no path is on a volume, the home's least of all.
     assert!(!Computer::none().is_on_volume("/Users/someone/Scans"));
@@ -55,14 +50,14 @@ fn a_folder_lists_its_subfolders_alone_in_the_finders_order() {
     assert_eq!(children(&paths::join(&root, "Roll 1")), Some(Vec::new()));
     // Twin: a folder the disk refuses is not an empty one.
     assert_eq!(children(&paths::join(&root, "gone")), None);
-    assert_eq!((title(None, &mac()), title(Some("/Volumes/T7"), &mac())), ("Computer".to_string(), "T7".to_string()));
+    assert_eq!(mac().name("/Volumes/T7"), "T7");
 }
 
 /// The Finder sidebar's rule: one click opens any folder, whatever it holds; the chevron alone
 /// folds, and opens nothing.
 #[test]
 fn a_click_opens_and_the_chevron_folds() {
-    let mut nav = Navigation::new(Some("/r".into()), false, BTreeSet::new(), vec![]);
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::new(), BTreeSet::new(), vec![]);
     nav.listings.insert("/r/2024".into(), strings(&["/r/2024/Roll 12"]));
     assert_eq!(nav.click("/r/2024", 1).as_deref(), Some("/r/2024"), "a folder holding others opens on the first click");
     assert!(!nav.unfolded.contains("/r/2024"), "the click folds nothing");
@@ -80,7 +75,7 @@ fn a_click_opens_and_the_chevron_folds() {
 /// its rows and opens nothing, as no click waits on it.
 #[test]
 fn a_late_listing_never_opens_over_a_newer_open() {
-    let mut nav = Navigation::new(Some("/Volumes/T7".into()), false, BTreeSet::new(), vec![]);
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::new(), BTreeSet::new(), vec![]);
     assert_eq!(nav.click("/Volumes/T7/Roll 3", 1).as_deref(), Some("/Volumes/T7/Roll 3"));
     assert_eq!(nav.click("/Volumes/T7/Roll 4", 1).as_deref(), Some("/Volumes/T7/Roll 4"));
     nav.list("/Volumes/T7/Roll 3", false);
@@ -95,7 +90,7 @@ fn a_late_listing_never_opens_over_a_newer_open() {
 
 #[test]
 fn a_refused_folder_stays_unlisted_until_read_again() {
-    let mut nav = Navigation::new(None, false, BTreeSet::from(["/Volumes/T7".to_string()]), strings(&["/Volumes/T7"]));
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::from(["/Volumes/T7".to_string()]), BTreeSet::new(), strings(&["/Volumes/T7"]));
     nav.rows(&[]);
     assert_eq!(nav.take_wanted(), ["/Volumes/T7"]);
     assert_eq!(nav.refused("/Volumes/T7"), Landed::Nothing);
@@ -118,42 +113,70 @@ fn a_refused_folder_stays_unlisted_until_read_again() {
 
 #[test]
 fn the_rows_walk_the_unfolded_folders_and_ask_each_listing_once() {
-    let mut nav = Navigation::new(None, false, BTreeSet::from(["/h".to_string()]), strings(&["/h", "/Volumes/T7"]));
-    assert_eq!(nav.rows(&[]), [("/h".to_string(), 0), ("/Volumes/T7".to_string(), 0)]);
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::from(["/h".to_string()]), BTreeSet::new(), strings(&["/h", "/Volumes/T7"]));
+    let flat = |rows: Vec<(String, usize)>| rows.into_iter().map(|(p, d)| (p, d)).collect::<Vec<_>>();
+    let laid = |rows: &[(&str, usize)]| rows.iter().map(|(p, d)| (p.to_string(), *d)).collect::<Vec<_>>();
+    assert_eq!(flat(nav.rows(&[])), laid(&[(COMPUTER_ROW, 0), ("/h", 0), ("/Volumes/T7", 0)]), "no favourite, no section for them");
     assert_eq!(nav.take_wanted(), ["/h"]);
     nav.rows(&[]);
     assert!(nav.take_wanted().is_empty(), "a listing under way is asked once");
     nav.listed("/h", strings(&["/h/a", "/h/b"]));
-    let rows = nav.rows(&[]);
-    assert_eq!(rows.iter().map(|(p, d)| (p.as_str(), *d)).collect::<Vec<_>>(), [("/h", 0), ("/h/a", 1), ("/h/b", 1), ("/Volumes/T7", 0)]);
-    // Twin: the favourites view lists the favourites alone, whatever the base.
-    nav.show_favourites(true);
-    assert_eq!(nav.rows(&strings(&["/f"])), [("/f".to_string(), 0)]);
+    let computer = [(COMPUTER_ROW, 0), ("/h", 0), ("/h/a", 1), ("/h/b", 1), ("/Volumes/T7", 0)];
+    assert_eq!(flat(nav.rows(&[])), laid(&computer));
+    // The favourites stand in a section of their own before Computer's, each folder in both.
+    let favourites = strings(&["/f", "/h/a"]);
+    let both = [(FAVOURITES_ROW, 0), ("/f", 0), ("/h/a", 0), (COMPUTER_ROW, 0), ("/h", 0), ("/h/a", 1), ("/h/b", 1), ("/Volumes/T7", 0)];
+    assert_eq!(flat(nav.rows(&favourites)), laid(&both));
+    // A folded section keeps its heading alone; twin: unfolded again, its rows come back.
+    nav.toggle_section(COMPUTER_ROW);
+    assert_eq!(flat(nav.rows(&favourites)), laid(&[(FAVOURITES_ROW, 0), ("/f", 0), ("/h/a", 0), (COMPUTER_ROW, 0)]));
+    nav.toggle_section(COMPUTER_ROW);
+    assert_eq!(flat(nav.rows(&favourites)), laid(&both));
+    assert!(is_heading(FAVOURITES_ROW) && is_heading(COMPUTER_ROW) && !is_heading("/f"));
+    // A folder in both sections unfolds where its chevron is; twin: Computer's row of it stays folded.
+    nav.listed("/h/a", strings(&["/h/a/x"]));
+    nav.toggle_in(FAVOURITES_ROW, "/h/a");
+    let rows = flat(nav.rows(&favourites));
+    assert_eq!(rows[..4], laid(&[(FAVOURITES_ROW, 0), ("/f", 0), ("/h/a", 0), ("/h/a/x", 1)])[..]);
+    assert_eq!(rows.iter().filter(|(p, _)| p == "/h/a/x").count(), 1, "{rows:?}");
+    let ids: Vec<String> = rows.iter().map(|(p, _)| p.clone()).collect();
+    assert_eq!((heading_above(&ids, 3), heading_above(&ids, 6)), (FAVOURITES_ROW, COMPUTER_ROW));
 }
 
 #[test]
-fn going_up_moves_the_base_and_a_rename_carries_what_the_navigator_holds() {
-    let c = mac();
-    let mut nav = Navigation::new(Some("/Users/someone/Scans".into()), false, BTreeSet::new(), vec![]);
-    assert!(nav.can_go_up());
-    nav.go_up(&c);
-    assert_eq!(nav.base.as_deref(), Some("/Users/someone"));
-    nav.go_up(&c);
-    assert_eq!(nav.base, None);
-    assert!(!nav.can_go_up());
-    // In the favourites view, Parent climbs from the picked favourite.
-    nav.show_favourites(true);
-    assert!(!nav.can_go_up());
-    nav.selected = Some("/Volumes/T7/Film".into());
-    nav.go_up(&c);
-    assert_eq!((nav.base.as_deref(), nav.favourites_only), (Some("/Volumes/T7"), false));
+fn a_folder_both_sections_show_is_picked_in_one() {
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::from(["/h".to_string()]), BTreeSet::new(), strings(&["/h"]));
+    nav.listed("/h", strings(&["/h/a"]));
+    let favourites = strings(&["/h/a"]);
+    let rows: Vec<String> = nav.rows(&favourites).into_iter().map(|(p, _)| p).collect();
+    assert_eq!(rows, strings(&[FAVOURITES_ROW, "/h/a", COMPUTER_ROW, "/h", "/h/a"]));
+    // Picked under Computer, the pick stands on Computer's row of it alone; revealed, it stays there.
+    nav.pick(&rows, 4);
+    nav.reveal("/h/a", &favourites);
+    assert_eq!((nav.selected.as_deref(), nav.picked_row(&rows)), (Some("/h/a"), Some(4)));
+    // Twin: picked among the favourites, on the favourite's row.
+    nav.pick(&rows, 1);
+    nav.reveal("/h/a", &favourites);
+    assert_eq!(nav.picked_row(&rows), Some(1));
+    // A folder made inside it unfolds it in the pick's section alone.
+    nav.made("/h/a/New Folder");
+    assert!(nav.unfolded_favourites.contains("/h/a") && !nav.unfolded.contains("/h/a"));
+    // Its section folded away, the pick falls on the row still showing the folder.
+    nav.pick(&rows, 4);
+    nav.toggle_section(COMPUTER_ROW);
+    let folded: Vec<String> = nav.rows(&favourites).into_iter().map(|(p, _)| p).collect();
+    assert_eq!(nav.picked_row(&folded), Some(1));
+}
 
-    let mut moved = Navigation::new(Some("/r/trip".into()), false, BTreeSet::from(["/r/trip/day2".to_string(), "/r/tripod".to_string()]), vec![]);
+#[test]
+fn a_rename_carries_what_the_navigator_holds() {
+    let mut moved = Navigation::new(BTreeSet::new(), BTreeSet::from(["/r/trip/day2".to_string(), "/r/tripod".to_string()]), BTreeSet::new(), vec![]);
+    moved.beyond.insert("/r/trip".into());
     moved.selected = Some("/r/trip/day2".into());
     moved.listings.insert("/r/trip".into(), vec![]);
     moved.listings.insert("/r/tripod".into(), vec![]);
     moved.follow("/r/trip", "/s/trip");
-    assert_eq!(moved.base.as_deref(), Some("/s/trip"));
+    assert_eq!(moved.beyond, BTreeSet::from(["/s/trip".to_string()]));
     assert_eq!(moved.selected.as_deref(), Some("/s/trip/day2"));
     // Twin: a sibling whose name starts alike keeps its row and its listing.
     assert_eq!(moved.unfolded, BTreeSet::from(["/s/trip/day2".to_string(), "/r/tripod".to_string()]));
@@ -161,49 +184,62 @@ fn going_up_moves_the_base_and_a_rename_carries_what_the_navigator_holds() {
 }
 
 #[test]
-fn the_open_photos_folder_is_unfolded_down_to_or_the_base_moves() {
-    let c = mac();
-    let mut nav = Navigation::new(None, false, BTreeSet::new(), strings(&["/Users/someone", "/Volumes/T7"]));
-    nav.show("/Users/someone/Scans/2026", &[], &c);
+fn the_open_photos_folder_unfolds_under_its_section() {
+    let mut nav = Navigation::new(BTreeSet::from([COMPUTER_ROW.to_string()]), BTreeSet::new(), BTreeSet::new(), strings(&["/Users/someone", "/Volumes/T7"]));
+    nav.show("/Users/someone/Scans/2026", &[]);
     assert_eq!(nav.unfolded, BTreeSet::from(["/Users/someone".to_string(), "/Users/someone/Scans".to_string()]));
-    assert_eq!((nav.base.as_deref(), nav.selected.as_deref()), (None, Some("/Users/someone/Scans/2026")));
-    // Under a base, the folders between it and the photo's unfold; the base itself is the list.
-    let mut based = Navigation::new(Some("/Volumes/T7".into()), false, BTreeSet::new(), vec![]);
-    based.show("/Volumes/T7/Film/Roll 1", &[], &c);
-    assert_eq!(based.unfolded, BTreeSet::from(["/Volumes/T7/Film".to_string()]));
-    // Twin: a folder outside the base moves the base to its parent.
-    based.show("/Users/someone/Scans/2026", &[], &c);
-    assert_eq!(based.base.as_deref(), Some("/Users/someone/Scans"));
+    assert_eq!(nav.selected.as_deref(), Some("/Users/someone/Scans/2026"));
+    assert!(nav.folded.is_empty() && nav.beyond.is_empty(), "its section opens; nothing beyond Computer's rows");
+    // Under a favourite holding it, the favourite's section unfolds down to it rather than Computer's.
+    let mut starred = Navigation::new(BTreeSet::from([FAVOURITES_ROW.to_string()]), BTreeSet::new(), BTreeSet::new(), strings(&["/Volumes/T7"]));
+    starred.show("/Volumes/T7/Film/Roll 1", &strings(&["/Volumes/T7/Film"]));
+    assert_eq!(starred.unfolded_favourites, BTreeSet::from(["/Volumes/T7/Film".to_string()]));
+    assert!(starred.folded.is_empty() && starred.unfolded.is_empty(), "twin: Computer's rows stay folded");
+    // Beyond the home and the volumes, it comes under Computer as itself: nothing above it is listed.
+    nav.show("/opt/scans/2026", &[]);
+    assert_eq!(nav.beyond, BTreeSet::from(["/opt/scans/2026".to_string()]));
+    assert!(!nav.unfolded.iter().any(|u| u.starts_with("/opt")), "{:?}", nav.unfolded);
+    assert_eq!(nav.computer_tops(), strings(&["/Users/someone", "/Volumes/T7", "/opt/scans/2026"]));
+    // A folder beyond holding it takes its place, and a folder under the home brings nothing beyond.
+    nav.show("/opt/scans", &[]);
+    nav.show("/Users/someone/Scans", &[]);
+    assert_eq!(nav.beyond, BTreeSet::from(["/opt/scans".to_string()]));
+    // Twin: once a volume listed holds a folder beyond, the folder is unfolded down to under it alone.
+    nav.show("/Volumes/T8/Film", &[]);
+    assert!(nav.beyond.contains("/Volumes/T8/Film"));
+    nav.set_volumes(strings(&["/Users/someone", "/Volumes/T7", "/Volumes/T8"]));
+    assert_eq!(nav.computer_tops(), strings(&["/Users/someone", "/Volumes/T7", "/Volumes/T8", "/opt/scans"]));
+    assert!(nav.unfolded.contains("/Volumes/T8") && nav.selected.as_deref() == Some("/Volumes/T8/Film"));
     // A folder made inside another is picked and named, its parent unfolded.
-    based.made("/Users/someone/Scans/New Folder");
-    assert_eq!(based.renaming.as_deref(), Some("/Users/someone/Scans/New Folder"));
-    assert!(based.unfolded.contains("/Users/someone/Scans"));
+    nav.made("/Users/someone/Scans/New Folder");
+    assert_eq!(nav.renaming.as_deref(), Some("/Users/someone/Scans/New Folder"));
+    assert!(nav.unfolded.contains("/Users/someone/Scans"));
 }
 
 #[test]
-fn a_folder_opened_elsewhere_is_picked_where_it_shows_else_the_base_moves() {
-    let c = mac();
-    let mut nav = Navigation::new(Some("/Users/someone".into()), false, BTreeSet::new(), vec![]);
+fn a_folder_opened_elsewhere_is_picked_where_it_shows_else_unfolded_down_to() {
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::from(["/Users/someone".to_string()]), BTreeSet::new(), strings(&["/Users/someone"]));
     nav.listings.insert("/Users/someone".into(), strings(&["/Users/someone/Scans"]));
-    nav.reveal("/Users/someone/Scans", &c);
-    assert_eq!((nav.base.as_deref(), nav.selected.as_deref()), (Some("/Users/someone"), Some("/Users/someone/Scans")));
-    // Twin: one not on screen moves the base to its parent.
-    nav.reveal("/Volumes/T7/Film", &c);
-    assert_eq!((nav.base.as_deref(), nav.selected.as_deref()), (Some("/Volumes/T7"), Some("/Volumes/T7/Film")));
+    nav.reveal("/Users/someone/Scans", &[]);
+    assert_eq!(nav.selected.as_deref(), Some("/Users/someone/Scans"));
+    assert_eq!(nav.unfolded.len(), 1, "on screen already, nothing more unfolds");
+    // Twin: one no row shows, beyond Computer's rows, comes under them as itself, picked.
+    nav.reveal("/Volumes/T7/Film", &[]);
+    assert_eq!((nav.beyond.iter().next().map(String::as_str), nav.selected.as_deref()), (Some("/Volumes/T7/Film"), Some("/Volumes/T7/Film")));
+    assert!(!nav.unfolded.contains("/Volumes/T7"));
     nav.toggle_trash();
     assert_eq!(nav.selected.as_deref(), Some(TRASH_ROW));
     assert!(nav.unfolded.contains(TRASH_ROW));
 }
 
-/// Windows mounts no disk in one folder: each drive's root is a volume, its parent Computer, and a
-/// drive other than the home's comes and goes.
+/// Windows mounts no disk in one folder: each drive's root is a volume, and a drive other than the
+/// home's comes and goes.
 #[test]
 fn on_windows_each_drive_is_a_volume() {
     let c = Computer { home: r"C:\Users\someone".into(), volumes: DRIVES.into() };
     assert!(c.is_volume_root(r"D:\") && c.is_volume_root("e:/"));
     assert!(!c.is_volume_root(r"D:\Scans"), "twin: a folder on the drive is not its root");
     assert!(c.is_on_volume(r"D:\Scans\Roll 8") && !c.is_on_volume(r"C:\Scans"));
-    assert_eq!(c.parent(r"D:\"), None);
     // Twin: `/Volumes` reads none of them as a volume.
     assert!(!mac().is_volume_root(r"D:\"));
 }
@@ -214,7 +250,7 @@ fn on_windows_each_drive_is_a_volume() {
 fn an_injected_volumes_folder_is_read_in_any_spelling_on_windows() {
     let c = Computer { home: r"C:\x\home".into(), volumes: r"C:\x\Volumes".into() };
     assert!(c.is_on_volume("C:/x/Volumes/T7/Roll") && c.is_on_volume("c:/X/volumes/T7"));
-    assert!(c.is_volume_root("C:/x/Volumes/T7") && c.parent("C:/x/Volumes/T7").is_none());
+    assert!(c.is_volume_root("C:/x/Volumes/T7") && !c.is_volume_root("C:/x/Volumes/T7/Roll"));
     // Twin: a sibling named like it, and the folder itself, lie on no volume.
     assert!(!c.is_on_volume("C:/x/Volumesque/T7") && !c.is_on_volume("C:/x/Volumes"));
     assert_eq!(crate::absence::volume_root(&c, "C:/x/Volumes/T7/Roll/A.NEF").as_deref(), Some("C:/x/Volumes/T7"));
@@ -279,8 +315,8 @@ fn an_accented_folder_on_exfat_opens_marks_and_stars() {
     let area = crate::roots::survey(std::slice::from_ref(&root), &|| true);
     assert!(area.rolls.contains_key(&row) && area.folders.contains(&ete), "the roll's icon falls on its row");
     assert!(!area.images.is_empty() && area.images.iter().all(|i| holds(&row, i)));
-    let mut nav = Navigation::new(Some(root.clone()), false, BTreeSet::new(), Vec::new());
-    nav.show(&row, &[], &Computer::none());
+    let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::new(), BTreeSet::new(), vec![root.clone()]);
+    nav.show(&row, &[]);
     let mut wanted = nav.take_wanted();
     while !wanted.is_empty() {
         for folder in wanted {

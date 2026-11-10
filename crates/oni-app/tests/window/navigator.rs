@@ -1,5 +1,5 @@
-//! The navigator on the headless window over a disk of its own: clicks, favourites, the base, the
-//! folder menu on folders made for the check, the photo's folder revealed, a former library, a relaunch.
+//! The navigator on the headless window over a disk of its own: the favourites' section and Computer's,
+//! clicks, the folder menu on folders made for the check, the photo's folder revealed, a former library, a relaunch.
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::Preferences;
@@ -24,6 +24,24 @@ fn titles(w: &oni_app::MainWindow) -> Vec<String> {
 
 fn at(w: &oni_app::MainWindow, title: &str) -> usize {
     titles(w).iter().position(|t| t == title).unwrap_or_else(|| panic!("{title} is not among {:?}", titles(w)))
+}
+
+/// The row titled so under a section's heading.
+fn under(w: &oni_app::MainWindow, heading: &str, title: &str) -> usize {
+    let (t, start) = (titles(w), at(w, heading));
+    start + t[start..].iter().position(|x| x == title).unwrap_or_else(|| panic!("{title} is not under {heading} among {t:?}"))
+}
+
+/// The favourites' section: the rows between its heading and Computer's.
+fn starred(w: &oni_app::MainWindow) -> Vec<String> {
+    let t = titles(w);
+    let start = t.iter().position(|x| x == "Favourites").map_or(t.len(), |i| i + 1);
+    t[start..].iter().take_while(|x| *x != "Computer").cloned().collect()
+}
+
+/// The rows picked, which a folder both sections show never doubles.
+fn picked(w: &oni_app::MainWindow) -> Vec<usize> {
+    lines(w).iter().enumerate().filter(|(_, l)| l.picked).map(|(i, _)| i).collect()
 }
 
 fn row(w: &oni_app::MainWindow, title: &str) -> FolderLine {
@@ -104,6 +122,8 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     let n = w.global::<Navigator>();
     let opened = || ctl.state.borrow().opened().map(str::to_owned);
 
+    // No favourite yet, no section for them: Computer's alone, the home then every volume.
+    rig.until("Computer's rows", Duration::from_secs(10), || titles(w) == ["Computer", "Home", "T7"]);
     // A former library: the catch-up sheet counts the photos no folder holds, and the welcome offers
     // the folders they were in, per volume, never the home itself.
     assert!(n.get_catch_up_shown());
@@ -130,15 +150,15 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert!(!n.get_catch_up_shown());
     assert_eq!(Preferences::load(&support).bool("rootsCatchUpShown"), Some(true));
 
-    // Added, Old is revealed among its siblings; Parent climbs to Computer.
-    assert_eq!(n.get_pill_title().as_str(), "Home");
+    // Added, Old stands picked in the favourites' section, above Computer's; each heading is a row.
+    assert_eq!(titles(w), ["Favourites", "Old", "Computer", "Home", "T7"]);
+    assert_eq!((row(w, "Favourites").kind, row(w, "Computer").kind, row(w, "Old").kind), (3, 3, 2));
     assert!(row(w, "Old").picked && row(w, "Old").favourite, "Add stars the folder it opens");
-    n.invoke_go_up();
-    rig.pump();
-    // Computer: the home folder, then every volume; nothing to climb to, the ONI Trash under them.
-    assert_eq!(titles(w), ["Home", "T7"]);
-    assert!(n.get_at_computer() && !n.get_can_go_up());
-    assert_eq!((n.get_pill_title().as_str(), n.get_pill_help().as_str()), ("Computer", "The home folder and every volume"));
+    // A heading folds its section; twin: clicked again, its rows come back.
+    click(&rig, w, "Computer");
+    assert_eq!((titles(w), row(w, "Computer").unfolded), (vec!["Favourites".to_string(), "Old".into(), "Computer".into()], false));
+    click(&rig, w, "Computer");
+    assert_eq!(titles(w), ["Favourites", "Old", "Computer", "Home", "T7"]);
     // A click on the home asks before reading a whole disk, and unfolds it to pick a folder in.
     let confirm = w.global::<Confirm>();
     click(&rig, w, "Home");
@@ -147,8 +167,11 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     confirm.invoke_answered(false);
     rig.pump();
     rig.until("the home listed", Duration::from_secs(10), || titles(w).contains(&"Scans".to_string()));
-    assert_eq!(titles(w), ["Home", "Old", "Other", "Scans", "T7"]);
+    assert_eq!(titles(w), ["Favourites", "Old", "Computer", "Home", "Old", "Other", "Scans", "T7"]);
     assert!(row(w, "Home").unfolded && row(w, "Old").opened && row(w, "Old").kind == 2);
+    // Old shows in both sections and stands opened in both, picked in neither: the home is.
+    assert!(lines(w)[under(w, "Computer", "Old")].opened);
+    assert_eq!(picked(w), [at(w, "Home")]);
     assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()), "twin: the ask cancelled, nothing opens");
     // A folder holding others opens on the first click, and folds nothing.
     rest(&rig);
@@ -158,7 +181,8 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     // The chevron alone unfolds it, and opens nothing.
     n.invoke_row_folded(at(w, "Scans") as i32);
     rig.until("Scans listed", Duration::from_secs(10), || titles(w).contains(&"Roll 1".to_string()));
-    assert_eq!(lines(w).iter().map(|l| (l.title.to_string(), l.depth)).collect::<Vec<_>>()[3..7], [
+    let first = at(w, "Scans");
+    assert_eq!(lines(w).iter().map(|l| (l.title.to_string(), l.depth)).collect::<Vec<_>>()[first..first + 4], [
         ("Scans".to_string(), 1),
         ("Empty".to_string(), 2),
         ("Roll 1".to_string(), 2),
@@ -185,7 +209,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     std::fs::create_dir_all(volumes.join("T8")).unwrap();
     rig.until("T8 mounted", Duration::from_secs(10), || titles(w).contains(&"T8".to_string()));
 
-    // Favourites: a star keeps a folder in `favourites.json`; the view lists them alone.
+    // Favourites: a star keeps a folder in `favourites.json` and in its section.
     rest(&rig);
     n.invoke_star_clicked(at(w, "Scans") as i32);
     rig.pump();
@@ -200,59 +224,40 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     let favourites = oni_library::favourites::Favourites::load(&support).unwrap().paths;
     assert_eq!(favourites, [p(&home.join("Old")), p(&home.join("Scans")), p(&volumes.join("T7/Film"))]);
     assert!(row(w, "Scans").favourite && !row(w, "Other").favourite);
-    n.invoke_favourites_toggled();
-    rig.pump();
-    assert_eq!(titles(w), ["Old", "Scans", "Film"]);
-    assert!(n.get_favourites_only() && !n.get_at_computer() && !n.get_no_favourites());
-    assert_eq!(n.get_pill_title().as_str(), "Favourites");
-    assert_eq!(n.get_pill_help().as_str(), "", "the pill names the favourites, no folder's note under it");
+    assert_eq!(starred(w), ["Old", "Scans", "Film"]);
     // A favourite on a volume gone fades; mounted again, it is there.
     std::fs::rename(volumes.join("T7"), root.join("T7 away")).unwrap();
     rig.until("T7 gone", Duration::from_secs(10), || !row(w, "Film").present);
     assert!(row(w, "Scans").present, "twin: a favourite on the home stays");
     std::fs::rename(root.join("T7 away"), volumes.join("T7")).unwrap();
     rig.until("T7 back", Duration::from_secs(10), || row(w, "Film").present);
-    // Unstarred in the view, a favourite leaves it, and the notice's Undo brings it back.
+    // Unstarred, a favourite leaves its section, and the notice's Undo brings it back.
     n.invoke_star_clicked(at(w, "Old") as i32);
     rig.pump();
-    assert_eq!(titles(w), ["Scans", "Film"]);
+    assert_eq!(starred(w), ["Scans", "Film"]);
     let told = w.global::<Told>();
     assert!(told.get_shown() && told.get_title() == "Removed from Favourites" && told.get_action() == "Undo");
     assert_eq!(told.get_message().as_str(), "“Old” is no longer a favourite.");
     told.invoke_acted();
     rig.pump();
-    assert_eq!(titles(w), ["Scans", "Film", "Old"], "Undo stars it again");
+    assert_eq!(starred(w), ["Scans", "Film", "Old"], "Undo stars it again");
     n.invoke_star_clicked(at(w, "Old") as i32);
     rig.pump();
     told.invoke_closed();
-    assert_eq!(titles(w), ["Scans", "Film"], "twin: closed without Undo, it stays out");
-    n.invoke_favourites_toggled();
-    rig.pump();
+    assert_eq!(starred(w), ["Scans", "Film"], "twin: closed without Undo, it stays out");
 
-    // A folder opened from elsewhere moves the base to its parent; Parent climbs back to Computer.
+    // A folder opened from elsewhere is picked where a row shows it, in the section the hand was in.
     shell.add(&volumes.join("T7/Film"));
     rig.until("Film opened", Duration::from_secs(30), || ctl.state.borrow().read_done() && opened().as_deref() == Some(p(&volumes.join("T7/Film")).as_str()));
-    assert!(titles(w).contains(&"Film".to_string()), "Film shows under T7's unfolded row, so the base stays");
+    assert_eq!(picked(w), [under(w, "Computer", "Film")], "one row picked, though both sections show Film");
+    // Shown by no row, it unfolds under the favourite holding it; Computer's Scans stays folded.
     shell.add(&home.join("Scans/Roll 2"));
     rig.until("Roll 2 opened", Duration::from_secs(30), || opened().as_deref() == Some(p(&home.join("Scans/Roll 2")).as_str()));
-    assert_eq!(n.get_pill_title().as_str(), "Scans");
-    assert_eq!(n.get_pill_help().as_str(), format!("{} — click to jump to a folder above", p(&home.join("Scans"))));
-    let ancestors = n.get_ancestors();
-    let ancestors: Vec<(String, bool)> = (0..ancestors.row_count()).filter_map(|i| ancestors.row_data(i)).map(|a| (a.title.to_string(), a.current)).collect();
-    assert_eq!(ancestors, [("Scans".to_string(), true), ("Home".to_string(), false), ("Computer".to_string(), false)]);
-    assert!(row(w, "Roll 2").picked && row(w, "Roll 2").opened);
-    n.invoke_go_up();
-    rig.pump();
-    assert_eq!((n.get_pill_title().as_str(), n.get_can_go_up()), ("Home", true));
-    n.invoke_go_up();
-    rig.pump();
-    assert_eq!((n.get_pill_title().as_str(), n.get_can_go_up()), ("Computer", false), "the home climbs to Computer, never `/`");
-    shell.add(&home.join("Scans/Roll 2"));
-    rig.until("Roll 2 revealed", Duration::from_secs(10), || n.get_pill_title().as_str() == "Scans");
-    n.invoke_ancestor_chosen(1);
-    rig.pump();
-    assert_eq!(n.get_pill_title().as_str(), "Home");
-    rig.until("Home's folders", Duration::from_secs(10), || titles(w).first().map(String::as_str) == Some("Old"));
+    rig.until("Roll 2 shown", Duration::from_secs(10), || titles(w).contains(&"Roll 2".to_string()));
+    assert_eq!(titles(w).iter().filter(|t| *t == "Roll 2").count(), 1);
+    assert!(at(w, "Roll 2") < at(w, "Computer") && row(w, "Roll 2").opened);
+    assert_eq!(picked(w), [at(w, "Roll 2")]);
+    assert!(row(w, "Scans").unfolded && !lines(w)[under(w, "Computer", "Scans")].unfolded);
 
     // The folder menu, in Swift's order, its rules above Rename… and Show in Finder.
     assert_eq!(menu(w, "Scans"), [
@@ -348,25 +353,27 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rig.settle();
     println!("shot {}", rig.shot("navigator-gallery").display());
 
-    // The next launch: the base, the unfolded rows, the favourites and the height where they were.
-    let base_before = n.get_pill_title().to_string();
+    // The next launch: the sections, the unfolded rows, the favourites and the height where they were.
+    click(&rig, w, "Computer");
     let rows_before = titles(w);
+    assert_eq!(rows_before.last().map(String::as_str), Some("Computer"), "Computer's section folded");
     drop(shell);
     let shell = launch();
     let w = &shell.window;
     let n = w.global::<Navigator>();
     rig.until("the rows listed again", Duration::from_secs(10), || titles(w) == rows_before);
-    assert_eq!((n.get_pill_title().to_string(), n.get_height()), (base_before, 320.0));
-    assert!(!n.get_catch_up_shown() && !n.get_favourites_only());
+    assert_eq!(n.get_height(), 320.0);
+    assert!(!n.get_catch_up_shown());
     assert!(row(w, "Scans 2026").favourite);
     let prefs = Preferences::load(&support);
-    assert_eq!(prefs.string("navigatorBase"), Some(p(&home).as_str()));
-    assert_eq!(prefs.bool("navigatorFavouritesOnly"), Some(false));
     assert_eq!(prefs.value("navigatorEditorHeight").and_then(|v| v.as_f64()), Some(320.0));
-    let unfolded: Vec<String> = prefs.value("navigatorUnfolded").and_then(|v| v.as_array().cloned()).unwrap_or_default().iter().filter_map(|v| v.as_str().map(str::to_owned)).collect();
-    assert!(unfolded.contains(&scans), "{unfolded:?}");
-    // Twin: a row never unfolded is not remembered so.
-    assert!(!unfolded.contains(&paths::join(&scans, "Roll 1")));
+    let set = |key: &str| -> Vec<String> { prefs.value(key).and_then(|v| v.as_array().cloned()).unwrap_or_default().iter().filter_map(|v| v.as_str().map(str::to_owned)).collect() };
+    assert_eq!(set("navigatorFoldedSections"), ["oni-computer"]);
+    assert!(set("navigatorUnfoldedFavourites").contains(&scans), "{:?}", set("navigatorUnfoldedFavourites"));
+    assert!(set("navigatorUnfolded").contains(&p(&home)), "the home, unfolded under Computer");
+    // Twin: Computer's row of the favourite and a row never unfolded are not remembered so.
+    assert!(!set("navigatorUnfolded").contains(&scans));
+    assert!(!set("navigatorUnfoldedFavourites").contains(&paths::join(&scans, "Roll 1")));
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

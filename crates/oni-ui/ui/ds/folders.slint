@@ -1,6 +1,9 @@
-// The navigator's gauges and the line dragged to size the rows beside a photograph.
+// The navigator's gauges, the heading over a section's rows, and the line dragged to size the rows
+// beside a photograph.
 import { DS } from "tokens.slint";
-import { Colour, Space, Stroke } from "theme.slint";
+import { Colour, Space, Stroke, RowStyle, Type } from "theme.slint";
+import { Label, Icon, TextRole, Tone } from "base.slint";
+import { Icons } from "icons.slint";
 
 export global NavigatorStyle {
     // `DS.Control.navigatorMaxHeight`: the rows beside a photograph at their tallest.
@@ -35,4 +38,28 @@ export component RowsDivider inherits Rectangle {
             }
         }
     }
+}
+
+// A section's heading over its rows, as the Finder's sidebar heads its own: its name in the quiet ink
+// after the tree's chevron, a click anywhere on it folding its rows away or bringing them back.
+export component RowsHeading inherits Rectangle {
+    in property <string> title;
+    in property <bool> unfolded;
+    callback toggled();
+    height: RowStyle.height;
+    accessible-role: button;
+    accessible-label: root.unfolded ? @tr("Hide {}", root.title) : @tr("Show {}", root.title);
+    accessible-expandable: true;
+    accessible-expanded: root.unfolded;
+    accessible-action-default => { root.toggled(); }
+    HorizontalLayout {
+        padding-left: RowStyle.lead;
+        spacing: RowStyle.gap;
+        VerticalLayout {
+            alignment: center;
+            Icon { source: root.unfolded ? Icons.chevron-down : Icons.chevron-right; width: RowStyle.chevron; height: RowStyle.chevron; tone: Tone.tertiary; }
+        }
+        Label { text: root.title; role: TextRole.caption; font-weight: Type.strong; tone: Tone.tertiary; overflow: elide; }
+    }
+    TouchArea { clicked => { root.toggled(); } }
 }

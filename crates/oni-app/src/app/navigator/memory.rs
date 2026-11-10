@@ -1,4 +1,4 @@
-//! Wiring the navigator, and what it keeps across launches: base, favourites view, unfolded rows, height.
+//! Wiring the navigator, and what it keeps across launches: the sections folded, the unfolded rows, the height.
 
 use super::*;
 
@@ -38,26 +38,6 @@ impl Ctl {
             p.keys_back();
         });
         let p = me.clone();
-        n.on_go_up(move || {
-            {
-                let mut s = p.state.borrow_mut();
-                let computer = s.nav.computer.clone();
-                s.nav.model.go_up(&computer);
-            }
-            p.publish_navigator();
-        });
-        let p = me.clone();
-        n.on_favourites_toggled(move || {
-            {
-                let mut s = p.state.borrow_mut();
-                let on = !s.nav.model.favourites_only;
-                s.nav.model.show_favourites(on);
-            }
-            p.publish_navigator();
-        });
-        let p = me.clone();
-        n.on_ancestor_chosen(move |i| p.ancestor_chosen(index(i)));
-        let p = me.clone();
         n.on_height_stored(move |h| {
             let _ = p.state.borrow_mut().preferences.set(EDITOR_HEIGHT, Value::from(h as f64));
         });
@@ -89,25 +69,22 @@ impl Ctl {
         me.publish_trash_rows();
     }
 
-    /// `FolderNavigation.init` and the launch's favourites: the remembered base, view, rows and
-    /// height; `favourites.json`, seeded once from `roots.json`; a former library's folders.
+    /// `FolderNavigation.init` and the launch's favourites: the remembered sections, rows and height;
+    /// `favourites.json`, seeded once from `roots.json`; a former library's folders.
     pub(super) fn load_navigator(&self) {
         let (height, catching_up, failure) = {
             let mut s = self.state.borrow_mut();
             let prefs = &s.preferences;
-            let base = prefs.string(BASE).map(str::to_owned);
-            let favourites_only = prefs.bool(FAVOURITES_ONLY).unwrap_or(false);
-            let unfolded: BTreeSet<String> = prefs
-                .value(UNFOLDED)
-                .and_then(Value::as_array)
-                .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
-                .unwrap_or_default();
+            let strings = |key: &str| -> BTreeSet<String> {
+                prefs.value(key).and_then(Value::as_array).map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect()).unwrap_or_default()
+            };
+            let (folded, unfolded, favourites) = (strings(FOLDED), strings(UNFOLDED), strings(UNFOLDED_FAVOURITES));
             let height = prefs.value(EDITOR_HEIGHT).and_then(Value::as_f64).unwrap_or(EDITOR_REST);
             let remembered_opened = prefs.string(crate::preferences::OPENED_FOLDER).map(str::to_owned);
             let caught_up = prefs.bool(ROOTS_CATCH_UP_SHOWN).unwrap_or(false);
             // The home alone until the volumes' thread lists the rest: a sleeping mount never holds the launch.
             let volumes: Vec<String> = Some(s.nav.computer.home.clone()).filter(|h| !h.is_empty()).into_iter().collect();
-            s.nav.model = Navigation::new(base, favourites_only, unfolded, volumes);
+            s.nav.model = Navigation::new(folded, unfolded, favourites, volumes);
             s.nav.remembered = Some(s.nav.model.remembered());
             s.org.trash_unfolded = s.nav.model.unfolded.contains(TRASH_ROW);
             let roots = Roots::load(&s.support);
@@ -170,7 +147,7 @@ impl Ctl {
     pub(super) fn volumes_moved(self: &Rc<Self>, now: Vec<String>, answering: Vec<String>, first: bool) {
         let (moved, left, reread, arrived) = {
             let mut s = self.state.borrow_mut();
-            let before = std::mem::replace(&mut s.nav.model.volumes, now.clone());
+            let before = s.nav.model.set_volumes(now.clone());
             let moved = before != now;
             let (left, arrived): (Vec<String>, Vec<String>) = if first {
                 (Vec::new(), Vec::new())

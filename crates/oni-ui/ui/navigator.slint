@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
-// Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
-import { Space, ShellStyle, RowStyle, Scroller, KeyScope, Picker, PickerFace, FolderChoice, RowsDivider, RowsEmpty, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach, SheetFooter } from "ds/ds.slint";
+// the favourites' section, then Computer's, each folding under its heading, then the ONI Trash in every view.
+import { Space, ShellStyle, RowStyle, Scroller, KeyScope, RowsDivider, RowsHeading, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach, SheetFooter } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -18,7 +18,7 @@ export struct TrashLine {
     help: string,
 }
 
-// A folder's row: `kind` 0 a folder, 1 a roll, 2 the opened folder.
+// A folder's row: `kind` 0 a folder, 1 a roll, 2 the opened folder, 3 a section's heading.
 export struct FolderLine {
     title: string,
     // The title cut for a narrow column: its head elides, its tail stays whole; no tail, no cut.
@@ -53,19 +53,9 @@ export struct CatchUpLine { folder: string, count: string }
 
 export global Navigator {
     in property <[FolderLine]> rows;
-    in property <bool> can-go-up;
-    in property <bool> favourites-only;
-    in property <string> pill-title;
-    in property <string> pill-help;
-    in property <[FolderChoice]> ancestors;
-    in property <bool> no-favourites;
-    // Computer's view, the home and the volumes.
-    in property <bool> at-computer;
-    // The base out of reach or holding no folder, said in place of its rows.
-    in property <string> blank-title;
-    in property <string> blank-detail;
     // The rows' height beside a photograph, dragged by the line under them.
     in-out property <length> height;
+    // Beside a photo, its folder's row, -1 in the gallery; each serial asks the rows to centre it.
     in property <int> reveal-row: -1;
     in property <int> reveal-serial;
     in property <[MenuLine]> menu-lines;
@@ -89,9 +79,6 @@ export global Navigator {
     callback menu-chosen(int);
     callback rename-committed(int, string);
     callback rename-cancelled();
-    callback go-up();
-    callback favourites-toggled();
-    callback ancestor-chosen(int);
     callback height-stored(length);
     callback mode-changed();
     callback welcome-added(int);
@@ -101,7 +88,7 @@ export global Navigator {
     callback catch-up-done();
 }
 
-// The folders, then the ONI Trash's rows under Computer; scrolled by the wheel and the knob alone.
+// The sections' folders, then the ONI Trash's rows; scrolled by the wheel and the knob alone.
 component Rows inherits Scroller {
     in property <[TrashLine]> trash-rows;
     // A place in Tab's order, beside the grid, where the arrows walk the rows.
@@ -113,10 +100,20 @@ component Rows inherits Scroller {
     callback trash-menu(int, length, length);
     callback folder-menu(int, length, length);
     property <int> serial: Navigator.reveal-serial;
+    property <int> aim: Navigator.reveal-row;
+    // The photo's folder centred once per reveal Rust asks and once as a list is made, which beside a
+    // photo comes after the ask; owed until the list has laid that row, so no later change re-centres it.
+    property <bool> owed: true;
     content-height: column.preferred-height;
-    changed serial => {
-        if (Navigator.reveal-row >= 0) {
-            self.content-y = min(0px, max(self.height - self.content-height, self.height / 2 - (Navigator.reveal-row + 0.5) * RowStyle.height));
+    changed serial => { root.owed = true; root.reveal(); }
+    changed aim => { root.reveal(); }
+    changed height => { root.reveal(); }
+    changed content-height => { root.reveal(); }
+    init => { root.reveal(); }
+    function reveal() {
+        if (root.owed && root.aim >= 0 && root.height > 0 && root.content-height >= (root.aim + 1) * RowStyle.height) {
+            root.owed = false;
+            self.content-y = min(0px, max(self.height - self.content-height, self.height / 2 - (root.aim + 0.5) * RowStyle.height));
         }
     }
     column := VerticalLayout {
@@ -125,7 +122,12 @@ component Rows inherits Scroller {
         padding-left: ShellStyle.column-inset;
         padding-right: ShellStyle.column-inset;
         for row[i] in Navigator.rows: VerticalLayout {
-            if !row.renaming: Row {
+            if row.kind == 3: RowsHeading {
+                title: row.title;
+                unfolded: row.unfolded;
+                toggled => { Navigator.row-folded(i); }
+            }
+            if row.kind != 3 && !row.renaming: Row {
                 form: RowForm.navigator;
                 starrable: true;
                 title: row.title;
@@ -160,15 +162,9 @@ component Rows inherits Scroller {
                 cancelled => { Navigator.rename-cancelled(); }
             }
         }
-        if Navigator.no-favourites: RowsEmpty {
-            title: @tr("No Favourites");
-            detail: @tr("Star a folder to keep it here, ready to open.");
-        }
-        if Navigator.blank-title != "": RowsEmpty {
-            title: Navigator.blank-title;
-            detail: Navigator.blank-detail;
-        }
+        // Apart from Computer's rows, so a folded section never seems to hold it.
         VerticalLayout {
+            padding-top: Space.s;
             for line[i] in root.trash-rows: Row {
                 kind: RowKind.trash;
                 form: RowForm.navigator;
@@ -250,38 +246,6 @@ export component NavigatorSection inherits Rectangle {
     changed beside-photo => { Navigator.mode-changed(); }
     VerticalLayout {
         if Navigator.welcome-shown && !root.beside-photo: Welcome { }
-        HorizontalLayout {
-            padding-left: ShellStyle.column-inset;
-            padding-right: ShellStyle.column-inset;
-            padding-bottom: Space.s;
-            spacing: Space.s;
-            // Parent and the favourites' view, then the pill. The view is a filter lit while on; the star
-            // stays the mark a folder is starred with.
-            ButtonGroup {
-                Button { size: ButtonSize.mini; has-icon: true; square: true;
-                    icon: Icons.parent;
-                    help: @tr("Parent Folder");
-                    enabled: Navigator.can-go-up;
-                    clicked => { Navigator.go-up(); }
-                }
-                Button { size: ButtonSize.mini; has-icon: true; square: true;
-                    icon: Icons.filter;
-                    on: Navigator.favourites-only;
-                    help: Navigator.favourites-only ? @tr("Show every folder") : @tr("Show the favourites alone");
-                    clicked => { Navigator.favourites-toggled(); }
-                }
-            }
-            Picker {
-                face: PickerFace.pill;
-                horizontal-stretch: 1;
-                value: Navigator.pill-title;
-                help: Navigator.pill-help;
-                // The favourites alone, it only names what the column lists.
-                pressable: !Navigator.favourites-only;
-                choices: Navigator.ancestors;
-                chosen(i) => { Navigator.ancestor-chosen(i); }
-            }
-        }
         if !root.beside-photo: Rectangle {
             vertical-stretch: 1;
             Rows {

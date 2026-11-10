@@ -69,10 +69,10 @@ impl Ctl {
         let Some(w) = self.window() else { return false };
         let lines = {
             let mut s = self.state.borrow_mut();
-            let Some(path) = s.nav.rows.get(i).cloned() else { return false };
+            let Some(path) = s.nav.rows.get(i).cloned().filter(|p| !walk::is_heading(p)) else { return false };
             let items = s.folder_lines(&path, s.row_presence(&path));
             s.nav.menu = items.iter().map(|(_, a)| *a).collect();
-            s.nav.menu_path = Some(path);
+            s.nav.menu_path = Some((path, walk::heading_above(&s.nav.rows, i)));
             items.into_iter().map(|(l, _)| l).collect::<Vec<_>>()
         };
         w.global::<crate::Navigator>().set_menu_lines(ModelRc::new(VecModel::from(lines)));
@@ -81,8 +81,12 @@ impl Ctl {
 
     pub(super) fn navigator_menu_chosen(self: &Rc<Self>, i: usize) {
         let (act, path) = {
-            let s = self.state.borrow();
-            let (Some(act), Some(path)) = (s.nav.menu.get(i).copied(), s.nav.menu_path.clone()) else { return };
+            let mut s = self.state.borrow_mut();
+            let (Some(act), Some((path, section))) = (s.nav.menu.get(i).copied(), s.nav.menu_path.clone()) else { return };
+            // Opened, renamed or filled from a row, the folder is picked or typed in that row's section.
+            if matches!(act, FolderAct::Open | FolderAct::Rename | FolderAct::NewFolder) {
+                s.nav.model.picked_in = section;
+            }
             (act, path)
         };
         self.folder_acted(act, &path, false);
@@ -253,8 +257,8 @@ impl Ctl {
     pub(in crate::app) fn navigator_reveal(&self, folder: &str) {
         {
             let mut s = self.state.borrow_mut();
-            let computer = s.nav.computer.clone();
-            s.nav.model.reveal(folder, &computer);
+            let favourites = s.nav.favourites.paths.clone();
+            s.nav.model.reveal(folder, &favourites);
         }
         self.publish_navigator();
     }

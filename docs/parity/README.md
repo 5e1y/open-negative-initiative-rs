@@ -23,11 +23,11 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
 | Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 140 | 7 | 0 | 141 of 147 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 92 | 6 | 0 | 97 of 98 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 89 | 6 | 0 | 94 of 95 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 37 | 8 | 2 | 39 of 47 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 123 | 3 | 5 | 122 of 131 |
-| **All** | | **429** | **25** | **7** | **437 of 461** |
+| **All** | | **426** | **25** | **7** | **434 of 458** |
 
 Within the editor: canvas 19 / 1 / 0, main band 2 / 3 / 0, panel tabs 6 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 3 / 0 / 0, De-dust 7 / 0 / 0, Scanner face
@@ -41,7 +41,7 @@ and Tint track ends, Show Presets Folder and Roll of the N.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **104 have a Rust twin, 35 a partial one,
+[checks.md](checks.md) lists the 162 checks `--check` runs: **103 have a Rust twin, 36 a partial one,
 9 none, and 12 are blocked on a behaviour the port lacks**; two the owner chose to leave.
 
 ### Pipeline branches against Swift

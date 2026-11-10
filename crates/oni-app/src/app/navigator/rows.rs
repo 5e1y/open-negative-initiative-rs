@@ -1,29 +1,42 @@
-//! The navigator's rows: Computer, the base's folders and the favourites, each one's state, a click
-//! opening and the chevron folding.
+//! The navigator's rows: the favourites' section and Computer's, each folder's state, a click opening,
+//! the chevron folding and a section's heading folding its rows.
 
 use super::*;
 
 impl Ctl {
-    /// The rows, the header and the welcome as they stand; every row's own listing is asked so
-    /// its chevron knows whether it holds a folder.
+    /// The rows and the welcome as they stand; every folder's own listing is asked so its chevron
+    /// knows whether it holds a folder.
     pub(in crate::app) fn publish_navigator(&self) {
         let Some(w) = self.window() else { return };
         let published = {
             let mut s = self.state.borrow_mut();
             let favourites = s.nav.favourites.paths.clone();
             let rows = s.nav.model.rows(&favourites);
-            for (path, _) in &rows {
+            for (path, _) in rows.iter().filter(|(p, _)| !walk::is_heading(p)) {
                 s.nav.model.list(path, false);
             }
             let rolls = s.nav.rolls();
             let opened = if s.org.trash_open { None } else { s.opened.clone() };
             let model = &s.nav.model;
             let side = crate::stocks::row_side(&w);
-            // Two favourites named alike carry the folders above them, only there: siblings never are.
-            let trails = if model.favourites_only { walk::trails(&favourites) } else { HashMap::new() };
+            // Two favourites named alike carry the folders above them, in their own section alone.
+            let trails = walk::trails(&favourites);
+            let mut section = walk::COMPUTER_ROW;
+            let paths: Vec<String> = rows.iter().map(|(p, _)| p.clone()).collect();
+            // A folder both sections show is picked and typed over in one row alone.
+            let picked = model.picked_row(&paths);
+            let typed = model.renaming.as_deref().and_then(|r| model.row_of(&paths, r));
+            // Beside a photo, its folder's row, which a list made anew scrolls to as it first draws.
+            let reveal = s.nav.current.as_deref().and_then(|c| model.row_of(&paths, c)).map_or(-1, |i| i as i32);
             let lines: Vec<FolderLine> = rows
                 .iter()
-                .map(|(path, depth)| {
+                .enumerate()
+                .map(|(i, (path, depth))| {
+                    if walk::is_heading(path) {
+                        section = if path == walk::FAVOURITES_ROW { walk::FAVOURITES_ROW } else { walk::COMPUTER_ROW };
+                        let title = if section == walk::FAVOURITES_ROW { tr("Favourites") } else { tr("Computer") };
+                        return FolderLine { title: title.into(), depth: 0, chevron: true, unfolded: !model.folded.contains(path), kind: 3, present: true, ..FolderLine::default() };
+                    }
                     let presence = s.row_presence(path);
                     let (caption, help) = reach::row_words(presence, path, &s.nav.computer);
                     let title = s.nav.computer.name(path);
@@ -34,12 +47,12 @@ impl Ctl {
                     title: title.into(),
                     head: head.into(),
                     tail: tail.into(),
-                    trail: trails.get(path).filter(|_| *depth == 0).cloned().unwrap_or_default().into(),
+                    trail: trails.get(path).filter(|_| *depth == 0 && section == walk::FAVOURITES_ROW).cloned().unwrap_or_default().into(),
                     path: path.clone().into(),
                     depth: *depth as i32,
                     // Out of reach, it promises no folder inside.
                     chevron: presence.is_present() && model.listings.get(path).is_none_or(|c| !c.is_empty()),
-                    unfolded: model.unfolded.contains(path),
+                    unfolded: model.is_unfolded(section, path),
                     kind: if roll {
                         1
                     } else if opened.as_deref() == Some(path.as_str()) {
@@ -47,38 +60,19 @@ impl Ctl {
                     } else {
                         0
                     },
-                    picked: model.selected.as_deref() == Some(path.as_str()),
+                    picked: picked == Some(i),
                     opened: opened.as_deref() == Some(path.as_str()),
                     favourite: s.nav.favourites.contains(path),
                     present: presence.is_present(),
                     reach: reach::reach(presence),
                     caption: caption.into(),
                     help: help.into(),
-                    renaming: model.renaming.as_deref() == Some(path.as_str()),
+                    renaming: typed == Some(i),
                     has_stock: stock.is_some(),
                     stock: stock.unwrap_or_default(),
                     unprepared: presence.is_present() && s.nav.unprepared.contains(path),
                 }})
                 .collect();
-            let blank = s.blank_words();
-            let base = model.base.clone();
-            let mut ancestors: Vec<Option<String>> =
-                base.as_deref().map(|b| s.nav.computer.ancestors(b)).unwrap_or_default().into_iter().map(Some).collect();
-            ancestors.push(None);
-            let choices: Vec<FolderChoice> =
-                ancestors.iter().map(|a| FolderChoice { title: walk::title(a.as_deref(), &s.nav.computer).into(), current: *a == base }).collect();
-            let header = (
-                model.can_go_up(),
-                model.favourites_only,
-                if model.favourites_only { tr("Favourites").to_string() } else { walk::title(base.as_deref(), &s.nav.computer) },
-                if model.favourites_only {
-                    String::new()
-                } else {
-                    base.as_deref().map(|b| tr!("{folder} — click to jump to a folder above", folder = b)).unwrap_or_else(|| tr("The home folder and every volume").into())
-                },
-                model.favourites_only && favourites.is_empty(),
-                !model.favourites_only && base.is_none(),
-            );
             let welcome: Vec<WelcomeLine> = s
                 .nav
                 .welcome
@@ -97,26 +91,18 @@ impl Ctl {
                 })
                 .collect();
             let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
-            s.nav.rows = rows.into_iter().map(|(p, _)| p).collect();
+            s.nav.rows = paths;
             let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
             refused.extend(s.opened.clone().filter(|o| s.survey.unreadable.contains(o)));
             *s.nav.refused.lock().expect("refused") = refused;
             s.remember();
-            (lines, choices, header, welcome, welcome_shown, blank)
+            (lines, welcome, welcome_shown, reveal)
         };
         self.list_wanted();
-        let (lines, choices, header, welcome, welcome_shown, blank) = published;
+        let (lines, welcome, welcome_shown, reveal) = published;
         let n = w.global::<crate::Navigator>();
         n.set_rows(ModelRc::new(VecModel::from(lines)));
-        n.set_ancestors(ModelRc::new(VecModel::from(choices)));
-        n.set_can_go_up(header.0);
-        n.set_favourites_only(header.1);
-        n.set_pill_title(header.2.into());
-        n.set_pill_help(header.3.into());
-        n.set_no_favourites(header.4);
-        n.set_at_computer(header.5);
-        n.set_blank_title(blank.0.into());
-        n.set_blank_detail(blank.1.into());
+        n.set_reveal_row(reveal);
         n.set_welcome(ModelRc::new(VecModel::from(welcome)));
         n.set_welcome_shown(welcome_shown);
         self.publish_catch_up();
@@ -151,8 +137,11 @@ impl Ctl {
     }
 
     /// `NavigatorRow.onTapGesture`: a click opens its folder, out of reach too, where the gallery
-    /// says its state; the second of a double click opens nothing more.
+    /// says its state; the second of a double click opens nothing more. A heading folds its section.
     pub(super) fn navigator_row_clicked(self: &Rc<Self>, i: usize) {
+        if self.state.borrow().nav.rows.get(i).is_some_and(|p| walk::is_heading(p)) {
+            return self.navigator_row_folded(i);
+        }
         let open = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.nav.rows.get(i).cloned() else { return };
@@ -163,6 +152,8 @@ impl Ctl {
             };
             s.nav.clicks = Some((path.clone(), now, count));
             s.org.trash_picked = None;
+            let s = &mut *s;
+            s.nav.model.pick(&s.nav.rows, i);
             s.nav.model.click(&path, count)
         };
         self.publish_trash_rows();
@@ -172,12 +163,17 @@ impl Ctl {
         }
     }
 
-    /// The chevron alone: the row folds or unfolds, and nothing opens.
+    /// The chevron alone: the row folds or unfolds, and nothing opens; a heading folds its section.
     pub(super) fn navigator_row_folded(self: &Rc<Self>, i: usize) {
         {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.nav.rows.get(i).cloned() else { return };
-            s.nav.model.toggle(&path);
+            if walk::is_heading(&path) {
+                s.nav.model.toggle_section(&path);
+            } else {
+                let heading = walk::heading_above(&s.nav.rows, i);
+                s.nav.model.toggle_in(heading, &path);
+            }
         }
         self.publish_navigator();
     }
@@ -205,36 +201,5 @@ impl Ctl {
             false,
             Pending::Run(Box::new(move |c| c.open_folder(Path::new(&target)))),
         );
-    }
-
-    pub(super) fn ancestor_chosen(&self, i: usize) {
-        {
-            let mut s = self.state.borrow_mut();
-            let base = s.nav.model.base.clone();
-            let mut ancestors: Vec<Option<String>> =
-                base.as_deref().map(|b| s.nav.computer.ancestors(b)).unwrap_or_default().into_iter().map(Some).collect();
-            ancestors.push(None);
-            let Some(chosen) = ancestors.get(i).cloned() else { return };
-            s.nav.model.go(chosen);
-        }
-        self.publish_navigator();
-    }
-}
-
-impl State {
-    /// What the column says in place of its rows: the base out of reach, or holding no folder.
-    fn blank_words(&self) -> (String, String) {
-        let model = &self.nav.model;
-        let Some(base) = model.base.as_deref().filter(|_| !model.favourites_only) else { return Default::default() };
-        let name = paths::name(base);
-        let presence = self.row_presence(base);
-        if !presence.is_present() {
-            let (state, _) = reach::row_words(presence, base, &self.nav.computer);
-            return (tr!("“{name}” Cannot Be Reached", name = name), state);
-        }
-        match model.listings.get(base) {
-            Some(children) if children.is_empty() => (tr!("No Folder Inside “{name}”", name = name), tr("Parent shows the folders around it.").into()),
-            _ => Default::default(),
-        }
     }
 }

@@ -159,8 +159,7 @@ mod tests {
     const NAMING: [&str; 7] = ["{name}", "{names}", "{path}", "{folder}", "{disk}", "{file}", "{phones}"];
 
     /// Templates that never reach the log: captions, tooltips and fields set directly, or the app's own files.
-    const NEVER_LOGGED: [&str; 22] = [
-        "{folder} — click to jump to a folder above",
+    const NEVER_LOGGED: [&str; 21] = [
         "{name} — {state}",
         "Add {name}",
         "{name} · decoding",

@@ -169,7 +169,7 @@ pub(crate) fn the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_expor
     let Some(roll) = Roll::new("sidebar-filter-gallery") else { return };
     let lib = roll.lib();
     assert!(roll.w().global::<App>().get_gallery());
-    let (head, folders) = (roll.filter("All Photos"), common::the(roll.w(), Role::Button, "Parent Folder"));
+    let (head, folders) = (roll.filter("All Photos"), common::the(roll.w(), Role::Button, "Hide Computer"));
     assert!(head.y + head.height <= folders.y, "the filter heads the column, above the folders: {head:?} {folders:?}");
 
     roll.pick("All Photos", "Gold", "sidebar-filter-gallery-menu");

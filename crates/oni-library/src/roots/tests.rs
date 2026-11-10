@@ -205,11 +205,11 @@ fn a_symlinked_folder_is_listed_and_a_loop_is_not_followed() {
     assert!(!rows.contains(&root));
     let back = crate::navigator::children(&paths::join(&paths::canonical(&scans), "Deep")).unwrap();
     assert!(back.is_empty(), "{back:?}");
-    let mut nav = crate::navigator::Navigation::new(Some(root.clone()), false, BTreeSet::from([root.clone(), "/x".to_owned(), "/y".to_owned()]), Vec::new());
+    let mut nav = crate::navigator::Navigation::new(BTreeSet::new(), BTreeSet::from([root.clone(), "/x".to_owned(), "/y".to_owned()]), BTreeSet::new(), vec![root.clone()]);
     nav.listed(&root, vec!["/x".to_owned()]);
     nav.listed("/x", vec!["/y".to_owned()]);
     nav.listed("/y", vec!["/x".to_owned()]);
-    let laid: Vec<String> = nav.rows(&[]).into_iter().map(|(p, _)| p).collect();
+    let laid: Vec<String> = nav.rows(&[]).into_iter().map(|(p, _)| p).filter(|p| !crate::navigator::is_heading(p) && *p != root).collect();
     assert_eq!(laid, ["/x", "/y", "/x"]);
 }
 

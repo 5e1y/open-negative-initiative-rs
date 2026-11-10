@@ -213,9 +213,7 @@ field lies flat, as a text field.
 - **`Picker`**, field face (`DSPicker`): the value on a text field's flat `FieldFace`, a chevron at its end, lit
   under the hand as a flat key's face; the pill face keeps the hover ground, and the chip, the colour space's
   among the canvas band's mini keys, is its words alone at rest and wears their flat face, edgeless, under the
-  hand or while its popover is open. A pill that only names
-  what its column lists is `pressable: false`, never disabled, so its words keep the primary ink. A value
-  naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
+  hand or while its popover is open. A value naming a medal strikes it before its words, or alone in their place (`bare`) where the room is short; a
   menu line names one the same way, every line's words then starting past the medal's room. A menu's line
   may carry a `note` under its words in the caption's secondary ink, two lines tall
   (`MenuStyle.noted-height`), as the export's presets over their summaries; the `current` line is checked. Its
