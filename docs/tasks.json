@@ -8271,5 +8271,12 @@
     "title": "The installer's walk sees the app it launches",
     "status": "done",
     "detail": "The Windows package's pictures ended on the finish page in both languages: the wizard runs in the setup's child process and no longer holds the keyboard when the install ends, so the Enter meant for Finish reached another window and the app was never started; bringing it forward by its title did not help, Windows keeping the foreground from a script. The walk presses Finish through the accessibility tree, waits up to 90 s for ONI.exe's window, pictures it and fails when Finish started none. The launched app keeps a support folder of its own marked launched at the built version, so the walk sends no install ping."
+  },
+  {
+    "id": 1659,
+    "type": "fix",
+    "title": "The Windows CI's window checks see the interface again",
+    "status": "done",
+    "detail": "The Windows CI builds and tests in release, where the interface is compiled without its element names: every window check that finds an element by its role and label (common::the, placed) found none, 80 962 warnings in one run and most of its 97 failures. SLINT_EMIT_DEBUG_INFO is set for the whole job, so the compiled interface keeps the names the checks read, as the live preview does on the Mac."
   }
 ]
