@@ -8257,5 +8257,12 @@
     "title": "A pinned row's rule is a point thick again",
     "status": "done",
     "detail": "Owner's report: the roll line held at the top of the lower tree showed a grey ground instead of the column's. The flat separator (#1652) leaves its thickness to a layout; laid outside one in the pinned row, it took the row's whole height in the separator's grey. It is given its point there, and the Divider's note says a rule laid outside a layout is given its thickness. Window check tree_leftovers: the held row on the column's ground (it failed on the full-height rule), its rule seen at its foot (twin)."
+  },
+  {
+    "id": 1657,
+    "type": "check",
+    "title": "A live check of the published Windows app: its update and a report through its own keys",
+    "status": "done",
+    "detail": "Owner's question: since 1.5.4 the downloads dashboard shows no Windows update at all. The Windows live workflow (by hand, and whenever it changes) installs the release before the latest on a runner, with a support folder of its own marking that version launched and the welcome seen; it waits for UPDATE TO <latest> through the accessibility tree, presses it and Download, waits for the app to quit, for the helper to lay the latest ONI.exe (its hash the published one) and start it, for the former copy to go, and for lastLaunchedVersion to reach the latest, which the app writes only once the install ping is answered. With report, the updated app sends a feedback report through its Feedback key, the sheet's field and Send, until Done shows. Pictures, the tree of every missing key, preferences.json and oni.log are kept 14 days. Each run sends one real install ping, an update, and checks the feed twice."
   }
 ]
