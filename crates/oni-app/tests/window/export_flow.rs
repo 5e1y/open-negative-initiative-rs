@@ -170,9 +170,7 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
     // Twin: a folder that cannot be made, in a read-only one, says why over the surface, which stays.
     let locked = root.join("Locked");
     std::fs::create_dir_all(&locked).unwrap();
-    let mut permissions = std::fs::metadata(&locked).unwrap().permissions();
-    permissions.set_readonly(true);
-    std::fs::set_permissions(&locked, permissions.clone()).unwrap();
+    unwritable(&locked, true);
     *chosen.borrow_mut() = locked.join("Here");
     ctl.enter_export(targets());
     rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
@@ -194,10 +192,27 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
     // Twin: once no export runs, quitting asks nothing.
     rig.window.dispatch_event(WindowEvent::CloseRequested);
     assert!(!confirm.get_shown(), "no export, no question on quitting");
-    #[allow(clippy::permissions_set_readonly_false)]
-    permissions.set_readonly(false);
-    let _ = std::fs::set_permissions(&locked, permissions);
+    unwritable(&locked, false);
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A folder nothing can be made or written in, or writable again. Windows ignores a folder's read-only
+/// attribute: its writes are refused through its access list instead.
+fn unwritable(folder: &std::path::Path, locked: bool) {
+    #[cfg(windows)]
+    {
+        let who = std::env::var("USERNAME").expect("the account the check runs as");
+        let rule: Vec<String> = if locked { vec!["/deny".into(), format!("{who}:(W)")] } else { vec!["/remove:d".into(), who] };
+        let set = std::process::Command::new("icacls").arg(folder).args(&rule).output().expect("icacls");
+        assert!(set.status.success(), "icacls {rule:?}: {}", String::from_utf8_lossy(&set.stdout));
+    }
+    #[cfg(not(windows))]
+    {
+        let mut permissions = std::fs::metadata(folder).unwrap().permissions();
+        #[allow(clippy::permissions_set_readonly_false)]
+        permissions.set_readonly(locked);
+        std::fs::set_permissions(folder, permissions).unwrap();
+    }
 }
 
 /// The estimate on a frame resized for the web weighs the file the export then writes.

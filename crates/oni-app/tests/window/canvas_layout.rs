@@ -35,11 +35,13 @@ fn hover(rig: &common::Rig, x: f32, y: f32) {
     rig.settle();
 }
 
-fn open(rig: &common::Rig, w: &oni_app::MainWindow, caption: &str) {
-    let tiles = app::tiles(w);
-    let shown = || tiles.iter().map(|t| t.caption.to_string()).collect::<Vec<_>>();
-    let tile = tiles.iter().find(|t| t.caption == caption).unwrap_or_else(|| panic!("{caption} is shown among {:?}", shown()));
-    w.global::<Library>().invoke_tile_opened(tile.index);
+/// The photo whose tile reads `caption` opened by its place in the gallery's order, as its tile's click
+/// does, whether the grid has laid that tile on screen or not.
+fn open(rig: &common::Rig, shell: &Shell, caption: &str) {
+    let order = shell.ctl.state.borrow().order().to_vec();
+    let index = order.iter().position(|p| std::path::Path::new(p).file_stem().is_some_and(|s| s == caption));
+    let index = index.unwrap_or_else(|| panic!("{caption} is in the gallery's order"));
+    shell.window.global::<Library>().invoke_tile_opened(index as i32);
     rig.pump();
 }
 
@@ -98,14 +100,14 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     click(&rig, 200.0, MENU + 20.0);
     assert_eq!(room.get(), 1, "a press between the keys reaches the room");
 
-    open(&rig, w, "A00");
+    open(&rig, &shell, "A00");
     rig.until("A00 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.settle();
     assert!(!app.get_gallery());
     click(&rig, 40.0, MENU + 20.0);
     assert!(app.get_gallery(), "the BACK key took its press");
     assert_eq!(room.get(), 1, "twin: a key's press never reaches the room");
-    open(&rig, w, "A00");
+    open(&rig, &shell, "A00");
     rig.settle();
 
     rig.shot("layout-editor");
@@ -175,7 +177,7 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     rig.pump();
 
     // Back beside the photo, the column key brings the Library back.
-    open(&rig, w, "A00");
+    open(&rig, &shell, "A00");
     rig.settle();
     click(&rig, KEY + 12.0, CARD_TOP + 20.0);
     assert!(!app.get_library_hidden(), "the key shows the Library again");
@@ -183,13 +185,13 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     // A file that never decodes says so on the canvas; a fine one says nothing.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
-    open(&rig, w, "Bad");
+    open(&rig, &shell, "Bad");
     rig.until("Bad refused", Duration::from_secs(60), || !canvas.get_failure().is_empty());
     assert_eq!(canvas.get_failure(), "Bad.tif: could not be decoded");
     rig.shot("layout-undecodable");
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
-    open(&rig, w, "B00");
+    open(&rig, &shell, "B00");
     assert_eq!(canvas.get_failure(), "", "twin: a fine frame clears the message");
     let _ = std::fs::remove_dir_all(&root);
 }

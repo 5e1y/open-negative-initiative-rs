@@ -8369,5 +8369,19 @@
     "title": "A step taken before every frame is read writes its draft once the last one lands",
     "status": "done",
     "detail": "Prepare the Roll writes a step's draft only once every frame is read; a step taken earlier wrote nothing until the next step or the window's close, so a roll left then lost that step. Seen on the Windows runner, where the frames read slowly. The roll remembers a step that waited (Roll::step_drafts) and writes it as the last frame lands (Roll::draft_landed). Check prepare::model: a frame still unread keeps the step waiting, the last one writes it once."
+  },
+  {
+    "id": 1693,
+    "type": "fix",
+    "title": "The shell's layout check opens a photo by its place in the gallery's order",
+    "status": "done",
+    "detail": "On the Windows runner the check looked for Bad's tile among the tiles the grid had laid, A00 to A27, Roll B lying below the visible rows; it passed or not with the grid's scroll. It now opens a photo by its place in the gallery's order, as its tile's click does, laid on screen or not (canvas_layout)."
+  },
+  {
+    "id": 1694,
+    "type": "fix",
+    "title": "The export's unwritable folder is unwritable on Windows too",
+    "status": "done",
+    "detail": "The export check made a folder unwritable through its read-only attribute, which Windows ignores on a folder, so a folder made inside it was made and no failure came. On Windows its writes are now refused through its access list (icacls /deny (W), then /remove:d), the read-only permission kept elsewhere (export_flow)."
   }
 ]
