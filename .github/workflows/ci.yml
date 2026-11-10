@@ -15,6 +15,10 @@ jobs:
       matrix:
         os: [windows-latest]
     runs-on: ${{ matrix.os }}
+    # The compiled interface keeps its element names, which the window checks find their elements by;
+    # without them every search finds none.
+    env:
+      SLINT_EMIT_DEBUG_INFO: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

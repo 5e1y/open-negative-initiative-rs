@@ -1,0 +1,29 @@
+name: Windows live
+# The published Windows app on a runner, as a person runs it: the release before the latest takes its
+# update through its own keys and reports it (one real install ping); `report` also sends a feedback
+# report, a public issue. By hand only, as each run reaches the real recorder.
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: The published version installed first (empty is the one before the latest)
+        default: ''
+      report:
+        description: Send a feedback report from the updated app (a public issue)
+        type: boolean
+        default: false
+jobs:
+  live:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update and report
+        shell: powershell
+        run: ./packaging/windows/live.ps1 -From "${{ inputs.from }}" -Report:${{ inputs.report && '$true' || '$false' }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: windows-live
+          path: live
+          retention-days: 14

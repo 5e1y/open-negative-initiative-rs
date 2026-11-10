@@ -8264,5 +8264,26 @@
     "title": "The navigator in two sections, Favourites then Computer, with no header row",
     "status": "done",
     "detail": "Owner's call after a study of the navigator's header: the dropdown only ever named Computer, the funnel only filtered the favourites, and Parent moved a base no one saw. The header row is gone (Parent, the pill and its list of folders above, the favourites-only funnel, the empty favourites' words). The rows are a Finder-like sidebar: the favourites' section while one is starred, then Computer's (the home, each volume, a folder opened beyond them), each heading a row that folds its section. A folder opened from elsewhere, the launch's own among them, is picked where a row shows it, else unfolded down to under the favourite holding it, else under Computer, where a folder beyond the home and the volumes comes as itself, nothing above it listed (a check's temporary folder held 3,567 folders). A volume listed after such a reveal takes the folder under it, unfolded down to it. Each section keeps its own unfolded rows, so a folder both show unfolds where the hand unfolds it; the pick and a rename's field stand in one row alone, in the section the hand picked in (keys, menu, reveal). The ONI Trash stands a little apart from Computer's rows. Beside a photo, its folder's row is centred once the list has laid it: that list is made after the reveal is asked, so it never scrolled, which the extra headings brought to light (row_marks); Rust now publishes the row with every publish, -1 in the gallery, and each list owes the reveal until the row is there. What served the header alone goes with it: the Picker's folder choices (FolderChoice) and its pressable switch, and the funnel icon. Prefs: navigatorFoldedSections and navigatorUnfoldedFavourites beside navigatorUnfolded; Swift's navigatorBase and navigatorFavouritesOnly are neither read nor written. Parity rows 48 to 50 departed. Checks: oni-library navigator (sections, per-section unfold and pick, show and reveal, beyond), window navigator rewritten (headings fold, both sections, one row picked, relaunch with a folded section), column_edges and sidebar_filter on the headings."
+  },
+  {
+    "id": 1657,
+    "type": "check",
+    "title": "A live check of the published Windows app: its update and a report through its own keys",
+    "status": "done",
+    "detail": "Owner's question: since 1.5.4 the downloads dashboard shows no Windows update at all. The Windows live workflow (by hand only, as each run reaches the real recorder) installs the release before the latest on a runner, with a support folder of its own marking that version launched and the welcome seen; it waits for UPDATE TO <latest> through the accessibility tree, presses it and Download, waits for the app to quit, for the helper to lay the latest ONI.exe (its hash the published one) and start it, for the former copy to go, and for lastLaunchedVersion to reach the latest, which the app writes only once the install ping is answered. With report, the updated app sends a feedback report through its Feedback key, the sheet's field and Send, until Done shows. Pictures, the tree of every missing key, preferences.json and oni.log are kept 14 days. Each run sends one real install ping, an update, and checks the feed twice."
+  },
+  {
+    "id": 1658,
+    "type": "fix",
+    "title": "Every Windows package starts the app it built",
+    "status": "done",
+    "detail": "The Windows package's last pictures showed the installer's finish page, never the app: the wizard runs in the setup's child process and takes no key once the install runs, so the Enter meant for Finish was lost, and neither its title nor the accessibility tree reached the key; a later run even lost an Enter before Install. Every package run now starts the ONI.exe it built, with a support folder of its own marked launched at that version so no install ping is sent, waits up to 120 s for its Settings key through the accessibility tree, keeps a picture and oni.log, and fails when the app ends or never shows its keys. The installer's walk ends on its last page."
+  },
+  {
+    "id": 1659,
+    "type": "fix",
+    "title": "The Windows CI's window checks see the interface again",
+    "status": "done",
+    "detail": "The Windows CI builds and tests in release, where the interface is compiled without its element names: every window check that finds an element by its role and label (common::the, placed) found none, 80 962 warnings in one run and most of its 97 failures. SLINT_EMIT_DEBUG_INFO is set for the whole job, so the compiled interface keeps the names the checks read, as the live preview does on the Mac."
   }
 ]
