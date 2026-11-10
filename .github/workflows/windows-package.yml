@@ -78,6 +78,12 @@ jobs:
             $bitmap.Save("shots/$name.png")
           }
           $setup = (Get-ChildItem ONI-setup-*.exe)[0].FullName
+          # The app the finish page starts keeps a folder of its own, marked launched, so it sends no install ping.
+          $version = (Select-String -Path crates/oni-app/Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          $support = Join-Path $env:RUNNER_TEMP 'oni-support'
+          New-Item -ItemType Directory -Force $support | Out-Null
+          [System.IO.File]::WriteAllText("$support\preferences.json", (@{ lastLaunchedVersion = $version } | ConvertTo-Json))
+          $env:ONI_SUPPORT = $support
           $app = "$env:LOCALAPPDATA\Programs\Open Negative Initiative"
           $shell = New-Object -ComObject WScript.Shell
           foreach ($lang in "fr", "en") {
@@ -93,11 +99,14 @@ jobs:
             }
             for ($t = 0; $t -lt 180 -and -not (Test-Path "$app\unins000.dat"); $t += 2) { Start-Sleep 2 }
             Start-Sleep 5
-            $shell.AppActivate($p.Id) | Out-Null
+            # The wizard runs in the setup's child process: its window is found by its title.
+            $shell.AppActivate($(if ($lang -eq 'fr') { 'Installation - Open Negative Initiative' } else { 'Setup - Open Negative Initiative' })) | Out-Null
             Shot "$lang-6-finished"
             $shell.SendKeys("{ENTER}")
+            for ($t = 0; $t -lt 90 -and -not (Get-Process ONI -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }); $t += 2) { Start-Sleep 2 }
             Start-Sleep 20
             Shot "$lang-7-app"
+            if (-not (Get-Process ONI -ErrorAction SilentlyContinue)) { Write-Error "Finish started no ONI.exe"; exit 1 }
             Get-Process ONI, ONI-setup* -ErrorAction SilentlyContinue | Stop-Process -Force
             Start-Sleep 2
             Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT" -Wait
