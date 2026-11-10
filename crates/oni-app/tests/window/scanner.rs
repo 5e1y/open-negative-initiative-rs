@@ -311,7 +311,9 @@ pub(crate) fn the_lab_screen_holds_its_widest_count_whole() {
     rig.window.set_size(slint::PhysicalSize::new(2 * 240, 2 * 140));
     probe.show().unwrap();
     rig.settle();
-    // Ink over the glass, on the screen's every row, half a point either side of each column's edge.
+    // Ink over the glass, on the screen's every row, within a point and a half either side of each column's
+    // edge: a count too wide overflows the edge where the interface is read live, and is cut just short of it
+    // where it is compiled; one that fits keeps over two points clear.
     let inked = || {
         let (width, px) = rig.drawn();
         let lit = |x: f32, y: f32| {
@@ -320,7 +322,8 @@ pub(crate) fn the_lab_screen_holds_its_widest_count_whole() {
         };
         let edges: Vec<f32> = (0..=5).map(|i| probe.get_left() + i as f32 * probe.get_column()).collect();
         let rows = (probe.get_top() * 2.0) as i32..(probe.get_bottom() * 2.0) as i32;
-        rows.map(|r| r as f32 / 2.0).any(|y| edges.iter().any(|x| lit(x - 0.5, y) || lit(x + 0.5, y)))
+        let band = [-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5];
+        rows.map(|r| r as f32 / 2.0).any(|y| edges.iter().any(|x| band.iter().any(|d| lit(x + d, y))))
     };
     println!("shot {}", rig.shot("lab-screen-widest").display());
     assert!(!inked(), "every count stands whole in its column");

@@ -311,7 +311,7 @@ pub fn focused_label(window: &impl slint::ComponentHandle) -> String {
 }
 
 /// A runner with no GPU renders on a software adapter (WARP, lavapipe), 20 to 50 times slower than a GPU:
-/// every wait stretches tenfold there, what the window itself times left as it is.
+/// every wait and every bound a check sets stretch tenfold there, what the window itself times left as it is.
 pub fn stretch() -> u32 {
     static STRETCH: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
     *STRETCH.get_or_init(|| match oni_app::render::Device::open() {

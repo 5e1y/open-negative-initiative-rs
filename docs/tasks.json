@@ -8341,5 +8341,12 @@
     "title": "The Windows CI keeps the window checks' pictures of a failure",
     "status": "done",
     "detail": "A failing window check on Windows could only be read, never seen: the CI keeps target/tmp/shots for seven days when a check fails. Two checks say more when they fail: the project's pick names the gallery's order it was made in, the export's Stop names the job as the click found it."
+  },
+  {
+    "id": 1668,
+    "type": "fix",
+    "title": "Three window checks read what is drawn the way each build draws it",
+    "status": "done",
+    "detail": "From the Windows CI's pictures: the Lab screen cuts a count too wide just short of its column's edge where the interface is compiled, where the live preview lets it overflow, so the screen check looks within a point and a half of each edge, which a count that fits keeps clear by over two (scanner). The status bar gives its room to work under way and then shows the frame's line again, so the line is read as it is drawn rather than at one instant (filmstrip). The press with every balance kept is bounded tenfold on a software adapter, like every wait (balance_kept)."
   }
 ]

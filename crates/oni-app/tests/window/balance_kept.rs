@@ -121,7 +121,7 @@ impl Rigged {
         assert!(!panel.get_balancing(), "{what}: no count on the key");
         assert_eq!(READINGS.load(Ordering::SeqCst), readings, "{what}: a kept balance was read again");
         println!("{what}: the press with every balance kept took {took:?}");
-        assert!(took < AT_ONCE, "{what}: {took:?}");
+        assert!(took < AT_ONCE * common::stretch(), "{what}: {took:?}");
         took
     }
 

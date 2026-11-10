@@ -14,7 +14,14 @@ use crate::common;
 
 /// The status bar's words as drawn: the one text shown that starts with the open frame's name.
 fn bar(w: &MainWindow, name: &str) -> String {
-    let lines: Vec<String> = w
+    let lines = lines(w, name);
+    assert_eq!(lines.len(), 1, "one status line for {name}: {lines:?}");
+    lines[0].clone()
+}
+
+/// Every text shown that starts with the frame's name, as the status bar draws its line.
+fn lines(w: &MainWindow, name: &str) -> Vec<String> {
+    w
         .root_element()
         .query_descendants()
         .match_accessible_role(AccessibleRole::Text)
@@ -22,9 +29,7 @@ fn bar(w: &MainWindow, name: &str) -> String {
         .into_iter()
         .filter_map(|e: ElementHandle| e.accessible_label().map(|l| l.to_string()))
         .filter(|l| l.starts_with(&format!("{name} · ")))
-        .collect();
-    assert_eq!(lines.len(), 1, "one status line for {name}: {lines:?}");
-    lines[0].clone()
+        .collect()
 }
 
 /// Whether `inner` lies within `outer`'s width and below its middle, as a caption under a picture.
@@ -107,6 +112,9 @@ pub(crate) fn the_filmstrip_numbers_its_frames_and_the_status_bar_says_the_place
     assert!(canvas.get_status().starts_with("P02 · Frame 3 of 3 · "), "{}", canvas.get_status());
     assert!(!canvas.get_status().contains("Frame 2"), "twin: the place follows the open frame");
     assert!(canvas.get_read_only() && !canvas.get_saved(), "a sidecar from a newer format is never said saved");
-    assert!(!bar(w, "P02").contains("Settings saved"), "{}", bar(w, "P02"));
+    // Read as it is drawn: the bar gives its room to work under way, as a redrawn thumbnail, and then the line again.
+    let line = std::cell::RefCell::new(String::new());
+    rig.until("P02's line drawn", Duration::from_secs(30), || lines(w, "P02").first().map(|l| *line.borrow_mut() = l.clone()).is_some());
+    assert!(!line.borrow().contains("Settings saved"), "{}", line.borrow());
     let _ = std::fs::remove_dir_all(&root);
 }
