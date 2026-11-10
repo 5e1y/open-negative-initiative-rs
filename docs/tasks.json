@@ -8268,9 +8268,9 @@
   {
     "id": 1658,
     "type": "fix",
-    "title": "The installer's walk sees the installed app start",
+    "title": "Every Windows package starts the app it built",
     "status": "done",
-    "detail": "The Windows package's pictures ended on the finish page in both languages: the wizard runs in the setup's child process and takes no key once the install ends, so the Enter meant for Finish reached another window and the app never started; neither its title nor the accessibility tree reached its Finish key, Windows keeping the foreground from a script. Once installed, the walk closes the wizard and starts the installed ONI.exe as its shortcut does, waits up to 90 s for its window, pictures it and fails when none comes. The app keeps a support folder of its own marked launched at the built version, so the walk sends no install ping."
+    "detail": "The Windows package's last pictures showed the installer's finish page, never the app: the wizard runs in the setup's child process and takes no key once the install runs, so the Enter meant for Finish was lost, and neither its title nor the accessibility tree reached the key; a later run even lost an Enter before Install. Every package run now starts the ONI.exe it built, with a support folder of its own marked launched at that version so no install ping is sent, waits up to 120 s for its Settings key through the accessibility tree, keeps a picture and oni.log, and fails when the app ends or never shows its keys. The installer's walk ends on its last page."
   },
   {
     "id": 1659,
