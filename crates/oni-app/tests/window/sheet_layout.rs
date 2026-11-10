@@ -128,10 +128,12 @@ fn edge(rig: &common::Rig, heard: &Cell<bool>, x: f32, from: f32, to: f32) -> Op
     None
 }
 
-/// Each modal sheet's key, read in windows `GROWN` apart in height, moves down by half of it: the
-/// card's vertical centre is the window's. Twin: a picker's menu stays under its picker.
+/// Each modal sheet's key, read in windows `GROWN` apart in height, moves down by `REST` of it: the card
+/// rests a little above the window's middle, where the eye looks. Twin: a picker's menu stays under its picker.
 pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
     const GROWN: f32 = 200.0;
+    // `SheetStyle.rest`: the share of the window's free height above the card.
+    const REST: f32 = 0.42;
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
@@ -186,9 +188,9 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
         let top = edge(&rig, &heard, x, y - 5.0, y).unwrap();
         rig.window.set_size(PhysicalSize::new(w as u32, (h + GROWN) as u32));
         rig.settle();
-        let moved = edge(&rig, &heard, x, top + GROWN / 2.0 - 3.0, top + GROWN / 2.0 + 3.0);
+        let moved = edge(&rig, &heard, x, top + GROWN * REST - 3.0, top + GROWN * REST + 3.0);
         println!("{name}: key's top {top} px, {moved:?} in the taller window");
-        assert!(moved.is_some_and(|m| (m - top - GROWN / 2.0).abs() <= 1.0), "{name}: its centre follows the window's, {top} then {moved:?}");
+        assert!(moved.is_some_and(|m| (m - top - GROWN * REST).abs() <= 1.0), "{name}: it rests where the window's room puts it, {top} then {moved:?}");
         show(false);
         rig.pump();
     }
@@ -252,7 +254,8 @@ const FOOTER_GAP: f32 = 12.0;
 const GROUP_GAP: f32 = 8.0;
 
 /// A sheet's footer: Cancel flat at its left, the commit a keycap alone at its right, a clear gap between;
-/// a question's destructive key twice a group's gap from Cancel; a preset's Delete alone at the left end.
+/// a question's Cancel at the card's left and its key at its right, destructive or not; a preset's Delete
+/// alone at the left end.
 pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
@@ -278,19 +281,20 @@ pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     confirm.set_message("It is removed from the presets folder.".into());
     confirm.set_key("Delete".into());
     confirm.set_shown(true);
-    rig.settle();
-    let gap = || {
+    // How far Cancel's left edge and the key's right edge stand from the message's, the card's inner edges.
+    let ends = || {
         rig.settle();
         let (cancel, delete) = (common::the(&window, Role::Button, "Cancel"), common::the(&window, Role::Button, "Delete"));
-        delete.x - (cancel.x + cancel.width)
+        let message = common::the(&window, Role::Text, "It is removed from the presets folder.");
+        (cancel.x - message.x, message.x + message.width - (delete.x + delete.width), delete.x - message.x)
     };
-    let kept = gap();
-    assert!((kept - GROUP_GAP).abs() < 1.0, "a question's keys a group's gap apart: {kept} pt");
-    confirm.set_destructive(true);
-    let removing = gap();
-    assert!(removing >= 2.0 * GROUP_GAP - 1.0, "a destructive key apart from Cancel: {removing} pt");
-    // Twin: the measure reads a group's gap as less than the destructive key's.
-    assert!(kept < removing, "twin: Cancel beside a key that keeps stands nearer: {kept} {removing}");
+    for destructive in [false, true] {
+        confirm.set_destructive(destructive);
+        let (left, right, start) = ends();
+        assert!(left.abs() < 1.0 && right.abs() < 1.0, "Cancel at the card's left, the key at its right, destructive {destructive}: {left} {right}");
+        // Twin: the key's own left edge is far from the card's, so the measure tells one end from the other.
+        assert!(start > 100.0, "twin: the key does not start at the card's left: {start}");
+    }
     confirm.set_shown(false);
 
     // The preset editor: Delete alone at the left end, the keys that keep the preset one group beside DONE.

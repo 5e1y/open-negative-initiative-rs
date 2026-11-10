@@ -2,6 +2,7 @@
 //! refused in the gallery, a roll walked back in part, a folder the disk refuses, a name refused.
 //! A success says nothing but a trash, told with its Undo. Every folder lies in the check's own scratch.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{App, FolderLine, Navigator, Told};
 use oni_core::{Archive, EditorStore};
@@ -13,6 +14,10 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use crate::common;
+
+/// How far over the status line a notice's action key ends: `SheetStyle.margin`, the notice's padding and
+/// the status line's own inset, within a few points.
+const FOOT: std::ops::Range<f32> = 40.0..64.0;
 
 struct Disk {
     root: PathBuf,
@@ -184,6 +189,16 @@ pub(crate) fn an_undo_that_cannot_put_every_photo_back_says_how_many() {
     assert_ne!(picked, names.iter().map(|n| at(&scans, n)).collect::<HashSet<_>>());
     rig.settle();
     println!("shot {}", rig.shot("told-undo").display());
+    // The notice rests at the bottom right of the view the hand works in, above its status bar: its action's
+    // foot a notice's padding and a margin over the status line, however high the window's menu bar.
+    let w = &shell.window;
+    let (action, status) = (common::the(w, Role::Button, common::reveal()), common::the(w, Role::Text, "3 selected"));
+    let over = |key: common::Placed| status.y - (key.y + key.height);
+    println!("the notice's action {} pt over the status line", over(action));
+    assert!(FOOT.contains(&over(action)), "the notice above the status bar: its action's foot {} pt over the status line", over(action));
+    // Twin: the library's tabs, at the card's top, read far outside that band.
+    let tabs = common::the(w, Role::Tab, "Archive");
+    assert!(!FOOT.contains(&over(tabs)), "twin: the library's tabs {} pt over the status line", over(tabs));
     let _ = std::fs::remove_dir_all(&d.root);
 }
 

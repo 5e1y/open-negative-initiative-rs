@@ -1,0 +1,101 @@
+// The notices: the one that passes over the view the hand works in, and the banner that stays over its view.
+import { Space, Motion, ButtonStyle, SheetStyle } from "theme.slint";
+import { Label, Icon, TextRole, Raised, Lift, Gap } from "base.slint";
+import { Button, ButtonKind, ButtonSize, ButtonGroup, GroupAlign } from "controls.slint";
+import { Icons } from "icons.slint";
+import { Reach, Reaches } from "reach.slint";
+
+// A transient notice: what a gesture could not do, or a step landed with its Undo, never stopping the hand.
+// At the bottom right of the view the hand works in, where a grid and a frame leave room, it slides in from
+// the edge and back out as it goes: by its close key, its action, or after `SheetStyle.linger` unread, held
+// while the pointer rests on it.
+export component Toast inherits Rectangle {
+    in property <string> title;
+    in property <string> message;
+    // A key acting on what the notice names, as Show in Finder or Undo; empty for none.
+    in property <string> action;
+    // Bumped by each notice, so one replacing another stays its whole time.
+    in property <int> serial;
+    // The window's width, and the corner the notice rests in: the bottom right of the view the hand works
+    // in, so it covers no key of the bar, the panel or the view's top band, nor the grid's first rows.
+    in property <length> room;
+    in property <length> right;
+    in property <length> bottom;
+    callback acted();
+    callback closed();
+    width: min(SheetStyle.notice-width, root.room - 2 * SheetStyle.margin);
+    height: card.height;
+    property <float> come;
+    property <bool> leaving;
+    init => { root.come = 1; }
+    animate come { duration: root.leaving ? Motion.overlay-out : Motion.overlay-in; easing: ease-out; }
+    x: root.right - self.width - SheetStyle.margin + (1 - root.come) * SheetStyle.slide;
+    y: root.bottom - self.height - SheetStyle.margin;
+    opacity: root.come;
+    changed serial => {
+        root.leaving = false;
+        root.come = 1;
+        linger.restart();
+    }
+    function leave() {
+        root.leaving = true;
+        root.come = 0;
+    }
+    // Out of sight once it has slid away.
+    Timer { interval: Motion.overlay-out; running: root.leaving; triggered => { root.closed(); } }
+    linger := Timer {
+        interval: SheetStyle.linger;
+        running: !hover.has-hover && !root.leaving;
+        triggered => { root.leave(); }
+    }
+    hover := TouchArea {
+        card := Raised {
+            lift: Lift.sheet;
+            pad: Gap.m;
+            gap: Gap.s;
+            width: root.width;
+            HorizontalLayout {
+                spacing: Space.s;
+                Label { role: TextRole.section; text: root.title; wrap: word-wrap; horizontal-stretch: 1; }
+                Button { kind: ButtonKind.ghost; has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.close; help: @tr("Close"); clicked => { root.leave(); } }
+            }
+            Label { role: TextRole.note; text: root.message; }
+            if root.action != "": ButtonGroup { align: GroupAlign.end;
+                Button { text: root.action; kind: ButtonKind.accent; clicked => { root.acted(); } }
+            }
+        }
+    }
+}
+
+// A band over a view that says why what it shows is out of reach, the view kept under it: the
+// state's glyph, a title and its words, then the keys acting on the place it names.
+export component Banner inherits Raised {
+    in property <Reach> reach: Reach.offline;
+    in property <string> title;
+    in property <string> message;
+    in property <[string]> keys;
+    callback acted(int);
+    pad: Gap.m;
+    accessible-role: text;
+    accessible-label: root.title;
+    HorizontalLayout {
+        spacing: Space.m;
+        VerticalLayout {
+            alignment: start;
+            Icon { source: Reaches.glyph(root.reach); width: ButtonStyle.icon; height: ButtonStyle.icon; }
+        }
+        // The keys under the words, so a narrow view never squeezes them to a column.
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Space.xxs;
+            Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
+            Label { role: TextRole.note; text: root.message; }
+            if root.keys.length > 0: VerticalLayout {
+                padding-top: Space.s;
+                ButtonGroup { align: GroupAlign.end;
+                    for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
+                }
+            }
+        }
+    }
+}

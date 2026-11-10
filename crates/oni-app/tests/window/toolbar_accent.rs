@@ -90,7 +90,7 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     println!("shot {}", rig.shot("toolbar-accent-archive").display());
     assert!(filled(add) && export.0 == 0, "ADD FOLDER… alone filled with the accent: {add:?} {export:?}");
     assert_eq!(at_end(), (true, 0), "EXPORT at the gallery's right end");
-    assert!(key("ADD FOLDER…").x < key("Reset Pro").x, "ADD FOLDER… in the centre, before Reset");
+    assert!(key("ADD FOLDER…").x < key("Reset").x, "ADD FOLDER… in the centre, before Reset");
     // A roll never measured: Prepare Roll takes it.
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());

@@ -302,17 +302,25 @@ export component Row inherits Rectangle {
                 // The star's catch, a small key's square, overhangs its column into the room either side.
                 if root.ended: Rectangle {
                     width: RowStyle.mark;
+                    // Filled and gold on a favourite; under the hand the star shows what its press will make,
+                    // and once pressed what it made, until the hand leaves.
                     if root.starrable && (root.favourite || root.hovered): Button {
+                        property <bool> pressed-here;
+                        property <bool> lit: self.pressed-here ? root.favourite : root.favourite != self.under-hand;
+                        changed under-hand => { if (!self.under-hand) { self.pressed-here = false; } }
                         kind: ButtonKind.ghost;
                         has-icon: true;
                         square: true;
-                        icon: Icons.favourite;
+                        icon: self.lit ? Icons.favourite-on : Icons.favourite;
                         width: ButtonStyle.small-height;
                         height: ButtonStyle.small-height;
                         glyph-size: RowStyle.mark;
-                        glyph-ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
+                        glyph-ink: self.lit ? NavigatorStyle.favourite : Colour.ink-tertiary;
                         help: root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites");
-                        clicked => { root.starred(); }
+                        clicked => {
+                            self.pressed-here = true;
+                            root.starred();
+                        }
                     }
                     if root.choice && root.checked: Icon { source: Icons.done; width: RowStyle.mark; height: RowStyle.mark; tone: Tone.primary; }
                 }

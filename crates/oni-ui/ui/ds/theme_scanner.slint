@@ -1,0 +1,59 @@
+// The Scanner's styles: the Lab keypad's bands, the face bar, the scanner's screen and its glow.
+import { DS } from "tokens.slint";
+
+// `DS.Scanner`: the Lab keypad's bands, the face bar, the scanner's screen.
+export global ScannerStyle {
+    out property <length> face-bar: DS.control-mode-bar-width;
+    out property <color> band-dark: DS.scanner-band-dark;
+    out property <color> band-light: DS.scanner-band-light;
+    out property <color> band-red: DS.scanner-band-red;
+    out property <color> band-cyan: DS.scanner-band-cyan;
+    out property <color> band-green: DS.scanner-band-green;
+    out property <color> band-magenta: DS.scanner-band-magenta;
+    out property <color> band-blue: DS.scanner-band-blue;
+    out property <color> band-yellow: DS.scanner-band-yellow;
+    out property <color> band-cool: DS.scanner-band-cool;
+    out property <color> band-warm: DS.scanner-band-warm;
+    // `LabKeyboard.band`: a fill this light in Rec. 709 luma takes the dark ink.
+    out property <float> light-luma: 0.55;
+    out property <color> glass: DS.palette-lcd-glass;
+    out property <color> lcd-ink: DS.palette-lcd-ink;
+    out property <length> screen-label: DS.scanner-screen-label-size;
+    out property <length> screen-value: DS.scanner-screen-value-size;
+    out property <length> scanline-pitch: DS.scanner-scanline-pitch;
+    // `LabScreen`'s scanlines: black at 35 %.
+    out property <color> scanline: #00000059;
+    // The screen's face, the system's monospaced design.
+    out property <string> mono: "monospace";
+    out property <int> value-weight: 700;
+    // `LabScreen`'s glow: the ink at 80 % within `phosphorGlow` of every stroke it lights.
+    out property <length> phosphor-glow: DS.scanner-phosphor-glow;
+    out property <float> phosphor-glow-ink: 0.8;
+}
+
+// The scanner's screen drawn in Slint, which has no shadow on text or paths: `LabScreen`'s glow
+// laid as a near and a far halo; then the measure's bank of screens, which Swift does not have.
+export global CrtStyle {
+    out property <float> glow-near: 0.3;
+    out property <float> glow-far: 0.1;
+    out property <length> text-glow-near: 1.5px;
+    out property <length> text-glow-far: ScannerStyle.phosphor-glow * 0.8;
+    out property <length> trace-glow-near: 4px;
+    out property <length> trace-glow-far: ScannerStyle.phosphor-glow * 2;
+    // A histogram's area under its lit edge, and the frames before fading from this.
+    out property <float> area: 0.14;
+    out property <float> echo: 0.3;
+    // The roll's ends: their line and what lies past them, dimmed as the levels clip it.
+    out property <float> end: 0.85;
+    out property <float> clipped: 0.5;
+    // The bank: never wider than this, its screens apart.
+    out property <length> bank: 720px;
+    out property <length> gap: DS.space-sm;
+    out property <length> padding: DS.space-sm;
+    // The negative's screen takes this share of the bank's width, 3:2 as a 35 mm frame.
+    out property <float> negative-share: 0.6;
+    out property <float> negative-ratio: 2 / 3;
+    // The roll's screen against the negative's height.
+    out property <float> roll-share: 0.5;
+    out property <duration> fade: DS.motion-settle-response * 1s;
+}

@@ -16,7 +16,7 @@ and every screen picks it up.
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
 | `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
-| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `notices.slint` (the notice that passes, the banner that stays), `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
@@ -258,11 +258,43 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   title, the app's one look for folding; its Reset shows only while the block stands off its rest, at the
   row's far end, the title between it and the fold. On a short row the title yields. A help mark, always shown and named with its block, opens its card (`HelpLayer`) while the hand rests on it, and the card goes as the hand leaves; it stands left of the column, under the tab bar in
   the editor, over the photo and never over the block, one card at a time; its note comes in short parts a blank line apart.
+- **ToolTab**: a tool the canvas is in, a tab in its own colour hanging from the card's top edge after the
+  Library's key, its name in dark capitals. Each tool has its own colour (`ToolStyle`): the Sheet orange, Crop
+  verdigris, De-dust violet, Compare pink. Its bar key shows it in its glyph's ink while it holds, never on a
+  lit face.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
   clip, no layer), the rule, the embossed ink; the glint sweeps once on `glinting` or a hovered note, clipped
   only while it crosses; `glint-at` holds it still. **Lamp** is a key's or a switch's state, dark glass in a light rim at rest, its colour blooming on the face when lit.
+
+## Overlays
+
+Every overlay takes one of two forms, the help cards (`HelpLayer`) and the menus aside.
+
+**Sheet**, modal. Every question, form and board is a `Sheet`; a question is an `AskSheet`.
+- It sits over the one scrim, centred across, resting at `SheetStyle.rest` of the window's free height, a margin
+  kept above and below. Its content scrolls past the window's room.
+- Three widths: `width` for a question or a one-field form, `notice-width` for a form of several groups (a
+  notice, the report, the catch-up), `wide-width` for a wide form (the welcome, a preset's save). A board keeps a
+  gauge of its own (Settings, the papers, the stocks, the preset editor).
+- It comes in as one at `Motion.overlay-in`, the scrim darkening as the card rises `SheetStyle.rise`.
+- Its footer puts what leaves at the left, then apart at the right a step back and the commit, the accent keycap:
+  `SheetFooter`, and an `AskSheet`'s keys alike. A key that removes is red, apart, and never the default.
+- Return presses the default key and Escape leaves; a click beside the card reaches nothing.
+
+**Notice** (`Toast`), never modal: what a gesture could not do, or a step landed with its Undo.
+- It rests at the bottom right of the view the hand works in, `SheetStyle.margin` in from its corner, above the
+  status bar: where a grid of photos and a frame leave room, clear of the bar, the panel and the view's keys.
+- It slides in at `Motion.overlay-in` and away at `Motion.overlay-out`. One shows at a time, a newer one taking its
+  place.
+- Its title and its close key share a line, then come its words and its one action, the accent key.
+- It leaves by its close key, by its action, or after `SheetStyle.linger` unread, held while the hand rests on it.
+  It never takes the keyboard.
+
+**Banner**: a view's state, never an overlay. It stands at the top of its view, the view kept under it.
+
+Reduce Motion shows every overlay at once.
 
 ## The rule: screens use only the design system
 

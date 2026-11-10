@@ -1,6 +1,7 @@
 //! Sheets are modal, as Swift's: Escape closes one from inside its own field, a stray click on the
 //! scrim keeps what was typed, nothing behind a sheet moves, and each sheet's keys reach its answer.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::export_card;
 use oni_app::app::{Options, Shell};
 use oni_app::{Confirm, Exporting, Help, Library, Menus};
@@ -124,7 +125,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.until("the second post", Duration::from_secs(10), || help.get_report_sent());
     assert_eq!(posted.load(Ordering::Relaxed), 2, "twin: the open sheet's own post is thanked");
     help.invoke_report_closed();
-    rig.pump();
+    rig.settle();
 
     // A Confirm over the gallery: ⌘⌫ and a medal key reach nothing behind it; Escape cancels.
     let tiles = || oni_app::app::tiles(w);
@@ -193,27 +194,25 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     assert!(e.get_confirm_shown(), "the clash asks");
     rig.settle();
     println!("shot {}", rig.shot("export-replace").display());
-    // The prompt is centred in the window, its keys at its right: the pointer sweeps them, Cancel
-    // asked again; Return replaces nothing, as the key is destructive.
+    // The prompt is centred in the window, Cancel at its left and Replace at its right, each pressed
+    // where it is drawn; Return replaces nothing, as the key is destructive.
     rig.key("\n");
     assert!(e.get_confirm_shown(), "Return does not replace files");
-    let (mut cancelled, mut replaced) = (0, false);
-    'sweep: for y in (24..776).step_by(4) {
-        for x in (640..840).step_by(8) {
-            click(&rig, x as f32, y as f32);
-            if !e.get_confirm_shown() {
-                if export_card::card(&ctl).exporting || !e.get_shown() {
-                    replaced = true;
-                    break 'sweep;
-                }
-                cancelled += 1;
-                e.invoke_export();
-                rig.pump();
-            }
-        }
-    }
-    assert!(replaced, "Replace reaches the export");
-    assert!(cancelled > 0, "Cancel, beside it, closes the prompt and writes nothing");
+    // The prompt's own Cancel, on Replace's row: the export's card behind it has one too.
+    let press = |label: &str| {
+        let replace = common::the(w, Role::Button, "Replace");
+        let key = common::placed(w, Role::Button, label).into_iter().find(|k| k.level_with(&replace)).unwrap_or_else(|| panic!("{label} on the prompt"));
+        assert!((key.middle().0 < 640.0) == (label == "Cancel"), "{label} on its side of the prompt: {key:?}");
+        click(&rig, key.middle().0, key.middle().1);
+    };
+    press("Cancel");
+    assert!(!e.get_confirm_shown() && e.get_shown() && !export_card::card(&ctl).exporting, "Cancel closes the prompt and writes nothing");
+    e.invoke_export();
+    rig.pump();
+    assert!(e.get_confirm_shown(), "the clash asks again");
+    rig.settle();
+    press("Replace");
+    assert!(export_card::card(&ctl).exporting || !e.get_shown(), "Replace reaches the export");
     assert!(generic.borrow().is_empty(), "twin: the generic confirm's answer is never the export's");
     rig.until("the batch written", Duration::from_secs(120), || !export_card::card(&ctl).exporting && !e.get_shown());
     assert!(names.iter().all(|n| std::fs::read_dir(&batch).unwrap().filter_map(Result::ok).any(|f| {

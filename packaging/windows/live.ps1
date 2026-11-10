@@ -89,7 +89,7 @@ $env:ONI_SUPPORT = $support
 
 $app = Start-Process $exe -PassThru
 try {
-    $update = Await-Button $app.Id { param($n) $n -like "UPDATE TO $latest" -or $n -like "Download version $latest*" } 180 'update key'
+    $update = Await-Button $app.Id { param($n) $n -eq "UPDATE" -or $n -like "UPDATE TO $latest" -or $n -like "Download version $latest*" } 180 'update key'
     Shot '1-update-key'
     Press $update
     Press (Await-Button $app.Id { param($n) $n -eq 'Download' } 60 'download key')

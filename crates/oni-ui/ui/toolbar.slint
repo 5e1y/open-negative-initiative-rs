@@ -1,7 +1,7 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
 // past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard, ToolStyle } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -59,6 +59,8 @@ export global Bar {
     in property <length> traffic-lights;
     // The bar's height, which the traffic lights are centred in.
     out property <length> height: ShellStyle.bar-height;
+    // The window's width under which the flat keys' words give way to their glyphs.
+    in-out property <length> needed;
     callback act(Act);
     // A press on the bar's empty room: on macOS it stands for the title bar.
     callback room-pressed();
@@ -87,13 +89,15 @@ component Cap inherits Button {
     clicked => { Bar.act(root.action); }
 }
 
-// ⌘A from the bar, one name and the first key of the centre in both modes, lit while it holds:
-// every photo the gallery shows picked, or beside a photo the whole roll together; pressed again, one.
+// ⌘A from the bar, the Sheet as film shows a roll whole, the first key of the centre in both modes, its
+// glyph in its tool's colour while it holds: every photo the gallery shows picked, or beside a photo the
+// whole roll together; pressed again, one.
 component SelectAll inherits Key {
     action: Act.select-all;
-    word: @tr("Select All");
+    word: @tr("Sheet");
     icon: Icons.contact-sheet;
     on: Bar.whole;
+    on-ink: ToolStyle.sheet;
     help: self.on ? @tr("Back to One Photo")
         : Bar.editing ? @tr("Show the Whole Roll Together ({})", KeyWords.command + "A") : @tr("Select All ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
@@ -128,13 +132,12 @@ component Centre inherits HorizontalLayout {
     Divider { vertical: true; height: ButtonStyle.height; }
     ButtonGroup {
         joined: true;
-        // It resets the face the photos are edited on, Pro's settings or the Scanner's, the other's kept,
-        // and says which; as wide as the longer word, so the bar holds still when the face turns.
+        // It resets the face the photos are edited on, Pro's settings or the Scanner's, the other's kept;
+        // its help says which.
         Key {
             compact: root.compact;
             action: Act.reset;
-            word: Bar.face == 1 ? @tr("Reset Scanner") : @tr("Reset Pro");
-            widest: @tr("Reset Scanner");
+            word: @tr("Reset");
             icon: Icons.reset;
             help: Bar.face == 1 ? @tr("Reset the Scanner settings ({})", KeyWords.command-shift + "R") : @tr("Reset the Pro settings ({})", KeyWords.command-shift + "R");
             enabled: Bar.can-reset;
@@ -154,8 +157,8 @@ component Centre inherits HorizontalLayout {
 
 component EditorKeys inherits Centre {
     trash: false;
-    // `centreKeys` by job: the canvas's views and tools, each lit while it holds, the faces,
-    // then the settings carried from photo to photo.
+    // `centreKeys` by job: the canvas's views and tools, each glyph in its tool's colour while it holds, as
+    // its tab on the canvas's edge, the faces, then the settings carried from photo to photo.
     ButtonGroup {
         joined: true;
         SelectAll { compact: root.compact; }
@@ -165,6 +168,7 @@ component EditorKeys inherits Centre {
             word: @tr("Crop");
             icon: Icons.framing;
             on: PanelState.tab == 1;
+            on-ink: ToolStyle.crop;
             help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
             enabled: Bar.has-photo && Bar.single;
         }
@@ -174,10 +178,11 @@ component EditorKeys inherits Centre {
             word: @tr("De-dust");
             icon: Icons.correction;
             on: PanelState.tab == 4;
+            on-ink: ToolStyle.dust;
             help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
             enabled: Bar.has-photo && Bar.single;
         }
-        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; enabled: Bar.has-photo; }
+        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; on-ink: ToolStyle.compare; enabled: Bar.has-photo; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
     Tabs {
@@ -205,7 +210,7 @@ component EditorKeys inherits Centre {
         Key {
             compact: root.compact;
             action: Act.paste-to-roll;
-            word: @tr("Paste to Roll");
+            word: @tr("Paste All");
             icon: Icons.film-roll;
             help: Menus.titles.paste-to-roll + " (" + KeyWords.option-command + "V)";
             enabled: Bar.can-paste;
@@ -243,9 +248,15 @@ export component Toolbar inherits Surface {
     // Settled once the bar is laid: the history's and the app's keys stand in the bar's own layout, so
     // a binding would feed their widths back into the width that decides them.
     property <bool> compact;
-    init => { root.compact = root.width < root.full; }
+    init => {
+        root.compact = root.width < root.full;
+        Bar.needed = root.full;
+    }
     changed width => { root.compact = root.width < root.full; }
-    changed full => { root.compact = root.width < root.full; }
+    changed full => {
+        root.compact = root.width < root.full;
+        Bar.needed = root.full;
+    }
     // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
     property <bool> tool: Bar.editing && (PanelState.tab == 1 || PanelState.tab == 4);
     // Out of the gallery, the mode key goes back to it.

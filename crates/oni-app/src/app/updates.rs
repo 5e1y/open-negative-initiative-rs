@@ -3,7 +3,7 @@
 
 use super::{Ctl, Pending, with_shell};
 use crate::updates::{self as feed, Item};
-use crate::{Bar, Confirm};
+use crate::Bar;
 use oni_i18n::tr;
 use slint::{ComponentHandle, Timer, TimerMode};
 use std::path::{Path, PathBuf};
@@ -171,16 +171,9 @@ impl Ctl {
         }
         match found {
             Ok(Some(item)) => {
+                // Asked whole, so nothing of the question before it, a red key or quitting's layout, stays.
                 let (title, message) = feed::found(&item);
-                self.state.borrow_mut().pending = Some(Pending::DownloadUpdate);
-                if let Some(w) = self.window() {
-                    let c = w.global::<Confirm>();
-                    c.set_title(title.into());
-                    c.set_message(message.into());
-                    c.set_key(tr("Download").into());
-                    c.set_shown(true);
-                    w.invoke_refocus();
-                }
+                self.ask(&title, &message, tr("Download"), false, Pending::DownloadUpdate);
             }
             Ok(None) => {
                 let (title, message) = feed::up_to_date();
@@ -253,7 +246,7 @@ impl Ctl {
         let u = &s.updates;
         let bar = w.global::<Bar>();
         let display = u.available.as_ref().map(|i| i.display.clone());
-        bar.set_update_title(display.as_deref().map(feed::key_title).unwrap_or_default().into());
+        bar.set_update_title(display.as_ref().map(|_| feed::key_title()).unwrap_or_default().into());
         bar.set_update_help(display.as_deref().map(feed::key_help).unwrap_or_default().into());
         bar.set_updating(u.downloading || (u.checking && u.asked));
     }

@@ -1,6 +1,6 @@
 //! Every key of the bar at one height, its glyph over its word, in both screens; a flat key shows no ground
-//! at rest, one under the hand, and while it holds a state a flat ground stronger than the hand's, edge to
-//! edge with no inset, as every other key of its kind, bare again once it lets go.
+//! at rest and one under the hand; a canvas tool's key, while it holds, shows its glyph in its tool's colour
+//! and no ground, its tab of the same colour on the canvas's top edge, both gone once it lets go.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -81,7 +81,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     let (keys, others) = heights();
     assert!(keys.len() >= 9 && keys.iter().all(|k| k.height == KEY), "every key of the gallery's bar {KEY} pt tall: {keys:?}");
     assert!(others.iter().any(|k| k.height != KEY), "twin: the measure tells a key of another height");
-    for (label, word) in [("EDIT", "EDIT"), ("Select All", "Select All"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset Pro", "Reset Pro"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
+    for (label, word) in [("EDIT", "EDIT"), ("Sheet", "Sheet"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset", "Reset"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
         stacked(&rig, w, label, word);
     }
     // Twin: beside the glyph, within the key's padding, nothing is drawn but its face.
@@ -100,7 +100,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     assert_eq!(face.height, panel.height, "the faces' tabs as tall as the panel's: {face:?} {panel:?}");
     assert!((face.middle().1 - back.middle().1).abs() <= 0.5, "the faces' tabs centred on the bar's line: {face:?} {back:?}");
     assert!(back.height > panel.height, "twin: a key of the bar is taller than a tab: {back:?} {panel:?}");
-    for (label, word) in [("BACK", "BACK"), ("Undo", "Undo"), ("Crop", "Crop"), ("De-dust", "De-dust"), ("Compare", "Compare"), ("Copy", "Copy"), ("Paste to Roll", "Paste to Roll"), ("EXPORT", "EXPORT")] {
+    for (label, word) in [("BACK", "BACK"), ("Undo", "Undo"), ("Crop", "Crop"), ("De-dust", "De-dust"), ("Compare", "Compare"), ("Copy", "Copy"), ("Paste All", "Paste All"), ("EXPORT", "EXPORT")] {
         stacked(&rig, w, label, word);
     }
 
@@ -120,9 +120,21 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
         rig.window.dispatch_event(WindowEvent::PointerExited);
         rig.settle();
     };
-    for (label, act) in [("Crop", Act::Framing), ("De-dust", Act::Correction), ("Compare", Act::Compare), ("Select All", Act::SelectAll)] {
+    // Whether the box shows the colour, as the window's 16-bit pixels keep it.
+    let shows = |px: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), r: common::Placed, rgb: u32| {
+        let want = (((rgb >> 19) & 0x1f) << 11 | ((rgb >> 10) & 0x3f) << 5 | ((rgb >> 3) & 0x1f)) as u16;
+        let near = |v: u16| ((v >> 11) as i32 - (want >> 11) as i32).abs() <= 1 && (((v >> 5) & 0x3f) as i32 - ((want >> 5) & 0x3f) as i32).abs() <= 2 && ((v & 0x1f) as i32 - (want & 0x1f) as i32).abs() <= 1;
+        (r.y as usize..(r.y + r.height) as usize).any(|y| (r.x as usize..(r.x + r.width) as usize).any(|x| near(px.1[y * px.0 + x].0)))
+    };
+    // The canvas tool's tab: its name in text under the bar's keys, glued to the card's top edge.
+    let tab = |label: &str| {
+        let below = bar_key(w, "BACK");
+        common::placed(w, Role::Text, label).into_iter().find(|t| t.y >= below.y + below.height && t.y < below.y + below.height + KEY)
+    };
+    for (label, act, rgb) in [("Crop", Act::Framing, 0x3fae96), ("De-dust", Act::Correction, 0x9d7ff0), ("Compare", Act::Compare, 0xec6fa8), ("Sheet", Act::SelectAll, 0xe8873a)] {
         let (rest, ground, width) = face(label);
         assert_eq!(rest, [ground; 3], "{label} at rest: no ground of its own, the bar's around its glyph");
+        assert!(!shows(&rig.drawn(), bar_key(w, label), rgb) && tab(label).is_none(), "twin: {label} at rest, neither its colour nor its tab");
         hover(label);
         let (under, ground, _) = face(label);
         println!("shot {}", rig.shot(&format!("toolbar-keys-{}-hover", label.replace(' ', "-"))).display());
@@ -130,14 +142,13 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
         away();
         bar.invoke_act(act);
         rig.settle();
-        let (on, _, held) = face(label);
+        let (on, ground, held) = face(label);
         println!("shot {}", rig.shot(&format!("toolbar-keys-{}", label.replace(' ', "-"))).display());
-        assert!(on[0] == on[1] && on[1] == on[2], "{label} on: one flat ground from top to foot, no inset nor shade: {on:?}");
-        assert!(on[1] > under[1] && held == width, "{label} on: a ground stronger than the hand's, as wide: {on:?} {under:?} {held} {width}");
-        hover(label);
-        let (both, _, _) = face(label);
-        assert!(both[1] > on[1], "{label} on and under the hand: the hand's light over its ground: {both:?} {on:?}");
-        away();
+        assert!(on == [ground; 3] && held == width, "{label} on: no ground of its own, as wide: {on:?} {ground} {held} {width}");
+        let px = rig.drawn();
+        assert!(shows(&px, bar_key(w, label), rgb), "{label} on: its glyph in its tool's colour");
+        let tab = tab(label).unwrap_or_else(|| panic!("{label}'s tab on the canvas's edge"));
+        assert!(shows(&px, tab, rgb), "{label}'s tab in its tool's colour: {tab:?}");
         let (copy, ground, _) = face("Copy");
         assert_eq!(copy, [ground; 3], "twin: Copy, which holds nothing, stays bare beside it: {copy:?} {ground}");
         bar.invoke_act(act);

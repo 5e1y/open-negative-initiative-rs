@@ -1,6 +1,6 @@
 //! The picture's histogram is counted and traced for the plots on screen alone: the Scanner's screen
 //! stands in the readout's place, and Pro's face back traces the readout from a fresh count at once.
-//! The readout names what it draws in a legend under it, the print curve's lines on the Colour tab.
+//! The readout is its plot alone, no word under it.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::fields::Field;
@@ -11,41 +11,23 @@ use std::time::Duration;
 use crate::common;
 use crate::panel_bindings::opened;
 
-/// How far a legend under the plot stands above the tab bar's labels: the bar's inset, never the plot.
-const UNDER_PLOT: f32 = 40.0;
-/// The readout's box, `PlotStyle.main`.
-const BOX: f32 = 150.0;
-
-pub(crate) fn the_readout_names_its_curves_under_the_histogram() {
-    let Some((rig, shell, root)) = opened("readout-legend") else { return };
+pub(crate) fn the_readout_is_its_plot_alone() {
+    let Some((rig, shell, root)) = opened("readout-alone") else { return };
     let w = &shell.window;
-    let panel = w.global::<PanelState>();
-    let pick = |tab: i32| {
+    let (panel, plots) = (w.global::<PanelState>(), w.global::<Plots>());
+    for tab in [2, 0] {
         panel.set_tab(tab);
         panel.invoke_tab_picked(tab);
         rig.settle();
-    };
-    // The tab bar's label, above its block's title of the same name.
-    let tab_label = |name: &str| common::placed(w, Role::Text, name).into_iter().min_by(|a, b| a.y.total_cmp(&b.y)).unwrap();
-    pick(2);
-    rig.shot("readout-legend-colour");
-    let names = ["Histogram", "Print curve", "Inverse curve"].map(|n| common::placed(w, Role::Text, n));
-    assert!(names.iter().all(|n| n.len() == 1), "the legend names the histogram and both lines once: {names:?}");
-    let [histogram, curve, inverse] = names.map(|n| n[0]);
-    assert!(histogram.level_with(&curve) && curve.level_with(&inverse), "one row: {histogram:?} {curve:?} {inverse:?}");
-    assert!(histogram.x < curve.x && curve.x < inverse.x, "the histogram, the curve, then its inverse");
-    let colour = tab_label("Colour");
-    let above = colour.y - (curve.y + curve.height);
-    assert!(above > 0.0 && above < UNDER_PLOT, "under the plot, above the tab bar: {above:.1} pt");
-
-    // The Roll tab draws no line: the histogram alone is named, on the same row, the bar unmoved.
-    pick(0);
-    assert_eq!(common::placed(w, Role::Text, "Print curve").len() + common::placed(w, Role::Text, "Inverse curve").len(), 0, "no line, no name");
-    let alone = common::the(w, Role::Text, "Histogram");
-    assert_eq!((alone.x, alone.y), (histogram.x, histogram.y), "the legend keeps its place");
-    assert_eq!(tab_label("Roll").y, colour.y, "the tab bar keeps its place");
-    // Twin: a legend at the plot's top would stand a plot's height above the bar.
-    assert!(colour.y - (curve.y - BOX + curve.height) >= UNDER_PLOT, "the measure sees a legend over the plot");
+        let named: usize = ["Histogram", "Print curve", "Inverse curve"].iter().map(|n| common::placed(w, Role::Text, n).len()).sum();
+        assert_eq!(named, 0, "no word under the plot on tab {tab}");
+        // The plot takes the readout's whole height, `PlotStyle.main`.
+        let height = plots.get_output_height();
+        assert!((height - 150.0).abs() < 0.5, "the plot fills the readout: {height} pt");
+        // Twin: a row of words under it would leave the plot a caption and a gap shorter.
+        assert!((height - (150.0 - 20.0)).abs() > 0.5);
+    }
+    rig.shot("readout-alone-colour");
     let _ = std::fs::remove_dir_all(&root);
 }
 

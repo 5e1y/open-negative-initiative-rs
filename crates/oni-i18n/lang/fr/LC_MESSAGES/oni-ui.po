@@ -209,6 +209,22 @@ msgstr "Les flèches déplacent la fenêtre de mesure, {}-flèches son bord droi
 msgid "Arrows move the crop, {}-arrows its right or bottom edge, {} ten times as far. Return keeps it."
 msgstr "Les flèches déplacent le recadrage, {}-flèches son bord droit ou bas, {} dix fois plus loin. Retour le garde."
 
+#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/toolbar.slint
+msgid "Sheet"
+msgstr "Planche"
+
+#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Crop"
+msgstr "Recadrage"
+
+#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Dépoussiérage"
+
+#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/toolbar.slint
+msgid "Compare"
+msgstr "Comparer"
+
 #: crates/oni-ui/ui/card_status.slint
 msgid "Settings saved"
 msgstr "Réglages enregistrés"
@@ -249,7 +265,7 @@ msgstr "Garder les fichiers NEF incompatibles"
 msgid "The best option if you already opened them in another software."
 msgstr "Le meilleur choix si vous les avez déjà ouverts dans un autre logiciel."
 
-#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "OK"
 msgstr "OK"
 
@@ -281,7 +297,7 @@ msgstr "Afficher {}"
 msgid "Hide {}"
 msgstr "Masquer {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -345,6 +361,10 @@ msgstr "Après"
 msgid "REMEASURE ROLL"
 msgstr "REMESURER LA PELLICULE"
 
+#: crates/oni-ui/ui/ds/notices.slint
+msgid "Close"
+msgstr "Fermer"
+
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "No Medal (0)"
 msgstr "Aucune médaille (0)"
@@ -364,18 +384,6 @@ msgstr "Bronze (3)"
 #: crates/oni-ui/ui/ds/organise.slint
 msgid "Rating"
 msgstr "Note"
-
-#: crates/oni-ui/ui/ds/plots.slint
-msgid "Histogram"
-msgstr "Histogramme"
-
-#: crates/oni-ui/ui/ds/plots.slint
-msgid "Print curve"
-msgstr "Courbe du tirage"
-
-#: crates/oni-ui/ui/ds/plots.slint
-msgid "Inverse curve"
-msgstr "Courbe inverse"
 
 #: crates/oni-ui/ui/ds/readout.slint
 msgid "One step lower"
@@ -1089,7 +1097,7 @@ msgstr "Restaurer"
 msgid "Paste Settings"
 msgstr "Coller les réglages"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
 
@@ -2002,20 +2010,12 @@ msgid "Details"
 msgstr "Détails"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "Crop"
-msgstr "Recadrage"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
 msgstr "Quitter le recadrage"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Rend à cette photo le recadrage qu’elle avait à l’ouverture du recadrage, puis le quitte."
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Dépoussiérage"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
@@ -2330,10 +2330,6 @@ msgid "Window"
 msgstr "Fenêtre"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Select All"
-msgstr "Tout sélectionner"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Back to One Photo"
 msgstr "Revenir à une seule photo"
 
@@ -2344,14 +2340,6 @@ msgstr "Afficher toute la pellicule ensemble ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select All ({})"
 msgstr "Tout sélectionner ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Reset Scanner"
-msgstr "Réinitialiser Scanner"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Reset Pro"
-msgstr "Réinitialiser Pro"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Reset the Scanner settings ({})"
@@ -2386,10 +2374,6 @@ msgid "Select one photo to de-dust it"
 msgstr "Sélectionnez une seule photo pour la dépoussiérer"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Compare"
-msgstr "Comparer"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
 msgstr "Pro"
 
@@ -2408,6 +2392,10 @@ msgstr "Coller les réglages sur {} photos ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste settings ({})"
 msgstr "Coller les réglages ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Paste All"
+msgstr "Tout coller"
 
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
@@ -4602,12 +4590,12 @@ msgid "Compiling the image kernels"
 msgstr "Compilation des noyaux d'image"
 
 #: crates/oni-app/src/updates.rs
-msgid "You’re up-to-date!"
-msgstr "Vous êtes à jour !"
+msgid "UPDATE"
+msgstr "MISE À JOUR"
 
 #: crates/oni-app/src/updates.rs
-msgid "UPDATE TO {version}"
-msgstr "PASSER À LA {version}"
+msgid "You’re up-to-date!"
+msgstr "Vous êtes à jour !"
 
 #: crates/oni-app/src/updates.rs
 msgid "Download version {version} · export stays on {key}"

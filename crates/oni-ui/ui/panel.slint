@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, PlotLegend, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
@@ -25,11 +25,10 @@ export component Panel inherits Surface {
         HorizontalLayout {
             Rectangle {
                 height: PlotStyle.main;
-                // The plot over its legend, one height on every tab, so the tab bar never moves.
+                // The plot alone, one height on every tab, so the tab bar never moves.
                 if !Lab.shown && PanelState.tab != 3: VerticalLayout {
                     width: parent.width;
                     height: parent.height;
-                    spacing: Space.xs;
                     Plot {
                         vertical-stretch: 1;
                         plot: 5;
@@ -45,12 +44,6 @@ export component Panel inherits Surface {
                         resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
                         property <int> epoch: Editors.epoch;
                         changed epoch => { Editors.resized(self.plot, self.width, self.height); }
-                    }
-                    HorizontalLayout {
-                        vertical-stretch: 0;
-                        padding-left: Space.m;
-                        padding-right: Space.m;
-                        PlotLegend { curves: PanelState.tab == 2; }
                     }
                 }
                 // Under Details the output histogram cannot move, so the readout holds the loupe.

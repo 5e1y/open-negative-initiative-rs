@@ -1,12 +1,11 @@
 // The containers: a block's section, the help mark, the sheet and its footer, the question a sheet
-// asks, the notice that passes and the banner that stays.
-import { Colour, Space, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
-import { Label, Engraved, Icon, Divider, TextRole, Tone, Tip, Tips, Raised, Lift, Gap, Tones } from "base.slint";
+// asks; the notice that passes and the banner that stays are `notices.slint`'s.
+import { Colour, Space, Motion, ButtonStyle, SectionStyle, SheetStyle } from "theme.slint";
+import { Label, Engraved, Divider, TextRole, Tip, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
-import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
+import { Button, ButtonKind, ButtonSize, TextField } from "controls.slint";
 import { Scroller } from "scroller.slint";
 import { Icons } from "icons.slint";
-import { Reach, Reaches } from "reach.slint";
 import { Keyboard } from "keyboard.slint";
 
 // The "?" beside a title, always shown: a ghost key whose card stands while the hand rests on it, or the
@@ -163,8 +162,9 @@ export component Section inherits VerticalLayout {
 // question, the title face else; `bar`, the title beside its exit key above a rule, as a board's.
 export enum SheetHeader { leading, bar }
 
-// A window-modal sheet centred over a scrim that sets the window back, a margin kept above and below; a
-// click beside the card reaches nothing. Its default key holds the keyboard for Return, Escape closes it.
+// A window-modal sheet over a scrim that sets the window back, centred across and resting a little above
+// the middle, a margin kept above and below; it comes in as one, the scrim darkening as the card rises
+// into place. A click beside the card reaches nothing; its default key holds Return, Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
     in property <SheetHeader> header: SheetHeader.leading;
@@ -187,7 +187,10 @@ export component Sheet inherits Rectangle {
     out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
     property <bool> fixed: root.card-height > 0;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;
-    background: Colour.scrim;
+    property <float> come;
+    init => { root.come = 1; }
+    animate come { duration: Motion.overlay-in; easing: ease-out; }
+    Rectangle { width: 100%; height: 100%; background: Colour.scrim; opacity: root.come; }
     TouchArea { }
     // Tab leaving the sheet meets the window's walls, which hand the keyboard back to the sheet: to this
     // scope going forward, so Tab goes on to its first control, to `back` going back, before its last.
@@ -210,7 +213,8 @@ export component Sheet inherits Rectangle {
         }
         card := Raised {
             lift: Lift.sheet;
-            y: (root.height - self.height) / 2;
+            y: (root.height - self.height) * SheetStyle.rest + (1 - root.come) * SheetStyle.rise;
+            opacity: root.come;
             width: root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width;
             height: min(root.fixed ? root.card-height : column.preferred-height, root.height - 2 * SheetStyle.margin);
             Scroller {
@@ -286,9 +290,10 @@ export enum AskRole { confirm, destructive, option }
 
 export struct AskKey { text: string, role: AskRole }
 
-// `DSDialogPanel`: a question as a sheet, its message, a field when it asks for a word, then Cancel
-// and its keys at the end, a destructive one apart from those beside it. `answered` gives the key's
-// place, -1 for Cancel and Escape, with the field's text; Return in the field presses `default-key`.
+// `DSDialogPanel`: a question as a sheet, its message, a field when it asks for a word, then every sheet's
+// footer: Cancel at the left, apart at the right its keys, the confirm an accent keycap, a destructive one
+// red and apart from those beside it. `answered` gives the key's place, -1 for Cancel and Escape, with the
+// field's text; Return in the field presses `default-key`.
 export component AskSheet inherits Sheet {
     in property <string> message;
     in property <bool> field;
@@ -308,90 +313,21 @@ export component AskSheet inherits Sheet {
         accepted(typed) => { root.answered(root.default-key, typed); }
         init => { self.take-focus(); }
     }
-    ButtonGroup { align: GroupAlign.end;
+    HorizontalLayout {
+        spacing: ButtonStyle.group-gap;
+        cross-axis-alignment: center;
         if root.cancel != "": Button { text: root.cancel; clicked => { root.answered(-1, ""); } }
+        Rectangle { horizontal-stretch: 1; }
         // A key that removes stands apart from the key before it and the key after it.
         for key[i] in root.keys: HorizontalLayout {
             property <bool> beside: key.role == AskRole.destructive || root.keys[max(0, i - 1)].role == AskRole.destructive;
-            padding-left: (i > 0 || root.cancel != "") && self.beside ? ButtonStyle.apart - ButtonStyle.group-gap : 0px;
+            padding-left: i > 0 && self.beside ? ButtonStyle.apart - ButtonStyle.group-gap : 0px;
             Button {
                 text: key.text;
+                keycap: key.role == AskRole.confirm;
                 kind: key.role == AskRole.confirm ? ButtonKind.accent : key.role == AskRole.destructive ? ButtonKind.destructive : ButtonKind.plain;
                 default: key.role == AskRole.confirm;
                 clicked => { root.answered(i, root.text); }
-            }
-        }
-    }
-}
-
-// A transient notice: what a gesture could not do, laid low over every view without stopping the
-// hand; it leaves by its key or after `SheetStyle.linger`, held while the pointer rests on it.
-export component Toast inherits Rectangle {
-    in property <string> title;
-    in property <string> message;
-    // A key acting on what the notice names, as Show in Finder; empty for none.
-    in property <string> action;
-    // Bumped by each notice, so one replacing another stays its whole time.
-    in property <int> serial;
-    // The window's room, the notice centred low in it.
-    in property <length> room;
-    in property <length> room-height;
-    callback acted();
-    callback closed();
-    width: min(SheetStyle.notice-width, root.room - 2 * SheetStyle.margin);
-    height: card.height;
-    x: (root.room - self.width) / 2;
-    y: root.room-height - self.height - SheetStyle.margin;
-    changed serial => { linger.restart(); }
-    linger := Timer {
-        interval: SheetStyle.linger;
-        running: !hover.has-hover;
-        triggered => { root.closed(); }
-    }
-    hover := TouchArea {
-        card := Raised {
-            lift: Lift.sheet;
-            pad: Gap.m;
-            gap: Gap.s;
-            width: root.width;
-            if root.title != "": Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
-            Label { role: TextRole.note; text: root.message; }
-            ButtonGroup { align: GroupAlign.end;
-                if root.action != "": Button { text: root.action; clicked => { root.acted(); } }
-                Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { root.closed(); } }
-            }
-        }
-    }
-}
-
-// A band over a view that says why what it shows is out of reach, the view kept under it: the
-// state's glyph, a title and its words, then the keys acting on the place it names.
-export component Banner inherits Raised {
-    in property <Reach> reach: Reach.offline;
-    in property <string> title;
-    in property <string> message;
-    in property <[string]> keys;
-    callback acted(int);
-    pad: Gap.m;
-    accessible-role: text;
-    accessible-label: root.title;
-    HorizontalLayout {
-        spacing: Space.m;
-        VerticalLayout {
-            alignment: start;
-            Icon { source: Reaches.glyph(root.reach); width: ButtonStyle.icon; height: ButtonStyle.icon; }
-        }
-        // The keys under the words, so a narrow view never squeezes them to a column.
-        VerticalLayout {
-            horizontal-stretch: 1;
-            spacing: Space.xxs;
-            Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
-            Label { role: TextRole.note; text: root.message; }
-            if root.keys.length > 0: VerticalLayout {
-                padding-top: Space.s;
-                ButtonGroup { align: GroupAlign.end;
-                    for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
-                }
             }
         }
     }

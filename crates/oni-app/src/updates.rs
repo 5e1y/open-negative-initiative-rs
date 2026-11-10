@@ -262,9 +262,10 @@ pub fn file_name(url: &str) -> String {
     if clean.is_empty() || clean.starts_with('.') { "OpenNegative.zip".into() } else { clean }
 }
 
-/// `"UPDATE TO 0.2.0"`: the export slot's face while an update waits, and it says to what.
-pub fn key_title(display: &str) -> String {
-    tr!("UPDATE TO {version}", version = display)
+/// The export slot's face while an update waits, the version left to its help so the key keeps the
+/// export's width.
+pub fn key_title() -> String {
+    tr("UPDATE").into()
 }
 
 pub fn key_help(display: &str) -> String {

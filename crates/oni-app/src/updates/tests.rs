@@ -143,8 +143,8 @@ fn the_published_archives_verify_against_the_apps_key() {
 
 #[test]
 fn the_key_and_the_dialogs_say_what_sparkle_says() {
-    assert_eq!(key_title("0.2.0"), "UPDATE TO 0.2.0");
-    assert!(!key_title("0.2.0").contains("EXPORT"));
+    assert_eq!(key_title(), "UPDATE");
+    assert!(!key_title().contains("EXPORT"));
     assert_eq!(file_name("https://x/releases/download/v1.3.1/OpenNegative-1.3.1.zip?raw=1"), "OpenNegative-1.3.1.zip");
     assert_eq!(file_name("https://x/../"), "OpenNegative.zip", "never a name that leaves the folder");
     assert_eq!(up_to_date().0, "You\u{2019}re up-to-date!");

@@ -1,6 +1,6 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
 import { Act } from "act.slint";
-import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, SheetStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, LabCell, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
@@ -91,14 +91,14 @@ export component MainWindow inherits AppWindow {
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Exporting.naming-shown || Stocks.shown
         || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
         || Advice.shown || Wrapped.shown || Unsaved.shown || Converting.shown;
-    // A sheet shown or closed takes the keyboard from a control behind it, a field it opens on aside, and
-    // the tooltip, as a new screen does.
+    // A sheet shown takes the keyboard from a control behind it, a field it opens on aside, and the tooltip,
+    // as a new screen does; closed, it hands the keyboard back, its own field going with it.
     changed sheet-shown => {
         App.sheet-changed();
         Keyboard.covered = self.sheet-shown;
         Tip.shown = false;
         Tips.close();
-        if (!TextInputInterface.text-input-focused) { keys.focus(); }
+        if (!self.sheet-shown || !TextInputInterface.text-input-focused) { keys.focus(); }
     }
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
@@ -358,11 +358,26 @@ export component MainWindow inherits AppWindow {
     // Last, so a question asked over another sheet, as quitting's, is drawn over it.
     if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
-    if Told.shown: ToldNotice { room: root.width; room-height: root.height; }
+    // Where the content starts in the window: under Slint's own menu bar where the system has none.
+    origin := Rectangle { x: 0; y: 0; width: 0; height: 0; }
+    // The notice and the tooltips, laid from the absolute positions of what they speak of, lie in the
+    // window's own space, so they land where those point whatever stands above the content.
+    Rectangle {
+        x: -origin.absolute-position.x;
+        y: -origin.absolute-position.y;
+        width: root.width;
+        height: root.height;
+        // The notice at the bottom right of the view the hand works in, above its status bar.
+        if Told.shown: ToldNotice {
+            room: root.width;
+            right: card-area.absolute-position.x + card-area.width;
+            bottom: card-area.absolute-position.y + card-area.height - (Exporting.shown ? CardStyle.inset : card-area.status);
+        }
+        tips := TipLayer { room: root.width; room-height: root.height; }
+    }
     // A press hides a tooltip, as AppKit's: the key may change its help or vanish under the hand.
     property <int> presses: Outside.presses;
     changed presses => { Tip.shown = false; }
-    tips := TipLayer { room: root.width; room-height: root.height; }
     // Last, over everything: the app beneath stands up while the starter says each step.
     if Starter.shown: StarterView { x: 0; y: 0; width: root.width; height: root.height; }
 

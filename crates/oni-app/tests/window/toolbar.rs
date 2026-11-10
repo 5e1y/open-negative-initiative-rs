@@ -225,8 +225,8 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
 
     // The gallery: EDIT, Select All, PREPARE ROLL and ADD FOLDER…, then past a rule Reset naming the face
     // it resets and Trash last, one group; the rating filter is the library's, off the bar.
-    let (edit, select) = (bar_key(w, "EDIT"), bar_key(w, "Select All"));
-    let (prepare, add, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "ADD FOLDER\u{2026}"), bar_key(w, "Reset Pro"), bar_key(w, "Trash"));
+    let (edit, select) = (bar_key(w, "EDIT"), bar_key(w, "Sheet"));
+    let (prepare, add, reset, trash) = (bar_key(w, "PREPARE ROLL"), bar_key(w, "ADD FOLDER\u{2026}"), bar_key(w, "Reset"), bar_key(w, "Trash"));
     println!("shot {}", rig.shot("toolbar-groups-gallery").display());
     let on_bar = |label: &str| common::placed(w, Role::Button, label).into_iter().filter(|k| k.y < bar.get_height()).count();
     assert_eq!((on_bar("All Photos"), on_bar("EDITOR"), on_bar("BACK")), (0, 0, 0), "no filter on the bar; EDIT names the action");
@@ -243,12 +243,12 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let (report, settings, export) = (bar_key(w, "Feedback"), bar_key(w, "Settings"), bar_key(w, "EXPORT"));
     assert!(near(gap(report, settings), 0.0) && near(gap(settings, export), BAR_GAP), "{report:?} {settings:?} {export:?}");
 
-    // Select All holds lit; Reset still names the face, whatever the count, the bar holding still.
+    // The Sheet holds lit; Reset keeps its word, whatever the count, the bar holding still.
     assert!(!bar.get_whole());
     bar.invoke_act(Act::SelectAll);
     rig.settle();
     assert!(bar.get_whole() && bar.get_targets() == 2, "every photo picked, the key lit");
-    let (both, sent) = (bar_key(w, "Reset Pro"), bar_key(w, "EXPORT"));
+    let (both, sent) = (bar_key(w, "Reset"), bar_key(w, "EXPORT"));
     let menu_on = |name: &str| {
         let t = oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap();
         let position = LogicalPosition::new(lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
@@ -263,7 +263,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let line_width = |text: &str| common::placed(w, Role::Button, text).first().unwrap_or_else(|| panic!("{text}")).width;
     let two = line_width("Move into a New Roll\u{2026} (2 photos)");
     rig.key("\u{1b}");
-    assert_eq!((bar_key(w, "Select All").x, both.x, both.width), (select.x, reset.x, reset.width), "the key lights in place, Reset keeps its room");
+    assert_eq!((bar_key(w, "Sheet").x, both.x, both.width), (select.x, reset.x, reset.width), "the key lights in place, Reset keeps its room");
     assert_eq!((sent.x, sent.width), (export.x, export.width), "EXPORT keeps its room as the count changes");
     bar.invoke_act(Act::SelectAll);
     rig.settle();
@@ -306,17 +306,22 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     lib.invoke_tile_opened(tile("A"));
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     rig.settle();
-    let (back, select, crop, de_dust, compare) = (bar_key(w, "BACK"), bar_key(w, "Select All"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
+    let (back, select, crop, de_dust, compare) = (bar_key(w, "BACK"), bar_key(w, "Sheet"), bar_key(w, "Crop"), bar_key(w, "De-dust"), bar_key(w, "Compare"));
     assert_eq!((back.x, back.width, on_bar("EDIT"), on_bar("GALLERY")), (edit.x, edit.width, 0, 0), "BACK in EDIT's place, as wide");
-    let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste to Roll"));
-    let reset = bar_key(w, "Reset Pro");
+    let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste All"));
+    let reset = bar_key(w, "Reset");
     println!("shot {}", rig.shot("toolbar-groups-editor").display());
-    // On the Scanner face the key names the Scanner, in the same room; twin: Pro's word is gone.
+    // On the Scanner face the key keeps its word and its room, its help naming the face it resets.
+    let help = || {
+        let key = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "Reset").find(|e| e.accessible_role() == Some(Role::Button));
+        key.and_then(|e| e.accessible_description()).map(|d| d.to_string()).unwrap_or_default()
+    };
+    assert!(help().starts_with("Reset the Pro settings"), "{}", help());
     bar.invoke_act(Act::FaceScanner);
     rig.settle();
-    let scanner = bar_key(w, "Reset Scanner");
-    assert_eq!((scanner.x, scanner.width), (reset.x, reset.width), "Reset names the face in the same room");
-    assert!(common::placed(w, Role::Button, "Reset Pro").is_empty(), "twin: Pro's Reset is gone on the Scanner face");
+    let scanner = bar_key(w, "Reset");
+    assert_eq!((scanner.x, scanner.width), (reset.x, reset.width), "Reset keeps its word and its room");
+    assert!(help().starts_with("Reset the Scanner settings"), "twin: its help names the Scanner now: {}", help());
     bar.invoke_act(Act::FacePro);
     rig.settle();
     for (a, b) in [(select, crop), (crop, de_dust), (de_dust, compare), (copy, paste), (paste, to_roll)] {
@@ -324,7 +329,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     }
     assert_eq!(on_bar("Trash"), 0, "no Trash on the editor's bar");
     assert!(near(gap(to_roll, reset), RULED), "a rule before Reset, alone where the group stood: {to_roll:?} {reset:?}");
-    assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between Paste to Roll and Reset");
+    assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between Paste All and Reset");
     // Beside Reset, where Trash stood, bare room up to the app's keys.
     assert!(!inked(&rig, reset, right(reset) + 12.0), "nothing drawn past Reset");
     // Twin: the faces stand between the views and the settings, a bar's gap either side.
@@ -339,5 +344,42 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     rig.landed(&ctl);
     assert!(trashed("A.tif") && !trashed("B.tif"), "the frame open alone moved to the ONI Trash");
     assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("B.tif")), "the editor goes on to B");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A 13-inch MacBook Air's screen, in points, the narrowest the bar must hold every word on.
+const AIR_13: f32 = 1440.0;
+/// The room the Mac's traffic lights take at the bar's start, as `chrome::traffic_lights` lays them.
+const LIGHTS: f32 = 94.0;
+
+pub(crate) fn the_bar_holds_every_word_on_a_13_inch_screen() {
+    let Some((rig, shell, root)) = crate::panel_bindings::opened("bar-13") else { return };
+    let w = &shell.window;
+    let bar = w.global::<Bar>();
+    bar.set_traffic_lights(LIGHTS);
+    let worded = |width: f32| {
+        rig.window.set_size(slint::PhysicalSize::new(width as u32, 900));
+        rig.settle();
+        !common::placed(w, Role::Button, "Undo").is_empty()
+    };
+    // The editor's bar, the fullest, in every language the app speaks, shot on the screen it must fit.
+    let needs: Vec<(oni_i18n::Language, f32)> = [oni_i18n::Language::English, oni_i18n::Language::French, oni_i18n::Language::Spanish]
+        .into_iter()
+        .map(|language| {
+            oni_app::language::speak(Some(language));
+            rig.window.set_size(slint::PhysicalSize::new(AIR_13 as u32, 900));
+            rig.settle();
+            println!("shot {}", rig.shot(&format!("bar-13-inch-{language:?}")).display());
+            (language, bar.get_needed())
+        })
+        .collect();
+    println!("the bar needs {needs:?}");
+    assert!(needs.iter().all(|(_, needed)| *needed <= AIR_13), "over a 13-inch screen's {AIR_13} pt: {needs:?}");
+    oni_app::language::speak(Some(oni_i18n::Language::English));
+    rig.settle();
+    // The width read is the one the words give way under: whole at it; twin: a point narrower, glyphs alone.
+    let needed = bar.get_needed().ceil();
+    assert!(worded(needed), "every word at {needed} pt");
+    assert!(!worded(needed - 1.0), "twin: the words give way a point narrower");
     let _ = std::fs::remove_dir_all(&root);
 }

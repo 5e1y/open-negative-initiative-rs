@@ -8348,5 +8348,54 @@
     "title": "Three window checks read what is drawn the way each build draws it",
     "status": "done",
     "detail": "From the Windows CI's pictures: the Lab screen cuts a count too wide just short of its column's edge where the interface is compiled, where the live preview lets it overflow, so the screen check looks within a point and a half of each edge, which a count that fits keeps clear by over two (scanner). The status bar gives its room to work under way and then shows the frame's line again, so the line is read as it is drawn rather than at one instant (filmstrip). The press with every balance kept is bounded tenfold on a software adapter, like every wait (balance_kept)."
+  },
+  {
+    "id": 1669,
+    "type": "ui",
+    "title": "The readout is its plot alone",
+    "status": "done",
+    "detail": "Owner's ninth round: the small words under the histogram go. The legend (Histogram, Print curve, Inverse curve) and its tokens are gone; the plot takes the readout's whole 150 pt on every tab. Window check picture_plots: no word under the plot on the Colour and Roll tabs, the plot 150 pt tall (twin: a row of words would leave it shorter)."
+  },
+  {
+    "id": 1670,
+    "type": "ui",
+    "title": "The bar holds every word on a 13-inch screen, in every language",
+    "status": "done",
+    "detail": "Owner's ninth round: the bar must not give way to glyphs on a 13-inch MacBook Air (1440 pt). The bar's caps keep 12 pt either side instead of 16 (BACK and EDIT, PREPARE ROLL, ADD FOLDER, EXPORT); EXPORT is 110 pt instead of 124; the Pro and Scanner faces 176 pt instead of 232. Words: Select All is the Sheet (Planche, Contactos), as film shows a roll whole; Paste to Roll on the key is Paste All (Tout coller, Pegar todo), the menu keeping its longer title; Reset Pro and Reset Scanner are Reset alone, its help naming the face; the update's face says UPDATE (MISE À JOUR, ACTUALIZAR), the version in its help. The bar publishes the width its words need (Bar.needed). Window check toolbar: with the Mac's traffic lights, the editor's bar needs at most 1440 pt in English, French and Spanish; whole at that width (twin: a point narrower, glyphs alone)."
+  },
+  {
+    "id": 1671,
+    "type": "ui",
+    "title": "A favourite's star shows its press under the hand",
+    "status": "done",
+    "detail": "Owner's ninth round: a hover on the stars, to add and to remove. A favourite's star is filled and gold; under the hand the star shows what its press will make, filled gold to add, an empty grey outline to remove, and once pressed what it made until the hand leaves. Button gains under-hand; Icons.favourite-on is the filled star. Window check row_marks: the offered star, the hand beside it, is not gold (twin), under the hand it lights gold; a favourite's star, the hand away, is gold (twin), under the hand it goes out."
+  },
+  {
+    "id": 1672,
+    "type": "ui",
+    "title": "The canvas's tool shows on a tab of its colour at the card's edge",
+    "status": "done",
+    "detail": "Owner's ninth round: instead of a flat lit ground under a tool's key, a tab glued to the canvas card's top edge names the tool the canvas is in, each in its own colour: the Sheet orange, Crop verdigris, De-dust violet, Compare pink (ToolStyle, ToolTab, CanvasTools after the Library's key, the colour space's select starting after them). The tool's bar key shows its glyph in that colour while it holds and no lit face (Button on-ink). Window check toolbar_keys: each tool's key bare at rest with neither its colour nor its tab (twin), under the hand a ground, on its glyph in its colour and its tab in the same colour under the bar, bare again let go."
+  },
+  {
+    "id": 1673,
+    "type": "ui",
+    "title": "One system for the sheets and the notices",
+    "status": "done",
+    "detail": "Owner's ninth round: every modal and every notice follows the same rules, with motion and an ergonomic place (ds/README.md, Overlays). A sheet rests a little above the window's middle (SheetStyle.rest 0.42) and comes in as one at Motion.overlay-in, the scrim darkening as the card rises 16 pt; every footer puts Cancel at the left and the keys at the right, AskSheet's included. The notice rests at the bottom right of the view the hand works in, above its status bar, where a grid of photos and a frame leave room: at the window's top right it covered Crop's DONE, under the canvas's band it covered the gallery's first tiles and caught their drag. It slides in at Motion.overlay-in and away at Motion.overlay-out, its title beside a close key instead of an OK, its action the accent key; it leaves by its close key, its action or after its linger unread. Reduce Motion shows both at once. The update's prompt is a plain question. The Scanner's styles move to theme_scanner.slint and the notice and the banner to notices.slint, so the theme and the containers stay under their caps. Window checks sheet_layout (rest, footers), sheets (the export's replace prompt pressed where drawn), sheet_keys (the notice's close key), told (the notice's action a margin and its padding over the status line; twin: the library's tabs far outside)."
+  },
+  {
+    "id": 1674,
+    "type": "fix",
+    "title": "A closed sheet hands the keyboard back",
+    "status": "done",
+    "detail": "A sheet closing while its own field held the keyboard left it with the field's dying element, so the shortcuts went deaf until a click; closing any sheet now gives the key monitor the keyboard, a field a sheet opens on still keeping it as the sheet opens. The window checks draw before they wait, as a window does, so what a change brings in (a sheet's entry, its field taking the keys) starts at once instead of at the next shot."
+  },
+  {
+    "id": 1675,
+    "type": "fix",
+    "title": "The notice and the tooltips lie in the window's own space",
+    "status": "done",
+    "detail": "Where Slint draws its own menu bar in the window (the checks' headless window, while macOS and Windows show the system's), the content lies under it while absolute positions count from the window's top: the notice and the tooltips, laid from those positions in the content's space, stood the menu bar's height too low in every shot. They now lie in a layer set back by the content's origin (app.slint), so the shots the owner judges show them where they are; on macOS and Windows nothing moves. Window checks told and tooltip read them against what they speak of."
   }
 ]

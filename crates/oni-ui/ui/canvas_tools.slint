@@ -1,0 +1,12 @@
+// The tools the canvas is in, each on its own tab glued to the card's top edge, in its own colour.
+import { ToolTab, ToolStyle, Space } from "ds/ds.slint";
+import { Canvas } from "canvas_state.slint";
+import { PanelState } from "panel/state.slint";
+
+export component CanvasTools inherits HorizontalLayout {
+    spacing: Space.xxs;
+    if Canvas.together: ToolTab { text: @tr("Sheet"); ink: ToolStyle.sheet; }
+    if PanelState.tab == 1: ToolTab { text: @tr("Crop"); ink: ToolStyle.crop; }
+    if PanelState.tab == 4: ToolTab { text: @tr("De-dust"); ink: ToolStyle.dust; }
+    if Canvas.split >= 0: ToolTab { text: @tr("Compare"); ink: ToolStyle.compare; }
+}

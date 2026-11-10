@@ -21,6 +21,18 @@ const MARK: f32 = 12.8;
 const MARKS_GAP: f32 = 8.0;
 const PADDING: f32 = 8.0;
 const SCALE: f32 = 2.0;
+
+/// Whether the box, in points, shows the favourite's gold (`DS.tint-favourite`) as the window's 16-bit
+/// pixels keep it.
+fn golden(px: &(usize, Vec<Rgb565Pixel>), r: Placed) -> bool {
+    const GOLD: u32 = 0xf2c94c;
+    let near = |v: u16| {
+        let (red, green, blue) = ((v >> 11) as i32, ((v >> 5) & 0x3f) as i32, (v & 0x1f) as i32);
+        (red - (GOLD >> 19 & 0x1f) as i32).abs() <= 1 && (green - (GOLD >> 10 & 0x3f) as i32).abs() <= 2 && (blue - (GOLD >> 3 & 0x1f) as i32).abs() <= 1
+    };
+    let (x0, y0, x1, y1) = ((r.x * SCALE) as usize, (r.y * SCALE) as usize, ((r.x + r.width) * SCALE) as usize, ((r.y + r.height) * SCALE) as usize);
+    (y0..y1).any(|y| (x0..x1).any(|x| near(px.1[y * px.0 + x].0)))
+}
 /// The mean gap, per channel out of 255, between an artwork and its pixels drawn: RGB565's steps.
 const DRAWN_AS: f32 = 6.0;
 
@@ -202,6 +214,18 @@ pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister
     assert_eq!(centre(&offered[0]), centre(&portra_star[0]), "the offered star stands in the stars' column");
     assert_eq!(on(&common::placed(w, Role::Image, "Not prepared yet"), long)[0].x, long_warning[0].x, "the star never pushes the warning");
     println!("shot {}", rig.shot("row-marks-hovered").display());
+    // A star under the hand shows what its press makes: the offered one lights gold, a favourite's goes out.
+    let point = |star: Placed| {
+        rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(star.x + star.width / 2.0, star.y + star.height / 2.0) });
+        rig.pump();
+        golden(&rig.drawn(), star)
+    };
+    assert!(!golden(&rig.drawn(), offered[0]), "twin: the offered star, the hand beside it, is not gold");
+    assert!(point(offered[0]), "under the hand, the offered star lights gold");
+    println!("shot {}", rig.shot("row-marks-star-offered").display());
+    assert!(golden(&rig.drawn(), portra_star[0]), "twin: a favourite's star, the hand away from it, is gold");
+    assert!(!point(portra_star[0]), "under the hand, a favourite's star goes out");
+    println!("shot {}", rig.shot("row-marks-star-removing").display());
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(1200.0, 700.0) });
     rig.settle();
 

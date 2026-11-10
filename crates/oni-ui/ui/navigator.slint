@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // the favourites' section, then Computer's, each folding under its heading, then the ONI Trash in every view.
-import { Space, ShellStyle, RowStyle, Scroller, KeyScope, RowsDivider, RowsHeading, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach, SheetFooter } from "ds/ds.slint";
+import { Space, ShellStyle, RowStyle, Scroller, KeyScope, RowsDivider, RowsHeading, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach, SheetFooter, SheetStyle } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -290,7 +290,7 @@ export component NavigatorSection inherits Rectangle {
 // `RootsCatchUp`: shown once to a library made before the archive followed the disk.
 export component RootsCatchUpSheet inherits Sheet {
     title: @tr("Your Library Now Follows Your Disk");
-    card-width: FormStyle.panel-width;
+    card-width: SheetStyle.notice-width;
     // Its groups a wider step apart than a plain sheet's lines, the steps a medium one.
     gap: Gap.l;
     dismissed => { Navigator.catch-up-done(); }

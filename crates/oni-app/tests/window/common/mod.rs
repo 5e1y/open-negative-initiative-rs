@@ -86,8 +86,13 @@ impl Rig {
         self.landed(ctl);
     }
 
-    /// Lets springs and the tooltip delay finish, as a person waits before looking.
+    /// Lets springs and the tooltip delay finish, as a person waits before looking; the window draws
+    /// first, as a real one does, so what a change brings in starts coming at once.
     pub fn settle(&self) {
+        // A window not laid out yet has nothing to draw.
+        if self.window.size().width > 0 && self.window.size().height > 0 {
+            self.drawn();
+        }
         let start = Instant::now();
         while start.elapsed() < Duration::from_millis(900) {
             self.pump();

@@ -140,7 +140,7 @@ pub(crate) fn a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_i
     told.set_shown(true);
     rig.settle();
     rig.drawn();
-    assert_eq!((common::focused_label(w), keys(w, "OK", false), keys(w, "Undo", false)), (String::new(), vec![true], vec![true]));
+    assert_eq!((common::focused_label(w), keys(w, "Close", false), keys(w, "Undo", false)), (String::new(), vec![true], vec![true]));
     assert!(bar_live(w, &bar).iter().all(|l| *l), "a passing notice covers nothing");
 
     // Twin: the sheet gone, the bar's Settings opens to an assistive tool's press.

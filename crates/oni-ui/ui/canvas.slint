@@ -9,6 +9,7 @@ import { Absent, AbsentNote } from "missing.slint";
 import { KeyWords } from "key_words.slint";
 import { Converting } from "dng.slint";
 import { CanvasKeys } from "canvas_keys.slint";
+import { CanvasTools } from "canvas_tools.slint";
 
 import { Canvas, Mark } from "canvas_state.slint";
 export { Canvas, Mark }
@@ -298,14 +299,12 @@ export component CanvasCard inherits Card {
     }
     // The deck rises over the picture's bottom edge; Crop's handles use that edge.
     // On the canvas's own bottom edge, full width, as Swift's overlay on `NegativeView`.
-    if PanelState.tab != 1 && !Lab.shown: PresetDeck {
-        x: 0;
-        width: parent.width;
-        y: parent.height - self.height;
-    }
+    if PanelState.tab != 1 && !Lab.shown: PresetDeck { x: 0; width: parent.width; y: parent.height - self.height; }
+    // The tools the canvas is in, glued to the card's top edge after the Library's key.
+    tools := CanvasTools { x: library-key.x + library-key.width + Space.s; y: 0; width: self.preferred-width; height: self.preferred-height; }
     // The Working Space in the room between the column keys, on the card's centre while that room allows.
     SpaceChip {
-        property <length> start: library-key.x + library-key.width + Space.s;
+        property <length> start: (tools.width > 0 ? tools.x + tools.width : library-key.x + library-key.width) + Space.s;
         property <length> end: zoom.x - Space.s;
         y: (CardStyle.padding - self.height) / 2;
         width: min(self.preferred-width, self.end - self.start);

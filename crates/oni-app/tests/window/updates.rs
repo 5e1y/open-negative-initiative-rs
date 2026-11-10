@@ -86,7 +86,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     let first = shell(Some(updater(true)));
     let bar = first.window.global::<Bar>();
     rig.until("the scheduled check", Duration::from_secs(10), || bar.get_update_title() != "");
-    assert_eq!(bar.get_update_title().as_str(), "UPDATE TO 9.1.0");
+    assert_eq!(bar.get_update_title().as_str(), "UPDATE");
     assert_eq!(bar.get_update_help().as_str(), format!("Download version 9.1.0 · export stays on {}E", common::command()));
     // A copy never reported names its version alone, a first installation, and keeps it once answered.
     let installed = oni_app::updates::installed_url(oni_app::updates::version(), None, oni_app::updates::os());
@@ -137,7 +137,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     first.ctl.act(oni_app::Act::CheckUpdates);
     rig.until("the error", Duration::from_secs(10), || advice.get_shown());
     assert_eq!((advice.get_title().as_str(), advice.get_message().as_str()), ("Update Error!", oni_app::updates::CHECK_FAILED));
-    assert_eq!(bar.get_update_title().as_str(), "UPDATE TO 9.1.0");
+    assert_eq!(bar.get_update_title().as_str(), "UPDATE");
     advice.invoke_closed();
     // Nothing newer than this build: up to date, and the key goes back to export.
     *served.lock().unwrap() = feed(&[("1400", "1.2.0", 1, "AAAA")]);
