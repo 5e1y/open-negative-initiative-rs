@@ -114,8 +114,12 @@ Start-Process $Exe"#;
 
 #[cfg(windows)]
 /// The archive's signature was checked on download: the helper script does the rest once the app quits.
+/// Only a build made for release lays it, as only a team-signed app does on the Mac.
 fn windows(archive: &Path) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
+    if !crate::updates::stamped() {
+        return Err("this build was not made for release".into());
+    }
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let script = std::env::temp_dir().join(format!("oni-update-{}.ps1", std::process::id()));
     std::fs::write(&script, SWAP_WINDOWS).map_err(|e| e.to_string())?;

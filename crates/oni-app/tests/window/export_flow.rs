@@ -159,9 +159,10 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
         rig.window.dispatch_event(event);
     }
     assert!(e.get_job_stopping() && e.get_job_title() == "Stopping after this photo…", "the click reached Stop");
+    let at_stop = export_card::job::job(&ctl);
     rig.until("the export stopped", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     let (done, _, end) = export_card::job::job(&ctl).unwrap();
-    assert_eq!(end, Some(End::Stopped));
+    assert_eq!(end, Some(End::Stopped), "the job at the click: {at_stop:?}");
     assert!(done < 3, "a frame after the stop was begun: {done}");
     assert!(told.get_message().starts_with("Stopped after"), "{}", told.get_message());
     told.invoke_closed();

@@ -129,7 +129,7 @@ fn listing(root: &Path) -> BTreeMap<String, Vec<u8>> {
             if path.is_dir() {
                 folders.push(path);
             } else {
-                out.insert(path.to_string_lossy().into_owned(), std::fs::read(&path).unwrap());
+                out.insert(common::spelt(&path), std::fs::read(&path).unwrap());
             }
         }
     }

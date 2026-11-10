@@ -39,11 +39,12 @@ pub(crate) fn an_undo_shows_a_member_beyond_the_folder_at_once() {
     let ctl = hand.shell.ctl.clone();
     hand.click(&a, false);
     hand.click(&z, true);
+    let order = ctl.state.borrow().order().to_vec();
     hand.menu(&a, "New Project from", None);
     hand.open("Roll A");
     hand.lib().invoke_surface_picked(1);
     hand.rig.pump();
-    assert_eq!(hand.shown(), [a.clone(), z.clone()], "Z found beyond the folder");
+    assert_eq!(hand.shown(), [a.clone(), z.clone()], "Z found beyond the folder, the pick made in {order:?}");
     hand.click(&z, false);
     hand.menu(&z, "Remove from Project", Some("Project 1"));
     hand.open("Roll C");

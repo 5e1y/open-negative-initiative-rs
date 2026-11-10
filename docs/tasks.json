@@ -8291,7 +8291,7 @@
     "type": "fix",
     "title": "The window checks read each system's own words and paths",
     "status": "done",
-    "detail": "Of the Windows CI's 28 failures, the checks expected the Mac's words and spellings where the app rightly answers Windows' own: Show in Explorer and Ctrl+E through common::reveal and common::command (export_flow, gallery, navigator, told, tree_hand, updates, visible); paths spelt as the archive spells them, `/` between names, through common::spelt and paths::normal (balance_kept, oni-core's kept and oni_trash, made_roll); a field Tab brings the keyboard to selecting its text outside the Mac, as Slint does after Windows' own fields (keyboard); a help mark found in the app's language where the interface is compiled, as in the CI (help_demo); the Lab screen's twin overflowing with counts twice as long, whatever the system's monospaced font (scanner, ScreenProbe's count); the gallery's tile lookup naming the tiles it saw when one is missing (canvas_layout)."
+    "detail": "Of the Windows CI's 28 failures, the checks expected the Mac's words and spellings where the app rightly answers Windows' own: Show in Explorer and Ctrl+E through common::reveal and common::command (export_flow, gallery, navigator, told, tree_hand, updates, visible); paths spelt as the archive spells them, `/` between names, through common::spelt and paths::normal (balance_kept, locate's listing, oni-core's kept and oni_trash, made_roll); a field Tab brings the keyboard to selecting its text outside the Mac, as Slint does after Windows' own fields (keyboard); a help mark found in the app's language where the interface is compiled, as in the CI (help_demo); the Lab screen's twin overflowing with counts twice as long, whatever the system's monospaced font (scanner, ScreenProbe's count); the gallery's tile lookup naming the tiles it saw when one is missing (canvas_layout)."
   },
   {
     "id": 1661,
@@ -8327,5 +8327,19 @@
     "title": "The report sheet says this computer, not this Mac",
     "status": "done",
     "detail": "On Windows the feedback sheet said the log is encrypted on this Mac. It says this computer, in English, French and Spanish."
+  },
+  {
+    "id": 1666,
+    "type": "fix",
+    "title": "A Windows build not made for release never lays an update over itself",
+    "status": "done",
+    "detail": "On Windows any executable laid a verified update over itself: a check's binary started the helper, which waited for it to quit and then tried to swap and start it. As only a team-signed app installs itself on the Mac, only a build stamped for release does on Windows; any other keeps the archive in Downloads to open by hand. Window check updates on Windows: the archive kept, as on the Mac."
+  },
+  {
+    "id": 1667,
+    "type": "check",
+    "title": "The Windows CI keeps the window checks' pictures of a failure",
+    "status": "done",
+    "detail": "A failing window check on Windows could only be read, never seen: the CI keeps target/tmp/shots for seven days when a check fails. Two checks say more when they fail: the project's pick names the gallery's order it was made in, the export's Stop names the job as the click found it."
   }
 ]

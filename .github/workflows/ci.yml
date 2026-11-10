@@ -33,5 +33,12 @@ jobs:
         run: >-
           cargo test --release --workspace --no-fail-fast
           --exclude oni-link --exclude oni-localsend --exclude oni-link-ffi --exclude oni-link-demo
+      # The window checks' pictures, so a failure on Windows can be seen and not only read.
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: window-shots
+          path: target/tmp/shots
+          retention-days: 7
       - name: Phone link checks
         run: cargo test --release -p oni-link -p oni-localsend -p oni-link-ffi
