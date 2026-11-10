@@ -150,7 +150,7 @@ export component Picture inherits Rectangle {
 }
 
 // A rule across a layout, or `vertical` between two columns: one flat line a point thick in the app's one
-// separator tint. Bounded across alone, so a layout stretches it.
+// separator tint. Bounded across alone, so a layout stretches it; laid outside one, it is given its thickness.
 export component Divider inherits Rectangle {
     in property <bool> vertical;
     property <length> unbounded: 100000px;

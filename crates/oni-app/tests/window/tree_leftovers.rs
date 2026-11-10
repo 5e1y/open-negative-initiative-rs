@@ -138,6 +138,15 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     assert!(pin().shown && pin().row.title == "Trip" && pin().push == 0.0, "Trip held over its photos: {:?}", pin());
+    // The held row's ground is the column's own, its rule a point at its foot; twin: that rule is seen.
+    let ground = {
+        let c = ds.get_palette_panel();
+        ((u16::from(c.red()) >> 3) << 11) | ((u16::from(c.green()) >> 2) << 5) | (u16::from(c.blue()) >> 3)
+    };
+    let (width, px) = rig.drawn();
+    let at_px = |x: f32, y: f32| px[y as usize * width + x as usize].0;
+    assert_eq!((at_px(left + 1.0, list_top + 2.0), at_px(left + 150.0, list_top + 2.0)), (ground, ground), "the held row on the column's ground");
+    assert_ne!(at_px(left + 150.0, list_top + h - 0.5), ground, "its rule at its foot");
     common::scroll_projects(&lib, -(walk_y - h / 2.0));
     rig.pump();
     assert!(pin().shown && pin().row.title == "Trip" && (pin().push + h / 2.0).abs() < 0.01, "Walk pushes Trip up: {:?}", pin());

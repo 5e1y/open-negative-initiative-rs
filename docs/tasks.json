@@ -8250,5 +8250,12 @@
     "title": "Prepare the Roll plays each step's demo",
     "status": "done",
     "detail": "Owner's call: a step with a demo plays it as the step shows, once, resting on its last frame; Hide puts the demos away until Show How or the next time a roll is prepared. Window check prepare: played unasked, Hide puts it away, Show How plays it again, the next step plays its own."
+  },
+  {
+    "id": 1655,
+    "type": "fix",
+    "title": "A pinned row's rule is a point thick again",
+    "status": "done",
+    "detail": "Owner's report: the roll line held at the top of the lower tree showed a grey ground instead of the column's. The flat separator (#1652) leaves its thickness to a layout; laid outside one in the pinned row, it took the row's whole height in the separator's grey. It is given its point there, and the Divider's note says a rule laid outside a layout is given its thickness. Window check tree_leftovers: the held row on the column's ground (it failed on the full-height rule), its rule seen at its foot (twin)."
   }
 ]

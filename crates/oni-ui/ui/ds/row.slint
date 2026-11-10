@@ -320,7 +320,7 @@ export component Row inherits Rectangle {
         }
     }
     if root.focused: FocusRing { radius: Radius.badge; }
-    if root.pinned: Divider { y: parent.height - self.height; }
+    if root.pinned: Divider { y: parent.height - self.height; height: Stroke.line; }
 }
 
 // An empty list's words where its lines would stand: at its top, on the lines' inset, in their quiet
