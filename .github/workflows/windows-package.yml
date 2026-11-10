@@ -69,7 +69,7 @@ jobs:
         if: ${{ inputs.shots }}
         shell: pwsh
         run: |
-          Add-Type -AssemblyName System.Windows.Forms, System.Drawing, UIAutomationClient, UIAutomationTypes
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
           New-Item -ItemType Directory -Force shots | Out-Null
           function Shot($name) {
             $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
@@ -100,14 +100,14 @@ jobs:
             for ($t = 0; $t -lt 180 -and -not (Test-Path "$app\unins000.dat"); $t += 2) { Start-Sleep 2 }
             Start-Sleep 5
             Shot "$lang-6-finished"
-            # Finish pressed through the accessibility tree: the wizard, a child process, no longer holds the keyboard.
-            $AE = [System.Windows.Automation.AutomationElement]
-            $named = New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $(if ($lang -eq 'fr') { 'Terminer' } else { 'Finish' }))
-            $AE::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $named).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            # The installed app started as its shortcut starts it: the wizard, a child process, takes no key
+            # once the install ends, and Windows keeps the foreground from a script.
+            Get-Process ONI-setup* -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Process "$app\ONI.exe"
             for ($t = 0; $t -lt 90 -and -not (Get-Process ONI -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }); $t += 2) { Start-Sleep 2 }
             Start-Sleep 20
             Shot "$lang-7-app"
-            if (-not (Get-Process ONI -ErrorAction SilentlyContinue)) { Write-Error "Finish started no ONI.exe"; exit 1 }
+            if (-not (Get-Process ONI -ErrorAction SilentlyContinue)) { Write-Error "the installed ONI.exe did not start"; exit 1 }
             Get-Process ONI, ONI-setup* -ErrorAction SilentlyContinue | Stop-Process -Force
             Start-Sleep 2
             Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT" -Wait
