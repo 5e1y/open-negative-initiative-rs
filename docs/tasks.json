@@ -8383,5 +8383,12 @@
     "title": "The export's unwritable folder is unwritable on Windows too",
     "status": "done",
     "detail": "The export check made a folder unwritable through its read-only attribute, which Windows ignores on a folder, so a folder made inside it was made and no failure came. On Windows its writes are now refused through its access list (icacls /deny (W), then /remove:d), the read-only permission kept elsewhere (export_flow)."
+  },
+  {
+    "id": 1695,
+    "type": "fix",
+    "title": "The projects' checks date their files, so the gallery lays them alike on every system",
+    "status": "done",
+    "detail": "On the Windows runner a pick from A to Z with Shift took C too: the gallery lays photos newest first, and Windows' file clock, which steps by about 16 ms, gave files written together one time, so the name broke the tie in one run and not in the next (B, C, A). The projects' hand dates each file a second after the one before, in the order given, the order the Mac's clock gave them (project_steps, project_filing, projects_tab)."
   }
 ]
