@@ -8270,6 +8270,6 @@
     "type": "fix",
     "title": "The installer's walk sees the app it launches",
     "status": "done",
-    "detail": "The Windows package's pictures ended on the finish page in both languages: the wizard runs in the setup's child process, so the Enter meant for Finish reached another window and the app was never started. The walk now brings the wizard forward by its title, waits up to 90 s for ONI.exe's window, pictures it and fails when Finish started none. The launched app keeps a support folder of its own marked launched at the built version, so the walk sends no install ping."
+    "detail": "The Windows package's pictures ended on the finish page in both languages: the wizard runs in the setup's child process and no longer holds the keyboard when the install ends, so the Enter meant for Finish reached another window and the app was never started; bringing it forward by its title did not help, Windows keeping the foreground from a script. The walk presses Finish through the accessibility tree, waits up to 90 s for ONI.exe's window, pictures it and fails when Finish started none. The launched app keeps a support folder of its own marked launched at the built version, so the walk sends no install ping."
   }
 ]
