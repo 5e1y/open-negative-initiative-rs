@@ -8397,5 +8397,12 @@
     "title": "The notice and the tooltips lie in the window's own space",
     "status": "done",
     "detail": "Where Slint draws its own menu bar in the window (the checks' headless window, while macOS and Windows show the system's), the content lies under it while absolute positions count from the window's top: the notice and the tooltips, laid from those positions in the content's space, stood the menu bar's height too low in every shot. They now lie in a layer set back by the content's origin (app.slint), so the shots the owner judges show them where they are; on macOS and Windows nothing moves. Window checks told and tooltip read them against what they speak of."
+  },
+  {
+    "id": 1676,
+    "type": "fix",
+    "title": "Leaving full screen lays the traffic lights back in the bar",
+    "status": "done",
+    "detail": "Owner's report: back from full screen, the traffic lights sat at AppKit's top-left corner over BACK. winit reads the window out of full screen only in windowDidExitFullScreen, after the last resize of the way out, so every resize of it read full screen: no room in the bar and the lights left where AppKit lays them. The end of each full-screen transition (NSWindowDidEnter/ExitFullScreenNotification) now lays the lights and the bar's room again on the loop's next turn (chrome::after_full_screen). No window check reaches AppKit's full screen; the owner's eye is the proof."
   }
 ]

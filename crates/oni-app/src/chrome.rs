@@ -39,6 +39,12 @@ pub fn traffic_lights(window: &slint::Window, bar: f32) -> f32 {
     window.with_winit_window(|w| if w.fullscreen().is_some() { 0.0 } else { platform::traffic_lights(w, f64::from(bar)) }).unwrap_or(0.0)
 }
 
+/// Calls `relay` once each full-screen transition has ended: winit reads the window out of full screen
+/// only after the last resize of its way out, by when AppKit has laid the lights back at its own place.
+pub fn after_full_screen(window: &slint::Window, relay: impl Fn() + 'static) {
+    window.with_winit_window(|w| platform::after_full_screen(w, relay));
+}
+
 thread_local! {
     /// The last press on the bar's room, which the drag swallows before Slint could pair two.
     static LAST_PRESS: Cell<Option<Instant>> = const { Cell::new(None) };
@@ -75,8 +81,12 @@ enum Action {
 #[cfg(target_os = "macos")]
 mod platform {
     use super::Action;
-    use objc2_app_kit::{NSView, NSWindowButton};
-    use objc2_foundation::{NSPoint, NSString, NSUserDefaults};
+    use block2::RcBlock;
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2_app_kit::{NSView, NSWindow, NSWindowButton, NSWindowDidEnterFullScreenNotification, NSWindowDidExitFullScreenNotification};
+    use objc2_foundation::{NSNotification, NSNotificationCenter, NSPoint, NSString, NSUserDefaults};
+    use std::ptr::NonNull;
     use slint::winit_030::winit::platform::macos::WindowAttributesExtMacOS;
     use slint::winit_030::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
     use slint::winit_030::winit::window::{Window, WindowAttributes};
@@ -96,14 +106,37 @@ mod platform {
     /// The close key's distance from the window's left edge, as AppKit sets it beside a tall toolbar.
     const LEAD: f64 = 20.0;
 
+    /// The `NSWindow` winit draws in.
+    fn ns_window(window: &Window) -> Option<Retained<NSWindow>> {
+        let handle = window.window_handle().ok()?;
+        let RawWindowHandle::AppKit(handle) = handle.as_raw() else { return None };
+        // SAFETY: winit hands out its live `NSView`, read here on the main thread that owns it.
+        let view: &NSView = unsafe { handle.ns_view.cast().as_ref() };
+        view.window()
+    }
+
+    /// Each end of a full-screen transition calls `relay` on the loop's next turn, once winit and AppKit
+    /// have both settled the window; the observers last as long as the window, the app's whole run.
+    pub fn after_full_screen(window: &Window, relay: impl Fn() + 'static) {
+        let Some(ns_window) = ns_window(window) else { return };
+        let (relay, center) = (std::rc::Rc::new(relay), NSNotificationCenter::defaultCenter());
+        let object: &AnyObject = &ns_window;
+        // SAFETY: AppKit's own notification names, read on the main thread.
+        for name in unsafe { [NSWindowDidEnterFullScreenNotification, NSWindowDidExitFullScreenNotification] } {
+            let relay = relay.clone();
+            let block = RcBlock::new(move |_: NonNull<NSNotification>| {
+                let relay = relay.clone();
+                slint::Timer::single_shot(std::time::Duration::ZERO, move || relay());
+            });
+            // SAFETY: with no queue the block runs where AppKit posts a window's notifications, the main thread.
+            std::mem::forget(unsafe { center.addObserverForName_object_queue_usingBlock(Some(name), Some(object), None, &block) });
+        }
+    }
+
     /// AppKit lays the lights again on every resize, so each call lays them back; the room is the zoom
     /// key's right edge plus the close key's margin, as far from the lights as they sit from the edge.
     pub fn traffic_lights(window: &Window, bar: f64) -> f32 {
-        let Ok(handle) = window.window_handle() else { return 0.0 };
-        let RawWindowHandle::AppKit(handle) = handle.as_raw() else { return 0.0 };
-        // SAFETY: winit hands out its live `NSView`, read here on the main thread that owns it.
-        let view: &NSView = unsafe { handle.ns_view.cast().as_ref() };
-        let Some(ns_window) = view.window() else { return 0.0 };
+        let Some(ns_window) = ns_window(window) else { return 0.0 };
         let (Some(close), Some(zoom)) = (ns_window.standardWindowButton(NSWindowButton::CloseButton), ns_window.standardWindowButton(NSWindowButton::ZoomButton)) else {
             return 0.0;
         };
@@ -156,6 +189,8 @@ mod platform {
     pub fn traffic_lights(_: &Window, _: f64) -> f32 {
         0.0
     }
+
+    pub fn after_full_screen(_: &Window, _: impl Fn() + 'static) {}
 
     pub fn double_click_action() -> Action {
         Action::Nothing

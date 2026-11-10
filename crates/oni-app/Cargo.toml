@@ -67,8 +67,9 @@ oni-hack = { version = "0.1", path = "../oni-hack" }
 # The double-click interval, the dialogs and the Trash are the system's own; Linux runs the checks only.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+block2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSEvent", "NSWorkspace", "NSPasteboard", "NSWindow", "NSView", "NSResponder", "NSButton", "NSControl", "NSSound", "NSApplication", "NSImage"] }
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSFileManager", "NSURL", "NSString", "NSError", "NSArray", "NSData", "NSUserDefaults"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSFileManager", "NSURL", "NSString", "NSError", "NSArray", "NSData", "NSUserDefaults", "NSNotification", "NSOperation", "block2"] }
 rfd = { version = "0.17", default-features = false }
 libc = "0.2"
 

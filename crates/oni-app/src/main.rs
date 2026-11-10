@@ -205,6 +205,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let before = vec![(marked("Starting the graphics card"), graphics), (marked("Starting the interface"), interface), (marked("Building the window"), built)];
     starter::launch(&window, began, before, steps, kernels, ready)?;
     lights(&window);
+    let after = window.as_weak();
+    oni_app::chrome::after_full_screen(window.window(), move || {
+        if let Some(w) = after.upgrade() {
+            lights(&w);
+        }
+    });
     oni_app::on_screen::shown(window.as_weak());
     slint::run_event_loop()?;
     if let Some(e) = failed.borrow_mut().take() {
