@@ -69,7 +69,7 @@ fn a_search_costs_what_lies_in_its_window_however_many_patches_the_frame_holds()
     let far: Vec<Correction> = (0..150).map(|k| dot(0.75 + 0.2 * k as f64 / 150.0, 0.1 + 0.8 * (k * 7 % 150) as f64 / 150.0)).collect();
     let with = |cs: &[&[Correction]]| PipelineSettings { corrections: cs.concat(), ..PipelineSettings::rest(oni_settings::ConversionMode::Negative, true) };
     let (one, by) = (std::slice::from_ref(&searched), std::slice::from_ref(&near));
-    let (few, many, alone) = (with(&[one, by, &far[..10]]), with(&[one, by, &far]), with(&[]));
+    let (few, many) = (with(&[one, by, &far[..10]]), with(&[one, by, &far]));
     let cost = |engine: &mut Engine, s: &PipelineSettings| {
         let before = engine.stats();
         let (region, _) = engine.search_region(&full, s, &searched).unwrap();
@@ -84,14 +84,12 @@ fn a_search_costs_what_lies_in_its_window_however_many_patches_the_frame_holds()
     assert_eq!(a, b, "150 patches away from the window cost what 10 do");
     assert_eq!(made, 0, "a second search uploaded strokes or patches again");
     assert!(seen_few == seen_many, "the far patches changed the window");
-    // Twins: the patch lying in the window is laid there, and the counters see its cost and the
-    // strokes' uploads once no recent recipe names them.
+    // Twins: the patch lying in the window is laid there, and the counters see its cost and, once
+    // another correction joins the frame, its patches and strokes gathered again.
     let (c, _, seen_bare) = cost(&mut engine, &with(&[one, &far[..10]]));
     assert!(a > c, "the patch in the window cost nothing: {a} against {c}");
     assert!(seen_few != seen_bare, "the search did not see the patch lying in its window");
-    for _ in 0..oni_pipeline::KEPT_RECIPES {
-        cost(&mut engine, &alone);
-    }
-    assert!(cost(&mut engine, &many).1 > 150, "the strokes' uploads went unseen");
+    let joined = dot(0.6, 0.5);
+    assert!(cost(&mut engine, &with(&[one, by, &far, std::slice::from_ref(&joined)])).1 >= 2, "the sheets gathered again went unseen");
     let _ = std::fs::remove_dir_all(&caches);
 }

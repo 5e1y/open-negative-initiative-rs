@@ -150,3 +150,142 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     textureStore(dst, frame.out_at + vec2<i32>(id.xy), pixel(frame.out_origin + vec2<i32>(id.xy)));
 }
 "#;
+
+/// One instance's header in a dispatch of many, mirrored by `Frame` in `INSTANCED`: `Frame`'s own
+/// fields, and where the input's rectangle starts in a texture many instances share.
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub(crate) struct InstanceFrame {
+    pub out_origin: [i32; 2],
+    pub in_origin: [i32; 2],
+    pub in_min: [i32; 2],
+    pub in_max: [i32; 2],
+    pub out_size: [u32; 2],
+    pub in_size: [u32; 2],
+    pub out_at: [i32; 2],
+    pub in_at: [i32; 2],
+}
+
+/// Where an instance's auxiliary input lies, mirrored by `AuxFrame` in `instanced_aux_prelude`.
+#[repr(C)]
+#[derive(Clone, Copy, Default, bytemuck::Pod, bytemuck::Zeroable)]
+pub(crate) struct InstanceAux {
+    pub in_origin: [i32; 2],
+    pub in_min: [i32; 2],
+    pub in_max: [i32; 2],
+    pub in_size: [i32; 2],
+    pub in_at: [i32; 2],
+}
+
+/// `PRELUDE` for a dispatch of many instances, one a depth of work groups: each reads its own frame.
+pub(crate) const INSTANCED: &str = r#"
+struct Frame {
+    out_origin: vec2<i32>,
+    in_origin: vec2<i32>,
+    in_min: vec2<i32>,
+    in_max: vec2<i32>,
+    out_size: vec2<u32>,
+    in_size: vec2<u32>,
+    out_at: vec2<i32>,
+    in_at: vec2<i32>,
+}
+
+@group(0) @binding(0) var<storage, read> frames: array<Frame>;
+@group(0) @binding(1) var src: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba32float, write>;
+var<private> frame: Frame;
+
+fn inside(q: vec2<i32>) -> bool {
+    return all(q >= frame.in_min) && all(q < frame.in_max);
+}
+
+fn load(q: vec2<i32>) -> vec4<f32> {
+    let e = clamp(q, frame.in_min, frame.in_max - vec2<i32>(1)) - frame.in_origin;
+    let t = clamp(e, vec2<i32>(0), vec2<i32>(frame.in_size) - vec2<i32>(1));
+    return textureLoad(src, frame.in_at + t, 0);
+}
+"#;
+
+/// `aux_prelude` for a dispatch of many instances.
+pub(crate) fn instanced_aux_prelude(arity: usize) -> String {
+    if arity == 0 {
+        return String::new();
+    }
+    let mut out = format!(
+        r#"
+struct AuxFrame {{
+    in_origin: vec2<i32>,
+    in_min: vec2<i32>,
+    in_max: vec2<i32>,
+    in_size: vec2<i32>,
+    in_at: vec2<i32>,
+}}
+
+struct AuxFrames {{ f: array<AuxFrame, {MAX_AUX}> }}
+
+@group(0) @binding(4) var<storage, read> aux_of: array<AuxFrames>;
+var<private> aux_frames: AuxFrames;
+
+fn load_from(t: texture_2d<f32>, f: AuxFrame, q: vec2<i32>) -> vec4<f32> {{
+    let e = clamp(q, f.in_min, f.in_max - vec2<i32>(1)) - f.in_origin;
+    let c = clamp(e, vec2<i32>(0), f.in_size - vec2<i32>(1));
+    return textureLoad(t, f.in_at + c, 0);
+}}
+"#
+    );
+    for k in 1..=arity {
+        out.push_str(&format!(
+            r#"
+@group(0) @binding({b}) var src{k}: texture_2d<f32>;
+
+fn load{k}(q: vec2<i32>) -> vec4<f32> {{
+    return load_from(src{k}, aux_frames.f[{i}], q);
+}}
+
+fn inside{k}(q: vec2<i32>) -> bool {{
+    let f = aux_frames.f[{i}];
+    return all(q >= f.in_min) && all(q < f.in_max);
+}}
+"#,
+            b = 4 + k,
+            i = k - 1
+        ));
+    }
+    out
+}
+
+/// A stage's whole shader for a dispatch of many instances: its uniform read from a table, a cell an
+/// instance, into a variable of the uniform's own name, so the stage's text reads it as it is.
+pub(crate) fn instanced_source(shader: &str, arity: usize) -> String {
+    const UNIFORM: &str = "@group(0) @binding(3) var<uniform> ";
+    let (body, params) = match shader.find(UNIFORM) {
+        Some(at) => {
+            let rest = &shader[at + UNIFORM.len()..];
+            let end = rest.find(';').expect("the uniform's declaration ends");
+            let (name, kind) = rest[..end].split_once(':').expect("the uniform names its type");
+            let (name, kind) = (name.trim(), kind.trim());
+            let table = format!("struct ParamsCell {{ @align(16) p: {kind} }}\n@group(0) @binding(3) var<storage, read> params_of: array<ParamsCell>;\nvar<private> {name}: {kind};");
+            (format!("{}{table}{}", &shader[..at], &rest[end + 1..]), format!("    {name} = params_of[id.z].p;\n"))
+        }
+        None => {
+            assert!(!shader.contains("@binding(3)"), "a stage's uniform is declared as the graph reads it");
+            (shader.to_owned(), String::new())
+        }
+    };
+    let aux = if arity > 0 { "    aux_frames = aux_of[id.z];\n" } else { "" };
+    format!(
+        r#"{INSTANCED}
+{}
+{body}
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {{
+    frame = frames[id.z];
+{params}{aux}    if (any(id.xy >= frame.out_size)) {{
+        return;
+    }}
+    textureStore(dst, frame.out_at + vec2<i32>(id.xy), pixel(frame.out_origin + vec2<i32>(id.xy)));
+}}
+"#,
+        instanced_aux_prelude(arity)
+    )
+}

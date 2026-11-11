@@ -258,6 +258,7 @@ impl Engine {
         self.measures = None;
         self.read = [None, None];
         self.cache.clear();
+        self.pipeline.trim();
         self.graph.purge();
     }
 
