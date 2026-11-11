@@ -1,9 +1,10 @@
 // A field typed as any, or filled from the names ONI knows by its key, which drops their list under it; a
-// name picked shows in the field and is told as picked.
+// name picked shows in the field and is told as picked. With none known, the list says how one comes.
 import { Space } from "theme.slint";
 import { Icons } from "icons.slint";
 import { Button, ButtonSize, TextField } from "controls.slint";
-import { Menu } from "menu.slint";
+import { Menu, MenuLine } from "menu.slint";
+import { MenuGlyph } from "icons.slint";
 
 export component KnownField inherits HorizontalLayout {
     in property <string> name;
@@ -13,6 +14,9 @@ export component KnownField inherits HorizontalLayout {
     in property <bool> enabled: true;
     in property <[string]> known;
     in property <string> known-help;
+    // The list's one line while no name is known, and the words under it.
+    in property <string> none-known;
+    in property <string> none-known-note;
     callback edited(string);
     callback accepted(string);
     callback left(string);
@@ -28,7 +32,7 @@ export component KnownField inherits HorizontalLayout {
         accepted(t) => { root.accepted(t); }
         left(t) => { root.left(t); }
     }
-    if root.known.length > 0: VerticalLayout {
+    VerticalLayout {
         alignment: center;
         Button { has-icon: true; square: true;
             size: ButtonSize.mini;
@@ -43,6 +47,7 @@ export component KnownField inherits HorizontalLayout {
         y: root.height + Space.xxs;
         span: max(root.width, self.natural);
         entries: root.known;
+        lines: root.known.length > 0 ? [] : [{ text: root.none-known, enabled: false, rule: false, opens: false, keys: "", medal: 0, note: root.none-known-note, glyph: MenuGlyph.none }];
         chosen(i) => {
             field.text = root.known[i];
             root.picked(root.known[i]);

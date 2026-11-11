@@ -245,7 +245,7 @@ msgstr "Boîtiers"
 msgid "Add a body…"
 msgstr "Ajouter un boîtier…"
 
-#: crates/oni-ui/ui/collection.slint
+#: crates/oni-ui/ui/collection.slint crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "No body yet"
 msgstr "Aucun boîtier pour l'instant"
 
@@ -257,7 +257,7 @@ msgstr "Objectifs"
 msgid "Add a lens…"
 msgstr "Ajouter un objectif…"
 
-#: crates/oni-ui/ui/collection.slint
+#: crates/oni-ui/ui/collection.slint crates/oni-ui/ui/export_fields.slint
 msgid "No lens yet"
 msgstr "Aucun objectif pour l'instant"
 
@@ -717,6 +717,10 @@ msgstr "p. ex. Leica M6"
 msgid "Pick From Your Collection"
 msgstr "Choisir dans votre collection"
 
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
+msgid "A body typed here joins your collection"
+msgstr "Un boîtier saisi ici rejoint votre collection"
+
 #: crates/oni-ui/ui/export_fields.slint
 msgid "Lens"
 msgstr "Objectif"
@@ -724,6 +728,10 @@ msgstr "Objectif"
 #: crates/oni-ui/ui/export_fields.slint
 msgid "e.g. Summicron 50 mm"
 msgstr "p. ex. Summicron 50 mm"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "A lens typed here joins your collection"
+msgstr "Un objectif saisi ici rejoint votre collection"
 
 #: crates/oni-ui/ui/export_fields.slint
 msgid "Film stock"

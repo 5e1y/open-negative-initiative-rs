@@ -19,6 +19,9 @@ pub struct Collection {
     pub bodies: Vec<String>,
     #[serde(default)]
     pub lenses: Vec<String>,
+    /// Whether the bodies a hand gave the rolls were taken in, once, so one forgotten never comes back.
+    #[serde(default)]
+    pub seeded: bool,
 }
 
 impl Collection {
@@ -67,6 +70,19 @@ impl Collection {
         true
     }
 
+    /// Names known elsewhere, each not kept yet added after the kept ones, in their order. Whether the
+    /// list changed.
+    pub fn take_in(&mut self, gear: Gear, names: &[String]) -> bool {
+        let list = self.list_mut(gear);
+        let before = list.len();
+        for name in names.iter().map(|n| n.trim()).filter(|n| !n.is_empty()) {
+            if !list.iter().any(|kept| kept.to_lowercase() == name.to_lowercase()) {
+                list.push(name.to_string());
+            }
+        }
+        list.len() != before
+    }
+
     /// The piece so named gone from its list, its case aside. Whether it was there.
     pub fn forget(&mut self, gear: Gear, name: &str) -> bool {
         let list = self.list_mut(gear);
@@ -94,6 +110,16 @@ mod tests {
         assert!(c.note(Gear::Lens, "Summicron 50"));
         assert!(c.note(Gear::Body, "Leica M6 TTL"));
         assert_eq!((c.bodies.len(), c.lenses.as_slice()), (3, ["Summicron 50".to_string()].as_slice()));
+    }
+
+    #[test]
+    fn names_taken_in_follow_the_kept_ones_and_never_twice() {
+        let mut c = Collection::default();
+        c.note(Gear::Body, "Leica M6");
+        assert!(c.take_in(Gear::Body, &["leica m6".into(), "Nikon F3".into(), " ".into(), "Pentax MX".into()]));
+        assert_eq!(c.bodies, ["Leica M6", "Nikon F3", "Pentax MX"], "the kept first, a name alike but for case once");
+        // Twin: taking in what is kept changes nothing.
+        assert!(!c.take_in(Gear::Body, &["Nikon F3".into()]));
     }
 
     #[test]
