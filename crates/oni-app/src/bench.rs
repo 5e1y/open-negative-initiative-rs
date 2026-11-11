@@ -84,6 +84,13 @@ pub(crate) fn frames_since(drawn: &[(Instant, Duration)], since: Instant) -> Str
     )
 }
 
+/// Every dust patch of the open frame made: a bench times the frame healed, never its healing.
+pub(crate) fn healed(ctl: &Ctl) -> bool {
+    let s = ctl.state.borrow();
+    let caches = crate::patches::caches();
+    !s.healing() && s.store().settings().corrections.iter().all(|c| c.stroke.is_empty() || crate::patches::file(&caches, c.id).exists())
+}
+
 /// `ONI_BENCH_FIELD` names the dragged parameter by its Slint stem (`dye-separation`); Exposure else.
 pub(crate) fn drag_field() -> Field {
     let named = std::env::var("ONI_BENCH_FIELD").ok();
@@ -236,7 +243,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         match phase.get() {
             Phase::Loading => {
                 let settled = !matches!(mode, Mode::Settled | Mode::Long) || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
-                if ctl.state.borrow().renders() >= 1 && settled {
+                if ctl.state.borrow().renders() >= 1 && settled && healed(&ctl) {
                     if mode == Mode::Compare && ctl.state.borrow().split().is_none() {
                         ctl.act(crate::Act::Compare);
                         return;

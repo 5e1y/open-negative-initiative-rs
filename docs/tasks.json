@@ -8593,5 +8593,19 @@
     "title": "De-dust's corrections as a grid of their dust and numbers; the hand on one shows it alone, with the ring of its source",
     "status": "done",
     "detail": "Owner's asks: a denser corrections panel, the number of each, and the dust in question shown on hovering its card; and the patch's source, drawn as a full orange band of the brush's width, hid the picture. The list's rows (reminder, label, keys) become a grid of the reminders, five to a row in the pane, each with its number on a badge, warm when its patch is a shifted tile (its note says so), faded while the patch is coming; the hand on a tile brings its remove key and shows that correction alone on the canvas (Dedust.hovered-row, shown), with a ring where its patch was copied from and the dashed line to it; at rest every marker shows and no source. The source band (Canvas.source-shapes) goes for that ring (source-marks). Window check dedust_grid: the hand on the second tile leaves its marker alone with one source ring and its line, twin: the hand gone, every marker and no source; removed from its tile, the others keep their numbers and none stays held. The tab's brush and its callbacks' wiring move to dedusting/hands.rs, keeping dedusting.rs and wiring.rs under the file ceiling; the catalogues lose the tab's \"Generating…\", the faded reminder saying it."
+  },
+  {
+    "id": 1720,
+    "type": "fix",
+    "title": "A notch or a zoom rebuilds no tile of De-dust's corrections, whatever their number",
+    "status": "done",
+    "detail": "Owner's report: zooming and moving a parameter slowed on a frame holding many patches. Measured on his 208 strokes (P1072734, M2 Max, --profile app): the interface drew a frame in 70 ms (3 ms with no patch) while Exposure was dragged, 49 ms through a pinch, in every tab but De-dust. Cause: publish_dedust kept its rows' model only when the rows compared equal, and Slint holds no two empty images equal (ImageInner's eq has no arm for None): a row whose reminder is not rendered, every row outside De-dust, never matched, so each notch and each move of the view gave the grid a new model and built its 208 tiles again, their layers with them. The models (rows, marks, sources, waiting strokes, auto De-dust's rings) are now kept and written row by row where a row changed (dedusting/models.rs, held), a row's reminder compared as made or not made (same_row), and outside De-dust nothing of the tab is built at all. After: 2.8 ms a frame under the drag, 0.9 ms through the pinch, a zoom step on screen in 9.5 ms where it took 60. Checks: models.rs, the rows that hold are left as they were and the others written, twin: rows never held the same are each written again; two rows with no reminder yet are one tile, twin: Slint's own equality tells them apart. Window check canvas_switch reads the rows with the tab shown; twin: another tab's photo writes none."
+  },
+  {
+    "id": 1721,
+    "type": "change",
+    "title": "The drag and zoom benches time a frame once its dust patches are made",
+    "status": "done",
+    "detail": "ONI_BENCH=1, zoom and midzoom started as soon as the frame was on the canvas, so on a frame holding corrections they timed its patches being generated, which a launch does again as the cache is purged at each quit. They now wait until every correction has its patch (bench::healed). ONI_BENCH_DEDUST walks the zoom bench with De-dust open, its marks on the canvas, and the zoom bench reports the interface's frames through the pinch."
   }
 ]
