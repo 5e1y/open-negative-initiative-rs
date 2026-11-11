@@ -146,6 +146,10 @@ fn the_canvas_s_renders_timed_on_a_frame_holding_dust_patches() {
         }
         if !landings.is_empty() {
             said("render after a patch landed", &landings);
+            // The De-dust tab's reminders, which hold the engine while they render.
+            let strokes: Vec<(Vec<(f64, f64)>, f64)> = settings.corrections.iter().map(|c| (c.stroke.iter().map(|p| (p.x, p.y)).collect(), c.radius)).collect();
+            let reminders = timed(&mut engine, |e| e.originals(&negative, &s, &strokes).map(|_| ())).1;
+            said("the tab's reminders, all at once", &[reminders]);
         }
     }
     together_against_in_turn(&mut engine, &full, &all, &caches);

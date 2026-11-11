@@ -34,11 +34,12 @@ impl<'a> Plan<'a> {
             };
             let (stage, input, aux) = match &nodes[i].kind {
                 Kind::Stage { stage, input, aux } => (stage, input, aux),
-                // Its input over the whole rectangle, the members it shows laid onto it.
+                // Its input over the whole rectangle, the members it shows laid onto it; last, it writes
+                // the render's own output even where it shows none.
                 Kind::Laid { laid, input } => {
                     ask(*input, need)?;
                     let members = laid.shown(need);
-                    runs[i] = if members.is_empty() { Run::Through } else { Run::Laid };
+                    runs[i] = if members.is_empty() && i != last { Run::Through } else { Run::Laid };
                     shown.insert(i, members);
                     continue;
                 }

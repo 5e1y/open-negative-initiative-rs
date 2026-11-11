@@ -216,8 +216,8 @@ fn a_batch_past_one_turn_and_one_laid_last_render_as_their_chains() {
         .collect();
     let order: Vec<usize> = (0..many.len()).collect();
     let whole = Rect::new(0, 0, W, H);
-    let (sheet, at) = sheet(&mut g, &many);
-    let tiles = Batch::of(&sheet, at).moved(many.iter().map(|m| [m.at.0, m.at.1]).collect());
+    let (gathered, at) = sheet(&mut g, &many);
+    let tiles = Batch::of(&gathered, at).moved(many.iter().map(|m| [m.at.0, m.at.1]).collect());
     let stamps = |members: &[Member]| members.iter().map(|m| Rect::new(m.at.0, m.at.1, m.size.0, m.size.1)).map(|at| Stamp { at, area: Some(at) }).collect::<Vec<_>>();
     // Laid last: the render's own output is the image the batch was laid on.
     let together = base.clone().then_laid(&Laid::new(stamps(&many), &[tiles]));
@@ -235,6 +235,15 @@ fn a_batch_past_one_turn_and_one_laid_last_render_as_their_chains() {
     assert_eq!(g.render(&Image::new(&kept), whole, None).unwrap(), reference);
     let on_sheet = g.laid_out(&[(&together, (3, 2))], (W + 5, H + 4)).expect("a sheet");
     assert_eq!(g.render(&Image::new(&on_sheet), Rect::new(3, 2, W, H), None).unwrap(), reference);
+    // Laid last on a source in half floats, a region no member reaches is still read as full floats.
+    let half = g.upload_half(W, H, &noise(W, H, 11)).expect("upload");
+    let (tiles_sheet, tiles_at) = sheet(&mut g, &many[..3]);
+    let few = Laid::new(stamps(&many[..3]), &[Batch::of(&tiles_sheet, tiles_at).moved(many[..3].iter().map(|m| [m.at.0, m.at.1]).collect())]);
+    let away = Rect::new(200, 150, 40, 30);
+    let bare = g.render(&Image::new(&half), away, None).expect("the source alone");
+    assert_eq!(g.render(&Image::new(&half).then_laid(&few), away, None).expect("laid last, none shown"), bare);
+    // Twin: the region beside it reads other pixels, which the comparison sees.
+    assert_ne!(g.render(&Image::new(&half).then_laid(&few), Rect::new(160, 150, 40, 30), None).unwrap(), bare);
     // Twin: a member left out of the batch is seen.
     let (fewer_sheet, fewer_at) = sheet_without_last(&mut g, &many);
     let fewer = base.clone().then_laid(&Laid::new(stamps(&many[..many.len() - 1]), &[Batch::of(&fewer_sheet, fewer_at).moved(many[..many.len() - 1].iter().map(|m| [m.at.0, m.at.1]).collect())]));
