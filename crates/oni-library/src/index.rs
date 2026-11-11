@@ -369,6 +369,7 @@ fn entry(row: &Row<'_>) -> rusqlite::Result<Entry> {
 
 mod forget;
 mod frames;
+mod gear;
 pub use frames::{shown, trashed};
 pub mod prune;
 mod rebuilt;

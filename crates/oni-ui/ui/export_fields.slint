@@ -34,6 +34,8 @@ export component FrameFields inherits VerticalLayout {
                 enabled: root.line.ready;
                 known: Gear.bodies;
                 known-help: @tr("Pick From Your Collection");
+                none-known: @tr("No body yet");
+                none-known-note: @tr("A body typed here joins your collection");
                 edited(t) => { Exporting.edited(root.at, "camera", t); }
                 picked(t) => { Exporting.edited(root.at, "camera", t); }
             }
@@ -46,6 +48,8 @@ export component FrameFields inherits VerticalLayout {
                     enabled: root.line.ready;
                     known: Gear.lenses;
                     known-help: @tr("Pick From Your Collection");
+                    none-known: @tr("No lens yet");
+                    none-known-note: @tr("A lens typed here joins your collection");
                     edited(t) => { Exporting.edited(root.at, "lens", t); }
                     picked(t) => { Exporting.edited(root.at, "lens", t); }
                 }

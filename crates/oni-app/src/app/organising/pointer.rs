@@ -21,7 +21,7 @@ impl Ctl {
                 if (x - px).hypot(y - py) < DRAG_DISTANCE {
                     return;
                 }
-                let Some(start) = s.layout.index_at(px, py) else { return };
+                let Some(start) = s.layout.cell_at(px, py) else { return };
                 let Some(lead) = s.order.get(start).cloned() else { return };
                 let sources = if s.picks.selection.contains(&lead) { s.picks.selection.clone() } else { HashSet::from([lead.clone()]) };
                 let width = s.layout.frame(start).map_or(0.0, |f| f.width);
@@ -52,17 +52,14 @@ impl Ctl {
         if (x - px).hypot(y - py) >= DRAG_DISTANCE {
             return;
         }
-        // Under the last row, the ground: what a click there drops is the picks.
-        if y >= self.state.borrow().layout.height {
-            return self.click_empty();
-        }
         // `RollHeaderContent` lies over the document: a release on it reaches no cell.
         let heading = self.state.borrow().heading_at(y);
         if let Some(i) = heading {
             return self.heading_clicked(i);
         }
         self.exit_heading();
-        let index = self.state.borrow().layout.index_at(x, y);
+        // A cell under the point, else the ground: a gutter, a margin, the room past the last cell.
+        let index = self.state.borrow().layout.cell_at(x, y);
         match index {
             Some(i) => self.click(i, command, shift),
             None => self.click_empty(),

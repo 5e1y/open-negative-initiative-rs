@@ -26,7 +26,7 @@ impl Ctl {
     pub(in crate::app) fn context(self: &Rc<Self>, x: f32, y: f32) -> bool {
         let (path, outside) = {
             let s = self.state.borrow();
-            let Some(i) = s.layout.index_at(x, y) else { return false };
+            let Some(i) = s.layout.cell_at(x, y) else { return false };
             let Some(path) = s.order.get(i).cloned() else { return false };
             let outside = !s.shown_picks().selection.contains(&path);
             (path, outside)

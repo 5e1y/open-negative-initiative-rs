@@ -84,6 +84,16 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.press_at(below, PointerEventButton::Left);
     hand.release_at(below, PointerEventButton::Left);
     assert!(hand.selected().is_empty(), "a click under the rows drops the picks");
+    // So does one in the gutter between two cells of a row, which the nearest cell no longer takes.
+    hand.click("B", &[Key::Control]);
+    assert_eq!(hand.selected(), ["B"], "twin: B picked again");
+    let (b, c) = (hand.centre("B"), hand.centre("C"));
+    assert!((b.1 - c.1).abs() < 1.0, "B and C share a row: {b:?} {c:?}");
+    let gutter = ((b.0 + c.0) / 2.0, b.1);
+    hand.press_at(gutter, PointerEventButton::Left);
+    hand.release_at(gutter, PointerEventButton::Left);
+    assert!(hand.selected().is_empty(), "a click in the gutter drops the picks");
+    hand.click("B", &[Key::Control]);
 
     // The second plain click on the same cell within the interval opens it; on another cell it does not.
     hand.rest();
