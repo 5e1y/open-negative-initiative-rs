@@ -152,6 +152,8 @@ fade and the chrome stays. The picker's field wears the same face.
 - **`TextField`**: one entry; `suffix` sits at the face's end, `lines-height` is the text's height inside
   the padding. Entered by a click, Tab or its owner, it selects its value; then a click places the caret,
   a double click selects a word, a triple click the line (the `text_fields` window check).
+- **`KnownField`**: a field typed as any, or filled from the names ONI knows by its mini chevron key, which
+  drops their list under it; a name picked shows in the field (the collection's bodies and lenses).
 - **`RenameField`**: a `TextField` that takes the focus at once; `role: title` for a title, its face on the
   column's inset as every field's, its margins the column's.
 - **`SizeFields`, `DateFields`**: two or three centred entries on one face a field tall, lit while any

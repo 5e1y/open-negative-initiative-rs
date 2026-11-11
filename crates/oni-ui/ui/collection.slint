@@ -1,0 +1,48 @@
+// Where nothing is picked in the archive: the person's collection, the bodies and the lenses ONI keeps from
+// what was typed, each forgotten by its row's key, and a field to add one.
+import { Section, Label, TextRole, Row, TextField } from "ds/ds.slint";
+import { Gear, GearKind } from "gear_state.slint";
+
+component GearList inherits Section {
+    in property <[string]> items;
+    in property <GearKind> kind;
+    in property <string> placeholder;
+    in property <string> empty;
+    if root.items.length == 0: Label { text: root.empty; role: TextRole.note; }
+    for item in root.items: Row {
+        title: item;
+        action: @tr("Forget");
+        action-help: @tr("Leaves the collection; no photo's EXIF changes");
+        acted => { Gear.forget(root.kind, item); }
+    }
+    TextField {
+        name: root.placeholder;
+        placeholder: root.placeholder;
+        accepted(t) => {
+            Gear.add(root.kind, t);
+            self.text = "";
+        }
+    }
+}
+
+export component CollectionView inherits VerticalLayout {
+    Section {
+        separated: false;
+        Label { role: TextRole.title; text: @tr("Collection"); }
+        Label { role: TextRole.note; text: @tr("The bodies and lenses you type are kept here, offered again when an export's EXIF is filled."); }
+    }
+    GearList {
+        title: @tr("Bodies");
+        items: Gear.bodies;
+        kind: GearKind.body;
+        placeholder: @tr("Add a body…");
+        empty: @tr("No body yet");
+    }
+    GearList {
+        title: @tr("Lenses");
+        items: Gear.lenses;
+        kind: GearKind.lens;
+        placeholder: @tr("Add a lens…");
+        empty: @tr("No lens yet");
+    }
+}

@@ -221,6 +221,46 @@ msgstr "Seleccionar todo ({}) para editar todo el rollo"
 msgid "Stop"
 msgstr "Detener"
 
+#: crates/oni-ui/ui/collection.slint
+msgid "Forget"
+msgstr "Olvidar"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "Leaves the collection; no photo's EXIF changes"
+msgstr "Sale de la colección; ningún EXIF de foto cambia"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "Collection"
+msgstr "Colección"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "The bodies and lenses you type are kept here, offered again when an export's EXIF is filled."
+msgstr "Los cuerpos y objetivos que escribes se guardan aquí y se vuelven a proponer al rellenar los EXIF de una exportación."
+
+#: crates/oni-ui/ui/collection.slint
+msgid "Bodies"
+msgstr "Cuerpos"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "Add a body…"
+msgstr "Añadir un cuerpo…"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "No body yet"
+msgstr "Aún no hay cuerpos"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "Lenses"
+msgstr "Objetivos"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "Add a lens…"
+msgstr "Añadir un objetivo…"
+
+#: crates/oni-ui/ui/collection.slint
+msgid "No lens yet"
+msgstr "Aún no hay objetivos"
+
 #: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Cancelar"
@@ -393,7 +433,7 @@ msgstr "Fotograma siguiente"
 msgid "Not prepared yet"
 msgstr "Aún sin preparar"
 
-#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/presets.slint
 msgid "Name"
 msgstr "Nombre"
 
@@ -496,66 +536,6 @@ msgstr "Saturado"
 #: crates/oni-ui/ui/editors.slint
 msgid "Desaturated"
 msgstr "Desaturado"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Camera"
-msgstr "Cámara"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Hide the EXIF"
-msgstr "Ocultar los EXIF"
-
-#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint
-msgid "e.g. Leica M6"
-msgstr "p. ej. Leica M6"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Lens"
-msgstr "Objetivo"
-
-#: crates/oni-ui/ui/export.slint
-msgid "e.g. Summicron 50 mm"
-msgstr "p. ej. Summicron 50 mm"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Film stock"
-msgstr "Emulsión"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Choose…"
-msgstr "Elegir…"
-
-#: crates/oni-ui/ui/export.slint
-msgid "ISO"
-msgstr "ISO"
-
-#: crates/oni-ui/ui/export.slint
-msgid "e.g. 400"
-msgstr "p. ej. 400"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Date"
-msgstr "Fecha"
-
-#: crates/oni-ui/ui/export.slint
-msgid "e.g. 2026-09-05 10:00:00"
-msgstr "p. ej. 2026-09-05 10:00:00"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Artist"
-msgstr "Artista"
-
-#: crates/oni-ui/ui/export.slint
-msgid "e.g. Jane Doe"
-msgstr "p. ej. Lucía García"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Copyright"
-msgstr "Copyright"
-
-#: crates/oni-ui/ui/export.slint
-msgid "e.g. © 2026 Jane Doe"
-msgstr "p. ej. © 2026 Lucía García"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Show the EXIF"
@@ -720,6 +700,70 @@ msgstr "Reemplazar"
 #: crates/oni-app/src/app/export_card/kept.rs crates/oni-app/src/app/masks.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Rename"
 msgstr "Renombrar"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Camera"
+msgstr "Cámara"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Hide the EXIF"
+msgstr "Ocultar los EXIF"
+
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
+msgid "e.g. Leica M6"
+msgstr "p. ej. Leica M6"
+
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
+msgid "Pick From Your Collection"
+msgstr "Elegir de tu colección"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Lens"
+msgstr "Objetivo"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "e.g. Summicron 50 mm"
+msgstr "p. ej. Summicron 50 mm"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Film stock"
+msgstr "Emulsión"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Choose…"
+msgstr "Elegir…"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "ISO"
+msgstr "ISO"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "e.g. 400"
+msgstr "p. ej. 400"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Date"
+msgstr "Fecha"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "e.g. 2026-09-05 10:00:00"
+msgstr "p. ej. 2026-09-05 10:00:00"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Artist"
+msgstr "Artista"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "e.g. Jane Doe"
+msgstr "p. ej. Lucía García"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "Copyright"
+msgstr "Copyright"
+
+#: crates/oni-ui/ui/export_fields.slint
+msgid "e.g. © 2026 Jane Doe"
+msgstr "p. ej. © 2026 Lucía García"
 
 #: crates/oni-ui/ui/export_papers.slint
 msgid "Paper Profiles"
@@ -3586,10 +3630,6 @@ msgstr "Selecciona un proyecto"
 #: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/oni_trash.rs
 msgid "ONI Trash"
 msgstr "Papelera de ONI"
-
-#: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "Select a roll"
-msgstr "Selecciona un rollo"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "No film stock set"

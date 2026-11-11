@@ -49,9 +49,12 @@ impl Ctl {
             return self.commit_reorder(r);
         }
         let Some((px, py)) = press else { return };
-        // The document is as tall as its cells: a click under the last row reaches no gesture.
-        if (x - px).hypot(y - py) >= DRAG_DISTANCE || y >= self.state.borrow().layout.height {
+        if (x - px).hypot(y - py) >= DRAG_DISTANCE {
             return;
+        }
+        // Under the last row, the ground: what a click there drops is the picks.
+        if y >= self.state.borrow().layout.height {
+            return self.click_empty();
         }
         // `RollHeaderContent` lies over the document: a release on it reaches no cell.
         let heading = self.state.borrow().heading_at(y);
@@ -126,12 +129,14 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `onClickEmpty`: the ground clears the selection and the ring; the ONI Trash's, its selection.
+    /// `onClickEmpty`: the ground clears the selection and the ring, the ONI Trash's its selection; in the
+    /// archive the column turns to the person's collection.
     pub(super) fn click_empty(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
             if !s.trash_shown() {
                 s.picks.anchor = None;
+                s.org.gear_shown = !s.org.projects_surface;
             }
             s.shown_picks_mut().clear();
             s.org.project_ring = None;

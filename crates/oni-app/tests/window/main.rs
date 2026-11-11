@@ -14,6 +14,7 @@ mod button_group;
 mod canvas_keys;
 mod canvas_layout;
 mod canvas_switch;
+mod collection;
 mod column_edges;
 mod column_menu;
 mod crop_session;
@@ -177,6 +178,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata", export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata),
     ("export_panel::the_export_panel_keeps_one_step_between_its_groups", export_panel::the_export_panel_keeps_one_step_between_its_groups),
     ("export_panel::a_preset_saved_before_web_keeps_its_name_and_its_file", export_panel::a_preset_saved_before_web_keeps_its_name_and_its_file),
+    ("collection::the_collection_shows_where_nothing_is_picked_and_fills_the_exif", collection::the_collection_shows_where_nothing_is_picked_and_fills_the_exif),
     ("export_columns::the_exif_folds_beside_each_picture_and_the_name_stays_under_it", export_columns::the_exif_folds_beside_each_picture_and_the_name_stays_under_it),
     ("export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most", export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most),
     ("export_speed::a_parameter_change_on_a_batch_is_timed", export_speed::a_parameter_change_on_a_batch_is_timed),

@@ -1,7 +1,9 @@
 // `InfoSidebar` beside the gallery: the roll the gallery stands on, a folder of photos being one,
 // the project, or the ONI Trash.
-import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack, WarningBand } from "ds/ds.slint";
+import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack, WarningBand, KnownField } from "ds/ds.slint";
 import { Library } from "library.slint";
+import { Gear } from "gear_state.slint";
+import { CollectionView } from "collection.slint";
 
 export component Info inherits Surface {
     width: ShellStyle.panel-width;
@@ -15,9 +17,11 @@ export component Info inherits Surface {
                 padding: Space.m;
                 Label { text: Library.info-empty; tone: Tone.secondary; }
             }
+            // Nothing picked in the archive: the person's collection of bodies and lenses.
+            if Library.info-kind == 4: CollectionView { }
             // What is selected names the column: a roll's or a project's name typed over where it
             // stands, the ONI Trash's never.
-            if Library.info-kind != 0: Section {
+            if Library.info-kind != 0 && Library.info-kind != 4: Section {
                 separated: false;
                 if Library.info-kind != 3: EditableTitle {
                     text: Library.info-title;
@@ -78,12 +82,18 @@ export component Info inherits Surface {
                 Section {
                     title: @tr("Camera Body");
                     help: @tr("The body this roll was shot on, hand-entered — never read off a scan's own EXIF.");
-                    TextField {
+                    KnownField {
                         name: @tr("Camera Body");
                         placeholder: @tr("e.g. Leica M6");
                         text <=> Library.camera-body;
+                        known: Gear.bodies;
+                        known-help: @tr("Pick From Your Collection");
                         accepted(t) => { Library.camera-body-committed(t); }
                         left(t) => { Library.camera-body-committed(t); }
+                        picked(t) => {
+                            Library.camera-body = t;
+                            Library.camera-body-committed(t);
+                        }
                     }
                 }
             }

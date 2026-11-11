@@ -18,8 +18,8 @@ use crate::common;
 const GAP: f32 = 24.0;
 /// `Space.m`: from the EXIF's key or its card to the picture.
 const NEAR: f32 = 16.0;
-/// `ButtonStyle.small-height`: the EXIF's key, a square.
-const KEY: f32 = 24.0;
+/// `Space.s`: the EXIF card's padding round its fields.
+const PAD: f32 = 8.0;
 /// `CardStyle.inset`: the card's room off the window's ground.
 const INSET: f32 = 8.0;
 /// `FieldStyle.across`, a field's padding on either side of its words.
@@ -86,11 +86,13 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
         assert_eq!(found.len(), 1, "line {k}'s caption under its preview: {found:?}");
         found[0]
     };
-    // A picture's left edge, read off its name's field: the band and the field's padding into it.
+    // A picture's left edge, read off its name's band under it, and its right edge off its size's end.
     let picture = |k: usize| nth(w, Role::TextInput, "Name", k).x - BAND - ACROSS;
-    // The picture reaches the room's edge, up to the column's padding, its caption ending there.
+    let end = |k: usize| caption(k).x + caption(k).width;
+    // The room's edge, up to the column's padding.
     let room = presets.x - GAP - INSET - GAP;
-    let reaches = |k: usize| (caption(k).x + caption(k).width - room).abs() < 1.0;
+    // The picture in the middle of its slot, from `left` to the room's edge, its name and size under it.
+    let centred = |k: usize, left: f32| picture(k) >= left - 0.5 && ((picture(k) - left) - (room - end(k))).abs() < 1.0;
 
     // Closed as the screen opens: no EXIF, each picture right after its key, its name under it.
     assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the EXIF closed until asked for");
@@ -99,8 +101,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     assert_eq!(keys.len(), 2, "one EXIF key a line: {keys:?}");
     let closed: Vec<f32> = (0..2).map(picture).collect();
     for k in 0..2 {
-        assert!((closed[k] - (keys[k].x + keys[k].width) - NEAR).abs() < 1.0, "line {k}'s picture right after its key: {:?} {}", keys[k], closed[k]);
-        assert!(reaches(k), "line {k}'s picture reaches the room's edge: {:?} {room}", caption(k));
+        assert!(centred(k, keys[k].x + keys[k].width + NEAR), "line {k}'s picture after its key, its name under it: {:?} {} {}", keys[k], closed[k], end(k));
         assert!(nth(w, Role::TextInput, "Name", k).y > keys[k].y + keys[k].height, "line {k}'s name under its picture");
     }
     println!("shot {}", rig.shot("export-columns").display());
@@ -116,9 +117,11 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
         assert!(laid.iter().all(|f| (face(f) - face(&laid[0])).abs() < 1.0), "line {k}'s fields one above the other: {laid:?}");
         let open = picture(k);
         assert!(laid.iter().all(|(_, f)| f.x + f.width + NEAR <= open), "line {k}'s fields left of its picture: {laid:?} {open}");
-        assert!((open - closed[k] - (CARD - KEY)).abs() < 1.0, "line {k}'s picture gives the card its room: {} then {open}", closed[k]);
+        // The card's face ends a padding past its fields; the picture's slot starts a gap after it.
+        let card = laid.iter().map(|(_, f)| f.x + f.width).fold(0.0, f32::max) + PAD;
+        assert!(centred(k, card + NEAR), "line {k}'s picture in the room the card leaves: {open} {}", end(k));
+        assert!((keys[k].x + CARD - card).abs() < 1.5, "line {k}'s card in its key's place: {card} {:?}", keys[k]);
         assert!(common::placed(w, Role::Button, "Show the EXIF").is_empty(), "open, the card's cross stands for the key");
-        assert!(reaches(k), "line {k}'s picture still reaches the room's edge: {:?}", caption(k));
         let mut labels: Vec<_> = common::placed(w, Role::Text, "Camera").into_iter().filter(|t| t.x < presets.x).collect();
         labels.sort_by(|a, b| a.y.total_cmp(&b.y));
         let (label, field) = (labels[k], nth(w, Role::TextInput, "Camera", k));
@@ -144,5 +147,22 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     rig.window.set_size(slint::PhysicalSize::new(1100, 680));
     rig.settle();
     println!("shot {}", rig.shot("export-columns-narrowest").display());
+
+    // An upright frame alone, its height the room's: it stands in the middle of its slot, its name and its
+    // size under it, not under the slot's edge; twin: off the key's side by a good part of the slot.
+    ctl.leave_export();
+    rig.window.set_size(slint::PhysicalSize::new(1280, 900));
+    rig.settle();
+    lib.invoke_tile_clicked(1, false, false);
+    ctl.act(oni_app::Act::Export);
+    rig.until("the upright frame's line", Duration::from_secs(120), || export_card::lines(w).len() == 1 && shown());
+    rig.settle();
+    let key = common::the(w, Role::Button, "Show the EXIF");
+    let lone = export_card::lines(w)[0].caption.to_string();
+    let size = common::placed(w, Role::Text, &lone).into_iter().find(|c| c.x < presets.x).expect("its size");
+    let (left, slot) = (nth(w, Role::TextInput, "Name", 0).x - BAND - ACROSS, key.x + key.width + NEAR);
+    assert!(((left - slot) - (room - (size.x + size.width))).abs() < 1.0, "the upright frame's name and size under it: {left} {slot} {size:?}");
+    assert!(left - slot > 40.0, "twin: off the slot's edge: {left} {slot}");
+    println!("shot {}", rig.shot("export-columns-upright").display());
     let _ = std::fs::remove_dir_all(&root);
 }

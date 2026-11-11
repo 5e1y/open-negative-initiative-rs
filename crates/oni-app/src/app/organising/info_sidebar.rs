@@ -57,10 +57,14 @@ impl Ctl {
             s.org.info_loaded = None;
             return;
         }
-        let Some(roll) = s.roll() else {
+        // Nothing picked since a click on the empty room, or no roll stood on: the person's collection.
+        if !s.shown_picks().selection.is_empty() {
+            s.org.gear_shown = false;
+        }
+        let roll = s.roll().filter(|_| !s.org.gear_shown);
+        let Some(roll) = roll else {
             lib.set_roll_unmeasured(false);
-            lib.set_info_kind(0);
-            lib.set_info_empty(tr("Select a roll").into());
+            lib.set_info_kind(4);
             s.org.info_loaded = None;
             return;
         };
@@ -240,6 +244,7 @@ impl Ctl {
     /// Written on Return or when the focus leaves: each keystroke would rewrite the whole roll.
     pub(in crate::app) fn camera_body_committed(self: &Rc<Self>, draft: &str) {
         let wanted = draft.trim().to_string();
+        self.note_gear(oni_library::collection::Gear::Body, &wanted);
         let Some(roll) = self.state.borrow().roll() else { return };
         if wanted == roll.film.camera_body.clone().unwrap_or_default() {
             return;

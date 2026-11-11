@@ -29,6 +29,7 @@ mod oni_trash;
 mod members;
 mod status_bar;
 mod info_sidebar;
+mod gear;
 mod resolving;
 pub(in crate::app) mod roll_card;
 mod band_rename;
@@ -106,6 +107,11 @@ pub enum Column {
 #[derive(Default)]
 pub struct Organising {
     pub projects_surface: bool,
+    /// The person's bodies and lenses, as the support folder keeps them.
+    pub collection: oni_library::collection::Collection,
+    /// The collection in the column: a click on the gallery's empty room shows it, until a photo is
+    /// picked or a folder opened, whatever drops that pick after.
+    pub gear_shown: bool,
     pub trash_open: bool,
     pub trash_unfolded: bool,
     /// The ONI Trash's picked row: `""` the trash itself, else a folder's path.
@@ -287,6 +293,7 @@ impl State {
 impl Ctl {
     pub(super) fn wire_organising(me: &Rc<Ctl>, window: &crate::MainWindow) {
         me.load_projects();
+        Ctl::wire_gear(me, window);
         let lib = window.global::<Library>();
         let index = |i: i32| i.max(0) as usize;
         let p = me.clone();

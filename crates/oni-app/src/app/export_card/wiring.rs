@@ -153,10 +153,17 @@ impl Ctl {
             let mut c = p.export.borrow_mut();
             let Some(Some(r)) = c.rows.get_mut(row.max(0) as usize) else { return };
             let text = text.to_string();
+            let at = row.max(0) as usize;
             match field.as_str() {
                 "name" => r.name = text,
-                "camera" => r.metadata.camera = text,
-                "lens" => r.metadata.lens = text,
+                "camera" => {
+                    r.metadata.camera = text;
+                    c.typed_gear.insert((at, oni_library::collection::Gear::Body));
+                }
+                "lens" => {
+                    r.metadata.lens = text;
+                    c.typed_gear.insert((at, oni_library::collection::Gear::Lens));
+                }
                 "iso" => r.metadata.iso = text,
                 "date" => r.metadata.date = super::dated::exif(&text),
                 "artist" => r.metadata.artist = text,

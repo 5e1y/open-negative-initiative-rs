@@ -8467,5 +8467,19 @@
     "title": "A pinned row hides what scrolls under it to the pixel",
     "status": "done",
     "detail": "Owner's report: a half-pixel line let the rows scrolled under the library tree's pinned row show through. Its square ground lay at a fractional place, so the device pixel it half covered was drawn half ground, half row. The ground now covers whole device pixels, its edges led out to them (row.slint)."
+  },
+  {
+    "id": 1686,
+    "type": "fix",
+    "title": "The file's name under the picture itself",
+    "status": "done",
+    "detail": "Owner's report: the name's band under a picture stood at the slot's left edge while a frame narrower than the room stands in its middle. The name and the size now lie under the picture as it shows, the row set in by half what the frame leaves of the room. Window check export_columns: each picture centred in its slot with its name and size under it, an upright frame alone too; twin: that frame's name off the slot's edge."
+  },
+  {
+    "id": 1687,
+    "type": "feature",
+    "title": "The collection: bodies and lenses kept and offered",
+    "status": "done",
+    "detail": "Owner's call: ONI keeps the bodies and the lenses a hand types, the last used first, in the support folder's collection.json (oni_library::collection). It learns from a roll's Camera Body and from the camera and lens a hand types or picks on an export's line, never from a scan's own metadata, which names the camera that digitised the film. The Camera and Lens of an export's EXIF and a roll's Camera Body offer it by a chevron key (KnownField). Where nothing is picked in the archive, the right column shows it: its bodies and lenses, each forgotten by its row's key, and a field to add one. A click anywhere on the gallery's ground, under its last row included, drops the picks and turns the column to the collection until a photo is picked or a folder opened. Window check collection: the opened roll's column, then the collection after a click on the ground (twin before it), a body and a lens added and kept in the file, a pick showing the roll again, the roll's body joining first, an export's Camera filled from the collection's menu (twin: the lens untouched); unit checks for the order, the case, forgetting and the file. Window check gallery: a click under the rows now drops the picks (twin: B picked before), and the column stands on the roll again once a photo picked since leaves it."
   }
 ]

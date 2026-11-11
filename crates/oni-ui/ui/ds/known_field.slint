@@ -1,0 +1,52 @@
+// A field typed as any, or filled from the names ONI knows by its key, which drops their list under it; a
+// name picked shows in the field and is told as picked.
+import { Space } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Button, ButtonSize, TextField } from "controls.slint";
+import { Menu } from "menu.slint";
+
+export component KnownField inherits HorizontalLayout {
+    in property <string> name;
+    in property <string> value;
+    in-out property <string> text <=> field.text;
+    in property <string> placeholder;
+    in property <bool> enabled: true;
+    in property <[string]> known;
+    in property <string> known-help;
+    callback edited(string);
+    callback accepted(string);
+    callback left(string);
+    callback picked(string);
+    spacing: Space.xs;
+    field := TextField {
+        horizontal-stretch: 1;
+        name: root.name;
+        value: root.value;
+        placeholder: root.placeholder;
+        enabled: root.enabled;
+        edited(t) => { root.edited(t); }
+        accepted(t) => { root.accepted(t); }
+        left(t) => { root.left(t); }
+    }
+    if root.known.length > 0: VerticalLayout {
+        alignment: center;
+        Button { has-icon: true; square: true;
+            size: ButtonSize.mini;
+            icon: Icons.chevron-down;
+            help: root.known-help;
+            enabled: root.enabled;
+            clicked => { menu.show(); }
+        }
+    }
+    menu := Menu {
+        x: 0;
+        y: root.height + Space.xxs;
+        span: max(root.width, self.natural);
+        entries: root.known;
+        chosen(i) => {
+            field.text = root.known[i];
+            root.picked(root.known[i]);
+            self.close();
+        }
+    }
+}

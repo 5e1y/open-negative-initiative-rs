@@ -57,6 +57,23 @@ impl Ctl {
         }
     }
 
+    /// The camera and the lens a hand named on a line join the person's collection as the export writes.
+    fn learn_gear(&self) {
+        let named: Vec<(oni_library::collection::Gear, String)> = {
+            let c = self.export.borrow();
+            c.typed_gear
+                .iter()
+                .filter_map(|&(at, gear)| {
+                    let m = &c.rows.get(at)?.as_ref()?.metadata;
+                    Some((gear, if gear == oni_library::collection::Gear::Body { m.camera.clone() } else { m.lens.clone() }))
+                })
+                .collect()
+        };
+        for (gear, name) in named {
+            self.note_gear(gear, &name);
+        }
+    }
+
     /// `writeExport`: in order off this thread on an engine apart, the stop honoured between files, an
     /// earlier export replaced only when `replacing`; the first line's artist and copyright are remembered.
     pub(super) fn write_export(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
@@ -66,6 +83,7 @@ impl Ctl {
             self.export.borrow_mut().notice = Some((tr("Export Failed").into(), oni_export::Failure::Write(e.kind()).to_string()));
             return self.publish_export();
         }
+        self.learn_gear();
         if self.export.borrow().on_sheet() {
             return self.write_sheet(destinations, replacing);
         }

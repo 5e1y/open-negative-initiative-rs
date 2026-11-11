@@ -5,6 +5,7 @@ pub mod absence;
 pub mod archive_tree;
 pub mod bookmarks;
 pub mod capture;
+pub mod collection;
 pub use oni_settings::exif;
 pub mod favourites;
 pub mod file_names;

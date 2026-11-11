@@ -23,6 +23,7 @@ impl Ctl {
             s.org.presence.clear();
             s.org.opened_presence = oni_library::presence::Presence::Present;
             s.trash_picks = Default::default();
+            s.org.gear_shown = false;
             s.opened = Some(folder.clone());
             s.reveal.fresh = true;
             let _ = s.preferences.set(preferences::OPENED_FOLDER, serde_json::Value::String(folder.clone()));

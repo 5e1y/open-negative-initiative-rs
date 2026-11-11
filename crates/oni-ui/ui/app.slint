@@ -35,6 +35,7 @@ export { DS, Motion, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, 
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
+export { Gear, GearKind } from "gear_state.slint";
 export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage, Menus, MenuTitles, MenuLive }
 export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe, KeyboardProbe } from "ds/probes.slint";
 export { StateProbe, HueProbe, ScreenProbe } from "ds/probe_states.slint";
@@ -370,10 +371,7 @@ export component MainWindow inherits AppWindow {
         height: root.height;
         // The canvas's tools held, a ring of each around the card and its tab from its key, over the card.
         if !Exporting.shown: ModeRings {
-            x: 0;
-            y: 0;
-            width: parent.width;
-            height: parent.height;
+            x: 0; y: 0; width: parent.width; height: parent.height;
             card-x: card-area.absolute-position.x;
             card-y: card-area.absolute-position.y;
             card-width: card-area.width;

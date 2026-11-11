@@ -64,6 +64,7 @@ impl Ctl {
             c.shown = true;
             c.stopped = None;
             c.rows = vec![None; targets.len()];
+            c.typed_gear.clear();
             c.sizes = vec![None; targets.len()];
             c.previews = vec![Preview::Waiting; targets.len()];
             c.low_precision = 0;

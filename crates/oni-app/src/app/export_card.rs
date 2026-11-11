@@ -83,6 +83,8 @@ pub struct Card {
     pub gamut: bool,
     pub targets: Vec<Target>,
     pub rows: Vec<Option<Row>>,
+    /// The lines whose camera or lens a hand typed or picked here: the scan's own name the digitiser's.
+    pub typed_gear: std::collections::HashSet<(usize, oni_library::collection::Gear)>,
     sizes: Vec<Option<(f64, f64)>>,
     previews: Vec<Preview>,
     /// The first target's reduced decode, as its preview read it, which the estimate's sample renders.
@@ -178,6 +180,7 @@ impl Card {
             sheet: false,
             targets: Vec::new(),
             rows: Vec::new(),
+            typed_gear: Default::default(),
             sizes: Vec::new(),
             previews: Vec::new(),
             first: None,

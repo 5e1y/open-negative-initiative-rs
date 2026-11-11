@@ -1,0 +1,9 @@
+// The person's collection, as Rust keeps it: the bodies and the lenses typed in ONI, the last used first.
+export enum GearKind { body, lens }
+
+export global Gear {
+    in property <[string]> bodies;
+    in property <[string]> lenses;
+    callback add(GearKind, string);
+    callback forget(GearKind, string);
+}

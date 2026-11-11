@@ -1,0 +1,97 @@
+// The export's words for each photo: its EXIF card, each label over its field, and its file's name under
+// its picture.
+import { Icons, Space, Label, Tone, Button, ButtonSize, TextField, Picker, Surface, FormStyle, Field, KnownField } from "ds/ds.slint";
+import { ExportLine, Exporting } from "export_state.slint";
+import { Gear } from "gear_state.slint";
+
+// `FrameFields`: the EXIF the file will carry, each label over its field, one narrow column beside the
+// picture on the panel's ground: on the canvas's, no field's face would show. A long word ends cut. Its
+// cross, on its first label's line, folds the card away on every line.
+export component FrameFields inherits VerticalLayout {
+    in property <ExportLine> line;
+    in property <int> at;
+    width: FormStyle.fields-width;
+    alignment: start;
+    // Every placeholder opens on "e.g.", as Camera Body's, so an empty field never reads as filled.
+    Surface {
+        rounded: true;
+        VerticalLayout {
+            padding: Space.s;
+            spacing: FormStyle.row-gap;
+            HorizontalLayout {
+                Label { text: @tr("Camera"); tone: Tone.secondary; horizontal-stretch: 1; vertical-alignment: center; }
+                Button { has-icon: true; square: true;
+                    size: ButtonSize.mini;
+                    icon: Icons.close;
+                    help: @tr("Hide the EXIF");
+                    clicked => { Exporting.exif-shown = false; }
+                }
+            }
+            KnownField {
+                name: @tr("Camera");
+                value: root.line.camera;
+                placeholder: @tr("e.g. Leica M6");
+                enabled: root.line.ready;
+                known: Gear.bodies;
+                known-help: @tr("Pick From Your Collection");
+                edited(t) => { Exporting.edited(root.at, "camera", t); }
+                picked(t) => { Exporting.edited(root.at, "camera", t); }
+            }
+            Field {
+                label: @tr("Lens");
+                KnownField {
+                    name: @tr("Lens");
+                    value: root.line.lens;
+                    placeholder: @tr("e.g. Summicron 50 mm");
+                    enabled: root.line.ready;
+                    known: Gear.lenses;
+                    known-help: @tr("Pick From Your Collection");
+                    edited(t) => { Exporting.edited(root.at, "lens", t); }
+                    picked(t) => { Exporting.edited(root.at, "lens", t); }
+                }
+            }
+            Field {
+                label: @tr("Film stock");
+                Picker {
+                    value: root.line.film == "" ? @tr("Choose…") : root.line.film;
+                    open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
+                }
+            }
+            Field {
+                label: @tr("ISO");
+                TextField { name: @tr("ISO"); value: root.line.iso; placeholder: @tr("e.g. 400"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+            }
+            // Shown and typed as a person writes a date; Rust keeps EXIF's colons in the file.
+            Field {
+                label: @tr("Date");
+                TextField { name: @tr("Date"); value: root.line.date; placeholder: @tr("e.g. 2026-09-05 10:00:00"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+            }
+            Field {
+                label: @tr("Artist");
+                TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("e.g. Jane Doe"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+            }
+            Field {
+                label: @tr("Copyright");
+                TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("e.g. © 2026 Jane Doe"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
+            }
+        }
+    }
+}
+
+// The file's name with its extension under its picture, shown with the EXIF or without, on a band of the
+// panel's ground as the EXIF's fields.
+export component FrameName inherits Surface {
+    in property <ExportLine> line;
+    in property <int> at;
+    rounded: true;
+    VerticalLayout {
+        padding: Space.s;
+        TextField {
+            name: @tr("Name");
+            value: root.line.name;
+            suffix: Exporting.extension;
+            enabled: root.line.ready;
+            edited(t) => { Exporting.edited(root.at, "name", t); }
+        }
+    }
+}

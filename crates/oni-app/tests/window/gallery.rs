@@ -78,11 +78,12 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert!(hand.selected().is_empty());
     assert_eq!(hand.lit_rows(), ["B"], "twin: ⌘ empties the selection, the ring stays on B in the sidebar");
     hand.click("B", &[Key::Control]);
-    // Under the last row the document has ended: no gesture there, the picks stay.
+    // Under the last row, the ground: a click there drops the picks, as one between the cells does.
     let below = (lib.get_grid_x() + 8.0, lib.get_grid_y() + lib.get_content_height() - lib.get_scroll() + 8.0);
+    assert_eq!(hand.selected(), ["B"], "twin: B picked before the click");
     hand.press_at(below, PointerEventButton::Left);
     hand.release_at(below, PointerEventButton::Left);
-    assert_eq!(hand.selected(), ["B"], "a click under the rows picks no cell");
+    assert!(hand.selected().is_empty(), "a click under the rows drops the picks");
 
     // The second plain click on the same cell within the interval opens it; on another cell it does not.
     hand.rest();
