@@ -19,6 +19,9 @@ use std::time::Duration;
 
 use crate::common;
 
+/// `FieldStyle.across`: a field's padding on either side of its words.
+const ACROSS: f32 = 16.0;
+
 fn listed(folder: &Path) -> Vec<String> {
     let mut names: Vec<String> = std::fs::read_dir(folder).map(|l| l.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect()).unwrap_or_default();
     names.sort();
@@ -134,8 +137,17 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert!(in_column("Roll").is_empty(), "no block stands for the name alone");
     assert_eq!(in_column("Film Stock").len(), 1, "twin: the same search finds a block's title");
 
-    // A name typed over the title makes the roll under it, the folder keeping its own name.
+    // A name typed over the title makes the roll under it, the folder keeping its own name. The field the
+    // title becomes keeps the column's margins, as wide as the column's content, its stock's key; twin: off
+    // the column's edge, where its fold keys stand.
     common::click(&rig, w, named[0].middle());
+    rig.settle();
+    let content = common::the(w, AccessibleRole::Button, "Select Film Stock");
+    let field = common::placed_all(w, AccessibleRole::TextInput).into_iter().find(|t| t.x >= edge - 1.0 && (t.y - named[0].y).abs() < 24.0).expect("the title's field");
+    let (left, right) = (field.x - ACROSS, field.x + field.width + ACROSS);
+    // The words' room ends a caret's point short of the face's padding.
+    assert!((left - content.x).abs() < 0.5 && (right - (content.x + content.width)).abs() < 1.5, "the title's field on the column's content: {left} {right} {content:?}");
+    assert!(left > edge, "twin: the field starts past the fold keys on the column's edge: {left} {edge}");
     for c in "Portra Trip".chars() {
         rig.key(&c.to_string());
     }

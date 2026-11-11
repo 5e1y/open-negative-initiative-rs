@@ -184,9 +184,9 @@ export global ButtonStyle {
     out property <length> legend-tracking: 0.5px;
     out property <int> word-weight: Type.strong;
     // A key of the window's bar, flat or keycap: its glyph over its word, every key of the bar this tall;
-    // short of room, its glyph alone on a key as wide as a flat key is tall.
+    // short of room, its glyph alone on a square a keycap tall, so the narrowest window holds every key.
     out property <length> bar-key: DS.control-keycap-height + Space.s;
-    out property <length> bar-glyph-key: DS.control-field-height;
+    out property <length> bar-glyph-key: DS.control-keycap-height;
     out property <length> bar-key-padding: Space.xs + Space.xxs;
     out property <length> bar-cap-padding: Space.s + Space.xs;
     out property <length> bar-legend-gap: Space.xxs;

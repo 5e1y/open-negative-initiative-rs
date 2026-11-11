@@ -1,7 +1,7 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
 // past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard, ToolStyle } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -21,6 +21,9 @@ export component RollStepKeys inherits Tabs {
     disabled: Preparing.measuring || Keyboard.covered ? [true, true, true, true, true] : Preparing.skipped;
     picked(i) => { Preparing.step-picked(i); }
 }
+
+// The canvas's tools a bar key holds, each shown on the card while it holds.
+export enum CanvasTool { none, sheet, crop, dust, compare }
 
 export global Bar {
     in property <bool> editing;
@@ -62,21 +65,47 @@ export global Bar {
     // The window's width under which the flat keys' words give way to their glyphs.
     in-out property <length> needed;
     callback act(Act);
+    // Where each canvas tool's key stands in the window, as the key shown publishes it, for its tab and its
+    // ring around the card to meet it.
+    out property <length> sheet-x;
+    out property <length> sheet-width;
+    out property <length> crop-x;
+    out property <length> crop-width;
+    out property <length> dust-x;
+    out property <length> dust-width;
+    out property <length> compare-x;
+    out property <length> compare-width;
+    public function place(tool: CanvasTool, x: length, width: length) {
+        if (tool == CanvasTool.sheet) { Bar.sheet-x = x; Bar.sheet-width = width; }
+        if (tool == CanvasTool.crop) { Bar.crop-x = x; Bar.crop-width = width; }
+        if (tool == CanvasTool.dust) { Bar.dust-x = x; Bar.dust-width = width; }
+        if (tool == CanvasTool.compare) { Bar.compare-x = x; Bar.compare-width = width; }
+    }
     // A press on the bar's empty room: on macOS it stands for the title bar.
     callback room-pressed();
 }
 
-// `AppBar.item`: a flat key of the bar, its glyph over its word, the glyph alone short of room; its
-// ground shows under the hand alone, its group's keys touching.
+// `AppBar.item`: a flat key of the bar, its glyph over its word, the glyph alone on a square short of room;
+// its ground shows under the hand alone, its group's keys touching. A canvas tool's key stays bare while its
+// tool holds: the tool's ring on the card and its tab under the key show it (`ModeRings`).
 component Key inherits Button {
     in property <Act> action;
     in property <bool> compact;
     in property <string> word;
+    in property <CanvasTool> tool: CanvasTool.none;
+    // The key shown, not a copy the bar measures itself with: it publishes where it stands.
+    in property <bool> publishes;
     stacked: true;
     in-bar: true;
     has-icon: true;
+    on-apart: root.tool != CanvasTool.none;
     text: root.compact ? "" : root.word;
     clicked => { Bar.act(root.action); }
+    property <length> left: self.absolute-position.x;
+    function publish() { if (root.publishes && root.tool != CanvasTool.none) { Bar.place(root.tool, root.left, root.width); } }
+    init => { root.publish(); }
+    changed left => { root.publish(); }
+    changed width => { root.publish(); }
 }
 
 // A keycap of the bar, the mode's key or a commit: its glyph over its legend at every width.
@@ -90,14 +119,14 @@ component Cap inherits Button {
 }
 
 // ⌘A from the bar, the Sheet as film shows a roll whole, the first key of the centre in both modes, its
-// glyph in its tool's colour while it holds: every photo the gallery shows picked, or beside a photo the
-// whole roll together; pressed again, one.
+// ring on the card while it holds: every photo the gallery shows picked, or beside a photo the whole roll
+// together; pressed again, one.
 component SelectAll inherits Key {
     action: Act.select-all;
     word: @tr("Sheet");
     icon: Icons.contact-sheet;
     on: Bar.whole;
-    on-ink: ToolStyle.sheet;
+    tool: CanvasTool.sheet;
     help: self.on ? @tr("Back to One Photo")
         : Bar.editing ? @tr("Show the Whole Roll Together ({})", KeyWords.command + "A") : @tr("Select All ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
@@ -124,6 +153,8 @@ component Own inherits ButtonGroup {
 // Reset names the photos it reaches, Trash wears its can, so neither reads as the other.
 component Centre inherits HorizontalLayout {
     in property <bool> compact;
+    // A copy the bar measures its room with, never shown.
+    in property <bool> measuring;
     // The key of the ONI Trash; beside a photo its menus and its chord alone reach it.
     in property <bool> trash: true;
     spacing: ShellStyle.bar-gap;
@@ -157,18 +188,19 @@ component Centre inherits HorizontalLayout {
 
 component EditorKeys inherits Centre {
     trash: false;
-    // `centreKeys` by job: the canvas's views and tools, each glyph in its tool's colour while it holds, as
-    // its tab on the canvas's edge, the faces, then the settings carried from photo to photo.
+    // `centreKeys` by job: the canvas's views and tools, each with its ring on the card while it holds, the
+    // faces, then the settings carried from photo to photo.
     ButtonGroup {
         joined: true;
-        SelectAll { compact: root.compact; }
+        SelectAll { compact: root.compact; publishes: !root.measuring; }
         Key {
             compact: root.compact;
             action: Act.framing;
             word: @tr("Crop");
             icon: Icons.framing;
             on: PanelState.tab == 1;
-            on-ink: ToolStyle.crop;
+            tool: CanvasTool.crop;
+            publishes: !root.measuring;
             help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
             enabled: Bar.has-photo && Bar.single;
         }
@@ -178,11 +210,12 @@ component EditorKeys inherits Centre {
             word: @tr("De-dust");
             icon: Icons.correction;
             on: PanelState.tab == 4;
-            on-ink: ToolStyle.dust;
+            tool: CanvasTool.dust;
+            publishes: !root.measuring;
             help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
             enabled: Bar.has-photo && Bar.single;
         }
-        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; on-ink: ToolStyle.compare; enabled: Bar.has-photo; }
+        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; tool: CanvasTool.compare; publishes: !root.measuring; enabled: Bar.has-photo; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
     Tabs {
@@ -220,7 +253,7 @@ component EditorKeys inherits Centre {
 
 component GalleryKeys inherits Centre {
     // The photos picked, opening on the key the editor's first opens on; the rating filter is the library's.
-    SelectAll { compact: root.compact; }
+    SelectAll { compact: root.compact; publishes: !root.measuring; }
     Cap {
         action: Act.prepare-roll;
         text: @tr("PREPARE ROLL");
@@ -293,10 +326,10 @@ export component Toolbar inherits Surface {
             horizontal-stretch: 1;
             min-width: max(compact-sizing.min-width, compact-gallery-sizing.min-width, steps-sizing.min-width);
             preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width);
-            sizing := EditorKeys { visible: false; }
-            gallery-sizing := GalleryKeys { visible: false; }
-            compact-sizing := EditorKeys { visible: false; compact: true; }
-            compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
+            sizing := EditorKeys { visible: false; measuring: true; }
+            gallery-sizing := GalleryKeys { visible: false; measuring: true; }
+            compact-sizing := EditorKeys { visible: false; measuring: true; compact: true; }
+            compact-gallery-sizing := GalleryKeys { visible: false; measuring: true; compact: true; }
             steps-sizing := RollStepKeys { visible: false; }
             history-sizing := History { visible: false; }
             own-sizing := Own { visible: false; }

@@ -208,8 +208,6 @@ export component RenameField inherits FocusScope {
     in property <length> line-height: FieldStyle.height;
     in property <string> placeholder;
     in property <TextRole> role: TextRole.label;
-    // The face led out by its padding, so the typed name starts where the title stood.
-    in property <bool> outdent;
     callback edited(string);
     callback committed(string);
     callback cancelled();
@@ -224,9 +222,8 @@ export component RenameField inherits FocusScope {
         reject
     }
     TextField {
-        x: root.outdent ? -FieldStyle.across : 0px;
         y: (root.height - self.height) / 2;
-        width: root.width - self.x;
+        width: root.width;
         height: root.line-height;
         line-height: root.line-height;
         text: root.text;

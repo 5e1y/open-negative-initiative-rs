@@ -35,13 +35,13 @@ export global StockStyle {
     out property <float> grow: DS.control-thumb-grow;
 }
 
-// The canvas's tools, each its own colour: on its tab glued to the card's top edge and on its key's glyph
-// in the bar, Sheet orange, Crop verdigris, De-dust violet, Compare pink; the tab's word in dark ink.
+// The canvas's tools, each its own colour while it holds: a ring a stroke wide around the card and a tab
+// under its key in the bar. Sheet orange, Crop verdigris, De-dust violet, Compare pink.
 export global ToolStyle {
     out property <color> sheet: DS.palette-tool-sheet;
     out property <color> crop: DS.palette-tool-crop;
     out property <color> dust: DS.palette-tool-dust;
     out property <color> compare: DS.palette-tool-compare;
-    out property <color> ink: DS.palette-tool-ink;
-    out property <length> tab-height: DS.control-tool-tab-height;
+    out property <length> marker: DS.control-tool-marker-height;
+    out property <length> ring: DS.stroke-line;
 }

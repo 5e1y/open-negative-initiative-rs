@@ -121,8 +121,8 @@ export component Button inherits Rectangle {
     in property <bool> square;
     // The glyph's own ink in place of the kind's, as the favourite star's.
     in property <color> glyph-ink: transparent;
-    // A key whose state shows in its glyph's ink while on, a canvas tool's colour, and on no lit face.
-    in property <color> on-ink: transparent;
+    // A key whose state shows apart from it while on, as a canvas tool's tab under its bar key: no lit face.
+    in property <bool> on-apart;
     // A glyph drawn at this size instead of the key's, as a help mark's or a row's star.
     in property <length> glyph-size: 0px;
     // A legend at this size instead of the key's, as a step key's larger sign.
@@ -151,7 +151,7 @@ export component Button inherits Rectangle {
     property <bool> primary: root.kind == ButtonKind.accent && root.live;
     property <color> tint: root.swatch ? root.fill : root.primary ? ButtonStyle.primary : transparent;
     // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
-    property <bool> lit-face: root.on && root.on-ink.alpha == 0;
+    property <bool> lit-face: root.on && !root.on-apart;
     property <color> face: root.tint.alpha > 0 ? root.tint : root.lit-face ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
     property <bool> waiting;
@@ -180,17 +180,15 @@ export component Button inherits Rectangle {
     property <bool> reached: root.hovered || root.pressed || keys.has-focus;
     // The glyph's ink: its own, the danger's red on a destructive key reached, else dark on a light face and
     // light on a dark one; a ghost's lifts under the hand. At rest no red stands beside the photo.
-    property <color> ink: root.on && root.on-ink.alpha > 0 ? root.on-ink
-        : root.glyph-ink.alpha > 0 ? root.glyph-ink
+    property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
         : root.ghost ? Tones.ink(root.hovered || (root.live && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
-    height: root.mini ? ButtonStyle.small-height : root.stacked ? ButtonStyle.bar-key : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
-    // Never narrower than tall, so a sign's key stays a square the hand can find; a bar's glyph alone
-    // keeps a flat key's square width under its taller face.
+    height: root.mini ? ButtonStyle.small-height : root.stacked ? (root.worded || root.keycap ? ButtonStyle.bar-key : ButtonStyle.bar-glyph-key) : root.keycap ? ButtonStyle.cap-height : ButtonStyle.height;
+    // Never narrower than tall, so a sign's key stays a square the hand can find, as a bar's glyph alone.
     min-width: root.square ? self.height
         : root.fixed-width > 0 ? root.fixed-width
-        : root.stacked ? (root.worded ? max(self.height, max(word-measure.preferred-width, measure.preferred-width, root.glyph) + 2 * root.pad) : ButtonStyle.bar-glyph-key)
+        : root.stacked ? (root.worded ? max(self.height, max(word-measure.preferred-width, measure.preferred-width, root.glyph) + 2 * root.pad) : self.height)
         : root.worded ? max(self.height, max(word-measure.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room)
         : self.height;
     preferred-width: self.min-width;

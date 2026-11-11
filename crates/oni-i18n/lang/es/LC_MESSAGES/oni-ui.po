@@ -209,22 +209,6 @@ msgstr "Las flechas mueven la ventana de medición, {}-flechas su borde derecho 
 msgid "Arrows move the crop, {}-arrows its right or bottom edge, {} ten times as far. Return keeps it."
 msgstr "Las flechas mueven el recorte, {}-flechas su borde derecho o inferior, {} diez veces más lejos. Retorno lo conserva."
 
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/toolbar.slint
-msgid "Sheet"
-msgstr "Contactos"
-
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "Crop"
-msgstr "Recorte"
-
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Polvo"
-
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/toolbar.slint
-msgid "Compare"
-msgstr "Comparar"
-
 #: crates/oni-ui/ui/card_status.slint
 msgid "Settings saved"
 msgstr "Ajustes guardados"
@@ -362,7 +346,7 @@ msgid "REMEASURE ROLL"
 msgstr "VOLVER A MEDIR"
 
 #: crates/oni-ui/ui/ds/notices.slint
-msgid "Close"
+msgid "Dismiss"
 msgstr "Cerrar"
 
 #: crates/oni-ui/ui/ds/organise.slint
@@ -517,6 +501,10 @@ msgstr "Desaturado"
 msgid "Camera"
 msgstr "Cámara"
 
+#: crates/oni-ui/ui/export.slint
+msgid "Hide the EXIF"
+msgstr "Ocultar los EXIF"
+
 #: crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "e.g. Leica M6"
 msgstr "p. ej. Leica M6"
@@ -568,6 +556,10 @@ msgstr "Copyright"
 #: crates/oni-ui/ui/export.slint
 msgid "e.g. © 2026 Jane Doe"
 msgstr "p. ej. © 2026 Lucía García"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Show the EXIF"
+msgstr "Mostrar los EXIF"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Quality"
@@ -2010,12 +2002,20 @@ msgid "Details"
 msgstr "Detalles"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Crop"
+msgstr "Recorte"
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
 msgstr "Salir del recorte"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Devuelve a esta foto el recorte que tenía al abrirse el recorte, y sale."
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Polvo"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
@@ -2330,6 +2330,10 @@ msgid "Window"
 msgstr "Ventana"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Sheet"
+msgstr "Contactos"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Back to One Photo"
 msgstr "Volver a una sola foto"
 
@@ -2372,6 +2376,10 @@ msgstr "Recortar y enderezar ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select one photo to de-dust it"
 msgstr "Selecciona una sola foto para quitarle el polvo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Compare"
+msgstr "Comparar"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
@@ -4370,8 +4378,8 @@ msgid "Writing {progress} of {count}…"
 msgstr "Escribiendo {progress} de {count}…"
 
 #: crates/oni-app/src/export.rs
-msgid "{count} photos. You will be asked for a folder; each file takes the name beside its preview."
-msgstr "{count} fotos. Se te pedirá una carpeta; cada archivo recibe el nombre que aparece junto a su vista previa."
+msgid "{count} photos. You will be asked for a folder; each file takes the name under its preview."
+msgstr "{count} fotos. Se te pedirá una carpeta; cada archivo recibe el nombre que aparece bajo su vista previa."
 
 #: crates/oni-app/src/export.rs
 msgid "{count} of {of} sources are 8-bit: their shadows may band once inverted"

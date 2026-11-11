@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use super::Target;
 
-/// The destinations of a batch in a folder: each file the name beside its preview, inside the folder.
+/// The destinations of a batch in a folder: each file the name under its preview, inside the folder.
 pub fn destinations(folder: &Path, targets: &[Target], rows: &[Option<Row>], format: Format) -> Vec<PathBuf> {
     targets.iter().zip(rows).map(|(t, r)| oni_export::destination(folder, &t.path, r.as_ref().map_or("", |r| r.name.as_str()), format)).collect()
 }

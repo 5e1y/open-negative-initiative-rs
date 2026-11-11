@@ -65,6 +65,8 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     assert!(moved.y > keys.y, "twin: the select takes room the fixed profile left free: {keys:?} {moved:?}");
 
     // Each field's face shows on its ground; twin: on the canvas, where the fields stood, it would not.
+    w.global::<Exporting>().set_exif_shown(true);
+    rig.settle();
     let (width, drawn) = rig.drawn();
     let at = |x: f32, y: f32| drawn[y as usize * width + x as usize].0;
     let artist = common::the(w, Role::TextInput, "Artist");
@@ -72,11 +74,14 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     let face = at(artist.x - 8.0, middle);
     assert_ne!(face, at(artist.x - 20.0, middle), "the Artist field's face shows beside its label");
     let caption = common::the(w, Role::Text, &export_card::lines(w)[0].caption);
-    assert_eq!(at(caption.x - 20.0, caption.y + caption.height / 2.0), face, "the canvas is the face's own ground");
-    // A lone photo stands in the middle of its room, as much above its fields as under its caption,
-    // between the panel's title and its keys; twin: from the top it would stand level with the title.
-    let (head, cancel, name) = (common::the(w, Role::Text, "Export"), common::the(w, Role::Button, "Cancel"), common::the(w, Role::TextInput, "Name"));
-    let (above, below) = (name.y - head.y, cancel.y + cancel.height - caption.y - caption.height);
+    assert_eq!(at(caption.x + caption.width + 8.0, caption.y + caption.height / 2.0), face, "the canvas is the face's own ground");
+    // A lone photo stands in the middle of its room, its line from its EXIF key at the picture's top to the
+    // foot of its name's band or of its last field, between the panel's title and its keys; twin: from the
+    // top it would stand level with the title.
+    let (head, cancel) = (common::the(w, Role::Text, "Export"), common::the(w, Role::Button, "Cancel"));
+    let (key, name, last) = (common::the(w, Role::Button, "Hide the EXIF"), common::the(w, Role::TextInput, "Name"), common::the(w, Role::TextInput, "Copyright"));
+    let foot = (name.y + name.height).max(last.y + last.height);
+    let (above, below) = (key.y - head.y, cancel.y + cancel.height - foot);
     assert!((above - below).abs() < 48.0, "the lone photo centred: {above} above, {below} below");
     assert!(above > 48.0, "the lone photo off the head's level: {above}");
 

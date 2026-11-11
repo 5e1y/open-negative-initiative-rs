@@ -1,0 +1,94 @@
+// Each canvas tool held, shown on the card: a ring of its colour around it, nested in its keys' order, an
+// inner ring over the outer ones, and its tab hanging from its key down onto its ring.
+import { ModeRing, ToolStyle } from "ds/ds.slint";
+import { Bar } from "toolbar.slint";
+import { PanelState } from "panel/state.slint";
+import { Canvas } from "canvas_state.slint";
+import { Preparing } from "prepare_state.slint";
+
+// Laid in the window's space, the card's place as the window reads it.
+export component ModeRings {
+    in property <length> card-x;
+    in property <length> card-y;
+    in property <length> card-width;
+    in property <length> card-height;
+    in property <bool> square-top-right;
+    in property <bool> square-left;
+    in property <bool> square-right;
+    property <bool> keys: !Preparing.shown;
+    property <bool> sheet: root.keys && Bar.whole;
+    property <bool> crop: root.keys && Bar.editing && PanelState.tab == 1;
+    property <bool> dust: root.keys && Bar.editing && PanelState.tab == 4;
+    property <bool> compare: root.keys && Bar.editing && Canvas.split >= 0;
+    property <int> crop-depth: root.sheet ? 1 : 0;
+    property <int> dust-depth: root.crop-depth + (root.crop ? 1 : 0);
+    property <int> compare-depth: root.dust-depth + (root.dust ? 1 : 0);
+    if root.sheet: ModeRing {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        ink: ToolStyle.sheet;
+        depth: 0;
+        key-x: Bar.sheet-x;
+        key-width: Bar.sheet-width;
+        card-x: root.card-x;
+        card-y: root.card-y;
+        card-width: root.card-width;
+        card-height: root.card-height;
+        square-top-right: root.square-top-right;
+        square-left: root.square-left;
+        square-right: root.square-right;
+    }
+    if root.crop: ModeRing {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        ink: ToolStyle.crop;
+        depth: root.crop-depth;
+        key-x: Bar.crop-x;
+        key-width: Bar.crop-width;
+        card-x: root.card-x;
+        card-y: root.card-y;
+        card-width: root.card-width;
+        card-height: root.card-height;
+        square-top-right: root.square-top-right;
+        square-left: root.square-left;
+        square-right: root.square-right;
+    }
+    if root.dust: ModeRing {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        ink: ToolStyle.dust;
+        depth: root.dust-depth;
+        key-x: Bar.dust-x;
+        key-width: Bar.dust-width;
+        card-x: root.card-x;
+        card-y: root.card-y;
+        card-width: root.card-width;
+        card-height: root.card-height;
+        square-top-right: root.square-top-right;
+        square-left: root.square-left;
+        square-right: root.square-right;
+    }
+    if root.compare: ModeRing {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        ink: ToolStyle.compare;
+        depth: root.compare-depth;
+        key-x: Bar.compare-x;
+        key-width: Bar.compare-width;
+        card-x: root.card-x;
+        card-y: root.card-y;
+        card-width: root.card-width;
+        card-height: root.card-height;
+        square-top-right: root.square-top-right;
+        square-left: root.square-left;
+        square-right: root.square-right;
+    }
+}

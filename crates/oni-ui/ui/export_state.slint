@@ -41,6 +41,8 @@ export struct PaperRow {
 
 export global Exporting {
     in property <bool> shown;
+    // The EXIF's card beside each picture, closed until asked for: the screen is the pictures'.
+    in-out property <bool> exif-shown;
     // The space is a paper: the Color pane shows Paper Correction.
     in property <bool> on-paper;
     in property <[ExportLine]> lines;

@@ -1,14 +1,15 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the colour space shared with the canvas's chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote } from "ds/ds.slint";
+import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote } from "ds/ds.slint";
 import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
 import { PresetPicker, PresetNameSheet } from "export_presets.slint";
 import { Canvas } from "canvas_state.slint";
 export { ExportLine, PaperRow, SheetTile, Exporting, PresetNameSheet }
 
-// `FrameFields`: the file name with its extension, then the EXIF the file will carry, one column beside
-// the picture on the panel's ground: on the canvas's, no field's face would show.
+// `FrameFields`: the EXIF the file will carry, each label over its field, one narrow column beside the
+// picture on the panel's ground: on the canvas's, no field's face would show. A long word ends cut. Its
+// cross, on its first label's line, folds the card away on every line.
 component FrameFields inherits VerticalLayout {
     in property <ExportLine> line;
     in property <int> at;
@@ -18,50 +19,64 @@ component FrameFields inherits VerticalLayout {
     Surface {
         rounded: true;
         VerticalLayout {
-            padding: Space.m;
+            padding: Space.s;
             spacing: FormStyle.row-gap;
-            Field { layout: FieldLayout.column;
-                label: @tr("Name");
-                TextField {
-                    name: @tr("Name");
-                    value: root.line.name;
-                    suffix: Exporting.extension;
-                    enabled: root.line.ready;
-                    edited(t) => { Exporting.edited(root.at, "name", t); }
+            HorizontalLayout {
+                Label { text: @tr("Camera"); tone: Tone.secondary; horizontal-stretch: 1; vertical-alignment: center; }
+                Button { has-icon: true; square: true;
+                    size: ButtonSize.mini;
+                    icon: Icons.close;
+                    help: @tr("Hide the EXIF");
+                    clicked => { Exporting.exif-shown = false; }
                 }
             }
-            Field { layout: FieldLayout.column;
-                label: @tr("Camera");
-                TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("e.g. Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
-            }
-            Field { layout: FieldLayout.column;
+            TextField { name: @tr("Camera"); value: root.line.camera; placeholder: @tr("e.g. Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+            Field {
                 label: @tr("Lens");
                 TextField { name: @tr("Lens"); value: root.line.lens; placeholder: @tr("e.g. Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
             }
-            Field { layout: FieldLayout.column;
+            Field {
                 label: @tr("Film stock");
                 Picker {
                     value: root.line.film == "" ? @tr("Choose…") : root.line.film;
                     open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
                 }
             }
-            Field { layout: FieldLayout.column;
+            Field {
                 label: @tr("ISO");
                 TextField { name: @tr("ISO"); value: root.line.iso; placeholder: @tr("e.g. 400"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
             }
             // Shown and typed as a person writes a date; Rust keeps EXIF's colons in the file.
-            Field { layout: FieldLayout.column;
+            Field {
                 label: @tr("Date");
                 TextField { name: @tr("Date"); value: root.line.date; placeholder: @tr("e.g. 2026-09-05 10:00:00"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
             }
-            Field { layout: FieldLayout.column;
+            Field {
                 label: @tr("Artist");
                 TextField { name: @tr("Artist"); value: root.line.artist; placeholder: @tr("e.g. Jane Doe"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
             }
-            Field { layout: FieldLayout.column;
+            Field {
                 label: @tr("Copyright");
                 TextField { name: @tr("Copyright"); value: root.line.copyright; placeholder: @tr("e.g. © 2026 Jane Doe"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
             }
+        }
+    }
+}
+
+// The file's name with its extension under its picture, shown with the EXIF or without, on a band of the
+// panel's ground as the EXIF's fields.
+component FrameName inherits Surface {
+    in property <ExportLine> line;
+    in property <int> at;
+    rounded: true;
+    VerticalLayout {
+        padding: Space.s;
+        TextField {
+            name: @tr("Name");
+            value: root.line.name;
+            suffix: Exporting.extension;
+            enabled: root.line.ready;
+            edited(t) => { Exporting.edited(root.at, "name", t); }
         }
     }
 }
@@ -99,13 +114,15 @@ component SheetPreview inherits Rectangle {
     }
 }
 
-// `ExportColumn`: the photographs about to be written, each line its fields, then its preview over its caption.
+// `ExportColumn`: the photographs about to be written, each line the EXIF's key or, open, its card, then
+// its preview over its name and its caption.
 export component ExportColumn inherits Scroller {
     property <length> room-width: self.width - 2 * Space.l;
     property <length> room-height: self.height - 2 * Space.l;
-    property <length> picture-width: self.room-width - FormStyle.fields-width - Space.l;
-    // A lone photo fills the room: what its caption leaves of the height.
-    property <length> picture-height: self.room-height - FormStyle.caption;
+    // What the EXIF's key or, open, its card leave of the width.
+    property <length> picture-width: self.room-width - (Exporting.exif-shown ? FormStyle.fields-width : ButtonStyle.small-height) - Space.m;
+    // A lone photo fills the room: what its name's row leaves of the height.
+    property <length> picture-height: self.room-height - FormStyle.name-row - Space.s;
     // Several photos on one sheet: the sheet itself in place of their lines.
     property <bool> sheet: Exporting.sheet && Exporting.count > 1;
     property <bool> lone: !root.sheet && Exporting.count == 1;
@@ -127,18 +144,35 @@ export component ExportColumn inherits Scroller {
         if !root.sheet: VerticalLayout {
             spacing: Space.l;
             for line[i] in Exporting.lines: HorizontalLayout {
-                spacing: Space.l;
-                FrameFields { line: line; at: i; }
+                spacing: Space.m;
+                // Left of the picture, the EXIF's key opens the card on every line at once, its cross folds it.
+                if !Exporting.exif-shown: VerticalLayout {
+                    alignment: start;
+                    Button { has-icon: true; square: true;
+                        size: ButtonSize.mini;
+                        icon: Icons.exif;
+                        help: @tr("Show the EXIF");
+                        clicked => { Exporting.exif-shown = true; }
+                    }
+                }
+                if Exporting.exif-shown: FrameFields { line: line; at: i; }
                 VerticalLayout {
                     alignment: start;
+                    spacing: Space.s;
                     PreviewSlot {
                         // The height a frame of that shape takes, so the list never jumps; unmeasured takes 3:2's.
                         height: max(FormStyle.preview-floor, min(root.picture-height, root.picture-width / (line.aspect > 0 ? line.aspect : 1.5)));
                         source: line.preview;
                         state: line.state;
                     }
-                    // As tall before the size lands as after.
-                    Label { height: FormStyle.caption; text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
+                    HorizontalLayout {
+                        spacing: Space.m;
+                        height: FormStyle.name-row;
+                        cross-axis-alignment: center;
+                        FrameName { line: line; at: i; width: min(FormStyle.fields-width, root.picture-width); }
+                        // As tall before the size lands as after.
+                        Label { horizontal-stretch: 1; height: FormStyle.caption; text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
+                    }
                 }
             }
         }

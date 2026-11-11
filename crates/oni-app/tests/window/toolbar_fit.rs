@@ -1,4 +1,5 @@
-//! The bar on the narrowest screen it must fit, every word whole in every language, its ends on the columns'.
+//! The bar on the narrowest screen it must fit, every word whole in every language, its ends on the columns';
+//! on the narrowest window, its glyphs alone on square keys, every key inside it.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::Bar;
@@ -8,8 +9,13 @@ use crate::common;
 
 /// A 13-inch MacBook Air's screen, in points, the narrowest the bar must hold every word on.
 const AIR_13: f32 = 1440.0;
-/// The room the Mac's traffic lights take at the bar's start, as `chrome::traffic_lights` lays them.
-const LIGHTS: f32 = 94.0;
+/// The room the Mac's traffic lights take at the bar's start, as `chrome::traffic_lights` lays them on
+/// macOS 26 (read off the app's log after a full screen's round trip).
+const LIGHTS: f32 = 100.0;
+/// The narrowest window the app opens at, `ShellStyle.min-width`.
+const NARROWEST: f32 = 1100.0;
+/// `ShellStyle.bar-end`.
+const END: f32 = 16.0;
 
 pub(crate) fn the_bar_holds_every_word_on_a_13_inch_screen() {
     let Some((rig, shell, root)) = crate::panel_bindings::opened("bar-13") else { return };
@@ -56,5 +62,24 @@ pub(crate) fn the_bar_holds_every_word_on_a_13_inch_screen() {
     assert!(start.abs() < 0.5 && end.abs() < 0.5, "the bar's ends on the columns' content: {start} pt and {end} pt off");
     let (_, end, first) = ends(LIGHTS);
     assert!((first - LIGHTS).abs() < 0.5 && end.abs() < 0.5, "twin: with the traffic lights the bar starts at their room: {first} pt, its end {end} pt off");
+    // The bar's keys left to right, as wide as tall but for the keycaps and the faces' tabs.
+    let keys = |width: f32| {
+        rig.window.set_size(slint::PhysicalSize::new(width as u32, 900));
+        rig.settle();
+        let mut keys: Vec<_> = common::placed_all(w, Role::Button).into_iter().filter(|k| k.y < bar.get_height()).collect();
+        keys.sort_by(|a, b| a.x.total_cmp(&b.x));
+        keys.dedup_by(|a, b| (a.x - b.x).abs() < 0.5);
+        keys
+    };
+    // On the narrowest window, with the lights, each glyph alone on a square key and every key inside it,
+    // none over another; twin: worded, a flat key is wider than tall.
+    let narrow = keys(NARROWEST);
+    let flat: Vec<_> = narrow.iter().filter(|k| k.width < k.height + 8.0).collect();
+    assert!(flat.len() >= 10 && flat.iter().all(|k| (k.width - k.height).abs() < 0.5), "the glyphs alone on square keys: {flat:?}");
+    assert!(narrow.last().is_some_and(|k| k.x + k.width <= NARROWEST - END + 0.5), "every key inside the narrowest window: {narrow:?}");
+    assert!(narrow.windows(2).all(|p| p[1].x >= p[0].x + p[0].width - 0.5), "no key over another: {narrow:?}");
+    println!("shot {}", rig.shot("bar-narrowest").display());
+    let wide = keys(AIR_13);
+    assert!(wide.iter().any(|k| k.width > k.height + 8.0 && k.height < 49.0 && (k.width - wide[wide.len() - 1].width).abs() > 0.5), "twin: worded, a flat key wider than tall: {wide:?}");
     let _ = std::fs::remove_dir_all(&root);
 }

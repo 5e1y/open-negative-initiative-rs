@@ -186,8 +186,10 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.pump();
     assert_eq!(boxes().iter().filter(|b| !b.2).map(|b| b.1.as_str()).collect::<Vec<_>>(), ["Lighting"], "the next copy opens on the last one's choice");
 
-    // "Don't ask again" holds through a copy alone: Escape drops it, and the sheet asks again.
+    // "Don't ask again" holds through a copy alone: Escape drops it, and the sheet asks again. The hand
+    // reaches for the box once the sheet has come in.
     let at_once = || common::the(w, AccessibleRole::Checkbox, "Don\u{2019}t ask again this session").middle();
+    rig.settle();
     common::click(&rig, w, at_once());
     assert!(presets.get_copy_at_once(), "the click ticks it");
     rig.key("\u{1b}");
@@ -195,6 +197,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     ctl.act(oni_app::Act::Copy);
     rig.pump();
     assert!(presets.get_saving() && !presets.get_copy_at_once(), "twin: a sheet cancelled asks again, the choice off");
+    rig.settle();
     common::click(&rig, w, at_once());
     rig.key("\r");
     assert!(!presets.get_saving());

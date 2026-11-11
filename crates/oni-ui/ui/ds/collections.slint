@@ -231,7 +231,6 @@ export component TileHeading inherits Rectangle {
         if root.renaming: RenameField {
             horizontal-stretch: 1;
             role: TextRole.title;
-            outdent: true;
             text: root.draft;
             placeholder: @tr("Roll name");
             edited(t) => { root.edited(t); }
