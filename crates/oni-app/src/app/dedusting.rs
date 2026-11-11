@@ -5,6 +5,7 @@ use super::*;
 pub(super) mod live;
 mod auto;
 mod dust;
+mod hands;
 mod originals;
 
 pub(in crate::app) use dust::Dust;
@@ -236,65 +237,6 @@ impl Ctl {
         if due {
             self.ensure_full();
         }
-    }
-
-    /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the
-    /// default, shown at once rather than on release.
-    pub(super) fn brush_press(&self) -> bool {
-        let double = {
-            let mut s = self.state.borrow_mut();
-            let double = s.brush_pressed_at.is_some_and(|t| t.elapsed() < system::double_click());
-            s.brush_pressed_at = Some(Instant::now());
-            if double {
-                s.brush = oni_settings::frame::Correction::DEFAULT_RADIUS as f32;
-                s.brush_start = None;
-            } else {
-                let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
-                s.brush_start = Some(((f64::from(s.brush) - low) / (high - low)) as f32);
-            }
-            double
-        };
-        if double {
-            self.keep_brush();
-            self.publish_dedust();
-        }
-        double
-    }
-
-    /// `@AppStorage("correctionBrushRadius")`: the size the hand left, for every photo and launch.
-    pub(super) fn keep_brush(&self) {
-        let radius = f64::from(self.state.borrow().brush);
-        self.remember(preferences::BRUSH_RADIUS, radius.into());
-    }
-
-    /// `DSScrollAdjust` on the brush: its size moved along the track, kept once the scroll rests.
-    pub(super) fn brush_scroll(self: &Rc<Self>, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
-        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
-        let from = ((f64::from(self.state.borrow().brush) - low) / (high - low)) as f32;
-        let Some(at) = self.slider_scrolled(from, dx, dy, span, fine, |c| c.keep_brush()) else { return false };
-        self.state.borrow_mut().brush = (low + f64::from(at) * (high - low)) as f32;
-        self.publish_dedust();
-        true
-    }
-
-    /// An arrow on the brush: a pixel a press, kept as the hand's size is.
-    pub(super) fn brush_step(&self, by: i32) {
-        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
-        let radius = (f64::from(self.state.borrow().brush).round() + f64::from(by)).clamp(low, high);
-        self.state.borrow_mut().brush = radius as f32;
-        self.keep_brush();
-        self.publish_dedust();
-    }
-
-    pub(super) fn brush_drag(&self, translation: f32, span: f32, fine: bool) {
-        {
-            let mut s = self.state.borrow_mut();
-            let Some(start) = s.brush_start else { return };
-            let f = track::clamped(track::asked(start, translation, span, fine));
-            let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
-            s.brush = (low + f64::from(f) * (high - low)) as f32;
-        }
-        self.publish_dedust();
     }
 
     /// A frame on the canvas held, moved and let go: one undo step, constrained on every event.

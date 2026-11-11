@@ -1705,6 +1705,14 @@ msgstr "Tamaño del pincel"
 msgid "Sensitivity"
 msgstr "Sensibilidad"
 
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."
+msgstr "No se encontró ninguna buena coincidencia cerca: este parche es un simple mosaico desplazado, no una coincidencia estructural real."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Remove This Correction"
+msgstr "Eliminar esta corrección"
+
 #: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
 msgid "Automatic"
 msgstr "Automático"
@@ -1736,18 +1744,6 @@ msgstr "Polvo y arañazos"
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Paint over a defect; the tool duplicates a matching patch of the same photo over it."
 msgstr "Pinta sobre un defecto; la herramienta coloca encima un parche similar de la misma foto."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."
-msgstr "No se encontró ninguna buena coincidencia cerca: este parche es un simple mosaico desplazado, no una coincidencia estructural real."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Generating…"
-msgstr "Generando…"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Remove This Correction"
-msgstr "Eliminar esta corrección"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
 msgid "Sharpening"

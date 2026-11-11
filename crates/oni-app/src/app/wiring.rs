@@ -259,53 +259,6 @@ impl Ctl {
 }
 
 impl Ctl {
-    pub(super) fn wire_dedust(me: &Rc<Ctl>, window: &MainWindow) {
-        let d = window.global::<crate::Dedust>();
-        let p = me.clone();
-        d.on_press(move |_| p.brush_press());
-        let p = me.clone();
-        d.on_drag(move |t, span, fine| p.brush_drag(t, span, fine));
-        let p = me.clone();
-        d.on_scroll(move |dx, dy, span, fine| p.brush_scroll(dx, dy, span, fine));
-        let p = me.clone();
-        d.on_step(move |by| p.brush_step(by));
-        let p = me.clone();
-        d.on_release(move || {
-            let dragged = p.state.borrow_mut().brush_start.take().is_some();
-            if dragged {
-                p.keep_brush();
-            }
-            p.publish_dedust();
-        });
-        let p = me.clone();
-        d.on_remove(move |i| p.remove_correction(usize::try_from(i).unwrap_or(usize::MAX)));
-        let p = me.clone();
-        d.on_shown(move |i| p.show_correction(i));
-        let p = me.clone();
-        d.on_act(move |action| p.act(action));
-        let p = me.clone();
-        d.on_detect(move || p.detect());
-        let p = me.clone();
-        d.on_remove_found(move || p.remove_found());
-        let p = me.clone();
-        d.on_sensitivity_press(move |_| p.sensitivity_press());
-        let p = me.clone();
-        d.on_sensitivity_drag(move |t, span, fine| p.sensitivity_drag(t, span, fine));
-        let p = me.clone();
-        d.on_sensitivity_release(move || p.sensitivity_release());
-        let p = me.clone();
-        d.on_sensitivity_scroll(move |dx, dy, span, fine| p.sensitivity_scroll(dx, dy, span, fine));
-        let p = me.clone();
-        d.on_sensitivity_step(move |by| p.sensitivity_step(by));
-        let c = window.global::<Canvas>();
-        let p = me.clone();
-        c.on_paint_start(move |x, y| p.paint_at(x, y, true));
-        let p = me.clone();
-        c.on_paint_move(move |x, y| p.paint_at(x, y, false));
-        let p = me.clone();
-        c.on_paint_end(move || p.paint_end());
-    }
-
     pub(super) fn wire_framing(me: &Rc<Ctl>, window: &MainWindow) {
         let f = window.global::<crate::Framing>();
         let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];
