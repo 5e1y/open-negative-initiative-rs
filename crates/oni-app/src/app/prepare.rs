@@ -89,6 +89,8 @@ pub(crate) struct Roll {
     stop: Arc<AtomicBool>,
     draft_id: Option<Id>,
     draftless: HashSet<String>,
+    /// A step taken before every frame was read, its draft written once the last one is.
+    draft_waiting: bool,
     /// Bumped at each entry and landing, so a late post of a session gone lands nowhere.
     session: u64,
     previews: Option<Previews>,
@@ -161,6 +163,7 @@ impl Default for Roll {
             stop: Arc::default(),
             draft_id: None,
             draftless: HashSet::new(),
+            draft_waiting: false,
             session: 0,
             previews: None,
             serial: None,
@@ -353,11 +356,6 @@ impl Roll {
         };
         Some(self.frames.iter().map(|f| (f.path.clone(), RollDraft { ticked: f.ticked, flagged: f.flagged, ..shared.clone() })).collect())
     }
-}
-
-/// The scan's pixel size, read off its container's header.
-fn scan_size(path: &str) -> Option<(usize, usize)> {
-    oni_decode::container::pixel_size(Path::new(path))
 }
 
 /// A frame as Prepare the Roll shows and measures it: its whole scan, whatever its crop.

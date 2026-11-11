@@ -30,8 +30,14 @@ impl Hand {
     pub(crate) fn made(label: &str, files: &[(&str, f32)], before: impl FnOnce(&std::path::Path)) -> Hand {
         let root = std::env::temp_dir().join(format!("oni-app-projects-{label}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
-        for (file, tone) in files {
-            common::linear_tiff(&root.join("Scans").join(file), 48, 32, *tone);
+        // Each file dated a second after the one before, in the order given: the gallery lays the newest
+        // first, and Windows' file clock, which steps by about 16 ms, gives files written together one time.
+        let first = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        for (i, (file, tone)) in files.iter().enumerate() {
+            let path = root.join("Scans").join(file);
+            common::linear_tiff(&path, 48, 32, *tone);
+            let dated = std::fs::File::options().write(true).open(&path).and_then(|f| f.set_modified(first + std::time::Duration::from_secs(i as u64)));
+            dated.unwrap();
         }
         let root = PathBuf::from(paths::canonical(&root));
         before(&root);

@@ -48,6 +48,9 @@ pub(crate) fn opening_a_photo_or_a_thumbnail_landing_cuts_no_tree() {
 
     // A photo opened in the editor: its row lit and centred, nothing cut or laid again.
     let tile = app::tiles(w).into_iter().find(|t| t.caption == "B03").expect("B03's tile");
+    // Counted from the open: its thumbnail is drawn from its sidecar once it rests, which a slow GPU
+    // reaches before the photo's own render lands.
+    let landed = ctl.state.borrow().thumbnails_landed();
     lib.invoke_tile_opened(tile.index);
     rig.until("a photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.settle();
@@ -55,7 +58,6 @@ pub(crate) fn opening_a_photo_or_a_thumbnail_landing_cuts_no_tree() {
     assert_eq!(cuts(), before, "opening a photo cuts no tree and lays no rows");
 
     // Its thumbnail drawn again once it rests, landing on its row and its tile alone.
-    let landed = ctl.state.borrow().thumbnails_landed();
     rig.until("the open photo's thumbnail drawn again", Duration::from_secs(30), || ctl.state.borrow().thumbnails_landed() > landed);
     rig.settle();
     assert_eq!(cuts(), before, "a thumbnail landing cuts no tree and lays no rows");
@@ -175,9 +177,9 @@ pub(crate) fn the_tree_s_cost_on_a_big_folder() {
     read(&rig, "read again, nothing moved: landings");
     rig.settle();
     let tile = app::tiles(w).into_iter().next().expect("a tile");
+    let landed = ctl.state.borrow().thumbnails_landed();
     timed("open a photo", || lib.invoke_tile_opened(tile.index));
     rig.until("a photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    let landed = ctl.state.borrow().thumbnails_landed();
     said("its thumbnail drawn again", &busy_until(&rig, Duration::from_secs(20), || ctl.state.borrow().thumbnails_landed() > landed));
     rig.settle();
     let roll = folder_row(&lib, "Roll 0").expect("Roll 0's row");

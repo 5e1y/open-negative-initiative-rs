@@ -8481,5 +8481,47 @@
     "title": "The collection: bodies and lenses kept and offered",
     "status": "done",
     "detail": "Owner's call: ONI keeps the bodies and the lenses a hand types, the last used first, in the support folder's collection.json (oni_library::collection). It learns from a roll's Camera Body and from the camera and lens a hand types or picks on an export's line, never from a scan's own metadata, which names the camera that digitised the film. The Camera and Lens of an export's EXIF and a roll's Camera Body offer it by a chevron key (KnownField). Where nothing is picked in the archive, the right column shows it: its bodies and lenses, each forgotten by its row's key, and a field to add one. A click anywhere on the gallery's ground, under its last row included, drops the picks and turns the column to the collection until a photo is picked or a folder opened. Window check collection: the opened roll's column, then the collection after a click on the ground (twin before it), a body and a lens added and kept in the file, a pick showing the roll again, the roll's body joining first, an export's Camera filled from the collection's menu (twin: the lens untouched); unit checks for the order, the case, forgetting and the file. Window check gallery: a click under the rows now drops the picks (twin: B picked before), and the column stands on the roll again once a photo picked since leaves it."
+  },
+  {
+    "id": 1690,
+    "type": "fix",
+    "title": "An export stopped before any frame reached its writer ends stopped",
+    "status": "done",
+    "detail": "Seen on the Windows runner: Stop clicked while the first large frame was still decoding ended the batch as written, 0 photos exported. The writer marked a batch stopped only when a frame reached it after the stop, so a stop that held every frame back in the decoders or on the GPU stage left it Done. staged() now ends Stopped whenever the stop is set and fewer frames were written than asked. Check export::batch: a stop before any frame reaches the writer is a stop (it read Done before the fix)."
+  },
+  {
+    "id": 1691,
+    "type": "fix",
+    "title": "The tree's cost check counts the open photo's thumbnail from the open",
+    "status": "done",
+    "detail": "On the Windows runner the open photo's thumbnail was drawn from its sidecar 2 s after the open, while the photo's own render took 11 s on the software adapter, so the check, counting from that render, waited for a second landing that never comes. Both waits in tree_cost count from the open."
+  },
+  {
+    "id": 1692,
+    "type": "fix",
+    "title": "A step taken before every frame is read writes its draft once the last one lands",
+    "status": "done",
+    "detail": "Prepare the Roll writes a step's draft only once every frame is read; a step taken earlier wrote nothing until the next step or the window's close, so a roll left then lost that step. Seen on the Windows runner, where the frames read slowly. The roll remembers a step that waited (Roll::step_drafts) and writes it as the last frame lands (Roll::draft_landed). Check prepare::model: a frame still unread keeps the step waiting, the last one writes it once."
+  },
+  {
+    "id": 1693,
+    "type": "fix",
+    "title": "The shell's layout check opens a photo by its place in the gallery's order",
+    "status": "done",
+    "detail": "On the Windows runner the check looked for Bad's tile among the tiles the grid had laid, A00 to A27, Roll B lying below the visible rows; it passed or not with the grid's scroll. It now opens a photo by its place in the gallery's order, as its tile's click does, laid on screen or not (canvas_layout)."
+  },
+  {
+    "id": 1694,
+    "type": "fix",
+    "title": "The export's unwritable folder is unwritable on Windows too",
+    "status": "done",
+    "detail": "The export check made a folder unwritable through its read-only attribute, which Windows ignores on a folder, so a folder made inside it was made and no failure came. On Windows its writes are now refused through its access list (icacls /deny (W), then /remove:d), the read-only permission kept elsewhere (export_flow)."
+  },
+  {
+    "id": 1695,
+    "type": "fix",
+    "title": "The projects' checks date their files, so the gallery lays them alike on every system",
+    "status": "done",
+    "detail": "On the Windows runner a pick from A to Z with Shift took C too: the gallery lays photos newest first, and Windows' file clock, which steps by about 16 ms, gave files written together one time, so the name broke the tie in one run and not in the next (B, C, A). The projects' hand dates each file a second after the one before, in the order given, the order the Mac's clock gave them (project_steps, project_filing, projects_tab)."
   }
 ]

@@ -150,7 +150,7 @@ pub fn staged<A: Send, B: Send, E: Send>(
             shelf.lock().unwrap_or_else(|e| e.into_inner()).closed = true;
             turn.notify_all();
         });
-        let mut end = End::Done;
+        let (mut end, mut written) = (End::Done, 0);
         for (i, frame, rendered) in from_renderer {
             if matches!(end, End::Done) && stop.load(Ordering::SeqCst) {
                 end = End::Stopped;
@@ -161,6 +161,7 @@ pub fn staged<A: Send, B: Send, E: Send>(
             match rendered.and_then(|b| write(i, b)) {
                 Ok(()) => {
                     drop(frame);
+                    written += 1;
                     landed(i);
                 }
                 Err(e) => {
@@ -168,6 +169,10 @@ pub fn staged<A: Send, B: Send, E: Send>(
                     end = End::Failed(i, e);
                 }
             }
+        }
+        // A stop that kept every frame left from reaching the writer, while still decoding, stopped it too.
+        if matches!(end, End::Done) && written < count && stop.load(Ordering::SeqCst) {
+            end = End::Stopped;
         }
         end
     });
@@ -221,7 +226,7 @@ mod tests {
 
     /// Ten frames whose writes are slow: the decoders would run ahead were nothing holding them back.
     fn run(hand: Hand, stop_after: Option<usize>, fail_at: Option<usize>) -> (End<usize>, usize, Vec<usize>) {
-        let stop = AtomicBool::new(false);
+        let stop = AtomicBool::new(stop_after == Some(0));
         let mut written = Vec::new();
         let (end, peak) = staged(
             10,
@@ -329,6 +334,8 @@ mod tests {
         let (end, _, written) = run(Hand::Bounded, Some(3), None);
         assert_eq!(end, End::Stopped);
         assert_eq!(written, [0, 1, 2], "the stop is honoured between files");
+        // A stop before any frame reached the writer is a stop, never every file written.
+        assert_eq!(run(Hand::Bounded, Some(0), None).0, End::Stopped);
         let (end, _, written) = run(Hand::Bounded, None, Some(4));
         assert_eq!(end, End::Failed(4, 4));
         assert_eq!(written, [0, 1, 2, 3], "every frame before the failure is written");

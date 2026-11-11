@@ -173,6 +173,21 @@ pub fn loupe(pointer: (f64, f64), rect: (f64, f64, f64, f64), display_width: usi
     }
 }
 
+impl Roll {
+    /// The drafts a step writes now; a step taken while a frame is still read waits for the last one.
+    pub(super) fn step_drafts(&mut self) -> Option<Vec<(String, RollDraft)>> {
+        self.draft_waiting = self.shown && self.read.len() < self.sources.len();
+        self.drafts()
+    }
+
+    /// Whether the frame just read was the last a step's draft waited for, which is then written once.
+    pub(super) fn draft_landed(&mut self) -> bool {
+        let landed = self.draft_waiting && self.read.len() >= self.sources.len();
+        self.draft_waiting &= !landed;
+        landed
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -285,12 +300,17 @@ mod tests {
         let other = RollDraft { id: Id::new(), ..draft.clone() };
         r.resume(Some(&other), 2);
         assert!(!r.frames[2].ticked, "twin: another draft's frame is left out");
-        // The draft written back carries each frame's own place; none before every frame is read.
+        // The draft written back carries each frame's own place; none before every frame is read, the
+        // step then written once the last one lands.
         r.shown = true;
-        assert!(r.drafts().is_none());
-        for f in ["a", "b", "c"] {
+        assert!(r.step_drafts().is_none());
+        for f in ["a", "b"] {
             r.read.insert(f.into(), PipelineSettings::default());
+            assert!(!r.draft_landed(), "twin: a frame still unread keeps the step waiting");
         }
+        r.read.insert("c".into(), PipelineSettings::default());
+        assert!(r.draft_landed(), "the last frame read writes the step's draft");
+        assert!(!r.draft_landed(), "once");
         let drafts = r.drafts().unwrap();
         assert_eq!(drafts.iter().map(|(_, d)| (d.ticked, d.flagged, d.id)).collect::<Vec<_>>(), [(false, false, id), (true, true, id), (false, false, id)]);
         assert_eq!(drafts[0].1.step, "flags");
