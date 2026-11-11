@@ -137,7 +137,16 @@ impl Layout {
         if raw <= 0.0 { 0 } else { (band.row_count - 1).min(raw as usize) }
     }
 
-    /// The cell under a point, clamped to the nearest band, column or row rather than refused.
+    /// The cell whose frame holds the point; none on the ground: a gutter, a margin, the room past a band's
+    /// last cell or under its rows. A click and a menu reach this one.
+    pub fn cell_at(&self, x: f32, y: f32) -> Option<usize> {
+        let near = self.index_at(x, y)?;
+        let f = self.frame(near)?;
+        (x >= f.x && x < f.x + f.width && y >= f.y && y < f.y + f.height).then_some(near)
+    }
+
+    /// The cell nearest a point, clamped to the nearest band, column or row rather than refused: where a
+    /// drop lands.
     pub fn index_at(&self, x: f32, y: f32) -> Option<usize> {
         if self.count == 0 {
             return None;
@@ -348,6 +357,22 @@ mod tests {
         assert_eq!(l.index_at(second_row.x + 1.0, second_row.y + 1.0), Some(6));
         // Twin: a point past the last cell clamps to it rather than refusing.
         assert_eq!(l.index_at(990.0, second_row.y + 1.0), Some(9));
+    }
+
+    #[test]
+    fn a_click_reaches_a_cell_inside_its_frame_and_the_ground_reaches_none() {
+        let l = Layout::new(&roll(10), 6, 1000.0, Metrics::GALLERY);
+        let (first, second) = (l.frame(0).unwrap(), l.frame(1).unwrap());
+        assert_eq!(l.cell_at(first.x + 1.0, first.y + 1.0), Some(0));
+        let gutter = (first.x + first.width + (second.x - first.x - first.width) / 2.0, first.y + 1.0);
+        let past = l.frame(9).unwrap();
+        let empty = (past.x + past.width + 40.0, past.y + 1.0);
+        let under = (first.x + 1.0, l.height + 4.0);
+        for (x, y) in [gutter, empty, under] {
+            assert_eq!(l.cell_at(x, y), None, "the ground at ({x}, {y})");
+            // Twin: the nearest cell there is a cell, which a drop takes and a click must not.
+            assert!(l.index_at(x, y).is_some());
+        }
     }
 
     #[test]
