@@ -242,7 +242,8 @@ export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
     // The bar with every word, read off hidden copies, never off the keys shown, or the window's width
     // would loop through it; narrower, the flat keys' words give way to glyphs.
-    property <length> full: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + history-sizing.preferred-width
+    property <length> start: Bar.traffic-lights > 0 ? Bar.traffic-lights : ShellStyle.bar-end;
+    property <length> full: root.start + ShellStyle.bar-end + mode.preferred-width + history-sizing.preferred-width
         + max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width)
         + own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
     // Settled once the bar is laid: the history's and the app's keys stand in the bar's own layout, so
@@ -268,8 +269,8 @@ export component Toolbar inherits Surface {
         }
     }
     HorizontalLayout {
-        padding-left: ShellStyle.bar-padding + Bar.traffic-lights;
-        padding-right: ShellStyle.bar-padding;
+        padding-left: root.start;
+        padding-right: ShellStyle.bar-end;
         padding-top: ShellStyle.bar-padding;
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;

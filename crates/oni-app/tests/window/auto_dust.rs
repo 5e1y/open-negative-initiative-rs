@@ -176,7 +176,9 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     // Past the double click the keys above made, which would read the press as a reset.
     let past_a_double = oni_app::system::double_click() + Duration::from_millis(50);
     std::thread::sleep(past_a_double);
-    let mut y = 0.0;
+    // Under the bar, whose keys a blind press would open.
+    let back = common::the(w, AccessibleRole::Button, "BACK");
+    let mut y = back.y + back.height;
     while d.get_sensitivity() == 0.0 && y < 800.0 {
         dragged(&rig, x, y, 40.0);
         y += 4.0;

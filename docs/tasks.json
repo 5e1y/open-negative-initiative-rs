@@ -8403,6 +8403,13 @@
     "type": "fix",
     "title": "Leaving full screen lays the traffic lights back in the bar",
     "status": "done",
-    "detail": "Owner's report: back from full screen, the traffic lights sat at AppKit's top-left corner over BACK. winit reads the window out of full screen only in windowDidExitFullScreen, after the last resize of the way out, so every resize of it read full screen: no room in the bar and the lights left where AppKit lays them. The end of each full-screen transition (NSWindowDidEnter/ExitFullScreenNotification) now lays the lights and the bar's room again on the loop's next turn (chrome::after_full_screen). No window check reaches AppKit's full screen; the owner's eye is the proof."
+    "detail": "Owner's report: back from full screen, the traffic lights sat at AppKit's top-left corner over BACK, the bar keeping no room for them. winit reads the window out of full screen only in windowDidExitFullScreen, after the last resize of the way out, so every resize of it read full screen: no room in the bar and the lights left where AppKit lays them. The end of each full-screen transition (NSWindowDidEnter/ExitFullScreenNotification) now lays the lights and the bar's room again on the loop's next turn (chrome::after_full_screen), followed from the moment winit has made the window (winit_window().await): before the loop runs there is no window to follow, which the first attempt missed. Each end is logged with the room the bar keeps. No window check reaches AppKit's full screen; the owner's eye and the log are the proof."
+  },
+  {
+    "id": 1677,
+    "type": "ui",
+    "title": "The bar's ends line up with the columns' content",
+    "status": "done",
+    "detail": "Owner's call: the header's content no longer stands out past the columns'. Its ends take the columns' inset (ShellStyle.bar-end, the column inset, 16 pt) instead of 8 pt; where the traffic lights show, their room starts the bar alone, as it keeps their own margin after them, so the windowed bar needs the same width as before (a 13-inch screen still holds every word). Window check toolbar: without the lights, BACK starts where the columns' leftmost control does and EXPORT ends where their rightmost does; twin: with the lights the bar starts at their room. The widening and accent checks read the new end."
   }
 ]

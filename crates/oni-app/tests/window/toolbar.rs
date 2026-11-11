@@ -14,6 +14,9 @@ use std::time::Duration;
 
 use crate::common;
 
+/// `ShellStyle.bar-end`: the bar ends as far in from the window's edge as the columns' content does.
+const END: f32 = 16.0;
+
 /// The bar's keys left to right in the window `w` points wide, each as the span of x it takes: read off
 /// the keys the window shows, never off their faces, which the bar's flat keys show under the hand alone.
 fn spans(rig: &common::Rig, window: &oni_app::MainWindow, w: u32) -> Vec<(f32, f32)> {
@@ -56,7 +59,7 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
         let mut out: Vec<(f32, f32)> = ["EXPORT", "Settings", "Phone", "Feedback"].iter().map(|l| at(l)).map(|k| (w as f32 - k.x, k.width)).collect();
         let trash = at("Trash");
         out.push((at("Feedback").x - (trash.x + trash.width), 0.0));
-        assert!(keys.last().is_some_and(|k| (k.1 - (w as f32 - 8.0)).abs() < 0.5), "EXPORT ends the bar: {keys:?}");
+        assert!(keys.last().is_some_and(|k| (k.1 - (w as f32 - END)).abs() < 0.5), "EXPORT ends the bar: {keys:?}");
         out
     };
     // Both bars hold every word of the centre, so only the room between the keys can change.
@@ -133,7 +136,7 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     let ends = |s: &[(f32, f32)], slot: usize| s[s.len() - slot - 2..s.len() - slot].to_vec();
     assert_eq!((ends(&gallery, 1), ends(&preparing, 0)), (ends(&editor, 1), ends(&editor, 1)), "{gallery:?} {preparing:?} {editor:?}");
     assert_eq!(gallery.last(), editor.last(), "EXPORT stands in one place in both screens");
-    assert!(editor.last().unwrap().1 <= 1100.0 - 8.0, "EXPORT ends inside the window: {editor:?}");
+    assert!(editor.last().unwrap().1 <= 1100.0 - END, "EXPORT ends inside the window: {editor:?}");
     // Twin: the keys between them are the mode's own, which a bar laid once would not show.
     assert_ne!(gallery[3..gallery.len() - 3], editor[3..editor.len() - 3]);
 
@@ -347,39 +350,3 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// A 13-inch MacBook Air's screen, in points, the narrowest the bar must hold every word on.
-const AIR_13: f32 = 1440.0;
-/// The room the Mac's traffic lights take at the bar's start, as `chrome::traffic_lights` lays them.
-const LIGHTS: f32 = 94.0;
-
-pub(crate) fn the_bar_holds_every_word_on_a_13_inch_screen() {
-    let Some((rig, shell, root)) = crate::panel_bindings::opened("bar-13") else { return };
-    let w = &shell.window;
-    let bar = w.global::<Bar>();
-    bar.set_traffic_lights(LIGHTS);
-    let worded = |width: f32| {
-        rig.window.set_size(slint::PhysicalSize::new(width as u32, 900));
-        rig.settle();
-        !common::placed(w, Role::Button, "Undo").is_empty()
-    };
-    // The editor's bar, the fullest, in every language the app speaks, shot on the screen it must fit.
-    let needs: Vec<(oni_i18n::Language, f32)> = [oni_i18n::Language::English, oni_i18n::Language::French, oni_i18n::Language::Spanish]
-        .into_iter()
-        .map(|language| {
-            oni_app::language::speak(Some(language));
-            rig.window.set_size(slint::PhysicalSize::new(AIR_13 as u32, 900));
-            rig.settle();
-            println!("shot {}", rig.shot(&format!("bar-13-inch-{language:?}")).display());
-            (language, bar.get_needed())
-        })
-        .collect();
-    println!("the bar needs {needs:?}");
-    assert!(needs.iter().all(|(_, needed)| *needed <= AIR_13), "over a 13-inch screen's {AIR_13} pt: {needs:?}");
-    oni_app::language::speak(Some(oni_i18n::Language::English));
-    rig.settle();
-    // The width read is the one the words give way under: whole at it; twin: a point narrower, glyphs alone.
-    let needed = bar.get_needed().ceil();
-    assert!(worded(needed), "every word at {needed} pt");
-    assert!(!worded(needed - 1.0), "twin: the words give way a point narrower");
-    let _ = std::fs::remove_dir_all(&root);
-}

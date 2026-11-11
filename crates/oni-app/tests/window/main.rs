@@ -125,6 +125,7 @@ mod together_tools;
 mod told;
 mod toolbar;
 mod toolbar_accent;
+mod toolbar_fit;
 mod toolbar_keys;
 mod tooltip;
 mod tree_hand;
@@ -347,7 +348,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("whole_roll::the_whole_roll_together_ends_when_another_roll_opens", whole_roll::the_whole_roll_together_ends_when_another_roll_opens),
     ("face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face", face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
-    ("toolbar::the_bar_holds_every_word_on_a_13_inch_screen", toolbar::the_bar_holds_every_word_on_a_13_inch_screen),
+    ("toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen", toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar_accent::the_accent_lands_on_each_screens_own_commit", toolbar_accent::the_accent_lands_on_each_screens_own_commit),
     ("toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit", toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit),

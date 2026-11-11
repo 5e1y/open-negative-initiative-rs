@@ -2,7 +2,7 @@
 //! content, so the traffic lights sit in the app's own bar; the bar's empty room drags the window.
 
 use slint::winit_030::WinitWindowAccessor;
-use slint::winit_030::winit::window::WindowAttributes;
+use slint::winit_030::winit::window::{Window, WindowAttributes};
 use std::cell::Cell;
 use std::time::Instant;
 
@@ -39,10 +39,11 @@ pub fn traffic_lights(window: &slint::Window, bar: f32) -> f32 {
     window.with_winit_window(|w| if w.fullscreen().is_some() { 0.0 } else { platform::traffic_lights(w, f64::from(bar)) }).unwrap_or(0.0)
 }
 
-/// Calls `relay` once each full-screen transition has ended: winit reads the window out of full screen
-/// only after the last resize of its way out, by when AppKit has laid the lights back at its own place.
-pub fn after_full_screen(window: &slint::Window, relay: impl Fn() + 'static) {
-    window.with_winit_window(|w| platform::after_full_screen(w, relay));
+/// Calls `relay`, told whether the window entered full screen, once each full-screen transition of `window`
+/// has ended: winit reads it out of full screen only after the last resize of its way out, by when AppKit
+/// has laid the lights back at its own place.
+pub fn after_full_screen(window: &Window, relay: impl Fn(bool) + 'static) {
+    platform::after_full_screen(window, relay);
 }
 
 thread_local! {
@@ -117,16 +118,16 @@ mod platform {
 
     /// Each end of a full-screen transition calls `relay` on the loop's next turn, once winit and AppKit
     /// have both settled the window; the observers last as long as the window, the app's whole run.
-    pub fn after_full_screen(window: &Window, relay: impl Fn() + 'static) {
+    pub fn after_full_screen(window: &Window, relay: impl Fn(bool) + 'static) {
         let Some(ns_window) = ns_window(window) else { return };
         let (relay, center) = (std::rc::Rc::new(relay), NSNotificationCenter::defaultCenter());
         let object: &AnyObject = &ns_window;
         // SAFETY: AppKit's own notification names, read on the main thread.
-        for name in unsafe { [NSWindowDidEnterFullScreenNotification, NSWindowDidExitFullScreenNotification] } {
+        for (name, entered) in unsafe { [(NSWindowDidEnterFullScreenNotification, true), (NSWindowDidExitFullScreenNotification, false)] } {
             let relay = relay.clone();
             let block = RcBlock::new(move |_: NonNull<NSNotification>| {
                 let relay = relay.clone();
-                slint::Timer::single_shot(std::time::Duration::ZERO, move || relay());
+                slint::Timer::single_shot(std::time::Duration::ZERO, move || relay(entered));
             });
             // SAFETY: with no queue the block runs where AppKit posts a window's notifications, the main thread.
             std::mem::forget(unsafe { center.addObserverForName_object_queue_usingBlock(Some(name), Some(object), None, &block) });
@@ -190,7 +191,7 @@ mod platform {
         0.0
     }
 
-    pub fn after_full_screen(_: &Window, _: impl Fn() + 'static) {}
+    pub fn after_full_screen(_: &Window, _: impl Fn(bool) + 'static) {}
 
     pub fn double_click_action() -> Action {
         Action::Nothing

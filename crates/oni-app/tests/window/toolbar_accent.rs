@@ -78,11 +78,11 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
         keys[0]
     };
     let face = |label: &str| blue(&rig, key(label));
-    // EXPORT ends the bar, a bar's padding from the window's right edge, no key after it.
+    // EXPORT ends the bar, the columns' inset from the window's right edge (`ShellStyle.bar-end`), no key after it.
     let at_end = || {
         let export = key("EXPORT");
         let after = common::placed_all(w, Role::Button).into_iter().filter(|k| k.y < bar.get_height() && k.x > export.x).count();
-        ((export.x + export.width - (1728.0 - 8.0)).abs() < 0.5, after)
+        ((export.x + export.width - (1728.0 - 16.0)).abs() < 0.5, after)
     };
 
     // An empty archive: a folder to add is all there is to do, EXPORT out of reach at the end.

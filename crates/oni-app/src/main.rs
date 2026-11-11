@@ -205,11 +205,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let before = vec![(marked("Starting the graphics card"), graphics), (marked("Starting the interface"), interface), (marked("Building the window"), built)];
     starter::launch(&window, began, before, steps, kernels, ready)?;
     lights(&window);
+    // winit makes the window once the loop runs: its full-screen transitions are followed from then.
     let after = window.as_weak();
-    oni_app::chrome::after_full_screen(window.window(), move || {
-        if let Some(w) = after.upgrade() {
-            lights(&w);
-        }
+    let _ = slint::spawn_local(async move {
+        let Some(w) = after.upgrade() else { return };
+        let Ok(made) = w.window().winit_window().await else { return };
+        oni_app::chrome::after_full_screen(&made, move |entered| {
+            if let Some(w) = after.upgrade() {
+                lights(&w);
+                let room = w.global::<oni_app::Bar>().get_traffic_lights();
+                timing::line(&format!("full screen {}: the bar keeps {room:.0} pt for the lights", if entered { "entered" } else { "left" }));
+            }
+        });
     });
     oni_app::on_screen::shown(window.as_weak());
     slint::run_event_loop()?;

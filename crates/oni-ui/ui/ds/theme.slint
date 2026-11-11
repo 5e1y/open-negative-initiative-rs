@@ -335,6 +335,9 @@ export global ShellStyle {
     out property <length> min-width: DS.control-min-window-width;
     out property <length> min-height: DS.control-min-window-height;
     out property <length> bar-padding: Space.s;
+    // The bar's ends line up with the columns' content under them; the traffic lights' room, where they
+    // show, keeps their own margin after them and starts the bar alone.
+    out property <length> bar-end: ShellStyle.column-inset;
     // Between the bar's groups, three times a group's own gap between its keys, so they read at a glance.
     out property <length> bar-gap: Space.l;
     out property <length> bar-height: ButtonStyle.bar-key + 2 * Space.s;
