@@ -14,6 +14,7 @@ mod button_group;
 mod canvas_keys;
 mod canvas_layout;
 mod canvas_switch;
+mod dedust_grid;
 mod collection;
 mod column_edges;
 mod column_menu;
@@ -148,6 +149,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is", column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is),
     ("column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset", column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
+    ("dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source", dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source),
     ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),

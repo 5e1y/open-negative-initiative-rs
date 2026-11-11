@@ -9,6 +9,8 @@ pub(in crate::app) struct Dust {
     pub next_number: usize,
     /// Where each correction's patch was copied from, in fractions of the rendered frame, y down.
     pub sources: HashMap<oni_settings::id::Id, (f64, f64)>,
+    /// The correction whose tile the hand is on: the canvas shows it alone, with its source.
+    pub shown: Option<oni_settings::id::Id>,
     /// The corrections whose search found no match and laid the tile beside the stroke.
     pub fallback: HashSet<oni_settings::id::Id>,
     /// The frames whose dust patches are being generated; the corrections whose patch is on disk,

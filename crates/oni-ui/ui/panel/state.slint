@@ -152,6 +152,8 @@ export global Framing {
 // One correction of the open frame, as `CorrectionsPanel` lists it.
 export struct CorrectionRow {
     label: string,
+    // The number its marker shows on the canvas, never its place in the list, which a removal shifts.
+    number: int,
     pending: bool,
     fallback: bool,
     // The dust the patch covers, as the frame shows it unpatched.
@@ -171,6 +173,9 @@ export global Dedust {
     callback scroll(length, length, length, bool) -> bool;
     callback step(int);
     callback remove(int);
+    // The tile under the hand, -1 for none: the canvas shows that correction alone.
+    in-out property <int> hovered-row: -1;
+    callback shown(int);
     // The header's DONE, the gesture the bar's key and the menu ask.
     callback act(Act);
     // Auto De-dust: a reading under way or shown, the dust it keeps, what it says.

@@ -26,7 +26,7 @@ impl Ctl {
         // Strokes and marks show in De-dust alone: a notch elsewhere builds none of their paths.
         let frame = self.image_frame(false).filter(|_| painting);
         type Shape = (Vec<(f64, f64)>, f64);
-        let (rows, marks, radius, stroke, rendered, traces, lines, waiting) = {
+        let (rows, marks, radius, stroke, rendered, sources, lines, waiting) = {
             let mut s = self.state.borrow_mut();
             let corrections = s.store.settings().corrections.clone();
             for c in &corrections {
@@ -39,6 +39,9 @@ impl Ctl {
             if let Some(f) = frame {
                 s.painting_stroke.relaid(f);
             }
+            if s.dust.shown.is_some_and(|id| !corrections.iter().any(|c| c.id == id)) {
+                s.dust.shown = None;
+            }
             let s = &*s;
             // A heal waiting on the frame's full-resolution build is already under way.
             let healing = s.open_path().is_some_and(|p| s.dust.healing.contains(p) || s.building_full.as_deref() == Some(p));
@@ -47,37 +50,42 @@ impl Ctl {
                 .iter()
                 .map(|c| crate::CorrectionRow {
                     label: s.dust.numbers.get(&c.id).map_or(tr("Correction").to_string(), |n| tr!("Correction {n}", n = n)).into(),
+                    number: s.dust.numbers.get(&c.id).map_or(0, |&n| n as i32),
                     pending: pending(c),
                     fallback: s.dust.fallback.contains(&c.id),
                     original: originals::original(c.id),
                 })
                 .collect();
+            // One correction shown alone, its source with it; else every marker and no source at all.
+            let shown = |c: &oni_settings::frame::Correction| s.dust.shown.is_none_or(|id| id == c.id);
+            let sourced = |c: &&oni_settings::frame::Correction| s.dust.shown == Some(c.id);
             let rendered = s.full_size;
             let marks: Vec<(f64, f64, f64, f64, usize)> = match (frame, rendered) {
                 (Some(f), Some(r)) => corrections
                     .iter()
-                    .filter(|c| !c.stroke.is_empty())
+                    .filter(|c| !c.stroke.is_empty() && shown(c))
                     .map(|c| {
-                        // `boundingFraction`: the stroke's extent padded by its radius, in fractions.
-                        let (rx, ry) = (c.radius / r.0, c.radius / r.1);
-                        let (x0, x1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
-                        let (y0, y1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.y), b.max(p.y)));
-                        let (x, y, wd, ht) = (x0 - rx, y0 - ry, x1 - x0 + 2.0 * rx, y1 - y0 + 2.0 * ry);
+                        let (x, y, wd, ht) = bounding(c, (0.0, 0.0), r);
                         (f.0 + x * f.2, f.1 + y * f.3, wd * f.2, ht * f.3, s.dust.numbers.get(&c.id).copied().unwrap_or(0))
                     })
                     .collect(),
                 _ => Vec::new(),
             };
-            // `correctionMarks`: the line from each stroke to its source, and the copied stroke itself.
-            let traces: Vec<Shape> = corrections
-                .iter()
-                .filter_map(|c| {
-                    let o = *s.dust.sources.get(&c.id)?;
-                    Some((c.stroke.iter().map(|p| (p.x + o.0, p.y + o.1)).collect(), c.radius))
-                })
-                .collect();
+            // `correctionMarks`: the line from the stroke shown to its source, and a ring where it was copied from.
+            let sources: Vec<(f64, f64, f64, f64, usize)> = match (frame, rendered) {
+                (Some(f), Some(r)) => corrections
+                    .iter()
+                    .filter(sourced)
+                    .filter_map(|c| {
+                        let (x, y, wd, ht) = bounding(c, *s.dust.sources.get(&c.id)?, r);
+                        Some((f.0 + x * f.2, f.1 + y * f.3, wd * f.2, ht * f.3, 0))
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
             let lines: Vec<((f64, f64), (f64, f64))> = corrections
                 .iter()
+                .filter(sourced)
                 .filter_map(|c| {
                     let o = s.dust.sources.get(&c.id)?;
                     let centre = live::bounding_centre(c.stroke.iter().map(|p| (p.x, p.y)))?;
@@ -86,7 +94,7 @@ impl Ctl {
                 .collect();
             // A stroke stays painted until its patch lands, so the dust is never shown bare meanwhile.
             let waiting: Vec<Shape> = corrections.iter().filter(|c| pending(c)).map(|c| (c.stroke.iter().map(|p| (p.x, p.y)).collect(), c.radius)).collect();
-            (rows, marks, s.brush, SharedString::from(s.painting_stroke.commands()), rendered, traces, lines, waiting)
+            (rows, marks, s.brush, SharedString::from(s.painting_stroke.commands()), rendered, sources, lines, waiting)
         };
         let d = w.global::<crate::Dedust>();
         let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
@@ -96,6 +104,10 @@ impl Ctl {
         d.set_value_text(text);
         if let Some(rows) = renewed(&d.get_rows(), rows) {
             d.set_rows(rows);
+        }
+        // No correction shown, a removal or another photo since: no tile stays under the hand.
+        if self.state.borrow().dust.shown.is_none() {
+            d.set_hovered_row(-1);
         }
         let c = w.global::<Canvas>();
         c.set_painting(painting);
@@ -117,21 +129,20 @@ impl Ctl {
         c.set_brush_diameter(width(f64::from(radius)));
         c.set_stroke_width(width(f64::from(radius)));
         c.set_stroke(stroke);
-        let marks: Vec<Mark> = marks
-            .into_iter()
-            .map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 })
-            .collect();
-        if let Some(marks) = renewed(&c.get_marks(), marks) {
+        let laid = |list: Vec<(f64, f64, f64, f64, usize)>| -> Vec<Mark> {
+            list.into_iter().map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 }).collect()
+        };
+        if let Some(marks) = renewed(&c.get_marks(), laid(marks)) {
             c.set_marks(marks);
+        }
+        if let Some(sources) = renewed(&c.get_source_marks(), laid(sources)) {
+            c.set_source_marks(sources);
         }
         let path = live::traced;
         let shapes = |list: &[Shape]| match frame {
             Some(f) => list.iter().map(|(points, radius)| (path(points, f).into(), width(*radius))).collect::<Vec<(SharedString, f32)>>(),
             None => Vec::new(),
         };
-        if let Some(shapes) = renewed(&c.get_source_shapes(), shapes(&traces)) {
-            c.set_source_shapes(shapes);
-        }
         if let Some(waiting) = renewed(&c.get_pending_strokes(), shapes(&waiting)) {
             c.set_pending_strokes(waiting);
         }
@@ -158,15 +169,16 @@ impl Ctl {
         }
     }
 
-    /// `appendCorrection`: a stroke of two points at least becomes a correction; the write asks the
-    /// render, which starts its patch and shows it pending before the next frame.
+    /// `appendCorrection`: a stroke becomes a correction, a click a dot of the brush's size; the write asks
+    /// the render, which starts its patch and shows it pending before the next frame.
     pub(super) fn paint_end(self: &Rc<Self>) {
-        let (stroke, radius) = {
+        let (mut stroke, radius) = {
             let mut s = self.state.borrow_mut();
             (s.painting_stroke.take(), s.brush)
         };
-        if stroke.len() < 2 {
-            return self.publish_dedust();
+        let Some(&(x, y)) = stroke.last() else { return self.publish_dedust() };
+        if stroke.len() == 1 {
+            stroke.push((x + DOT, y));
         }
         let correction = oni_settings::frame::Correction {
             id: oni_settings::id::Id::new(),
@@ -200,6 +212,14 @@ impl Ctl {
             s.dust.sources.remove(&gone.id);
         }
         self.write(Command::Write(Box::new(next)));
+    }
+
+    /// The list's tile under the hand, `row` -1 for none: the canvas shows that correction alone with its source.
+    pub(super) fn show_correction(self: &Rc<Self>, row: i32) {
+        let id = usize::try_from(row).ok().and_then(|r| self.state.borrow().store.settings().corrections.get(r).map(|c| c.id));
+        if std::mem::replace(&mut self.state.borrow_mut().dust.shown, id) != id {
+            self.publish_dedust();
+        }
     }
 
     /// `negative.fullIfReady`, built ahead for the open frame alone: as De-dust opens, or once the frame
@@ -351,6 +371,18 @@ impl State {
         }
         false
     }
+}
+
+/// A click's dot, in fractions of the frame: under a pixel of any scan, as a stroke holds two points.
+const DOT: f64 = 1e-4;
+
+/// `boundingFraction`: a stroke moved by `offset`, its extent padded by its radius, in fractions of the
+/// frame rendered at `full` pixels.
+fn bounding(c: &oni_settings::frame::Correction, offset: (f64, f64), full: (f64, f64)) -> (f64, f64, f64, f64) {
+    let (rx, ry) = (c.radius / full.0, c.radius / full.1);
+    let (x0, x1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
+    let (y0, y1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.y), b.max(p.y)));
+    (x0 + offset.0 - rx, y0 + offset.1 - ry, x1 - x0 + 2.0 * rx, y1 - y0 + 2.0 * ry)
 }
 
 /// `items` as a new model unless `model` holds them already, so a repeater is not rebuilt on a notch.

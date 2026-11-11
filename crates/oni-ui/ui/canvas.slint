@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Menu, Tips, StatusStyle } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, RingTone, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Menu, Tips, StatusStyle } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
@@ -178,12 +178,12 @@ export component CanvasCard inherits Card {
                     diameter: max(m.width, m.height, DustStyle.ring);
                 }
             }
-            for t in Canvas.source-shapes: Trace {
-                tone: TraceTone.source;
-                width: parent.width;
-                height: parent.height;
-                commands: t.commands;
-                thickness: t.width;
+            // A ring where the patch was copied from, the picture left whole under it.
+            for m in Canvas.source-marks: Ring {
+                tone: RingTone.sharpen;
+                centre-x: m.x + m.width / 2;
+                centre-y: m.y + m.height / 2;
+                diameter: min(m.width, m.height);
             }
             // `DSGuide.width(false)` dashed four on four, the dashes laid by Rust.
             if Canvas.source-lines != "": Trace {

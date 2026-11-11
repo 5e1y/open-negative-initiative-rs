@@ -83,9 +83,9 @@ export global Canvas {
     in property <[Mark]> marks;
     // The strokes whose patch is being generated, kept on the canvas until it lands.
     in property <[{commands: string, width: length}]> pending-strokes;
-    // Each patch's source: the lines to them, and the copied strokes with their widths.
+    // The source of the correction shown alone: the line to it, and a ring where its patch was copied from.
     in property <string> source-lines;
-    in property <[{commands: string, width: length}]> source-shapes;
+    in property <[Mark]> source-marks;
     // Auto De-dust's reading: the picture veiled but for its pixels past the roll's window, a ring on each speck kept.
     in property <bool> dust-shown;
     in property <image> dust-mask;
