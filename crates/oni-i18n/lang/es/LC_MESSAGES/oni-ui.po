@@ -570,6 +570,14 @@ msgid "e.g. © 2026 Jane Doe"
 msgstr "p. ej. © 2026 Lucía García"
 
 #: crates/oni-ui/ui/export.slint
+msgid "Hide the EXIF"
+msgstr "Ocultar los EXIF"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Show the EXIF"
+msgstr "Mostrar los EXIF"
+
+#: crates/oni-ui/ui/export.slint
 msgid "Quality"
 msgstr "Calidad"
 
@@ -4370,8 +4378,8 @@ msgid "Writing {progress} of {count}…"
 msgstr "Escribiendo {progress} de {count}…"
 
 #: crates/oni-app/src/export.rs
-msgid "{count} photos. You will be asked for a folder; each file takes the name beside its preview."
-msgstr "{count} fotos. Se te pedirá una carpeta; cada archivo recibe el nombre que aparece junto a su vista previa."
+msgid "{count} photos. You will be asked for a folder; each file takes the name under its preview."
+msgstr "{count} fotos. Se te pedirá una carpeta; cada archivo recibe el nombre que aparece bajo su vista previa."
 
 #: crates/oni-app/src/export.rs
 msgid "{count} of {of} sources are 8-bit: their shadows may band once inverted"

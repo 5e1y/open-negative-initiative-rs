@@ -1,6 +1,6 @@
 // The badges: a short word on a capsule, a tag, a disc, a tint or a foil seal.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Type, SurfaceStyle, SealStyle, Foil, ButtonStyle } from "theme.slint";
+import { Colour, Space, Radius, Type, SurfaceStyle, SealStyle, Foil, ButtonStyle, Motion } from "theme.slint";
 import { ToolStyle } from "theme_views.slint";
 import { Label, Tips, TextRole } from "base.slint";
 
@@ -152,26 +152,15 @@ export component Badge inherits Rectangle {
     }
 }
 
-
-// A tool the canvas is in, on a tab of its own colour hanging from the card's top edge, as a label tape.
-export component ToolTab inherits Rectangle {
-    in property <string> text;
+// A canvas tool's tab under its bar key while the tool holds: the tool's colour, as wide as the key, its top
+// corners round, rising from the bar's bottom edge as the tool takes hold.
+export component ToolMarker inherits Rectangle {
     in property <color> ink;
-    height: ToolStyle.tab-height;
-    width: word.preferred-width + 2 * Space.s;
+    in property <bool> shown;
+    property <length> grown: root.shown ? ToolStyle.marker : 0px;
+    animate grown { duration: Motion.overlay-out; easing: ease-out; }
+    height: root.grown;
     background: root.ink;
-    border-bottom-left-radius: Radius.badge;
-    border-bottom-right-radius: Radius.badge;
-    // Named in full: a bare `text` here reads the tab's own word.
-    accessible-role: AccessibleRole.text;
-    accessible-label: root.text;
-    word := Text {
-        text: root.text.to-uppercase();
-        color: ToolStyle.ink;
-        font-size: Type.caption;
-        font-weight: Type.strong;
-        letter-spacing: ButtonStyle.legend-tracking;
-        vertical-alignment: center;
-        horizontal-alignment: center;
-    }
+    border-top-left-radius: ToolStyle.marker / 2;
+    border-top-right-radius: ToolStyle.marker / 2;
 }

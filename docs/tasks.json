@@ -8411,5 +8411,26 @@
     "title": "The bar's ends line up with the columns' content",
     "status": "done",
     "detail": "Owner's call: the header's content no longer stands out past the columns'. Its ends take the columns' inset (ShellStyle.bar-end, the column inset, 16 pt) instead of 8 pt; where the traffic lights show, their room starts the bar alone, as it keeps their own margin after them, so the windowed bar needs the same width as before (a 13-inch screen still holds every word). Window check toolbar: without the lights, BACK starts where the columns' leftmost control does and EXPORT ends where their rightmost does; twin: with the lights the bar starts at their room. The widening and accent checks read the new end."
+  },
+  {
+    "id": 1678,
+    "type": "ui",
+    "title": "The export's EXIF folds away beside each picture",
+    "status": "done",
+    "detail": "Owner's tenth round: the export screen is the pictures'. Each line's EXIF stands in a card, each label over its field, closed until the key left of the picture opens it, for every line at once (Exporting.exif-shown); open, the picture gives the card and its gap of its width. The card is 260 pt and a long word ends cut (owner: cutting words is fine), so the no-cut measure of every stock's and camera's name goes. The file's name stays under its picture on a band of the panel's ground, beside its size, card open or not; the panel says each file takes the name under its preview. Window checks export_columns (closed at first, the key opens and closes the card on both lines, labels over fields, the picture's width given back; twins) and export_panel (the lone photo centred on its whole line, the field faces on their ground)."
+  },
+  {
+    "id": 1679,
+    "type": "ui",
+    "title": "A tool's tab under its key, not on the canvas",
+    "status": "done",
+    "detail": "Owner's tenth round, replacing #1672's tabs on the canvas and its coloured glyphs: while a canvas tool holds, its bar key shows a tab of the tool's colour under it, on the bar's bottom edge, as wide as the key and 5 pt tall (ToolStyle.marker), its top corners round, rising in at Motion.overlay-out, drawn by the design system's ToolMarker; the key itself stays bare (Button on-apart, no lit face, no coloured glyph). CanvasTools and ToolTab go. Window check toolbar_keys: at rest neither colour nor tab, under the hand a ground, on the tab in the tool's colour under the key, its ends at the key's and nothing beside it, the key without colour; let go, the tab gone (twins)."
+  },
+  {
+    "id": 1680,
+    "type": "ui",
+    "title": "Square keys in the dense bar",
+    "status": "done",
+    "detail": "Owner's tenth round: short of room, a flat key's glyph alone stood on a key 32 pt wide and 48 tall, which read as squeezed. It now stands on a square a keycap tall (ButtonStyle.bar-glyph-key, 40 pt): 48 pt squares would run 67 pt past the narrowest window (1100 pt) with the traffic lights. The traffic lights' room in the checks is the 100 pt the app's log read on macOS 26. Window check toolbar_fit: on the narrowest window with the lights, every glyph alone on a square key, every key inside the window and none over another; twin: worded, a flat key is wider than tall."
   }
 ]

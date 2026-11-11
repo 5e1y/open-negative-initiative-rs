@@ -1,7 +1,7 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
 // past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard, ToolStyle } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard, ToolStyle, ToolMarker } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -66,17 +66,28 @@ export global Bar {
     callback room-pressed();
 }
 
-// `AppBar.item`: a flat key of the bar, its glyph over its word, the glyph alone short of room; its
-// ground shows under the hand alone, its group's keys touching.
+// `AppBar.item`: a flat key of the bar, its glyph over its word, the glyph alone on a square short of room;
+// its ground shows under the hand alone, its group's keys touching. A canvas tool's key, while its tool
+// holds, shows a tab of the tool's colour under it on the bar's bottom edge, the key itself left bare.
 component Key inherits Button {
     in property <Act> action;
     in property <bool> compact;
     in property <string> word;
+    in property <color> tool: ToolStyle.none;
     stacked: true;
     in-bar: true;
     has-icon: true;
+    on-apart: root.tool.alpha > 0;
     text: root.compact ? "" : root.word;
     clicked => { Bar.act(root.action); }
+    // On the bar's bottom edge, the key centred in the bar's height whatever its own.
+    if root.tool.alpha > 0: ToolMarker {
+        x: 0;
+        y: (ShellStyle.bar-height + root.height) / 2 - self.height;
+        width: root.width;
+        ink: root.tool;
+        shown: root.on;
+    }
 }
 
 // A keycap of the bar, the mode's key or a commit: its glyph over its legend at every width.
@@ -90,14 +101,14 @@ component Cap inherits Button {
 }
 
 // ⌘A from the bar, the Sheet as film shows a roll whole, the first key of the centre in both modes, its
-// glyph in its tool's colour while it holds: every photo the gallery shows picked, or beside a photo the
-// whole roll together; pressed again, one.
+// tool's tab under it while it holds: every photo the gallery shows picked, or beside a photo the whole
+// roll together; pressed again, one.
 component SelectAll inherits Key {
     action: Act.select-all;
     word: @tr("Sheet");
     icon: Icons.contact-sheet;
     on: Bar.whole;
-    on-ink: ToolStyle.sheet;
+    tool: ToolStyle.sheet;
     help: self.on ? @tr("Back to One Photo")
         : Bar.editing ? @tr("Show the Whole Roll Together ({})", KeyWords.command + "A") : @tr("Select All ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
@@ -157,8 +168,8 @@ component Centre inherits HorizontalLayout {
 
 component EditorKeys inherits Centre {
     trash: false;
-    // `centreKeys` by job: the canvas's views and tools, each glyph in its tool's colour while it holds, as
-    // its tab on the canvas's edge, the faces, then the settings carried from photo to photo.
+    // `centreKeys` by job: the canvas's views and tools, each with its tool's tab under it while it holds,
+    // the faces, then the settings carried from photo to photo.
     ButtonGroup {
         joined: true;
         SelectAll { compact: root.compact; }
@@ -168,7 +179,7 @@ component EditorKeys inherits Centre {
             word: @tr("Crop");
             icon: Icons.framing;
             on: PanelState.tab == 1;
-            on-ink: ToolStyle.crop;
+            tool: ToolStyle.crop;
             help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
             enabled: Bar.has-photo && Bar.single;
         }
@@ -178,11 +189,11 @@ component EditorKeys inherits Centre {
             word: @tr("De-dust");
             icon: Icons.correction;
             on: PanelState.tab == 4;
-            on-ink: ToolStyle.dust;
+            tool: ToolStyle.dust;
             help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
             enabled: Bar.has-photo && Bar.single;
         }
-        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; on-ink: ToolStyle.compare; enabled: Bar.has-photo; }
+        Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; tool: ToolStyle.compare; enabled: Bar.has-photo; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
     Tabs {

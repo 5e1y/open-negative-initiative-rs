@@ -71,7 +71,7 @@ oni-lab) draws a still key once and a pressed one once a frame.
   section's header, a row or the canvas's header. A worded key is never narrower than tall.
 - **The bar's form** (`stacked`): every key of the window's bar, flat or keycap, its glyph over its word at
   `ButtonStyle.bar-key` (48 pt), the bar's tab bars as tall; short of room a flat key keeps its glyph alone
-  on a `bar-glyph-key`-wide key. A flat key shows no ground at rest: the hand's veil (`ButtonStyle.veil`)
+  on a square a keycap tall (`bar-glyph-key`), so the narrowest window holds every key. A flat key shows no ground at rest: the hand's veil (`ButtonStyle.veil`)
   under the hand, a step more pressed, and while `on` a flat lit ground (`ButtonStyle.on`), no hollow and no
   shade, a step over the veil so the two never read alike; a keycap `on` is held down: no lamp on the bar.
   Its primary is the accent keycap as anywhere else (`ButtonStyle.primary`): EXPORT at the bar's right end in
@@ -258,10 +258,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   title, the app's one look for folding; its Reset shows only while the block stands off its rest, at the
   row's far end, the title between it and the fold. On a short row the title yields. A help mark, always shown and named with its block, opens its card (`HelpLayer`) while the hand rests on it, and the card goes as the hand leaves; it stands left of the column, under the tab bar in
   the editor, over the photo and never over the block, one card at a time; its note comes in short parts a blank line apart.
-- **ToolTab**: a tool the canvas is in, a tab in its own colour hanging from the card's top edge after the
-  Library's key, its name in dark capitals. Each tool has its own colour (`ToolStyle`): the Sheet orange, Crop
-  verdigris, De-dust violet, Compare pink. Its bar key shows it in its glyph's ink while it holds, never on a
-  lit face.
+- **A tool's tab**: while a canvas tool holds, its bar key shows a tab of the tool's own colour under it on the
+  bar's bottom edge, as wide as the key and `ToolStyle.marker` (5 pt) tall, its top corners round; the key
+  itself stays bare (`on-apart`). Sheet orange, Crop verdigris, De-dust violet, Compare pink.
 - **GuideLine** draws a guide over a photo, the crop's thirds and the compare split: its light line edged a
   line either side by the contrast shade, so it reads on a bright sky as on a shadow.
 - **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no

@@ -14,7 +14,10 @@ export global FormStyle {
     out property <length> label-width: DS.control-exif-label-width;
     // The EXIF's column beside each export preview, its ground's padding in, as wide as the settings':
     // the longest film stock's name shows whole in its picker, a camera's maker and model in its field.
-    out property <length> fields-width: DS.control-export-panel-width;
+    // The EXIF's card, each label over its field, narrow so a small screen leaves the picture the rest: a long
+    // word ends cut; and the file's name under the picture, on a band of the panel's ground.
+    out property <length> fields-width: DS.control-export-fields-width;
+    out property <length> name-row: DS.control-field-height + 2 * Space.s;
     out property <length> caption: DS.control-export-caption-height;
     out property <length> preview-floor: DS.control-export-preview-floor;
     out property <length> progress: DS.control-inline-progress-width;

@@ -108,7 +108,7 @@ pub fn subtitle(targets: &[Target], exporting: bool, progress: usize, stopped: O
         return trn("Stopped after {n} file was written.", "Stopped after {n} files were written.", n as u64);
     }
     if batch {
-        return tr!("{count} photos. You will be asked for a folder; each file takes the name beside its preview.", count = targets.len());
+        return tr!("{count} photos. You will be asked for a folder; each file takes the name under its preview.", count = targets.len());
     }
     targets.first().and_then(|t| t.path.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
 }
