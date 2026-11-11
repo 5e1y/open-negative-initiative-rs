@@ -8382,7 +8382,7 @@
     "type": "ui",
     "title": "One system for the sheets and the notices",
     "status": "done",
-    "detail": "Owner's ninth round: every modal and every notice follows the same rules, with motion and an ergonomic place (ds/README.md, Overlays). A sheet rests a little above the window's middle (SheetStyle.rest 0.42) and comes in as one at Motion.overlay-in, the scrim darkening as the card rises 16 pt; every footer puts Cancel at the left and the keys at the right, AskSheet's included. The notice rests at the bottom right of the view the hand works in, above its status bar, where a grid of photos and a frame leave room: at the window's top right it covered Crop's DONE, under the canvas's band it covered the gallery's first tiles and caught their drag. It slides in at Motion.overlay-in and away at Motion.overlay-out, its title beside a close key instead of an OK, its action the accent key; it leaves by its close key, its action or after its linger unread. Reduce Motion shows both at once. The update's prompt is a plain question. The Scanner's styles move to theme_scanner.slint and the notice and the banner to notices.slint, so the theme and the containers stay under their caps. Window checks sheet_layout (rest, footers), sheets (the export's replace prompt pressed where drawn), sheet_keys (the notice's close key), told (the notice's action a margin and its padding over the status line; twin: the library's tabs far outside)."
+    "detail": "Owner's ninth round: every modal and every notice follows the same rules, with motion and an ergonomic place (ds/README.md, Overlays). A sheet rests a little above the window's middle (SheetStyle.rest 0.42) and comes in as one at Motion.overlay-in, the scrim darkening as the card rises 16 pt; every footer puts Cancel at the left and the keys at the right, AskSheet's included. The notice rests at the bottom right of the view the hand works in, above its status bar, where a grid of photos and a frame leave room: at the window's top right it covered Crop's DONE, under the canvas's band it covered the gallery's first tiles and caught their drag. It slides in at Motion.overlay-in and away at Motion.overlay-out, with Dismiss beside its action at its foot (#1683); it leaves by Dismiss, its action or after its linger unread. Reduce Motion shows both at once. The update's prompt is a plain question. The Scanner's styles move to theme_scanner.slint and the notice and the banner to notices.slint, so the theme and the containers stay under their caps. Window checks sheet_layout (rest, footers), sheets (the export's replace prompt pressed where drawn), sheet_keys (the notice's close key), told (the notice's action a margin and its padding over the status line; twin: the library's tabs far outside)."
   },
   {
     "id": 1674,
@@ -8424,7 +8424,7 @@
     "type": "ui",
     "title": "A tool's tab under its key, not on the canvas",
     "status": "done",
-    "detail": "Owner's tenth round, replacing #1672's tabs on the canvas and its coloured glyphs: while a canvas tool holds, its bar key shows a tab of the tool's colour under it, on the bar's bottom edge, as wide as the key and 5 pt tall (ToolStyle.marker), its top corners round, rising in at Motion.overlay-out, drawn by the design system's ToolMarker; the key itself stays bare (Button on-apart, no lit face, no coloured glyph). CanvasTools and ToolTab go. Window check toolbar_keys: at rest neither colour nor tab, under the hand a ground, on the tab in the tool's colour under the key, its ends at the key's and nothing beside it, the key without colour; let go, the tab gone (twins)."
+    "detail": "Owner's tenth round, replacing #1672's tabs on the canvas and its coloured glyphs: while a canvas tool holds, its bar key shows a tab of the tool's colour under it, on the bar's bottom edge, as wide as the key and 5 pt tall (ToolStyle.marker), its top corners round, drawn with the tool's ring (#1681); the key itself stays bare (Button on-apart, no lit face, no coloured glyph). CanvasTools and ToolTab go. Window check toolbar_keys: at rest neither colour nor tab, under the hand a ground, on the tab in the tool's colour under the key, its ends at the key's and nothing beside it, the key without colour; let go, the tab gone (twins)."
   },
   {
     "id": 1680,
@@ -8432,5 +8432,40 @@
     "title": "Square keys in the dense bar",
     "status": "done",
     "detail": "Owner's tenth round: short of room, a flat key's glyph alone stood on a key 32 pt wide and 48 tall, which read as squeezed. It now stands on a square a keycap tall (ButtonStyle.bar-glyph-key, 40 pt): 48 pt squares would run 67 pt past the narrowest window (1100 pt) with the traffic lights. The traffic lights' room in the checks is the 100 pt the app's log read on macOS 26. Window check toolbar_fit: on the narrowest window with the lights, every glyph alone on a square key, every key inside the window and none over another; twin: worded, a flat key is wider than tall."
+  },
+  {
+    "id": 1681,
+    "type": "ui",
+    "title": "A ring of each held tool's colour around the card",
+    "status": "done",
+    "detail": "Owner's tenth round: to make the app fun and show a mode plainly, each canvas tool held draws a ring a stroke wide (1 pt) of its colour around the card, the card's own corners kept, square where they are square. Tools held at once nest in their keys' order, Sheet outermost then Crop, De-dust, Compare, each ring a stroke inside the ones before it; each tool's tab hangs from its key down onto its own ring, over the rings outside it, an inner ring and its tab drawn over the outer ones, so no line crosses a tab. The rings lie in the window's own space over the card (ModeRings in app.slint, the design system's ModeRing); each tool key the bar shows publishes where it stands (Bar.place, its copies the bar measures with never do). Window check toolbar_keys: each tool's ring and tab, and Crop with Compare nested, Compare's tab over Crop's ring onto its own; twins at rest and let go. The presets check lets the copy sheet come in before its click on Don't ask again, as a hand does; it clicked during the sheet's entry, where the box stood 16 pt lower."
+  },
+  {
+    "id": 1682,
+    "type": "ui",
+    "title": "The EXIF card's own cross, a rangefinder key, tighter margins",
+    "status": "done",
+    "detail": "Owner's tenth round: closed, the key left of each picture wears Trinil's rangefinder, the camera the EXIF comes from; open, the key gives way to a cross at the card's top right, on its first label's line, that folds it. The card's padding is Space.s and its gap to the picture Space.m, the picture taking the rest. Window checks export_columns (the picture right after the key, open the card in the key's place and the picture giving it what the key took less, the cross over the first field at its right) and export_panel."
+  },
+  {
+    "id": 1683,
+    "type": "ui",
+    "title": "A denser notice with Dismiss; the EXIF card's cross a key",
+    "status": "done",
+    "detail": "Owner's tenth round: the notice is a tight card, its title then its words then at its foot Dismiss beside its action (Undo, Show in Finder), the accent key, the close cross gone; it leaves by Dismiss, its action or after its linger. The EXIF card's cross is a key with a face, as the key that opens the card, flat under the hand, no longer a bare glyph. Window checks sheet_keys (the notice's Dismiss and Undo), told (its action's foot over the status line)."
+  },
+  {
+    "id": 1684,
+    "type": "ui",
+    "title": "A title typed over keeps the column's margins",
+    "status": "done",
+    "detail": "Owner's tenth round: renaming a roll's title in its column, the field ran from the column's very edge to its content's, its words led out to where the title stood (RenameField's outdent). The field now stands on the column's content as every field does, its margins the column's, in the roll's column and over the gallery's heading alike; outdent goes. Window check roll_card: the title's field as wide as the column's content, the stock's key; twin: it starts past the fold keys on the column's edge."
+  },
+  {
+    "id": 1685,
+    "type": "fix",
+    "title": "A pinned row hides what scrolls under it to the pixel",
+    "status": "done",
+    "detail": "Owner's report: a half-pixel line let the rows scrolled under the library tree's pinned row show through. Its square ground lay at a fractional place, so the device pixel it half covered was drawn half ground, half row. The ground now covers whole device pixels, its edges led out to them (row.slint)."
   }
 ]

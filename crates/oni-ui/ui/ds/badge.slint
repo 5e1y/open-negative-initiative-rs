@@ -1,7 +1,6 @@
 // The badges: a short word on a capsule, a tag, a disc, a tint or a foil seal.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Type, SurfaceStyle, SealStyle, Foil, ButtonStyle, Motion } from "theme.slint";
-import { ToolStyle } from "theme_views.slint";
+import { Colour, Space, Radius, Type, SurfaceStyle, SealStyle, Foil, ButtonStyle } from "theme.slint";
 import { Label, Tips, TextRole } from "base.slint";
 
 // `DSBadge`'s and `DSGoldSealView`'s gauges.
@@ -150,17 +149,4 @@ export component Badge inherits Rectangle {
             }
         }
     }
-}
-
-// A canvas tool's tab under its bar key while the tool holds: the tool's colour, as wide as the key, its top
-// corners round, rising from the bar's bottom edge as the tool takes hold.
-export component ToolMarker inherits Rectangle {
-    in property <color> ink;
-    in property <bool> shown;
-    property <length> grown: root.shown ? ToolStyle.marker : 0px;
-    animate grown { duration: Motion.overlay-out; easing: ease-out; }
-    height: root.grown;
-    background: root.ink;
-    border-top-left-radius: ToolStyle.marker / 2;
-    border-top-right-radius: ToolStyle.marker / 2;
 }

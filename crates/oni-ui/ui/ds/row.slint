@@ -129,7 +129,15 @@ export component Row inherits Rectangle {
     property <string> tip: root.unprepared && root.said != "" ? @tr("Not prepared yet") + "\n" + root.said : root.unprepared ? @tr("Not prepared yet") : root.said;
     property <string> told;
     changed tip => { if (area.has-hover) { Tips.hover(false, root.told, 0px, 0px); } }
-    if root.pinned: Rectangle { background: Colour.ground; }
+    // Its square ground on whole device pixels, edges led out to them: one laid between two would let what
+    // scrolls under it show through the pixel it half covers.
+    if root.pinned: Rectangle {
+        property <float> top: root.absolute-position.y / 1phx;
+        property <float> foot: (root.absolute-position.y + root.height) / 1phx;
+        y: (floor(self.top) - self.top) * 1phx;
+        height: (ceil(self.foot) - floor(self.top)) * 1phx;
+        background: Colour.ground;
+    }
     if root.pinned: Rectangle { background: root.band; border-radius: Radius.badge; }
     // A sheet's side list is a few choices, each its own place in Tab's order, Space or Return taking it.
     if root.form == RowForm.sidebar: KeyScope {

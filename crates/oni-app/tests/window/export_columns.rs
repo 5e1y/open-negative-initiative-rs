@@ -14,8 +14,12 @@ use std::time::Duration;
 
 use crate::common;
 
-/// `Space.l`: the gap between the card and the picture, the column's and the panel's padding.
+/// `Space.l`: the column's and the panel's padding.
 const GAP: f32 = 24.0;
+/// `Space.m`: from the EXIF's key or its card to the picture.
+const NEAR: f32 = 16.0;
+/// `ButtonStyle.small-height`: the EXIF's key, a square.
+const KEY: f32 = 24.0;
 /// `CardStyle.inset`: the card's room off the window's ground.
 const INSET: f32 = 8.0;
 /// `FieldStyle.across`, a field's padding on either side of its words.
@@ -95,14 +99,14 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     assert_eq!(keys.len(), 2, "one EXIF key a line: {keys:?}");
     let closed: Vec<f32> = (0..2).map(picture).collect();
     for k in 0..2 {
-        assert!(closed[k] > keys[k].x + keys[k].width && closed[k] - (keys[k].x + keys[k].width) < GAP, "line {k}'s picture right after its key: {:?} {}", keys[k], closed[k]);
+        assert!((closed[k] - (keys[k].x + keys[k].width) - NEAR).abs() < 1.0, "line {k}'s picture right after its key: {:?} {}", keys[k], closed[k]);
         assert!(reaches(k), "line {k}'s picture reaches the room's edge: {:?} {room}", caption(k));
         assert!(nth(w, Role::TextInput, "Name", k).y > keys[k].y + keys[k].height, "line {k}'s name under its picture");
     }
     println!("shot {}", rig.shot("export-columns").display());
 
-    // The key opens the card on every line: each label over its field, the fields one above the other, left
-    // of the picture, which gives the card and its gap of its width.
+    // The key opens the card on every line in its place: each label over its field, the fields one above the
+    // other, left of the picture, which gives the card what the key took less.
     common::click(&rig, w, keys[0].middle());
     rig.settle();
     assert!(w.global::<Exporting>().get_exif_shown(), "the key opens the EXIF");
@@ -111,24 +115,27 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
         let face = |(n, f): &(&str, common::Placed)| if *n == "Film stock" { f.x } else { f.x - ACROSS };
         assert!(laid.iter().all(|f| (face(f) - face(&laid[0])).abs() < 1.0), "line {k}'s fields one above the other: {laid:?}");
         let open = picture(k);
-        assert!(laid.iter().all(|(_, f)| f.x + f.width + GAP <= open), "line {k}'s fields left of its picture: {laid:?} {open}");
-        assert!((open - closed[k] - CARD - GAP).abs() < 1.0, "line {k}'s picture gives the card its room: {} then {open}", closed[k]);
+        assert!(laid.iter().all(|(_, f)| f.x + f.width + NEAR <= open), "line {k}'s fields left of its picture: {laid:?} {open}");
+        assert!((open - closed[k] - (CARD - KEY)).abs() < 1.0, "line {k}'s picture gives the card its room: {} then {open}", closed[k]);
+        assert!(common::placed(w, Role::Button, "Show the EXIF").is_empty(), "open, the card's cross stands for the key");
         assert!(reaches(k), "line {k}'s picture still reaches the room's edge: {:?}", caption(k));
         let mut labels: Vec<_> = common::placed(w, Role::Text, "Camera").into_iter().filter(|t| t.x < presets.x).collect();
         labels.sort_by(|a, b| a.y.total_cmp(&b.y));
         let (label, field) = (labels[k], nth(w, Role::TextInput, "Camera", k));
         assert!(label.y + label.height <= field.y && (label.x - (field.x - ACROSS)).abs() < 1.0, "line {k}'s label over its field: {label:?} {field:?}");
         // Twin: the panel's Presets, right of the pictures, fails the same test.
-        assert!(presets.x + presets.width + GAP > open, "twin: the panel's Presets is not left of the picture");
+        assert!(presets.x + presets.width + NEAR > open, "twin: the panel's Presets is not left of the picture");
     }
     let (above, below) = (fields(w, 0), fields(w, 1));
     let foot = above.last().map(|(_, f)| f.y + f.height).unwrap().max(caption(0).y + caption(0).height);
     assert!(below[0].1.y > foot, "the second photo's line under the first's: {foot} {:?}", below[0].1);
     println!("shot {}", rig.shot("export-columns-exif").display());
 
-    // Closed again by its key, now named for hiding: the card gone, the picture back to its width.
+    // Closed again by the card's cross, at its top right: the card gone, the picture back to its width.
     let hide = common::placed(w, Role::Button, "Hide the EXIF");
-    assert_eq!(hide.len(), 2, "the key names what it does next: {hide:?}");
+    assert_eq!(hide.len(), 2, "a cross on each card: {hide:?}");
+    let first = fields(w, 0);
+    assert!(hide.iter().any(|x| x.y < first[0].1.y && x.x > first[0].1.x), "the cross over the first field, at its right: {hide:?} {:?}", first[0].1);
     common::click(&rig, w, hide[0].middle());
     rig.settle();
     assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the card closes on every line");

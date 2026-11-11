@@ -17,7 +17,7 @@ use crate::common;
 
 /// How far over the status line a notice's action key ends: `SheetStyle.margin`, the notice's padding and
 /// the status line's own inset, within a few points.
-const FOOT: std::ops::Range<f32> = 40.0..64.0;
+const FOOT: std::ops::Range<f32> = 32.0..56.0;
 
 struct Disk {
     root: PathBuf,

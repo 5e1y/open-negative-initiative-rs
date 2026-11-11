@@ -282,7 +282,6 @@ export component EditableTitle inherits VerticalLayout {
     }
     if root.renaming: RenameField {
         role: TextRole.title;
-        outdent: true;
         text: root.text;
         placeholder: root.placeholder;
         edited(t) => { root.edited(t); }

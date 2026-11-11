@@ -152,8 +152,8 @@ fade and the chrome stays. The picker's field wears the same face.
 - **`TextField`**: one entry; `suffix` sits at the face's end, `lines-height` is the text's height inside
   the padding. Entered by a click, Tab or its owner, it selects its value; then a click places the caret,
   a double click selects a word, a triple click the line (the `text_fields` window check).
-- **`RenameField`**: a `TextField` that takes the focus at once; `role: title` and `outdent` for a title,
-  the face led out by its padding so the name typed stays where the title stood.
+- **`RenameField`**: a `TextField` that takes the focus at once; `role: title` for a title, its face on the
+  column's inset as every field's, its margins the column's.
 - **`SizeFields`, `DateFields`**: two or three centred entries on one face a field tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
 - **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread
@@ -287,8 +287,8 @@ Every overlay takes one of two forms, the help cards (`HelpLayer`) and the menus
   status bar: where a grid of photos and a frame leave room, clear of the bar, the panel and the view's keys.
 - It slides in at `Motion.overlay-in` and away at `Motion.overlay-out`. One shows at a time, a newer one taking its
   place.
-- Its title and its close key share a line, then come its words and its one action, the accent key.
-- It leaves by its close key, by its action, or after `SheetStyle.linger` unread, held while the hand rests on it.
+- Its title, then its words, then at its foot Dismiss beside its one action, the accent key; a tight card.
+- It leaves by Dismiss, by its action, or after `SheetStyle.linger` unread, held while the hand rests on it.
   It never takes the keyboard.
 
 **Banner**: a view's state, never an overlay. It stands at the top of its view, the view kept under it.

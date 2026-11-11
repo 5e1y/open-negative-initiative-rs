@@ -34,6 +34,12 @@ fn inked(px: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), key
     (y0 as usize..y1 as usize).flat_map(|y| (x0 as usize..x1 as usize).map(move |x| (x, y))).filter(|&(x, y)| px.1[y * px.0 + x].0 != face).count()
 }
 
+/// Whether a pixel of the window's 16 bits shows the colour `rgb`, within the rounding the window keeps.
+fn near(v: u16, rgb: u32) -> bool {
+    let want = (((rgb >> 19) & 0x1f) << 11 | ((rgb >> 10) & 0x3f) << 5 | ((rgb >> 3) & 0x1f)) as u16;
+    ((v >> 11) as i32 - (want >> 11) as i32).abs() <= 1 && (((v >> 5) & 0x3f) as i32 - ((want >> 5) & 0x3f) as i32).abs() <= 2 && ((v & 0x1f) as i32 - (want & 0x1f) as i32).abs() <= 1
+}
+
 /// A worded key of the bar: its word written once, centred under the key's middle, and its glyph drawn above it.
 fn stacked(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, word: &str) {
     let key = bar_key(w, label);
@@ -122,9 +128,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     };
     // Whether the box shows the colour, as the window's 16-bit pixels keep it.
     let shows = |px: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), r: common::Placed, rgb: u32| {
-        let want = (((rgb >> 19) & 0x1f) << 11 | ((rgb >> 10) & 0x3f) << 5 | ((rgb >> 3) & 0x1f)) as u16;
-        let near = |v: u16| ((v >> 11) as i32 - (want >> 11) as i32).abs() <= 1 && (((v >> 5) & 0x3f) as i32 - ((want >> 5) & 0x3f) as i32).abs() <= 2 && ((v & 0x1f) as i32 - (want & 0x1f) as i32).abs() <= 1;
-        (r.y as usize..(r.y + r.height) as usize).any(|y| (r.x as usize..(r.x + r.width) as usize).any(|x| near(px.1[y * px.0 + x].0)))
+        (r.y as usize..(r.y + r.height) as usize).any(|y| (r.x as usize..(r.x + r.width) as usize).any(|x| near(px.1[y * px.0 + x].0, rgb)))
     };
     // Under a key, down to the bar's bottom edge: the room its tool's tab takes, its ends, and beside it.
     let below = |k: common::Placed| common::Placed { x: k.x + 2.0, y: k.y + k.height + 2.0, width: k.width - 4.0, height: 6.0 };
@@ -156,5 +160,26 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
         assert_eq!(face(label).0, rest, "twin: {label} let go, bare again");
         assert!(!shows(&rig.drawn(), below(bar_key(w, label)), rgb), "twin: {label} let go, its tab gone");
     }
+    // Two tools at once: their rings nested in their keys' order, Crop's on the card's edge and Compare's a
+    // stroke in; Compare's tab runs over Crop's ring onto its own, the inner over the outer.
+    let (crop, compare) = (0x3fae96, 0xec6fa8);
+    bar.invoke_act(Act::Framing);
+    bar.invoke_act(Act::Compare);
+    rig.settle();
+    println!("shot {}", rig.shot("toolbar-keys-nested").display());
+    let (px, back, tab) = (rig.drawn(), bar_key(w, "BACK"), bar_key(w, "Compare"));
+    // The card's top row: the bar's bottom edge, a bar padding under its keys.
+    let top = (back.y + back.height + 8.0) as usize;
+    let row = |y: usize, rgb: u32| (0..px.0).filter(|&x| near(px.1[y * px.0 + x].0, rgb)).count();
+    assert!(row(top, crop) > 500 && row(top + 1, compare) > 500, "Crop's ring on the card's edge, Compare's a stroke in: {} {}", row(top, crop), row(top + 1, compare));
+    let over = (tab.x as usize + 2..(tab.x + tab.width) as usize - 2).all(|x| near(px.1[top * px.0 + x].0, compare));
+    assert!(over, "Compare's tab over Crop's ring, onto its own: {tab:?}");
+    assert!(near(px.1[top * px.0 + (tab.x - 20.0) as usize].0, crop), "twin: beside Compare's tab, Crop's ring");
+    bar.invoke_act(Act::Compare);
+    bar.invoke_act(Act::Framing);
+    rig.settle();
+    let after = rig.drawn();
+    let left = (0..after.0).filter(|&x| near(after.1[top * after.0 + x].0, crop) || near(after.1[(top + 1) * after.0 + x].0, compare)).count();
+    assert_eq!(left, 0, "twin: let go, no ring");
     let _ = std::fs::remove_dir_all(&root);
 }

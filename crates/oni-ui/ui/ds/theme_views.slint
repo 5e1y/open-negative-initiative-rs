@@ -35,14 +35,13 @@ export global StockStyle {
     out property <float> grow: DS.control-thumb-grow;
 }
 
-// The canvas's tools, each its own colour on a tab under its key in the bar while it holds: Sheet orange,
-// Crop verdigris, De-dust violet, Compare pink.
+// The canvas's tools, each its own colour while it holds: a ring a stroke wide around the card and a tab
+// under its key in the bar. Sheet orange, Crop verdigris, De-dust violet, Compare pink.
 export global ToolStyle {
     out property <color> sheet: DS.palette-tool-sheet;
     out property <color> crop: DS.palette-tool-crop;
     out property <color> dust: DS.palette-tool-dust;
     out property <color> compare: DS.palette-tool-compare;
     out property <length> marker: DS.control-tool-marker-height;
-    // No tool: a key the canvas's tools do not hold.
-    out property <color> none: transparent;
+    out property <length> ring: DS.stroke-line;
 }

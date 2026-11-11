@@ -1,13 +1,12 @@
 // The notices: the one that passes over the view the hand works in, and the banner that stays over its view.
 import { Space, Motion, ButtonStyle, SheetStyle } from "theme.slint";
 import { Label, Icon, TextRole, Raised, Lift, Gap } from "base.slint";
-import { Button, ButtonKind, ButtonSize, ButtonGroup, GroupAlign } from "controls.slint";
-import { Icons } from "icons.slint";
+import { Button, ButtonKind, ButtonGroup, GroupAlign } from "controls.slint";
 import { Reach, Reaches } from "reach.slint";
 
 // A transient notice: what a gesture could not do, or a step landed with its Undo, never stopping the hand.
 // At the bottom right of the view the hand works in, where a grid and a frame leave room, it slides in from
-// the edge and back out as it goes: by its close key, its action, or after `SheetStyle.linger` unread, held
+// the edge and back out as it goes: by Dismiss, by its action, or after `SheetStyle.linger` unread, held
 // while the pointer rests on it.
 export component Toast inherits Rectangle {
     in property <string> title;
@@ -51,17 +50,15 @@ export component Toast inherits Rectangle {
     hover := TouchArea {
         card := Raised {
             lift: Lift.sheet;
-            pad: Gap.m;
-            gap: Gap.s;
+            pad: Gap.s;
+            gap: Gap.xs;
             width: root.width;
-            HorizontalLayout {
-                spacing: Space.s;
-                Label { role: TextRole.section; text: root.title; wrap: word-wrap; horizontal-stretch: 1; }
-                Button { kind: ButtonKind.ghost; has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.close; help: @tr("Close"); clicked => { root.leave(); } }
-            }
+            Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
             Label { role: TextRole.note; text: root.message; }
-            if root.action != "": ButtonGroup { align: GroupAlign.end;
-                Button { text: root.action; kind: ButtonKind.accent; clicked => { root.acted(); } }
+            // Dismiss beside its action, the accent key, at its foot.
+            ButtonGroup { align: GroupAlign.end;
+                Button { text: @tr("Dismiss"); clicked => { root.leave(); } }
+                if root.action != "": Button { text: root.action; kind: ButtonKind.accent; clicked => { root.acted(); } }
             }
         }
     }

@@ -1,0 +1,48 @@
+// A canvas tool held: a ring of its colour around the card, a stroke wide, set in by the rings outside it,
+// and its tab hanging from its key in the bar down onto its ring, over the rings outside it.
+import { CardStyle, Motion } from "theme.slint";
+import { ToolStyle } from "theme_views.slint";
+
+// Laid in the window's space: the card's place and the key's, as the window reads them.
+export component ModeRing {
+    in property <color> ink;
+    // How many rings lie outside this one.
+    in property <int> depth;
+    in property <length> card-x;
+    in property <length> card-y;
+    in property <length> card-width;
+    in property <length> card-height;
+    in property <length> key-x;
+    in property <length> key-width;
+    // The card's square corners, which the ring keeps square.
+    in property <bool> square-top-right;
+    in property <bool> square-left;
+    in property <bool> square-right;
+    property <length> inset: root.depth * ToolStyle.ring;
+    property <length> round: max(0px, CardStyle.radius - root.inset);
+    property <float> come;
+    init => { root.come = 1; }
+    animate come { duration: Motion.overlay-out; easing: ease-out; }
+    opacity: root.come;
+    Rectangle {
+        x: root.card-x + root.inset;
+        y: root.card-y + root.inset;
+        width: root.card-width - 2 * root.inset;
+        height: root.card-height - 2 * root.inset;
+        border-width: ToolStyle.ring;
+        border-color: root.ink;
+        border-top-left-radius: root.square-left ? 0px : root.round;
+        border-top-right-radius: root.square-right || root.square-top-right ? 0px : root.round;
+        border-bottom-right-radius: root.square-right ? 0px : root.round;
+        border-bottom-left-radius: root.square-left ? 0px : root.round;
+    }
+    Rectangle {
+        x: root.key-x;
+        y: root.card-y - ToolStyle.marker;
+        width: root.key-width;
+        height: ToolStyle.marker + root.inset + ToolStyle.ring;
+        background: root.ink;
+        border-top-left-radius: ToolStyle.marker / 2;
+        border-top-right-radius: ToolStyle.marker / 2;
+    }
+}

@@ -4,6 +4,7 @@ import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, T
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
+import { ModeRings } from "mode_rings.slint";
 import { Gallery, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount } from "library.slint";
 import { Info } from "info_sidebar.slint";
 import { CardStatus } from "card_status.slint";
@@ -367,6 +368,20 @@ export component MainWindow inherits AppWindow {
         y: -origin.absolute-position.y;
         width: root.width;
         height: root.height;
+        // The canvas's tools held, a ring of each around the card and its tab from its key, over the card.
+        if !Exporting.shown: ModeRings {
+            x: 0;
+            y: 0;
+            width: parent.width;
+            height: parent.height;
+            card-x: card-area.absolute-position.x;
+            card-y: card-area.absolute-position.y;
+            card-width: card-area.width;
+            card-height: card-area.height - card-area.status;
+            square-top-right: root.beside-photo;
+            square-left: root.beside-photo && App.library-hidden;
+            square-right: root.beside-photo && App.panel-hidden;
+        }
         // The notice at the bottom right of the view the hand works in, above its status bar.
         if Told.shown: ToldNotice {
             room: root.width;

@@ -209,22 +209,6 @@ msgstr "Les flèches déplacent la fenêtre de mesure, {}-flèches son bord droi
 msgid "Arrows move the crop, {}-arrows its right or bottom edge, {} ten times as far. Return keeps it."
 msgstr "Les flèches déplacent le recadrage, {}-flèches son bord droit ou bas, {} dix fois plus loin. Retour le garde."
 
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/toolbar.slint
-msgid "Sheet"
-msgstr "Planche"
-
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "Crop"
-msgstr "Recadrage"
-
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Dépoussiérage"
-
-#: crates/oni-ui/ui/canvas_tools.slint crates/oni-ui/ui/toolbar.slint
-msgid "Compare"
-msgstr "Comparer"
-
 #: crates/oni-ui/ui/card_status.slint
 msgid "Settings saved"
 msgstr "Réglages enregistrés"
@@ -362,7 +346,7 @@ msgid "REMEASURE ROLL"
 msgstr "REMESURER LA PELLICULE"
 
 #: crates/oni-ui/ui/ds/notices.slint
-msgid "Close"
+msgid "Dismiss"
 msgstr "Fermer"
 
 #: crates/oni-ui/ui/ds/organise.slint
@@ -517,6 +501,10 @@ msgstr "Désaturé"
 msgid "Camera"
 msgstr "Appareil"
 
+#: crates/oni-ui/ui/export.slint
+msgid "Hide the EXIF"
+msgstr "Masquer les EXIF"
+
 #: crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "e.g. Leica M6"
 msgstr "p. ex. Leica M6"
@@ -568,10 +556,6 @@ msgstr "Copyright"
 #: crates/oni-ui/ui/export.slint
 msgid "e.g. © 2026 Jane Doe"
 msgstr "p. ex. © 2026 Camille Martin"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Hide the EXIF"
-msgstr "Masquer les EXIF"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Show the EXIF"
@@ -2018,12 +2002,20 @@ msgid "Details"
 msgstr "Détails"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Crop"
+msgstr "Recadrage"
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
 msgstr "Quitter le recadrage"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Rend à cette photo le recadrage qu’elle avait à l’ouverture du recadrage, puis le quitte."
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Dépoussiérage"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
@@ -2338,6 +2330,10 @@ msgid "Window"
 msgstr "Fenêtre"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Sheet"
+msgstr "Planche"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "Back to One Photo"
 msgstr "Revenir à une seule photo"
 
@@ -2380,6 +2376,10 @@ msgstr "Recadrer et redresser ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select one photo to de-dust it"
 msgstr "Sélectionnez une seule photo pour la dépoussiérer"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Compare"
+msgstr "Comparer"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
