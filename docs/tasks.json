@@ -8628,5 +8628,12 @@
     "title": "One dispatch's uniform blocks are staged as one",
     "status": "done",
     "detail": "A stage's frame, parameters and auxiliary frames were staged in the uniform ring one after another, and the bind group built after them took the ring as it stood then: had the ring been renewed between two of them (one submission staging past its 4 MiB), the first block lay in the buffer the dispatch no longer bound. Never seen, as a render staged far less, but a dispatch of many instances stages tables a hundred times larger. The blocks of one dispatch are now reserved together (Graph::uniforms), each at its aligned place of one buffer."
+  },
+  {
+    "id": 1714,
+    "type": "fix",
+    "title": "A correction sliding under the hand after a removal shows alone",
+    "status": "done",
+    "detail": "With De-dust's rows now written one by one (#1720), a removal no longer rebuilds the tiles: the tile under the hand takes the next correction while its hand state stays, so its key showed but the canvas isolated nothing. A tile whose correction changes under the hand now names it shown in turn, as any tile the hand enters. The grid check's click on a key, with real pointer events, failed on the merge and passes."
   }
 ]

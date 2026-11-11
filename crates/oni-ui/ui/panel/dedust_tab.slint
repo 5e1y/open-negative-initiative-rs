@@ -50,6 +50,13 @@ component CorrectionTile inherits Rectangle {
             Tips.hover(self.under-hand, @tr("No good match was found nearby — this patch is a plain shifted tile, not a real structural match."), self.absolute-position.x, self.absolute-position.y + self.height);
         }
     }
+    // Another correction slides into the tile under the hand, a removal before it: it shows alone in turn.
+    changed data => {
+        if (self.under-hand) {
+            Dedust.hovered-row = root.place;
+            Dedust.shown(root.place);
+        }
+    }
     touch := TouchArea { }
     VerticalLayout {
         spacing: Space.xxs;
