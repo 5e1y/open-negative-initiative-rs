@@ -48,6 +48,8 @@ pub enum Error {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Stats {
     pub dispatches: u64,
+    /// The pixels the dispatches wrote: a render's work, whatever its stages.
+    pub pixels: u64,
     pub copies: u64,
     pub textures_created: u64,
     pub live_bytes: i64,
@@ -93,12 +95,23 @@ struct Flat<'a> {
     kind: Kind<'a>,
 }
 
-/// What one evaluation needs: each node's rectangle, `None` where nothing reads it, and the cache's hits.
+/// What one evaluation needs: each node's rectangle, `None` where nothing reads it, the cache's hits,
+/// and how each node runs.
 struct Plan<'a> {
     nodes: Vec<Flat<'a>>,
     last: usize,
     rects: Vec<Option<Rect>>,
     hits: Vec<Option<(FloatTexture, Rect)>>,
+    runs: Vec<Run>,
+}
+
+/// How a node covers its rectangle: dispatched over all of it; as its input, where a stage with an
+/// `area` misses it, its auxiliary inputs unread; or over the part of its area it holds, onto its input.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Run {
+    Whole,
+    Through,
+    Within(Rect),
 }
 
 struct Entry {
@@ -134,6 +147,7 @@ pub struct Graph {
     max_side: u32,
     max_buffer: u64,
     dispatches: u64,
+    pixels: u64,
     copies: u64,
     uniforms: Uniforms,
     /// The pass that packs a render into half floats, made at its first use.

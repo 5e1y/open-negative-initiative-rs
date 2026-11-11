@@ -109,6 +109,11 @@ impl FloatTexture {
         !self.0.pooled
     }
 
+    /// A pooled texture this handle alone holds, which no cache, source or other node reads.
+    pub fn alone(&self) -> bool {
+        self.0.pooled && Arc::strong_count(&self.0) == 1
+    }
+
     pub fn precision(&self) -> Precision {
         self.0.precision
     }

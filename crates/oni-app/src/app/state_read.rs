@@ -191,6 +191,11 @@ impl State {
         self.placed
     }
 
+    /// Whether a frame's dust patches are being generated.
+    pub fn healing(&self) -> bool {
+        !self.dust.healing.is_empty()
+    }
+
     pub fn viewport(&self) -> Viewport {
         self.viewport
     }

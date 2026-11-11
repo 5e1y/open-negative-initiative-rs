@@ -74,6 +74,7 @@ impl Graph {
             max_side: max_side.min(limits.max_texture_dimension_2d).max(1),
             max_buffer: limits.max_buffer_size,
             dispatches: 0,
+            pixels: 0,
             copies: 0,
             uniforms,
             packer: None,
@@ -99,6 +100,7 @@ impl Graph {
     pub fn stats(&self) -> Stats {
         Stats {
             dispatches: self.dispatches,
+            pixels: self.pixels,
             copies: self.copies,
             textures_created: self.pool.created,
             live_bytes: self.pool.meter.live.load(Ordering::Relaxed),

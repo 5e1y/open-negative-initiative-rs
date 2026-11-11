@@ -66,7 +66,7 @@ pub(crate) fn a_detect_pressed_before_the_frame_landed_reads_once_it_lands() {
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support, caches: oni_app::patches::caches(), picker: Box::new(|| None), ..Options::default() };
+    let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
     let engine = oni_app::render::Engine::shared(&gpu);
     engine.lock().unwrap().caches = Some(oni_app::patches::caches());
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
@@ -124,7 +124,7 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support, caches: oni_app::patches::caches(), picker: Box::new(|| None), ..Options::default() };
+    let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
     let engine = oni_app::render::Engine::shared(&gpu);
     engine.lock().unwrap().caches = Some(oni_app::patches::caches());
     let shell = Shell::new(Box::new(store), engine, options).unwrap();

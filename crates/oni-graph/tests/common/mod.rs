@@ -156,3 +156,41 @@ fn pixel(p: vec2<i32>) -> vec4<f32> {
         Rect::new(output.x + self.by.0, output.y + self.by.1, w, h)
     }
 }
+
+/// Its auxiliary input averaged onto its input over `at`, its input elsewhere: a placed patch, which
+/// declares `area` as where it writes, or nothing.
+pub struct Stamp {
+    pub at: Rect,
+    pub area: Option<Rect>,
+}
+
+impl Stage for Stamp {
+    fn name(&self) -> &'static str {
+        "stamp"
+    }
+
+    fn shader(&self) -> &'static str {
+        r#"
+fn pixel(p: vec2<i32>) -> vec4<f32> {
+    let s = load(p);
+    if (!inside1(p)) { return s; }
+    return 0.5 * (s + load1(p));
+}
+"#
+    }
+
+    fn params(&self) -> Vec<u8> {
+        let a = self.area.unwrap_or(Rect::new(0, 0, 0, 0));
+        [a.x, a.y, a.w as i32, a.h as i32].iter().flat_map(|v| v.to_le_bytes()).collect()
+    }
+
+    // Away from `at`, one of its pixels: a stage run whole binds it all the same.
+    fn aux_region(&self, _: usize, output: Rect) -> Rect {
+        let hit = output.intersect(&self.at);
+        if hit.is_empty() { Rect::new(self.at.x, self.at.y, 1, 1) } else { hit }
+    }
+
+    fn area(&self) -> Option<Rect> {
+        self.area
+    }
+}

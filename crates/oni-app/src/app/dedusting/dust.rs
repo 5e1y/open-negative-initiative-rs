@@ -13,9 +13,9 @@ pub(in crate::app) struct Dust {
     pub shown: Option<oni_settings::id::Id>,
     /// The corrections whose search found no match and laid the tile beside the stroke.
     pub fallback: HashSet<oni_settings::id::Id>,
-    /// The frames whose dust patches are being generated; the corrections whose patch is on disk,
-    /// and those whose generation failed, neither looked for again.
-    pub healing: HashSet<String>,
+    /// The frames whose dust patches are being generated, each with the settings its run reads; the
+    /// corrections whose patch is on disk, and those whose generation failed, neither looked for again.
+    pub healing: HashMap<String, crate::app::rendering::Latest>,
     pub patched: HashSet<oni_settings::id::Id>,
     pub unhealable: HashSet<oni_settings::id::Id>,
     /// Auto De-dust: a reading under way, one waiting on the full resolution, the last one shown.
@@ -32,6 +32,12 @@ impl Dust {
     /// `load(_:)`: numbering restarts per photo, another photo's sources never show, and a heal that
     /// failed (a drive asleep) is tried again.
     pub fn next_photo(&mut self) {
+        // A run on the frame left stops after its patch; that frame's next opening heals the rest.
+        for latest in self.healing.values() {
+            if let Ok(mut l) = latest.lock() {
+                *l = None;
+            }
+        }
         let (healing, patched) = (std::mem::take(&mut self.healing), std::mem::take(&mut self.patched));
         *self = Dust { next_number: 1, healing, patched, sensitivity: self.sensitivity, ..Dust::default() };
     }

@@ -40,6 +40,11 @@ impl Stage for Patched {
         let hit = output.intersect(&own);
         if hit.is_empty() { Rect::new(own.x, own.y, 1, 1) } else { hit }
     }
+
+    // Past the placed patch the input passes as it is: a patch costs its own pixels, not the region's.
+    fn area(&self) -> Option<Rect> {
+        Some(self.patch)
+    }
 }
 
 /// `RawDecode.rebuildingEdge`: a reduced decode darkens its two outer rows and columns, which are

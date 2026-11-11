@@ -68,12 +68,15 @@ pub struct Pipeline {
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
-    strokes: Vec<(Vec<[f32; 4]>, Source)>,
+    /// Each stroke's row, uploaded once, and the last recipe naming it.
+    strokes: Vec<(Vec<[f32; 4]>, Source, u64)>,
+    recipes: u64,
 }
 
-/// Tables and strokes kept per pipeline: two curve sets alternate, a frame carries tens of strokes.
+/// Tables kept per pipeline, as two curve sets alternate; strokes kept while one of the last recipes
+/// names them, as the canvas, the loupe and a search each name a frame's at their own scale.
 const KEPT_LUTS: usize = 4;
-const KEPT_STROKES: usize = 128;
+pub const KEPT_RECIPES: u64 = 8;
 
 type Result<T> = std::result::Result<T, oni_graph::Error>;
 
@@ -182,19 +185,19 @@ impl Pipeline {
     }
 
     fn stroke(&mut self, graph: &mut Graph, points: Vec<[f32; 4]>) -> Result<Source> {
-        if let Some((_, source)) = self.strokes.iter().find(|(p, _)| *p == points) {
+        let now = self.recipes;
+        if let Some((_, source, used)) = self.strokes.iter_mut().find(|(p, _, _)| *p == points) {
+            *used = now;
             return Ok(source.clone());
         }
         let source = graph.upload(points.len() as u32, 1, &points)?;
-        if self.strokes.len() >= KEPT_STROKES {
-            self.strokes.remove(0);
-        }
-        self.strokes.push((points, source.clone()));
+        self.strokes.push((points, source.clone(), now));
         Ok(source)
     }
 
     /// Each correction's patch through its feathered stroke; a correction with no patch is left out.
     fn corrections(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
+        self.recipes += 1;
         let mut out = image;
         let framed = out.extent();
         for c in &s.corrections {
@@ -218,6 +221,8 @@ impl Pipeline {
             let mask = blurred(hard, corrections::feather(c, scale), true);
             out = out.then_reading(Patched { patch: tile, mask: tile }, &[placed, mask]);
         }
+        let now = self.recipes;
+        self.strokes.retain(|(_, _, used)| now - used < KEPT_RECIPES);
         Ok(out)
     }
 
