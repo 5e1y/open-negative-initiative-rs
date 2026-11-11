@@ -1,35 +1,36 @@
 //! Auto De-dust's reading: how far inside its window's dense end each pixel of a framed frame lies, and the
-//! shapes that are dust. Read once on a click, it answers every sensitivity with no pixel read again, and writes nothing.
+//! dust its shapes show. Read once on a click, it answers every sensitivity with no pixel read again, and writes nothing.
 
 use oni_pipeline::conversion::rendered_ceiling;
 use oni_settings::PipelineSettings;
 use oni_settings::axis::{density_axis, pipeline};
 use std::collections::HashMap;
 
-/// The smallest shape read as dust: a pixel or two past the window is the sensor's noise.
-pub const MIN_AREA: u32 = 3;
-/// The largest, a long hair; a highlight past the window fills more.
+/// The largest speck, a long hair; a highlight past the window fills more.
 pub const MAX_AREA: u32 = 8192;
-/// How far off the frame's edge a shape must stand, in pixels: the holder and the rebate lie there.
+/// How far off the frame's edge a speck must stand, in pixels: the holder and the rebate lie there.
 pub const EDGE: u32 = 16;
-/// Where a shape's jump is read, in pixels off it: dust lies on the film, in the scan's focus.
+/// Where a speck's edge is read, in pixels off it: dust lies on the film, in the scan's focus.
 pub const JUMP_AT: i64 = 2;
-/// The least channel's jump over the most's: dust stops every colour alike, where a glint's blue jumps up to five times its red.
-pub const NEUTRAL: f32 = 0.6;
+/// The least share of its jump a speck's edge makes within `JUMP_AT`: dust makes 0.46 to 1 at 47 Mpx, the
+/// image's glints and lamps, softened by the camera's lens and the film, 0.26 to 0.39 at 26 Mpx.
+pub const SHARP: f32 = 0.45;
 /// How far inside the window a reading goes at full sensitivity, in density.
 const REACH: f32 = 0.8;
 /// The insets shapes are read at: a shape past one can merge with a highlight past the next, so each is
 /// read and a speck stays found once found.
 const LEVELS: [f32; 5] = [0.0, 0.2, 0.4, 0.6, 0.8];
-/// The jump the least channel must make at the least sensitive and at the most: the image's glints
-/// measure 0.05 to 0.17 on rolls #8 and Lumix, the one speck 0.34; at full sensitivity those frames read 3 to 82 shapes.
+/// The jump over its ground the least channel of a speck must make at the least sensitive and at the most:
+/// grain in a highlight rises 0.09 at most, a speck 0.11 to 0.73.
 const JUMPS: (f32, f32) = (0.2, 0.1);
 /// A map's texel for what no sensitivity shows.
 pub const NEVER: u8 = 255;
 /// The last of the slider's notches a map's texels tell apart.
 const NOTCHES: f32 = 254.0;
 
+mod speck;
 mod stroke;
+pub use speck::speck;
 pub use stroke::stroke;
 
 /// The slider's position as a notch: a texel shows at its own notch and every one above.
@@ -68,7 +69,7 @@ impl Limits {
     }
 
     /// The dense end read `by` density inside the window; under the guard the kernel reads the guard, so that end is never passed.
-    fn closed_in(self, by: f32) -> Limits {
+    pub fn closed_in(self, by: f32) -> Limits {
         let opaque_below = [0, 1, 2].map(|c| {
             let light = 10f32.powf(by - self.densest[c]);
             if light > self.guard { light / self.gain[c] - self.pedestal } else { f32::NEG_INFINITY }
@@ -222,44 +223,9 @@ fn gathered(runs: &[Run]) -> Vec<Speck> {
     out
 }
 
-/// Each channel's jump across a shape's edge: the median between its pixels and the pixels inside the
-/// window `off` away, so a highlight's far denser core, with nothing near to pair it, counts for nothing.
-pub fn jumps(s: &Speck, pixels: &[[f32; 4]], width: usize, limits: &Limits, off: i64) -> [f32; 3] {
-    let height = pixels.len() / width.max(1);
-    let (w, h) = (width as i64, height as i64);
-    let mut across: [Vec<f32>; 3] = Default::default();
-    for r in &s.runs {
-        for x in r.start..r.end {
-            let p = &pixels[r.row as usize * width + x as usize];
-            for (dx, dy) in [(off, 0), (-off, 0), (0, off), (0, -off), (off, off), (-off, off), (off, -off), (-off, -off)] {
-                let (nx, ny) = (i64::from(x) + dx, i64::from(r.row) + dy);
-                if nx < 0 || ny < 0 || nx >= w || ny >= h {
-                    continue;
-                }
-                let q = &pixels[ny as usize * width + nx as usize];
-                if limits.past(q) {
-                    continue;
-                }
-                for (c, list) in across.iter_mut().enumerate() {
-                    list.push(limits.density(p, c) - limits.density(q, c));
-                }
-            }
-        }
-    }
-    [0, 1, 2].map(|c| {
-        let list = &mut across[c];
-        if list.is_empty() {
-            return 0.0;
-        }
-        list.sort_by(|a, b| a.total_cmp(b));
-        list[list.len() / 2]
-    })
-}
-
-/// A shape's jump when it is what a speck on the film makes, sharp and alike in every channel.
-pub fn dust_jump(j: [f32; 3]) -> Option<f32> {
-    let (least, most) = (j[0].min(j[1]).min(j[2]), j[0].max(j[1]).max(j[2]));
-    (least >= JUMPS.1 && least >= NEUTRAL * most).then_some(least)
+/// Every shape past `limits`, before any rule: what the veil shows.
+pub fn shapes(pixels: &[[f32; 4]], width: usize, limits: &Limits) -> Vec<Speck> {
+    gathered(&runs_of(pixels, width, limits))
 }
 
 /// The sensitivity a shape read at `level` with this jump shows from: its level reached, its jump asked no more.
@@ -268,14 +234,16 @@ fn shows_from(level: usize, jump: f32) -> f32 {
 }
 
 fn candidates(pixels: &[[f32; 4]], width: usize, limits: &Limits, level: usize) -> Vec<Candidate> {
-    let height = pixels.len() / width.max(1);
-    let stands = |s: &Speck| s.bounds[0] >= EDGE && s.bounds[1] >= EDGE && s.bounds[2] + EDGE <= width as u32 && s.bounds[3] + EDGE <= height as u32 && (MIN_AREA..=MAX_AREA).contains(&s.area);
-    let inside = limits.closed_in(LEVELS[level]);
-    gathered(&runs_of(pixels, width, &inside))
-        .into_iter()
-        .filter(stands)
-        .filter_map(|speck| dust_jump(jumps(&speck, pixels, width, &inside, JUMP_AT)).map(|jump| Candidate { speck, from: shows_from(level, jump), until: f32::INFINITY }))
-        .collect()
+    let shown: Vec<Speck> = gathered(&runs_of(pixels, width, &limits.closed_in(LEVELS[level]))).into_iter().filter(|s| s.area <= MAX_AREA).collect();
+    // Shapes crowd where a sky nears the window: small parts, read on all cores, keep their order.
+    let per = shown.len().div_ceil(4 * std::thread::available_parallelism().map_or(1, |n| n.get())).max(1);
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = shown
+            .chunks(per)
+            .map(|part| scope.spawn(move || part.iter().filter_map(|s| speck(s, pixels, width, limits)).map(|(speck, jump)| Candidate { speck, from: shows_from(level, jump), until: f32::INFINITY }).collect::<Vec<_>>()))
+            .collect();
+        handles.into_iter().flat_map(|h| h.join().expect("a speck reader")).collect()
+    })
 }
 
 /// Whether a shape's first pixel lies in another's, as a shape read at one inset lies in what the next reads.
