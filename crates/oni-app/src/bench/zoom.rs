@@ -40,6 +40,8 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let phase = Cell::new(Zoomed::Loading);
     let done = RefCell::new(Some(done));
     let full_after = Cell::new(Duration::ZERO);
+    let drawn: RefCell<Rc<RefCell<Vec<(Instant, Duration)>>>> = RefCell::default();
+    let pinched_at = Cell::new(Instant::now());
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, PACE, move || {
@@ -59,9 +61,15 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if w.window().size().width < (WINDOW.0 * w.window().scale_factor()) as u32 {
                     w.window().set_size(slint::LogicalSize::new(WINDOW.0, WINDOW.1));
                 }
-                if s.renders() >= 1 && s.loaded() >= s.photos() && s.placed().is_some() {
-                    let early = s.views().count();
-                    drop(s);
+                let ready = s.renders() >= 1 && s.loaded() >= s.photos() && s.placed().is_some();
+                drop(s);
+                if ready && healed(&ctl) {
+                    // `ONI_BENCH_DEDUST`: the walk in De-dust, every correction's mark on the canvas.
+                    if std::env::var_os("ONI_BENCH_DEDUST").is_some() && !c.get_painting() {
+                        ctl.act(crate::Act::Correction);
+                        return;
+                    }
+                    let early = ctl.state.borrow().views().count();
                     c.invoke_double_clicked();
                     c.invoke_grabbed(200.0, 200.0);
                     phase.set(Zoomed::In { asked: Instant::now(), step: 0, early });
@@ -113,6 +121,8 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 if fitted {
+                    *drawn.borrow_mut() = frame_clock(&ctl);
+                    pinched_at.set(Instant::now());
                     c.invoke_pinch_started();
                     phase.set(Zoomed::Pinching { event: 0, from, pinch_from: ctl.state.borrow().views().count() });
                     return;
@@ -147,7 +157,7 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let pinch_from = PINCHED.with(Cell::get);
                 let (early, built) = EARLY.with(Cell::get);
                 let report = format!(
-                    "bench, zoom: full resolution {:.0} ms after the double click; {}\n{}\n{}\n{}",
+                    "bench, zoom: full resolution {:.0} ms after the double click; {}\n{}\n{}\n{}\n  {}",
                     full_after.as_secs_f64() * 1000.0,
                     format!(
                         "{}; the interface thread's longest tick {:.1} ms",
@@ -157,6 +167,7 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     s.views().summary(from, &format!("{PANS} pan steps at 100 %, then the ladder")),
                     s.views().cadence(from),
                     s.views().summary(pinch_from, &format!("a pinch of {PINCH_EVENTS} events from fit")),
+                    frames_since(&drawn.borrow().borrow(), pinched_at.get()),
                 );
                 drop(s);
                 finish(report);

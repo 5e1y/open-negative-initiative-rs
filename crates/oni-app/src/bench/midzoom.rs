@@ -46,13 +46,12 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     w.window().set_size(slint::LogicalSize::new(WINDOW.0, WINDOW.1));
                 }
                 let fitted = s.placed().filter(|p| p.whole && s.full_built());
-                if let Some(p) = fitted {
-                    drop(s);
+                drop(s);
+                if let Some(p) = fitted.filter(|_| healed(&ctl)) {
                     c.invoke_pinch_started();
                     c.invoke_pinched(AT / (p.width / p.full.0) as f32, c.get_width() / 2.0, c.get_height() / 2.0);
                     phase.set(Mid::Zooming { at: Instant::now() });
-                } else if started.elapsed() > FULL {
-                    drop(s);
+                } else if fitted.is_none() && started.elapsed() > FULL {
                     finish(format!("bench, midzoom: no full resolution in {} s", FULL.as_secs()));
                 }
             }

@@ -12,10 +12,13 @@ impl<'a> Plan<'a> {
         let mut rects: Vec<Option<Rect>> = vec![None; n];
         let mut hits: Vec<Option<(FloatTexture, Rect)>> = vec![None; n];
         let mut runs = vec![Run::Whole; n];
+        let mut shown = HashMap::new();
         rects[last] = Some(request);
         for i in (0..n).rev() {
             let Some(need) = rects[i] else { continue };
-            let Kind::Stage { stage, input, aux } = &nodes[i].kind else { continue };
+            if matches!(nodes[i].kind, Kind::Source(_)) {
+                continue;
+            }
             if let Some(hit) = cache.and_then(|c| c.hit(nodes[i].key, need)) {
                 hits[i] = Some(hit);
                 continue;
@@ -28,6 +31,19 @@ impl<'a> Plan<'a> {
                 let region = region.nearest_in(&nodes[j].extent);
                 rects[j] = Some(rects[j].map_or(region, |r| r.union(&region)));
                 Ok(())
+            };
+            let (stage, input, aux) = match &nodes[i].kind {
+                Kind::Stage { stage, input, aux } => (stage, input, aux),
+                // Its input over the whole rectangle, the members it shows laid onto it; last, it writes
+                // the render's own output even where it shows none.
+                Kind::Laid { laid, input } => {
+                    ask(*input, need)?;
+                    let members = laid.shown(need);
+                    runs[i] = if members.is_empty() && i != last { Run::Through } else { Run::Laid };
+                    shown.insert(i, members);
+                    continue;
+                }
+                Kind::Source(_) => continue,
             };
             // The last node writes the render's own output, so it runs whole.
             runs[i] = match stage.area().filter(|_| i != last) {
@@ -43,7 +59,7 @@ impl<'a> Plan<'a> {
                     Some(need)
                 }
                 // Its input over the whole rectangle, which its result holds as it is outside the area.
-                Run::Through => {
+                Run::Through | Run::Laid => {
                     ask(*input, need)?;
                     None
                 }
@@ -58,7 +74,7 @@ impl<'a> Plan<'a> {
                 }
             }
         }
-        Ok(Self { nodes, last, rects, hits, runs })
+        Ok(Self { nodes, last, rects, hits, runs, shown })
     }
 
     pub(super) fn output(&self) -> Rect {

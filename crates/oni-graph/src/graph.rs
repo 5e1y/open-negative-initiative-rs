@@ -5,7 +5,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::stage::{AuxFrame, Frame, MAX_AUX, PRELUDE, aux_prelude};
+use crate::stage::{AuxFrame, Frame, InstanceAux, InstanceFrame, MAX_AUX, PRELUDE, aux_prelude, instanced_source};
 use crate::stages::{AnchoredLanczos, Axis, Lanczos};
 use crate::texture::{BYTES_PER_PIXEL, FloatTexture, Meter, Pool, Precision};
 use crate::{Rect, Stage};
@@ -21,6 +21,11 @@ pub use device::{Gpu, gpu};
 mod rendering;
 mod dispatch;
 mod half;
+mod batch;
+pub use batch::{Batch, Laid};
+mod instanced;
+mod laying;
+mod sheet;
 
 /// Metal's and Direct3D 12's largest texture side: a pixel-shift frame of 16 736 px goes in tiles.
 pub const TEXTURE_SIDE: u32 = 16_384;
@@ -69,11 +74,11 @@ struct SourceInner {
 #[derive(Clone)]
 pub struct Source(Arc<SourceInner>);
 
-/// A stage and the further images it reads beside its input.
+/// A step of a recipe: a stage and the further images it reads beside its input, or a batch laid on it.
 #[derive(Clone)]
-struct Node {
-    stage: Arc<dyn Stage>,
-    aux: Vec<Image>,
+enum Node {
+    Stage { stage: Arc<dyn Stage>, aux: Vec<Image> },
+    Laid(Laid),
 }
 
 /// A source and the stages that follow it: a recipe, evaluated only when a region is asked for.
@@ -86,6 +91,19 @@ pub struct Image {
 enum Kind<'a> {
     Source(&'a Source),
     Stage { stage: &'a dyn Stage, input: usize, aux: Vec<usize> },
+    Laid { laid: &'a Laid, input: usize },
+}
+
+impl Kind<'_> {
+    /// The nodes this one reads, its input first.
+    fn reads(&self) -> impl Iterator<Item = usize> + '_ {
+        let (input, aux): (Option<usize>, &[usize]) = match self {
+            Kind::Source(_) => (None, &[]),
+            Kind::Stage { input, aux, .. } => (Some(*input), aux),
+            Kind::Laid { input, .. } => (Some(*input), &[]),
+        };
+        input.into_iter().chain(aux.iter().copied())
+    }
 }
 
 /// One node of a render: its key folds in every node upstream of it, so equal keys are one node.
@@ -103,6 +121,8 @@ struct Plan<'a> {
     rects: Vec<Option<Rect>>,
     hits: Vec<Option<(FloatTexture, Rect)>>,
     runs: Vec<Run>,
+    /// For each laid node, its members the request shows and the part of each one's area it holds.
+    shown: HashMap<usize, Vec<(usize, Rect)>>,
 }
 
 /// How a node covers its rectangle: dispatched over all of it; as its input, where a stage with an
@@ -112,6 +132,8 @@ enum Run {
     Whole,
     Through,
     Within(Rect),
+    /// A batch's members the request shows, each over its own part, onto the input.
+    Laid,
 }
 
 struct Entry {
@@ -143,6 +165,8 @@ pub struct Graph {
     queue: wgpu::Queue,
     layouts: HashMap<usize, Layout>,
     pipelines: HashMap<(usize, usize, usize), wgpu::ComputePipeline>,
+    /// The same, for a dispatch of many instances.
+    instanced: (HashMap<usize, Layout>, HashMap<(usize, usize, usize), wgpu::ComputePipeline>),
     pool: Pool,
     max_side: u32,
     max_buffer: u64,

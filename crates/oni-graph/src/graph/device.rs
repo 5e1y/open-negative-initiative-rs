@@ -59,7 +59,7 @@ impl Graph {
         let uniforms = Uniforms {
             buffer: dispatch::ring(&device),
             at: 0,
-            align: u64::from(limits.min_uniform_buffer_offset_alignment).max(16),
+            align: u64::from(limits.min_uniform_buffer_offset_alignment.max(limits.min_storage_buffer_offset_alignment)).max(16),
             staged: Vec::new(),
             staged_from: 0,
             first: 0,
@@ -71,6 +71,7 @@ impl Graph {
             queue,
             layouts: HashMap::new(),
             pipelines: HashMap::new(),
+            instanced: Default::default(),
             max_side: max_side.min(limits.max_texture_dimension_2d).max(1),
             max_buffer: limits.max_buffer_size,
             dispatches: 0,
@@ -106,7 +107,7 @@ impl Graph {
             live_bytes: self.pool.meter.live.load(Ordering::Relaxed),
             peak_bytes: self.pool.meter.peak.load(Ordering::Relaxed),
             idle_textures: self.pool.idle(),
-            pipelines: self.pipelines.len(),
+            pipelines: self.pipelines.len() + self.instanced.1.len(),
         }
     }
 

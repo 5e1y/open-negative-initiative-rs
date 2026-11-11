@@ -310,7 +310,7 @@ impl Ctl {
             (Some(f), Some(p)) => f.rings.iter().map(|r| Mark { x: (p.0 + r[0] * p.2) as f32, y: (p.1 + r[1] * p.3) as f32, width: (r[2] * p.2) as f32, height: (r[3] * p.3) as f32, number: 0 }).collect(),
             _ => Vec::new(),
         };
-        if let Some(marks) = renewed(&c.get_dust_marks(), marks) {
+        if let Some(marks) = held(&c.get_dust_marks(), marks, Mark::eq) {
             c.set_dust_marks(marks);
         }
     }

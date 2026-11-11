@@ -17,7 +17,7 @@ impl Image {
     }
 
     pub fn then(mut self, stage: impl Stage + 'static) -> Self {
-        self.stages.push(Node { stage: Arc::new(stage), aux: Vec::new() });
+        self.stages.push(Node::Stage { stage: Arc::new(stage), aux: Vec::new() });
         self
     }
 
@@ -25,7 +25,13 @@ impl Image {
     /// coordinates. A node `aux` shares with this chain is evaluated once per render. Panics past `MAX_AUX`.
     pub fn then_reading(mut self, stage: impl Stage + 'static, aux: &[Image]) -> Self {
         assert!(aux.len() <= MAX_AUX, "{} auxiliary inputs, at most {MAX_AUX}", aux.len());
-        self.stages.push(Node { stage: Arc::new(stage), aux: aux.to_vec() });
+        self.stages.push(Node::Stage { stage: Arc::new(stage), aux: aux.to_vec() });
+        self
+    }
+
+    /// `laid`'s members laid on the image, each over its own area, in a few passes for them all.
+    pub fn then_laid(mut self, laid: &Laid) -> Self {
+        self.stages.push(Node::Laid(laid.clone()));
         self
     }
 
@@ -53,7 +59,10 @@ impl Image {
     }
 
     pub fn extent(&self) -> Rect {
-        self.stages.iter().fold(self.source.extent(), |e, node| node.stage.extent(e))
+        self.stages.iter().fold(self.source.extent(), |e, node| match node {
+            Node::Stage { stage, .. } => stage.extent(e),
+            Node::Laid(_) => e,
+        })
     }
 
     /// The stages of the chain itself, auxiliary images apart.
@@ -68,8 +77,17 @@ impl Image {
         let key = hasher.finish();
         let mut at = intern(nodes, seen, Flat { key, extent: self.source.extent(), kind: Kind::Source(&self.source) });
         for node in &self.stages {
-            let aux: Vec<usize> = node.aux.iter().map(|a| a.flatten(nodes, seen)).collect();
-            let stage = node.stage.as_ref();
+            let (stage, aux) = match node {
+                Node::Stage { stage, aux } => (stage.as_ref(), aux),
+                Node::Laid(laid) => {
+                    let mut hasher = DefaultHasher::new();
+                    (nodes[at].key, "laid", laid.key()).hash(&mut hasher);
+                    let extent = nodes[at].extent;
+                    at = intern(nodes, seen, Flat { key: hasher.finish(), extent, kind: Kind::Laid { laid, input: at } });
+                    continue;
+                }
+            };
+            let aux: Vec<usize> = aux.iter().map(|a| a.flatten(nodes, seen)).collect();
             let mut hasher = DefaultHasher::new();
             nodes[at].key.hash(&mut hasher);
             stage.name().hash(&mut hasher);

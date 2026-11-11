@@ -42,3 +42,5 @@ mod prewarm_tests;
 mod inputs_tests;
 #[cfg(test)]
 mod tiles_tests;
+#[cfg(test)]
+mod dust_probe;

@@ -24,12 +24,12 @@ pub(super) fn texture_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
     }
 }
 
-/// The buffer every dispatch's uniforms are staged in, in turn.
+/// The buffer every dispatch's uniforms are staged in, in turn, and the tables a dispatch of many reads.
 pub(super) fn ring(device: &wgpu::Device) -> wgpu::Buffer {
     device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("uniforms"),
         size: UNIFORM_RING,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     })
 }
@@ -60,13 +60,17 @@ impl Graph {
         let mut params = stage.params();
         // A uniform binding holds at least 16 bytes, in 16-byte steps.
         params.resize(params.len().div_ceil(16).max(1) * 16, 0);
-        let frame = self.uniform(bytemuck::bytes_of(&frame));
-        let params = self.uniform(&params);
         let mut frames = [AuxFrame::default(); MAX_AUX];
         for (f, (_, rect, extent)) in frames.iter_mut().zip(aux) {
             *f = AuxFrame { in_origin: [rect.x, rect.y], in_min: [extent.x, extent.y], in_max: [extent.right(), extent.bottom()], in_size: [rect.w as i32, rect.h as i32] };
         }
-        let frames = (!aux.is_empty()).then(|| self.uniform(bytemuck::bytes_of(&frames)));
+        let (frame, params, frames) = if aux.is_empty() {
+            let [frame, params] = self.uniforms([bytemuck::bytes_of(&frame), &params]);
+            (frame, params, None)
+        } else {
+            let [frame, params, frames] = self.uniforms([bytemuck::bytes_of(&frame), &params, bytemuck::bytes_of(&frames)]);
+            (frame, params, Some(frames))
+        };
         let buffer = &self.uniforms.buffer.clone();
         let bound = |(offset, size): (u64, u64)| wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer, offset, size: wgpu::BufferSize::new(size) });
         let mut entries = vec![
@@ -94,9 +98,31 @@ impl Graph {
         self.pixels += output_rect.area();
     }
 
+    /// One dispatch's blocks staged as one, each at an aligned place: a ring renewed between two of
+    /// them would leave the first in the buffer the dispatch no longer binds.
+    pub(super) fn uniforms<const N: usize>(&mut self, blocks: [&[u8]; N]) -> [(u64, u64); N] {
+        let align = self.uniforms.align;
+        let mut places = [(0u64, 0u64); N];
+        let mut end = 0u64;
+        for (place, block) in places.iter_mut().zip(blocks) {
+            *place = (end.div_ceil(align) * align, (block.len() as u64).div_ceil(16).max(1) * 16);
+            end = place.0 + place.1;
+        }
+        let at = self.reserved(end);
+        let from = (at - self.uniforms.staged_from) as usize;
+        for (place, block) in places.iter().zip(blocks) {
+            self.uniforms.staged[from + place.0 as usize..][..block.len()].copy_from_slice(block);
+        }
+        places.map(|(offset, size)| (at + offset, size))
+    }
+
     /// `bytes` staged at the ring's next aligned place; its offset and size there.
     pub(super) fn uniform(&mut self, bytes: &[u8]) -> (u64, u64) {
-        let size = (bytes.len() as u64).div_ceil(16).max(1) * 16;
+        self.uniforms([bytes])[0]
+    }
+
+    /// `size` zeroed bytes at the ring's next aligned place, in the buffer the next dispatch binds.
+    fn reserved(&mut self, size: u64) -> u64 {
         if self.uniforms.at + size > UNIFORM_RING {
             self.flush_uniforms();
             self.uniforms.at = 0;
@@ -112,11 +138,9 @@ impl Graph {
         }
         let u = &mut self.uniforms;
         let at = u.at;
-        u.staged.resize((at - u.staged_from) as usize, 0);
-        u.staged.extend_from_slice(bytes);
         u.staged.resize((at - u.staged_from + size) as usize, 0);
         u.at = (at + size).div_ceil(u.align) * u.align;
-        (at, size)
+        at
     }
 
     /// Hands `encoder` to the queue, the uniforms it reads first, through the graph's door when it has one.

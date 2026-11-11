@@ -32,6 +32,14 @@ stage needs, runs only those, and reads the region back as `Vec<[f32; 4]>`.
   declares what is read of each. A render is a graph, not a chain: nodes are keyed by everything upstream
   of them, so a prefix an auxiliary image shares with the chain runs once, over the union of what its
   readers need, and its texture returns to the pool once its last reader has run.
+- **Batches.** A `Batch` is many small images read off one source, each through its own stages of the
+  same kinds (`Batch::of`, `then`, `moved`); `Laid::new(stages, &[batches])` lays stage `k` over its own
+  `area`, reading member `k` of each batch, and `Image::then_laid` puts them on an image, in their order
+  where their areas meet. It renders what the same stages chained one by one do, but each step is one
+  dispatch for every member, a work-group depth an instance, each instance reading its own frame and
+  parameters from a table: a pass costs about what a small member's pixels do, so hundreds of members
+  chained cost hundreds of times their work. Members of far apart sizes go in separate dispatches, and
+  past a few megapixels in turns, so the passes follow the sizes and the layers, never the count.
 - **Tiles.** A source past the texture side (16 384 px, or the device's limit if lower) is laid in tiles,
   one texture each. A stage that needs pixels from several tiles gets them copied into one texture, so
   a filter across a seam reads its neighbour. A request whose needs pass the side at any depth is halved
@@ -75,6 +83,8 @@ let preview = graph.materialise(&image.clone().lanczos(2000.0 / side))?;
 | `stages::Lanczos` | Lanczos-3 along one axis; `Image::lanczos` adds both. |
 | `stages::{Gain, BoxBlur3, Crop}` | The stages the tests drive. |
 | `Image::then_reading`, `Stage::aux_region` | A stage reading further images. |
+| `Batch`, `Laid`, `Image::then_laid` | Many small images evaluated together and laid on an image. |
+| `Graph::gathered` | Whole sources copied on one sheet, for a batch to read. |
 | `Graph::upload_at`, `Graph::materialise_region` | A source anywhere; a region held on the GPU. |
 | `cpu` | The scalar reference of every kernel above. |
 

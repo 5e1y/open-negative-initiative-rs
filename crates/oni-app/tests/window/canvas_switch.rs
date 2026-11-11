@@ -74,8 +74,11 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
-    rig.until("A's patch", Duration::from_secs(60), || healed(w));
+    // The corrections' rows are De-dust's own: written while its tab shows.
+    ctl.act(oni_app::Act::Correction);
+    rig.until("A's patch", Duration::from_secs(60), || rows(w).len() == 1 && healed(w));
     assert_eq!(labels(w), ["Correction 1"]);
+    ctl.act(oni_app::Act::Correction);
     ctl.act(oni_app::Act::Compare);
     rig.until("A's before", Duration::from_secs(60), || c.get_before().size().width > 0);
 
@@ -88,12 +91,13 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     assert_eq!(c.get_frame().size().width, 0, "nothing of A's picture stands under B's name");
     assert_eq!(c.get_before().size().width, 0, "nor A's before");
     rig.until("B's own render on the emptied canvas", Duration::from_secs(30), || ctl.state.borrow().renders() > renders && c.get_frame().size().width > 0);
-    rig.until("B's patches", Duration::from_secs(60), || healed(w));
-    assert_eq!(labels(w), ["Correction 1", "Correction 2"], "B's corrections number from one, as A's did");
+    assert_eq!(labels(w), ["Correction 1"], "twin: another tab's notch or photo writes no row of De-dust's");
 
     // The De-dust key is on while the tab it opens shows, and goes dark when the header's DONE leaves it.
     ctl.act(oni_app::Act::Correction);
     assert_eq!(w.global::<PanelState>().get_tab(), 4, "the key lights on De-dust");
+    rig.until("B's patches", Duration::from_secs(60), || rows(w).len() == 2 && healed(w));
+    assert_eq!(labels(w), ["Correction 1", "Correction 2"], "B's corrections number from one, as A's did");
     d.invoke_act(oni_app::Act::Correction);
     assert_ne!(w.global::<PanelState>().get_tab(), 4, "twin: DONE leaving De-dust darkens it");
     ctl.act(oni_app::Act::Correction);
@@ -119,10 +123,10 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     assert!(d.invoke_scroll(40.0, 0.0, 200.0, false));
     assert_ne!(d.get_readout().as_str(), rested, "the scroll along resized the brush");
 
-    // A notch leaves the corrections' list as it was; a correction painted renews it.
-    let list = d.get_rows();
+    // A notch leaves the corrections' list as it was; a correction painted adds its row to it.
+    let (list, before) = (d.get_rows(), rows(w));
     w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);
-    assert!(d.get_rows() == list, "a notch rebuilds no correction row");
+    assert!(d.get_rows() == list && rows(w) == before, "a notch rebuilds no correction row");
 
     // A correction whose patch cannot be generated, its frame's file gone, is not tried again.
     std::fs::remove_file(folder.join("B.tif")).unwrap();
@@ -130,7 +134,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     c.invoke_paint_start(fx + fw * 0.5, fy + fh * 0.3);
     c.invoke_paint_move(fx + fw * 0.6, fy + fh * 0.3);
     c.invoke_paint_end();
-    assert!(d.get_rows() != list, "twin: a painted correction renews the list");
+    assert!(d.get_rows() == list && rows(w).len() == before.len() + 1, "twin: a painted correction grows the list it has");
     assert_eq!(rows(w).last(), Some(&("Correction 3".to_string(), true)), "its patch is being generated");
     rig.until("the generation's failure", Duration::from_secs(60), || healed(w));
     w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);

@@ -33,12 +33,11 @@ impl Cache {
             let changed = |i: usize| !self.seen.contains(&nodes[i].key);
             let mut keep = HashSet::new();
             for (i, node) in nodes.iter().enumerate() {
-                let Kind::Stage { input, aux, .. } = &node.kind else { continue };
                 if !changed(i) {
                     continue;
                 }
-                for &j in std::iter::once(input).chain(aux) {
-                    if !changed(j) && matches!(nodes[j].kind, Kind::Stage { .. }) {
+                for j in node.kind.reads() {
+                    if !changed(j) && !matches!(nodes[j].kind, Kind::Source(_)) {
                         keep.insert(nodes[j].key);
                     }
                 }

@@ -6,9 +6,11 @@ pub(super) mod live;
 mod auto;
 mod dust;
 mod hands;
+mod models;
 mod originals;
 
 pub(in crate::app) use dust::Dust;
+use models::{held, same_row};
 
 impl Ctl {
     // MARK: - De-dust
@@ -23,9 +25,15 @@ impl Ctl {
     /// moves skip it and grow the stroke's path alone.
     pub(super) fn publish_dedust(&self) {
         let Some(w) = self.window() else { return };
-        let painting = self.painting();
-        // Strokes and marks show in De-dust alone: a notch elsewhere builds none of their paths.
-        let frame = self.image_frame(false).filter(|_| painting);
+        let c = w.global::<Canvas>();
+        // Tiles, marks and strokes show in De-dust alone: a notch or a zoom elsewhere builds none of them.
+        if !self.painting() {
+            c.set_painting(false);
+            self.publish_found(None);
+            c.set_space_held(false);
+            return;
+        }
+        let frame = self.image_frame(false);
         type Shape = (Vec<(f64, f64)>, f64);
         let (rows, marks, radius, stroke, rendered, sources, lines, waiting) = {
             let mut s = self.state.borrow_mut();
@@ -103,20 +111,15 @@ impl Ctl {
         let text: SharedString = crate::fields::number(f64::from(radius), 0, false, crate::fields::Unit::Pixels).into();
         d.set_readout(text.clone());
         d.set_value_text(text);
-        if let Some(rows) = renewed(&d.get_rows(), rows) {
+        if let Some(rows) = held(&d.get_rows(), rows, same_row) {
             d.set_rows(rows);
         }
         // No correction shown, a removal or another photo since: no tile stays under the hand.
         if self.state.borrow().dust.shown.is_none() {
             d.set_hovered_row(-1);
         }
-        let c = w.global::<Canvas>();
-        c.set_painting(painting);
+        c.set_painting(true);
         self.publish_found(frame);
-        if !painting {
-            c.set_space_held(false);
-            return;
-        }
         let picture = frame.unwrap_or_default();
         c.set_picture_x(picture.0 as f32);
         c.set_picture_y(picture.1 as f32);
@@ -133,10 +136,10 @@ impl Ctl {
         let laid = |list: Vec<(f64, f64, f64, f64, usize)>| -> Vec<Mark> {
             list.into_iter().map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 }).collect()
         };
-        if let Some(marks) = renewed(&c.get_marks(), laid(marks)) {
+        if let Some(marks) = held(&c.get_marks(), laid(marks), Mark::eq) {
             c.set_marks(marks);
         }
-        if let Some(sources) = renewed(&c.get_source_marks(), laid(sources)) {
+        if let Some(sources) = held(&c.get_source_marks(), laid(sources), Mark::eq) {
             c.set_source_marks(sources);
         }
         let path = live::traced;
@@ -144,7 +147,7 @@ impl Ctl {
             Some(f) => list.iter().map(|(points, radius)| (path(points, f).into(), width(*radius))).collect::<Vec<(SharedString, f32)>>(),
             None => Vec::new(),
         };
-        if let Some(waiting) = renewed(&c.get_pending_strokes(), shapes(&waiting)) {
+        if let Some(waiting) = held(&c.get_pending_strokes(), shapes(&waiting), |a, b| a == b) {
             c.set_pending_strokes(waiting);
         }
         let line_commands = frame.map(|f| lines.iter().map(|(a, b)| live::dashed(*a, *b, f)).filter(|l| !l.is_empty()).collect::<Vec<_>>().join(" ")).unwrap_or_default();
@@ -325,27 +328,6 @@ fn bounding(c: &oni_settings::frame::Correction, offset: (f64, f64), full: (f64,
     let (x0, x1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
     let (y0, y1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.y), b.max(p.y)));
     (x0 + offset.0 - rx, y0 + offset.1 - ry, x1 - x0 + 2.0 * rx, y1 - y0 + 2.0 * ry)
-}
-
-/// `items` as a new model unless `model` holds them already, so a repeater is not rebuilt on a notch.
-fn renewed<T: Clone + PartialEq + 'static>(model: &ModelRc<T>, items: Vec<T>) -> Option<ModelRc<T>> {
-    let same = model.row_count() == items.len() && items.iter().enumerate().all(|(i, item)| model.row_data(i).as_ref() == Some(item));
-    (!same).then(|| ModelRc::new(VecModel::from(items)))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::renewed;
-    use slint::{Model, ModelRc, VecModel};
-
-    #[test]
-    fn a_model_holding_the_items_is_kept_and_another_renewed() {
-        let model = ModelRc::new(VecModel::from(vec![1, 2]));
-        assert!(renewed(&model, vec![1, 2]).is_none());
-        let next = renewed(&model, vec![1, 3]).expect("twin: a changed item renews the model");
-        assert_eq!(next.row_data(1), Some(3));
-        assert!(renewed(&model, vec![1]).is_some(), "twin: a shorter list renews it");
-    }
 }
 
 /// A frame looked at this long has its full resolution built; arrows walking a roll pass sooner.

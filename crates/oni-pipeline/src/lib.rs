@@ -7,6 +7,7 @@ pub mod finishing;
 pub mod flat_field;
 pub mod frontier_table;
 pub mod geometry;
+mod healing;
 pub mod look_lab;
 pub mod oni_look;
 pub mod frontier_look;
@@ -22,7 +23,7 @@ use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
 use oni_settings::tone::Print;
 use oni_settings::{PipelineSettings, ScannerMachine};
-use stages::{Before, DetailColumns, DetailRows, OnGround, Patched, Stroke, Translate};
+use stages::{Before, DetailColumns, DetailRows, OnGround};
 use std::collections::HashMap;
 
 /// What a render is asked for.
@@ -68,22 +69,14 @@ pub struct Pipeline {
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
-    /// Each stroke's row, uploaded once, and the last recipe naming it.
-    strokes: Vec<(Vec<[f32; 4]>, Source, u64)>,
-    recipes: u64,
+    /// The frames' corrections as last laid.
+    healing: healing::Healing,
 }
 
-/// Tables kept per pipeline, as two curve sets alternate; strokes kept while one of the last recipes
-/// names them, as the canvas, the loupe and a search each name a frame's at their own scale.
+/// Tables kept per pipeline, as two curve sets alternate.
 const KEPT_LUTS: usize = 4;
-pub const KEPT_RECIPES: u64 = 8;
 
 type Result<T> = std::result::Result<T, oni_graph::Error>;
-
-/// Both axes of `CIGaussianBlur`, which returns its input bit for bit at or under `BLUR_FLOOR`.
-fn blurred(image: Image, sigma: f64, transparent: bool) -> Image {
-    if sigma <= BLUR_FLOOR { image } else { stages::blurred(image, sigma, transparent) }
-}
 
 /// A cube's nodes as an image `n²` wide and `n` high: node (r, g, b) at (r + n·g, b).
 fn upload_cube(graph: &mut Graph, cube: &ColorCube) -> Result<Source> {
@@ -94,6 +87,11 @@ fn upload_cube(graph: &mut Graph, cube: &ColorCube) -> Result<Source> {
 impl Pipeline {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// The corrections' sheets and recipes let go, with the frame they were laid on.
+    pub fn trim(&mut self) {
+        self.healing = Default::default();
     }
 
     /// `apply` as a recipe on `source`: evaluate any region of it, materialise it, or read it whole.
@@ -184,46 +182,11 @@ impl Pipeline {
         Ok(image.then_reading(stages::flat_field(&flat_field::arguments(f, s.mode, per_channel)), &[fitted]))
     }
 
-    fn stroke(&mut self, graph: &mut Graph, points: Vec<[f32; 4]>) -> Result<Source> {
-        let now = self.recipes;
-        if let Some((_, source, used)) = self.strokes.iter_mut().find(|(p, _, _)| *p == points) {
-            *used = now;
-            return Ok(source.clone());
-        }
-        let source = graph.upload(points.len() as u32, 1, &points)?;
-        self.strokes.push((points, source.clone(), now));
-        Ok(source)
-    }
-
-    /// Each correction's patch through its feathered stroke; a correction with no patch is left out.
+    /// Each correction's patch through its feathered stroke, laid together; one with no patch is left out.
     fn corrections(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
-        self.recipes += 1;
-        let mut out = image;
-        let framed = out.extent();
-        for c in &s.corrections {
-            let Some(patch) = inputs.patches.get(&c.id) else { continue };
-            if c.stroke.is_empty() {
-                continue;
-            }
-            let size = (patch.extent().w, patch.extent().h);
-            let (tile, shift) = corrections::placed(c, size, framed, scale);
-            let mut placed = Image::new(patch);
-            if scale != 1.0 {
-                placed = placed.lanczos_shifted(scale, shift);
-            }
-            let at = placed.extent();
-            let placed = placed.then(Translate(tile.x - at.x, tile.y - at.y));
-            let tile = placed.extent();
-            let points = corrections::stroke_points(c, framed);
-            let count = points.len();
-            let row = self.stroke(graph, points)?;
-            let hard = Image::new(&row).then(Stroke { k: oni_render::StrokeMask { radius: (c.radius * scale) as f32, count }, extent: tile });
-            let mask = blurred(hard, corrections::feather(c, scale), true);
-            out = out.then_reading(Patched { patch: tile, mask: tile }, &[placed, mask]);
-        }
-        let now = self.recipes;
-        self.strokes.retain(|(_, _, used)| now - used < KEPT_RECIPES);
-        Ok(out)
+        let patched = |c: &&oni_settings::frame::Correction| !c.stroke.is_empty();
+        let named: Vec<_> = s.corrections.iter().filter(patched).filter_map(|c| Some((c, *inputs.patches.get(&c.id)?))).collect();
+        self.healing.laid(graph, image, &named, scale)
     }
 
     fn cube(&mut self, graph: &mut Graph, name: &'static str, cube: &ColorCube) -> Result<(Image, usize)> {
