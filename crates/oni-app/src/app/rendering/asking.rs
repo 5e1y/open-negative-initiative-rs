@@ -67,12 +67,18 @@ impl Ctl {
                 (Kind::View, Instant::now())
             };
             let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone(), coarse });
-            // The cache is purged at every quit, so each correction's patch is generated as its frame opens,
-            // on the full resolution, built first when it is not; its landing asks again.
-            let unhealed = !s.dust.healing.contains(&path) && s.unhealed();
+            // Each correction's patch is generated as its frame opens, the cache purged at every quit, on the
+            // full resolution, built first when it is not; a run under way reads these settings before each patch.
+            if let Some(latest) = s.dust.healing.get(&path)
+                && let Ok(mut l) = latest.lock()
+            {
+                *l = Some(s.store.settings().clone());
+            }
+            let unhealed = !s.dust.healing.contains_key(&path) && s.unhealed();
             let heal = full.clone().filter(|_| unhealed).map(|full| {
-                s.dust.healing.insert(path.clone());
-                (path.clone(), s.store.settings().clone(), full)
+                let latest = std::sync::Arc::new(std::sync::Mutex::new(Some(s.store.settings().clone())));
+                s.dust.healing.insert(path.clone(), latest.clone());
+                (path.clone(), latest, full)
             });
             // On the Settings' choice the full resolution is built as the photo opens; every render reads it once built.
             let wants_full = full.is_none() && (unhealed || render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed));
@@ -87,8 +93,8 @@ impl Ctl {
         if wants_full {
             self.ensure_full();
         }
-        if let Some((path, settings, full)) = heal {
-            self.heal(path, settings, full);
+        if let Some((path, latest, full)) = heal {
+            self.heal(path, latest, full);
             self.publish_dedust();
         }
     }
@@ -114,79 +120,58 @@ impl Ctl {
         None
     }
 
-    /// `ensureGenerated` for each correction of the open frame that has no patch yet, one after the
-    /// other on the full-resolution frame, so each source holds the patches before it healed. `full`
-    /// is the frame's own, `fullIfReady`.
-    fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings, full: oni_graph::Source) {
+    /// `ensureGenerated` off this thread, on `full`, the frame's own full resolution: each correction without a
+    /// patch in turn, picked by `heal::next` from the settings as the hand leaves them, until none is left.
+    fn heal(self: &Rc<Self>, path: String, latest: Latest, full: oni_graph::Source) {
         let engine = self.engine.clone();
+        let mut unhealable = self.state.borrow().dust.unhealable.clone();
         std::thread::spawn(move || {
             crate::decode_gate::in_background();
             let started = Instant::now();
             let caches = crate::patches::caches();
-            let lacking = |c: &oni_settings::frame::Correction| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists();
-            let mut made = Vec::new();
-            let failed = (|| -> Result<(), String> {
-                // The engine is taken per correction, so the canvas's renders pass between two.
-                for c in settings.corrections.iter().filter(|c| lacking(c)) {
-                    let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
-                    let patch = crate::heal::generate(&region, c, size.0, size.1);
-                    crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
-                    // Each search lays textures of its own size, so a run of large strokes frees them one by one.
-                    {
-                        let mut e = engine.lock()?;
-                        e.forget_patch(c.id);
-                        e.purge();
+            let (mut made, mut failed, mut error) = (0, Vec::new(), None);
+            // Until nothing is left to heal or the frame is left.
+            while let Some(settings) = latest.lock().ok().and_then(|l| l.clone()) {
+                let cs = &settings.corrections;
+                let pending: Vec<usize> = (0..cs.len()).filter(|&i| !cs[i].stroke.is_empty() && !unhealable.contains(&cs[i].id) && !crate::patches::file(&caches, cs[i].id).exists()).collect();
+                let framed = oni_pipeline::geometry::apply(oni_graph::Image::new(&full), &settings.geometry, 1.0).extent();
+                let Some(k) = crate::heal::next(cs, &pending, f64::from(framed.w), f64::from(framed.h)) else { break };
+                match generated(&engine, &full, &settings, &cs[k], &caches) {
+                    Ok(one) => {
+                        made += 1;
+                        // Each patch shows as it lands, so a hand painting stroke after stroke sees them come.
+                        let at = path.clone();
+                        with_shell(move |ctl| ctl.patch_landed(&at, one));
                     }
-                    made.push((c.id, patch.fallback, patch.offset));
-                    // Each patch shows as it lands, so a hand painting stroke after stroke sees them come.
-                    let (at, one) = (path.clone(), (c.id, patch.fallback, patch.offset));
-                    with_shell(move |ctl| ctl.patch_landed(&at, one));
+                    // Not tried again on every render.
+                    Err(e) => {
+                        unhealable.insert(cs[k].id);
+                        failed.push(cs[k].id);
+                        error = Some(e);
+                    }
                 }
-                Ok(())
-            })()
-            .err();
+            }
             let took = started.elapsed();
-            // A correction left without its patch by a failure is not generated again on every render.
-            let unhealable: Vec<oni_settings::id::Id> =
-                if failed.is_some() { settings.corrections.iter().filter(|c| lacking(c)).map(|c| c.id).collect() } else { Vec::new() };
             with_shell(move |c| {
                 let open = c.state.borrow().open_path() == Some(path.as_str());
                 {
                     let mut s = c.state.borrow_mut();
                     s.dust.healing.remove(&path);
-                    s.dust.unhealable.extend(unhealable);
-                    // `deleteCorrection` cancels the generation: a patch made for a correction removed meanwhile is dropped.
-                    if open {
-                        let (kept, gone) = landed(made, &s.store.settings().corrections);
-                        for id in gone {
-                            let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), id));
-                        }
-                        made = kept;
-                    }
-                    for &(id, fell_back, offset) in &made {
-                        s.dust.patched.insert(id);
-                        if open {
-                            if fell_back {
-                                s.dust.fallback.insert(id);
-                            }
-                            s.dust.sources.insert(id, offset);
-                        }
-                    }
+                    s.dust.unhealable.extend(failed);
                 }
-                if !made.is_empty() {
-                    timing::line(&format!("{}: {} dust patches generated in {:.0} ms", crate::anonymity::token(&path), made.len(), took.as_secs_f64() * 1000.0));
+                if made > 0 {
+                    timing::line(&format!("{}: {made} dust patches generated in {:.0} ms", crate::anonymity::token(&path), took.as_secs_f64() * 1000.0));
                 }
-                // Strokes painted meanwhile are generated next, on the full resolution now kept.
-                let more = open && c.state.borrow_mut().unhealed();
-                if open && (!made.is_empty() || more) {
+                if let Some(e) = error {
+                    timing::line(&format!("{}: dust patches not generated: {e}", crate::anonymity::token(&path)));
+                }
+                // Strokes painted as the run ended are healed next.
+                if open {
                     c.state.borrow_mut().requests.requested_view = None;
                     c.request_render();
                 }
-                if let Some(e) = failed {
-                    timing::line(&format!("{}: dust patches not generated: {e}", crate::anonymity::token(&path)));
-                }
                 // A patch the balance reads landed after its tab was left.
-                if open && !made.is_empty() {
+                if open && made > 0 {
                     c.balance_at_rest();
                 }
                 c.publish_dedust();
@@ -194,18 +179,26 @@ impl Ctl {
         });
     }
 
-    /// One patch on the canvas as soon as it is written, unless its frame closed or its stroke went.
-    fn patch_landed(self: &Rc<Self>, path: &str, (id, fell_back, offset): Made) {
+    /// One patch on the canvas as soon as it is written, unless its frame closed; one made for a
+    /// correction removed meanwhile is dropped, as `deleteCorrection` cancels the generation.
+    fn patch_landed(self: &Rc<Self>, path: &str, one: Made) {
         {
             let mut s = self.state.borrow_mut();
-            if s.open_path() != Some(path) || !s.store.settings().corrections.iter().any(|c| c.id == id) {
+            if s.open_path() != Some(path) {
+                s.dust.patched.insert(one.0);
                 return;
             }
-            s.dust.patched.insert(id);
-            if fell_back {
-                s.dust.fallback.insert(id);
+            let (kept, gone) = landed(vec![one], &s.store.settings().corrections);
+            for id in gone {
+                let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), id));
             }
-            s.dust.sources.insert(id, offset);
+            for (id, fell_back, offset) in kept {
+                s.dust.patched.insert(id);
+                if fell_back {
+                    s.dust.fallback.insert(id);
+                }
+                s.dust.sources.insert(id, offset);
+            }
             s.requests.requested_view = None;
         }
         self.request_render();
@@ -261,6 +254,22 @@ impl Ctl {
 }
 
 type Made = (oni_settings::id::Id, bool, (f64, f64));
+
+/// The frame's settings a heal run reads before each patch, `None` once the frame is left.
+pub(in crate::app) type Latest = std::sync::Arc<std::sync::Mutex<Option<oni_settings::PipelineSettings>>>;
+
+/// A correction's patch searched on the frame framed with the other patches made, written to the
+/// cache, and the textures its search laid freed, as a run of large strokes would otherwise pile them up.
+fn generated(engine: &render::Shared, full: &oni_graph::Source, settings: &oni_settings::PipelineSettings, c: &oni_settings::frame::Correction, caches: &Path) -> Result<Made, String> {
+    let (region, size) = engine.lock()?.search_region(full, settings, c)?;
+    let patch = crate::heal::generate(&region, c, size.0, size.1);
+    drop(region);
+    crate::patches::write(caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
+    let mut e = engine.lock()?;
+    e.forget_patch(c.id);
+    e.purge();
+    Ok((c.id, patch.fallback, patch.offset))
+}
 
 /// The patches made for corrections the frame still holds, and the ids of those removed meanwhile.
 fn landed(made: Vec<Made>, corrections: &[oni_settings::frame::Correction]) -> (Vec<Made>, Vec<oni_settings::id::Id>) {

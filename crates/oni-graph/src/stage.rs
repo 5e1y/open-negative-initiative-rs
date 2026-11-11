@@ -30,6 +30,12 @@ pub trait Stage: Send + Sync {
         let _ = index;
         output
     }
+
+    /// For a stage reading its input only at the pixel it writes, the rectangle outside which it
+    /// returns that input unchanged: the graph then runs it over that rectangle alone, onto its input.
+    fn area(&self) -> Option<Rect> {
+        None
+    }
 }
 
 /// The most auxiliary inputs one stage reads beside its own.

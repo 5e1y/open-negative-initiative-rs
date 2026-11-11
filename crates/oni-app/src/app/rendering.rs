@@ -11,6 +11,7 @@ mod pace;
 mod plots;
 mod placeholder;
 mod resizing;
+pub(in crate::app) use asking::Latest;
 pub(in crate::app) use resizing::resizing;
 
 /// What the canvas asked of the open frame and was given: reset whole when another frame opens or

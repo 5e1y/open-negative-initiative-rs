@@ -11,6 +11,7 @@ impl<'a> Plan<'a> {
         let n = nodes.len();
         let mut rects: Vec<Option<Rect>> = vec![None; n];
         let mut hits: Vec<Option<(FloatTexture, Rect)>> = vec![None; n];
+        let mut runs = vec![Run::Whole; n];
         rects[last] = Some(request);
         for i in (0..n).rev() {
             let Some(need) = rects[i] else { continue };
@@ -28,12 +29,36 @@ impl<'a> Plan<'a> {
                 rects[j] = Some(rects[j].map_or(region, |r| r.union(&region)));
                 Ok(())
             };
-            ask(*input, stage.input_region(need))?;
-            for (k, &a) in aux.iter().enumerate() {
-                ask(a, stage.aux_region(k, need))?;
+            // The last node writes the render's own output, so it runs whole.
+            runs[i] = match stage.area().filter(|_| i != last) {
+                None => Run::Whole,
+                Some(area) => match need.intersect(&area) {
+                    hit if hit.is_empty() => Run::Through,
+                    hit => Run::Within(hit),
+                },
+            };
+            let read = match runs[i] {
+                Run::Whole => {
+                    ask(*input, stage.input_region(need))?;
+                    Some(need)
+                }
+                // Its input over the whole rectangle, which its result holds as it is outside the area.
+                Run::Through => {
+                    ask(*input, need)?;
+                    None
+                }
+                Run::Within(hit) => {
+                    ask(*input, need)?;
+                    Some(hit)
+                }
+            };
+            if let Some(read) = read {
+                for (k, &a) in aux.iter().enumerate() {
+                    ask(a, stage.aux_region(k, read))?;
+                }
             }
         }
-        Ok(Self { nodes, last, rects, hits })
+        Ok(Self { nodes, last, rects, hits, runs })
     }
 
     pub(super) fn output(&self) -> Rect {

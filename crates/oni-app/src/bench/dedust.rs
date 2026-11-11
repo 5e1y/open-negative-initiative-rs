@@ -1,13 +1,22 @@
-//! `ONI_BENCH=dedust`: a stroke painted in De-dust, its patch waited for, then removed;
-//! `ONI_DUST_STROKES=n` paints n strokes at the largest brush at once, as a hand clearing a frame.
+//! `ONI_BENCH=dedust`: a stroke painted in De-dust, its patch waited for, then removed; `ONI_DUST_STROKES=n` paints n at
+//! the largest brush, `ONI_DUST_DOTS=1` dots at the hand's, once `ONI_DUST_DURING` (0 to 1) of a frame's own are healed.
 
 use super::*;
 
-/// The stroke's moves, a 1000 Hz mouse's half second.
+/// The stroke's moves, a 1000 Hz mouse's half second; a dot's, a few pixels.
 const MOVES: usize = 500;
+const DOT_MOVES: usize = 3;
 
 fn strokes() -> usize {
     std::env::var("ONI_DUST_STROKES").ok().and_then(|v| v.parse().ok()).unwrap_or(1).max(1)
+}
+
+fn dots() -> bool {
+    std::env::var_os("ONI_DUST_DOTS").is_some()
+}
+
+fn during() -> f64 {
+    std::env::var("ONI_DUST_DURING").ok().and_then(|v| v.parse().ok()).unwrap_or(0.0)
 }
 
 /// De-dust through its own key, the brush keys and the canvas's painting callbacks; the patch
@@ -18,6 +27,10 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let done = RefCell::new(Some(done));
     let lines = RefCell::new(Vec::<String>::new());
     let painted = Cell::new(None::<Instant>);
+    // The strokes this bench paints, and when the last of their patches landed: a frame's own strokes
+    // may still be healing, which they must not wait behind.
+    let hand = RefCell::new(Vec::<oni_settings::id::Id>::new());
+    let hand_healed = Cell::new(None::<Duration>);
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, Duration::from_millis(200), move || {
@@ -35,12 +48,23 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 ctl.act(crate::Act::Correction);
-                for _ in 0..if strokes() > 1 { 40 } else { 2 } {
+                for _ in 0..if dots() { 0 } else if strokes() > 1 { 40 } else { 2 } {
                     ctl.act(crate::Act::BiggerBrush);
                 }
             }
             1 => {
+                // A frame holding strokes without patches is painted on while they are being made.
+                let own = corrections();
+                let made = own.iter().filter(|c| crate::patches::file(&crate::patches::caches(), c.id).exists()).count();
+                if made < own.len() && (!ctl.state.borrow().healing() || (made as f64) < during() * own.len() as f64) {
+                    step.set(1);
+                    return;
+                }
+                if !own.is_empty() {
+                    lines.borrow_mut().push(format!("{made} of the frame's {} patches made", own.len()));
+                }
                 lines.borrow_mut().push(format!("painting {}, brush {}", c.get_painting(), d.get_readout()));
+                let before: Vec<oni_settings::id::Id> = corrections().iter().map(|c| c.id).collect();
                 // Short strokes across the frame shown, the first in its middle.
                 let n = strokes();
                 let mut each = 0.0;
@@ -50,15 +74,21 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     // Moves a point apart, as a 1000 Hz mouse sends them: each one's cost on the hand's thread.
                     c.invoke_paint_start(x, y);
                     let moved = Instant::now();
-                    for k in 1..=MOVES {
-                        c.invoke_paint_move(x + k as f32 * 0.25 / n as f32, y + (k as f32 * 0.05).sin() * 4.0);
+                    let moves = if dots() { DOT_MOVES } else { MOVES };
+                    for k in 1..=moves {
+                        if dots() {
+                            c.invoke_paint_move(x + k as f32 * 0.5, y);
+                        } else {
+                            c.invoke_paint_move(x + k as f32 * 0.25 / n as f32, y + (k as f32 * 0.05).sin() * 4.0);
+                        }
                     }
-                    each = moved.elapsed().as_secs_f64() * 1e6 / MOVES as f64;
+                    each = moved.elapsed().as_secs_f64() * 1e6 / moves as f64;
                     c.invoke_paint_end();
                 }
-                lines.borrow_mut().push(format!("{MOVES} moves: {each:.1} us each on the hand's thread"));
+                lines.borrow_mut().push(format!("{} moves: {each:.1} us each on the hand's thread", if dots() { DOT_MOVES } else { MOVES }));
                 painted.set(Some(Instant::now()));
                 let list = corrections();
+                *hand.borrow_mut() = list.iter().map(|c| c.id).filter(|id| !before.contains(id)).collect();
                 lines.borrow_mut().push(format!("{} correction, radius {:.0}, {} points, marks {}", list.len(), list.first().map_or(0.0, |c| c.radius), list.first().map_or(0, |c| c.stroke.len()), c.get_marks().row_count()));
             }
             2 => {
@@ -66,7 +96,11 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if list.is_empty() {
                     return finish(timer, &done, &lines, "no correction to wait on");
                 }
-                if !list.iter().all(|c| crate::patches::file(&crate::patches::caches(), c.id).exists()) {
+                let healed = |id: &oni_settings::id::Id| crate::patches::file(&crate::patches::caches(), *id).exists();
+                if hand_healed.get().is_none() && hand.borrow().iter().all(healed) {
+                    hand_healed.set(painted.get().map(|t| t.elapsed()));
+                }
+                if !list.iter().all(|c| healed(&c.id)) {
                     if painted.get().is_some_and(|t| t.elapsed() > Duration::from_secs(120)) {
                         return finish(timer, &done, &lines, "the patch never came");
                     }
@@ -80,7 +114,9 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 lines.borrow_mut().push(format!(
-                    "{} patches and reminder {:.0} ms after the strokes; row {:?}, pending {:?}, reminder {:?}",
+                    "the hand's {} patches {:.0} ms after the strokes; {} patches and reminder {:.0} ms after; row {:?}, pending {:?}, reminder {:?}",
+                    hand.borrow().len(),
+                    hand_healed.get().map_or(0.0, |t| t.as_secs_f64() * 1000.0),
                     list.len(),
                     painted.get().map_or(0.0, |t| t.elapsed().as_secs_f64() * 1000.0),
                     row.as_ref().map(|r| r.label.to_string()),

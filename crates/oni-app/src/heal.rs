@@ -340,5 +340,25 @@ pub fn search_window(c: &Correction, width: f64, height: f64) -> Area {
     [x0, y0, x1 - x0, y1 - y0]
 }
 
+/// The pending correction (indices in order) to heal next on a framed `width` × `height`: the newest, after
+/// the earlier ones lying in its search window and theirs, earliest first, so each search holds them.
+pub fn next(corrections: &[Correction], pending: &[usize], width: f64, height: f64) -> Option<usize> {
+    let &newest = pending.last()?;
+    let extent = [0.0, 0.0, width, height];
+    let meets = |a: Area, b: Area| a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+    let mut before = vec![false; corrections.len()];
+    let mut asked = vec![newest];
+    while let Some(k) = asked.pop() {
+        let window = search_window(&corrections[k], width, height);
+        for &j in pending.iter().take_while(|&&j| j < k) {
+            if !before[j] && meets(corrections::patch_rect(&corrections[j], extent), window) {
+                before[j] = true;
+                asked.push(j);
+            }
+        }
+    }
+    pending.iter().copied().find(|&j| before[j]).or(Some(newest))
+}
+
 #[cfg(test)]
 mod tests;

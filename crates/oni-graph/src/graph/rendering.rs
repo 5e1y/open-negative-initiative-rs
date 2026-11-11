@@ -240,14 +240,13 @@ impl Graph {
     /// The plan with its sources laid, their copies outside the pass: every stage then runs in one
     /// compute pass, as each pass begun costs Metal a command buffer and its driver memory.
     fn lay<'a>(&mut self, encoder: &mut wgpu::CommandEncoder, plan: Plan<'a>) -> Laid<'a> {
-        let Plan { nodes, last, rects, hits } = plan;
+        let Plan { nodes, last, rects, hits, runs } = plan;
         let n = nodes.len();
         let mut pending = vec![0usize; n];
         for i in 0..n {
             if let (Some(_), None, Kind::Stage { input, aux, .. }) = (rects[i], &hits[i], &nodes[i].kind) {
-                pending[*input] += 1;
-                for &a in aux {
-                    pending[a] += 1;
+                for j in read_by(*input, aux, runs[i]) {
+                    pending[j] += 1;
                 }
             }
         }
@@ -257,52 +256,66 @@ impl Graph {
                 results[i] = Some(self.assemble(encoder, source, need));
             }
         }
-        Laid { nodes, last, rects, results, pending }
+        Laid { nodes, last, rects, results, pending, runs }
     }
 
     /// Dispatches every stage of `laid` into `pass`; the last node's result, unless it went into a sheet.
     fn record(&mut self, pass: &mut wgpu::ComputePass<'_>, laid: Laid, mut cache: Option<&mut Cache>, last_into: Last) -> Option<(FloatTexture, Rect)> {
-        let Laid { nodes, last, rects, mut results, mut pending } = laid;
+        let Laid { nodes, last, rects, mut results, mut pending, runs } = laid;
         for i in 0..nodes.len() {
             let Some(need) = rects[i] else { continue };
             if results[i].is_some() {
                 continue;
             }
-            match &nodes[i].kind {
-                Kind::Source(_) => unreachable!("every source is laid before the pass"),
-                Kind::Stage { stage, input, aux } => {
+            let Kind::Stage { stage, input, aux } = &nodes[i].kind else { unreachable!("every source is laid before the pass") };
+            let extent = nodes[*input].extent;
+            let (out, rect) = match runs[i] {
+                Run::Whole => {
                     let (out, at) = match (&last_into, i == last) {
                         (Last::Sheet(sheet, at), true) => ((*sheet).clone(), *at),
                         (Last::Owned, true) => (self.pool.output(need.w, need.h), [0; 2]),
                         _ => (self.pool.acquire(need.w, need.h), [0; 2]),
                     };
-                    {
-                        let main = results[*input].as_ref().expect("the input is evaluated first");
-                        let extras: Vec<(&FloatTexture, Rect, Rect)> = aux
-                            .iter()
-                            .map(|&a| {
-                                let (t, r) = results[a].as_ref().expect("an auxiliary input is evaluated first");
-                                (t, *r, nodes[a].extent)
-                            })
-                            .collect();
-                        self.dispatch(pass, *stage, (&main.0, main.1, nodes[*input].extent), &extras, (&out, at), need);
-                    }
-                    if let Some(c) = cache.as_deref_mut()
-                        && let Some(old) = c.store(nodes[i].key, need, &out)
-                    {
-                        self.pool.release(old);
-                    }
-                    if !(matches!(last_into, Last::Sheet(..)) && i == last) {
-                        results[i] = Some((out, need));
-                    }
-                    for j in std::iter::once(*input).chain(aux.iter().copied()) {
-                        pending[j] -= 1;
-                        if pending[j] == 0 && j != last
-                            && let Some((texture, _)) = results[j].take()
-                        {
-                            self.pool.release(texture);
-                        }
-                    }
+                    let main = results[*input].as_ref().expect("the input is evaluated first");
+                    let extras = auxiliaries(&nodes, &results, aux);
+                    self.dispatch(pass, *stage, (&main.0, main.1, extent), &extras, (&out, at), need);
+                    (out, need)
+                }
+                Run::Through => results[*input].clone().expect("the input is evaluated first"),
+                Run::Within(hit) => {
+                    // Onto the input's own texture when this node reads it last and nothing else holds it.
+                    let alone = pending[*input] == 1 && results[*input].as_ref().is_some_and(|(t, _)| t.alone());
+                    let (onto, rect) = if alone {
+                        results[*input].take().expect("the input is evaluated first")
+                    } else {
+                        let copy = self.pool.acquire(need.w, need.h);
+                        let (t, r) = results[*input].as_ref().expect("the input is evaluated first");
+                        self.dispatch(pass, &Put, (t, *r, extent), &[], (&copy, [0; 2]), need);
+                        (copy, need)
+                    };
+                    let part = self.pool.acquire(hit.w, hit.h);
+                    let extras = auxiliaries(&nodes, &results, aux);
+                    self.dispatch(pass, *stage, (&onto, rect, extent), &extras, (&part, [0; 2]), hit);
+                    self.dispatch(pass, &Put, (&part, hit, hit), &[], (&onto, [hit.x - rect.x, hit.y - rect.y]), hit);
+                    self.pool.release(part);
+                    (onto, rect)
+                }
+            };
+            // A result lent by its input is kept only where its texture starts at the node's own rectangle.
+            if let Some(c) = cache.as_deref_mut().filter(|_| rect == need)
+                && let Some(old) = c.store(nodes[i].key, need, &out)
+            {
+                self.pool.release(old);
+            }
+            if !(matches!(last_into, Last::Sheet(..)) && i == last) {
+                results[i] = Some((out, rect));
+            }
+            for j in read_by(*input, aux, runs[i]) {
+                pending[j] -= 1;
+                if pending[j] == 0 && j != last
+                    && let Some((texture, _)) = results[j].take()
+                {
+                    self.pool.release(texture);
                 }
             }
         }
@@ -343,6 +356,36 @@ struct Laid<'a> {
     rects: Vec<Option<Rect>>,
     results: Vec<Option<(FloatTexture, Rect)>>,
     pending: Vec<usize>,
+    runs: Vec<Run>,
+}
+
+/// The nodes a node reads as it runs: its input, and its auxiliary inputs unless it runs through.
+fn read_by(input: usize, aux: &[usize], run: Run) -> impl Iterator<Item = usize> + '_ {
+    std::iter::once(input).chain(aux.iter().copied().filter(move |_| run != Run::Through))
+}
+
+/// Each auxiliary input's result: its texture, the rectangle it covers and its extent.
+fn auxiliaries<'r>(nodes: &[Flat], results: &'r [Option<(FloatTexture, Rect)>], aux: &[usize]) -> Vec<(&'r FloatTexture, Rect, Rect)> {
+    aux.iter()
+        .map(|&a| {
+            let (t, r) = results[a].as_ref().expect("an auxiliary input is evaluated first");
+            (t, *r, nodes[a].extent)
+        })
+        .collect()
+}
+
+/// Its input where it is dispatched: a confined stage's part laid onto its input's pixels, or those
+/// pixels copied where another reader still needs them as they are.
+struct Put;
+
+impl Stage for Put {
+    fn name(&self) -> &'static str {
+        "put"
+    }
+
+    fn shader(&self) -> &'static str {
+        "fn pixel(p: vec2<i32>) -> vec4<f32> { return load(p); }"
+    }
 }
 
 /// Where the last node of a plan is written.

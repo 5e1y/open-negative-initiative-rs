@@ -4,9 +4,17 @@
 use oni_settings::id::Id;
 use std::path::{Path, PathBuf};
 
-/// The app's caches folder, `AppFolders.caches`'s one route.
+/// This instance's folder of patches, under the caches folder every running ONI shares: one of its
+/// own, named after the support folder that one instance at a time holds, so a quit purges its own.
 pub fn caches() -> PathBuf {
-    crate::system::caches()
+    instance(&crate::system::caches(), &crate::timing::support())
+}
+
+/// The folder under `caches` of the instance holding `support`, named by the path's FNV-1a hash,
+/// which names no folder of the person's.
+fn instance(caches: &Path, support: &Path) -> PathBuf {
+    let hash = support.as_os_str().as_encoded_bytes().iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3));
+    caches.join("Instances").join(format!("{hash:016x}"))
 }
 
 pub fn file(caches: &Path, id: Id) -> PathBuf {
@@ -26,9 +34,11 @@ pub fn write(caches: &Path, id: Id, width: u32, height: u32, pixels: &[[f32; 4]]
     std::fs::rename(&partial, &path).map_err(|e| e.to_string())
 }
 
-/// `CorrectionCache.purgeAll`, run at quit: every patch is generated again the next time its frame opens.
+/// `CorrectionCache.purgeAll`, run at quit on this instance's folder: each of its patches is generated
+/// again the next time its frame opens, and the folder goes once empty.
 pub fn purge(caches: &Path) {
     let _ = std::fs::remove_dir_all(caches.join("Corrections"));
+    let _ = std::fs::remove_dir(caches);
 }
 
 /// The patch's pixels and size; `None` while it has not been generated.
@@ -58,5 +68,25 @@ mod tests {
         // Twin: another correction's id finds nothing.
         assert!(read(&caches, Id::parse("11111111-2222-3333-4444-555555555555").unwrap()).is_none());
         let _ = std::fs::remove_dir_all(&caches);
+    }
+
+    #[test]
+    fn a_quit_purges_its_own_patches_and_leaves_another_instance_s() {
+        let root = std::env::temp_dir().join(format!("oni-patches-instances-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let (mine, theirs) = (instance(&root, Path::new("/a/Open Negative Initiative")), instance(&root, Path::new("/b/scratch support")));
+        let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
+        for folder in [&mine, &theirs] {
+            write(folder, id, 2, 2, &[[0.5; 4]; 4]).unwrap();
+        }
+        assert_eq!(instance(&root, Path::new("/a/Open Negative Initiative")), mine, "a launch finds its own folder again");
+        purge(&mine);
+        assert!(read(&mine, id).is_none() && !mine.exists(), "the quitting instance's patches and folder go");
+        assert!(read(&theirs, id).is_some(), "another instance's patch went with them");
+        // Twin: two instances on one folder, as before, lose each other's patches at a quit.
+        let shared = instance(&root, Path::new("/b/scratch support"));
+        purge(&shared);
+        assert!(read(&theirs, id).is_none(), "a purge of the shared folder left the patch");
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

@@ -41,7 +41,7 @@ impl Ctl {
             }
             let s = &*s;
             // A heal waiting on the frame's full-resolution build is already under way.
-            let healing = s.open_path().is_some_and(|p| s.dust.healing.contains(p) || s.building_full.as_deref() == Some(p));
+            let healing = s.open_path().is_some_and(|p| s.dust.healing.contains_key(p) || s.building_full.as_deref() == Some(p));
             let pending = |c: &oni_settings::frame::Correction| healing && !s.dust.patched.contains(&c.id) && !s.dust.unhealable.contains(&c.id);
             let rows: Vec<crate::CorrectionRow> = corrections
                 .iter()

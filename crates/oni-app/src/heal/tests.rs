@@ -164,3 +164,86 @@ fn the_unclamped_taps_read_what_the_clamped_ones_do() {
     }
     assert!(points.iter().any(|&(x, y)| src.sample(x, y) != reference(x, y, true)), "twin: rows read the wrong way round are seen");
 }
+
+/// Dots of radius 12 at fractions of a 6000 × 4000 frame, whose search windows reach about 1 450 px.
+fn dots(at: &[(f64, f64)]) -> Vec<Correction> {
+    at.iter().map(|&(x, y)| Correction { id: Id::new(), stroke: vec![Point { x, y }, Point { x: x + 0.001, y }], radius: 12.0 }).collect()
+}
+
+const FRAME: (f64, f64) = (6000.0, 4000.0);
+
+/// Whether `j`'s patch lies where a search for `k` reads.
+fn lies_for(cs: &[Correction], j: usize, k: usize) -> bool {
+    let (r, w) = (corrections::patch_rect(&cs[j], [0.0, 0.0, FRAME.0, FRAME.1]), search_window(&cs[k], FRAME.0, FRAME.1));
+    r[0] < w[0] + w[2] && w[0] < r[0] + r[2] && r[1] < w[1] + w[3] && w[1] < r[1] + r[3]
+}
+
+/// The pending corrections a search for `k` waits on, by fixed point: earlier ones lying in its
+/// window, and in theirs, and so on.
+fn waits_on(cs: &[Correction], pending: &[usize], k: usize) -> Vec<usize> {
+    let mut set = vec![k];
+    loop {
+        let more: Vec<usize> = pending.iter().copied().filter(|&j| !set.contains(&j) && set.iter().any(|&m| j < m && lies_for(cs, j, m))).collect();
+        if more.is_empty() {
+            set.retain(|&j| j != k);
+            return set;
+        }
+        set.extend(more);
+    }
+}
+
+/// Corrections healed in turn by `pick`, from `pending`, until `stop` is healed or none is left: the
+/// order, and how many earlier corrections of each one's window were not healed yet when it was.
+fn healed(cs: &[Correction], pending: &mut Vec<usize>, stop: Option<usize>, pick: impl Fn(&[usize]) -> Option<usize>) -> (Vec<usize>, usize) {
+    let (mut order, mut unsound) = (Vec::new(), 0);
+    while let Some(k) = pick(pending) {
+        unsound += pending.iter().filter(|&&j| j < k && lies_for(cs, j, k)).count();
+        pending.retain(|&j| j != k);
+        order.push(k);
+        if Some(k) == stop {
+            break;
+        }
+    }
+    (order, unsound)
+}
+
+#[test]
+fn the_newest_stroke_heals_first_after_the_earlier_ones_its_window_holds() {
+    // 0 and 1 far from the rest; 3 lies in 4's window, 2 in 3's alone; 4 the hand's newest.
+    let cs = dots(&[(0.9, 0.9), (0.85, 0.1), (0.1, 0.5), (0.3, 0.5), (0.45, 0.5)]);
+    let next = |pending: &[usize]| next(&cs, pending, FRAME.0, FRAME.1);
+    assert_eq!(next(&[0, 1, 4]), Some(4), "nothing it reads is pending: the newest at once");
+    assert_eq!(next(&[0, 1, 3, 4]), Some(3), "an earlier stroke in its window first");
+    assert_eq!(next(&[0, 1, 2, 3, 4]), Some(2), "and the one that stroke's window holds before it");
+    assert_eq!(next(&[0, 1]), Some(1));
+    assert_eq!(next(&[]), None);
+    // Twin: 2 does not lie in 4's window, so with 3 healed it is not 4's to wait for.
+    assert!(!lies_for(&cs, 2, 4) && lies_for(&cs, 2, 3) && lies_for(&cs, 3, 4));
+    assert_eq!(next(&[0, 1, 2, 4]), Some(4));
+}
+
+#[test]
+fn a_stroke_painted_during_a_batch_heals_before_the_batch_s_rest_and_every_search_holds_its_window() {
+    // Sixty dots on the frame's left third and sixty on its right, all to make again.
+    let spread = |x0: f64| (0..60).map(move |k| (x0 + 0.25 * ((k * 37) % 60) as f64 / 60.0, 0.05 + 0.9 * ((k * 53) % 60) as f64 / 60.0));
+    let mut cs = dots(&spread(0.03).chain(spread(0.72)).collect::<Vec<_>>());
+    let pick = |cs: &[Correction], p: &[usize]| next(cs, p, FRAME.0, FRAME.1);
+    let (order, unsound) = healed(&cs, &mut (0..cs.len()).collect(), None, |p| pick(&cs, p));
+    assert_eq!((order.len(), unsound), (120, 0), "a search ran before an earlier patch of its window");
+    // The left third healed, the hand paints there: its stroke heals next, the right's sixty after.
+    cs.extend(dots(&[(0.15, 0.5), (0.85, 0.5)]));
+    let (hand, among) = (cs.len() - 2, cs.len() - 1);
+    let batch: Vec<usize> = (60..120).collect();
+    let (order, _) = healed(&cs, &mut [&batch[..], &[hand]].concat(), Some(hand), |p| pick(&cs, p));
+    assert_eq!(order, vec![hand], "the stroke waited behind the batch");
+    // Painted among the right's dots, it waits for the earlier ones its window holds, and theirs.
+    let pending = [&batch[..], &[among]].concat();
+    let waits = waits_on(&cs, &pending, among);
+    let (order, unsound) = healed(&cs, &mut pending.clone(), Some(among), |p| pick(&cs, p));
+    assert_eq!((order.len(), unsound), (waits.len() + 1, 0));
+    // Twins: the list's order serves the stroke after the whole batch, and the newest first at once
+    // runs searches before earlier patches of their windows.
+    let (listed, _) = healed(&cs, &mut [&batch[..], &[hand]].concat(), Some(hand), |p| p.first().copied());
+    assert_eq!(listed.len(), 61);
+    assert!(healed(&cs, &mut pending.clone(), None, |p| p.last().copied()).1 > 0, "newest first missed no earlier patch");
+}

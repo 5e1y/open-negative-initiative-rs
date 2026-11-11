@@ -91,6 +91,7 @@ impl Graph {
         pass.set_bind_group(0, &group, &[]);
         pass.dispatch_workgroups(output_rect.w.div_ceil(8), output_rect.h.div_ceil(8), 1);
         self.dispatches += 1;
+        self.pixels += output_rect.area();
     }
 
     /// `bytes` staged at the ring's next aligned place; its offset and size there.
