@@ -4,8 +4,6 @@ use oni_settings::ConversionMode;
 use oni_settings::frame::Correction;
 use oni_settings::levels::Levels;
 
-/// The least sensitive reading's jump.
-const STRICT: f32 = JUMPS.0;
 /// A map as large as the checks' frames.
 const SIDE: usize = 4096;
 
@@ -129,14 +127,13 @@ fn with_block(x: usize, side: usize, light: [f32; 3]) -> Vec<[f32; 4]> {
 }
 
 #[test]
-fn a_sharp_neutral_speck_is_dust_and_noise_a_glint_or_a_highlight_are_not() {
+fn a_sharp_speck_is_dust_from_one_pixel_and_noise_a_dye_or_a_highlight_are_not() {
     let dust = |pixels: &[[f32; 4]]| dust_at(pixels, 0.0);
-    assert_eq!(dust(&with_block(100, 3, [0.01; 3])), 1, "a speck stopping every channel alike");
-    assert_eq!(dust(&with_block(100, 1, [0.01; 3])), 0, "twin: a lone pixel is noise");
-    // Past the window on its blue alone: the red and green do not jump.
-    assert_eq!(dust(&with_block(100, 3, [0.5, 0.5, 0.01])), 0, "twin: a dye's jump is no dust");
-    // Every channel past, the blue twenty times as far: a glint's colour, not a speck's.
-    assert_eq!(dust(&with_block(100, 3, [0.09, 0.09, 0.0001])), 0, "twin: not neutral");
+    assert_eq!(dust(&with_block(100, 3, [0.01; 3])), 1, "a speck stopping every channel");
+    assert_eq!(dust(&with_block(100, 1, [0.01; 3])), 1, "one pixel past the window, rising in every channel");
+    assert_eq!(dust(&with_block(100, 1, [0.01, 0.5, 0.5])), 0, "twin: a pixel rising in one channel is noise");
+    // Past the window on its blue alone: the red and green do not rise.
+    assert_eq!(dust(&with_block(100, 3, [0.5, 0.5, 0.01])), 0, "twin: a dye's rise is no dust");
     assert_eq!(dust(&with_block(100, 100, [0.01; 3])), 0, "twin: 10 000 pixels are a highlight");
     assert_eq!(dust(&with_block(4, 3, [0.01; 3])), 0, "twin: at the frame's edge is the holder");
     // Clearer than the window: a scratch or the scene's shadows, never read.
@@ -144,38 +141,96 @@ fn a_sharp_neutral_speck_is_dust_and_noise_a_glint_or_a_highlight_are_not() {
     assert!(read(&with_block(100, 3, [10.0; 3]), 200, &limits(), SIDE).map.texels.iter().all(|&t| t != 0));
 }
 
-#[test]
-fn a_soft_edge_measures_no_jump_where_a_sharp_one_does() {
-    // The same core just past the window, its neighbours just inside it: two pixels off, it reads them.
-    let mut soft = with_block(100, 3, [0.09; 3]);
-    for row in 97..106 {
-        for col in 97..106 {
-            if !(100..103).contains(&row) || !(100..103).contains(&col) {
-                soft[row * 200 + col] = grey(0.11);
-            }
-        }
-    }
-    let sharp = with_block(100, 3, [0.09; 3]);
-    let speck = |pixels: &[[f32; 4]]| gathered(&runs_of(pixels, 200, &limits())).remove(0);
-    let at = |pixels: &[[f32; 4]]| jumps(&speck(pixels), pixels, 200, &limits(), JUMP_AT);
-    assert!(dust_jump(at(&sharp)).is_some_and(|j| j >= STRICT), "{:?}", at(&sharp));
-    assert!(dust_jump(at(&soft)).is_none_or(|j| j < STRICT), "twin: {:?}", at(&soft));
-    assert_eq!(dust_at(&soft, 0.0), 0);
+/// A 200 × 200 frame at light 0.5 holding a round shape at (100, 100): each channel rises over the ground, in
+/// density, by `rise` times `fall` of the distance from its centre.
+fn round(rise: [f32; 3], fall: impl Fn(f32) -> f32) -> Vec<[f32; 4]> {
+    (0..40_000)
+        .map(|i| {
+            let f = fall(((i % 200) as f32 - 100.0).hypot((i / 200) as f32 - 100.0));
+            let [r, g, b] = rise.map(|d| 0.5 * 10f32.powf(-d * f));
+            [r, g, b, 1.0]
+        })
+        .collect()
 }
 
 #[test]
-fn a_highlights_dense_core_does_not_make_its_soft_edge_a_jump() {
-    // A 30-pixel lamp: its core far past the window, its rim just past it, what lies around just inside.
-    let mut lamp = vec![grey(0.5); 40_000];
-    for row in 90..130usize {
-        for col in 90..130usize {
-            let off = (row.abs_diff(110)).max(col.abs_diff(110));
-            lamp[row * 200 + col] = grey(if off < 13 { 0.001 } else if off < 16 { 0.09 } else { 0.11 });
+fn a_glints_soft_edge_is_no_speck_where_a_sharp_one_is_whatever_its_colour() {
+    // An opaque speck's blue sinks to the sensor's floor under the orange mask: five times its red's rise, as a glint's.
+    let colour = [0.75, 0.75, 3.7];
+    let sharp = round(colour, |r| if r <= 5.0 { 1.0 } else { 0.0 });
+    let soft = round(colour, |r| (-r * r / 72.0).exp());
+    assert_eq!(dust_at(&sharp, 0.0), 1, "a speck at the scan's focus, its blue far past its red");
+    assert_eq!(dust_at(&soft, 0.0), 0, "twin: the same light falling off over six pixels is the image's");
+    // The glint is past the window and rises enough: its edge alone tells it apart.
+    let shown = shapes(&soft, 200);
+    assert_eq!(shown.len(), 1);
+    assert!(speck(&shown[0], &soft, 200, &limits()).is_none());
+    assert!(speck(&shapes(&sharp, 200)[0], &sharp, 200, &limits()).is_some_and(|(_, jump)| jump > JUMPS.0));
+}
+
+#[test]
+fn a_lamps_light_falling_off_slowly_is_no_speck_where_a_step_is() {
+    // A 30-pixel lamp far past the window, its light falling to the ground over ten pixels.
+    let lamp = |fall: f32| {
+        let mut pixels = vec![grey(0.5); 40_000];
+        for row in 70..130usize {
+            for col in 70..130usize {
+                let off = row.abs_diff(100).max(col.abs_diff(100)) as f32;
+                let f = if off < 15.0 { 1.0 } else if fall == 0.0 { 0.0 } else { (1.0 - (off - 15.0) / fall).max(0.0) };
+                pixels[row * 200 + col] = grey(0.5 * 10f32.powf(-2.7 * f));
+            }
         }
-    }
-    assert_eq!(dust_at(&lamp, 0.0), 0);
-    // Twin: the core alone, with no soft rim, is what a large opaque speck looks like.
-    assert_eq!(dust_at(&with_block(95, 30, [0.001; 3]), 0.0), 1);
+        pixels
+    };
+    assert_eq!(dust_at(&lamp(10.0), 0.0), 0);
+    assert_eq!(dust_at(&lamp(0.0), 0.0), 1, "twin: with no fall, it is what a large opaque speck looks like");
+}
+
+#[test]
+fn a_flake_or_a_hair_whose_densest_pixel_alone_passes_is_ringed_whole() {
+    // A 30 × 12 flake and a hair 2 wide and 60 long, inside the window but for one pixel each.
+    let lay = |pixels: &mut [[f32; 4]], x: std::ops::Range<usize>, y: std::ops::Range<usize>, light: f32| {
+        for row in y {
+            for col in x.clone() {
+                pixels[row * 200 + col] = grey(light);
+            }
+        }
+    };
+    let mut pixels = vec![grey(0.5); 40_000];
+    lay(&mut pixels, 40..70, 50..62, 0.12);
+    lay(&mut pixels, 150..152, 30..90, 0.12);
+    lay(&mut pixels, 55..56, 55..56, 0.08);
+    lay(&mut pixels, 150..151, 60..61, 0.08);
+    assert_eq!(shapes(&pixels, 200).iter().map(|s| s.area).collect::<Vec<_>>(), vec![1, 1], "the veil shows one pixel of each");
+    let mut ringed: Vec<(u32, [u32; 4])> = read(&pixels, 200, &limits(), SIDE).at(0.0).iter().map(|s| (s.area, s.bounds)).collect();
+    ringed.sort();
+    assert_eq!(ringed, vec![(120, [150, 30, 152, 90]), (360, [40, 50, 70, 62])]);
+    // Twin: a body rising less than half the densest pixel's rise is not the speck's, and stays out of its ring.
+    lay(&mut pixels, 40..70, 50..62, 0.4);
+    lay(&mut pixels, 55..56, 55..56, 0.08);
+    let ringed = read(&pixels, 200, &limits(), SIDE);
+    assert!(ringed.at(0.0).iter().any(|s| s.area == 1 && s.bounds == [55, 55, 56, 56]), "{:?}", ringed.at(0.0));
+}
+
+#[test]
+fn a_bright_patch_among_the_images_own_shapes_is_no_speck_where_the_same_on_an_even_ground_is() {
+    // A sharp 6-pixel patch past the window, among leaves 8 pixels wide inside it, or on an even ground.
+    let patch = |leaves: bool| {
+        let mut pixels = vec![grey(0.5); 40_000];
+        for (i, p) in pixels.iter_mut().enumerate() {
+            let (x, y) = (i % 200, i / 200);
+            if leaves && (x / 8 + y / 8) % 2 == 0 {
+                *p = grey(0.15);
+            }
+            if (97..103).contains(&x) && (97..103).contains(&y) {
+                *p = grey(0.05);
+            }
+        }
+        pixels
+    };
+    assert_eq!(shapes(&patch(true), 200).iter().map(|s| s.area).collect::<Vec<_>>(), vec![36], "the veil shows the patch alone");
+    assert_eq!(dust_at(&patch(true), 0.0), 0);
+    assert_eq!(dust_at(&patch(false), 0.0), 1, "twin: on an even ground, the same patch is a speck");
 }
 
 fn with_speck_at(x: usize, y: usize, light: f32, pixels: &mut [[f32; 4]]) {
@@ -197,17 +252,16 @@ fn sensitivity_reads_further_inside_the_window() {
 }
 
 #[test]
-fn a_speck_ringed_stands_clear_of_the_veil_on_the_map() {
-    // The same speck inside the window: the display veils what the map has not reached, never a speck ringed.
+fn a_speck_ringed_holds_what_the_veil_shows_of_it() {
+    // The same speck inside the window: the display veils what the map has not reached, never all of a speck ringed.
     let mut pixels = vec![grey(0.5); 40_000];
     with_speck_at(100, 100, 0.2, &mut pixels);
     let reading = read(&pixels, 200, &limits(), SIDE);
     assert_eq!(reading.at(0.5).len(), 1);
     for s in [0.5, 0.74, 1.0] {
         for speck in reading.at(s) {
-            for run in &speck.runs {
-                assert!((run.start..run.end).all(|x| u32::from(reading.map.texels[run.row as usize * 200 + x as usize]) <= notch(s)), "at {s}");
-            }
+            let shown = speck.runs.iter().any(|run| (run.start..run.end).any(|x| u32::from(reading.map.texels[run.row as usize * 200 + x as usize]) <= notch(s)));
+            assert!(shown, "at {s}");
         }
     }
     assert!(u32::from(reading.map.texels[50 * 200 + 50]) > notch(0.74), "twin: the ground beside it stays veiled");
@@ -215,8 +269,7 @@ fn a_speck_ringed_stands_clear_of_the_veil_on_the_map() {
 
 #[test]
 fn a_speck_once_found_stays_found_as_sensitivity_rises() {
-    // A speck past the window, in a band that a deeper inset reads too: there the two merge into one
-    // shape far too wide to be a speck.
+    // A speck past the window, in a band that a deeper inset reads too: there the veil merges the two.
     let mut pixels = vec![grey(0.5); 40_000];
     for row in 90..110usize {
         for col in 20..180usize {
@@ -227,14 +280,16 @@ fn a_speck_once_found_stays_found_as_sensitivity_rises() {
     for s in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0] {
         assert_eq!(dust_at(&pixels, s), 1, "at {s}");
     }
-    // Twin: read at the deep inset alone, the speck is lost in the band.
+    // Read at the deep inset alone, the speck is still what stands above the band: its peak finds it.
     let alone = candidates(&pixels, 200, &limits(), 2);
-    assert!(alone.iter().all(|c| c.speck.area > 16), "{alone:?}");
+    assert_eq!(alone.iter().map(|c| c.speck.area).collect::<Vec<_>>(), vec![16]);
+    // Twin: what the veil shows there is one shape far too wide to be a speck.
+    assert_eq!(gathered(&runs_of(&pixels, 200, &limits().closed_in(0.4))).iter().map(|s| s.area).collect::<Vec<_>>(), vec![3200]);
 }
 
 #[test]
-fn a_speck_read_at_two_insets_counts_once_and_whole() {
-    // A core past the window, a rim read at the next inset: both are shapes, nested.
+fn a_speck_read_at_every_inset_counts_once() {
+    // A core past the window on a rim that the next inset reads too, rising less than half the core's rise.
     let mut pixels = vec![grey(0.5); 40_000];
     for row in 98..108usize {
         for col in 98..108usize {
@@ -243,10 +298,11 @@ fn a_speck_read_at_two_insets_counts_once_and_whole() {
     }
     with_speck_at(101, 101, 0.01, &mut pixels);
     let reading = read(&pixels, 200, &limits(), SIDE);
-    assert_eq!(reading.at(0.0)[0].area, 16, "the core alone at rest");
-    let deep = reading.at(0.74);
-    assert_eq!(deep.len(), 1, "{deep:?}");
-    assert_eq!(deep[0].area, 100, "twin: the whole shape, not the core");
+    for s in [0.0, 0.25, 0.5, 0.74, 1.0] {
+        assert_eq!(reading.at(s).iter().map(|r| r.area).collect::<Vec<_>>(), vec![16], "at {s}");
+    }
+    // Twin: each inset reads it but the deepest, where the ground itself is past, and the reading holds it once an inset.
+    assert_eq!(reading.candidates.len(), LEVELS.len() - 1);
 }
 
 #[test]
