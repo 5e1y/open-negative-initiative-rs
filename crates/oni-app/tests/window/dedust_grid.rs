@@ -1,6 +1,8 @@
-//! De-dust's corrections as a grid of their numbers: a click on the picture lays a dot, a tile under the
-//! hand shows its correction alone with the ring of its source, and a click on the tile removes it.
+//! De-dust's corrections as a grid of their dust, each numbered under it beside its key: a click on the
+//! picture lays a dot, a tile under the hand shows its correction alone with the ring of its source, and
+//! a click on its key removes it.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Canvas, Dedust, Library};
 use oni_core::{Archive, EditorStore};
@@ -8,11 +10,24 @@ use oni_settings::cg::Point;
 use oni_settings::frame::Correction;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
+use slint::platform::WindowEvent;
+use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, Model};
 use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
+
+/// `CropStyle.dust-original`: a correction's dust in the tab.
+const DUST: f32 = 56.0;
+/// `Space.xxs`: from the dust to its number and key.
+const XXS: f32 = 2.0;
+
+/// Red, green and blue summed, 0 to 765, where the window is drawn at a point.
+fn luma(drawn: &(usize, Vec<Rgb565Pixel>), (x, y): (f32, f32)) -> u32 {
+    let v = drawn.1[y.floor() as usize * drawn.0 + x.floor() as usize].0;
+    u32::from((v >> 11) & 0x1f) * 255 / 31 + u32::from((v >> 5) & 0x3f) * 255 / 63 + u32::from(v & 0x1f) * 255 / 31
+}
 
 fn numbers(w: &oni_app::MainWindow) -> Vec<i32> {
     w.global::<Dedust>().get_rows().iter().map(|r| r.number).collect()
@@ -106,6 +121,41 @@ pub(crate) fn a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_
     assert_eq!(numbers(w), [1, 2, 4], "the others keep their numbers");
     assert_eq!(d.get_hovered_row(), -1, "the removed one held no longer");
     assert_eq!(marked(&c), [1, 2, 4]);
+    // Each tile's number and key under its dust, the key square beside the number; twin: a key without a
+    // width of its own spanned its tile and covered the dust and the number.
+    rig.settle();
+    let mut keys = common::placed(w, Role::Button, "Remove This Correction");
+    keys.sort_by(|a, b| a.x.total_cmp(&b.x));
+    assert_eq!(keys.len(), 3, "one key a tile: {keys:?}");
+    for (k, n) in keys.iter().zip(["1", "2", "4"]) {
+        assert!(k.width == k.height && k.width < DUST / 2.0, "a square key, not the tile's width: {k:?}");
+        let label: Vec<_> = common::placed(w, Role::Text, n).into_iter().filter(|t| (t.y - k.y).abs() < 1.0 && t.x >= k.x + k.width - DUST - 0.5 && t.x + t.width <= k.x + 0.5).collect();
+        assert_eq!(label.len(), 1, "number {n} left of its key, under its dust: {k:?}");
+    }
+    // The dust above each key's row stays bare with the hand on the key: light, the key's plate dark.
+    let k = keys[0];
+    let (left, top) = (k.x + k.width - DUST, k.y - XXS - DUST);
+    let moved = |x: f32, y: f32| {
+        rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x, y) });
+        rig.settle();
+    };
+    moved(left + DUST / 2.0, top + DUST / 2.0);
+    assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![1]), "the hand on the dust shows its correction alone");
+    moved(k.x + k.width / 2.0, k.y + k.height / 2.0);
+    assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![1]), "and on its key, still");
+    let drawn = rig.drawn();
+    assert!(luma(&drawn, (k.x + k.width / 2.0, top + DUST - 4.0)) > 500, "the dust over the key bare");
+    assert!(luma(&drawn, (k.x + 3.0, k.y + 3.0)) < 300, "twin: the key's plate is dark");
+    println!("shot {}", rig.shot("dedust_grid_key").display());
+
+    // A click on the key removes its correction; the next slides under the hand, shown alone, and the hand
+    // gone shows every marker again.
+    common::click(&rig, w, k.middle());
+    rig.settle();
+    assert_eq!(numbers(w), [2, 4], "the key removes its own correction");
+    assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![2]), "the next under the hand, shown alone");
+    moved(left - 200.0, top);
+    assert_eq!((d.get_hovered_row(), marked(&c)), (-1, vec![2, 4]), "the hand gone, every marker");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -1,5 +1,5 @@
 // The De-dust tab: the brush and the corrections list, the panel naming the mode above them.
-import { Icons, Space, State, CropStyle, Slider, Section, Label, Badge, BadgeTone, DustOriginal, Button, ButtonGroup, ButtonSize, GroupAlign, TextRole } from "../ds/ds.slint";
+import { Icons, Space, State, CropStyle, Slider, Section, Label, Tone, Tips, DustOriginal, Button, ButtonKind, ButtonGroup, ButtonSize, GroupAlign, TextRole } from "../ds/ds.slint";
 import { Dedust, CorrectionRow } from "state.slint";
 import { Pane } from "parts.slint";
 
@@ -32,8 +32,8 @@ component SensitivitySlider inherits Slider {
 }
 
 
-// A correction as the dust its patch covers and its number, faded while the patch is coming. The hand
-// on it shows that correction alone on the canvas and brings the key that removes it.
+// A correction as the dust its patch covers, faded while the patch is coming, its number under it, in
+// orange for a plain shifted tile. The hand on it shows that correction alone and the key that removes it.
 component CorrectionTile inherits Rectangle {
     in property <int> place;
     in property <CorrectionRow> data;
@@ -46,33 +46,38 @@ component CorrectionTile inherits Rectangle {
             Dedust.hovered-row = -1;
         }
         Dedust.shown(Dedust.hovered-row);
+        if (root.data.fallback) {
+            Tips.hover(self.under-hand, @tr("No good match was found nearby — this patch is a plain shifted tile, not a real structural match."), self.absolute-position.x, self.absolute-position.y + self.height);
+        }
     }
     touch := TouchArea { }
-    DustOriginal {
-        source: root.data.original;
-        opacity: root.data.pending ? State.disabled : 1;
-    }
-    Badge {
-        x: Space.xxs;
-        y: Space.xxs;
-        text: root.data.number;
-        role: TextRole.label;
-        tone: root.data.fallback ? BadgeTone.warning : BadgeTone.dark;
-        note: root.data.fallback ? @tr("No good match was found nearby — this patch is a plain shifted tile, not a real structural match.") : "";
-    }
-    remove := Button {
-        x: parent.width - self.width - Space.xxs;
-        y: Space.xxs;
-        // Shown with the hand on the tile, which it lies within.
-        opacity: root.under-hand ? 1 : 0;
-        size: ButtonSize.mini;
-        square: true;
-        has-icon: true;
-        icon: Icons.remove;
-        help: @tr("Remove This Correction");
-        clicked => {
-            Dedust.hovered-row = -1;
-            Dedust.remove(root.place);
+    VerticalLayout {
+        spacing: Space.xxs;
+        DustOriginal {
+            source: root.data.original;
+            opacity: root.data.pending ? State.disabled : 1;
+        }
+        HorizontalLayout {
+            Label {
+                horizontal-stretch: 1;
+                text: root.data.number;
+                role: TextRole.caption;
+                tone: root.data.fallback ? Tone.warning : Tone.secondary;
+            }
+            // Beside the number, never over the dust; seen while the hand is on the tile.
+            remove := Button {
+                opacity: root.under-hand ? 1 : 0;
+                size: ButtonSize.mini;
+                square: true;
+                has-icon: true;
+                kind: ButtonKind.destructive;
+                icon: Icons.remove;
+                help: @tr("Remove This Correction");
+                clicked => {
+                    Dedust.hovered-row = -1;
+                    Dedust.remove(root.place);
+                }
+            }
         }
     }
 }
@@ -104,14 +109,15 @@ export component DedustPane inherits Pane {
         BrushSlider { }
         // The corrections as a grid of their dust and numbers, as many to a row as the pane holds.
         if Dedust.rows.length > 0: Rectangle {
-            property <length> step: CropStyle.dust-original + Space.xs;
-            property <int> columns: max(1, floor((self.width + Space.xs) / self.step));
-            height: ceil(Dedust.rows.length / self.columns) * self.step - Space.xs;
+            property <length> across: CropStyle.dust-original + Space.xs;
+            property <length> down: CropStyle.dust-tile + Space.xs;
+            property <int> columns: max(1, floor((self.width + Space.xs) / self.across));
+            height: ceil(Dedust.rows.length / self.columns) * self.down - Space.xs;
             for row[i] in Dedust.rows: CorrectionTile {
-                x: mod(i, parent.columns) * parent.step;
-                y: floor(i / parent.columns) * parent.step;
+                x: mod(i, parent.columns) * parent.across;
+                y: floor(i / parent.columns) * parent.down;
                 width: CropStyle.dust-original;
-                height: CropStyle.dust-original;
+                height: CropStyle.dust-tile;
                 place: i;
                 data: row;
             }

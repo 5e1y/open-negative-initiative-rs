@@ -82,12 +82,14 @@ export global Space {
     out property <length> l: DS.space-lg;
 }
 
-// The four radius tokens `DSShape.rounded` allows, by what they round.
+// The radius tokens, by what they round.
 export global Radius {
     out property <length> track: DS.radius-track;
     out property <length> badge: DS.radius-badge;
     out property <length> card: DS.radius-card;
     out property <length> control: DS.radius-control;
+    // A small picture among others, so its corners never eat into what it shows.
+    out property <length> picture: DS.radius-picture;
 }
 
 export global Stroke {
@@ -306,9 +308,10 @@ export global CropStyle {
     out property <length> edge: DS.control-crop-edge;
     out property <length> stroke: DS.control-crop-stroke;
     out property <length> halo: DS.control-crop-halo;
-    out property <length> well-radius: Radius.control;
-    // A De-dust reminder's side in the tab.
+    out property <length> well-radius: Radius.picture;
+    // A De-dust reminder's side in the tab, and its tile: the dust over its number and its key.
     out property <length> dust-original: 56px;
+    out property <length> dust-tile: self.dust-original + Space.xxs + ButtonStyle.small-height;
 }
 
 // Auto De-dust's reading on the canvas: the crop's dim over what it leaves out, a speck's least ring.
