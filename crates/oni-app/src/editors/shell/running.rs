@@ -2,29 +2,26 @@
 
 use super::*;
 
-
-
 /// Runs a gesture on the store, keeping the thumbnails' decodes back while a press holds.
 pub(super) fn run(ctl: &Rc<Ctl>, f: impl FnOnce(&mut Gestures, &mut dyn crate::store::Store) -> Then) -> Then {
     let mut s = ctl.state.borrow_mut();
     let mut g = ctl.editors.gestures.borrow_mut();
-    let before = g.holding();
     let then = f(&mut g, s.store.as_mut());
-    match (before, g.holding()) {
-        (false, true) => {
-            s.hands.fetch_add(1, Ordering::Relaxed);
-        }
-        (true, false) => {
-            let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
-        }
-        _ => {}
-    }
+    s.held_plot(g.holding());
     let wait = s.store.settle_if_due();
     drop((g, s));
     if let Some(wait) = wait {
         settle_after(ctl, wait);
     }
     then
+}
+
+/// The hand lifted from whichever plot or band slider holds it, though Slint destroyed that item.
+pub fn let_go(ctl: &Rc<Ctl>) {
+    if ctl.editors.gestures.borrow().holding() {
+        let then = run(ctl, |g, store| g.release(store));
+        after(ctl, then);
+    }
 }
 
 /// Restarts the settle clock, as each change restarts Swift's recording task.

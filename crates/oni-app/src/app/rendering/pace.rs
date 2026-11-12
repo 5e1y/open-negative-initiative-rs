@@ -101,7 +101,7 @@ impl Ctl {
             }
             let failure = {
                 let mut s = me.state.borrow_mut();
-                if s.slides.iter().any(|sl| sl.live.is_some()) {
+                if s.slides.iter().any(|sl| sl.live().is_some()) {
                     return;
                 }
                 s.last_change = None;

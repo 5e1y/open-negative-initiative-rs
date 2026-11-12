@@ -137,6 +137,7 @@ mod toolbar_accent;
 mod toolbar_fit;
 mod toolbar_keys;
 mod tooltip;
+mod slider_hand;
 mod tree_hand;
 mod tree_held;
 mod tree_cost;
@@ -179,6 +180,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step", editors::curves::a_point_dragged_on_the_curves_reaches_the_store_as_one_step),
     ("editors::a_double_click_on_a_point_removes_it_with_its_move_as_one_step", editors::curves::a_double_click_on_a_point_removes_it_with_its_move_as_one_step),
     ("editors::a_folded_curves_block_takes_no_press", editors::curves::a_folded_curves_block_takes_no_press),
+    ("editors::a_curve_taken_away_under_the_hand_lets_go_at_the_button", editors::curves::a_curve_taken_away_under_the_hand_lets_go_at_the_button),
     ("editors::a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo", editors::panel::a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo),
     ("editors::the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_their_bands", editors::panel::the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_their_bands),
     ("editors::the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have", editors::panel::the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have),
@@ -269,6 +271,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("tooltip::a_slider_s_tooltip_stays_down_through_its_drag", tooltip::a_slider_s_tooltip_stays_down_through_its_drag),
     ("tooltip::a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key", tooltip::a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key),
     ("tooltip::a_slider_s_tooltip_covers_no_neighbour", tooltip::a_slider_s_tooltip_covers_no_neighbour),
+    ("slider_hand::a_walk_under_a_drag_leaves_the_drag_on_its_frame", slider_hand::a_walk_under_a_drag_leaves_the_drag_on_its_frame),
+    ("slider_hand::a_slider_taken_away_under_the_hand_lets_go_at_the_button", slider_hand::a_slider_taken_away_under_the_hand_lets_go_at_the_button),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one", picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one),

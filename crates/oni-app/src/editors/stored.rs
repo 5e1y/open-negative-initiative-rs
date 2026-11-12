@@ -101,7 +101,7 @@ mod tests {
         let t0 = Instant::now();
         g.press(&mut store, Plot::Levels, (white, 17.0), t0);
         g.drag(&mut store, Plot::Levels, (white - 30.0, 17.0), false, t0 + Duration::from_millis(40));
-        g.release(&mut store, Plot::Levels);
+        g.release(&mut store);
         store.release();
         let moved = store.settings().levels.red.white - 2.4;
         assert!(moved < -0.01, "{moved}");

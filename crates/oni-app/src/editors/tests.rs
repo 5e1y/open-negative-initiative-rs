@@ -85,7 +85,7 @@ fn a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step() {
     assert!(g.writes > 1 && g.writes <= ceiling, "{} writes for {moves} moves, at most {ceiling}", g.writes);
     // Twin: a write per move would have reached the store sixty times.
     assert!(g.writes < moves);
-    assert_eq!(g.release(&mut store, Plot::Curves), Then::Released);
+    assert_eq!(g.release(&mut store), Then::Released);
     let p = store.settings().manual_curves.linked.points[1];
     assert_eq!((p.x, p.y), (0.5, 1.0 - 90.0 / 300.0), "the point lands where the pointer left it");
     // One undo takes the whole press back.
@@ -118,16 +118,16 @@ fn a_double_click_on_a_curve_point_removes_it_and_a_slow_one_does_not() {
     let mut g = gestures();
     let t0 = Instant::now();
     g.press(&mut store, Plot::Curves, (150.0, 150.0), t0);
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     rested(&mut store);
     assert_eq!(store.settings().manual_curves.linked.points.len(), 3);
     // Two presses on the disc within the double-click interval: the second's release removes it.
     // The second lands inside the settle delay, so both presses are one step.
     let late = t0 + DOUBLE_CLICK + Duration::from_millis(50);
     g.press(&mut store, Plot::Curves, (151.0, 150.0), late);
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     g.press(&mut store, Plot::Curves, (151.0, 150.0), late + Duration::from_millis(120));
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     assert_eq!(store.settings().manual_curves.linked.points.len(), 2, "the double click removed the point");
     undo(&mut store);
     let points = &store.settings().manual_curves.linked.points;
@@ -135,10 +135,10 @@ fn a_double_click_on_a_curve_point_removes_it_and_a_slow_one_does_not() {
     // Twin: the delay running out between the two presses leaves the move a step of its own.
     let again = late + Duration::from_secs(2);
     g.press(&mut store, Plot::Curves, (151.0, 150.0), again);
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     rested(&mut store);
     g.press(&mut store, Plot::Curves, (151.0, 150.0), again + Duration::from_millis(300));
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     assert_eq!(store.settings().manual_curves.linked.points.len(), 2);
     undo(&mut store);
     let points = &store.settings().manual_curves.linked.points;
@@ -146,9 +146,9 @@ fn a_double_click_on_a_curve_point_removes_it_and_a_slow_one_does_not() {
     // Twin: the same two presses past the interval only move the point to the pointer.
     let slow = again + Duration::from_secs(2);
     g.press(&mut store, Plot::Curves, (152.0, 150.0), slow);
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     g.press(&mut store, Plot::Curves, (152.0, 150.0), slow + DOUBLE_CLICK + Duration::from_millis(1));
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     let points = &store.settings().manual_curves.linked.points;
     assert_eq!(points.len(), 3);
     assert_eq!(points[1].x, 152.0 / 300.0);
@@ -162,7 +162,7 @@ fn each_curve_channel_is_edited_alone() {
     g.pick(0, 2);
     assert_eq!(g.curve_channel(), LevelsChannel::Red);
     g.press(&mut store, Plot::Curves, (150.0, 100.0), Instant::now());
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     let curves = &store.settings().manual_curves;
     assert_eq!(curves.red.points.len(), 3);
     assert!(curves.linked.is_neutral() && curves.green.is_neutral(), "only the picked channel moved");
@@ -182,7 +182,7 @@ fn a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_al
     let t0 = Instant::now();
     assert_eq!(g.press(&mut store, Plot::Levels, (white - 5.0, 17.0), t0), Then::Draw);
     g.drag(&mut store, Plot::Levels, (white - 35.0, 17.0), false, t0 + Duration::from_millis(40));
-    g.release(&mut store, Plot::Levels);
+    g.release(&mut store);
     let start = levels::place(levels::Grip::White, &window, channel, mode);
     let asked = track::clamped(start - 30.0 / TRACK.w as f32);
     let expected = levels::moved(levels::Grip::White, &window, asked, channel, mode);
@@ -197,7 +197,7 @@ fn a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_al
     let later = t0 + Duration::from_secs(2);
     g.press(&mut store, Plot::Levels, (x, 17.0), later);
     g.drag(&mut store, Plot::Levels, (x - 50.0, 17.0), true, later + Duration::from_millis(40));
-    g.release(&mut store, Plot::Levels);
+    g.release(&mut store);
     let fine = levels::moved(
         levels::Grip::White,
         &moved,
@@ -211,9 +211,9 @@ fn a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_al
     let x = levels::knob_x(levels::Grip::White, &fine, channel, mode, TRACK.w);
     let again = later + Duration::from_secs(2);
     g.press(&mut store, Plot::Levels, (x, 17.0), again);
-    g.release(&mut store, Plot::Levels);
+    g.release(&mut store);
     g.press(&mut store, Plot::Levels, (x, 17.0), again + Duration::from_millis(100));
-    g.release(&mut store, Plot::Levels);
+    g.release(&mut store);
     let rest = LevelsSet::resting(channel, mode, store.settings().density_ceiling);
     let after = store.settings().levels.get(channel);
     assert_eq!(after.white, rest.white);
@@ -280,7 +280,7 @@ fn the_wheel_selects_on_a_press_and_moves_by_the_travel_from_where_it_grabbed() 
     assert!(g.focused && g.active().is_some());
     assert_eq!(store.settings().spectrogram, rest);
     g.drag(&mut store, Plot::Wheel, (at.0 + 25.0, at.1 - 10.0), false, t0 + Duration::from_millis(40));
-    g.release(&mut store, Plot::Wheel);
+    g.release(&mut store);
     let grab = spectrogram::grab(wheel, at, &rest);
     let expected = spectrogram::dragged(wheel, grab, (25.0, -10.0), &rest);
     assert_eq!(store.settings().spectrogram, expected);
@@ -325,9 +325,9 @@ fn a_double_click_on_the_wheel_resets_the_point_s_own_axes() {
     let tip = wheel.position(spectrogram::Grip { band: Band::Red, part: spectrogram::Part::Tip }, &s);
     let t0 = Instant::now();
     g.press(&mut store, Plot::Wheel, tip, t0);
-    g.release(&mut store, Plot::Wheel);
+    g.release(&mut store);
     g.press(&mut store, Plot::Wheel, tip, t0 + Duration::from_millis(150));
-    g.release(&mut store, Plot::Wheel);
+    g.release(&mut store);
     assert_eq!(store.settings().spectrogram.band(Band::Red), (0.0, 0.0, 0.3), "hue and saturation back, luminance kept");
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -342,16 +342,16 @@ fn a_saturation_double_click_puts_its_point_back_on_neutral() {
     // A drag raises the middle point.
     g.press(&mut store, Plot::Saturation, middle, t0);
     g.drag(&mut store, Plot::Saturation, (middle.0, middle.1 - 30.0), false, t0 + Duration::from_millis(40));
-    g.release(&mut store, Plot::Saturation);
+    g.release(&mut store);
     let raised = store.settings().saturation.clone();
     assert!(raised.points[2].y > 0.7, "{:?}", raised.points[2]);
     // A double click on it, past the drag's interval, lays it back on 0.5.
     let at = saturation::screen(raised.points[2], PLOT);
     let t1 = t0 + Duration::from_secs(2);
     g.press(&mut store, Plot::Saturation, at, t1);
-    g.release(&mut store, Plot::Saturation);
+    g.release(&mut store);
     g.press(&mut store, Plot::Saturation, at, t1 + Duration::from_millis(120));
-    g.release(&mut store, Plot::Saturation);
+    g.release(&mut store);
     let back = &store.settings().saturation;
     assert_eq!(back.points[2].y, 0.5);
     assert!((back.points[2].x - raised.points[2].x).abs() < 1e-9);
@@ -359,9 +359,9 @@ fn a_saturation_double_click_puts_its_point_back_on_neutral() {
     let t2 = t1 + Duration::from_secs(2);
     let high = (at.0, at.1 - 20.0);
     g.press(&mut store, Plot::Saturation, high, t2);
-    g.release(&mut store, Plot::Saturation);
+    g.release(&mut store);
     g.press(&mut store, Plot::Saturation, high, t2 + DOUBLE_CLICK + Duration::from_millis(1));
-    g.release(&mut store, Plot::Saturation);
+    g.release(&mut store);
     assert!(store.settings().saturation.points[2].y > 0.5);
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -399,7 +399,7 @@ fn the_scanner_face_edits_its_own_finishing_and_keeps_pro_s() {
     store.scanner_face = true;
     let mut g = gestures();
     g.press(&mut store, Plot::Curves, (150.0, 150.0), Instant::now());
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     let s = store.settings();
     assert_eq!(s.scanner_finish.manual_curves.linked.points.len(), 3);
     // Twin: Pro's own curves are untouched by a gesture on the other face.
@@ -413,7 +413,7 @@ fn a_block_reset_is_one_write_back_to_neutral() {
     let (mut store, dir) = fresh("editors-reset");
     let mut g = gestures();
     g.press(&mut store, Plot::Curves, (150.0, 150.0), Instant::now());
-    g.release(&mut store, Plot::Curves);
+    g.release(&mut store);
     rested(&mut store);
     let writes = g.writes;
     g.reset(&mut store, Reset::Curves);
@@ -431,7 +431,7 @@ fn a_press_off_the_wheel_releases_its_focus_and_one_on_it_keeps_it() {
     g.origins[Plot::Wheel as usize] = (40.0, 500.0);
     assert!(!g.pressed_anywhere((0.0, 0.0)), "an unfocused wheel has nothing to release");
     g.press(&mut store, Plot::Wheel, (154.0, 154.0), Instant::now());
-    g.release(&mut store, Plot::Wheel);
+    g.release(&mut store);
     assert!(g.active().is_some());
     // Twin: a press inside the wheel's own bounds, its corners included, keeps the point lit.
     assert!(!g.pressed_anywhere((40.0 + WHEEL.w, 500.0 + WHEEL.h)));

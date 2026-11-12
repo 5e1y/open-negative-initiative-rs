@@ -14,7 +14,6 @@ use oni_settings::tone::Print;
 use slint::{Color, ComponentHandle, ModelRc, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 mod ink;
@@ -24,6 +23,7 @@ mod wiring;
 
 pub use drawing::*;
 pub use ink::*;
+pub use running::let_go;
 use running::*;
 pub use wiring::*;
 

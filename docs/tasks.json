@@ -8950,5 +8950,40 @@
     "title": "A superseded read writes no row after its file read",
     "status": "done",
     "detail": "read_rows checked its token at the loop's head only, so a read inside a file read when a move superseded it still wrote its row under the old path after the move rewrote it: a ghost row and a false copy. The token is now checked just before each index write, and look_again only reads, the loop writing for both kinds of row. a_read_superseded_during_a_file_read_writes_no_row_under_a_moved_path holds the read on a pipe sidecar while the move lands; twin, a read whose token holds writes the ghost row and one copy. Each new check was run against the code before the fix and failed there."
+  },
+  {
+    "id": 1775,
+    "type": "refactor",
+    "title": "A hand on a control is a token the thumbnails' decodes count while it lives",
+    "status": "done",
+    "detail": "HandDown raises State.hands when made and lowers it when dropped. The slider's drag, a scroll along a track (State.scrolling) and a plot's press (State.plot_down) each hold one, so the three paired fetch_add and fetch_update(checked_sub) go. A double press no longer lowers a count it never raised, which could take another holder's hand. Unit check: two tokens count two, dropping one counts one; twin: a token forgotten leaves its hand counted."
+  },
+  {
+    "id": 1776,
+    "type": "fix",
+    "title": "A slider's drag is one owned value with one idempotent ending",
+    "status": "done",
+    "detail": "Slide.start, live and resetting become Slide.drag: Option<Drag> (where the knob stood, the value under the hand, the hand's token). Ctl::let_go(f) in app/hands.rs is the release's body, taking the drag; on_release calls it. let_go_all ends every drag, the plots' press and a scroll. A double press leaves no drag, so a late drag moves nothing."
+  },
+  {
+    "id": 1777,
+    "type": "fix",
+    "title": "A walk under a held slider lands the drag on the frame it was on",
+    "status": "done",
+    "detail": "open_photo and move_out, the paths that leave a frame, call let_go_all first: the hand's value is applied and recorded on its own frame before the store leaves it, and the slider's later moves and release find no drag. Before, the next move wrote the old frame's start plus the hand's travel into the new frame and its sidecar, and hands stayed up."
+  },
+  {
+    "id": 1778,
+    "type": "fix",
+    "title": "The left button lifted ends a drag whose slider Slint destroyed",
+    "status": "done",
+    "detail": "Slint sends nothing to a grabbing item destroyed under the hand (HidePanel, the gallery, Export, Prepare), so the drag and its hand outlived the slider: the thumbnails' decodes waited for the session and the sidecar write was held back. The winit hook in main.rs calls Ctl::lifted on every left-button release, before Slint dispatches it. Window checks slider_hand: a walk under a drag (twin: the same travel with no walk moves the open frame) and a slider taken away under the hand (twin: the drag stands after the release until lifted). Both failed with the walk's let_go_all and lifted disabled."
+  },
+  {
+    "id": 1779,
+    "type": "fix",
+    "title": "A plot's press taken away under the hand ends with the button too",
+    "status": "done",
+    "detail": "Gestures::release takes no plot: the double click's size comes from the plot its hold names, and it clears the band knob. editors::let_go releases the held plot or band slider and let_go_all calls it, so the walk and the lifted button end a curve, levels, wheel or saturation press as they end a slider's. Window check editors::a_curve_taken_away_under_the_hand_lets_go_at_the_button (twin: the hand stands after the release until lifted); it failed with the plots left out of let_go_all."
   }
 ]

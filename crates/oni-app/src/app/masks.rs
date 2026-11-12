@@ -184,6 +184,7 @@ impl Ctl {
     /// `moveOut`: the file moved to FlatField Presets, then the frame closed if open and its neighbour
     /// in the roll opened under the same flat-field, or the gallery when none is left.
     fn move_out(self: &Rc<Self>, path: &str) {
+        self.let_go_all();
         let (was_open, neighbour, carried) = {
             let s = self.state.borrow();
             let was_open = s.open.as_deref() == Some(path);

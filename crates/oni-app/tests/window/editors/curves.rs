@@ -134,3 +134,30 @@ pub(crate) fn a_folded_curves_block_takes_no_press() {
     assert!(curves().is_neutral(), "a folded plot took a press");
     let _ = std::fs::remove_dir_all(&o.dir);
 }
+
+/// ⌥⌘] takes the panel away under a point held on the curves: Slint tells the destroyed plot nothing,
+/// so the button lifted over the canvas ends the press, the point landed as one step.
+pub(crate) fn a_curve_taken_away_under_the_hand_lets_go_at_the_button() {
+    let Some(o) = opened("curve-taken") else { return };
+    let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
+    on_tab(&o, 2, |g| g.set_curves_folded(false));
+    let (origin, size) = (editors::origin(&ctl, Plot::Curves), editors::size(&ctl, Plot::Curves));
+    let start = (origin.0 + size.w / 2.0, origin.1 + size.h / 2.0);
+    press(rig, start);
+    drag(rig, start, (0.0, -size.h / 5.0), 10);
+    ctl.act(oni_app::Act::HidePanel);
+    rig.pump();
+    release(rig, (start.0, start.1 - size.h / 5.0));
+    // Twin: the plot destroyed under the hand heard no release, so its hand stands.
+    assert_eq!(ctl.state.borrow().hands(), 1, "the destroyed plot sent no release");
+    ctl.lifted();
+    rig.settle();
+    assert_eq!(ctl.state.borrow().hands(), 0, "the lifted button ends the press");
+    let curves = || ctl.state.borrow().store().settings().manual_curves.linked.clone();
+    let p = curves().points[1];
+    assert!((p.x - 0.5).abs() < 1e-3 && (p.y - 0.7).abs() < 1e-3, "the point landed under the hand: {p:?}");
+    w.global::<Bar>().invoke_act(oni_app::Act::Undo);
+    rig.settle();
+    assert!(curves().is_neutral() && !ctl.state.borrow().store().can_undo(), "one step took the press back");
+    let _ = std::fs::remove_dir_all(&o.dir);
+}

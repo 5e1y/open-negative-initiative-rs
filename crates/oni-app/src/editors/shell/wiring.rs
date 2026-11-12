@@ -34,7 +34,7 @@ pub fn wire(ctl: &Rc<Ctl>, window: &MainWindow) {
         let then = run(&p, |g, store| match kind {
             0 => g.press(store, plot, at, now),
             1 => g.drag(store, plot, at, alt, now),
-            2 | 3 => g.release(store, plot),
+            2 | 3 => g.release(store),
             4 if plot == Plot::Wheel => g.hover(store, Some(at)),
             5 if plot == Plot::Wheel => g.hover(store, None),
             _ => Then::Nothing,

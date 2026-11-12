@@ -53,6 +53,7 @@ mod workers;
 mod shell;
 mod canvas_gpu;
 mod opening;
+mod hands;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
 mod tree_column;
@@ -160,9 +161,7 @@ struct Shown {
 /// One slider's hand: the dragged value drawn at once, handed to the store thirty times a second.
 #[derive(Default)]
 struct Slide {
-    live: Option<f32>,
-    start: Option<f32>,
-    resetting: bool,
+    drag: Option<hands::Drag>,
     last_press: Option<Instant>,
     hand: Hand,
     /// Where the knob is drawn, as a fraction of the track.
@@ -305,7 +304,9 @@ pub struct State {
     framing_memory: Option<(Remembered, String)>,
     frame_gesture: Option<cropping::FrameGesture>,
     /// A scroll along a track under way, its hand raised until the idle window passes.
-    scrolling: bool,
+    scrolling: Option<hands::HandDown>,
+    /// A plot under the hand, raised while the editors' gestures hold.
+    plot_down: Option<hands::HandDown>,
     /// The frame a straightening gesture set out from, the one it last wrote, and when.
     straightening: Option<(Geometry, Geometry, Instant)>,
     /// The tab shown, the last panel the hand was in and the measuring window armed.
