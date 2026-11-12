@@ -3,7 +3,6 @@
 
 use oni_i18n::tr;
 use std::fs::{File, OpenOptions, TryLockError};
-use std::io::Write as _;
 use std::path::Path;
 
 /// The lock's file in the support folder, which this app alone reads.
@@ -34,12 +33,12 @@ pub fn hold(support: &Path) -> Held {
     }
 }
 
-/// The second launch's words, on stderr and, for a launch by hand, in a window of the system's.
+/// The second launch's words, on stderr through the log's one writer and, for a launch by hand, in a window of the system's.
 pub fn refused(support: &Path) {
     oni_i18n::set(crate::language::resolved(crate::language::chosen(&crate::preferences::Preferences::load(support))));
     let (title, message) = (tr("Open Negative Initiative is already open"), tr("Switch to its window: two copies at once would write over each other's work."));
-    // A closed stderr fails the write, which `eprintln!` turns into a panic.
-    let _ = writeln!(std::io::stderr().lock(), "{title}: {message} ({})", support.join(FILE).display());
+    crate::timing::shown(&title, &message);
+    crate::timing::flush();
     if by_hand() {
         crate::system::alert(title, message);
     }

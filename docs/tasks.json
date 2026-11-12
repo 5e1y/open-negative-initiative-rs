@@ -9489,5 +9489,12 @@
     "title": "Swift is dead: no rule imposes its behaviour",
     "status": "done",
     "detail": "Owner's call (2026-11-12): the Swift app is totally deprecated and every rule imposing a behaviour that comes from it is killed. CLAUDE.md no longer asks for a strict behavioural copy of Swift's result, Swift parity, proof against Swift's outputs, Swift-format sidecars or Swift attributions; docs/parity/ is history. Kept: reading the sidecars a person already has, Swift-written included, as their data."
+  },
+  {
+    "id": 1897,
+    "type": "change",
+    "title": "The second-launch refusal goes through the log's one writer",
+    "status": "done",
+    "detail": "instance::refused wrote the support folder's path, account name included, straight to stderr; it now says the notice through timing::shown, which scrubs every line, and leaves the path out. Check: only_the_log_writes_stderr (no source but timing.rs writes io::stderr, with a planted twin) and the second-instance launch check asserting the line names no folder."
   }
 ]
