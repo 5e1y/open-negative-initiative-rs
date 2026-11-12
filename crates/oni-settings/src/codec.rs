@@ -20,7 +20,7 @@ use std::fmt;
 use std::sync::OnceLock;
 
 /// Format version, bumped only for a field whose meaning changes, never for one added.
-pub const VERSION: i64 = 20;
+pub const VERSION: i64 = 21;
 
 /// Long side the fraction scale was calibrated on, hence what a stored fraction meant.
 pub const RADIUS_REFERENCE_SIDE: f64 = 8368.0;
@@ -41,6 +41,8 @@ pub const ONI_MACHINE_VERSION: i64 = 18;
 pub const LOOK_FOLDED_VERSION: i64 = 19;
 /// The version the camera matrices left the RAW decode, their move kept in the gains.
 pub const MATRICES_RETIRED_VERSION: i64 = 20;
+/// The version a dust stroke came to be kept on the scan rather than on the cropped, oriented frame.
+pub const STROKES_ON_SCAN_VERSION: i64 = 21;
 /// From it no migration consumes a document's keys, so a rewrite carries the ones it does not know.
 pub const KEYS_CARRIED_FROM: i64 = LOOK_FOLDED_VERSION;
 

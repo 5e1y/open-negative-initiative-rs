@@ -136,6 +136,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
                 // Frames edited while camera matrices shaped the decode keep their look through their gains.
                 oni_app::retired_matrices::install(&support);
+                // Dust strokes kept on the cropped frame before format 21 move onto their scan.
+                oni_app::strokes_on_scan::install();
                 oni_app::retired_matrices::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
             }
         }),

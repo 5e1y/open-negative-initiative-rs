@@ -224,7 +224,8 @@ pub(crate) fn de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke() {
     }
     r.rig.until("the patches", Duration::from_secs(60), || {
         let caches = oni_app::patches::caches();
-        r.settings(&open[0]).corrections.iter().all(|c| oni_app::patches::file(&caches, c.id).exists())
+        let settings = r.settings(&open[0]);
+        settings.corrections.iter().all(|c| oni_app::patches::made(&caches, &settings, c))
     });
     rested();
     assert_eq!(READINGS.load(Ordering::SeqCst), readings, "a stroke was read before the tab was left");

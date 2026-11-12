@@ -6,6 +6,7 @@ use oni_measure::dust;
 use oni_measure::dust::Limits;
 use oni_settings::PipelineSettings;
 use oni_settings::frame::{Correction, Geometry};
+use oni_settings::geometry::Placing;
 use oni_settings::id::Id;
 
 /// The mask's long side, about a 6K window's picture; a zoom past it shows its pixels as blocks.
@@ -30,6 +31,8 @@ impl Read {
 pub(in crate::app) struct Shown {
     read: Read,
     reading: dust::Reading,
+    /// The map from the framed frame read back to the scan a correction is kept on.
+    placing: Placing,
     kernel: display::DustKernel,
     target: wgpu::Texture,
     mask: Image,
@@ -40,7 +43,7 @@ pub(in crate::app) struct Shown {
 
 impl Shown {
     /// The map on the GPU, its copy here let go, and the texture Slint samples; one refused shows the rings alone.
-    fn new(gpu: &Gpu, read: Read, mut reading: dust::Reading) -> Shown {
+    fn new(gpu: &Gpu, read: Read, mut reading: dust::Reading, placing: Placing) -> Shown {
         let map = std::mem::take(&mut reading.map);
         let kernel = display::DustKernel::new(&gpu.device, &gpu.queue, (map.width, map.height), &map.texels);
         let target = display::Gpu::target(&gpu.device, map.width, map.height);
@@ -52,7 +55,7 @@ impl Shown {
                 Image::default()
             })
         };
-        Shown { read, reading, kernel, target, mask, ringed: Vec::new(), rings: Vec::new() }
+        Shown { read, reading, placing, kernel, target, mask, ringed: Vec::new(), rings: Vec::new() }
     }
 
     /// The mask at `sensitivity`: one dispatch, nothing read or uploaded; a window that cannot take the GPU's texture reads it back.
@@ -78,9 +81,9 @@ impl Shown {
         true
     }
 
-    /// The corrections the rings stand for.
+    /// The corrections the rings stand for, kept on the scan.
     fn corrections(&self, sensitivity: f32) -> Vec<Correction> {
-        corrections(&self.reading.at(sensitivity), self.reading.width, self.reading.height)
+        corrections(&self.reading.at(sensitivity), self.reading.width, self.reading.height, &self.placing)
     }
 }
 
@@ -99,11 +102,11 @@ fn rings(dust: &[&dust::Speck], width: usize, height: usize) -> Vec<[f64; 4]> {
     dust.iter().map(|s| [f64::from(s.bounds[0]) / fw, f64::from(s.bounds[1]) / fh, f64::from(s.bounds[2] - s.bounds[0]) / fw, f64::from(s.bounds[3] - s.bounds[1]) / fh]).collect()
 }
 
-fn corrections(dust: &[&dust::Speck], width: usize, height: usize) -> Vec<Correction> {
+fn corrections(dust: &[&dust::Speck], width: usize, height: usize, placing: &Placing) -> Vec<Correction> {
     dust.iter()
         .map(|s| {
             let (points, radius) = dust::stroke(s, width, height);
-            Correction { id: Id::new(), stroke: points.into_iter().map(|(x, y)| oni_settings::cg::Point { x, y }).collect(), radius }
+            Correction { id: Id::new(), stroke: points.into_iter().map(|(x, y)| placing.on_scan(oni_settings::cg::Point { x, y })).collect(), radius }
         })
         .collect()
 }
@@ -151,22 +154,24 @@ impl Ctl {
             let started = Instant::now();
             let read = Read::of(&path, &settings);
             let result = engine.lock().and_then(|mut e| e.framed_whole(&full, &settings)).map(|(width, pixels)| dust::read(&pixels, width, &read.limits, MASK_SIDE));
+            let scan = full.extent();
+            let placing = settings.geometry.placing((f64::from(scan.w), f64::from(scan.h)));
             let took = started.elapsed();
-            with_shell(move |c| c.detection_landed(read, result, took));
+            with_shell(move |c| c.detection_landed(read, result.map(|r| (r, placing)), took));
         });
     }
 
-    fn detection_landed(self: &Rc<Self>, read: Read, result: Result<dust::Reading, String>, took: Duration) {
+    fn detection_landed(self: &Rc<Self>, read: Read, result: Result<(dust::Reading, Placing), String>, took: Duration) {
         {
             let mut s = self.state.borrow_mut();
             s.dust.detecting = false;
             let current = s.open_path().is_some_and(|p| Read::of(p, s.store.settings()) == read);
             match result {
-                Ok(reading) => {
+                Ok((reading, placing)) => {
                     let count = reading.at(s.dust.sensitivity).len();
                     timing::line(&format!("{}: {count} specks of dust, {} pixels past the window, read in {:.0} ms", crate::anonymity::token(&read.path), reading.past, took.as_secs_f64() * 1000.0));
                     if current {
-                        let shown = Shown::new(&s.gpu, read, reading);
+                        let shown = Shown::new(&s.gpu, read, reading, placing);
                         s.dust.found = Some(shown);
                     }
                 }
@@ -322,18 +327,23 @@ mod tests {
     use oni_measure::dust::{Run, Speck};
 
     #[test]
-    fn a_reading_writes_one_correction_per_speck_on_the_frames_fractions() {
+    fn a_reading_writes_one_correction_per_speck_on_the_scans_fractions() {
         let run = Run { row: 50, start: 100, end: 110 };
         let speck = Speck { area: 10, runs: vec![run], bounds: [100, 50, 110, 51] };
-        let written = corrections(&[&speck], 1000, 500);
+        let whole = Geometry::default().placing((1000.0, 500.0));
+        let written = corrections(&[&speck], 1000, 500, &whole);
         assert_eq!((written.len(), rings(&[&speck], 1000, 500).len()), (1, 1));
         let c = &written[0];
         assert!(c.stroke.len() >= 2);
         assert!(c.stroke.iter().all(|p| (0.1..0.111).contains(&p.x) && (0.1..0.102).contains(&p.y)), "{:?}", c.stroke);
         let ring = rings(&[&speck], 1000, 500)[0];
         assert!((ring[0] - 0.1).abs() < 1e-12 && (ring[1] - 0.1).abs() < 1e-12);
+        // Read on a frame turned a quarter, the same speck is kept where the scan holds it.
+        let turned = Geometry { quarter_turns: 1, ..Geometry::default() };
+        let on_scan = corrections(&[&speck], 1000, 500, &turned.placing((500.0, 1000.0)));
+        assert!(on_scan[0].stroke.iter().all(|p| (0.1..0.111).contains(&p.y) && (0.85..0.95).contains(&p.x)), "{:?}", on_scan[0].stroke);
         // Twin: no dust writes nothing.
-        assert!(corrections(&[], 1000, 500).is_empty());
+        assert!(corrections(&[], 1000, 500, &whole).is_empty());
     }
 
     #[test]

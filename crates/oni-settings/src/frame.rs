@@ -126,7 +126,8 @@ impl FlatField {
     }
 }
 
-/// A painted dust or scratch stroke, in fractions of the cropped, oriented frame, origin top-left.
+/// A painted dust or scratch stroke, in fractions of the scan before stage 0 (no turn, mirror, angle
+/// or crop), origin top-left, so it stays on its speck whatever the framing.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Correction {
     pub id: Id,

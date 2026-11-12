@@ -1,6 +1,7 @@
 //! Asking a render: the open frame's settings in the slot, its patches healed, its full-resolution decode.
 
 use super::*;
+use oni_pipeline::corrections::PatchKey;
 
 impl State {
     /// The canvas asked again at the next render though no setting moved, one frame or frames together:
@@ -132,10 +133,11 @@ impl Ctl {
             let (mut made, mut failed, mut error) = (0, Vec::new(), None);
             // Until nothing is left to heal or the frame is left.
             while let Some(settings) = latest.lock().ok().and_then(|l| l.clone()) {
-                let cs = &settings.corrections;
-                let pending: Vec<usize> = (0..cs.len()).filter(|&i| !cs[i].stroke.is_empty() && !unhealable.contains(&cs[i].id) && !crate::patches::file(&caches, cs[i].id).exists()).collect();
-                let framed = oni_pipeline::geometry::apply(oni_graph::Image::new(&full), &settings.geometry, 1.0).extent();
-                let Some(k) = crate::heal::next(cs, &pending, f64::from(framed.w), f64::from(framed.h)) else { break };
+                let (cs, upstream) = (&settings.corrections, oni_pipeline::corrections::upstream(&settings));
+                let key = |c: &oni_settings::frame::Correction| PatchKey { id: c.id, upstream };
+                let pending: Vec<usize> = (0..cs.len()).filter(|&i| !cs[i].stroke.is_empty() && !unhealable.contains(&key(&cs[i])) && !crate::patches::file(&caches, key(&cs[i])).exists()).collect();
+                let scan = full.extent();
+                let Some(k) = crate::heal::next(cs, &pending, f64::from(scan.w), f64::from(scan.h)) else { break };
                 match generated(&engine, &full, &settings, &cs[k], &caches) {
                     Ok(one) => {
                         made += 1;
@@ -145,8 +147,8 @@ impl Ctl {
                     }
                     // Not tried again on every render.
                     Err(e) => {
-                        unhealable.insert(cs[k].id);
-                        failed.push(cs[k].id);
+                        unhealable.insert(key(&cs[k]));
+                        failed.push(key(&cs[k]));
                         error = Some(e);
                     }
                 }
@@ -189,15 +191,15 @@ impl Ctl {
                 return;
             }
             let (kept, gone) = landed(vec![one], &s.store.settings().corrections);
-            for id in gone {
-                let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), id));
+            for key in gone {
+                let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), key));
             }
-            for (id, fell_back, offset) in kept {
-                s.dust.patched.insert(id);
+            for (key, fell_back, offset) in kept {
+                s.dust.patched.insert(key);
                 if fell_back {
-                    s.dust.fallback.insert(id);
+                    s.dust.fallback.insert(key.id);
                 }
-                s.dust.sources.insert(id, offset);
+                s.dust.sources.insert(key.id, offset);
             }
             s.requests.requested_view = None;
         }
@@ -253,27 +255,28 @@ impl Ctl {
     }
 }
 
-type Made = (oni_settings::id::Id, bool, (f64, f64));
+type Made = (PatchKey, bool, (f64, f64));
 
 /// The frame's settings a heal run reads before each patch, `None` once the frame is left.
 pub(in crate::app) type Latest = std::sync::Arc<std::sync::Mutex<Option<oni_settings::PipelineSettings>>>;
 
-/// A correction's patch searched on the frame framed with the other patches made, written to the
-/// cache, and the textures its search laid freed, as a run of large strokes would otherwise pile them up.
+/// A correction's patch searched on the scan healed of the other patches made, written to the cache
+/// under the settings it was cut on, and the textures its search laid freed, as a run of large strokes would otherwise pile them up.
 fn generated(engine: &render::Shared, full: &oni_graph::Source, settings: &oni_settings::PipelineSettings, c: &oni_settings::frame::Correction, caches: &Path) -> Result<Made, String> {
     let (region, size) = engine.lock()?.search_region(full, settings, c)?;
     let patch = crate::heal::generate(&region, c, size.0, size.1);
     drop(region);
-    crate::patches::write(caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
+    let key = PatchKey::of(settings, c);
+    crate::patches::write(caches, key, patch.width as u32, patch.height as u32, &patch.pixels)?;
     let mut e = engine.lock()?;
-    e.forget_patch(c.id);
+    e.forget_patch(key);
     e.purge();
-    Ok((c.id, patch.fallback, patch.offset))
+    Ok((key, patch.fallback, patch.offset))
 }
 
-/// The patches made for corrections the frame still holds, and the ids of those removed meanwhile.
-fn landed(made: Vec<Made>, corrections: &[oni_settings::frame::Correction]) -> (Vec<Made>, Vec<oni_settings::id::Id>) {
-    let (kept, gone): (Vec<Made>, Vec<Made>) = made.into_iter().partition(|m| corrections.iter().any(|c| c.id == m.0));
+/// The patches made for corrections the frame still holds, and the keys of those removed meanwhile.
+fn landed(made: Vec<Made>, corrections: &[oni_settings::frame::Correction]) -> (Vec<Made>, Vec<PatchKey>) {
+    let (kept, gone): (Vec<Made>, Vec<Made>) = made.into_iter().partition(|m| corrections.iter().any(|c| c.id == m.0.id));
     (kept, gone.into_iter().map(|m| m.0).collect())
 }
 
@@ -285,8 +288,8 @@ mod tests {
 
     #[test]
     fn a_patch_made_for_a_correction_removed_meanwhile_does_not_land() {
-        let c = |id| Correction { id, stroke: Vec::new(), radius: 20.0 };
-        let (stays, removed) = (Id::new(), Id::new());
+        let c = |key: PatchKey| Correction { id: key.id, stroke: Vec::new(), radius: 20.0 };
+        let (stays, removed) = (PatchKey { id: Id::new(), upstream: 1 }, PatchKey { id: Id::new(), upstream: 1 });
         let made = vec![(stays, false, (0.1, 0.0)), (removed, true, (0.0, 0.2))];
         let (kept, gone) = landed(made.clone(), &[c(stays)]);
         assert_eq!(kept.iter().map(|m| m.0).collect::<Vec<_>>(), vec![stays]);

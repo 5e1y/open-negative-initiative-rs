@@ -6,45 +6,19 @@ use oni_graph::stages::Crop;
 use oni_graph::{Image, Rect};
 use oni_render::{Affine, Orient};
 use oni_settings::frame::Geometry;
+use oni_settings::geometry::placing;
 
 /// The turns and mirrors as one permutation from `input` onto an extent at the origin.
 pub fn orientation(g: &Geometry, input: Rect) -> (Orient, Rect) {
-    let (w, h) = (input.w as i32, input.h as i32);
-    let (a, b, out_w, out_h) = match g.quarter_turns.rem_euclid(4) {
-        1 => ([0, -1, 1, 0], [w - 1, 0], h, w),
-        2 => ([-1, 0, 0, -1], [w - 1, h - 1], w, h),
-        3 => ([0, 1, -1, 0], [0, h - 1], h, w),
-        _ => ([1, 0, 0, 1], [0, 0], w, h),
-    };
-    // A mirror flips the axes seen after the turns: p ↦ F·p + f, composed under the turn.
-    let f = [if g.mirrored { -1 } else { 1 }, if g.mirrored_vertically { -1 } else { 1 }];
-    let shift = [if g.mirrored { out_w - 1 } else { 0 }, if g.mirrored_vertically { out_h - 1 } else { 0 }];
-    let a2 = [a[0] * f[0], a[1] * f[1], a[2] * f[0], a[3] * f[1]];
-    let b2 = [
-        a[0] * shift[0] + a[1] * shift[1] + b[0] + input.x,
-        a[2] * shift[0] + a[3] * shift[1] + b[1] + input.y,
-    ];
-    (Orient { a: a2, b: b2 }, Rect::new(0, 0, out_w as u32, out_h as u32))
+    let (a, b, out) = placing::orientation(g, (f64::from(input.w), f64::from(input.h)));
+    let b = [b[0] as i32 + input.x, b[1] as i32 + input.y];
+    (Orient { a, b }, Rect::new(0, 0, out.0 as u32, out.1 as u32))
 }
 
 /// The rotation by `degrees` counter-clockwise about `upright`'s centre, onto its bounding box.
 pub fn rotation(degrees: f32, upright: Rect) -> (Affine, Rect) {
-    let t = f64::from(degrees).to_radians();
-    let (c, s) = (t.cos(), t.sin());
-    let cx = f64::from(upright.x) + f64::from(upright.w) / 2.0;
-    let cy = f64::from(upright.y) + f64::from(upright.h) / 2.0;
-    // Output centre to input point; on screen, y running down, a positive angle turns counter-clockwise.
-    let m = [[c, -s, cx - c * cx + s * cy], [s, c, cy - s * cx - c * cy]];
-    let (hw, hh) = (
-        (f64::from(upright.w) * c.abs() + f64::from(upright.h) * s.abs()) / 2.0,
-        (f64::from(upright.w) * s.abs() + f64::from(upright.h) * c.abs()) / 2.0,
-    );
-    let extent = Rect::from_corners(
-        (cx - hw).floor() as i32,
-        (cy - hh).floor() as i32,
-        (cx + hw).ceil() as i32,
-        (cy + hh).ceil() as i32,
-    );
+    let (m, b) = placing::rotation(degrees, [f64::from(upright.x), f64::from(upright.y), f64::from(upright.w), f64::from(upright.h)]);
+    let extent = Rect::from_corners(b[0] as i32, b[1] as i32, b[2] as i32, b[3] as i32);
     (Affine { m: m.map(|r| r.map(|v| v as f32)), transparent: true }, extent)
 }
 

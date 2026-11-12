@@ -1,3 +1,6 @@
+use oni_settings::cg::Point;
+use oni_settings::frame::Correction;
+use oni_settings::geometry::Placing;
 use std::collections::{HashMap, HashSet};
 
 /// De-dust's state: each correction's number and patch source on the open frame, which another
@@ -7,17 +10,17 @@ pub(in crate::app) struct Dust {
     /// The number each correction's marker shows, never its row, which a removal shifts.
     pub numbers: HashMap<oni_settings::id::Id, usize>,
     pub next_number: usize,
-    /// Where each correction's patch was copied from, in fractions of the rendered frame, y down.
+    /// Where each correction's patch was copied from, in fractions of the scan, y down.
     pub sources: HashMap<oni_settings::id::Id, (f64, f64)>,
     /// The correction whose tile the hand is on: the canvas shows it alone, with its source.
     pub shown: Option<oni_settings::id::Id>,
     /// The corrections whose search found no match and laid the tile beside the stroke.
     pub fallback: HashSet<oni_settings::id::Id>,
     /// The frames whose dust patches are being generated, each with the settings its run reads; the
-    /// corrections whose patch is on disk, and those whose generation failed, neither looked for again.
+    /// patches on disk, and those whose generation failed, by key, neither looked for again.
     pub healing: HashMap<String, crate::app::rendering::Latest>,
-    pub patched: HashSet<oni_settings::id::Id>,
-    pub unhealable: HashSet<oni_settings::id::Id>,
+    pub patched: HashSet<oni_pipeline::corrections::PatchKey>,
+    pub unhealable: HashSet<oni_pipeline::corrections::PatchKey>,
     /// Auto De-dust: a reading under way, one waiting on the full resolution, the last one shown.
     pub detecting: bool,
     pub detect_asked: bool,
@@ -40,5 +43,23 @@ impl Dust {
         }
         let (healing, patched) = (std::mem::take(&mut self.healing), std::mem::take(&mut self.patched));
         *self = Dust { next_number: 1, healing, patched, sensitivity: self.sensitivity, ..Dust::default() };
+    }
+}
+
+/// The corrections as the canvas shows them, each stroke moved by its offset in the scan's fractions,
+/// then mapped from the scan onto the frame stage 0 hands on; with no map, as they are.
+pub(in crate::app) fn on_frame(corrections: &[Correction], offsets: impl Fn(&Correction) -> (f64, f64), placing: Option<&Placing>) -> Vec<Correction> {
+    let point = |p: &Point, o: (f64, f64)| {
+        let moved = Point::new(p.x + o.0, p.y + o.1);
+        placing.map_or(moved, |m| m.on_frame(moved))
+    };
+    corrections.iter().map(|c| Correction { stroke: c.stroke.iter().map(|p| point(p, offsets(c))).collect(), ..c.clone() }).collect()
+}
+
+impl crate::app::State {
+    /// The open frame's map between its scan and the picture the canvas shows.
+    pub(in crate::app) fn placing(&self) -> Option<Placing> {
+        let (_, negative) = self.negative.as_ref()?;
+        Some(self.store.settings().geometry.placing(negative.full()))
     }
 }

@@ -192,6 +192,35 @@ int oni_thumbnail(const char *path, void *stream, oni_thumb *out)
     return 0;
 }
 
+// The full decode's size from the file's metadata, nothing unpacked: the processed sides, the maker's
+// crop as `oni_process` reads it (x, y, w, h) and the flip. `stream`, when given, is freed before the call returns.
+int oni_size(const char *path, void *stream, int out[7])
+{
+    memset(out, 0, 7 * sizeof *out);
+    libraw_data_t *lr = libraw_init(0);
+    if (!lr) { if (stream) oni_stream_free(stream); return -1; }
+    lr->params.half_size = 0;
+    lr->params.user_flip = 0;
+    int rc = oni_attach(lr, path, stream);
+    if (rc == LIBRAW_SUCCESS) {
+        out[6] = lr->sizes.flip;
+        const libraw_raw_inset_crop_t *c = &lr->sizes.raw_inset_crops[0];
+        int left = lr->sizes.left_margin, top = lr->sizes.top_margin;
+        if (c->cleft < 0xffff && c->ctop < 0xffff && c->cleft >= left && c->ctop >= top) {
+            out[2] = c->cleft - left;
+            out[3] = c->ctop - top;
+            out[4] = c->cwidth;
+            out[5] = c->cheight;
+        }
+        rc = libraw_adjust_sizes_info_only(lr);
+        out[0] = lr->sizes.iwidth;
+        out[1] = lr->sizes.iheight;
+    }
+    libraw_close(lr);
+    if (stream) oni_stream_free(stream);
+    return rc;
+}
+
 // The maker and model LibRaw names from the file's metadata, and whether it is a DNG; nothing decoded.
 // `stream`, when given, is freed before the call returns.
 int oni_identify(const char *path, void *stream, char make[64], char model[64], int *dng)

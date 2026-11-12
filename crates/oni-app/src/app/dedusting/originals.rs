@@ -36,13 +36,13 @@ impl Ctl {
         if !self.painting() {
             return;
         }
-        let (path, negative, settings, screen) = {
+        let (path, negative, settings, screen, placing) = {
             let s = self.state.borrow();
             let Some((path, negative)) = s.negative.clone() else { return };
             if s.open_path() != Some(path.as_str()) || s.hands.load(Ordering::Relaxed) > 0 {
                 return;
             }
-            (path, negative, s.store.settings().clone(), s.screen)
+            (path, negative, s.store.settings().clone(), s.screen, s.placing())
         };
         let look = look_of(&settings);
         let lacking: Vec<(Id, Vec<(f64, f64)>, f64)> = KEPT.with(|k| {
@@ -53,8 +53,7 @@ impl Ctl {
             if k.asking {
                 return Vec::new();
             }
-            let lacking: Vec<_> = settings
-                .corrections
+            let lacking: Vec<_> = dust::on_frame(&settings.corrections, |_| (0.0, 0.0), placing.as_ref())
                 .iter()
                 .filter(|c| !c.stroke.is_empty() && !k.images.contains_key(&c.id))
                 .map(|c| (c.id, c.stroke.iter().map(|p| (p.x, p.y)).collect(), c.radius))

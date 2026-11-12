@@ -6,8 +6,8 @@ use oni_core::balance::{Kept, Measure, Outcome};
 use oni_measure::key::{Decoded, Measurer};
 use oni_settings::PipelineSettings;
 use oni_pipeline::flat_field::Mask;
+use oni_pipeline::corrections::PatchKey;
 use oni_pipeline::resident::Files;
-use oni_settings::id::Id;
 use crate::latest::{Latest, Taken};
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
@@ -33,9 +33,9 @@ impl Files for Folders {
         crate::flat_fields::read(&support, id)
     }
 
-    fn patch(&self, id: Id) -> Option<(u32, u32, Vec<[f32; 4]>)> {
+    fn patch(&self, key: PatchKey) -> Option<(u32, u32, Vec<[f32; 4]>)> {
         let caches = FOLDERS.read().ok()?.1.clone()?;
-        crate::patches::read(&caches, id)
+        crate::patches::read(&caches, key)
     }
 }
 
@@ -101,7 +101,8 @@ pub fn facts(path: &str, s: &PipelineSettings) -> Option<String> {
         out += &format!("\nmask {id} {:?}", stat(&crate::flat_fields::file(support, id)));
     }
     for c in &s.corrections {
-        out += &format!("\npatch {} {:?}", c.id, caches.as_ref().and_then(|at| stat(&crate::patches::file(at, c.id))));
+        let key = PatchKey::of(s, c);
+        out += &format!("\npatch {} {:?}", c.id, caches.as_ref().and_then(|at| stat(&crate::patches::file(at, key))));
     }
     Some(out)
 }

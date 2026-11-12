@@ -1,6 +1,7 @@
 //! The plots' readings: the input histograms read the frame the canvas shows, its custom mask and dust
 //! patches laid, the curves' on its face; the picture is counted for a plot on screen alone.
 use super::*;
+use oni_pipeline::corrections::PatchKey;
 
 fn tiff(path: &std::path::Path, w: u32, h: u32, pixels: &[f32]) {
     let out = std::fs::File::create(path).unwrap();
@@ -55,7 +56,7 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
     let missing = engine.inputs(&negative, &dusted, false).expect("readings");
     assert_eq!((&missing.levels, &missing.curves), (&bare.levels, &bare.curves));
     let bright: Vec<f32> = (0..w * h).flat_map(|_| [0.9f32, 0.9, 0.9, 1.0]).collect();
-    tiff(&crate::patches::file(&caches, id), w as u32, h as u32, &bright);
+    tiff(&crate::patches::file(&caches, oni_pipeline::corrections::PatchKey::of(&dusted, &dusted.corrections[0])), w as u32, h as u32, &bright);
     let healed = engine.inputs(&negative, &dusted, false).expect("readings");
     assert_ne!(healed.levels, bare.levels, "the patch reaches the levels' input");
     assert_ne!(healed.curves, bare.curves, "the patch reaches the curves' input");
@@ -123,4 +124,47 @@ fn a_render_counts_its_picture_only_for_a_plot_on_screen() {
     // Twin: the same picture asked with a plot on screen is counted.
     worker.submit(job(2, true));
     assert_eq!((landed(), drained()), (0, vec!["counted"]));
+}
+
+/// A patch is cut from the scan as the settings upstream of the corrections leave it: under another
+/// exposure or flat-field none is found, so the heal makes one again; a framing never loses it.
+#[test]
+fn a_patch_made_under_one_exposure_is_never_laid_under_another() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the patches' keys are not exercised");
+        return;
+    };
+    let caches = std::env::temp_dir().join(format!("oni-patch-keys-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&caches);
+    let mut engine = Engine::on(&device);
+    engine.caches = Some(caches.clone());
+    let (w, h) = (64usize, 48usize);
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
+    let mut made = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+    made.corrections = vec![oni_settings::frame::Correction { id: Id::new(), stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
+    let c = made.corrections[0].clone();
+    crate::patches::write(&caches, PatchKey::of(&made, &c), w as u32, h as u32, &vec![[0.9, 0.9, 0.9, 1.0]; w * h]).unwrap();
+    // The centre of what the canvas shows, with the patch and without any correction.
+    let centre = |e: &mut Engine, s: &PipelineSettings| {
+        let l = e.render(&negative, s, None).unwrap();
+        l.pixels[l.height / 2 * l.width + l.width / 2][1]
+    };
+    let bare = |s: &PipelineSettings| PipelineSettings { corrections: Vec::new(), ..s.clone() };
+    // Twin: under the settings it was made on, the patch is found and laid.
+    assert!(crate::patches::made(&caches, &made, &c));
+    assert!((centre(&mut engine, &made) - centre(&mut engine, &bare(&made))).abs() > 1e-2, "the patch was not laid");
+    let stopped = PipelineSettings { capture_stops: 1.0, ..made.clone() };
+    let mut evened = made.clone();
+    evened.flat_field = oni_settings::frame::FlatField { mask: FlatFieldMask::ValoiEasy35V1, ..Default::default() };
+    for (name, s) in [("a capture stop", &stopped), ("a flat-field", &evened)] {
+        assert!(!crate::patches::made(&caches, s, &c), "{name}: the former patch counts as made");
+        assert!((centre(&mut engine, s) - centre(&mut engine, &bare(s))).abs() < 1e-5, "{name}: the former patch was laid");
+    }
+    // A framing reads the same scan: its patch is the one made.
+    let mut turned = made.clone();
+    turned.geometry.rotate(1, (w as f64, h as f64));
+    turned.geometry.crop = oni_settings::cg::Rect::new(0.1, 0.1, 0.8, 0.8);
+    assert!(crate::patches::made(&caches, &turned, &c));
+    assert!((centre(&mut engine, &turned) - centre(&mut engine, &bare(&turned))).abs() > 1e-2, "a framing lost the patch");
+    let _ = std::fs::remove_dir_all(&caches);
 }

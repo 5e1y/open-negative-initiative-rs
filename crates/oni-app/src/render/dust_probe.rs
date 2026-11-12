@@ -1,6 +1,7 @@
 //! `ONI_DUST_PROBE=<folder>`: the canvas's renders timed on a frame holding dust patches, each drained
 //! on the GPU; without the variable it returns at once. `ONI_DUST_PROBE_FILE` names the frame in the
 //! folder, `ONI_DUST_PROBE_COUNTS` how many of its corrections each round lays (`0,20,164`).
+use oni_pipeline::corrections::PatchKey;
 use super::*;
 use crate::viewport::Viewport;
 use oni_settings::frame::Correction;
@@ -77,8 +78,9 @@ fn the_canvas_s_renders_timed_on_a_frame_holding_dust_patches() {
             let upstream = PipelineSettings { corrections: settings.corrections[..k].to_vec(), ..settings.clone() };
             let (region, frame) = engine.search_region(&full, &upstream, c).expect("the search's region");
             let patch = crate::heal::generate(&region, c, frame.0, frame.1);
-            crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels).expect("the patch written");
-            engine.forget_patch(c.id);
+            let key = PatchKey::of(&upstream, c);
+            crate::patches::write(&caches, key, patch.width as u32, patch.height as u32, &patch.pixels).expect("the patch written");
+            engine.forget_patch(key);
             engine.purge();
         }
         if n > healed {
@@ -141,13 +143,14 @@ fn the_canvas_s_renders_timed_on_a_frame_holding_dust_patches() {
         // A patch landing: read again from its file, the frame's corrections laid again with it.
         let mut landings = Vec::new();
         for c in settings.corrections.iter().take(12) {
-            engine.forget_patch(c.id);
+            engine.forget_patch(PatchKey::of(&settings, c));
             landings.push(timed(&mut engine, |e| e.resident(&negative, &s, Some(&fit)).map(|_| ())).1);
         }
         if !landings.is_empty() {
             said("render after a patch landed", &landings);
             // The De-dust tab's reminders, which hold the engine while they render.
-            let strokes: Vec<(Vec<(f64, f64)>, f64)> = settings.corrections.iter().map(|c| (c.stroke.iter().map(|p| (p.x, p.y)).collect(), c.radius)).collect();
+            let placing = settings.geometry.placing(negative.full());
+            let strokes: Vec<(Vec<(f64, f64)>, f64)> = settings.corrections.iter().map(|c| (c.stroke.iter().map(|p| placing.on_frame(*p)).map(|p| (p.x, p.y)).collect(), c.radius)).collect();
             let reminders = timed(&mut engine, |e| e.originals(&negative, &s, &strokes).map(|_| ())).1;
             said("the tab's reminders, all at once", &[reminders]);
         }
@@ -163,7 +166,7 @@ fn together_against_in_turn(engine: &mut Engine, full: &Source, settings: &Pipel
     use oni_pipeline::stages::{Patched, Stroke, Translate, blurred};
     let (graph, pipeline) = engine.parts();
     let held: Vec<(Correction, Source)> = (settings.corrections.iter())
-        .filter_map(|c| crate::patches::read(caches, c.id).and_then(|(w, h, pixels)| Some((c.clone(), graph.upload(w, h, &pixels).ok()?))))
+        .filter_map(|c| crate::patches::read(caches, PatchKey::of(settings, c)).and_then(|(w, h, pixels)| Some((c.clone(), graph.upload(w, h, &pixels).ok()?))))
         .collect();
     let inputs = Inputs { patches: held.iter().map(|(c, p)| (c.id, p)).collect(), custom_flat_field: None };
     let bare = PipelineSettings { corrections: Vec::new(), ..settings.clone() };
@@ -171,8 +174,8 @@ fn together_against_in_turn(engine: &mut Engine, full: &Source, settings: &Pipel
     for reduce in [1.0, 0.29] {
         let source = if reduce == 1.0 { Image::new(full) } else { Image::new(full).lanczos(reduce) };
         let scale = f64::from(source.extent().w) / f64::from(full.extent().w);
-        let together = pipeline.framed(graph, source.clone(), settings, scale, &inputs).expect("the recipe builds");
-        let clean = pipeline.framed(graph, source, &bare, scale, &Inputs::default()).expect("the bare frame");
+        let together = pipeline.healed(graph, source.clone(), settings, scale, &inputs).expect("the recipe builds");
+        let clean = pipeline.healed(graph, source, &bare, scale, &Inputs::default()).expect("the bare frame");
         let (mut in_turn, framed) = (clean.clone(), clean.extent());
         for (c, patch) in &held {
             let (tile, shift) = corrections::placed(c, (patch.extent().w, patch.extent().h), framed, scale);
