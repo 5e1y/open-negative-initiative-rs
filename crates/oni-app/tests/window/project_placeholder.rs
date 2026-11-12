@@ -53,7 +53,9 @@ pub(crate) fn a_placeholder_hidden_by_a_print_counts_nothing_and_its_prompt_says
         };
         let projects = [made("Portfolio", 8e8, &[(&print, &a), ("1-stale", &b)]), made("Trip", 9e8, &[(&wa, &a)]), made("Tour", 9.5e8, &[(&wb, &b)])];
         std::fs::create_dir_all(root.join("Support")).unwrap();
-        std::fs::write(project::file_path(&root.join("Support")), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": projects})).unwrap()).unwrap();
+        // The file as an earlier build wrote it, imported as a launch does.
+        std::fs::write(root.join("Support/projects.json"), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": projects})).unwrap()).unwrap();
+        oni_app::migration::brought(&root.join("Support"), None);
     });
     let support = hand.root.join("Support");
     let (a, b) = (hand.at("Roll/A.tif"), hand.at("Roll/B.tif"));

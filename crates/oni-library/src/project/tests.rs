@@ -307,3 +307,15 @@ fn a_project_dragged_among_its_siblings_takes_an_order_between_the_target_and_th
     // Twin: the target alone dragged onto itself is refused.
     assert!(!reorder_root(&mut projects, &HashSet::from([new_id]), new_id));
 }
+
+/// An undo's step laid over the members as they stand: both sides' changes kept.
+#[test]
+fn an_undo_lays_its_step_over_what_changed_since() {
+    let strings = |items: &[&str]| items.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+    let base = strings(&["/a", "/b"]);
+    assert_eq!(gestures::laid_over(&base, &strings(&["/a", "/b", "/c"]), &strings(&["/b", "/a", "/d"])), ["/b", "/a", "/d", "/c"]);
+    assert_eq!(gestures::laid_over(&base, &strings(&["/b"]), &strings(&["/a", "/b", "/d"])), ["/b", "/d"]);
+    // Twin: one side unchanged gives the other's order whole, a reorder included.
+    assert_eq!(gestures::laid_over(&base, &strings(&["/b", "/a"]), &base), ["/b", "/a"]);
+    assert_eq!(gestures::laid_over(&base, &base, &strings(&["/b"])), ["/b"]);
+}

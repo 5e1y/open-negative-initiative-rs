@@ -27,9 +27,11 @@ pub struct Options {
     /// `Propagation.board`: the general pasteboard in the app, a board of the process's own for a check.
     pub pasteboard: Box<dyn crate::pasteboard::Board>,
     /// Names the volume a path lies on: the system's in the app, a check's own for its folders.
-    pub identify: oni_library::bookmarks::Identify,
+    pub identify: oni_library::places::Identify,
     /// The phone link offered at all (`phone::offered`): off, no entry to it shows and nothing listens.
     pub phone: bool,
+    /// What the launch's `migration::support` left: imports due, never written this run, and its notice.
+    pub brought: crate::migration::Brought,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -60,8 +62,9 @@ impl Default for Options {
             require_roll: false,
             updates: None,
             pasteboard: Box::new(crate::pasteboard::Memory::default()),
-            identify: oni_library::bookmarks::system(),
+            identify: oni_library::places::system(),
             phone: phone::offered(),
+            brought: Default::default(),
         }
     }
 }

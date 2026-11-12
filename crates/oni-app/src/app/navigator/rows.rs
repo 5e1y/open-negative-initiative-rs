@@ -10,7 +10,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let published = {
             let mut s = self.state.borrow_mut();
-            let favourites = s.nav.favourites.paths.clone();
+            let favourites = s.nav.favourites.paths();
             let rows = s.nav.model.rows(&favourites);
             for (path, _) in rows.iter().filter(|(p, _)| !walk::is_heading(p)) {
                 s.nav.model.list(path, false);

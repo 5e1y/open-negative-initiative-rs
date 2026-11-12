@@ -2,7 +2,7 @@
 //! leaves the cache, no file touched; a place an identity suggests is offered, never followed alone.
 
 use super::*;
-use oni_library::bookmarks::{Bookmarks, Lead};
+use oni_library::places::Lead;
 use oni_i18n::trn;
 use oni_library::relink::{self, Recognised};
 
@@ -263,7 +263,7 @@ impl Ctl {
         self.publish_navigator();
     }
 
-    /// The opened folder out of reach looked for by the identities `bookmarks.json` keeps, off
+    /// The opened folder out of reach looked for by the identities the places file keeps, off
     /// this thread, each time it, its state or the mounted volumes change.
     pub(in crate::app) fn look_for_lead(&self) {
         let (job, dropped) = {
@@ -277,20 +277,16 @@ impl Ctl {
             let dropped = s.nav.leads.lead.take().is_some();
             s.nav.leads.looks += 1;
             let job = key.filter(|(_, p, _)| matches!(p, Presence::Missing | Presence::Offline(Away::Disconnected))).map(|(opened, _, mounted)| {
-                let favourites = s.nav.favourites.paths.clone();
-                (s.nav.leads.looks, opened, mounted, favourites, s.nav.computer.clone(), s.nav.identify.clone(), s.support.clone())
+                (s.nav.leads.looks, opened, mounted, s.nav.favourites.clone(), s.nav.computer.clone(), s.nav.identify.clone())
             });
             (job, dropped)
         };
         if dropped {
             self.publish_banner();
         }
-        let Some((turn, opened, mounted, favourites, computer, identify, support)) = job else { return };
+        let Some((turn, opened, mounted, favourites, computer, identify)) = job else { return };
         let _ = std::thread::Builder::new().name("leads".into()).spawn(move || {
-            // The favourites as they stand: a place still noted for one forgotten leads nowhere.
-            let mut bookmarks = Bookmarks::load(&support);
-            bookmarks.places.retain(|p, _| favourites.contains(p));
-            let lead = bookmarks.lead(&opened, &computer, &mounted, &identify);
+            let lead = favourites.lead(&opened, &computer, &mounted, &identify);
             with_shell(move |c| c.lead_found(turn, lead));
         });
     }

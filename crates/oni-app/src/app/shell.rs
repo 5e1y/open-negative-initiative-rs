@@ -48,7 +48,7 @@ impl Shell {
         let kernel = display::Gpu::new(&device);
         laps.lap("the display kernel");
         let masks = crate::flat_fields::entries(&options.support);
-        let nav = navigator::Nav::new(options.computer, options.identify);
+        let nav = navigator::Nav::new(options.computer, options.identify, options.brought);
         let export = export_card::Card::new(&options.support);
         laps.lap("the flat fields, the navigator and the export card");
         let state = State {

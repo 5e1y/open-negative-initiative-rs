@@ -41,12 +41,6 @@ pub fn file_name(fingerprint: &str) -> String {
     name + ".jpg"
 }
 
-/// Swift's name, colons kept: Swift writes it and an earlier build did, so it is still read where
-/// the system allows it.
-fn swift_name(fingerprint: &str) -> String {
-    format!("{}.jpg", fingerprint.replace('/', "_"))
-}
-
 /// The name a tile is kept and shown under: the fingerprint, or for a print two rows hold (a copy,
 /// a backup) the print and the path, so an edit on one copy never shows on the other's tile.
 pub fn key(fingerprint: &str, path: &str, copies: &HashSet<String>) -> String {
@@ -57,9 +51,9 @@ pub fn key(fingerprint: &str, path: &str, copies: &HashSet<String>) -> String {
     format!("{fingerprint}~{hash:016x}")
 }
 
-/// The files a row keeps from the sweep: its print's, Swift's name for it, and its own key's.
-pub fn claims(fingerprint: &str, key: &str) -> [String; 3] {
-    [file_name(fingerprint), swift_name(fingerprint), file_name(key)]
+/// The files a row keeps from the sweep: its print's and its own key's.
+pub fn claims(fingerprint: &str, key: &str) -> [String; 2] {
+    [file_name(fingerprint), file_name(key)]
 }
 
 /// Where a thumbnail is written.
@@ -67,29 +61,18 @@ pub fn file(support: &Path, fingerprint: &str) -> PathBuf {
     directory(support).join(file_name(fingerprint))
 }
 
-/// The file a tile reads: the newer of the portable name and Swift's, Windows having only the first.
+/// The file a tile reads, when one was written.
 fn held(support: &Path, fingerprint: &str) -> Option<PathBuf> {
-    let portable = file(support, fingerprint);
-    let swift = (!cfg!(windows)).then(|| directory(support).join(swift_name(fingerprint))).filter(|s| *s != portable);
-    let modified = |p: &Path| std::fs::metadata(p).ok().map(|m| m.modified().unwrap_or(std::time::UNIX_EPOCH));
-    match (modified(&portable), swift.as_deref().and_then(|s| modified(s).map(|t| (s, t)))) {
-        (Some(mine), Some((s, theirs))) if theirs > mine => Some(s.to_path_buf()),
-        (Some(_), _) => Some(portable),
-        (None, Some((s, _))) => Some(s.to_path_buf()),
-        (None, None) => None,
-    }
+    Some(file(support, fingerprint)).filter(|p| p.is_file())
 }
 
 pub fn is_held(support: &Path, fingerprint: &str) -> bool {
     held(support, fingerprint).is_some()
 }
 
-/// Both names gone, so neither app shows a tile older than the photo's settings.
+/// The tile gone, so none older than the photo's settings shows.
 pub fn forget(support: &Path, fingerprint: &str) {
     let _ = std::fs::remove_file(file(support, fingerprint));
-    if !cfg!(windows) {
-        let _ = std::fs::remove_file(directory(support).join(swift_name(fingerprint)));
-    }
 }
 
 /// The sRGB JPEG of an encoded frame at `COMPRESSION`, alpha dropped.
@@ -109,12 +92,7 @@ pub fn jpeg(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
 pub fn persist(support: &Path, fingerprint: &str, data: &[u8]) -> std::io::Result<()> {
     let folder = directory(support);
     std::fs::create_dir_all(&folder)?;
-    oni_settings::atomic::write_atomically(&folder.join(file_name(fingerprint)), data)?;
-    // Swift's copy is older than this one now: gone, so Swift draws the photo afresh.
-    if !cfg!(windows) && swift_name(fingerprint) != file_name(fingerprint) {
-        let _ = std::fs::remove_file(folder.join(swift_name(fingerprint)));
-    }
-    Ok(())
+    oni_settings::atomic::write_atomically(&folder.join(file_name(fingerprint)), data)
 }
 
 /// A held file decoded to RGBA for `screen`, its sRGB carried to the screen's primaries once here
@@ -254,7 +232,7 @@ mod tests {
         let (mac, backup) = (key("4096-no-date-9f", "/Users/a/Roll 8/A.tif", &copies), key("4096-no-date-9f", "/Volumes/T7/Roll 8/A.tif", &copies));
         assert!(mac != backup && mac.starts_with("4096-no-date-9f~"), "{mac} {backup}");
         assert_eq!(key("4096-no-date-9f", "/Users/a/Roll 8/A.tif", &copies), mac, "a copy keeps its name");
-        // Twin: a print no other row holds keeps Swift's name, the print alone.
+        // Twin: a print no other row holds keeps its name, the print alone.
         assert_eq!(key("2048-no-date-1a", "/Users/a/Roll 8/B.tif", &copies), "2048-no-date-1a");
     }
 
@@ -270,19 +248,10 @@ mod tests {
         assert!(is_held(&support, dated) && load(&support, dated, Screen::Srgb).is_some());
         let name = file_name(dated);
         assert!(name.bytes().all(|b| b.is_ascii_alphanumeric() || b"-. _".contains(&b)), "{name}");
-        // Twin: the name Swift writes keeps the colons, which every Windows volume refuses.
-        assert!(swift_name(dated).contains(':'));
-        if !cfg!(windows) {
-            // A tile Swift or an earlier build left reads on, and the next persist takes its place.
-            let older = "25331200-2025:01:02 03:04:05-77";
-            std::fs::write(directory(&support).join(swift_name(older)), &data).unwrap();
-            assert!(load(&support, older, Screen::Srgb).is_some(), "Swift's tile still shows");
-            assert!(!is_held(&support, "25331200-2025:01:02 03:04:06-77"), "another photo's is not taken");
-            persist(&support, older, &data).unwrap();
-            assert!(!directory(&support).join(swift_name(older)).exists() && file(&support, older).exists());
-            forget(&support, older);
-            assert!(!is_held(&support, older));
-        }
+        // Twin: the fingerprint itself as a name keeps the colons, which every Windows volume refuses.
+        assert!(format!("{dated}.jpg").contains(':'));
+        forget(&support, dated);
+        assert!(!is_held(&support, dated));
         let _ = std::fs::remove_dir_all(&support);
     }
 

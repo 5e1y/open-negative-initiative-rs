@@ -3425,6 +3425,10 @@ msgid_plural "ONI forgets the {n} photos it knows in “{folder}”. No file is 
 msgstr[0] "ONI oublie la photo qu’il connaît dans « {folder} ». Aucun fichier n'est touché : si le dossier revient, sa photo revient avec ses réglages."
 msgstr[1] "ONI oublie les {n} photos qu’il connaît dans « {folder} ». Aucun fichier n'est touché : si le dossier revient, ses photos reviennent avec leurs réglages."
 
+#: crates/oni-app/src/app/navigator/memory.rs
+msgid "Favourites and Projects"
+msgstr "Favoris et projets"
+
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "Favourites"
 msgstr "Favoris"
@@ -4509,6 +4513,18 @@ msgstr "Démarrage de l'interface"
 msgid "Building the window"
 msgstr "Construction de la fenêtre"
 
+#: crates/oni-app/src/migration.rs
+msgid "The favourites or projects of an earlier version of ONI could not be brought over. They are shown as they were and brought at the next launch; until then, changes to them are not kept."
+msgstr "Les favoris ou les projets d’une version antérieure d’ONI n’ont pas pu être repris. Ils sont montrés tels qu’ils étaient et seront repris au prochain lancement ; d’ici là, leurs modifications ne sont pas conservées."
+
+#: crates/oni-app/src/migration.rs
+msgid "A file of favourites or projects of an earlier version of ONI could not be read, so nothing was taken from it. It is left as it was."
+msgstr "Un fichier de favoris ou de projets d’une version antérieure d’ONI n’a pas pu être lu : rien n’en a été repris. Il reste tel quel."
+
+#: crates/oni-app/src/migration.rs
+msgid "An earlier version of ONI changed favourites or projects after this version brought them over. Those changes are not carried over."
+msgstr "Une version antérieure d’ONI a modifié des favoris ou des projets après leur reprise par cette version. Ces modifications ne sont pas reportées."
+
 #: crates/oni-app/src/organise/cells.rs
 msgid "Paste Settings ({count} photos)"
 msgstr "Coller les réglages ({count} photos)"
@@ -5011,10 +5027,6 @@ msgstr "Images"
 msgid "Videos"
 msgstr "Vidéos"
 
-#: crates/oni-library/src/project/file.rs
-msgid "their file comes from a newer version of ONI, which this one never overwrites"
-msgstr "leur fichier vient d’une version plus récente d’ONI, que celle-ci n’écrase jamais"
-
 #: crates/oni-library/src/project.rs
 msgid "It holds no photos. Nothing else is affected."
 msgstr "Il ne contient aucune photo. Rien d’autre n’est touché."
@@ -5158,6 +5170,10 @@ msgid "One item could not be moved into the roll again: its folder moved or a fi
 msgid_plural "{n} of the items could not be moved into the roll again: their folder moved or a file took their name."
 msgstr[0] "Un élément n’a pas pu être remis dans la pellicule : son dossier a été déplacé ou un fichier a pris son nom."
 msgstr[1] "{n} éléments n’ont pas pu être remis dans la pellicule : leur dossier a été déplacé ou un fichier a pris leur nom."
+
+#: crates/oni-library/src/state.rs
+msgid "This was last written by a newer version of ONI and is left as it is."
+msgstr "Ceci a été écrit en dernier par une version plus récente d’ONI et reste tel quel."
 
 #: crates/oni-library/src/trash.rs
 msgid "{head}: a newer version of ONI wrote their settings, and this one never rewrites them."

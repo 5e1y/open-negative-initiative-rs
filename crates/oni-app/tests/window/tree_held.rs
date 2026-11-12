@@ -77,7 +77,9 @@ pub(crate) fn a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows
         let members: Vec<String> = ["Roll 10/A.tif", "Roll 10/B.tif", "Roll 10/C.tif", "Roll 8/P.tif", "Roll 8/Q.tif"].map(at).to_vec();
         let client = serde_json::json!({"id": oni_settings::Id::new().to_string(), "name": "Client", "description": "", "createdAt": 8e8, "members": members});
         std::fs::create_dir_all(root.join("Support")).unwrap();
-        std::fs::write(oni_library::project::file_path(&root.join("Support")), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+        // The file as an earlier build wrote it, imported as a launch does.
+        std::fs::write(root.join("Support/projects.json"), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+        oni_app::migration::brought(&root.join("Support"), None);
     });
     let [a, b, c, e, p, q] = FILES.map(|(f, _)| hand.at(f));
     hand.open("");

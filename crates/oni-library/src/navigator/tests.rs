@@ -299,7 +299,7 @@ impl Drop for Exfat {
 #[cfg(target_os = "macos")]
 #[test]
 fn an_accented_folder_on_exfat_opens_marks_and_stars() {
-    use crate::favourites::Favourites;
+    use crate::places::Places;
     let scratch = Scratch::new("exfat");
     let (nfc, nfd) = ("\u{c9}t\u{e9} 2025", "E\u{301}te\u{301} 2025");
     let exfat = Exfat::attach(&scratch);
@@ -340,9 +340,9 @@ fn an_accented_folder_on_exfat_opens_marks_and_stars() {
         wanted = nav.take_wanted();
     }
     assert!(nav.unfolded.contains(&ete) && nav.rows(&[]).iter().any(|(p, _)| *p == row), "the photo's folder unfolds to its row");
-    let mut stars = Favourites::default();
+    let mut stars = Places::default();
     stars.toggle(&row);
-    assert!(stars.contains(&row) && area.images.iter().all(|i| stars.paths.iter().any(|p| holds(p, i))), "the star holds its photos");
+    assert!(stars.contains(&row) && area.images.iter().all(|i| stars.places.iter().any(|p| holds(&p.path, i))), "the star holds its photos");
     // Twin: the row the disk's listing spells, joined byte for byte, is no folder the survey knows.
     let listed = format!("{root}/{}", raw[0]);
     assert!(listed != ete && !area.folders.contains(&listed));

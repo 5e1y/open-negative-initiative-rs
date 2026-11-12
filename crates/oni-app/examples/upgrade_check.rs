@@ -173,20 +173,21 @@ fn support_folder(support: &Path, index: &Path) -> usize {
     let masks = oni_app::flat_fields::entries(support);
     let resolved = masks.iter().filter(|m| oni_app::flat_fields::folder(support).join(format!("{}.tiff", m.id)).exists()).count();
     check("flat-field masks", !masks.is_empty() && resolved == masks.len(), format!("{resolved} of {} resolve", masks.len()));
+    // The support files whose shape changed are brought up to date first, as a launch does.
+    oni_app::migration::brought(support, None);
     let projects = oni_library::project::load(support);
     let raw = count(&support.join("projects.json"), "projects");
     check("projects", projects.projects.len() == raw, format!("{} of {raw}", projects.projects.len()));
-    let favourites = oni_library::favourites::Favourites::load(support);
+    let favourites = oni_library::places::Places::load(support);
     let raw = count(&support.join("favourites.json"), "paths");
-    check("favourites", favourites.as_ref().is_some_and(|f| f.paths.len() == raw), format!("{:?} of {raw}", favourites.map(|f| f.paths.len())));
+    let noted = favourites.as_ref().map_or(0, |f| f.places.iter().filter(|p| p.file_id.is_some()).count());
+    check("favourites", favourites.as_ref().is_some_and(|f| f.places.len() == raw), format!("{:?} of {raw}, {noted} places noted", favourites.map(|f| f.places.len())));
     let roots = oni_library::roots::Roots::load(support);
     let raw = count(&support.join("roots.json"), "paths");
     check("roots", roots.paths.len() == raw, format!("{} of {raw}", roots.paths.len()));
     let library = oni_library::library::load(support);
     let raw = count(&support.join("library.json"), "files");
     check("library.json", library.files.len() == raw, format!("{} of {raw}", library.files.len()));
-    let bookmarks = oni_library::bookmarks::Bookmarks::load(support);
-    check("bookmarks", true, format!("{} places", bookmarks.places.len()));
     // Another schema's file, as the Swift app's, is never opened: this build makes its own beside it.
     let given = std::fs::read(index).ok();
     let opened = oni_library::LibraryIndex::open(index);

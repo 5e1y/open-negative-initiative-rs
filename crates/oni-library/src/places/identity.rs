@@ -1,12 +1,12 @@
-//! What this app alone keeps of each favourite beyond its path, by path: the volume it lives on and
-//! its file id. A file of its own, as the Swift app rewrites `favourites.json` with its two fields.
+//! Where a favourite lives beyond its path: the volume it was seen on and its file id, read off the
+//! system, and the lead they give once the folder is out of reach.
 
+use super::{Place, Places};
 use crate::navigator::Computer;
 use crate::paths::{self, holds};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::path::Path;
+use std::sync::Arc;
 
 /// Names the volume a path lies on: the system's answer in the app, a check's own disk otherwise.
 pub type Identify = Arc<dyn Fn(&str) -> Option<Volume> + Send + Sync>;
@@ -24,82 +24,10 @@ pub struct Volume {
     pub mount: String,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Place {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub volume: Option<Volume>,
-    #[serde(rename = "fileId", default, skip_serializing_if = "Option::is_none")]
-    pub file_id: Option<u64>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Bookmarks {
-    pub version: i64,
-    #[serde(default)]
-    pub places: BTreeMap<String, Place>,
-}
-
-impl Default for Bookmarks {
-    fn default() -> Self {
-        Bookmarks { version: 1, places: BTreeMap::new() }
-    }
-}
-
-impl Bookmarks {
-    pub fn file_path(support: &Path) -> PathBuf {
-        support.join("bookmarks.json")
-    }
-
-    pub fn load(support: &Path) -> Bookmarks {
-        crate::read_json(&Self::file_path(support)).unwrap_or_default()
-    }
-
-    pub fn save(&self, support: &Path) -> std::io::Result<()> {
-        oni_settings::atomic::write_atomically(&Self::file_path(support), &serde_json::to_vec_pretty(self).map_err(std::io::Error::other)?)
-    }
-
-    /// One place per favourite, read again by `read` where its folder answers, else kept as last
-    /// read: a disk away, or another volume now under the same path, never erases the identity known.
-    pub fn noted(&self, favourites: &[String], read: impl Fn(&str) -> Option<Place>) -> Bookmarks {
-        let mut places = BTreeMap::new();
-        for path in favourites {
-            let known = self.places.get(path);
-            let now = read(path);
-            let moved_volume = |now: &Place| {
-                let uuid = |p: &Place| p.volume.as_ref().and_then(|v| v.uuid.clone());
-                known.is_some_and(|k| uuid(k).is_some() && uuid(k) != uuid(now))
-            };
-            let place = match now {
-                Some(now) if !moved_volume(&now) => Some(now),
-                _ => known.cloned(),
-            };
-            if let Some(place) = place {
-                places.insert(path.clone(), place);
-            }
-        }
-        Bookmarks { version: self.version, places }
-    }
-}
-
-/// Serialises the writes of `record`, each a read, a merge and a write of the one file.
-static RECORDING: Mutex<()> = Mutex::new(());
-
-/// Notes each favourite's place off the interface thread, as a volume asleep can hold a `statfs`.
-pub fn record(support: PathBuf, favourites: Vec<String>, identify: Identify) {
-    std::thread::spawn(move || {
-        let _turn = RECORDING.lock();
-        // A support folder removed meanwhile, a check's own, is not made again.
-        if !support.is_dir() {
-            return;
-        }
-        let _ = Bookmarks::load(&support).noted(&favourites, |p| place(p, &identify)).save(&support);
-    });
-}
-
 /// The volume and file id of `path` as the system reports them now, `None` when it does not answer.
 pub fn place(path: &str, identify: &Identify) -> Option<Place> {
     let metadata = std::fs::metadata(path).ok()?;
-    Some(Place { volume: identify(path), file_id: file_id(path, &metadata) })
+    Some(Place { path: path.to_owned(), volume: identify(path), file_id: file_id(path, &metadata) })
 }
 
 /// Where a folder out of reach seems to be now, by an identity kept here: offered, never followed
@@ -111,7 +39,7 @@ pub struct Lead {
     pub volume: bool,
 }
 
-impl Bookmarks {
+impl Places {
     /// Its volume's UUID mounted under another name, else a favourite above it found by its file id
     /// on the same volume. Reads the disk: each mounted volume's identity, then a folder's.
     pub fn lead(&self, path: &str, computer: &Computer, mounted: &[String], identify: &Identify) -> Option<Lead> {
@@ -120,7 +48,7 @@ impl Bookmarks {
 
     fn by_volume(&self, path: &str, computer: &Computer, mounted: &[String], identify: &Identify) -> Option<Lead> {
         let root = computer.volume_root(path)?;
-        let uuid = self.places.iter().filter(|(p, _)| holds(&root, p)).find_map(|(_, place)| place.volume.as_ref()?.uuid.clone())?;
+        let uuid = self.places.iter().filter(|p| holds(&root, &p.path)).find_map(|place| place.volume.as_ref()?.uuid.clone())?;
         let known = |v: &str| identify(v).and_then(|v| v.uuid).is_some_and(|u| u == uuid);
         // Its own disk under its own name: whatever is gone moved on it, not with it.
         if Path::new(&root).is_dir() && known(&root) {
@@ -133,11 +61,8 @@ impl Bookmarks {
     }
 
     fn by_file_id(&self, path: &str, identify: &Identify) -> Option<Lead> {
-        let (favourite, place) = self
-            .places
-            .iter()
-            .filter(|(p, place)| holds(p, path) && place.file_id.is_some())
-            .max_by_key(|(p, _)| p.len())?;
+        let place = self.places.iter().filter(|p| holds(&p.path, path) && p.file_id.is_some()).max_by_key(|p| p.path.len())?;
+        let favourite = &place.path;
         let uuid = place.volume.as_ref()?.uuid.as_deref()?;
         if Path::new(favourite).exists() {
             return None;
@@ -354,5 +279,3 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
     format!("{}-{}-{}-{}-{}", &hex[0..8], &hex[8..12], &hex[12..16], &hex[16..20], &hex[20..32])
 }
 
-#[cfg(test)]
-mod tests;

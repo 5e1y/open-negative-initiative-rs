@@ -99,13 +99,16 @@ pub fn flush() {
     }
 }
 
-/// Opens a fresh log file for the rest of the run, the last run's kept beside it as `oni.previous.log`
+/// The last run's log, beside this run's.
+pub const PREVIOUS_LOG: &str = "oni.previous.log";
+
+/// Opens a fresh log file for the rest of the run, the last run's kept beside it as `PREVIOUS_LOG`
 /// and never sent: a report seals this run alone. Without it, lines go to stderr alone.
 pub fn open_file(path: &Path) -> Result<(), String> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
-    let _ = std::fs::rename(path, path.with_file_name("oni.previous.log"));
+    let _ = std::fs::rename(path, path.with_file_name(PREVIOUS_LOG));
     let file = std::fs::OpenOptions::new().create(true).append(true).open(path).map_err(|e| e.to_string())?;
     *sink().file.lock().map_err(|_| "the log failed earlier")? = Some(file);
     Ok(())

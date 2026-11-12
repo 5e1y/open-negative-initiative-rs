@@ -127,27 +127,23 @@ struct Wire {
 }
 
 impl Settings {
-    /// The preference's text as `JSONEncoder` with `.sortedKeys` writes it: keys sorted, `/`
-    /// escaped, a whole number without its `.0`.
+    /// The preference's text, compact JSON, every field written.
     pub fn raw_value(&self) -> String {
         let (edge, pixels) = match self.resize {
             Resize::Full => ("full", None),
             Resize::LongestEdge(n) => ("long", Some(n)),
             Resize::ShortestEdge(n) => ("short", Some(n)),
         };
-        let mut fields = vec![
-            ("compressTIFF", self.compress_tiff.to_string()),
-            ("format", string(self.format.key())),
-            ("hdr", self.hdr.to_string()),
-            ("jpegQuality", number(self.jpeg_quality)),
-            ("resizeEdge", string(edge)),
-        ];
-        if let Some(n) = pixels {
-            fields.push(("resizePixels", n.to_string()));
-        }
-        fields.push(("space", string(&self.space.key())));
-        let body: Vec<String> = fields.iter().map(|(k, v)| format!("\"{k}\":{v}")).collect();
-        format!("{{{}}}", body.join(","))
+        let wire = Wire {
+            compress_tiff: Some(self.compress_tiff),
+            format: Some(self.format.key().to_owned()),
+            hdr: Some(self.hdr),
+            jpeg_quality: Some(self.jpeg_quality),
+            resize_edge: Some(edge.to_owned()),
+            resize_pixels: pixels,
+            space: Some(self.space.key()),
+        };
+        serde_json::to_string(&wire).unwrap_or_default()
     }
 
     /// Decoded tolerantly: an absent or unknown key reads its default; text that is not the
@@ -180,13 +176,4 @@ impl Settings {
         }
         Some(out)
     }
-}
-
-fn string(s: &str) -> String {
-    serde_json::to_string(s).unwrap_or_default().replace('/', "\\/")
-}
-
-/// Swift's shortest digits; a whole number loses its `.0`, as `JSONEncoder` writes it.
-fn number(v: f64) -> String {
-    if v.is_finite() && v.fract() == 0.0 && v.abs() < 1e15 { format!("{}", v as i64) } else { format!("{v}") }
 }

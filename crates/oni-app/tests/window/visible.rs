@@ -5,7 +5,7 @@
 use oni_app::app::{self, Options, Shell};
 use oni_app::{FolderLine, Library, Navigator, Reach};
 use oni_core::{Archive, EditorStore};
-use oni_library::favourites::Favourites;
+use oni_library::places::{Place, Places};
 use oni_library::navigator::Computer;
 use oni_library::paths;
 use oni_settings::sidecar::{self, WriteOptions};
@@ -106,7 +106,7 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
     let d = disk("favourite", &[("Home/Scans/Roll 12/A.tif", 0.5), ("Home/Keep/B.tif", 0.7)]);
     let (gone, keep) = (d.path("Home/Scans/Roll 12"), d.path("Home/Keep"));
     std::fs::create_dir_all(&d.support).unwrap();
-    Favourites { version: 1, paths: vec![gone.clone(), keep.clone()] }.save(&d.support).unwrap();
+    Places { version: 1, places: vec![Place::at(&gone), Place::at(&keep)] }.save(&d.support).unwrap();
     // Moved in the Finder while ONI was closed, its disk the home's, which always answers.
     std::fs::rename(d.root.join("Home/Scans/Roll 12"), d.root.join("Home/Scans/Roll 12 old")).unwrap();
     let rig = rig();
@@ -158,7 +158,7 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
     // Its key takes the favourite away and leaves the banner with Locate alone.
     w.global::<Library>().invoke_banner_acted(1);
     rig.pump();
-    assert!(!Favourites::load(&d.support).unwrap().paths.contains(&gone));
+    assert!(!Places::load(&d.support).unwrap().contains(&gone));
     assert_eq!(keys(), ["Locate…"]);
     drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);

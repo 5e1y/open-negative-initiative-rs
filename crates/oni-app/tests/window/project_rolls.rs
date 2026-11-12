@@ -50,7 +50,9 @@ pub(crate) fn a_drop_by_roll_lands_at_its_line_in_the_tree_and_the_grid() {
         };
         let file = serde_json::json!({"version": 1, "projects": [project("Client", 8e8, client), project("Other", 7e8, vec![at("Roll 9/X.tif")])]});
         std::fs::create_dir_all(root.join("Support")).unwrap();
-        std::fs::write(oni_library::project::file_path(&root.join("Support")), serde_json::to_vec(&file).unwrap()).unwrap();
+        // The file as an earlier build wrote it, imported as a launch does.
+        std::fs::write(root.join("Support/projects.json"), serde_json::to_vec(&file).unwrap()).unwrap();
+        oni_app::migration::brought(&root.join("Support"), None);
     });
     let [a, c, d, a8, b8, x] = FILES.map(|(f, _)| hand.at(f));
     hand.open("");
@@ -101,7 +103,9 @@ pub(crate) fn the_rating_filter_keeps_the_trees_roll_order() {
         let members: Vec<String> = ["Roll 10/A.tif", "Roll 8/A.tif", "Roll 10/D.tif"].map(at).to_vec();
         let client = serde_json::json!({"id": oni_settings::Id::new().to_string(), "name": "Client", "description": "", "createdAt": 8e8, "members": members});
         std::fs::create_dir_all(root.join("Support")).unwrap();
-        std::fs::write(oni_library::project::file_path(&root.join("Support")), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+        // The file as an earlier build wrote it, imported as a launch does.
+        std::fs::write(root.join("Support/projects.json"), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+        oni_app::migration::brought(&root.join("Support"), None);
     });
     let [a, d, a8] = files.map(|(f, _)| hand.at(f));
     hand.open("");
@@ -131,7 +135,9 @@ pub(crate) fn a_tree_drop_lands_at_its_line_when_the_tree_changes_under_the_hand
         let members: Vec<String> = ["Roll 10/C.tif", "Roll 10/A.tif", "Roll 10/D.tif"].map(at).to_vec();
         let client = serde_json::json!({"id": oni_settings::Id::new().to_string(), "name": "Client", "description": "", "createdAt": 8e8, "members": members});
         std::fs::create_dir_all(root.join("Support")).unwrap();
-        std::fs::write(oni_library::project::file_path(&root.join("Support")), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+        // The file as an earlier build wrote it, imported as a launch does.
+        std::fs::write(root.join("Support/projects.json"), serde_json::to_vec(&serde_json::json!({"version": 1, "projects": [client]})).unwrap()).unwrap();
+        oni_app::migration::brought(&root.join("Support"), None);
     });
     let [a, c, d] = files.map(|(f, _)| hand.at(f));
     hand.open("");
