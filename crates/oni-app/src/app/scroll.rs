@@ -26,8 +26,8 @@ impl Ctl {
     pub(super) fn scroll_kept_alive(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            if s.scrolling.is_none() {
-                s.scrolling = Some(super::hands::HandDown::on(&s.hands));
+            if s.down.scrolling.is_none() {
+                s.down.scrolling = Some(super::hands::HandDown::on(&s.hands));
                 s.store.hold();
             }
         }
@@ -59,7 +59,7 @@ impl Ctl {
     pub(super) fn scroll_ended(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            if s.scrolling.take().is_none() {
+            if s.down.scrolling.take().is_none() {
                 return;
             }
             s.store.release();
@@ -75,6 +75,6 @@ impl Ctl {
 impl super::State {
     /// A scroll along a track holds the hand, read by the checks.
     pub fn scrolling(&self) -> bool {
-        self.scrolling.is_some()
+        self.down.scrolling.is_some()
     }
 }

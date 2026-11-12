@@ -11,7 +11,7 @@ mod pace;
 mod plots;
 mod placeholder;
 mod resizing;
-pub(in crate::app) use asking::Latest;
+pub(in crate::app) use asking::Healing;
 pub(in crate::app) use resizing::resizing;
 
 /// What the canvas asked of the open frame and was given: each frame opened has its own, and Edit

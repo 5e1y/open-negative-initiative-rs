@@ -69,16 +69,4 @@ pub mod web;
 pub mod watchdog;
 pub mod wrapped;
 
-use std::path::PathBuf;
-
 pub use oni_ui::*;
-
-/// The Swift app's `Sources/OpenNegative`, which the Swift comparison checks read: `ONI_SWIFT_APP`, else
-/// a checkout beside this workspace.
-pub fn swift_sources() -> Option<PathBuf> {
-    if let Some(dir) = std::env::var_os("ONI_SWIFT_APP") {
-        return Some(PathBuf::from(dir));
-    }
-    let beside = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../open-negative-initiative/Sources/OpenNegative");
-    beside.is_dir().then_some(beside)
-}

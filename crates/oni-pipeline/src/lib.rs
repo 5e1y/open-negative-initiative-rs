@@ -151,15 +151,14 @@ impl Pipeline {
         Ok(if s.inverted_source { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
     }
 
-    /// The scan in its own frame, before stage 0: the capture's exposure evened, the flat-field, then
-    /// the corrections, so neither slides as the crop, the turns or the angle move.
+    /// The scan in its own frame, before stage 0: its corrections, then the capture's exposure evened and
+    /// the flat-field, so a patch takes the gains of the place it lies on and none slides as the crop moves.
     pub fn healed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
-        let mut out = image;
+        let mut out = self.patched(graph, image, s, scale, inputs)?;
         if s.capture_stops != 0.0 {
             out = out.then(stages::exposure(-s.capture_stops));
         }
-        out = self.flat_field(graph, out, s, inputs)?;
-        self.corrections(graph, out, s, scale, inputs)
+        self.flat_field(graph, out, s, inputs)
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {
@@ -187,8 +186,9 @@ impl Pipeline {
         Ok(image.then_reading(stages::flat_field(&flat_field::arguments(f, s.mode, per_channel)), &[fitted]))
     }
 
-    /// Each correction's patch through its feathered stroke, laid together; one with no patch is left out.
-    fn corrections(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
+    /// The decoded scan with each correction's patch through its feathered stroke, laid together; one
+    /// with no patch is left out. A patch is cut on it and keyed on its reading alone.
+    pub fn patched(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let patched = |c: &&oni_settings::frame::Correction| !c.stroke.is_empty();
         let named: Vec<_> = s.corrections.iter().filter(patched).filter_map(|c| Some((c, *inputs.patches.get(&c.id)?))).collect();
         self.healing.laid(graph, image, &named, scale)

@@ -26,25 +26,7 @@ pub struct Decoded {
     pub undeclared: Option<bool>,
 }
 
-/// How a frame's sidecar asks a file outside the RAW engine to be read.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Reading {
-    /// Its windows were measured on its channels converted to the working primaries.
-    pub primaries_converted: bool,
-    /// The encoding the hand chose for a file naming no profile.
-    pub source_encoding: Option<oni_settings::SourceEncoding>,
-    /// The three passes a lead names, decoded and laid as one frame.
-    pub passes: Option<oni_settings::frame::RgbPasses>,
-    /// A positive's RAW, balanced at `oni_decode::SLIDE_KELVIN`.
-    pub slide: bool,
-}
-
-impl Reading {
-    pub fn of(s: &oni_settings::PipelineSettings) -> Reading {
-        let slide = s.mode == oni_settings::ConversionMode::Positive;
-        Reading { primaries_converted: s.primaries_converted, source_encoding: s.source_encoding, passes: s.rgb_passes.clone(), slide }
-    }
-}
+pub use oni_settings::Reading;
 
 /// `RawDecode.linear` on its preview: a lead's three passes composed, any other file alone.
 pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {

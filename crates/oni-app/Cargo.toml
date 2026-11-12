@@ -51,9 +51,10 @@ serde_json.workspace = true
 # A contact sheet's numbers and heading set into its file: the interface's face and the logo.
 swash = "0.2"
 resvg = { version = "0.48", default-features = false }
-# `Updates`: the appcast read, and each archive's EdDSA signature checked before it is kept.
+# `Updates`: the appcast read, each archive's EdDSA signature checked before it is kept, Windows' unpacked.
 roxmltree = "0.21"
 ring = "0.17"
+zip.workspace = true
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
 tiff = "0.11"
 # Prepare the Roll's tutorials, played from GIFs on every system.

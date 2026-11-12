@@ -14,21 +14,59 @@ pub fn full_decode(path: &Path, reading: crate::render::Reading) -> Result<Decod
     crate::render::decode_full(path, reading).map_err(|_| Failure::Decode)
 }
 
-/// `Pipeline.apply` at full resolution and unproofed, with the canvas's masks and patches, read
-/// back in bands of rows; the decode held in half floats, as the canvas holds it.
-pub fn render_full(engine: &mut Engine, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
+/// `Pipeline.apply` at full resolution and unproofed on an engine already held, with the masks and the
+/// patches on disk alone, read back in bands of rows; the decode held in half floats, as the canvas holds it.
+#[cfg(test)]
+pub(crate) fn render_full(engine: &mut Engine, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
     let l = decoded.linear;
     let source = engine.parts().0.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
     drop(l.pixels);
     rendered(engine, source, settings)
 }
 
-/// `render_full` with the decode laid on the GPU beside the engine, so another frame renders meanwhile.
+/// `Pipeline.apply` at full resolution and unproofed, with the canvas's masks and every stroke's patch,
+/// made first when not on disk, read back in bands of rows; the decode laid beside the engine, so
+/// another frame renders meanwhile.
 pub fn render_full_beside(engine: &Shared, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
     let source = engine.upload(&decoded.linear).map_err(|_| Failure::Render)?;
     drop(decoded);
+    heal(engine, &source, settings)?;
     let mut engine = engine.lock().map_err(|_| Failure::Render)?;
     rendered(&mut engine, source, settings)
+}
+
+/// Every stroke of `settings` given its patch on `full`, the frame's whole decode: a render lays only
+/// the patches on disk, and one that cannot be made fails the file rather than leave its speck.
+pub fn heal(engine: &Shared, full: &oni_graph::Source, settings: &PipelineSettings) -> Result<(), Failure> {
+    let Some(caches) = engine.lock().map_err(|_| Failure::Render)?.caches.clone() else { return Ok(()) };
+    let (mut made, mut failed) = (0, None);
+    crate::heal::ensure(engine, full, &caches, &mut Default::default(), || Some(settings.clone()), |one| match one {
+        Ok(_) => made += 1,
+        Err((_, e)) => failed = Some(e),
+    });
+    if made > 0 {
+        crate::timing::line(&format!("export: {made} dust patches generated"));
+    }
+    match failed {
+        Some(e) => {
+            crate::timing::line(&format!("export: a dust patch not generated: {e}"));
+            Err(Failure::Dust)
+        }
+        None => Ok(()),
+    }
+}
+
+/// `heal` for a render that reads a reduced decode, a contact sheet's: the frame decoded whole only
+/// when one of its strokes has no patch on disk.
+pub fn heal_ahead(engine: &Shared, target: &Target) -> Result<(), Failure> {
+    let Some(caches) = engine.lock().map_err(|_| Failure::Render)?.caches.clone() else { return Ok(()) };
+    if crate::heal::pending(&caches, &target.settings, &Default::default()).is_empty() {
+        return Ok(());
+    }
+    let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
+    let full = engine.upload(&decoded.linear).map_err(|_| Failure::Render)?;
+    drop(decoded);
+    heal(engine, &full, &target.settings)
 }
 
 fn rendered(engine: &mut Engine, source: oni_graph::Source, settings: &PipelineSettings) -> Result<Image, Failure> {
@@ -75,8 +113,7 @@ pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings,
 pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata, typed: &ExifMetadata) -> Result<(), Failure> {
     let render = || {
         let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
-        let mut engine = engine.lock().map_err(|_| Failure::Render)?;
-        render_full(&mut engine, decoded, &target.settings)
+        render_full_beside(engine, decoded, &target.settings)
     };
     let date = (!metadata.date.is_empty()).then_some(metadata.date.as_str());
     oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata, date)?;

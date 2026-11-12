@@ -153,8 +153,13 @@ impl EditorStore {
         self.unsaved.clear();
     }
 
-    /// Writes the open frame's sidecar when the disk differs; the failure's message otherwise.
+    /// Writes what the store shows to the disk: a step whose hand has lifted is recorded first, so the
+    /// frames together and the roll hold it too; a hand still down is left alone. The failure's message, if any.
     pub fn flush(&mut self) -> Option<String> {
+        if !self.held && self.deferred.is_some() {
+            let now = self.now();
+            self.settle(now);
+        }
         let open = self.open.as_ref()?;
         let failure =
             sidecar::flush(&self.settings, Some(Path::new(&open.path)), open.persisted.as_ref(), open.writable);

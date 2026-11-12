@@ -56,8 +56,8 @@ impl Computer {
         same(&paths::parent(path), &self.volumes)
     }
 
-    /// On a disk that may come and go: under `/Volumes` in any spelling of it, or on Windows a drive
-    /// other than the home's; never with no volumes' folder known, which would hold every path.
+    /// On a disk Computer's rows list that may come and go: under `/Volumes` in any spelling of it, or
+    /// on Windows a drive other than the home's; never a share, which no row lists, nor with no volumes' folder.
     pub fn is_on_volume(&self, path: &str) -> bool {
         if self.volumes.is_empty() {
             return false;
@@ -68,4 +68,28 @@ impl Computer {
         }
         holds(&self.volumes, path) && !same(&self.volumes, path)
     }
+
+    /// The root of the disk `path` lies on when that disk may come and go: `/Volumes/T7`, on Windows a
+    /// drive other than the home's, `D:/`, or a network share, `//nas/film`; `None` on the boot disk.
+    pub fn volume_root(&self, path: &str) -> Option<String> {
+        if self.volumes == DRIVES {
+            return share_root(path).or_else(|| path.get(..2).filter(|_| self.is_on_volume(path)).map(|d| format!("{d}/")));
+        }
+        if !self.is_on_volume(path) {
+            return None;
+        }
+        let rest = paths::below(&self.volumes, path)?;
+        let name = rest.split('/').next().filter(|n| !n.is_empty())?;
+        Some(paths::join(&self.volumes, name))
+    }
+}
+
+/// The share a UNC path lies on, `//server/share`, in either separator; none for a server alone or a
+/// device path (`//?/`, `//./`).
+fn share_root(path: &str) -> Option<String> {
+    let path = path.replace('\\', "/");
+    let mut parts = path.strip_prefix("//")?.split('/');
+    let server = parts.next().filter(|s| !s.is_empty() && *s != "?" && *s != ".")?;
+    let share = parts.next().filter(|s| !s.is_empty())?;
+    Some(format!("//{server}/{share}"))
 }

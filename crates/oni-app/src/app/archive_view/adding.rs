@@ -115,7 +115,7 @@ impl Ctl {
             return false;
         }
         // Under a sheet the drop would change the folder the sheet was asked about.
-        let busy = w.get_sheet_shown() || self.export.borrow().shown || self.state.borrow().prepare.shown;
+        let busy = self.covered() || self.state.borrow().prepare.shown;
         if busy {
             self.told(tr("Not Opened"), tr("Go back to the gallery to open these files."));
             return false;

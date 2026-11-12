@@ -9524,5 +9524,159 @@
     "title": "Kept lines follow their roll; no sidecar for an empty line",
     "status": "done",
     "detail": "oni-settings: over and beyond round-trip, twin a blanked field comes back derived; an empty line gives an untouched frame no sidecar, twin a field writes one. oni-app export::line: a kept line follows its roll and a film picked by hand stays, twin the whole line kept freezes the body; the first line's artist is not frozen, twin against the earlier artist. Each failed on the unfixed code."
+  },
+  {
+    "id": 1870,
+    "type": "fix",
+    "title": "The export surface takes every key: none reaches the editor or the gallery behind it",
+    "status": "done",
+    "detail": "Ctl::key answered Escape on the export surface and let every other key through: an arrow walked to another frame or moved the crop, Return applied the measuring window or opened a tile in the editor, Space left for the gallery and ⌘A picked the roll, all hidden. The router now gates the surface whole, as it gates Prepare: Escape closes its sheet or leaves it, any other key goes to Slint. export_escape no longer reads `shown`. Check: window export_modal, its twin the same keys acting once the surface is gone."
+  },
+  {
+    "id": 1871,
+    "type": "fix",
+    "title": "The menus go dark behind the export surface, as behind Prepare and a sheet",
+    "status": "done",
+    "detail": "publish_menus had a block for Prepare and one for a sheet, but the export surface only narrowed a few items through `modal`: Undo, Redo, Reset Settings, a preset, Paste, Mirror, Prepare the Roll and the rest kept editing frames the export had captured. One block now keeps only Open, Export, Refresh and the screen-gamut view on the surface; every scattered `!modal` term goes, and act()'s ToggleMode arm for the surface with them. Check: window export_modal (the menu's live flags, ⌘Z, ⇧⌘M and ⇧⌘R moving nothing; twin: ⌘Z takes the mirror back once the surface is gone)."
+  },
+  {
+    "id": 1872,
+    "type": "fix",
+    "title": "The phone's presses land nowhere while the export surface covers the editor",
+    "status": "done",
+    "detail": "The phone link applied its steps, slides, faces and undos to the store behind the export surface. Link carries `covered`, set by phone_event from the surface, and a press then changes nothing while the phone is still told it was taken. Check: tests/link.rs a_press_while_the_host_covers_the_editor_lands_nowhere, its twin the same press landing uncovered."
+  },
+  {
+    "id": 1873,
+    "type": "fix",
+    "title": "Prepare the Roll never opens over the export surface or a sheet",
+    "status": "done",
+    "detail": "enter_roll, the one way into a roll (its key, a bare frame's requireRoll, the DNG conversion), never checked the export surface: Rolls > Prepare the Roll stayed live there, and a roll asked for just before ⌘E landed on top of it. enter_roll now refuses while Ctl::covered() (the export surface or a sheet), the predicate the Finder drop reads too; the menu item goes dark with #1871. Check: window export_modal (Prepare then Export in one turn: no roll after 1.5 s; twin: Prepare alone comes within it)."
+  },
+  {
+    "id": 1875,
+    "type": "fix",
+    "title": "Every file written heals its strokes: an export or a contact sheet makes the patches not on disk",
+    "status": "done",
+    "detail": "A render lays only the patches on disk, and only the editor's open frame made them, so an export after a relaunch (patches purged at quit), after a roll-wide change of what they are keyed on, or of strokes never opened wrote the frame with its dust back and said nothing. The editor's heal loop is now one function, heal::ensure, with heal::pending; render_full_beside (the export, write_one included) runs it on the frame's whole decode before rendering, and the contact sheet runs it ahead (export::heal_ahead) for frames lacking a patch, decoding them whole only then. A patch that cannot be made fails the file with Failure::Dust, translated. render_full, which lays only what is on disk, is left to the tests. Checks: export/heal_tests.rs an_export_heals_strokes_whose_patch_was_never_made (never made, then purged as at a quit) and a_contact_sheet_heals_strokes_whose_patch_was_never_made, each with the bare render as its twin; both seen failing with the heal left out."
+  },
+  {
+    "id": 1876,
+    "type": "fix",
+    "title": "A heal run ends with the full resolution it cuts on",
+    "status": "done",
+    "detail": "The run's hand-off lived in Dust.healing beside the frame, and only another photo opened ended it: a close, a release on leaving the editor or a reread kept it going, holding up to 1.6 GB on the GPU, and after a reread it cut patches on the old decode and filed them under the new reading's key. The frame now owns its run (Frame.heal, a Healing whose drop ends the run) beside full: reread, release_full, a close or another frame let both go together, and the same frame opened again keeps both. Dust.healing and the stop in Dust::next_photo are deleted; State::healing reads the open frame's run; a run's end clears the frame's only when it is the same run. Check: frame.rs a_heal_run_ends_with_the_full_resolution_it_reads (reread, release, another frame, a close; twins: a frame held or opened again keeps its run), seen failing with the reread and release lines left out."
+  },
+  {
+    "id": 1877,
+    "type": "refactor",
+    "title": "Reading lives in oni-settings, with its stamp",
+    "status": "done",
+    "detail": "render::Reading (the decode's choices: primaries converted, source encoding, RGB passes, slide) moves unchanged to oni_settings::Reading, re-exported by render, and gains stamp(), FNV-1a over its JSON, so the decode and the dust patch key can read one value. No behaviour change; the key moves to it in #1878."
+  },
+  {
+    "id": 1878,
+    "type": "change",
+    "title": "Dust patches lie on the decoded scan, keyed on its reading alone",
+    "status": "done",
+    "detail": "Pipeline::healed lays the corrections first (Pipeline::patched, now public), then the capture's exposure and the flat-field, and the search reads Pipeline::patched, never a gain. PatchKey.upstream becomes PatchKey.reading, the stamp of oni_settings::Reading (PatchKey::under stamps once; corrections::upstream is deleted), so capture_stops, the flat-field and a Negative/Monochrome switch no longer re-key a patch: a flat-field Amount, Temperature or Tint drag no longer drops every patch while it moves nor heals the whole frame after, and no superseded generation piles up until quit. Both stages are per-pixel gains and the heal is linear in its scan, so the only change in a render: under a flat-field a patch takes the gain of the place it lies on instead of its source's, and under a capture exposure it moves by float rounding alone. Renders with dust corrections under a flat-field or a capture exposure therefore move slightly, inside the patches only. Sidecars are untouched; patch files of earlier builds are never found and go at the next quit. Checks, each seen failing on the former order and key: corrections.rs a_patch_key_reads_the_decode_alone (twin: each decode choice re-keys), oni-pipeline/tests/healed_order.rs a_patch_takes_the_gains_of_the_place_it_lies_on (twin: the former order gives 6, not 3, under a stop), inputs_tests a_patch_follows_the_exposure_and_flat_field_it_sits_under (rewrites the #1786 check; twin: another reading finds none), heal/tests.rs a_patch_scales_with_its_scan (twin: a curve is not a gain), window flat_drag::a_flat_field_drag_keeps_every_patch (20 Amount notches: no heal, no pending row, the same 3 files; twin: Positive cuts 3 more)."
+  },
+  {
+    "id": 1879,
+    "type": "docs",
+    "title": "CLAUDE.md states where a dust patch lies and what keys it",
+    "status": "done",
+    "detail": "The dust stroke decision no longer says a patch's file names the exposure and flat-field; a new line says a patch lies on the decoded scan before the capture's exposure and the flat-field, keyed on the reading alone (#1878). docs/parity/ is history (#1865) and is left as it is."
+  },
+  {
+    "id": 1885,
+    "type": "fix",
+    "title": "Windows update: the new ONI.exe is laid before the app quits",
+    "status": "done",
+    "detail": "update_install::windows only wrote a PowerShell script and spawned it, then the app quit: write access, unpacking and the swap were first tried by a helper with no way to report. A Program Files install (oni.iss allows it) without rights relaunched the old build in a loop, with no word. `lay` now unpacks the archive's ONI.exe in process (the zip crate already in the workspace), writes it as ONI.exe.next, renames the running ONI.exe to ONI.exe.previous (Windows renames a running image) and the new one into place; any failure leaves ONI.exe as it was and returns Err, which reaches the existing 'install by hand' message. A helper that cannot be spawned puts the old one back. Checks on every system: a folder named 'Apps [portable]' takes the new bytes and keeps the old as .previous; twins: an archive without ONI.exe and a folder closed to writing leave it untouched; a lay that does nothing fails both."
+  },
+  {
+    "id": 1886,
+    "type": "fix",
+    "title": "Windows update helper: no wildcard path, the process it started judged, itself deleted",
+    "status": "done",
+    "detail": "SWAP_WINDOWS kept only what the helper alone can do: wait for the app, start the new ONI.exe, keep it if the process it started still runs after $Wait ms (8000), else put .previous back and start it. Every path goes through .NET calls ([IO.File], [Diagnostics.Process]), which read no `[` or `]` as a wildcard; no path-spelling compare decides liveness; the script deletes itself. A helper blocked by policy now leaves the new build in place for the next launch. A Windows-only check runs it in a bracketed folder with cmd (stays) and hostname (ends) as stand-ins; it waits for the Windows CI."
+  },
+  {
+    "id": 1887,
+    "type": "fix",
+    "title": "An offline network share reads as a disk away, not a file gone",
+    "status": "done",
+    "detail": "On Windows a path on //server/share was on no volume, so absence::refusal took the system's NotFound (ERROR_BAD_NETPATH 53, ERROR_BAD_NET_NAME 67) as Gone: 'Not found, moved, renamed or deleted', Locate and Remove from Library, and Locate forgot the share's rows. Computer::volume_root now names a share's root, //server/share (never a server alone nor a device path), so its root not being a folder reads as Unplugged. Checks: a share's root on a Windows computer, twins for the home's drive, a server alone, a device path and the Mac; refusal of NotFound on a share is Unplugged, twin Gone on the home's drive (fails before the fix); a Windows-only check names the system's mapping of 53 and 67, twin 5."
+  },
+  {
+    "id": 1888,
+    "type": "simplification",
+    "title": "One definition of a disk that comes and goes",
+    "status": "done",
+    "detail": "absence::volume_root became Computer::volume_root and every caller (refusal, bookmarks, reach's caption, the locate window check) uses it; index pruning drops its own `starts_with(\"//\")` and asks volume_root, so a share's rows wait for its read as everywhere else. is_on_volume keeps meaning a disk Computer's rows list, which no share is. Check: a share whose folder lists keeps its row while the home's is pruned; dropping the share case fails it."
+  },
+  {
+    "id": 1897,
+    "type": "change",
+    "title": "The second-launch refusal goes through the log's one writer",
+    "status": "done",
+    "detail": "instance::refused wrote the support folder's path, account name included, straight to stderr; it now says the notice through timing::shown, which scrubs every line, and leaves the path out. Check: only_the_log_writes_stderr (no source but timing.rs writes io::stderr, with a planted twin) and the second-instance launch check asserting the line names no folder."
+  },
+  {
+    "id": 1896,
+    "type": "change",
+    "title": "A flush records a lifted hand's step before it writes",
+    "status": "done",
+    "detail": "EditorStore::flush recorded nothing of a step whose hand had lifted and still waited SETTLE_DELAY, so an export (and a quit, a file move, a folder rename) read the frames together and the roll without it. flush now settles that step first, a hand still down being left alone, and export_now flushes before it reads its targets. Check: a_flush_records_a_lifted_hands_step_on_the_frames_together_a_hand_still_down_is_left_alone, with its twins."
+  },
+  {
+    "id": 1898,
+    "type": "change",
+    "title": "A Scanner slider's hand is owned by the hands",
+    "status": "done",
+    "detail": "The Scanner sliders held the store with a bare hold and release, outside the hands, so a slider destroyed under the press (Escape, the face turned, the gallery, the panel hidden) left the store held: later edits merged into one undo step and the bar's Undo lagged. The hold is now a hand beside the scroll and the plot (hands::Down, which also shrinks app.rs), counted for the thumbnails and lifted with the button wherever the slider went; a normal release now also publishes. Check: a_scanner_slider_taken_away_under_the_hand_lets_go_at_the_button."
+  },
+  {
+    "id": 1895,
+    "type": "change",
+    "title": "A hidden column's reveal ends with its column",
+    "status": "done",
+    "detail": "The reveal flags lived on the window while their column existed only as long as it floated, so the Opt+Cmd shortcuts, the gallery, export, Prepare the Roll or the trash brought a column back slid over the photo. The flags now clear whenever the column starts or stops floating (library-floats, panel-floats name its one condition), and the column keys' column-toggled callback, which cleared them at one caller, is gone. Check: a_column_removed_while_revealed_comes_back_hidden, with live-reveal twins."
+  },
+  {
+    "id": 1900,
+    "type": "change",
+    "title": "Measure checks stop reading Swift's dumps",
+    "status": "done",
+    "detail": "The roll #8 measure checks that compared with Swift's decode dumps, its written filters and roll reference, and its measure.json are removed; the second-press and pipette checks stay on LibRaw's decode of two frames."
+  },
+  {
+    "id": 1901,
+    "type": "change",
+    "title": "Pipeline and decode checks stop comparing with Swift renders",
+    "status": "done",
+    "detail": "The roll #8 render comparison and the decode comparison against Swift dumps are removed; the adversarial branches now assert each reaches the render on LibRaw's decode, with the frame at rest as twin."
+  },
+  {
+    "id": 1902,
+    "type": "change",
+    "title": "Window and app checks stop reading Swift's sources and probe dumps",
+    "status": "done",
+    "detail": "The extended probe checks, the Swift help-string check and swift_sources() are removed; the Roll tab's block order is pinned on ONI's own titles."
+  },
+  {
+    "id": 1903,
+    "type": "change",
+    "title": "Swift render scripts removed",
+    "status": "done",
+    "detail": "adversarial-dump, extended-dump, frontier-swift-dump, swift-probe, decoder-gap, sensor-colours and the decoder_gap example, which rendered Swift pairs, are removed; look_lab_strip no longer compares with Swift's render."
+  },
+  {
+    "id": 1904,
+    "type": "change",
+    "title": "Swift reference folders leave the fixtures and the README",
+    "status": "done",
+    "detail": "ONI_REFERENCE and ONI_ADVERSARIAL leave oni-fixtures and the README; docs/parity/README.md is marked as history."
   }
 ]
