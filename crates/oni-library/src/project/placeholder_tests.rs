@@ -1,11 +1,10 @@
 //! 1.5.6's placeholder beside a print of the same photo, as 1.5.6 leaves it when a photo that joined while
 //! its tile loaded is filed elsewhere once read: the photo shows once, at the print, the placeholder kept as given.
 
-use super::shipped_tests::{learned_off, row, shipped, shown, written_back};
+use super::shipped_tests::{learned_off, old, old_path, row, shipped};
 use super::*;
 use crate::index::LibraryIndex;
 use crate::library::WAITING_MARK;
-use crate::merge;
 use crate::project_standing::{self, Standing};
 use crate::scratch::Scratch;
 use std::collections::HashSet;
@@ -35,7 +34,7 @@ fn made(name: &str, at: f64, texts: &[(&str, &str)]) -> shipped::Project {
 
 fn wrote(support: &Path, projects: Vec<shipped::Project>) -> shipped::ProjectsFile {
     let file = shipped::ProjectsFile { version: 1, projects };
-    std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
+    std::fs::write(old_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
     file
 }
 
@@ -94,7 +93,7 @@ fn printless(projects: &[Project]) -> Vec<Project> {
 fn a_later_move_to_portfolio_stands_over_the_placeholder() {
     let scratch = Scratch::new("projects-pair-later");
     pair(scratch.path());
-    let read = load(scratch.path()).projects;
+    let read = old(scratch.path());
     assert_eq!(members(&read), [vec![of(B, "1-b"), of(A, "1-a")], vec![of(A, &mark()), of(C, "1-c")]], "both kept, the placeholder as given");
     let waits = format!("{WAITING_MARK}{A}");
     for (index, shown) in [(index(&[]), vec!["Trip", "Portfolio"]), (read_roll(), vec!["Portfolio"])] {
@@ -114,7 +113,7 @@ fn a_print_found_at_the_placeholders_file_stands_for_it() {
     let scratch = Scratch::new("projects-pair-found");
     let w = mark();
     wrote(scratch.path(), vec![made("Portfolio", 8e8, &[("1-a", "/Roll 9 old/a.NEF")]), made("Trip", 9e8, &[(&w, A)])]);
-    let read = load(scratch.path()).projects;
+    let read = old(scratch.path());
     let roll = read_roll();
     assert_eq!(showing(&read, &roll, A), [("Portfolio".to_string(), "1-a".to_string())]);
     // Twin: a member claiming that file, as one with no print does, leaves Portfolio's print a missing tile.
@@ -128,11 +127,11 @@ fn two_placeholders_at_one_file_show_it_once() {
     let scratch = Scratch::new("projects-pair-twice");
     let (w, moved) = (mark(), "/Roll 9b/a.NEF");
     wrote(scratch.path(), vec![made("Client", 7e8, &[(&w, moved)]), made("Trip", 9e8, &[(&w, A)])]);
-    assert_eq!(members(&load(scratch.path()).projects), [vec![], vec![of(A, &w)]], "one text, one member, the newest's");
+    assert_eq!(members(&old(scratch.path())), [vec![], vec![of(A, &w)]], "one text, one member, the newest's");
     let other = format!("{WAITING_MARK}{A}");
     let both = |client: f64| {
         wrote(scratch.path(), vec![made("Client", client, &[(&other, A)]), made("Trip", 9e8, &[(&w, A)])]);
-        showing(&load(scratch.path()).projects, &read_roll(), A)
+        showing(&old(scratch.path()), &read_roll(), A)
     };
     assert_eq!(both(7e8), [("Trip".to_string(), "1-a".to_string())]);
     // Twin: Client made last shows it there, so the order the check reads is the projects' dates.
@@ -150,7 +149,7 @@ fn a_rescan_shows_in_trip_and_the_stale_print_as_a_missing_tile() {
     let twelve = "/Roll 9/12.tif";
     let w = format!("{WAITING_MARK}{twelve}");
     wrote(scratch.path(), vec![made("Portfolio", 8e8, &[("1-12", twelve)]), made("Trip", 9e8, &[(&w, twelve)])]);
-    let read = load(scratch.path()).projects;
+    let read = old(scratch.path());
     let rescanned = index(&[(twelve, "2-12")]);
     assert_eq!(showing(&read, &rescanned, twelve), [("Trip".to_string(), "2-12".to_string())]);
     let st = standing(&read, &rescanned);
@@ -176,7 +175,7 @@ fn a_drop_beside_the_pair_waits_for_its_file_then_lands_in_portfolio() {
     let scratch = Scratch::new("projects-pair-drop");
     pair(scratch.path());
     let unread = index(&[]);
-    let mut read = load(scratch.path()).projects;
+    let mut read = old(scratch.path());
     assert_eq!(showing(&read, &unread, A).len(), 2, "a tile for a in each");
     let st = standing(&read, &unread);
     let reach = Reach::new(&st.rows, &st.found);
@@ -196,19 +195,20 @@ fn an_undo_in_the_placeholders_project_holds_it_as_read() {
     let scratch = Scratch::new("projects-pair-undo");
     let support = scratch.path();
     pair(support);
-    let read = load(support).projects;
+    let read = old(support);
     let mut ours = read.clone();
     let st = standing(&ours, &index(&[]));
     let reach = Reach::new(&st.rows, &st.found);
     let before = rosters(&ours);
     assert_eq!(remove_from(&mut ours, &reach, &picked(&[C]), read[1].id), [C]);
     let after = rosters(&ours);
-    let base = merge::save_projects(support, &read, &ours).unwrap();
-    let mut undone = base.clone();
+    save(support, &ProjectsFile { version: FORMAT, projects: ours }).unwrap();
+    let mut undone = load(support).projects;
     regroup(&mut undone, &after, &before);
     assert_eq!(members(&undone), members(&read), "c back in Trip, the placeholder as given");
-    let saved = merge::save_projects(support, &base, &undone).unwrap();
-    assert_eq!(load(support).projects, saved, "written and read back alike");
+    save(support, &ProjectsFile { version: FORMAT, projects: undone.clone() }).unwrap();
+    let saved = load(support).projects;
+    assert_eq!(saved, undone, "written and read back alike");
     assert_eq!(showing(&saved, &read_roll(), A), [("Portfolio".to_string(), "1-a".to_string())]);
     // Twin: as a member with no print, the undo lends it Portfolio's print and the newer Trip takes a.
     let mut old = printless(&read);
@@ -219,61 +219,23 @@ fn an_undo_in_the_placeholders_project_holds_it_as_read() {
     assert!(!exclusive(&old)[0].paths().contains(&A));
 }
 
-/// Review 7: a placeholder 1.5.6 added to Trip since this build read the file survives a save of a change
-/// here to Trip, merged three ways, member by member: c removed, or Roll 9 renamed in ONI.
+/// A save writes each placeholder as 1.5.6 gave it and each print with its path: read back, the
+/// pair is as it was.
 #[test]
-fn a_merge_keeps_a_placeholder_1_5_6_added_since() {
-    let scratch = Scratch::new("projects-pair-merge");
-    let support = scratch.path();
-    let given = pair(support);
-    let base = load(support).projects;
-    let mut ours = base.clone();
-    ours[1].members.retain(|m| m.path.as_deref() != Some(C));
-    let renamed = moved(&base, &[("/Roll 9".into(), "/Roll 9b".into())]);
-    assert_eq!(renamed[1].members[0], of("/Roll 9b/a.NEF", &mark()), "the folder carries the recorded path, the text kept");
-    let wd = format!("{WAITING_MARK}{D}");
-    let mut theirs = given.projects.clone();
-    theirs[1].members.push(wd.clone());
-    theirs[1].paths.as_mut().unwrap().insert(wd.clone(), D.into());
-    theirs.push(made("Client", 7e8, &[("1-d", D)]));
-    let theirs = wrote(support, theirs);
-    let read_theirs = read(&file_path(support)).unwrap().projects;
-    let merged = merge::save_projects(support, &base, &ours).unwrap();
-    assert_eq!(merged[1].members, [of(A, &mark()), of(D, &wd)], "c gone, 1.5.6's placeholder for d kept");
-    assert_eq!(load(support).projects[1].members, merged[1].members);
-    assert_eq!(showing(&merged, &read_roll(), D), [("Client".to_string(), "1-d".to_string())], "d shows once, at Client's print");
-    wrote(support, theirs.projects);
-    assert!(merge::save_projects(support, &base, &renamed).unwrap()[1].members.contains(&of(D, &wd)), "kept through the rename too");
-    // Twin: Trip's members picked whole from this side, which changed them, as a field is, lose d's placeholder.
-    let picked = if ours[1].members != base[1].members { &ours[1].members } else { &read_theirs[1].members };
-    assert!(!picked.contains(&of(D, &wd)));
-}
-
-/// Any save writes each placeholder as 1.5.6 gave it and each print with its path; rewritten by 1.5.6,
-/// the file reads back as it was.
-#[test]
-fn a_save_and_1_5_6_s_rewrite_keep_every_placeholder_text_and_print_path() {
+fn a_save_keeps_every_placeholder_text_and_print_path() {
     let scratch = Scratch::new("projects-pair-written");
     let support = scratch.path();
-    let given = pair(support);
-    let read = load(support).projects;
+    pair(support);
+    let read = old(support);
     let mut renamed = read.clone();
     renamed[0].name = "Folio".into();
-    merge::save_projects(support, &read, &renamed).unwrap();
-    let text: shipped::ProjectsFile = serde_json::from_slice(&std::fs::read(file_path(support)).unwrap()).expect("1.5.6 parses this format");
-    assert_eq!(text.version, FORMAT);
-    for (written, given) in text.projects.iter().zip(&given.projects) {
-        assert_eq!((&written.members, &written.paths), (&given.members, &given.paths), "{}'s texts and paths as given", given.name);
-    }
-    assert_eq!(load(support).projects, renamed, "this build reads its exact members back alike");
-    let rows = [row(A, "1-a"), row(B, "1-b"), row(C, "1-c")];
-    assert_eq!(shown(&text.projects[1], &rows).into_iter().map(|e| e.path.as_str()).collect::<Vec<_>>(), [A, C], "1.5.6 shows a in Trip as before");
-    written_back(support, &rows);
-    assert_eq!(members(&load(support).projects), members(&read), "the pair as it was, a's print at its path");
-    // Twin: the placeholder written as its bare path takes a's path from Portfolio's print in 1.5.6's write.
+    save(support, &ProjectsFile { version: FORMAT, projects: renamed.clone() }).unwrap();
+    assert_eq!(load(support).projects, renamed, "read back alike");
+    assert_eq!(load(support).projects[1].members[0], of(A, &mark()), "the placeholder as 1.5.6 gave it");
+    // Twin: the placeholder written as a bare path loses its text, and the newer Trip takes a from Portfolio.
     save(support, &ProjectsFile { version: FORMAT, projects: printless(&read) }).unwrap();
-    written_back(support, &rows);
-    assert_eq!(load(support).projects[0].members[1], Member::new(None, Some("1-a")));
+    assert_eq!(load(support).projects[1].members[0], Member::new(Some(A), None));
+    assert!(!load(support).projects[0].paths().contains(&A));
 }
 
 /// A photo taken out of its projects leaves with every member standing for it, the placeholder it hides
@@ -282,7 +244,7 @@ fn a_save_and_1_5_6_s_rewrite_keep_every_placeholder_text_and_print_path() {
 fn adding_the_photo_to_client_takes_the_hidden_placeholder_with_it() {
     let scratch = Scratch::new("projects-pair-client");
     pair(scratch.path());
-    let mut read = load(scratch.path()).projects;
+    let mut read = old(scratch.path());
     let client = Project::new("Client", Date::since_reference_date(7e8), vec![]);
     let id = client.id;
     read.push(client);
@@ -315,7 +277,7 @@ fn a_gesture_in_one_project_takes_its_own_hidden_placeholder_with_the_photo() {
     let scratch = Scratch::new("projects-pair-own");
     let w = mark();
     wrote(scratch.path(), vec![made("Client", 7e8, &[("1-c", C)]), made("Portfolio", 8e8, &[(&w, A), ("1-b", B), ("1-a", A)])]);
-    let read = load(scratch.path()).projects;
+    let read = old(scratch.path());
     let roll = read_roll();
     let st = standing(&read, &roll);
     let reach = Reach::new(&st.rows, &st.found);
@@ -341,7 +303,7 @@ fn a_project_holding_only_a_hidden_placeholder_claims_no_photo_and_says_so() {
     let scratch = Scratch::new("projects-pair-alone");
     let w = mark();
     wrote(scratch.path(), vec![made("Portfolio", 8e8, &[("1-a", A)]), made("Trip", 9e8, &[(&w, A)])]);
-    let read = load(scratch.path()).projects;
+    let read = old(scratch.path());
     let roll = read_roll();
     let st = standing(&read, &roll);
     let reach = Reach::new(&st.rows, &st.found);

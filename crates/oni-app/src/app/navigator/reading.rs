@@ -33,7 +33,7 @@ impl Ctl {
     pub(super) fn list_apart(&self, wanted: Vec<String>) {
         let (computer, favourites) = {
             let s = self.state.borrow();
-            (s.nav.computer.clone(), s.nav.favourites.paths.clone())
+            (s.nav.computer.clone(), s.nav.favourites.paths())
         };
         let read = move |folder: &str| -> Listing {
             let children = walk::children(folder);
@@ -54,7 +54,7 @@ impl Ctl {
             let spelt = favourite.then(|| paths::canonical(Path::new(folder))).filter(|c| c != folder);
             (children, state, roll, stock, unprepared, spelt)
         };
-        favourites::read_apart(wanted, LISTERS, favourites::STUCK, read, |landed| with_shell(move |c| c.listed_apart(landed)));
+        places::read_apart(wanted, LISTERS, places::STUCK, read, |landed| with_shell(move |c| c.listed_apart(landed)));
     }
 
     fn listed_apart(self: &Rc<Self>, landed: Vec<(String, Listing)>) {
@@ -97,12 +97,12 @@ impl Ctl {
         }
     }
 
-    /// Favourites kept in another spelling, the Swift app's or a link's, take the archive's.
+    /// Favourites kept in another spelling, an earlier build's or a link's, take the archive's.
     fn favourites_respelt(&self, respelt: &[(String, String)]) {
         let failure = {
             let mut s = self.state.borrow_mut();
             for (old, new) in respelt {
-                if s.nav.favourites.paths.contains(old) {
+                if s.nav.favourites.places.iter().any(|p| p.path == *old) {
                     s.nav.model.follow(old, new);
                     s.nav.favourites.follow(old, new);
                 }
@@ -142,7 +142,7 @@ impl Ctl {
             }
             s.nav.current = current.clone();
             if let Some(folder) = current {
-                let favourites = s.nav.favourites.paths.clone();
+                let favourites = s.nav.favourites.paths();
                 s.nav.model.show(&folder, &favourites);
             }
         }

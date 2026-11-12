@@ -5,23 +5,21 @@ use super::*;
 impl Ctl {
     pub(in crate::app) fn load_projects(&self) {
         let mut s = self.state.borrow_mut();
-        s.org.projects = project::load(&s.support).projects;
-        s.org.projects_read = s.org.projects.clone();
+        let file = project::load(&s.support);
+        (s.org.projects, s.org.projects_version) = (file.projects, file.version);
     }
 
-    /// `saveProjects`: the one file, merged with what another app wrote since it was read.
+    /// `saveProjects`: the one file, written whole, this app being its one writer. A newer build's
+    /// file is never written: the change is taken back and the refusal said.
     pub(in crate::app) fn save_projects(&self) {
         let failure = {
             let mut s = self.state.borrow_mut();
-            let ours = s.org.projects.clone();
-            match oni_library::merge::save_projects(&s.support, &s.org.projects_read, &ours) {
-                Ok(written) => {
-                    s.org.projects_read = written.clone();
-                    s.org.projects = written;
-                    None
-                }
-                Err(e) => Some(e),
+            let file = project::ProjectsFile { version: s.org.projects_version, projects: s.org.projects.clone() };
+            let saved = project::save(&s.support, &file);
+            if saved.is_err() && file.is_newer() {
+                s.org.projects = project::load(&s.support).projects;
             }
+            saved.err()
         };
         if let Some(e) = failure {
             self.told(tr("Something Went Wrong"), &tr!("The projects could not be saved: {error}", error = e));

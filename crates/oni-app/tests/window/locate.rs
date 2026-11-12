@@ -4,8 +4,7 @@
 use oni_app::app::{Options, Shell};
 use oni_app::{Confirm, Library, Told};
 use oni_core::{Archive, EditorStore};
-use oni_library::bookmarks::{self, Bookmarks, Place, Volume};
-use oni_library::favourites::Favourites;
+use oni_library::places::{self, Place, Places, Volume};
 use oni_library::index::LibraryIndex;
 use oni_library::navigator::Computer;
 use oni_library::{paths, project, relink};
@@ -42,7 +41,7 @@ fn disk(label: &str, files: &[&str]) -> Disk {
 }
 
 impl Disk {
-    fn launch(&self, gpu: &oni_app::render::Device, picked: Rc<RefCell<Option<PathBuf>>>, identify: bookmarks::Identify) -> Shell {
+    fn launch(&self, gpu: &oni_app::render::Device, picked: Rc<RefCell<Option<PathBuf>>>, identify: places::Identify) -> Shell {
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
         let options = Options {
             support: self.support.clone(),
@@ -66,7 +65,7 @@ impl Disk {
     }
 
     fn favourites(&self) -> Vec<String> {
-        Favourites::load(&self.support).map(|f| f.paths).unwrap_or_default()
+        Places::load(&self.support).map(|f| f.paths()).unwrap_or_default()
     }
 }
 
@@ -147,7 +146,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     for (path, print) in [(&old_a, &print_a), (&old_b, &print_b)] {
         index.upsert(&oni_library::Entry::new(path, oni_settings::Date::now(), print)).unwrap();
     }
-    Favourites { version: 1, paths: vec![old.clone()] }.save(&d.support).unwrap();
+    Places { version: 1, places: vec![Place::at(&old)] }.save(&d.support).unwrap();
     let held = project::Project::new("Lisbon", oni_settings::Date::now(), vec![project::Member::new(Some(&old_a), Some(&print_a))]);
     project::save(&d.support, &project::ProjectsFile { version: project::FORMAT, projects: vec![held] }).unwrap();
     let mut preferences = oni_app::preferences::Preferences::load(&d.support);
@@ -155,7 +154,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
 
     let picked = Rc::new(RefCell::new(None));
     let rig = rig();
-    let shell = d.launch(&gpu, picked.clone(), bookmarks::system());
+    let shell = d.launch(&gpu, picked.clone(), places::system());
     let ctl = shell.ctl.clone();
     opened(&rig, &shell, &old);
     rig.until("its banner", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.0 == "Folder Not Found"));
@@ -211,7 +210,7 @@ pub(crate) fn locate_onto_copies_carries_no_member_onto_another_file() {
 
     let picked = Rc::new(RefCell::new(None));
     let rig = rig();
-    let shell = d.launch(&gpu, picked.clone(), bookmarks::system());
+    let shell = d.launch(&gpu, picked.clone(), places::system());
     let ctl = shell.ctl.clone();
     opened(&rig, &shell, &old);
     rig.until("its banner", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.0 == "Folder Not Found"));
@@ -238,9 +237,9 @@ pub(crate) fn forget_touches_no_file() {
     oni_settings::sidecar::set_label(oni_settings::Medal::Gold, &d.root.join("Home/Scans/Roll 12/A.tif"), false).unwrap();
     std::fs::create_dir_all(d.root.join("Home/Copy")).unwrap();
     std::fs::copy(d.root.join("Home/Scans/Roll 12/A.tif"), d.root.join("Home/Copy/A copy.tif")).unwrap();
-    Favourites { version: 1, paths: vec![roll.clone(), away.clone()] }.save(&d.support).unwrap();
+    Places { version: 1, places: vec![Place::at(&roll), Place::at(&away)] }.save(&d.support).unwrap();
     let rig = rig();
-    let shell = d.launch(&gpu, Rc::new(RefCell::new(None)), bookmarks::system());
+    let shell = d.launch(&gpu, Rc::new(RefCell::new(None)), places::system());
     let ctl = shell.ctl.clone();
     opened(&rig, &shell, &copy);
     opened(&rig, &shell, &away);
@@ -293,7 +292,7 @@ pub(crate) fn forget_touches_no_file() {
 }
 
 /// Each volume of `computer` named by the UUID `uuids` gives its folder's name, as `getattrlist` would.
-fn fake(computer: &Computer, uuids: &'static [(&'static str, &'static str)]) -> bookmarks::Identify {
+fn fake(computer: &Computer, uuids: &'static [(&'static str, &'static str)]) -> places::Identify {
     let computer = computer.clone();
     Arc::new(move |path: &str| {
         let root = computer.volume_root(path)?;
@@ -306,9 +305,8 @@ fn fake(computer: &Computer, uuids: &'static [(&'static str, &'static str)]) -> 
 fn remounted(label: &str) -> (Disk, String) {
     let d = disk(label, &["Volumes/T7/Scans/A.tif", "Volumes/T7/Scans/B.tif"]);
     let scans = d.path("Volumes/T7/Scans");
-    Favourites { version: 1, paths: vec![scans.clone()] }.save(&d.support).unwrap();
-    let place = Place { volume: Some(Volume { uuid: Some("T7-UUID".into()), mount: d.path("Volumes/T7") }), file_id: None };
-    Bookmarks { version: 1, places: [(scans.clone(), place)].into() }.save(&d.support).unwrap();
+    let place = Place { path: scans.clone(), volume: Some(Volume { uuid: Some("T7-UUID".into()), mount: d.path("Volumes/T7") }), file_id: None };
+    Places { version: 1, places: vec![place] }.save(&d.support).unwrap();
     (d, scans)
 }
 

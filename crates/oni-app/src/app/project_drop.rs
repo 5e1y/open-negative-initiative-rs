@@ -1,5 +1,5 @@
 //! A drag in the projects' tree (`TreeEngine.swift:234-244,458-552`, `EditorScene+Rolls.swift:202-271`):
-//! the pick or the row pressed, onto a project to join it or between two rows, to `projects.json` alone.
+//! the pick or the row pressed, onto a project to join it or between two rows, to the projects file alone.
 
 use super::organising::DRAG_DISTANCE;
 use super::tree_column::Which;

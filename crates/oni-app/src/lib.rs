@@ -31,6 +31,7 @@ pub mod loupe;
 #[cfg(target_os = "macos")]
 pub mod mapped;
 pub mod measuring;
+pub mod migration;
 pub mod motion;
 pub mod on_screen;
 pub mod organise;

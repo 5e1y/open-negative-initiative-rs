@@ -121,8 +121,8 @@ pub struct Organising {
     /// The folder each trash row shows, by row, as last published: a click names the row it landed on.
     pub trash_lines: Vec<String>,
     pub projects: Vec<Project>,
-    /// `projects.json` as last read or written, which tells this app's changes from another's.
-    pub projects_read: Vec<Project>,
+    /// The version the projects' file was read at: a newer build's is shown and never written.
+    pub projects_version: i64,
     /// The projects' members the index holds beyond the opened folder's rows.
     pub standing: Vec<Entry>,
     /// Where the last read found each member its own path no longer shows.

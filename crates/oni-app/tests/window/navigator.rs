@@ -208,7 +208,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     std::fs::create_dir_all(volumes.join("T8")).unwrap();
     rig.until("T8 mounted", Duration::from_secs(10), || titles(w).contains(&"T8".to_string()));
 
-    // Favourites: a star keeps a folder in `favourites.json` and in its section.
+    // Favourites: a star keeps a folder in the places file and in its section.
     rest(&rig);
     n.invoke_star_clicked(at(w, "Scans") as i32);
     rig.pump();
@@ -220,7 +220,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rig.until("T7 listed", Duration::from_secs(10), || titles(w).contains(&"Film".to_string()));
     n.invoke_star_clicked(at(w, "Film") as i32);
     rig.pump();
-    let favourites = oni_library::favourites::Favourites::load(&support).unwrap().paths;
+    let favourites = oni_library::places::Places::load(&support).unwrap().paths();
     assert_eq!(favourites, [p(&home.join("Old")), p(&home.join("Scans")), p(&volumes.join("T7/Film"))]);
     assert!(row(w, "Scans").favourite && !row(w, "Other").favourite);
     assert_eq!(starred(w), ["Old", "Scans", "Film"]);
@@ -333,7 +333,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     n.invoke_rename_committed(at(w, "Scans") as i32, "Scans 2026".into());
     rig.until("Scans 2026 listed", Duration::from_secs(10), || titles(w).contains(&"Scans 2026".to_string()));
     let scans = p(&home.join("Scans 2026"));
-    assert!(oni_library::favourites::Favourites::load(&support).unwrap().paths.contains(&scans));
+    assert!(oni_library::places::Places::load(&support).unwrap().contains(&scans));
     assert_eq!(opened().as_deref(), Some(paths::join(&scans, "Roll 2").as_str()));
     assert_eq!(Preferences::load(&support).string("openedFolder"), Some(paths::join(&scans, "Roll 2").as_str()));
     rig.until("Roll 2 read again", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().photos() == 1);

@@ -351,31 +351,33 @@ pub(crate) fn every_drag_is_one_step_and_the_notice_undoes_its_own() {
     assert_eq!(hand.members(), [vec![b], vec![a, c, x, y]]);
 }
 
-/// A Swift-era file names its photos by print: the app finds each at launch and writes nothing; the
-/// first gesture writes this format, the former file kept beside it as it was.
-pub(crate) fn a_swift_file_is_read_without_a_write_and_kept_at_the_first_change() {
+/// A file an earlier build wrote names its photos by print: imported at launch, each is found on its
+/// photo; a gesture writes the new file alone, the old one left as it was.
+pub(crate) fn a_former_file_is_imported_and_left_as_it_was() {
     let tones = [("Roll/A.tif", 0.3), ("Roll/B.tif", 0.6)];
-    let hand = Hand::made("swift", &tones, |root| {
+    let hand = Hand::made("former", &tones, |root| {
         let prints: Vec<String> = tones.iter().map(|(f, _)| oni_library::relink::fingerprint(&root.join("Scans").join(f)).unwrap()).collect();
-        let file = serde_json::json!({"version": 1, "projects": [{"id": oni_settings::Id::new().to_string(), "name": "Swift", "description": "", "createdAt": 8e8, "members": prints}]});
+        let file = serde_json::json!({"version": 1, "projects": [{"id": oni_settings::Id::new().to_string(), "name": "Former", "description": "", "createdAt": 8e8, "members": prints}]});
         std::fs::create_dir_all(root.join("Support")).unwrap();
-        std::fs::write(project::file_path(&root.join("Support")), serde_json::to_vec(&file).unwrap()).unwrap();
+        std::fs::write(root.join("Support/projects.json"), serde_json::to_vec(&file).unwrap()).unwrap();
+        oni_app::migration::brought(&root.join("Support"), None);
     });
     let support = hand.root.join("Support");
-    let original = std::fs::read(project::file_path(&support)).unwrap();
+    let original = std::fs::read(support.join("projects.json")).unwrap();
+    let imported = std::fs::read(project::file_path(&support)).unwrap();
     let [a, b] = tones.map(|(f, _)| hand.at(f));
     hand.open("Roll");
     hand.lib().invoke_surface_picked(1);
     hand.rig.pump();
     assert_eq!(hand.shown(), [a.clone(), b.clone()], "each print found on its photo");
-    assert_eq!(std::fs::read(project::file_path(&support)).unwrap(), original, "a read writes nothing");
-    assert!(!project::former_path(&support, 1).exists());
+    assert_eq!(std::fs::read(project::file_path(&support)).unwrap(), imported, "a read writes nothing");
 
     hand.click(&b, false);
-    hand.menu(&b, "Remove from Project", Some("Swift"));
+    hand.menu(&b, "Remove from Project", Some("Former"));
     assert_eq!(hand.shown(), [a]);
-    assert_eq!(std::fs::read(project::former_path(&support, 1)).unwrap(), original, "the Swift file kept beside, as it was");
+    assert_eq!(std::fs::read(support.join("projects.json")).unwrap(), original, "the old file left as it was");
     let text = std::fs::read_to_string(project::file_path(&support)).unwrap();
-    // Twin: the file written is this format's, no longer the one kept.
-    assert!(text.contains(&format!("\"version\" : {}", project::FORMAT)) && text.contains("\"exactMembers\""), "{text}");
+    assert!(text.contains(&format!("\"version\": {}", project::FORMAT)), "{text}");
+    // Twin: the new file holds the change, which the old one does not.
+    assert_eq!(project::load(&support).projects[0].members.len(), 1);
 }

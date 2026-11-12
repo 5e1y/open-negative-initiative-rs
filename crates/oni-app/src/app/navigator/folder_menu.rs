@@ -129,7 +129,7 @@ impl Ctl {
         }
     }
 
-    /// `toggleFavourite`: kept in `favourites.json`, a bookmark that reads nothing more; one taken
+    /// `toggleFavourite`: kept in the places file, a bookmark that reads nothing more; one taken
     /// away says so, with Undo, as its row may vanish.
     pub(in crate::app) fn toggle_favourite(&self, path: &str) {
         let (failure, removed) = {
@@ -291,7 +291,7 @@ impl Ctl {
     pub(in crate::app) fn navigator_reveal(&self, folder: &str) {
         {
             let mut s = self.state.borrow_mut();
-            let favourites = s.nav.favourites.paths.clone();
+            let favourites = s.nav.favourites.paths();
             s.nav.model.reveal(folder, &favourites);
         }
         self.publish_navigator();

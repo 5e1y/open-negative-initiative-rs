@@ -86,7 +86,7 @@ fn a_windows_share_or_mapped_drive_has_one_spelling() {
 #[cfg(target_os = "macos")]
 #[test]
 fn a_path_spelt_nfc_holds_its_nfd_listing() {
-    use crate::favourites::Favourites;
+    use crate::places::{Place, Places};
     let scratch = crate::scratch::Scratch::new("nfd");
     let root = normal(&scratch.path().to_string_lossy()).into_owned();
     let (nfd, nfc) = ("E\u{301}te\u{301}", "\u{c9}t\u{e9}");
@@ -99,11 +99,11 @@ fn a_path_spelt_nfc_holds_its_nfd_listing() {
     assert_eq!(row, typed, "the row is spelt as the person types it");
     let image = canonical(&scratch.path().join(nfd).join("Roll 3").join("a.NEF"));
     assert!(holds(&typed, &image) && holds(&format!("{root}/{nfd}"), &image) && same(&format!("{root}/{nfd}"), &row));
-    let mut stars = Favourites { version: 1, paths: vec![format!("{root}/{nfd}"), typed.clone()] }.respelt();
-    assert_eq!(stars.paths, std::slice::from_ref(&typed), "one folder starred once, in one spelling");
+    let mut stars = Places { version: 1, places: vec![Place::at(&format!("{root}/{nfd}")), Place::at(&typed)] }.respelt();
+    assert_eq!(stars.paths(), std::slice::from_ref(&typed), "one folder starred once, in one spelling");
     assert!(stars.contains(&row));
     stars.follow(&format!("{root}/{nfd}"), &format!("{root}/Hiver"));
-    assert_eq!(stars.paths, [format!("{root}/Hiver")]);
+    assert_eq!(stars.paths(), [format!("{root}/Hiver")]);
     // Twin: compared byte for byte, the decomposed listing is outside its composed spelling.
     let listed = format!("{root}/{nfd}/Roll 3/a.NEF");
     assert!(!listed.starts_with(&format!("{typed}/")) && format!("{root}/{nfd}") != typed);

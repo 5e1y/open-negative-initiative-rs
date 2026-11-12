@@ -283,8 +283,27 @@ pub fn regroup(projects: &mut Vec<Project>, from: &Rosters, to: &Rosters) {
             continue;
         }
         let base: Vec<Member> = base.unwrap_or_default().into_iter().filter(|m| !homeless.contains(m)).collect();
-        let laid = crate::merge::list(&base, &ours.unwrap_or_default(), &printed(&project.members, &known));
+        let laid = laid_over(&base, &ours.unwrap_or_default(), &printed(&project.members, &known));
         project.members = distinct(laid);
     }
     projects.retain(|p| !(from.contains_key(&p.id) && !to.contains_key(&p.id) && p.members.is_empty()));
+}
+
+/// `ours` against `base`, laid over `theirs`: what this side removed goes, what it added comes
+/// last, in its order; either side unchanged gives the other whole, its order included.
+pub(super) fn laid_over<T: PartialEq + Clone>(base: &[T], ours: &[T], theirs: &[T]) -> Vec<T> {
+    if theirs == base {
+        return ours.to_vec();
+    }
+    if ours == base {
+        return theirs.to_vec();
+    }
+    let removed = |p: &T| base.contains(p) && !ours.contains(p);
+    let mut out: Vec<T> = theirs.iter().filter(|p| !removed(p)).cloned().collect();
+    for added in ours.iter().filter(|p| !base.contains(p)) {
+        if !out.contains(added) {
+            out.push(added.clone());
+        }
+    }
+    out
 }

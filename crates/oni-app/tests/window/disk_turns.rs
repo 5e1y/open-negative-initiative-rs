@@ -3,7 +3,7 @@
 
 use crate::freshness::{disk, gpu, names, on_disk, opened, rig, row_titles, told};
 use oni_app::{Act, Library, Navigator, Told};
-use oni_library::favourites::Favourites;
+use oni_library::places::{Place, Places};
 use oni_library::index::LibraryIndex;
 use oni_library::paths;
 use slint::{ComponentHandle, Model};
@@ -160,11 +160,11 @@ pub(crate) fn a_favourite_in_another_spelling_opens_in_the_archives() {
     // Twin: that spelling is not the archive's, so a check comparing spellings can tell them apart.
     assert_ne!(paths::canonical(Path::new(&other)), other);
     let support = d.root.join("Support");
-    Favourites { version: 1, paths: vec![other.clone()] }.save(&support).unwrap();
+    Places { version: 1, places: vec![Place::at(&other)] }.save(&support).unwrap();
     let rig = rig();
     let shell = d.launch(&gpu);
     let ctl = shell.ctl.clone();
-    let kept = || Favourites::load(&support).map(|f| f.paths).unwrap_or_default();
+    let kept = || Places::load(&support).map(|f| f.paths()).unwrap_or_default();
     rig.until("the favourite respelt", Duration::from_secs(30), || kept() == [roll.clone()]);
     let at = row_titles(&shell).iter().position(|t| t == "Roll 8").expect("the favourite's row");
     shell.window.global::<Navigator>().invoke_row_clicked(at as i32);

@@ -1,11 +1,11 @@
 //! The navigator in the window (`FolderNavigator`, `RootWelcome`, `RootsCatchUp`): folders listed off
-//! this thread, the favourites kept as bookmarks, the folder menu, what a launch finds.
+//! this thread, the favourites and where each lives, the folder menu, what a launch finds.
 
 use super::{Ctl, Pending, State, with_shell};
 use super::organising::reach;
 use crate::{App, CatchUpLine, FolderLine, MenuGlyph, MenuLine, WelcomeLine};
 use oni_i18n::tr;
-use oni_library::favourites::{self, Favourites};
+use oni_library::places::{self, Places};
 use oni_library::history::Move;
 use oni_library::navigator::{self as walk, Computer, Landed, Navigation, TRASH_ROW};
 use oni_library::paths::{self, holds};
@@ -65,9 +65,7 @@ pub(in crate::app) enum FolderAct {
 pub(super) struct Nav {
     pub computer: Computer,
     pub model: Navigation,
-    pub favourites: Favourites,
-    /// `favourites.json` as last read or written, which tells this app's changes from another's.
-    pub favourites_read: Favourites,
+    pub favourites: Places,
     remembered: Option<(Vec<String>, Vec<String>, Vec<String>)>,
     /// The last click: its row, when, and the count it reached, as AppKit's `clickCount` keeps it.
     clicks: Option<(String, Instant, usize)>,
@@ -99,8 +97,8 @@ pub(super) struct Nav {
     refused: Arc<std::sync::Mutex<Vec<String>>>,
     /// The rows' folders a listing found offline or missing, looked at off this thread.
     presence: HashMap<String, Presence>,
-    /// Names the volumes a favourite lives on, which `bookmarks.json` keeps beside its path.
-    identify: oni_library::bookmarks::Identify,
+    /// Names the volumes a favourite lives on, kept beside its path.
+    identify: places::Identify,
     leads: locate::Leads,
     fresh: freshness::Fresh,
     /// A favourite just taken away, which the notice's Undo stars again.
@@ -108,12 +106,11 @@ pub(super) struct Nav {
 }
 
 impl Nav {
-    pub fn new(computer: Computer, identify: oni_library::bookmarks::Identify) -> Nav {
+    pub fn new(computer: Computer, identify: places::Identify) -> Nav {
         Nav {
             computer,
             model: Navigation::default(),
-            favourites: Favourites::default(),
-            favourites_read: Favourites::default(),
+            favourites: Places::default(),
             remembered: None,
             clicks: None,
             rows: Vec::new(),
@@ -246,14 +243,23 @@ impl State {
         self.nav.remembered = Some(now);
     }
 
-    /// Merged with what another app wrote since, then each favourite's volume noted beside it.
+    /// Written whole, this app being the file's one writer, then each favourite's volume noted beside
+    /// it. A newer build's file is never written: the change is taken back and the refusal said.
     fn save_favourites(&mut self) -> Option<String> {
-        let nav = &mut self.nav;
-        let saved = nav.favourites.save_merged(&mut nav.favourites_read, &self.support);
+        if self.nav.favourites.is_newer() {
+            self.nav.favourites = Places::load(&self.support).unwrap_or_else(|| self.nav.favourites.clone());
+            return Some(oni_library::state::left_newer().to_string());
+        }
+        let saved = self.nav.favourites.save(&self.support);
         if saved.is_ok() {
-            oni_library::bookmarks::record(self.support.clone(), self.nav.favourites.paths.clone(), self.nav.identify.clone());
+            self.record_places();
         }
         saved.err().map(|e| tr!("The favourites cannot be saved: {error}", error = e))
+    }
+
+    /// Each favourite's volume and file id read off this thread, kept by `places_noted`.
+    fn record_places(&self) {
+        places::record(self.nav.favourites.clone(), self.nav.identify.clone(), |noted| with_shell(move |c| c.places_noted(noted)));
     }
 }
 

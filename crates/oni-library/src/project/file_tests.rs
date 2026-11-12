@@ -1,7 +1,9 @@
+use super::shipped_tests::{old, old_path};
 use super::*;
 use crate::index::{Entry, LibraryIndex};
+use crate::migrate::projects::is_path;
+use crate::project_standing;
 use crate::scratch::Scratch;
-use crate::{merge, project_standing};
 use std::path::Path;
 
 fn stamp() -> Date {
@@ -11,7 +13,7 @@ fn stamp() -> Date {
 fn former(support: &Path, id: Id, members: &[&str], paths: &[(&str, &str)]) {
     let paths: serde_json::Map<String, serde_json::Value> = paths.iter().map(|(k, v)| (k.to_string(), (*v).into())).collect();
     let file = serde_json::json!({"version": 1, "projects": [{"id": id.to_string(), "name": "Trip", "description": "", "createdAt": 8e8, "members": members, "paths": paths}]});
-    std::fs::write(file_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
+    std::fs::write(old_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
 }
 
 #[test]
@@ -23,14 +25,12 @@ fn a_file_round_trips_through_the_disk_saying_its_format() {
     portraits.manual_order = Some(3.0);
     let file = ProjectsFile { version: FORMAT, projects: vec![iceland, portraits] };
     save(scratch.path(), &file).unwrap();
-    save(scratch.path(), &file).unwrap();
     assert_eq!(load(scratch.path()), file);
-    let text = std::fs::read_to_string(file_path(scratch.path())).unwrap();
-    assert!(text.contains(&format!("\"version\" : {FORMAT}")) && text.contains("\"print\" : \"fa\""), "{text}");
-    assert!(text.contains("\"createdAt\" : 800000000") && text.contains("\"manualOrder\" : 3"));
-    assert!(!former_path(scratch.path(), FORMAT).exists(), "a file in this format, written over, is never set aside");
-    // Twin: the sidecar's ISO spelling of the same date is not what a project writes.
-    assert!(!text.contains(&stamp().iso8601()));
+    let text = std::fs::read_to_string(scratch.path().join("State/projects.json")).unwrap();
+    assert!(text.contains(&format!("\"version\": {FORMAT}")) && text.contains("\"print\": \"fa\""), "{text}");
+    assert!(text.contains(&format!("\"createdAt\": \"{}\"", stamp().iso8601())) && text.contains("\"manualOrder\": 3.0"), "{text}");
+    // Twin: the seconds since 2001 the old file kept are not what this one writes.
+    assert!(!text.contains("800000000"));
 }
 
 /// A version 1 file read: each print beside its recorded path spelt as the index spells it, a path
@@ -46,7 +46,7 @@ fn a_former_file_reads_each_member_with_its_path_and_its_print() {
         &["1-no-date-a", "1-no-date-b", "1-no-date-c", "/r9/z.NEF", "2026:10:31/x-y", "1-no-date-a"],
         &[("1-no-date-a", decomposed), ("1-no-date-c", r"C:\Scans\c.NEF")],
     );
-    let read = load(scratch.path()).projects;
+    let read = old(scratch.path());
     let composed = if cfg!(target_os = "macos") { "/r8/\u{c9}t\u{e9}.NEF" } else { decomposed };
     let backslashed = if cfg!(windows) { "C:/Scans/c.NEF" } else { r"C:\Scans\c.NEF" };
     assert_eq!(
@@ -64,51 +64,8 @@ fn a_former_file_reads_each_member_with_its_path_and_its_print() {
     assert!(!is_path("2026:10:31/x-y") && is_path(r"C:\Scans\c.NEF") && is_path("/r9/z.NEF"));
 }
 
-/// Read and laid, a former file is never written; the first change writes this format and keeps
-/// the former file beside it, byte for byte, and a later one beside the first, each once.
-#[test]
-fn only_a_change_writes_and_each_former_file_is_kept_beside_it_once() {
-    let scratch = Scratch::new("projects-kept");
-    let support = scratch.path();
-    former(support, Id::new(), &["1-no-date-a"], &[("1-no-date-a", "/r/a.NEF")]);
-    let original = std::fs::read(file_path(support)).unwrap();
-    let read = load(support).projects;
-    let written = merge::save_projects(support, &read, &read).unwrap();
-    assert_eq!(written, read);
-    assert_eq!(std::fs::read(file_path(support)).unwrap(), original, "nothing changed, nothing written");
-    assert!(!former_path(support, 1).exists());
-
-    let mut ours = read.clone();
-    ours[0].name = "Lisbon".into();
-    let read = merge::save_projects(support, &read, &ours).unwrap();
-    assert_eq!(std::fs::read(former_path(support, 1)).unwrap(), original, "the former file kept beside");
-    assert_eq!(load(support), ProjectsFile { version: FORMAT, projects: read.clone() });
-    assert_eq!(load(support).projects[0].members[0], Member::new(Some("/r/a.NEF"), Some("1-no-date-a")), "its print written beside its path");
-    // A former build's later file is kept beside the first, never in its place.
-    former(support, Id::new(), &["1-no-date-z"], &[]);
-    let later = std::fs::read(file_path(support)).unwrap();
-    let again = load(support).projects;
-    let mut renamed = again.clone();
-    renamed[0].name = "Porto".into();
-    merge::save_projects(support, &again, &renamed).unwrap();
-    assert_eq!(std::fs::read(former_path(support, 1)).unwrap(), original, "the first kept as it was");
-    assert_eq!(std::fs::read(support.join("projects-v1-2.json")).unwrap(), later, "the later one beside it");
-    // Twin: a former file a copy holds already sets no other aside.
-    std::fs::write(file_path(support), &later).unwrap();
-    let mut seen = load(support).projects;
-    seen[0].name = "Faro".into();
-    merge::save_projects(support, &again, &seen).unwrap();
-    assert!(!support.join("projects-v1-3.json").exists());
-    // Twin: a change written in this format sets nothing aside.
-    std::fs::remove_file(former_path(support, 1)).unwrap();
-    let mut third = load(support).projects;
-    third[0].description = "Coast".into();
-    merge::save_projects(support, &seen, &third).unwrap();
-    assert!(!former_path(support, 1).exists() && !former_path(support, FORMAT).exists());
-}
-
 /// Builds before #1550 took 1.5.6's placeholder for a print and wrote it as an exact member, with its
-/// path or without: each reads as that placeholder at its path, and the next write keeps both texts.
+/// path or without: each reads as that placeholder at its path, and the next write keeps both.
 #[test]
 fn an_exact_member_holding_a_placeholder_stands_at_its_path() {
     let scratch = Scratch::new("projects-exact-placeholder");
@@ -118,18 +75,14 @@ fn an_exact_member_holding_a_placeholder_stands_at_its_path() {
     let paths: serde_json::Map<String, serde_json::Value> = [(wb.clone(), b.into())].into_iter().collect();
     let exact = serde_json::json!([{"print": wa}, {"path": b, "print": wb}]);
     let project = serde_json::json!({"id": Id::new().to_string(), "name": "Trip", "description": "", "createdAt": 8e8, "members": [wa, wb], "paths": paths, "exactMembers": exact});
-    std::fs::write(file_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [project]})).unwrap()).unwrap();
-    let original = std::fs::read(file_path(support)).unwrap();
-    let read = load(support).projects;
+    std::fs::write(old_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [project]})).unwrap()).unwrap();
+    let read = old(support);
     let standing = [Member::new(Some(a), Some(&wa)), Member::new(Some(b), Some(&wb))];
     assert_eq!(read[0].members, standing, "each its placeholder, at its path");
     let mut renamed = read.clone();
     renamed[0].name = "Porto".into();
-    merge::save_projects(support, &read, &renamed).unwrap();
+    save(support, &ProjectsFile { version: FORMAT, projects: renamed }).unwrap();
     assert_eq!(load(support).projects[0].members, standing, "the next write keeps both");
-    let text: serde_json::Value = serde_json::from_slice(&std::fs::read(file_path(support)).unwrap()).unwrap();
-    assert_eq!(text["projects"][0]["members"], serde_json::json!([wa, wb]), "as 1.5.6 names them");
-    assert_eq!(std::fs::read(former_path(support, 3)).unwrap(), original, "the version 3 file kept beside, its builds reading this one only");
     // Twin: a member left with neither path nor print, as a's was, is dropped by that write.
     save(support, &ProjectsFile { version: FORMAT, projects: vec![Project::new("Lost", stamp(), vec![Member::new(None, None)])] }).unwrap();
     assert!(load(support).projects[0].members.is_empty());
@@ -154,8 +107,8 @@ fn a_placeholder_recorded_elsewhere_than_its_mark_stands_where_recorded() {
     };
     let former = project("Trip", &wa, a, None);
     let exact = project("Client", &wb, b, Some(serde_json::json!([{"path": b, "print": wb}])));
-    std::fs::write(file_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [former, exact]})).unwrap()).unwrap();
-    let read: Vec<Vec<Member>> = load(support).projects.into_iter().map(|p| p.members).collect();
+    std::fs::write(old_path(support), serde_json::to_vec(&serde_json::json!({"version": 3, "projects": [former, exact]})).unwrap()).unwrap();
+    let read: Vec<Vec<Member>> = old(support).into_iter().map(|p| p.members).collect();
     assert_eq!(read, [vec![Member::new(Some(a), Some(&wa))], vec![Member::new(Some(b), Some(&wb))]], "each at its recorded path");
     // Twin: the path after each mark is the folder's old name.
     let after = |w: &str| w.strip_prefix(crate::library::WAITING_MARK).map(str::to_owned);
@@ -174,13 +127,13 @@ fn a_former_files_stale_and_respelt_paths_are_found_by_their_prints() {
         index.upsert(&row(path, print)).unwrap();
     }
     former(scratch.path(), Id::new(), &["1-a", "1-e", "1-c", "1-b"], &[("1-a", "/Roll 8/a.NEF"), ("1-e", "/Roll 8/E\u{301}te\u{301}.NEF"), ("1-c", r"D:\Scans\c.NEF"), ("1-b", other)]);
-    let original = std::fs::read(file_path(scratch.path())).unwrap();
-    let projects = load(scratch.path()).projects;
+    let original = std::fs::read(old_path(scratch.path())).unwrap();
+    let projects = old(scratch.path());
     let standing = project_standing::standing(&projects, &[], &index, &Default::default());
     let shown: Vec<String> = grouped(&projects, &Reach::new(&standing.rows, &standing.found))[0].entries.iter().map(|e| e.path.clone()).collect();
     assert_eq!(shown, [moved, accented, windows, "/Roll 8/b.NEF/b.NEF"], "the stale, the accented and the backslashed found; b missing, as its place holds another file");
     assert_eq!(projects[0].members.len(), 4, "b stays a member, its print kept for a later read");
-    assert_eq!(std::fs::read(file_path(scratch.path())).unwrap(), original, "reading writes nothing");
+    assert_eq!(std::fs::read(old_path(scratch.path())).unwrap(), original, "reading writes nothing");
     // Twin: by their recorded paths alone, only the other file at b's place would show.
     let blind: Vec<Project> = projects.iter().map(|p| Project { members: p.members.iter().map(|m| Member { print: None, ..m.clone() }).collect(), ..p.clone() }).collect();
     let rows: Vec<Entry> = index.all();

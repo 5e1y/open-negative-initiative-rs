@@ -17,7 +17,7 @@ impl Ctl {
             if !s.nav.catching_up {
                 return;
             }
-            let roots = s.nav.favourites.paths.clone();
+            let roots = s.nav.favourites.paths();
             let mut counts: HashMap<String, usize> = HashMap::new();
             for path in s.nav.former.iter().filter(|p| !roots.iter().any(|r| holds(r, p))) {
                 *counts.entry(paths::parent(path)).or_default() += 1;

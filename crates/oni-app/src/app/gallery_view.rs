@@ -248,7 +248,7 @@ impl Ctl {
         let (index_path, support, computer, kept) = {
             let s = self.state.borrow();
             let mut kept: Vec<String> = s.opened().into_iter().map(str::to_owned).collect();
-            kept.extend(s.nav.favourites.paths.iter().cloned());
+            kept.extend(s.nav.favourites.paths());
             (s.index_path.clone(), s.support.clone(), s.nav.computer.clone(), kept)
         };
         let _ = std::thread::Builder::new().name("tidying".into()).spawn(move || {

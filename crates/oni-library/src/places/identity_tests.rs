@@ -1,56 +1,36 @@
 use super::*;
-use crate::favourites::Favourites;
+use crate::navigator::Computer;
 use crate::scratch::Scratch;
-
-/// `Favourites.swift` at launch: the file decoded as its two fields, then encoded back.
-#[derive(Serialize, Deserialize)]
-struct SwiftFavourites {
-    version: i64,
-    paths: Vec<String>,
-}
-
-fn swift_launch(support: &Path) {
-    let file = Favourites::file_path(support);
-    let read: SwiftFavourites = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
-    std::fs::write(&file, serde_json::to_vec(&read).unwrap()).unwrap();
-}
+use std::sync::Arc;
 
 #[test]
-fn a_swift_launch_keeps_the_volume_identities() {
-    let scratch = Scratch::new("bookmarks");
-    let support = scratch.path().join("support");
-    let scans = scratch.path().join("Scans");
-    std::fs::create_dir_all(&scans).unwrap();
-    let path = crate::paths::canonical(&scans);
-    let mut favourites = Favourites { version: 1, paths: vec![path.clone()] };
-    favourites.save_merged(&mut Favourites::default(), &support).unwrap();
-    Bookmarks::default().noted(&favourites.paths, |p| place(p, &system())).save(&support).unwrap();
-    let noted = Bookmarks::load(&support).places[&path].clone();
-    assert!(noted.file_id.is_some());
+fn a_folder_s_identity_is_its_volume_and_its_file_id() {
+    let scratch = Scratch::new("places-identity");
+    let path = crate::paths::canonical(scratch.path());
+    let noted = place(&path, &system()).expect("the folder answers");
+    assert!(noted.path == path && noted.file_id.is_some(), "{noted:?}");
     if cfg!(any(target_os = "macos", windows)) {
         assert!(noted.volume.as_ref().is_some_and(|v| v.uuid.is_some()), "{noted:?}");
     }
-    swift_launch(&support);
-    assert_eq!(Favourites::load(&support).unwrap().paths, std::slice::from_ref(&path));
-    assert_eq!(Bookmarks::load(&support).places.get(&path), Some(&noted));
-    // Twin: the same identity kept inside `favourites.json` is gone after Swift's launch.
-    let file = Favourites::file_path(&support);
-    std::fs::write(&file, format!(r#"{{"version":1,"paths":["{path}"],"places":{{"{path}":{{"fileId":1}}}}}}"#)).unwrap();
-    swift_launch(&support);
-    assert!(!std::fs::read_to_string(&file).unwrap().contains("places"));
+    // Twin: a folder gone answers nothing, which keeps the identity known.
+    assert_eq!(place(&format!("{path}/gone"), &system()), None);
 }
 
 #[test]
 fn a_disk_away_or_another_volume_keeps_the_identity_known() {
-    let volume = |uuid: &str| Place { volume: Some(Volume { uuid: Some(uuid.into()), mount: "/Volumes/T7".into() }), file_id: Some(7) };
-    let known = Bookmarks { version: 1, places: [("/Volumes/T7/Scans".to_string(), volume("A"))].into() };
-    let paths = vec!["/Volumes/T7/Scans".to_string()];
-    assert_eq!(known.noted(&paths, |_| None), known, "a disk away");
-    assert_eq!(known.noted(&paths, |_| Some(volume("B"))), known, "another disk under the same name");
+    let scans = "/Volumes/T7/Scans";
+    let volume = |uuid: &str| Place { path: scans.into(), volume: Some(Volume { uuid: Some(uuid.into()), mount: "/Volumes/T7".into() }), file_id: Some(7) };
+    let known = Places { version: VERSION, places: vec![volume("A")] };
+    assert_eq!(known.noted(|_| None), known, "a disk away");
+    assert_eq!(known.noted(|_| Some(volume("B"))), known, "another disk under the same name");
     let refreshed = Place { file_id: Some(8), ..volume("A") };
-    assert_eq!(known.noted(&paths, |_| Some(refreshed.clone())).places["/Volumes/T7/Scans"], refreshed);
-    // Twin: a path no longer a favourite leaves the file.
-    assert!(known.noted(&[], |_| Some(volume("A"))).places.is_empty());
+    assert_eq!(known.noted(|_| Some(refreshed.clone())).places, std::slice::from_ref(&refreshed));
+    // Laid on the places held: a star taken off meanwhile stays off, the others take what was read.
+    let mut held = Places { version: VERSION, places: vec![Place::at("/Volumes/T7/Other"), volume("A")] };
+    assert!(held.take_identities(&known.noted(|_| Some(refreshed.clone()))));
+    assert_eq!(held.places, [Place::at("/Volumes/T7/Other"), refreshed.clone()]);
+    // Twin: what was read already held changes nothing, so nothing is written.
+    assert!(!held.take_identities(&known.noted(|_| Some(refreshed.clone()))));
 }
 
 /// Each volume of `computer` named by the UUID `uuids` gives its folder's name.
@@ -71,7 +51,7 @@ fn a_volume_known_by_its_uuid_under_another_name_is_a_lead() {
     let computer = Computer { home: paths::canonical(scratch.path()), volumes: paths::canonical(&volumes) };
     let (t7, t7_1) = (paths::join(&computer.volumes, "T7"), paths::join(&computer.volumes, "T7 1"));
     let scans = paths::join(&t7, "Scans");
-    let known = Bookmarks { version: 1, places: [(scans.clone(), Place { volume: Some(Volume { uuid: Some("A".into()), mount: t7.clone() }), file_id: None })].into() };
+    let known = Places { version: VERSION, places: vec![Place { path: scans.clone(), volume: Some(Volume { uuid: Some("A".into()), mount: t7.clone() }), file_id: None }] };
     let mounted = vec![computer.home.clone(), t7_1.clone()];
     let lead = known.lead(&paths::join(&scans, "Roll 12"), &computer, &mounted, &fake(&computer, &[("T7 1", "A")]));
     assert_eq!(lead, None, "the folder itself is not on the disk now under that name");
@@ -94,7 +74,7 @@ fn a_favourite_renamed_in_the_finder_is_found_by_its_file_id_and_one_thrown_away
     std::fs::create_dir_all(scratch.path().join("Archive")).unwrap();
     let computer = Computer { home: paths::canonical(scratch.path()), volumes: "/Volumes".into() };
     let old = paths::canonical(&scans.join("Roll 12"));
-    let known = Bookmarks::default().noted(std::slice::from_ref(&old), |p| place(p, &system()));
+    let known = Places { version: VERSION, places: vec![Place::at(&old)] }.noted(|p| place(p, &system()));
     let inside = paths::join(&old, "Day 2");
     std::fs::rename(scans.join("Roll 12"), scans.join("2026-03 Lisbon")).unwrap();
     let renamed = paths::canonical(&scans.join("2026-03 Lisbon"));

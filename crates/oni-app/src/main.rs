@@ -71,6 +71,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => timing::line(&format!("no log file ({e}); stderr only")),
     }
     timing::keep_panics();
+    // Before anything reads a support file: those whose shape changed are brought up to date once.
+    oni_app::migration::support(&support);
     // Slint's MCP server, an evaluation's driver, sends keys no hand holds: the system cannot confirm them.
     if std::env::var_os("SLINT_MCP_PORT").is_none() {
         oni_app::system::verify_held_keys();

@@ -70,7 +70,7 @@ impl Ctl {
     }
 
     /// `FolderNavigation.init` and the launch's favourites: the remembered sections, rows and height;
-    /// `favourites.json`, seeded once from `roots.json`; a former library's folders.
+    /// the places file, seeded once from `roots.json`; a former library's folders.
     pub(super) fn load_navigator(&self) {
         let (height, catching_up, failure) = {
             let mut s = self.state.borrow_mut();
@@ -88,13 +88,22 @@ impl Ctl {
             s.nav.remembered = Some(s.nav.model.remembered());
             s.org.trash_unfolded = s.nav.model.unfolded.contains(TRASH_ROW);
             let roots = Roots::load(&s.support);
-            let read = Favourites::load(&s.support);
-            s.nav.favourites_read = read.clone().unwrap_or_default();
-            s.nav.favourites = read.unwrap_or_else(|| Favourites::seeded(&roots));
-            let failure = s.save_favourites();
+            let failure = match Places::load(&s.support) {
+                Some(read) => {
+                    s.nav.favourites = read;
+                    if !s.nav.favourites.is_newer() {
+                        s.record_places();
+                    }
+                    None
+                }
+                None => {
+                    s.nav.favourites = Places::seeded(&roots);
+                    s.save_favourites()
+                }
+            };
             let former = oni_library::library::load(&s.support).files;
             let opened = remembered_opened.or_else(|| roots.current().map(str::to_owned));
-            if s.nav.favourites.paths.is_empty() && opened.is_none() {
+            if s.nav.favourites.places.is_empty() && opened.is_none() {
                 s.nav.welcome = roots::suggested(&former, &s.nav.computer.home);
             }
             // A bench never meets the sheet, as Swift's `--bench` leaves before it.
@@ -111,6 +120,18 @@ impl Ctl {
             n.set_catch_up_shown(catching_up);
         }
         self.publish_navigator();
+    }
+
+    /// Each favourite's volume and file id as read off the interface thread, written when one changed;
+    /// a support folder removed meanwhile, a check's own, is not made again.
+    pub(super) fn places_noted(&self, noted: Places) {
+        let mut s = self.state.borrow_mut();
+        if s.nav.favourites.is_newer() || !s.support.is_dir() {
+            return;
+        }
+        if s.nav.favourites.take_identities(&noted) {
+            let _ = s.nav.favourites.save(&s.support);
+        }
     }
 
     /// Reads the mounted volumes off this thread, first at once, then whenever Computer's rows

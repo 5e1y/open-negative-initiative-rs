@@ -9643,5 +9643,61 @@
     "title": "Swift reference folders leave the fixtures and the README",
     "status": "done",
     "detail": "ONI_REFERENCE and ONI_ADVERSARIAL leave oni-fixtures and the README; docs/parity/README.md is marked as history."
+  },
+  {
+    "id": 1920,
+    "type": "data-safety",
+    "title": "Support files whose shape changes live under State/",
+    "status": "done",
+    "detail": "oni_library::state reads and writes <support>/State/, where no build before it looks: builds 1.4.0 to 1.5.6 set aside a support file they cannot parse (#1472), so a new shape never stands at a name they read. A file a newer build wrote reads as far as this one can and is never written: favourites cannot be starred and projects cannot be changed for the session, each refusal saying 'This was last written by a newer version of ONI and is left as it is.' An unreadable file is set aside at its first read. read_json loses its 100 ms sleep and second read, whose cause was the former app's write in place. Checks: a_newer_places_file_is_shown_and_left_as_it_is (twin: a reader that sets it aside leaves nothing at its name), an_unreadable_places_file_is_set_aside_at_the_first_read_with_no_wait (under 20 ms; twin: the retrying read fails the bound), a_file_from_a_newer_build_is_never_set_aside_or_written."
+  },
+  {
+    "id": 1921,
+    "type": "refactor",
+    "title": "Favourites and bookmarks are one file, State/places.json, with one writer",
+    "status": "done",
+    "detail": "Favourites and Bookmarks become Places: each favourite's path, volume and file id in the order starred. ONI holds the instance lock, so what it holds is what the file says: Favourites::save_merged, the per-write read-merge of bookmarks::record and its mutex go. Identities are read off the interface thread and laid on the places still held (take_identities), then written; the lead for a folder out of reach reads the held places, no file. Checks: a_favourite_starred_is_there_at_the_next_launch (twin: a save that skips the write), a_disk_away_or_another_volume_keeps_the_identity_known, a_folder_s_identity_is_its_volume_and_its_file_id, the window checks of locate, navigator, visible and disk_turns on the new file."
+  },
+  {
+    "id": 1922,
+    "type": "refactor",
+    "title": "Projects live in State/projects.json, format 5; the three-way merges go",
+    "status": "done",
+    "detail": "The file is plain serde_json of the projects, createdAt in ISO 8601, each member by its path and print. merge.rs and its tests are deleted (list, projects, save_projects, the 1.5.6-compatible writer with its texts, paths and exactMembers, the former files kept beside as projects-vN.json). The undo's lay of a step over the members as they stand keeps its list merge as project::gestures::laid_over. The readers of formats 1 to 4 (Incoming, Written, Writ, placeholders) move to oni_library::migrate::projects, read once."
+  },
+  {
+    "id": 1923,
+    "type": "data-safety",
+    "title": "Old favourites, bookmarks and projects imported once, verified, left as they are",
+    "status": "done",
+    "detail": "oni_library::migrate::places and ::projects: nothing when the new file exists; else the old files read with their readers, the new value built, written, read back and compared with what was built before returning, a mismatch removing the new file so the next launch tries again. The old files are never written nor set aside: an older build still finds what it wrote. Checks: places_import_keeps_the_favourites_order_and_lays_each_place_on_its_path (twins: a sorted import fails the order; favourites.json rewritten in the new shape fails the bytes and 1.5.6's reader), projects_import_each_former_format_to_the_members_its_reader_gave (formats 1 with a 1.5.6 placeholder, 2, 4; twin: ignoring exactMembers loses the copy's print), a_second_import_writes_nothing_and_keeps_a_star_added_since (twin: without the new-file test the star is lost), nothing_is_imported_where_no_favourite_was_ever_kept."
+  },
+  {
+    "id": 1924,
+    "type": "refactor",
+    "title": "Thumbnails under one name; old-named tiles renamed once",
+    "status": "done",
+    "detail": "swift_name goes with its three uses (held, forget, persist) and its claim. migration::tiles renames once each Thumbnails/*.jpg whose name holds a byte file_name spells in hex to file_name's spelling, unless a tile as new or newer stands there, which wins; nothing to do on Windows. Checks: a_tile_under_its_old_name_takes_the_portable_one_unless_a_newer_stands_there (twin: a rename over the newer tile changes its bytes), a_tile_is_found_only_under_its_portable_name (twin: without the rename the tile is not found)."
+  },
+  {
+    "id": 1925,
+    "type": "change",
+    "title": "The former app's preferences imported once through plutil; prior::swift goes",
+    "status": "done",
+    "detail": "migration::defaults, macOS only: for exportSettings, exportArtist, exportCopyright, exportLastProfile, galleryColumns, correctionBrushRadius, soundMuted and lastLaunchedVersion, when preferences.json lacks the key, /usr/bin/plutil -extract <key> raw -expect <type>, each value checked (the export document read by Settings::from_raw_value, the ladder's rungs, the brush's range, a non-empty text). The plist is read, never written; where plutil fails nothing is imported. updates::prior::swift, SWIFT_DOMAIN, Updater::swift_prior and the defaults process at every launch go: a move from the former app counts as an update through ONI's own mark. Checks: the_former_preferences_land_once_never_over_a_value_held (binary plist from tests/fixtures/former-preferences.plist; twin: an import over the held value loses it), a_former_value_onis_readers_refuse_is_left_out (twin: the unchecked text is one the export card cannot read)."
+  },
+  {
+    "id": 1926,
+    "type": "data-safety",
+    "title": "migration::support runs at launch before any support file is read",
+    "status": "done",
+    "detail": "oni_app::migration::support, called in main.rs after the instance lock and the log: places, projects, tiles and preferences, then the ledger <support>/State/migration.json {version: 1, support: 2}. A step that failed leaves the ledger as it was, so the next launch tries again; a newer build's ledger is left alone. Check: a_second_launch_writes_nothing (modification dates of the ledger and both State files unchanged; twin: a ledger that forgot the step writes again). The upgrade_check example brings a support copy up first, and the projects tab's former-file window check imports at launch and leaves the old file byte for byte."
+  },
+  {
+    "id": 1927,
+    "type": "change",
+    "title": "The export preference is plain serde_json",
+    "status": "done",
+    "detail": "Settings::raw_value writes its fields by serde_json::to_string in place of the former encoder's mimicry (sorted keys, escaped slashes, whole numbers without .0); from_raw_value reads both. Check: the_preference_text_is_plain_compact_json, the former text reading alike, with a twin missing its resize."
   }
 ]

@@ -3,11 +3,9 @@
 
 pub mod absence;
 pub mod archive_tree;
-pub mod bookmarks;
 pub mod capture;
 pub mod collection;
 pub use oni_settings::exif;
-pub mod favourites;
 pub mod file_names;
 pub mod film_group;
 pub mod folders;
@@ -17,10 +15,11 @@ pub mod index;
 pub mod journal;
 pub mod kept;
 pub mod library;
-pub mod merge;
+pub mod migrate;
 pub mod names;
 pub mod navigator;
 pub mod paths;
+pub mod places;
 pub mod presence;
 pub mod project;
 pub mod project_standing;
@@ -31,6 +30,7 @@ pub mod rgb_passes;
 pub mod roll_folder;
 pub mod roll_membership;
 pub mod roots;
+pub mod state;
 pub mod trash;
 pub mod watching;
 pub mod wrapped;
@@ -68,33 +68,31 @@ pub fn replace_readable(path: &std::path::Path, bytes: &[u8]) -> std::io::Result
     }
 }
 
-/// A JSON file of the support folder, `None` when absent or unreadable; one that stays unreadable,
-/// read again after another app's write would have landed, is set aside before anything writes it.
+/// A JSON file of the support folder, `None` when absent or unreadable; one that does not parse is
+/// set aside before anything writes it, so whatever it held stays readable by a hand.
 pub fn read_json<T: serde::de::DeserializeOwned>(path: &std::path::Path) -> Option<T> {
     let data = std::fs::read(path).ok()?;
-    if let Ok(value) = serde_json::from_slice(&data) {
-        return Some(value);
+    let parsed = serde_json::from_slice(&data);
+    if parsed.is_err() {
+        set_aside(path);
     }
-    // The Swift app writes its mask list in place: a torn read is retried once before it counts.
-    std::thread::sleep(std::time::Duration::from_millis(100));
-    let again = std::fs::read(path).ok()?;
-    if let Ok(value) = serde_json::from_slice(&again) {
-        return Some(value);
-    }
-    if again == data {
-        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
-        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-        let _ = std::fs::rename(path, path.with_file_name(format!("{name}.unreadable-{stamp}")));
-    }
-    None
+    parsed.ok()
 }
 
-/// `Date` as a plain `JSONEncoder` writes a required one: seconds since 2001-01-01.
+/// The file renamed beside itself, `<name>.unreadable-<stamp>`.
+pub(crate) fn set_aside(path: &std::path::Path) {
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let _ = std::fs::rename(path, path.with_file_name(format!("{name}.unreadable-{stamp}")));
+}
+
+/// `Date` as a plain `JSONEncoder` writes a required one: seconds since 2001-01-01, as old files keep it.
 pub(crate) mod reference_date {
     use oni_settings::Date;
-    use serde::{Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer};
 
-    pub fn serialize<S: Serializer>(date: &Date, s: S) -> Result<S::Ok, S::Error> {
+    #[cfg(test)]
+    pub fn serialize<S: serde::Serializer>(date: &Date, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_f64(date.time_interval_since_reference_date())
     }
 
