@@ -10,13 +10,12 @@ use crate::roll::{self, Measured};
 use crate::truncate::Stage;
 use crate::window::sheet_reads;
 use oni_core::balance::{self, Outcome, Suggestion};
-use oni_core::parameters;
 use oni_graph::{Graph, Image, Source};
 use oni_pipeline::Pipeline;
 use oni_pipeline::resident::{Files, Resident};
 use oni_settings::blocks::Gains;
 use oni_settings::cg::{self, Point};
-use oni_settings::frame::{FlatField, Geometry};
+use oni_settings::frame::Geometry;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::path::Path;
 use std::sync::Mutex;
@@ -170,30 +169,19 @@ pub fn outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> 
     balance::averaged(&found).into_iter().next()
 }
 
-/// `EditorScene.base`: the bare film under the pick, read before the levels on a frame stripped of
-/// its framing, gains and dust, on the roll's film and mask.
-#[allow(clippy::too_many_arguments)]
-pub fn base(
-    r: &mut Reader,
-    copy: Copy,
-    open: &PipelineSettings,
-    mode: ConversionMode,
-    mask: Option<&FlatField>,
-    capture_stops: f32,
-    unit: Point,
-    radius: f64,
-) -> Option<[f32; 3]> {
-    let mut bare = parameters::imported(open);
-    bare.mode = mode;
+/// `EditorScene.base`'s frame: the start it is measured from, stripped of its framing, gains and dust.
+pub fn bare(start: &PipelineSettings) -> PipelineSettings {
+    let mut bare = start.clone();
     bare.geometry = Geometry::default();
     bare.gains = Gains::default();
     bare.corrections = Vec::new();
-    bare.capture_stops = capture_stops;
-    if let Some(m) = mask {
-        bare.flat_field = m.clone();
-    }
-    let graduated = r.plane(copy, &bare, Stage::Levels)?;
-    pipette::read(&graduated, unit, mode, radius, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC).map(|x| x.fractions)
+    bare
+}
+
+/// `EditorScene.base`: the bare film under the pick, read before the levels.
+fn base(r: &mut Reader, copy: Copy, start: &PipelineSettings, unit: Point, radius: f64) -> Option<[f32; 3]> {
+    let graduated = r.plane(copy, &bare(start), Stage::Levels)?;
+    pipette::read(&graduated, unit, start.mode, radius, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC).map(|x| x.fractions)
 }
 
 /// A file decoded on the CPU: linear Rec. 2020 pixels, and the full width of the frame they came from.
@@ -328,6 +316,14 @@ impl Measurer {
         drop(source);
         graph.purge();
         out
+    }
+}
+
+impl Measurer {
+    /// The base picked on a frame, decoded and read on `start`, the settings its frame is measured
+    /// from, so the base belongs to the decode the roll's frames are read on.
+    pub fn base(&self, path: &str, start: &PipelineSettings, unit: Point, radius: f64) -> Option<[f32; 3]> {
+        self.with(path, start, |r, copy| base(r, copy, start, unit, radius))
     }
 }
 

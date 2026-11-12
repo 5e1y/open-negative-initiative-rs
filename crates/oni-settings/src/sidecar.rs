@@ -52,6 +52,9 @@ pub struct RollDraft {
     pub capture: String,
     #[serde(rename = "passOrder", skip_serializing_if = "Option::is_none", default)]
     pub pass_order: Option<PassOrder>,
+    /// The files skipped before the first triplet, so a roll shifted by a file resumes on its own leads.
+    #[serde(rename = "passOffset", skip_serializing_if = "Option::is_none", default)]
+    pub pass_offset: Option<usize>,
     #[serde(rename = "flatField", skip_serializing_if = "Option::is_none", default)]
     pub flat_field: Option<FlatField>,
     #[serde(skip_serializing_if = "Option::is_none", default)]

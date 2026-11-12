@@ -126,6 +126,7 @@ fn draft() -> RollDraft {
         film: ConversionMode::Negative,
         capture: "camera".into(),
         pass_order: Some(PassOrder::Bgr),
+        pass_offset: None,
         flat_field: Some(FlatField::default()),
         base: Some(DraftBase { path: "/r/1.RW2".into(), x: 0.1, y: 0.2, radius: 4.0 }),
         window: Some(Rect::new(0.1, 0.1, 0.8, 0.8)),

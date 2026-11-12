@@ -39,35 +39,32 @@ impl Ctl {
                 let mut frames = Vec::new();
                 let side = oni_measure::tiles::roll_tile();
                 let mut blank = Vec::new();
-                // The base read first, so the roll's screen places the black the roll will take.
-                let base = pick.and_then(|p| {
-                    let mut bare = if Some(&p.path) == open.as_ref() {
-                        live.clone()
+                // What a frame is measured from, the base frame's too: its sidecar, whether the measure
+                // may write it, and its start on the roll's film, window, mask and passes.
+                let measured_from = |path: &str| {
+                    let (before, writable) = if Some(path) == open.as_deref() {
+                        (live.clone(), true)
                     } else {
-                        sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
+                        sidecar::read(Path::new(path), mosaic(path), true).map(|l| (l.settings, l.writable)).unwrap_or_default()
                     };
-                    bare.inverted_source = false;
-                    let unit = Point::new(p.unit.0, p.unit.1);
-                    m?.with(&p.path, &bare, |r, copy| key::base(r, copy, &bare, film, mask.as_ref(), stops(&p.path), unit, p.radius))
-                });
+                    let mut start = roll::start(&before, film, window, mask.as_ref(), stops(path));
+                    start.inverted_source = false;
+                    if let Some(passes) = rgb_passes::named_by(path) {
+                        let passes = registrar.registered(path, passes);
+                        rgb_passes::hold_one(path, passes.clone());
+                        start.rgb_passes = Some(passes);
+                    }
+                    (before, writable, start)
+                };
+                // The base read first, so the roll's screen places the black the roll will take.
+                let base = pick.and_then(|p| m?.base(&p.path, &measured_from(&p.path).2, Point::new(p.unit.0, p.unit.1), p.radius));
                 for f in &picked {
                     if stop.load(Ordering::Relaxed) {
                         break;
                     }
-                    let before = if Some(&f.path) == open.as_ref() {
-                        live.clone()
-                    } else {
-                        match sidecar::read(Path::new(&f.path), mosaic(&f.path), true) {
-                            Ok(l) if l.writable => l.settings,
-                            _ => continue,
-                        }
-                    };
-                    let mut start = roll::start(&before, film, window, mask.as_ref(), stops(&f.path));
-                    start.inverted_source = false;
-                    if let Some(passes) = rgb_passes::named_by(&f.path) {
-                        let passes = registrar.registered(&f.path, passes);
-                        rgb_passes::hold_one(&f.path, passes.clone());
-                        start.rgb_passes = Some(passes);
+                    let (before, writable, start) = measured_from(&f.path);
+                    if !writable {
+                        continue;
                     }
                     let job = roll::Job { path: f.path.clone(), before, start, flagged: f.flagged };
                     // Every frame of the measure draws its tile, a flagged one too, on the measuring copy, uncropped.
@@ -234,7 +231,7 @@ impl Ctl {
         }
     }
 
-    /// `saveRollDraft`: each frame's draft written on the serial thread, after the writes before it.
+    /// `saveRollDraft`: each file's draft written or cleared on the serial thread, after the writes before it.
     pub(in crate::app) fn save_draft(&self) {
         self.flush_open();
         let job = {
@@ -242,7 +239,7 @@ impl Ctl {
             let Some(drafts) = r.step_drafts() else { return };
             let job: Job = Box::new(move || {
                 let refused: Vec<String> =
-                    drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(Some(draft), Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
+                    drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(draft, Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
                 if let Some(cause) = refused.first().cloned() {
                     let n = refused.len() as u64;
                     with_shell(move |c| c.told(tr("Prepare the Roll"), &trn("One frame's preparation could not be saved: {cause}", "{n} frames' preparation could not be saved: {cause}", n).replace("{cause}", &cause)));
