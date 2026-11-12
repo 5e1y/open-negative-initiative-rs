@@ -60,8 +60,10 @@ is its glyph and word alone, its ground shown only under the hand. A `Keycap` st
 `keycap: true`: the mode switch (EDIT, BACK), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
 PREPARE ROLL, the prepare footer's NEXT, every DONE, GOT IT, GET STARTED, SEND), the
 automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the Scanner
-face's step keys, − and + beside each of its rails. A question's answers and a passing notice's OK stay
-flat. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
+face's step keys, − and + beside each of its rails. A choice holding one keycap holds keycaps alone: its
+Cancel, its step back and its other answers are keycaps on the face of the ground they stand on (`ground`),
+the commit alone standing out; a choice with none, as a passing notice's OK or a question of options, stays
+flat. Tabs alike: every tab a key raised from the hollow, the one taken on the pill's face. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
 `Raster.keycap(KeycapLook)`; `oni_app::keycaps::serve` answers it on a window (the `Shell` does it for the
 main window and the console; a check building a window alone calls it); an unserved window, as slint-viewer's,
 shows each cap's flat stand-in. One cache by the look's numbers (oni-keycap's `look::Cache`, shared with

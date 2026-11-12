@@ -2,7 +2,7 @@
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
 import { Pairing } from "pairing.slint";
-import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, SheetFooter, Tone, Field, FieldLayout } from "ds/ds.slint";
+import { Sheet, SheetHeader, SheetStyle, SectionStyle, Button, ButtonGroup, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, Tone, Field, FieldLayout } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -36,7 +36,7 @@ component SheetKey inherits Button {
 }
 
 // A section's page. Every page shares one cell and only the chosen one shows, so the sheet stands at
-// the tallest page's height whichever is open and its DONE key never moves.
+// the tallest page's height whichever is open.
 component Page inherits Rectangle {
     in property <int> section;
     visible: AppSettings.section == root.section;
@@ -191,8 +191,11 @@ component AboutPage inherits Page {
     }
 }
 
+// The board's header as every sheet of choices: the title beside its DONE key over a rule, then the rail of
+// pages and the page shown, the rule between them running from that rule to the sheet's foot.
 export component SettingsSheet inherits Sheet {
     title: @tr("Settings");
+    header: SheetHeader.bar;
     card-width: SheetStyle.settings-width;
     dismissed => { AppSettings.close(); }
     property <[{ name: string, section: int }]> pages: [
@@ -202,9 +205,10 @@ export component SettingsSheet inherits Sheet {
         { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier Look"), section: 2 },
         { name: @tr("About"), section: 4 }];
     HorizontalLayout {
-        spacing: SheetStyle.gap;
         VerticalLayout {
-            width: SheetStyle.settings-rail;
+            width: SheetStyle.settings-rail + SheetStyle.padding + SheetStyle.gap;
+            padding: SheetStyle.padding;
+            padding-right: SheetStyle.gap;
             alignment: start;
             // Each page keeps its section number, so About stays 4 while the Phone page is hidden.
             for page in Pairing.available ? root.pages : root.pages-without-phone: Row {
@@ -217,15 +221,13 @@ export component SettingsSheet inherits Sheet {
         Divider { vertical: true; }
         GridLayout {
             horizontal-stretch: 1;
+            padding: SheetStyle.padding;
+            padding-left: SheetStyle.gap;
             GeneralPage { row: 0; col: 0; }
             EditorPage { row: 0; col: 0; }
             FrontierPage { row: 0; col: 0; }
             if Pairing.available: PhonePage { row: 0; col: 0; }
             AboutPage { row: 0; col: 0; }
         }
-    }
-    SheetFooter {
-        commit: @tr("DONE");
-        committed => { AppSettings.close(); }
     }
 }

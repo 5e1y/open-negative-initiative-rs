@@ -6,9 +6,9 @@ import { Dot } from "marks.slint";
 import { Inward, Outward } from "depth.slint";
 import { KeyScope } from "keyboard.slint";
 
-// `DSTabBar`: a hollow cut down to the canvas, one raised pill sliding under the selection on the grab
-// spring; a tab answers hover with its label alone. Its owner holds the choice: a click only asks, so a
-// binding on `selected` keeps following the owner's value.
+// `DSTabBar`: a hollow cut down to the canvas, every tab a key raised from it, the one taken on the pill's
+// face and the others on the hollow's own; a tab answers hover with its label alone. Its owner holds the
+// choice: a click only asks, so a binding on `selected` keeps following the owner's value.
 export component Tabs inherits Rectangle {
     in property <[string]> tabs;
     in property <int> selected;
@@ -31,10 +31,7 @@ export component Tabs inherits Rectangle {
     out property <length> pill-width;
     out property <length> pill-room;
     property <int> held;
-    // A change of tab slides the pill; a change of layout moves it at once, so a resize never trails it.
-    property <bool> sliding;
-    function hold(x: length, width: length, words: length, slide: bool) {
-        root.sliding = slide;
+    function hold(x: length, width: length, words: length) {
         root.pill-x = x;
         root.pill-width = width;
         root.pill-room = (width - words) / 2;
@@ -54,16 +51,6 @@ export component Tabs inherits Rectangle {
         ground: Colour.canvas;
         radius: root.height / 2;
         shade: TabsStyle.track-shade;
-        Outward {
-            visible: root.pill-shown;
-            x: root.pill-x;
-            y: TabsStyle.inset;
-            width: root.pill-width;
-            height: root.height - 2 * TabsStyle.inset;
-            radius: self.height / 2;
-            fill: TabsStyle.pill;
-            animate x, width { duration: root.sliding ? TabsStyle.slide : 0ms; easing: spring(0.38); }
-        }
         HorizontalLayout {
             padding: TabsStyle.inset;
             spacing: TabsStyle.gap;
@@ -75,55 +62,63 @@ export component Tabs inherits Rectangle {
                 // A walk's steps share the room left past their words, so the gaps between them are even.
                 preferred-width: root.ordered ? self.min-width : self.words + 2 * TabsStyle.room;
                 horizontal-stretch: 1;
-                init => { if (self.holds) { root.hold(self.x, self.width, self.words, false); } }
-                changed holds => { if (self.holds) { root.hold(self.x, self.width, self.words, true); } }
-                changed x => { if (self.holds) { root.hold(self.x, self.width, self.words, false); } }
-                changed width => { if (self.holds) { root.hold(self.x, self.width, self.words, false); } }
+                init => { if (self.holds) { root.hold(self.x, self.width, self.words); } }
+                changed holds => { if (self.holds) { root.hold(self.x, self.width, self.words); } }
+                changed x => { if (self.holds) { root.hold(self.x, self.width, self.words); } }
+                changed width => { if (self.holds) { root.hold(self.x, self.width, self.words); } }
                 accessible-role: tab;
                 accessible-label: name;
                 accessible-description: root.helps[i];
-                opacity: root.disabled[i] ? State.disabled
-                    : i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle;
-                label := Label {
-                    visible: root.swatches.length == 0 && !root.ordered;
-                    text: name;
-                    centred: true;
+                opacity: root.disabled[i] ? State.disabled : 1;
+                Outward {
+                    radius: self.height / 2;
+                    fill: i == root.selected ? TabsStyle.pill : Colour.canvas;
+                    animate fill { duration: TabsStyle.slide; }
                 }
-                if root.ordered: HorizontalLayout {
-                    alignment: center;
-                    spacing: TabsStyle.step-gap;
-                    VerticalLayout {
+                // The words dimmed but on the tab taken or under the hand.
+                Rectangle {
+                    opacity: i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle;
+                    label := Label {
+                        visible: root.swatches.length == 0 && !root.ordered;
+                        text: name;
+                        centred: true;
+                    }
+                    if root.ordered: HorizontalLayout {
                         alignment: center;
-                        Rectangle {
-                            width: TabsStyle.step;
-                            height: TabsStyle.step;
-                            border-radius: self.width / 2;
-                            background: TabsStyle.step-disc;
-                            if !root.marked[i]: Label { role: TextRole.caption; text: i + 1; centred: true; }
-                            if root.marked[i]: Icon {
-                                x: (parent.width - self.width) / 2;
-                                y: (parent.height - self.height) / 2;
-                                width: TabsStyle.step-check;
-                                height: TabsStyle.step-check;
-                                source: Icons.done;
-                                // The number's ink: on the dimmed disc an accent check would read under 3:1.
-                                tone: Tone.primary;
+                        spacing: TabsStyle.step-gap;
+                        VerticalLayout {
+                            alignment: center;
+                            Rectangle {
+                                width: TabsStyle.step;
+                                height: TabsStyle.step;
+                                border-radius: self.width / 2;
+                                background: TabsStyle.step-disc;
+                                if !root.marked[i]: Label { role: TextRole.caption; text: i + 1; centred: true; }
+                                if root.marked[i]: Icon {
+                                    x: (parent.width - self.width) / 2;
+                                    y: (parent.height - self.height) / 2;
+                                    width: TabsStyle.step-check;
+                                    height: TabsStyle.step-check;
+                                    source: Icons.done;
+                                    // The number's ink: on the dimmed disc an accent check would read under 3:1.
+                                    tone: Tone.primary;
+                                }
                             }
                         }
+                        Label { text: name; }
                     }
-                    Label { text: name; }
-                }
-                if root.swatches.length > 0: Dot {
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    size: TabsStyle.swatch;
-                    ink: root.swatches[i];
-                }
-                if root.marked[i] && !root.ordered: Dot {
-                    x: parent.width - self.width - TabsStyle.mark-inset;
-                    y: TabsStyle.mark-inset;
-                    size: TabsStyle.mark;
-                    ink: Colour.accent;
+                    if root.swatches.length > 0: Dot {
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        size: TabsStyle.swatch;
+                        ink: root.swatches[i];
+                    }
+                    if root.marked[i] && !root.ordered: Dot {
+                        x: parent.width - self.width - TabsStyle.mark-inset;
+                        y: TabsStyle.mark-inset;
+                        size: TabsStyle.mark;
+                        ink: Colour.accent;
+                    }
                 }
                 touch := TouchArea {
                     enabled: !root.disabled[i];

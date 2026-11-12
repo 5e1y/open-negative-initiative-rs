@@ -121,20 +121,24 @@ impl Ctl {
     }
 
     /// What `roll`'s frames say, read off this thread once per roll and per bearing of the open
-    /// photo, which counts by its settings in memory; `None` while they read. A slide is never
-    /// measured, so a roll holding one asks for no measure.
+    /// photo, which counts by its settings in memory, and again once a write may have changed them;
+    /// `None` while a first read runs. A slide is never measured, so a roll holding one asks for no measure.
     pub(super) fn roll_frames(&self, roll: &str, frames: &[String]) -> Option<Frames> {
-        let (key, mosaic, open) = {
+        let (key, mosaic, open, last) = {
             let mut s = self.state.borrow_mut();
             let key = (roll.to_string(), s.open_bearing());
             if let Some((held, read)) = &s.org.frames
                 && *held == key
+                && !s.org.frames_due
             {
                 return read.clone();
             }
-            s.org.frames = Some((key.clone(), None));
+            // The roll's last read stays on its card while the next runs, so a medal never blanks it.
+            let last = s.org.frames.as_ref().filter(|(held, _)| held.0 == key.0).and_then(|(_, read)| read.clone());
+            s.org.frames = Some((key.clone(), last.clone()));
+            s.org.frames_due = false;
             let open = s.open.clone().map(|p| (p, s.store.settings().clone()));
-            (key, s.store.editor().map(|e| e.mosaic_rule())?, open)
+            (key, s.store.editor().map(|e| e.mosaic_rule())?, open, last)
         };
         let frames = frames.to_vec();
         let _ = std::thread::Builder::new().name("reading a roll's frames".into()).spawn(move || {
@@ -148,7 +152,7 @@ impl Ctl {
             let read = Frames::read(settings);
             super::super::with_shell(move |c| c.frames_landed(&key, read));
         });
-        None
+        last
     }
 
     fn frames_landed(&self, key: &(String, String), read: Frames) {

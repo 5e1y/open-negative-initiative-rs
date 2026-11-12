@@ -117,6 +117,9 @@ export component Button inherits Rectangle {
     in property <bool> turned;
     // A face of its own colour instead of its kind's, as a tint's swatch, which `on` rings.
     in property <color> fill: transparent;
+    // A keycap of a choice other than its taken key or its commit: the face of the ground it stands on,
+    // its relief alone telling it is a key beside the one that stands out.
+    in property <color> ground: transparent;
     // As wide as tall, a glyph alone.
     in property <bool> square;
     // The glyph's own ink in place of the kind's, as the favourite star's.
@@ -152,7 +155,7 @@ export component Button inherits Rectangle {
     property <color> tint: root.swatch ? root.fill : root.primary ? ButtonStyle.primary : transparent;
     // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
     property <bool> lit-face: root.on && !root.on-apart;
-    property <color> face: root.tint.alpha > 0 ? root.tint : root.lit-face ? ButtonStyle.on : root.keycap ? ButtonStyle.cap : ButtonStyle.face;
+    property <color> face: root.tint.alpha > 0 ? root.tint : root.lit-face ? ButtonStyle.on : root.keycap ? (root.ground.alpha > 0 ? root.ground : ButtonStyle.cap) : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
     property <bool> waiting;
     // Lifted while still hovered: going back up to the hover depth is a release, not a press.

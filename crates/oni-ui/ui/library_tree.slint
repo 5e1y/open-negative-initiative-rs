@@ -9,6 +9,8 @@ import { RatingFilter } from "rating_filter.slint";
 // navigator keeps its height over the opened folder's tree with its photos.
 export component Tree inherits Surface {
     in property <bool> beside-photo;
+    // Slid over the card on its own raised face, which has no card top to meet: inset as at its sides.
+    in property <bool> floating;
     property <length> menu-x;
     property <length> menu-y;
     // `sidebarLayout` follows the mode: the projects' tree is laid again by the other one.
@@ -32,6 +34,7 @@ export component Tree inherits Surface {
     VerticalLayout {
         // The tab bar's top on the canvas card's.
         HorizontalLayout {
+            padding-top: root.floating ? ShellStyle.column-inset : 0;
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
             padding-bottom: Space.s;

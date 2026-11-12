@@ -309,9 +309,9 @@ export global CropStyle {
     out property <length> stroke: DS.control-crop-stroke;
     out property <length> halo: DS.control-crop-halo;
     out property <length> well-radius: Radius.picture;
-    // A De-dust reminder's side in the tab, and its tile: the dust over its number and its key.
+    // A De-dust reminder's least side in the tab, and the row under it: its number and its key.
     out property <length> dust-original: 56px;
-    out property <length> dust-tile: self.dust-original + Space.xxs + ButtonStyle.small-height;
+    out property <length> dust-under: Space.xxs + ButtonStyle.small-height;
 }
 
 // Auto De-dust's reading on the canvas: the crop's dim over what it leaves out, a speck's least ring.

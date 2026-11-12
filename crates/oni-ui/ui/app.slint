@@ -315,7 +315,7 @@ export component MainWindow inherits AppWindow {
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.library-width + 2 * Space.s; height: card.height;
                         // Laid by the card's column, inside its inset: sized on the strip, it ran past the card.
-                        Tree { beside-photo: true; cache-rendering-hint: true; }
+                        Tree { beside-photo: true; floating: true; cache-rendering-hint: true; }
                     }
                     if root.beside-photo && App.panel-hidden: FloatingColumn {
                         revealed <=> root.revealed-panel; trailing: true;

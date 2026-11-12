@@ -192,8 +192,9 @@ pub struct Organising {
     /// The gesture whose writes or moves run off this thread, named; the others wait for it.
     pub(in crate::app) disk_busy: Option<String>,
     /// The roll shown, by key, and the open photo's bearing it was read on, with what its frames
-    /// say, `None` while they read.
+    /// say, `None` while a first read runs; `frames_due` once a write may have changed them.
     pub(in crate::app) frames: Option<((String, String), Option<roll_card::Frames>)>,
+    pub(in crate::app) frames_due: bool,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.

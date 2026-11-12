@@ -103,6 +103,18 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
         rig.pump();
         lib.get_roll_unmeasured()
     });
+    // A medal given from the gallery reads the roll's frames again: its card keeps the last read meanwhile,
+    // its note never blinking off; twin: the medal is written, and its Undo leaves no step.
+    lib.invoke_tile_medal_picked(at("A.tif"), 2);
+    assert!(lib.get_roll_unmeasured(), "the card's note held through the medal's read");
+    rig.landed(&ctl);
+    rig.settle();
+    assert!(lib.get_roll_unmeasured(), "and once read");
+    assert!(menus.get_live().undo, "twin: the medal is a step");
+    ctl.act(oni_app::Act::Undo);
+    rig.landed(&ctl);
+    rig.settle();
+    assert!(lib.get_roll_unmeasured(), "and through its Undo");
 
     // A focus passing through the date writes nothing; a date typed writes the marker, one step.
     let shown = (lib.get_month(), lib.get_day(), lib.get_year());

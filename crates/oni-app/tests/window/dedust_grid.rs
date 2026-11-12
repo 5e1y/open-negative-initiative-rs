@@ -18,10 +18,12 @@ use std::time::Duration;
 
 use crate::common;
 
-/// `CropStyle.dust-original`: a correction's dust in the tab.
+/// `CropStyle.dust-original`: a correction's dust at its least in the tab.
 const DUST: f32 = 56.0;
 /// `Space.xxs`: from the dust to its number and key.
 const XXS: f32 = 2.0;
+/// `Space.xs`: between two tiles.
+const GAP: f32 = 4.0;
 
 /// Red, green and blue summed, 0 to 765, where the window is drawn at a point.
 fn luma(drawn: &(usize, Vec<Rgb565Pixel>), (x, y): (f32, f32)) -> u32 {
@@ -127,24 +129,41 @@ pub(crate) fn a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_
     let mut keys = common::placed(w, Role::Button, "Remove This Correction");
     keys.sort_by(|a, b| a.x.total_cmp(&b.x));
     assert_eq!(keys.len(), 3, "one key a tile: {keys:?}");
+    let mut sides = Vec::new();
     for (k, n) in keys.iter().zip(["1", "2", "4"]) {
-        assert!(k.width == k.height && k.width < DUST / 2.0, "a square key, not the tile's width: {k:?}");
-        let label: Vec<_> = common::placed(w, Role::Text, n).into_iter().filter(|t| (t.y - k.y).abs() < 1.0 && t.x >= k.x + k.width - DUST - 0.5 && t.x + t.width <= k.x + 0.5).collect();
+        let label: Vec<_> = common::placed(w, Role::Text, n).into_iter().filter(|t| (t.y - k.y).abs() < 1.0 && t.x < k.x && k.x - t.x < 2.0 * DUST).collect();
         assert_eq!(label.len(), 1, "number {n} left of its key, under its dust: {k:?}");
+        let side = k.x + k.width - label[0].x;
+        assert!(k.width == k.height && k.width < side / 2.0, "a square key, not the tile's width: {k:?} {side}");
+        sides.push((label[0].x, side));
     }
+    // The tiles fill the pane's width edge to edge, as many to a row as fit at their least side; twin: tiles
+    // of that least side alone leave room at the row's end.
+    let (detect, remove) = (common::the(w, Role::Button, "DETECT"), common::the(w, Role::Button, "REMOVE"));
+    let room = remove.x + remove.width - detect.x;
+    let columns = ((room + GAP) / (DUST + GAP)).floor();
+    let (left, side) = sides[0];
+    assert!((left - detect.x).abs() < 0.5 && (columns * (side + GAP) - GAP - room).abs() < 0.5, "the row fills the pane: {left} {side} {room}");
+    assert!((columns * (DUST + GAP) - GAP - room).abs() > 0.5, "twin: least-side tiles stop short of the edge: {room}");
+
     // The dust above each key's row stays bare with the hand on the key: light, the key's plate dark.
     let k = keys[0];
-    let (left, top) = (k.x + k.width - DUST, k.y - XXS - DUST);
+    let top = k.y - XXS - side;
     let moved = |x: f32, y: f32| {
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x, y) });
         rig.settle();
     };
-    moved(left + DUST / 2.0, top + DUST / 2.0);
+    moved(left + side / 2.0, top + side / 2.0);
     assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![1]), "the hand on the dust shows its correction alone");
+    // The gap after a tile is its own: the hand there keeps it shown; twin: on the next tile, the next.
+    moved(left + side + GAP / 2.0, top + side / 2.0);
+    assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![1]), "the gap between two tiles keeps the first shown");
+    moved(left + side + GAP + 2.0, top + side / 2.0);
+    assert_eq!((d.get_hovered_row(), marked(&c)), (1, vec![2]), "twin: past the gap, the next tile");
     moved(k.x + k.width / 2.0, k.y + k.height / 2.0);
-    assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![1]), "and on its key, still");
+    assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![1]), "and on its key, its own");
     let drawn = rig.drawn();
-    assert!(luma(&drawn, (k.x + k.width / 2.0, top + DUST - 4.0)) > 500, "the dust over the key bare");
+    assert!(luma(&drawn, (k.x + k.width / 2.0, top + side - 4.0)) > 500, "the dust over the key bare");
     assert!(luma(&drawn, (k.x + 3.0, k.y + 3.0)) < 300, "twin: the key's plate is dark");
     println!("shot {}", rig.shot("dedust_grid_key").display());
 

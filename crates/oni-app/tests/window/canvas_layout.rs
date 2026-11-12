@@ -19,6 +19,8 @@ const MENU: f32 = 40.0;
 const CARD_TOP: f32 = MENU + 64.0;
 /// The card's content inset, where the deck's tab and the status line start.
 const INSET: f32 = 24.0;
+/// `ShellStyle.column-inset`: a column's content in from its sides.
+const COLUMN_INSET: f32 = 16.0;
 /// A column key's step in from the card's side, as from its top: half the band less the key's 24 pt.
 const KEY: f32 = (40.0 - 24.0) / 2.0;
 
@@ -155,13 +157,17 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     let hidden_width = canvas.get_width();
     assert_eq!(hidden_width, flush + 260.0, "the card takes the Library's room");
 
-    // The hidden column slides over the card from its edge while hovered.
+    // The hidden column slides over the card from its edge while hovered, its tabs inset from its raised
+    // face's top as from its sides; twin: flush with that top, as the docked column meets the card's.
     let surface = lib.get_surface();
     click(&rig, 8.0 + 200.0, tab_y + 8.0);
     assert_eq!(lib.get_surface(), surface, "twin: with nothing revealed the tabs are not there");
     hover(&rig, 4.0, 400.0);
     rig.shot("layout-revealed-library");
-    click(&rig, 8.0 + 200.0, tab_y + 8.0);
+    let tab = common::the(&shell.window, AccessibleRole::Tab, "Projects");
+    assert!((tab.y - (tab_y + COLUMN_INSET)).abs() < 1.0, "the tab a column's inset under the face's top: {tab:?}");
+    assert!((tab.y - tab_y).abs() > 1.0, "twin: not flush with it: {tab:?}");
+    click(&rig, tab.x + tab.width / 2.0, tab.y + tab.height / 2.0);
     assert_ne!(lib.get_surface(), surface, "the revealed column's Projects tab took the click");
     lib.invoke_surface_picked(surface);
     hover(&rig, 600.0, 400.0);

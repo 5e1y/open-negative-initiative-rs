@@ -37,6 +37,8 @@ component SensitivitySlider inherits Slider {
 component CorrectionTile inherits Rectangle {
     in property <int> place;
     in property <CorrectionRow> data;
+    // The dust's side; the tile's own box also takes the gap after it, so the hand never falls between two.
+    in property <length> side;
     // The key's own touch takes the hand from the tile's: either holds the correction shown.
     property <bool> under-hand: touch.has-hover || remove.under-hand;
     changed under-hand => {
@@ -59,8 +61,14 @@ component CorrectionTile inherits Rectangle {
     }
     touch := TouchArea { }
     VerticalLayout {
+        x: 0;
+        y: 0;
+        width: root.side;
+        height: root.side + CropStyle.dust-under;
         spacing: Space.xxs;
         DustOriginal {
+            width: root.side;
+            height: root.side;
             source: root.data.original;
             opacity: root.data.pending ? State.disabled : 1;
         }
@@ -114,17 +122,20 @@ export component DedustPane inherits Pane {
         help: @tr("Paint over a defect; the tool duplicates a matching patch of the same photo over it.");
         separated: false;
         BrushSlider { }
-        // The corrections as a grid of their dust and numbers, as many to a row as the pane holds.
+        // The corrections as a grid of their dust and numbers, as many to a row as the pane holds, their
+        // tiles widened to fill it edge to edge.
         if Dedust.rows.length > 0: Rectangle {
-            property <length> across: CropStyle.dust-original + Space.xs;
-            property <length> down: CropStyle.dust-tile + Space.xs;
-            property <int> columns: max(1, floor((self.width + Space.xs) / self.across));
+            property <int> columns: max(1, floor((self.width + Space.xs) / (CropStyle.dust-original + Space.xs)));
+            property <length> side: (self.width - (self.columns - 1) * Space.xs) / self.columns;
+            property <length> across: self.side + Space.xs;
+            property <length> down: self.side + CropStyle.dust-under + Space.xs;
             height: ceil(Dedust.rows.length / self.columns) * self.down - Space.xs;
             for row[i] in Dedust.rows: CorrectionTile {
                 x: mod(i, parent.columns) * parent.across;
                 y: floor(i / parent.columns) * parent.down;
-                width: CropStyle.dust-original;
-                height: CropStyle.dust-tile;
+                width: parent.across;
+                height: parent.down;
+                side: parent.side;
                 place: i;
                 data: row;
             }

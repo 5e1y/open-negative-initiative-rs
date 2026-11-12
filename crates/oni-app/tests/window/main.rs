@@ -65,6 +65,7 @@ mod keycap_cost;
 mod medal_keys;
 mod launch;
 mod library_column;
+mod column_pin;
 mod library_wide;
 mod locate;
 mod masks;
@@ -211,6 +212,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests", keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests),
     ("launch::the_starter_says_each_step_then_grows_into_the_app_and_the_notice_covers_the_window", launch::the_starter_says_each_step_then_grows_into_the_app_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
+    ("column_pin::the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it", column_pin::the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it),
     ("library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches", library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches),
     ("library_column::a_long_tree_makes_only_the_rows_near_its_view", library_column::a_long_tree_makes_only_the_rows_near_its_view),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),

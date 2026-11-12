@@ -8642,5 +8642,47 @@
     "title": "The batch and De-dust's corrections laid together hold on Windows: DirectX 12's software adapter, through FXC and DXC",
     "status": "done",
     "detail": "#1722 and #1723 had run on Metal only, and their instanced shaders (a stage's frame and parameters read from storage tables of structs, a cell aligned on 16 bytes, private copies, a work-group depth an instance) reach DirectX 12 through naga's HLSL. On a GitHub runner (windows-2025, Microsoft Basic Render Driver, wgpu compiling through FXC as no dxcompiler.dll is on the PATH, which is what the shipped app does too), commit e0c139c9: the whole suite as ci.yml runs it is green, 107 binaries and 1 504 checks, then the phone link's 8 and 70, with oni-graph's batch and oni-pipeline's healing in it, 3 checks each. Those two run alone with their output shown: no shader refused; a batch lies 0 from its members chained and the corrections 0 from each laid in turn at scales 1, 0.37 and 0.06, where Metal gives 1.0e-6, then 0, 1.5e-6 and 2.6e-7; the twins lie 0.06 to 0.80 away on both; 7 passes for 4 members as for 200 (chained 26 and 1 202), 6 then 8 for 5 corrections as for 200 (in turn 30 and 1 200, then 40 and 1 600). With the runner's own DXC 1.9 on the PATH, which wgpu then picks (shader model 6): the same six checks pass, 2.6e-7 and 6.2e-8 from their references at most. The tolerance (1e-5) stays as Metal set it. Not verified: a real Windows GPU, the runner's adapter being software, whose driver may round the two compilations apart as Metal does; the whole suite through DXC; any timing on Windows."
+  },
+  {
+    "id": 1715,
+    "type": "fix",
+    "title": "De-dust's grid fills its pane, the gaps between tiles belong to a tile",
+    "status": "done",
+    "detail": "Owner's report: the grid stopped short of the pane's edge, and the hand crossing the few points between two tiles showed every patch again for an instant. The tiles now widen to fill the pane edge to edge, as many to a row as fit at their 56-point least side, and each tile's box takes the gap after it, so the hand is always on one. The grid check measures the row against the pane, twin the least side stopping short, and moves the pointer through a gap."
+  },
+  {
+    "id": 1716,
+    "type": "fix",
+    "title": "The folded column's tabs inset from its raised face's top",
+    "status": "done",
+    "detail": "Owner's report: slid over the card, the left column's Archive and Projects tabs touched its top. The tree's tab bar meets the canvas card's top when docked; on its own raised face it is now inset by the column's inset, as at its sides. The layout check reads the tab's place, twin flush with the top."
+  },
+  {
+    "id": 1717,
+    "type": "fix",
+    "title": "The tree's clip on whole device pixels, no sliver past the held roll",
+    "status": "done",
+    "detail": "Owner's report: past the roll held at the top of the editor's column, a line of what scrolls under it still showed. The tree's box, laid by the column, can start between two device pixels; femtovg's clip then leaves the edge pixel half to the rows under the held one and half to its ground, which blend through. The clip now starts and ends on whole device pixels inside the box. The window checks' software renderer never blends the clip, so the new column_pin check reads the geometry at 1.5 device pixels a point: the held row on a whole pixel, twin the box laid between two."
+  },
+  {
+    "id": 1718,
+    "type": "fix",
+    "title": "The roll card keeps its last read while a medal's write reads it again",
+    "status": "done",
+    "detail": "Owner's report: a medal given from the gallery made the right column flicker. Every sidecar write dropped the roll card's frames read, so the card fell back to its reading state, its note off, until the read landed. A write now marks the read due and the card keeps the roll's last read until the new one lands. The roll card check gives a medal and reads the card's note at once, through its read and its Undo; without the change it fails."
+  },
+  {
+    "id": 1719,
+    "type": "change",
+    "title": "Settings with the board's header, as the other sheets",
+    "status": "done",
+    "detail": "Owner's report: Settings did not follow the other sheets. It now has the board's header (SheetHeader.bar): the title beside its DONE key over a rule edge to edge, its footer gone, and the rule between its pages' rail and the page shown runs from that rule to the sheet's foot."
+  },
+  {
+    "id": 1725,
+    "type": "change",
+    "title": "A choice holding one keycap holds keycaps alone",
+    "status": "done",
+    "detail": "Owner's rule: where a choice has one key as a keycap, every key of it is a keycap, the others on the face of the ground they stand on. Button gains `ground`, the face of a keycap beside the one that stands out. SheetFooter's Cancel, step back and remove, a question's Cancel and answers once one confirms, and the panel header's Cancel beside DONE are keycaps on the ground's face; a choice with no keycap, as a passing notice's OK or a question of options, stays flat. Tabs alike: every tab a key raised from the hollow, the one taken on the pill's face, in place of one pill sliding."
   }
 ]

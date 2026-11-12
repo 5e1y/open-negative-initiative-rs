@@ -148,7 +148,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(back.x - (cancel.x + cancel.width) >= 2.0 * group, "twin: Cancel stands far from them: {cancel:?} {back:?}");
     assert!(common::placed(w, Role::Button, "Skip").is_empty(), "the keycap alone goes on");
     assert_eq!((cancel.y, cancel.height, p.get_footer_height()), (first.0.y, first.0.height, first.1), "one footer on every step");
-    assert!(cancel.height < p.get_footer_height(), "twin: the keycap lays the footer, taller than a flat key");
+    assert!(p.get_footer_height() > 32.0, "twin: keycaps lay the footer, taller than a flat key's 32 pt");
     // At the keycap's place, a click goes on without the base, which keeps no mark; Back returns to it.
     let (x, y) = action();
     click(&rig, x, y);

@@ -114,6 +114,21 @@ pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
     assert!(key.1 > h / 3.0, "the notice is centred, not hung from the window's top");
 }
 
+/// Where a card's ground ends going down from `(x, y)`: the first point whose colour leaves it.
+fn foot(rig: &common::Rig, (x, y): (f32, f32)) -> f32 {
+    let (width, px) = rig.drawn();
+    let luma = |y: f32| {
+        let v = px[y as usize * width + x as usize].0;
+        i32::from((v >> 11) & 0x1f) * 255 / 31 + i32::from((v >> 5) & 0x3f) * 255 / 63 + i32::from(v & 0x1f) * 255 / 31
+    };
+    let ground = luma(y);
+    let mut at = y;
+    while (luma(at) - ground).abs() < 24 {
+        at += 1.0;
+    }
+    at
+}
+
 /// The top edge of the key whose click fires `heard` at `x`, read at one pixel's step from `from`.
 fn edge(rig: &common::Rig, heard: &Cell<bool>, x: f32, from: f32, to: f32) -> Option<f32> {
     let mut y = from;
@@ -214,8 +229,8 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
     }
 }
 
-/// The Settings sheet stands at its tallest page's height, so DONE stays put from section to section.
-/// Twin: General ends far above DONE, room a sheet fit to the page shown would close.
+/// The Settings sheet stands at its tallest page's height, so its foot and its header's DONE stay put from
+/// section to section. Twin: General ends far above the foot, room a sheet fit to the page shown would close.
 pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
@@ -232,15 +247,20 @@ pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
         rig.settle();
     };
     shown(0);
-    let done = common::the(&window, Role::Button, "DONE");
+    let done = common::the(&window, Role::Button, "Done");
+    let about = common::the(&window, Role::ListItem, "About");
+    let below = (about.x + 4.0, about.y + about.height + 4.0);
+    let bottom = foot(&rig, below);
     let last = common::the(&window, Role::Text, "A click as each key is pressed and released.");
     for section in [1, 2, 4, 0] {
         shown(section);
-        let at = common::the(&window, Role::Button, "DONE");
-        assert!((at.y - done.y).abs() < 0.5 && (at.x - done.x).abs() < 0.5, "section {section}: DONE at {at:?}, {done:?} on General");
+        let at = common::the(&window, Role::Button, "Done");
+        assert!((at.y - done.y).abs() < 0.5 && (at.x - done.x).abs() < 0.5, "section {section}: Done at {at:?}, {done:?} on General");
+        assert!((foot(&rig, below) - bottom).abs() < 0.5, "section {section}: the foot at {}, {bottom} on General", foot(&rig, below));
     }
-    let room = done.y - (last.y + last.height);
-    assert!(room > 60.0, "twin: General's last line ends {room} px above DONE");
+    assert!(done.y < about.y, "the DONE key heads the sheet, over its pages");
+    let room = bottom - (last.y + last.height);
+    assert!(room > 60.0, "twin: General's last line ends {room} px above the foot");
     // One switch on beside the others off, for the eye.
     settings.set_keep_zoom(true);
     shown(1);
@@ -250,10 +270,12 @@ pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
 
 /// The clear gap between what leaves and what commits, the proposal's 12 pt at the least.
 const FOOTER_GAP: f32 = 12.0;
+/// `ButtonStyle.height`: a flat key's.
+const FLAT: f32 = 32.0;
 /// Swift's `DS.Space.sm` between the keys of one group.
 const GROUP_GAP: f32 = 8.0;
 
-/// A sheet's footer: Cancel flat at its left, the commit a keycap alone at its right, a clear gap between;
+/// A sheet's footer: Cancel at its left, the commit at its right, both keycaps, a clear gap between;
 /// a question's Cancel at the card's left and its key at its right, destructive or not; a preset's Delete
 /// alone at the left end.
 pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
@@ -273,7 +295,10 @@ pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
     let (cancel, send) = (common::the(&window, Role::Button, "Cancel"), common::the(&window, Role::Button, "Send"));
     let gap = send.x - (cancel.x + cancel.width);
     assert!(gap >= FOOTER_GAP, "Cancel stands apart from Send: {gap} pt");
-    assert!(send.height > cancel.height && send.level_with(&cancel), "Send is the keycap, taller than the flat Cancel on its row: {send:?} {cancel:?}");
+    // A choice holding one keycap holds keycaps alone: Cancel is one, on Send's row and height; twin: taller
+    // than a flat key.
+    assert!(send.height == cancel.height && send.level_with(&cancel), "Cancel a keycap beside Send: {send:?} {cancel:?}");
+    assert!(cancel.height > FLAT, "twin: Cancel taller than a flat key: {cancel:?}");
     help.set_report_shown(false);
 
     let confirm = window.global::<Confirm>();
