@@ -23,6 +23,7 @@ mod column_menu;
 mod crop_session;
 mod frame_gesture;
 mod frame_owner;
+mod folder_owner;
 mod face_turn;
 mod density;
 mod picture_plots;

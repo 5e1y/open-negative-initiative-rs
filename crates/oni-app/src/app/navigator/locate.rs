@@ -27,7 +27,7 @@ pub(super) struct Leads {
 impl State {
     /// Where the opened folder out of reach seems to be now, once looked for off this thread.
     pub(in crate::app) fn lead(&self) -> Option<&Lead> {
-        let opened = self.opened.as_deref()?;
+        let opened = self.opened()?;
         let looked = self.nav.leads.looked.as_ref()?;
         (paths::same(&looked.0, opened) && !self.opened_presence().is_present()).then_some(self.nav.leads.lead.as_ref()).flatten()
     }
@@ -138,10 +138,14 @@ impl Ctl {
             s.nav.model.follow(old, new);
             s.nav.favourites.follow(old, new);
             let failure = s.save_favourites();
-            if let Some(opened) = s.opened.clone().filter(|o| holds(old, o)) {
+            if let Some(opened) = s.opened().map(str::to_owned).filter(|o| holds(old, o)) {
                 let moved = paths::moved(&opened, old, new);
-                let _ = s.preferences.set(crate::preferences::OPENED_FOLDER, Value::String(moved.clone()));
-                s.opened = Some(moved);
+                let _ = s.preferences.set(crate::preferences::OPENED_FOLDER, Value::String(moved));
+            }
+            // The folder asked and the one shown follow alike; the rows follow with the move below.
+            let s = &mut *s;
+            for at in s.heading.iter_mut().chain(s.folder.iter_mut().map(|f| &mut f.path)).filter(|at| holds(old, at)) {
+                *at = paths::moved(at, old, new);
             }
             // What was known of the old places says nothing of the new ones.
             s.nav.presence.retain(|p, _| !holds(old, p));
@@ -229,7 +233,7 @@ impl Ctl {
                     s.nav.leads.looked = None;
                     s.nav.leads.lead = None;
                     let kept = s.index_path.parent().map(|caches| oni_library::kept::file(&caches.join("Surveys"), folder));
-                    let opened = s.opened.as_deref().is_some_and(|o| holds(o, folder) || holds(folder, o));
+                    let opened = s.opened().is_some_and(|o| holds(o, folder) || holds(folder, o));
                     Ok((prints, kept, s.support.clone(), failure, opened))
                 }
             }
@@ -265,7 +269,7 @@ impl Ctl {
         let (job, dropped) = {
             let mut s = self.state.borrow_mut();
             let presence = s.opened_presence();
-            let key = s.opened.clone().map(|o| (o, presence, s.nav.model.volumes.clone()));
+            let key = s.opened().map(str::to_owned).map(|o| (o, presence, s.nav.model.volumes.clone()));
             if s.nav.leads.looked == key {
                 return;
             }

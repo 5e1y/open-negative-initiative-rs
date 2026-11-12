@@ -165,8 +165,8 @@ impl Ctl {
             if !answering.is_empty() {
                 s.nav.model.retry();
             }
-            let opened = s.opened.clone();
-            let refused = opened.as_ref().is_some_and(|o| answering.contains(o) && s.survey.unreadable.contains(o));
+            let opened = s.opened().map(str::to_owned);
+            let refused = opened.as_ref().is_some_and(|o| answering.contains(o) && s.survey().unreadable.contains(o));
             let reread = refused || opened.as_ref().is_some_and(|o| on(&arrived, o));
             (moved, left, reread, !arrived.is_empty())
         };

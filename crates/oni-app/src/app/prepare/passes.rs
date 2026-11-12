@@ -125,7 +125,7 @@ impl Roll {
 
 impl Ctl {
     pub(super) fn known(&self) -> Known {
-        self.state.borrow().rows.iter().map(|e| (e.path.clone(), (e.captured_at, e.leads_passes))).collect()
+        self.state.borrow().rows().iter().map(|e| (e.path.clone(), (e.captured_at, e.leads_passes))).collect()
     }
 
     /// `rollCaptureBinding`: a new capture regroups, and RGB Passes reads the first frame's files.

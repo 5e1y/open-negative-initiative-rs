@@ -9328,5 +9328,33 @@
     "title": "#271's detail says what the opening resets",
     "status": "done",
     "detail": "#271 said the opening reset Requests, Dust and Compare whole; it resets Dust and Requests, Compare's split is turned off by leave_modes and befores counts across photos. The detail now says so, and where #1830 moved them."
+  },
+  {
+    "id": 1840,
+    "type": "refactor",
+    "title": "The folder shown is one Folder the state owns, the folder asked its heading",
+    "status": "done",
+    "detail": "app/folder.rs: Folder { path, rows, survey, copies, staged, read_done } replaces State.opened, rows, survey, copies, read_done and org.staged; State.folder is the folder the archive shows, State.heading the folder asked whose read has not landed. open_spelt sets the heading and leaves the shown folder whole; take_rows on a current read assigns a whole Folder and clears the heading. State::opened() (heading, else shown) serves the navigator's row, the openedFolder preference, the watches, Refresh, the banner, the load bar's condition and read_again; State::shown() serves the archive's lay, the band, the medal's reread (on the window and off it), the survey's marker and folder writes and the member rolls. read_done() is the asked folder read whole. The fresh unfold is taken by the first lay after the heading lands. Seen through it: a medal given while another folder's read ran reread the rows under the folder asked and laid them with the old survey; it now rereads the shown folder's rows under its own path. fingerprints stays in State, the tile keys of every surface (the ONI Trash's and the projects' too)."
+  },
+  {
+    "id": 1841,
+    "type": "refactor",
+    "title": "One Ticket type numbers the folder reads and the thumbnails' pass",
+    "status": "done",
+    "detail": "ticket.rs: Ticket (next, supersede, standing) and Asked (current). State.reads replaces the static READS and the read half of State.generation: open_spelt and followed supersede it, every read takes next(), the read thread and take_rows test current(). State.folder_turns replaces generation's other half: a folder opened or moved stops the thumbnails' pass and a settling read; fill takes standing(), so a read again leaves the pass running as before. Two tickets, not one: merging them would stop the pass at every read again."
+  },
+  {
+    "id": 1842,
+    "type": "check",
+    "title": "A folder asked keeps the one shown whole until its read lands",
+    "status": "done",
+    "detail": "window check folder_owner: B asked while A shows, B's landings held unpumped: opened() is B, shown() A, the load bar counts A's 3 rows; a medal on A2's tile rereads A's rows under A's path, A's tiles and the bar stay, the medal shows; released, the first landing makes B asked and shown with no tile of A. Twins: the same rows reread under B's path hold none of A's; A2's tile is gone once B lands. With the medal's reread under the folder asked the check fails at 'the medal lands on A's tile'."
+  },
+  {
+    "id": 1843,
+    "type": "check",
+    "title": "An ask stays current until a newer one or a supersession",
+    "status": "done",
+    "detail": "ticket::tests: next() and standing() current until another next() or supersede(); twins: the older asks read stale. architecture.rs: app.rs's ceiling lowered to 463."
   }
 ]

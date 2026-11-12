@@ -247,7 +247,7 @@ impl Ctl {
         }
         let (index_path, support, computer, kept) = {
             let s = self.state.borrow();
-            let mut kept: Vec<String> = s.opened.iter().cloned().collect();
+            let mut kept: Vec<String> = s.opened().into_iter().map(str::to_owned).collect();
             kept.extend(s.nav.favourites.paths.iter().cloned());
             (s.index_path.clone(), s.support.clone(), s.nav.computer.clone(), kept)
         };
@@ -261,13 +261,6 @@ impl Ctl {
                 with_shell(|c| c.read_library());
             }
         });
-    }
-}
-
-impl State {
-    /// The name a row's tile goes by (`thumbnails::key`): a copy's is told from the other's.
-    pub(super) fn tile_key(&self, e: &oni_library::Entry) -> String {
-        thumbnails::key(&e.fingerprint, &e.path, &self.copies)
     }
 }
 

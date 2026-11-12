@@ -45,17 +45,18 @@ pub(super) fn prepared_keeping(engine: &Shared, path: &str, reading: render::Rea
 
 /// The renderer's thread for thumbnails: an edit's redraw first, then the pass's next photo, each
 /// waiting while a hand holds a control, so a drag never shares the GPU with the gallery.
-pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previews>>, hands: Arc<AtomicUsize>, generation: Arc<AtomicU64>, support: PathBuf, screen: Screen) {
+pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previews>>, hands: Arc<AtomicUsize>, support: PathBuf, screen: Screen) {
+    use crate::ticket::Asked;
     enum Next {
         Redraw(String, Option<String>),
-        Pass(u64, Vec<(String, String)>, Vec<String>),
-        Fill(u64, String, String),
+        Pass(Asked, Vec<(String, String)>, Vec<String>),
+        Fill(Asked, String, String),
     }
     std::thread::Builder::new()
         .name("thumbnails".into())
         .spawn(move || {
             crate::decode_gate::in_background();
-            let mut current: Option<(u64, VecDeque<(String, String)>)> = None;
+            let mut current: Option<(Asked, VecDeque<(String, String)>)> = None;
             let mut seed = 0u32;
             loop {
                 let next = {
@@ -73,7 +74,7 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                         if let Some((g, queue)) = current.as_mut()
                             && let Some((path, fingerprint)) = queue.pop_front()
                         {
-                            break Next::Fill(*g, path, fingerprint);
+                            break Next::Fill(g.clone(), path, fingerprint);
                         }
                         paint = wake.wait(paint).expect("painter");
                     }
@@ -83,12 +84,12 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                         let (held, absent): (Vec<_>, Vec<_>) = rows.into_iter().partition(|(_, f)| thumbnails::is_held(&support, f));
                         let unreachable = gone.iter().filter(|f| !thumbnails::is_held(&support, f)).count();
                         let counts = (held.len(), absent.len());
-                        current = Some((g, absent.into()));
+                        current = Some((g.clone(), absent.into()));
                         with_shell(move |c| c.pass_counted(g, counts.0, counts.1, unreachable));
                         continue;
                     }
                     Next::Fill(g, path, fingerprint) => {
-                        if generation.load(Ordering::Relaxed) != g {
+                        if !g.current() {
                             current = None;
                             continue;
                         }

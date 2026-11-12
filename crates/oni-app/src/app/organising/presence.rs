@@ -17,7 +17,7 @@ impl State {
 
     /// The opened folder's state, kept whatever it is: a folder away stays the one opened.
     pub fn opened_presence(&self) -> Presence {
-        match self.opened.as_deref() {
+        match self.opened() {
             Some(o) if self.org.left.iter().any(|v| holds(v, o)) => Presence::Offline(Away::Disconnected),
             Some(_) => self.org.opened_presence,
             None => Presence::Present,
@@ -36,8 +36,9 @@ impl State {
 
     /// Each row's state and the opened folder's, cut from the survey they landed with.
     pub(in crate::app) fn landed_presence(&mut self) {
-        let survey = self.survey.clone();
-        for e in &self.rows {
+        let Some(shown) = &self.folder else { return };
+        let survey = &shown.survey;
+        for e in &shown.rows {
             let state = survey.presence(&e.path);
             // Each path's key kept, never cloned again, as every landing passes every row.
             match self.org.presence.get_mut(&e.path) {
@@ -47,7 +48,7 @@ impl State {
                 }
             }
         }
-        self.org.opened_presence = self.opened.as_deref().map(|o| survey.presence(o)).unwrap_or_default();
+        self.org.opened_presence = survey.presence(&shown.path);
     }
 }
 
@@ -57,7 +58,7 @@ impl Ctl {
     pub fn probe_presence(self: &Rc<Self>) {
         let paths: Vec<String> = {
             let s = self.state.borrow();
-            let mut paths: HashSet<String> = s.rows.iter().map(|e| e.path.clone()).collect();
+            let mut paths: HashSet<String> = s.rows().iter().map(|e| e.path.clone()).collect();
             paths.extend(s.order.iter().cloned());
             paths.into_iter().collect()
         };
@@ -71,7 +72,7 @@ impl Ctl {
         }
         let (computer, leads) = {
             let s = self.state.borrow();
-            let leads: HashSet<String> = s.rows.iter().filter(|e| e.leads_passes).map(|e| e.path.clone()).collect();
+            let leads: HashSet<String> = s.rows().iter().filter(|e| e.leads_passes).map(|e| e.path.clone()).collect();
             (s.nav.computer.clone(), leads)
         };
         let _ = std::thread::Builder::new().name("presence".into()).spawn(move || {

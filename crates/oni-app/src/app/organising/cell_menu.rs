@@ -84,7 +84,7 @@ impl Ctl {
     }
 
     pub(super) fn cell_items(&self, s: &State, path: &str, scope: &HashSet<String>, edit: bool, can_paste: bool) -> Vec<Item> {
-        let rolled: HashSet<String> = s.rows.iter().filter(|e| e.film.is_some()).map(|e| e.path.clone()).collect();
+        let rolled: HashSet<String> = s.rows().iter().filter(|e| e.film.is_some()).map(|e| e.path.clone()).collect();
         let projects: Vec<(Id, String)> = s.org.projects.iter().map(|p| (p.id, p.name.clone())).collect();
         let rows = s.reach();
         let reach = project::Reach::new(&rows, &s.org.found);

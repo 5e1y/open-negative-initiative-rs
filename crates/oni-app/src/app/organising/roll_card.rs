@@ -49,7 +49,7 @@ impl State {
 
     /// The photos a folder's marker gathers: every frame lying in it, passes and trashed photos aside.
     pub(in crate::app) fn folder_frames(&self, folder: &str) -> Vec<String> {
-        self.rows
+        self.rows()
             .iter()
             .filter(|e| e.pass_of.is_none() && e.trashed_at.is_none() && oni_library::paths::same(&oni_library::paths::parent(&e.path), folder))
             .map(|e| e.path.clone())

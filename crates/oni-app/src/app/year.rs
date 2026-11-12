@@ -117,7 +117,7 @@ impl Ctl {
     pub fn offer_wrapped_when_read(self: &Rc<Self>) {
         let reading = {
             let s = self.state.borrow();
-            s.opened.is_some() && !s.read_done
+            s.opened().is_some() && !s.read_done()
         };
         if reading {
             self.state.borrow_mut().year.offer_due = true;

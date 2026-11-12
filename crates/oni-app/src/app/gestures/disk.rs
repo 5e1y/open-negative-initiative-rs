@@ -28,7 +28,7 @@ impl Ctl {
         let (ordered, earliest) = {
             let s = self.state.borrow();
             let ordered: Vec<String> = s.order.iter().filter(|p| targets.contains(*p)).cloned().collect();
-            let dates = s.rows.iter().filter(|e| targets.contains(&e.path)).filter_map(|e| e.captured_at);
+            let dates = s.rows().iter().filter(|e| targets.contains(&e.path)).filter_map(|e| e.captured_at);
             (ordered, dates.reduce(|a, b| if b < a { b } else { a }))
         };
         if ordered.is_empty() {
@@ -159,7 +159,8 @@ impl Ctl {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
             // A read in flight surveyed the old names: superseded, its rows would drop the moved picks.
-            s.generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            s.reads.supersede();
+            s.folder_turns.supersede();
             // The store first: the open frame's next write and the edits kept unsaved go to the new path.
             s.store.follow(moves);
             if let Some(index) = &s.index {
@@ -170,12 +171,15 @@ impl Ctl {
                     }
                 }
             }
-            for row in s.rows.iter_mut().chain(s.org.standing.iter_mut()).chain(s.org.trashed.iter_mut()) {
+            let shown = s.folder.as_mut().map(|f| f.rows.iter_mut()).into_iter().flatten();
+            for row in shown.chain(s.org.standing.iter_mut()).chain(s.org.trashed.iter_mut()) {
                 carry(&mut row.path);
             }
-            let fingerprints = s.rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
+            let fingerprints = s.rows().iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
             s.fingerprints = fingerprints;
-            survey_moved(Arc::make_mut(&mut s.survey), &moved);
+            if let Some(shown) = s.folder.as_mut() {
+                survey_moved(Arc::make_mut(&mut shown.survey), &moved);
+            }
             s.order.iter_mut().for_each(carry);
             // `selection` and `ring` follow too, so a photo moved is never opened where it was.
             let picks = &mut s.picks;

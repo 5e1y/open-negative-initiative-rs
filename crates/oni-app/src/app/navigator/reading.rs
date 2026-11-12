@@ -18,9 +18,9 @@ impl Ctl {
     pub(in crate::app) fn navigator_read(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            let rolls: HashSet<String> = s.survey.rolls.keys().cloned().collect();
-            if let Some(opened) = s.opened.clone() {
-                s.nav.roll_edits.retain(|k, _| !holds(&opened, k));
+            let rolls: HashSet<String> = s.survey().rolls.keys().cloned().collect();
+            if let Some(shown) = s.shown().map(str::to_owned) {
+                s.nav.roll_edits.retain(|k, _| !holds(&shown, k));
             }
             s.nav.opened_rolls = rolls;
         }

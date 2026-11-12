@@ -101,13 +101,13 @@ impl Ctl {
         self.on_disk(busy, marked, move |c, (outcome, reread)| c.marks_landed(title, &targets, &outcome, date, reread));
     }
 
-    /// `library::reread` for a gesture's thread, on a connection of its own, of the folder open now.
+    /// `library::reread` for a gesture's thread, on a connection of its own, of the folder shown now.
     fn reread_apart(&self) -> impl FnOnce(&[String]) -> library::Reread + Send + 'static {
-        let (index_path, opened) = {
+        let (index_path, shown) = {
             let s = self.state.borrow();
-            (s.index_path.clone(), s.opened.clone())
+            (s.index_path.clone(), s.shown().map(str::to_owned))
         };
-        move |paths| LibraryIndex::open(&index_path).map(|index| library::reread(&index, paths, opened.as_deref())).unwrap_or_default()
+        move |paths| LibraryIndex::open(&index_path).map(|index| library::reread(&index, paths, shown.as_deref())).unwrap_or_default()
     }
 
     fn marks_landed(self: &Rc<Self>, title: &str, targets: &[String], outcome: &oni_library::trash::Outcome, date: Option<oni_settings::Date>, reread: library::Reread) {

@@ -14,9 +14,10 @@ impl Ctl {
         self.open_spelt(oni_library::paths::canonical(folder));
     }
 
-    /// `open_folder` on a path already in the archive's spelling, which reads no disk here.
+    /// `open_folder` on a path already in the archive's spelling, which reads no disk here; the
+    /// folder shown stays whole until the new one's first landing replaces it.
     pub(super) fn open_spelt(self: &Rc<Self>, folder: String) {
-        let (generation, index_path) = {
+        let index_path = {
             let mut s = self.state.borrow_mut();
             s.org.trash_open = false;
             s.org.renaming = None;
@@ -24,56 +25,62 @@ impl Ctl {
             s.org.opened_presence = oni_library::presence::Presence::Present;
             s.trash_picks = Default::default();
             s.org.gear_shown = false;
-            s.opened = Some(folder.clone());
+            s.heading = Some(folder.clone());
             s.reveal.fresh = true;
             let _ = s.preferences.set(preferences::OPENED_FOLDER, serde_json::Value::String(folder.clone()));
             s.opening = None;
-            s.read_done = false;
             s.creating = (0, 0);
             s.painted = (0, 0);
             s.painter.0.lock().expect("painter").pass = None;
-            (s.generation.fetch_add(1, Ordering::Relaxed) + 1, s.index_path.clone())
+            s.folder_turns.supersede();
+            s.reads.supersede();
+            s.index_path.clone()
         };
         self.navigator_opened(&folder);
-        self.read_folder(generation, folder, index_path);
+        self.read_folder(folder, index_path);
     }
 
     /// `rescan`: the opened folder read again, the index trimmed to what the disk holds.
     pub(super) fn read_again(self: &Rc<Self>) {
-        let (folder, index_path, generation) = {
+        let (folder, index_path) = {
             let mut s = self.state.borrow_mut();
-            let Some(folder) = s.opened.clone() else { return };
-            s.read_done = false;
-            (folder, s.index_path.clone(), s.generation.load(Ordering::Relaxed))
+            let Some(folder) = s.opened().map(str::to_owned) else { return };
+            if let Some(shown) = s.folder.as_mut() {
+                shown.read_done = false;
+            }
+            (folder, s.index_path.clone())
         };
-        self.read_folder(generation, folder, index_path);
+        self.read_folder(folder, index_path);
     }
 
     /// A roll marker this app just wrote, laid as the survey would have read it, with no read back.
     pub(super) fn roll_written(&self, folder: &str, film: Option<oni_settings::Film>) {
         let mut s = self.state.borrow_mut();
-        let holding = s.survey.images.iter().any(|i| oni_library::paths::same(&oni_library::paths::parent(i), folder));
-        let rolls = &mut Arc::make_mut(&mut s.survey).rolls;
+        let Some(shown) = s.folder.as_mut() else { return };
+        let holding = shown.survey.images.iter().any(|i| oni_library::paths::same(&oni_library::paths::parent(i), folder));
+        let rolls = &mut Arc::make_mut(&mut shown.survey).rolls;
         match film.filter(|_| holding) {
             Some(film) => rolls.insert(folder.to_owned(), film),
             None => rolls.remove(folder),
         };
     }
 
-    /// The archive cut again from the rows held, under the filter; what the hand folded stays so,
-    /// except in a folder just opened.
+    /// The archive cut again from the shown folder's rows, under the filter; what the hand folded
+    /// stays so, except in a folder just opened, which is fresh from its first landing on.
     pub(super) fn lay_archive(self: &Rc<Self>) {
-        let Some(folder) = self.state.borrow().opened.clone() else {
+        if self.state.borrow().folder.is_none() {
             // The ONI Trash and the projects are the library's, laid with no folder open too.
             self.read_library();
             return self.lay_grid();
-        };
+        }
         let (title, stock, restocked) = {
-            let mut s = self.state.borrow_mut();
-            let fresh = std::mem::take(&mut s.reveal.fresh);
-            let (old, staged) = (s.archive.take(), s.org.staged.take());
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            let fresh = s.heading.is_none() && std::mem::take(&mut s.reveal.fresh);
+            let folder = s.folder.as_mut().expect("a folder shown");
+            let (old, staged) = (s.archive.take(), folder.staged.take());
             let folded = old.as_ref().filter(|_| !fresh).map(Archive::folded);
-            let (mut archive, relaid) = Archive::relaid(old, staged, &folder, &s.rows, &s.survey, s.filter);
+            let (mut archive, relaid) = Archive::relaid(old, staged, &folder.path, &folder.rows, &folder.survey, s.filter);
             match (relaid, folded) {
                 (library::Relaid::Cut, Some(folded)) => archive.keep_folded(&folded),
                 (library::Relaid::Cut, None) => {}
@@ -82,7 +89,7 @@ impl Ctl {
             }
             // Rows alike but for their medals name the same photos: the store's list stands.
             if relaid == library::Relaid::Cut {
-                let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
+                let every: Vec<String> = folder.rows.iter().map(|e| e.path.clone()).collect();
                 s.store.set_archive_paths(every);
             }
             let (title, stock) = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
@@ -108,19 +115,19 @@ impl Ctl {
     /// photo whose original cannot be reached is never decoded, only counted once if it lacks one.
     pub(super) fn fill(&self) {
         let s = self.state.borrow();
-        let generation = s.generation.load(Ordering::Relaxed);
+        let pass = s.folder_turns.standing();
         // A pair's JPEG stands behind its RAW: no tile shows it, so none is drawn.
         let behind: HashSet<&String> = s.archive.as_ref().map(|a| a.companions.values().collect()).unwrap_or_default();
         let (rows, gone): (Vec<_>, Vec<_>) = s
-            .rows
+            .rows()
             .iter()
             // A file the cloud keeps away is drawn once opened, never downloaded by the pass.
-            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path) && !behind.contains(&e.path))
+            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey().cloud.contains(&e.path) && !behind.contains(&e.path))
             .map(|e| (e.path.clone(), s.tile_key(e)))
             .partition(|(path, _)| s.presence(path).is_present());
         let gone = gone.into_iter().map(|(_, fingerprint)| fingerprint).collect();
         let (lock, wake) = &*s.painter;
-        lock.lock().expect("painter").pass = Some((generation, rows, gone));
+        lock.lock().expect("painter").pass = Some((pass, rows, gone));
         wake.notify_one();
     }
 
@@ -159,10 +166,10 @@ impl Ctl {
 
     /// The pass's count once it knows which photos lack a file, and one line for those whose
     /// original cannot be reached, never one per photo.
-    pub(super) fn pass_counted(&self, generation: u64, held: usize, absent: usize, unreachable: usize) {
+    pub(super) fn pass_counted(&self, pass: crate::ticket::Asked, held: usize, absent: usize, unreachable: usize) {
         {
             let mut s = self.state.borrow_mut();
-            if s.generation.load(Ordering::Relaxed) != generation {
+            if !pass.current() {
                 return;
             }
             s.painted = (held, held + absent);
@@ -174,12 +181,12 @@ impl Ctl {
     }
 
     /// A drawn thumbnail lands in memory and on every tile holding its photo; a failure says why.
-    pub(super) fn thumb_landed(&self, pass: Option<u64>, fingerprint: String, drawn: Result<(Vec<u8>, usize, usize), String>, name: String) {
+    pub(super) fn thumb_landed(&self, pass: Option<crate::ticket::Asked>, fingerprint: String, drawn: Result<(Vec<u8>, usize, usize), String>, name: String) {
         let failure = {
             let mut s = self.state.borrow_mut();
             s.org.thumbnails_landed += 1;
             match pass {
-                Some(g) if g == s.generation.load(Ordering::Relaxed) => {
+                Some(pass) if pass.current() => {
                     s.painted.0 += 1;
                     s.creating.0 += 1;
                 }

@@ -147,7 +147,7 @@ impl State {
     /// A folder's state wherever it shows: inside an opened folder out of reach, that folder's.
     pub(in crate::app) fn folder_presence(&self, path: &str) -> Presence {
         let opened = self.opened_presence();
-        if !opened.is_present() && self.opened.as_deref().is_some_and(|o| paths::holds(o, path)) {
+        if !opened.is_present() && self.opened().is_some_and(|o| paths::holds(o, path)) {
             return opened;
         }
         self.row_presence(path)
@@ -160,7 +160,7 @@ impl State {
         if !presence.is_present() {
             return (reach(presence), tile_note(presence, path, &self.nav.computer).into(), SharedString::new());
         }
-        if self.survey.cloud.contains(path) {
+        if self.survey().cloud.contains(path) {
             return (crate::Reach::Here, tr("In the cloud: opening it downloads it").into(), SharedString::new());
         }
         if let Some(format) = self.org.seen.unsupported.get(path) {
@@ -184,10 +184,10 @@ impl State {
         }
         if self.opened_presence() == Presence::Missing {
             keys.push(BannerKey::Locate);
-            if self.opened.as_deref().is_some_and(|o| self.nav.favourites.contains(o)) {
+            if self.opened().is_some_and(|o| self.nav.favourites.contains(o)) {
                 keys.push(BannerKey::Unfavourite);
             }
-            if !self.rows.is_empty() {
+            if !self.rows().is_empty() {
                 keys.push(BannerKey::Forget);
             }
         }
@@ -208,7 +208,7 @@ impl Ctl {
         self.look_for_lead();
         let (shown, keys) = {
             let s = self.state.borrow();
-            let folder = s.opened.clone().filter(|_| !s.trash_shown() && !s.org.projects_surface);
+            let folder = s.opened().map(str::to_owned).filter(|_| !s.trash_shown() && !s.org.projects_surface);
             let presence = s.opened_presence();
             let mut words = folder.as_deref().and_then(|f| banner_words(presence, f, &s.nav.computer, !s.order.is_empty()));
             if let (Some((_, message)), Some(lead)) = (words.as_mut(), s.lead()) {
@@ -235,7 +235,7 @@ impl Ctl {
     pub(in crate::app) fn banner_acted(self: &Rc<Self>, i: usize) {
         let (key, opened) = {
             let s = self.state.borrow();
-            (s.banner_keys().get(i).copied(), s.opened.clone())
+            (s.banner_keys().get(i).copied(), s.opened().map(str::to_owned))
         };
         let Some(folder) = opened else { return };
         match key {

@@ -51,7 +51,7 @@ impl Ctl {
         if !s.nav.fresh.on {
             return;
         }
-        let deep: Vec<String> = s.opened.iter().filter(|_| !s.org.trash_open).cloned().collect();
+        let deep: Vec<String> = s.opened().into_iter().filter(|_| !s.org.trash_open).map(str::to_owned).collect();
         let model = &s.nav.model;
         let unfolded = |r: &String| model.unfolded.contains(r) || model.unfolded_favourites.contains(r);
         let mut flat: Vec<String> = s.nav.rows.iter().filter(|r| unfolded(r)).cloned().collect();
@@ -94,8 +94,8 @@ impl Ctl {
             for folder in &touched.flat {
                 s.nav.model.list(folder, true);
             }
-            let opened = s.opened.clone().filter(|o| touched.deep.iter().any(|d| paths::same(d, o)));
-            if opened.is_some() && !s.read_done {
+            let opened = s.opened().map(str::to_owned).filter(|o| touched.deep.iter().any(|d| paths::same(d, o)));
+            if opened.is_some() && !s.read_done() {
                 s.nav.fresh.stale = true;
                 None
             } else {
@@ -113,7 +113,7 @@ impl Ctl {
     pub(in crate::app) fn reads_held(&self) {
         {
             let mut s = self.state.borrow_mut();
-            let running = !s.read_done;
+            let running = !s.read_done();
             s.nav.fresh.stale |= running;
         }
         self.read_superseded();
@@ -147,14 +147,14 @@ impl Ctl {
     pub(in crate::app) fn refresh(self: &Rc<Self>) {
         let opened = {
             let mut s = self.state.borrow_mut();
-            let held: HashSet<String> = s.rows.iter().map(|e| e.path.clone()).collect();
-            s.nav.fresh.refreshing = s.opened.as_ref().map(|_| held);
+            let held: HashSet<String> = s.rows().iter().map(|e| e.path.clone()).collect();
+            s.nav.fresh.refreshing = s.opened().map(|_| held);
             let listed: Vec<String> = s.nav.model.listings.keys().cloned().collect();
             for folder in listed {
                 s.nav.model.list(&folder, true);
             }
             s.nav.model.retry();
-            s.opened.clone()
+            s.opened().map(str::to_owned)
         };
         self.list_wanted();
         self.rewatch_anew();
@@ -174,7 +174,7 @@ impl Ctl {
         }
         let (opened, away, looking) = {
             let s = self.state.borrow();
-            let Some(opened) = s.opened.clone().filter(|_| s.read_done) else { return };
+            let Some(opened) = s.opened().map(str::to_owned).filter(|_| s.read_done()) else { return };
             (opened, s.nav.fresh.away.clone(), s.nav.fresh.looking.clone())
         };
         let seen = away.lock().expect("away").take().filter(|(folder, _)| *folder == opened);
@@ -193,7 +193,7 @@ impl Ctl {
         let (same, reading) = {
             let mut s = self.state.borrow_mut();
             s.nav.fresh.returns += 1;
-            (s.opened.as_deref() == Some(folder.as_str()), !s.read_done)
+            (s.opened() == Some(folder.as_str()), !s.read_done())
         };
         match (same, moved, reading) {
             (false, ..) => {}
@@ -207,7 +207,7 @@ impl Ctl {
     fn note_listing(&self) {
         let (opened, away, noting) = {
             let s = self.state.borrow();
-            let Some(opened) = s.opened.clone() else { return };
+            let Some(opened) = s.opened().map(str::to_owned) else { return };
             (opened, s.nav.fresh.away.clone(), s.nav.fresh.noting.clone())
         };
         if noting.swap(true, Ordering::AcqRel) {
@@ -241,10 +241,10 @@ impl State {
 
     /// What a read changed against the photos held before it: added, gone, out of reach.
     fn refreshed(&self, before: &HashSet<String>) -> String {
-        let now: HashSet<&String> = self.rows.iter().map(|e| &e.path).collect();
+        let now: HashSet<&String> = self.rows().iter().map(|e| &e.path).collect();
         let added = now.iter().filter(|p| !before.contains(**p)).count() as u64;
         let gone = before.iter().filter(|p| !now.contains(p)).count() as u64;
-        let away = self.rows.iter().filter(|e| !self.presence(&e.path).is_present()).count() as u64;
+        let away = self.rows().iter().filter(|e| !self.presence(&e.path).is_present()).count() as u64;
         let mut said: Vec<String> = Vec::new();
         if added > 0 {
             said.push(trn("{n} photo added.", "{n} photos added.", added));

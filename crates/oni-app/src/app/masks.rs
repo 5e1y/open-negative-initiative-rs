@@ -173,7 +173,7 @@ impl Ctl {
             let s = self.state.borrow();
             match &s.index {
                 Some(index) => index.all().iter().any(|e| e.path == path),
-                None => s.rows.iter().any(|e| e.path == path),
+                None => s.rows().iter().any(|e| e.path == path),
             }
         };
         if member {
@@ -213,7 +213,9 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             s.previews.lock().expect("previews").remove(path);
-            s.rows.retain(|e| e.path != path);
+            if let Some(shown) = s.folder.as_mut() {
+                shown.rows.retain(|e| e.path != path);
+            }
             s.order.retain(|p| p != path);
             s.picks.selection.remove(path);
         }
