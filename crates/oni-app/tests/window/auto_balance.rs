@@ -47,7 +47,7 @@ pub(crate) fn the_key_balances_the_open_frame_off_the_interface_thread_and_one_u
     let window = rig.window.clone();
     let folder = mirror(&roll);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), Options::default()).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), Options::default()).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     window.set_size(PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();

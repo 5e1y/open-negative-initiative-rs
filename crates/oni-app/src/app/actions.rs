@@ -86,9 +86,7 @@ impl Ctl {
             Act::Paste => self.paste(),
             Act::PasteToRoll => self.paste_to_roll(),
             Act::CopyFraming => {
-                if let Some(store) = self.state.borrow_mut().store.editor() {
-                    store.copy_framing();
-                }
+                self.state.borrow_mut().store.copy_framing();
                 self.board_out(crate::pasteboard::FRAMING);
                 self.publish_framing();
             }
@@ -160,7 +158,7 @@ impl Ctl {
         }
         let failure = self.state.borrow_mut().store.flush();
         // Edits kept from a refused write are lost on quitting too, so they ask the same.
-        let kept = self.state.borrow().store.editor_ref().and_then(|e| e.unsaved().first().map(|u| u.message.clone()));
+        let kept = self.state.borrow().store.unsaved().first().map(|u| u.message.clone());
         let Some(message) = failure.or(kept) else { return self.quit_exporting() };
         self.ask(
             tr("Your latest settings could not be saved"),

@@ -66,8 +66,8 @@ impl Ctl {
             let before = project::rosters(&s.org.projects);
             let moved = gesture(&mut s.org.projects, &project::Reach::new(&rows, &s.org.found));
             let members = oni_library::history::Members { before, after: project::rosters(&s.org.projects) };
-            if let Some(store) = s.store.editor().filter(|_| moved) {
-                store.record_members(members, label);
+            if moved {
+                s.store.record_members(members, label);
             }
             moved
         };
@@ -87,9 +87,7 @@ impl Ctl {
             let s = &mut *guard;
             let found = s.org.projects.clone();
             project::regroup(&mut s.org.projects, from, to);
-            if let Some(store) = s.store.editor() {
-                store.walked(undone, &found, &s.org.projects);
-            }
+            s.store.walked(undone, &found, &s.org.projects);
             let ringed = |id: &Id| s.org.projects.iter().any(|p| p.id == *id);
             if matches!(&s.org.project_ring, Some(NodeId::Project(r)) if !ringed(r)) {
                 s.org.project_ring = None;

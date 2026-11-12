@@ -62,7 +62,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support: support.clone(), caches, picker: Box::new(|| None), require_roll: true, ..Options::default() };
     let radius = || oni_app::preferences::Preferences::load(&support).value(oni_measure::roll::BASE_RADIUS_KEY).and_then(serde_json::Value::as_f64);
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();

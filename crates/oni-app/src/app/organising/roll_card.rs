@@ -138,7 +138,7 @@ impl Ctl {
             s.org.frames = Some((key.clone(), last.clone()));
             s.org.frames_due = false;
             let open = s.open.clone().map(|p| (p, s.store.settings().clone()));
-            (key, s.store.editor().map(|e| e.mosaic_rule())?, open, last)
+            (key, s.store.mosaic_rule(), open, last)
         };
         let frames = frames.to_vec();
         let _ = std::thread::Builder::new().name("reading a roll's frames".into()).spawn(move || {

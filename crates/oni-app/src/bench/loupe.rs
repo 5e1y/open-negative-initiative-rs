@@ -21,7 +21,7 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let timer = &held;
         let Some(ctl) = me.upgrade() else { return timer.stop() };
         let Some(w) = ctl.window() else { return };
-        let (panel, band, g) = (w.global::<crate::PanelState>(), w.global::<crate::DetailLoupe>(), w.global::<StoreGlobal>());
+        let (panel, band, g) = (w.global::<crate::PanelState>(), w.global::<crate::DetailLoupe>(), w.global::<Store>());
         let loupes = ctl.state.borrow().loupes();
         let n = step.get();
         let landed = |since: Option<(Instant, u64)>| since.filter(|(_, before)| loupes > *before).map(|(at, _)| at.elapsed().as_secs_f64() * 1000.0);
@@ -30,7 +30,7 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if ctl.state.borrow().renders() < 1 {
                     return;
                 }
-                start.set(ctl.state.borrow().store().get(Field::SharpenAmount));
+                start.set(crate::store::get(ctl.state.borrow().store(), Field::SharpenAmount));
                 panel.set_tab(3);
                 panel.invoke_tab_picked(3);
                 asked.set(Some((Instant::now(), loupes)));
@@ -63,12 +63,12 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 lines.borrow_mut().push(format!("200 %: {ms:.0} ms, {} × {} source px at {}", size.width, size.height, band.get_ratio()));
                 band.invoke_toggled();
                 for _ in 0..LOUPE_NOTCHES {
-                    if ctl.state.borrow().store().get(Field::SharpenAmount) == start.get() {
+                    if crate::store::get(ctl.state.borrow().store(), Field::SharpenAmount) == start.get() {
                         break;
                     }
                     ctl.act(crate::Act::Undo);
                 }
-                let back = ctl.state.borrow().store().get(Field::SharpenAmount) == start.get();
+                let back = crate::store::get(ctl.state.borrow().store(), Field::SharpenAmount) == start.get();
                 lines.borrow_mut().push(format!("undone to the amount it started from: {back}"));
                 timer.stop();
                 panel.set_tab(2);

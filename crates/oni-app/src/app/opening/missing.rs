@@ -97,7 +97,7 @@ impl Ctl {
 
     /// The open frame's original cannot be seen, so its sliders take no hand.
     pub(in crate::app) fn inert(&self) -> bool {
-        self.state.borrow().store.editor_ref().is_some_and(|e| e.inert())
+        self.state.borrow().store.inert()
     }
 
     /// Lays on the canvas why `path` cannot be shown, else clears the note; true when it says so,
@@ -129,7 +129,7 @@ impl Ctl {
         let u = w.global::<crate::Unsaved>();
         let (count, first) = {
             let s = self.state.borrow();
-            let kept = s.store.editor_ref().map_or(&[][..], |e| e.unsaved());
+            let kept = s.store.unsaved();
             let first = kept.first().map(|k| (k.path.clone(), refusal(&s.nav.computer, &k.path, &k.message)));
             (kept.len(), first)
         };
@@ -150,7 +150,7 @@ impl Ctl {
 
     fn unsaved_answered(self: &Rc<Self>, i: i32) {
         match i {
-            0 => self.state.borrow_mut().store.editor().into_iter().for_each(|e| e.discard_unsaved()),
+            0 => self.state.borrow_mut().store.discard_unsaved(),
             1 => return self.retry_unsaved(true),
             _ => {}
         }
@@ -163,7 +163,13 @@ impl Ctl {
     /// Writes the kept edits again, at the hand's word or as a volume comes back; the sheet asks
     /// again while a write is refused, at once when the hand asked, and goes once all are written.
     pub(in crate::app) fn retry_unsaved(&self, asked: bool) {
-        let Some(refused) = self.state.borrow_mut().store.editor().filter(|e| !e.unsaved().is_empty()).map(|e| e.retry_unsaved()) else { return };
+        let refused = {
+            let store = &mut self.state.borrow_mut().store;
+            if store.unsaved().is_empty() {
+                return;
+            }
+            store.retry_unsaved()
+        };
         let shown = self.window().is_some_and(|w| w.global::<crate::Unsaved>().get_shown());
         match refused {
             Some(_) if asked || shown => self.ask_unsaved(),

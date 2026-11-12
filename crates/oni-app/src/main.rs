@@ -148,7 +148,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 // The folded bench pairs a phone, so it offers the link whatever the switch says.
                 let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
                 let options = Options { support, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, ..Options::default() };
-                match Shell::standing(built, Box::new(store), engine, options) {
+                match Shell::standing(built, store, engine, options) {
                     Ok(standing) => {
                         let quitting = standing.ctl.clone();
                         ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));

@@ -9202,5 +9202,26 @@
     "title": "The presets takeover test names no library member",
     "status": "done",
     "detail": "swift_checks' no_crate_trashes_or_removes_a_library_member reads the word `pass` as a library member, so the takeover test's local named so (#1759) read as removing members. The local is now `run`; the check passes 9/9."
+  },
+  {
+    "id": 1822,
+    "type": "refactor",
+    "title": "The shell's store is the editing model itself",
+    "status": "done",
+    "detail": "trait Store had one implementation: State.store is now an EditorStore and Shell::new, with_window and standing take one; editors/mod.rs takes &mut EditorStore. Deleted: the trait, its forwarding impl, the default stubs and the Settings and StoreGlobal aliases, so Store names the Slint global only. changed(&mut EditorStore) -> Vec<Field> and get(&EditorStore, Field) -> f32 are free functions in store.rs; open and open_adjusted map their error to a string at the call, set_archive is set_archive_paths. Tests and benches change only the constructor argument, the Store import and the accessor of a read."
+  },
+  {
+    "id": 1823,
+    "type": "refactor",
+    "title": "The shell reads the store with no absent case",
+    "status": "done",
+    "detail": "About 56 `store.editor()` / `editor_ref()` sites carried a None branch no run could reach, with fallback values (an empty list, false, a default scope, an Undo title with no step). They use the store directly; roll_scope's reference-only scope, the menus' fallback titles and the phone's early returns went with them. Gestures::scanner, a one-field wrapper, is the field."
+  },
+  {
+    "id": 1824,
+    "type": "check",
+    "title": "The store's tests read it through the free functions",
+    "status": "done",
+    "detail": "store.rs's drag and reset tests call changed(&mut s) and get(&s, field) in place of the trait's methods, and editors/tests.rs calls the store's own apply and can_undo; no expectation changed."
   }
 ]

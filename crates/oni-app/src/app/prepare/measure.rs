@@ -145,9 +145,7 @@ impl Ctl {
         };
         self.trace_cleared();
         let Some(written) = written.filter(|w| !w.is_empty()) else {
-            if let Some(store) = self.state.borrow_mut().store.editor() {
-                store.forget_measured();
-            }
+            self.state.borrow_mut().store.forget_measured();
             if !stopped {
                 self.advise(tr("Something Went Wrong"), tr("No frame of this roll could be measured: the files could not be read, or the measuring window holds nothing to balance."));
             }
@@ -157,7 +155,7 @@ impl Ctl {
         };
         let (failure, landed) = {
             let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             let landed = store.land_roll(&written, &prepared);
             let failure = store.failure.take();
             s.last_change = Some(Instant::now());

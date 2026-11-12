@@ -26,7 +26,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     timer.start(TimerMode::Repeated, PACE, move || {
         let Some(ctl) = me.upgrade() else { return held.stop() };
         let Some(w) = ctl.window() else { return };
-        let g = w.global::<StoreGlobal>();
+        let g = w.global::<Store>();
         let field = Field::Exposure.index();
         let n = phase.get();
         match n {

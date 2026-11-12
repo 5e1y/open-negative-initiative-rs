@@ -42,7 +42,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
             Ok(())
         });
         let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), reporter, ..Options::default() };
-        let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+        let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
         rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
         rig.window.set_size(slint::PhysicalSize::new(1280, 800));
         shell.window.show().unwrap();

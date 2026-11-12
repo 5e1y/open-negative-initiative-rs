@@ -72,7 +72,7 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = Computer { home: p(&home), volumes: p(&volumes) };
     let options = Options { support, caches, picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let lib = w.global::<Library>();
@@ -178,7 +178,7 @@ pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = Computer { home: p(&home), volumes: p(&volumes) };
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     shell.add(&home.join("Scans"));

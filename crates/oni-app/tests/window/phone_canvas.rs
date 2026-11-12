@@ -31,7 +31,7 @@ pub(crate) fn a_phone_step_reaches_the_canvas_with_the_panel_folded() {
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| false));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), phone: true, ..Options::default() };
-    let shell = Shell::new(Box::new(store), Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();

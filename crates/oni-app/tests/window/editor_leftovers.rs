@@ -41,7 +41,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
         Box::new(shared.clone())
     };
     let options = Options { support: support.clone(), caches: caches.clone(), picker: Box::new(|| None), pasteboard: board(), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
+    let shell = Shell::new(store, engine.clone(), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -139,7 +139,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     panel.invoke_tab_picked(2);
     w.global::<oni_app::Store>().invoke_step(Field::Exposure.index(), 5);
     rig.pump();
-    let donor = ctl.state.borrow().store().get(Field::Exposure);
+    let donor = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     ctl.act(oni_app::Act::Copy);
     w.global::<oni_app::Presets>().invoke_save_confirmed();
     let seen = board();
@@ -194,7 +194,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
         drop(shell);
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
         let options = Options { support, caches, picker: Box::new(|| None), pasteboard: board(), ..Options::default() };
-        let shell = Shell::new(Box::new(store), engine, options).unwrap();
+        let shell = Shell::new(store, engine, options).unwrap();
         shell.window.show().unwrap();
         let ctl = shell.ctl.clone();
         let lib = shell.window.global::<Library>();
@@ -211,11 +211,11 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
             lib.invoke_tile_clicked(1, false, false);
             rig.until("A rendered again", Duration::from_secs(120), || ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("A.tif")) && ctl.state.borrow().renders() >= 2);
         }
-        let before = ctl.state.borrow().store().get(Field::Exposure);
+        let before = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
         assert!((before - donor).abs() > 1e-3, "B starts elsewhere");
         ctl.act(oni_app::Act::Paste);
         rig.pump();
-        assert!((ctl.state.borrow().store().get(Field::Exposure) - donor).abs() < 1e-6, "the copy crossed the relaunch");
+        assert!((oni_app::store::get(ctl.state.borrow().store(), Field::Exposure) - donor).abs() < 1e-6, "the copy crossed the relaunch");
     }
 }
 

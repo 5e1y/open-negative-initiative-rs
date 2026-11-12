@@ -37,7 +37,7 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let (ww, wh) = (1280.0f32, 800.0f32);
     rig.window.set_size(slint::PhysicalSize::new(ww as u32, wh as u32));
@@ -234,7 +234,7 @@ pub(crate) fn the_estimate_weighs_the_file_the_export_writes() {
     let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { canvas: false, support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let e = shell.window.global::<Exporting>();

@@ -17,19 +17,20 @@ impl Ctl {
         let (failure, stranded) = {
             let mut s = self.state.borrow_mut();
             // The frame left is stranded when its edits join the unsaved ones with this opening.
-            let leaving = s.store.editor_ref().and_then(|e| e.path()).map(str::to_string);
-            let kept = |s: &State| leaving.as_ref().is_some_and(|l| s.store.editor_ref().is_some_and(|e| e.unsaved().iter().any(|u| &u.path == l)));
+            let leaving = s.store.path().map(str::to_string);
+            let kept = |s: &State| leaving.as_ref().is_some_and(|l| s.store.unsaved().iter().any(|u| &u.path == l));
             let was_kept = kept(&s);
             // The flat-field sliders last dialled reach a frame that never had its own; a frame never
             // balanced opens with its measuring window proposed and armed.
             let armed = std::cell::Cell::new(false);
             let opened = s
                 .store
-                .open_adjusted(path, &|o| {
+                .open_adjusted(path, |o| {
                     o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, remembered);
                     armed.set(oni_core::balance::opening_window(o));
                 })
-                .err();
+                .err()
+                .map(|e| e.to_string());
             s.route.armed = armed.get();
             s.open = Some(path.to_string());
             s.org.editing_project = if s.org.projects_surface { s.project_of(path) } else { None };
@@ -50,7 +51,7 @@ impl Ctl {
             }
             (opened, kept(&s) && !was_kept)
         };
-        let read_only = self.state.borrow_mut().store.editor().is_some_and(|e| !e.writable());
+        let read_only = !self.state.borrow_mut().store.writable();
         // Checked before any decode, and said last, so no status of the opening covers it.
         let absent = self.say_absent(path);
         if let Some(w) = self.window() {

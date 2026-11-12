@@ -50,10 +50,8 @@ impl Ctl {
         self.remember(crate::preferences::COPY_CARRIES, rows.iter().cloned().collect::<Vec<_>>().into());
         let failure = {
             let mut s = self.state.borrow_mut();
-            s.store.editor().and_then(|store| {
-                store.copy_settings(from.as_deref(), &rows);
-                store.failure.take()
-            })
+            s.store.copy_settings(from.as_deref(), &rows);
+            s.store.failure.take()
         };
         match failure {
             Some(message) => self.told(tr("Copy Settings"), &message),

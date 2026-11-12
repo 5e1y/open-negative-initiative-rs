@@ -45,7 +45,7 @@ fn launch(d: &Disk, gpu: &oni_app::render::Device) -> Shell {
         computer,
         ..Options::default()
     };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap();
     shell.window.show().unwrap();
     shell
 }

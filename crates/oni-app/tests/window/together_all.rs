@@ -2,7 +2,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Canvas, Library, Store as StoreGlobal};
+use oni_app::{Canvas, Library, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use slint::platform::WindowEvent;
@@ -35,13 +35,13 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    let (lib, canvas, g) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<StoreGlobal>());
+    let (lib, canvas, g) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Store>());
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     rig.settle();

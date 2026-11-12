@@ -54,8 +54,7 @@ impl super::State {
     /// `rollScope`: the frames measured with the open frame's roll, and those of its folder not.
     pub(super) fn roll_scope(&mut self) -> RollScope {
         let Some(id) = self.store.settings().roll_reference.as_ref().map(|r| r.id) else { return RollScope::default() };
-        let Some(store) = self.store.editor() else { return RollScope { reference: true, ..RollScope::default() } };
-        let members = store.measured_with(id);
+        let members = self.store.measured_with(id);
         let open = self.open.clone();
         let folder: Vec<String> = self
             .org
@@ -122,15 +121,13 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let Some(id) = s.store.settings().roll_reference.as_ref().map(|r| r.id) else { return };
             let open = s.open.clone();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             let mut all: HashSet<String> = store.measured_with(id).into_iter().collect();
             all.extend(open);
             all
         };
         self.new_roll_from(&all);
-        if let Some(store) = self.state.borrow_mut().store.editor() {
-            store.forget_measured();
-        }
+        self.state.borrow_mut().store.forget_measured();
         self.publish_bar();
     }
 
@@ -305,7 +302,7 @@ impl Ctl {
         let measure = |path: &str, _: &PipelineSettings| outcomes.get(path).cloned();
         let failure = {
             let mut s = self.state.borrow_mut();
-            let failure = s.store.editor().and_then(|e| e.auto_balance(targets, strategy, &measure));
+            let failure = s.store.auto_balance(targets, strategy, &measure);
             s.last_change = Some(std::time::Instant::now());
             failure
         };

@@ -69,7 +69,7 @@ pub(crate) fn a_detect_pressed_before_the_frame_landed_reads_once_it_lands() {
     let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
     let engine = oni_app::render::Engine::shared(&gpu);
     engine.lock().unwrap().caches = Some(oni_app::patches::caches());
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
@@ -127,7 +127,7 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
     let engine = oni_app::render::Engine::shared(&gpu);
     engine.lock().unwrap().caches = Some(oni_app::patches::caches());
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();

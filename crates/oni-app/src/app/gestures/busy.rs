@@ -87,7 +87,7 @@ impl Ctl {
         }
         let mosaic = {
             let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             store.mark_begun(&targets, date);
             store.mosaic_rule()
         };
@@ -114,7 +114,7 @@ impl Ctl {
         let (failure, frames, folder) = {
             let mut s = self.state.borrow_mut();
             let folder = s.org.restore_told.take().filter(|(_, asked)| asked == targets).map(|(f, _)| f);
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             let frames = store.mark_landed(targets, outcome, date);
             (store.failure.take(), frames, folder)
         };
@@ -149,10 +149,8 @@ impl Ctl {
     }
 
     fn walked(self: &Rc<Self>, title: &str, undoing: bool, touched: &[String], walked: Walked, reread: library::Reread) {
-        if walked.refused
-            && let Some(store) = self.state.borrow_mut().store.editor()
-        {
-            store.walk_refused(undoing);
+        if walked.refused {
+            self.state.borrow_mut().store.walk_refused(undoing);
         }
         if let Some(message) = &walked.said {
             self.told_with(title, message, walked.left_in.clone());

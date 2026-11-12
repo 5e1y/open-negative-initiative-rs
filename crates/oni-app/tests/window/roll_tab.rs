@@ -3,7 +3,7 @@
 //! and the flat-field's toggle, mask picker and Apply to Selection reach the frames.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Library, PanelState, Store as StoreGlobal};
+use oni_app::{Library, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::SourceEncoding;
 use oni_settings::blocks::SeparationFamily;
@@ -36,13 +36,13 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    let (lib, panel, g) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<StoreGlobal>());
+    let (lib, panel, g) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<Store>());
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     lib.invoke_tile_clicked(0, false, false);

@@ -100,7 +100,7 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
 
     // Paste to Roll says how many photos it rewrote, its key taking the paste back.
     let told = w.global::<Told>();
-    let exposure = || ctl.state.borrow().store().get(Field::Exposure);
+    let exposure = || oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     ctl.act(oni_app::Act::Copy);
     w.global::<oni_app::Presets>().invoke_save_confirmed();
     ctl.act(oni_app::Act::PasteToRoll);

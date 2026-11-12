@@ -60,7 +60,7 @@ fn rested(store: &mut EditorStore) {
 /// An undo once the last edit has rested, as a hand reaching for the key does.
 fn undo(store: &mut EditorStore) {
     rested(store);
-    crate::store::Store::apply(store, Command::Undo);
+    store.apply(Command::Undo);
 }
 
 #[test]
@@ -91,7 +91,7 @@ fn a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step() {
     // One undo takes the whole press back.
     undo(&mut store);
     assert!(store.settings().manual_curves.is_neutral());
-    assert!(!crate::store::Store::can_undo(&store), "the press and its drag were one step");
+    assert!(!store.can_undo(), "the press and its drag were one step");
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -105,7 +105,7 @@ fn without_the_hold_each_curve_write_would_be_its_own_step() {
     for k in 1..=3 {
         curves.linked.add(Point::new(0.2 * k as f64, 0.5));
         let next = lay(store.settings(), false, &Edit::Curves(curves.clone()));
-        crate::store::Store::apply(&mut store, Command::Write(Box::new(next)));
+        store.apply(Command::Write(Box::new(next)));
     }
     undo(&mut store);
     assert_eq!(store.settings().manual_curves.linked.points.len(), 4, "one undo took one write back");
@@ -253,7 +253,7 @@ fn the_levels_reset_puts_back_the_three_windows_and_nothing_else() {
     curves.linked.add(Point::new(0.5, 0.6));
     let mut next = lay(store.settings(), false, &Edit::Levels(set));
     next.manual_curves = curves;
-    crate::store::Store::apply(&mut store, Command::Write(Box::new(next)));
+    store.apply(Command::Write(Box::new(next)));
     g.reset(&mut store, Reset::Levels);
     let after = store.settings().levels;
     let mode = store.settings().mode;
@@ -320,7 +320,7 @@ fn a_double_click_on_the_wheel_resets_the_point_s_own_axes() {
     let mut s = store.settings().spectrogram;
     s.set(Band::Red, 5.0, 0.4, 0.3);
     let next = lay(store.settings(), false, &Edit::Spectrogram(s));
-    crate::store::Store::apply(&mut store, Command::Write(Box::new(next)));
+    store.apply(Command::Write(Box::new(next)));
     let wheel = spectrogram::Wheel { side: WHEEL.w };
     let tip = wheel.position(spectrogram::Grip { band: Band::Red, part: spectrogram::Part::Tip }, &s);
     let t0 = Instant::now();
@@ -452,7 +452,7 @@ fn notches_inside_the_settle_delay_are_one_step_and_rested_ones_are_two() {
     // the delay can make them one step.
     g.band_step(&mut store, 1, 1);
     g.band_step(&mut store, 1, 1);
-    assert!(!crate::store::Store::can_undo(&store), "the step waits for the edit to rest");
+    assert!(!store.can_undo(), "the step waits for the edit to rest");
     undo(&mut store);
     assert_eq!(store.settings().spectrogram, rest, "one undo took both notches");
     // Twin: the delay running out between them leaves two steps.

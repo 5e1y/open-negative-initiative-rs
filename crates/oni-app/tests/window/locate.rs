@@ -52,7 +52,7 @@ impl Disk {
             identify,
             ..Options::default()
         };
-        let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(gpu), options).unwrap();
+        let shell = Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap();
         shell.window.show().unwrap();
         shell
     }

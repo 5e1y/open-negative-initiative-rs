@@ -86,7 +86,7 @@ impl Ctl {
         }
         let (g, board, window_board) = {
             let s = self.state.borrow();
-            let board = s.store.editor_ref().is_some_and(|e| e.board.framing.is_some());
+            let board = s.store.board.framing.is_some();
             (s.store.settings().geometry.clone(), board, s.window_board)
         };
         w.global::<PanelState>().set_crop_first(g.crop == Fraction::UNIT && g.measure_window.is_none());

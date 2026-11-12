@@ -213,7 +213,7 @@ impl Ctl {
         if self.busy_said(tr("Something Went Wrong")) {
             return;
         }
-        let laid = self.state.borrow_mut().store.editor().map(|store| store.lay_medal(targets, label)).unwrap_or_default();
+        let laid = self.state.borrow_mut().store.lay_medal(targets, label);
         let mut written = Vec::new();
         let (mut gone, mut said) = (0, Vec::new());
         for (path, done) in laid {

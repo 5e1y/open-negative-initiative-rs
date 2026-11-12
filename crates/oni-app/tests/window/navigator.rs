@@ -112,7 +112,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
             computer: computer.clone(),
             ..Options::default()
         };
-        let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+        let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
         shell.window.show().unwrap();
         shell
     };

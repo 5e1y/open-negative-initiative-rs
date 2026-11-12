@@ -114,7 +114,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     mono.apply(oni_core::Command::Mode(oni_settings::ConversionMode::Monochrome));
     let engine = oni_app::render::Engine::shared(&o.gpu);
     let options = Options { support: o.dir.join("support"), ..Options::default() };
-    let second = Shell::new(Box::new(mono), engine, options).unwrap();
+    let second = Shell::new(mono, engine, options).unwrap();
     second.window.show().unwrap();
     second.window.global::<App>().set_gallery(false);
     let g2 = second.window.global::<Editors>();
@@ -134,7 +134,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     eight.open(&scan).unwrap();
     let engine = oni_app::render::Engine::shared(&o.gpu);
     let options = Options { support: o.dir.join("support"), ..Options::default() };
-    let third = Shell::new(Box::new(eight), engine, options).unwrap();
+    let third = Shell::new(eight, engine, options).unwrap();
     third.window.show().unwrap();
     third.window.global::<App>().set_gallery(false);
     let g3 = third.window.global::<Editors>();
@@ -155,7 +155,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     let engine = oni_app::render::Engine::shared(&o.gpu);
     let picker: Box<dyn Fn() -> Option<PathBuf>> = Box::new(|| None);
     let options = Options { support: o.dir.join("faces-support"), caches: o.dir.join("faces-caches"), picker, ..Options::default() };
-    let fourth = Shell::new(Box::new(store), engine, options).unwrap();
+    let fourth = Shell::new(store, engine, options).unwrap();
     fourth.window.show().unwrap();
     fourth.add(&raw);
     rig.until("the frame in the editor", Duration::from_secs(60), || {

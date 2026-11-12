@@ -21,7 +21,7 @@
 //! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure (`ONI_FOLDED=scanner`: the Scanner
 //! keypad on Frontier) with the panel shown, then folded, counting each step rendered and drawn.
 
-use crate::Store as StoreGlobal;
+use crate::Store;
 use crate::app::Ctl;
 use crate::fields::Field;
 use slint::{ComponentHandle, Model, Timer, TimerMode};
@@ -233,7 +233,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         let timer = &held;
         let Some(ctl) = me.upgrade() else { return timer.stop() };
         let Some(w) = ctl.window() else { return };
-        let g = w.global::<StoreGlobal>();
+        let g = w.global::<Store>();
         let field = drag_field().index();
         let finish = |text: String| {
             timer.stop();

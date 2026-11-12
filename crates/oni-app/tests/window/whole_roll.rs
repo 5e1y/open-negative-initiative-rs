@@ -4,7 +4,7 @@
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Canvas, Library, Store as StoreGlobal};
+use oni_app::{Canvas, Library, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use slint::ComponentHandle;
@@ -40,10 +40,10 @@ pub(crate) fn the_whole_roll_together_ends_when_another_roll_opens() {
     rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    let (canvas, g) = (w.global::<Canvas>(), w.global::<StoreGlobal>());
+    let (canvas, g) = (w.global::<Canvas>(), w.global::<Store>());
     let open = |folder: &Path| {
         shell.open_folder(folder);
         rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());

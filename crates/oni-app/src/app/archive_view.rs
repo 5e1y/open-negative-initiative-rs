@@ -83,7 +83,7 @@ impl Ctl {
             // Rows alike but for their medals name the same photos: the store's list stands.
             if relaid == library::Relaid::Cut {
                 let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
-                s.store.set_archive(every);
+                s.store.set_archive_paths(every);
             }
             let (title, stock) = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
             let restocked = s.nav.set_opened_stocks(archive.roll_stocks());

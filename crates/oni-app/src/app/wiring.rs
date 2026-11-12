@@ -9,7 +9,7 @@ impl Ctl {
         Ctl::wire_dedust(me, window);
         Ctl::wire_missing(me, window);
         crate::editors::wire(me, window);
-        let g = window.global::<StoreGlobal>();
+        let g = window.global::<Store>();
 
         let p = me.clone();
         g.on_press(move |field, _fine| {
@@ -59,7 +59,7 @@ impl Ctl {
             };
             p.place(f, asked);
             if let Some(w) = p.window() {
-                set_readout(&w.global::<StoreGlobal>(), f, p.readout_at(f, live).into());
+                set_readout(&w.global::<Store>(), f, p.readout_at(f, live).into());
             }
             match offer {
                 Offer::Now => p.set(f, live),
@@ -104,7 +104,7 @@ impl Ctl {
         let p = me.clone();
         g.on_step(move |field, by| {
             let Some(f) = Field::from_index(field).filter(|_| !p.inert()) else { return };
-            let v = { let s = p.state.borrow(); crate::slider_track::stepped(f, s.store.get(f), by, &track_on(f, s.store.settings())) };
+            let v = { let s = p.state.borrow(); crate::slider_track::stepped(f, crate::store::get(&s.store, f), by, &track_on(f, s.store.settings())) };
             p.set(f, v);
         });
 

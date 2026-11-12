@@ -10,7 +10,7 @@ pub mod shell;
 pub mod spectrogram;
 mod stored;
 
-use crate::store::Store;
+use oni_core::EditorStore;
 use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
 use geometry::Size;
 use oni_core::Command;
@@ -145,13 +145,9 @@ pub enum Then {
 }
 
 impl Gestures {
-    fn scanner(store: &mut dyn Store) -> bool {
-        store.editor().is_some_and(|e| e.scanner_face)
-    }
-
     /// The face's settings with the hand's edit laid on: what the editors draw.
-    pub fn view(&self, store: &mut dyn Store) -> PipelineSettings {
-        let scanner = Self::scanner(store);
+    pub fn view(&self, store: &mut EditorStore) -> PipelineSettings {
+        let scanner = store.scanner_face;
         let mut f = face(store.settings(), scanner);
         match &self.live {
             Some(Edit::Curves(c)) => f.manual_curves = c.clone(),
@@ -197,19 +193,23 @@ impl Gestures {
         self.focused.then_some(self.selected)
     }
 
-    fn write(&mut self, store: &mut dyn Store, edit: &Edit) {
-        let scanner = Self::scanner(store);
+    fn write(&mut self, store: &mut EditorStore, edit: &Edit) {
+        let scanner = store.scanner_face;
         match edit {
             // Each handle is a knob, which frames together move by its distance from their own window.
-            Edit::Levels(set) => levels::steps(store.settings(), set).into_iter().for_each(|c| store.apply(c)),
-            _ => store.apply(Command::Write(Box::new(lay(store.settings(), scanner, edit)))),
+            Edit::Levels(set) => levels::steps(store.settings(), set).into_iter().for_each(|c| {
+                store.apply(c);
+            }),
+            _ => {
+                store.apply(Command::Write(Box::new(lay(store.settings(), scanner, edit))));
+            }
         }
         self.writes += 1;
     }
 
     /// One write outside a press: a reset, an arrow, a scroll notch, its step closing once it
     /// rests like a press's.
-    fn once(&mut self, store: &mut dyn Store, edit: Edit) -> Then {
+    fn once(&mut self, store: &mut EditorStore, edit: Edit) -> Then {
         store.defer();
         self.write(store, &edit);
         Then::Publish
@@ -223,7 +223,7 @@ impl Gestures {
     }
 
     /// The hand's value to the store at the cadence, or a trailing write scheduled.
-    fn offer(&mut self, store: &mut dyn Store, now: Instant) -> Then {
+    fn offer(&mut self, store: &mut EditorStore, now: Instant) -> Then {
         match self.hand.offer(now) {
             Offer::Now => {
                 if let Some(edit) = self.live.clone() {
@@ -237,7 +237,7 @@ impl Gestures {
     }
 
     /// The trailing hand-off fired: the latest value the hand left.
-    pub fn trailed(&mut self, store: &mut dyn Store, now: Instant) -> Then {
+    pub fn trailed(&mut self, store: &mut EditorStore, now: Instant) -> Then {
         self.hand.trailed(now);
         match self.live.clone() {
             Some(edit) if self.held.is_some() => {
@@ -248,7 +248,7 @@ impl Gestures {
         }
     }
 
-    fn begin(&mut self, store: &mut dyn Store, held: Held, edit: Edit) {
+    fn begin(&mut self, store: &mut EditorStore, held: Held, edit: Edit) {
         store.hold();
         self.held = Some(held);
         self.live = Some(edit);
@@ -256,7 +256,7 @@ impl Gestures {
 
     // MARK: - Pointer
 
-    pub fn press(&mut self, store: &mut dyn Store, plot: Plot, at: (f64, f64), now: Instant) -> Then {
+    pub fn press(&mut self, store: &mut EditorStore, plot: Plot, at: (f64, f64), now: Instant) -> Then {
         let size = self.sizes[plot as usize];
         let view = self.view(store);
         match plot {
@@ -304,7 +304,7 @@ impl Gestures {
         }
     }
 
-    pub fn drag(&mut self, store: &mut dyn Store, plot: Plot, at: (f64, f64), fine: bool, now: Instant) -> Then {
+    pub fn drag(&mut self, store: &mut EditorStore, plot: Plot, at: (f64, f64), fine: bool, now: Instant) -> Then {
         let size = self.sizes[plot as usize];
         let (Some(held), Some(live)) = (self.held, self.live.clone()) else { return Then::Nothing };
         let next = match (held, live) {
@@ -337,7 +337,7 @@ impl Gestures {
 
     /// The press's end, on whichever plot holds it: a double click's second release removes the disc
     /// under it, or puts the saturation point back on neutral; then the last value lands and the step closes.
-    pub fn release(&mut self, store: &mut dyn Store) -> Then {
+    pub fn release(&mut self, store: &mut EditorStore) -> Then {
         let Some(held) = self.held.take() else { return Then::Nothing };
         let channel = self.curve_channel();
         self.band_shown = None;
@@ -365,7 +365,7 @@ impl Gestures {
     }
 
     /// The pointer over the wheel without a press: the point it would take lights up.
-    pub fn hover(&mut self, store: &mut dyn Store, at: Option<(f64, f64)>) -> Then {
+    pub fn hover(&mut self, store: &mut EditorStore, at: Option<(f64, f64)>) -> Then {
         let hovered = match at {
             Some(at) if self.held.is_none() => Some(self.wheel().nearest(at, &self.view(store).spectrogram)),
             _ => None,
@@ -379,7 +379,7 @@ impl Gestures {
 
     /// A scroll along the levels track moves the handle under the pointer, else the nearest, through
     /// the same path as a drag; one across it is left to the panel.
-    pub fn scroll(&mut self, store: &mut dyn Store, plot: Plot, x: f64, dx: f64, dy: f64, fine: bool) -> Option<Then> {
+    pub fn scroll(&mut self, store: &mut EditorStore, plot: Plot, x: f64, dx: f64, dy: f64, fine: bool) -> Option<Then> {
         if plot != Plot::Levels || dx == 0.0 || dx.abs() <= dy.abs() || self.held.is_some() {
             return None;
         }
@@ -398,7 +398,7 @@ impl Gestures {
 
     /// The wheel's keys while it holds the focus: the arrows step the selected point, Tab walks the
     /// wheel; every other key goes on to the window.
-    pub fn key(&mut self, store: &mut dyn Store, text: &str, option: bool) -> Option<Then> {
+    pub fn key(&mut self, store: &mut EditorStore, text: &str, option: bool) -> Option<Then> {
         use slint::platform::Key;
         if !self.focused {
             return None;
@@ -445,8 +445,8 @@ impl Gestures {
     }
 
     /// A reset key: the block at each frame's own rest, every frame shown with the open one.
-    pub fn reset(&mut self, store: &mut dyn Store, block: Reset) -> Then {
-        let scanner = Self::scanner(store);
+    pub fn reset(&mut self, store: &mut EditorStore, block: Reset) -> Then {
+        let scanner = store.scanner_face;
         store.defer();
         store.apply(Command::Each(rest_of(block, scanner)));
         self.writes += 1;
@@ -456,7 +456,7 @@ impl Gestures {
     // MARK: - The band sliders
 
     /// A press on a band slider; the second of a double click puts the axis back on zero.
-    pub fn band_press(&mut self, store: &mut dyn Store, field: usize, now: Instant) -> (bool, Then) {
+    pub fn band_press(&mut self, store: &mut EditorStore, field: usize, now: Instant) -> (bool, Then) {
         let field = field.min(BAND_FIELDS - 1);
         let double = self.band_presses[field].is_some_and(|t| now.duration_since(t) <= DOUBLE_CLICK);
         self.band_presses[field] = Some(now);
@@ -472,7 +472,7 @@ impl Gestures {
         (false, Then::Draw)
     }
 
-    pub fn band_drag(&mut self, store: &mut dyn Store, field: usize, translation: f32, span: f32, fine: bool, now: Instant) -> Then {
+    pub fn band_drag(&mut self, store: &mut EditorStore, field: usize, translation: f32, span: f32, fine: bool, now: Instant) -> Then {
         let (Some(Held::Band { field: held, start }), Some(Edit::Spectrogram(s))) = (self.held, self.live.clone()) else { return Then::Nothing };
         if held != field {
             return Then::Nothing;
@@ -489,14 +489,14 @@ impl Gestures {
         self.offer(store, now)
     }
 
-    pub fn band_release(&mut self, store: &mut dyn Store) -> Then {
+    pub fn band_release(&mut self, store: &mut EditorStore) -> Then {
         if !matches!(self.held, Some(Held::Band { .. })) {
             return Then::Nothing;
         }
         self.release(store)
     }
 
-    pub fn band_scroll(&mut self, store: &mut dyn Store, field: usize, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
+    pub fn band_scroll(&mut self, store: &mut EditorStore, field: usize, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
         if dx == 0.0 || dx.abs() <= dy.abs() || self.held.is_some() {
             return false;
         }
@@ -512,7 +512,7 @@ impl Gestures {
     }
 
     /// An arrow's or accessibility's step: a unit of the readout, a degree or a percent, on its grid.
-    pub fn band_step(&mut self, store: &mut dyn Store, field: usize, direction: i32) -> Then {
+    pub fn band_step(&mut self, store: &mut EditorStore, field: usize, direction: i32) -> Then {
         let s = self.view(store).spectrogram;
         let (band, unit) = (self.selected.band, if field == 0 { 1.0 } else { 0.01 });
         let (low, high) = band_range(field, band);

@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Canvas, Library, PanelState, Store as StoreGlobal};
+use oni_app::{Canvas, Library, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::SourceEncoding;
 use slint::ComponentHandle;
@@ -46,13 +46,13 @@ pub(crate) fn a_decode_under_a_reading_left_never_lands_on_the_canvas() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    let (c, panel, store) = (w.global::<Canvas>(), w.global::<PanelState>(), w.global::<StoreGlobal>());
+    let (c, panel, store) = (w.global::<Canvas>(), w.global::<PanelState>(), w.global::<Store>());
     let renders = || ctl.state.borrow().renders();
     let rendered_past = |n: usize, what: &str| rig.until(what, Duration::from_secs(60), || renders() > n && c.get_frame().size().width > 0);
     shell.open_folder(&folder);

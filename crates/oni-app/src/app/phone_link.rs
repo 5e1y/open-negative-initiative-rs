@@ -111,7 +111,8 @@ impl Ctl {
         let sliders = self.phone_sliders();
         let s = &mut *self.state.borrow_mut();
         let place = s.place();
-        let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
+        let Some(p) = s.phone.as_mut() else { return };
+        let store = &mut s.store;
         p.link.frame = place.map(wire_place);
         p.link.sliders = Box::new(sliders);
         p.link.refresh(store);
@@ -156,7 +157,8 @@ impl Ctl {
             let s = &mut *self.state.borrow_mut();
             let place = s.place();
             let revision = s.store.revision();
-            let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return receipt.applied() };
+            let Some(p) = s.phone.as_mut() else { return receipt.applied() };
+            let store = &mut s.store;
             p.link.frame = place.map(wire_place);
             p.link.sliders = Box::new(sliders);
             let out = p.link.handle(store, event, receipt);

@@ -151,9 +151,7 @@ impl Ctl {
         let others = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         {
             let mut s = self.state.borrow_mut();
-            if let Some(e) = s.store.editor() {
-                e.set_together(others);
-            }
+            s.store.set_together(others);
             s.picks.selection = paths.iter().cloned().collect();
         }
         let id = GROUPS.fetch_add(1, Ordering::Relaxed) + 1;
@@ -242,9 +240,7 @@ impl Ctl {
             return;
         }
         GROUPS.fetch_add(1, Ordering::Relaxed);
-        if let Some(e) = self.state.borrow_mut().store.editor() {
-            e.set_together(Vec::new());
-        }
+        self.state.borrow_mut().store.set_together(Vec::new());
         self.unnumbered();
         self.publish_readouts(Field::ALL);
         self.state.borrow_mut().viewport.fit();
@@ -267,7 +263,7 @@ impl Ctl {
             (s.store.revision(), s.store.settings().clone(), s.open.clone())
         };
         let live: HashMap<String, PipelineSettings> =
-            self.state.borrow().store.editor_ref().map(|e| e.together_live().into_iter().collect()).unwrap_or_default();
+            self.state.borrow().store.together_live().into_iter().collect();
         // A hovered preset previews on every frame, as a click applies it to the whole selection.
         let (lead, live) = {
             let s = self.state.borrow();

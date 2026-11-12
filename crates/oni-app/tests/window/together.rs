@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Canvas, Library, Store as StoreGlobal};
+use oni_app::{Canvas, Library, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use slint::{ComponentHandle, Model};
@@ -35,7 +35,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -118,7 +118,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     rig.settle();
     println!("shot {}", rig.shot("together-grid").display());
 
-    let g = w.global::<StoreGlobal>();
+    let g = w.global::<Store>();
     let field = Field::Exposure.index();
     let left_out = exposure(&path("D"));
     g.invoke_press(field, false);
@@ -154,7 +154,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     lib.invoke_tile_clicked(tile("D"), false, false);
     lib.invoke_tile_opened(tile("D"));
     rig.until("D alone", Duration::from_secs(60), || canvas.get_status().contains(" × "));
-    assert!(ctl.state.borrow().store().editor_ref().is_some_and(|e| e.together().is_empty()));
+    assert!(ctl.state.borrow().store().together().is_empty());
     assert!(!canvas.get_together() && numbers().is_empty(), "twin: one frame alone on the canvas's own ground");
     // The full resolution is built as the frame opens, for every render, a stroke or a zoom.
     rig.until("D's full resolution", Duration::from_secs(10), || ctl.state.borrow().full_built());

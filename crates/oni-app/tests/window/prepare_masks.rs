@@ -132,7 +132,7 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     let engine = oni_app::render::Engine::shared(&gpu);
     let asked = chosen.clone();
     let options = Options { support: support.clone(), caches, picker: Box::new(|| None), mask_picker: Box::new(move || asked.borrow().clone()), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();

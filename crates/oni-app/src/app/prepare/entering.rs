@@ -254,7 +254,7 @@ impl Ctl {
     pub(in crate::app) fn require_roll(self: &Rc<Self>, path: &str) {
         let picked: Vec<String> = {
             let mut s = self.state.borrow_mut();
-            let writable = s.store.editor().is_some_and(|e| e.writable());
+            let writable = s.store.writable();
             let settings = s.store.settings();
             let slide = settings.mode == ConversionMode::Positive;
             if !s.prepare.require || !writable || settings.roll_reference.is_some() || settings.sheet.is_some() || slide {
