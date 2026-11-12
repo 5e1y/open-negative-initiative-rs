@@ -149,15 +149,18 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     // Keep in Library: B stays where it is.
     rig.key("\u{1b}");
     assert!(!dialog.get_shown() && folder.join("B.tif").exists());
-    // A move the disk refuses keeps B open and live, its flat-field and all.
-    use std::os::unix::fs::PermissionsExt;
+    // A move the disk refuses keeps B open and live, its flat-field and all: a file stands where the
+    // presets' folder goes, which every system refuses to move into.
     let presets = flat_fields::presets(&support);
-    std::fs::set_permissions(&presets, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let aside = presets.with_extension("aside");
+    std::fs::rename(&presets, &aside).unwrap();
+    std::fs::write(&presets, b"").unwrap();
     panel.invoke_take_mask();
     rig.until("B taken to be refused", Duration::from_secs(60), || !panel.get_taking_mask());
     dialog.invoke_answered(true, "".into());
     rig.pump();
-    std::fs::set_permissions(&presets, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::remove_file(&presets).unwrap();
+    std::fs::rename(&aside, &presets).unwrap();
     assert_eq!(w.global::<Canvas>().get_status(), "The photo could not be moved to FlatField Presets.");
     assert!(folder.join("B.tif").exists() && !w.global::<App>().get_gallery());
     assert_eq!(ctl.state.borrow().open_path(), Some(canonical("B.tif").as_str()), "B stays open");

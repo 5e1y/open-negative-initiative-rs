@@ -31,6 +31,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     // A named system board on the Mac, so the copy crosses a relaunch without touching the clipboard.
+    #[cfg(target_os = "macos")]
     let board_name = format!("oni-leftovers-{}", std::process::id());
     #[cfg(not(target_os = "macos"))]
     let shared = pasteboard::Shared::default();

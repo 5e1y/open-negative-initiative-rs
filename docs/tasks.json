@@ -9965,5 +9965,12 @@
     "title": "The sidecar corpus dates no one's work: importedAt and trashedAt fixed by scripts/corpus-scrub",
     "status": "done",
     "detail": "Cut the Swift cord, lot 2 review. Five corpus sidecars kept the real day a photo was imported or trashed. scripts/corpus-scrub now sets importedAt to 2000-01-01T00:00:00Z and trashedAt to 2000-01-02T00:00:00Z where they stand (their order kept), refusing a date not written as text, and leaves a document that is no object as it is (it stopped on the broken corpus' array); run over every corpus file, it changed the five and their goldens (examples/reading.rs: imported Date(-31622400), trashed Date(-31536000)), nothing else; the truncated file is named and left, as it should. Task #1950's detail names no machine or private folder any more. Check in migrate::corpus: the_corpus_dates_no_ones_work (every importedAt and trashedAt is the scrub's; a trashed photo stays represented; failed on the head's corpus, naming the five; twin: a real import date is caught). The wide corpus, kept outside the repository, still reads as its 348 goldens."
+  },
+  {
+    "id": 1947,
+    "type": "fix",
+    "title": "Two window checks build on Windows again",
+    "status": "done",
+    "detail": "Windows CI failed to compile the window checks: masks.rs refused the move to FlatField Presets through Unix permissions, editor_leftovers.rs named the macOS board on every system. The refused move is now a file standing where the presets' folder goes, refused on every system; the board's name is macOS only."
   }
 ]
