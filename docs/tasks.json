@@ -8803,5 +8803,40 @@
     "title": "Checks for the sheets' keyboard and a field's undo",
     "status": "done",
     "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
+  },
+  {
+    "id": 1770,
+    "type": "fix",
+    "title": "A frame held on the canvas ends with its overlay and its photo",
+    "status": "done",
+    "detail": "Slint drops a grab with the overlay that holds it and sends no release, so a crop or window drag left by Return, a tool key, a disarm or a walk kept its gesture and the store held: the next Escape laid the old crop or window on the open frame, the next drag after it moved nothing, every later edit joined one undo step and the crop's badge stayed. publish_framing, which decides both overlays, now ends a gesture whose overlay it hides, and open_photo ends one before the next frame opens; end_frame_gesture is the one way out, the release included."
+  },
+  {
+    "id": 1771,
+    "type": "refactor",
+    "title": "One FrameGesture replaces the gesture tuple and its cancelled flag",
+    "status": "done",
+    "detail": "The frame handlers move from dedusting.rs to cropping.rs beside publish_framing. Esc's spent mark lives in the gesture itself, so a new press always starts unspent and frame_cancelled goes."
+  },
+  {
+    "id": 1772,
+    "type": "fix",
+    "title": "A handle's grab ends on a cancel as on a release",
+    "status": "done",
+    "detail": "Grab (ds/frame.slint) ignored PointerEventKind.cancel, which a TouchArea sends as it lets go of the hand on an Exit; it now calls released, as the canvas's paint area already does."
+  },
+  {
+    "id": 1773,
+    "type": "fix",
+    "title": "A De-dust stroke goes with its overlay",
+    "status": "done",
+    "detail": "A stroke cut short by leaving De-dust kept its points, drawn again as a ghost on the next De-dust; publish_dedust clears it where it hides the painting overlay."
+  },
+  {
+    "id": 1774,
+    "type": "check",
+    "title": "Window check frame_gesture",
+    "status": "done",
+    "detail": "A stroke and a crop drag left mid-press by Return, then a window drag left by the walk to B: no stroke drawn again, Undo after the coalescing window takes back a later mirror alone, Esc beside the photo puts back no crop, no kept-size badge, the next window drag moves, B keeps its window under Esc. Twins: the stroke under the hand is drawn, and Esc under a live hand puts the crop back. Run against the code before the fix it failed at four steps, and without open_photo's end at the walk."
   }
 ]

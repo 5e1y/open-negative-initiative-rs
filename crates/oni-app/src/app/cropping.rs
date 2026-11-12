@@ -73,10 +73,21 @@ impl Ctl {
         let cropping = self.cropping();
         let crop_frame = self.image_frame(true);
         let picture_frame = self.image_frame(cropping);
-        let (g, armed, board, window_board) = {
+        let window_frame = if cropping { crop_frame } else { picture_frame };
+        let tab = w.global::<PanelState>().get_tab();
+        let armed = self.state.borrow().route.armed;
+        let crop_shown = cropping && crop_frame.is_some();
+        // The window is the open frame's own: a sheet of frames together shows none.
+        let window_shown = crate::tabs::window_shown(armed, tab) && window_frame.is_some() && !self.together_shown();
+        // A frame held lives as long as its overlay: Slint drops the grab with it and sends no release.
+        let orphaned = self.state.borrow().frame_gesture.is_some_and(|h| !if h.window { window_shown } else { crop_shown });
+        if orphaned && self.end_frame_gesture() {
+            self.publish_bar();
+        }
+        let (g, board, window_board) = {
             let s = self.state.borrow();
             let board = s.store.editor_ref().is_some_and(|e| e.board.framing.is_some());
-            (s.store.settings().geometry.clone(), s.route.armed, board, s.window_board)
+            (s.store.settings().geometry.clone(), board, s.window_board)
         };
         w.global::<PanelState>().set_crop_first(g.crop == Fraction::UNIT && g.measure_window.is_none());
         let f = w.global::<crate::Framing>();
@@ -97,7 +108,7 @@ impl Ctl {
         f.set_has_window(g.measure_window.is_some());
         f.set_can_paste_window(window_board.is_some());
         let c = w.global::<Canvas>();
-        c.set_cropping(cropping && crop_frame.is_some());
+        c.set_cropping(crop_shown);
         if let Some(frame) = crop_frame {
             let (x, y, wd, ht) = frames::shown(g.crop, frame);
             c.set_crop_x(x as f32);
@@ -105,16 +116,13 @@ impl Ctl {
             c.set_crop_width(wd as f32);
             c.set_crop_height(ht as f32);
             // `liveSize`: the kept pixels above the frame while a handle is held, inside the view.
-            let held = self.state.borrow().frame_gesture.is_some_and(|(window, ..)| !window);
+            let held = self.state.borrow().frame_gesture.is_some_and(|h| !h.window);
             let view = (f64::from(c.get_width()), f64::from(c.get_height()));
             c.set_crop_badge(if held { kept.as_str() } else { "" }.into());
             c.set_crop_badge_x((x + wd / 2.0).clamp(BADGE_MARGIN, (view.0 - BADGE_MARGIN).max(BADGE_MARGIN)) as f32);
             c.set_crop_badge_y((y - BADGE_RISE).clamp(BADGE_MARGIN / 2.0, (view.1 - BADGE_MARGIN / 2.0).max(BADGE_MARGIN / 2.0)) as f32);
         }
-        let window_frame = if cropping { crop_frame } else { picture_frame };
-        let tab = w.global::<PanelState>().get_tab();
-        // The window is the open frame's own: a sheet of frames together shows none.
-        c.set_window_shown(crate::tabs::window_shown(armed, tab) && window_frame.is_some() && !self.together_shown());
+        c.set_window_shown(window_shown);
         if let Some(frame) = window_frame {
             let (x, y, wd, ht) = frames::shown(frames::window_shown(&g, cropping), frame);
             c.set_window_x(x as f32);
@@ -122,6 +130,65 @@ impl Ctl {
             c.set_window_width(wd as f32);
             c.set_window_height(ht as f32);
         }
+    }
+
+    /// A frame on the canvas held, moved and let go: one undo step, constrained on every event.
+    pub(super) fn frame_grabbed(self: &Rc<Self>, window: bool, handle: i32) {
+        let Some(handle) = Handle::from_index(handle) else { return };
+        let cropping = self.cropping();
+        let Some(frame) = self.image_frame(cropping || !window) else { return };
+        let mut s = self.state.borrow_mut();
+        let g = s.store.settings().geometry.clone();
+        let from = if window { frames::window_shown(&g, cropping) } else { g.crop };
+        s.frame_gesture = Some(FrameGesture { window, handle, from, size: (frame.2, frame.3), spent: false });
+        s.store.hold();
+    }
+
+    pub(super) fn frame_dragged(self: &Rc<Self>, dx: f32, dy: f32) {
+        let Some(image) = self.image_size() else { return };
+        let cropping = self.cropping();
+        let Some(held) = self.state.borrow().frame_gesture.filter(|h| !h.spent) else { return };
+        let proposed = frames::apply(held.handle, held.from, held.size, (f64::from(dx), f64::from(dy)));
+        let g = self.state.borrow().store.settings().geometry.clone();
+        let next = if held.window {
+            Geometry { measure_window: Some(frames::window_stored(&g, frames::bounded(proposed), cropping)), ..g }
+        } else {
+            frames::constrained_crop(&g, held.handle, proposed, image)
+        };
+        self.write_geometry(next);
+        self.publish_framing();
+    }
+
+    /// `CropOverlay`'s Esc: the held frame back where the press found it, the drag spent.
+    pub(super) fn cancel_frame_drag(self: &Rc<Self>) -> bool {
+        let cropping = self.cropping();
+        let (window, from) = {
+            let mut s = self.state.borrow_mut();
+            let Some(held) = s.frame_gesture.as_mut().filter(|h| !h.spent) else { return false };
+            held.spent = true;
+            (held.window, held.from)
+        };
+        let g = self.state.borrow().store.settings().geometry.clone();
+        let back = if window { Geometry { measure_window: Some(frames::window_stored(&g, from, cropping)), ..g } } else { Geometry { crop: from, ..g } };
+        self.write_geometry(back);
+        self.publish_framing();
+        true
+    }
+
+    pub(super) fn frame_released(self: &Rc<Self>) {
+        if self.end_frame_gesture() {
+            self.publish(false);
+        }
+    }
+
+    /// The held frame let go, by the hand, its overlay gone or its photo left: the drag is one step.
+    pub(super) fn end_frame_gesture(&self) -> bool {
+        let mut s = self.state.borrow_mut();
+        let ended = s.frame_gesture.take().is_some();
+        if ended {
+            s.store.release();
+        }
+        ended
     }
 
     /// An arrow beside the crop moves its frame rather than walk the photos, as on the canvas.
@@ -257,4 +324,15 @@ impl Ctl {
         self.publish_framing();
         self.request_render();
     }
+}
+
+/// A frame held on the canvas: the window's or the crop's, the handle, the frame at the press, the
+/// shown image frame's size in points, and whether Esc put it back, so the rest of the drag moves nothing.
+#[derive(Clone, Copy)]
+pub(super) struct FrameGesture {
+    window: bool,
+    handle: Handle,
+    from: Fraction,
+    size: (f64, f64),
+    spent: bool,
 }

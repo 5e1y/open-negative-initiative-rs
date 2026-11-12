@@ -28,6 +28,8 @@ impl Ctl {
         let c = w.global::<Canvas>();
         // Tiles, marks and strokes show in De-dust alone: a notch or a zoom elsewhere builds none of them.
         if !self.painting() {
+            // A stroke goes with its overlay, whose release Slint never sends once the overlay is gone.
+            self.state.borrow_mut().painting_stroke.clear();
             c.set_painting(false);
             self.publish_found(None);
             c.set_space_held(false);
@@ -239,58 +241,6 @@ impl Ctl {
         };
         if due {
             self.ensure_full();
-        }
-    }
-
-    /// A frame on the canvas held, moved and let go: one undo step, constrained on every event.
-    pub(super) fn frame_grabbed(self: &Rc<Self>, window: bool, handle: i32) {
-        let Some(handle) = Handle::from_index(handle) else { return };
-        let cropping = self.cropping();
-        let Some(frame) = self.image_frame(cropping || !window) else { return };
-        let mut s = self.state.borrow_mut();
-        let g = s.store.settings().geometry.clone();
-        let from = if window { frames::window_shown(&g, cropping) } else { g.crop };
-        s.frame_gesture = Some((window, handle, from, (frame.2, frame.3)));
-        s.store.hold();
-    }
-
-    pub(super) fn frame_dragged(self: &Rc<Self>, dx: f32, dy: f32) {
-        let Some(image) = self.image_size() else { return };
-        let cropping = self.cropping();
-        let Some((window, handle, from, frame)) = self.state.borrow().frame_gesture.filter(|_| !self.state.borrow().frame_cancelled) else { return };
-        let proposed = frames::apply(handle, from, frame, (f64::from(dx), f64::from(dy)));
-        let g = self.state.borrow().store.settings().geometry.clone();
-        let next = if window {
-            Geometry { measure_window: Some(frames::window_stored(&g, frames::bounded(proposed), cropping)), ..g }
-        } else {
-            frames::constrained_crop(&g, handle, proposed, image)
-        };
-        self.write_geometry(next);
-        self.publish_framing();
-    }
-
-    /// `CropOverlay`'s Esc: the held frame back where the press found it, the drag spent.
-    pub(super) fn cancel_frame_drag(self: &Rc<Self>) -> bool {
-        let cropping = self.cropping();
-        let (window, from) = {
-            let mut s = self.state.borrow_mut();
-            let Some((window, _, from, _)) = s.frame_gesture.filter(|_| !s.frame_cancelled) else { return false };
-            s.frame_cancelled = true;
-            (window, from)
-        };
-        let g = self.state.borrow().store.settings().geometry.clone();
-        let back = if window { Geometry { measure_window: Some(frames::window_stored(&g, from, cropping)), ..g } } else { Geometry { crop: from, ..g } };
-        self.write_geometry(back);
-        self.publish_framing();
-        true
-    }
-
-    pub(super) fn frame_released(self: &Rc<Self>) {
-        self.state.borrow_mut().frame_cancelled = false;
-        let held = self.state.borrow_mut().frame_gesture.take().is_some();
-        if held {
-            self.state.borrow_mut().store.release();
-            self.publish(false);
         }
     }
 }
