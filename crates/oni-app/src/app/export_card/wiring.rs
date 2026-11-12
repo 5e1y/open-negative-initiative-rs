@@ -155,19 +155,19 @@ impl Ctl {
             let text = text.to_string();
             let at = row.max(0) as usize;
             match field.as_str() {
-                "name" => r.name = text,
+                "name" => r.row.name = text,
                 "camera" => {
-                    r.metadata.camera = text;
+                    r.row.metadata.camera = text;
                     c.typed_gear.insert((at, oni_library::collection::Gear::Body));
                 }
                 "lens" => {
-                    r.metadata.lens = text;
+                    r.row.metadata.lens = text;
                     c.typed_gear.insert((at, oni_library::collection::Gear::Lens));
                 }
-                "iso" => r.metadata.iso = text,
-                "date" => r.metadata.date = super::dated::exif(&text),
-                "artist" => r.metadata.artist = text,
-                "copyright" => r.metadata.copyright = text,
+                "iso" => r.row.metadata.iso = text,
+                "date" => r.row.metadata.date = super::dated::exif(&text),
+                "artist" => r.row.metadata.artist = text,
+                "copyright" => r.row.metadata.copyright = text,
                 _ => {}
             }
         });
@@ -176,7 +176,7 @@ impl Ctl {
             let current = {
                 let mut c = p.export.borrow_mut();
                 c.film_row = Some(row.max(0) as usize);
-                let film = c.rows.get(row.max(0) as usize).cloned().flatten().map(|r| r.metadata.film).unwrap_or_default();
+                let film = c.rows.get(row.max(0) as usize).cloned().flatten().map(|r| r.row.metadata.film).unwrap_or_default();
                 FILM_STOCKS.iter().position(|k| k.display_name == film).map_or(-1, |i| i as i32)
             };
             // This frame alone: the stock is the frame's, not the roll's.
@@ -189,7 +189,7 @@ impl Ctl {
             if let (Some(row), Some(kind)) = (row, usize::try_from(i).ok().and_then(|i| FILM_STOCKS.get(i)))
                 && let Some(Some(r)) = p.export.borrow_mut().rows.get_mut(row)
             {
-                r.metadata.film = kind.display_name.to_owned();
+                r.row.metadata.film = kind.display_name.to_owned();
             }
             if let Some(row) = row {
                 p.publish_line(row);

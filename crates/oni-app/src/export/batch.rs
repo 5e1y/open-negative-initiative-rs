@@ -17,12 +17,13 @@ pub const DECODERS: usize = crate::decode_gate::DECODES;
 /// the GPU's and the writer's.
 pub const IN_FLIGHT: usize = DECODERS + 2;
 
-/// One frame of a batch: its photo, its file and the line written into it.
+/// One frame of a batch: its photo, its file, the line written into it and what a hand set of it.
 #[derive(Clone, Debug)]
 pub struct Job {
     pub target: Target,
     pub destination: PathBuf,
     pub metadata: ExifMetadata,
+    pub typed: ExifMetadata,
 }
 
 /// How a batch ended: every file written, stopped by the hand, or the first frame that failed.
@@ -212,8 +213,7 @@ pub fn write_batch(engine: &Shared, jobs: &[Job], export: &Settings, ledger: &mu
         let mut ledger = ledger.lock().map_err(|_| Failure::Render)?;
         oni_export::land(Landing { path: &job.destination, ledger: &mut ledger, replacing }, &bytes)?;
         drop(ledger);
-        let mosaic = oni_decode::decodes_via_mosaic(&job.target.path);
-        let _ = oni_settings::sidecar::set_exif(job.metadata.clone(), &job.target.path, mosaic);
+        super::keep_line(&job.target.path, &job.typed);
         Ok(())
     };
     staged(jobs.len(), DECODERS, stop, decode, render, write, landed, Hand::Bounded)
@@ -302,9 +302,9 @@ mod tests {
             let named = |dir: &std::path::Path, t: &Target| dir.join(oni_export::name(&t.path, "", format));
             for t in &targets {
                 let to = Landing { path: &named(&one, t), ledger: &mut Ledger::none(), replacing: false };
-                super::super::write_one(&engine, t, to, &export, &ExifMetadata::default()).unwrap();
+                super::super::write_one(&engine, t, to, &export, &ExifMetadata::default(), &ExifMetadata::default()).unwrap();
             }
-            let jobs: Vec<Job> = targets.iter().map(|t| Job { target: t.clone(), destination: named(&many, t), metadata: ExifMetadata::default() }).collect();
+            let jobs: Vec<Job> = targets.iter().map(|t| Job { target: t.clone(), destination: named(&many, t), metadata: ExifMetadata::default(), typed: ExifMetadata::default() }).collect();
             let (end, _) = write_batch(&engine, &jobs, &export, &mut Ledger::none(), false, &AtomicBool::new(false), |_| {});
             assert_eq!(end, End::Done);
             for t in &targets {

@@ -202,6 +202,11 @@ impl State {
         self.viewport
     }
 
+    /// The last render's size in full-resolution pixels: a frame opened next is laid by it until its own lands.
+    pub fn full_size(&self) -> Option<(f64, f64)> {
+        self.full_size
+    }
+
     pub fn split(&self) -> Option<f32> {
         self.frame.as_ref()?.compare.split
     }

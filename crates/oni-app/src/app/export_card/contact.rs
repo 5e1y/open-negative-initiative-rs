@@ -14,7 +14,7 @@ impl Ctl {
         let (targets, sizes, export, stop, metadata) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();
-            let first = c.rows.first().cloned().flatten().map(|r| r.metadata).unwrap_or_default();
+            let first = c.rows.first().cloned().flatten().map(|r| r.row.metadata).unwrap_or_default();
             let metadata = ExifMetadata { artist: first.artist, copyright: first.copyright, ..ExifMetadata::default() };
             // The sizes the panel laid its sheet on, so the file is the size it said.
             let sizes = c.sizes.iter().copied().collect::<Option<Vec<_>>>();

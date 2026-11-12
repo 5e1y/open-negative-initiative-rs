@@ -95,7 +95,7 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
 
     // A date typed as shown reaches the file in EXIF's form and comes back dashed.
     e.invoke_edited(0, "date".into(), "2026-09-14 16:46:19".into());
-    let kept = export_card::card(&ctl).rows[0].as_ref().map(|r| r.metadata.date.clone());
+    let kept = export_card::card(&ctl).rows[0].as_ref().map(|r| r.row.metadata.date.clone());
     assert_eq!(kept.as_deref(), Some("2026:09:14 16:46:19"));
     e.invoke_full_size();
     rig.settle();

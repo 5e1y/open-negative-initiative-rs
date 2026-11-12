@@ -276,7 +276,9 @@ pub struct State {
     notches: Notches,
     /// When the hand moved the value the next render shows; `None` times a render from its ask.
     moved_at: Option<Instant>,
+    /// The view, and the last render's size in full-resolution pixels, which its scale is counted in.
     viewport: Viewport,
+    full_size: Option<(f64, f64)>,
     views: Notches,
     /// The frame a full resolution is being built for.
     building_full: Option<String>,

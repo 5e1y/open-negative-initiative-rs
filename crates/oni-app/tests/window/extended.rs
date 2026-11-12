@@ -359,7 +359,7 @@ pub(crate) fn an_export_writes_swift_s_pixels_profile_and_tags() {
         let ours_path = scratch.join(format!("{index:05}.{ext}"));
         let target = oni_app::export::Target { path: file.clone(), settings: oni_settings::sidecar::read(&file, true, false).unwrap().settings };
         let fresh = oni_export::Landing { path: &ours_path, ledger: &mut Default::default(), replacing: false };
-        oni_app::export::write_one(&engine, &target, fresh, &settings, &oni_settings::sidecar::ExifMetadata::default()).unwrap_or_else(|err| panic!("{}: {err:?}", file.display()));
+        oni_app::export::write_one(&engine, &target, fresh, &settings, &Default::default(), &Default::default()).unwrap_or_else(|err| panic!("{}: {err:?}", file.display()));
         let ours = written(&ours_path);
         let swift = written(&dir.join("export").join(format!("{index:05}.{ext}")));
         let label = format!("{:12} {format:6} {space:9} {edge:4}", e["file"].as_str().unwrap());

@@ -127,6 +127,7 @@ impl Shell {
             notches: Notches::default(),
             moved_at: None,
             viewport: Viewport::default(),
+            full_size: None,
             views: Notches::default(),
             building_full: None,
             full_failed: HashSet::new(),

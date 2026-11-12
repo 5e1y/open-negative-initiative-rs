@@ -11,7 +11,7 @@ use crate::ticket::{Asked, Ticket};
 use crate::track::{self, DOUBLE_CLICK};
 use crate::{App, ExportLine, Exporting, MainWindow};
 use oni_colour::{OutputProfile, Proof, Space};
-use oni_export::{ExifMetadata, Format, PREVIEW_SIDE, Preset, Resize, Row, Settings};
+use oni_export::{ExifMetadata, Format, PREVIEW_SIDE, Preset, Resize, Settings};
 use oni_library::journal::Kind as Gesture;
 use oni_settings::film::FILM_STOCKS;
 use serde_json::Value;
@@ -84,7 +84,7 @@ pub struct Card {
     pub colour_only: bool,
     pub gamut: bool,
     pub targets: Vec<Target>,
-    pub rows: Vec<Option<Row>>,
+    pub rows: Vec<Option<export::Line>>,
     /// The lines whose camera or lens a hand typed or picked here: the scan's own name the digitiser's.
     pub typed_gear: std::collections::HashSet<(usize, oni_library::collection::Gear)>,
     sizes: Vec<Option<(f64, f64)>>,
@@ -262,7 +262,7 @@ impl Card {
     }
 
     fn line(&self, i: usize) -> ExportLine {
-        let row = self.rows.get(i).cloned().flatten();
+        let row = self.rows.get(i).cloned().flatten().map(|l| l.row);
         let m = row.as_ref().map(|r| r.metadata.clone()).unwrap_or_default();
         let target = &self.targets[i];
         let (preview, state) = match self.previews.get(i) {

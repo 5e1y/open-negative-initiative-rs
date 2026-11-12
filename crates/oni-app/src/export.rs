@@ -2,10 +2,9 @@
 //! targets, each frame's line, the labels that count them, the renders and the write.
 
 use oni_colour::OutputProfile;
-use oni_export::{Format, Resize, Row};
+use oni_export::{Format, Resize};
 use oni_i18n::{tr, trn};
 use oni_settings::PipelineSettings;
-use oni_settings::film::{Film, film_stock};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -13,8 +12,10 @@ pub use oni_export::PREVIEW_SIDE;
 
 pub mod batch;
 pub mod clash;
+mod line;
 mod renders;
 
+pub use line::*;
 pub use renders::*;
 
 /// Rows the full-resolution render reads back at a time, so a frame never needs every stage at once.
@@ -53,28 +54,6 @@ pub mod label {
     pub fn context(count: usize) -> String {
         if count > 1 { tr!("Export… ({count} photos)", count = count) } else { tr("Export…").into() }
     }
-}
-
-/// `openingRow`: the sidecar's typed line, else the scan's own facts with the roll's camera and
-/// stock and the artist and copyright last written.
-pub fn opening_row(path: &Path, roll: Option<&Film>, artist: &str, copyright: &str) -> Row {
-    let name = oni_export::stem(path);
-    let mosaic = oni_decode::decodes_via_mosaic(path);
-    if let Some(typed) = oni_settings::sidecar::read(path, mosaic, false).ok().and_then(|l| l.exif) {
-        return Row { name, metadata: typed };
-    }
-    let mut scan = oni_export::scan_metadata(path);
-    if let Some(body) = roll.and_then(|f| f.camera_body.as_deref()).filter(|b| !b.is_empty()) {
-        scan.camera = body.to_owned();
-    }
-    scan.film = film_stock(roll.and_then(|f| f.stock.as_deref())).map(|k| k.display_name.to_owned()).unwrap_or_default();
-    if scan.artist.is_empty() {
-        scan.artist = artist.to_owned();
-    }
-    if scan.copyright.is_empty() {
-        scan.copyright = copyright.to_owned();
-    }
-    Row { name, metadata: scan }
 }
 
 /// `Geometry.croppedPixelSize`: the frame's size with its quarter turns and crop applied, rounded.

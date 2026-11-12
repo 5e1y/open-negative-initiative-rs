@@ -9489,5 +9489,40 @@
     "title": "Swift is dead: no rule imposes its behaviour",
     "status": "done",
     "detail": "Owner's call (2026-11-12): the Swift app is totally deprecated and every rule imposing a behaviour that comes from it is killed. CLAUDE.md no longer asks for a strict behavioural copy of Swift's result, Swift parity, proof against Swift's outputs, Swift-format sidecars or Swift attributions; docs/parity/ is history. Kept: reading the sidecars a person already has, Swift-written included, as their data."
+  },
+  {
+    "id": 1890,
+    "type": "fix",
+    "title": "The last render's full size is the canvas's, kept across a close",
+    "status": "done",
+    "detail": "State.full_size, beside the viewport whose scale it is counted in, written by lay when a render is placed and never cleared; Frame loses full_size, and Frame::opened carries only the same frame's full resolution, its place starting empty. A frame trashed or moved out no longer takes the size with it, so under Keep Zoom the next frame's thumbnail lies at its photo's size, not its own pixels. #1830's 'the next opening lays its thumbnail at its own size' is withdrawn; app.rs's ceiling goes 462 to 464 for the field."
+  },
+  {
+    "id": 1891,
+    "type": "test",
+    "title": "A trashed frame leaves its size to the canvas; the next is laid at the kept zoom",
+    "status": "done",
+    "detail": "frame.rs: another frame opened takes no place from the last, twin a placed frame holds its place. Window: a_trashed_frame_leaves_its_size_to_the_canvas_and_no_place (was ..._no_place_or_size_behind); the_frame_after_a_trashed_one_is_laid_at_the_kept_zoom at 100 % with every decode place held, B's thumbnail 2400 wide, twin the thumbnail's own width under it. Both failed on the unfixed code (320 wide, size None)."
+  },
+  {
+    "id": 1892,
+    "type": "fix",
+    "title": "An export keeps in the sidecar only the EXIF fields a hand set",
+    "status": "done",
+    "detail": "The line shown is the sidecar's fields laid over the scan's facts, the roll's body and stock and the artist and copyright remembered, derived at every opening (export::opening_line, replacing opening_row and its early return); an export keeps the line beyond what derives (Line::typed against the artist just remembered, export::keep_line, the one set_exif caller). A roll's stock or body set after an export now reaches that frame's line. ExifMetadata gains over and beyond. Same format; a full block from an older sidecar reads as typed. Limit: a derived field cleared by hand cannot be kept, it derives again."
+  },
+  {
+    "id": 1893,
+    "type": "fix",
+    "title": "set_exif writes nothing for an unchanged line",
+    "status": "done",
+    "detail": "The same EXIF as on file, an empty one beside no sidecar included, returns before writing, so exporting a never-edited frame with nothing typed gives it no sidecar."
+  },
+  {
+    "id": 1894,
+    "type": "test",
+    "title": "Kept lines follow their roll; no sidecar for an empty line",
+    "status": "done",
+    "detail": "oni-settings: over and beyond round-trip, twin a blanked field comes back derived; an empty line gives an untouched frame no sidecar, twin a field writes one. oni-app export::line: a kept line follows its roll and a film picked by hand stays, twin the whole line kept freezes the body; the first line's artist is not frozen, twin against the earlier artist. Each failed on the unfixed code."
   }
 ]

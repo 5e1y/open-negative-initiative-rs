@@ -197,6 +197,18 @@ fn the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent() {
     assert!(sidecar::read(&original, true, true).unwrap().exif.is_none() && !text.contains("\"exif\""));
 }
 
+#[test]
+fn an_empty_line_gives_a_frame_never_touched_no_sidecar() {
+    let folder = scratch("sidecar-exif-untouched");
+    let original = folder.join("frame.RW2");
+    std::fs::write(&original, b"raw").unwrap();
+    sidecar::set_exif(ExifMetadata::default(), &original, true).unwrap();
+    assert!(!sidecar::url_for(&original).exists(), "nothing typed, nothing written");
+    // Twin: a line holding a field is written beside the same frame.
+    sidecar::set_exif(ExifMetadata { film: "Kodak Portra 400".into(), ..ExifMetadata::default() }, &original, true).unwrap();
+    assert!(sidecar::url_for(&original).exists());
+}
+
 // MARK: - Correction.selfCheck
 
 #[test]

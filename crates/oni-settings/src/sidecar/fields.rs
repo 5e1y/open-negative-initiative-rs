@@ -44,7 +44,8 @@ pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Erro
     )
 }
 
-/// Sets the frame's EXIF, the settings and the revision untouched.
+/// Sets the frame's EXIF, the settings and the revision untouched; a frame never touched gains no
+/// sidecar for an empty line.
 pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(), Error> {
     let _held = held::hold(original);
     original_present(original)?;
@@ -52,6 +53,10 @@ pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(),
     let existing = read(original, mosaic, true)?;
     if !existing.writable {
         return Err(Error::Newer);
+    }
+    // The same line, an empty one beside no sidecar included, writes nothing.
+    if existing.exif.clone().unwrap_or_default() == exif {
+        return Ok(());
     }
     let settings = existing.settings.clone();
     written(
