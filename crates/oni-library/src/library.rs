@@ -153,7 +153,7 @@ mod tests {
         }
         assert!(index.row(&sheet).is_some_and(|r| r.sheet), "the sheet's row is held, told a sheet");
         let drawn: Vec<String> = index.shown().into_iter().map(|e| e.path).collect();
-        assert_eq!(drawn, [frame.clone()]);
+        assert_eq!(drawn, std::slice::from_ref(&frame));
         // Twin: the same file whose sidecar holds no grid is drawn as any scan is.
         sidecar::write(&PipelineSettings::default(), Path::new(&sheet), sidecar::WriteOptions::default()).unwrap();
         index.upsert(&indexed(&sheet).unwrap()).unwrap();

@@ -18,6 +18,9 @@ doctest = false
 # are managed by hakari.
 
 ### BEGIN HAKARI SECTION
+[lints]
+workspace = true
+
 [dependencies]
 aead = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
 anstyle = { version = "1" }

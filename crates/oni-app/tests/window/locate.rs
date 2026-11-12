@@ -170,7 +170,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     assert!(message.starts_with("None of the 2 photos ONI knew in “Roll 12” is in “Other”."), "{message}");
     shell.window.global::<Confirm>().invoke_answered(false);
     rig.pump();
-    assert_eq!(d.favourites(), [old.clone()]);
+    assert_eq!(d.favourites(), std::slice::from_ref(&old));
     assert_eq!(d.index().under(&old).len(), 2);
     assert_eq!(ctl.state.borrow().opened(), Some(old.as_str()));
 
@@ -179,7 +179,7 @@ pub(crate) fn locate_follows_favourite_rows_and_projects() {
     rig.until("followed", Duration::from_secs(10), || ctl.state.borrow().opened() == Some(new.as_str()));
     assert!(confirm(&shell).is_none(), "photos recognised follow at once");
     assert_eq!(told(&shell).as_deref(), Some("2 photos of 2 recognised in “2026-03 Lisbon”: “Roll 12” follows it."));
-    assert_eq!(d.favourites(), [new.clone()]);
+    assert_eq!(d.favourites(), std::slice::from_ref(&new));
     let rows: Vec<(String, String)> = d.index().under(&d.path("Home/Scans")).into_iter().map(|e| (e.path, e.fingerprint)).collect();
     assert_eq!(rows.len(), 2, "{rows:?}");
     assert!(rows.contains(&(new_a.clone(), print_a.clone())) && rows.contains(&(new_b.clone(), print_b.clone())), "{rows:?}");
@@ -272,7 +272,7 @@ pub(crate) fn forget_touches_no_file() {
     rig.until("B's thumbnail gone", Duration::from_secs(10), || !thumbnail(&print_b).exists());
     assert!(thumbnail(&print_a).exists(), "the copy elsewhere still claims A's thumbnail");
     assert_eq!(d.index().under(&copy).len(), 1, "the copy's row stays");
-    assert_eq!(d.favourites(), [away.clone()], "the favourite gone, the one away kept");
+    assert_eq!(d.favourites(), std::slice::from_ref(&away), "the favourite gone, the one away kept");
     rig.until("the banner without the key", Duration::from_secs(10), || banner(&shell).is_some_and(|b| b.2 == ["Locate…"]));
     let after = listing(&d.root);
     assert_eq!(before.keys().collect::<Vec<_>>(), after.keys().collect::<Vec<_>>());
@@ -348,7 +348,7 @@ pub(crate) fn a_t7_remounted_as_t7_1_is_offered_to_follow() {
     while start.elapsed() < Duration::from_secs(1) {
         rig.pump();
     }
-    assert_eq!(d.favourites(), [scans.clone()]);
+    assert_eq!(d.favourites(), std::slice::from_ref(&scans));
     assert_eq!(ctl.state.borrow().opened(), Some(scans.as_str()));
     rig.settle();
     rig.shot("locate-t7-offered");
@@ -357,7 +357,7 @@ pub(crate) fn a_t7_remounted_as_t7_1_is_offered_to_follow() {
     let moved = d.path("Volumes/T7 1/Scans");
     rig.until("followed", Duration::from_secs(10), || ctl.state.borrow().opened() == Some(moved.as_str()));
     assert_eq!(told(&shell).as_deref(), Some("2 photos of 2 recognised in “T7 1”: “T7” follows it."));
-    assert_eq!(d.favourites(), [moved.clone()]);
+    assert_eq!(d.favourites(), std::slice::from_ref(&moved));
     assert_eq!(d.index().under(&moved).len(), 2);
     assert!(d.index().under(&scans).is_empty());
     rig.until("the folder there", Duration::from_secs(20), || ctl.state.borrow().read_done() && banner(&shell).is_none());

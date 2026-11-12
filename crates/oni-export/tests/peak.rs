@@ -47,7 +47,7 @@ fn peak_of_export(dir: &std::path::Path, held: Option<&Image>) -> usize {
     let to = Landing { path: &path, ledger: &mut ledger, replacing: false };
     let start = LIVE.load(Ordering::Relaxed);
     PEAK.store(start, Ordering::Relaxed);
-    let twin = held.map(|h| h.clone());
+    let twin = held.cloned();
     write(&source, to, render, &PaperCorrection::default(), &export, &ExifMetadata::default(), None).unwrap();
     drop(twin);
     PEAK.load(Ordering::Relaxed) - start

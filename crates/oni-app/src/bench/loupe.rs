@@ -42,7 +42,7 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 lines.borrow_mut().push(format!("first loupe, full resolution built: {ms:.0} ms, {} × {} source px at {}", size.width, size.height, band.get_ratio()));
                 step.set(2);
             }
-            k if k >= 2 && k < 2 + 2 * LOUPE_NOTCHES => {
+            k if (2..2 + 2 * LOUPE_NOTCHES).contains(&k) => {
                 if k % 2 == 0 {
                     g.invoke_step(Field::SharpenAmount.index(), 1);
                     asked.set(Some((Instant::now(), loupes)));

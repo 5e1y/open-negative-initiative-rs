@@ -296,7 +296,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     phase.set(Phase::Dragging { notch, from });
                 } else if let Some((since, renders)) = resized_from.get() {
                     let asked = ctl.state.borrow().renders() - renders;
-                    return finish(format!("bench, {NOTCHES} resizes with no hand on a slider: {asked} renders meanwhile, {} left an edge of the zoomed picture inside\n{}", unfilled.get(), frames_since(&drawn.borrow().borrow(), since)));
+                    finish(format!("bench, {NOTCHES} resizes with no hand on a slider: {asked} renders meanwhile, {} left an edge of the zoomed picture inside\n{}", unfilled.get(), frames_since(&drawn.borrow().borrow(), since)))
                 } else {
                     g.invoke_release(field);
                     phase.set(Phase::Landing { revision: ctl.state.borrow().store().revision(), from });

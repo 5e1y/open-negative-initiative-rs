@@ -49,7 +49,7 @@ fn an_export_never_lands_on_another_original() {
 
     let named = vec![destination(&roll, &nef, "", Format::Jpeg)];
     assert_eq!(named[0], roll.join("P1.jpg"));
-    let found = plan(&named, &[nef.clone()], &ledger);
+    let found = plan(&named, std::slice::from_ref(&nef), &ledger);
     let landed = found.renamed()[0].clone();
     if ignores_case {
         assert_eq!(found.clashes, [Clash::Original], "P1.jpg is P1.JPG on this volume");
@@ -70,14 +70,14 @@ fn an_export_never_lands_on_another_original() {
     std::fs::write(&tif, b"scan").unwrap();
     let twice = vec![roll.join("Q.jpg"), roll.join("q.JPG")];
     assert_eq!(plan(&twice, &[nef.clone(), tif.clone()], &ledger).clashes, [Clash::None, Clash::Twice]);
-    assert_eq!(plan(&[tif.clone()], &[tif.clone()], &ledger).clashes, [Clash::Original]);
+    assert_eq!(plan(std::slice::from_ref(&tif), std::slice::from_ref(&tif), &ledger).clashes, [Clash::Original]);
     assert_eq!(export(&tif, &tif, &mut Ledger::in_support(&support), true), Err(Failure::WouldOverwriteOriginal));
     assert_eq!(std::fs::read(&tif).unwrap(), b"scan");
 
     // An earlier export is offered for Replace while it stands as written, never once changed.
     let ledger = Ledger::in_support(&support);
     assert_eq!(file::standing(&landed, &ledger), Standing::Export);
-    assert_eq!(plan(std::slice::from_ref(&landed), &[nef.clone()], &ledger).clashes, [Clash::Export]);
+    assert_eq!(plan(std::slice::from_ref(&landed), std::slice::from_ref(&nef), &ledger).clashes, [Clash::Export]);
     export(&nef, &landed, &mut Ledger::in_support(&support), true).unwrap();
     assert_eq!(file::standing(&landed, &Ledger::in_support(&support)), Standing::Export, "a replaced export is still ONI's");
     std::fs::write(&landed, b"another app saved over it").unwrap();
@@ -91,7 +91,7 @@ fn an_export_never_lands_on_another_original() {
     let nef = other.join("P1.NEF");
     std::fs::write(&nef, b"raw").unwrap();
     let named = vec![destination(&other, &nef, "", Format::Jpeg)];
-    let found = plan(&named, &[nef.clone()], &Ledger::in_support(&support));
+    let found = plan(&named, std::slice::from_ref(&nef), &Ledger::in_support(&support));
     assert_eq!(found.clashes, [Clash::None]);
     export(&nef, &found.renamed()[0], &mut Ledger::in_support(&support), false).unwrap();
     assert_eq!(listing(&other), ["P1.NEF", "P1.jpg"]);

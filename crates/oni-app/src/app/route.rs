@@ -83,7 +83,7 @@ impl Ctl {
             let s = self.state.borrow();
             let now = s.store.settings();
             match s.frame.as_ref().and_then(|f| f.tool_entry.as_ref()) {
-                Some(was) if tab == PanelTab::Crop && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry.clone(), ..now.clone() }),
+                Some(was) if tab == PanelTab::Crop && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry, ..now.clone() }),
                 Some(was) if tab == PanelTab::Dedust && was.corrections != now.corrections => Some(oni_settings::PipelineSettings { corrections: was.corrections.clone(), ..now.clone() }),
                 _ => None,
             }

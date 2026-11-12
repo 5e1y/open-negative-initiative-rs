@@ -23,6 +23,32 @@ serde_json = "1"
 wgpu = "30.0.1"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+# Tuples of plain numbers and nested closures read better inline than behind a one-use alias.
+type_complexity = "allow"
+# Index loops over several parallel buffers are the kernels' and their references' shape.
+needless_range_loop = "allow"
+# Lazy and clamp-like forms in the pipeline, measure and colour crates are left as written: a rewrite
+# may move a float result or run guarded arithmetic eagerly.
+unnecessary_lazy_evaluations = "allow"
+manual_clamp = "allow"
+excessive_precision = "allow"
+float_cmp = "allow"
+manual_is_multiple_of = "allow"
+# Twins and constraints on constants are asserted on purpose, so a changed constant fails a check.
+assertions_on_constants = "allow"
+# A test builds a value from its default, then sets the one field it is about.
+field_reassign_with_default = "allow"
+# A guard before a loop that divides many times is not one checked division.
+manual_checked_ops = "allow"
+# A tile is built per frame of a short-lived grid; boxing its settings adds an allocation each.
+large_enum_variant = "allow"
+# `Frames::next` lends from the decoder, so it cannot be an `Iterator`.
+should_implement_trait = "allow"
+# A test file shared by path across crates is loaded once per test target.
+duplicate_mod = "allow"
+
 [profile.release]
 debug = 1
 

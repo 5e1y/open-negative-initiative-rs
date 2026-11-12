@@ -52,7 +52,7 @@ fn two_saves_of_one_preset_never_share_a_temporary() {
     let seen = seen.into_inner();
     assert_eq!(seen.len(), 2);
     assert_ne!(seen[0], seen[1]);
-    assert_eq!(load(&dir), [preset.clone()], "the first save, renamed last, stands whole");
+    assert_eq!(load(&dir), std::slice::from_ref(&preset), "the first save, renamed last, stands whole");
     assert_eq!(listing(&dir), [file_name(&preset)]);
     // Twin: the same two saves with the first's temporary taken from under it: the first fails, the later stands.
     let lost = |from: &Path, to: &Path| {

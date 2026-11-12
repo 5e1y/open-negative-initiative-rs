@@ -114,7 +114,7 @@ fn a_refused_folder_stays_unlisted_until_read_again() {
 #[test]
 fn the_rows_walk_the_unfolded_folders_and_ask_each_listing_once() {
     let mut nav = Navigation::new(BTreeSet::new(), BTreeSet::from(["/h".to_string()]), BTreeSet::new(), strings(&["/h", "/Volumes/T7"]));
-    let flat = |rows: Vec<(String, usize)>| rows.into_iter().map(|(p, d)| (p, d)).collect::<Vec<_>>();
+    let flat = |rows: Vec<(String, usize)>| rows.into_iter().collect::<Vec<_>>();
     let laid = |rows: &[(&str, usize)]| rows.iter().map(|(p, d)| (p.to_string(), *d)).collect::<Vec<_>>();
     assert_eq!(flat(nav.rows(&[])), laid(&[(COMPUTER_ROW, 0), ("/h", 0), ("/Volumes/T7", 0)]), "no favourite, no section for them");
     assert_eq!(nav.take_wanted(), ["/h"]);

@@ -62,6 +62,12 @@ pub fn slot() -> Option<Slot<'static>> {
     slot
 }
 
+impl Default for Slots {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Slots {
     pub const fn new() -> Slots {
         Slots { state: Mutex::new((0, 0)), turn: Condvar::new() }
@@ -102,6 +108,12 @@ pub struct Gate {
 pub static PREVIEW: Gate = Gate::new();
 pub static FULL: Gate = Gate::new();
 pub static ROLL_FULL: Gate = Gate::new();
+
+impl Default for Gate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Gate {
     pub const fn new() -> Gate {

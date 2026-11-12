@@ -51,12 +51,12 @@ impl Ctl {
             match (key, picked) {
                 (RowKey::Up, _) => {
                     if let Some(i) = at.map_or(first, |at| (0..at).rev().find(folder).or(Some(at))) {
-                        pick(&mut *s, i);
+                        pick(&mut s, i);
                     }
                 }
                 (RowKey::Down, _) => {
                     if let Some(i) = at.map_or(first, |at| (at + 1..rows.len()).find(folder).or(Some(at))) {
-                        pick(&mut *s, i);
+                        pick(&mut s, i);
                     }
                 }
                 (RowKey::Unfold, Some(p)) if !s.nav.model.is_unfolded(heading, &p) => s.nav.model.toggle_in(heading, &p),
@@ -66,7 +66,7 @@ impl Ctl {
                     let up = paths::parent(&p);
                     let at = at.unwrap_or_default();
                     if let Some(i) = (0..at).rev().take_while(|&j| !walk::is_heading(&rows[j])).find(|&j| rows[j] == up) {
-                        pick(&mut *s, i);
+                        pick(&mut s, i);
                     }
                 }
                 (RowKey::Toggle, Some(p)) => s.nav.model.toggle_in(heading, &p),

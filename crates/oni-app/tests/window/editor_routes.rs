@@ -64,7 +64,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.pump();
 
     // `adopt`: A, never balanced, opens with the window its key proposes, armed and drawn on Color.
-    let g = ctl.state.borrow().store().settings().geometry.clone();
+    let g = ctl.state.borrow().store().settings().geometry;
     assert_eq!(g.measure_window, Some(oni_settings::geometry::proposal(g.crop, false)));
     assert!(framing.get_armed());
     rig.until("the window drawn", Duration::from_secs(30), || {

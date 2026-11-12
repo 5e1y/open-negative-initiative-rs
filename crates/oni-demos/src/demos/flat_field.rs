@@ -24,6 +24,12 @@ pub struct FlatField {
     states: States,
 }
 
+impl Default for FlatField {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FlatField {
     pub fn new() -> FlatField {
         FlatField { settings: photo::base(), clicks: None, states: States::default() }

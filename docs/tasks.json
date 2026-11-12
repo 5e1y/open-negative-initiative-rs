@@ -9447,5 +9447,40 @@
     "title": "app.rs ceiling lowered to 462",
     "status": "done",
     "detail": "The tickets moved into one Asks field of State, which leaves app.rs one line shorter."
+  },
+  {
+    "id": 1860,
+    "type": "chore",
+    "title": "Clippy installed as a lint gate: scripts/lint",
+    "status": "done",
+    "detail": "[workspace.lints.clippy] all = warn, every workspace crate opts in, and scripts/lint runs clippy on all targets with warnings denied; not part of scripts/check. Lints that fight the style or would touch float arithmetic are allowed once, at workspace level, with a reason."
+  },
+  {
+    "id": 1861,
+    "type": "refactor",
+    "title": "Clippy findings fixed without touching arithmetic",
+    "status": "done",
+    "detail": "Copy clones, slice refs, Default impls, merged branches and the like; oni-pipeline, oni-render, oni-colour and oni-measure change only in Copy clones of two tests and their lints opt-in, never a float expression."
+  },
+  {
+    "id": 1862,
+    "type": "chore",
+    "title": "Dead functions removed",
+    "status": "done",
+    "detail": "roll_folder::name_for, History::redo_label, oni-keycap panel_button, scanner_key, plate_radius, release_motion, and the PanelHeight and TEXT_ON_FILL they left unused, plus two unused test helpers."
+  },
+  {
+    "id": 1863,
+    "type": "test",
+    "title": "Architecture ceilings refreshed and a width ratchet",
+    "status": "done",
+    "detail": "GRANDFATHERED holds today's sizes without entries under 400; the count of Rust lines over 200 characters may only fall from 86, with a twin that counts a wide line."
+  },
+  {
+    "id": 1864,
+    "type": "docs",
+    "title": "CLAUDE.md names scripts/lint",
+    "status": "done",
+    "detail": "One line in the Build section."
   }
 ]

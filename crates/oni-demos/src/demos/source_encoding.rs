@@ -22,6 +22,12 @@ pub struct SourceEncodingDemo {
     states: States,
 }
 
+impl Default for SourceEncodingDemo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SourceEncodingDemo {
     pub fn new() -> SourceEncodingDemo {
         SourceEncodingDemo { settings: photo::framed(photo::base()), clicks: None, states: States::default() }

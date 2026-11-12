@@ -148,7 +148,7 @@ mod tests {
         assert_eq!(window, (x0 as u32, y0 as u32, ((x + w + SLACK).ceil() - x0) as u32, ((y + h + SLACK).ceil() - y0) as u32));
         // A tile a pixel larger than its place, as a rounded crop renders, still lies inside the box.
         let (px, py) = sheet.place(second, ((w + 1.0) as u32, (h + 1.0) as u32), 1.0);
-        assert!(px >= window.0 as i32 && py >= window.1 as i32 && px + w as i32 + 1 <= (window.0 + window.2) as i32 && py + h as i32 + 1 <= (window.1 + window.3) as i32);
+        assert!(px >= window.0 as i32 && py >= window.1 as i32 && (px + w as i32) < (window.0 + window.2) as i32 && (py + h as i32) < (window.1 + window.3) as i32);
         // The whole sheet in view: every tile.
         let whole = sheet.drawn(1.0);
         let (shows, _) = sheet.seen(1.0, (0.0, 0.0, f64::from(whole.0), f64::from(whole.1)));

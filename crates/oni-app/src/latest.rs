@@ -16,6 +16,12 @@ pub enum Taken<T> {
     Closed,
 }
 
+impl<T> Default for Latest<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> Latest<T> {
     pub const fn new() -> Latest<T> {
         Latest { slot: Mutex::new((None, false)), wake: Condvar::new() }

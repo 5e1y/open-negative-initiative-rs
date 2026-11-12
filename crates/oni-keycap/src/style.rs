@@ -219,14 +219,6 @@ impl KeycapStyle {
         self.press_timing.motion(self.press_response, self.press_damping)
     }
 
-    pub fn release_motion(&self) -> Motion {
-        if self.separate_release {
-            self.release_timing.motion(self.release_response, self.release_damping)
-        } else {
-            self.press_motion()
-        }
-    }
-
     /// Centres the label on the face, apart from the padding so retuning the walls keeps the height.
     pub fn label_centring(&self) -> f64 {
         (self.wall_top - self.wall_bottom) / 2.0

@@ -158,11 +158,11 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     let rest = exposure();
     store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
     store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
-    assert!((exposure() - rest - 2.0 * 8.0 * 0.25 / span as f32).abs() < 1e-5, "{} from {rest}", exposure());
+    assert!((exposure() - rest - 2.0 * 8.0 * 0.25 / span).abs() < 1e-5, "{} from {rest}", exposure());
     oni_app::viewport::note_wheel(oni_app::viewport::Wheel { dx: 1.0, dy: 0.0, precise: false });
     let before = exposure();
     store.invoke_scroll(Field::Exposure.index(), 60.0, 0.0, span, false);
-    assert!((exposure() - before - 10.0 / span as f32).abs() < 1e-5, "a wheel line is ten points, not Slint's sixty");
+    assert!((exposure() - before - 10.0 / span).abs() < 1e-5, "a wheel line is ten points, not Slint's sixty");
     std::thread::sleep(Duration::from_millis(250));
     rig.pump();
     ctl.act(oni_app::Act::Undo);

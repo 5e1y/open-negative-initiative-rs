@@ -80,6 +80,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
 `--release` is the shipped build and the benches' only. LibRaw is vendored in `crates/oni-libraw/libraw` (0.22.2) and
 built by `build.rs`, so a new camera arrives by updating that copy, never from the system.
 
+- **`scripts/lint`** runs clippy on every target with warnings denied (`[workspace.lints.clippy]`); it is outside `scripts/check`. A lint is
+  allowed once at workspace level with its reason, never per site, and no fix may rewrite arithmetic in the render, pipeline, colour or measure crates.
 - **The loop stays under a minute, build and checks included.** The dev profile is incremental, the
   workspace at opt-level 1 and every dependency at 3. The Slint interface is its own crate (`oni-ui`),
   so a Rust change never rebuilds it.

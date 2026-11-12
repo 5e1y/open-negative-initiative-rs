@@ -47,7 +47,7 @@ fn an_older_stroke_moves_onto_the_scan_once_and_an_unknown_size_keeps_it_read_on
             assert!((p.x - q.x).hypot(p.y - q.y) > 0.05, "{p:?} against {q:?}");
         }
     }
-    assert_eq!((moved.id_of_corrections(), moved.geometry.clone()), (old.id_of_corrections(), old.geometry.clone()), "only the points move");
+    assert_eq!((moved.id_of_corrections(), moved.geometry), (old.id_of_corrections(), old.geometry), "only the points move");
     // A stroke of this format, a neutral framing and no stroke at all ask nothing and stay.
     let unasked = |_: &Path, _: &PipelineSettings| -> Option<(f64, f64)> { panic!("the size was asked") };
     assert_eq!(caught_up_by(at, STROKES_ON_SCAN_VERSION, old.clone(), unasked), (old.clone(), true));

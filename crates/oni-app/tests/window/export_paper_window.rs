@@ -200,7 +200,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     let solved = stops();
     println!("the paper's correction: {solved:?}");
     assert!(solved.iter().any(|s| *s < -0.01), "{solved:?}");
-    assert!(solved.iter().any(|s| *s == 0.0), "the strongest channel is held at 0: {solved:?}");
+    assert!(solved.contains(&0.0), "the strongest channel is held at 0: {solved:?}");
     settled_after(n, "the corrected proof");
     let corrected = frame(w);
     assert!(differing(&paper, &corrected) * 10 > pixels, "the correction moves nothing on the paper");

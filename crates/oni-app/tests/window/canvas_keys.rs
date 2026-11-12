@@ -141,7 +141,7 @@ pub(crate) fn the_canvas_holding_the_keyboard_places_the_window_the_crop_and_the
     let Some((rig, shell, root)) = opened("canvas-keys") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, framing, canvas) = (w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
-    let geometry = || ctl.state.borrow().store().settings().geometry.clone();
+    let geometry = || ctl.state.borrow().store().settings().geometry;
     let (right, down) = (arrow(Key::RightArrow), arrow(Key::DownArrow));
     let photo = canvas.get_status().to_string();
     let element = || ElementHandle::find_by_accessible_label(w, &photo).find(|e| e.accessible_role() == Some(Role::Image)).expect("the canvas read as the photo");

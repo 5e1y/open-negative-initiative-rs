@@ -131,7 +131,7 @@ pub fn said(carried: &Carried) -> Option<String> {
         .map(|(frame, why)| tr!("“{frame}” stayed where it was: {why}.", frame = frame, why = why))
         .collect();
     if carried.stayed.len() > NAMED {
-        lines.push(oni_i18n::trn("And one other frame.", "And {n} other frames.", (carried.stayed.len() - NAMED) as u64).into());
+        lines.push(oni_i18n::trn("And one other frame.", "And {n} other frames.", (carried.stayed.len() - NAMED) as u64));
     }
     Some(lines.join("\n"))
 }

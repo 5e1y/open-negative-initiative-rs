@@ -119,7 +119,7 @@ fn copies(rolls: &Path, support: &Path) -> usize {
                     .and_then(|data| thumbnails::decoded(&data, Screen::Srgb))
                     .map(|t| luminance(&t.0));
                 let off = swift.is_some_and(|s| (s - mean).abs() > 0.15);
-                let bad = mean < 0.02 || mean > 0.98 || sd < 0.01 || off;
+                let bad = !(0.02..=0.98).contains(&mean) || sd < 0.01 || off;
                 compared += swift.is_some() as usize;
                 failures += bad as usize;
                 println!("{} v{version} {name}: mean {mean:.3} sd {sd:.3} swift {}", if bad { "FAIL" } else { "ok" }, swift.map_or("-".into(), |s| format!("{s:.3}")));

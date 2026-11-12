@@ -176,9 +176,7 @@ pub fn scan_source(path: &Path, source: &str) -> Vec<Breach> {
                     }
                 } else if PRIMITIVES.contains(&word.as_str()) && (next.starts_with('{') || line[..line.find(&word).unwrap_or(0)].trim_end().ends_with("inherits")) {
                     found(Rule::Primitive, line);
-                } else if COLOUR_CALLS.contains(&word.as_str()) && next.starts_with('(') {
-                    found(Rule::Colour, line);
-                } else if word == "Colors" && next.starts_with('.') {
+                } else if (COLOUR_CALLS.contains(&word.as_str()) && next.starts_with('(')) || (word == "Colors" && next.starts_with('.')) {
                     found(Rule::Colour, line);
                 } else if NAMED.contains(&word.as_str()) && !next.starts_with(':') && !next.starts_with('(') && !next.starts_with('{') && !next.starts_with('.') {
                     found(Rule::Colour, &word);

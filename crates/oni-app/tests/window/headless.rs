@@ -124,7 +124,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
     rig.settle();
     // The crop-first line over Auto White Balance follows the open frame's own framing.
-    let g = ctl.state.borrow().store().settings().geometry.clone();
+    let g = ctl.state.borrow().store().settings().geometry;
     let uncropped = g.crop == oni_settings::cg::Rect::UNIT && g.measure_window.is_none();
     assert_eq!(w.global::<PanelState>().get_crop_first(), uncropped, "{:?}", g.crop);
 

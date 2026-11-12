@@ -28,6 +28,12 @@ pub struct WhiteBalance {
     shown: Option<bool>,
 }
 
+impl Default for WhiteBalance {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WhiteBalance {
     pub fn new() -> WhiteBalance {
         let base = photo::framed(photo::base());

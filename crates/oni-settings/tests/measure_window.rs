@@ -58,13 +58,13 @@ fn the_crop_or_the_bypassed_frame_is_what_the_window_is_seen_in() {
     for (window, base, expected, framed) in seen() {
         let cropped = Geometry { crop: base, measure_window: Some(window), ..Geometry::default() };
         assert_eq!(cropped.measure_window_in_crop(), (expected != Rect::UNIT).then_some(expected), "{window:?} in {base:?}");
-        assert_eq!(Geometry { crop_bypassed: true, ..cropped.clone() }.measure_window_in_crop(), framed, "{window:?} bypassed");
+        assert_eq!(Geometry { crop_bypassed: true, ..cropped }.measure_window_in_crop(), framed, "{window:?} bypassed");
         assert_eq!(Geometry { measure_window: None, ..cropped }.measure_window_in_crop(), None, "untouched");
     }
     // Twin: bypassing the crop reads the same window in the frame's own fractions, not the crop's.
     let window = rect(0.375, 0.25, 0.25, 0.5);
     let g = Geometry { crop: CROP, measure_window: Some(window), ..Geometry::default() };
-    assert_eq!(Geometry { crop_bypassed: true, ..g.clone() }.measure_window_in_crop(), Some(window));
+    assert_eq!(Geometry { crop_bypassed: true, ..g }.measure_window_in_crop(), Some(window));
     assert_ne!(g.measure_window_in_crop(), Some(window));
 }
 

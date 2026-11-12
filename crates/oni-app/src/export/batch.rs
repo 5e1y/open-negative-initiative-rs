@@ -210,7 +210,7 @@ pub fn write_batch(engine: &Shared, jobs: &[Job], export: &Settings, ledger: &mu
         let date = (!job.metadata.date.is_empty()).then_some(job.metadata.date.as_str());
         let bytes = oni_export::file_bytes(&job.target.path, full, &job.target.settings.paper_correction, export, &job.metadata, date)?;
         let mut ledger = ledger.lock().map_err(|_| Failure::Render)?;
-        oni_export::land(Landing { path: &job.destination, ledger: &mut **ledger, replacing }, &bytes)?;
+        oni_export::land(Landing { path: &job.destination, ledger: &mut ledger, replacing }, &bytes)?;
         drop(ledger);
         let mosaic = oni_decode::decodes_via_mosaic(&job.target.path);
         let _ = oni_settings::sidecar::set_exif(job.metadata.clone(), &job.target.path, mosaic);

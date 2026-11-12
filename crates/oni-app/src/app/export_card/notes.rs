@@ -121,7 +121,7 @@ mod tests {
         let notes = space_notes();
         let gone = OutputProfile { path: "/nowhere/Gone.icc".into(), name: "Gone".into() };
         let states = Space::BUILT_IN.into_iter().flat_map(|s| [(s.clone(), false), (s, true)]).chain([(Space::Profile(gone.clone()), false)]);
-        let said: Vec<String> = states.flat_map(|(space, pending)| [space_note(&space, pending, &[]), space_note(&space, pending, &[gone.clone()])]).collect();
+        let said: Vec<String> = states.flat_map(|(space, pending)| [space_note(&space, pending, &[]), space_note(&space, pending, std::slice::from_ref(&gone))]).collect();
         assert!(said.iter().all(|n| notes.contains(n)), "{said:?} against {notes:?}");
         assert!(said.contains(&purpose(&Space::ProPhoto).to_owned()) && said.contains(&troubles()[0].to_owned()));
         // Twin: a list fitted without the notes waiting for a profile misses one the field says.

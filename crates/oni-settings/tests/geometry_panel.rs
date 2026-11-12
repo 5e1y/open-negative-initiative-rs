@@ -25,13 +25,13 @@ fn one_click_resets_the_framing_and_keeps_the_balance_window() {
     let set = Geometry { quarter_turns: 2, angle: 3.0, crop: rect(0.1, 0.2, 0.5, 0.4), ratio: Some(AspectRatio::ThreeTwo), portrait: true, measure_window: Some(window), ..Geometry::default() };
     assert!(can_reset(&set));
     let reset = Geometry::reset_keeping(&set);
-    assert_eq!(Geometry { measure_window: None, ..reset.clone() }, Geometry::default(), "angle, turns, frame, ratio and portrait");
+    assert_eq!(Geometry { measure_window: None, ..reset }, Geometry::default(), "angle, turns, frame, ratio and portrait");
     assert_eq!(reset.measure_window, Some(window), "the measuring window has a reset of its own");
     // Twin: a bare rest drops that window.
     assert_eq!(Geometry::default().measure_window, None);
     assert!(!can_reset(&reset), "at rest the button turns off");
     // Twin: the former gesture, frame and ratio alone, leaves the rest set.
-    let partial = Geometry { crop: Rect::UNIT, ratio: None, ..set.clone() };
+    let partial = Geometry { crop: Rect::UNIT, ratio: None, ..set };
     assert_ne!(partial, Geometry::default());
     let locked = Geometry { ratio: Some(AspectRatio::Square), ..Geometry::default() };
     assert!(can_reset(&locked) && locked.crop == Rect::UNIT, "a ratio locked on the full frame is something set");
@@ -41,7 +41,7 @@ fn one_click_resets_the_framing_and_keeps_the_balance_window() {
 #[test]
 fn a_quarter_turn_and_a_mirror_carry_the_balance_window_and_a_ratio_moves_the_crop_alone() {
     let start = Geometry { crop: rect(0.1, 0.2, 0.5, 0.4), ..Geometry::default() };
-    let mut turning = start.clone();
+    let mut turning = start;
     for _ in 0..3 {
         turning.rotate(1, SIZE);
     }
@@ -51,7 +51,7 @@ fn a_quarter_turn_and_a_mirror_carry_the_balance_window_and_a_ratio_moves_the_cr
     assert!(turning.quarter_turns == 0 && close(turning.crop, start.crop));
 
     let drawn = rect(0.6, 0.1, 0.3, 0.2);
-    let mut windowed = Geometry { measure_window: Some(drawn), ..start.clone() };
+    let mut windowed = Geometry { measure_window: Some(drawn), ..start };
     windowed.rotate(1, SIZE);
     let turned = windowed.measure_window.unwrap();
     assert!(close(turned, rotated_crop(drawn)), "a turn carries the window as it carries the crop");
@@ -59,7 +59,7 @@ fn a_quarter_turn_and_a_mirror_carry_the_balance_window_and_a_ratio_moves_the_cr
     windowed.mirror();
     let mirrored = windowed.measure_window.unwrap();
     assert!((mirrored.x - (1.0 - turned.x - turned.width)).abs() < 1e-9 && (mirrored.width - turned.width).abs() < 1e-9);
-    let mut constrained = Geometry { ratio: Some(AspectRatio::Square), crop: rect(0.3, 0.3, 0.2, 0.3), ..windowed.clone() };
+    let mut constrained = Geometry { ratio: Some(AspectRatio::Square), crop: rect(0.3, 0.3, 0.2, 0.3), ..windowed };
     constrained.apply_ratio(SIZE, None, Driving::Width);
     constrained.fit_crop_inside_image(SIZE);
     assert!(constrained.crop != windowed.crop && constrained.measure_window == windowed.measure_window);
@@ -93,7 +93,7 @@ fn arming_proposes_a_window_inside_the_crop_once_and_a_remembered_framing_cuts_t
     // Twin: a frame already on the remembered ratio is left as it is.
     let mut same = Geometry { ratio: Some(AspectRatio::ThreeTwo), portrait: true, ..Geometry::default() };
     same.apply_ratio(SIZE, None, Driving::Width);
-    let cut = same.clone();
+    let cut = same;
     same.adopt(remembered, SIZE);
     assert_eq!(same, cut);
 }

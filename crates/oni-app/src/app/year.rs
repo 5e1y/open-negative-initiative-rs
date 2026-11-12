@@ -186,7 +186,7 @@ impl Ctl {
         g.set_shown(true);
         let wanted: Vec<(usize, usize, String)> = {
             let s = self.state.borrow();
-            deck.iter().enumerate().flat_map(|(i, c)| c.photos.iter().enumerate().filter_map(move |(j, p)| Some((i, j, p.clone())))).filter_map(|(i, j, p)| s.fingerprints.get(&p).map(|f| (i, j, f.clone()))).collect()
+            deck.iter().enumerate().flat_map(|(i, c)| c.photos.iter().enumerate().map(move |(j, p)| (i, j, p.clone()))).filter_map(|(i, j, p)| s.fingerprints.get(&p).map(|f| (i, j, f.clone()))).collect()
         };
         self.state.borrow_mut().year.deck = Some((deck, 0, false));
         self.publish_bar();

@@ -318,7 +318,7 @@ pub(crate) fn a_rename_moves_the_projects_recorded_path() {
 
     rename(&rig, &shell, "Roll 1", "Roll 9");
     let moved = d.at("Home/Scans/Roll 9/A.tif");
-    assert_eq!(recorded(), [moved.clone()], "projects.json follows the rename");
+    assert_eq!(recorded(), std::slice::from_ref(&moved), "projects.json follows the rename");
     assert!(shell.ctl.state.borrow().picked().contains(&moved), "the selection follows");
     assert!(!unfolded(&shell, "Sub"), "the fold a hand made stays");
     assert!(unfolded(&shell, "Kept"), "and an open folder stays open");

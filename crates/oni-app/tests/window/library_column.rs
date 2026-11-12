@@ -62,7 +62,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     rig.until("P00 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.shot("column-beside-p00");
     // Rows within a screen of the view hold their pictures; those three screens away and more hold none.
-    let seen = |r: &TreeRow| r.y + r.height > -lib.get_tree_viewport_y() && r.y < -lib.get_tree_viewport_y() + 800.0;
+    let _seen = |r: &TreeRow| r.y + r.height > -lib.get_tree_viewport_y() && r.y < -lib.get_tree_viewport_y() + 800.0;
     // Rows near the column's view hold their pictures, those far below it none; a scroll there swaps them.
     let held = |title: &str| picture(&lib, title).size().width > 0;
     rig.until("the thumbnails in view", Duration::from_secs(60), || rows(&lib).iter().filter(|r| r.y < 300.0).all(|r| r.kind != 2 || r.picture.size().width > 0));

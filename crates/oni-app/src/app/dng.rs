@@ -181,7 +181,7 @@ impl Ctl {
             return self.dng_convert(program);
         }
         let Some(stop) = JOB.with(|j| j.borrow().as_ref().map(|job| job.stop.clone())) else { return };
-        self.dng_sheet(DngStage::Fetching, &tr("Downloading Adobe DNG Converter from Adobe…"), 0.0, "");
+        self.dng_sheet(DngStage::Fetching, tr("Downloading Adobe DNG Converter from Adobe…"), 0.0, "");
         let folder = crate::system::caches().join("Adobe DNG Converter");
         std::thread::spawn(move || {
             let told = std::sync::Mutex::new(Instant::now());
@@ -196,7 +196,7 @@ impl Ctl {
                     };
                     with_shell(move |c| {
                         if Ctl::dng_running(&stop) {
-                            c.dng_sheet(DngStage::Fetching, &tr("Downloading Adobe DNG Converter from Adobe…"), fraction, &count);
+                            c.dng_sheet(DngStage::Fetching, tr("Downloading Adobe DNG Converter from Adobe…"), fraction, &count);
                         }
                     });
                 }
@@ -216,7 +216,7 @@ impl Ctl {
         };
         self.dng_sheet(
             DngStage::Installing,
-            &tr("Adobe’s installer is open: follow it to the end. ONI converts the photos once Adobe DNG Converter is installed."),
+            tr("Adobe’s installer is open: follow it to the end. ONI converts the photos once Adobe DNG Converter is installed."),
             -1.0,
             "",
         );
@@ -232,7 +232,7 @@ impl Ctl {
                 match (adobe_dng::installed(), ran) {
                     (Some(program), _) => c.dng_convert(program),
                     (None, Err(e)) => c.dng_failed(&tr!("Adobe DNG Converter could not be installed: {error}", error = e)),
-                    (None, Ok(())) => c.dng_failed(&tr("Adobe DNG Converter is not installed: its installer closed before the end.")),
+                    (None, Ok(())) => c.dng_failed(tr("Adobe DNG Converter is not installed: its installer closed before the end.")),
                 }
             });
         });
@@ -242,15 +242,15 @@ impl Ctl {
     fn dng_convert(self: &Rc<Self>, program: PathBuf) {
         let Some((raws, stop)) = JOB.with(|j| j.borrow().as_ref().map(|job| (job.raws.clone(), job.stop.clone()))) else { return };
         let converting = tr("Converting the High Efficiency NEF files to DNG…");
-        self.dng_sheet(DngStage::Converting, &converting, 0.0, "");
+        self.dng_sheet(DngStage::Converting, converting, 0.0, "");
         std::thread::spawn(move || {
             let total = raws.len();
             let going = |done: usize| {
-                let (held, converting) = (stop.clone(), converting.clone());
+                let (held, converting) = (stop.clone(), converting);
                 with_shell(move |c| {
                     if Ctl::dng_running(&held) {
                         let count = tr!("{done} of {total}", done = done, total = total);
-                        c.dng_sheet(DngStage::Converting, &converting, done as f32 / total.max(1) as f32, &count);
+                        c.dng_sheet(DngStage::Converting, converting, done as f32 / total.max(1) as f32, &count);
                     }
                 });
                 !stop.load(Ordering::Relaxed)
@@ -273,7 +273,7 @@ impl Ctl {
             return;
         }
         if count == 0 {
-            return self.dng_failed(&tr("The folder holds no High Efficiency NEF file left to convert."));
+            return self.dng_failed(tr("The folder holds no High Efficiency NEF file left to convert."));
         }
         let message = trn("One DNG stands beside its NEF file, which ONI no longer shows.", "{n} DNGs stand beside their NEF files, which ONI no longer shows.", count as u64);
         self.dng_sheet(DngStage::Choice, &message, 1.0, "");

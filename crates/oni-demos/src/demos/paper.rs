@@ -30,6 +30,12 @@ pub struct PaperCorrection {
     shown: Option<bool>,
 }
 
+impl Default for PaperCorrection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PaperCorrection {
     pub fn new() -> PaperCorrection {
         let mut plain = photo::base();

@@ -15,6 +15,9 @@ name = "oni-lab"
 path = "src/main.rs"
 test = false
 
+[lints]
+workspace = true
+
 [dependencies]
 oni-keycap = { path = "../oni-keycap" }
 png = "0.18"

@@ -19,6 +19,12 @@ pub struct FilmType {
     states: States,
 }
 
+impl Default for FilmType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FilmType {
     pub fn new() -> FilmType {
         FilmType { settings: photo::framed(photo::base()), clicks: None, states: States::default() }

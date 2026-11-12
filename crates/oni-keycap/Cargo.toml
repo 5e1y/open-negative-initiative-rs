@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 publish = false
 
+[lints]
+workspace = true
+
 [dependencies]
 tiny-skia = { version = "0.11", default-features = false, features = ["std"] }
 oni-hack = { version = "0.1", path = "../oni-hack" }

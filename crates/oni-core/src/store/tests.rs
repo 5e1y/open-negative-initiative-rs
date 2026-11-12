@@ -152,12 +152,12 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
     assert_eq!(kept, stamp, "the revision holds, so the thumbnail key does");
     assert_eq!(read(&c), None, "twin: a frame not named keeps its roll");
     assert_eq!(store.history().undo_label(), Some("Rename Roll"));
-    assert_eq!(store.set_film(&[b.clone()], Some(film.clone()), "Rename Roll"), 0, "an unchanged roll writes nothing");
+    assert_eq!(store.set_film(std::slice::from_ref(&b), Some(film.clone()), "Rename Roll"), 0, "an unchanged roll writes nothing");
     store.undo();
     assert_eq!(read(&b), None, "one undo takes the others back");
     // Twin: `None` ungroups.
-    store.set_film(&[b.clone()], Some(film.clone()), "Set Film Stock");
-    store.set_film(&[b.clone()], None, "Ungroup");
+    store.set_film(std::slice::from_ref(&b), Some(film.clone()), "Set Film Stock");
+    store.set_film(std::slice::from_ref(&b), None, "Ungroup");
     assert_eq!(read(&b), None);
     let _ = std::fs::remove_dir_all(&dir);
 }

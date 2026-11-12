@@ -75,7 +75,7 @@ impl Ctl {
         let readouts: Vec<SharedString> = (0..5)
             .map(|i| match i {
                 AMOUNT | TEMPERATURE | TINT => flat_field(i).readout(Self::slider_value(r, radius, i)),
-                PICKER => crate::fields::number(f64::from(radius), 0, false, crate::fields::Unit::Pixels),
+                PICKER => crate::fields::number(radius, 0, false, crate::fields::Unit::Pixels),
                 _ => format!("{} / {}", r.at.min(last) + 1, m.len()),
             })
             .map(SharedString::from)

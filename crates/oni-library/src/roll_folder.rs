@@ -16,11 +16,6 @@ mod units;
 pub use carry::{Carried, PAUSES, Rename, carry, rename_new, retried, said};
 pub use units::{Unit, files, plan_units};
 
-/// The earliest capture as year, month, day in local time, numbered past the names taken beside it.
-pub fn name_for(earliest: Date, parent: &str) -> String {
-    numbered(&dated(earliest), parent)
-}
-
 /// `base`, numbered past the names taken in `parent`.
 pub fn numbered(base: &str, parent: &str) -> String {
     let base = base.to_owned();

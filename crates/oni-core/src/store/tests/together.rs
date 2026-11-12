@@ -62,7 +62,7 @@ fn read(p: &str) -> PipelineSettings {
 
 #[test]
 fn a_paste_on_frames_together_is_one_step_undone_to_each_one_s_own_settings() {
-    let own = |stops| PipelineSettings { vignette: oni_settings::blocks::Vignette { stops, ..Default::default() }, ..PipelineSettings::default() };
+    let own = |stops| PipelineSettings { vignette: oni_settings::blocks::Vignette { stops }, ..PipelineSettings::default() };
     let (mut store, dir, [a, b, c]) = three("together-paste", own(-0.7), own(-0.4));
     store.set_together(vec![b.clone(), c.clone()]);
     store.board.settings = Some(codec::encode_settings(&own(0.2)).unwrap());

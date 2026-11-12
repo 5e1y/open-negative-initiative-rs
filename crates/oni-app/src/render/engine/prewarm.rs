@@ -105,27 +105,6 @@ impl Shared {
     }
 }
 
-#[cfg(test)]
-mod kernels_tests {
-    use super::*;
-
-    #[test]
-    fn the_kernels_read_finished_however_their_thread_ends() {
-        let kernels = std::sync::Arc::new(Kernels::default());
-        let held = kernels.clone();
-        let ended = std::thread::spawn(move || {
-            let _finishing = Finishing(&held);
-            held.done.fetch_add(Kernels::total() + 5, std::sync::atomic::Ordering::AcqRel);
-            panic!("a variant that fails");
-        })
-        .join();
-        assert!(ended.is_err() && kernels.finished());
-        assert_eq!(kernels.done(), Kernels::total(), "the count never reads past the whole");
-        // Twin: a compilation under way is not finished.
-        assert!(!Kernels::default().finished());
-    }
-}
-
 impl Engine {
     /// Renders a small frame through each face, film and finishing branch the editor can reach, then
     /// strips long enough for Texture at both its blurs' reaches.
@@ -158,5 +137,26 @@ impl Engine {
     fn prewarm_variant(&mut self, negative: &Negative, s: &PipelineSettings) {
         let _ = self.resident(negative, s, None);
         let _ = self.inputs(negative, s, false);
+    }
+}
+
+#[cfg(test)]
+mod kernels_tests {
+    use super::*;
+
+    #[test]
+    fn the_kernels_read_finished_however_their_thread_ends() {
+        let kernels = std::sync::Arc::new(Kernels::default());
+        let held = kernels.clone();
+        let ended = std::thread::spawn(move || {
+            let _finishing = Finishing(&held);
+            held.done.fetch_add(Kernels::total() + 5, std::sync::atomic::Ordering::AcqRel);
+            panic!("a variant that fails");
+        })
+        .join();
+        assert!(ended.is_err() && kernels.finished());
+        assert_eq!(kernels.done(), Kernels::total(), "the count never reads past the whole");
+        // Twin: a compilation under way is not finished.
+        assert!(!Kernels::default().finished());
     }
 }

@@ -274,7 +274,7 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
     assert_eq!(store.move_to_trash(std::slice::from_ref(&frame)), 1);
     assert!(store.path().is_none(), "the open frame closes");
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_some());
-    assert_eq!(moved(&before, &roll.bytes()), [frame.clone()], "the marked frame's sidecar alone is written");
+    assert_eq!(moved(&before, &roll.bytes()), std::slice::from_ref(&frame), "the marked frame's sidecar alone is written");
     assert_eq!(roll.originals(), files, "no original moves, vanishes or changes, nor any other member's");
     store.undo();
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_none());

@@ -18,6 +18,9 @@ required-features = ["cli"]
 [features]
 cli = ["uniffi/cli"]
 
+[lints]
+workspace = true
+
 [dependencies]
 oni-link = { path = "../oni-link" }
 oni-localsend = { path = "../oni-localsend" }

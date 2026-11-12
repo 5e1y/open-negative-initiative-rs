@@ -46,7 +46,7 @@ fn framings() -> Vec<(&'static str, Geometry)> {
     let mut half = Geometry { quarter_turns: 2, ..cropped() };
     half.rotate(1, size());
     let tilted = cropped().straightened(3.0, size());
-    let mut uncropped = tilted.clone();
+    let mut uncropped = tilted;
     (uncropped.crop, uncropped.angle) = (Rect::UNIT, 0.0);
     vec![
         ("cropped", cropped()),
@@ -55,7 +55,7 @@ fn framings() -> Vec<(&'static str, Geometry)> {
         ("three quarter turns", half),
         ("mirrored", mirrored),
         ("mirrored vertically", upside),
-        ("3 degrees", tilted.clone()),
+        ("3 degrees", tilted),
         ("the Crop tab", tilted.without_crop()),
         ("Prepare's whole scan", uncropped),
     ]
@@ -126,7 +126,7 @@ fn a_patch_painted_on_one_framing_heals_its_speck_on_every_other() {
     let laid = patch(&mut g, &c, size());
     for (name, framing) in framings() {
         let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
-        (s.geometry, s.corrections) = (framing.clone(), vec![c.clone()]);
+        (s.geometry, s.corrections) = (framing, vec![c.clone()]);
         let inputs = Inputs { patches: [(c.id, &laid)].into_iter().collect(), custom_flat_field: None };
         let framed = pipeline.framed(&mut g, Image::new(&source), &s, 1.0, &inputs).expect("framed");
         let at = framing.placing(size()).on_frame(speck());

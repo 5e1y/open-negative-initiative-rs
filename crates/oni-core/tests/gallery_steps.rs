@@ -31,11 +31,10 @@ fn methods(texts: &[String]) -> BTreeMap<String, String> {
             let trimmed = line.trim_start();
             let declared = line.starts_with("    ") && !line.starts_with("     ") && trimmed.contains("fn ")
                 && (trimmed.starts_with("fn ") || trimmed.starts_with("pub"));
-            if declared || line.starts_with('}') {
-                if let Some((name, body)) = current.take() {
+            if (declared || line.starts_with('}'))
+                && let Some((name, body)) = current.take() {
                     out.insert(name, body);
                 }
-            }
             if declared {
                 let name = trimmed.split("fn ").nth(1).unwrap_or("").split(['(', '<']).next().unwrap_or("").to_owned();
                 current = Some((name, String::new()));

@@ -123,7 +123,7 @@ pub(crate) fn a_drop_from_two_folders_says_what_it_left() {
     let shell = d.launch(&gpu);
     let ctl = shell.ctl.clone();
     let opened = || ctl.state.borrow().opened().map(str::to_owned);
-    assert!(ctl.dropped(&[b.clone()]));
+    assert!(ctl.dropped(std::slice::from_ref(&b)));
     rig.until("B read", Duration::from_secs(30), || ctl.state.borrow().read_done() && opened().is_some_and(|o| o.ends_with("/B")));
     assert_eq!(told(&shell), None, "twin: one folder leaves nothing out, and says nothing");
     // A folder first, then two photos of another: the folder opens, the photos are said left out.

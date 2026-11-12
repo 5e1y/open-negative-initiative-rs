@@ -2,7 +2,7 @@
 //! edge, the bar's empty room, roll headers' trail and pin, the editor's medals, an undecodable file.
 
 use i_slint_backend_testing::AccessibleRole;
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{Options, Shell};
 use oni_app::{App, Bar, Canvas, Library};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
