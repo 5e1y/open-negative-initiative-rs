@@ -37,7 +37,7 @@ pub fn hold(support: &Path) -> Held {
 pub fn refused(support: &Path) {
     oni_i18n::set(crate::language::resolved(crate::language::chosen(&crate::preferences::Preferences::load(support))));
     let (title, message) = (tr("Open Negative Initiative is already open"), tr("Switch to its window: two copies at once would write over each other's work."));
-    crate::timing::shown(&title, &message);
+    crate::timing::shown(title, message);
     crate::timing::flush();
     if by_hand() {
         crate::system::alert(title, message);
