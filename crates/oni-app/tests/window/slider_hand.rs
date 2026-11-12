@@ -29,7 +29,7 @@ fn editor(name: &str) -> Option<(common::Rig, Shell, PathBuf, (f32, f32))> {
     let rig = common::rig(std::env::temp_dir());
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -69,7 +69,7 @@ fn button(rig: &common::Rig, (x, y): (f32, f32), down: bool) {
 pub(crate) fn a_walk_under_a_drag_leaves_the_drag_on_its_frame() {
     let Some((rig, shell, root, (x, y))) = editor("slider-walk") else { return };
     let ctl = shell.ctl.clone();
-    let open = || ctl.state.borrow().store().get(Field::Exposure);
+    let open = || oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     let (a, b) = (root.join("Scans/A.tif"), root.join("Scans/B.tif"));
     let a0 = open();
     button(&rig, (x, y), true);
@@ -106,7 +106,7 @@ pub(crate) fn a_slider_taken_away_under_the_hand_lets_go_at_the_button() {
     let Some((rig, shell, root, (x, y))) = editor("slider-taken") else { return };
     let ctl = shell.ctl.clone();
     let a = root.join("Scans/A.tif");
-    let a0 = ctl.state.borrow().store().get(Field::Exposure);
+    let a0 = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     button(&rig, (x, y), true);
     moved(&rig, x + 40.0, y);
     // ⌥⌘] takes the panel and the slider under the hand away; the button then rises over the canvas.
@@ -117,7 +117,7 @@ pub(crate) fn a_slider_taken_away_under_the_hand_lets_go_at_the_button() {
     assert_eq!((ctl.state.borrow().dragging(), ctl.state.borrow().hands()), (true, 1), "the destroyed slider sent no release");
     ctl.lifted();
     assert_eq!((ctl.state.borrow().dragging(), ctl.state.borrow().hands()), (false, 0), "the lifted button ends the drag");
-    let a1 = ctl.state.borrow().store().get(Field::Exposure);
+    let a1 = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     assert!((a1 - a0).abs() > 1e-3, "the hand's value landed: {a1} against {a0}");
     assert_eq!(shell.window.global::<Menus>().get_titles().undo.as_str(), "Undo Exposure", "one step, recorded");
     rig.until("A's sidecar written", Duration::from_secs(5), || (exposure(&a) - a1).abs() < 1e-5);

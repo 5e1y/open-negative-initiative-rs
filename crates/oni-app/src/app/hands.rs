@@ -53,7 +53,7 @@ impl Ctl {
         self.trailing[i].stop();
         if let Some(live) = live {
             let mut s = self.state.borrow_mut();
-            let command = store::moved(&*s.store, f, live);
+            let command = store::moved(&s.store, f, live);
             s.store.apply(command);
         }
         let released = Instant::now();
@@ -69,8 +69,8 @@ impl Ctl {
         }
         // The readout leaves the hand's value for the store's, which a clamp may have moved.
         if let Some(w) = self.window() {
-            let v = self.state.borrow().store.get(f);
-            set_readout(&w.global::<StoreGlobal>(), f, self.readout_at(f, v).into());
+            let v = store::get(&self.state.borrow().store, f);
+            set_readout(&w.global::<Store>(), f, self.readout_at(f, v).into());
         }
     }
 

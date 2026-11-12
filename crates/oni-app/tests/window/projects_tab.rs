@@ -48,7 +48,7 @@ impl Hand {
         let gpu = oni_app::render::Device::open().expect("a GPU");
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
         let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-        let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+        let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
         shell.window.show().unwrap();
         Hand { rig, shell, root }
     }

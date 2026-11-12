@@ -1,153 +1,25 @@
-//! What the shell asks of the open photo's settings. The shell reads and writes them only through
-//! `Store`, which `oni_core::EditorStore` answers; a notch is one `apply`, a drag one undo step.
+//! What the shell asks of the open photo's settings, which `oni_core::EditorStore` answers; a notch
+//! is one `apply`, a drag one undo step.
 
 use crate::fields::{Block, Field};
 use oni_core::{Command, Each, EditorStore};
 use oni_settings::blocks::SeparationFamily;
-use oni_settings::{Face, PipelineSettings};
+use oni_settings::PipelineSettings;
 
-pub trait Store {
-    /// Opens a frame on its sidecar, writing the previous one first.
-    fn open(&mut self, path: &str) -> Result<(), String>;
-    /// `open`, the settings read adjusted before the history starts on them.
-    fn open_adjusted(&mut self, path: &str, _adjust: &dyn Fn(&mut PipelineSettings)) -> Result<(), String> {
-        self.open(path)
-    }
-    /// Every frame of the library, which a Roll Settings gesture reaches.
-    fn set_archive(&mut self, paths: Vec<String>);
-    /// Writes the open frame's sidecar when the disk differs; the failure's message otherwise.
-    fn flush(&mut self) -> Option<String>;
-    fn settings(&self) -> &PipelineSettings;
-    /// One command, one write; the moved fields are reported by `changed`.
-    fn apply(&mut self, command: Command);
-    /// A hand on a control: its notches land at once, and the step is recorded on `release`.
-    fn hold(&mut self);
-    fn release(&mut self);
-    /// The hand lifts and the step closes once the edit has rested, a press landing sooner
-    /// joining it; a stand-in closes it at once.
-    fn release_deferred(&mut self) {
-        self.release();
-    }
-    /// The next change outside a press waits like a lifted hand's; nothing while a hand holds.
-    fn defer(&mut self) {}
-    /// Records a waiting step once due; how long it still waits, `None` when nothing does.
-    fn settle_if_due(&mut self) -> Option<std::time::Duration> {
-        None
-    }
-    /// The sliders whose store field moved since the last call, drained; a field holds several
-    /// sliders, so the shell compares each value with the one it shows.
-    fn changed(&mut self) -> Vec<Field>;
-    fn can_undo(&self) -> bool;
-    fn can_redo(&self) -> bool;
-    /// Bumped by every change, so a render job can say which state it shows.
-    fn revision(&self) -> u64;
-
-    fn get(&self, field: Field) -> f32 {
-        field.knob().get(self.settings())
-    }
-
-    /// The editing model itself, which the phone link drives; `None` for a stand-in.
-    fn editor(&mut self) -> Option<&mut EditorStore> {
-        None
-    }
-
-    fn editor_ref(&self) -> Option<&EditorStore> {
-        None
-    }
-
-    /// The face the open frame is edited on, which `Command::Face` switches.
-    fn face(&self) -> Face {
-        Face::Pro
-    }
-
-    /// The settings as the open face's Color tab reads them.
-    fn face_view(&self) -> PipelineSettings {
-        self.settings().clone()
-    }
+/// The sliders whose store field moved since the last call, drained; a field holds several
+/// sliders, so the shell compares each value with the one it shows.
+pub fn changed(store: &mut EditorStore) -> Vec<Field> {
+    let moved = store.take_changes();
+    Field::ALL.into_iter().filter(|f| moved.contains(f.knob().field())).collect()
 }
 
-impl Store for EditorStore {
-    fn open(&mut self, path: &str) -> Result<(), String> {
-        EditorStore::open(self, path).map_err(|e| e.to_string())
-    }
-
-    fn open_adjusted(&mut self, path: &str, adjust: &dyn Fn(&mut PipelineSettings)) -> Result<(), String> {
-        EditorStore::open_adjusted(self, path, adjust).map_err(|e| e.to_string())
-    }
-
-    fn set_archive(&mut self, paths: Vec<String>) {
-        self.set_archive_paths(paths);
-    }
-
-    fn flush(&mut self) -> Option<String> {
-        EditorStore::flush(self)
-    }
-
-    fn settings(&self) -> &PipelineSettings {
-        EditorStore::settings(self)
-    }
-
-    fn apply(&mut self, command: Command) {
-        EditorStore::apply(self, command);
-    }
-
-    fn hold(&mut self) {
-        EditorStore::hold(self);
-    }
-
-    fn release(&mut self) {
-        EditorStore::release(self);
-    }
-
-    fn release_deferred(&mut self) {
-        EditorStore::release_deferred(self);
-    }
-
-    fn settle_if_due(&mut self) -> Option<std::time::Duration> {
-        EditorStore::settle_if_due(self)
-    }
-
-    fn defer(&mut self) {
-        EditorStore::defer(self);
-    }
-
-    fn changed(&mut self) -> Vec<Field> {
-        let moved = self.take_changes();
-        Field::ALL.into_iter().filter(|f| moved.contains(f.knob().field())).collect()
-    }
-
-    fn can_undo(&self) -> bool {
-        EditorStore::can_undo(self)
-    }
-
-    fn can_redo(&self) -> bool {
-        EditorStore::can_redo(self)
-    }
-
-    fn revision(&self) -> u64 {
-        EditorStore::revision(self)
-    }
-
-    fn editor(&mut self) -> Option<&mut EditorStore> {
-        Some(self)
-    }
-
-    fn editor_ref(&self) -> Option<&EditorStore> {
-        Some(self)
-    }
-
-    fn face(&self) -> Face {
-        EditorStore::face(self)
-    }
-
-    fn face_view(&self) -> PipelineSettings {
-        EditorStore::face_view(self)
-    }
+pub fn get(store: &EditorStore, field: Field) -> f32 {
+    field.knob().get(store.settings())
 }
 
 /// The hand's value for `field` on the open frame, as a move from where it stands: the frames edited
 /// with it move by the same distance, each keeping its own offset.
-pub fn moved(store: &dyn Store, field: Field, to: f32) -> Command {
+pub fn moved(store: &EditorStore, field: Field, to: f32) -> Command {
     let knob = field.knob();
     Command::Step { knob, by: to - knob.get(&store.face_view()) }
 }
@@ -223,21 +95,21 @@ pub(crate) mod tests {
     #[test]
     fn a_drag_is_one_undo_step_and_reports_only_its_slider() {
         let (mut s, dir) = fresh("drag");
-        Store::changed(&mut s);
-        let rest = s.get(Field::Exposure);
+        changed(&mut s);
+        let rest = get(&s, Field::Exposure);
         s.hold();
         for k in 1..=10 {
             s.apply(Command::Set { knob: Field::Exposure.knob(), value: rest + k as f32 * 0.1 });
         }
-        let moved = Store::changed(&mut s);
+        let moved = changed(&mut s);
         assert!(moved.contains(&Field::Exposure) && !moved.contains(&Field::Vignette));
-        assert!(Store::changed(&mut s).is_empty(), "drained once published");
+        assert!(changed(&mut s).is_empty(), "drained once published");
         s.release();
-        assert!((s.get(Field::Exposure) - rest - 1.0).abs() < 1e-5);
+        assert!((get(&s, Field::Exposure) - rest - 1.0).abs() < 1e-5);
         s.apply(Command::Undo);
-        assert!((s.get(Field::Exposure) - rest).abs() < 1e-6, "one step undoes the whole drag");
+        assert!((get(&s, Field::Exposure) - rest).abs() < 1e-6, "one step undoes the whole drag");
         // Twin: a second undo finds nothing, the ten notches having been one step.
-        assert!(!Store::can_undo(&s));
+        assert!(!s.can_undo());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -253,8 +125,8 @@ pub(crate) mod tests {
         assert_eq!(s.revision(), revision + 1);
         assert!(!is_modified(s.settings(), Block::Effects, None));
         s.apply(Command::Undo);
-        assert_eq!(s.get(Field::Chrome), 0.5, "the reset is one step, undone whole");
-        assert_eq!(s.get(Field::Vignette), -1.0);
+        assert_eq!(get(&s, Field::Chrome), 0.5, "the reset is one step, undone whole");
+        assert_eq!(get(&s, Field::Vignette), -1.0);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -269,8 +141,8 @@ pub(crate) mod tests {
         let command = reset(Block::DensityCeiling, None);
         s.apply(command);
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
-        assert_eq!(s.get(Field::Exposure), Field::Exposure.knob().get(&slide));
-        assert_eq!(s.get(Field::DensityCeiling), Field::DensityCeiling.knob().get(&slide));
+        assert_eq!(get(&s, Field::Exposure), Field::Exposure.knob().get(&slide));
+        assert_eq!(get(&s, Field::DensityCeiling), Field::DensityCeiling.knob().get(&slide));
         assert!(!is_modified(s.settings(), Block::Lighting, None) && !is_modified(s.settings(), Block::DensityCeiling, None));
         // Twin: a negative's rest sits elsewhere on both, so a reset to it would fail above.
         let negative = PipelineSettings::rest(ConversionMode::Negative, true);
@@ -328,7 +200,7 @@ pub(crate) mod tests {
         picked.separation_family = Some(SeparationFamily::KodakC41);
         s.apply(Command::Write(Box::new(picked)));
         // The family alone, the dose at its base, still shows the block's reset key.
-        assert_eq!(s.get(Field::DyeSeparation), separation::BASE);
+        assert_eq!(get(&s, Field::DyeSeparation), separation::BASE);
         assert!(is_modified(s.settings(), Block::DyeSeparation, None) && is_modified(s.settings(), Block::DyeSeparation, fuji));
         s.apply(Command::Set { knob: Field::DyeSeparation.knob(), value: 1.1 });
         assert!(s.settings().separation_by_hand);

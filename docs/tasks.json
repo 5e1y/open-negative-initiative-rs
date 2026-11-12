@@ -9265,5 +9265,26 @@
     "title": "The decoder's stamp moves with one byte of any listed file and with nothing else",
     "status": "done",
     "detail": "stamp.rs tests: one byte changed in a nested source or in the version file changes the stamp, an unchanged tree keeps it, a file outside the parts or a hidden file inside them moves nothing (twin); one tree in two folders prints alike, a renamed file prints otherwise (twin), a missing part is an error; the built ONI_DECODE_STAMP equals the stamp of today's sources (twin: the former five-file list prints otherwise). Shown live: appending a line to src/m3.rs rebuilt oni-decode alone and the built stamp followed; a line in csrc/stream.cpp rebuilt oni-libraw and the stamp followed."
+  },
+  {
+    "id": 1822,
+    "type": "refactor",
+    "title": "The shell's store is the editing model itself",
+    "status": "done",
+    "detail": "trait Store had one implementation: State.store is now an EditorStore and Shell::new, with_window and standing take one; editors/mod.rs takes &mut EditorStore. Deleted: the trait, its forwarding impl, the default stubs and the Settings and StoreGlobal aliases, so Store names the Slint global only. changed(&mut EditorStore) -> Vec<Field> and get(&EditorStore, Field) -> f32 are free functions in store.rs; open and open_adjusted map their error to a string at the call, set_archive is set_archive_paths. Tests and benches change only the constructor argument, the Store import and the accessor of a read."
+  },
+  {
+    "id": 1823,
+    "type": "refactor",
+    "title": "The shell reads the store with no absent case",
+    "status": "done",
+    "detail": "About 56 `store.editor()` / `editor_ref()` sites carried a None branch no run could reach, with fallback values (an empty list, false, a default scope, an Undo title with no step). They use the store directly; roll_scope's reference-only scope, the menus' fallback titles and the phone's early returns went with them. Gestures::scanner, a one-field wrapper, is the field."
+  },
+  {
+    "id": 1824,
+    "type": "check",
+    "title": "The store's tests read it through the free functions",
+    "status": "done",
+    "detail": "store.rs's drag and reset tests call changed(&mut s) and get(&s, field) in place of the trait's methods, and editors/tests.rs calls the store's own apply and can_undo; no expectation changed."
   }
 ]

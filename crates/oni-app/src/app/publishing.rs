@@ -15,20 +15,20 @@ impl Ctl {
 
     fn publish_store(self: &Rc<Self>, jump: bool) {
         let Some(w) = self.window() else { return };
-        let g = w.global::<StoreGlobal>();
+        let g = w.global::<Store>();
         let (moved, edited) = {
             let mut s = self.state.borrow_mut();
             // Any new state of the open frame is written, a slider's or not: a roll joined or reset moves none.
             let revision = s.store.revision();
             let edited = revision != s.published_revision;
             s.published_revision = revision;
-            let mut moved: Vec<Field> = s.store.changed();
+            let mut moved: Vec<Field> = store::changed(&mut s.store);
             if jump {
                 moved = Field::ALL.to_vec();
             }
             let mut out = Vec::new();
             for f in moved {
-                let v = s.store.get(f);
+                let v = store::get(&s.store, f);
                 let slide = &mut s.slides[f.index() as usize];
                 if !jump && slide.published == Some(v) {
                     continue;
@@ -117,7 +117,7 @@ impl Ctl {
     pub(super) fn place(&self, f: Field, at: f32) {
         self.state.borrow_mut().slides[f.index() as usize].knob.aim(at, true, Instant::now());
         if let Some(w) = self.window() {
-            set_fraction(&w.global::<StoreGlobal>(), f, at);
+            set_fraction(&w.global::<Store>(), f, at);
         }
     }
 
@@ -158,7 +158,7 @@ impl Ctl {
             (drawn, !s.slides.iter().any(|slide| slide.knob.moving(now)))
         };
         if let Some(w) = self.window() {
-            let g = w.global::<StoreGlobal>();
+            let g = w.global::<Store>();
             for (f, at) in drawn {
                 set_fraction(&g, f, at);
             }
@@ -185,7 +185,7 @@ impl Ctl {
         if f == Field::Angle {
             return self.straighten(stored);
         }
-        let command = store::moved(&*self.state.borrow().store, f, stored);
+        let command = store::moved(&self.state.borrow().store, f, stored);
         self.write(command);
     }
 

@@ -59,7 +59,7 @@ pub(crate) fn high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up
         discard: Box::new(move |p: &Path| std::fs::rename(p, binned.join(p.file_name().unwrap()))),
         ..Options::default()
     };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();

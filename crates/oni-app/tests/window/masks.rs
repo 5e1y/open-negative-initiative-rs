@@ -4,7 +4,7 @@
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::flat_fields;
-use oni_app::{Advice, App, Canvas, Library, MaskDialog, PanelState, Store as StoreGlobal};
+use oni_app::{Advice, App, Canvas, Library, MaskDialog, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::FlatFieldMask;
 use slint::ComponentHandle;
@@ -52,7 +52,7 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
         discard: Box::new(move |p| std::fs::rename(p, bin.join(p.file_name().unwrap()))),
         ..Options::default()
     };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -117,7 +117,7 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     assert!(flat_fields::presets(&support).is_dir());
 
     // The colour a hand dials is kept; an undo keeps nothing; B, never dialled, opens on it.
-    let g = w.global::<StoreGlobal>();
+    let g = w.global::<Store>();
     let field = Field::FlatTemperature.index();
     g.invoke_press(field, false);
     g.invoke_drag(field, 30.0, 300.0, false);

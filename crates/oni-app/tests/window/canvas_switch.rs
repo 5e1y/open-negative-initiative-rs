@@ -4,7 +4,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Canvas, Dedust, Library, PanelState, Store as StoreGlobal};
+use oni_app::{Canvas, Dedust, Library, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::cg::Point;
 use oni_settings::frame::Correction;
@@ -60,7 +60,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -125,7 +125,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
 
     // A notch leaves the corrections' list as it was; a correction painted adds its row to it.
     let (list, before) = (d.get_rows(), rows(w));
-    w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);
+    w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
     assert!(d.get_rows() == list && rows(w) == before, "a notch rebuilds no correction row");
 
     // A correction whose patch cannot be generated, its frame's file gone, is not tried again.
@@ -137,7 +137,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     assert!(d.get_rows() == list && rows(w).len() == before.len() + 1, "twin: a painted correction grows the list it has");
     assert_eq!(rows(w).last(), Some(&("Correction 3".to_string(), true)), "its patch is being generated");
     rig.until("the generation's failure", Duration::from_secs(60), || healed(w));
-    w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);
+    w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
     assert!(healed(w), "a notch starts no generation again");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);

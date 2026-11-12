@@ -8,7 +8,7 @@ impl Ctl {
     fn respread(&self) -> Vec<Field> {
         let spans: Vec<(f32, f32)> = {
             let s = self.state.borrow();
-            let live = s.together.as_ref().and(s.store.editor_ref()).map(|e| e.together_live()).unwrap_or_default();
+            let live = s.together.as_ref().map(|_| s.store.together_live()).unwrap_or_default();
             let open = s.store.settings();
             let span = |f: Field| {
                 let at = f.knob().get(open);
@@ -38,11 +38,11 @@ impl Ctl {
     /// These sliders' readouts written as the frames shown read now, a slider under the hand writing its own.
     pub(in crate::app) fn publish_readouts(&self, fields: impl IntoIterator<Item = Field>) {
         let Some(w) = self.window() else { return };
-        let g = w.global::<StoreGlobal>();
+        let g = w.global::<Store>();
         for f in fields {
             let (v, held) = {
                 let s = self.state.borrow();
-                (s.store.get(f), s.slides[f.index() as usize].live().is_some())
+                (crate::store::get(&s.store, f), s.slides[f.index() as usize].live().is_some())
             };
             let text: SharedString = self.readout_at(f, v).into();
             set_value(&g, f, text.clone());

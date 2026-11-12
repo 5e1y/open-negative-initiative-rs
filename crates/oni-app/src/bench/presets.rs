@@ -41,7 +41,7 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 done(text);
             }
         };
-        let exposure = || ctl.state.borrow().store().get(Field::Exposure);
+        let exposure = || crate::store::get(ctl.state.borrow().store(), Field::Exposure);
         let shown = || ctl.state.borrow().shown_settings().map(|s| Field::Exposure.knob().get(s));
         // The card's middle, wherever the deck stands now.
         let card = || slint::LogicalPosition::new(presets.get_first_x() + 36.0, presets.get_first_y() + 52.0);
@@ -55,7 +55,7 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
                 // The look saved two stops over the frame's own, then the frame back at rest.
                 let rest = exposure();
-                let g = w.global::<StoreGlobal>();
+                let g = w.global::<Store>();
                 g.invoke_press(Field::Exposure.index(), false);
                 g.invoke_drag(Field::Exposure.index(), 30.0, SPAN, false);
                 g.invoke_release(Field::Exposure.index());

@@ -104,7 +104,7 @@ pub(super) fn opened(label: &str) -> Option<Opened> {
     store.open(&frame).unwrap();
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support: dir.join("support"), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.set_size(PhysicalSize::new(1280, 2200));
     shell.window.show().unwrap();
     // The app launches on the gallery; the store's open frame is shown in the editor.

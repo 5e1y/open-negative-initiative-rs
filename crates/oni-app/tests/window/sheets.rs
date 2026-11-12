@@ -28,7 +28,7 @@ fn click(rig: &common::Rig, x: f32, y: f32) {
 fn shell(rig: &common::Rig, root: &std::path::Path, gpu: &oni_app::render::Device, reporter: oni_app::app::Reporter) -> Shell {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), reporter, ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();

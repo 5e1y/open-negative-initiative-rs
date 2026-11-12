@@ -105,7 +105,7 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let open = ctl.state.borrow().open_path().is_some_and(|p| p.contains(&name));
                 if !app.get_gallery() && open && ctl.state.borrow().placed().is_some() {
                     check(&name, "opened");
-                    w.global::<StoreGlobal>().invoke_press(Field::Exposure.index(), false);
+                    w.global::<Store>().invoke_press(Field::Exposure.index(), false);
                     phase.set(Flow::Editing { frame, notch: 0 });
                 } else if at.elapsed() > Duration::from_secs(60) {
                     fail(format!("{name}: a double click did not open it (gallery {}, open {:?})", app.get_gallery(), ctl.state.borrow().open_path()));
@@ -113,7 +113,7 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
             }
             Flow::Editing { frame, notch } => {
-                let g = w.global::<StoreGlobal>();
+                let g = w.global::<Store>();
                 let notch = notch + 1;
                 g.invoke_drag(Field::Exposure.index(), notch as f32 * STEP, SPAN, false);
                 // The window resized mid-edit, as entering the editor resizes the canvas.

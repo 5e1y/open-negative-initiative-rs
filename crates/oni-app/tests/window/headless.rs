@@ -3,7 +3,7 @@
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{App, Bar, Library, MainWindow, PanelState, Store as StoreGlobal};
+use oni_app::{App, Bar, Library, MainWindow, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
@@ -88,7 +88,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     // The app's own folders in the mirror's, so a run never reaches the person's index or thumbnails.
     let (support, caches) = (folder.parent().unwrap().join("Support"), folder.parent().unwrap().join("Caches"));
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
     shell.window.show().unwrap();
@@ -129,9 +129,9 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert_eq!(w.global::<PanelState>().get_crop_first(), uncropped, "{:?}", g.crop);
 
     // A drag on Exposure: notches at the hand's pace, one store step, one render at least.
-    let g = w.global::<StoreGlobal>();
+    let g = w.global::<Store>();
     let field = Field::Exposure.index();
-    let before = ctl.state.borrow().store().get(Field::Exposure);
+    let before = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     let renders = ctl.state.borrow().renders();
     let span = 300.0;
     assert!(!g.invoke_press(field, false), "a first press is no double click");
@@ -144,7 +144,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.pump();
     let (low, high) = Field::Exposure.spec().range;
     let expected = before + 60.0 / span * (high - low);
-    let after = ctl.state.borrow().store().get(Field::Exposure);
+    let after = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     assert!((after - expected).abs() < 1e-3, "{after} against {expected}");
     assert!((app::fraction(&g, Field::Exposure) - (expected - low) / (high - low)).abs() < 1e-4);
     assert_eq!(g.get_exposure_readout(), Field::Exposure.spec().readout.format(after));
@@ -156,7 +156,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
 
     // One undo takes the whole drag back, and the knob springs home.
     rig.chord(slint::platform::Key::Control, "z");
-    assert!((ctl.state.borrow().store().get(Field::Exposure) - before).abs() < 1e-6, "the drag was one step");
+    assert!((oni_app::store::get(ctl.state.borrow().store(), Field::Exposure) - before).abs() < 1e-6, "the drag was one step");
     rig.settle();
     assert!((app::fraction(&g, Field::Exposure) - (before - low) / (high - low)).abs() < 1e-4);
     // Twin: the press of a double click resets to the rest instead of starting a drag.
@@ -166,7 +166,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     g.invoke_drag(field, 100.0, span, false);
     g.invoke_release(field);
     rig.pump();
-    assert_eq!(ctl.state.borrow().store().get(Field::Exposure), Field::Exposure.base(ctl.state.borrow().store().settings()));
+    assert_eq!(oni_app::store::get(ctl.state.borrow().store(), Field::Exposure), Field::Exposure.base(ctl.state.borrow().store().settings()));
     rig.chord(slint::platform::Key::Control, "z");
     rig.settle();
     // One more notch alone, from the store's write to the canvas: the render a held slider waits on.
@@ -277,7 +277,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FacePro);
 
     // The bench: sixty notches scripted on Exposure, their centiles, and the drag undone.
-    let before = ctl.state.borrow().store().get(Field::Exposure);
+    let before = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     let revision = ctl.state.borrow().store().revision();
     let report = Rc::new(RefCell::new(None));
     let r = report.clone();
@@ -286,7 +286,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let text = report.borrow().clone().unwrap();
     println!("{text}");
     assert!(text.starts_with("bench, 60 notches") && text.contains(" p99 "), "{text}");
-    assert_eq!(ctl.state.borrow().store().get(Field::Exposure), before, "the bench undoes its drag");
+    assert_eq!(oni_app::store::get(ctl.state.borrow().store(), Field::Exposure), before, "the bench undoes its drag");
     // Twin: the drag did write the store, so a bench that moved nothing would fail here.
     assert!(ctl.state.borrow().store().revision() >= revision + 2);
 

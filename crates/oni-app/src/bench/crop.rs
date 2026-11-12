@@ -67,7 +67,7 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
             5 => {
                 note("bottom-right corner dragged in");
-                let g = w.global::<StoreGlobal>();
+                let g = w.global::<Store>();
                 let field = Field::Angle.index();
                 g.invoke_press(field, false);
                 for k in 1..=10 {

@@ -80,7 +80,7 @@ impl Ctl {
     }
 
     pub(super) fn can_paste(&self) -> bool {
-        self.state.borrow_mut().store.editor().is_some_and(|e| e.has_copied_settings())
+        self.state.borrow_mut().store.has_copied_settings()
     }
 
     pub(super) fn cell_items(&self, s: &State, path: &str, scope: &HashSet<String>, edit: bool, can_paste: bool) -> Vec<Item> {

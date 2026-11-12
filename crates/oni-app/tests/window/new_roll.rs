@@ -46,7 +46,7 @@ pub(crate) fn a_new_roll_asks_names_the_folder_and_counts_files() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = Computer { home: paths::canonical(&root.join("Home")), volumes: paths::canonical(&root.join("Volumes")) };
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     shell.open_folder(&scans);

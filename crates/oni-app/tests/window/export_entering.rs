@@ -37,7 +37,7 @@ pub(crate) fn entering_the_export_reads_no_scan_on_the_interface_thread() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { canvas: false, support: root.join("support"), caches: root.join("caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let targets: Vec<oni_app::export::Target> =

@@ -6,7 +6,7 @@ use oni_app::app::{Options, Shell};
 use oni_app::display::Screen;
 use oni_app::export::label;
 use oni_app::fields::Field;
-use oni_app::{App, Bar, Exporting, Library, MainWindow, Menus, Store as StoreGlobal};
+use oni_app::{App, Bar, Exporting, Library, MainWindow, Menus, Store};
 use oni_colour::Space;
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
@@ -138,7 +138,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     let engine = oni_app::render::Engine::shared(&gpu);
     // A Display P3 screen, so a proof narrower than the screen is visible on it.
     let options = Options { screen: Screen::DisplayP3, canvas: false, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     window.set_size(PhysicalSize::new(1440, 900));
     shell.window.show().unwrap();
@@ -188,7 +188,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(e.get_chip_hint(), "phones & screens");
 
     // Colour density raised so the frame holds colours sRGB cannot.
-    let g = w.global::<StoreGlobal>();
+    let g = w.global::<Store>();
     for _ in 0..40 {
         g.invoke_step(Field::ColorDensity.index(), 1);
     }

@@ -5,7 +5,7 @@
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::measuring::{self, READINGS};
-use oni_app::{Canvas, Library, PanelState, Store as StoreGlobal};
+use oni_app::{Canvas, Library, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::{PipelineSettings, sidecar};
 use slint::ComponentHandle;
@@ -71,7 +71,7 @@ fn rigged(check: &str) -> Option<Rigged> {
     let rig = common::rig(std::env::temp_dir());
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -135,7 +135,7 @@ impl Rigged {
         let panel = w.global::<PanelState>();
         panel.set_tab(tab);
         panel.invoke_tab_picked(tab);
-        let g = w.global::<StoreGlobal>();
+        let g = w.global::<Store>();
         let before: Vec<PipelineSettings> = paths.iter().map(|p| self.settings(p)).collect();
         g.invoke_press(field.index(), false);
         g.invoke_drag(field.index(), 40.0, 300.0, false);

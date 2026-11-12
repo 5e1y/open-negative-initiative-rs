@@ -216,7 +216,7 @@ pub(crate) fn a_parameter_change_on_a_batch_is_timed() {
     oni_decode::cache::keep_in(root.join("Decodes"), 64 << 30);
     let store = oni_core::EditorStore::new(oni_core::Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = oni_app::app::Options { canvas: false, support: root.join("support"), caches: root.join("caches"), picker: Box::new(|| None), ..Default::default() };
-    let shell = oni_app::app::Shell::new(Box::new(store), Engine::shared(&gpu), options).unwrap();
+    let shell = oni_app::app::Shell::new(store, Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let e = shell.window.global::<Exporting>();
@@ -278,7 +278,7 @@ pub(crate) fn a_burst_of_changes_weighs_the_estimate_twice_at_most() {
     let support = root.join("support");
     let store = oni_core::EditorStore::new(oni_core::Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = oni_app::app::Options { canvas: false, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None), ..Default::default() };
-    let shell = oni_app::app::Shell::new(Box::new(store), Engine::shared(&gpu), options).unwrap();
+    let shell = oni_app::app::Shell::new(store, Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let e = shell.window.global::<Exporting>();

@@ -3,7 +3,7 @@
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Library, Store as StoreGlobal, TreeRow};
+use oni_app::{Library, Store, TreeRow};
 use oni_core::{Archive, EditorStore};
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_settings::Date;
@@ -91,7 +91,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -127,7 +127,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     lib.invoke_row_folded(folder(&lib, "Roll B").0 as i32);
     rig.pump();
     for _ in 0..2 {
-        w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);
+        w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
         rig.pump();
     }
     assert!(!folder(&lib, "Roll B").1.expanded, "an edit keeps the hand's fold");

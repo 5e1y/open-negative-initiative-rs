@@ -53,7 +53,7 @@ impl Ctl {
         self.told(title, message);
         let step = {
             let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             store.history().undo_mark()
         };
         self.state.borrow_mut().org.told_step = step;
@@ -76,7 +76,7 @@ impl Ctl {
         }
         if let Some(mark) = step {
             // A step taken since stands on top: Undo here would walk back that one instead.
-            let last = self.state.borrow_mut().store.editor().is_some_and(|store| store.history().undo_mark() == Some(mark));
+            let last = self.state.borrow_mut().store.history().undo_mark() == Some(mark);
             if last {
                 self.history_step(true);
             }

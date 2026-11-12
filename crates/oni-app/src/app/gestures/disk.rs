@@ -112,10 +112,8 @@ impl Ctl {
             if !named {
                 s.rename_request = Some(folder.clone());
             }
-            if let Some(store) = s.store.editor() {
-                store.record_disk(made.disk, tr("New Roll"));
-                store.forget_measured();
-            }
+            s.store.record_disk(made.disk, tr("New Roll"));
+            s.store.forget_measured();
         }
         self.journal_count(oni_library::journal::Kind::Rolled, moves.len());
         self.followed(&moves);
@@ -130,7 +128,7 @@ impl Ctl {
     pub(in crate::app) fn unsaved_among(&self, title: &str, moves: &[Move]) -> bool {
         let failure = self.state.borrow_mut().store.flush();
         let Some(error) = failure else { return false };
-        let open = self.state.borrow().store.editor_ref().and_then(|e| e.path().map(str::to_string));
+        let open = self.state.borrow().store.path().map(str::to_string);
         if !open.is_some_and(|o| moves.iter().any(|m| oni_library::paths::holds(&m.from, &o))) {
             self.told(title, &error);
             return false;
@@ -142,9 +140,7 @@ impl Ctl {
     /// `followed`, for a move no gallery step made, a folder renamed or found elsewhere: the steps
     /// follow it too, so an undo reaches the files under their new names.
     pub(in crate::app) fn followed_outside(self: &Rc<Self>, moves: &[Move]) {
-        if let Some(store) = self.state.borrow_mut().store.editor() {
-            store.follow_history(moves);
-        }
+        self.state.borrow_mut().store.follow_history(moves);
         self.followed(moves);
     }
 
@@ -165,9 +161,7 @@ impl Ctl {
             // A read in flight surveyed the old names: superseded, its rows would drop the moved picks.
             s.generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             // The store first: the open frame's next write and the edits kept unsaved go to the new path.
-            if let Some(store) = s.store.editor() {
-                store.follow(moves);
-            }
+            s.store.follow(moves);
             if let Some(index) = &s.index {
                 for row in index.all() {
                     if let Some(to) = moved(&row.path) {

@@ -4,7 +4,7 @@
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Canvas, Library, Store as StoreGlobal, Tip};
+use oni_app::{Canvas, Library, Store, Tip};
 use oni_core::{Archive, EditorStore, Knob};
 use oni_settings::PipelineSettings;
 use oni_settings::sidecar::{self, WriteOptions};
@@ -43,13 +43,13 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    let (lib, canvas, g, tip) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<StoreGlobal>(), w.global::<Tip>());
+    let (lib, canvas, g, tip) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Store>(), w.global::<Tip>());
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     rig.settle();

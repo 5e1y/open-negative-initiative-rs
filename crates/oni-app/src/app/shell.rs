@@ -4,12 +4,12 @@ use super::*;
 
 impl Shell {
     /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
-    pub fn new(store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+    pub fn new(store: EditorStore, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         Self::with_window(MainWindow::new()?, store, engine, options)
     }
 
     /// `new` on a window already built: the shell stands, then rises, its steps run in a row.
-    pub fn with_window(window: MainWindow, store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+    pub fn with_window(window: MainWindow, store: EditorStore, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let shell = Self::standing(window, store, engine, options)?;
         for step in shell.rising() {
             step.run();
@@ -19,7 +19,7 @@ impl Shell {
 
     /// The shell's state and controller on a window already built, each part's time in the log;
     /// `rising` then wires and lays out the window, a step each the starter names.
-    pub fn standing(window: MainWindow, store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+    pub fn standing(window: MainWindow, store: EditorStore, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let mut laps = crate::starter::Laps::new("Building the app");
         crate::keycaps::serve(&window);
         crate::slider_track::serve(&window);

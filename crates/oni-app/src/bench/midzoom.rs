@@ -103,12 +103,12 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let held = s.notches().histogram_count();
                 drop(s);
                 *text.borrow_mut() = report;
-                w.global::<StoreGlobal>().invoke_press(Field::Exposure.index(), false);
+                w.global::<Store>().invoke_press(Field::Exposure.index(), false);
                 phase.set(Mid::Dragging { notch: 0, held });
             }
             Mid::Dragging { notch, held, .. } => {
                 drop(s);
-                let g = w.global::<StoreGlobal>();
+                let g = w.global::<Store>();
                 if notch < NOTCHES / 2 {
                     g.invoke_drag(Field::Exposure.index(), (notch + 1) as f32 * STEP, SPAN, false);
                     phase.set(Mid::Dragging { notch: notch + 1, held });

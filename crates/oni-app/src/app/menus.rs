@@ -45,30 +45,25 @@ impl Ctl {
             let (zoom_out, zoom_in) = (rung(-1), rung(1));
             let settings = s.store.settings().clone();
             let open_path = s.open.clone();
-            let mut store = s.store.editor();
+            let store = &mut s.store;
             // A slide roll is scanned once for the title's count, then kept until a frame joins or leaves it.
-            if let Some(e) = store.as_deref_mut()
-                && let Some(key @ oni_library::roll_membership::RollKey::Slides(_)) = e.roll_key()
-                && e.measured_group(key.clone()).is_none()
+            if let Some(key @ oni_library::roll_membership::RollKey::Slides(_)) = store.roll_key()
+                && store.measured_group(key.clone()).is_none()
             {
-                e.measured_with(key);
+                store.measured_with(key);
             }
             // One history in every mode: the same step answers ⌘Z in the gallery and the editor.
-            let (can_undo, can_redo, undo_title, redo_title) = store.as_ref().map_or_else(
-                || (false, false, tr("Undo").to_string(), tr("Redo").to_string()),
-                |e| {
-                    let h = e.history();
-                    let name = |step| step_name(step, open_path.as_deref());
-                    let undo = h.next_undo().and_then(name).map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l));
-                    let redo = h.next_redo().and_then(name).map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l));
-                    (h.can_undo(), h.can_redo(), undo, redo)
-                },
-            );
-            let (has_settings, scanner_face) =
-                store.as_ref().map_or((false, false), |e| (e.has_copied_settings(), e.scanner_face));
+            let (can_undo, can_redo, undo_title, redo_title) = {
+                let h = store.history();
+                let name = |step| step_name(step, open_path.as_deref());
+                let undo = h.next_undo().and_then(name).map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l));
+                let redo = h.next_redo().and_then(name).map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l));
+                (h.can_undo(), h.can_redo(), undo, redo)
+            };
+            let (has_settings, scanner_face) = (store.has_copied_settings(), store.scanner_face);
             let reach = store
-                .as_ref()
-                .and_then(|e| e.roll_key().and_then(|k| e.measured_group(k)))
+                .roll_key()
+                .and_then(|k| store.measured_group(k))
                 .map_or(0, |m| m.len() - usize::from(open_path.as_ref().is_some_and(|p| m.contains(p))));
             let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
             let (exporting, writing) = {

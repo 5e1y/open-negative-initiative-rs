@@ -195,8 +195,8 @@ impl Ctl {
             (was_open, neighbour, s.store.settings().flat_field.clone())
         };
         // The sidecar written first, as the move takes it to the Trash; a refused move leaves the frame open.
-        if was_open && let Some(store) = self.state.borrow_mut().store.editor() {
-            store.flush();
+        if was_open {
+            self.state.borrow_mut().store.flush();
         }
         let moved = {
             let s = self.state.borrow();
@@ -209,9 +209,7 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             if was_open {
-                if let Some(store) = s.store.editor() {
-                    store.close();
-                }
+                s.store.close();
                 s.open = None;
                 s.negative = None;
             }

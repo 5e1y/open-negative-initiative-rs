@@ -62,8 +62,8 @@ impl State {
         self.requests.rendered
     }
 
-    pub fn store(&self) -> &dyn Settings {
-        self.store.as_ref()
+    pub fn store(&self) -> &EditorStore {
+        &self.store
     }
 
     /// `Diagnostics.witness`: what the window showed, written beside a block.

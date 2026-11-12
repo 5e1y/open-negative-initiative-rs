@@ -25,7 +25,8 @@ impl Ctl {
     /// Which reset keys a frame beside the open one stands off rest for; none while it stands alone.
     pub(crate) fn beside(&self) -> Beside {
         let s = self.state.borrow();
-        let (Some(together), Some(e)) = (s.together.as_ref(), s.store.editor_ref()) else { return Beside::default() };
+        let Some(together) = s.together.as_ref() else { return Beside::default() };
+        let e = &s.store;
         let (dyes, scanner) = (s.open_dyes(), e.scanner_face);
         let read = (e.together_generation(), e.roll_key(), dyes, scanner);
         if let Some((at, beside)) = &*together.beside.borrow()

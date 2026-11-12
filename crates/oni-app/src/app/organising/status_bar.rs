@@ -45,7 +45,7 @@ impl Ctl {
     /// edit hides it until its write.
     pub(in crate::app) fn publish_saved(&self) {
         let Some(w) = self.window() else { return };
-        let kept = self.state.borrow().store.editor_ref().is_some_and(|e| e.kept());
+        let kept = self.state.borrow().store.kept();
         w.global::<crate::Canvas>().set_saved(kept);
     }
 

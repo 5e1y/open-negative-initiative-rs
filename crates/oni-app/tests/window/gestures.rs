@@ -53,7 +53,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches: caches.clone(), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
     shell.window.show().unwrap();
@@ -139,7 +139,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     // Copy Settings on an exposure moved, then the gallery with two photos of another roll selected.
     w.global::<oni_app::Store>().invoke_step(Field::Exposure.index(), 5);
     rig.pump();
-    let donor = ctl.state.borrow().store().get(Field::Exposure);
+    let donor = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     rig.chord_with(&[Key::Control, Key::Shift], "c");
     assert!(w.global::<oni_app::Presets>().get_copying() && !menus.get_live().paste_to_roll, "the copy sheet asks what it carries first");
     rig.key("\n");
@@ -175,7 +175,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!(menus.get_titles().redo.as_str(), "Redo Paste settings to 2 photos");
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Exposure", "under it, the exposure moved in the editor, named by its slider");
     // One history: the gallery's ⌘Z reaches that edit of the open frame too, and its redo lays it again.
-    let open_exposure = || ctl.state.borrow().store().get(Field::Exposure);
+    let open_exposure = || oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     rig.chord(Key::Control, "z");
     assert!((open_exposure() - donor).abs() > 1e-4, "the editor's edit taken back from the gallery");
     assert_eq!(menus.get_titles().redo.as_str(), "Redo Exposure");

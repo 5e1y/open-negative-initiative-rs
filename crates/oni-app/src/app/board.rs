@@ -17,10 +17,8 @@ impl Ctl {
         let settings = s.pasteboard.data(SETTINGS).and_then(|d| String::from_utf8(d).ok());
         let framing = s.pasteboard.data(FRAMING).and_then(|d| serde_json::from_slice(&d).ok());
         s.window_board = s.pasteboard.data(MEASURE_WINDOW).and_then(|d| serde_json::from_slice(&d).ok());
-        if let Some(e) = s.store.editor() {
-            e.board.settings = settings;
-            e.board.framing = framing;
-        }
+        s.store.board.settings = settings;
+        s.store.board.framing = framing;
     }
 
     /// `Propagation.copy`, `copyFraming`, `copyMeasureWindow`: the store's copy of that kind laid on
@@ -29,8 +27,8 @@ impl Ctl {
         let mut s = self.state.borrow_mut();
         let s = &mut *s;
         let data = match kind {
-            SETTINGS => s.store.editor().and_then(|e| e.board.settings.clone()).map(String::into_bytes),
-            FRAMING => s.store.editor().and_then(|e| e.board.framing).and_then(|g| serde_json::to_vec(&g).ok()),
+            SETTINGS => s.store.board.settings.clone().map(String::into_bytes),
+            FRAMING => s.store.board.framing.and_then(|g| serde_json::to_vec(&g).ok()),
             _ => s.window_board.and_then(|w| serde_json::to_vec(&w).ok()),
         };
         let Some(data) = data else { return };

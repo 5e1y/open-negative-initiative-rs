@@ -4,7 +4,7 @@
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Bar, Lab, Library, Menus, Store as StoreGlobal};
+use oni_app::{Bar, Lab, Library, Menus, Store};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
@@ -32,7 +32,7 @@ pub(crate) fn an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_fac
     rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| false));
     let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     shell.open_folder(&folder);
@@ -46,7 +46,7 @@ pub(crate) fn an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_fac
 
     // Pro's Contrast moved, then the face turned to the Scanner and back: the undo still names it.
     let rest = settings().print.contrast;
-    w.global::<StoreGlobal>().invoke_step(Field::Contrast.index(), 1);
+    w.global::<Store>().invoke_step(Field::Contrast.index(), 1);
     rig.pump();
     assert_ne!(settings().print.contrast, rest, "the step moved nothing, so the check sees nothing");
     face("Scanner");

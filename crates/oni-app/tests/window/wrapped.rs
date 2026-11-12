@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Library, Menus, PanelState, Store as StoreGlobal, Wrapped};
+use oni_app::{Library, Menus, PanelState, Store, Wrapped};
 use oni_core::{Archive, EditorStore};
 use oni_library::journal::{Journal, Kind};
 use slint::platform::{Key, WindowEvent};
@@ -43,7 +43,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -60,7 +60,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     assert_eq!(kinds(), [Kind::Opened]);
-    let g = w.global::<StoreGlobal>();
+    let g = w.global::<Store>();
     let field = Field::Exposure.index();
     g.invoke_press(field, false);
     for step in 1..=6 {

@@ -50,7 +50,7 @@ impl Ctl {
         }
         let (failure, marked) = {
             let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             run(store);
             (store.failure.take(), store.marked.take())
         };
@@ -83,9 +83,9 @@ impl Ctl {
     pub(super) fn closed_if_trashed(self: &Rc<Self>) {
         let closed = {
             let mut s = self.state.borrow_mut();
-            let held = s.store.editor().map(|e| e.path().map(str::to_string));
+            let held = s.store.path().map(str::to_string);
             match held {
-                Some(None) if s.open.is_some() => {
+                None if s.open.is_some() => {
                     s.open = None;
                     s.negative = None;
                     true
@@ -107,7 +107,8 @@ impl Ctl {
         if self.busy_said(title) {
             return;
         }
-        if let Some(store) = self.state.borrow_mut().store.editor() {
+        {
+            let store = &mut self.state.borrow_mut().store;
             if undo { store.undo() } else { store.redo() };
         }
         self.stepped(undo);
@@ -119,7 +120,7 @@ impl Ctl {
         let title = if undo { tr("Undo") } else { tr("Redo") };
         let (touched, failure, walk, marked, regrouped, face) = {
             let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             // The step just taken stands at the other end of the history now.
             let history = store.history();
             let touched: Vec<String> = if undo { history.redo_paths() } else { history.undo_paths() }.into_iter().collect();
@@ -217,7 +218,7 @@ impl Ctl {
         let targets = self.targets();
         let check = {
             let mut s = self.state.borrow_mut();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             store.paste_check(&targets)
         };
         match check {
@@ -244,7 +245,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let Some(open) = s.open.clone() else { return };
             let roll = s.store.settings().roll_reference.is_some();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             if !store.has_copied_settings() {
                 return;
             }
@@ -263,7 +264,7 @@ impl Ctl {
         let (touched, rewritten) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.clone();
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             let key = store.roll_key();
             let rewritten = told::rewritten(store, oni_core::EditorStore::paste_to_roll);
             let mut touched: Vec<String> = key.and_then(|k| store.measured_group(k)).map(|g| g.iter().cloned().collect()).unwrap_or_default();
@@ -284,7 +285,7 @@ impl Ctl {
         let targets: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let Some(open) = s.open.clone() else { return };
-            let Some(store) = s.store.editor() else { return };
+            let store = &mut s.store;
             let members = store.roll_key().map(|k| store.measured_with(k)).unwrap_or_default();
             std::iter::once(open.clone()).chain(members.into_iter().filter(|m| *m != open)).collect()
         };

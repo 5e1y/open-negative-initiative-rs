@@ -12,10 +12,10 @@ use crate::viewport::{self, Viewport};
 use crate::framing::{self as frames, Handle};
 use oni_settings::{cg::Rect as Fraction, frame::Geometry, geometry::{self as geom, Framing as Remembered}};
 use crate::phone::{self, Phone};
-use crate::store::{self, Store as Settings};
+use crate::store;
 use crate::timing::{self, Kind, Notches};
-use crate::{Act, App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, MenuLive, MenuTitles, Menus, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
-use oni_core::{Command, PasteCheck};
+use crate::{Act, App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, MenuLive, MenuTitles, Menus, Pairing, PanelState, Plots, Store, Tile, TreeRow};
+use oni_core::{Command, EditorStore, PasteCheck};
 use crate::link::Outward;
 use oni_link::HostEvent;
 use crate::motion::Sprung;
@@ -191,7 +191,7 @@ struct Gpu {
 }
 
 pub struct State {
-    pub(crate) store: Box<dyn Settings>,
+    pub(crate) store: EditorStore,
     screen: Screen,
     archive: Option<Archive>,
     /// Every photo's path in gallery order.
@@ -382,17 +382,17 @@ fn with_shell(f: impl FnOnce(&Rc<Ctl>) + Send + 'static) {
 
 macro_rules! fields {
     ($($variant:ident => $fraction:ident, $get:ident, $readout:ident, $value:ident;)*) => {
-        fn set_fraction(g: &StoreGlobal, f: Field, v: f32) {
+        fn set_fraction(g: &Store, f: Field, v: f32) {
             match f { $(Field::$variant => g.$fraction(v),)* }
         }
         /// The fraction the panel draws, read back by the checks.
-        pub fn fraction(g: &StoreGlobal, f: Field) -> f32 {
+        pub fn fraction(g: &Store, f: Field) -> f32 {
             match f { $(Field::$variant => g.$get(),)* }
         }
-        fn set_readout(g: &StoreGlobal, f: Field, v: SharedString) {
+        fn set_readout(g: &Store, f: Field, v: SharedString) {
             match f { $(Field::$variant => g.$readout(v),)* }
         }
-        fn set_value(g: &StoreGlobal, f: Field, v: SharedString) {
+        fn set_value(g: &Store, f: Field, v: SharedString) {
             match f { $(Field::$variant => g.$value(v),)* }
         }
     };
@@ -433,7 +433,7 @@ fields! {
     GainTint => set_gain_tint_fraction, get_gain_tint_fraction, set_gain_tint_readout, set_gain_tint_value;
 }
 
-fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
+fn set_modified(g: &Store, b: Block, on: bool) {
     match b {
         Block::Color => g.set_color_modified(on),
         Block::Lighting => g.set_lighting_modified(on),

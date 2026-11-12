@@ -37,7 +37,7 @@ pub(crate) fn the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     // A point at 1.5 device pixels, where the column lays the tree's box at a fractional one.
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
     rig.window.set_size(slint::PhysicalSize::new(1920, 1200));

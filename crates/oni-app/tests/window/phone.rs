@@ -20,7 +20,7 @@ const WAIT: Duration = Duration::from_secs(20);
 fn launch(rig: &common::Rig, engine: &Shared, root: &Path) -> Shell {
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), phone: true, ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
+    let shell = Shell::new(store, engine.clone(), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
     shell.window.show().unwrap();
@@ -191,7 +191,7 @@ pub(crate) fn the_switch_off_hides_the_link_and_listens_nowhere() {
     let shell = |phone: bool| {
         let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
         let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), phone, ..Options::default() };
-        let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
+        let shell = Shell::new(store, engine.clone(), options).unwrap();
         shell.window.show().unwrap();
         rig.pump();
         shell

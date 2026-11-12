@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Library, Store as StoreGlobal, TreeRow};
+use oni_app::{Library, Store, TreeRow};
 use oni_core::{Archive, EditorStore};
 use slint::{ComponentHandle, Image, Model, ModelRc};
 use std::path::PathBuf;
@@ -49,7 +49,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -92,7 +92,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     let p20 = picture(&lib, "P20");
     let p19 = picture(&lib, "P19");
     for _ in 0..3 {
-        w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);
+        w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
         rig.pump();
     }
     assert_eq!(lib.get_tree_viewport_y(), scrolled, "an edit never moves the column");
@@ -191,7 +191,7 @@ pub(crate) fn a_scroll_brings_the_pictures_of_the_rows_it_reaches() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -270,7 +270,7 @@ pub(crate) fn a_long_tree_makes_only_the_rows_near_its_view() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -319,7 +319,7 @@ pub(crate) fn a_long_tree_makes_only_the_rows_near_its_view() {
     bounded("mid-column");
 
     // Sixty notches of Exposure, each handled and drawn as a frame.
-    let store = shell.window.global::<StoreGlobal>();
+    let store = shell.window.global::<Store>();
     let field = Field::Exposure.index();
     let mut frames = Vec::new();
     store.invoke_press(field, false);

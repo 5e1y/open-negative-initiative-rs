@@ -101,7 +101,7 @@ pub(crate) fn a_photo_clicked_hands_the_grid_its_keys_and_a_ring_follows_the_key
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;

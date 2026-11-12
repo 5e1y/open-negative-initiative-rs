@@ -4,7 +4,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Advice, App, Confirm, Library, Menus, Presets, Store as StoreGlobal};
+use oni_app::{Advice, App, Confirm, Library, Menus, Presets, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use i_slint_backend_testing::AccessibleRole;
@@ -61,7 +61,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
         discard: Box::new(move |p: &Path| std::fs::rename(p, binned.join(p.file_name().unwrap()))),
         ..Options::default()
     };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -83,14 +83,14 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     assert!(!w.global::<App>().get_gallery());
-    let g = w.global::<StoreGlobal>();
+    let g = w.global::<Store>();
     let field = Field::Exposure.index();
-    let rest = ctl.state.borrow().store().get(Field::Exposure);
+    let rest = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     g.invoke_press(field, false);
     g.invoke_drag(field, 30.0, 300.0, false);
     g.invoke_release(field);
     rig.pump();
-    let moved = ctl.state.borrow().store().get(Field::Exposure);
+    let moved = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
     assert!((moved - rest).abs() > 0.1, "{moved} against {rest}");
     assert!(menus.get_live().save_preset);
     ctl.act(oni_app::Act::SavePreset);
@@ -150,12 +150,12 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.until("the drag's step", Duration::from_secs(2), || rested.elapsed() > Duration::from_millis(300));
     rig.chord(Key::Control, "z");
     rig.pump();
-    assert!((ctl.state.borrow().store().get(Field::Exposure) - rest).abs() < 1e-6, "the keys came back once the sheet closed");
+    assert!((oni_app::store::get(ctl.state.borrow().store(), Field::Exposure) - rest).abs() < 1e-6, "the keys came back once the sheet closed");
     presets.invoke_hover(0);
     rig.until("the preview drawn", Duration::from_secs(60), || {
         ctl.state.borrow().shown_settings().is_some_and(|s| (Field::Exposure.knob().get(s) - moved).abs() < 1e-4)
     });
-    assert!((ctl.state.borrow().store().get(Field::Exposure) - rest).abs() < 1e-6, "a hover writes no setting");
+    assert!((oni_app::store::get(ctl.state.borrow().store(), Field::Exposure) - rest).abs() < 1e-6, "a hover writes no setting");
     presets.invoke_hover(-1);
     rig.until("the preview left", Duration::from_secs(60), || {
         ctl.state.borrow().shown_settings().is_some_and(|s| (Field::Exposure.knob().get(s) - rest).abs() < 1e-6)
@@ -204,7 +204,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     // Then Copy takes the last boxes at once: the vignette moved since reaches the board, Lighting not.
     g.invoke_step(Field::Vignette.index(), -5);
     rig.pump();
-    let vignetted = ctl.state.borrow().store().get(Field::Vignette);
+    let vignetted = oni_app::store::get(ctl.state.borrow().store(), Field::Vignette);
     ctl.act(oni_app::Act::Copy);
     rig.pump();
     assert!(!presets.get_saving(), "Copy asks no more");

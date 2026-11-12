@@ -34,9 +34,8 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         let mut s = ctl.state.borrow_mut();
         let mut gestures = ctl.editors.gestures.borrow_mut();
         let scrolled = std::mem::take(&mut gestures.scrolled);
-        let view = gestures.view(s.store.as_mut());
-        let open = s.store.editor_ref();
-        let path = open.and_then(|e| e.path()).map(str::to_string);
+        let view = gestures.view(&mut s.store);
+        let path = s.store.path().map(str::to_string);
         (view, Snapshot::of(&gestures), path, scrolled)
     };
     let jump = ctl.editors.jump.take() || force;

@@ -3,10 +3,10 @@
 use super::*;
 
 /// Runs a gesture on the store, keeping the thumbnails' decodes back while a press holds.
-pub(super) fn run(ctl: &Rc<Ctl>, f: impl FnOnce(&mut Gestures, &mut dyn crate::store::Store) -> Then) -> Then {
+pub(super) fn run(ctl: &Rc<Ctl>, f: impl FnOnce(&mut Gestures, &mut oni_core::EditorStore) -> Then) -> Then {
     let mut s = ctl.state.borrow_mut();
     let mut g = ctl.editors.gestures.borrow_mut();
-    let then = f(&mut g, s.store.as_mut());
+    let then = f(&mut g, &mut s.store);
     s.held_plot(g.holding());
     let wait = s.store.settle_if_due();
     drop((g, s));

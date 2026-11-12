@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Confirm, Library, Store as StoreGlobal};
+use oni_app::{Confirm, Library, Store};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::ComponentHandle;
@@ -33,7 +33,7 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -46,13 +46,13 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A open", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some());
     let drag = |by: f32| {
-        let g = w.global::<StoreGlobal>();
+        let g = w.global::<Store>();
         let field = Field::Exposure.index();
         g.invoke_press(field, false);
         g.invoke_drag(field, by, 300.0, false);
         g.invoke_release(field);
         rig.pump();
-        ctl.state.borrow().store().get(Field::Exposure)
+        oni_app::store::get(ctl.state.borrow().store(), Field::Exposure)
     };
 
     // A drag, then the window closed at once: the write is not left to the pause.
@@ -80,6 +80,6 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     assert!(shown, "a failed write asks before quitting");
     assert_eq!(title, "Your latest settings could not be saved");
     assert!(!confirm.get_shown(), "Return chose Cancel");
-    assert!((ctl.state.borrow().store().get(Field::Exposure) - again).abs() < 1e-6, "the work stays open");
+    assert!((oni_app::store::get(ctl.state.borrow().store(), Field::Exposure) - again).abs() < 1e-6, "the work stays open");
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -50,7 +50,7 @@ pub(crate) fn a_screen_s_keys_are_drawn_once_and_never_again_while_still() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
     rig.window.set_size(PhysicalSize::new((1440.0 * SCALE) as u32, (900.0 * SCALE) as u32));
     shell.window.show().unwrap();

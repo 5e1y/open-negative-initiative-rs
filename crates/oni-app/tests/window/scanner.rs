@@ -64,7 +64,7 @@ fn caps_drawn(rig: &common::Rig, act: impl FnOnce()) -> u64 {
 fn shell(gpu: &oni_app::render::Device, support: &Path) -> Shell {
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
     let options = Options { support: support.to_path_buf(), ..Options::default() };
-    Shell::new(Box::new(store), oni_app::render::Engine::shared(gpu), options).unwrap()
+    Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap()
 }
 
 pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back() {

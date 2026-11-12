@@ -44,7 +44,7 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
     let bar = |phone: bool| {
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
         let options = Options { support: support.clone(), caches: caches.clone(), picker: Box::new(|| None), phone, ..Options::default() };
-        let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
+        let shell = Shell::new(store, engine.clone(), options).unwrap();
         rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
         shell.window.show().unwrap();
         rig.until("the bar laid", Duration::from_secs(5), || true);
@@ -100,7 +100,7 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1100, 800));
     shell.window.show().unwrap();
@@ -210,7 +210,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1728, 900));
     shell.window.show().unwrap();

@@ -4,7 +4,7 @@
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Absent, App, Canvas, Library, Store as StoreGlobal, Unsaved};
+use oni_app::{Absent, App, Canvas, Library, Store, Unsaved};
 use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
 use slint::ComponentHandle;
@@ -48,7 +48,7 @@ fn bench(label: &str, extra: impl Fn(&Path)) -> Option<Bench> {
     let engine = oni_app::render::Engine::shared(&gpu);
     let computer = Computer { home: root.join("home").to_string_lossy().into_owned(), volumes: root.join("Volumes").to_string_lossy().into_owned() };
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
@@ -89,7 +89,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
         return;
     };
     let w = &b.shell.window;
-    let (canvas, store) = (w.global::<Canvas>(), w.global::<StoreGlobal>());
+    let (canvas, store) = (w.global::<Canvas>(), w.global::<Store>());
 
     // Twin: a file really broken is the decoder's to refuse, in its own words.
     b.open("Bad");
@@ -142,7 +142,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     assert!(u.get_message().contains("Its disk “T7” is not connected."), "{}", u.get_message());
     b.rig.shot("missing-unplugged");
     // Kept for now by Escape after a press beside the card, then by its own key: the edits stay in memory.
-    let held = || b.shell.ctl.state.borrow().store().editor_ref().map_or(0, |e| e.unsaved().len());
+    let held = || b.shell.ctl.state.borrow().store().unsaved().len();
     let away = || Field::Exposure.knob().get(&oni_settings::sidecar::read(&b.root.join("T7 away/Scans/Roll 12/B00.tif"), false, true).unwrap().settings);
     let kept = held();
     assert!(kept > 0);
