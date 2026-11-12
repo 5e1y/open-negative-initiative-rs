@@ -9776,5 +9776,19 @@
     "title": "The export's profile checks each read a stand-in profile file of their own",
     "status": "done",
     "detail": "every_format_declares_the_profile_of_its_space failed in a full run with 'Jpeg hdr false in ProPhoto RGB': the file declared the profile while the space's icc_data() read None. Both it and a_wide_green_survives_prophoto_and_clips_in_adobe_rgb wrote the same ROMM.icc in the same process; OutputProfile::loaded re-reads a file whose stamp changed, so one test caught the other's write between its truncation and its bytes and read the space as gone, which is the app's intended answer for a profile gone or unreadable. The app was right, the check shared a file: each stand-in is now a file of its own name. Reproduced once in 900 runs of the binary under load before, none in 900 after. Check: files a_stand_in_profile_rewritten_leaves_every_other_whole (failed with the shared file; twin: the stand-in caught halfway through its own rewrite reads as gone)."
+  },
+  {
+    "id": 1932,
+    "type": "fix",
+    "title": "The phone check's restart listens on a port of its own, never the default every ONI wants",
+    "status": "done",
+    "detail": "phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame failed in a full run at the restart: the first launch listened on 53318, the restart on 58789. The runner starts checks in parallel processes and four of them (this one, the switch, phone_tabs, phone_canvas) start the link on a fresh support, so on phone::PORT, 53318: one took it between this check's two launches, and the app listened elsewhere as it should when its kept port is taken. The check is wrong, not the app: it now keeps a port the system gave it before the first launch, as a code keeps one, and asserts the link listens there. Passing alone three times before; after, it holds the default port itself across the restart. Check: the same window check, with the default port held across the restart (failed before: the restart could not take the code's 53318) and a twin launch while the code's port is held, which listens elsewhere. That open_pairing keeps the port is phone::tests the_link_listens_on_the_port_the_last_code_named."
+  },
+  {
+    "id": 1933,
+    "type": "research",
+    "title": "A resize's 637 ms wait during an export in a full run was the machine's load, not the door",
+    "status": "done",
+    "detail": "render::door_tests a_resize_during_an_export_waits_one_submission_not_the_render failed once in the full run of canvas (longest hold 636.7 ms, p99 62.3 ms, median 0): the same export render took 10 409 ms there against 264 to 548 ms alone, 20 to 40 times slower, with every test binary and the window checks sharing the GPU at a load average of about 25. Alone, five runs in a row passed, longest hold 8 to 63 ms, the twin's whole-render gate 193 to 328 ms. No change: the check judges the door, a GPU shared by a hundred binaries makes one submission long; it stays as it is."
   }
 ]

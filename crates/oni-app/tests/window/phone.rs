@@ -62,6 +62,11 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
         std::fs::write(root.join("Roll").join(name), b"not a raw").unwrap();
     }
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    // A port of its own, kept as a code keeps one: the default is every ONI's on this machine, a
+    // sibling check's included, and is taken by another between two launches.
+    let own = std::net::TcpListener::bind("0.0.0.0:0").unwrap().local_addr().unwrap().port();
+    std::fs::create_dir_all(support.join("Link")).unwrap();
+    std::fs::write(support.join("Link").join("port.txt"), format!("{own}\n")).unwrap();
     let rig = common::rig(shots);
     let engine = Engine::shared(&gpu);
     let shell = launch(&rig, &engine, &root);
@@ -85,6 +90,7 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     // The phone reads the code as its scanner hands it over.
     let info = parse_pairing_code(uri.clone()).expect("the phone parses the sheet's code");
     let port = ctl.state.borrow().phone().unwrap().bound().unwrap().port();
+    assert_eq!(port, own, "the link listens on the port kept");
     assert!(!info.addresses.is_empty() && info.addresses.iter().all(|a| a.ends_with(&format!(":{port}"))), "{:?}", info.addresses);
     assert_eq!(info.name, oni_app::phone::device_name());
 
@@ -138,11 +144,23 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     drop(pairing);
     drop(ctl);
     drop(shell);
+    // Another ONI listening on the default port meanwhile leaves the code's own to this one.
+    let sibling = std::net::TcpListener::bind(("0.0.0.0", oni_app::phone::PORT)).ok();
+    let listening = |shell: &Shell| {
+        let ctl = shell.ctl.clone();
+        rig.until("the link listening", WAIT, || ctl.state.borrow().phone().and_then(|p| p.bound()).is_some());
+        ctl.state.borrow().phone().unwrap().bound().unwrap().port()
+    };
+    // Twin: with the code's port held, the link listens elsewhere, where the phone never dials.
+    let holder = std::net::TcpListener::bind(("0.0.0.0", port)).unwrap();
+    let held = launch(&rig, &engine, &root);
+    assert_ne!(listening(&held), port);
+    drop(held);
+    drop(holder);
     let shell = launch(&rig, &engine, &root);
     let ctl = shell.ctl.clone();
     assert!(ctl.state.borrow().phone().is_some(), "a phone paired before starts the link at launch");
-    rig.until("the link listening", WAIT, || ctl.state.borrow().phone().and_then(|p| p.bound()).is_some());
-    assert_eq!(ctl.state.borrow().phone().unwrap().bound().unwrap().port(), port);
+    assert_eq!(listening(&shell), port);
     let mut addresses = info.addresses.clone();
     addresses.push(format!("127.0.0.1:{port}"));
     let again = phone(RemoteSession::connect(addresses.clone(), info.host_key.clone(), identity.clone(), "Test Phone".into()))
@@ -169,6 +187,7 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     drop(pairing);
     drop(ctl);
     drop(shell);
+    drop(sibling);
     let _ = std::fs::remove_dir_all(&root);
 }
 
