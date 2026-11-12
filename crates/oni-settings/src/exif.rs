@@ -91,6 +91,46 @@ fn exif_directory(path: &Path) -> Option<(Reader, u64)> {
     Some((reader, exif))
 }
 
+/// Whether `text` opens on a year, a month and a day set apart by `mark`.
+fn dated(text: &str, mark: u8) -> bool {
+    let b = text.as_bytes();
+    b.len() >= 10 && b[4] == mark && b[7] == mark && [0..4, 5..7, 8..10].into_iter().all(|r| b[r].iter().all(u8::is_ascii_digit))
+}
+
+/// Two digits at `at` read as a number from `least` to `most`.
+fn two(text: &str, at: usize, least: u32, most: u32) -> Option<u32> {
+    let b = text.as_bytes().get(at..at + 2)?;
+    let n = b.iter().all(u8::is_ascii_digit).then(|| u32::from(b[0] - b'0') * 10 + u32::from(b[1] - b'0'))?;
+    (least..=most).contains(&n).then_some(n)
+}
+
+/// A date in EXIF's nineteen characters, the only form a line keeps: a day, dashed or in EXIF's
+/// colons, then its time to the minute or second, midnight when none. Empty stays empty.
+pub fn date_of(text: &str) -> Option<String> {
+    let t = text.trim();
+    if t.is_empty() {
+        return Some(String::new());
+    }
+    if !(dated(t, b'-') || dated(t, b':')) {
+        return None;
+    }
+    let (month, day) = (two(t, 5, 1, 12)?, two(t, 8, 1, 31)?);
+    let (hour, minute, second) = match t.len() {
+        10 => (0, 0, 0),
+        16 | 19 if t.as_bytes()[10] == b' ' && t.as_bytes()[13] == b':' => {
+            let second = if t.len() == 19 { (t.as_bytes()[16] == b':').then(|| two(t, 17, 0, 59))?? } else { 0 };
+            (two(t, 11, 0, 23)?, two(t, 14, 0, 59)?, second)
+        }
+        _ => return None,
+    };
+    Some(format!("{}:{month:02}:{day:02} {hour:02}:{minute:02}:{second:02}", &t[0..4]))
+}
+
+/// A date read from a sidecar or a scan, as a line keeps it: what reads as no date is none.
+pub fn settled_date(text: &str) -> String {
+    date_of(text).unwrap_or_default()
+}
+
 /// `DateTimeOriginal` as the file stores it (`2026:06:18 14:32:10`), `None` when it carries none.
 pub fn capture_date(path: &Path) -> Option<String> {
     let (mut reader, exif) = exif_directory(path)?;

@@ -165,7 +165,7 @@ impl Ctl {
                     c.typed_gear.insert((at, oni_library::collection::Gear::Lens));
                 }
                 "iso" => r.metadata.iso = text,
-                "date" => r.metadata.date = super::dated::exif(&text).unwrap_or_else(|| r.metadata.date.clone()),
+                "date" => r.metadata.date = oni_settings::exif::date_of(&text).unwrap_or_else(|| r.metadata.date.clone()),
                 "artist" => r.metadata.artist = text,
                 "copyright" => r.metadata.copyright = text,
                 _ => {}

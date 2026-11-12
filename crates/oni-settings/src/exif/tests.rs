@@ -205,3 +205,51 @@ fn a_heic_and_a_png_carry_their_date() {
 fn containers_uuid() -> [u8; 16] {
     [0x85, 0xc0, 0xb6, 0x87, 0x82, 0x0f, 0x11, 0xe0, 0x81, 0x11, 0xf4, 0xce, 0x46, 0x2b, 0x6a, 0x48]
 }
+
+/// EXIF's date shape: `YYYY:MM:DD HH:MM:SS`, nineteen characters.
+fn exifs(date: &str) -> bool {
+    let b = date.as_bytes();
+    b.len() == 19 && dated(date, b':') && b[10] == b' ' && b[13] == b':' && b[16] == b':'
+}
+
+#[test]
+fn a_date_reaches_a_line_in_exifs_nineteen_characters() {
+    assert_eq!(date_of("2026-09-14 16:46:19").as_deref(), Some("2026:09:14 16:46:19"));
+    assert_eq!(date_of("2026:09:14 16:46:19").as_deref(), Some("2026:09:14 16:46:19"), "EXIF's own form is kept");
+    assert_eq!(date_of("2026-09-14 16:46").as_deref(), Some("2026:09:14 16:46:00"));
+    assert_eq!(date_of("2026-09-14").as_deref(), Some("2026:09:14 00:00:00"));
+    assert_eq!(date_of(" 2026:09:14 ").as_deref(), Some("2026:09:14 00:00:00"));
+    assert_eq!(date_of("").as_deref(), Some(""), "a cleared date is none");
+    assert!(["2026-09-14 16:46:19", "2026-09-14", "2026-09-14 16:46"].iter().all(|t| date_of(t).as_deref().is_some_and(exifs)));
+    // Words, half a date, a day or an hour out of range, a time half typed: no date.
+    for typed in ["summer 1998", "2026-09-1", "14-09-2026", "2026-13-14", "2026-09-40", "2026-09-14 24:00", "2026-09-14 16:4", "2026-09-14T16:46", "2026-09-14 16:46:60", "    :  :     :  :  "] {
+        assert_eq!(date_of(typed), None, "{typed}");
+        assert_eq!(settled_date(typed), "", "{typed}");
+    }
+    // Twin: the dashes swapped alone leave ten characters EXIF refuses.
+    assert!(!exifs(&"2026-09-14".replace('-', ":")));
+}
+
+#[test]
+fn a_sidecars_date_is_settled_as_it_is_read() {
+    let stored = |date: &str| {
+        let document = format!(
+            r#"{{"version": {}, "exif": {{"camera": "", "lens": "", "film": "", "iso": "", "date": "{date}", "artist": "A. Tester", "copyright": ""}}}}"#,
+            crate::codec::VERSION
+        );
+        let decoded = crate::codec::decode(document.as_bytes()).unwrap().exif.unwrap();
+        let enveloped = crate::codec::envelope(document.as_bytes()).unwrap().exif.unwrap();
+        assert_eq!(decoded, enveloped, "both readings agree");
+        decoded
+    };
+    // A day typed in an earlier build, kept in colons without its time, and a time kept to the minute.
+    assert_eq!(stored("2026:09:14").date, "2026:09:14 00:00:00");
+    assert_eq!(stored("2026-09-14 16:46").date, "2026:09:14 16:46:00");
+    assert_eq!(stored("2026:09:14 16:46:19").date, "2026:09:14 16:46:19");
+    // Words stored by an older build are no date; the line keeps every other field.
+    let words = stored("summer 1998");
+    assert_eq!((words.date.as_str(), words.artist.as_str()), ("", "A. Tester"));
+    // Twin: the same document read as plain JSON, as before, keeps the ten characters EXIF refuses.
+    let plain: serde_json::Value = serde_json::from_str(r#"{"date": "2026:09:14"}"#).unwrap();
+    assert!(!exifs(plain["date"].as_str().unwrap()));
+}

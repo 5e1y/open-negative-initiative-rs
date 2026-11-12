@@ -127,6 +127,28 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     rig.key(&slint::SharedString::from(slint::platform::Key::Return));
     rig.settle();
     assert_eq!(field(), "2026-09-14 16:46:19");
+    // Typed in, the words stand through the line published again, which a preview or a size landing
+    // does as date-settled does, so a time typed after the day reaches the file whole.
+    common::click(&rig, w, common::the(w, Role::TextInput, "Artist").middle());
+    common::click(&rig, w, common::the(w, Role::TextInput, "Date").middle());
+    rig.key("2026-09-15");
+    rig.settle();
+    e.invoke_date_settled(0);
+    rig.settle();
+    // Twin: the line published meanwhile carries the midnight the words do not.
+    assert_eq!(export_card::lines(w)[0].date, "2026-09-15 00:00:00");
+    assert_eq!(field(), "2026-09-15", "a line published again leaves the words typed");
+    rig.key(" 10:30");
+    rig.key(&slint::SharedString::from(slint::platform::Key::Return));
+    rig.settle();
+    assert_eq!(field(), "2026-09-15 10:30:00");
+    // Let go by a click elsewhere, the field shows the date the file will carry as Return does.
+    common::click(&rig, w, common::the(w, Role::TextInput, "Artist").middle());
+    common::click(&rig, w, common::the(w, Role::TextInput, "Date").middle());
+    rig.key("2026-09-16");
+    common::click(&rig, w, common::the(w, Role::TextInput, "Artist").middle());
+    rig.settle();
+    assert_eq!(field(), "2026-09-16 00:00:00");
     presets_keep_the_rows_in_place(&rig, &shell);
     let _ = std::fs::remove_dir_all(&root);
 }

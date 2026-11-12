@@ -100,7 +100,8 @@ impl From<io::Error> for Refused {
     }
 }
 
-/// A new file: refused when anything stands at `destination`, even one appearing while it is written.
+/// A new file: refused when anything stands at `destination`, even one appearing while it is written,
+/// save on a macOS exFAT or SMB volume, whose rename cannot refuse (`rename_new`).
 pub fn create(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
     create_with(destination, bytes, &oni_library::roll_folder::rename_new)
 }
@@ -124,10 +125,17 @@ pub fn replace(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
     })
 }
 
+/// The folders whose leftovers this run has taken: a leftover is a write whose process died, so one
+/// look a folder spares a batch a listing per frame.
+static SWEPT: std::sync::Mutex<std::collections::BTreeSet<PathBuf>> = std::sync::Mutex::new(std::collections::BTreeSet::new());
+
 /// An export: a new file, or an earlier export replaced when `replacing`; never anything else. The
-/// leftovers of exports cut short in its folder go first.
+/// leftovers of exports cut short in its folder go at its first export of the run.
 pub fn put(destination: &Path, bytes: &[u8], ledger: &Ledger, replacing: bool) -> Result<(), Refused> {
-    oni_settings::atomic::reclaimed(destination.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new(".")));
+    let folder = destination.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    if SWEPT.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(folder.to_path_buf()) {
+        oni_settings::atomic::reclaimed(folder);
+    }
     match standing(destination, ledger) {
         Standing::Free => create(destination, bytes),
         Standing::Export if replacing => replace(destination, bytes),
@@ -189,6 +197,19 @@ mod tests {
         // Another export into the folder, under another name, takes the leftover.
         put(&dir.join("Q.tif"), b"q", &Ledger::none(), false).unwrap();
         assert_eq!(listing(&dir), ["Q.tif"]);
+        // The folder is looked at once a run, not at each frame: a leftover laid after its first export stays.
+        let late = dir.join(".oni-0123456789abcdef-0.tmp");
+        std::fs::write(&late, b"").unwrap();
+        put(&dir.join("R.tif"), b"r", &Ledger::none(), false).unwrap();
+        assert!(late.exists());
+        // Twin: the same leftover in a folder not yet exported to this run goes at its first export.
+        let fresh = dir.join("fresh");
+        std::fs::create_dir_all(&fresh).unwrap();
+        std::fs::rename(&late, fresh.join(".oni-0123456789abcdef-0.tmp")).unwrap();
+        put(&fresh.join("S.tif"), b"s", &Ledger::none(), false).unwrap();
+        assert_eq!(listing(&fresh), ["S.tif"]);
+        std::fs::remove_dir_all(&fresh).unwrap();
+        std::fs::remove_file(dir.join("R.tif")).unwrap();
         // Twin: a file standing at the name is never replaced, and its export leaves no temporary.
         std::fs::write(&p1, b"original").unwrap();
         assert!(matches!(create(&p1, b"new"), Err(Refused::Taken)));

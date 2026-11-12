@@ -9678,5 +9678,33 @@
     "title": "Swift reference folders leave the fixtures and the README",
     "status": "done",
     "detail": "ONI_REFERENCE and ONI_ADVERSARIAL leave oni-fixtures and the README; docs/parity/README.md is marked as history."
+  },
+  {
+    "id": 1910,
+    "type": "fix",
+    "title": "A date read from a sidecar or a scan reaches the file in EXIF's nineteen characters",
+    "status": "done",
+    "detail": "#1882 settled only the typed date: a sidecar's stored date (a day kept in colons by an earlier build, words from an older one) and a scan's own malformed DateTime reached tags 306 and 36867 as they stood. The rule moves to oni_settings::exif::date_of, applied where a date is read, once: ExifMetadata's date deserialises through it (every sidecar read, envelope and decode alike), scan_metadata settles the scan's, and the field's keystrokes call it; what reads as no date is none, and the writers write the line as it stands. Checks: oni-settings exif a_sidecars_date_is_settled_as_it_is_read (failed before: 2026:09:14 kept; twin: the plain JSON keeps ten characters) and a_date_reaches_a_line_in_exifs_nineteen_characters (moved from dated.rs); oni-export tests/dates.rs a_date_read_from_a_sidecar_or_a_scan_reaches_the_file_in_exifs_nineteen_characters (failed before on the scan; twin: a line that skipped the reading writes its ten characters)."
+  },
+  {
+    "id": 1911,
+    "type": "fix",
+    "title": "The Date field keeps the words being typed through a line published again",
+    "status": "done",
+    "detail": "A typed day is stored with its midnight, so a preview or size landing that republished the line while the field held the focus replaced the words with the stored form and the time typed next was lost. While edited, the Date field's value is its own text; let go by Return or by the focus leaving, Exporting.date-settled publishes the line and the field shows the date the file will carry. Check: window export_panel types 2026-09-15, publishes its line again as a landing does (publish_line), then types 10:30 and Return: the field reads 2026-09-15 10:30:00 (twin: the line published meanwhile carries 00:00:00; failed before with 2026-09-15 00:00:00 in the field); a click elsewhere settles as Return does."
+  },
+  {
+    "id": 1912,
+    "type": "fix",
+    "title": "A new export or a moved frame never replaces a file appearing at its name on Windows",
+    "status": "done",
+    "detail": "rename_new fell back to a look then std::fs::rename, which Windows makes with MOVEFILE_REPLACE_EXISTING, so a file landing between the two (a sync client, another ONI) was replaced. Windows now renames through MoveFileExW without that flag, under a \\\\?\\ path past MAX_PATH, refused in one step; the look stays only for macOS exFAT and SMB volumes, which refuse RENAME_EXCL and offer no refusing rename, and file::create's doc names that limit. Check: roll_folder::carry a_rename_onto_a_taken_name_is_refused_and_the_file_there_kept (twin: the plain rename replaces it); on macOS it passes through RENAME_EXCL, the Windows path compiles and passes clippy for x86_64-pc-windows-msvc but awaits a Windows run."
+  },
+  {
+    "id": 1913,
+    "type": "fix",
+    "title": "A reclaim takes only temporaries no writer holds, once a folder a run",
+    "status": "done",
+    "detail": "atomic::reclaimed knew only this process's writes, so another ONI's sidecar save in the folder lost its temporary; it held the in-flight lock over the listing and every removal, and file::put listed the folder again at each frame. A staged temporary now stays open and locked until dropped (created locked with O_EXLOCK on macOS, locked just after elsewhere), and reclaimed removes only a temporary whose lock it can take, which the system frees when a writer dies; it takes no in-process lock. put reclaims a folder at its first export of the run. Checks: atomic a_temporary_another_process_holds_is_never_reclaimed (failed before; twin: let go, it goes) and file an_export_cut_short_takes_no_name_and_its_leftover_goes_at_the_next_export (a leftover laid after the folder's first export stays; twin: a folder not yet exported to loses it)."
   }
 ]

@@ -30,10 +30,15 @@ pub struct ExifMetadata {
     pub lens: String,
     pub film: String,
     pub iso: String,
-    /// EXIF form, `YYYY:MM:DD HH:MM:SS`.
+    /// EXIF form, `YYYY:MM:DD HH:MM:SS`, settled as it is read: the file writes it as it stands.
+    #[serde(deserialize_with = "settled_date")]
     pub date: String,
     pub artist: String,
     pub copyright: String,
+}
+
+fn settled_date<'de, D: serde::Deserializer<'de>>(stored: D) -> Result<String, D::Error> {
+    String::deserialize(stored).map(|d| crate::exif::settled_date(&d))
 }
 
 impl ExifMetadata {

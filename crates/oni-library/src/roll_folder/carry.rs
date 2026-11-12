@@ -51,15 +51,47 @@ fn rename_once(from: &Path, to: &Path) -> io::Result<()> {
             return Ok(());
         }
         let e = io::Error::last_os_error();
-        // exFAT and network volumes refuse the flag itself: a look before the plain rename stands in.
+        // exFAT and SMB volumes refuse the flag and offer macOS no other refusing rename: a look
+        // before the plain rename stands in, and a file landing between the two is replaced.
         if !matches!(e.raw_os_error(), Some(libc::ENOTSUP) | Some(libc::EINVAL)) {
             return Err(e);
         }
     }
+    renamed_unless_taken(from, to)
+}
+
+/// Without MOVEFILE_REPLACE_EXISTING, which `std::fs::rename` passes, a name taken is refused.
+#[cfg(windows)]
+fn renamed_unless_taken(from: &Path, to: &Path) -> io::Result<()> {
+    let (f, t) = (verbatim(from)?, verbatim(to)?);
+    // SAFETY: both are NUL-terminated wide paths that outlive the call.
+    let moved = unsafe { windows_sys::Win32::Storage::FileSystem::MoveFileExW(f.as_ptr(), t.as_ptr(), 0) };
+    if moved != 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
+}
+
+#[cfg(not(windows))]
+fn renamed_unless_taken(from: &Path, to: &Path) -> io::Result<()> {
     if std::fs::symlink_metadata(to).is_ok() {
         return Err(io::Error::from(io::ErrorKind::AlreadyExists));
     }
     std::fs::rename(from, to)
+}
+
+/// `path` absolute under `\\?\`, NUL-terminated: past MAX_PATH's 260 characters, as std's own calls go.
+#[cfg(windows)]
+fn verbatim(path: &Path) -> io::Result<Vec<u16>> {
+    use std::os::windows::ffi::OsStrExt;
+    let wide: Vec<u16> = std::path::absolute(path)?.as_os_str().encode_wide().collect();
+    let starts = |prefix: &str| wide.starts_with(&prefix.encode_utf16().collect::<Vec<u16>>());
+    let mut out: Vec<u16> = if starts(r"\\?\") {
+        wide
+    } else if starts(r"\\") {
+        r"\\?\UNC".encode_utf16().chain(wide[1..].iter().copied()).collect()
+    } else {
+        r"\\?\".encode_utf16().chain(wide).collect()
+    };
+    out.push(0);
+    Ok(out)
 }
 
 pub use oni_settings::atomic::PAUSES;
@@ -134,4 +166,28 @@ pub fn said(carried: &Carried) -> Option<String> {
         lines.push(oni_i18n::trn("And one other frame.", "And {n} other frames.", (carried.stayed.len() - NAMED) as u64));
     }
     Some(lines.join("\n"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_rename_onto_a_taken_name_is_refused_and_the_file_there_kept() {
+        let scratch = crate::scratch::Scratch::new("rename-new");
+        let dir = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
+        let (staged, standing) = (format!("{dir}/.staged"), format!("{dir}/P1.tif"));
+        std::fs::write(&staged, b"new").unwrap();
+        std::fs::write(&standing, b"original").unwrap();
+        let refused = rename_new(Path::new(&staged), Path::new(&standing)).unwrap_err();
+        assert_eq!(refused.kind(), io::ErrorKind::AlreadyExists);
+        assert_eq!((std::fs::read(&standing).unwrap(), std::fs::read(&staged).unwrap()), (b"original".to_vec(), b"new".to_vec()));
+        // A free name takes the file.
+        let free = format!("{dir}/P2.tif");
+        rename_new(Path::new(&staged), Path::new(&free)).unwrap();
+        assert_eq!((std::fs::read(&free).unwrap(), Path::new(&staged).exists()), (b"new".to_vec(), false));
+        // Twin: the plain rename, which Windows makes with MOVEFILE_REPLACE_EXISTING, replaces the file standing there.
+        std::fs::rename(&free, &standing).unwrap();
+        assert_eq!(std::fs::read(&standing).unwrap(), b"new");
+    }
 }

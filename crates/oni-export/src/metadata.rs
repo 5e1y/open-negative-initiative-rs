@@ -144,8 +144,14 @@ fn embedded(found: &exif::Exif) -> Option<exif::Exif> {
 }
 
 /// What the scan itself says: the scanning camera, its lens, its ISO, its date. Offered so the
-/// hand sees whose facts these are before it keeps or replaces them.
+/// hand sees whose facts these are before it keeps or replaces them; a date as a line keeps it.
 pub fn scan_metadata(path: &Path) -> ExifMetadata {
+    let mut out = scanned(path);
+    out.date = oni_settings::exif::settled_date(&out.date);
+    out
+}
+
+fn scanned(path: &Path) -> ExifMetadata {
     let mut out = ExifMetadata::default();
     let Some(found) = scan_exif(path) else { return described(path) };
     let preview = embedded(&found);
