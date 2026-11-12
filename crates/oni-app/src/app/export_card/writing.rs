@@ -91,7 +91,8 @@ impl Ctl {
         let (jobs, export, stop) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();
-            // What a hand set is told from what derives against the artist and copyright just remembered.
+            // What a hand set is told from what derived at each line's opening and what derives under the
+            // artist and copyright just remembered.
             let jobs: Vec<export::batch::Job> = c
                 .targets
                 .iter()

@@ -11,7 +11,7 @@ use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
 use oni_settings::legacy::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::scanner::ScannerClicks;
-use oni_settings::sidecar::{ExifMetadata, RollDraft};
+use oni_settings::sidecar::{RollDraft, TypedExif};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Date, Film, Id, Medal, PipelineSettings, ScannerMachine};
 use serde_json::{Map, Value, json};
@@ -89,7 +89,7 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     filed.pass_of = Some("/tmp/a.ARW".into());
     filed.rgb_passes = Some(RgbPasses { red: "r.ARW".into(), green: "g.ARW".into(), blue: "b.ARW".into(), registration: None });
     let stamped = Date::from_unix_seconds(1_700_000_000.0);
-    let typed = ExifMetadata { camera: "Leica M6".into(), ..ExifMetadata::default() };
+    let typed = TypedExif { camera: Some("Leica M6".into()), ..TypedExif::default() };
     let (id, step, film, capture) = (Id::new(), "Frames".into(), ConversionMode::Positive, "camera".into());
     let draft = RollDraft { id, step, film, capture, pass_order: None, pass_offset: None, flat_field: None, base: None, window: None, ticked: true, flagged: false };
     let text = codec::encode(&filed, Some(stamped), Some(Medal::Silver), Some(typed), Some(draft), Some(stamped)).unwrap();

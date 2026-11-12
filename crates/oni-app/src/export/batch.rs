@@ -23,7 +23,7 @@ pub struct Job {
     pub target: Target,
     pub destination: PathBuf,
     pub metadata: ExifMetadata,
-    pub typed: ExifMetadata,
+    pub typed: oni_settings::TypedExif,
 }
 
 /// How a batch ended: every file written, stopped by the hand, or the first frame that failed.
@@ -302,9 +302,9 @@ mod tests {
             let named = |dir: &std::path::Path, t: &Target| dir.join(oni_export::name(&t.path, "", format));
             for t in &targets {
                 let to = Landing { path: &named(&one, t), ledger: &mut Ledger::none(), replacing: false };
-                super::super::write_one(&engine, t, to, &export, &ExifMetadata::default(), &ExifMetadata::default()).unwrap();
+                super::super::write_one(&engine, t, to, &export, &ExifMetadata::default(), &Default::default()).unwrap();
             }
-            let jobs: Vec<Job> = targets.iter().map(|t| Job { target: t.clone(), destination: named(&many, t), metadata: ExifMetadata::default(), typed: ExifMetadata::default() }).collect();
+            let jobs: Vec<Job> = targets.iter().map(|t| Job { target: t.clone(), destination: named(&many, t), metadata: ExifMetadata::default(), typed: Default::default() }).collect();
             let (end, _) = write_batch(&engine, &jobs, &export, &mut Ledger::none(), false, &AtomicBool::new(false), |_| {});
             assert_eq!(end, End::Done);
             for t in &targets {

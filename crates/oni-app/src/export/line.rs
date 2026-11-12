@@ -2,14 +2,16 @@
 //! written, and over them what a hand set, which alone its sidecar keeps.
 
 use oni_export::{ExifMetadata, Row};
+use oni_settings::TypedExif;
 use oni_settings::film::{Film, film_stock};
 use std::path::Path;
 
-/// A frame's line as the card shows it, and the facts it was derived from at its opening.
+/// A frame's line as the card shows it, the facts it was derived from, and what derived at its opening.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Line {
     pub row: Row,
-    pub facts: ExifMetadata,
+    facts: ExifMetadata,
+    opened: ExifMetadata,
 }
 
 /// The scan's own facts, its roll's camera body over the scan's camera and its roll's stock as the film.
@@ -22,16 +24,17 @@ fn facts(path: &Path, roll: Option<&Film>) -> ExifMetadata {
     scan
 }
 
-impl Line {
-    /// The facts, the artist and copyright last written filling those the scan leaves empty.
-    fn derived(&self, artist: &str, copyright: &str) -> ExifMetadata {
-        let remembered = ExifMetadata { artist: artist.to_owned(), copyright: copyright.to_owned(), ..ExifMetadata::default() };
-        self.facts.over(&remembered)
-    }
+/// `facts`, the artist and copyright remembered filling those the scan leaves empty.
+fn derived(facts: &ExifMetadata, artist: &str, copyright: &str) -> ExifMetadata {
+    let fill = |scan: &String, remembered: &str| if scan.is_empty() { remembered } else { scan }.to_owned();
+    ExifMetadata { artist: fill(&facts.artist, artist), copyright: fill(&facts.copyright, copyright), ..facts.clone() }
+}
 
-    /// What a hand set on the line: every field its derived value would fill again is left out.
-    pub fn typed(&self, artist: &str, copyright: &str) -> ExifMetadata {
-        self.row.metadata.beyond(&self.derived(artist, copyright))
+impl Line {
+    /// What a hand set on the line against the artist and copyright just remembered: a field that
+    /// derived at its opening, or derives under them, is left to derive.
+    pub fn typed(&self, artist: &str, copyright: &str) -> TypedExif {
+        self.row.metadata.beyond(&[&self.opened, &derived(&self.facts, artist, copyright)])
     }
 }
 
@@ -40,13 +43,13 @@ impl Line {
 pub fn opening_line(path: &Path, roll: Option<&Film>, artist: &str, copyright: &str) -> Line {
     let mosaic = oni_decode::decodes_via_mosaic(path);
     let kept = oni_settings::sidecar::read(path, mosaic, false).ok().and_then(|l| l.exif).unwrap_or_default();
-    let mut line = Line { row: Row { name: oni_export::stem(path), metadata: ExifMetadata::default() }, facts: facts(path, roll) };
-    line.row.metadata = kept.over(&line.derived(artist, copyright));
-    line
+    let facts = facts(path, roll);
+    let opened = derived(&facts, artist, copyright);
+    Line { row: Row { name: oni_export::stem(path), metadata: kept.over(&opened) }, facts, opened }
 }
 
 /// What a hand set on `path`'s line kept in its sidecar, once its file is written.
-pub fn keep_line(path: &Path, typed: &ExifMetadata) {
+pub fn keep_line(path: &Path, typed: &TypedExif) {
     let _ = oni_settings::sidecar::set_exif(typed.clone(), path, oni_decode::decodes_via_mosaic(path));
 }
 
@@ -63,6 +66,12 @@ mod tests {
         let path = folder.join("frame.RW2");
         std::fs::write(&path, b"raw").unwrap();
         path
+    }
+
+    /// The scratch folder `frame` made, gone.
+    fn cleared(frame: &Path) {
+        let folder = frame.parent().unwrap();
+        let _ = std::fs::remove_dir_all(folder);
     }
 
     fn roll(stock: usize, body: &str) -> Film {
@@ -88,9 +97,9 @@ mod tests {
 
         // Twin: the whole line kept, the roll's body frozen in it, no longer follows the roll.
         let whole = opening_line(&path, Some(&b), "", "");
-        keep_line(&path, &whole.row.metadata);
+        keep_line(&path, &whole.row.metadata.beyond(&[]));
         assert_ne!(opening_line(&path, Some(&c), "", "").row.metadata.camera, "Leica M6");
-        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+        cleared(&path);
     }
 
     #[test]
@@ -98,9 +107,48 @@ mod tests {
         let path = frame("artist");
         let mut line = opening_line(&path, None, "", "");
         line.row.metadata.artist = "X".into();
-        assert_eq!(line.typed("X", "").artist, "", "the artist remembered as this export writes is derived");
+        assert_eq!(line.typed("X", "").artist, None, "the artist remembered as this export writes is derived");
         // Twin: against the artist remembered before, the typed one is the hand's.
-        assert_eq!(line.typed("", "").artist, "X");
-        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+        assert_eq!(line.typed("", "").artist.as_deref(), Some("X"));
+        cleared(&path);
+    }
+
+    #[test]
+    fn a_line_left_alone_is_not_pinned_to_the_artist_remembered_before() {
+        let (first, other) = (frame("first"), frame("other"));
+        let mut line = opening_line(&first, None, "Alice", "");
+        line.row.metadata.artist = "Bob".into();
+        let left = opening_line(&other, None, "Alice", "");
+        let typed = left.typed("Bob", "");
+        keep_line(&other, &typed);
+        assert!(typed.is_empty() && !oni_settings::sidecar::url_for(&other).exists(), "a line left alone gains no sidecar: {typed:?}");
+        assert_eq!(opening_line(&other, None, "Bob", "").row.metadata.artist, "Bob", "the artist remembered since reaches it");
+        // Twin: told from what derives under the new artist alone, the old one is pinned.
+        let pinned = left.row.metadata.beyond(&[&derived(&left.facts, "Bob", "")]);
+        assert_eq!(pinned.artist.as_deref(), Some("Alice"));
+        cleared(&first);
+        cleared(&other);
+    }
+
+    #[test]
+    fn a_field_cleared_by_hand_stays_cleared() {
+        let path = frame("cleared");
+        let whole = r#"{"version":20,"settings":{},"exif":{"artist":"","camera":"","copyright":"","date":"","film":"","iso":"","lens":""}}"#;
+        std::fs::write(oni_settings::sidecar::url_for(&path), whole).unwrap();
+        let line = opening_line(&path, None, "Alice", "");
+        assert_eq!(line.row.metadata.artist, "", "an artist cleared in a block written whole stays cleared");
+        keep_line(&path, &line.typed("Alice", ""));
+        assert_eq!(opening_line(&path, None, "Alice", "").row.metadata.artist, "", "an export keeps the clear");
+
+        let fresh = frame("cleared-fresh");
+        let mut line = opening_line(&fresh, None, "Alice", "");
+        line.row.metadata.artist.clear();
+        keep_line(&fresh, &line.typed("Alice", ""));
+        assert_eq!(opening_line(&fresh, None, "Alice", "").row.metadata.artist, "", "a clear typed now is kept");
+        // Twin: a block without the artist's key derives it.
+        keep_line(&fresh, &TypedExif { film: Some(String::new()), ..TypedExif::default() });
+        assert_eq!(opening_line(&fresh, None, "Alice", "").row.metadata.artist, "Alice");
+        cleared(&path);
+        cleared(&fresh);
     }
 }

@@ -8,7 +8,7 @@ use oni_settings::frame::{Correction, FlatField, PassOrder};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::sidecar::{self, DraftBase, WriteOptions};
 use oni_settings::tone::color_density;
-use oni_settings::{ConversionMode, ExifMetadata, Id, PipelineSettings, RollDraft};
+use oni_settings::{ConversionMode, ExifMetadata, Id, PipelineSettings, RollDraft, TypedExif};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
@@ -170,11 +170,11 @@ fn the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent() {
     let folder = scratch("sidecar-exif");
     let original = folder.join("frame.RW2");
     std::fs::write(&original, b"raw").unwrap();
-    let typed = ExifMetadata {
-        camera: "Nikon FM2".into(),
-        film: "Kodak Portra 400".into(),
-        date: "2024:05:01 10:00:00".into(),
-        ..ExifMetadata::default()
+    let typed = TypedExif {
+        camera: Some("Nikon FM2".into()),
+        film: Some("Kodak Portra 400".into()),
+        date: Some("2024:05:01 10:00:00".into()),
+        ..TypedExif::default()
     };
     let mut edited = PipelineSettings::default();
     edited.gains.stops = [0.5, 0.0, 0.0];
@@ -192,7 +192,7 @@ fn the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent() {
     // Twin: the encoder handed nothing drops it.
     assert_eq!(codec::decode(codec::encode_settings(&later).unwrap().as_bytes()).unwrap().exif, None);
 
-    sidecar::set_exif(ExifMetadata::default(), &original, true).unwrap();
+    sidecar::set_exif(TypedExif::default(), &original, true).unwrap();
     let text = std::fs::read_to_string(sidecar::url_for(&original)).unwrap();
     assert!(sidecar::read(&original, true, true).unwrap().exif.is_none() && !text.contains("\"exif\""));
 }
@@ -202,11 +202,24 @@ fn an_empty_line_gives_a_frame_never_touched_no_sidecar() {
     let folder = scratch("sidecar-exif-untouched");
     let original = folder.join("frame.RW2");
     std::fs::write(&original, b"raw").unwrap();
-    sidecar::set_exif(ExifMetadata::default(), &original, true).unwrap();
+    sidecar::set_exif(TypedExif::default(), &original, true).unwrap();
     assert!(!sidecar::url_for(&original).exists(), "nothing typed, nothing written");
     // Twin: a line holding a field is written beside the same frame.
-    sidecar::set_exif(ExifMetadata { film: "Kodak Portra 400".into(), ..ExifMetadata::default() }, &original, true).unwrap();
+    sidecar::set_exif(TypedExif { film: Some("Kodak Portra 400".into()), ..TypedExif::default() }, &original, true).unwrap();
     assert!(sidecar::url_for(&original).exists());
+}
+
+#[test]
+fn a_block_written_whole_keeps_its_cleared_fields_and_a_sparse_one_derives_the_rest() {
+    let derived = ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), artist: "Alice".into(), ..ExifMetadata::default() };
+    let whole = r#"{"version":20,"settings":{},"exif":{"artist":"","camera":"","copyright":"","date":"","film":"","iso":"","lens":""}}"#;
+    let whole = codec::decode(whole.as_bytes()).unwrap().exif.unwrap();
+    let shown = whole.over(&derived);
+    assert_eq!((shown.artist.as_str(), shown.camera.as_str()), ("", ""), "an artist and a camera cleared before stay cleared");
+    // Twin: a block naming the film alone derives the artist and the camera.
+    let sparse = r#"{"version":21,"settings":{},"exif":{"film":"Kodak Portra 400"}}"#;
+    let sparse = codec::decode(sparse.as_bytes()).unwrap().exif.unwrap();
+    assert_eq!(sparse.over(&derived), ExifMetadata { film: "Kodak Portra 400".into(), ..derived });
 }
 
 // MARK: - Correction.selfCheck

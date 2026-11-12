@@ -12,7 +12,7 @@ use crate::lighting_catch_up;
 use crate::modes::{ConversionMode, Medal, ScannerMachine};
 use crate::scanner::ScannerLook;
 use crate::settings::PipelineSettings;
-use crate::sidecar::{ExifMetadata, RollDraft};
+use crate::sidecar::{RollDraft, TypedExif};
 use crate::tolerant::{self, Object};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -55,7 +55,7 @@ pub struct SettingsDocument {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub label: Option<Medal>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     #[serde(rename = "rollDraft", skip_serializing_if = "Option::is_none", default)]
     pub roll_draft: Option<RollDraft>,
     #[serde(rename = "trashedAt", skip_serializing_if = "Option::is_none", default)]
@@ -87,7 +87,7 @@ pub struct Decoded {
     pub version: i64,
     pub imported_at: Option<Date>,
     pub label: Medal,
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     pub roll_draft: Option<RollDraft>,
     pub trashed_at: Option<Date>,
 }
@@ -103,7 +103,7 @@ impl Decoded {
 pub struct Envelope {
     pub imported_at: Option<Date>,
     pub label: Medal,
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     pub roll_draft: Option<RollDraft>,
     pub trashed_at: Option<Date>,
     pub film: Option<Film>,
@@ -120,7 +120,7 @@ pub fn encode(
     settings: &PipelineSettings,
     imported_at: Option<Date>,
     label: Option<Medal>,
-    exif: Option<ExifMetadata>,
+    exif: Option<TypedExif>,
     roll_draft: Option<RollDraft>,
     trashed_at: Option<Date>,
 ) -> Result<String, json::Error> {
@@ -133,11 +133,11 @@ pub(crate) fn document(
     settings: &PipelineSettings,
     imported_at: Option<Date>,
     label: Option<Medal>,
-    exif: Option<ExifMetadata>,
+    exif: Option<TypedExif>,
     roll_draft: Option<RollDraft>,
     trashed_at: Option<Date>,
 ) -> SettingsDocument {
-    // An empty box is no EXIF at all, so an untouched frame's sidecar does not grow empty strings.
+    // A line with no field set is no EXIF at all, so an untouched frame's sidecar holds no block.
     let exif = exif.filter(|e| !e.is_empty());
     SettingsDocument { version: VERSION, imported_at, label, exif, roll_draft, trashed_at, settings: settings.clone() }
 }

@@ -9678,5 +9678,26 @@
     "title": "Swift reference folders leave the fixtures and the README",
     "status": "done",
     "detail": "ONI_REFERENCE and ONI_ADVERSARIAL leave oni-fixtures and the README; docs/parity/README.md is marked as history."
+  },
+  {
+    "id": 1906,
+    "type": "fix",
+    "title": "A line left alone is not pinned to the artist remembered before",
+    "status": "done",
+    "detail": "Line keeps what derived at its opening; Line::typed keeps a field only when it differs both from that and from what derives under the artist and copyright the export just remembered (ExifMetadata::beyond over several derived lines). Changing the first line's artist no longer writes the old remembered artist into the sidecar of every other frame, nor gives a sidecar to frames nobody touched."
+  },
+  {
+    "id": 1907,
+    "type": "fix",
+    "title": "A sidecar keeps an EXIF field cleared by hand",
+    "status": "done",
+    "detail": "The sidecar's exif block is TypedExif (oni-settings sidecar/exif_line.rs): each field optional, an absent key derives at each opening, an empty one was cleared. A block written whole by an older build or by Swift holds every key, so it reads as set in full and an artist, copyright or scanning camera cleared there stays cleared; an export keeps it as an empty key. No version bump: what was readable means what it meant. ExifMetadata stays the line an export writes; TypedExif::over lays the block over what derives."
+  },
+  {
+    "id": 1908,
+    "type": "test",
+    "title": "The EXIF line: a line left alone and a cleared field",
+    "status": "done",
+    "detail": "oni-app export::line: a_line_left_alone_is_not_pinned_to_the_artist_remembered_before (twin: the diff against the new artist alone pins the old one) and a_field_cleared_by_hand_stays_cleared, from a block written whole and from a clear typed now (twin: a block without the key derives the artist); both failed on the code before (Alice pinned, the cleared artist came back). oni-settings: a cleared film round-trips, twin without its key it derives; a block written whole keeps its cleared fields, twin a sparse one derives the rest. The line tests' scratch folders are removed under a name the member-deletion check accepts. Window export_window: the artist typed on the first line is remembered, not kept in the sidecar; the film picked is."
   }
 ]

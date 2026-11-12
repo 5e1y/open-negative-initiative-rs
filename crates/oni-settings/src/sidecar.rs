@@ -17,53 +17,13 @@ use std::path::{Path, PathBuf};
 pub(crate) use crate::atomic::write_atomically;
 use std::time::{Duration, SystemTime};
 
+mod exif_line;
 mod fields;
 mod held;
 pub mod identity;
 
+pub use exif_line::{ExifMetadata, TypedExif};
 pub use fields::{set_exif, set_label, set_roll_draft, set_trashed, update};
-
-/// The EXIF a hand set for the export, an empty field derived at each opening; every key is required,
-/// as the document writes them all.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-pub struct ExifMetadata {
-    pub camera: String,
-    pub lens: String,
-    pub film: String,
-    pub iso: String,
-    /// EXIF form, `YYYY:MM:DD HH:MM:SS`.
-    pub date: String,
-    pub artist: String,
-    pub copyright: String,
-}
-
-impl ExifMetadata {
-    pub fn is_empty(&self) -> bool {
-        *self == ExifMetadata::default()
-    }
-
-    /// Each field set here laid over `base`'s.
-    pub fn over(&self, base: &Self) -> Self {
-        self.zip(base, |mine, theirs| if mine.is_empty() { theirs } else { mine }.to_owned())
-    }
-
-    /// What differs from `base`: a field equal to `base`'s is emptied.
-    pub fn beyond(&self, base: &Self) -> Self {
-        self.zip(base, |mine, theirs| if mine == theirs { String::new() } else { mine.to_owned() })
-    }
-
-    fn zip(&self, other: &Self, f: impl Fn(&str, &str) -> String) -> Self {
-        ExifMetadata {
-            camera: f(&self.camera, &other.camera),
-            lens: f(&self.lens, &other.lens),
-            film: f(&self.film, &other.film),
-            iso: f(&self.iso, &other.iso),
-            date: f(&self.date, &other.date),
-            artist: f(&self.artist, &other.artist),
-            copyright: f(&self.copyright, &other.copyright),
-        }
-    }
-}
 
 /// A roll being prepared, written with each of its frames so a preparation left halfway resumes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -116,7 +76,7 @@ pub struct Loaded {
     pub is_new: bool,
     pub imported_at: Option<Date>,
     pub label: Medal,
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     pub roll_draft: Option<RollDraft>,
     pub trashed_at: Option<Date>,
     /// The sidecar beside it was written for another file of that name: read as none, and set aside
@@ -227,7 +187,7 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
 pub struct WriteOptions {
     pub imported_at: Option<Date>,
     pub label: Option<Medal>,
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     /// `Some(None)` clears the draft on file.
     pub roll_draft: Option<Option<RollDraft>>,
     /// `Some(None)` clears the ONI Trash mark.
@@ -365,21 +325,4 @@ pub fn flush(settings: &PipelineSettings, original: Option<&Path>, persisted: Op
         return None;
     }
     write(settings, original, WriteOptions::default()).err().map(|e| e.to_string())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::ExifMetadata;
-
-    #[test]
-    fn a_line_kept_beyond_its_derived_one_comes_back_over_it() {
-        let derived = ExifMetadata { camera: "Nikon FM2".into(), film: "Kodak Portra 400".into(), artist: "A".into(), ..ExifMetadata::default() };
-        let shown = ExifMetadata { lens: "50mm".into(), artist: "B".into(), ..derived.clone() };
-        let kept = shown.beyond(&derived);
-        assert_eq!(kept, ExifMetadata { lens: "50mm".into(), artist: "B".into(), ..ExifMetadata::default() }, "only what differs is kept");
-        assert_eq!(kept.over(&derived), shown);
-        // Twin: a derived field blanked by hand cannot be kept, and comes back derived.
-        let blanked = ExifMetadata { film: String::new(), ..shown.clone() };
-        assert_ne!(blanked.beyond(&derived).over(&derived), blanked);
-    }
 }
