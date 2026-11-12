@@ -9111,5 +9111,19 @@
     "title": "A refused takeover never brings a deleted preset back, and the archive keeps the list whole",
     "status": "done",
     "detail": "presets/tests/takeover.rs: a_preset_taken_then_deleted_stays_deleted_when_the_disk_refuses_the_rest takes [A, B, C] with C blocked and the write-back refused, then with the rename refused (error 32), deletes what shows and reloads: nothing deleted returns and the list is whole in place or archived; twin, with the write-back allowed C comes in once clear. an_element_the_takeover_cannot_read_stays_in_the_archive: [A, X, C] with X unreadable ends with the archive equal to the list. a_list_written_again_only_adds_to_the_shelf covers the held ids. On the code before (seam only) the first reads A and B back (disk full) and A, B, C (held), the second finds the archive [C]; the fix without the write-back, with every list renamed over the archive, or without the held ids each fails one of them."
+  },
+  {
+    "id": 1806,
+    "type": "check",
+    "title": "Both copies of the measuring window's rule agree on a grid of rects",
+    "status": "done",
+    "detail": "oni-measure/tests/measure_window_grid.rs runs oni_measure::window's relative, absolute, in_crop, proposal and propose against oni_settings::geometry's on a grid of 625 rects (negative, zero and NaN positions and sides), every rect in every base, crop bypassed or not, frame and sheet: bit for bit equal. Twin: the settings' former relative, which computed through a side not a number, parts from the measure's on the grid. The proof before window's copy goes (#1808); it is then replaced by fixed expectations (#1809)."
+  },
+  {
+    "id": 1807,
+    "type": "refactor",
+    "title": "The settings' relative reads a side not a number as the whole window",
+    "status": "done",
+    "detail": "oni_settings::geometry::relative tested `base.width <= 0 || … || cut.height <= 0`, which lets a NaN through and computes a NaN window, while oni_measure::window::relative, the one the measures read, returned the whole window. The settings take the measure's form, `!(base.width > 0 && … && cut.height > 0)`, so one rule can serve both (structure plan, measure-window-once). Its other reader, the Crop tool's window placing (framing.rs), differs only on a crop with a side not a number."
   }
 ]
