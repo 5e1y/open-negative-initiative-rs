@@ -71,7 +71,8 @@ impl Plan {
                 if *clash == Clash::None {
                     return path.clone();
                 }
-                let free = (2..).map(|n| file::numbered(path, n)).find(|p| !taken.contains(&folded(p)) && std::fs::symlink_metadata(p).is_err());
+                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                let free = (2..).map(|n| path.with_file_name(oni_library::paths::numbered(&name, n))).find(|p| !taken.contains(&folded(p)) && std::fs::symlink_metadata(p).is_err());
                 let free = free.expect("an unbounded count reaches a free name");
                 taken.insert(folded(&free));
                 free

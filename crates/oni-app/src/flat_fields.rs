@@ -65,7 +65,7 @@ pub fn entries(support: &Path) -> Vec<Entry> {
 
 /// Through a sibling and a rename, so a reader never meets half a list.
 fn write_entries(support: &Path, list: &[Entry]) -> bool {
-    serde_json::to_vec(list).is_ok_and(|data| oni_library::write_atomically(&index(support), &data).is_ok())
+    serde_json::to_vec(list).is_ok_and(|data| oni_settings::atomic::write_atomically(&index(support), &data).is_ok())
 }
 
 fn stem(path: &Path) -> String {
@@ -112,7 +112,7 @@ pub fn load(support: &Path, source: &Path, decode: impl FnOnce(&Path) -> Option<
     let icc = oni_colour::working::working_profile().encode().unwrap_or_default();
     let tiff = oni_export::tiff::encoded_half(width, height, &pixels, &icc).ok_or(Failure::Unwritable)?;
     // Through a sibling and a rename: a mask cut short by a crash would be taken whole by the next load.
-    oni_library::write_atomically(&file(support, &id), &tiff).map_err(|_| Failure::Unwritable)?;
+    oni_settings::atomic::write_atomically(&file(support, &id), &tiff).map_err(|_| Failure::Unwritable)?;
     let entry = Entry { id: id.clone(), name: stem(source), per_channel: passes.map(|_| true) };
     list.retain(|e| e.id != id);
     list.push(entry.clone());
@@ -170,13 +170,8 @@ impl<'a> Moving<'a> {
 pub fn move_out(path: &str, folder: &Path, index: Option<&LibraryIndex>, how: &Moving) -> Option<PathBuf> {
     let url = Path::new(path);
     std::fs::create_dir_all(folder).ok()?;
-    let mut target = folder.join(url.file_name()?);
-    let extension = url.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
-    let mut rank = 2;
-    while target.symlink_metadata().is_ok() {
-        target = folder.join(format!("{} {rank}.{extension}", stem(url)));
-        rank += 1;
-    }
+    let name = url.file_name()?.to_string_lossy().into_owned();
+    let target = (1..).map(|rank| folder.join(oni_library::paths::numbered(&name, rank))).find(|t| t.symlink_metadata().is_err())?;
     moved(url, &target, how).ok()?;
     let settings = sidecar::url_for(url);
     if settings.exists() {

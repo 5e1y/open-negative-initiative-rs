@@ -2,7 +2,7 @@
 //! ledger of ONI's own exports, and every write through a temporary file then a rename.
 
 use std::fs::OpenOptions;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
@@ -84,7 +84,7 @@ impl Ledger {
         let over = self.book.files.len().saturating_sub(REMEMBERED);
         self.book.files.drain(..over);
         std::fs::create_dir_all(at.parent().unwrap_or(Path::new(".")))?;
-        oni_library::write_atomically(at, &serde_json::to_vec_pretty(&self.book).map_err(io::Error::other)?)
+        oni_settings::atomic::write_atomically(at, &serde_json::to_vec_pretty(&self.book).map_err(io::Error::other)?)
     }
 }
 
@@ -103,7 +103,7 @@ impl From<io::Error> for Refused {
 
 /// A new file: refused when anything stands at `destination`, even one appearing while it is written.
 pub fn create(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
-    let staged = staged(destination, bytes)?;
+    let staged = oni_settings::atomic::staged(destination, bytes)?;
     // The name is held before the rename, so a file arriving meanwhile finds it taken.
     let held = OpenOptions::new().write(true).create_new(true).open(destination);
     if let Err(e) = held {
@@ -122,7 +122,7 @@ pub fn create(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
 
 /// A file ONI made before, swapped whole: until the rename lands the earlier one stays as it was.
 pub fn replace(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
-    let staged = staged(destination, bytes)?;
+    let staged = oni_settings::atomic::staged(destination, bytes)?;
     oni_settings::atomic::renamed(&staged, destination).map_err(|e| {
         let _ = std::fs::remove_file(&staged);
         Refused::Io(e)
@@ -136,33 +136,6 @@ pub fn put(destination: &Path, bytes: &[u8], ledger: &Ledger, replacing: bool) -
         Standing::Export if replacing => replace(destination, bytes),
         _ => Err(Refused::Taken),
     }
-}
-
-/// The bytes written and flushed beside `destination` under a hidden name no archive lists.
-fn staged(destination: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
-    let staged = oni_settings::atomic::temporary(destination);
-    let written = (|| {
-        let mut file = OpenOptions::new().write(true).create_new(true).open(&staged)?;
-        file.write_all(bytes)?;
-        file.sync_all()
-    })();
-    match written {
-        Ok(()) => Ok(staged),
-        Err(e) => {
-            let _ = std::fs::remove_file(&staged);
-            Err(e)
-        }
-    }
-}
-
-/// `name 2.ext`, `name 3.ext`…: the Finder's way of keeping both.
-pub fn numbered(path: &Path, number: usize) -> PathBuf {
-    let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-    let name = match path.extension() {
-        Some(e) => format!("{stem} {number}.{}", e.to_string_lossy()),
-        None => format!("{stem} {number}"),
-    };
-    path.with_file_name(name)
 }
 
 /// The path with symlinks resolved where it exists: a file not yet written resolves its folder.

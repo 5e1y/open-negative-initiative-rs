@@ -32,7 +32,7 @@ pub fn keep(dir: &Path, folder: &str, survey: &Survey) -> std::io::Result<()> {
         return Ok(());
     }
     std::fs::create_dir_all(dir)?;
-    crate::write_atomically(&file(dir, folder), &serde_json::to_vec(&shape).map_err(std::io::Error::other)?)
+    oni_settings::atomic::write_atomically(&file(dir, folder), &serde_json::to_vec(&shape).map_err(std::io::Error::other)?)
 }
 
 /// A survey whose folder the disk refused takes the shape last kept for it.

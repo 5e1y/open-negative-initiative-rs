@@ -50,19 +50,20 @@ fn the_key_and_the_trusted_phones_are_written_whole_and_owner_only() {
     let first = Identity::generate().public();
     trust(&dir, first).unwrap();
     identity(&dir).unwrap();
+    let listed = || std::fs::read_dir(folder(&dir)).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect::<Vec<_>>();
+    assert!(listed().iter().all(|n| !n.ends_with(".tmp")), "no temporary stays behind: {:?}", listed());
+    #[cfg(unix)]
     for path in [trusted_path(&dir), folder(&dir).join("host.key")] {
-        assert!(!sibling(&path).exists(), "no sibling stays behind {}", path.display());
-        #[cfg(unix)]
         assert_eq!(mode(&path), 0o600, "{}", path.display());
     }
-    // A write that cannot finish leaves the list as it was, never half of it.
-    std::fs::create_dir_all(sibling(&trusted_path(&dir)).join("blocked")).unwrap();
-    assert!(trust(&dir, Identity::generate().public()).is_err());
-    assert_eq!(trusted(&dir), vec![first]);
-    std::fs::remove_dir_all(sibling(&trusted_path(&dir))).unwrap();
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
+        // A write that cannot finish leaves the list as it was, never half of it.
+        std::fs::set_permissions(folder(&dir), std::fs::Permissions::from_mode(0o500)).unwrap();
+        assert!(trust(&dir, Identity::generate().public()).is_err());
+        std::fs::set_permissions(folder(&dir), std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(trusted(&dir), vec![first]);
         let key = folder(&dir).join("host.key");
         std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o644)).unwrap();
         identity(&dir).unwrap();

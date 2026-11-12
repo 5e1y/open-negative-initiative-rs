@@ -87,32 +87,30 @@ pub fn download(url: &str, folder: &Path) -> Result<PathBuf, String> {
 pub fn download_counted(url: &str, folder: &Path, going: &dyn Fn(u64, Option<u64>) -> bool) -> Result<PathBuf, String> {
     use std::io::Write;
     let path = landing(url, folder);
-    let part = path.with_file_name(format!("{}.part", path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default()));
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
-    let written = run(async {
-        let client = builder().read_timeout(STALL).build().map_err(|e| e.to_string())?;
-        let mut response = client.get(url).send().await.map_err(|e| e.to_string())?.error_for_status().map_err(|e| e.to_string())?;
-        let total = response.content_length();
-        let mut file = std::io::BufWriter::new(std::fs::File::create(&part).map_err(|e| e.to_string())?);
-        let mut written = 0u64;
-        while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
-            file.write_all(&chunk).map_err(|e| e.to_string())?;
-            written += chunk.len() as u64;
-            if !going(written, total) {
-                return Err(String::new());
+    oni_settings::atomic::write_with(&path, |file| {
+        run(async {
+            let client = builder().read_timeout(STALL).build().map_err(|e| e.to_string())?;
+            let mut response = client.get(url).send().await.map_err(|e| e.to_string())?.error_for_status().map_err(|e| e.to_string())?;
+            let total = response.content_length();
+            let mut file = std::io::BufWriter::new(file);
+            let mut written = 0u64;
+            while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
+                file.write_all(&chunk).map_err(|e| e.to_string())?;
+                written += chunk.len() as u64;
+                if !going(written, total) {
+                    return Err(String::new());
+                }
             }
-        }
-        file.flush().map_err(|e| e.to_string())?;
-        match total {
-            Some(total) if total != written => Err(oni_i18n::tr("the download ended before the file did").into()),
-            _ => Ok(written),
-        }
-    });
-    if written.is_err() {
-        let _ = std::fs::remove_file(&part);
-    }
-    written?;
-    std::fs::rename(&part, &path).map_err(|e| e.to_string())?;
+            file.flush().map_err(|e| e.to_string())?;
+            match total {
+                Some(total) if total != written => Err(oni_i18n::tr("the download ended before the file did").into()),
+                _ => Ok(()),
+            }
+        })
+        .map_err(std::io::Error::other)
+    })
+    .map_err(|e| e.to_string())?;
     Ok(path)
 }
 

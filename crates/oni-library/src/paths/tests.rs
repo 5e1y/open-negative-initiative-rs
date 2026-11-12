@@ -118,3 +118,10 @@ fn case_folds_only_where_the_volume_ignores_it() {
     // Twin: folded or not, a sibling sharing the prefix stays outside.
     assert!(!holds("/Scans/roll 8", "/Scans/Roll 80/a.NEF") && !holds("/Scans/roll", "/Scans/Roll 8"));
 }
+
+#[test]
+fn a_copy_is_numbered_as_the_finder_numbers_one() {
+    assert_eq!([numbered("P107.RW2", 1), numbered("P107.RW2", 2), numbered("notes", 3), numbered("a.tar.gz", 2)], ["P107.RW2", "P107 2.RW2", "notes 3", "a.tar 2.gz"]);
+    // Twin: the stem and extension joined bare spell a trailing dot on a name with no extension.
+    assert_eq!(format!("{} {}.{}", stem("notes"), 3, extension("notes")), "notes 3.");
+}

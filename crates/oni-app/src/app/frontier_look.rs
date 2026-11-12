@@ -39,7 +39,7 @@ impl Ctl {
     pub(super) fn export_frontier_look(&self) {
         let cube = oni_pipeline::frontier_table::current().map(|(_, c)| (*c).clone()).unwrap_or_else(oni_pipeline::frontier_table::starting);
         let Some(path) = crate::system::save_file(tr("Export the Frontier look"), "ONI Frontier look.cube", &["cube"]) else { return };
-        if let Err(e) = oni_library::write_atomically(&path, oni_pipeline::frontier_table::write(&cube).as_bytes()) {
+        if let Err(e) = oni_settings::atomic::write_atomically(&path, oni_pipeline::frontier_table::write(&cube).as_bytes()) {
             self.say(&tr!("The look could not be written: {e}", e = e));
         }
     }

@@ -107,14 +107,14 @@ fn a_preset_taken_then_deleted_stays_deleted_when_the_disk_refuses_the_rest() {
     let held = |_: &Path, _: &Path| Err(io::Error::from_raw_os_error(32));
     let archive = |s: &Path| s.join("presets.json.migrated");
     // Disk full: C's save and the list's rewrite refused. Then the list held open, its rename refused.
-    for (label, block_c, rename, write) in [("full", true, &oni_settings::atomic::renamed as Rename, &full as Write), ("held", false, &held, &oni_library::write_atomically)] {
+    for (label, block_c, rename, write) in [("full", true, &oni_settings::atomic::renamed as Rename, &full as Write), ("held", false, &held, &oni_settings::atomic::write_atomically)] {
         let pass = refused_pass(label, block_c, rename, write);
         assert!(pass.after.iter().all(|n| !pass.deleted.contains(n)), "{label}: deleted {:?}, back {:?}", pass.deleted, pass.after);
         assert!(listed(&legacy_file(&pass.support)) == pass.list || listed(&archive(&pass.support)) == pass.list, "{label}: the list kept whole");
         let _ = std::fs::remove_dir_all(&pass.support);
     }
     // Twin: with the rewrite allowed, C is kept for a later pass and comes in once its path is clear.
-    let pass = refused_pass("rewritten", true, &oni_settings::atomic::renamed, &oni_library::write_atomically);
+    let pass = refused_pass("rewritten", true, &oni_settings::atomic::renamed, &oni_settings::atomic::write_atomically);
     assert_eq!((pass.deleted, pass.after), (vec!["A".to_string(), "B".into()], vec![]));
     std::fs::remove_dir(&pass.blocked).unwrap();
     assert_eq!(load_shelf(&pass.support).into_iter().map(|p| p.name).collect::<Vec<_>>(), ["C"]);

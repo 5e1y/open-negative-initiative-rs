@@ -170,12 +170,8 @@ pub fn plan_units(items: &[String], folder: &str) -> Vec<Unit> {
     out
 }
 
-/// `name` past rank 1 as the Finder numbers a copy: `Tokyo 2`, `P107 2.RW2`.
+/// `name` past rank 1 as the Finder numbers a copy: `Tokyo 2`, `P107 2.RW2`; a folder's dot is no extension's.
 fn numbered(item: &str, rank: usize) -> String {
     let file = paths::name(item);
-    if rank == 1 {
-        return file;
-    }
-    let ext = if Path::new(item).is_dir() { String::new() } else { paths::extension(&file) };
-    if ext.is_empty() { format!("{file} {rank}") } else { format!("{} {rank}.{ext}", paths::stem(&file)) }
+    if rank > 1 && Path::new(item).is_dir() { format!("{file} {rank}") } else { paths::numbered(&file, rank) }
 }

@@ -362,15 +362,7 @@ fn place(data: &[u8], name: &str, folder: &Path) -> Option<PathBuf> {
         match fs::read(&candidate) {
             Ok(held) if held == data => return Some(candidate),
             Ok(_) => continue,
-            Err(_) => {
-                let temporary = folder.join(format!(".{}.part", unique()));
-                let laid = fs::write(&temporary, data).and_then(|_| fs::rename(&temporary, &candidate));
-                if laid.is_err() {
-                    let _ = fs::remove_file(&temporary);
-                    return None;
-                }
-                return Some(candidate);
-            }
+            Err(_) => return oni_settings::atomic::write_atomically(&candidate, data).ok().map(|()| candidate),
         }
     }
     None

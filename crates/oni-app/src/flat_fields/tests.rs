@@ -292,3 +292,19 @@ fn the_swift_apps_own_masks_read_whole() {
         assert!(mask.peaks.iter().all(|p| p.is_finite() && *p > 0.0), "{}: {:?}", e.name, mask.peaks);
     }
 }
+
+#[test]
+fn a_photo_with_no_extension_moved_out_takes_a_number_and_no_dot() {
+    let root = scratch("move-out-bare");
+    let presets = presets(&root);
+    std::fs::create_dir_all(root.join("Scans")).unwrap();
+    std::fs::create_dir_all(&presets).unwrap();
+    let photo = root.join("Scans/Panel");
+    std::fs::write(&photo, b"panel bytes").unwrap();
+    std::fs::write(presets.join("Panel"), b"an earlier panel").unwrap();
+    let target = move_out(&oni_library::paths::canonical(&photo), &presets, None, &Moving::through(&trashed)).expect("moved");
+    assert_eq!((target.clone(), std::fs::read(&target).unwrap()), (presets.join("Panel 2"), b"panel bytes".to_vec()));
+    // Twin: the stem and extension joined bare, as the move once named it, end in a dot.
+    assert_ne!(presets.join(format!("{} {}.{}", "Panel", 2, "")), target);
+    let _ = std::fs::remove_dir_all(&root);
+}
