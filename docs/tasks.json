@@ -9111,5 +9111,33 @@
     "title": "A refused takeover never brings a deleted preset back, and the archive keeps the list whole",
     "status": "done",
     "detail": "presets/tests/takeover.rs: a_preset_taken_then_deleted_stays_deleted_when_the_disk_refuses_the_rest takes [A, B, C] with C blocked and the write-back refused, then with the rename refused (error 32), deletes what shows and reloads: nothing deleted returns and the list is whole in place or archived; twin, with the write-back allowed C comes in once clear. an_element_the_takeover_cannot_read_stays_in_the_archive: [A, X, C] with X unreadable ends with the archive equal to the list. a_list_written_again_only_adds_to_the_shelf covers the held ids. On the code before (seam only) the first reads A and B back (disk full) and A, B, C (held), the second finds the archive [C]; the fix without the write-back, with every list renamed over the archive, or without the held ids each fails one of them."
+  },
+  {
+    "id": 1806,
+    "type": "check",
+    "title": "Both copies of the measuring window's rule agree on a grid of rects",
+    "status": "done",
+    "detail": "oni-measure/tests/measure_window_grid.rs runs oni_measure::window's relative, absolute, in_crop, proposal and propose against oni_settings::geometry's on a grid of 625 rects (negative, zero and NaN positions and sides), every rect in every base, crop bypassed or not, frame and sheet: bit for bit equal. Twin: the settings' former relative, which computed through a side not a number, parts from the measure's on the grid. The proof before window's copy goes (#1808); it is then replaced by fixed expectations (#1809)."
+  },
+  {
+    "id": 1807,
+    "type": "refactor",
+    "title": "The settings' relative reads a side not a number as the whole window",
+    "status": "done",
+    "detail": "oni_settings::geometry::relative tested `base.width <= 0 || … || cut.height <= 0`, which lets a NaN through and computes a NaN window, while oni_measure::window::relative, the one the measures read, returned the whole window. The settings take the measure's form, `!(base.width > 0 && … && cut.height > 0)`, so one rule can serve both (structure plan, measure-window-once). Its other reader, the Crop tool's window placing (framing.rs), differs only on a crop with a side not a number."
+  },
+  {
+    "id": 1808,
+    "type": "refactor",
+    "title": "The measuring window's rule lives in the settings alone",
+    "status": "done",
+    "detail": "oni_measure::window kept its own relative, absolute, in_crop, proposal, propose, MEASURE_WINDOW_INSET and FULL_WINDOW beside oni_settings::geometry's, the two already parting on a NaN (#1807). They go: measurement_windows reads Geometry::measure_window_in_crop and, untouched, geometry::proposal(Rect::UNIT, false) (bit for bit the inline rect it built); Prepare the Roll's resting and laid windows (prepare.rs, entering.rs) and slide_roll.rs call the settings. window.rs keeps the rect arithmetic, contains, contains_point, intersection, measurement_windows and the sheet's cells; its two tests of the deleted copy go with it, their cases held by #1809. window.rs 65 lines shorter, no change to what a measure reads (#1806 proved both copies equal before the deletion)."
+  },
+  {
+    "id": 1809,
+    "type": "check",
+    "title": "What a measure reads, on fixed expectations",
+    "status": "done",
+    "detail": "oni-settings/tests/measure_window.rs replaces the equality grid (#1806): thirteen windows and bases, inside, clipped, equal to the crop, outside, touching an edge, zero and negative sides, a base of zero, negative or NaN side, each with its literal relative, its measure_window_in_crop under the crop and under a bypassed crop, and None untouched; the frame's proposal a tenth inside, the sheet's the whole crop, a placed window kept. Twins: the settings' former relative, computing through a NaN, misses exactly the two NaN rows; a bypassed crop reads the window in the frame's fractions, not the crop's; a frame's proposal is not the sheet's."
   }
 ]

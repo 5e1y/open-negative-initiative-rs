@@ -1,14 +1,10 @@
 //! Where a measurement reads, in Core Image's frame: x right, y up, an extent's lower-left corner
-//! its origin. `Pipeline.measurementWindows`, `Geometry`'s measuring window and a sheet's cells.
+//! its origin. `Pipeline.measurementWindows` and a sheet's cells; the window's rule is `oni_settings::geometry`'s.
 
 use oni_settings::cg::{Point, Rect};
-use oni_settings::frame::{ContactSheetGrid, Geometry};
+use oni_settings::frame::ContactSheetGrid;
+use oni_settings::geometry::proposal;
 use oni_settings::PipelineSettings;
-
-/// `Geometry.measureWindowInset`: how far inside the crop a proposed window starts, on each side.
-pub const MEASURE_WINDOW_INSET: f64 = 0.1;
-
-pub const FULL_WINDOW: Rect = Rect::UNIT;
 
 pub fn max_x(r: &Rect) -> f64 {
     r.x + r.width
@@ -63,45 +59,10 @@ pub fn contains_point(r: &Rect, p: Point) -> bool {
     p.x >= r.x && p.x < max_x(r) && p.y >= r.y && p.y < max_y(r)
 }
 
-/// `Geometry.relative`: `rect` seen from inside `base`; a rect missing `base` reads as all of it.
-pub fn relative(rect: &Rect, base: &Rect) -> Rect {
-    let cut = intersection(rect, base);
-    if !(base.width > 0.0 && base.height > 0.0 && cut.width > 0.0 && cut.height > 0.0) {
-        return FULL_WINDOW;
-    }
-    Rect::new((cut.x - base.x) / base.width, (cut.y - base.y) / base.height, cut.width / base.width, cut.height / base.height)
-}
-
-/// `Geometry.absolute`: a rect drawn inside `base`, back in the frame's fractions.
-pub fn absolute(rect: &Rect, base: &Rect) -> Rect {
-    Rect::new(base.x + rect.x * base.width, base.y + rect.y * base.height, rect.width * base.width, rect.height * base.height)
-}
-
-/// `Geometry.measureWindowInCrop`: the window over the picture stage 0 hands on; `None` restricts nothing.
-pub fn in_crop(g: &Geometry) -> Option<Rect> {
-    let window = g.measure_window?;
-    let seen = relative(&window, if g.crop_bypassed { &FULL_WINDOW } else { &g.crop });
-    (seen != FULL_WINDOW).then_some(seen)
-}
-
-/// `Geometry.proposal`: inside the crop and clear of its edges, a sheet's on the whole crop.
-pub fn proposal(crop: &Rect, sheet: bool) -> Rect {
-    let inset_by = if sheet { 0.0 } else { MEASURE_WINDOW_INSET };
-    inset(crop, crop.width * inset_by, crop.height * inset_by)
-}
-
-/// `Geometry.proposeMeasureWindow`: an untouched window gets one; a placed one stays.
-pub fn propose(g: &mut Geometry, sheet: bool) {
-    if g.measure_window.is_none() {
-        g.measure_window = Some(proposal(&g.crop, sheet));
-    }
-}
-
 /// `Pipeline.measurementWindows`: the drawn window, else the picture clear of its edges; empty is the whole.
 pub fn measurement_windows(extent: &Rect, s: &PipelineSettings) -> Vec<Rect> {
-    let i = MEASURE_WINDOW_INSET;
     let untouched = s.geometry.measure_window.is_none();
-    let Some(seen) = in_crop(&s.geometry).or(untouched.then(|| Rect::new(i, i, 1.0 - 2.0 * i, 1.0 - 2.0 * i))) else {
+    let Some(seen) = s.geometry.measure_window_in_crop().or(untouched.then(|| proposal(Rect::UNIT, false))) else {
         return Vec::new();
     };
     let drawn = whole(&Rect::new(
@@ -169,32 +130,6 @@ mod tests {
         s.geometry.measure_window = Some(Rect::UNIT);
         assert!(measurement_windows(&extent(), &s).is_empty());
         assert_ne!(measurement_windows(&extent(), &s), rest);
-    }
-
-    #[test]
-    fn the_window_is_seen_inside_the_crop_and_a_bypassed_crop_reads_the_frame() {
-        let mut g = Geometry { crop: Rect::new(0.2, 0.2, 0.6, 0.6), ..Geometry::default() };
-        g.measure_window = Some(Rect::new(0.2, 0.2, 0.3, 0.6));
-        let seen = in_crop(&g).unwrap();
-        assert!((seen.x).abs() < 1e-12 && (seen.width - 0.5).abs() < 1e-12 && (seen.height - 1.0).abs() < 1e-12);
-        g.crop_bypassed = true;
-        // Twin: off the crop the same window is read in the frame's own fractions.
-        let whole = in_crop(&g).unwrap();
-        assert!((whole.x - 0.2).abs() < 1e-12 && (whole.width - 0.3).abs() < 1e-12 && (whole.height - 0.6).abs() < 1e-12);
-        // A window missing the crop altogether reads the whole of it.
-        assert_eq!(relative(&Rect::new(0.9, 0.9, 0.05, 0.05), &Rect::new(0.0, 0.0, 0.5, 0.5)), FULL_WINDOW);
-    }
-
-    #[test]
-    fn a_proposal_insets_a_frame_by_a_tenth_and_a_sheet_not_at_all() {
-        let crop = Rect::new(0.1, 0.0, 0.8, 1.0);
-        let p = proposal(&crop, false);
-        assert!((p.x - 0.18).abs() < 1e-12 && (p.width - 0.64).abs() < 1e-12 && (p.y - 0.1).abs() < 1e-12);
-        assert_eq!(proposal(&crop, true), crop);
-        let mut g = Geometry { measure_window: Some(Rect::new(0.3, 0.3, 0.1, 0.1)), ..Geometry::default() };
-        propose(&mut g, false);
-        // Twin: a window the hand placed is left where it is.
-        assert_eq!(g.measure_window, Some(Rect::new(0.3, 0.3, 0.1, 0.1)));
     }
 
     #[test]

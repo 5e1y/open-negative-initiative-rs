@@ -161,7 +161,7 @@ impl Ctl {
                 if let Some(a) = aspect {
                     r.aspect = a;
                 }
-                r.window = read.geometry.measure_window.unwrap_or_else(|| oni_measure::window::proposal(&read.geometry.crop, false));
+                r.window = read.geometry.measure_window.unwrap_or_else(|| oni_settings::geometry::proposal(read.geometry.crop, false));
                 r.laid_window = r.window;
                 r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
                 // A slide once read as its own negative comes back as the positive it is.

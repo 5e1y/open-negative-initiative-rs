@@ -219,10 +219,10 @@ impl Geometry {
     }
 }
 
-/// `rect` seen from inside `base`; a rect missing `base` reads as the whole of it.
+/// `rect` seen from inside `base`; a rect missing `base`, or a side not a number, reads as the whole of it.
 pub fn relative(rect: Rect, base: Rect) -> Rect {
     let cut = intersection(rect, base);
-    if base.width <= 0.0 || base.height <= 0.0 || cut.width <= 0.0 || cut.height <= 0.0 {
+    if !(base.width > 0.0 && base.height > 0.0 && cut.width > 0.0 && cut.height > 0.0) {
         return Rect::UNIT;
     }
     Rect { x: (cut.x - base.x) / base.width, y: (cut.y - base.y) / base.height, width: cut.width / base.width, height: cut.height / base.height }
