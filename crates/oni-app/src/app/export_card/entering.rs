@@ -109,20 +109,22 @@ impl Ctl {
         self.leave_export();
     }
 
-    /// Esc on the surface is Cancel.
-    pub(in crate::app) fn export_escape(self: &Rc<Self>) -> bool {
-        let (shown, sheet) = {
+    /// Esc on the surface closes its own sheet, else is Cancel.
+    pub(in crate::app) fn export_escape(self: &Rc<Self>) {
+        let sheet = {
             let c = self.export.borrow();
-            (c.shown, c.confirm.is_some() || c.notice.is_some() || c.naming.is_some() || c.film_row.is_some() || c.papers.shown)
+            c.confirm.is_some() || c.notice.is_some() || c.naming.is_some() || c.film_row.is_some() || c.papers.shown
         };
         if sheet {
             self.close_export_sheets();
-            return true;
-        }
-        if shown {
+        } else {
             self.cancel_export();
         }
-        shown
+    }
+
+    /// Whether a sheet or the export surface covers the gallery and the editor, so nothing opens under it.
+    pub(in crate::app) fn covered(&self) -> bool {
+        self.export.borrow().shown || self.window().is_some_and(|w| w.get_sheet_shown())
     }
 
     pub(super) fn close_export_sheets(self: &Rc<Self>) {

@@ -38,6 +38,10 @@ impl Ctl {
     /// `enterRollReference`: every frame ticked, the film step, then each sidecar read off this thread.
     pub(in crate::app) fn enter_roll(self: &Rc<Self>, paths: &[String], left_out: usize) {
         let Some(w) = self.window() else { return };
+        // A roll asked for before the export or a sheet stood lands under neither.
+        if self.covered() {
+            return;
+        }
         let wanted: HashSet<&String> = paths.iter().collect();
         let (ordered, session) = {
             let mut s = self.state.borrow_mut();

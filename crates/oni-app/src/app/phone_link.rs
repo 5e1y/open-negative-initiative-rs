@@ -152,6 +152,7 @@ impl Ctl {
             _ => None,
         };
         let sliders = self.phone_sliders();
+        let covered = self.export.borrow().shown;
         let was = self.state.borrow().store.settings().flat_field.clone();
         let (out, changed) = {
             let s = &mut *self.state.borrow_mut();
@@ -161,6 +162,7 @@ impl Ctl {
             let store = &mut s.store;
             p.link.frame = place.map(wire_place);
             p.link.sliders = Box::new(sliders);
+            p.link.covered = covered;
             let out = p.link.handle(store, event, receipt);
             (out, store.revision() != revision)
         };

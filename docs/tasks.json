@@ -9489,5 +9489,33 @@
     "title": "Swift is dead: no rule imposes its behaviour",
     "status": "done",
     "detail": "Owner's call (2026-11-12): the Swift app is totally deprecated and every rule imposing a behaviour that comes from it is killed. CLAUDE.md no longer asks for a strict behavioural copy of Swift's result, Swift parity, proof against Swift's outputs, Swift-format sidecars or Swift attributions; docs/parity/ is history. Kept: reading the sidecars a person already has, Swift-written included, as their data."
+  },
+  {
+    "id": 1870,
+    "type": "fix",
+    "title": "The export surface takes every key: none reaches the editor or the gallery behind it",
+    "status": "done",
+    "detail": "Ctl::key answered Escape on the export surface and let every other key through: an arrow walked to another frame or moved the crop, Return applied the measuring window or opened a tile in the editor, Space left for the gallery and ⌘A picked the roll, all hidden. The router now gates the surface whole, as it gates Prepare: Escape closes its sheet or leaves it, any other key goes to Slint. export_escape no longer reads `shown`. Check: window export_modal, its twin the same keys acting once the surface is gone."
+  },
+  {
+    "id": 1871,
+    "type": "fix",
+    "title": "The menus go dark behind the export surface, as behind Prepare and a sheet",
+    "status": "done",
+    "detail": "publish_menus had a block for Prepare and one for a sheet, but the export surface only narrowed a few items through `modal`: Undo, Redo, Reset Settings, a preset, Paste, Mirror, Prepare the Roll and the rest kept editing frames the export had captured. One block now keeps only Open, Export, Refresh and the screen-gamut view on the surface; every scattered `!modal` term goes, and act()'s ToggleMode arm for the surface with them. Check: window export_modal (the menu's live flags, ⌘Z, ⇧⌘M and ⇧⌘R moving nothing; twin: ⌘Z takes the mirror back once the surface is gone)."
+  },
+  {
+    "id": 1872,
+    "type": "fix",
+    "title": "The phone's presses land nowhere while the export surface covers the editor",
+    "status": "done",
+    "detail": "The phone link applied its steps, slides, faces and undos to the store behind the export surface. Link carries `covered`, set by phone_event from the surface, and a press then changes nothing while the phone is still told it was taken. Check: tests/link.rs a_press_while_the_host_covers_the_editor_lands_nowhere, its twin the same press landing uncovered."
+  },
+  {
+    "id": 1873,
+    "type": "fix",
+    "title": "Prepare the Roll never opens over the export surface or a sheet",
+    "status": "done",
+    "detail": "enter_roll, the one way into a roll (its key, a bare frame's requireRoll, the DNG conversion), never checked the export surface: Rolls > Prepare the Roll stayed live there, and a roll asked for just before ⌘E landed on top of it. enter_roll now refuses while Ctl::covered() (the export surface or a sheet), the predicate the Finder drop reads too; the menu item goes dark with #1871. Check: window export_modal (Prepare then Export in one turn: no roll after 1.5 s; twin: Prepare alone comes within it)."
   }
 ]
