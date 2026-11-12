@@ -9,16 +9,22 @@ fn only_a_notarised_package_signed_by_adobe_is_opened() {
     assert!(!adobe_signed(&adobe.replace("Notarization: trusted by the Apple notary service\n", "")));
 }
 
-/// A stand-in for Adobe's program: each file after `-d <folder>` gets its `.dng` there, and every
-/// run's files are logged, so the check sees which were handed over.
+/// A stand-in for Adobe's program: each file after `-d <folder>` gets its `.dng` there, a copy of
+/// `sample.dng` but for the `cut` file's, which stops half way through its strip; every run's files
+/// are logged, so the check sees which were handed over.
 #[cfg(unix)]
-fn stand_in(dir: &Path) -> PathBuf {
+fn stand_in(dir: &Path, cut: &str) -> PathBuf {
     use std::os::unix::fs::PermissionsExt;
     let program = dir.join("converter.sh");
     let log = dir.join("handed.log");
+    let sample = dir.join("sample.dng");
+    oni_fixtures::dng::mosaic_dng(&sample);
+    let whole = std::fs::metadata(&sample).unwrap().len() as usize;
+    let half = whole - oni_fixtures::dng::MOSAIC_W * oni_fixtures::dng::MOSAIC_H;
     let script = format!(
-        "#!/bin/sh\nwhile [ \"$1\" != \"-d\" ]; do shift; done\nshift; out=\"$1\"; shift\nfor f in \"$@\"; do n=$(basename \"$f\"); echo \"$n\" >> '{}'; : > \"$out/${{n%.*}}.dng\"; done\n",
-        log.display()
+        "#!/bin/sh\nwhile [ \"$1\" != \"-d\" ]; do shift; done\nshift; out=\"$1\"; shift\nfor f in \"$@\"; do n=$(basename \"$f\"); echo \"$n\" >> '{log}'; if [ \"$n\" = '{cut}' ]; then head -c {half} '{sample}' > \"$out/${{n%.*}}.dng\"; else cp '{sample}' \"$out/${{n%.*}}.dng\"; fi; done\n",
+        log = log.display(),
+        sample = sample.display(),
     );
     std::fs::write(&program, script).unwrap();
     std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
@@ -26,17 +32,23 @@ fn stand_in(dir: &Path) -> PathBuf {
 }
 
 #[cfg(unix)]
-#[test]
-fn a_folder_converts_in_batches_and_no_dng_is_written_over() {
-    let dir = std::env::temp_dir().join(format!("oni-adobe-dng-{}", std::process::id()));
+fn scratch(name: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("oni-adobe-dng-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    let program = stand_in(&dir);
+    dir
+}
+
+#[cfg(unix)]
+#[test]
+fn a_folder_converts_in_batches_and_only_a_dng_that_reads_counts() {
+    let dir = scratch("batches");
+    let program = stand_in(&dir, "DSC_0002.NEF");
     let raws: Vec<PathBuf> = (1..=6).map(|i| dir.join(format!("DSC_000{i}.NEF"))).collect();
     for r in &raws {
         std::fs::write(r, b"nef").unwrap();
     }
-    // One DNG already stands, the person's own: it keeps its bytes and its NEF is never handed over.
+    // One DNG already stands, the person's own: it keeps its bytes, its NEF is never handed over, and it is not this run's.
     std::fs::write(dir.join("DSC_0003.dng"), b"theirs").unwrap();
     let counts = std::cell::RefCell::new(Vec::new());
     let converted = convert(&program, &raws, &|n| {
@@ -44,11 +56,21 @@ fn a_folder_converts_in_batches_and_no_dng_is_written_over() {
         true
     })
     .unwrap();
-    assert_eq!(converted, raws, "every NEF has its DNG");
-    assert_eq!(*counts.borrow(), vec![4, 6], "the count moves after each batch of {BATCH}");
+    let expected: Vec<PathBuf> = [1, 4, 5, 6].iter().map(|i| raws[i - 1].clone()).collect();
+    assert_eq!(converted, expected, "a cut DNG and the person's own DNG are not conversions");
+    assert_eq!(*counts.borrow(), vec![2, 4], "the count moves after each batch of {BATCH}");
     assert_eq!(std::fs::read(dir.join("DSC_0003.dng")).unwrap(), b"theirs");
+    assert!(!dir.join("DSC_0002.dng").exists(), "the cut DNG is removed");
+    // Nothing stands for the NEF, so convertible() offers it again.
+    assert!(!has_twin(&raws[1]));
     let handed = std::fs::read_to_string(dir.join("handed.log")).unwrap();
     assert!(!handed.contains("DSC_0003.NEF") && handed.contains("DSC_0004.NEF"), "{handed}");
+    // Twin: the same run with no cut file counts DSC_0002, so the exclusion above is the cut's.
+    let whole = scratch("whole");
+    let program = stand_in(&whole, "none");
+    let raw = whole.join("DSC_0002.NEF");
+    std::fs::write(&raw, b"nef").unwrap();
+    assert_eq!(convert(&program, std::slice::from_ref(&raw), &|_| true).unwrap(), vec![raw]);
     // Twin: stopped after the first batch, the rest is never converted.
     let more: Vec<PathBuf> = (7..=9).map(|i| dir.join(format!("DSC_000{i}.NEF"))).chain([dir.join("DSC_0010.NEF"), dir.join("DSC_0011.NEF")]).collect();
     for r in &more {
@@ -58,6 +80,7 @@ fn a_folder_converts_in_batches_and_no_dng_is_written_over() {
     assert_eq!(stopped.len(), BATCH);
     assert!(!dir.join("DSC_0011.dng").exists());
     let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&whole);
 }
 
 #[test]

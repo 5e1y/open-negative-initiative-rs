@@ -8698,5 +8698,12 @@
     "title": "A footer too narrow for its keys lays its commit on a line of its own",
     "status": "done",
     "detail": "Owner's report: in French the prepare panel's footer ran past the panel, Cancel and Back now keycaps beside PRÉPARER LA PELLICULE. SheetFooter measures its keys on one line in an unseen copy of no height, so the choice never follows the lines it lays; too narrow, it lays the commit under the other keys, as wide as the room. The prepare check names the last step's key as French does: every key inside the footer, the commit under Back at the footer's width, twin one line outrunning it; with the footer forced to one line the check fails."
+  },
+  {
+    "id": 1740,
+    "type": "fix",
+    "title": "A High Efficiency NEF counts as converted only when the DNG this run wrote reads",
+    "status": "done",
+    "detail": "adobe_dng::convert counted a NEF by a file named like its DNG, the whole batch included, so 'Keep the new DNGs only' could trash the only real NEF beside a cut or empty DNG, which then hid the NEF from every new offer. A run now counts the files it handed over whose DNG LibRaw unpacks (oni_decode::reads, a decode's own reading without the demosaic) and removes one that does not, so its NEF stays listed and convertible; the person's own DNG is no conversion. The synthetic mosaic DNG writer moves to oni-fixtures to serve both crates. The conversion check's stand-in cuts one DNG half way through its strip: before the fix it is returned as converted along with the person's own, after it is not and its file is gone, twin the same run with no cut counting it; a_dng_reads_unless_cut covers reads on a whole, a cut and an empty file."
   }
 ]
