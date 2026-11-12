@@ -109,7 +109,7 @@ pub fn jpeg(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
 pub fn persist(support: &Path, fingerprint: &str, data: &[u8]) -> std::io::Result<()> {
     let folder = directory(support);
     std::fs::create_dir_all(&folder)?;
-    oni_library::write_atomically(&folder.join(file_name(fingerprint)), data)?;
+    oni_settings::atomic::write_atomically(&folder.join(file_name(fingerprint)), data)?;
     // Swift's copy is older than this one now: gone, so Swift draws the photo afresh.
     if !cfg!(windows) && swift_name(fingerprint) != file_name(fingerprint) {
         let _ = std::fs::remove_file(folder.join(swift_name(fingerprint)));

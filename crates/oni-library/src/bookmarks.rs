@@ -55,7 +55,7 @@ impl Bookmarks {
     }
 
     pub fn save(&self, support: &Path) -> std::io::Result<()> {
-        crate::write_atomically(&Self::file_path(support), &serde_json::to_vec_pretty(self).map_err(std::io::Error::other)?)
+        oni_settings::atomic::write_atomically(&Self::file_path(support), &serde_json::to_vec_pretty(self).map_err(std::io::Error::other)?)
     }
 
     /// One place per favourite, read again by `read` where its folder answers, else kept as last

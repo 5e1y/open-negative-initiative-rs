@@ -41,12 +41,17 @@ pub fn load(directory: &Path) -> Vec<Preset> {
 
 /// Writes one preset, then removes any other file with its id, which makes a rename safe.
 pub fn save(preset: &Preset, directory: &Path) -> io::Result<()> {
+    saved(preset, directory, &oni_settings::atomic::renamed)
+}
+
+/// `save` through its own rename, which a check refuses.
+pub(super) fn saved(preset: &Preset, directory: &Path, rename: &dyn Fn(&Path, &Path) -> io::Result<()>) -> io::Result<()> {
     std::fs::create_dir_all(directory)?;
     let mut preset = preset.clone();
     preset.name = writable_name(&preset, directory);
     let path = directory.join(file_name(&preset));
     let text = encode(&preset).map_err(|e| io::Error::other(e.to_string()))?;
-    oni_library::write_atomically(&path, text.as_bytes())?;
+    oni_settings::atomic::written(&path, text.as_bytes(), rename)?;
     for other in files(directory).into_iter().filter(|f| *f != path) {
         // A stale twin that refuses to go leaves the save standing: the file just written is the preset.
         if std::fs::read(&other).ok().and_then(|d| decode(&d)).is_some_and(|p| p.id == preset.id) {
@@ -79,7 +84,7 @@ pub fn shareable(preset: &Preset) -> Result<String, json::Error> {
 /// Takes the single-file list over. Only adds: an id on the shelf is left as the person keeps it,
 /// and what fails to save goes back to the list for the next pass alone.
 pub fn migrate(legacy: &Path, directory: &Path) -> usize {
-    taken_over(legacy, directory, &oni_settings::atomic::renamed, &oni_library::write_atomically)
+    taken_over(legacy, directory, &oni_settings::atomic::renamed, &oni_settings::atomic::write_atomically)
 }
 
 /// `migrate` through its own rename and write, which a check refuses. The list leaves its place in

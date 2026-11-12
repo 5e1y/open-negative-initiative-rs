@@ -105,30 +105,12 @@ fn identity(support: &Path) -> Result<Identity, String> {
     Ok(me)
 }
 
-fn sibling(path: &Path) -> PathBuf {
-    let mut name = path.as_os_str().to_owned();
-    name.push(".tmp");
-    PathBuf::from(name)
-}
-
-/// Written through a sibling then renamed, so a crash never leaves half a file; owner-only on Unix.
-/// On Windows the support folder sits in the user's profile, whose ACL already keeps others out.
+/// `oni_settings::atomic::write_private` into the link folder, made on its first file.
 fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    use std::io::Write;
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }
-    let temporary = sibling(path);
-    let _ = std::fs::remove_file(&temporary);
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
-    let mut file = options.open(&temporary)?;
-    file.write_all(bytes)?;
-    file.sync_all()?;
-    drop(file);
-    std::fs::rename(&temporary, path)
+    oni_settings::atomic::write_private(path, bytes)
 }
 
 /// A key written readable by others before is closed to them; elsewhere the profile's ACL holds.

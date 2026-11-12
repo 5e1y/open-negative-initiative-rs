@@ -270,7 +270,7 @@ fn keep_former(support: &Path) -> std::io::Result<()> {
         let kept = kept_path(support, version, n);
         match std::fs::read(&kept) {
             Ok(held) if held == bytes => return Ok(()),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return crate::write_atomically(&kept, &bytes),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return oni_settings::atomic::write_atomically(&kept, &bytes),
             _ => n += 1,
         }
     }

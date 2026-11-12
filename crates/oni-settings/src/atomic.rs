@@ -1,13 +1,17 @@
 //! A file written whole or not at all: a temporary beside the target, handed to the drive, then renamed.
+//! The one writer of the app's files, sidecars, presets, preferences, index and exports alike.
 
+use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::sync::Mutex;
+use std::time::Duration;
 
 /// The bytes handed to the drive before the rename. A plain `fsync`: `sync_all`'s F_FULLFSYNC on macOS
 /// costs nine times as much, 117 ms against 13 for a 38-frame roll's sidecars.
 #[cfg(unix)]
-fn flushed(file: &std::fs::File) -> io::Result<()> {
+fn flushed(file: &File) -> io::Result<()> {
     use std::os::fd::AsRawFd;
     unsafe extern "C" {
         fn fsync(fd: i32) -> i32;
@@ -17,18 +21,56 @@ fn flushed(file: &std::fs::File) -> io::Result<()> {
 }
 
 #[cfg(not(unix))]
-fn flushed(file: &std::fs::File) -> io::Result<()> {
+fn flushed(file: &File) -> io::Result<()> {
     file.sync_all()
 }
 
-/// A hidden name beside `path` for its temporary, about 45 bytes whatever the target's: a name of
-/// 220 bytes or more plus its own would pass the 255 every file system allows.
-pub fn temporary(path: &Path) -> PathBuf {
+/// The temporaries of the writes in flight in this process, so two writes of one file never share one.
+static IN_FLIGHT: Mutex<BTreeSet<PathBuf>> = Mutex::new(BTreeSet::new());
+
+fn in_flight() -> std::sync::MutexGuard<'static, BTreeSet<PathBuf>> {
+    IN_FLIGHT.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// `.oni-<hash of the target's name>-<rank>.tmp` beside `path`, about 30 bytes whatever the
+/// target's: a name of 220 bytes or more plus its own would pass the 255 every file system allows.
+fn temporary(path: &Path, rank: usize) -> PathBuf {
     let directory = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let hash = name.bytes().fold(0xcbf2_9ce4_8422_2325_u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3));
-    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos() % 1_000_000_000_000).unwrap_or(0);
-    directory.join(format!(".oni-{hash:016x}-{}-{stamp}.tmp", std::process::id()))
+    directory.join(format!(".oni-{hash:016x}-{rank}.tmp"))
+}
+
+/// A temporary held for its write until dropped, named from its target and the lowest rank no
+/// write of that target in flight holds: an interrupted write's leftover is taken by the next one.
+pub struct Staged(PathBuf);
+
+impl Staged {
+    fn held(path: &Path) -> Staged {
+        let mut flying = in_flight();
+        let free = (0..).map(|rank| temporary(path, rank)).find(|t| !flying.contains(t)).unwrap_or_default();
+        flying.insert(free.clone());
+        Staged(free)
+    }
+}
+
+impl Drop for Staged {
+    fn drop(&mut self) {
+        in_flight().remove(&self.0);
+    }
+}
+
+impl std::ops::Deref for Staged {
+    type Target = Path;
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for Staged {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
 }
 
 /// The pauses between tries, about half a second in all: an indexer, a cloud client or an
@@ -61,24 +103,72 @@ pub fn renamed(from: &Path, to: &Path) -> io::Result<()> {
     retried(from, to, &|f, t| std::fs::rename(f, t), &std::thread::sleep, cfg!(windows))
 }
 
-/// A temporary file beside the target, then a rename: a reader never sees half a document.
-pub(crate) fn write_atomically(path: &Path, bytes: &[u8]) -> io::Result<()> {
+/// `write` into a temporary beside `path`, owner-only on Unix when `private`, handed to the drive
+/// when `flush`; the temporary removed on any failure.
+fn staged_with(path: &Path, private: bool, flush: bool, write: impl FnOnce(&mut File) -> io::Result<()>) -> io::Result<Staged> {
+    let temporary = Staged::held(path);
+    // A leftover goes first, so neither its mode nor a link at its name reaches the new file. Another
+    // ONI process writing the same file at the same instant can take the same name: a known limit.
+    let _ = std::fs::remove_file(&temporary);
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    if private {
+        std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    }
+    #[cfg(not(unix))]
+    let _ = private;
+    let result = options.open(&temporary).and_then(|mut file| {
+        write(&mut file)?;
+        if flush { flushed(&file) } else { Ok(()) }
+    });
+    match result {
+        Ok(()) => Ok(temporary),
+        Err(e) => {
+            let _ = std::fs::remove_file(&temporary);
+            Err(e)
+        }
+    }
+}
+
+/// A staged temporary renamed over `path`, or removed when the rename is refused.
+fn landed(path: &Path, staged: io::Result<Staged>, rename: &dyn Fn(&Path, &Path) -> io::Result<()>) -> io::Result<()> {
+    let temporary = staged?;
+    rename(&temporary, path).inspect_err(|_| {
+        let _ = std::fs::remove_file(&temporary);
+    })
+}
+
+/// `path` written whole by `write`, handed to the drive, then renamed: a reader never sees half a file.
+pub fn write_with(path: &Path, write: impl FnOnce(&mut File) -> io::Result<()>) -> io::Result<()> {
+    landed(path, staged_with(path, false, true, write), &renamed)
+}
+
+/// `write_with` for bytes in hand.
+pub fn write_atomically(path: &Path, bytes: &[u8]) -> io::Result<()> {
     written(path, bytes, &renamed)
 }
 
 /// `write_atomically` through its own rename, which a check makes fail.
-fn written(path: &Path, bytes: &[u8], rename: &dyn Fn(&Path, &Path) -> io::Result<()>) -> io::Result<()> {
-    let temporary = temporary(path);
-    let result = (|| {
-        let mut file = std::fs::File::create(&temporary)?;
-        file.write_all(bytes)?;
-        flushed(&file)?;
-        rename(&temporary, path)
-    })();
-    if result.is_err() {
-        let _ = std::fs::remove_file(&temporary);
-    }
-    result
+pub fn written(path: &Path, bytes: &[u8], rename: &dyn Fn(&Path, &Path) -> io::Result<()>) -> io::Result<()> {
+    landed(path, staged_with(path, false, true, |file| file.write_all(bytes)), rename)
+}
+
+/// `write_atomically` readable by its owner alone on Unix; on Windows the support folder sits in
+/// the user's profile, whose ACL already keeps others out.
+pub fn write_private(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    landed(path, staged_with(path, true, true, |file| file.write_all(bytes)), &renamed)
+}
+
+/// The bytes written and handed to the drive beside `path` under a hidden name no archive lists,
+/// for a caller that lands them by its own rule while it holds them.
+pub fn staged(path: &Path, bytes: &[u8]) -> io::Result<Staged> {
+    staged_with(path, false, true, |file| file.write_all(bytes))
+}
+
+/// `write_with` without handing the bytes to the drive, for a file made again when lost.
+pub fn cached_with(path: &Path, write: impl FnOnce(&mut File) -> io::Result<()>) -> io::Result<()> {
+    landed(path, staged_with(path, false, false, write), &renamed)
 }
 
 #[cfg(test)]
@@ -94,7 +184,7 @@ mod tests {
         assert_eq!(long.file_name().unwrap().len(), 240);
         write_atomically(&long, b"{}").unwrap();
         assert_eq!(std::fs::read(&long).unwrap(), b"{}");
-        assert!(temporary(&long).file_name().unwrap().len() < 60);
+        assert!(temporary(&long, 0).file_name().unwrap().len() < 60);
         // Twin: the former temporary's name, the target's own plus 37 bytes, is refused by the disk.
         let former = dir.join(format!(".{}.{}.1761400000000000000.tmp", long.file_name().unwrap().to_string_lossy(), std::process::id()));
         assert!(std::fs::File::create(&former).is_err());
@@ -141,6 +231,104 @@ mod tests {
         assert_eq!(tries.get(), 1);
         assert_eq!(std::fs::read(&target).unwrap(), b"old");
         assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 1, "every temporary removed");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_writer_that_fails_leaves_the_old_file_and_no_temporary() {
+        let dir = std::env::temp_dir().join(format!("oni-atomic-writer-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("patch.tiff");
+        std::fs::write(&target, b"old").unwrap();
+        for land in [write_with as fn(&Path, fn(&mut File) -> io::Result<()>) -> io::Result<()>, cached_with] {
+            assert!(land(&target, |f| f.write_all(b"half").and(Err(io::Error::other("stopped")))).is_err());
+            assert_eq!(std::fs::read(&target).unwrap(), b"old");
+            assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 1, "the temporary removed");
+            // Twin: the same writer finishing lands its bytes whole.
+            land(&target, |f| f.write_all(b"new")).unwrap();
+            assert_eq!(std::fs::read(&target).unwrap(), b"new");
+            std::fs::write(&target, b"old").unwrap();
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The names in `dir`, sorted.
+    fn listing(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+        names.sort();
+        names
+    }
+
+    /// Set in a child of the check below: the target of a write it quits midway.
+    const QUITTING: &str = "ONI_ATOMIC_QUITTING";
+
+    #[test]
+    fn a_write_cut_short_by_a_quit_leaves_nothing_once_its_file_is_written_again() {
+        if let Ok(target) = std::env::var(QUITTING) {
+            // Half the bytes on the drive, then gone without unwinding, as a crash or a force-quit.
+            let _ = write_with(Path::new(&target), |file| {
+                file.write_all(b"half")?;
+                std::process::exit(0)
+            });
+            return;
+        }
+        let dir = std::env::temp_dir().join(format!("oni-atomic-quit-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (key, list) = (dir.join("host.key"), dir.join("trusted.txt"));
+        let quit = |target: &Path| {
+            let test = "atomic::tests::a_write_cut_short_by_a_quit_leaves_nothing_once_its_file_is_written_again";
+            let child = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", test]).env(QUITTING, target).output().unwrap();
+            assert!(child.status.success(), "{child:?}");
+        };
+        quit(&key);
+        quit(&key);
+        quit(&list);
+        assert_eq!(listing(&dir).len(), 2, "one leftover a file, however many quits: {:?}", listing(&dir));
+        write_private(&key, b"secret").unwrap();
+        let left = listing(&dir);
+        assert_eq!(left.len(), 2, "the key's leftover gone: {left:?}");
+        // Twin: another file's leftover is not the key's, and stays until that file is written.
+        assert!(left.contains(&"host.key".to_string()) && left.iter().any(|n| n.ends_with(".tmp")), "{left:?}");
+        write_atomically(&list, b"").unwrap();
+        assert_eq!(listing(&dir), ["host.key", "trusted.txt"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_write_in_flight_keeps_its_temporary_while_its_file_is_written_again() {
+        let dir = std::env::temp_dir().join(format!("oni-atomic-flight-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("Portra.json");
+        let first = staged(&target, b"first").unwrap();
+        write_atomically(&target, b"second").unwrap();
+        renamed(&first, &target).unwrap();
+        drop(first);
+        assert_eq!((std::fs::read(&target).unwrap(), listing(&dir)), (b"first".to_vec(), vec!["Portra.json".to_string()]));
+        // Twin: a write let go before its rename, its rank free again, loses its temporary to the next write.
+        let third = staged(&target, b"third").unwrap().to_path_buf();
+        write_atomically(&target, b"first").unwrap();
+        assert!(renamed(&third, &target).is_err());
+        assert_eq!((std::fs::read(&target).unwrap(), listing(&dir)), (b"first".to_vec(), vec!["Portra.json".to_string()]));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_private_file_is_readable_by_its_owner_alone() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("oni-atomic-private-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let (key, plain) = (dir.join("host.key"), dir.join("plain.json"));
+        write_private(&key, b"secret").unwrap();
+        let mode = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!((std::fs::read(&key).unwrap(), mode(&key)), (b"secret".to_vec(), 0o600));
+        // Twin: a plain write takes the mask's mode as any new file does, open to others under the usual one.
+        write_atomically(&plain, b"{}").unwrap();
+        let reference = dir.join("reference");
+        File::create(&reference).unwrap();
+        assert_eq!(mode(&plain), mode(&reference));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

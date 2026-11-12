@@ -55,8 +55,7 @@ fn downloads() -> PathBuf {
 
 /// A name in `folder` no file holds yet: the archive never writes over one already there.
 fn free_name(folder: &Path, name: &str) -> PathBuf {
-    let (stem, extension) = name.rsplit_once('.').map_or((name, String::new()), |(s, e)| (s, format!(".{e}")));
-    (1..).map(|n| if n == 1 { folder.join(name) } else { folder.join(format!("{stem} {n}{extension}")) }).find(|p| !p.exists()).unwrap_or_else(|| folder.join(name))
+    (1..).map(|n| folder.join(oni_library::paths::numbered(name, n))).find(|p| !p.exists()).unwrap_or_else(|| folder.join(name))
 }
 
 #[derive(Default)]

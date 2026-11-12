@@ -119,7 +119,7 @@ impl Preferences {
             std::fs::create_dir_all(folder)?;
         }
         let text = serde_json::to_vec_pretty(&self.values).map_err(std::io::Error::other)?;
-        oni_library::write_atomically(&self.file, &text)
+        oni_settings::atomic::write_atomically(&self.file, &text)
     }
 
     /// The unreadable file renamed beside itself, so whatever it held can still be read by a hand.

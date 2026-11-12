@@ -31,13 +31,15 @@ pub fn made(caches: &Path, s: &oni_settings::PipelineSettings, c: &oni_settings:
 pub fn write(caches: &Path, key: PatchKey, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<(), String> {
     let path = file(caches, key);
     std::fs::create_dir_all(path.parent().expect("a folder")).map_err(|e| e.to_string())?;
-    let partial = path.with_extension("tiff.partial");
-    let out = std::fs::File::create(&partial).map_err(|e| e.to_string())?;
     let data: &[f32] = bytemuck::cast_slice(pixels);
-    tiff::encoder::TiffEncoder::new(std::io::BufWriter::new(out))
-        .and_then(|mut e| e.write_image::<tiff::encoder::colortype::RGBA32Float>(width, height, data))
-        .map_err(|e| e.to_string())?;
-    std::fs::rename(&partial, &path).map_err(|e| e.to_string())
+    oni_settings::atomic::cached_with(&path, |file| {
+        let mut out = std::io::BufWriter::new(file);
+        tiff::encoder::TiffEncoder::new(&mut out)
+            .and_then(|mut e| e.write_image::<tiff::encoder::colortype::RGBA32Float>(width, height, data))
+            .map_err(std::io::Error::other)?;
+        std::io::Write::flush(&mut out)
+    })
+    .map_err(|e| e.to_string())
 }
 
 /// `CorrectionCache.purgeAll`, run at quit on this instance's folder: each of its patches is generated

@@ -55,6 +55,16 @@ pub fn stem(path: &str) -> String {
     Path::new(&*normal(path)).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| name(path))
 }
 
+/// A file's `name` past rank 1 as the Finder numbers a copy: `P107 2.RW2`, `notes 2`.
+pub fn numbered(name: &str, rank: usize) -> String {
+    let ext = extension(name);
+    match rank {
+        1 => name.to_string(),
+        _ if ext.is_empty() => format!("{name} {rank}"),
+        _ => format!("{} {rank}.{ext}", stem(name)),
+    }
+}
+
 /// `appendingPathComponent`: a name read from a sidecar starting with a separator stays inside `folder`.
 pub fn join(folder: &str, name: &str) -> String {
     let (folder, name) = (normal(folder), normal(name));

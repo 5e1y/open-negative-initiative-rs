@@ -1,6 +1,7 @@
 use super::*;
 
 mod takeover;
+mod writes;
 
 fn folder(label: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("oni-core-presets-{label}-{}", std::process::id()));

@@ -9202,5 +9202,40 @@
     "title": "The presets takeover test names no library member",
     "status": "done",
     "detail": "swift_checks' no_crate_trashes_or_removes_a_library_member reads the word `pass` as a library member, so the takeover test's local named so (#1759) read as removing members. The local is now `run`; the check passes 9/9."
+  },
+  {
+    "id": 1801,
+    "type": "refactor",
+    "title": "One writer for every file the app writes whole: oni_settings::atomic",
+    "status": "done",
+    "detail": "oni_settings::atomic is public and the only write-then-rename: write_with(path, writer), write_atomically(path, bytes), written(path, bytes, rename) for checks, write_private (0o600 on Unix), staged(path, bytes) for the export's create-new landing, cached_with (no flush) for rebuildable files. Each write opens a new temporary (create_new) named by the target's hash, the process, the clock and a per-process serial, so two writes of one file in one clock tick never share one; it flushes with the plain fsync trusted for sidecars, renames through the retried rename and removes the temporary on any failure. Deleted: oni_library::write_atomically (preferences, library index files, bookmarks, kept folders, projects, flat fields, thumbnails, the Frontier look, the export ledger and presets now call the shared one; replace_readable stays over it), the export's staged, phone.rs's sibling and its writer body (a folder-making wrapper stays), patches.rs's .tiff.partial (cached_with), web.rs's .part download landing (write_with), profile.rs's .part placing (write_atomically). Durability: these files move from sync_all's F_FULLFSYNC on macOS to fsync, as sidecars already were; the export still never replaces a file it did not make. oni-localsend's inbox and the decode cache (wave 2) stay out."
+  },
+  {
+    "id": 1802,
+    "type": "refactor",
+    "title": "One Finder numbering: oni_library::paths::numbered",
+    "status": "done",
+    "detail": "paths::numbered(name, rank): the name itself at rank 1, `P107 2.RW2` past it, `notes 2` for a name with no extension. Deleted: oni_export::file::numbered (landing.rs numbers through it), flat_fields::move_out's inline loop, which named `Panel 2.` for a file with no extension, and updates.rs free_name's rsplit_once split (a feed archive name always carries its extension; only a dot-file or a trailing dot would now number differently). roll_folder::units keeps its folder rule: a folder's dot is no extension's."
+  },
+  {
+    "id": 1803,
+    "type": "check",
+    "title": "A preset save is whole or absent, each through its own temporary; a copy is numbered without a stray dot",
+    "status": "done",
+    "detail": "presets/tests/writes.rs: a_save_under_a_refused_rename_keeps_the_old_file_and_leaves_no_temporary (twin: the former fixed temporary renamed bare stays behind); two_saves_of_one_preset_never_share_a_temporary runs a second save inside the first's rename and finds two temporaries and the first save whole (twin: one fixed temporary taken by the second save leaves the first's rename nothing). atomic.rs: two temporaries in one clock tick differ (twin: the stamp alone names one), a failing writer through write_with or cached_with leaves the old file and no temporary (twin: the finishing writer lands), write_private is 0o600 (twin: a plain write is open to others). paths::numbered and move_out with an extension-less name, each with the former `name 2.` as twin. phone's write check now refuses through a read-only link folder, the unique temporary leaving no sibling to block."
+  },
+  {
+    "id": 1804,
+    "type": "bug",
+    "title": "no_crate_trashes_or_removes_a_library_member fails on presets/tests/takeover.rs",
+    "status": "open",
+    "detail": "oni-library/tests/swift_checks.rs reads `pass` as a member name, so takeover.rs's remove_dir_all(&pass.support) and remove_dir(&pass.blocked), from #1759, are reported as deletions of library members: the check fails on canvas before #1801. Left: rename the test's binding or list it as scratch."
+  },
+  {
+    "id": 1805,
+    "type": "bug",
+    "title": "An interrupted write's temporary is removed by the next write of its file",
+    "status": "done",
+    "detail": "Since #1801 every temporary had a unique hidden name, so a crash or force-quit mid-write left it for good: N interrupted DNG Converter downloads left N hidden 1.8 GB files in the caches, an interrupted host key write a copy of the private key. oni_settings::atomic now names a temporary from its target alone, `.oni-<hash of the target's name>-<rank>.tmp`, the rank the lowest no write of that target in flight in this process holds (a small static set, released when the write's `Staged` drops). A write removes whatever stands at that name, then creates its own: an interrupted write's leftover is taken by the next write of its file, one at most a rank, with no folder listing, and two writes of one file in flight in one process never share. Removing before creating, rather than truncating, keeps a leftover's mode or a link at the name out of the new file. `staged` returns the held `Staged`. The per-write clock stamp and the process serial are gone. Checks: a child process quits mid-write twice, one leftover stays and the next write leaves only its file (fails on 4c6582dc: three leftovers); a write in flight keeps its temporary, its twin letting go before the rename loses it. Review points: the presets, flat-field and atomic twins now run the code under test, the private-mode twin holds under umask 077, the phone check fails at the rename on every system and as root. Known limit: a second ONI process writing the same file at the same instant can take the same temporary."
   }
 ]

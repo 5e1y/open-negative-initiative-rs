@@ -292,3 +292,23 @@ fn the_swift_apps_own_masks_read_whole() {
         assert!(mask.peaks.iter().all(|p| p.is_finite() && *p > 0.0), "{}: {:?}", e.name, mask.peaks);
     }
 }
+
+#[test]
+fn a_photo_with_no_extension_moved_out_takes_a_number_and_no_dot() {
+    let root = scratch("move-out-bare");
+    let presets = presets(&root);
+    std::fs::create_dir_all(root.join("Scans")).unwrap();
+    std::fs::create_dir_all(&presets).unwrap();
+    let photo = root.join("Scans/Panel");
+    std::fs::write(&photo, b"panel bytes").unwrap();
+    std::fs::write(presets.join("Panel"), b"an earlier panel").unwrap();
+    let target = move_out(&oni_library::paths::canonical(&photo), &presets, None, &Moving::through(&trashed)).expect("moved");
+    assert_eq!((target.clone(), std::fs::read(&target).unwrap()), (presets.join("Panel 2"), b"panel bytes".to_vec()));
+    // Twin: a photo with an extension keeps it after its number, which a bare name has none to keep.
+    let named = root.join("Scans/Panel.tif");
+    std::fs::write(&named, b"tif bytes").unwrap();
+    std::fs::write(presets.join("Panel.tif"), b"an earlier tif").unwrap();
+    let target = move_out(&oni_library::paths::canonical(&named), &presets, None, &Moving::through(&trashed)).expect("moved");
+    assert_eq!(target, presets.join("Panel 2.tif"));
+    let _ = std::fs::remove_dir_all(&root);
+}
