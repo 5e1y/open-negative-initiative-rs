@@ -58,32 +58,64 @@ fn integral(v: f64) -> bool {
     (v - v.round()).abs() < 1e-6
 }
 
+/// Stage 0's steps on an input of extent `input`, each with the extent it leaves: the render and the
+/// size it is shown at read one plan.
+struct Cuts {
+    oriented: Option<(Orient, Rect)>,
+    rotated: Option<(Affine, Rect)>,
+    /// The crop's outer frame, and whether the frame lies between pixels.
+    cropped: Option<(Rect, bool)>,
+    extent: Rect,
+}
+
+fn cuts(g: &Geometry, input: Rect, scale: f64) -> Cuts {
+    let mut c = Cuts { oriented: None, rotated: None, cropped: None, extent: input };
+    if g.is_neutral() {
+        return c;
+    }
+    if g.quarter_turns.rem_euclid(4) != 0 || g.mirrored || g.mirrored_vertically {
+        let o = orientation(g, input);
+        c.extent = o.1;
+        c.oriented = Some(o);
+    }
+    let upright = c.extent;
+    if g.angle != 0.0 {
+        let r = rotation(g.angle, upright);
+        c.extent = r.1;
+        c.rotated = Some(r);
+    }
+    if !g.crop_bypassed {
+        let r = frame(g, upright, scale);
+        let (x0, y0, x1, y1) = (r[0], r[1], r[0] + r[2], r[1] + r[3]);
+        let outer = Rect::from_corners(x0.floor() as i32, y0.floor() as i32, x1.ceil() as i32, y1.ceil() as i32);
+        c.extent = c.extent.intersect(&outer);
+        c.cropped = Some((outer, ![x0, y0, x1, y1].into_iter().all(integral)));
+    }
+    c
+}
+
+/// The extent stage 0 leaves of an input of extent `input`, as `apply` cuts it.
+pub fn extent(g: &Geometry, input: Rect, scale: f64) -> Rect {
+    cuts(g, input, scale).extent
+}
+
 /// Stage 0 on `image`; `scale` is its width over the full-resolution width, so every scale crops one frame.
 pub fn apply(image: Image, g: &Geometry, scale: f64) -> Image {
-    if g.is_neutral() {
-        return image;
-    }
+    let c = cuts(g, image.extent(), scale);
     let mut out = image;
-    if g.quarter_turns.rem_euclid(4) != 0 || g.mirrored || g.mirrored_vertically {
-        let (k, extent) = orientation(g, out.extent());
+    if let Some((k, extent)) = c.oriented {
         out = out.then(Oriented { k, extent });
     }
-    let upright = out.extent();
-    if g.angle != 0.0 {
-        let (k, extent) = rotation(g.angle, upright);
+    if let Some((k, extent)) = c.rotated {
         out = out.then(Resample { k, extent });
     }
-    if g.crop_bypassed {
-        return out;
-    }
-    let r = frame(g, upright, scale);
-    let (x0, y0, x1, y1) = (r[0], r[1], r[0] + r[2], r[1] + r[3]);
-    let outer = Rect::from_corners(x0.floor() as i32, y0.floor() as i32, x1.ceil() as i32, y1.ceil() as i32);
-    out = out.then(Crop(outer));
-    // A frame between pixels has its border partly covered: the line inside it stands in.
-    if ![x0, y0, x1, y1].into_iter().all(integral) && outer.w > 2 && outer.h > 2 {
-        let extent = out.extent();
-        out = out.then(OpaqueEdge { inner: extent.outset(-1, -1), extent });
+    if let Some((outer, between)) = c.cropped {
+        out = out.then(Crop(outer));
+        // A frame between pixels has its border partly covered: the line inside it stands in.
+        if between && outer.w > 2 && outer.h > 2 {
+            let extent = out.extent();
+            out = out.then(OpaqueEdge { inner: extent.outset(-1, -1), extent });
+        }
     }
     out
 }
@@ -143,5 +175,48 @@ mod tests {
         // A point right of the centre comes from below it, on screen, for a counter-clockwise turn.
         let p = [60.0f32, 30.0];
         assert!(k.m[1][0] * p[0] + k.m[1][1] * p[1] + k.m[1][2] > 30.0);
+    }
+
+    /// The view's 1:1 size: a turned frame cut off the preview's grid, the preview reduced a quarter.
+    fn off_grid() -> Geometry {
+        Geometry { quarter_turns: 1, crop: cg::Rect::new(0.1003, 0.0, 0.8997, 1.0), ..Geometry::default() }
+    }
+
+    #[test]
+    fn the_full_frames_size_is_read_on_its_own_grid_never_scaled_up_from_the_previews() {
+        let (full, preview) = (Rect::new(0, 0, 1600, 1000), Rect::new(0, 0, 400, 250));
+        assert_eq!(extent(&off_grid(), full, 1.0), Rect::new(101, 0, 899, 1600));
+        // Twin: the preview's own cut, scaled up, says a column more than the full frame holds.
+        let guessed = extent(&off_grid(), preview, 0.25);
+        assert_eq!(guessed.w * 4, 900);
+        // A tilt's bleed is a pixel of the grid it is cut on: four full pixels on a quarter preview.
+        let tilted = Geometry { angle: 1.0, ..off_grid() };
+        assert_ne!(extent(&tilted, preview, 0.25).w * 4, extent(&tilted, full, 1.0).w);
+    }
+
+    #[test]
+    fn the_extent_read_is_the_one_stage_0_cuts() {
+        let Ok(mut graph) = oni_graph::Graph::new() else {
+            return eprintln!("no adapter: stage 0's extent is not compared");
+        };
+        let (w, h) = (1600, 1000);
+        let source = graph.upload(w, h, &vec![[0.5; 4]; (w * h) as usize]).unwrap();
+        let input = Rect::new(0, 0, w, h);
+        let crop = cg::Rect::new(0.1003, 0.2, 0.5, 0.4567);
+        let geometries = [
+            Geometry::default(),
+            Geometry { crop, ..Geometry::default() },
+            off_grid(),
+            Geometry { quarter_turns: 3, mirrored: true, crop, ..Geometry::default() },
+            Geometry { angle: -2.5, crop, ..Geometry::default() },
+            Geometry { angle: 1.0, quarter_turns: 1, crop, crop_bypassed: true, ..Geometry::default() },
+        ];
+        for g in &geometries {
+            for scale in [1.0, 0.25] {
+                assert_eq!(extent(g, input, scale), apply(Image::new(&source), g, scale).extent(), "{g:?} at {scale}");
+            }
+        }
+        // Twin: the input's own extent, which a neutral frame keeps, is not what a cropped one leaves.
+        assert_ne!(input, apply(Image::new(&source), &geometries[1], 1.0).extent());
     }
 }

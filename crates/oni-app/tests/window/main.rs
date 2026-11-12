@@ -50,6 +50,7 @@ mod gallery_keys;
 mod unprepared;
 mod gallery_leftovers;
 mod gestures;
+mod hand_rest;
 mod headless;
 mod help;
 mod corners;
@@ -363,6 +364,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face", face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen", toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen),
+    ("hand_rest::the_view_renders_sharp_once_the_hand_has_rested_on_the_timers_clock", hand_rest::the_view_renders_sharp_once_the_hand_has_rested_on_the_timers_clock),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar_accent::the_accent_lands_on_each_screens_own_commit", toolbar_accent::the_accent_lands_on_each_screens_own_commit),
     ("toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit", toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit),

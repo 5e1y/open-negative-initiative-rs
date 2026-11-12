@@ -31,7 +31,7 @@ impl Ctl {
             let revision = s.store.revision();
             let moved_at = s.moved_at.take();
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let coarse = s.requests.hand.is_some_and(|t| t.elapsed() < super::navigation::SETTLE);
+            let coarse = s.requests.hand.running();
             let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.compare.split.is_some(), cropping, coarse));
             let moved = revision != s.requests.requested || s.requests.rendered == 0;
             if !moved && view_key == s.requests.requested_view {

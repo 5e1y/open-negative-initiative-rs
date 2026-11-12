@@ -6,6 +6,7 @@
 use slint::platform::software_renderer::{MinimalSoftwareWindow, Rgb565Pixel};
 use slint::platform::{EventLoopProxy, Platform, WindowAdapter, WindowEvent};
 use std::path::PathBuf;
+use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -16,6 +17,8 @@ pub struct Headless {
     pub window: Rc<MinimalSoftwareWindow>,
     pub queue: Arc<Mutex<Vec<Queued>>>,
     pub start: Instant,
+    /// How far Slint's clock runs ahead of the real one, so a check moves the timers alone.
+    pub ahead: Rc<Cell<Duration>>,
 }
 
 struct Proxy(Arc<Mutex<Vec<Queued>>>);
@@ -37,7 +40,7 @@ impl Platform for Headless {
     }
 
     fn duration_since_start(&self) -> Duration {
-        self.start.elapsed()
+        self.start.elapsed() + self.ahead.get()
     }
 
     fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
@@ -49,6 +52,7 @@ pub struct Rig {
     pub window: Rc<MinimalSoftwareWindow>,
     pub queue: Arc<Mutex<Vec<Queued>>>,
     pub shots: PathBuf,
+    pub ahead: Rc<Cell<Duration>>,
 }
 
 impl Rig {
@@ -70,6 +74,12 @@ impl Rig {
         }
         self.pump();
         println!("{what}: {:.1} s", start.elapsed().as_secs_f64());
+    }
+
+    /// Slint's clock moved `by` while the real one stands, then the timers it reached run.
+    pub fn advance(&self, by: Duration) {
+        self.ahead.set(self.ahead.get() + by);
+        slint::platform::update_timers_and_animations();
     }
 
     /// Waits for the writes or moves a gesture runs off the interface's thread to land.
@@ -173,8 +183,9 @@ pub fn rig(shots: PathBuf) -> Rig {
     unsafe { std::env::set_var("ONI_LANGUAGE", "en") };
     let window = MinimalSoftwareWindow::new(slint::platform::software_renderer::RepaintBufferType::NewBuffer);
     let queue: Arc<Mutex<Vec<Queued>>> = Arc::default();
-    slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now() })).unwrap();
-    Rig { window, queue, shots }
+    let ahead: Rc<Cell<Duration>> = Rc::default();
+    slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now(), ahead: ahead.clone() })).unwrap();
+    Rig { window, queue, shots, ahead }
 }
 
 /// A little-endian LinearRaw TIFF, 16-bit RGB in one strip, a smooth ramp scaled by `tone`: the

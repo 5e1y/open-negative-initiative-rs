@@ -8803,5 +8803,40 @@
     "title": "Checks for the sheets' keyboard and a field's undo",
     "status": "done",
     "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
+  },
+  {
+    "id": 1760,
+    "type": "fix",
+    "title": "The view turns sharp once the hand rests, on the timer's own clock",
+    "status": "done",
+    "detail": "A pan or zoom stored a std Instant and started a fresh single-shot timer per event, and the ask decided coarse again from the Instant. Slint's clock counts whole milliseconds, so the timer could fire up to a millisecond before the Instant reached SETTLE: the ask saw coarse, found the view unchanged and returned, leaving the light gesture render stretched on screen until the next move. Requests.hand is now one held slint::Timer restarted at each move, and coarse is whether it runs; a single-shot timer stops before its callback, so the settle always asks sharp. One timer replaces a timestamp and N timers a gesture."
+  },
+  {
+    "id": 1761,
+    "type": "check",
+    "title": "A window check moves Slint's clock alone: the view rests sharp after the last move",
+    "status": "done",
+    "detail": "The window rig's platform clock can run ahead of the real one (Rig::advance). hand_rest zooms with the wheel, sees the view asked lighter, zooms again 100 ms later, and at 150 ms after the first move still sees it lighter (twin: the rest counts from the last move); at 150 ms after the last, on Slint's clock alone, the view is asked sharp. State::coarse reads the last ask. Run against the code before #1760, it fails on the last assertion."
+  },
+  {
+    "id": 1762,
+    "type": "fix",
+    "title": "100 % is 1:1: the frame's full size is read on the full grid, not scaled up from the preview",
+    "status": "done",
+    "detail": "Engine::resident built the whole chain on the preview only to read its extent, then divided by the preview ratio: the preview's own rounding, stage 0's outer cut on its grid and a tilt's one-pixel bleed made the full size off by a few pixels, so at 100 % the full-resolution render was stretched (a turned 6048x4032 frame read 4031 wide; a crop off the preview grid a column wider). The size is now stage 0's cut of the full frame's rect, oni_pipeline::geometry::extent, and the preview chain built for it is gone."
+  },
+  {
+    "id": 1763,
+    "type": "refactor",
+    "title": "Stage 0 reads one plan for its render and its extent",
+    "status": "done",
+    "detail": "geometry::apply and the new geometry::extent share cuts(): the orientation, the rotation's box and the crop's outer frame, each with the extent it leaves, so the size the view reasons on and the pixels stage 0 cuts cannot drift."
+  },
+  {
+    "id": 1764,
+    "type": "check",
+    "title": "Checks for the 100 % size and stage 0's extent",
+    "status": "done",
+    "detail": "render::view_tests renders a turned frame cropped off the preview's grid at 100 % from its full resolution: its full size is stage 0's cut of the full rect and each texel lands on one drawable pixel; twin, the preview's cut scaled up says 900 against 899. geometry tests compare extent with apply's image extent for neutral, cropped, turned, mirrored, tilted and bypassed frames at two scales, and show the preview inference off for the off-grid crop and a tilt. Run against the code before #1762, view_tests fails with 900 against 899."
   }
 ]
