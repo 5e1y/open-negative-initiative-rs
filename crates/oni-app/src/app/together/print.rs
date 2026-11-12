@@ -20,6 +20,13 @@ pub(in crate::app) struct Captions {
 /// size, else its tile's) with its `captions`; `None` once `stop` is raised.
 pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option<Vec<(f64, f64)>>, captions: &Captions, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
     let stopped = || stop.load(Ordering::Relaxed);
+    // A tile reads a reduced decode: a stroke with no patch on disk is healed on the whole frame first.
+    for t in targets {
+        if stopped() {
+            return Ok(None);
+        }
+        crate::export::heal_ahead(engine, t)?;
+    }
     let Some(negatives) = decoded(engine, targets, &stopped)? else { return Ok(None) };
     let tiles = || negatives.iter().zip(targets).map(|(n, t)| crate::export::cropped_size((f64::from(n.size().0), f64::from(n.size().1)), &t.settings)).collect();
     let sheet = laid(&sizes.filter(|s| s.len() == targets.len()).unwrap_or_else(tiles));

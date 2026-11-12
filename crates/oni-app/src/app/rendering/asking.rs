@@ -1,6 +1,7 @@
 //! Asking a render: the open frame's settings in the slot, its patches healed, its full-resolution decode.
 
 use super::*;
+use crate::heal::Made;
 use oni_pipeline::corrections::PatchKey;
 
 impl State {
@@ -143,27 +144,20 @@ impl Ctl {
             let caches = crate::patches::caches();
             let (mut made, mut failed, mut error) = (0, Vec::new(), None);
             // Until nothing is left to heal or the frame is left.
-            while let Some(settings) = latest.lock().ok().and_then(|l| l.clone()) {
-                let (cs, upstream) = (&settings.corrections, oni_pipeline::corrections::upstream(&settings));
-                let key = |c: &oni_settings::frame::Correction| PatchKey { id: c.id, upstream };
-                let pending: Vec<usize> = (0..cs.len()).filter(|&i| !cs[i].stroke.is_empty() && !unhealable.contains(&key(&cs[i])) && !crate::patches::file(&caches, key(&cs[i])).exists()).collect();
-                let scan = full.extent();
-                let Some(k) = crate::heal::next(cs, &pending, f64::from(scan.w), f64::from(scan.h)) else { break };
-                match generated(&engine, &full, &settings, &cs[k], &caches) {
-                    Ok(one) => {
-                        made += 1;
-                        // Each patch shows as it lands, so a hand painting stroke after stroke sees them come.
-                        let at = path.clone();
-                        with_shell(move |ctl| ctl.patch_landed(&at, one));
-                    }
-                    // Not tried again on every render.
-                    Err(e) => {
-                        unhealable.insert(key(&cs[k]));
-                        failed.push(key(&cs[k]));
-                        error = Some(e);
-                    }
+            let settings = || latest.lock().ok().and_then(|l| l.clone());
+            crate::heal::ensure(&engine, &full, &caches, &mut unhealable, settings, |one| match one {
+                Ok(one) => {
+                    made += 1;
+                    // Each patch shows as it lands, so a hand painting stroke after stroke sees them come.
+                    let at = path.clone();
+                    with_shell(move |ctl| ctl.patch_landed(&at, one));
                 }
-            }
+                // Not tried again on every render.
+                Err((key, e)) => {
+                    failed.push(key);
+                    error = Some(e);
+                }
+            });
             let took = started.elapsed();
             with_shell(move |c| {
                 let open = c.state.borrow_mut().frame_for(&path).is_some();
@@ -270,24 +264,8 @@ impl Ctl {
     }
 }
 
-type Made = (PatchKey, bool, (f64, f64));
-
 /// The frame's settings a heal run reads before each patch, `None` once the frame is left.
 pub(in crate::app) type Latest = std::sync::Arc<std::sync::Mutex<Option<oni_settings::PipelineSettings>>>;
-
-/// A correction's patch searched on the scan healed of the other patches made, written to the cache
-/// under the settings it was cut on, and the textures its search laid freed, as a run of large strokes would otherwise pile them up.
-fn generated(engine: &render::Shared, full: &oni_graph::Source, settings: &oni_settings::PipelineSettings, c: &oni_settings::frame::Correction, caches: &Path) -> Result<Made, String> {
-    let (region, size) = engine.lock()?.search_region(full, settings, c)?;
-    let patch = crate::heal::generate(&region, c, size.0, size.1);
-    drop(region);
-    let key = PatchKey::of(settings, c);
-    crate::patches::write(caches, key, patch.width as u32, patch.height as u32, &patch.pixels)?;
-    let mut e = engine.lock()?;
-    e.forget_patch(key);
-    e.purge();
-    Ok((key, patch.fallback, patch.offset))
-}
 
 /// The patches made for corrections the frame still holds, and the keys of those removed meanwhile.
 fn landed(made: Vec<Made>, corrections: &[oni_settings::frame::Correction]) -> (Vec<Made>, Vec<PatchKey>) {

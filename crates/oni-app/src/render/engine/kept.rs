@@ -20,8 +20,8 @@ impl<T> Kept<T> {
 }
 
 impl Engine {
-    /// Each correction's patch from the cache, read and uploaded once; one not generated yet is left
-    /// out, and asked for again on the next render.
+    /// Each correction's patch from the cache, read and uploaded once; one not on disk is left out, as
+    /// `heal::ensure` makes it first for the editor and for every render written to a file.
     pub(super) fn read_patches(&mut self, settings: &PipelineSettings) {
         let Some(caches) = self.caches.clone() else { return };
         let upstream = oni_pipeline::corrections::upstream(settings);

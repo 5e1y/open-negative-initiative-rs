@@ -43,7 +43,7 @@ pub fn write(caches: &Path, key: PatchKey, width: u32, height: u32, pixels: &[[f
 }
 
 /// `CorrectionCache.purgeAll`, run at quit on this instance's folder: each of its patches is generated
-/// again the next time its frame opens, and the folder goes once empty.
+/// again when its frame opens or is written to a file, and the folder goes once empty.
 pub fn purge(caches: &Path) {
     let _ = std::fs::remove_dir_all(caches.join("Corrections"));
     let _ = std::fs::remove_dir(caches);

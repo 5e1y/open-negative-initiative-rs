@@ -9489,5 +9489,12 @@
     "title": "Swift is dead: no rule imposes its behaviour",
     "status": "done",
     "detail": "Owner's call (2026-11-12): the Swift app is totally deprecated and every rule imposing a behaviour that comes from it is killed. CLAUDE.md no longer asks for a strict behavioural copy of Swift's result, Swift parity, proof against Swift's outputs, Swift-format sidecars or Swift attributions; docs/parity/ is history. Kept: reading the sidecars a person already has, Swift-written included, as their data."
+  },
+  {
+    "id": 1875,
+    "type": "fix",
+    "title": "Every file written heals its strokes: an export or a contact sheet makes the patches not on disk",
+    "status": "done",
+    "detail": "A render lays only the patches on disk, and only the editor's open frame made them, so an export after a relaunch (patches purged at quit), after a roll-wide change of what they are keyed on, or of strokes never opened wrote the frame with its dust back and said nothing. The editor's heal loop is now one function, heal::ensure, with heal::pending; render_full_beside (the export, write_one included) runs it on the frame's whole decode before rendering, and the contact sheet runs it ahead (export::heal_ahead) for frames lacking a patch, decoding them whole only then. A patch that cannot be made fails the file with Failure::Dust, translated. render_full, which lays only what is on disk, is left to the tests. Checks: export/heal_tests.rs an_export_heals_strokes_whose_patch_was_never_made (never made, then purged as at a quit) and a_contact_sheet_heals_strokes_whose_patch_was_never_made, each with the bare render as its twin; both seen failing with the heal left out."
   }
 ]
