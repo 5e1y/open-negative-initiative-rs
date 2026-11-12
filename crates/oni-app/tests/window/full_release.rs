@@ -1,6 +1,7 @@
 //! Every way out of the editor lets it go, its full resolution first: a build landing after the return
 //! is dropped, never kept resident or rendered on the hidden canvas.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{App, Library, PanelState, Store};
@@ -146,7 +147,7 @@ pub(crate) fn every_way_out_lets_the_editor_go() {
     // The full resolution, Compare and the crop: what the editor holds and must let go.
     let held = || {
         let s = ctl.state.borrow();
-        (s.full_resident(), s.split().is_some(), w.global::<PanelState>().get_tab() == oni_app::tabs::CROP)
+        (s.full_resident(), s.split().is_some(), w.global::<PanelState>().get_tab() == PanelTab::Crop)
     };
     let hold = || {
         w.global::<Store>().invoke_step(Field::Exposure.index(), 1);

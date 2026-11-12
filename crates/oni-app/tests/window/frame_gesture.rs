@@ -1,6 +1,7 @@
 //! A frame or a stroke held on the canvas ends with the overlay that draws it and with its photo:
 //! Slint drops a grab with its overlay and sends no release, so nothing held outlives what shows it.
 
+use oni_app::PanelTab;
 use oni_app::{Act, Canvas, Framing, PanelState};
 use slint::platform::Key;
 use slint::{ComponentHandle, SharedString};
@@ -26,7 +27,7 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     c.invoke_paint_move(fx + fw * 0.6, fy + fh * 0.4);
     assert_ne!(c.get_stroke(), "", "twin: the stroke under the hand is drawn");
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "Return leaves De-dust, the hand still down");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Return leaves De-dust, the hand still down");
     ctl.act(Act::Correction);
     rig.settle();
     assert_eq!(c.get_stroke(), "", "the stroke went with its overlay");
@@ -45,7 +46,7 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     c.invoke_frame_dragged(false, 6, -20.0, 0.0);
     assert_ne!(geometry(), found, "the right edge follows the hand");
     rig.key(&escape);
-    assert_eq!((panel.get_tab(), geometry()), (1, found.clone()), "twin: Esc under the hand puts the crop back");
+    assert_eq!((panel.get_tab(), geometry()), (PanelTab::Crop, found.clone()), "twin: Esc under the hand puts the crop back");
     c.invoke_frame_released(false);
 
     // Return leaves the crop with the hand still down: the drag is its own step, nothing is held after.
@@ -53,7 +54,7 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     c.invoke_frame_dragged(false, 6, -20.0, 0.0);
     let dragged = geometry();
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "Return leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Return leaves the crop");
     // Past the history's coalescing window, so only a store still held could join the mirror to the drag.
     std::thread::sleep(Duration::from_secs_f64(oni_library::history::COALESCE_WINDOW + 0.1));
     framing.invoke_act(Act::Mirror);
@@ -66,7 +67,7 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     ctl.act(Act::ToggleMode);
     ctl.act(Act::Framing);
     rig.settle();
-    assert_eq!((panel.get_tab(), c.get_crop_badge()), (1, "".into()), "the crop again, no kept size above a frame no hand holds");
+    assert_eq!((panel.get_tab(), c.get_crop_badge()), (PanelTab::Crop, "".into()), "the crop again, no kept size above a frame no hand holds");
     rig.key("\r");
 
     // The window held on Color as the arrow walks to B: B keeps its own window under Esc.

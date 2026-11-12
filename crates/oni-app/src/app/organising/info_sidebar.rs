@@ -13,12 +13,12 @@ impl Ctl {
         if s.org.projects_surface {
             lib.set_roll_unmeasured(false);
             let Some(group) = s.project_group() else {
-                lib.set_info_kind(0);
+                lib.set_info_kind(crate::InfoKind::None);
                 lib.set_info_empty(tr("Select a project").into());
                 s.org.info_loaded = None;
                 return;
             };
-            lib.set_info_kind(2);
+            lib.set_info_kind(crate::InfoKind::Project);
             lib.set_info_title(group.project.name.clone().into());
             let stocks: Vec<StockCount> = oni_library::info::stocks(&group.entries, &s.roll_markers())
                 .into_iter()
@@ -50,7 +50,7 @@ impl Ctl {
         if s.trash_shown() {
             let (count, key) = oni_trash::inspector(s.org.trashed.len(), s.trash_picks.selection.len());
             lib.set_roll_unmeasured(false);
-            lib.set_info_kind(3);
+            lib.set_info_kind(crate::InfoKind::Trash);
             lib.set_info_title(tr("ONI Trash").into());
             lib.set_trash_count(count.into());
             lib.set_trash_key(key.into());
@@ -64,12 +64,12 @@ impl Ctl {
         let roll = s.roll().filter(|_| !s.org.gear_shown);
         let Some(roll) = roll else {
             lib.set_roll_unmeasured(false);
-            lib.set_info_kind(4);
+            lib.set_info_kind(crate::InfoKind::Collection);
             s.org.info_loaded = None;
             return;
         };
         let film = &roll.film;
-        lib.set_info_kind(1);
+        lib.set_info_kind(crate::InfoKind::Roll);
         lib.set_info_title(film.name.clone().into());
         // `heroStock`: the stock a hand picked, else the first photo's mode's default, said so.
         let mode = roll.first.as_ref().and_then(|e| e.mode);
@@ -163,7 +163,7 @@ impl Ctl {
         let draft = self.state.borrow_mut().org.title_draft.take();
         let title = draft.filter(|(on, _)| Some(on) == subject.as_ref()).map(|(_, t)| t);
         if self.state.borrow().org.projects_surface {
-            if lib.get_info_kind() == 2 {
+            if lib.get_info_kind() == crate::InfoKind::Project {
                 self.description_committed(&lib.get_description());
             }
             if let Some(title) = title {
@@ -171,7 +171,7 @@ impl Ctl {
             }
             return;
         }
-        let Some(roll) = self.state.borrow().roll().filter(|_| lib.get_info_kind() == 1) else { return };
+        let Some(roll) = self.state.borrow().roll().filter(|_| lib.get_info_kind() == crate::InfoKind::Roll) else { return };
         let mut film = roll.film.clone();
         if let Some(name) = title.and_then(|t| picking::named(&t, &film.name)) {
             film.name = name;

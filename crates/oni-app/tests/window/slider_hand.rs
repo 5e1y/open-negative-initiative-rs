@@ -1,6 +1,7 @@
 //! A slider's drag ends with its owners: a walk under the hand lands the drag on the frame it was on,
 //! and the button lifted ends a drag whose slider was taken away, which Slint tells nothing.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
@@ -40,8 +41,8 @@ fn editor(name: &str) -> Option<(common::Rig, Shell, PathBuf, (f32, f32))> {
     lib.invoke_tile_opened(at(&shell, "A.tif"));
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     let w = &shell.window;
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     // Exposure's rail, the knob's row at the slider's foot.
     let slider = common::the(w, Role::Slider, "Exposure");

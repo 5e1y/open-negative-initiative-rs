@@ -2095,7 +2095,7 @@
     "type": "refactor",
     "title": "Sheets and the mode as Slint enums, one Ask dialog, one RowTree",
     "status": "todo",
-    "detail": "Eighteen sheet flags are ORed in app.slint and mounted one by one, and the mode is three booleans read at 25 sites; six copies of Swift's DSDialogRequest and two near-identical trees (archive, projects) remain. An enum for the sheet and the mode, one Ask dialog, one RowTree."
+    "detail": "Eighteen sheet flags are ORed in app.slint and mounted one by one, and the mode is three booleans read at 25 sites (the panel tab, the Info column's kind and the roll state are enums since #1850 to #1852); six copies of Swift's DSDialogRequest and two near-identical trees (archive, projects) remain. An enum for the sheet and the mode, one Ask dialog, one RowTree."
   },
   {
     "id": 291,
@@ -9377,5 +9377,40 @@
     "title": "library/tests.rs back under its ceiling",
     "status": "done",
     "detail": "#1836 brought crates/oni-app/src/library/tests.rs to 401 lines; the roll #8 test folds its skip and its frame filter."
+  },
+  {
+    "id": 1850,
+    "type": "refactor",
+    "title": "The panel's tab is a Slint enum",
+    "status": "done",
+    "detail": "PanelState.tab was an int that tabs.rs named ROLL to DEDUST while the Slint panes, the bar, the canvas and Rust (cropping, loupe, dedusting, menus, lab, plots, the benches and about a hundred check sites) compared 0 to 4. PanelTab { roll, crop, color, details, dedust } replaces it everywhere: tab-picked takes it, Route.shown and last_panel are PanelTab, tabs.rs loses its constants, and the tab bar's index tables become explicit conditionals. No tab number reaches oni-link (its own Tab) or the preferences."
+  },
+  {
+    "id": 1851,
+    "type": "refactor",
+    "title": "The Info column's kind is a Slint enum",
+    "status": "done",
+    "detail": "Library.info-kind was set by the literals 0 to 4 in info_sidebar.rs and compared by them in the sidebar and the checks. InfoKind { none, roll, project, trash, collection } replaces them."
+  },
+  {
+    "id": 1852,
+    "type": "refactor",
+    "title": "The roll's state is a Slint enum",
+    "status": "done",
+    "detail": "PanelState.roll-state was 0, 1 or 2 across rolls.rs, the Roll and Color panes and a check. RollState { alone, prepared, finding } replaces it, prepared the default as 1 was."
+  },
+  {
+    "id": 1853,
+    "type": "test",
+    "title": "A slider's field index is checked against its Store fraction",
+    "status": "done",
+    "detail": "The 32 sliders of the panes name their field twice, `field: N` and `fraction: Store.<stem>-fraction`; a shifted index drew one field's slider on another's value with nothing failing. A source check reads every pane and asserts Field::from_index(N).slint_name() equals the stem, no `field:` standing without a fraction; its twin shifts Exposure's index and must be caught."
+  },
+  {
+    "id": 1854,
+    "type": "refactor",
+    "title": "Checks and benches name tabs, kinds and states by variant",
+    "status": "done",
+    "detail": "The window checks and the crop and loupe benches set and read PanelTab, InfoKind and RollState variants where they wrote 0 to 4. #290's detail is corrected: the tab, the info kind and the roll state are enums; the sheets and the mode stay its work."
   }
 ]

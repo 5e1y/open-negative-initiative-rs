@@ -3,7 +3,7 @@
 import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
-import { PanelState } from "panel/state.slint";
+import { PanelState, PanelTab } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
 import { KeyWords } from "key_words.slint";
 import { Pairing } from "pairing.slint";
@@ -198,7 +198,7 @@ component EditorKeys inherits Centre {
             action: Act.framing;
             word: @tr("Crop");
             icon: Icons.framing;
-            on: PanelState.tab == 1;
+            on: PanelState.tab == PanelTab.crop;
             tool: CanvasTool.crop;
             publishes: !root.measuring;
             help: !Bar.single ? @tr("Select one photo to crop it") : self.on ? @tr("Leave Crop") : @tr("Crop and Straighten ({})", KeyWords.command + "K");
@@ -209,7 +209,7 @@ component EditorKeys inherits Centre {
             action: Act.correction;
             word: @tr("De-dust");
             icon: Icons.correction;
-            on: PanelState.tab == 4;
+            on: PanelState.tab == PanelTab.dedust;
             tool: CanvasTool.dust;
             publishes: !root.measuring;
             help: !Bar.single ? @tr("Select one photo to de-dust it") : self.on ? @tr("Leave De-dust") : @tr("De-dust");
@@ -292,7 +292,7 @@ export component Toolbar inherits Surface {
         Bar.needed = root.full;
     }
     // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
-    property <bool> tool: Bar.editing && (PanelState.tab == 1 || PanelState.tab == 4);
+    property <bool> tool: Bar.editing && (PanelState.tab == PanelTab.crop || PanelState.tab == PanelTab.dedust);
     // Out of the gallery, the mode key goes back to it.
     property <bool> back: Bar.editing || Preparing.shown;
     // Under the keys, so only the room between them reaches it.

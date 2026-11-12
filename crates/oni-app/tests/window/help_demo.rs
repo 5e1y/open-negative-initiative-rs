@@ -1,6 +1,7 @@
 //! A help mark naming a demo plays it on its card, frame after frame, while the hand rests on the mark;
 //! the hand leaving stops the clip, the next mark plays its own, and a card closed with its panel asks no frame.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{PanelState, Tip};
 use slint::ComponentHandle;
@@ -51,8 +52,8 @@ pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
     let Some((rig, shell, root)) = opened("help-demo") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let tip = w.global::<Tip>();
-    w.global::<PanelState>().set_tab(3);
-    w.global::<PanelState>().invoke_tab_picked(3);
+    w.global::<PanelState>().set_tab(PanelTab::Details);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Details);
     rig.settle();
 
     press_help(&rig, w, "Sharpening");

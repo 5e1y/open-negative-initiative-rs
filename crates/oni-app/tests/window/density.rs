@@ -1,6 +1,7 @@
 //! A window moved to a screen of another density keeps its size in points: the canvas still renders
 //! again at the new count of pixels, and the plots' rasters are traced again at it.
 
+use oni_app::PanelTab;
 use oni_app::{Editors, PanelState, Plots};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
@@ -14,8 +15,8 @@ pub(crate) fn a_screen_of_another_density_renders_the_canvas_and_the_plots_again
     // The Roll tab's levels unfolded in a window tall enough to lay them: their histogram is a raster
     // traced at the screen's density.
     rig.window.set_size(slint::PhysicalSize::new(1280, 2200));
-    w.global::<PanelState>().set_tab(0);
-    w.global::<PanelState>().invoke_tab_picked(0);
+    w.global::<PanelState>().set_tab(PanelTab::Roll);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Roll);
     w.global::<Editors>().set_levels_folded(false);
     // Drawn once, so the block unfolded is laid and its plot sized.
     rig.drawn();

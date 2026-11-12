@@ -167,8 +167,8 @@ impl Ctl {
     pub(super) fn picture_plots(&self) -> [bool; 2] {
         let Some(w) = self.window() else { return [false; 2] };
         let (tab, editors) = (w.global::<PanelState>().get_tab(), w.global::<crate::Editors>());
-        let readout = !w.global::<crate::Lab>().get_shown() && tab != crate::tabs::DETAILS;
-        [readout, tab == crate::tabs::COLOR && !editors.get_monochrome() && !editors.get_saturation_folded()]
+        let readout = !w.global::<crate::Lab>().get_shown() && tab != crate::PanelTab::Details;
+        [readout, tab == crate::PanelTab::Color && !editors.get_monochrome() && !editors.get_saturation_folded()]
     }
 
     /// The picture's plots as the panel shows them, which the next render counts for: one shown again is

@@ -1,12 +1,13 @@
 //! The levels track, the wheel, and the blocks each photo and face lays out.
 
+use oni_app::PanelTab;
 use super::*;
 
 pub(crate) fn a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo() {
     let Some(o) = opened("levels") else { return };
     let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
     let g = w.global::<Editors>();
-    on_tab(&o, 0, |g| g.set_levels_folded(false));
+    on_tab(&o, oni_app::PanelTab::Roll, |g| g.set_levels_folded(false));
     let origin = editors::origin(&ctl, Plot::Levels);
     let size = editors::size(&ctl, Plot::Levels);
     assert!(size.w > 200.0, "the levels track is laid out: {size:?}");
@@ -44,7 +45,7 @@ pub(crate) fn the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_thei
     let Some(o) = opened("wheel") else { return };
     let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
     let g = w.global::<Editors>();
-    on_tab(&o, 2, |g| g.set_spectrogram_folded(false));
+    on_tab(&o, oni_app::PanelTab::Color, |g| g.set_spectrogram_folded(false));
     let origin = editors::origin(&ctl, Plot::Wheel);
     let size = editors::size(&ctl, Plot::Wheel);
     assert!(size.w > 200.0 && (size.w - size.h).abs() < 0.5, "the wheel is a square: {size:?}");
@@ -118,7 +119,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     second.window.show().unwrap();
     second.window.global::<App>().set_gallery(false);
     let g2 = second.window.global::<Editors>();
-    second.window.global::<PanelState>().set_tab(2);
+    second.window.global::<PanelState>().set_tab(PanelTab::Color);
     g2.set_spectrogram_folded(false);
     rig.shot("editors-monochrome");
     rig.settle();
@@ -138,7 +139,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     third.window.show().unwrap();
     third.window.global::<App>().set_gallery(false);
     let g3 = third.window.global::<Editors>();
-    third.window.global::<PanelState>().set_tab(0);
+    third.window.global::<PanelState>().set_tab(PanelTab::Roll);
     g3.set_levels_folded(false);
     rig.shot("editors-eight-bit");
     rig.settle();
@@ -163,7 +164,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     });
     fourth.window.global::<Bar>().invoke_act(oni_app::Act::FaceScanner);
     let g4 = fourth.window.global::<Editors>();
-    fourth.window.global::<PanelState>().set_tab(0);
+    fourth.window.global::<PanelState>().set_tab(PanelTab::Roll);
     g4.set_levels_folded(false);
     rig.shot("editors-scanner-face");
     rig.settle();

@@ -1,20 +1,16 @@
 //! `PanelTab`'s routes: the crop and De-dust are left for the last panel the hand was in, recorded
 //! on every route, and Return validates the frames a hand draws, the measuring window first, then DONE.
 
-pub const ROLL: i32 = 0;
-pub const CROP: i32 = 1;
-pub const COLOR: i32 = 2;
-pub const DETAILS: i32 = 3;
-pub const DEDUST: i32 = 4;
+use crate::PanelTab;
 
 /// `PanelTab.leaving(toward:)`: a way out never lands back on the crop or the dust tool.
-pub fn leaving(wanted: i32) -> i32 {
-    if wanted == CROP || wanted == DEDUST { COLOR } else { wanted }
+pub fn leaving(wanted: PanelTab) -> PanelTab {
+    if matches!(wanted, PanelTab::Crop | PanelTab::Dedust) { PanelTab::Color } else { wanted }
 }
 
 /// `measuring:` on the canvas: the window drawn while armed on the crop or on Color alone.
-pub fn window_shown(armed: bool, tab: i32) -> bool {
-    armed && (tab == CROP || tab == COLOR)
+pub fn window_shown(armed: bool, tab: PanelTab) -> bool {
+    armed && matches!(tab, PanelTab::Crop | PanelTab::Color)
 }
 
 /// What Return asks of the editor.
@@ -26,40 +22,40 @@ pub enum Validated {
 }
 
 /// The tab on screen, `lastPanel` and `measureFraming`, the measuring window armed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Route {
-    pub shown: i32,
-    pub last_panel: i32,
+    pub shown: PanelTab,
+    pub last_panel: PanelTab,
     pub armed: bool,
 }
 
 impl Default for Route {
     fn default() -> Self {
-        Route { shown: COLOR, last_panel: COLOR, armed: false }
+        Route { shown: PanelTab::Color, last_panel: PanelTab::Color, armed: false }
     }
 }
 
 impl Route {
     /// `onChange(of: tab)`: the panel left is recorded unless modal, and leaving the crop disarms.
-    pub fn moved(&mut self, next: i32) {
+    pub fn moved(&mut self, next: PanelTab) {
         let old = std::mem::replace(&mut self.shown, next);
         if old == next {
             return;
         }
-        if old != CROP && old != DEDUST {
+        if !matches!(old, PanelTab::Crop | PanelTab::Dedust) {
             self.last_panel = old;
         }
-        if old == CROP {
+        if old == PanelTab::Crop {
             self.armed = false;
         }
     }
 
-    pub fn way_out(&self) -> i32 {
+    pub fn way_out(&self) -> PanelTab {
         leaving(self.last_panel)
     }
 
     /// `toggleFraming` and `toggleCorrecting`: into the crop or the dust tool, or out of it to the last panel.
-    pub fn toggled(&self, tool: i32) -> i32 {
+    pub fn toggled(&self, tool: PanelTab) -> PanelTab {
         if self.shown == tool { self.way_out() } else { tool }
     }
 
@@ -70,7 +66,7 @@ impl Route {
             self.armed = false;
             return Validated::Disarmed;
         }
-        if self.shown == CROP || self.shown == DEDUST { Validated::Leave } else { Validated::Nothing }
+        if matches!(self.shown, PanelTab::Crop | PanelTab::Dedust) { Validated::Leave } else { Validated::Nothing }
     }
 
     pub fn window_shown(&self) -> bool {
@@ -82,47 +78,45 @@ impl Route {
 mod tests {
     use super::*;
 
-    const DETAILS: i32 = 3;
-
     #[test]
     fn every_route_records_the_panel_left_and_never_a_modal_one() {
         let mut r = Route::default();
-        r.moved(DETAILS);
-        r.moved(CROP);
-        assert_eq!(r.way_out(), DETAILS, "the tab bar's route is recorded");
-        assert_eq!(r.toggled(CROP), DETAILS, "the crop's key leaves it as De-dust's does");
-        r.moved(DEDUST);
-        assert_eq!((r.last_panel, r.toggled(DEDUST)), (DETAILS, DETAILS), "the crop is never recorded");
-        assert_eq!(r.toggled(CROP), CROP, "another tool's key opens its own");
+        r.moved(PanelTab::Details);
+        r.moved(PanelTab::Crop);
+        assert_eq!(r.way_out(), PanelTab::Details, "the tab bar's route is recorded");
+        assert_eq!(r.toggled(PanelTab::Crop), PanelTab::Details, "the crop's key leaves it as De-dust's does");
+        r.moved(PanelTab::Dedust);
+        assert_eq!((r.last_panel, r.toggled(PanelTab::Dedust)), (PanelTab::Details, PanelTab::Details), "the crop is never recorded");
+        assert_eq!(r.toggled(PanelTab::Crop), PanelTab::Crop, "another tool's key opens its own");
         // Twin: recording every tab left would hold the crop, and De-dust would lead to Color.
-        assert_ne!(leaving(CROP), r.toggled(DEDUST));
-        r.moved(COLOR);
-        r.moved(COLOR);
-        assert_eq!(r.last_panel, DETAILS, "a tab picked again records nothing");
-        r.last_panel = CROP;
-        assert_eq!(r.way_out(), COLOR, "a modal panel recorded leads to Color");
+        assert_ne!(leaving(PanelTab::Crop), r.toggled(PanelTab::Dedust));
+        r.moved(PanelTab::Color);
+        r.moved(PanelTab::Color);
+        assert_eq!(r.last_panel, PanelTab::Details, "a tab picked again records nothing");
+        r.last_panel = PanelTab::Crop;
+        assert_eq!(r.way_out(), PanelTab::Color, "a modal panel recorded leads to Color");
     }
 
     #[test]
     fn return_disarms_the_window_first_then_leaves_either_tool() {
-        let mut r = Route { shown: CROP, last_panel: DETAILS, armed: true };
+        let mut r = Route { shown: PanelTab::Crop, last_panel: PanelTab::Details, armed: true };
         assert_eq!(r.validate(), Validated::Disarmed);
         assert_eq!(r.validate(), Validated::Leave, "a second Return leaves framing");
-        let mut dust = Route { shown: DEDUST, last_panel: COLOR, armed: true };
+        let mut dust = Route { shown: PanelTab::Dedust, last_panel: PanelTab::Color, armed: true };
         assert!(!dust.window_shown());
         assert_eq!(dust.validate(), Validated::Leave, "Return is De-dust's DONE too");
-        let mut colour = Route { shown: COLOR, last_panel: COLOR, armed: true };
+        let mut colour = Route { shown: PanelTab::Color, last_panel: PanelTab::Color, armed: true };
         assert!(colour.window_shown());
         assert_eq!((colour.validate(), colour.validate()), (Validated::Disarmed, Validated::Nothing));
-        let mut details = Route { shown: DETAILS, last_panel: COLOR, armed: true };
+        let mut details = Route { shown: PanelTab::Details, last_panel: PanelTab::Color, armed: true };
         assert!(!details.window_shown(), "Details never draws the window");
         assert_eq!(details.validate(), Validated::Nothing);
         assert!(details.armed, "twin: Return on Details leaves the window armed");
-        let mut left = Route { shown: CROP, last_panel: COLOR, armed: true };
-        left.moved(COLOR);
+        let mut left = Route { shown: PanelTab::Crop, last_panel: PanelTab::Color, armed: true };
+        left.moved(PanelTab::Color);
         assert!(!left.armed, "leaving the crop disarms");
-        let mut kept = Route { shown: COLOR, last_panel: COLOR, armed: true };
-        kept.moved(DETAILS);
+        let mut kept = Route { shown: PanelTab::Color, last_panel: PanelTab::Color, armed: true };
+        kept.moved(PanelTab::Details);
         assert!(kept.armed, "twin: leaving Color keeps it armed");
     }
 }

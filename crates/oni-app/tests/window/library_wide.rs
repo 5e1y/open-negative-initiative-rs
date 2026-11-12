@@ -1,6 +1,7 @@
 //! The ONI Trash and the projects are the whole library's, whatever folder is open, a disk away
 //! said, and a rename carries the paths a project recorded. Every folder lies in the check's scratch.
 
+use oni_app::InfoKind;
 use oni_app::app::{self, Options, Shell};
 use oni_app::{Confirm, FolderLine, Library, Navigator, Told};
 use oni_core::{Archive, EditorStore};
@@ -194,10 +195,10 @@ pub(crate) fn the_trash_inspector_counts_and_its_key_restores_what_it_names() {
     let keys = |label: &str| common::placed(w, AccessibleRole::Button, label).len();
     let lib = w.global::<Library>();
     // Twin: the folder's inspector is its roll's, with no key of the trash.
-    assert_eq!((lib.get_info_kind(), keys("Restore All…")), (1, 0));
+    assert_eq!((lib.get_info_kind(), keys("Restore All…")), (InfoKind::Roll, 0));
     lib.invoke_trash_row_clicked(0);
     rig.pump();
-    assert_eq!((lib.get_info_kind(), lib.get_trash_count().as_str()), (3, "2 photos"), "the trash's own, never Select a roll");
+    assert_eq!((lib.get_info_kind(), lib.get_trash_count().as_str()), (InfoKind::Trash, "2 photos"), "the trash's own, never Select a roll");
 
     // A photo picked, the key names it and restores it alone, unasked.
     rest(&rig);

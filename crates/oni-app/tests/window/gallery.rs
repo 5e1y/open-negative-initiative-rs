@@ -1,6 +1,7 @@
 //! The gallery on the headless window, driven by real pointer and key events: picks, opening, the
 //! medal picker, the cell menu, projects, the archive that moves nothing, the ONI Trash, the sidebar.
 
+use oni_app::InfoKind;
 use oni_app::app::{Options, Shell};
 use oni_app::{App, Confirm, Library, Menus, Presets};
 use oni_core::{Archive, EditorStore};
@@ -239,7 +240,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     // The project's info: its name, its stocks counted by photo, a description kept on blur.
     lib.invoke_project_row_clicked(0, false, false);
     rig.pump();
-    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (2, "Project 1"));
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Project, "Project 1"));
     assert_eq!(lib.get_stocks().row_count(), 0, "no stock set yet");
     lib.invoke_description_committed("Coast".into());
     lib.invoke_title_committed("Coast trip".into());
@@ -328,7 +329,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     // The roll's info writes the folder's marker: a camera body on Return, a date clamped.
     hand.rest();
     hand.click("A", &[]);
-    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Roll 7"));
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Roll, "Roll 7"));
     let marker = || oni_library::folders::roll(&oni_library::paths::canonical(&folder)).unwrap();
     lib.invoke_camera_body_committed("  Leica M6 ".into());
     rig.pump();

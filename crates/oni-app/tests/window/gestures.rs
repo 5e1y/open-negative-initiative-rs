@@ -2,6 +2,7 @@
 //! rules, copy and paste across rolls with its confirm, the ONI Trash, the filter, the gallery's
 //! own undo naming its step, the film type, the framing's copy and paste, mirror, ⌘K and ⌘0.
 
+use oni_app::PanelTab;
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{App, Confirm, Framing, Library, Menus, PanelState};
@@ -97,19 +98,19 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert!(w.global::<App>().get_panel_hidden());
     assert_eq!(menus.get_titles().panel.as_str(), "Show the Panel");
     hide_panel();
-    w.global::<PanelState>().set_tab(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
     rig.chord(Key::Control, "k");
-    assert_eq!(w.global::<PanelState>().get_tab(), 1);
+    assert_eq!(w.global::<PanelState>().get_tab(), PanelTab::Crop);
     // A, never balanced, opened with its window armed: Return applies it, a second leaves the crop.
     assert!(w.global::<Framing>().get_armed());
     rig.key("\r");
-    assert_eq!((w.global::<PanelState>().get_tab(), w.global::<Framing>().get_armed()), (1, false));
+    assert_eq!((w.global::<PanelState>().get_tab(), w.global::<Framing>().get_armed()), (PanelTab::Crop, false));
     rig.key("\r");
-    assert_eq!(w.global::<PanelState>().get_tab(), 2, "twin: the second Return is the crop's way out");
+    assert_eq!(w.global::<PanelState>().get_tab(), PanelTab::Color, "twin: the second Return is the crop's way out");
     // ⌘K is the crop's key both ways, as De-dust's key is De-dust's.
     rig.chord(Key::Control, "k");
     rig.chord(Key::Control, "k");
-    assert_eq!(w.global::<PanelState>().get_tab(), 2, "a second ⌘K leaves the crop");
+    assert_eq!(w.global::<PanelState>().get_tab(), PanelTab::Color, "a second ⌘K leaves the crop");
     // A bare bracket is the brush's only on its own tab: here it reaches nothing.
     let revision = ctl.state.borrow().store().revision();
     rig.key("]");

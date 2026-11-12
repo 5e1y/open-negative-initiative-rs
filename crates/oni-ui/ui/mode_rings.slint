@@ -2,7 +2,7 @@
 // inner ring over the outer ones, and its tab hanging from its key down onto its ring.
 import { ModeRing, ToolStyle } from "ds/ds.slint";
 import { Bar } from "toolbar.slint";
-import { PanelState } from "panel/state.slint";
+import { PanelState, PanelTab } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
 import { Preparing } from "prepare_state.slint";
 
@@ -17,8 +17,8 @@ export component ModeRings {
     in property <bool> square-right;
     property <bool> keys: !Preparing.shown;
     property <bool> sheet: root.keys && Bar.whole;
-    property <bool> crop: root.keys && Bar.editing && PanelState.tab == 1;
-    property <bool> dust: root.keys && Bar.editing && PanelState.tab == 4;
+    property <bool> crop: root.keys && Bar.editing && PanelState.tab == PanelTab.crop;
+    property <bool> dust: root.keys && Bar.editing && PanelState.tab == PanelTab.dedust;
     property <bool> compare: root.keys && Bar.editing && Canvas.split >= 0;
     property <int> crop-depth: root.sheet ? 1 : 0;
     property <int> dust-depth: root.crop-depth + (root.crop ? 1 : 0);

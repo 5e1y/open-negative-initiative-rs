@@ -6,7 +6,7 @@
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::export_card::{self, Ask};
 use oni_app::app::{Options, Shell};
-use oni_app::{Exporting, Framing, Library, PanelState};
+use oni_app::{Exporting, Framing, Library, PanelState, PanelTab};
 use oni_core::{Archive, EditorStore};
 use oni_settings::SourceEncoding;
 use oni_settings::frame::FlatFieldMask;
@@ -88,7 +88,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
         click(&rig, x, y);
     };
     let settings = || ctl.state.borrow().store().settings().clone();
-    let tab = |i: i32| {
+    let tab = |i: PanelTab| {
         panel.set_tab(i);
         panel.invoke_tab_picked(i);
         rig.settle();
@@ -96,7 +96,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
 
     // Vertical by the pointer, undone from Rust: the next click asks for vertical again, not for
     // the state the hand last left the switch in.
-    tab(1);
+    tab(PanelTab::Crop);
     // Free and 1:1 have no orientation: no switch shows; 3:2 has one.
     assert!(!framing.get_orientable(), "no Vertical switch under Free");
     framing.invoke_ratio_picked(3);
@@ -157,7 +157,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     // Scan Profile's RESET writes no encoding, the file read as sRGB again; the window taller, so
     // the keys above leave the block in sight.
     rig.window.set_size(slint::PhysicalSize::new(1280, 900));
-    tab(0);
+    tab(PanelTab::Roll);
     panel.invoke_encoding_picked(1);
     rig.settle();
     // Flat-Field's chevron: the block unfolds above Scan Profile, its switch then in reach.

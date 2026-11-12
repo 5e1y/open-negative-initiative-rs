@@ -3,6 +3,7 @@
 //! as the photo, its arrows place the measuring window, the crop and their right and bottom edges,
 //! Return keeps them; Prepare's floor places the base's picker and the measuring window alike.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Canvas, Framing, Library, PanelState, Preparing};
@@ -121,8 +122,8 @@ pub(crate) fn tab_walks_the_bar_the_sidebar_the_canvas_then_the_panel() {
     println!("elements shown before Lighting's Exposure: {}", before_exposure(w));
     // Twin: Details shown, Colour's sliders leave the tree.
     let panel = w.global::<PanelState>();
-    panel.set_tab(3);
-    panel.invoke_tab_picked(3);
+    panel.set_tab(PanelTab::Details);
+    panel.invoke_tab_picked(PanelTab::Details);
     rig.settle();
     assert!(common::placed(w, Role::Slider, "Exposure").is_empty(), "twin: a hidden pane's slider is not read");
     drop(shell);
@@ -146,7 +147,7 @@ pub(crate) fn the_canvas_holding_the_keyboard_places_the_window_the_crop_and_the
     let element = || ElementHandle::find_by_accessible_label(w, &photo).find(|e| e.accessible_role() == Some(Role::Image)).expect("the canvas read as the photo");
 
     // A frame never balanced opens with its window drawn on Colour; the photos' arrow leaves it.
-    assert!(framing.get_armed() && canvas.get_window_shown() && panel.get_tab() == 2);
+    assert!(framing.get_armed() && canvas.get_window_shown() && panel.get_tab() == PanelTab::Color);
     let window = geometry().measure_window.expect("a window proposed");
     press(&rig, w, &right);
     assert_eq!(geometry().measure_window, Some(window), "twin: the photos holding the keyboard, the arrow moves no window");
@@ -169,7 +170,7 @@ pub(crate) fn the_canvas_holding_the_keyboard_places_the_window_the_crop_and_the
     rig.chord(Key::Control, "k");
     framing.invoke_ratio_picked(0);
     rig.settle();
-    assert_eq!(panel.get_tab(), 1);
+    assert_eq!(panel.get_tab(), PanelTab::Crop);
     tab_to_canvas(&rig, w, &canvas.get_status());
     let crop = geometry().crop;
     rig.chord(Key::Alt, &arrow(Key::LeftArrow));
@@ -179,7 +180,7 @@ pub(crate) fn the_canvas_holding_the_keyboard_places_the_window_the_crop_and_the
     let shifted = geometry().crop;
     assert!(shifted.x > narrower.x && (shifted.width - narrower.width).abs() < 1e-9, "twin: the bare arrow moves the left edge with it: {shifted:?}");
     press(&rig, w, "\n");
-    assert_eq!((panel.get_tab(), geometry().crop), (2, shifted), "Return keeps the crop and leaves it");
+    assert_eq!((panel.get_tab(), geometry().crop), (PanelTab::Color, shifted), "Return keeps the crop and leaves it");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

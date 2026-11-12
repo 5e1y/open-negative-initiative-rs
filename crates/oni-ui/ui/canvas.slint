@@ -1,7 +1,7 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
 import { DS, Card, CardCorners, Picture, Ground, SplitGuide, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, RingTone, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Menu, Tips, StatusStyle } from "ds/ds.slint";
-import { PanelState, Lab } from "panel.slint";
+import { PanelState, PanelTab, Lab } from "panel.slint";
 import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -298,7 +298,7 @@ export component CanvasCard inherits Card {
     }
     // The deck rises over the picture's bottom edge; Crop's handles use that edge.
     // On the canvas's own bottom edge, full width, as Swift's overlay on `NegativeView`.
-    if PanelState.tab != 1 && !Lab.shown: PresetDeck { x: 0; width: parent.width; y: parent.height - self.height; }
+    if PanelState.tab != PanelTab.crop && !Lab.shown: PresetDeck { x: 0; width: parent.width; y: parent.height - self.height; }
     // The Working Space in the room between the column keys, on the card's centre while that room allows.
     SpaceChip {
         property <length> start: library-key.x + library-key.width + Space.s;

@@ -51,8 +51,8 @@ impl Ctl {
                 self.publish_dedust();
             }
             Act::BiggerBrush | Act::SmallerBrush => {}
-            Act::Correction if self.state.borrow().frame.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::DEDUST),
-            Act::Framing if self.state.borrow().frame.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::CROP),
+            Act::Correction if self.state.borrow().frame.is_some() && !self.together_shown() => self.toggle_tool(crate::PanelTab::Dedust),
+            Act::Framing if self.state.borrow().frame.is_some() && !self.together_shown() => self.toggle_tool(crate::PanelTab::Crop),
             Act::CancelTool => {
                 self.cancel_frame_tools();
             }

@@ -18,7 +18,7 @@ impl Ctl {
     /// The De-dust pane open on a photo in the editor: a drag on the canvas paints.
     pub(super) fn painting(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 4 && self.state.borrow().frame.is_some() && !self.together_shown()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == crate::PanelTab::Dedust && self.state.borrow().frame.is_some() && !self.together_shown()
     }
 
     /// The brush, the corrections' rows and the canvas's marks from the open frame; a stroke's

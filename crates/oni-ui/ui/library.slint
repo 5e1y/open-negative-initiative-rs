@@ -42,6 +42,9 @@ export struct StockCount {
     has-artwork: bool,
 }
 
+// What the Info column stands on: nothing, a roll, a project, the trash or the collection.
+export enum InfoKind { none, roll, project, trash, collection }
+
 export global Library {
     // `SidebarLayout`: 0 names only, 1 two thumbnails per row, 2 one, which the column's select picks.
     in property <int> tree-layout;
@@ -135,7 +138,7 @@ export global Library {
     in property <int> filter-medal;
     callback filter-picked(int);
     // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project, 3 the ONI Trash.
-    in property <int> info-kind;
+    in property <InfoKind> info-kind;
     in property <string> info-empty;
     in property <string> info-title;
     in property <string> roll-title;

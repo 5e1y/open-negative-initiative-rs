@@ -6,7 +6,7 @@ pub(crate) fn a_point_dragged_on_the_curves_reaches_the_store_as_one_step() {
     let Some(o) = opened("curves") else { return };
     let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
     let g = w.global::<Editors>();
-    on_tab(&o, 2, |g| g.set_curves_folded(false));
+    on_tab(&o, oni_app::PanelTab::Color, |g| g.set_curves_folded(false));
     let origin = editors::origin(&ctl, Plot::Curves);
     let size = editors::size(&ctl, Plot::Curves);
     assert!(size.w > 200.0 && (size.w - size.h).abs() < 0.5, "the curves plot is a square: {size:?}");
@@ -59,7 +59,7 @@ pub(crate) fn a_point_dragged_on_the_curves_reaches_the_store_as_one_step() {
 pub(crate) fn a_double_click_on_a_point_removes_it_with_its_move_as_one_step() {
     let Some(o) = opened("double-click") else { return };
     let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
-    on_tab(&o, 2, |g| g.set_curves_folded(false));
+    on_tab(&o, oni_app::PanelTab::Color, |g| g.set_curves_folded(false));
     let origin = editors::origin(&ctl, Plot::Curves);
     let size = editors::size(&ctl, Plot::Curves);
     assert!(size.w > 200.0 && (size.w - size.h).abs() < 0.5, "the curves plot is a square: {size:?}");
@@ -115,7 +115,7 @@ pub(crate) fn a_folded_curves_block_takes_no_press() {
     let Some(o) = opened("folded") else { return };
     let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
     let g = w.global::<Editors>();
-    on_tab(&o, 2, |g| g.set_curves_folded(false));
+    on_tab(&o, oni_app::PanelTab::Color, |g| g.set_curves_folded(false));
     let origin = editors::origin(&ctl, Plot::Curves);
     let size = editors::size(&ctl, Plot::Curves);
     assert!(size.w > 200.0 && (size.w - size.h).abs() < 0.5, "the curves plot is a square: {size:?}");
@@ -140,7 +140,7 @@ pub(crate) fn a_folded_curves_block_takes_no_press() {
 pub(crate) fn a_curve_taken_away_under_the_hand_lets_go_at_the_button() {
     let Some(o) = opened("curve-taken") else { return };
     let (rig, w, ctl): (&common::Rig, &MainWindow, _) = (&o.rig, &o.shell.window, o.shell.ctl.clone());
-    on_tab(&o, 2, |g| g.set_curves_folded(false));
+    on_tab(&o, oni_app::PanelTab::Color, |g| g.set_curves_folded(false));
     let (origin, size) = (editors::origin(&ctl, Plot::Curves), editors::size(&ctl, Plot::Curves));
     let start = (origin.0 + size.w / 2.0, origin.1 + size.h / 2.0);
     press(rig, start);

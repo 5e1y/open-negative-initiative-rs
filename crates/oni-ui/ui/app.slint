@@ -2,10 +2,10 @@
 import { Act } from "act.slint";
 import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, SheetStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, LabCell, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
-import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
+import { Panel, Plots, PanelState, PanelTab, RollState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { ModeRings } from "mode_rings.slint";
-import { Gallery, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount } from "library.slint";
+import { Gallery, Library, InfoKind, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount } from "library.slint";
 import { Info } from "info_sidebar.slint";
 import { CardStatus } from "card_status.slint";
 import { Canvas, Mark, CanvasCard } from "canvas.slint";
@@ -31,7 +31,7 @@ import { KeyWords } from "key_words.slint";
 import { Converting, DngSheet, DngStage } from "dng.slint";
 import { Menus, MenuTitles, MenuLive } from "menus.slint";
 
-export { DS, Motion, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Starter, Exporting, ExportLine, PaperRow, SheetTile }
+export { DS, Motion, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, PanelTab, RollState, InfoKind, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Starter, Exporting, ExportLine, PaperRow, SheetTile }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
@@ -80,9 +80,9 @@ export component MainWindow inherits AppWindow {
     changed grid-shown => { keys.focus(); Tip.shown = false; Tips.close(); if (self.grid-shown) { Library.gallery-shown(); } }
     changed beside-photo => { keys.focus(); Tip.shown = false; Tips.close(); }
     // A help card goes with its mark: the pane, the face, what Info stands on, the hidden panel sliding off.
-    property <int> pane: PanelState.tab;
+    property <PanelTab> pane: PanelState.tab;
     property <bool> face: Lab.shown;
-    property <int> info: Library.info-kind;
+    property <InfoKind> info: Library.info-kind;
     property <bool> panel-seen: !App.panel-hidden || root.revealed-panel;
     changed pane => { Tips.close(); }
     changed face => { Tips.close(); }

@@ -1,6 +1,7 @@
 //! A demo showing words plays in the app's language: in French, Film Type's card plays the film
 //! whose tabs read French; back in English, the English film.
 
+use oni_app::PanelTab;
 use oni_app::tutorial::Frames;
 use oni_app::{PanelState, Tip};
 use oni_i18n::Language;
@@ -34,8 +35,8 @@ pub(crate) fn a_worded_demo_plays_in_the_app_s_language() {
     let Some((rig, shell, root)) = opened("help-demo-language") else { return };
     let w = &shell.window;
     let tip = w.global::<Tip>();
-    w.global::<PanelState>().set_tab(0);
-    w.global::<PanelState>().invoke_tab_picked(0);
+    w.global::<PanelState>().set_tab(PanelTab::Roll);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Roll);
     rig.settle();
     let english = pictures(oni_app::demos::clip_in("film-type", Language::English).unwrap());
     let french = pictures(oni_app::demos::clip_in("film-type", Language::French).unwrap());

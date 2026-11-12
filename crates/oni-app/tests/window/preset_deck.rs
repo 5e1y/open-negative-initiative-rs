@@ -2,6 +2,7 @@
 //! keeps its hit while it lifts, a wheel keeps the deck up and scrolls it, two automatic cards each
 //! preview their balance, and the preview leaves with the deck or under a sheet.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Library, Menus, PanelState, Presets};
@@ -180,13 +181,13 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
 
     // The preview leaves with the deck, under Crop, and under the save sheet.
     deck.invoke_hover(2);
-    w.global::<PanelState>().set_tab(1);
-    w.global::<PanelState>().invoke_tab_picked(1);
+    w.global::<PanelState>().set_tab(PanelTab::Crop);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Crop);
     rig.pump();
     assert_eq!(deck.get_hovered(), -1, "Crop takes the deck and its preview");
     rig.until("the preview gone under Crop", Duration::from_secs(30), || ctl.state.borrow().shown_settings().is_some_and(|s| exposure(s) == exposure(&settings)));
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     deck.invoke_hover(2);
     rig.until("twin: the preview back", Duration::from_secs(30), || ctl.state.borrow().shown_settings() == Some(&laid(2)));
     let menus = w.global::<Menus>();

@@ -232,7 +232,7 @@ impl Ctl {
         if gallery {
             return false;
         }
-        let dedust = self.window().is_some_and(|w| w.global::<PanelState>().get_tab() == 4);
+        let dedust = self.window().is_some_and(|w| w.global::<PanelState>().get_tab() == crate::PanelTab::Dedust);
         match text {
             UP | LEFT if bare => self.walk(-1),
             DOWN | RIGHT if bare => self.walk(1),

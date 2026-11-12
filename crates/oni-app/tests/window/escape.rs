@@ -3,6 +3,7 @@
 //! A press on Compare's key takes a slider's hold away, so one Escape leaves Compare. A paste on the
 //! roll says how many photos it rewrote, its Undo beside.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::fields::Field;
 use oni_app::{App, Canvas, PanelState, Told};
@@ -58,7 +59,7 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
     let w = &shell.window;
     let (app, panel, canvas) = (w.global::<App>(), w.global::<PanelState>(), w.global::<Canvas>());
     let escape: SharedString = Key::Escape.into();
-    assert!(!app.get_gallery() && panel.get_tab() == 2);
+    assert!(!app.get_gallery() && panel.get_tab() == PanelTab::Color);
 
     // With nothing open the photos' Escape leaves the editor; Return on the grid opens the photo again.
     rig.key(&escape);
@@ -76,11 +77,11 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
     ctl.act(oni_app::Act::Compare);
     rig.pump();
     rig.key(&escape);
-    assert!(canvas.get_split() < 0.0 && panel.get_tab() == 1, "Compare closes first");
+    assert!(canvas.get_split() < 0.0 && panel.get_tab() == PanelTab::Crop, "Compare closes first");
     // The crop names itself where the tab bar stands, beside the DONE that leaves it.
     assert!(common::placed(w, Role::Tab, "Crop").is_empty(), "the crop is a tool, no tab");
     click(&rig, common::the(w, Role::Button, "DONE").middle());
-    assert_eq!(panel.get_tab(), 2, "DONE leaves the crop for the last panel");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "DONE leaves the crop for the last panel");
     assert!(common::placed(w, Role::Button, "DONE").is_empty(), "twin: no DONE beside a pane");
 
     // A slider pressed in the crop leaves the keyboard with the photos: one Escape leaves the crop.
@@ -89,14 +90,14 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
     click(&rig, (rail.x + rail.width / 2.0, rail.y + rail.height - 4.0));
     assert!(w.get_keys_focused(), "the pressed slider takes no keyboard");
     rig.key(&escape);
-    assert_eq!(panel.get_tab(), 2, "Escape leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Escape leaves the crop");
 
     // Return is De-dust's DONE as it is the crop's.
     ctl.act(oni_app::Act::Correction);
     rig.pump();
-    assert_eq!(panel.get_tab(), 4);
+    assert_eq!(panel.get_tab(), PanelTab::Dedust);
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "Return leaves De-dust");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Return leaves De-dust");
 
     // Paste to Roll says how many photos it rewrote, its key taking the paste back.
     let told = w.global::<Told>();

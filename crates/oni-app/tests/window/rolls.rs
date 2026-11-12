@@ -3,6 +3,7 @@
 //! Reset the Roll asks then reaches the whole roll, Ungroup takes the roll off the targets, and the
 //! balance key asks Each or Average.
 
+use oni_app::{PanelTab, RollState};
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Choice, Confirm, Library, Menus, PanelState};
@@ -90,11 +91,11 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.until("A open", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some());
     rig.pump();
-    assert_eq!((panel.get_roll_state(), panel.get_roll_measured(), panel.get_roll_unmeasured()), (1, 2, 2));
+    assert_eq!((panel.get_roll_state(), panel.get_roll_measured(), panel.get_roll_unmeasured()), (RollState::Prepared, 2, 2));
     // Balance strength, behind the balance key's settings, says it is the roll's two photos', and moved
     // on A it reaches B, while C, left out of the roll, keeps its own.
-    panel.set_tab(2);
-    panel.invoke_tab_picked(2);
+    panel.set_tab(PanelTab::Color);
+    panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
     let shared = "Shared by the 2 photos of this roll.";
     // Closed at first, out of a beginner's way; its settings key, beside the balance key, opens it.
@@ -120,8 +121,8 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.until("B takes A's strength", Duration::from_secs(10), || (strength("B.tif") - resting).abs() > 0.05);
     assert!((strength("B.tif") - ctl.state.borrow().store().settings().balance_strength).abs() < 1e-6);
     assert_eq!(strength("C.tif"), resting, "twin: a photo outside the roll keeps its strength");
-    panel.set_tab(0);
-    panel.invoke_tab_picked(0);
+    panel.set_tab(PanelTab::Roll);
+    panel.invoke_tab_picked(PanelTab::Roll);
     rig.settle();
     panel.invoke_join_roll();
     rig.pump();

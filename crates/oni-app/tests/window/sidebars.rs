@@ -2,6 +2,7 @@
 //! words, a filling group spans its block with its words evenly apart, a key alone on its row spans
 //! it too, and a black and white photo has no Color block.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Tip};
 use oni_core::{Archive, EditorStore};
@@ -140,8 +141,8 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     assert!(!worded(&[("Show the Selected Photo".to_string(), 16.0, 40.0), ("Names only".to_string(), 40.0, 64.0)]));
 
     // The crop's first group spans its block, its two keys sharing the room alike.
-    panel.set_tab(1);
-    panel.invoke_tab_picked(1);
+    panel.set_tab(PanelTab::Crop);
+    panel.invoke_tab_picked(PanelTab::Crop);
     w.global::<Framing>().invoke_act(oni_app::Act::CopyFraming);
     rig.settle();
     rig.shot("sidebars-crop");
@@ -182,8 +183,8 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
 
     // `ColorPane`: a colour photo offers Auto White Balance; a black and white one has no Color block.
     let balance = "The frame's light toward grey with Temperature and Tint, scaled by Auto White Balance Strength";
-    panel.set_tab(2);
-    panel.invoke_tab_picked(2);
+    panel.set_tab(PanelTab::Color);
+    panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
     rig.shot("sidebars-color");
     assert!(row_of(&rig, &tip, left + 170.0, balance).is_some(), "twin: a colour photo shows the Color block");
@@ -193,8 +194,8 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     assert!(panel.get_monochrome());
     assert_eq!(row_of(&rig, &tip, left + 170.0, balance), None, "a black and white photo has no Color block");
     panel.invoke_film_type_picked(0);
-    panel.set_tab(0);
-    panel.invoke_tab_picked(0);
+    panel.set_tab(PanelTab::Roll);
+    panel.invoke_tab_picked(PanelTab::Roll);
     panel.invoke_flat_field_toggled(true);
     lib.invoke_surface_picked(1);
     rig.settle();

@@ -1,6 +1,7 @@
 //! The editor's last gestures on the headless window: the Details loupe, the blocks' folds and
 //! help, New Roll naming its folder, Copy Settings on a system pasteboard, scroll over a slider.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::pasteboard;
@@ -55,8 +56,8 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
 
     // The loupe: Details builds the full frame, then shows the band's region at 1.5 drawable pixels a source pixel.
     assert!(!ctl.state.borrow().loupe_shown(), "nothing under Color");
-    panel.set_tab(3);
-    panel.invoke_tab_picked(3);
+    panel.set_tab(PanelTab::Details);
+    panel.invoke_tab_picked(PanelTab::Details);
     rig.settle();
     rig.until("the loupe", Duration::from_secs(60), || {
         rig.pump();
@@ -134,8 +135,8 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     assert_eq!(oni_library::folders::roll(&scans.join("Holiday").to_string_lossy()).map(|f| f.name), Some("Holiday".to_string()));
 
     // Copy Settings: the codec's text on the board under the app's type, the framing's type untouched.
-    panel.set_tab(2);
-    panel.invoke_tab_picked(2);
+    panel.set_tab(PanelTab::Color);
+    panel.invoke_tab_picked(PanelTab::Color);
     w.global::<oni_app::Store>().invoke_step(Field::Exposure.index(), 5);
     rig.pump();
     let donor = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);

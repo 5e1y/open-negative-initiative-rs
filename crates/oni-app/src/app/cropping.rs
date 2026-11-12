@@ -8,7 +8,7 @@ impl Ctl {
     /// The Crop tab open on a photo alone in the editor: the canvas shows the frame uncropped.
     pub(super) fn cropping(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 1 && self.state.borrow().frame.is_some() && !self.together_shown()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == crate::PanelTab::Crop && self.state.borrow().frame.is_some() && !self.together_shown()
     }
 
     /// The open frame's raw size in full-resolution pixels; `Geometry` alone applies the quarter turns.
@@ -308,11 +308,11 @@ impl Ctl {
     }
 
     /// A tab opened: on Crop the framing the hand last chose is handed to this frame if chosen on another.
-    pub(super) fn tab_opened(self: &Rc<Self>, tab: i32) {
+    pub(super) fn tab_opened(self: &Rc<Self>, tab: crate::PanelTab) {
         let left = self.state.borrow().route.shown;
         self.route_moved(tab);
         self.balance_on_leaving(left, tab);
-        if tab == 1 {
+        if tab == crate::PanelTab::Crop {
             // Crop's handles take the deck's edge, and the deck with its preview.
             self.clear_hover();
             let remembered = {

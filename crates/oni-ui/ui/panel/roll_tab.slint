@@ -2,7 +2,7 @@
 import { Colour, Space, SliderFill, Tabs, Button, Field, Label, TextRole, Tone, ButtonGroup, GroupAlign, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
-import { Plots, PanelState } from "state.slint";
+import { Plots, PanelState, RollState } from "state.slint";
 import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
 
 export component RollPane inherits Pane {
@@ -16,29 +16,29 @@ export component RollPane inherits Pane {
         // nothing beside the photo outweighs it, and its keys one a row, whatever the language's length.
         VerticalLayout {
             spacing: Space.s;
-            if PanelState.roll-state == 0 && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never prepared with its roll, so these settings act on it alone."); }
-            if PanelState.roll-state == 0: Button {
+            if PanelState.roll-state == RollState.alone && !PanelState.slide: Label { role: TextRole.note; text: @tr("This photo was never prepared with its roll, so these settings act on it alone."); }
+            if PanelState.roll-state == RollState.alone: Button {
                 text: @tr("Prepare the Roll…");
                 enabled: PanelState.can-prepare;
                 clicked => { PanelState.prepare-roll(); }
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured == 0: Label { role: TextRole.note;
+            if PanelState.roll-state == RollState.prepared && PanelState.roll-unmeasured == 0: Label { role: TextRole.note;
                 text: PanelState.roll-measured == 1 ? @tr("Acts on this photo, the only one of its roll.") : @tr("Acts on the {} photos of this roll.", PanelState.roll-measured);
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Label { role: TextRole.note; tone: Tone.warning;
+            if PanelState.roll-state == RollState.prepared && PanelState.roll-unmeasured > 0: Label { role: TextRole.note; tone: Tone.warning;
                 text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this roll was left out when it was prepared, so these settings do not reach it.") : @tr("{} photos of this roll were left out when it was prepared, so these settings do not reach them.", PanelState.roll-unmeasured);
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
+            if PanelState.roll-state == RollState.prepared && PanelState.roll-unmeasured > 0: Button {
                 text: PanelState.roll-unmeasured == 1 ? @tr("Include It") : @tr("Include Them");
                 help: @tr("Gives the photos left out this roll's preparation and settings, their own look kept.");
                 clicked => { PanelState.join-roll(); }
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Button {
+            if PanelState.roll-state == RollState.prepared && PanelState.roll-unmeasured > 0: Button {
                 text: @tr("Move into a New Roll…");
                 help: @tr("Moves the photos prepared with this roll into a roll folder of their own.");
                 clicked => { PanelState.make-roll(); }
             }
-            if PanelState.roll-state == 2: Label { role: TextRole.note; text: @tr("Finding the photos prepared with this roll…"); }
+            if PanelState.roll-state == RollState.finding: Label { role: TextRole.note; text: @tr("Finding the photos prepared with this roll…"); }
         }
     }
     Block {
