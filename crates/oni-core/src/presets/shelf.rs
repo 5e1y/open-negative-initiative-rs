@@ -45,9 +45,7 @@ pub fn save(preset: &Preset, directory: &Path) -> io::Result<()> {
     preset.name = writable_name(&preset, directory);
     let path = directory.join(file_name(&preset));
     let text = encode(&preset).map_err(|e| io::Error::other(e.to_string()))?;
-    let temporary = directory.join(format!(".{}.tmp", file_name(&preset)));
-    std::fs::write(&temporary, text)?;
-    std::fs::rename(&temporary, &path)?;
+    oni_library::write_atomically(&path, text.as_bytes())?;
     for other in files(directory).into_iter().filter(|f| *f != path) {
         // A stale twin that refuses to go leaves the save standing: the file just written is the preset.
         if std::fs::read(&other).ok().and_then(|d| decode(&d)).is_some_and(|p| p.id == preset.id) {
@@ -83,12 +81,14 @@ pub fn migrate(legacy: &Path, directory: &Path) -> usize {
     let Some(list) = std::fs::read(legacy).ok().and_then(|d| serde_json::from_slice::<Value>(&d).ok()) else { return 0 };
     let Some(list) = list.as_array() else { return 0 };
     let mut migrated = 0;
+    // The list stays where it is until every preset is on the shelf: the next launch takes it over again.
     for element in list {
         let Ok(bytes) = serde_json::to_vec(element) else { continue };
         let Some(preset) = decode(&bytes) else { continue };
-        if save(&preset, directory).is_ok() {
-            migrated += 1;
+        if save(&preset, directory).is_err() {
+            return migrated;
         }
+        migrated += 1;
     }
     let mut archive = legacy.as_os_str().to_owned();
     archive.push(".migrated");

@@ -45,7 +45,7 @@ pub fn decode(data: &[u8]) -> Option<Preset> {
     if name.is_empty() {
         return None;
     }
-    let id = meta.get("id").and_then(Value::as_str).and_then(Id::parse).unwrap_or_default();
+    let id = meta.get("id").and_then(Value::as_str).and_then(Id::parse).unwrap_or_else(|| Id::of_bytes(data));
     let parameters = match meta.get("parameters").and_then(Value::as_array) {
         // Rows naming stages that no longer render go; the two saturation zones are one curve.
         Some(written) => parameters::without_retired_methods(

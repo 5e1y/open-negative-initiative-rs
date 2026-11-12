@@ -8698,5 +8698,26 @@
     "title": "A footer too narrow for its keys lays its commit on a line of its own",
     "status": "done",
     "detail": "Owner's report: in French the prepare panel's footer ran past the panel, Cancel and Back now keycaps beside PRÉPARER LA PELLICULE. SheetFooter measures its keys on one line in an unseen copy of no height, so the choice never follows the lines it lays; too narrow, it lays the commit under the other keys, as wide as the room. The prepare check names the last step's key as French does: every key inside the footer, the commit under Back at the footer's width, twin one line outrunning it; with the footer forced to one line the check fails."
+  },
+  {
+    "id": 1755,
+    "type": "fix",
+    "title": "A preset is written through the app's atomic write",
+    "status": "done",
+    "detail": "shelf::save used its own write and rename: no flush, no Windows retry, a temporary left behind on failure. It now calls oni_library::write_atomically; the check refuses a save onto a directory and finds no temporary, fails on the old code."
+  },
+  {
+    "id": 1756,
+    "type": "fix",
+    "title": "A failed takeover keeps the legacy preset list",
+    "status": "done",
+    "detail": "migrate archived presets.json even when saves failed. It stops at the first failed save and leaves the list for the next launch; the check with an unwritable folder fails on the old code."
+  },
+  {
+    "id": 1757,
+    "type": "fix",
+    "title": "A preset file without an id keeps one identity",
+    "status": "done",
+    "detail": "decode gave a missing id a random one on every read, so edits duplicated and delete trashed nothing. The id is now Id::of_bytes of the file (128-bit FNV-1a); the check on load, edit and delete fails on the old code."
   }
 ]

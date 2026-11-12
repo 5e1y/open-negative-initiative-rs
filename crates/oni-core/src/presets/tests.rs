@@ -277,3 +277,67 @@ fn the_preview_is_what_a_click_writes() {
     // Twin: the preset does change the destination, so an ignored preview fails above.
     assert_ne!(previewed(Some(&preset), &target), target);
 }
+
+fn without_id(preset: &Preset) -> Vec<u8> {
+    let mut doc: Value = serde_json::from_str(&encode(preset).unwrap()).unwrap();
+    doc["preset"].as_object_mut().unwrap().remove("id");
+    serde_json::to_vec(&doc).unwrap()
+}
+
+#[test]
+fn a_file_without_an_id_keeps_one_identity() {
+    let dir = folder("noid");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("a.json"), without_id(&sample())).unwrap();
+    let first = load(&dir).remove(0);
+    assert_eq!(first.id, load(&dir)[0].id);
+    let mut edited = first.clone();
+    edited.name = "Edited".into();
+    save(&edited, &dir).unwrap();
+    assert_eq!(files(&dir).len(), 1);
+    let mut trashed = Vec::new();
+    delete(&edited, &dir, &mut |f| {
+        trashed.push(f.to_path_buf());
+        Ok(())
+    });
+    assert_eq!(trashed.len(), 1);
+    // Twin: two files with different bytes get different ids.
+    let mut other = sample();
+    other.name = "Other".into();
+    std::fs::write(dir.join("b.json"), without_id(&other)).unwrap();
+    let ids: BTreeSet<String> = load(&dir).iter().map(|p| p.id.to_string()).collect();
+    assert_eq!(ids.len(), 2);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_failed_takeover_keeps_the_list() {
+    let support = folder("takeover");
+    std::fs::create_dir_all(&support).unwrap();
+    std::fs::write(directory(&support), b"a file where the folder goes").unwrap();
+    let element: Value = serde_json::from_str(&encode(&sample()).unwrap()).unwrap();
+    std::fs::write(legacy_file(&support), serde_json::to_vec(&serde_json::json!([element])).unwrap()).unwrap();
+    assert!(load_shelf(&support).is_empty());
+    assert!(legacy_file(&support).exists() && !support.join("presets.json.migrated").exists());
+    // Twin: with the folder writable the list is archived.
+    std::fs::remove_file(directory(&support)).unwrap();
+    assert_eq!(load_shelf(&support).len(), 1);
+    assert!(!legacy_file(&support).exists() && support.join("presets.json.migrated").exists());
+    let _ = std::fs::remove_dir_all(&support);
+}
+
+#[test]
+fn a_refused_save_leaves_no_temporary() {
+    let dir = folder("refused");
+    let preset = sample();
+    std::fs::create_dir_all(dir.join(file_name(&preset))).unwrap();
+    assert!(save(&preset, &dir).is_err());
+    let temporaries = |d: &Path| std::fs::read_dir(d).unwrap().flatten().filter(|e| e.file_name().to_string_lossy().ends_with(".tmp")).count();
+    assert_eq!(temporaries(&dir), 0);
+    // Twin: a normal save leaves one file and no temporary.
+    let fine = folder("fine");
+    save(&preset, &fine).unwrap();
+    assert_eq!((files(&fine).len(), temporaries(&fine)), (1, 0));
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&fine);
+}

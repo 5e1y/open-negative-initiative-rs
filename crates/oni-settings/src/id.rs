@@ -11,6 +11,12 @@ impl Id {
         Id(uuid::Uuid::new_v4())
     }
 
+    /// An identity drawn from bytes, so one file without an id reads as the same preset every time.
+    pub fn of_bytes(bytes: &[u8]) -> Self {
+        let hash = bytes.iter().fold(0x6c62_272e_07bb_0142_62b8_2175_6295_c58d_u128, |h, b| (h ^ u128::from(*b)).wrapping_mul(0x0000_0000_0100_0000_0000_0000_0000_013b));
+        Id(uuid::Uuid::from_u128(hash))
+    }
+
     /// `UUID(uuidString:)`: the 36-character hyphenated form, either case.
     pub fn parse(text: &str) -> Option<Self> {
         if text.len() != 36 {
