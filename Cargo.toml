@@ -1,6 +1,9 @@
 [workspace]
 resolver = "3"
 members = ["crates/*","crates/oni-hack"]
+# Vendored crates stay outside: oni-hack's path to a patched one would make it a member, which
+# `cargo hakari manage-deps` wires back to oni-hack, a cycle.
+exclude = ["vendor"]
 
 [workspace.package]
 edition = "2024"
