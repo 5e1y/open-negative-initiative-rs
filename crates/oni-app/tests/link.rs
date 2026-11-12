@@ -176,12 +176,12 @@ async fn the_phone_switches_the_face_and_steps_a_slider_the_host_resolves() {
 
 /// A store on a plain file with the Exposure slider, driven by a Host; the phone that pairs with it.
 async fn exposure_desk(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, std::path::PathBuf) {
-    let (store, remote, dir, _) = exposure_desk_dialled(name).await;
+    let (store, remote, dir, _, _) = exposure_desk_dialled(name).await;
     (store, remote, dir)
 }
 
 /// The same, with what the phone dials again by: the address, its identity and the desktop's key.
-async fn exposure_desk_dialled(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, std::path::PathBuf, (std::net::SocketAddr, Identity)) {
+async fn exposure_desk_dialled(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, std::path::PathBuf, (std::net::SocketAddr, Identity), Arc<Mutex<Link>>) {
     let dir = std::env::temp_dir().join(format!("oni-core-link-{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let frame = dir.join("frame.tif");
@@ -201,12 +201,12 @@ async fn exposure_desk_dialled(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, 
     let code = PairingCode::parse(&host.open_pairing(vec![addr]).to_uri()).unwrap();
     let me = Identity::generate();
     let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &me, &code, "Phone").await.unwrap();
-    (store, remote, dir, (addr, me))
+    (store, remote, dir, (addr, me), link)
 }
 
 #[tokio::test]
 async fn the_old_link_of_a_phone_back_on_a_new_one_leaves_its_drag_held() {
-    let (store, old, dir, (addr, me)) = exposure_desk_dialled("relink").await;
+    let (store, old, dir, (addr, me), _) = exposure_desk_dialled("relink").await;
     let new = Remote::connect(Remote::dial(&[addr]).await.unwrap(), &me, old.host(), "Phone").await.unwrap();
     let mut display = new.display();
     until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
@@ -296,5 +296,26 @@ async fn a_drag_cut_by_another_key_or_a_lost_phone_still_records_its_step() {
     })
     .await
     .expect("the hold is released once the phone is gone");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test]
+async fn a_press_while_the_host_covers_the_editor_lands_nowhere() {
+    let (store, remote, dir, _, link) = exposure_desk_dialled("covered").await;
+    let start = store.lock().unwrap().settings().clone();
+    let mut display = remote.display();
+    until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
+    link.lock().unwrap().covered = true;
+    remote.slide(Param::Exposure, 0.75);
+    remote.press(Command::StepParam { param: Param::Exposure, by: 2 });
+    remote.press(Command::Face(Face::Scanner));
+    let refused = until(&mut display, |d| d.state.applied == 3).await;
+    assert!(store.lock().unwrap().settings() == &start, "no press moves the frame the host covers");
+    assert!(!refused.state.can_undo && refused.state.panel.face == Face::Pro, "the phone is told nothing moved");
+    // Twin: uncovered, the same press lands.
+    link.lock().unwrap().covered = false;
+    remote.press(Command::StepParam { param: Param::Exposure, by: 2 });
+    until(&mut display, |d| d.state.applied == 4).await;
+    assert!((store.lock().unwrap().settings().print.exposure - start.print.exposure - 0.2).abs() < 1e-5);
     let _ = std::fs::remove_dir_all(&dir);
 }

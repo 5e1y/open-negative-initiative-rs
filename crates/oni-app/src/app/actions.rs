@@ -19,7 +19,6 @@ impl Ctl {
             Act::LeaveRoll => self.leave_roll(),
             Act::ToggleMode if self.state.borrow().prepare.shown => {}
             Act::Reset => self.reset_all(),
-            Act::ToggleMode if self.export.borrow().shown => {}
             Act::Export => self.export_act(),
             Act::ToggleMode => self.toggle_mode(),
             Act::HidePanel => app.set_panel_hidden(!app.get_panel_hidden()),

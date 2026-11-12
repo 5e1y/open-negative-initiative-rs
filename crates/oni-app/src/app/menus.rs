@@ -25,14 +25,17 @@ impl Ctl {
             // the roll gestures act on the roll shown.
             let subject = s.editor_subject().is_some();
             let roll = s.roll_targets(gallery).len();
-            // `modalOpen`: the export surface or any sheet, Report a Bug and the year's deck included.
+            // Any sheet, Report a Bug and the year's deck included.
             let sheet = w.get_sheet_shown() || s.shelf_form_open();
-            let modal = self.export.borrow().shown || sheet;
+            let (exporting, writing) = {
+                let c = self.export.borrow();
+                (c.shown.then_some(c.targets.len()), c.exporting)
+            };
             let presets = s.shelf.held.len();
             let members = s.roll_members(gallery).len();
             let preparing = s.prepare.shown;
             // The bar's ⌘A: the gallery's photos, or those beside the one open.
-            let select_all = !modal && !preparing && if gallery { !s.order.is_empty() } else { open };
+            let select_all = !sheet && exporting.is_none() && !preparing && if gallery { !s.order.is_empty() } else { open };
             let (opened, read_done, filter, muted, columns) = (s.opened().is_some(), s.read_done(), s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split().is_some(), s.screen_gamut, s.negative().is_some());
             // The crop and De-dust are each frame's own, out of reach while frames show together.
@@ -66,10 +69,6 @@ impl Ctl {
                 .and_then(|k| store.measured_group(k))
                 .map_or(0, |m| m.len() - usize::from(open_path.as_ref().is_some_and(|p| m.contains(p))));
             let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
-            let (exporting, writing) = {
-                let c = self.export.borrow();
-                (c.shown.then_some(c.targets.len()), c.exporting)
-            };
             let titles = MenuTitles {
                 mode: if gallery { tr("Editor") } else { tr("Gallery") }.into(),
                 export: crate::export::label::menu(exporting.unwrap_or(exported)).into(),
@@ -120,7 +119,7 @@ impl Ctl {
                 mirror: open && single,
                 screen_gamut: true,
                 emulator: open && !gallery,
-                medal: selected > 0 && !modal,
+                medal: selected > 0,
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
                 new_project: count > 0 && !trash,
@@ -128,14 +127,14 @@ impl Ctl {
                 measure_roll: !preparing && roll > 0,
                 reset_to_default: gallery && roll > 0,
                 // In the gallery, the one photo picked, as its menu's Copy Settings.
-                copy_settings: !modal && if gallery { count == 1 } else { open },
+                copy_settings: if gallery { count == 1 } else { open },
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
-                save_preset: open && !modal,
-                edit_presets: !modal && presets > 0,
-                import_presets: !modal,
-                show_presets: !modal,
-                paste_preset_code: !modal,
+                save_preset: open,
+                edit_presets: presets > 0,
+                import_presets: true,
+                show_presets: true,
+                paste_preset_code: true,
                 apply_preset: count > 0,
             };
             // `.roll` is neither the gallery nor the editor: their own gestures, and those on the editor it
@@ -152,6 +151,12 @@ impl Ctl {
                     paste_preset_code: live.paste_preset_code,
                     ..MenuLive::default()
                 }
+            } else {
+                live
+            };
+            // The export surface covers the editor and the gallery: its own key, opening and the gamut's view stay.
+            let live = if exporting.is_some() {
+                MenuLive { open: live.open, export: live.export, refresh: live.refresh, screen_gamut: live.screen_gamut, ..MenuLive::default() }
             } else {
                 live
             };
