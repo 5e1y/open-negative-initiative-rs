@@ -9370,5 +9370,12 @@
     "title": "Refresh tells what moved against the folder shown",
     "status": "done",
     "detail": "Review of #1840: ⌘R pressed while another folder's read was under way kept the shown folder's rows as the before and told the difference against the folder asked once it landed. Refresh now keeps a before only when the folder asked is the one shown. The folder_owner check loses a twin that ran nothing of the app (the mutation run already showed the check fails with the reread under the folder asked)."
+  },
+  {
+    "id": 1846,
+    "type": "fix",
+    "title": "library/tests.rs back under its ceiling",
+    "status": "done",
+    "detail": "#1836 brought crates/oni-app/src/library/tests.rs to 401 lines; the roll #8 test folds its skip and its frame filter."
   }
 ]

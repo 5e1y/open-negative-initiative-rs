@@ -101,13 +101,10 @@ fn a_folder_reached_through_a_link_lists_the_photos_on_its_real_path() {
 
 #[test]
 fn roll_8_opens_as_one_named_roll_of_its_photos() {
-    let Some(dir) = roll8() else {
-        eprintln!("roll #8 is absent: the archive is not exercised");
-        return;
-    };
-    // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it; its contact sheet is no photo of the roll.
-    let frame = |p: &Path| oni_settings::sidecar::read(p, true, true).map_or(true, |l| l.settings.sheet.is_none());
-    let n = std::fs::read_dir(&dir).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") && frame(&e.path()) }).count();
+    let Some(dir) = roll8() else { return eprintln!("roll #8 is absent: the archive is not exercised") };
+    // Ten frames in the fixture, the roll's 38 where a tester holds it; its contact sheet is no photo of it.
+    let frame = |p: &Path| { let n = p.file_name().unwrap().to_string_lossy(); !n.starts_with('.') && !n.ends_with(".json") && oni_settings::sidecar::read(p, true, true).map_or(true, |l| l.settings.sheet.is_none()) };
+    let n = std::fs::read_dir(&dir).unwrap().filter_map(|e| e.ok()).filter(|e| frame(&e.path())).count();
     let a = Archive::load(&dir);
     assert_eq!(a.groups.len(), 1);
     assert_eq!((a.groups[0].title.as_str(), a.groups[0].entries.len()), ("Roll #8", n));
