@@ -280,8 +280,11 @@ fn rename(rig: &common::Rig, shell: &Shell, folder: &str, to: &str) {
     n.invoke_menu_chosen(i as i32);
     rig.pump();
     n.invoke_rename_committed(at(w, folder) as i32, to.into());
-    rig.pump();
+    // The rename lands off the window while the folder's last read stands done: a wait on the read
+    // alone looks before anything follows it.
     let ctl = shell.ctl.clone();
+    assert!(ctl.state.borrow().disk_busy() && ctl.state.borrow().read_done(), "the rename runs, the read stands");
+    rig.landed(&ctl);
     rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
 }
 

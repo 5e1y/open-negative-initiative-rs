@@ -9895,5 +9895,12 @@
     "title": "The migration twins run the code they guard",
     "status": "done",
     "detail": "The newer-file twin reads through state::read blind to the version (it sets the file aside); the starred twin runs the same check with a save that skips the write; the defaults twin lays defaults::taken where this line ran; the refused-value twin reads each value through defaults::extracted; the tiles twin runs tiles::renamed over an old-named tile newer than the portable one; the second-import twin rebuilds through former_places. Each new check was seen to fail on the head's behaviour put back."
+  },
+  {
+    "id": 1946,
+    "type": "test",
+    "title": "The rename check waits for the rename to land before it reads projects.json",
+    "status": "done",
+    "detail": "a_rename_moves_the_projects_recorded_path failed about one run in four beside other checks: its rename helper waited on read_done alone, which stands true while the rename runs off the window (on_disk), so it read projects.json before follow_folder carried and saved the member. The app writes the moved path (project::moved, save_projects); lot 1's guard, writer and laid_over play no part. The helper now asserts disk_busy and read_done together right after the commit (the twin: a wait on the read alone passes before the rename lands), then waits for rig.landed and the read again. Seen: 24 of 24 library_wide runs green under three parallel copies, against 1 failure in 4 before."
   }
 ]
