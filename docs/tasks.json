@@ -9699,5 +9699,75 @@
     "title": "The EXIF line: a line left alone and a cleared field",
     "status": "done",
     "detail": "oni-app export::line: a_line_left_alone_is_not_pinned_to_the_artist_remembered_before (twin: the diff against the new artist alone pins the old one) and a_field_cleared_by_hand_stays_cleared, from a block written whole and from a clear typed now (twin: a block without the key derives the artist); both failed on the code before (Alice pinned, the cleared artist came back). oni-settings: a cleared film round-trips, twin without its key it derives; a block written whole keeps its cleared fields, twin a sparse one derives the rest. The line tests' scratch folders are removed under a name the member-deletion check accepts. Window export_window: the artist typed on the first line is remembered, not kept in the sidecar; the film picked is."
+  },
+  {
+    "id": 1880,
+    "type": "fix",
+    "title": "A contact sheet on a paper lays each frame's Paper Correction on its own tile",
+    "status": "done",
+    "detail": "The sheet's file laid frame 1's correction on every pixel (contact.rs passed it to file_bytes once), while the panel shows each frame under its own. together::printed now takes the export space and, on a paper, lays each frame's gains on the pixels its tile was drawn on, the gaps, numbers and logo none; the whole-file step gets no correction. Checks: print.rs a_frames_correction_is_laid_on_its_tile_alone (twin: frame 1's gains on the whole band move tile 2 and the gaps) and window sheet_paper::each_frame_of_a_sheet_on_a_paper_takes_its_own_correction (failed before: tile 2's blue 78 against 177; twin: frame 1's own tile moves). The engine-fallback double proof the finding named is unreachable: apart() fails only on a poisoned engine, which the fallback is too."
+  },
+  {
+    "id": 1881,
+    "type": "fix",
+    "title": "The export date is the line's alone: a cleared Date writes none",
+    "status": "done",
+    "detail": "file_bytes fell back to the scan's capture date whenever the line's date was empty, so a cleared field still wrote 306 and 36867. The separate date argument is gone from oni_export::write, file_bytes (and its now unused source path), encoded and metadata::stated: the date is ExifMetadata.date like every other field, empty writes no tag. The line still opens on the scan's date (opening_row). Check: oni-export tests/dates.rs a_cleared_date_writes_no_date_even_from_a_dated_source (failed before; twin: the source carries a date a fallback would leak)."
+  },
+  {
+    "id": 1882,
+    "type": "fix",
+    "title": "A typed date reaches the file in EXIF's nineteen characters",
+    "status": "done",
+    "detail": "dated::exif only swapped the dashes, so 2026-09-14 reached EXIF as ten characters and words verbatim. It now returns the 19-character form for a day dashed or in colons with an optional HH:MM[:SS] (midnight when none), empty for empty, nothing otherwise; a keystroke that reads as no date keeps the line's last. The field let go (Return or focus leaving) calls Exporting.date-settled and shows the line again, so it shows what the file will carry. Checks: dated.rs a_typed_date_reaches_the_file_in_exifs_nineteen_characters (twin: the old dash swap fails the EXIF shape); export_panel window check types words over the date and Return shows the date back (fails without the re-show)."
+  },
+  {
+    "id": 1883,
+    "type": "fix",
+    "title": "The contact sheet carries the first line's date",
+    "status": "done",
+    "detail": "write_sheet built its metadata from the first line's artist and copyright and let the scan's capture date fill in. sheet_metadata now keeps the first line's artist, copyright and date, never a camera, lens, ISO or film. Check: contact.rs a_sheet_states_the_first_lines_artist_copyright_and_date_alone (failed on the former construction; twin: an empty first date gives the sheet none)."
+  },
+  {
+    "id": 1884,
+    "type": "fix",
+    "title": "An export cut short takes no name and leaves no hidden temporary",
+    "status": "done",
+    "detail": "file::create held the destination with an empty create_new placeholder before renaming over it, so a process killed in between left a 0-byte file that later read as an original; and a cut write's .oni-<hash>-<n>.tmp was reclaimed only by a later write of the same name. create now renames the staged bytes where nothing stands in one step through roll_folder::rename_new (renamex_np RENAME_EXCL on macOS, a look before the rename where a volume refuses the flag, as frame moves already do), and file::put first calls the new atomic::reclaimed on its folder, which removes every temporary no write of this process holds. Checks: file.rs an_export_cut_short_takes_no_name_and_its_leftover_goes_at_the_next_export (a child quits before the rename; failed before on both halves; twins: an empty placeholder reads as an original, a file standing at the name is refused and kept); atomic.rs a_folder_reclaimed_loses_every_leftover_and_keeps_the_writes_in_flight (twin: only temporaries' names go)."
+  },
+  {
+    "id": 1910,
+    "type": "fix",
+    "title": "A date read from a sidecar or a scan reaches the file in EXIF's nineteen characters",
+    "status": "done",
+    "detail": "#1882 settled only the typed date: a sidecar's stored date (a day kept in colons by an earlier build, words from an older one) and a scan's own malformed DateTime reached tags 306 and 36867 as they stood. The rule moves to oni_settings::exif::date_of, applied where a date is read, once: ExifMetadata's date deserialises through it (every sidecar read, envelope and decode alike), scan_metadata settles the scan's, and the field's keystrokes call it; what reads as no date is none, and the writers write the line as it stands. Checks: oni-settings exif a_sidecars_date_is_settled_as_it_is_read (failed before: 2026:09:14 kept; twin: the plain JSON keeps ten characters) and a_date_reaches_a_line_in_exifs_nineteen_characters (moved from dated.rs); oni-export tests/dates.rs a_date_read_from_a_sidecar_or_a_scan_reaches_the_file_in_exifs_nineteen_characters (failed before on the scan; twin: a line that skipped the reading writes its ten characters)."
+  },
+  {
+    "id": 1911,
+    "type": "fix",
+    "title": "The Date field keeps the words being typed through a line published again",
+    "status": "done",
+    "detail": "A typed day is stored with its midnight, so a preview or size landing that republished the line while the field held the focus replaced the words with the stored form and the time typed next was lost. While edited, the Date field's value is its own text; let go by Return or by the focus leaving, Exporting.date-settled publishes the line and the field shows the date the file will carry. Check: window export_panel types 2026-09-15, publishes its line again as a landing does (publish_line), then types 10:30 and Return: the field reads 2026-09-15 10:30:00 (twin: the line published meanwhile carries 00:00:00; failed before with 2026-09-15 00:00:00 in the field); a click elsewhere settles as Return does."
+  },
+  {
+    "id": 1912,
+    "type": "fix",
+    "title": "A new export or a moved frame never replaces a file appearing at its name on Windows",
+    "status": "done",
+    "detail": "rename_new fell back to a look then std::fs::rename, which Windows makes with MOVEFILE_REPLACE_EXISTING, so a file landing between the two (a sync client, another ONI) was replaced. Windows now renames through MoveFileExW without that flag, under a \\\\?\\ path past MAX_PATH, refused in one step; the look stays only for macOS exFAT and SMB volumes, which refuse RENAME_EXCL and offer no refusing rename, and file::create's doc names that limit. Check: roll_folder::carry a_rename_onto_a_taken_name_is_refused_and_the_file_there_kept (twin: the plain rename replaces it); on macOS it passes through RENAME_EXCL, the Windows path compiles and passes clippy for x86_64-pc-windows-msvc but awaits a Windows run."
+  },
+  {
+    "id": 1913,
+    "type": "fix",
+    "title": "A reclaim takes only temporaries no writer holds, once a folder a run",
+    "status": "done",
+    "detail": "atomic::reclaimed knew only this process's writes, so another ONI's sidecar save in the folder lost its temporary; it held the in-flight lock over the listing and every removal, and file::put listed the folder again at each frame. A staged temporary now stays open and locked until dropped (created locked with O_EXLOCK on macOS, locked just after elsewhere), and reclaimed removes only a temporary whose lock it can take, which the system frees when a writer dies; it takes no in-process lock. put reclaims a folder at its first export of the run. Checks: atomic a_temporary_another_process_holds_is_never_reclaimed (failed before; twin: let go, it goes) and file an_export_cut_short_takes_no_name_and_its_leftover_goes_at_the_next_export (a leftover laid after the folder's first export stays; twin: a folder not yet exported to loses it)."
+  },
+  {
+    "id": 1930,
+    "type": "fix",
+    "title": "A date kept on a frame's EXIF line is settled as it is read, on the line types fix/exif-zoom brought",
+    "status": "done",
+    "detail": "fix/export-files settled a date where read through ExifMetadata, while canvas had moved the sidecar's line to TypedExif (a missing key derives, an empty one was cleared by hand). Merging both, ExifMetadata.date and TypedExif.date are settled at deserialisation: a kept date that reads as no date is a date cleared (Some(\"\")), never one left to derive, and an absent one still derives; the Date field writes exif::date_of over the row, the export writes the line's date as it stands and keeps what a hand set through keep_line. Check: exif a_sidecars_date_is_settled_as_it_is_read, on TypedExif (words read as cleared, an absent date as None, the whole line settled too; twin: the document read as plain JSON keeps the ten characters EXIF refuses)."
   }
 ]

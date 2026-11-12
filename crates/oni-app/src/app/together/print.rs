@@ -5,7 +5,9 @@ use super::*;
 use super::numbers::under;
 use crate::export::Target;
 use crate::render::Laid;
+use oni_colour::{PaperCorrection, Space};
 use oni_export::{Failure, Image as Picture};
+use std::cell::RefCell;
 use std::sync::atomic::AtomicBool;
 use super::plate::{Face, Inks, Lettering, Plate, linear};
 use swash::scale::ScaleContext;
@@ -17,8 +19,9 @@ pub(in crate::app) struct Captions {
 }
 
 /// The sheet of `targets` at full scale in the working space, laid on `sizes` (each frame's cropped
-/// size, else its tile's) with its `captions`; `None` once `stop` is raised.
-pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option<Vec<(f64, f64)>>, captions: &Captions, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
+/// size, else its tile's) with its `captions`; on a paper each tile takes its frame's Paper Correction
+/// as the panel shows it, the gaps and inks none. `None` once `stop` is raised.
+pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option<Vec<(f64, f64)>>, captions: &Captions, space: &Space, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
     let stopped = || stop.load(Ordering::Relaxed);
     // A tile reads a reduced decode: a stroke with no patch on disk is healed on the whole frame first.
     for t in targets {
@@ -34,6 +37,7 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
     let (width, height) = sheet.drawn(1.0);
     let ground = captions.inks.ground;
     let mut picture = filled(width as usize, height as usize, linear(ground));
+    let on_paper = space.paper().is_some();
     for row in (0..targets.len()).collect::<Vec<_>>().chunks(COLUMNS) {
         if stopped() {
             return Ok(None);
@@ -42,17 +46,23 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
         let bottom = row.iter().map(|&i| sheet.pictures[i].1 + sheet.pictures[i].3).fold(0.0, f64::max);
         let (_, (wx, wy, ww, wh)) = sheet.seen(1.0, (0.0, top, sheet.size.0, bottom - top));
         let present: Vec<Laid> = row.iter().map(|&i| Laid::Frame(&negatives[i], &targets[i].settings)).collect();
-        let at = |k: usize, tile| {
+        let tiles = RefCell::new(Vec::with_capacity(row.len()));
+        let at = |k: usize, tile: (u32, u32)| {
             let (x, y) = sheet.place(row[k], tile, 1.0);
-            (x - wx as i32, y - wy as i32)
+            let placed = (x - wx as i32, y - wy as i32);
+            tiles.borrow_mut().push((k, placed, tile));
+            placed
         };
         let mut e = engine.lock().map_err(|_| Failure::Render)?;
         let drawn = e.render_laid(&present, TILE, &at, (ww, wh)).map_err(|error| {
             crate::timing::line(&format!("contact sheet: row of {:?} at {:?} not drawn: {error}", row, (wx, wy, ww, wh)));
             Failure::Render
         })?;
-        let band = crate::export::read_laid(&mut e, drawn)?;
+        let mut band = crate::export::read_laid(&mut e, drawn)?;
         drop(e);
+        for (k, placed, tile) in tiles.take().into_iter().filter(|_| on_paper) {
+            corrected(&mut band, placed, tile, &targets[row[k]].settings.paper_correction);
+        }
         laid_on(&mut picture, &band, (wx as usize, wy as usize));
     }
     let mut context = ScaleContext::new();
@@ -109,6 +119,15 @@ fn laid_on(sheet: &mut Picture, band: &Picture, at: (usize, usize)) {
     }
 }
 
+/// `correction`'s gains laid on the tile of `size` at `at` in `band`, and nowhere else.
+fn corrected(band: &mut Picture, at: (i32, i32), size: (u32, u32), correction: &PaperCorrection) {
+    let span = |from: i32, length: u32, most: usize| (from.max(0) as usize).min(most)..((from + length as i32).max(0) as usize).min(most);
+    let (xs, ys) = (span(at.0, size.0, band.width), span(at.1, size.1, band.height));
+    for y in ys {
+        correction.apply(&mut band.pixels[(y * band.width + xs.start) * 4..(y * band.width + xs.end) * 4]);
+    }
+}
+
 /// Frame `n`'s number at `NUMBER` pixels from the left of `at`, centred in the `MARGIN` band under it.
 fn number(sheet: &mut Picture, at: (f64, f64), n: usize, lettering: Lettering, ground: [f32; 3], context: &mut ScaleContext) {
     let Some(face) = Face::of(lettering.weight) else { return };
@@ -143,6 +162,31 @@ mod tests {
         let mut regular = filled(400, 200, [0.0; 3]);
         number(&mut regular, (20.0, 40.0), 12, Lettering { weight: 400.0, ..ORANGE }, [0.0; 3], &mut ScaleContext::new());
         assert!(lit(&regular).1 < count, "a regular number as heavy as a bold one");
+    }
+
+    #[test]
+    fn a_frames_correction_is_laid_on_its_tile_alone() {
+        // Two 2 × 2 tiles a pixel apart on a grey band 6 wide, the first's blue a stop down.
+        let grey = [0.4, 0.4, 0.4, 1.0];
+        let band = || Picture { width: 6, height: 3, pixels: grey.repeat(18) };
+        let down = PaperCorrection { stops: [0.0, 0.0, -1.0] };
+        let at = |p: &Picture, x: usize, y: usize| p.pixels[(y * 6 + x) * 4..][..4].to_vec();
+        let mut sheet = band();
+        corrected(&mut sheet, (0, 0), (2, 2), &down);
+        corrected(&mut sheet, (3, 0), (2, 2), &PaperCorrection::default());
+        assert_eq!(at(&sheet, 1, 1), [0.4, 0.4, 0.2, 1.0], "the first tile's blue halved, red and green kept");
+        for (x, y) in [(3, 0), (4, 1), (2, 0), (5, 1), (0, 2)] {
+            assert_eq!(at(&sheet, x, y), grey, "({x}, {y}) is the second tile's, a gap or the margin");
+        }
+        // A tile running past the band is laid on the part inside it.
+        let mut cut = band();
+        corrected(&mut cut, (5, 2), (4, 4), &down);
+        assert_eq!((at(&cut, 5, 2), at(&cut, 4, 2)), (vec![0.4, 0.4, 0.2, 1.0], grey.to_vec()));
+        // Twin: the first frame's gains laid on the whole sheet move the second tile and the gaps.
+        let mut whole = band();
+        down.apply(&mut whole.pixels);
+        assert_ne!(at(&whole, 4, 1), grey);
+        assert_ne!(at(&whole, 2, 0), grey);
     }
 
     #[test]

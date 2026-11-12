@@ -33,7 +33,7 @@ fn typed() -> ExifMetadata {
         lens: "Summicron 50".into(),
         film: "Kodak Portra 400".into(),
         iso: "400".into(),
-        date: String::new(),
+        date: "2001:02:03 04:05:06".into(),
         artist: "A. Photographer".into(),
         copyright: "© A. Photographer".into(),
     }
@@ -84,7 +84,7 @@ fn the_tiff_is_zip_compressed_lossless_and_profiled() {
     let image = frame(320, 200);
     let export = settings(Format::Tiff16, Space::AdobeRgb);
     let rendered = converted(&image, &export).unwrap();
-    let file = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+    let file = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
     let mut d = read_tiff(&file);
     assert_eq!(d.dimensions().unwrap(), (320, 200));
     assert_eq!(d.colortype().unwrap(), tiff::ColorType::RGBA(16));
@@ -99,7 +99,7 @@ fn the_tiff_is_zip_compressed_lossless_and_profiled() {
     // Twin: switched off, the same frame reads Compression 1 and weighs its exact samples.
     let mut plain = export.clone();
     plain.compress_tiff = false;
-    let raw = encoded(&rendered, &plain, None, &ExifMetadata::default()).unwrap();
+    let raw = encoded(&rendered, &plain, &ExifMetadata::default()).unwrap();
     let mut d = read_tiff(&raw);
     assert_eq!(d.get_tag_u32(tiff::tags::Tag::Compression).unwrap(), 1);
     assert!(raw.len() > file.len());
@@ -118,7 +118,7 @@ fn an_eight_bit_tiff_is_written_as_well() {
         pixels: Quantised::Eight((0..24).map(|v| v as u8 * 10).collect()),
         icc: Space::Srgb.icc_data().unwrap(),
     };
-    let file = encoded(&rendered, &settings(Format::Tiff16, Space::Srgb), None, &ExifMetadata::default()).unwrap();
+    let file = encoded(&rendered, &settings(Format::Tiff16, Space::Srgb), &ExifMetadata::default()).unwrap();
     let mut d = read_tiff(&file);
     assert_eq!(d.colortype().unwrap(), tiff::ColorType::RGBA(8));
     let tiff::decoder::DecodingResult::U8(read) = d.read_image().unwrap() else { panic!("8-bit samples") };
@@ -131,7 +131,7 @@ fn a_large_tiff_spans_several_strips_and_reads_back_whole() {
     let image = frame(1100, 260);
     let export = settings(Format::Tiff16, Space::Srgb);
     let rendered = converted(&image, &export).unwrap();
-    let file = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+    let file = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
     let mut d = read_tiff(&file);
     assert!(d.strip_count().unwrap() >= 3, "{} strips", d.strip_count().unwrap());
     let tiff::decoder::DecodingResult::U16(read) = d.read_image().unwrap() else { panic!() };
@@ -155,7 +155,7 @@ const STATED: [u16; 8] = [
 fn the_tiff_carries_its_structure_and_the_stated_fields_only() {
     let export = settings(Format::Tiff16, Space::DisplayP3);
     let rendered = converted(&frame(64, 40), &export).unwrap();
-    let file = encoded(&rendered, &export, Some("2001:02:03 04:05:06"), &typed()).unwrap();
+    let file = encoded(&rendered, &export, &typed()).unwrap();
     // With an Exif directory, ImageIO also states the picture's size in it.
     let expected: BTreeSet<u16> = STRUCTURE.into_iter().chain(STATED).chain([40962, 40963]).collect();
     assert_eq!(tags(&file), expected);
@@ -170,7 +170,7 @@ fn the_tiff_carries_its_structure_and_the_stated_fields_only() {
     assert!(matches!(d.read_image().unwrap(), tiff::decoder::DecodingResult::U16(_)));
 
     // Twin: nothing stated, no date, and only the structure is left.
-    let bare = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+    let bare = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
     assert_eq!(tags(&bare), STRUCTURE.into_iter().collect());
 }
 
@@ -178,13 +178,13 @@ fn the_tiff_carries_its_structure_and_the_stated_fields_only() {
 fn the_jpeg_carries_the_stated_fields_only_and_its_profile() {
     let export = settings(Format::Jpeg, Space::DisplayP3);
     let rendered = converted(&frame(64, 40), &export).unwrap();
-    let file = encoded(&rendered, &export, Some("2001:02:03 04:05:06"), &typed()).unwrap();
+    let file = encoded(&rendered, &export, &typed()).unwrap();
     assert_eq!(tags(&file), STATED.into_iter().collect());
     assert_eq!(text(&file, exif::Tag::Artist).as_deref(), Some("A. Photographer"));
     assert_eq!(text(&file, exif::Tag::DateTime).as_deref(), Some("2001:02:03 04:05:06"));
     assert_eq!(jpeg_profile(&file), Space::DisplayP3.icc_data());
     // Twin: nothing stated writes no Exif segment at all.
-    let bare = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+    let bare = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
     assert!(tags(&bare).is_empty());
     assert!(!bare.windows(6).any(|w| w == b"Exif\0\0"));
     assert!(file.windows(6).any(|w| w == b"Exif\0\0"));
@@ -195,7 +195,7 @@ fn an_empty_field_writes_no_tag() {
     let export = settings(Format::Jpeg, Space::Srgb);
     let rendered = converted(&frame(16, 16), &export).unwrap();
     let lens_only = ExifMetadata { lens: "Summicron 50".into(), ..Default::default() };
-    let file = encoded(&rendered, &export, None, &lens_only).unwrap();
+    let file = encoded(&rendered, &export, &lens_only).unwrap();
     assert_eq!(tags(&file), [tag::LENS_MODEL].into_iter().collect());
     for (typed, expected) in [("ISO 400", Some(400)), ("", None), ("0", None), ("١٢", None), ("100000", Some(100000))]
     {
@@ -203,7 +203,7 @@ fn an_empty_field_writes_no_tag() {
     }
     // A rating past a SHORT is written as Exif's ceiling.
     let fast = ExifMetadata { iso: "100000".into(), ..Default::default() };
-    let file = encoded(&rendered, &export, None, &fast).unwrap();
+    let file = encoded(&rendered, &export, &fast).unwrap();
     assert_eq!(text(&file, exif::Tag::PhotographicSensitivity).as_deref(), Some("65535"));
 }
 
@@ -232,7 +232,7 @@ fn every_format_declares_the_profile_of_its_space() {
             }
             export.hdr = hdr;
             let rendered = converted(&image, &export).unwrap();
-            let file = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+            let file = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
             let declared = match format {
                 Format::Jpeg => jpeg_profile(&file),
                 Format::Tiff16 => read_tiff(&file).get_tag_u8_vec(tiff::tags::Tag::IccProfile).ok(),
@@ -254,7 +254,7 @@ fn every_format_declares_the_profile_of_its_space() {
 fn read_back_gap(space: Space, colour: [f32; 3], read_as: Option<&[u8]>) -> f64 {
     let image = Image { width: 4, height: 4, pixels: [colour[0], colour[1], colour[2], 1.0].repeat(16) };
     let export = settings(Format::Tiff16, space);
-    let file = encoded(&converted(&image, &export).unwrap(), &export, None, &ExifMetadata::default()).unwrap();
+    let file = encoded(&converted(&image, &export).unwrap(), &export, &ExifMetadata::default()).unwrap();
     let mut d = read_tiff(&file);
     let embedded = d.get_tag_u8_vec(tiff::tags::Tag::IccProfile).unwrap();
     let tiff::decoder::DecodingResult::U16(samples) = d.read_image().unwrap() else { panic!("16-bit samples") };
@@ -328,9 +328,9 @@ fn the_jpeg_quality_is_honoured() {
         sum / rgb.len() as f64
     };
     export.jpeg_quality = 0.85;
-    let good = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+    let good = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
     export.jpeg_quality = 0.1;
-    let poor = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+    let poor = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
     let (good_error, poor_error) = (error(&good), error(&poor));
     assert!(good_error < 1.5, "0.85 mean error {good_error}");
     // Twin: at 0.1 the same reader sees the loss.
@@ -344,7 +344,7 @@ fn the_estimate_weighs_the_same_bytes_as_the_file() {
     let image = frame(500, 333);
     for export in [settings(Format::Jpeg, Space::Srgb), settings(Format::Tiff16, Space::AdobeRgb)] {
         let rendered = converted(&image, &export).unwrap();
-        let file = encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap();
+        let file = encoded(&rendered, &export, &ExifMetadata::default()).unwrap();
         let pixels = (500 * 333) as f64;
         assert_eq!(estimate(&image, pixels, &export), file.len() as u64);
         // Scaled by area: four times the pixels, four times the weight.
@@ -360,9 +360,9 @@ fn base_and_container() -> (Vec<u8>, Vec<u8>) {
     let mut export = settings(Format::Jpeg, Space::Srgb);
     export.jpeg_quality = 0.92;
     let rendered = converted(&frame(400, 300), &export).unwrap();
-    let base = encoded(&rendered, &export, Some("2001:02:03 04:05:06"), &typed()).unwrap();
+    let base = encoded(&rendered, &export, &typed()).unwrap();
     export.hdr = true;
-    let built = encoded(&rendered, &export, Some("2001:02:03 04:05:06"), &typed()).unwrap();
+    let built = encoded(&rendered, &export, &typed()).unwrap();
     (base, built)
 }
 

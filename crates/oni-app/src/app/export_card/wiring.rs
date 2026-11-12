@@ -165,12 +165,14 @@ impl Ctl {
                     c.typed_gear.insert((at, oni_library::collection::Gear::Lens));
                 }
                 "iso" => r.row.metadata.iso = text,
-                "date" => r.row.metadata.date = super::dated::exif(&text),
+                "date" => r.row.metadata.date = oni_settings::exif::date_of(&text).unwrap_or_else(|| r.row.metadata.date.clone()),
                 "artist" => r.row.metadata.artist = text,
                 "copyright" => r.row.metadata.copyright = text,
                 _ => {}
             }
         });
+        let p = me.clone();
+        e.on_date_settled(move |row| p.publish_line(row.max(0) as usize));
         let p = me.clone();
         e.on_pick_film(move |row| {
             let current = {

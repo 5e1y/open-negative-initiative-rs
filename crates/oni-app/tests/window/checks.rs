@@ -61,6 +61,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar", export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar),
     ("export_flow::the_estimate_weighs_the_file_the_export_writes", export_flow::the_estimate_weighs_the_file_the_export_writes),
     ("export_sheet::a_selection_exports_as_one_contact_sheet_black_and_numbered", export_sheet::a_selection_exports_as_one_contact_sheet_black_and_numbered),
+    ("sheet_paper::each_frame_of_a_sheet_on_a_paper_takes_its_own_correction", sheet_paper::each_frame_of_a_sheet_on_a_paper_takes_its_own_correction),
     ("filmstrip::the_filmstrip_numbers_its_frames_and_the_status_bar_says_the_place_and_the_save", filmstrip::the_filmstrip_numbers_its_frames_and_the_status_bar_says_the_place_and_the_save),
     ("first_frame::a_first_drawable_owes_nothing_to_the_occlusion_state", first_frame::a_first_drawable_owes_nothing_to_the_occlusion_state),
     ("frontier_look::a_frontier_look_file_is_read_again_on_each_save", frontier_look::a_frontier_look_file_is_read_again_on_each_save),

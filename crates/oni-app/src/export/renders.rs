@@ -115,8 +115,7 @@ pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, 
         let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
         render_full_beside(engine, decoded, &target.settings)
     };
-    let date = (!metadata.date.is_empty()).then_some(metadata.date.as_str());
-    oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata, date)?;
+    oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata)?;
     super::keep_line(&target.path, typed);
     Ok(())
 }

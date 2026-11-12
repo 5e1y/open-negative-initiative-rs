@@ -9,10 +9,20 @@ pub struct ExifMetadata {
     pub lens: String,
     pub film: String,
     pub iso: String,
-    /// EXIF form, `YYYY:MM:DD HH:MM:SS`.
+    /// EXIF form, `YYYY:MM:DD HH:MM:SS`, settled as it is read: the file writes it as it stands.
+    #[serde(deserialize_with = "settled_date")]
     pub date: String,
     pub artist: String,
     pub copyright: String,
+}
+
+fn settled_date<'de, D: serde::Deserializer<'de>>(stored: D) -> Result<String, D::Error> {
+    String::deserialize(stored).map(|d| crate::exif::settled_date(&d))
+}
+
+/// A kept date that reads as no date is a date cleared, never one left to derive.
+fn settled_typed_date<'de, D: serde::Deserializer<'de>>(stored: D) -> Result<Option<String>, D::Error> {
+    Option::<String>::deserialize(stored).map(|d| d.map(|d| crate::exif::settled_date(&d)))
 }
 
 impl ExifMetadata {
@@ -47,7 +57,7 @@ pub struct TypedExif {
     pub film: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub iso: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "settled_typed_date")]
     pub date: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub artist: Option<String>,

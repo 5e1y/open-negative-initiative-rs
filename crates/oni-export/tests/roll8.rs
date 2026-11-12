@@ -139,7 +139,7 @@ fn the_scans_own_exif_is_read_for_the_box() {
     let bare = scratch("bare").join("bare.tiff");
     let export = Settings::default();
     let rendered = converted(&Image { width: 2, height: 2, pixels: vec![0.5; 16] }, &export).unwrap();
-    std::fs::write(&bare, encoded(&rendered, &export, None, &ExifMetadata::default()).unwrap()).unwrap();
+    std::fs::write(&bare, encoded(&rendered, &export, &ExifMetadata::default()).unwrap()).unwrap();
     assert!(scan_metadata(&bare).is_empty());
     assert_eq!(capture_date(&bare), None);
 }
@@ -169,8 +169,9 @@ fn a_frame_exports_with_its_date_and_none_of_the_scans_fields() {
     for (name, export) in [("written.tiff", &tiff), ("written.jpg", &jpeg), ("written-hdr.jpg", &hdr)] {
         let out = dir.join(name);
         let started = Instant::now();
-        write(&source, fresh(&out), || Ok(full.clone()), &PaperCorrection::default(), export, &ExifMetadata::default(), None)
-            .unwrap();
+        // The line as it opens, its date the scan's.
+        let line = ExifMetadata { date: date.clone(), ..ExifMetadata::default() };
+        write(&source, fresh(&out), || Ok(full.clone()), &PaperCorrection::default(), export, &line).unwrap();
         let file = std::fs::read(&out).unwrap();
         println!("{name}: {} bytes in {:.2} s", file.len(), started.elapsed().as_secs_f64());
         let found = tags(&file);
@@ -210,10 +211,9 @@ fn a_frame_exports_with_its_date_and_none_of_the_scans_fields() {
     assert!((lift - 4.0).abs() < 1e-4, "lift {lift}");
 
     // A typed date replaces the capture date, and the hand's fields land.
-    let typed = ExifMetadata { camera: "Leica M6".into(), film: "Kodak Gold 200".into(), ..Default::default() };
+    let typed = ExifMetadata { camera: "Leica M6".into(), film: "Kodak Gold 200".into(), date: "2001:02:03 04:05:06".into(), ..Default::default() };
     let out = dir.join("dated.jpg");
-    write(&source, fresh(&out), || Ok(full.clone()), &PaperCorrection::default(), &jpeg, &typed, Some("2001:02:03 04:05:06"))
-        .unwrap();
+    write(&source, fresh(&out), || Ok(full.clone()), &PaperCorrection::default(), &jpeg, &typed).unwrap();
     let file = std::fs::read(&out).unwrap();
     let read = exif::Reader::new().read_from_container(&mut Cursor::new(&file)).unwrap();
     let field = |t| read.get_field(t, exif::In::PRIMARY).map(|f| f.display_value().to_string());
@@ -250,7 +250,6 @@ fn the_source_is_never_overwritten() {
             &PaperCorrection::default(),
             &Settings::default(),
             &ExifMetadata::default(),
-            None,
         );
         assert_eq!(result, Err(Failure::WouldOverwriteOriginal), "{}", destination.display());
         assert!(!rendered, "refused before anything renders");
@@ -267,7 +266,6 @@ fn the_source_is_never_overwritten() {
         &PaperCorrection::default(),
         &Settings::default(),
         &ExifMetadata::default(),
-        None,
     );
     assert_eq!(result, Err(Failure::Render));
     assert!(rendered);
@@ -293,7 +291,7 @@ fn the_estimate_holds_on_roll_8() {
             let guess = estimate(&sample, w * h, export) as f64;
             let guessed_in = started.elapsed().as_secs_f64();
             let written = as_set(path, resized(full.clone(), scale));
-            let actual = encoded(&converted(&written, export).unwrap(), export, None, &ExifMetadata::default()).unwrap().len() as f64;
+            let actual = encoded(&converted(&written, export).unwrap(), export, &ExifMetadata::default()).unwrap().len() as f64;
             let error = guess / actual - 1.0;
             println!(
                 "{} {preset:?}: estimated {:.2} MB in {guessed_in:.2} s, written {:.2} MB, error {:+.1} %",

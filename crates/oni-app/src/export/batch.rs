@@ -208,8 +208,7 @@ pub fn write_batch(engine: &Shared, jobs: &[Job], export: &Settings, ledger: &mu
     let render = |i: usize, decoded| render_full_beside(engine, decoded, &jobs[i].target.settings);
     let write = |i: usize, full| {
         let job = &jobs[i];
-        let date = (!job.metadata.date.is_empty()).then_some(job.metadata.date.as_str());
-        let bytes = oni_export::file_bytes(&job.target.path, full, &job.target.settings.paper_correction, export, &job.metadata, date)?;
+        let bytes = oni_export::file_bytes(full, &job.target.settings.paper_correction, export, &job.metadata)?;
         let mut ledger = ledger.lock().map_err(|_| Failure::Render)?;
         oni_export::land(Landing { path: &job.destination, ledger: &mut ledger, replacing }, &bytes)?;
         drop(ledger);

@@ -17,12 +17,6 @@ pub(super) fn shown(exif: &str) -> String {
     if dated(exif, b':') { marked(exif, '-') } else { exif.to_owned() }
 }
 
-/// A date typed as the field shows it, in EXIF's form for the file; one in EXIF's form or anything
-/// else as typed.
-pub(super) fn exif(typed: &str) -> String {
-    if dated(typed, b'-') { marked(typed, ':') } else { typed.to_owned() }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -30,17 +24,9 @@ mod tests {
     #[test]
     fn the_field_shows_a_dashed_date_and_the_file_keeps_exifs() {
         assert_eq!(shown("2026:09:14 16:46:19"), "2026-09-14 16:46:19");
-        assert_eq!(exif("2026-09-14 16:46:19"), "2026:09:14 16:46:19");
-        assert_eq!(exif(&shown("2026:09:14 16:46:19")), "2026:09:14 16:46:19", "a date left as shown is written as read");
-        // A date pasted in EXIF's form is kept, and shown dashed.
-        assert_eq!(exif("2026:09:14 16:46:19"), "2026:09:14 16:46:19");
-        assert_eq!(exif("2026-09-14"), "2026:09:14");
-        // Twin: a date half typed, or words, are never rewritten, and the time's colons stay.
-        assert_eq!(exif("2026-09-1"), "2026-09-1");
-        assert_eq!(exif("14-09-2026"), "14-09-2026");
+        assert_eq!(oni_settings::exif::date_of(&shown("2026:09:14 16:46:19")).as_deref(), Some("2026:09:14 16:46:19"), "a date left as shown is written as read");
         assert_eq!(shown("sometime in 2026"), "sometime in 2026");
         assert_eq!(shown(""), "");
         assert_ne!(shown("2026:09:14 16:46:19"), "2026:09:14 16:46:19", "the raw EXIF date is not what the field shows");
-        assert!(shown("2026:09:14 16:46:19").ends_with("16:46:19"));
     }
 }
