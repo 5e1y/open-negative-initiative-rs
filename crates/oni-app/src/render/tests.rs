@@ -137,8 +137,7 @@ fn previews_keep_the_last_four_used() {
     assert!(kept.get("0", &negative).is_some(), "a use moves the frame to the back");
     kept.insert("4".into(), negative.clone(), one(&mut engine));
     assert!(kept.get("1", &negative).is_none(), "the least recently used frame left");
-    // Twin: the frame used just before the insertion stayed.
-    assert!(kept.get("0", &negative).is_some());
+    assert!(kept.get("0", &negative).is_some(), "twin: the frame used just before the insertion stayed");
     // A frame read as a negative is no slide's preview, and read as a slide replaces it.
     let slide = Reading { slide: true, ..Reading::default() };
     assert!(kept.get("0", &slide).is_none() && kept.holds("0"));

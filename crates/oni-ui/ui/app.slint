@@ -104,10 +104,7 @@ export component MainWindow inherits AppWindow {
     }
     // Gives the key monitor the keyboard back after a click elsewhere than a field, and from a field
     // behind a sheet; the sheet then takes it, as Tab entering it does.
-    public function refocus() {
-        keys.focus();
-        if (root.sheet-shown) { Keyboard.entered += 1; }
-    }
+    public function refocus() { keys.focus(); if (root.sheet-shown) { Keyboard.entered += 1; } }
 
     // `EditorCommands`: Swift's titles, shortcuts and live rules, read from `Menus`, which Rust fills.
     // A key a field answers itself (a digit, ⌘⌫, ⌘Z) is live only while no field holds the keyboard:
