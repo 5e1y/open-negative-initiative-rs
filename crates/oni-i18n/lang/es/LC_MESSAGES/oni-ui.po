@@ -1213,6 +1213,10 @@ msgstr "Mostrar la carpeta"
 msgid "Back to the Gallery"
 msgstr "Volver a la galería"
 
+#: crates/oni-ui/ui/missing.slint
+msgid "Keep for Now"
+msgstr "Conservar por ahora"
+
 #: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
 msgid "Discard"
 msgstr "Descartar"
@@ -1269,7 +1273,7 @@ msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fu
 msgid "Add"
 msgstr "Añadir"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint
 msgid "DONE"
 msgstr "OK"
 

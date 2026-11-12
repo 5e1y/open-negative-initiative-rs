@@ -8698,5 +8698,40 @@
     "title": "A footer too narrow for its keys lays its commit on a line of its own",
     "status": "done",
     "detail": "Owner's report: in French the prepare panel's footer ran past the panel, Cancel and Back now keycaps beside PRÉPARER LA PELLICULE. SheetFooter measures its keys on one line in an unseen copy of no height, so the choice never follows the lines it lays; too narrow, it lays the commit under the other keys, as wide as the room. The prepare check names the last step's key as French does: every key inside the footer, the commit under Back at the footer's width, twin one line outrunning it; with the footer forced to one line the check fails."
+  },
+  {
+    "id": 1750,
+    "type": "fix",
+    "title": "⌘Z and ⌘⇧Z typed in a field step the field's typing, not the photos' history",
+    "status": "done",
+    "detail": "Slint serves the menu bar's shortcuts before the focused item, so Undo and Redo, live from the history alone, took ⌘Z from every field (the gallery's info fields, the export's EXIF and names) and undid a medal or a move out of sight. They now follow the rule the digits and ⌘⌫ follow: live only while no field holds the keyboard (`keys.held`). The field_undo window check labels a photo, types in a sidebar field and presses ⌘Z: the field's text comes back, the medal stays; twin, the photos holding the keyboard, ⌘Z and ⌘⇧Z step the medal. Before the fix the check fails on the medal undone."
+  },
+  {
+    "id": 1751,
+    "type": "fix",
+    "title": "The unsaved-edits sheet has a Keep for Now key",
+    "status": "done",
+    "detail": "The sheet said ONI keeps the edits while it runs, yet offered only Discard and Retry: with the disk away, a Retry asks again and the mouse could only discard. Its AskSheet cancel is Keep for Now, the answer -1 that keeps them in memory, translated in French and Spanish. missing_original clicks it with the disk away: the sheet goes, the edits stay held and unwritten."
+  },
+  {
+    "id": 1752,
+    "type": "fix",
+    "title": "A sheet holds the keyboard, so Escape always reaches its own dismiss",
+    "status": "done",
+    "detail": "Escape under a sheet went to the sheet when its key held the keyboard, else to a hand-kept Rust list that lacked Unsaved and Converting; any press gave the keyboard to the window's monitor, so after a click the unsaved sheet and the DNG conversion ignored Escape. A sheet now takes the keyboard as it shows (its scope, then its field or default key), the monitor no longer takes it on a press under a sheet nor as the sheet shows, and a refocus under a sheet hands it back to the sheet. sheet_escape shows the unsaved sheet, the conversion at work, a removing question and the notice, presses beside each card and sends Escape: each answers its dismiss; twin, the DNG choice stays. Before the fix it fails on the unsaved sheet."
+  },
+  {
+    "id": 1753,
+    "type": "refactor",
+    "title": "The Rust per-sheet Escape and Return lists go",
+    "status": "done",
+    "detail": "escape_sheet, return_sheet and the welcome's key branch are deleted: each sheet answers Escape through dismissed and Return through its default key, or `returned` where it has none (the welcome, whose commit would scroll it away, and the library catch-up). The key path keeps one rule for a sheet: no key reaches behind it. The sheets check now expects the sheet, not the monitor, to hold the keyboard under a confirm."
+  },
+  {
+    "id": 1754,
+    "type": "check",
+    "title": "Checks for the sheets' keyboard and a field's undo",
+    "status": "done",
+    "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
   }
 ]

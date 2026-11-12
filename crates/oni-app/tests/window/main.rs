@@ -112,6 +112,8 @@ mod scroll;
 mod session;
 mod sheet_layout;
 mod sheets;
+mod sheet_escape;
+mod field_undo;
 mod sheet_keys;
 mod sidebar_reveal;
 mod sidebars;
@@ -342,6 +344,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("sheets::a_clash_with_an_original_offers_rename_and_keeps_it", sheets::a_clash_with_an_original_offers_rename_and_keeps_it),
     ("sheets::the_preset_name_sheet_holds_the_keys_and_answers_them", sheets::the_preset_name_sheet_holds_the_keys_and_answers_them),
+    ("sheet_escape::escape_answers_every_sheet_after_a_press_beside_it", sheet_escape::escape_answers_every_sheet_after_a_press_beside_it),
+    ("field_undo::undo_in_a_field_steps_its_typing_and_leaves_the_photos_history", field_undo::undo_in_a_field_steps_its_typing_and_leaves_the_photos_history),
     ("roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes", roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
     ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),

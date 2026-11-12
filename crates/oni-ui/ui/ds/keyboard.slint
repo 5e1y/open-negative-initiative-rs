@@ -62,8 +62,9 @@ export component KeyMonitor inherits KeyScope {
     focus-on-click: true;
     focus-on-tab-navigation: false;
     out property <bool> held: Keyboard.held;
+    // Under a sheet, a press leaves the keyboard with the sheet's control, whose Escape is the sheet's.
     property <int> released: Outside.released;
-    changed released => { self.focus(); }
+    changed released => { if (!Keyboard.covered) { self.focus(); } }
     // Escape from a control gives the photos the keyboard back before the control hears it, its hold
     // the innermost thing open; a field keeps its Escape.
     capture-key-pressed(event) => {
