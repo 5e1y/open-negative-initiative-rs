@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn a_patch_made_for_a_correction_removed_meanwhile_does_not_land() {
         let c = |key: PatchKey| Correction { id: key.id, stroke: Vec::new(), radius: 20.0 };
-        let (stays, removed) = (PatchKey { id: Id::new(), upstream: 1 }, PatchKey { id: Id::new(), upstream: 1 });
+        let (stays, removed) = (PatchKey { id: Id::new(), reading: 1 }, PatchKey { id: Id::new(), reading: 1 });
         let made = vec![(stays, false, (0.1, 0.0)), (removed, true, (0.0, 0.2))];
         let (kept, gone) = landed(made.clone(), &[c(stays)]);
         assert_eq!(kept.iter().map(|m| m.0).collect::<Vec<_>>(), vec![stays]);

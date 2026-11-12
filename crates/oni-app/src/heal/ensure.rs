@@ -17,8 +17,7 @@ pub type Tried = Result<Made, (PatchKey, String)>;
 
 /// The corrections of `s` holding a stroke whose patch is neither in `caches` nor in `skip`.
 pub fn pending(caches: &Path, s: &PipelineSettings, skip: &HashSet<PatchKey>) -> Vec<usize> {
-    let upstream = oni_pipeline::corrections::upstream(s);
-    let key = |c: &Correction| PatchKey { id: c.id, upstream };
+    let key = PatchKey::under(s);
     (0..s.corrections.len()).filter(|&i| !s.corrections[i].stroke.is_empty() && !skip.contains(&key(&s.corrections[i])) && !crate::patches::file(caches, key(&s.corrections[i])).exists()).collect()
 }
 
@@ -37,8 +36,8 @@ pub fn ensure(engine: &Shared, full: &Source, caches: &Path, skip: &mut HashSet<
     }
 }
 
-/// A correction's patch searched on the scan healed of the other patches made, written to the cache
-/// under the settings it was cut on, and the textures its search laid freed, as a run of large strokes would otherwise pile them up.
+/// A correction's patch searched on the decoded scan healed of the other patches made, written under
+/// its reading, and the textures its search laid freed, as a run of large strokes would pile them up.
 fn generated(engine: &Shared, full: &Source, settings: &PipelineSettings, c: &Correction, caches: &Path) -> Result<Made, String> {
     let (region, size) = engine.lock()?.search_region(full, settings, c)?;
     let patch = super::generate(&region, c, size.0, size.1);

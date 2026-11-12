@@ -24,9 +24,9 @@ impl Engine {
     /// `heal::ensure` makes it first for the editor and for every render written to a file.
     pub(super) fn read_patches(&mut self, settings: &PipelineSettings) {
         let Some(caches) = self.caches.clone() else { return };
-        let upstream = oni_pipeline::corrections::upstream(settings);
+        let key = PatchKey::under(settings);
         for c in &settings.corrections {
-            let key = PatchKey { id: c.id, upstream };
+            let key = key(c);
             if let Some(kept) = self.patches.get_mut(&key) {
                 kept.used = self.reads;
                 continue;
@@ -89,10 +89,10 @@ impl Engine {
     }
 }
 
-/// The patches of the settings' own corrections generated under their own upstream settings.
+/// The patches of the settings' own corrections cut on the decode the settings read.
 pub(crate) fn patches_for<'a>(kept: &'a HashMap<PatchKey, Kept<Source>>, settings: &PipelineSettings) -> HashMap<Id, &'a Source> {
-    let upstream = oni_pipeline::corrections::upstream(settings);
-    settings.corrections.iter().filter_map(|c| Some((c.id, &kept.get(&PatchKey { id: c.id, upstream })?.value))).collect()
+    let key = PatchKey::under(settings);
+    settings.corrections.iter().filter_map(|c| Some((c.id, &kept.get(&key(c))?.value))).collect()
 }
 
 /// The custom mask read for the settings' own id, which the pipeline lays only when the ids match.

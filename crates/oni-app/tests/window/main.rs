@@ -16,6 +16,7 @@ mod canvas_keys;
 mod canvas_layout;
 mod canvas_switch;
 mod dedust_grid;
+mod flat_drag;
 mod dedust_turn;
 mod collection;
 mod column_edges;

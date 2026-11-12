@@ -58,8 +58,7 @@ impl Ctl {
             let s = &*s;
             // A heal waiting on the frame's full-resolution build is already under way.
             let healing = s.healing() || s.open_path().is_some_and(|p| s.building_full.as_deref() == Some(p));
-            let upstream = oni_pipeline::corrections::upstream(s.store.settings());
-            let key = |c: &oni_settings::frame::Correction| oni_pipeline::corrections::PatchKey { id: c.id, upstream };
+            let key = oni_pipeline::corrections::PatchKey::under(s.store.settings());
             let pending = |c: &oni_settings::frame::Correction| healing && !s.dust.patched.contains(&key(c)) && !s.dust.unhealable.contains(&key(c));
             // Every stroke and source as the canvas shows them, mapped once from the scan.
             let placing = s.placing();
@@ -260,12 +259,12 @@ impl State {
     /// a patch seen once is not looked for again, so a notch stats no file.
     pub(super) fn unhealed(&mut self) -> bool {
         let settings = self.store.settings();
-        let upstream = oni_pipeline::corrections::upstream(settings);
+        let key = oni_pipeline::corrections::PatchKey::under(settings);
         let lacking: Vec<oni_pipeline::corrections::PatchKey> = settings
             .corrections
             .iter()
             .filter(|c| !c.stroke.is_empty())
-            .map(|c| oni_pipeline::corrections::PatchKey { id: c.id, upstream })
+            .map(key)
             .filter(|k| !self.dust.patched.contains(k) && !self.dust.unhealable.contains(k))
             .collect();
         let mut caches = None;

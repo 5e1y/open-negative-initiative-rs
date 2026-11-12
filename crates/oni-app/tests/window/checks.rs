@@ -17,6 +17,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("frame_owner::a_preview_landing_for_a_frame_left_changes_nothing", frame_owner::a_preview_landing_for_a_frame_left_changes_nothing),
     ("folder_owner::a_folder_asked_keeps_the_one_shown_whole_until_its_read_lands", folder_owner::a_folder_asked_keeps_the_one_shown_whole_until_its_read_lands),
     ("dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source", dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source),
+    ("flat_drag::a_flat_field_drag_keeps_every_patch", flat_drag::a_flat_field_drag_keeps_every_patch),
     ("dedust_turn::a_stroke_stays_on_its_scan_point_through_turns_and_mirrors", dedust_turn::a_stroke_stays_on_its_scan_point_through_turns_and_mirrors),
     ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
