@@ -74,6 +74,9 @@ pub(crate) fn prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_s
     assert_eq!(picked(), HashSet::from([path("R1", "A.tif")]));
     rig.until("the first frame shown", Duration::from_secs(30), || canvas.get_status().contains(" × "));
     assert!(!canvas.get_together(), "twin: no frames together");
+    // The hint is the idle bar's: a frame left on screen a second builds its full resolution, the bar
+    // busy meanwhile, so the bar is read once that build has landed and the bar has said so.
+    rig.until("the frame's full resolution, the bar idle", Duration::from_secs(30), || ctl.state.borrow().full_built() && lib.get_loading().is_empty());
     rig.settle();
     assert_eq!(hinted(), 1, "the status bar says how to edit the whole roll");
     println!("shot {}", rig.shot("prepare-ends-alone").display());
