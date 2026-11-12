@@ -336,14 +336,14 @@ impl Engine {
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
     }
 
-    /// `Pipeline.correctionSource` read back where a search for `c` looks: the scan at full
-    /// resolution, every other correction healed, and the scan's size.
+    /// `Pipeline.correctionSource` read back where a search for `c` looks: the decoded scan at full
+    /// resolution with every other correction healed, never a gain, and the scan's size.
     pub fn search_region(&mut self, full: &Source, settings: &PipelineSettings, c: &oni_settings::frame::Correction) -> Result<(crate::heal::Region, (f64, f64)), String> {
-        let mut upstream = settings.clone();
-        upstream.corrections.retain(|other| other.id != c.id);
-        self.read_custom(&upstream);
-        let inputs = Inputs { patches: patches_for(&self.patches, &upstream), custom_flat_field: custom_for(&self.custom, &upstream) };
-        let healed = self.pipeline.healed(&mut self.graph, Image::new(full), &upstream, 1.0, &inputs).map_err(|e| e.to_string())?;
+        let mut others = settings.clone();
+        others.corrections.retain(|other| other.id != c.id);
+        self.read_custom(&others);
+        let inputs = Inputs { patches: patches_for(&self.patches, &others), custom_flat_field: None };
+        let healed = self.pipeline.patched(&mut self.graph, Image::new(full), &others, 1.0, &inputs).map_err(|e| e.to_string())?;
         let e = healed.extent();
         let size = (f64::from(e.w), f64::from(e.h));
         let win = crate::heal::search_window(c, size.0, size.1);

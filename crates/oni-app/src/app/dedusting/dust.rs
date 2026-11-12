@@ -4,7 +4,7 @@ use oni_settings::geometry::Placing;
 use std::collections::{HashMap, HashSet};
 
 /// De-dust's state: each correction's number and patch source on the open frame, which another
-/// frame starts again, and the frames healing and the patches made or failed, kept by id.
+/// frame starts again, and the patches made or failed, kept by id.
 #[derive(Default)]
 pub(in crate::app) struct Dust {
     /// The number each correction's marker shows, never its row, which a removal shifts.
@@ -16,9 +16,7 @@ pub(in crate::app) struct Dust {
     pub shown: Option<oni_settings::id::Id>,
     /// The corrections whose search found no match and laid the tile beside the stroke.
     pub fallback: HashSet<oni_settings::id::Id>,
-    /// The frames whose dust patches are being generated, each with the settings its run reads; the
-    /// patches on disk, and those whose generation failed, by key, neither looked for again.
-    pub healing: HashMap<String, crate::app::rendering::Latest>,
+    /// The patches on disk, and those whose generation failed, by key, neither looked for again.
     pub patched: HashSet<oni_pipeline::corrections::PatchKey>,
     pub unhealable: HashSet<oni_pipeline::corrections::PatchKey>,
     /// Auto De-dust: a reading under way, one waiting on the full resolution, the last one shown.
@@ -35,14 +33,8 @@ impl Dust {
     /// `load(_:)`: numbering restarts per photo, another photo's sources never show, and a heal that
     /// failed (a drive asleep) is tried again.
     pub fn next_photo(&mut self) {
-        // A run on the frame left stops after its patch; that frame's next opening heals the rest.
-        for latest in self.healing.values() {
-            if let Ok(mut l) = latest.lock() {
-                *l = None;
-            }
-        }
-        let (healing, patched) = (std::mem::take(&mut self.healing), std::mem::take(&mut self.patched));
-        *self = Dust { next_number: 1, healing, patched, sensitivity: self.sensitivity, ..Dust::default() };
+        let patched = std::mem::take(&mut self.patched);
+        *self = Dust { next_number: 1, patched, sensitivity: self.sensitivity, ..Dust::default() };
     }
 }
 

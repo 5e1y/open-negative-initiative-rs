@@ -247,3 +247,30 @@ fn a_stroke_painted_during_a_batch_heals_before_the_batch_s_rest_and_every_searc
     assert_eq!(listed.len(), 61);
     assert!(healed(&cs, &mut pending.clone(), None, |p| p.last().copied()).1 > 0, "newest first missed no earlier patch");
 }
+
+/// The heal is linear in its scan: a gain on the scan finds the same place and scales the patch,
+/// so a patch cut before the capture's exposure and the flat-field is the one cut after them.
+#[test]
+fn a_patch_scales_with_its_scan() {
+    let (w, h) = (480usize, 360usize);
+    let wave = |x: usize, y: usize| 0.4 + 0.08 * ((x as f32 * 0.21).sin() * (y as f32 * 0.17).cos() + (x as f32 * 0.043 + y as f32 * 0.061).sin());
+    let mut pixels: Vec<[f32; 4]> = (0..w * h).map(|i| { let v = wave(i % w, i / w); [v, v * 0.9, v * 0.8, 1.0] }).collect();
+    for y in h / 2 - 3..=h / 2 + 3 {
+        for x in w / 2 - 3..=w / 2 + 3 {
+            pixels[y * w + x] = [0.95, 0.95, 0.95, 1.0];
+        }
+    }
+    let region = |f: &dyn Fn(f32) -> f32| {
+        let pixels = pixels.iter().map(|p| [f(p[0]), f(p[1]), f(p[2]), 1.0]).collect();
+        Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 }
+    };
+    let c = Correction { id: Id::new(), stroke: vec![Point { x: 0.5, y: 0.5 }, Point { x: 0.5001, y: 0.5 }], radius: 8.0 };
+    let whole = generate(&region(&|v| v), &c, w as f64, h as f64);
+    let half = generate(&region(&|v| v * 0.5), &c, w as f64, h as f64);
+    assert_eq!(half.offset, whole.offset, "a gain moved the place the patch is copied from");
+    let off = |a: &Patch, b: &Patch, k: f32| a.pixels.iter().zip(&b.pixels).flat_map(|(p, q)| (0..3).map(move |i| (p[i] * k - q[i]).abs() / p[i].abs().max(1e-3))).fold(0.0f32, f32::max);
+    assert!(off(&whole, &half, 0.5) < 1e-6, "the patch is not the scan's gain: {}", off(&whole, &half, 0.5));
+    // Twin: a curve on the scan, not a gain, moves the patch off a scaled copy.
+    let curved = generate(&region(&|v| v.powf(0.45)), &c, w as f64, h as f64);
+    assert!(curved.offset != whole.offset || off(&whole, &curved, 0.5) > 1e-2, "a curve passed for a gain");
+}

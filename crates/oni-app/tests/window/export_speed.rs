@@ -108,7 +108,7 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
         };
         let decoded = export::full_decode(&t.path, oni_app::render::Reading::of(&t.settings)).unwrap();
         lap(0, &mut at);
-        let full = export::render_full(&mut engine.lock().unwrap(), decoded, &t.settings).unwrap();
+        let full = export::render_full_beside(&engine, decoded, &t.settings).unwrap();
         lap(1, &mut at);
         hashes.push_str(&format!("{} {:016x}\n", t.path.file_name().unwrap().to_string_lossy(), bits(&full.pixels)));
         at = Instant::now();

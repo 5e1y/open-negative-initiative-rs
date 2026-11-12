@@ -17,9 +17,9 @@ fn instance(caches: &Path, support: &Path) -> PathBuf {
     caches.join("Instances").join(format!("{hash:016x}"))
 }
 
-/// A patch's file: its correction's id and what was upstream of it, so a change there finds none.
+/// A patch's file: its correction's id and the reading it was cut on, so another decode finds none.
 pub fn file(caches: &Path, key: PatchKey) -> PathBuf {
-    caches.join("Corrections").join(format!("{}-{:016x}.tiff", key.id, key.upstream))
+    caches.join("Corrections").join(format!("{}-{:016x}.tiff", key.id, key.reading))
 }
 
 /// Whether the patch of `c` under the frame's settings `s` is on disk.
@@ -43,7 +43,7 @@ pub fn write(caches: &Path, key: PatchKey, width: u32, height: u32, pixels: &[[f
 }
 
 /// `CorrectionCache.purgeAll`, run at quit on this instance's folder: each of its patches is generated
-/// again the next time its frame opens, and the folder goes once empty.
+/// again when its frame opens or is written to a file, and the folder goes once empty.
 pub fn purge(caches: &Path) {
     let _ = std::fs::remove_dir_all(caches.join("Corrections"));
     let _ = std::fs::remove_dir(caches);
@@ -59,12 +59,12 @@ mod tests {
     use super::*;
     use oni_settings::id::Id;
 
-    fn key(id: &str, upstream: u64) -> PatchKey {
-        PatchKey { id: Id::parse(id).unwrap(), upstream }
+    fn key(id: &str, reading: u64) -> PatchKey {
+        PatchKey { id: Id::parse(id).unwrap(), reading }
     }
 
     #[test]
-    fn a_patch_is_found_under_its_correction_and_what_was_upstream_of_it() {
+    fn a_patch_is_found_under_its_correction_and_the_reading_it_was_cut_on() {
         let at = key("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B", 0x2a);
         let caches = std::env::temp_dir().join(format!("oni-patches-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&caches);
@@ -78,9 +78,9 @@ mod tests {
         let (w, h, got) = read(&caches, at).unwrap();
         assert_eq!((w, h), (3, 2));
         assert!((got[4][0] - 4.0 / 6.0).abs() < 1e-6, "row 1 column 1 in place");
-        // Twins: another correction's id, or the same one under other settings upstream, finds nothing.
+        // Twins: another correction's id, or the same one under another reading, finds nothing.
         assert!(read(&caches, key("11111111-2222-3333-4444-555555555555", 0x2a)).is_none());
-        assert!(read(&caches, PatchKey { upstream: 0x2b, ..at }).is_none());
+        assert!(read(&caches, PatchKey { reading: 0x2b, ..at }).is_none());
         let _ = std::fs::remove_dir_all(&caches);
     }
 

@@ -6,6 +6,8 @@ use oni_pipeline::corrections::{self, Area};
 use oni_settings::frame::Correction;
 
 mod cost;
+mod ensure;
+pub use ensure::{Made, ensure, pending};
 use cost::{Candidate, Costs};
 
 /// A region of the framed frame read back to the CPU: its rectangle in the frame, y down, and its pixels.

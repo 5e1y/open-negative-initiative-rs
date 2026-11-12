@@ -9517,5 +9517,40 @@
     "title": "Prepare the Roll never opens over the export surface or a sheet",
     "status": "done",
     "detail": "enter_roll, the one way into a roll (its key, a bare frame's requireRoll, the DNG conversion), never checked the export surface: Rolls > Prepare the Roll stayed live there, and a roll asked for just before ⌘E landed on top of it. enter_roll now refuses while Ctl::covered() (the export surface or a sheet), the predicate the Finder drop reads too; the menu item goes dark with #1871. Check: window export_modal (Prepare then Export in one turn: no roll after 1.5 s; twin: Prepare alone comes within it)."
+  },
+  {
+    "id": 1875,
+    "type": "fix",
+    "title": "Every file written heals its strokes: an export or a contact sheet makes the patches not on disk",
+    "status": "done",
+    "detail": "A render lays only the patches on disk, and only the editor's open frame made them, so an export after a relaunch (patches purged at quit), after a roll-wide change of what they are keyed on, or of strokes never opened wrote the frame with its dust back and said nothing. The editor's heal loop is now one function, heal::ensure, with heal::pending; render_full_beside (the export, write_one included) runs it on the frame's whole decode before rendering, and the contact sheet runs it ahead (export::heal_ahead) for frames lacking a patch, decoding them whole only then. A patch that cannot be made fails the file with Failure::Dust, translated. render_full, which lays only what is on disk, is left to the tests. Checks: export/heal_tests.rs an_export_heals_strokes_whose_patch_was_never_made (never made, then purged as at a quit) and a_contact_sheet_heals_strokes_whose_patch_was_never_made, each with the bare render as its twin; both seen failing with the heal left out."
+  },
+  {
+    "id": 1876,
+    "type": "fix",
+    "title": "A heal run ends with the full resolution it cuts on",
+    "status": "done",
+    "detail": "The run's hand-off lived in Dust.healing beside the frame, and only another photo opened ended it: a close, a release on leaving the editor or a reread kept it going, holding up to 1.6 GB on the GPU, and after a reread it cut patches on the old decode and filed them under the new reading's key. The frame now owns its run (Frame.heal, a Healing whose drop ends the run) beside full: reread, release_full, a close or another frame let both go together, and the same frame opened again keeps both. Dust.healing and the stop in Dust::next_photo are deleted; State::healing reads the open frame's run; a run's end clears the frame's only when it is the same run. Check: frame.rs a_heal_run_ends_with_the_full_resolution_it_reads (reread, release, another frame, a close; twins: a frame held or opened again keeps its run), seen failing with the reread and release lines left out."
+  },
+  {
+    "id": 1877,
+    "type": "refactor",
+    "title": "Reading lives in oni-settings, with its stamp",
+    "status": "done",
+    "detail": "render::Reading (the decode's choices: primaries converted, source encoding, RGB passes, slide) moves unchanged to oni_settings::Reading, re-exported by render, and gains stamp(), FNV-1a over its JSON, so the decode and the dust patch key can read one value. No behaviour change; the key moves to it in #1878."
+  },
+  {
+    "id": 1878,
+    "type": "change",
+    "title": "Dust patches lie on the decoded scan, keyed on its reading alone",
+    "status": "done",
+    "detail": "Pipeline::healed lays the corrections first (Pipeline::patched, now public), then the capture's exposure and the flat-field, and the search reads Pipeline::patched, never a gain. PatchKey.upstream becomes PatchKey.reading, the stamp of oni_settings::Reading (PatchKey::under stamps once; corrections::upstream is deleted), so capture_stops, the flat-field and a Negative/Monochrome switch no longer re-key a patch: a flat-field Amount, Temperature or Tint drag no longer drops every patch while it moves nor heals the whole frame after, and no superseded generation piles up until quit. Both stages are per-pixel gains and the heal is linear in its scan, so the only change in a render: under a flat-field a patch takes the gain of the place it lies on instead of its source's, and under a capture exposure it moves by float rounding alone. Renders with dust corrections under a flat-field or a capture exposure therefore move slightly, inside the patches only. Sidecars are untouched; patch files of earlier builds are never found and go at the next quit. Checks, each seen failing on the former order and key: corrections.rs a_patch_key_reads_the_decode_alone (twin: each decode choice re-keys), oni-pipeline/tests/healed_order.rs a_patch_takes_the_gains_of_the_place_it_lies_on (twin: the former order gives 6, not 3, under a stop), inputs_tests a_patch_follows_the_exposure_and_flat_field_it_sits_under (rewrites the #1786 check; twin: another reading finds none), heal/tests.rs a_patch_scales_with_its_scan (twin: a curve is not a gain), window flat_drag::a_flat_field_drag_keeps_every_patch (20 Amount notches: no heal, no pending row, the same 3 files; twin: Positive cuts 3 more)."
+  },
+  {
+    "id": 1879,
+    "type": "docs",
+    "title": "CLAUDE.md states where a dust patch lies and what keys it",
+    "status": "done",
+    "detail": "The dust stroke decision no longer says a patch's file names the exposure and flat-field; a new line says a patch lies on the decoded scan before the capture's exposure and the flat-field, keyed on the reading alone (#1878). docs/parity/ is history (#1865) and is left as it is."
   }
 ]
