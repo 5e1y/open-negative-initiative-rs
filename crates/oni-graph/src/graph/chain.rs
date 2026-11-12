@@ -70,6 +70,13 @@ impl Image {
         self.stages.len()
     }
 
+    /// The recipe's identity: every source, stage, parameter and auxiliary image it reads, in one key.
+    pub fn key(&self) -> u64 {
+        let (mut nodes, mut seen) = (Vec::new(), HashMap::new());
+        let last = self.flatten(&mut nodes, &mut seen);
+        nodes[last].key
+    }
+
     /// Every node this image reads, inputs before the stages reading them, each once; returns the last.
     pub(super) fn flatten<'a>(&'a self, nodes: &mut Vec<Flat<'a>>, seen: &mut HashMap<u64, usize>) -> usize {
         let mut hasher = DefaultHasher::new();

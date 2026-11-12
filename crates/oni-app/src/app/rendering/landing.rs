@@ -102,8 +102,10 @@ impl Ctl {
             if s.open_path().map(Path::new) != Some(path) {
                 return;
             }
-            s.gpu.uncounted = Some(crate::app::canvas_gpu::Counted { picture, sheet: false });
-            s.gpu.count_due();
+            let s = &mut *s;
+            if s.requests.count.take(picture, false) {
+                s.gpu.count_due(&mut s.requests.count);
+            }
         }
         self.watch_histogram();
     }
@@ -113,6 +115,9 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             if s.open_path().map(Path::new) != Some(path) {
+                return;
+            }
+            if s.requests.inputs.as_ref() == Some(&inputs) {
                 return;
             }
             s.requests.inputs = Some(inputs);
@@ -187,7 +192,8 @@ impl Ctl {
         let canvas = self.canvas_size();
         let mut refused: Option<String> = None;
         let image = {
-            let mut s = self.state.borrow_mut();
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
             let screen = s.screen;
             let g = &mut s.gpu;
             let e = picture.extent();
@@ -198,7 +204,7 @@ impl Ctl {
             let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
             g.seed = g.seed.wrapping_add(1);
             let seed = g.seed;
-            let k = grounded(&s, zebra(&s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas));
+            let k = grounded(s, zebra(s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas));
             let g = &mut s.gpu;
             let (target, encoded) = g.encode(g.target.as_ref(), (bw, bh), &source, &k, (wd, ht));
             let imported = match encoded {
@@ -214,9 +220,9 @@ impl Ctl {
             g.current = Some(picture);
             // The histogram describes the whole picture at one size, never the zoom's part of it.
             if let Some(picture) = counted {
-                g.uncounted = Some(crate::app::canvas_gpu::Counted { picture, sheet: true });
+                s.requests.count.take(picture, true);
             }
-            g.count_due();
+            s.gpu.count_due(&mut s.requests.count);
             (imported, shown, (wd, ht))
         };
         self.watch_histogram();

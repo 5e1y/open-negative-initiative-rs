@@ -124,3 +124,92 @@ fn a_render_counts_its_picture_only_for_a_plot_on_screen() {
     worker.submit(job(2, true));
     assert_eq!((landed(), drained()), (0, vec!["counted"]));
 }
+
+/// What one job delivered: the before's and the counted picture's sources, and the distributions.
+struct Delivered {
+    before: Source,
+    counted: Option<Source>,
+    inputs: Option<InputHistograms>,
+}
+
+/// A worker on `engine` that renders `negative` under `settings`, Compare and a plot on screen.
+fn asking(engine: &Shared, negative: Negative, settings: PipelineSettings) -> impl FnMut() -> Delivered {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let worker = Worker::new(Box::new(engine.clone()), move |d| drop(tx.send(d)));
+    let negative = Arc::new(negative);
+    let mut revision = 0;
+    move || {
+        revision += 1;
+        let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
+        let (reference, negative) = (Some(settings.clone()), negative.clone());
+        worker.submit(Job { revision, path: PathBuf::new(), negative, settings: settings.clone(), kind, asked, view: None, reference, held: false, counted: true });
+        let (mut before, mut counted, mut inputs) = (None, None, None);
+        while let Ok(delivery) = rx.recv_timeout(Duration::from_secs(if before.is_none() { 10 } else { 1 })) {
+            match delivery {
+                Delivery::Render(done) => before = done.ok().and_then(|d| d.before).map(|(s, _)| s),
+                Delivery::Counted { picture, .. } => counted = Some(picture),
+                Delivery::Inputs { inputs: read, .. } => inputs = Some(read),
+            }
+        }
+        Delivered { before: before.expect("the before"), counted, inputs }
+    }
+}
+
+/// A new proof asked with the settings unchanged reaches the histogram's picture and Compare's before;
+/// the same job asked again with nothing changed delivers the same sources.
+#[test]
+fn a_proof_changed_under_the_same_settings_counts_and_compares_again() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the proof's reach into the kept pictures is not exercised");
+        return;
+    };
+    let engine = Engine::shared(&device);
+    let (w, h) = (32usize, 16usize);
+    let pixels = (0..w * h).map(|i| { let v = 0.05 + 0.9 * (i % w) as f32 / w as f32; [v, 0.02, v * 0.1, 1.0] }).collect();
+    let negative = engine.lock().unwrap().prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let mut ask = asking(&engine, negative, PipelineSettings::rest(oni_settings::ConversionMode::Positive, true));
+    let first = ask();
+    engine.lock().unwrap().proof.wanted = Some(crate::proof::wanted(oni_colour::Space::Srgb, false));
+    let proofed = ask();
+    let (Some(was), Some(now)) = (&first.counted, &proofed.counted) else { panic!("a count for each proof") };
+    let read = engine.lock().unwrap().graph.read_back(&[was, now, &first.before, &proofed.before]).unwrap();
+    assert_ne!(read[1], read[0], "the histogram counts the new proof");
+    assert_ne!(read[3], read[2], "the before is drawn in the new proof");
+    // Twin: nothing changed since, the same sources.
+    let again = ask();
+    let id = |d: &Delivered| (d.before.id(), d.counted.as_ref().map(Source::id));
+    assert_eq!(id(&again), id(&proofed));
+}
+
+/// A patch landing under unchanged settings reaches the histogram's picture and the distributions; with
+/// no patch landing, both stay.
+#[test]
+fn a_patch_landing_under_the_same_settings_counts_and_reads_again() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: a late patch's reach into the readings is not exercised");
+        return;
+    };
+    let root = std::env::temp_dir().join(format!("oni-patch-landing-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("Corrections")).unwrap();
+    let engine = Engine::shared(&device);
+    engine.lock().unwrap().caches = Some(root.clone());
+    let (w, h) = (64usize, 48usize);
+    let decoded = Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None };
+    let negative = engine.lock().unwrap().prepare(decoded).unwrap();
+    let id = Id::parse("1A2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
+    let mut dusted = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+    dusted.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
+    let mut ask = asking(&engine, negative, dusted);
+    let first = ask();
+    let bright: Vec<f32> = (0..w * h).flat_map(|_| [0.9f32, 0.9, 0.9, 1.0]).collect();
+    tiff(&crate::patches::file(&root, id), w as u32, h as u32, &bright);
+    let healed = ask();
+    let counted = |d: &Delivered| d.counted.as_ref().map(Source::id);
+    assert!(counted(&healed).is_some() && counted(&healed) != counted(&first), "the histogram counts the patch");
+    assert!(healed.inputs.is_some() && healed.inputs != first.inputs, "the distributions read the patch");
+    // Twin: nothing landed since, the same picture and distributions.
+    let again = ask();
+    assert_eq!((counted(&again), &again.inputs), (counted(&healed), &healed.inputs));
+    let _ = std::fs::remove_dir_all(&root);
+}

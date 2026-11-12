@@ -33,6 +33,8 @@ pub(in crate::app) struct Requests {
     /// ask: a render with neither counts nothing.
     pub histogram: Option<oni_measure::histogram::Histogram>,
     pub plots: [bool; 2],
+    /// The picture the histogram counts next and the count in flight.
+    pub count: super::canvas_gpu::Counting,
 }
 
 /// Compare Before/After: the split, a fraction of the canvas's width (none while off), where the

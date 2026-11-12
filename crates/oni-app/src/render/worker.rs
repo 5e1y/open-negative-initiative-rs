@@ -69,14 +69,10 @@ impl Worker {
         let thread = std::thread::Builder::new()
             .name("render".into())
             .spawn(move || {
-                // The before is kept while its settings and the view hold, so a notch never renders it again.
-                let mut kept: Option<(PathBuf, PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
                 let mut last_counted = last_inputs;
                 // The last job read on the small copy, read again on the full one once the hand rests.
                 let mut resting: Option<(PathBuf, Arc<Negative>, PipelineSettings)> = None;
-                // The distributions read last: they hang on the frame and its settings, never on the view.
-                let mut measured: Option<(PathBuf, PipelineSettings, bool)> = None;
                 loop {
                     let job = loop {
                         match shared.take(resting.is_some().then_some(REST)) {
@@ -84,10 +80,8 @@ impl Worker {
                             Taken::Closed => return,
                             Taken::TimedOut => {
                                 if let Some((path, negative, settings)) = resting.take()
-                                    && measured.as_ref() != Some(&(path.clone(), settings.clone(), false))
                                     && let Some(inputs) = renderer.inputs(&negative, &settings, false)
                                 {
-                                    measured = Some((path.clone(), settings, false));
                                     deliver(Delivery::Inputs { path, inputs });
                                 }
                             }
@@ -104,26 +98,8 @@ impl Worker {
                         placed,
                         before: None,
                     });
-                    let before = match &job.reference {
-                        Some(reference) => {
-                            let key = job.view.as_ref().map(View::key);
-                            match &kept {
-                                Some((p, s, k, source, placed)) if *p == job.path && s == reference && *k == key => Some((source.clone(), *placed)),
-                                _ => match renderer.resident(&job.negative, reference, job.view.as_ref()) {
-                                    Ok((source, placed)) => {
-                                        kept = Some((job.path.clone(), reference.clone(), key, source.clone(), placed));
-                                        Some((source, placed))
-                                    }
-                                    Err(_) => None,
-                                },
-                            }
-                        }
-                        // Compare off lets its kept before go, a canvas of floats.
-                        None => {
-                            kept = None;
-                            None
-                        }
-                    };
+                    // The engine keeps the before while what it reads holds; Compare off lets it go.
+                    let before = renderer.before(&job.negative, job.reference.as_ref(), job.view.as_ref());
                     let drawn = done.is_ok();
                     deliver(Delivery::Render(done.map(|d| Done { before, ..d }).map_err(|e| (job.path.clone(), e))));
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
@@ -135,13 +111,11 @@ impl Worker {
                             deliver(Delivery::Counted { path: job.path.clone(), picture });
                         }
                     }
-                    let read = (job.path.clone(), job.settings.clone(), job.held);
-                    if drawn && measured.as_ref() != Some(&read) && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                    if drawn && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_inputs = Instant::now();
                         if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held) {
                             deliver(Delivery::Inputs { path: job.path.clone(), inputs });
                         }
-                        measured = Some(read);
                         resting = job.held.then(|| (job.path.clone(), job.negative.clone(), job.settings.clone()));
                     }
                 }

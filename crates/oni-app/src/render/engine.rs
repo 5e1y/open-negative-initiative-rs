@@ -383,7 +383,6 @@ impl Engine {
     /// Forgets a correction's patch, so the next render and input reading read it again from the cache.
     pub fn forget_patch(&mut self, id: Id) {
         self.patches.remove(&id);
-        self.read = [None, None];
     }
 
     /// `Pipeline.apply` unproofed, with the masks and patches the canvas reads: an export's render.

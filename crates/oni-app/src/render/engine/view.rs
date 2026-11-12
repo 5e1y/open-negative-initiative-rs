@@ -8,13 +8,37 @@ impl Engine {
     /// only its visible region, from the full frame once built, else the preview, each reduced once to
     /// the scale shown, so a notch computes no hidden pixel.
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
+        let (image, region, placed) = self.composed(negative, settings, view)?;
+        Ok((self.one_texture(&image, region)?, placed))
+    }
+
+    /// Compare's before, `resident` on `reference`, kept while its recipe and region hold, so a notch
+    /// renders it again only when what it reads moved; none drops the kept one.
+    pub fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Result<Option<(Source, Option<Placed>)>, String> {
+        let Some(reference) = reference else {
+            self.fitted.before = None;
+            return Ok(None);
+        };
+        let (image, region, placed) = self.composed(negative, reference, view)?;
+        let key = (image.key(), region);
+        if let Some((k, source)) = &self.fitted.before
+            && *k == key
+        {
+            return Ok(Some((source.clone(), placed)));
+        }
+        let source = self.one_texture(&image, region)?;
+        self.fitted.before = Some((key, source.clone()));
+        Ok(Some((source, placed)))
+    }
+
+    /// The recipe `resident` materialises, the region it keeps and where it lands.
+    fn composed(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Image, Option<Rect>, Option<Placed>), String> {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
         let Some(view) = view else {
             let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
             let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
-            let image = self.proof.laid(&mut self.graph, image, settings)?;
-            return Ok((self.one_texture(&image, None)?, None));
+            return Ok((self.proof.laid(&mut self.graph, image, settings)?, None, None));
         };
         let ratio = negative.size().0 as f64 / negative.full_width;
         let shown = {
@@ -76,7 +100,7 @@ impl Engine {
             whole: region == extent,
             at_full_resolution: view.full.is_some(),
         };
-        Ok((self.one_texture(&image, Some(region))?, Some(placed)))
+        Ok((image, Some(region), Some(placed)))
     }
 
     pub(super) fn one_texture(&mut self, image: &Image, region: Option<Rect>) -> Result<Source, String> {
@@ -119,12 +143,8 @@ impl Engine {
     }
 
     /// The whole picture `COUNTED_SIDE` long from the preview, for the histogram, which so reads the same
-    /// pixels at fit and zoomed; `None` while the settings and the preview are those last counted.
-    pub fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Option<Source>, String> {
-        let key = (settings.clone(), negative.preview.id());
-        if self.fitted.counted.as_ref() == Some(&key) {
-            return Ok(None);
-        }
+    /// pixels at fit and zoomed; the kept one while its recipe holds, so a picture counted is known by its id.
+    pub fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Source, String> {
         let (w, h) = negative.size();
         let scale = (COUNTED_SIDE / w.max(h) as f64).min(1.0);
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
@@ -132,9 +152,15 @@ impl Engine {
         let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
+        let key = image.key();
+        if let Some((k, source)) = &self.fitted.counted
+            && *k == key
+        {
+            return Ok(source.clone());
+        }
         let source = self.graph.materialise(&image).map_err(|e| e.to_string())?;
-        self.fitted.counted = Some(key);
-        Ok(Some(source))
+        self.fitted.counted = Some((key, source.clone()));
+        Ok(source)
     }
 
     /// `level` reduced by `reduce` whole, the last one kept.
@@ -170,8 +196,9 @@ const BASES: usize = 2;
 pub(crate) struct Fitting {
     halves: Vec<(u64, Vec<Source>)>,
     kept: Option<((u64, u64), Source)>,
-    /// The settings and preview the histogram's picture was last made from.
-    counted: Option<(PipelineSettings, u64)>,
+    /// The histogram's picture and Compare's before, each with the recipe it was made from.
+    counted: Option<(u64, Source)>,
+    before: Option<((u64, Option<Rect>), Source)>,
 }
 
 #[cfg(test)]

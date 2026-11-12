@@ -121,7 +121,6 @@ impl Shell {
                 before: None,
                 current: None,
                 reads_back: !options.canvas,
-                uncounted: None,
                 seed: 0,
                 screen: options.screen,
                 counted_at: None,
