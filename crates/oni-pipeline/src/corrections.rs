@@ -6,26 +6,24 @@ use oni_settings::PipelineSettings;
 use oni_settings::frame::Correction;
 use oni_settings::id::Id;
 
-/// A patch as made: its correction, and the settings upstream of the corrections it was cut under,
-/// so a patch of another exposure or flat-field is never laid.
+/// A patch as made: its correction, and the stamp of the decode it was cut on, as a patch lies on the
+/// scan before any stage; a stroke is never edited once made, so its id names it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PatchKey {
     pub id: Id,
-    pub upstream: u64,
+    pub reading: u64,
 }
 
 impl PatchKey {
     pub fn of(s: &PipelineSettings, c: &Correction) -> PatchKey {
-        PatchKey { id: c.id, upstream: upstream(s) }
+        Self::under(s)(c)
     }
-}
 
-/// FNV-1a over what the scan reads before its corrections: the decode's choices, the capture's
-/// stops and the flat-field. A stroke is never edited once made, so its id names it.
-pub fn upstream(s: &PipelineSettings) -> u64 {
-    let read = (s.capture_stops, &s.flat_field, s.mode, &s.rgb_passes, s.primaries_converted, s.source_encoding);
-    let bytes = serde_json::to_vec(&read).unwrap_or_default();
-    bytes.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3))
+    /// The key of each correction under the settings `s`, their reading stamped once.
+    pub fn under(s: &PipelineSettings) -> impl Fn(&Correction) -> PatchKey + Copy {
+        let reading = oni_settings::Reading::of(s).stamp();
+        move |c| PatchKey { id: c.id, reading }
+    }
 }
 
 /// `CorrectionRenderer.tileSide`.
@@ -164,5 +162,39 @@ mod tests {
             assert!(shift.0 == 0.0 || off.abs() > 1e-3, "{off}");
         }
         assert!(worst < 1e-6, "{worst}");
+    }
+
+    #[test]
+    fn a_patch_key_reads_the_decode_alone() {
+        let c = Correction::new(vec![Point::new(0.5, 0.5)]);
+        let rest = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+        let key = |s: &PipelineSettings| PatchKey::of(s, &c);
+        let with = |f: &dyn Fn(&mut PipelineSettings)| {
+            let mut s = rest.clone();
+            f(&mut s);
+            s
+        };
+        let gains = [
+            with(&|s| s.flat_field.mask = oni_settings::frame::FlatFieldMask::ValoiEasy35V1),
+            with(&|s| s.flat_field.amount = 0.4),
+            with(&|s| s.flat_field.temperature = 12.0),
+            with(&|s| s.flat_field.tint = -7.0),
+            with(&|s| s.capture_stops = 1.3),
+            with(&|s| s.mode = oni_settings::ConversionMode::Monochrome),
+        ];
+        for s in &gains {
+            assert_eq!(key(s), key(&rest), "a gain after the decode re-keyed the patch");
+        }
+        // Twin: each choice of the decode keys another patch.
+        let passes = oni_settings::frame::RgbPasses { red: "r".into(), green: "g".into(), blue: "b".into(), registration: None };
+        let decodes = [
+            with(&|s| s.mode = oni_settings::ConversionMode::Positive),
+            with(&|s| s.primaries_converted = !s.primaries_converted),
+            with(&|s| s.source_encoding = Some(oni_settings::SourceEncoding::Linear)),
+            with(&|s| s.rgb_passes = Some(passes.clone())),
+        ];
+        for s in &decodes {
+            assert_ne!(key(s), key(&rest), "another decode found the same patch");
+        }
     }
 }

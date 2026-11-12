@@ -1,5 +1,5 @@
 //! `look_lab_strip <raw dir> <out dir> <frame>[@name=x,y,w,h]…`: each frame on the Frontier through five
-//! cubes side by side, its regions measured in Oklab; `ONI_SWIFT_FRONTIER` adds Swift's render to compare.
+//! cubes side by side, its regions measured in Oklab.
 
 use oni_graph::Graph;
 use oni_pipeline::look_lab::measure::{lab_of, lch, median};
@@ -112,13 +112,6 @@ fn write_png(path: &Path, w: usize, h: usize, panels: &[Vec<[f32; 4]>]) {
     encoder.write_header().unwrap().write_image_data(&bytes).unwrap();
 }
 
-fn dump(path: &Path) -> Option<Picture> {
-    let b = std::fs::read(path).ok()?;
-    let int = |i: usize| i32::from_le_bytes(b[i..i + 4].try_into().unwrap()) as usize;
-    let f: Vec<f32> = b[8..].chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect();
-    Some(Picture { w: int(0), h: int(4), px: f.chunks_exact(4).map(|c| [c[0], c[1], c[2], 1.0]).collect() })
-}
-
 /// Mean and 99th centile of the worst channel's gap on the common top-left rows and columns.
 fn gap(a: &Picture, b: &Picture) -> (f64, f64) {
     let (w, h) = (a.w.min(b.w), a.h.min(b.h));
@@ -144,21 +137,6 @@ fn against_app(g: &mut Graph, p: &Picture, s: &PipelineSettings, panel: &[[f32; 
     println!("  the strip's measured-table panel against the app's pipeline: mean {mean:.5}, p99 {p99:.5}");
 }
 
-/// The Rust pipeline on LibRaw's whole frame against Swift's render of the same frame on the Frontier.
-fn against_swift(g: &mut Graph, swift: &Picture, full: &oni_decode::Linear, s: &PipelineSettings, regions: &[(String, Region)]) {
-    let source = g.upload(full.width as u32, full.height as u32, &full.pixels).expect("upload");
-    let scale = swift.w.max(swift.h) as f64 / full.width.max(full.height) as f64;
-    let image = Pipeline::new().image(g, &source, s, &Request { scale, ..Request::default() }, &Inputs::default()).expect("recipe");
-    let e = image.extent();
-    let ours = Picture { w: e.w as usize, h: e.h as usize, px: g.render(&image, e, None).expect("render") };
-    let (mean, p99) = gap(&ours, swift);
-    println!("  Rust (LibRaw) against Swift on the Frontier, {}x{}: mean {mean:.4}, p99 {p99:.4}", ours.w, ours.h);
-    for (name, r) in regions {
-        let (a, b) = (measured(&ours.px, ours.w, ours.h, r), measured(&swift.px, swift.w, swift.h, r));
-        println!("    {name}: Rust L {:.3} C {:.3} h {:.1}°, Swift L {:.3} C {:.3} h {:.1}°", a[0], a[1], a[2], b[0], b[1], b[2]);
-    }
-}
-
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let (raws, out) = (Path::new(&args[0]), Path::new(&args[1]));
@@ -179,7 +157,6 @@ fn main() {
         ("Lab Frontier, G←R and 240–300° neutral", bake(&moved, 27)),
         ("idem, G←R at the seed's neutral", bake(&seeded, 27)),
     ];
-    let swift = std::env::var_os("ONI_SWIFT_FRONTIER");
     let mut graph = Graph::new().map_err(|e| println!("no GPU ({e}): the strips are not checked against the app")).ok();
     for arg in &args[2..] {
         let (name, regions) = frame(arg);
@@ -199,9 +176,6 @@ fn main() {
         }
         let Some(g) = graph.as_mut() else { continue };
         against_app(g, &picture, &s, &panels[0]);
-        if let Some(swift) = swift.as_ref().and_then(|d| dump(&Path::new(d).join(format!("{name}.f32")))) {
-            against_swift(g, &swift, &full, &s, &regions);
-        }
         g.purge();
     }
 }

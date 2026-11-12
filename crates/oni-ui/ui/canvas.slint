@@ -19,7 +19,6 @@ export component CanvasCard inherits Card {
     callback menu(Act);
     callback refocused();
     // A column key pressed: true for the Library's, so the shell drops that column's reveal.
-    callback column-toggled(bool);
     dimmed: Canvas.cropping;
     // Square against the panel's readout, which runs edge to edge beside it; a column folded squares
     // both corners of its side.
@@ -323,7 +322,6 @@ export component CanvasCard inherits Card {
             icon: Icons.menu-left;
             help: root.library-hidden ? @tr("Show the Library ({})", KeyWords.option-command + "[") : @tr("Hide the Library ({})", KeyWords.option-command + "[");
             clicked => {
-                root.column-toggled(true);
                 root.menu(Act.hide-library);
             }
         }
@@ -365,7 +363,6 @@ export component CanvasCard inherits Card {
             icon: Icons.menu-right;
             help: root.panel-hidden ? @tr("Show the Panel ({})", KeyWords.option-command + "]") : @tr("Hide the Panel ({})", KeyWords.option-command + "]");
             clicked => {
-                root.column-toggled(false);
                 root.menu(Act.hide-panel);
             }
         }

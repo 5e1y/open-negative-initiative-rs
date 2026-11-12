@@ -289,14 +289,7 @@ impl Ctl {
             }
         });
         let p = me.clone();
-        lab.on_hold(move |on| {
-            let mut s = p.state.borrow_mut();
-            if on {
-                s.store.hold();
-            } else {
-                s.store.release();
-            }
-        });
+        lab.on_hold(move |on| p.hold_lab(on));
         let p = me.clone();
         lab.on_clear(move |letter| {
             if let Some(letter) = at(&Letter::ALL, letter) {

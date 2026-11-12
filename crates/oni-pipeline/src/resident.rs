@@ -1,7 +1,7 @@
 //! The images a frame's settings name but do not hold, read from their files onto a graph of its
 //! own: the custom mask the settings name, kept while asked again, and the dust patches.
 
-use crate::corrections::{self, PatchKey};
+use crate::corrections::PatchKey;
 use crate::flat_field::Mask;
 use crate::{CustomFlatField, Inputs};
 use oni_graph::{Graph, Source};
@@ -46,9 +46,9 @@ impl Resident {
     /// asked again next time, so a mask loaded later reaches the frames naming it.
     pub fn read(&mut self, graph: &mut Graph, s: &PipelineSettings) {
         let Some(files) = self.files.clone() else { return };
-        let upstream = corrections::upstream(s);
+        let key = PatchKey::under(s);
         for c in &s.corrections {
-            let key = PatchKey { id: c.id, upstream };
+            let key = key(c);
             if self.patches.contains_key(&key) {
                 continue;
             }
@@ -72,9 +72,9 @@ impl Resident {
 
     /// The inputs `s` names among those read; the pipeline lays a mask only when its id is the frame's.
     pub fn inputs(&self, s: &PipelineSettings) -> Inputs<'_> {
-        let upstream = corrections::upstream(s);
+        let key = PatchKey::under(s);
         Inputs {
-            patches: s.corrections.iter().filter_map(|c| Some((c.id, self.patches.get(&PatchKey { id: c.id, upstream })?))).collect(),
+            patches: s.corrections.iter().filter_map(|c| Some((c.id, self.patches.get(&key(c))?))).collect(),
             custom_flat_field: self.mask.as_ref(),
         }
     }

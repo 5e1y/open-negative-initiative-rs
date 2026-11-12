@@ -78,8 +78,12 @@ impl Ctl {
             w.global::<crate::Tips>().invoke_close();
             return true;
         }
-        if text == "\u{1b}" && self.export_escape() {
-            return true;
+        // The export surface covers the editor and the gallery: Escape leaves it, no key reaches behind it.
+        if self.export.borrow().shown {
+            if text == "\u{1b}" {
+                self.export_escape();
+            }
+            return text == "\u{1b}";
         }
         if self.state.borrow().prepare.shown {
             return self.prepare_key(text, command, shift, bare);

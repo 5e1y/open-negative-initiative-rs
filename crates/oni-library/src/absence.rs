@@ -1,7 +1,7 @@
 //! Why an original cannot be read, told before any decode: its disk away, the file gone, access
 //! refused, or a file with no byte; each has its own words, never a decoder's failure.
 
-use crate::navigator::{Computer, DRIVES};
+use crate::navigator::Computer;
 use crate::paths;
 use std::io::ErrorKind;
 use std::path::Path;
@@ -36,7 +36,9 @@ pub fn absence(computer: &Computer, path: &Path) -> Option<Absence> {
 /// What a refusal of `path` by the disk means: its volume away, gone from a disk that answers,
 /// denied, or another failure. Reads the disk: the volume's root.
 pub fn refusal(computer: &Computer, path: &str, refused: &std::io::Error) -> Absence {
-    if let Some(root) = volume_root(computer, path) {
+    // Windows tells an unreachable server or share as `NotFound` (ERROR_BAD_NETPATH, BAD_NET_NAME):
+    // only its root, a share's as a drive's, tells a disk away from a file gone.
+    if let Some(root) = computer.volume_root(path) {
         crate::presence::looked(&root);
         if !Path::new(&root).is_dir() {
             let volume = paths::name(&root).trim_end_matches('/').to_string();
@@ -48,20 +50,6 @@ pub fn refusal(computer: &Computer, path: &str, refused: &std::io::Error) -> Abs
         ErrorKind::NotFound | ErrorKind::NotADirectory => Absence::Gone,
         _ => Absence::Unreadable(refused.to_string()),
     }
-}
-
-/// The root of the volume `path` lies on when that volume may come and go: `/Volumes/T7`, or a
-/// drive other than the home's on Windows; `None` on the boot disk.
-pub fn volume_root(computer: &Computer, path: &str) -> Option<String> {
-    if computer.volumes.is_empty() || !computer.is_on_volume(path) {
-        return None;
-    }
-    if computer.volumes == DRIVES {
-        return path.get(..2).map(|d| format!("{d}/"));
-    }
-    let rest = paths::below(&computer.volumes, path)?;
-    let name = rest.split('/').next().filter(|n| !n.is_empty())?;
-    Some(paths::join(&computer.volumes, name))
 }
 
 /// The folder nearest `path` that is still on the disk, `path`'s own parent first: what Show the
@@ -108,8 +96,27 @@ mod tests {
         std::fs::rename(paths::join(&c.volumes, "T7"), paths::join(&root, "T7 away")).unwrap();
         let unplugged = Some(Absence::Unplugged { volume: "T7".into() });
         assert_eq!(absence(&c, Path::new(&on_t7)), unplugged, "the volume's root is gone: its disk is away");
-        assert_eq!(volume_root(&c, &home), None, "the home is on no volume that comes and goes");
-        assert_eq!(volume_root(&Computer::none(), &on_t7), None, "no volumes folder, no volume");
+        assert_eq!(c.volume_root(&home), None, "the home is on no volume that comes and goes");
+        assert_eq!(Computer::none().volume_root(&on_t7), None, "no volumes folder, no volume");
+    }
+
+    #[test]
+    fn a_share_out_of_reach_is_a_disk_away_and_not_a_file_gone() {
+        let c = Computer { home: "C:/Users/someone".into(), volumes: crate::navigator::DRIVES.into() };
+        let not_found = std::io::Error::from(ErrorKind::NotFound);
+        let away = refusal(&c, "//oni-no-such-host/film/Roll/A.NEF", &not_found);
+        assert!(matches!(away, Absence::Unplugged { .. }), "{away:?}");
+        // Twin: the same refusal on the home's drive is a file gone.
+        assert_eq!(refusal(&c, "C:/Users/someone/Scans/A.NEF", &not_found), Absence::Gone);
+    }
+
+    /// The system's own words for a server or a share out of reach, read by `refusal` as a file gone.
+    #[cfg(windows)]
+    #[test]
+    fn windows_tells_a_share_out_of_reach_as_not_found() {
+        let kind = |code| std::io::Error::from_raw_os_error(code).kind();
+        assert_eq!((kind(53), kind(67)), (ErrorKind::NotFound, ErrorKind::NotFound));
+        assert_ne!(kind(5), ErrorKind::NotFound, "twin: access denied is no absence of a disk");
     }
 
     #[cfg(unix)]

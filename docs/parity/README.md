@@ -1,5 +1,7 @@
 # Parity with the Swift app
 
+**History:** the Swift app is dead, no rule imposes its behaviour and no check compares with it; this inventory records the port as it was.
+
 The goal is a strictly identical clone of the Swift app (`5e1y/open-negative-initiative`): every
 feature in the same place, every hidden rule and constant, every serialised field. Only the RAW decode
 (LibRaw) and 16-bit rendering may differ. Each row cites the Swift code it was read from, which wins

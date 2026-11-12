@@ -193,9 +193,9 @@ impl State {
         self.frame.as_ref().and_then(|f| f.requests.requested_view).is_some_and(|v| v.5)
     }
 
-    /// Whether a frame's dust patches are being generated.
+    /// Whether the open frame's dust patches are being generated.
     pub fn healing(&self) -> bool {
-        !self.dust.healing.is_empty()
+        self.frame.as_ref().is_some_and(|f| f.heal.is_some())
     }
 
     pub fn viewport(&self) -> Viewport {

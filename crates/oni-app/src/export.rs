@@ -196,6 +196,9 @@ pub fn import_report(installed: usize, refused: usize) -> Option<(String, String
 }
 
 #[cfg(test)]
+mod heal_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::render::{Decoded, Engine, Linear};

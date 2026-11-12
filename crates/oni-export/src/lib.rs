@@ -48,6 +48,8 @@ pub struct Rendered {
 pub enum Failure {
     Decode,
     Render,
+    /// A stroke's patch could not be made, so the file would show its dust.
+    Dust,
     /// The disk's own reason, so the notice can say full, read-only or refused.
     Write(std::io::ErrorKind),
     Profile,
@@ -61,6 +63,7 @@ impl fmt::Display for Failure {
         f.write_str(match self {
             Failure::Decode => tr("The RAW file could not be decoded."),
             Failure::Render => tr("Full-resolution rendering failed."),
+            Failure::Dust => tr("A speck of dust could not be patched: the file is not written."),
             Failure::Profile => tr("The ICC profile chosen for the export can no longer be read."),
             Failure::Write(kind) => match kind {
                 std::io::ErrorKind::StorageFull | std::io::ErrorKind::QuotaExceeded => {

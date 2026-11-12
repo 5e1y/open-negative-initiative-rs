@@ -216,10 +216,10 @@ fn a_patch_landing_under_the_same_settings_counts_and_reads_again() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// A patch is cut from the scan as the settings upstream of the corrections leave it: under another
-/// exposure or flat-field none is found, so the heal makes one again; a framing never loses it.
+/// A patch lies on the decoded scan before every gain: under another capture exposure, a flat-field
+/// or a framing it is found and laid; under another reading of the file none is.
 #[test]
-fn a_patch_made_under_one_exposure_is_never_laid_under_another() {
+fn a_patch_follows_the_exposure_and_flat_field_it_sits_under() {
     let Ok(device) = Device::open() else {
         eprintln!("no adapter: the patches' keys are not exercised");
         return;
@@ -240,21 +240,19 @@ fn a_patch_made_under_one_exposure_is_never_laid_under_another() {
         l.pixels[l.height / 2 * l.width + l.width / 2][1]
     };
     let bare = |s: &PipelineSettings| PipelineSettings { corrections: Vec::new(), ..s.clone() };
-    // Twin: under the settings it was made on, the patch is found and laid.
-    assert!(crate::patches::made(&caches, &made, &c));
-    assert!((centre(&mut engine, &made) - centre(&mut engine, &bare(&made))).abs() > 1e-2, "the patch was not laid");
     let stopped = PipelineSettings { capture_stops: 1.0, ..made.clone() };
     let mut evened = made.clone();
     evened.flat_field = oni_settings::frame::FlatField { mask: FlatFieldMask::ValoiEasy35V1, ..Default::default() };
-    for (name, s) in [("a capture stop", &stopped), ("a flat-field", &evened)] {
-        assert!(!crate::patches::made(&caches, s, &c), "{name}: the former patch counts as made");
-        assert!((centre(&mut engine, s) - centre(&mut engine, &bare(s))).abs() < 1e-5, "{name}: the former patch was laid");
-    }
-    // A framing reads the same scan: its patch is the one made.
     let mut turned = made.clone();
     turned.geometry.rotate(1, (w as f64, h as f64));
     turned.geometry.crop = oni_settings::cg::Rect::new(0.1, 0.1, 0.8, 0.8);
-    assert!(crate::patches::made(&caches, &turned, &c));
-    assert!((centre(&mut engine, &turned) - centre(&mut engine, &bare(&turned))).abs() > 1e-2, "a framing lost the patch");
+    for (name, s) in [("rest", &made), ("a capture stop", &stopped), ("a flat-field", &evened), ("a framing", &turned)] {
+        assert!(crate::patches::made(&caches, s, &c), "{name}: the patch is not found");
+        assert!((centre(&mut engine, s) - centre(&mut engine, &bare(s))).abs() > 1e-2, "{name}: the patch was not laid");
+    }
+    // Twin: another reading of the file is another decode, on which the patch was never cut.
+    let reread = PipelineSettings { primaries_converted: !made.primaries_converted, ..made.clone() };
+    assert!(!crate::patches::made(&caches, &reread, &c), "a patch of another decode counts as made");
+    assert!((centre(&mut engine, &reread) - centre(&mut engine, &bare(&reread))).abs() < 1e-5, "a patch of another decode was laid");
     let _ = std::fs::remove_dir_all(&caches);
 }

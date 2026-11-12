@@ -7,7 +7,7 @@ const LIMIT: usize = 400;
 
 /// Files already past the limit, each at its size today: a ceiling that only comes down, never a target.
 const GRANDFATHERED: &[(&str, usize)] = &[
-    ("crates/oni-app/src/app.rs", 462),
+    ("crates/oni-app/src/app.rs", 459),
     ("crates/oni-app/src/editors/mod.rs", 525),
     ("crates/oni-app/src/editors/tests.rs", 466),
     ("crates/oni-app/tests/window/extended.rs", 409),
@@ -27,7 +27,7 @@ const GRANDFATHERED: &[(&str, usize)] = &[
 const WIDE: usize = 200;
 
 /// Rust lines past `WIDE` today: a count that only falls, never a target.
-const WIDE_LINES: usize = 86;
+const WIDE_LINES: usize = 84;
 
 /// Every source file under `crates/`, as its path from `root` and its text.
 fn sources(root: &Path) -> Vec<(String, String)> {

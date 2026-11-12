@@ -135,6 +135,36 @@ mod tests {
         found
     }
 
+    /// Every Rust source of the app but the files named, as (path, text).
+    fn sources_but(skipped: &[&str]) -> Vec<(std::path::PathBuf, String)> {
+        let mut found = Vec::new();
+        let mut dirs = vec![std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/src"))];
+        while let Some(dir) = dirs.pop() {
+            for entry in std::fs::read_dir(&dir).unwrap().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs.push(path);
+                } else if path.extension().is_some_and(|e| e == "rs") && !skipped.iter().any(|f| path.ends_with(f)) {
+                    found.push((path.clone(), std::fs::read_to_string(&path).unwrap()));
+                }
+            }
+        }
+        found
+    }
+
+    /// The writes to stderr outside the log's thread, which alone masks what a line names.
+    fn stderr_writes(source: &str) -> usize {
+        source.matches("io::stderr()").count()
+    }
+
+    #[test]
+    fn only_the_log_writes_stderr() {
+        let found: Vec<_> = sources_but(&["timing.rs", "anonymity.rs"]).into_iter().filter(|(_, text)| stderr_writes(text) > 0).map(|(p, _)| p).collect();
+        assert!(found.is_empty(), "files writing stderr unmasked: {found:#?}");
+        let planted = "let _ = writeln!(std::io::stderr().lock(), \"{}\", path.display());";
+        assert_eq!(stderr_writes(planted), 1, "twin: a direct write to stderr is caught");
+    }
+
     #[test]
     fn no_line_of_the_log_names_a_file() {
         let mut found = Vec::new();

@@ -83,6 +83,8 @@ pub struct Link {
     host: Host,
     pub frame: Option<(u16, u16)>,
     pub sliders: Box<dyn Sliders>,
+    /// The host's screen covering the editor: a press lands nowhere until it goes.
+    pub covered: bool,
     published: Option<State>,
     /// The slider a phone's hand holds, and the connection it holds it on: the store records its
     /// moves as one step on release.
@@ -91,7 +93,7 @@ pub struct Link {
 
 impl Link {
     pub fn new(host: Host) -> Link {
-        Link { host, frame: None, sliders: Box::new(NoSliders), published: None, held: None }
+        Link { host, frame: None, sliders: Box::new(NoSliders), covered: false, published: None, held: None }
     }
 
     /// Publishes the store's screen when it differs from the last one sent.
@@ -133,6 +135,10 @@ impl Link {
     }
 
     fn command(&mut self, store: &mut EditorStore, command: oni_link::Command, connection: u64) -> Option<Outward> {
+        if self.covered {
+            self.let_go(store);
+            return None;
+        }
         // `DSSlider`'s drag: the first place holds the store, every later one lands under that hold.
         if let oni_link::Command::SetParam { param, position } = command {
             let set = self.sliders.command(store, param, Move::To(position))?;

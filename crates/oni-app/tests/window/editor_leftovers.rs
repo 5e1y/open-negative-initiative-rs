@@ -219,32 +219,6 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     }
 }
 
-/// The string literals of `text` up to `end`, joined as Swift's `+` joins them.
-fn literals(text: &str) -> String {
-    text.split('"').skip(1).step_by(2).collect()
-}
-
-/// A Swift section's help: the literals between `help:` and the section's content.
-fn swift_help(source: &str, title: &str) -> String {
-    let at = source.find(&format!("DSSection(\"{title}\"")).unwrap_or_else(|| panic!("{title} in Swift"));
-    let from = at + source[at..].find("help:").unwrap();
-    let to = from + source[from..].find(") {").unwrap();
-    literals(source[from..to].split("separated:").next().unwrap())
-}
-
-/// Swift's words in the app's one spelling (#1148), which writes colour where Swift wrote color.
-fn british(text: &str) -> String {
-    text.replace("color", "colour").replace("Color", "Colour")
-}
-
-/// A Slint block's help: the last literal on the `help:` line under its title.
-fn slint_help(source: &str, title: &str) -> String {
-    let at = source.find(&format!("title: @tr(\"{title}\");")).unwrap_or_else(|| panic!("{title} in Slint"));
-    let from = at + source[at..].find("help:").unwrap();
-    let line = source[from..].lines().next().unwrap();
-    line.rsplit('"').nth(1).unwrap_or_default().to_string()
-}
-
 /// The panel and its tabs' files, one text.
 fn panel_source() -> String {
     let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui");
@@ -297,29 +271,5 @@ pub(crate) fn every_titled_block_has_a_note() {
     // Twin: a block's note taken away is caught, its keys' own notes never standing for it.
     let stripped = panel.replacen("help: @tr(\"The part of the photo", "demo: @tr(\"The part of the photo", 1);
     assert_eq!(bare_titles(&stripped), ["Measuring Window"]);
-}
-
-/// `DSSection(help:)` on the blocks: each block's note is Swift's own string.
-pub(crate) fn every_block_says_swifts_own_help() {
-    let Some(swift) = oni_app::swift_sources() else { return eprintln!("no Swift checkout: the notes are not compared") };
-    let panel = panel_source();
-    for (file, title) in [
-        ("UI/SettingsPane.swift", "Flat-Field"),
-        ("UI/SettingsPane.swift", "Dye Separation"),
-        ("UI/DetailsPane.swift", "Sharpening"),
-        ("UI/DetailsPane.swift", "Chroma Denoise"),
-        ("UI/DetailsPane.swift", "Texture"),
-    ] {
-        let source = std::fs::read_to_string(swift.join(file)).unwrap();
-        let want = british(&swift_help(&source, title));
-        assert!(want.len() > 20, "{title}: {want}");
-        assert_eq!(slint_help(&panel, title), want, "{title}");
-        // Twin: one word changed in the port is caught.
-        let changed = panel.replacen(&want, &want.replacen(' ', "  ", 1), 1);
-        assert_ne!(slint_help(&changed, title), want, "{title}");
-    }
-    let details = std::fs::read_to_string(swift.join("UI/DetailsPane.swift")).unwrap();
-    let off = literals(details.split("offOnSheet = ").nth(1).unwrap().split('\n').take(2).collect::<Vec<_>>().join("").as_str());
-    assert!(panel.contains(&format!("off-on-sheet: @tr(\"{off}\");")), "{off}");
 }
 

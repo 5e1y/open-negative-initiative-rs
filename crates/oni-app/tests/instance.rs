@@ -89,6 +89,7 @@ fn a_second_instance_does_not_write() {
     std::io::Read::read_to_string(&mut second.stderr.take().unwrap(), &mut said).unwrap();
     assert_eq!(status.code(), Some(2), "{said}");
     assert!(said.contains("already open"), "{said}");
+    assert!(!said.contains(&support.display().to_string()) && !said.contains("instance.lock"), "the line names the folder: {said}");
     assert_eq!(snapshot(&support), support_before, "the support folder is as it was");
     assert_eq!(snapshot(&root.join("caches")), caches_before, "the caches are as they were");
     // Twin: once the first lets go, the same launch goes on and writes its log.
