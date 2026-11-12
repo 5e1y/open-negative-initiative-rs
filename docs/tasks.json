@@ -9062,5 +9062,54 @@
     "title": "The window checks' list in a file of its own",
     "status": "done",
     "detail": "The bug hunt's merges brought tests/window/main.rs to 413 lines, past the 400-line ceiling. The checks' list moves to tests/window/checks.rs; main.rs keeps the modules and the runner's call. The prepare_ending check failed once under the full run's load and passes four times of four alone: a timing flake, logged here, not a regression."
+  },
+  {
+    "id": 1755,
+    "type": "fix",
+    "title": "A preset is written through the app's atomic write",
+    "status": "done",
+    "detail": "shelf::save used its own write and rename: no flush, no Windows retry, a temporary left behind on failure. It now calls oni_library::write_atomically; the check refuses a save onto a directory and finds no temporary, fails on the old code."
+  },
+  {
+    "id": 1756,
+    "type": "fix",
+    "title": "A failed takeover keeps the legacy preset list",
+    "status": "done",
+    "detail": "migrate archived presets.json even when saves failed. It stops at the first failed save and leaves the list for the next launch; the check with an unwritable folder fails on the old code."
+  },
+  {
+    "id": 1757,
+    "type": "fix",
+    "title": "A preset file without an id keeps one identity",
+    "status": "done",
+    "detail": "decode gave a missing id a random one on every read, so edits duplicated and delete trashed nothing. The id is now Id::of_bytes of the file (128-bit FNV-1a); the check on load, edit and delete fails on the old code."
+  },
+  {
+    "id": 1790,
+    "type": "fix",
+    "title": "The presets takeover only adds, and its list keeps only what failed",
+    "status": "done",
+    "detail": "migrate runs on every shelf reload, and a takeover that stopped partway saved the whole list again on the next one: an edit or rename made since was overwritten and its file removed as a twin, a deleted preset came back, on every gesture while one save kept failing. migrate now reads the shelf's ids once and skips any it holds, carries on past a failed save, and writes back to presets.json only the elements it could not take, archiving the list once none is left."
+  },
+  {
+    "id": 1791,
+    "type": "check",
+    "title": "A takeover rerun keeps the edits and deletions made since",
+    "status": "done",
+    "detail": "a_takeover_rerun_keeps_the_edits_and_deletions_made_since takes over A, B and C with C's path blocked, edits A, deletes B and reloads: the shelf reads A edited alone; twin, once C's path is clear C comes in and the list goes. On the code before the fix it reads A and B; with the list left whole (ids skipped but no shrink) it reads A edited and B."
+  },
+  {
+    "id": 1758,
+    "type": "fix",
+    "title": "The presets takeover moves the list out of the way before it takes anything",
+    "status": "done",
+    "detail": "migrate renamed presets.json only once every preset was saved and shrank it in place otherwise, so a refused shrink (disk full) or a refused rename (the file held open on Windows) left the whole list, and every preset deleted since came back on the next reload; and an element decode refused was dropped from the shrunk list, the archive then holding only the last leftovers. The list now leaves its place first, in one rename through oni_settings::atomic::renamed with its Windows retry: the first one becomes presets.json.migrated whole, a later one a staging copy read then removed. Only the elements whose save failed are written back to presets.json; a refused write leaves them in the archive alone."
+  },
+  {
+    "id": 1759,
+    "type": "check",
+    "title": "A refused takeover never brings a deleted preset back, and the archive keeps the list whole",
+    "status": "done",
+    "detail": "presets/tests/takeover.rs: a_preset_taken_then_deleted_stays_deleted_when_the_disk_refuses_the_rest takes [A, B, C] with C blocked and the write-back refused, then with the rename refused (error 32), deletes what shows and reloads: nothing deleted returns and the list is whole in place or archived; twin, with the write-back allowed C comes in once clear. an_element_the_takeover_cannot_read_stays_in_the_archive: [A, X, C] with X unreadable ends with the archive equal to the list. a_list_written_again_only_adds_to_the_shelf covers the held ids. On the code before (seam only) the first reads A and B back (disk full) and A, B, C (held), the second finds the archive [C]; the fix without the write-back, with every list renamed over the archive, or without the held ids each fails one of them."
   }
 ]

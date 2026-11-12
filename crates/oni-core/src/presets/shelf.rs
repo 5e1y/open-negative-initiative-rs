@@ -20,7 +20,8 @@ pub fn directory(support: &Path) -> PathBuf {
     support.join("Presets")
 }
 
-/// The single-file list of earlier versions, read once by the migration and never written.
+/// The single-file list of earlier versions, archived whole by the migration; it holds afterwards
+/// only what the migration could not save.
 pub fn legacy_file(support: &Path) -> PathBuf {
     support.join("presets.json")
 }
@@ -45,9 +46,7 @@ pub fn save(preset: &Preset, directory: &Path) -> io::Result<()> {
     preset.name = writable_name(&preset, directory);
     let path = directory.join(file_name(&preset));
     let text = encode(&preset).map_err(|e| io::Error::other(e.to_string()))?;
-    let temporary = directory.join(format!(".{}.tmp", file_name(&preset)));
-    std::fs::write(&temporary, text)?;
-    std::fs::rename(&temporary, &path)?;
+    oni_library::write_atomically(&path, text.as_bytes())?;
     for other in files(directory).into_iter().filter(|f| *f != path) {
         // A stale twin that refuses to go leaves the save standing: the file just written is the preset.
         if std::fs::read(&other).ok().and_then(|d| decode(&d)).is_some_and(|p| p.id == preset.id) {
@@ -77,25 +76,55 @@ pub fn shareable(preset: &Preset) -> Result<String, json::Error> {
     encode(preset)
 }
 
-/// Takes over the single-file list once, then archives it beside itself; idempotent, the files
-/// deriving from ids, and the new files land before the old one moves.
+/// Takes the single-file list over. Only adds: an id on the shelf is left as the person keeps it,
+/// and what fails to save goes back to the list for the next pass alone.
 pub fn migrate(legacy: &Path, directory: &Path) -> usize {
-    let Some(list) = std::fs::read(legacy).ok().and_then(|d| serde_json::from_slice::<Value>(&d).ok()) else { return 0 };
-    let Some(list) = list.as_array() else { return 0 };
+    taken_over(legacy, directory, &oni_settings::atomic::renamed, &oni_library::write_atomically)
+}
+
+/// `migrate` through its own rename and write, which a check refuses. The list leaves its place in
+/// one rename before any preset is taken, so a refusal later can never bring a taken one back.
+pub(super) fn taken_over(legacy: &Path, directory: &Path, rename: &dyn Fn(&Path, &Path) -> io::Result<()>, write: &dyn Fn(&Path, &[u8]) -> io::Result<()>) -> usize {
+    // The first list stays whole as the archive. A later one, written back by a pass or again by an
+    // earlier version, is read then removed: the archive keeps the first.
+    let archive = beside(legacy, "migrated");
+    let staging = beside(legacy, "taking");
+    let from = if archive.exists() { &staging } else { &archive };
+    if rename(legacy, from).is_err() {
+        return 0;
+    }
+    let list: Vec<Value> = std::fs::read(from).ok().and_then(|d| serde_json::from_slice(&d).ok()).unwrap_or_default();
+    if *from == staging {
+        let _ = std::fs::remove_file(&staging);
+    }
+    let held: Vec<Id> = load(directory).into_iter().map(|p| p.id).collect();
     let mut migrated = 0;
-    for element in list {
-        let Ok(bytes) = serde_json::to_vec(element) else { continue };
-        let Some(preset) = decode(&bytes) else { continue };
-        if save(&preset, directory).is_ok() {
-            migrated += 1;
+    let mut failed = Vec::new();
+    for element in &list {
+        let Some(preset) = serde_json::to_vec(element).ok().and_then(|b| decode(&b)) else { continue };
+        if held.contains(&preset.id) {
+            continue;
+        }
+        match save(&preset, directory) {
+            Ok(()) => migrated += 1,
+            Err(_) => failed.push(element),
         }
     }
-    let mut archive = legacy.as_os_str().to_owned();
-    archive.push(".migrated");
-    let archive = PathBuf::from(archive);
-    let _ = std::fs::remove_file(&archive);
-    let _ = std::fs::rename(legacy, &archive);
+    if !failed.is_empty() {
+        // A refused write leaves them in the archive alone.
+        if let Ok(bytes) = serde_json::to_vec(&failed) {
+            let _ = write(legacy, &bytes);
+        }
+    }
     migrated
+}
+
+/// `<legacy>.<suffix>`, beside it.
+fn beside(legacy: &Path, suffix: &str) -> PathBuf {
+    let mut name = legacy.as_os_str().to_owned();
+    name.push(".");
+    name.push(suffix);
+    PathBuf::from(name)
 }
 
 /// Takes presets in and never overwrites: one held already is skipped, one sharing an id with a
