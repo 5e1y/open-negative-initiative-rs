@@ -9111,5 +9111,33 @@
     "title": "A refused takeover never brings a deleted preset back, and the archive keeps the list whole",
     "status": "done",
     "detail": "presets/tests/takeover.rs: a_preset_taken_then_deleted_stays_deleted_when_the_disk_refuses_the_rest takes [A, B, C] with C blocked and the write-back refused, then with the rename refused (error 32), deletes what shows and reloads: nothing deleted returns and the list is whole in place or archived; twin, with the write-back allowed C comes in once clear. an_element_the_takeover_cannot_read_stays_in_the_archive: [A, X, C] with X unreadable ends with the archive equal to the list. a_list_written_again_only_adds_to_the_shelf covers the held ids. On the code before (seam only) the first reads A and B back (disk full) and A, B, C (held), the second finds the archive [C]; the fix without the write-back, with every list renamed over the archive, or without the held ids each fails one of them."
+  },
+  {
+    "id": 1810,
+    "type": "refactor",
+    "title": "tokens.slint is the hand-owned source of the design system's constants",
+    "status": "done",
+    "detail": "The file said it was generated from the Swift app's DSTokens.swift and never to be edited, yet the Swift checkout is absent and the file was edited by hand. The header and the three README mentions now say it is written by hand, and ds/README.md names no generator."
+  },
+  {
+    "id": 1811,
+    "type": "refactor",
+    "title": "The token generator is deleted",
+    "status": "done",
+    "detail": "crates/oni-app/src/bin/oni-tokens (656 lines, the largest grandfathered file) with its [[bin]] entry and its GRANDFATHERED line in oni-core's architecture test; the generator's own check skipped silently without the Swift sources. swift_sources() stays for the two checks that still read Swift, its doc comment no longer names the generator. editors/geometry.rs keeps its own check of the lengths against tokens.slint."
+  },
+  {
+    "id": 1812,
+    "type": "refactor",
+    "title": "Tokens named nowhere are deleted",
+    "status": "done",
+    "detail": "99 of the 320 DS tokens were named in no .slint, .rs or catalogue file under crates/ (matched by word, hyphen and underscore alike); they are removed, leaving 221, with no other file touched."
+  },
+  {
+    "id": 1813,
+    "type": "docs",
+    "title": "The parity row of the token generator's test reads none",
+    "status": "done",
+    "detail": "docs/parity/checks.md row 155 (DS.Typo.selfCheck) pointed at the generator's test, which no longer exists; it reads none and the counts become 35 partial, 10 none."
   }
 ]

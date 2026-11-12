@@ -1,7 +1,7 @@
 //! What every editor shares: the design system's lengths it hit-tests with, the plot's size, and the
 //! SVG path data its lines are drawn from, in the plot's own points.
 
-/// The `DSTokens.swift` lengths the editors measure with, held to `tokens.slint` by a check.
+/// The design-system lengths the editors measure with, held to `tokens.slint` by a check.
 pub mod ds {
     pub const GRAB_SIZE: f64 = 24.0;
     pub const HANDLE_SIZE: f64 = 9.0;
