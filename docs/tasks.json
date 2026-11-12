@@ -8698,5 +8698,33 @@
     "title": "A footer too narrow for its keys lays its commit on a line of its own",
     "status": "done",
     "detail": "Owner's report: in French the prepare panel's footer ran past the panel, Cancel and Back now keycaps beside PRÉPARER LA PELLICULE. SheetFooter measures its keys on one line in an unseen copy of no height, so the choice never follows the lines it lays; too narrow, it lays the commit under the other keys, as wide as the room. The prepare check names the last step's key as French does: every key inside the footer, the commit under Back at the footer's width, twin one line outrunning it; with the footer forced to one line the check fails."
+  },
+  {
+    "id": 1730,
+    "type": "fix",
+    "title": "An opening decode under a reading the frame has left never lands on the canvas",
+    "status": "done",
+    "detail": "The opening decode's landing checked only the frame's path: a decode already running when an edit changed the reading (Positive mode, the scan profile, the passes, the primaries) installed its negative and rendered the new settings on it, and the right decode then asked no render, its revision already asked. State::wants (path and reading) now gates the landing, Ok and Err alike, and the full-resolution build's landing uses it too. The window check opening_reading holds every decode place, opens a frame, changes its scan profile before the decode lands, and compares the picture with a re-render on the frame's own negative; twin: the two readings render apart. Without the fix the canvas kept the old reading's picture."
+  },
+  {
+    "id": 1731,
+    "type": "fix",
+    "title": "The previews kept are keyed by their whole reading, not the slide flag alone",
+    "status": "done",
+    "detail": "A preview read under one scan profile, passes or primaries was served to an asking under another, the key holding only the slide flag. Previews::get and insert take the Reading; the editor, the thumbnails, Edit Together and the export read it so. The previews test asks a slide preview under another encoding and finds none; twin: the slide flag cannot tell the two apart."
+  },
+  {
+    "id": 1732,
+    "type": "fix",
+    "title": "A render landed takes the failure card away",
+    "status": "done",
+    "detail": "The canvas's failure card was cleared only by opening a photo: a frame decoded again under another reading after a failure rendered under the stale card, and Auto De-dust dropped its ask on it. A render of the open frame that lands now clears the card and the conversion offer. The layout check opens an undecodable file, changes its reading (twin: still bad, the card stays over an empty canvas), mends the file and changes it back: the render clears the card. Without the fix the card stayed."
+  },
+  {
+    "id": 1733,
+    "type": "fix",
+    "title": "A decode failure and a render failure each say their own",
+    "status": "done",
+    "detail": "Both went through the render delivery's error arm, which called every failure a decode one and probed the file for Nikon HE before even checking the frame was open. The opening decode's failure now goes to Ctl::decode_failed, its error compared bare so a file cut short says so (the stem prefixed to it had made that card unreachable); a GPU render failure says the frame could not be rendered and probes no file. French and Spanish catalogues carry the new text."
   }
 ]

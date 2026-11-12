@@ -195,6 +195,20 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     rig.until("Bad refused", Duration::from_secs(60), || !canvas.get_failure().is_empty());
     assert_eq!(canvas.get_failure(), "Bad.tif: could not be decoded");
     rig.shot("layout-undecodable");
+    // The card follows what lands, not the opening: a reading changed decodes again with no opening.
+    // Twin: the file still bad, the card stays over an empty canvas.
+    let panel = w.global::<oni_app::PanelState>();
+    panel.invoke_encoding_picked(1);
+    rig.settle();
+    assert_eq!(canvas.get_failure(), "Bad.tif: could not be decoded", "twin: a failed decode again keeps the card");
+    assert_eq!(canvas.get_frame().size().width, 0, "twin: over an empty canvas");
+    // The file mended, the next reading's decode renders, and its render takes the card away.
+    ctl.set_watching(false);
+    common::plain_tiff(&folder.join("Roll B").join("Bad.tif"), 48, 32, 0.5);
+    panel.invoke_encoding_picked(0);
+    rig.until("the mended frame rendered", Duration::from_secs(60), || canvas.get_frame().size().width > 0);
+    assert_eq!(canvas.get_failure(), "", "a frame rendered stands under no failure");
+    assert!(!canvas.get_convertible());
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     open(&rig, &shell, "B00");

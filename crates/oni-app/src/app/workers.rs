@@ -139,17 +139,16 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
         return Ok((jpeg, tile));
     }
     let reading = render::Reading::of(&settings);
-    let known = previews.lock().expect("previews").get(path, reading.slide);
+    let known = previews.lock().expect("previews").get(path, &reading);
     let negative = match known {
         Some(n) => n,
         None => {
             // A RAW read at half size, a third of the second: kept for the editor only when it was read whole.
-            let slide = reading.slide;
-            let decoded = render::decode_for(Path::new(path), reading, render::PREVIEW_SIDE)?;
+            let decoded = render::decode_for(Path::new(path), reading.clone(), render::PREVIEW_SIDE)?;
             let halved = mosaic && decoded.full_width > decoded.linear.width as f64;
             let n = Arc::new(engine.prepare(decoded)?);
             if !halved {
-                previews.lock().expect("previews").insert(path.to_string(), slide, n.clone());
+                previews.lock().expect("previews").insert(path.to_string(), reading, n.clone());
             }
             n
         }
