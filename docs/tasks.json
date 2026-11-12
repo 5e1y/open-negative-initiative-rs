@@ -9195,5 +9195,12 @@
     "title": "A spring's landing frame lays its target",
     "status": "done",
     "detail": "motion::tests::a_spring_steps_each_frame_and_its_landing_frame_lays_the_target: a placed knob steps nothing, a sprung one draws a frame between its ends, the first frame past settled_after returns the target exactly and the next None. Twin: the frame before the landing stands short of the target, so a timer stopping on moving() alone would leave the knob there."
+  },
+  {
+    "id": 1820,
+    "type": "fix",
+    "title": "The presets takeover test names no library member",
+    "status": "done",
+    "detail": "swift_checks' no_crate_trashes_or_removes_a_library_member reads the word `pass` as a library member, so the takeover test's local named so (#1759) read as removing members. The local is now `run`; the check passes 9/9."
   }
 ]
