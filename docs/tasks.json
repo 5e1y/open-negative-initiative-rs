@@ -9363,5 +9363,12 @@
     "title": "An ask stays current until a newer one or a supersession",
     "status": "done",
     "detail": "ticket::tests: next() and standing() current until another next() or supersede(); twins: the older asks read stale. architecture.rs: app.rs's ceiling lowered to 463."
+  },
+  {
+    "id": 1845,
+    "type": "fix",
+    "title": "Refresh tells what moved against the folder shown",
+    "status": "done",
+    "detail": "Review of #1840: ⌘R pressed while another folder's read was under way kept the shown folder's rows as the before and told the difference against the folder asked once it landed. Refresh now keeps a before only when the folder asked is the one shown. The folder_owner check loses a twin that ran nothing of the app (the mutation run already showed the check fails with the reread under the folder asked)."
   }
 ]

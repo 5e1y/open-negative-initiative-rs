@@ -3,7 +3,6 @@
 
 use crate::freshness::{disk, gpu, names, opened, rig};
 use oni_app::Library;
-use oni_library::index::LibraryIndex;
 use oni_library::paths;
 use slint::ComponentHandle;
 use std::path::Path;
@@ -39,10 +38,6 @@ pub(crate) fn a_folder_asked_keeps_the_one_shown_whole_until_its_read_lands() {
         assert_eq!(s.shown(), Some(a.as_str()));
     }
     assert_eq!(medal("A2"), 2, "the medal lands on A's tile");
-    // Twin: the same rows read again under the folder asked hold none of A's, nor A's count.
-    let index = LibraryIndex::open(&LibraryIndex::default_path(&d.root.join("Caches"))).expect("the index");
-    let under_b = oni_app::library::reread(&index, &[format!("{a}/A2.tif")], Some(&b));
-    assert!(under_b.rows.iter().all(|e| !paths::holds(&a, &e.path)) && under_b.rows.len() != 3, "the check tells A's rows from B's");
 
     // Released, B's first landing replaces the folder, its rows and its tiles at once.
     let start = Instant::now();

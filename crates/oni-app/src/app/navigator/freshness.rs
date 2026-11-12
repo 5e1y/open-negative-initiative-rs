@@ -148,7 +148,8 @@ impl Ctl {
         let opened = {
             let mut s = self.state.borrow_mut();
             let held: HashSet<String> = s.rows().iter().map(|e| e.path.clone()).collect();
-            s.nav.fresh.refreshing = s.opened().map(|_| held);
+            // What moved is told against the folder shown, never one whose read has not landed yet.
+            s.nav.fresh.refreshing = s.shown().filter(|shown| s.opened() == Some(*shown)).map(|_| held);
             let listed: Vec<String> = s.nav.model.listings.keys().cloned().collect();
             for folder in listed {
                 s.nav.model.list(&folder, true);
