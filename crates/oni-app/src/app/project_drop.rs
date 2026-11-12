@@ -71,7 +71,7 @@ fn target_row(target: DropTarget) -> usize {
 }
 
 /// `addToProjectDrop` and `reorderProjectTreeDrop` on the projects: what the landing changed.
-fn land(projects: &mut Vec<project::Project>, reach: &project::Reach, items: &HashSet<NodeId>, landing: &Landing) -> bool {
+fn land(projects: &mut [project::Project], reach: &project::Reach, items: &HashSet<NodeId>, landing: &Landing) -> bool {
     match landing {
         Landing::Join(id) => project::add_to(projects, reach, &photos(items), *id).added > 0,
         Landing::Beside(path, past) => project::reorder_drop(projects, reach, &photos(items), path, *past),
@@ -260,7 +260,7 @@ mod tests {
     }
 
     /// A release at `target` of the row `node` stands at, as the tree lays the projects now.
-    fn dropped(projects: &mut Vec<Project>, reach: &Reach, items: &HashSet<NodeId>, target: fn(usize) -> DropTarget, node: &NodeId) -> bool {
+    fn dropped(projects: &mut [Project], reach: &Reach, items: &HashSet<NodeId>, target: fn(usize) -> DropTarget, node: &NodeId) -> bool {
         let rows = nodes(projects, reach);
         let at = rows.iter().position(|n| n == node).expect("the row laid");
         landing(&rows, projects, reach, items, target(at)).is_some_and(|l| land(projects, reach, items, &l))

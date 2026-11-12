@@ -37,7 +37,7 @@ fn next_rung(current: f64, fit: f64, delta: i32) -> Option<Rung> {
     let mut ladder = std::iter::once((fit, Rung::Fit)).chain(ZOOM_STEPS.iter().filter(|&&s| s > fit).map(|&s| (s, Rung::Scale(s))));
     match delta.signum() {
         1 => ladder.find(|&(s, _)| s > current),
-        -1 => ladder.filter(|&(s, _)| s < current).last(),
+        -1 => ladder.rfind(|&(s, _)| s < current),
         _ => None,
     }
     .map(|(_, rung)| rung)

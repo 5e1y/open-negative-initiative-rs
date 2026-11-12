@@ -54,7 +54,7 @@ mod refused {
         // The navigator lists nothing for it, which is not an empty listing.
         assert_eq!(navigator::children(&refused), None);
         let survey = roots::surveyed(std::slice::from_ref(&refused), &|| true, &computer);
-        assert_eq!(survey.unreadable, [refused.clone()]);
+        assert_eq!(survey.unreadable, std::slice::from_ref(&refused));
         assert_eq!(survey.away.get(&refused), Some(&Presence::Offline(Away::Denied)), "denied, not gone");
         assert_eq!(survey.presence(&format!("{refused}/A.tif")), Presence::Offline(Away::Denied));
         // The folder itself is there; what it holds is refused, never missing.

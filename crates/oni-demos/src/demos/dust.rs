@@ -43,6 +43,12 @@ pub struct Dust {
     shown: Option<(u8, usize)>,
 }
 
+impl Default for Dust {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Dust {
     pub fn new() -> Dust {
         let settings = photo::base();

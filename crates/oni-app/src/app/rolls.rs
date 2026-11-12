@@ -170,7 +170,7 @@ impl Ctl {
         let title = trn("Reset the Roll of This Photo?", "Reset the Roll of {n} Photos?", count as u64);
         let message = tr("Every photo of the roll goes back as it was scanned: the roll's preparation, the crops and every setting of the look go, a frame shot in RGB passes splits back into its three shots. Dust corrections, flat-fields, medals and EXIF stay. Undo brings them back.");
         let key = trn("Reset Photo", "Reset {n} Photos", count as u64);
-        self.ask(&title, &message, &key, true, Pending::ResetToDefault(reach));
+        self.ask(&title, message, &key, true, Pending::ResetToDefault(reach));
     }
 
     pub(super) fn reset_to_default(self: &Rc<Self>, reach: ResetReach) {

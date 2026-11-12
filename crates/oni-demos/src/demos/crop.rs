@@ -35,6 +35,12 @@ pub struct Crop {
     reset: bool,
 }
 
+impl Default for Crop {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Crop {
     pub fn new() -> Crop {
         let settings = photo::base();

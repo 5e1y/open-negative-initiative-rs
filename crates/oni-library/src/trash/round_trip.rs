@@ -65,11 +65,11 @@ fn a_mark_rides_in_the_sidecar_alone_and_a_restore_clears_its_key() {
     let bare = WriteOptions { trashed_at: Some(None), ..WriteOptions::default() };
     sidecar::write(&later, Path::new(&frame), bare).unwrap();
     assert_eq!(read(&frame).trashed_at, None);
-    assert_eq!(mark(std::slice::from_ref(&frame), Some(when()), &|_| true).done, [frame.clone()]);
+    assert_eq!(mark(std::slice::from_ref(&frame), Some(when()), &|_| true).done, std::slice::from_ref(&frame));
 
     let restored = mark(std::slice::from_ref(&frame), None, &|_| true);
     let text = std::fs::read_to_string(sidecar::url_for(Path::new(&frame))).unwrap();
-    assert_eq!(restored.done, [frame.clone()]);
+    assert_eq!(restored.done, std::slice::from_ref(&frame));
     assert!(read(&frame).trashed_at.is_none() && !text.contains("trashedAt"), "the key itself goes: {text}");
 
     // Twin: the listing sees a file moved away, so a trash that moved its photo would fail above.

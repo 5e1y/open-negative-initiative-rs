@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Clippy over every target of the workspace, warnings failing; not part of scripts/check.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec cargo clippy --workspace --all-targets "$@" -- -D warnings

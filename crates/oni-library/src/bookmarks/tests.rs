@@ -31,7 +31,7 @@ fn a_swift_launch_keeps_the_volume_identities() {
         assert!(noted.volume.as_ref().is_some_and(|v| v.uuid.is_some()), "{noted:?}");
     }
     swift_launch(&support);
-    assert_eq!(Favourites::load(&support).unwrap().paths, [path.clone()]);
+    assert_eq!(Favourites::load(&support).unwrap().paths, std::slice::from_ref(&path));
     assert_eq!(Bookmarks::load(&support).places.get(&path), Some(&noted));
     // Twin: the same identity kept inside `favourites.json` is gone after Swift's launch.
     let file = Favourites::file_path(&support);

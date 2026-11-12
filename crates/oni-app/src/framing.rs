@@ -106,7 +106,7 @@ pub fn apply(handle: Handle, from: Rect, frame: Size, translation: Size) -> Rect
 
 /// `CropOverlay.constrain`: the ratio about the point opposite the hand, then the fit under rotation.
 pub fn constrained_crop(geometry: &Geometry, handle: Handle, proposed: Rect, image: Size) -> Geometry {
-    let mut g = geometry.clone();
+    let mut g = *geometry;
     g.crop = proposed;
     g.apply_ratio(image, Some(handle.opposite(proposed)), handle.driving());
     g.fit_crop_inside_image(image);
@@ -193,7 +193,7 @@ mod tests {
         let px = fitted.cropped_pixel_size(RAW);
         assert!((px.0 - px.1).abs() < 1e-6, "square: {px:?}");
         // Twin: anchored at the centre instead, the top edge would move with the height.
-        let mut centred = g.clone();
+        let mut centred = g;
         centred.crop = proposed;
         centred.apply_ratio(RAW, None, Driving::Width);
         assert!((centred.crop.y + centred.crop.height - 0.8).abs() > 1e-3);

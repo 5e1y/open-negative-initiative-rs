@@ -129,7 +129,8 @@ impl Ctl {
             let g = &s.gpu;
             let (target, shown) = g.encode(s.loupe.texture.as_ref(), (w, h), view, &Params::new(key.5, w, h, 0), (w, h));
             // A texture the band refuses is not kept, so the next render imports another.
-            let image = match shown {
+            
+            match shown {
                 Ok(image) => {
                     s.loupe.texture = Some(target);
                     image
@@ -138,8 +139,7 @@ impl Ctl {
                     s.loupe.texture = None;
                     Some(Image::default())
                 }
-            };
-            image
+            }
         };
         let scale = f64::from(win.window().scale_factor());
         let band = win.global::<DetailLoupe>();

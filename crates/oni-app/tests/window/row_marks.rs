@@ -62,7 +62,7 @@ fn canister_gap(drawn: &(usize, Vec<Rgb565Pixel>), row: &Placed, id: &str) -> f3
         .flat_map(|y| (0..aw).map(move |x| (x, y)))
         .filter_map(|(x, y)| {
             let p = art.as_slice()[y * aw + x];
-            (p.a == 255).then(|| (x, y, [p.r as f32, p.g as f32, p.b as f32]))
+            (p.a == 255).then_some((x, y, [p.r as f32, p.g as f32, p.b as f32]))
         })
         .collect();
     let (left, top) = ((row.x * SCALE) as usize, (row.y * SCALE) as usize);

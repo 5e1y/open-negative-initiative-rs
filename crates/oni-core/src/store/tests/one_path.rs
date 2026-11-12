@@ -84,7 +84,7 @@ fn a_dye_reset_lays_the_open_roll_s_stock_on_its_roll_alone() {
 
 #[test]
 fn an_action_the_open_frame_stands_still_for_still_reaches_the_frames_together() {
-    let mut theirs = PipelineSettings { vignette: oni_settings::blocks::Vignette { stops: -0.7, ..Default::default() }, ..PipelineSettings::default() };
+    let mut theirs = PipelineSettings { vignette: oni_settings::blocks::Vignette { stops: -0.7 }, ..PipelineSettings::default() };
     theirs.scanner.c = 3;
     theirs.scanner.y = 10;
     theirs.manual_curves.red.add(oni_settings::cg::Point::new(0.5, 0.7));

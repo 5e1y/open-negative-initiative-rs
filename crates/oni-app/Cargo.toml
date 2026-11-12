@@ -11,6 +11,9 @@ name = "oni"
 path = "src/main.rs"
 test = false
 
+[lints]
+workspace = true
+
 [dependencies]
 arboard = { version = "3.6", default-features = false }
 bytemuck.workspace = true

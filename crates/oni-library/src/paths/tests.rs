@@ -100,7 +100,7 @@ fn a_path_spelt_nfc_holds_its_nfd_listing() {
     let image = canonical(&scratch.path().join(nfd).join("Roll 3").join("a.NEF"));
     assert!(holds(&typed, &image) && holds(&format!("{root}/{nfd}"), &image) && same(&format!("{root}/{nfd}"), &row));
     let mut stars = Favourites { version: 1, paths: vec![format!("{root}/{nfd}"), typed.clone()] }.respelt();
-    assert_eq!(stars.paths, [typed.clone()], "one folder starred once, in one spelling");
+    assert_eq!(stars.paths, std::slice::from_ref(&typed), "one folder starred once, in one spelling");
     assert!(stars.contains(&row));
     stars.follow(&format!("{root}/{nfd}"), &format!("{root}/Hiver"));
     assert_eq!(stars.paths, [format!("{root}/Hiver")]);

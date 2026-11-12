@@ -135,11 +135,10 @@ pub fn kept(path: &str, s: &PipelineSettings) -> Option<Outcome> {
             found
         }
     };
-    if s.roll_reference.is_none() {
-        if let Some(r) = found.reference.as_mut() {
+    if s.roll_reference.is_none()
+        && let Some(r) = found.reference.as_mut() {
             r.id = oni_settings::Id::new();
         }
-    }
     Some(found)
 }
 

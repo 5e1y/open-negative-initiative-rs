@@ -17,9 +17,7 @@ fn mirror(from: &Path, to: &Path) {
         let (src, dst) = (entry.path(), to.join(entry.file_name()));
         if src.is_dir() {
             mirror(&src, &dst);
-        } else if src.extension().is_some_and(|e| e == "json") {
-            std::fs::copy(&src, &dst).unwrap();
-        } else if std::fs::hard_link(&src, &dst).is_err() {
+        } else if src.extension().is_some_and(|e| e == "json") || std::fs::hard_link(&src, &dst).is_err() {
             std::fs::copy(&src, &dst).unwrap();
         }
     }

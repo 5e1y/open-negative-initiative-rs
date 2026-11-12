@@ -197,7 +197,7 @@ impl Ctl {
         let target = folder.to_owned();
         self.ask(
             &tr!("Show Every Photo on “{name}”?", name = name),
-            &tr("ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it."),
+            tr("ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it."),
             tr("Show Every Photo"),
             false,
             Pending::Run(Box::new(move |c| c.open_spelt(target))),

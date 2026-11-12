@@ -51,7 +51,7 @@ pub(crate) fn an_undo_shows_a_member_beyond_the_folder_at_once() {
     hand.lib().invoke_surface_picked(1);
     hand.rig.pump();
     // Twin: Z out of the project, the Projects tab shows A alone.
-    assert_eq!(hand.shown(), [a.clone()]);
+    assert_eq!(hand.shown(), std::slice::from_ref(&a));
     ctl.act(oni_app::Act::Undo);
     hand.rig.pump();
     assert_eq!(hand.members(), [vec![a.clone(), z.clone()]]);

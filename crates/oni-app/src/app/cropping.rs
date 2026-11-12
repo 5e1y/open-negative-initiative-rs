@@ -38,14 +38,14 @@ impl Ctl {
         let Some(image) = self.image_size() else { return };
         let fitted = {
             let mut s = self.state.borrow_mut();
-            let current = s.store.settings().geometry.clone();
+            let current = s.store.settings().geometry;
             let Some(f) = s.frame.as_mut() else { return };
             let base = match &f.straightening {
-                Some((base, written, at)) if at.elapsed() < STRAIGHTEN_IDLE && *written == current => base.clone(),
+                Some((base, written, at)) if at.elapsed() < STRAIGHTEN_IDLE && *written == current => *base,
                 _ => current,
             };
             let fitted = base.straightened(angle, image);
-            f.straightening = Some((base, fitted.clone(), Instant::now()));
+            f.straightening = Some((base, fitted, Instant::now()));
             fitted
         };
         self.write_geometry(fitted);
@@ -88,7 +88,7 @@ impl Ctl {
         let (g, board, window_board) = {
             let s = self.state.borrow();
             let board = s.store.board.framing.is_some();
-            (s.store.settings().geometry.clone(), board, s.window_board)
+            (s.store.settings().geometry, board, s.window_board)
         };
         w.global::<PanelState>().set_crop_first(g.crop == Fraction::UNIT && g.measure_window.is_none());
         let f = w.global::<crate::Framing>();
@@ -139,7 +139,7 @@ impl Ctl {
         let cropping = self.cropping();
         let Some(frame) = self.image_frame(cropping || !window) else { return };
         let mut s = self.state.borrow_mut();
-        let g = s.store.settings().geometry.clone();
+        let g = s.store.settings().geometry;
         let from = if window { frames::window_shown(&g, cropping) } else { g.crop };
         let Some(f) = s.frame.as_mut() else { return };
         f.frame_gesture = Some(FrameGesture { window, handle, from, size: (frame.2, frame.3), spent: false });
@@ -151,7 +151,7 @@ impl Ctl {
         let cropping = self.cropping();
         let Some(held) = self.held_frame().filter(|h| !h.spent) else { return };
         let proposed = frames::apply(held.handle, held.from, held.size, (f64::from(dx), f64::from(dy)));
-        let g = self.state.borrow().store.settings().geometry.clone();
+        let g = self.state.borrow().store.settings().geometry;
         let next = if held.window {
             Geometry { measure_window: Some(frames::window_stored(&g, frames::bounded(proposed), cropping)), ..g }
         } else {
@@ -170,7 +170,7 @@ impl Ctl {
             held.spent = true;
             (held.window, held.from)
         };
-        let g = self.state.borrow().store.settings().geometry.clone();
+        let g = self.state.borrow().store.settings().geometry;
         let back = if window { Geometry { measure_window: Some(frames::window_stored(&g, from, cropping)), ..g } } else { Geometry { crop: from, ..g } };
         self.write_geometry(back);
         self.publish_framing();
@@ -224,7 +224,7 @@ impl Ctl {
             return false;
         }
         let (Some(image), Some(frame)) = (self.image_size(), self.image_frame(cropping || !window)) else { return true };
-        let g = self.state.borrow().store.settings().geometry.clone();
+        let g = self.state.borrow().store.settings().geometry;
         let next = if window {
             let moved = frames::apply(handle, frames::window_shown(&g, cropping), (frame.2, frame.3), by);
             Geometry { measure_window: Some(frames::window_stored(&g, frames::bounded(moved), cropping)), ..g }
@@ -240,7 +240,7 @@ impl Ctl {
     /// A ratio or an orientation chosen: the frame cut to it in place and remembered for the next.
     pub(super) fn choose_framing(self: &Rc<Self>, change: impl FnOnce(&mut Geometry)) {
         let Some(image) = self.image_size() else { return };
-        let mut g = self.state.borrow().store.settings().geometry.clone();
+        let mut g = self.state.borrow().store.settings().geometry;
         change(&mut g);
         g.apply_ratio(image, None, geom::Driving::Width);
         g.fit_crop_inside_image(image);
@@ -257,7 +257,7 @@ impl Ctl {
             return;
         }
         let Some(image) = self.image_size() else { return };
-        let mut g = self.state.borrow().store.settings().geometry.clone();
+        let mut g = self.state.borrow().store.settings().geometry;
         match action {
             // Three quarters counter-clockwise is one clockwise, as the key says: the render turns the other way.
             crate::Act::Rotate => g.rotate(3, image),
@@ -321,7 +321,7 @@ impl Ctl {
                 s.framing_memory.as_ref().filter(|(_, on)| Some(on) != open.as_ref()).map(|(r, _)| *r)
             };
             if let (Some(r), Some(image)) = (remembered, self.image_size()) {
-                let mut g = self.state.borrow().store.settings().geometry.clone();
+                let mut g = self.state.borrow().store.settings().geometry;
                 if (g.ratio, g.portrait) != (Some(r.ratio), r.portrait) {
                     g.adopt(r, image);
                     self.write_geometry(g);

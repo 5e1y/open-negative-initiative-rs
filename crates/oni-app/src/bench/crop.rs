@@ -17,7 +17,7 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let Some(ctl) = me.upgrade() else { return timer.stop() };
         let Some(w) = ctl.window() else { return };
         let (f, c, panel) = (w.global::<crate::Framing>(), w.global::<crate::Canvas>(), w.global::<crate::PanelState>());
-        let geometry = || ctl.state.borrow().store().settings().geometry.clone();
+        let geometry = || ctl.state.borrow().store().settings().geometry;
         let note = |what: &str| {
             let g = geometry();
             lines.borrow_mut().push(format!("{what}: crop {:.3} {:.3} {:.3} {:.3}, turns {}, angle {:.2}, mirrored {}, ratio {:?}, kept {}", g.crop.x, g.crop.y, g.crop.width, g.crop.height, g.quarter_turns, g.angle, g.mirrored, g.ratio, f.get_kept()));
@@ -79,7 +79,7 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             7..=12 => ctl.act(crate::Act::Undo),
             13 => {
                 note("undone");
-                let back = start.borrow().clone() == Some(geometry());
+                let back = *start.borrow() == Some(geometry());
                 timer.stop();
                 panel.set_tab(crate::PanelTab::Color);
                 panel.invoke_tab_picked(crate::PanelTab::Color);

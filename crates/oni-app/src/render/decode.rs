@@ -182,7 +182,7 @@ pub(crate) fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, dec
     let green = decode(&beside(&passes.green)).map_err(|e| tr!("its green pass: {error}", error = e))?;
     let red = decode(&beside(&passes.red)).map_err(|e| tr!("its red pass: {error}", error = e))?;
     let blue = decode(&beside(&passes.blue)).map_err(|e| tr!("its blue pass: {error}", error = e))?;
-    let fits = passes.registration.clone().unwrap_or_default();
+    let fits = passes.registration.unwrap_or_default();
     let (w, h) = (green.linear.width, green.linear.height);
     let r = laid(&red.linear, &fits.red, w, h, 0);
     let b = laid(&blue.linear, &fits.blue, w, h, 2);

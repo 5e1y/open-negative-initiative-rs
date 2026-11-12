@@ -330,7 +330,7 @@ fn colorants(icc: &[u8]) -> Option<([[f64; 3]; 3], String)> {
         let s = |i: usize| -> Option<f64> { Some(f64::from(i32::from_be_bytes(icc.get(at + 8 + 4 * i..at + 12 + 4 * i)?.try_into().ok()?)) / 65536.0) };
         Some([s(0)?, s(1)?, s(2)?])
     };
-    let curve = found.get(&b"rTRC".to_vec()).map(|&(at, len)| format!("{} of {len} bytes", String::from_utf8_lossy(&icc[at..at + 4])))?;
+    let curve = found.get(&b"rTRC"[..]).map(|&(at, len)| format!("{} of {len} bytes", String::from_utf8_lossy(&icc[at..at + 4])))?;
     Some(([xyz(b"rXYZ")?, xyz(b"gXYZ")?, xyz(b"bXYZ")?], curve))
 }
 

@@ -84,7 +84,7 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, framing, c) = (w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
     let escape: SharedString = Key::Escape.into();
-    let geometry = || ctl.state.borrow().store().settings().geometry.clone();
+    let geometry = || ctl.state.borrow().store().settings().geometry;
     let crop = |rig: &common::Rig| {
         ctl.act(oni_app::Act::Framing);
         rig.settle();
@@ -159,7 +159,7 @@ pub(crate) fn the_arrows_move_the_crop_and_every_readout_says_one_kept_size() {
 
     // A frame never balanced opens with its measuring window drawn: the arrows move that frame first,
     // as Return applies it first.
-    let geometry = || ctl.state.borrow().store().settings().geometry.clone();
+    let geometry = || ctl.state.borrow().store().settings().geometry;
     ctl.act(oni_app::Act::Framing);
     framing.invoke_ratio_picked(3);
     rig.settle();

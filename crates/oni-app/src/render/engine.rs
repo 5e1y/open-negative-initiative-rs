@@ -5,7 +5,9 @@ use oni_i18n::tr;
 
 mod inputs;
 mod kept;
-pub(crate) use kept::{INPUTS_KEPT, custom_for, patches_for};
+pub(crate) use kept::{custom_for, patches_for};
+#[cfg(test)]
+pub(crate) use kept::INPUTS_KEPT;
 use kept::Kept;
 use oni_pipeline::corrections::PatchKey;
 pub(crate) mod prewarm;

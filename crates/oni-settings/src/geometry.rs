@@ -72,7 +72,7 @@ impl Geometry {
 
     /// The crop removed for the length of a crop gesture, the straightened bounding box shown.
     pub fn without_crop(&self) -> Geometry {
-        Geometry { crop: Rect::UNIT, crop_bypassed: true, ..self.clone() }
+        Geometry { crop: Rect::UNIT, crop_bypassed: true, ..*self }
     }
 
     /// The image and the frame rotated together, a locked ratio applied again; `image` is raw.
@@ -155,7 +155,7 @@ impl Geometry {
 
     /// One straightening gesture expressed on its starting frame, so the shrink never ratchets.
     pub fn straightened(&self, angle: f32, image: Size) -> Geometry {
-        let mut fitted = self.clone();
+        let mut fitted = *self;
         fitted.angle = angle;
         fitted.fit_crop_inside_image(image);
         fitted

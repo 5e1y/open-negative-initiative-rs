@@ -23,7 +23,7 @@ pub(in crate::app) struct Read {
 
 impl Read {
     fn of(path: &str, settings: &PipelineSettings) -> Read {
-        Read { path: path.to_string(), corrections: settings.corrections.iter().map(|c| c.id).collect(), geometry: settings.geometry.clone(), limits: Limits::of(settings) }
+        Read { path: path.to_string(), corrections: settings.corrections.iter().map(|c| c.id).collect(), geometry: settings.geometry, limits: Limits::of(settings) }
     }
 }
 

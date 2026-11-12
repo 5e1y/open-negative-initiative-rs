@@ -10,8 +10,6 @@ use std::time::{Duration, Instant};
 use crate::common;
 use crate::panel_bindings::opened;
 
-const SHARPENING: &str = "Sharpens edges without adding colour fringing.\n\nHalo suppression keeps a sharpened edge within the light of its neighbours, clamping the overshoot that draws a bright or dark rim along it.";
-const CHROMA: &str = "Smooths colour noise from the scan without touching the film grain.";
 /// The help mark of the block titled `subject`, named as assistive tools read it: in English where the
 /// interface is read live, as on the Mac, in the app's language where it is compiled, as in the CI.
 pub(crate) fn mark(w: &oni_app::MainWindow, subject: &'static str) -> common::Placed {

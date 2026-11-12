@@ -13,7 +13,10 @@ fn the_double_click_is_the_systems_and_never_zero() {
 #[test]
 fn a_missing_file_is_never_reported_trashed() {
     let asked = std::cell::Cell::new(0);
-    let platform = |_: &Path| io::Result::Ok(asked.set(asked.get() + 1));
+    let platform = |_: &Path| {
+        asked.set(asked.get() + 1);
+        io::Result::Ok(())
+    };
     let [gone, here] = ["absent", "here"].map(|n| std::env::temp_dir().join(format!("oni-trash-{}-{n}", std::process::id())));
     assert_eq!(guarded(&gone, platform).unwrap_err().kind(), io::ErrorKind::NotFound);
     assert_eq!(asked.get(), 0, "the platform is never asked about a missing file");

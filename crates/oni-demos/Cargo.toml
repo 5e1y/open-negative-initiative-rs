@@ -14,6 +14,9 @@ test = false
 [lib]
 doctest = false
 
+[lints]
+workspace = true
+
 [dependencies]
 color_quant = "1.1"
 gif = "0.14"

@@ -126,7 +126,7 @@ fn a_rolls_row_shows_the_stock_picked_else_its_modes_generic_one() {
     let mut entry = Entry::new("/R/A.NEF", oni_library::distant_past(), "A");
     entry.mode = Some(ConversionMode::Positive);
     let mut film = oni_settings::film::Film::new("Roll 1");
-    let mut group = FilmGroup { id: FilmKey::Roll(film.id.clone()), film: Some(film.clone()), start: oni_library::distant_past(), entries: vec![entry], heading: None };
+    let mut group = FilmGroup { id: FilmKey::Roll(film.id), film: Some(film.clone()), start: oni_library::distant_past(), entries: vec![entry], heading: None };
     assert_eq!(default_stock(&group), "generic-color-positive");
     film.stock = Some("kodak-portra".into());
     group.film = Some(film);
@@ -205,7 +205,7 @@ fn read_rows_tells_gone_away_and_denied_apart() {
     // Twin: in a folder that reads, a file removed loses its row.
     std::fs::remove_file(root.join("Volumes/T7/Scans/A.NEF")).unwrap();
     let (_, rows) = read_whole(&scans, &index, &place);
-    assert_eq!(rows, [b.clone()]);
+    assert_eq!(rows, std::slice::from_ref(&b));
     assert!(index.all().iter().all(|e| e.path != a), "the removed file's row leaves the index");
     let _ = std::fs::remove_dir_all(&root);
 }

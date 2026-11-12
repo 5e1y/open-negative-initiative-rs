@@ -5,6 +5,9 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "query", "tokio"] }
 hyper = { version = "1", features = ["server", "http1"] }

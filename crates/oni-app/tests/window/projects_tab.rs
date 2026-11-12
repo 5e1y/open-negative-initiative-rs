@@ -279,7 +279,7 @@ pub(crate) fn the_empty_tab_makes_a_project_and_the_filter_acts_in_it() {
     assert_eq!(hand.shown(), [a.clone(), b.clone()]);
     lib.invoke_filter_picked(1);
     hand.rig.pump();
-    assert_eq!(hand.shown(), [a.clone()], "Gold keeps A alone");
+    assert_eq!(hand.shown(), std::slice::from_ref(&a), "Gold keeps A alone");
     lib.invoke_filter_picked(2);
     hand.rig.pump();
     assert!(hand.shown().is_empty());

@@ -109,7 +109,7 @@ fn the_scanner_face_prints_without_pros_auto_white_balance() {
         assert!(corrected.print == bare.print, "{machine:?}: {:?} {:?}", corrected.print, bare.print);
     }
     // Twin: the correction laid on the print moves it, so a face that took it would be seen.
-    let mut laid = bare.print.clone();
+    let mut laid = bare.print;
     laid.set_filters([0.4, -0.2, -0.4]);
     assert!(laid != bare.print);
 }

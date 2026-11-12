@@ -51,7 +51,7 @@ pub fn could_not_start(support: &Path, cause: &str) {
     let log = crate::timing::log_path(support);
     let message = tr!("{cause}\n\nThe log holds the details: {log}", cause = cause, log = log.display().to_string());
     if by_hand() {
-        crate::system::alert(&tr("Open Negative Initiative could not start"), &message);
+        crate::system::alert(tr("Open Negative Initiative could not start"), &message);
     }
 }
 

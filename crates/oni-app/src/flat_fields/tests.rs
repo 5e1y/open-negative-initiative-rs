@@ -66,7 +66,7 @@ fn a_loaded_picture_joins_the_list_under_its_files_name_once() {
     let entry = load(&support, &source, decode).expect("the panel loads");
     assert_eq!((entry.name.as_str(), entry.per_channel), ("panel", None));
     assert_eq!(entry.id, id_of(b"the panel's own bytes", None));
-    assert_eq!(entries(&support), [entry.clone()]);
+    assert_eq!(entries(&support), std::slice::from_ref(&entry));
     let text = std::fs::read_to_string(folder(&support).join("masks.json")).unwrap();
     assert!(!text.contains("perChannel"), "an unset flag is left out, as JSONEncoder does: {text}");
     let again = load(&support, &source, |_| -> Option<Picture> { panic!("a known file is not decoded again") }).unwrap();
@@ -145,7 +145,7 @@ fn a_fresh_frame_opens_on_the_colour_last_dialled_and_a_dialled_one_keeps_its_ow
 
 thread_local! {
     /// Where the checks' Trash lays what it is handed, and each step a move took, in order.
-    static TRASH: std::cell::RefCell<(PathBuf, Vec<String>)> = std::cell::RefCell::new((PathBuf::new(), Vec::new()));
+    static TRASH: std::cell::RefCell<(PathBuf, Vec<String>)> = const { std::cell::RefCell::new((PathBuf::new(), Vec::new())) };
 }
 
 fn step(name: String) {

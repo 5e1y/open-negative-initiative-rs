@@ -150,10 +150,6 @@ impl Picks {
 mod tests {
     use super::*;
 
-    fn paths(items: &[&str]) -> Vec<String> {
-        items.iter().map(|s| s.to_string()).collect()
-    }
-
     fn set(items: &[&str]) -> HashSet<String> {
         items.iter().map(|s| s.to_string()).collect()
     }

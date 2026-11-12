@@ -183,14 +183,14 @@ fn a_print_learned_here_is_the_same_member_in_the_merge() {
     ours.members.remove(1);
     let mut theirs = read.clone();
     theirs.members.push(project::Member::new(Some("/d"), None));
-    let merged = projects(&[read.clone()], &[ours.clone()], &[theirs.clone()]);
+    let merged = projects(std::slice::from_ref(&read), &[ours.clone()], &[theirs.clone()]);
     let paths: Vec<&str> = merged[0].paths();
     assert_eq!(paths, ["/a", "/c", "/d"], "b gone, a in its place");
     assert_eq!(merged[0].members[0].print.as_deref(), Some("1-a"));
     // A project the other app deleted stays deleted when this side only learned a print.
     let mut learned = read.clone();
     learned.members[0].print = Some("1-a".into());
-    assert!(projects(&[read.clone()], &[learned], &[]).is_empty());
+    assert!(projects(std::slice::from_ref(&read), &[learned], &[]).is_empty());
     // Twin: compared whole, the learned member reads as removed and added, and falls to the end.
     let whole = list(&read.members, &ours.members, &theirs.members);
     assert_ne!(whole.iter().filter_map(|m| m.path.as_deref()).collect::<Vec<_>>(), ["/a", "/c", "/d"]);

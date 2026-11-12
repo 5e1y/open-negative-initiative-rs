@@ -228,7 +228,7 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             if s.org.project_expanded.is_empty() {
-                let all: HashSet<NodeId> = s.org.projects.iter().map(|p| NodeId::Project(p.id.clone())).collect();
+                let all: HashSet<NodeId> = s.org.projects.iter().map(|p| NodeId::Project(p.id)).collect();
                 s.org.project_expanded = all;
             } else {
                 s.org.project_expanded.clear();

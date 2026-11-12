@@ -67,7 +67,7 @@ pub(crate) fn a_stroke_stays_on_its_scan_point_through_turns_and_mirrors() {
     let clicked = (fx + fw * 0.3, fy + fh * 0.25);
     c.invoke_paint_start(clicked.0, clicked.1);
     c.invoke_paint_end();
-    let geometry = ctl.state.borrow().store().settings().geometry.clone();
+    let geometry = ctl.state.borrow().store().settings().geometry;
     let dot = ctl.state.borrow().store().settings().corrections.last().cloned().expect("a dot");
     let wanted = geometry.placing(SCAN).on_scan(Point::new(0.3, 0.25));
     assert!((dot.stroke[0].x - wanted.x).abs() < 1e-6 && (dot.stroke[0].y - wanted.y).abs() < 1e-6, "{:?} for {wanted:?}", dot.stroke[0]);
@@ -79,9 +79,9 @@ pub(crate) fn a_stroke_stays_on_its_scan_point_through_turns_and_mirrors() {
 
     // Turned and mirrored, the stroke stays and its marker follows the scan point onto the new picture.
     for (name, act) in [("a turn", oni_app::Act::Rotate), ("a mirror", oni_app::Act::Mirror)] {
-        let before = ctl.state.borrow().store().settings().geometry.clone();
+        let before = ctl.state.borrow().store().settings().geometry;
         ctl.act(act);
-        let g = ctl.state.borrow().store().settings().geometry.clone();
+        let g = ctl.state.borrow().store().settings().geometry;
         assert_ne!(g, before, "{name} moved nothing");
         rig.until("the picture framed anew", Duration::from_secs(60), || {
             rig.pump();

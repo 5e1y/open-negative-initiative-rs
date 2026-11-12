@@ -159,7 +159,7 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let report = format!(
                     "bench, zoom: full resolution {:.0} ms after the double click; {}\n{}\n{}\n{}\n  {}",
                     full_after.as_secs_f64() * 1000.0,
-                    format!(
+                    format_args!(
                         "{}; the interface thread's longest tick {:.1} ms",
                         s.views().summary_between(early, built, "pans while full resolution is built"),
                         STALL.with(Cell::get).1.as_secs_f64() * 1000.0

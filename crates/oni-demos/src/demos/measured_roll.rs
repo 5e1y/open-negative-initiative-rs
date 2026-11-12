@@ -30,6 +30,12 @@ pub struct MeasuredRoll {
     renders: Vec<Vec<Rgba>>,
 }
 
+impl Default for MeasuredRoll {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MeasuredRoll {
     pub fn new() -> MeasuredRoll {
         MeasuredRoll { settings: photo::framed(photo::base()), drag: None, renders: Vec::new() }

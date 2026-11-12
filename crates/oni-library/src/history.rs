@@ -150,10 +150,6 @@ impl History {
         self.next_undo().map(|s| s.label.as_str()).filter(|l| !l.is_empty())
     }
 
-    pub fn redo_label(&self) -> Option<&str> {
-        self.next_redo().map(|s| s.label.as_str()).filter(|l| !l.is_empty())
-    }
-
     /// The photos the next undo would touch, so a host reads their rows and thumbnails again.
     pub fn undo_paths(&self) -> BTreeSet<String> {
         self.next_undo().map(Step::paths).unwrap_or_default()

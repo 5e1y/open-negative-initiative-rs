@@ -17,7 +17,7 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     let (panel, framing, c) = (w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
     let escape: SharedString = Key::Escape.into();
     let right: SharedString = Key::RightArrow.into();
-    let geometry = || ctl.state.borrow().store().settings().geometry.clone();
+    let geometry = || ctl.state.borrow().store().settings().geometry;
 
     // A stroke under way shows; twin of what follows: De-dust left mid-stroke and opened again shows none.
     ctl.act(Act::Correction);
@@ -46,7 +46,7 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     c.invoke_frame_dragged(false, 6, -20.0, 0.0);
     assert_ne!(geometry(), found, "the right edge follows the hand");
     rig.key(&escape);
-    assert_eq!((panel.get_tab(), geometry()), (PanelTab::Crop, found.clone()), "twin: Esc under the hand puts the crop back");
+    assert_eq!((panel.get_tab(), geometry()), (PanelTab::Crop, found), "twin: Esc under the hand puts the crop back");
     c.invoke_frame_released(false);
 
     // Return leaves the crop with the hand still down: the drag is its own step, nothing is held after.

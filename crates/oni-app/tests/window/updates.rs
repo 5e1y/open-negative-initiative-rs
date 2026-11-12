@@ -121,7 +121,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     let kept = downloads.join("OpenNegative-9.1.0.zip");
     rig.until("the archive kept", Duration::from_secs(10), || !revealed.lock().unwrap().is_empty());
     assert_eq!(std::fs::read(&kept).unwrap(), archive);
-    assert_eq!(*revealed.lock().unwrap(), [kept.clone()]);
+    assert_eq!(*revealed.lock().unwrap(), std::slice::from_ref(&kept));
     assert!(!bar.get_updating());
     // A second download keeps both files rather than writing over the first.
     bar.invoke_act(oni_app::Act::Update);

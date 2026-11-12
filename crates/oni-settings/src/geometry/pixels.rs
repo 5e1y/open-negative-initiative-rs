@@ -62,16 +62,16 @@ mod tests {
         let slivers = Geometry { crop: Rect { x: 0.0, y: 0.00001, width: 1.0, height: 0.99998 }, ..Geometry::default() };
         assert_eq!(slivers.frame_in([0.0, 0.0, 6000.0, 4000.0], 1.0), [0.0, 0.0, 6000.0, 3999.0]);
         assert_eq!(slivers.kept_pixels(RAW), (6000.0, 3999.0));
-        let tilted = Geometry { angle: 1.0, ..g.clone() };
+        let tilted = Geometry { angle: 1.0, ..g };
         assert_eq!(tilted.kept_pixels(RAW), (2998.0, 3998.0));
         // A box of no whole height keeps every row the frame touches.
         assert_eq!(Geometry::default().kept_pixels((6048.0, 4031.4)), (6048.0, 4032.0));
         // Twin: the readouts' former rounding said a pixel more, and a pixel less, than the file holds.
         assert_eq!(((0.50009f64 * RAW.0).round(), (0.99998f64 * RAW.1).round()), (3001.0, 4000.0));
         // A turn written backwards is still a quarter: the sides swap as the render's do.
-        let back = Geometry { quarter_turns: -1, ..g.clone() };
+        let back = Geometry { quarter_turns: -1, ..g };
         assert_eq!(back.kept_pixels(RAW), (2000.0, 6000.0));
         // Twin: the remainder's sign kept, −1 would read as no turn and the sides stay.
-        assert_ne!(back.kept_pixels(RAW), Geometry { quarter_turns: 0, ..back.clone() }.kept_pixels(RAW));
+        assert_ne!(back.kept_pixels(RAW), Geometry { quarter_turns: 0, ..back }.kept_pixels(RAW));
     }
 }

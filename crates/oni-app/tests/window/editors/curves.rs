@@ -16,7 +16,7 @@ pub(crate) fn a_point_dragged_on_the_curves_reaches_the_store_as_one_step() {
     // A press at the middle adds a point there; the drag carries it up by a fifth of the plot.
     let start = (origin.0 + size.w / 2.0, origin.1 + size.h / 2.0);
     let writes = editors::writes(&ctl);
-    press(&rig, start);
+    press(rig, start);
     let curves = || ctl.state.borrow().store().settings().manual_curves.linked.clone();
     assert_eq!(curves().points.len(), 3, "the press added a point");
     // The editor draws the hand's value at once; the store's wait inside the hand's interval is proven
@@ -36,7 +36,7 @@ pub(crate) fn a_point_dragged_on_the_curves_reaches_the_store_as_one_step() {
         rig.pump();
     }
     let elapsed = began.elapsed();
-    release(&rig, (start.0, start.1 - lift));
+    release(rig, (start.0, start.1 - lift));
     rig.settle();
     let p = curves().points[1];
     assert!((p.x - 0.5).abs() < 1e-3 && (p.y - 0.7).abs() < 1e-3, "the point lands under the pointer: {p:?}");
@@ -75,13 +75,13 @@ pub(crate) fn a_double_click_on_a_point_removes_it_with_its_move_as_one_step() {
         w.global::<Bar>().invoke_act(oni_app::Act::Undo);
         rig.settle();
     };
-    press(&rig, start);
-    release(&rig, start);
+    press(rig, start);
+    release(rig, start);
     rig.settle();
     let off = (start.0 + 3.0, start.1);
     for _ in 0..2 {
-        press(&rig, off);
-        release(&rig, off);
+        press(rig, off);
+        release(rig, off);
     }
     assert!(curves().is_neutral(), "the double click removed the point");
     rig.settle();
@@ -90,15 +90,15 @@ pub(crate) fn a_double_click_on_a_point_removes_it_with_its_move_as_one_step() {
     undo();
     assert!(curves().is_neutral());
     // Twin: the delay running out between the two presses leaves the move a step of its own.
-    press(&rig, start);
-    release(&rig, start);
+    press(rig, start);
+    release(rig, start);
     rig.settle();
-    press(&rig, off);
-    release(&rig, off);
+    press(rig, off);
+    release(rig, off);
     let rest = std::time::Instant::now();
     rig.until("the settle delay", Duration::from_secs(1), || rest.elapsed() > Duration::from_millis(250));
-    press(&rig, off);
-    release(&rig, off);
+    press(rig, off);
+    release(rig, off);
     assert!(curves().is_neutral(), "still a double click at 250 ms");
     rig.settle();
     undo();
@@ -128,8 +128,8 @@ pub(crate) fn a_folded_curves_block_takes_no_press() {
     // Twin: a press on the folded block's place reaches no editor.
     g.set_curves_folded(true);
     rig.settle();
-    press(&rig, start);
-    release(&rig, start);
+    press(rig, start);
+    release(rig, start);
     rig.settle();
     assert!(curves().is_neutral(), "a folded plot took a press");
     let _ = std::fs::remove_dir_all(&o.dir);

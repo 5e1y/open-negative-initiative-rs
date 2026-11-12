@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn a_pass_s_shares_are_its_light_per_channel_over_the_sum() {
-        let s = shares(&vec![[0.1, 0.3, 0.1, 1.0]; 12]).unwrap();
+        let s = shares(&[[0.1, 0.3, 0.1, 1.0]; 12]).unwrap();
         assert!((s[0] - 0.2).abs() < 1e-6 && (s[1] - 0.6).abs() < 1e-6 && (s[2] - 0.2).abs() < 1e-6, "{s:?}");
         // Twin: a black pass reads no share at all.
         assert_eq!(shares(&[[0.0, 0.0, 0.0, 1.0]]), None);
