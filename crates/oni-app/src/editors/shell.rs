@@ -2,7 +2,7 @@
 //! the hand's value at once and publishes the store only when it was written.
 
 use super::geometry::{Dot, Drawing, Ink, Line, Size};
-use super::sprung::Sprung;
+use crate::motion::Sprung;
 use super::{Gestures, Plot, Reset, Then, curve, levels, print, saturation, spectrogram};
 use crate::app::Ctl;
 use crate::{Editors as Global, Ink as PlotInk, MainWindow, PlotDot, PlotKnob, PlotLine, PlotReadout};

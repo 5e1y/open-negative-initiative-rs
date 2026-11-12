@@ -115,13 +115,7 @@ impl Ctl {
     }
 
     pub(super) fn place(&self, f: Field, at: f32) {
-        let i = f.index() as usize;
-        self.arrivals[i].stop();
-        {
-            let mut s = self.state.borrow_mut();
-            s.slides[i].arrival = None;
-            s.slides[i].shown = at;
-        }
+        self.state.borrow_mut().slides[f.index() as usize].knob.aim(at, true, Instant::now());
         if let Some(w) = self.window() {
             set_fraction(&w.global::<StoreGlobal>(), f, at);
         }
@@ -129,33 +123,49 @@ impl Ctl {
 
     /// `DS.Motion.settle`: a value arriving from elsewhere springs the knob; the canvas takes it at once.
     pub(super) fn spring(self: &Rc<Self>, f: Field, to: f32) {
-        let i = f.index() as usize;
-        let from = {
-            let mut s = self.state.borrow_mut();
-            let from = s.slides[i].shown;
-            s.slides[i].arrival = Some((from, to, Instant::now()));
-            from
+        let now = Instant::now();
+        let moving = {
+            let knob = &mut self.state.borrow_mut().slides[f.index() as usize].knob;
+            knob.aim(to, false, now);
+            knob.moving(now)
         };
-        if from == to {
+        if !moving {
             return self.place(f, to);
         }
-        let me = Rc::downgrade(self);
-        self.arrivals[i].start(TimerMode::Repeated, FRAME_TICK, move || {
-            let Some(me) = me.upgrade() else { return };
-            let arrival = me.state.borrow().slides[i].arrival;
-            let Some((from, to, at)) = arrival else { return me.arrivals[i].stop() };
-            let t = at.elapsed().as_secs_f64();
-            let spring = Spring::SETTLE;
-            if t >= spring.settled_after() {
-                me.place(f, to);
-            } else {
-                let at = from + (to - from) * spring.value(t) as f32;
-                me.state.borrow_mut().slides[i].shown = at;
-                if let Some(w) = me.window() {
-                    set_fraction(&w.global::<StoreGlobal>(), f, at);
+        if !self.arrival.running() {
+            self.state.borrow_mut().arrivals += 1;
+            let me = Rc::downgrade(self);
+            self.arrival.start(TimerMode::Repeated, FRAME_TICK, move || {
+                if let Some(me) = me.upgrade() {
+                    me.arrive();
                 }
+            });
+        }
+    }
+
+    /// A panel knob is springing, read by the checks.
+    pub fn arriving(&self) -> bool {
+        self.arrival.running()
+    }
+
+    /// One frame of the panel's springs: each moving knob drawn where it shows, the timer stopped once all rest.
+    fn arrive(&self) {
+        let now = Instant::now();
+        let (drawn, resting) = {
+            let mut s = self.state.borrow_mut();
+            let drawn: Vec<(Field, f32)> =
+                Field::ALL.into_iter().zip(s.slides.iter_mut()).filter_map(|(f, slide)| Some((f, slide.knob.step(now)?))).collect();
+            (drawn, !s.slides.iter().any(|slide| slide.knob.moving(now)))
+        };
+        if let Some(w) = self.window() {
+            let g = w.global::<StoreGlobal>();
+            for (f, at) in drawn {
+                set_fraction(&g, f, at);
             }
-        });
+        }
+        if resting {
+            self.arrival.stop();
+        }
     }
 
     // MARK: - Writing

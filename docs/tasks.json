@@ -9167,5 +9167,33 @@
     "title": "The parity row of the token generator's test reads none",
     "status": "done",
     "detail": "docs/parity/checks.md row 155 (DS.Typo.selfCheck) pointed at the generator's test, which no longer exists; it reads none and the counts become 35 partial, 10 none."
+  },
+  {
+    "id": 1815,
+    "type": "refactor",
+    "title": "Sprung lives in crate::motion beside Spring",
+    "status": "done",
+    "detail": "editors/sprung.rs moves into motion.rs whole, its two tests with it, and the editors' Shell imports it from there. Sprung gains step(now): the knob's place for this frame, None at rest, and the frame it lands on lays the target exactly and ends the spring, which a timer drawing several knobs needs to write each one's last frame once."
+  },
+  {
+    "id": 1816,
+    "type": "refactor",
+    "title": "The panel's sliders spring on Sprung and one timer",
+    "status": "done",
+    "detail": "Slide { shown, arrival } becomes Slide { knob: Sprung }, and Ctl.arrivals, one Timer per field (32), becomes Ctl.arrival. place(f, at) is knob.aim(at, true) and one property write; spring(f, to) is knob.aim(to, false) and starts the timer if stopped, keeping the early return that places a knob with nothing to travel; arrive() walks the slides, writes set_fraction for each stepped knob and stops once none moves. The press and the scroll along a track read knob.at(now). Deleted: the inline spring arithmetic, 31 timers, Slide.arrival. Differences no one sees: a knob never placed is placed on its first aim where it sprang from 0, and startup's first publish places every knob (jump) before any spring reaches the window; a re-aim at the same target mid-flight keeps its curve instead of restarting it, and publish skips an unchanged value anyway; a drag starts from where the knob shows now rather than from the last frame written, up to 16 ms older."
+  },
+  {
+    "id": 1817,
+    "type": "check",
+    "title": "A block's reset springs every knob home on one timer",
+    "status": "done",
+    "detail": "knob_arrival::a_blocks_reset_springs_every_knob_home_on_one_timer steps Exposure, Contrast and Shadows, rests, then resets Lighting: the timer starts once for the three knobs, each lands exactly on its target and the timer stops within settle's settled_after plus 250 ms. Twins: right after the reset no knob stands on its target yet, so a placing reset is seen; the starts counted differ from the knobs moved. Starting the timer on every spring fails it (3 starts), and aiming with jump fails it (nothing springs). State::arrivals and Ctl::arriving are read by the check."
+  },
+  {
+    "id": 1818,
+    "type": "check",
+    "title": "A spring's landing frame lays its target",
+    "status": "done",
+    "detail": "motion::tests::a_spring_steps_each_frame_and_its_landing_frame_lays_the_target: a placed knob steps nothing, a sprung one draws a frame between its ends, the first frame past settled_after returns the target exactly and the next None. Twin: the frame before the landing stands short of the target, so a timer stopping on moving() alone would leave the knob there."
   }
 ]

@@ -8,7 +8,6 @@ pub mod print;
 pub mod saturation;
 pub mod shell;
 pub mod spectrogram;
-pub mod sprung;
 mod stored;
 
 use crate::store::Store;
