@@ -1,10 +1,11 @@
 # Open Negative Initiative in Rust — working notes
 
 The Rust rewrite of Open Negative Initiative (ONI), the film negative converter and editor, native on
-macOS and Windows. The Swift app (`5e1y/open-negative-initiative`) was the reference while the port was
-rebuilt. It is now deprecated and far behind in flows, UX and UI, which answer to the UX and UI benches
-(`docs/ux-bench.md`, `docs/ui-bench.md`) instead. What stays from it is the result: the conversion's
-maths and constants, and the sidecar format it reads.
+macOS and Windows. The Swift app (`5e1y/open-negative-initiative`) is dead (owner's call, 2026-11-12): no
+rule, constant, flow or behaviour is kept because Swift had it, and no check compares with it. The
+conversion is ONI's own; flows, UX and UI answer to the benches (`docs/ux-bench.md`, `docs/ui-bench.md`).
+The one thing kept is reading the sidecars a person already has, Swift-written ones included: that is
+their data, not Swift's behaviour.
 
 ## Hard rules
 
@@ -50,15 +51,15 @@ the code; a costly trap keeps its constraint and its number in two lines.
   per-camera matrix (owner's call, 2026-11-02). A frame edited under the former Mac matrices keeps its look
   through its gains (`retired_matrices`, sidecar format 20) until its roll is measured again. Linear TIFF
   and DNG renders must not move.
-- **The balance is the Swift app's 5000 K / tint 0** (Planckian), derived from the camera's own matrix
+- **The balance is 5000 K / tint 0** (Planckian), derived from the camera's own matrix
   and adapted to D65 by Bradford; never the as-shot one or `pre_mul`. LibRaw's highlight mode 1 keeps
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
-- **The Frontier is the ONI machine's render with its own baked look** (owner's call), not Swift's
-  density table: ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
+- **The Frontier is the ONI machine's render with its own baked look** (owner's call): ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
-- **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.
+- **Sidecars a person already has always read**, Swift-written ones included; ONI's own format changes freely,
+  its version bumped, and nothing is written for Swift to read.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,
   turns and angle, so no framing moves them, and a patch's file names the exposure and flat-field it was cut under.
 - **The editor reads a RAW at LibRaw's half size** (owner's call, 2026-10-22): 3 to 5 times faster to open, no
@@ -114,23 +115,19 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
 
 ## Goal and definition of done
 
-The conversion is a **strict behavioural copy** of the Swift app's result: the same pipeline, including
-the hidden rules no panel shows (the hue compensation of the print curve in inverted saturation, the
-saturation compensation of the black and white points, dye separation, the exact placement of points).
-Only two differences are allowed there: the LibRaw decode and 16-bit rendering. Port that logic from the
-Swift code, never from its interface, and prove it against Swift's outputs.
+The conversion is **ONI's own**: its result moves only on purpose, the change named in its task, proven by
+the checks and judged by the owner's eye on the reference roll. Nothing is kept or refused because the Swift
+app did it so; its hidden rules stay only where they earn their place.
 
-**Flows, UX and UI owe Swift nothing** (owner's call): they are judged on the benches and may be rethought
-whole, a sidebar or a flow included, as long as the result stays as good. A step that secures a good
+**Flows, UX and UI** are judged on the benches and may be rethought whole, a sidebar or a flow included, as
+long as the result stays as good. A step that secures a good
 conversion, such as the dark pick in Prepare the Roll, is never cut to save time.
 
 **Done** means every feature present and working, each proven by a check.
 
-- **The parity inventory is `docs/parity/`**: every rule of the Swift app's result (conversion, hidden
-  rules, data), with its status, the Swift code it was read from and the Rust test that proves it. Its
-  `README.md` carries the counts; update them when a result row changes. Its interface rows are history.
-- **Proof by difference**: the pipeline against Swift on Swift's own decode with adversarial settings;
-  every Swift `Checks/` self-check gets a Rust twin; gestures are replayed through the command layer.
+- **`docs/parity/` is history** of the port: no change needs to update it, and no rule there binds.
+- **Proof**: every result rule has its own check on ONI's own outputs; gestures are replayed through the
+  command layer.
 - **Green tests are not proof that the app works.** Before saying a feature works, drive the real app
   through the user's flows on a Mac: open the gallery, select, double-click to edit, edit, go back, and
   watch for crashes. A full set of green test targets once shipped an app that crashed on every edit,
@@ -141,8 +138,7 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
 ## Performance targets
 
 - **While a parameter slides**, the image follows each render's landing (one in flight, the latest
-  waiting, at most one a 120 Hz frame) and the histogram counts at 30 fps (Swift's
-  `DS.Motion.recomputedInterval`), so fast-renewing caches never flood RAM or GPU (owner's call).
+  waiting, at most one a 120 Hz frame) and the histogram counts at 30 fps, so fast-renewing caches never flood RAM or GPU (owner's call).
 - **The rest of the interface** (knob, labels, hovers, scrolling) runs as fast as it can, 120 fps at
   least on Apple silicon.
 - **Responsiveness beats frame rate**: a constant 60 fps with very low input-to-photon latency is
@@ -152,14 +148,14 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
 - How: `docs/research/performance.md`. In short, the settings store stays in Rust with one Slint property
   per displayed value and one write per notch; a latest-value slot keeps one render in flight and one
   pending; full resolution renders only the visible region plus the filter margin, a preview pyramid
-  serves gestures. The display path starts 8-bit like Swift's canvas, with the screen-profile conversion
+  serves gestures. The display path starts 8-bit, with the screen-profile conversion
   isolated in one kernel; 16-bit and EDR come later through a presentation ONI owns.
 
 ## Interface rules
 
 - **Every screen is built from the design system** (`crates/oni-ui/ui/ds/`): no literal size, colour or
-  radius outside it, so a change of look is one edit. The design system is ONI's own; its tokens began as
-  Swift's `DSTokens.swift` and owe it nothing now. Its look follows the art direction and the UI bench.
+  radius outside it, so a change of look is one edit. The design system is ONI's own, its tokens kept by
+  hand; its look follows the art direction and the UI bench.
 - **Any screen, flow or interaction may be rethought whole** when the benches show a better way. Today drag
   adjusts parameters and the image, and lists scroll by wheel or trackpad (`mouse-drag-pan-enabled:
   false`). That is the current state, not a rule. Only the conversion's result is untouchable.
@@ -170,7 +166,7 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
   writes `@tr("…")` (arguments as `{}`), Rust `tr("…")`, `tr!("… {name}", name = …)`, `trn(one, many, n)` and
   `marked("…")` for a constant. `scripts/i18n` adds new texts to the catalogues; the catalogue check fails
   while one lacks a translation, loses a placeholder, or a `.slint` word sits outside `@tr`. Logs, keys and
-  what files or the Swift app read stay English. The language is Settings > General's, else the system's
+  what files read stay English. The language is Settings > General's, else the system's
   (`ONI_LANGUAGE` for the checks, which read English).
 
 ## Working loop
@@ -195,19 +191,19 @@ Desktop milestones, each closed by a measure or by the owner's judgement in hand
 1. First window on the reference roll (reached).
 2. A usable editor, at the performance targets above.
 3. Archive and rolls.
-4. Parity with the Swift app (Scanner face, De-dust, flat-field, contact sheet, paper proof, full export).
+4. The full tool set (Scanner face, De-dust, flat-field, contact sheet, paper proof, full export).
 5. Windows.
 6. Public beta on both systems.
 
 Mobile milestones (`5e1y/open-negative-initiative-mobile`, Android first): M1 the Android remote against
 the demo host, M2 import from the phone (needs milestone 3), M3 the remote on the Rust app (needs the
-Scanner face, milestone 4), M4 Bluetooth. Beyond Swift: the **Frontier Look Lab** (the measured SP-3000
+Scanner face, milestone 4), M4 Bluetooth. Then the **Frontier Look Lab** (the measured SP-3000
 table unbaked into parameters, the paper curve edited as a graph, each parameter showing a "neutral" and
 a "Frontier" value; research in `docs/research/frontier/`) and **frame detection on a click** (the frame
 edge in Crop, the measure window in Prepare the Roll). Later: tablets (iPad, Android), sending images to
 the phone, a physical keyboard speaking the same commands, and a way to support the project.
 
-The Swift app is frozen except for bug fixes. The phone link crates (`oni-link`, `oni-localsend`,
+The Swift app gets no work. The phone link crates (`oni-link`, `oni-localsend`,
 `oni-link-ffi`, `oni-link-demo`) live here; the desktop drives them through `oni_link::Host`,
 `HostEvents::next()` and `Host::publish(State)`, with relative commands (step, reset, machine, walk, undo,
 redo).
