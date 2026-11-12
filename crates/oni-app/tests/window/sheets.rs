@@ -131,7 +131,10 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     let tiles = || oni_app::app::tiles(w);
     ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the confirm", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
-    assert!(w.get_keys_focused());
+    // Built as a frame draws it, the sheet holds the keyboard.
+    rig.drawn();
+    rig.pump();
+    assert!(!w.get_keys_focused(), "the sheet holds the keyboard");
     let backspace: SharedString = Key::Backspace.into();
     rig.chord(Key::Control, &backspace);
     rig.key("1");

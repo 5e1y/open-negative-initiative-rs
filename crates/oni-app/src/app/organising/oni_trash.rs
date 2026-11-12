@@ -133,6 +133,7 @@ impl Ctl {
 
     /// `openTrash`: the grid lays the ONI Trash, both selections cleared, in the gallery.
     pub(in crate::app) fn open_trash(self: &Rc<Self>) {
+        self.leave_editor();
         {
             let mut s = self.state.borrow_mut();
             s.org.trash_open = true;
@@ -141,7 +142,6 @@ impl Ctl {
             s.picks.selection.clear();
         }
         if let Some(w) = self.window() {
-            w.global::<App>().set_gallery(true);
             w.global::<Library>().set_surface(0);
         }
         self.lay_grid();

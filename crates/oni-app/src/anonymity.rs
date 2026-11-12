@@ -159,7 +159,7 @@ mod tests {
     const NAMING: [&str; 7] = ["{name}", "{names}", "{path}", "{folder}", "{disk}", "{file}", "{phones}"];
 
     /// Templates that never reach the log: captions, tooltips and fields set directly, or the app's own files.
-    const NEVER_LOGGED: [&str; 21] = [
+    const NEVER_LOGGED: [&str; 22] = [
         "{name} — {state}",
         "Add {name}",
         "{name} · decoding",
@@ -178,6 +178,7 @@ mod tests {
         "On {name}",
         "{name}: cut short",
         "{name}: could not be decoded",
+        "{name}: could not be rendered",
         "{name} — overcooked?",
         "{name} is in Downloads, its signature checked: open it to install.",
         "{file} cannot be read, so it is kept as it is: {error}",

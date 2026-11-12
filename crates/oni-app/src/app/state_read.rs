@@ -28,6 +28,11 @@ impl State {
         self.full.as_ref().is_some_and(|(p, _)| self.open.as_ref() == Some(p))
     }
 
+    /// A full resolution held, whichever frame it belongs to.
+    pub fn full_resident(&self) -> bool {
+        self.full.is_some()
+    }
+
     /// The settings the canvas was last asked to show, a hovered preset's preview included.
     pub fn shown_settings(&self) -> Option<&oni_settings::PipelineSettings> {
         self.requests.requested_live.as_ref()
@@ -66,6 +71,11 @@ impl State {
 
     pub fn open_path(&self) -> Option<&str> {
         self.open.as_deref()
+    }
+
+    /// Whether a decode of `path` under `reading` is the open frame's: any other is superseded.
+    pub(super) fn wants(&self, path: &str, reading: &render::Reading) -> bool {
+        self.open_path() == Some(path) && self.reading.as_ref() == Some(reading)
     }
 
     /// The library column's height, which a check places a row in view against.

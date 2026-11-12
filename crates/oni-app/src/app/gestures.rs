@@ -73,7 +73,7 @@ impl Ctl {
     }
 
     /// `took(_:at:)`: a trashed open frame leaves the editor, which falls back on the gallery.
-    pub(super) fn closed_if_trashed(&self) {
+    pub(super) fn closed_if_trashed(self: &Rc<Self>) {
         let closed = {
             let mut s = self.state.borrow_mut();
             let held = s.store.editor().map(|e| e.path().map(str::to_string));
@@ -86,8 +86,8 @@ impl Ctl {
                 _ => false,
             }
         };
-        if closed && let Some(w) = self.window() {
-            w.global::<App>().set_gallery(true);
+        if closed {
+            self.leave_editor();
             self.blank_canvas();
         }
     }
@@ -141,32 +141,37 @@ impl Ctl {
         self.gesture(&targets, |store| store.reset_frames(&targets));
     }
 
-    /// Back in the gallery, the editor's full-resolution frame and its copies are let go: up to 1.6 GB
-    /// on a 24 MP frame; the view builds it again once it asks.
-    fn leave_editor_memory(&self) {
+    /// The one way out of the editor, whatever leads there: its modes left, then its full resolution
+    /// and copies let go, up to 1.6 GB on a 24 MP frame; the view builds them again once it asks.
+    pub(in crate::app) fn leave_editor(self: &Rc<Self>) {
+        let Some(w) = self.window() else { return };
+        if w.global::<App>().get_gallery() {
+            return;
+        }
+        // Leaving the editor takes the deck away with no exit event: the preview goes with it.
+        self.clear_hover();
+        self.leave_modes();
+        w.global::<App>().set_gallery(true);
         self.leave_together();
         {
+            // A full resolution under way keeps its mark: its landing clears it and drops what lands here.
             let mut s = self.state.borrow_mut();
             s.full = None;
-            s.building_full = None;
+            s.gpu.current = None;
         }
         if let Ok(mut engine) = self.engine.lock() {
             engine.trim();
         }
+        self.publish_tiles();
     }
 
-    /// `toggleMode()`: the editor on the photo the gallery stands on, or back to the gallery, its modes left.
+    /// `toggleMode()`: the editor on the photo the gallery stands on, or back to the gallery.
     pub(super) fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
-        // Leaving the editor takes the deck away with no exit event: the preview goes with it.
-        self.clear_hover();
         if !w.global::<App>().get_gallery() {
-            self.leave_modes();
-            w.global::<App>().set_gallery(true);
-            self.leave_editor_memory();
-            self.publish_tiles();
-            return;
+            return self.leave_editor();
         }
+        self.clear_hover();
         self.commit_info_drafts();
         let Some(path) = self.state.borrow().editor_subject() else { return };
         self.open_in_editor(&path);

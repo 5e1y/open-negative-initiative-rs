@@ -29,13 +29,14 @@ export global Unsaved {
     in property <bool> shown;
     in property <string> title;
     in property <string> message;
-    // 0 discards, 1 retries, -1 (Escape) keeps them in memory for the disk's return.
+    // 0 discards, 1 retries, -1 (Keep for Now, Escape) keeps them in memory for the disk's return.
     callback answered(int);
 }
 
 export component UnsavedSheet inherits AskSheet {
     title: Unsaved.title;
     message: Unsaved.message;
+    cancel: @tr("Keep for Now");
     keys: [{ text: @tr("Discard"), role: AskRole.destructive }, { text: @tr("Retry"), role: AskRole.confirm }];
     answered(i) => { Unsaved.answered(i); }
 }

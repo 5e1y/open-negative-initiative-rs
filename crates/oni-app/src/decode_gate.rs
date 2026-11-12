@@ -113,6 +113,11 @@ impl Gate {
         self.latest.fetch_add(1, Ordering::SeqCst) + 1
     }
 
+    /// How many decodes were asked so far, which a check counts.
+    pub fn asked(&self) -> u64 {
+        self.latest.load(Ordering::SeqCst)
+    }
+
     /// Runs `decode` once the one before it is done, unless a later ask has come meanwhile.
     pub fn run<T>(&self, ticket: u64, decode: impl FnOnce() -> T) -> Option<T> {
         let _turn = self.running.lock().unwrap_or_else(|e| e.into_inner());

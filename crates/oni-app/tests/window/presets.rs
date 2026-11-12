@@ -199,7 +199,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert!(presets.get_saving() && !presets.get_copy_at_once(), "twin: a sheet cancelled asks again, the choice off");
     rig.settle();
     common::click(&rig, w, at_once());
-    rig.key("\r");
+    rig.key("\n");
     assert!(!presets.get_saving());
     // Then Copy takes the last boxes at once: the vignette moved since reaches the board, Lighting not.
     g.invoke_step(Field::Vignette.index(), -5);

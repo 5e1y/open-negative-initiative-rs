@@ -4,7 +4,7 @@
 use super::{Ctl, Picker, Shower, with_shell};
 use crate::flat_fields::{self, Entry, Failure, Picture};
 use crate::render::{self, Shared};
-use crate::{App, MaskDialog, PanelState};
+use crate::{MaskDialog, PanelState};
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
 use oni_settings::sidecar;
@@ -181,7 +181,7 @@ impl Ctl {
         }
     }
 
-    /// `moveOut`: the frame closed if open, the file moved to FlatField Presets, then its neighbour
+    /// `moveOut`: the file moved to FlatField Presets, then the frame closed if open and its neighbour
     /// in the roll opened under the same flat-field, or the gallery when none is left.
     fn move_out(self: &Rc<Self>, path: &str) {
         let (was_open, neighbour, carried) = {
@@ -193,15 +193,9 @@ impl Ctl {
             let neighbour = at.and_then(|i| frames.get(i + 1).or_else(|| i.checked_sub(1).and_then(|j| frames.get(j)))).map(|p| p.to_string());
             (was_open, neighbour, s.store.settings().flat_field.clone())
         };
-        if was_open {
-            let mut s = self.state.borrow_mut();
-            if let Some(store) = s.store.editor() {
-                store.close();
-            }
-            s.open = None;
-            s.negative = None;
-            s.full = None;
-            s.previews.lock().expect("previews").remove(path);
+        // The sidecar written first, as the move takes it to the Trash; a refused move leaves the frame open.
+        if was_open && let Some(store) = self.state.borrow_mut().store.editor() {
+            store.flush();
         }
         let moved = {
             let s = self.state.borrow();
@@ -213,6 +207,14 @@ impl Ctl {
         }
         {
             let mut s = self.state.borrow_mut();
+            if was_open {
+                if let Some(store) = s.store.editor() {
+                    store.close();
+                }
+                s.open = None;
+                s.negative = None;
+            }
+            s.previews.lock().expect("previews").remove(path);
             s.rows.retain(|e| e.path != path);
             s.order.retain(|p| p != path);
             s.picks.selection.remove(path);
@@ -228,12 +230,9 @@ impl Ctl {
                 self.write_settings(|s| s.flat_field = carried);
             }
             None => {
-                if let Some(w) = self.window() {
-                    w.global::<App>().set_gallery(true);
-                }
+                self.leave_editor();
                 self.blank_canvas();
                 self.publish(true);
-                self.publish_tiles();
             }
         }
     }

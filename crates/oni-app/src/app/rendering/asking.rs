@@ -234,7 +234,7 @@ impl Ctl {
                     if s.building_full.as_deref() == Some(path.as_str()) {
                         s.building_full = None;
                     }
-                    let current = editing && s.open_path() == Some(path.as_str()) && s.reading.as_ref() == Some(&reading);
+                    let current = editing && s.wants(&path, &reading);
                     match built {
                         Some(Ok(full)) if current => s.full = Some((path, full)),
                         Some(Ok(_)) | None => {}

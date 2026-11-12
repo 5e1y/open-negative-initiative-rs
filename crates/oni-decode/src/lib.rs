@@ -53,6 +53,13 @@ impl Drop for Session {
     }
 }
 
+impl Session {
+    fn unpack(&mut self) -> i32 {
+        let _held = (self.0.dng != 0).then(|| DNG_UNPACK.lock().unwrap_or_else(|e| e.into_inner()));
+        unsafe { oni_unpack(&mut self.0) }
+    }
+}
+
 /// LibRaw's DNG unpacker fills a static cosine table on first use, unguarded (`ljpeg_idct`): DNG
 /// unpacks take this lock, every other stage of every decode runs concurrently.
 pub(crate) static DNG_UNPACK: Mutex<()> = Mutex::new(());
@@ -300,6 +307,14 @@ pub fn is_nikon_he(path: &Path) -> bool {
     unsafe { oni_open(source.name(), source.take(), 1.0, 0, &mut s.0) == NIKON_HE }
 }
 
+/// Whether LibRaw opens and unpacks every pixel of `path`: a decode's own reading, no demosaic.
+pub fn reads(path: &Path) -> bool {
+    let Ok(mut source) = Source::open(path, Route::PLATFORM) else { return false };
+    let mut s = Session(unsafe { std::mem::zeroed() });
+    let opened = unsafe { oni_open(source.name(), source.take(), 1.0, 0, &mut s.0) } == 0;
+    opened && s.unpack() == 0
+}
+
 /// `decode_for` balanced on `neutral`.
 pub fn decode_on(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
     decoded(path, exposure_gain, side, Colours::Matrix, neutral)
@@ -329,12 +344,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, ne
     if rc != 0 {
         return Err(DecodeError(rc));
     }
-    let rc = if s.0.dng != 0 {
-        let _held = DNG_UNPACK.lock().unwrap_or_else(|e| e.into_inner());
-        unsafe { oni_unpack(&mut s.0) }
-    } else {
-        unsafe { oni_unpack(&mut s.0) }
-    };
+    let rc = s.unpack();
     if rc != 0 {
         return Err(DecodeError(rc));
     }

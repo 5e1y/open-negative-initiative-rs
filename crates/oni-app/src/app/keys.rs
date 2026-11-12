@@ -25,10 +25,6 @@ impl Ctl {
             return true;
         }
         let help = w.global::<crate::Help>();
-        if help.get_welcome_shown() && matches!(text, "\u{1b}" | "\r" | "\n") {
-            help.invoke_welcome_closed();
-            return true;
-        }
         if help.get_report_shown() && text == "\u{1b}" {
             help.invoke_report_closed();
             return true;
@@ -64,13 +60,8 @@ impl Ctl {
             self.close_pairing();
             return true;
         }
-        // A sheet is modal: Escape closes the ones no branch above reads, and no key reaches behind it.
+        // A sheet is modal and answers its own Escape and Return: no key reaches behind it.
         if w.get_sheet_shown() {
-            match text {
-                "\u{1b}" => self.escape_sheet(&w),
-                "\r" | "\n" => self.return_sheet(&w),
-                _ => {}
-            }
             return true;
         }
         if text == "\u{1b}" && w.global::<crate::Told>().get_shown() {
@@ -168,36 +159,6 @@ impl Ctl {
         self.publish_organising();
         self.publish_tree();
         self.publish_bar();
-    }
-
-    /// `.defaultAction`: Return presses the one key a notice offers, and the export clash's Rename;
-    /// its Replace takes none, as it replaces files.
-    fn return_sheet(self: &Rc<Self>, w: &crate::MainWindow) {
-        let e = w.global::<crate::Exporting>();
-        if e.get_notice_shown() {
-            e.invoke_notice_closed();
-        } else if e.get_confirm_shown() && !e.get_confirm_replaces() {
-            e.invoke_confirmed(true);
-        } else if w.global::<crate::Notice>().get_shown() {
-            w.global::<crate::Notice>().invoke_close();
-        } else if w.global::<crate::Navigator>().get_catch_up_shown() {
-            w.global::<crate::Navigator>().invoke_catch_up_done();
-        }
-    }
-
-    fn escape_sheet(self: &Rc<Self>, w: &crate::MainWindow) {
-        let e = w.global::<crate::Exporting>();
-        if e.get_confirm_shown() || e.get_notice_shown() || e.get_naming_shown() || e.get_papers_shown() {
-            self.export_escape();
-        } else if w.global::<crate::Notice>().get_shown() {
-            w.global::<crate::Notice>().invoke_close();
-        } else if w.global::<crate::Navigator>().get_catch_up_shown() {
-            w.global::<crate::Navigator>().invoke_catch_up_done();
-        } else if w.global::<crate::Wrapped>().get_shown() {
-            w.global::<crate::Wrapped>().invoke_close();
-        } else if w.global::<crate::AppSettings>().get_shown() {
-            self.close_settings();
-        }
     }
 }
 

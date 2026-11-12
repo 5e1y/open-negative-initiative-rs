@@ -141,6 +141,28 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     assert!(u.get_shown(), "the edits a disk gone refused are asked about");
     assert!(u.get_message().contains("Its disk “T7” is not connected."), "{}", u.get_message());
     b.rig.shot("missing-unplugged");
+    // Kept for now by Escape after a press beside the card, then by its own key: the edits stay in memory.
+    let held = || b.shell.ctl.state.borrow().store().editor_ref().map_or(0, |e| e.unsaved().len());
+    let away = || Field::Exposure.knob().get(&oni_settings::sidecar::read(&b.root.join("T7 away/Scans/Roll 12/B00.tif"), false, true).unwrap().settings);
+    let kept = held();
+    assert!(kept > 0);
+    common::click(&b.rig, w, (12.0, 400.0));
+    b.rig.key("\u{1b}");
+    assert!(!u.get_shown(), "Escape after a press beside the card answers the sheet");
+    assert_eq!((held(), away()), (kept, rested), "Escape keeps the edits, neither discarded nor written");
+    u.invoke_answered(1);
+    b.rig.settle();
+    assert!(u.get_shown(), "a Retry refused asks again");
+    let keep = common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Keep for Now");
+    common::click(&b.rig, w, keep.middle());
+    assert!(!u.get_shown(), "the sheet's keep key closes it");
+    assert_eq!((held(), away()), (kept, rested), "the keep key keeps the edits");
+    // Twin: Return after the press is Retry's, refused while the disk is away, so the sheet stays.
+    u.invoke_answered(1);
+    b.rig.settle();
+    common::click(&b.rig, w, (12.0, 400.0));
+    b.rig.key("\n");
+    assert!(u.get_shown(), "the measure sees a key that does not close the sheet");
     // The disk back, Retry writes them and the sheet goes.
     std::fs::rename(b.root.join("T7 away"), b.root.join("Volumes/T7")).unwrap();
     u.invoke_answered(1);

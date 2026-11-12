@@ -111,11 +111,11 @@ impl Ctl {
                             return;
                         }
                         let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
-                        let slide = crate::render::Reading::of(&target.settings).slide;
-                        let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path, slide));
+                        let reading = crate::render::Reading::of(&target.settings);
+                        let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path, &reading));
                         let negative = match known {
                             Some(n) => Ok(n),
-                            None => prepared(&engine, &path, crate::render::Reading::of(&target.settings)),
+                            None => prepared(&engine, &path, reading),
                         };
                         let full = negative.as_ref().ok().map(|n| n.full());
                         let size = full.map(|f| export::cropped_size(f, &target.settings));

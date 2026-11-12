@@ -1213,6 +1213,10 @@ msgstr "Mostrar la carpeta"
 msgid "Back to the Gallery"
 msgstr "Volver a la galería"
 
+#: crates/oni-ui/ui/missing.slint
+msgid "Keep for Now"
+msgstr "Conservar por ahora"
+
 #: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
 msgid "Discard"
 msgstr "Descartar"
@@ -1269,7 +1273,7 @@ msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fu
 msgid "Add"
 msgstr "Añadir"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint
 msgid "DONE"
 msgstr "OK"
 
@@ -4158,6 +4162,14 @@ msgid "The picture cannot be shown on this graphics card; the log names why."
 msgstr "La imagen no se puede mostrar con esta tarjeta gráfica; el registro indica el motivo."
 
 #: crates/oni-app/src/app/rendering/landing.rs
+msgid "{name}: could not be rendered"
+msgstr "{name}: no se pudo mostrar"
+
+#: crates/oni-app/src/app/rendering/landing.rs
+msgid "Frame {number} of {count}"
+msgstr "Fotograma {number} de {count}"
+
+#: crates/oni-app/src/app/rendering/landing.rs
 msgid "{name}: cut short"
 msgstr "{name}: archivo incompleto"
 
@@ -4168,10 +4180,6 @@ msgstr "{name}: no se pudo decodificar"
 #: crates/oni-app/src/app/rendering/landing.rs
 msgid "Not rendered: {e}"
 msgstr "No se pudo mostrar: {e}"
-
-#: crates/oni-app/src/app/rendering/landing.rs
-msgid "Frame {number} of {count}"
-msgstr "Fotograma {number} de {count}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Not from a film stock"

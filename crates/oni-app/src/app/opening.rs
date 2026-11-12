@@ -111,7 +111,7 @@ impl Ctl {
             let s = self.state.borrow();
             (s.previews.clone(), s.reading.clone().unwrap_or_else(|| render::Reading::of(s.store.settings())))
         };
-        let known = previews.lock().expect("previews").get(path, converted.slide);
+        let known = previews.lock().expect("previews").get(path, &converted);
         if let Some(negative) = known {
             self.state.borrow_mut().negative = Some((path.to_string(), negative));
             self.request_render();
@@ -123,26 +123,28 @@ impl Ctl {
         let ticket = crate::decode_gate::PREVIEW.ask();
         std::thread::spawn(move || {
             let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared_keeping(&engine, &path, converted.clone())) else { return };
-            with_shell(move |c| match prepared {
-                Ok((negative, full)) => {
-                    c.state.borrow().previews.lock().expect("previews").insert(path.clone(), converted.slide, negative.clone());
-                    if c.state.borrow().open_path() == Some(path.as_str()) {
+            with_shell(move |c| {
+                if let Ok((negative, _)) = &prepared {
+                    c.state.borrow().previews.lock().expect("previews").insert(path.clone(), converted.clone(), negative.clone());
+                }
+                // A decode under a reading the frame has since left installs nothing and blanks nothing.
+                if !c.state.borrow().wants(&path, &converted) {
+                    return;
+                }
+                match prepared {
+                    Ok((negative, full)) => {
                         let mut s = c.state.borrow_mut();
                         // The decode read the whole frame: it is the full resolution, kept rather than read again.
-                        if let Some(full) = full.filter(|_| s.full.is_none() && s.reading.as_ref().is_none_or(|r| *r == converted)) {
+                        if let Some(full) = full.filter(|_| s.full.is_none()) {
                             s.full = Some((path.clone(), full));
                         }
+                        s.negative = Some((path.clone(), negative));
                         drop(s);
-                        c.state.borrow_mut().negative = Some((path.clone(), negative));
                         c.request_render();
                         c.publish_roll_tab();
                         c.balance_ahead();
                     }
-                }
-                Err(e) => {
-                    if c.state.borrow().open_path() == Some(path.as_str()) {
-                        c.deliver(Delivery::Render(Err((PathBuf::from(&path), format!("{}: {e}", stem(&path))))));
-                    }
+                    Err(e) => c.decode_failed(&path, e),
                 }
             });
         });
