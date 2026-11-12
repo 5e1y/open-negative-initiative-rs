@@ -27,7 +27,6 @@ fn light(p: Rgb565Pixel) -> u32 {
 
 pub(crate) fn a_plate_s_keycaps_touch_and_a_group_s_flat_keys_stand_apart_on_their_faces() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = GroupProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
@@ -69,7 +68,6 @@ pub(crate) fn a_plate_s_keycaps_touch_and_a_group_s_flat_keys_stand_apart_on_the
 /// A flat key and a block's title show their words as written; a keycap alone shows its word in capitals.
 pub(crate) fn capitals_are_the_keycap_s_alone() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = GroupProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

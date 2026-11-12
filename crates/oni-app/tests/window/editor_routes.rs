@@ -35,7 +35,6 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     let auto: BTreeSet<String> = BTreeSet::from([oni_core::parameters::AUTO_BALANCE_NAME.to_string()]);
     presets::save(&Preset::new("Auto", auto, Tint::Amber, PipelineSettings::rest(ConversionMode::Negative, false)), &presets::directory(&support)).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };

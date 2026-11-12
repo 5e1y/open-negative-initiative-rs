@@ -39,7 +39,6 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     let preset = oni_core::presets::Preset::new("Portra warm", parameters, oni_core::presets::Tint::Amber, Default::default());
     oni_core::presets::save(&preset, &oni_core::presets::directory(&support)).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };

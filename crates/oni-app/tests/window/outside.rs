@@ -34,7 +34,6 @@ fn typed(rig: &common::Rig, text: &str) {
 
 fn probe() -> (common::Rig, OutsideProbe) {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = OutsideProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

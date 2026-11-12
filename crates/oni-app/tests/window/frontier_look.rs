@@ -38,7 +38,6 @@ pub(crate) fn a_frontier_look_file_is_read_again_on_each_save() {
     let support = root.join("Support");
     Preferences::load(&support).set(preferences::FRONTIER_LOOK, file.to_string_lossy().into_owned().into()).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| false));
     let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };

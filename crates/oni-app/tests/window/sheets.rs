@@ -46,7 +46,6 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     // The post waits while `hold` is set, so a sheet can close and open again before it answers.
     let (hold, posted) = (Arc::new(AtomicBool::new(false)), Arc::new(AtomicUsize::new(0)));
@@ -164,7 +163,6 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
     let ctl = shell.ctl.clone();
@@ -238,7 +236,6 @@ pub(crate) fn a_clash_with_an_original_offers_rename_and_keeps_it() {
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
     let ctl = shell.ctl.clone();
@@ -316,7 +313,6 @@ pub(crate) fn the_preset_name_sheet_holds_the_keys_and_answers_them() {
     let folder = root.join("Scans");
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
     let ctl = shell.ctl.clone();

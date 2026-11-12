@@ -14,9 +14,7 @@ use crate::common;
 const SCALE: f32 = 2.0;
 
 fn shots() -> PathBuf {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
-    shots
+    std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"))
 }
 
 fn renders() -> u64 {

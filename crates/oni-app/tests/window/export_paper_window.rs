@@ -111,7 +111,6 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
         Err(e) => return eprintln!("{e}: the paper proof is not exercised"),
     };
     let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let window = rig.window.clone();
     let root = scratch();

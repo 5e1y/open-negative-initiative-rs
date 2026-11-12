@@ -9319,8 +9319,8 @@
     "id": 1833,
     "type": "bug",
     "title": "The headless check counts 28 tiles of the 38-frame test copy",
-    "status": "open",
-    "detail": "With ONI_RAW_DIR on the test copy of roll #8 (38 NEFs), headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas fails at 'every cell of the roll is laid out': 28 tiles against 38. The build before #1830 fails the same way, so the cause lies in the check or the copy, not in the frame's ownership; left for its own task."
+    "status": "done",
+    "detail": "With ONI_RAW_DIR on the test copy of roll #8 (38 NEFs), headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas failed at 'every cell of the roll is laid out': 28 tiles against 38. The app is right and the check was stale: see #1836."
   },
   {
     "id": 1834,
@@ -9328,5 +9328,12 @@
     "title": "#271's detail says what the opening resets",
     "status": "done",
     "detail": "#271 said the opening reset Requests, Dust and Compare whole; it resets Dust and Requests, Compare's split is turned off by leave_modes and befores counts across photos. The detail now says so, and where #1830 moved them."
+  },
+  {
+    "id": 1836,
+    "type": "check",
+    "title": "The headless check walks the gallery to meet every cell of a roll taller than its view",
+    "status": "done",
+    "detail": "Cause of #1833: the gallery gives Slint only the cells in view and one row either side (Layout::cells, since #11), and since #1095 (84dbbbe6) it opens on four columns. In the check's 1280 by 800 window the grid is 680 by 662 pt: at six columns the 38 frames took 601 pt and were all laid, at four they take 1178 pt and 28 are laid (seven rows), so the check's count of the laid tiles held on the ten-frame fixture and failed on a tester's whole roll from #1095 on, not from #1830. The check now scrolls the grid from top to bottom, waits for each laid cell's picture and meets every cell once, in index order, before counting and reading each face. Twin: where the content passes the view and a row of slack each side, the top's cells alone fall short (28 of 38), and a walk that never scrolls fails the count (28 against 38). Two more stale expectations met on the same runs: library::tests::roll_8_opens_as_one_named_roll_of_its_photos counted the contact sheet, which #1252 leaves out of the roll's photos (39 against 38), and now counts frames by the sidecar's sheet as the headless check does; the gallery_cell checks wrote their shots into a folder nothing made in a fresh target, so common::rig makes its shots' folder and the 124 checks' own create_dir_all go."
   }
 ]

@@ -25,7 +25,6 @@ pub(crate) fn entering_the_export_reads_no_scan_on_the_interface_thread() {
         Err(e) => return eprintln!("{e}: entering the export is not exercised"),
     };
     let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let root = std::env::temp_dir().join(format!("oni-app-export-entering-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);

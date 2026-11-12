@@ -76,7 +76,6 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let shots = std::env::var_os("ONI_SHOTS")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let window = rig.window.clone();
 
@@ -190,8 +189,33 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let frame = |p: &std::path::Path| oni_settings::sidecar::read(p, true, true).map_or(true, |l| l.settings.sheet.is_none());
     let n = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") && frame(&e.path()) }).count();
     rig.until("every thumbnail", Duration::from_secs(600), || ctl.state.borrow().loaded() >= n);
-    let tiles = app::tiles(w);
+    // The grid lays only the cells near its view: a walk down it meets every cell of the roll once.
+    let lib = w.global::<Library>();
+    let viewport = ctl.state.borrow().grid().1;
+    lib.invoke_scrolled(-1e6);
+    rig.pump();
+    let at_top = app::tiles(w).len();
+    let mut met = std::collections::BTreeMap::new();
+    loop {
+        rig.until("the laid cells' pictures", Duration::from_secs(60), || app::tiles(w).iter().all(|t| t.picture.size().width > 0));
+        met.extend(app::tiles(w).into_iter().map(|t| (t.index, t)));
+        let scroll = lib.get_scroll();
+        lib.invoke_scrolled(viewport / 2.0);
+        rig.pump();
+        if lib.get_scroll() == scroll {
+            break;
+        }
+    }
+    lib.invoke_scrolled(-1e6);
+    rig.pump();
+    let tiles: Vec<_> = met.into_values().collect();
     assert_eq!(tiles.len(), n, "every cell of the roll is laid out");
+    assert!(tiles.iter().enumerate().all(|(i, t)| t.index == i as i32), "each cell met once, in order");
+    // Twin: past the view and a row of slack each side, the top's cells alone fall short, so a count without the walk fails.
+    let pitch = tiles.iter().map(|t| t.y).find(|&y| y > tiles[0].y).map_or(f32::MAX, |y| y - tiles[0].y);
+    if lib.get_content_height() > viewport + 2.0 * pitch {
+        assert!(at_top < n, "{at_top} cells laid at the top of {n}");
+    }
     // Both faces through the pipeline: every tile drawn, the Scanner face's among them.
     let mut scanner_drawn = 0;
     for t in &tiles {

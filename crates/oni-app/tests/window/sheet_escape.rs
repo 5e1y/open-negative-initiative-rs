@@ -20,7 +20,6 @@ pub(crate) fn escape_answers_every_sheet_after_a_press_beside_it() {
     let root = std::env::temp_dir().join(format!("oni-app-sheet-escape-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };

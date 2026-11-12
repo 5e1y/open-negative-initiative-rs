@@ -41,7 +41,6 @@ pub(crate) fn a_decode_under_a_reading_left_never_lands_on_the_canvas() {
     // decodes in a few milliseconds.
     common::plain_tiff(&folder.join("A.tif"), oni_app::render::PREVIEW_SIDE + 48, 300, 0.5);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);

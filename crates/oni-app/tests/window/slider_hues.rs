@@ -59,7 +59,6 @@ fn key_chroma(rig: &common::Rig, x: f32, y: f32) -> i32 {
 
 fn probe() -> (common::Rig, HueProbe) {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = HueProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

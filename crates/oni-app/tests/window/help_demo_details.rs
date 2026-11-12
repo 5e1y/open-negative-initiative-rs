@@ -38,7 +38,6 @@ pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.6);
     oni_library::folders::set_roll(Some(&Film::new("Roll 7")), &oni_library::paths::canonical(&folder)).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);

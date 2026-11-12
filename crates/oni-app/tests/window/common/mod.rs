@@ -172,8 +172,10 @@ impl Rig {
     }
 }
 
-/// The headless platform installed for this process, and the rig that drives it.
+/// The headless platform installed for this process, and the rig that drives it; the shots' folder
+/// is made here, so a check runs in a target folder no other check has written.
 pub fn rig(shots: PathBuf) -> Rig {
+    std::fs::create_dir_all(&shots).unwrap();
     // `AppFolders`: a check writes its dust patches in a folder of its own, never the machine's caches.
     if std::env::var_os("ONI_CACHES").is_none() {
         // SAFETY: set before the shell or any worker thread of this process starts.
