@@ -61,7 +61,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **Sidecars a person already has always read**, Swift-written ones included; ONI's own format changes freely,
   its version bumped, and nothing is written for Swift to read.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,
-  turns and angle, so no framing moves them, and a patch's file names the exposure and flat-field it was cut under.
+  turns and angle, so no framing moves them.
+- **A dust patch lies on the decoded scan**, before the capture's exposure and the flat-field, and its file names the
+  file's reading alone (`Reading::stamp`): a gain slider never drops or re-heals a patch, which takes the gain of where it lies.
 - **The editor reads a RAW at LibRaw's half size** (owner's call, 2026-10-22): 3 to 5 times faster to open, no
   difference on screen; the whole decode is a Settings choice, and Details, De-dust and every export read it.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
