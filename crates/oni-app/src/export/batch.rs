@@ -23,7 +23,7 @@ pub struct Job {
     pub target: Target,
     pub destination: PathBuf,
     pub metadata: ExifMetadata,
-    pub typed: oni_settings::TypedExif,
+    pub typed: oni_settings::ExifLine,
 }
 
 /// How a batch ended: every file written, stopped by the hand, or the first frame that failed.

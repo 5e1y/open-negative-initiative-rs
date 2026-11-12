@@ -1,54 +1,23 @@
-//! The roll's draft, one in each folder of its frames beside other rolls'; a frame's draft of format
-//! 21 and under is read where it is fresher than its folder's file, then cleared at the next step's write.
+//! The roll's draft, one in each folder of its frames beside other rolls'.
 
 use super::*;
 use oni_library::paths;
 use oni_settings::prepare::{self, Base, Draft};
 use std::collections::BTreeMap;
-use std::time::SystemTime;
 
-/// What a frame lands with: the draft that lists it, and whether its own sidecar still keeps one.
-pub(in crate::app) struct Found {
-    pub draft: Option<Draft>,
-    pub stored: bool,
-}
-
-/// Each frame's draft on entering, `loaded` its sidecar's reading: its folder's that lists it, else its
-/// own, which wins once written after that file; the id most frames carry alone resumes, others left out.
-pub(super) fn found(paths: &[String], loaded: &[Option<sidecar::Loaded>]) -> Vec<Found> {
-    let mut folders: BTreeMap<String, (Vec<Draft>, Option<SystemTime>)> = BTreeMap::new();
+/// Each frame's draft on entering: its folder's that lists it, or its own sidecar's while that is of an
+/// earlier format; the id most frames carry alone resumes, others left out.
+pub(super) fn found(paths: &[String]) -> Vec<Option<Draft>> {
+    let mut names: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for path in paths {
-        let folder = paths::parent(path);
-        let file = prepare::path(Path::new(&folder));
-        folders.entry(folder.clone()).or_insert_with(|| (prepare::read(Path::new(&folder)), modified(&file)));
+        // Entering a roll brings its frames first, so the drafts its steps rewrite are their folders' alone.
+        crate::migration::gated(path);
+        names.entry(paths::parent(path)).or_default().push(paths::name(path));
     }
-    // A sidecar's own draft wins where only an earlier build writes one after the folder's file.
-    let fresher = |p: &String| {
-        let (drafts, written) = &folders[&paths::parent(p)];
-        !drafts.iter().any(|d| d.frames.contains_key(&paths::name(p))) || modified(&sidecar::url_for(Path::new(p))) > *written
-    };
-    let own: Vec<Option<&sidecar::RollDraft>> = paths.iter().zip(loaded).map(|(p, l)| l.as_ref()?.roll_draft.as_ref().filter(|_| fresher(p))).collect();
-    let mut gathered: BTreeMap<String, Vec<Draft>> = BTreeMap::new();
-    for folder in folders.keys() {
-        let here = paths.iter().zip(&own).filter(|(p, _)| paths::parent(p) == *folder);
-        let kept = here.filter_map(|(p, d)| Some((paths::name(p), (*d)?))).collect::<Vec<_>>();
-        gathered.insert(folder.clone(), oni_settings::migrate::draft::gathered(folder, kept.iter().map(|(n, d)| (n.as_str(), *d))));
-    }
-    let drafts: Vec<Option<&Draft>> = paths
-        .iter()
-        .zip(&own)
-        .map(|(p, d)| {
-            let (folder, name) = (paths::parent(p), paths::name(p));
-            let pool = if d.is_some() { &gathered[&folder] } else { &folders[&folder].0 };
-            pool.iter().find(|d| d.frames.contains_key(&name))
-        })
-        .collect();
+    let folders: BTreeMap<String, Vec<Draft>> = names.into_iter().map(|(folder, names)| (folder.clone(), oni_settings::migrate::draft::found(Path::new(&folder), &names))).collect();
+    let drafts: Vec<Option<&Draft>> = paths.iter().map(|p| folders[&paths::parent(p)].iter().find(|d| d.frames.contains_key(&paths::name(p)))).collect();
     let lead = most(drafts.iter().flatten().map(|d| d.id));
-    let found = drafts.into_iter().zip(loaded).map(|(d, l)| Found {
-        draft: d.filter(|d| Some(d.id) == lead).cloned(),
-        stored: l.as_ref().is_some_and(|l| l.roll_draft.is_some()),
-    });
-    found.collect()
+    drafts.into_iter().map(|d| d.filter(|d| Some(d.id) == lead).cloned()).collect()
 }
 
 /// The id met most often, a tie going to the first met.
@@ -62,10 +31,6 @@ fn most(ids: impl Iterator<Item = Id>) -> Option<Id> {
     }
     let top = counts.iter().map(|(_, n)| *n).max()?;
     counts.into_iter().find(|(_, n)| *n == top).map(|(id, _)| id)
-}
-
-fn modified(path: &Path) -> Option<SystemTime> {
-    std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
 /// The frame `base` names in the folder of `path`, the frame that landed with its draft.
@@ -114,26 +79,13 @@ impl Roll {
     }
 }
 
-/// Each folder's part written, then the drafts of format 21 its frames keep cleared where it landed or
-/// was a removal; the failures' messages.
-pub(super) fn written(drafts: Drafts, stored: &[String]) -> Vec<String> {
-    let mut refused = Vec::new();
-    let mut landed = Vec::new();
-    for part in drafts {
-        let done = prepare::write(Path::new(&part.folder), &part.frames, part.draft.as_ref());
-        if let Err(e) = &done {
-            refused.push(oni_library::refusal::said(e));
-        }
-        if done.is_ok() || part.draft.is_none() {
-            landed.push(part.folder);
-        }
-    }
-    for path in stored.iter().filter(|p| landed.contains(&paths::parent(p))) {
-        if let Err(e) = sidecar::set_roll_draft(None, Path::new(path), mosaic(path)) {
-            refused.push(oni_library::refusal::said(&e));
-        }
-    }
-    refused
+/// Each folder's part written; the failures' messages.
+pub(super) fn written(drafts: Drafts) -> Vec<String> {
+    drafts
+        .into_iter()
+        .filter_map(|part| prepare::write(Path::new(&part.folder), &part.frames, part.draft.as_ref()).err())
+        .map(|e| oni_library::refusal::said(&e))
+        .collect()
 }
 
 #[cfg(test)]

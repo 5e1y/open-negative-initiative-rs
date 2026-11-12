@@ -154,9 +154,9 @@ fn the_colour_filters_move_the_render_and_reach_no_gain() {
     recoupled.gains.stops[1] = 1.0;
     assert_ne!(recoupled.gains, written);
     // A sidecar carrying the three filters reads them back unchanged.
-    let text = oni_settings::codec::encode_settings(&filtered).unwrap();
+    let text = oni_settings::document::encode_settings(&filtered).unwrap();
     let read = oni_settings::migrate::document(text.as_bytes()).unwrap();
-    assert_eq!(read.settings.print, filtered.print);
+    assert_eq!(read.document.settings.print, filtered.print);
 }
 
 // MARK: - ChromaDecompression.selfCheck
@@ -288,9 +288,9 @@ fn a_retired_colour_curve_renders_as_its_two_passes_did() {
     let mut hand = PipelineSettings::default();
     hand.manual_curves.linked = curve(&[(0.0, 0.0), (0.2, 0.26), (1.0, 1.0)]);
     hand.manual_curves.contrast = 0.2;
-    let mut object: serde_json::Value = serde_json::from_str(&oni_settings::codec::encode_settings(&hand).unwrap()).unwrap();
+    let mut object = oni_settings::migrate::reshape::as_stored(&oni_settings::Document::of(hand.clone()), 21);
     object["settings"]["curves"] = serde_json::to_value(&colour).unwrap();
-    let back = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().settings;
+    let back = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().document.settings;
     let display = |v: V3| v.map(|x| x.max(0.0).powf(1.0 / 2.2));
     let measured = windows_only(&mut g, &hand, true);
     let k = finishing::curves(&colour).expect("the colour curves bake a table");
@@ -323,7 +323,7 @@ fn every_curve_moves_the_render_alone_and_a_written_one_renders_as_one_built() {
     let mid = [0.7, 0.35, 0.55];
     let literal = format!(
         r#"{{"version": {}, "settings": {{"manualCurves": {{"red": {{"points": [[0, 0], [0.5, {}], [1, 1]]}}, "green": {{"points": [[0, 0], [0.5, {}], [1, 1]]}}, "blue": {{"points": [[0, 0], [0.5, {}], [1, 1]]}}}}}}}}"#,
-        oni_settings::codec::VERSION,
+        oni_settings::document::VERSION,
         mid[0],
         mid[1],
         mid[2]
@@ -332,7 +332,7 @@ fn every_curve_moves_the_render_alone_and_a_written_one_renders_as_one_built() {
     for (channel, y) in [LevelsChannel::Red, LevelsChannel::Green, LevelsChannel::Blue].into_iter().zip(mid) {
         built.manual_curves.get_mut(channel).points = vec![Point::new(0.0, 0.0), Point::new(0.5, y), Point::new(1.0, 1.0)];
     }
-    let typed = oni_settings::migrate::document(literal.as_bytes()).unwrap().settings;
+    let typed = oni_settings::migrate::document(literal.as_bytes()).unwrap().document.settings;
     let after = windows_only(&mut g, &typed, false);
     assert_eq!(after, windows_only(&mut g, &built, false), "a hand-written sidecar renders to the bits of one built");
     // Twin: the three keys taken out neutralise the pass.
@@ -340,7 +340,7 @@ fn every_curve_moves_the_render_alone_and_a_written_one_renders_as_one_built() {
     for key in ["red", "green", "blue"] {
         object["settings"]["manualCurves"].as_object_mut().unwrap().remove(key);
     }
-    let plain = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().settings;
+    let plain = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().document.settings;
     let gap = worst(after, windows_only(&mut g, &plain, false));
     assert!(plain.manual_curves.touched().is_empty() && gap > 0.01, "dropping the keys moves the pixel by only {gap:.4}");
 }

@@ -95,9 +95,9 @@ pub(crate) fn the_filmstrip_numbers_its_frames_and_the_status_bar_says_the_place
     w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
     rig.pump();
     assert!(!canvas.get_saved() && !bar(w, "P01").contains("Settings saved"), "an edit not written yet is not said saved");
-    let edited = oni_settings::sidecar::read(&folder.join("P01.tif"), false, true).unwrap().settings;
+    let edited = oni_settings::sidecar::read(&folder.join("P01.tif"), false).unwrap().settings;
     rig.until("the edit written", Duration::from_secs(10), || canvas.get_saved());
-    let written = oni_settings::sidecar::read(&folder.join("P01.tif"), false, true).unwrap().settings;
+    let written = oni_settings::sidecar::read(&folder.join("P01.tif"), false).unwrap().settings;
     assert_ne!(written, edited, "said saved, the disk holds the edit");
     rig.until("the line drawn again", Duration::from_secs(30), || bar(w, "P01").ends_with(" · Settings saved"));
     println!("shot {}", rig.shot("filmstrip-saved").display());

@@ -60,3 +60,30 @@ fn many_failures_name_a_few_and_count_the_rest() {
     assert!(said.starts_with("5 photos were not restored") && said.contains("P2.NEF.json"), "{said}");
     assert!(!said.contains("P3.NEF.json") && said.contains("and 2 others"), "{said}");
 }
+
+#[test]
+fn a_photo_held_back_in_an_earlier_format_says_its_own_reason() {
+    use oni_settings::migrate::{chain, reshape};
+    use oni_settings::{ConversionMode, Document, PipelineSettings};
+    let dir = scratch("held");
+    let (held, newer) = (dir.join("A.NEF"), dir.join("B.NEF"));
+    for p in [&held, &newer] {
+        std::fs::write(p, b"").unwrap();
+    }
+    // An edited negative from before the matrices left, on a computer whose table does not answer.
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
+    s.print.exposure = 0.4;
+    let old = serde_json::to_vec(&reshape::as_stored(&Document::of(s), chain::MATRICES_RETIRED_VERSION - 1)).unwrap();
+    std::fs::write(url_for(&held), &old).unwrap();
+    std::fs::write(url_for(&newer), br#"{"version": 99, "settings": {}}"#).unwrap();
+    let files: Vec<String> = [&held, &newer].iter().map(|p| p.to_string_lossy().into_owned()).collect();
+    let outcome = trash::mark(&files, None, &|_| true);
+    assert_eq!(outcome.refused, [files[1].clone()], "only the newer one reads as newer");
+    assert_eq!(outcome.failed.len(), 1);
+    let said = trash::report(&outcome, true).unwrap();
+    assert!(said.contains("colour matrix"), "its true reason: {said}");
+    assert_eq!(std::fs::read(url_for(&held)).unwrap(), old, "left as it was");
+    // Twin: the newer file's reason is said apart from it.
+    assert!(said.contains("a newer version of ONI"), "{said}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

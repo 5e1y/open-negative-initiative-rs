@@ -1,7 +1,7 @@
 use super::*;
+use oni_settings::migrate::draft::{DraftBase, RollDraft};
 use oni_settings::prepare::Mark;
-use oni_settings::sidecar::{DraftBase, RollDraft, WriteOptions};
-use std::fs::File;
+use oni_settings::sidecar::WriteOptions;
 use std::path::PathBuf;
 
 fn roll(paths: &[String]) -> Roll {
@@ -47,7 +47,7 @@ fn a_draft_base_is_found_in_its_own_folder_wherever_the_folder_went() {
     assert_eq!(r.base, None);
 }
 
-/// A draft of format 21 as a frame's sidecar keeps it.
+/// A draft of format 21 as a frame's sidecar kept it.
 fn kept(id: Id, step: &str, base: Option<DraftBase>, flagged: bool) -> RollDraft {
     let film = ConversionMode::Negative;
     RollDraft { id, step: step.into(), film, capture: "camera".into(), pass_order: None, pass_offset: None, flat_field: None, base, window: None, ticked: true, flagged }
@@ -68,6 +68,23 @@ fn stood(name: &str, n: usize) -> (PathBuf, Vec<String>) {
     (dir, paths)
 }
 
+/// `p`'s sidecar as format 21 wrote it, keeping `draft`.
+fn stored_with(p: &str, draft: &RollDraft) {
+    let path = sidecar::url_for(Path::new(p));
+    let current = oni_settings::document::decode(&std::fs::read(&path).unwrap()).unwrap();
+    let mut value = oni_settings::migrate::reshape::as_stored(&current, 21);
+    value["rollDraft"] = serde_json::to_value(draft).unwrap();
+    std::fs::write(path, serde_json::to_vec(&value).unwrap()).unwrap();
+}
+
+/// Each frame read, as entering does, then the draft its folder resumes.
+fn entered(paths: &[String]) -> Vec<Option<Draft>> {
+    for p in paths {
+        sidecar::read(Path::new(p), true).unwrap();
+    }
+    found(paths)
+}
+
 /// Every file of `dir`, its bytes and its date.
 fn listed(dir: &Path) -> BTreeMap<String, (Vec<u8>, std::time::SystemTime)> {
     let entries = std::fs::read_dir(dir).unwrap().flatten();
@@ -84,60 +101,58 @@ fn a_step_over_thirty_eight_frames_writes_one_file_and_leaving_removes_it_alone(
     let mut r = roll(&paths);
     r.read = paths.iter().map(|p| (p.clone(), PipelineSettings::default())).collect();
     let before = listed(&dir);
-    assert!(written(r.drafts().unwrap(), &[]).is_empty());
+    assert!(written(r.drafts().unwrap()).is_empty());
     let after = listed(&dir);
     assert_eq!(changed(&before, &after), 1, "one write for the step");
     let draft = prepare::read(&dir).pop().unwrap();
     assert_eq!((draft.frames.len(), draft.step.as_str()), (38, "base"));
     // Leaving removes that file and moves no sidecar.
-    assert!(written(r.dropped(), &[]).is_empty());
+    assert!(written(r.dropped()).is_empty());
     assert_eq!(listed(&dir), before);
-    // Twin: the per-frame draft writes every sidecar.
-    let id = Id::new();
+    // Twin: a draft kept in each frame's sidecar writes every one of them.
     for p in &paths {
-        sidecar::set_roll_draft(Some(kept(id, "base", None, false)), Path::new(p), true).unwrap();
+        sidecar::set_label(oni_settings::Medal::Gold, Path::new(p), true).unwrap();
     }
     assert_eq!(changed(&before, &listed(&dir)), 38);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
-fn the_drafts_frames_keep_from_format_21_resume_the_roll_and_go_at_its_next_write() {
+fn the_drafts_frames_kept_in_format_21_join_their_folders_file_and_resume_the_roll() {
     let (dir, paths) = stood("stored", 3);
     let (roll_id, stray) = (Id::new(), Id::new());
     let base = DraftBase { path: format!("/Volumes/Scans/{}/{}", paths::name(&paths::parent(&paths[1])), paths::name(&paths[1])), x: 0.4, y: 0.5, radius: 2.0 };
     for (p, id) in paths.iter().zip([stray, roll_id, roll_id]) {
-        sidecar::set_roll_draft(Some(kept(id, "flags", Some(base.clone()), p == &paths[2])), Path::new(p), true).unwrap();
+        stored_with(p, &kept(id, "flags", Some(base.clone()), p == &paths[2]));
     }
-    let loaded: Vec<_> = paths.iter().map(|p| sidecar::read(Path::new(p), true, false).ok()).collect();
-    let found = found(&paths, &loaded);
-    let ids = |found: &[Found]| found.iter().map(|f| f.draft.as_ref().map(|d| d.id)).collect::<Vec<_>>();
-    assert!(found.iter().all(|f| f.stored));
+    let found = entered(&paths);
+    let ids = |found: &[Option<Draft>]| found.iter().map(|f| f.as_ref().map(|d| d.id)).collect::<Vec<_>>();
     assert_eq!(ids(&found), [None, Some(roll_id), Some(roll_id)], "the majority's draft, the stray's frame given none");
     let mut r = roll(&paths);
     for (p, f) in paths.iter().zip(&found) {
-        r.resume(f.draft.as_ref(), p, &passes::Known::new());
+        r.resume(f.as_ref(), p, &passes::Known::new());
     }
     assert_eq!((r.step, r.base.as_ref().map(|b| b.path.as_str())), (Step::Flags, Some(paths[1].as_str())));
     let places: Vec<(bool, bool)> = r.frames.iter().map(|f| (f.ticked, f.flagged)).collect();
     assert_eq!(places, [(false, false), (true, false), (true, true)], "the stray's frame left out");
-    // The next step's write lays the folder's file and clears every frame's own.
+    // The frames' own sidecars keep no draft once read: the folder's file holds both rolls.
+    assert!(paths.iter().all(|p| !std::fs::read_to_string(sidecar::url_for(Path::new(p))).unwrap().contains("rollDraft")));
+    let mut held: Vec<Id> = prepare::read(&dir).iter().map(|d| d.id).collect();
+    held.sort_by_key(|id| id.to_string());
+    let mut both = vec![stray, roll_id];
+    both.sort_by_key(|id| id.to_string());
+    assert_eq!(held, both);
+    // Twin: the next step's write takes the stray's frame into the roll, its own draft emptied away.
     r.read = paths.iter().map(|p| (p.clone(), PipelineSettings::default())).collect();
-    assert!(written(r.drafts().unwrap(), &paths).is_empty());
+    assert!(written(r.drafts().unwrap()).is_empty());
     assert_eq!(prepare::read(&dir).iter().map(|d| d.id).collect::<Vec<_>>(), [roll_id]);
-    assert!(paths.iter().all(|p| sidecar::read(Path::new(p), true, false).unwrap().roll_draft.is_none()));
-    // Twin: entered again, the folder's file alone resumes the roll, the frames keeping none.
-    let loaded: Vec<_> = paths.iter().map(|p| sidecar::read(Path::new(p), true, false).ok()).collect();
-    let again = super::found(&paths, &loaded);
-    assert!(again.iter().all(|f| !f.stored));
-    assert_eq!(ids(&again), [Some(roll_id); 3], "the stray's frame now the roll's, left out");
+    assert_eq!(ids(&super::found(&paths)), [Some(roll_id); 3]);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
 /// Each frame's resumed draft by its id and step, as `found` gives them on entering `paths`.
 fn resuming(paths: &[String]) -> Vec<Option<(Id, String)>> {
-    let loaded: Vec<_> = paths.iter().map(|p| sidecar::read(Path::new(p), true, false).ok()).collect();
-    found(paths, &loaded).into_iter().map(|f| f.draft.map(|d| (d.id, d.step))).collect()
+    entered(paths).into_iter().map(|f| f.map(|d| (d.id, d.step))).collect()
 }
 
 fn walked(paths: &[String], step: Step) -> Roll {
@@ -152,19 +167,19 @@ fn two_rolls_in_one_folder_resume_each_its_own_draft() {
     let (dir, paths) = stood("two-rolls", 4);
     let (a, b) = (&paths[..2], &paths[2..]);
     let mut ra = walked(a, Step::Base);
-    assert!(written(ra.drafts().unwrap(), &[]).is_empty());
+    assert!(written(ra.drafts().unwrap()).is_empty());
     assert_eq!(resuming(b), [None, None], "A's draft reaches no frame of B");
     let mut rb = walked(b, Step::Flags);
-    assert!(written(rb.drafts().unwrap(), &[]).is_empty());
+    assert!(written(rb.drafts().unwrap()).is_empty());
     let (ida, idb) = (ra.draft_id.unwrap(), rb.draft_id.unwrap());
     assert_eq!(resuming(a), [Some((ida, "base".into())), Some((ida, "base".into()))], "B's step leaves A's draft");
     assert_eq!(resuming(b), [Some((idb, "flags".into())), Some((idb, "flags".into()))]);
     // B left or measured: its draft goes, A's stays.
-    assert!(written(rb.dropped(), &[]).is_empty());
+    assert!(written(rb.dropped()).is_empty());
     assert_eq!((resuming(a)[0].clone(), resuming(b)), (Some((ida, "base".into())), vec![None, None]));
     // Twin: a roll of A's frames and one of B's takes them, A keeping none and its draft gone.
     let mut rc = walked(&paths[..3], Step::Window);
-    assert!(written(rc.drafts().unwrap(), &[]).is_empty());
+    assert!(written(rc.drafts().unwrap()).is_empty());
     let idc = rc.draft_id.unwrap();
     assert_eq!(resuming(a), [Some((idc, "window".into())), Some((idc, "window".into()))]);
     assert_eq!(prepare::read(&dir).len(), 1);
@@ -180,12 +195,12 @@ fn a_base_stored_in_one_folder_stays_off_its_namesake_in_another() {
     let paths: Vec<String> = ys.iter().chain(&xs).cloned().collect();
     let base_after = |base: DraftBase| {
         for p in &paths {
-            sidecar::set_roll_draft(Some(kept(id, "flags", Some(base.clone()), false)), Path::new(p), true).unwrap();
+            stored_with(p, &kept(id, "flags", Some(base.clone()), false));
+            std::fs::write(prepare::path(Path::new(&paths::parent(p))), br#"{"version": 1, "drafts": []}"#).unwrap();
         }
-        let loaded: Vec<_> = paths.iter().map(|p| sidecar::read(Path::new(p), true, false).ok()).collect();
         let mut r = roll(&paths);
-        for (p, f) in paths.iter().zip(found(&paths, &loaded)) {
-            r.resume(f.draft.as_ref(), p, &passes::Known::new());
+        for (p, f) in paths.iter().zip(entered(&paths)) {
+            r.resume(f.as_ref(), p, &passes::Known::new());
         }
         r.base.map(|b| b.path)
     };
@@ -193,50 +208,4 @@ fn a_base_stored_in_one_folder_stays_off_its_namesake_in_another() {
     // Twin: a base stored under a folder of neither name is found on no frame, never guessed.
     assert_eq!(base_after(in_folder(Path::new("/Volumes/Old/Roll 12"))), None);
     let _ = (std::fs::remove_dir_all(&x), std::fs::remove_dir_all(&y));
-}
-
-#[test]
-fn a_draft_an_earlier_build_wrote_after_the_folders_file_is_the_one_resumed() {
-    let (dir, paths) = stood("fresher", 2);
-    let mut r = walked(&paths, Step::Base);
-    assert!(written(r.drafts().unwrap(), &[]).is_empty());
-    let file = prepare::path(&dir);
-    let set_back = |by: u64| File::options().write(true).open(&file).unwrap().set_modified(std::time::SystemTime::now() - std::time::Duration::from_secs(by)).unwrap();
-    // An earlier build walks the roll on to its flags step in each frame's sidecar, an hour later.
-    set_back(3600);
-    let later = Id::new();
-    for p in &paths {
-        sidecar::set_roll_draft(Some(kept(later, "flags", None, false)), Path::new(p), true).unwrap();
-    }
-    assert_eq!(resuming(&paths), [Some((later, "flags".into())), Some((later, "flags".into()))]);
-    // Twin: the folder's file written after them is the one resumed.
-    File::options().write(true).open(&file).unwrap().set_modified(std::time::SystemTime::now() + std::time::Duration::from_secs(60)).unwrap();
-    let mine = r.draft_id.unwrap();
-    assert_eq!(resuming(&paths), [Some((mine, "base".into())), Some((mine, "base".into()))]);
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-#[test]
-fn a_step_whose_file_is_refused_keeps_the_frames_own_drafts_for_the_discard() {
-    let (dir, paths) = stood("refused", 2);
-    let id = Id::new();
-    for p in &paths {
-        sidecar::set_roll_draft(Some(kept(id, "flags", None, false)), Path::new(p), true).unwrap();
-    }
-    let mut r = walked(&paths, Step::Flags);
-    r.stored = paths.iter().cloned().collect();
-    // A folder in the file's place refuses the step's write.
-    std::fs::create_dir(prepare::path(&dir)).unwrap();
-    let (drafts, stored) = r.step_drafts().unwrap();
-    assert_eq!(written(drafts, &stored).len(), 1);
-    let own = |p: &String| sidecar::read(Path::new(p), true, false).unwrap().roll_draft.is_some();
-    assert!(paths.iter().all(own), "a step refused clears no frame's own draft");
-    std::fs::remove_dir(prepare::path(&dir)).unwrap();
-    // Twin: had the step taken them, the discard would leave each frame's draft behind.
-    assert!(written(r.dropped(), &[]).is_empty());
-    assert!(paths.iter().all(own));
-    let kept_for: Vec<String> = std::mem::take(&mut r.stored).into_iter().collect();
-    assert!(written(r.dropped(), &kept_for).is_empty());
-    assert!(!paths.iter().any(own), "the discard clears them");
-    let _ = std::fs::remove_dir_all(&dir);
 }

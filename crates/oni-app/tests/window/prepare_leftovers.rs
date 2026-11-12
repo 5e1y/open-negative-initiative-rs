@@ -14,7 +14,7 @@ use std::time::Duration;
 use crate::common;
 
 fn loaded(path: &Path) -> sidecar::Loaded {
-    sidecar::read(path, false, true).unwrap()
+    sidecar::read(path, false).unwrap()
 }
 
 pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read() {

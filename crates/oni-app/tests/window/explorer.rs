@@ -64,7 +64,7 @@ fn opened(rig: &common::Rig, shell: &Shell, folder: &Path) {
 }
 
 fn trashed(path: &Path) -> bool {
-    oni_settings::sidecar::read(path, false, true).is_ok_and(|l| l.trashed_at.is_some())
+    oni_settings::sidecar::read(path, false).is_ok_and(|l| l.trashed_at.is_some())
 }
 
 fn told(shell: &Shell) -> Option<(String, String)> {

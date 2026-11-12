@@ -65,6 +65,7 @@ impl LevelsChannel {
 
 /// One set of levels. The two added points are stored normalised between black and white.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Levels {
     pub black: f32,
     pub white: f32,
@@ -166,6 +167,7 @@ impl Levels {
 
 /// The three per-channel windows; their resting white is the top of the density axis.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct LevelsSet {
     pub red: Levels,
     pub green: Levels,

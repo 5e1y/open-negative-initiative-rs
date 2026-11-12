@@ -90,7 +90,7 @@ pub(crate) fn a_roll_still_to_prepare_is_marked_in_the_navigator() {
     rig.until("Reset the Roll's confirm", Duration::from_secs(10), || confirm.get_shown());
     confirm.invoke_answered(true);
     rig.landed(&ctl);
-    assert!(sidecar::read(Path::new(&ready), false, true).unwrap().settings.roll_reference.is_none(), "the reset took the measure");
+    assert!(sidecar::read(Path::new(&ready), false).unwrap().settings.roll_reference.is_none(), "the reset took the measure");
     rig.until("Ready marked", Duration::from_secs(10), || line("Ready").is_some_and(|l| l.unprepared));
     assert!(!line("Slide").unwrap().unprepared, "twin: the slide's roll is untouched");
     drop(ctl);

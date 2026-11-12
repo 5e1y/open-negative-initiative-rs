@@ -3,7 +3,6 @@
 
 use oni_render::{Stage47, cpu};
 use oni_settings::axis::density_axis;
-use oni_settings::codec;
 use oni_settings::curves::CurveSet;
 use oni_settings::migrate::before_1_0;
 use oni_settings::migrate::lighting::{self as lighting, Curves, display, former_pixel};
@@ -98,7 +97,7 @@ fn the_print_replica_is_the_kernel_s_print() {
 
 /// A former document's settings object, the Swift check's own: exposure and a toned balance.
 fn former_document() -> (Vec<u8>, Value) {
-    let text = codec::encode_settings(&PipelineSettings::default()).unwrap();
+    let text = oni_settings::document::encode_settings(&PipelineSettings::default()).unwrap();
     let mut document: Value = serde_json::from_str(&text).unwrap();
     let settings = document["settings"].as_object_mut().unwrap();
     settings.remove("print");
@@ -139,7 +138,7 @@ fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
 #[test]
 fn a_former_document_renders_its_greys_through_the_kernel_as_it_did() {
     let (data, raw) = former_document();
-    let read = oni_settings::migrate::document(&data).unwrap().settings;
+    let read = oni_settings::migrate::document(&data).unwrap().document.settings;
     assert_eq!(read.print.black_point, 0.0, "the fit renders with the points at rest");
     let f = lighting::former(&raw).expect("a former document");
     let identity = Curves::new(&CurveSet::default());

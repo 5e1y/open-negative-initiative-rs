@@ -130,7 +130,7 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
 pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, screen: Screen, seed: u32) -> Result<(Vec<u8>, (Vec<u8>, usize, usize)), String> {
     let asked = Instant::now();
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
+    let settings = oni_settings::sidecar::read(Path::new(path), mosaic).map_err(|e| e.to_string())?.settings;
     // `Thumbnails.produce`: the scan as the file holds it until the frame is converted.
     if !crate::scans::is_converted(&settings)
         && let Some(jpeg) = crate::scans::scan(Path::new(path))

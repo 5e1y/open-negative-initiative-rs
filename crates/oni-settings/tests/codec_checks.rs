@@ -4,7 +4,7 @@
 use oni_settings::axis::{density_axis, pipeline};
 use oni_settings::blocks::{ChromaDenoise, Gains, SeparationFamily, Sharpen, Vignette, separation};
 use oni_settings::cg::{Point, Rect};
-use oni_settings::codec::{self, VERSION};
+use oni_settings::document::{self, VERSION};
 use oni_settings::migrate::{self, chain};
 use oni_settings::curves::SaturationCurve;
 use oni_settings::migrate::density;
@@ -12,16 +12,16 @@ use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
 use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::scanner::ScannerClicks;
-use oni_settings::sidecar::{RollDraft, TypedExif};
+use oni_settings::sidecar::ExifLine;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, Date, Film, Id, Medal, PipelineSettings, ScannerMachine};
+use oni_settings::{ConversionMode, Date, Document, Film, Id, Medal, PipelineSettings, ScannerMachine};
 use serde_json::{Map, Value, json};
 
 type Object = Map<String, Value>;
 
+/// `settings` as a build of format 21 and under wrote them.
 fn encoded(settings: &PipelineSettings) -> Object {
-    let text = codec::encode_settings(settings).unwrap();
-    match serde_json::from_str(&text).unwrap() {
+    match migrate::reshape::as_stored(&Document::of(settings.clone()), VERSION) {
         Value::Object(o) => o,
         _ => unreachable!(),
     }
@@ -38,12 +38,15 @@ fn aged(settings: &PipelineSettings, version: i64, edit: impl FnOnce(&mut Object
 }
 
 fn decode(data: &[u8]) -> PipelineSettings {
-    migrate::document(data).unwrap().settings
+    migrate::document(data).unwrap().document.settings
 }
 
 /// `file` says whether the document's file decodes through the mosaic, `None` for no file.
 fn decode_from(data: &[u8], file: Option<bool>) -> PipelineSettings {
-    migrate::decoded(data, file, false).unwrap().settings
+    match file {
+        None => decode(data),
+        Some(mosaic) => migrate::converted(data, &migrate::Facts { matrix: &|| Ok(None), ..migrate::Facts::bare(mosaic) }).unwrap().document.settings,
+    }
 }
 
 fn full() -> PipelineSettings {
@@ -91,26 +94,26 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     filed.pass_of = Some("/tmp/a.ARW".into());
     filed.rgb_passes = Some(RgbPasses { red: "r.ARW".into(), green: "g.ARW".into(), blue: "b.ARW".into(), registration: None });
     let stamped = Date::from_unix_seconds(1_700_000_000.0);
-    let typed = TypedExif { camera: Some("Leica M6".into()), ..TypedExif::default() };
-    let (id, step, film, capture) = (Id::new(), "Frames".into(), ConversionMode::Positive, "camera".into());
-    let draft = RollDraft { id, step, film, capture, pass_order: None, pass_offset: None, flat_field: None, base: None, window: None, ticked: true, flagged: false };
-    let text = codec::encode(&filed, Some(stamped), Some(Medal::Silver), Some(typed), Some(draft), Some(stamped)).unwrap();
-    assert!(text.contains("\"importedAt\" : \"2023-11-14T22:13:20Z\""), "{text}");
-    let whole = migrate::document(text.as_bytes()).unwrap();
-    let light = codec::envelope(text.as_bytes()).unwrap();
-    assert_eq!(
-        (light.imported_at, light.label, &light.exif, &light.roll_draft, light.trashed_at),
-        (whole.imported_at, whole.label, &whole.exif, &whole.roll_draft, whole.trashed_at)
-    );
+    let mut whole = Document::of(filed.clone());
+    (whole.imported_at, whole.label, whole.trashed_at) = (Some(stamped), Medal::Silver, Some(stamped));
+    whole.exif_line = ExifLine { camera: Some("Leica M6".into()), ..ExifLine::default() };
+    let text = document::encode(&whole).unwrap();
+    assert!(String::from_utf8_lossy(&text).contains("\"importedAt\": \"2023-11-14T22:13:20Z\""));
+    assert_eq!(document::decode(&text).unwrap(), whole);
+    let light = document::envelope(&text).unwrap();
+    assert_eq!((light.imported_at, light.label, light.trashed_at), (whole.imported_at, whole.label, whole.trashed_at));
     assert_eq!(light.film, whole.settings.film);
     assert_eq!(light.manual_order, whole.settings.manual_order);
     assert_eq!(light.mode, whole.settings.mode);
     assert_eq!(light.pass_of, whole.settings.pass_of);
     assert_eq!(light.leads_passes, whole.settings.rgb_passes.is_some());
+    // The same envelope from the document as format 21 wrote it: the keys it reads never moved.
+    let stored = serde_json::to_vec(&migrate::reshape::as_stored(&whole, 19)).unwrap();
+    assert_eq!(document::envelope(&stored), Some(light.clone()));
     // Twin: another film reads another film, and absent fields read absent.
     let mut other = filed.clone();
     other.film = Some(Film::new("HP5"));
-    let twin = codec::envelope(codec::encode(&other, Some(stamped), None, None, None, None).unwrap().as_bytes()).unwrap();
+    let twin = document::envelope(&document::encode(&Document::of(other)).unwrap()).unwrap();
     assert_ne!(twin.film, light.film);
     assert_eq!((twin.label, twin.trashed_at), (Medal::None, None));
 }
@@ -118,17 +121,17 @@ fn the_envelope_reads_what_the_full_decode_reads() {
 #[test]
 fn every_stage_makes_an_exact_round_trip() {
     let full = full();
-    let text = codec::encode_settings(&full).unwrap();
-    let back = migrate::document(text.as_bytes()).unwrap();
+    let text = document::encode_settings(&full).unwrap();
+    let back = document::decode(text.as_bytes()).unwrap();
     assert_eq!(back.settings, full);
     assert_eq!(back.version, VERSION);
     assert_eq!(back.settings.sharpen.radius, 3.1373);
-    let bare = migrate::document(codec::encode_settings(&PipelineSettings::default()).unwrap().as_bytes()).unwrap();
+    let bare = document::decode(document::encode_settings(&PipelineSettings::default()).unwrap().as_bytes()).unwrap();
     assert_eq!(bare.settings.film, None);
     // Twin: one field moved by one ulp is a different document.
     let mut moved = full.clone();
     moved.gains.stops[0] = f32::from_bits(full.gains.stops[0].to_bits() + 1);
-    assert_ne!(decode(codec::encode_settings(&moved).unwrap().as_bytes()), full);
+    assert_ne!(decode(document::encode_settings(&moved).unwrap().as_bytes()), full);
 }
 
 #[test]
@@ -172,7 +175,7 @@ fn a_document_without_mode_reads_negative_and_a_spelled_mode_itself() {
     assert_eq!(flipped.mode, ConversionMode::Positive);
     let mut positive = full.clone();
     positive.mode = ConversionMode::Positive;
-    let text = codec::encode_settings(&positive).unwrap();
+    let text = document::encode_settings(&positive).unwrap();
     assert!(text.contains("\"positive\""));
     assert_eq!(decode(text.as_bytes()), positive);
 }
@@ -181,7 +184,7 @@ fn a_document_without_mode_reads_negative_and_a_spelled_mode_itself() {
 fn the_crop_display_flag_stays_out_of_the_sidecar() {
     let mut bypassing = full();
     bypassing.geometry.crop_bypassed = true;
-    let text = codec::encode_settings(&bypassing).unwrap();
+    let text = document::encode_settings(&bypassing).unwrap();
     assert!(!text.contains("cropBypassed"));
     assert!(!decode(text.as_bytes()).geometry.crop_bypassed);
 }
@@ -189,13 +192,13 @@ fn the_crop_display_flag_stays_out_of_the_sidecar() {
 #[test]
 fn empty_reads_neutral_garbage_fails_and_the_future_is_flagged() {
     let empty = migrate::document(b"{}").unwrap();
-    assert_eq!((empty.settings, empty.version), (PipelineSettings::default(), 0));
+    assert_eq!((empty.document.settings, empty.from), (PipelineSettings::default(), 0));
     assert!(migrate::document(b"this is not JSON").is_err());
     assert!(migrate::document(b"[1, 2]").is_err());
-    let future = migrate::document(&aged(&full(), VERSION + 1, |_| {})).unwrap();
-    assert!(future.is_from_future());
-    // Twin: today's version is not.
-    assert!(!migrate::document(&aged(&full(), VERSION, |_| {})).unwrap().is_from_future());
+    let future = migrate::document(&aged(&full(), VERSION + 1, |_| {}));
+    assert_eq!(future, Err(migrate::Refusal::Newer(VERSION + 1)));
+    // Twin: today's version is read.
+    assert_eq!(migrate::document(&aged(&full(), VERSION, |_| {})).unwrap().document.settings, full());
 }
 
 // MARK: - Rests that moved
@@ -343,7 +346,7 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     placed.levels.blue = Levels { black: 0.2113, white: 0.9337, mid: 0.5, ..Levels::default() };
     placed.gains.stops = [1.5, -0.5, 2.125];
     let scaled = density::migrate(&placed.levels);
-    for stamp in [0, before_1_0::DENSITY_AXIS_VERSION - 1, before_1_0::DENSITY_AXIS_VERSION, VERSION + 1] {
+    for stamp in [0, before_1_0::DENSITY_AXIS_VERSION - 1, before_1_0::DENSITY_AXIS_VERSION] {
         let read = decode(&aged(&placed, stamp, |_| {}));
         let wanted = if stamp < before_1_0::DENSITY_AXIS_VERSION { scaled } else { placed.levels };
         assert_eq!(read.levels, wanted, "version {stamp}");
@@ -365,10 +368,10 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     assert_eq!((holed.levels.green, holed.levels.blue), (scaled.green, scaled.blue));
     // Twin: the forbidden order, defaults then scale, triples the absent default.
     let stored: Value = serde_json::from_slice(&missing).unwrap();
-    let completed = migrate::merged(&stored, migrate::neutral_document());
+    let completed = chain::merged(&stored, chain::neutral_document());
     let wrong = before_1_0::in_density(completed.as_object().unwrap().clone());
-    let wrong: codec::SettingsDocument = serde_json::from_value(Value::Object(wrong)).unwrap();
-    assert_eq!(wrong.settings.levels.red.white, LevelsSet::default().red.white * pipeline::DMAX);
+    let wrong: PipelineSettings = serde_json::from_value(wrong["settings"].clone()).unwrap();
+    assert_eq!(wrong.levels.red.white, LevelsSet::default().red.white * pipeline::DMAX);
 
     let partial = decode(&aged(&placed, before_1_0::DENSITY_AXIS_VERSION - 1, |s| {
         s["levels"]["blue"].as_object_mut().unwrap().remove("white");
@@ -379,7 +382,7 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
 
 #[test]
 fn the_two_radii_move_onto_pixels_before_the_defaults() {
-    let side = codec::RADIUS_REFERENCE_SIDE as f32;
+    let side = document::RADIUS_REFERENCE_SIDE as f32;
     let document = |chroma: Option<(f32, f32)>, sharpen: Option<f32>, stamp: i64, holing: bool| {
         aged(&PipelineSettings::default(), stamp, |s| {
             if let Some((r, f)) = chroma {
@@ -395,7 +398,7 @@ fn the_two_radii_move_onto_pixels_before_the_defaults() {
     };
     let hand = (0.0005f32, 0.62f32);
     let sharpened = 0.00037f32;
-    for stamp in [0, before_1_0::RADIUS_PIXELS_VERSION - 1, before_1_0::RADIUS_PIXELS_VERSION, VERSION + 1] {
+    for stamp in [0, before_1_0::RADIUS_PIXELS_VERSION - 1, before_1_0::RADIUS_PIXELS_VERSION] {
         let read = decode(&document(Some(hand), Some(sharpened), stamp, false));
         let migrates = stamp < before_1_0::RADIUS_PIXELS_VERSION;
         let wanted = if migrates { (hand.0 * side, sharpened * side) } else { (hand.0, sharpened) };
@@ -408,11 +411,11 @@ fn the_two_radii_move_onto_pixels_before_the_defaults() {
     assert!((read.chroma.radius - hand.0 * side).abs() < 1e-4);
     // Twin: the forbidden order puts the absent default on the track's stop.
     let stored: Value = serde_json::from_slice(&holed).unwrap();
-    let completed = migrate::merged(&stored, migrate::neutral_document());
+    let completed = chain::merged(&stored, chain::neutral_document());
     let wrong = before_1_0::in_pixels(completed.as_object().unwrap().clone(), false);
-    let wrong: codec::SettingsDocument = serde_json::from_value(Value::Object(wrong)).unwrap();
-    assert_eq!(wrong.settings.sharpen.radius, Sharpen::radius_range().1);
-    assert_ne!(wrong.settings.sharpen.radius, Sharpen::default().radius);
+    let wrong: PipelineSettings = serde_json::from_value(wrong["settings"].clone()).unwrap();
+    assert_eq!(wrong.sharpen.radius, Sharpen::radius_range().1);
+    assert_ne!(wrong.sharpen.radius, Sharpen::default().radius);
 
     for (r, f) in ChromaDenoise::FORMER_RESTS {
         assert_eq!(decode(&document(Some((r, f)), Some(sharpened), 1, false)).chroma, ChromaDenoise::default());
@@ -433,11 +436,11 @@ fn a_mosaic_gain_shifts_for_the_decode_change_and_a_scanner_gain_never() {
     let delta = before_1_0::NEUTRAL_DECODE_RATIO.map(libm::log2f);
     let expected: [f32; 3] = std::array::from_fn(|i| hand[i] - delta[i]);
     for mode in ConversionMode::ALL {
-        for stamp in [0, before_1_0::NEUTRAL_DECODE_GAINS_VERSION - 1, before_1_0::NEUTRAL_DECODE_GAINS_VERSION, VERSION + 1] {
+        for stamp in [0, before_1_0::NEUTRAL_DECODE_GAINS_VERSION - 1, before_1_0::NEUTRAL_DECODE_GAINS_VERSION] {
             let mut written = PipelineSettings { mode, ..PipelineSettings::default() };
             written.gains.stops = hand;
             let data = aged(&written, stamp, |_| {});
-            let mosaic = migrate::decoded(&data, Some(true), true).unwrap().settings;
+            let mosaic = decode_from(&data, Some(true));
             let migrates = stamp < before_1_0::NEUTRAL_DECODE_GAINS_VERSION;
             assert_eq!(mosaic.gains.stops, if migrates { expected } else { hand }, "{mode:?} v{stamp}");
             // Twin: read as scanner-sourced, the same document keeps its gains at every version.
@@ -446,9 +449,7 @@ fn a_mosaic_gain_shifts_for_the_decode_change_and_a_scanner_gain_never() {
     }
     let mut near = PipelineSettings::default();
     near.gains.stops = [-2.9, 0.0, 2.9];
-    let read = migrate::decoded(&aged(&near, 0, |_| {}), Some(true), true)
-        .unwrap()
-        .settings;
+    let read = decode_from(&aged(&near, 0, |_| {}), Some(true));
     assert_eq!((read.gains.stops[0], read.gains.stops[2]), (Gains::RANGE.0, Gains::RANGE.1));
     // Twin: green's small shift stays inside the track.
     assert!((read.gains.stops[1] + delta[1]).abs() < 1e-4);
@@ -583,9 +584,6 @@ fn a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not() {
     // Twin: the same keys beside a Lighting block, or written since, are left to the decoder.
     assert_eq!(decode(&former(before_1_0::LIGHTING_VERSION - 1, true)).print, Print::default());
     assert_eq!(decode(&former(before_1_0::LIGHTING_VERSION, false)).print, Print::default());
-    // And a read that does not catch up leaves the former document unfitted.
-    let raw = migrate::decoded(&former(before_1_0::LIGHTING_VERSION - 1, false), None, false).unwrap();
-    assert_eq!(raw.settings.print, Print::default());
 }
 
 // MARK: - Families

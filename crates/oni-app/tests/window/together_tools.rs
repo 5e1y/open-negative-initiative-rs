@@ -16,7 +16,7 @@ use std::time::Duration;
 use crate::common;
 
 pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
-    let face = |p: &std::path::Path| sidecar::read(p, false, true).map(|l| l.settings.face).ok();
+    let face = |p: &std::path::Path| sidecar::read(p, false).map(|l| l.settings.face).ok();
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: Edit Together's tools are not exercised"),

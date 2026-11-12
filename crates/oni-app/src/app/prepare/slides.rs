@@ -72,7 +72,7 @@ impl Ctl {
                     let before = if Some(&p.path) == open.as_ref() {
                         live.clone()
                     } else {
-                        sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
+                        sidecar::read(Path::new(&p.path), mosaic(&p.path)).map(|l| l.settings).unwrap_or_default()
                     };
                     m?.base(&p.path, &roll::slide(&before, window, mask.as_ref(), stops(&p.path)), Point::new(p.unit.0, p.unit.1), p.radius)
                 });
@@ -89,7 +89,7 @@ impl Ctl {
                     let before = if Some(path) == open.as_ref() {
                         Some(live.clone())
                     } else {
-                        sidecar::read(Path::new(path), mosaic(path), true).ok().filter(|l| l.writable).map(|l| l.settings)
+                        sidecar::read(Path::new(path), mosaic(path)).ok().filter(|l| l.writable).map(|l| l.settings)
                     };
                     let mut drawn = None;
                     let mut read_one = false;

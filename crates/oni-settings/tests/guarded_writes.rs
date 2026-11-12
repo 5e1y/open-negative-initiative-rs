@@ -1,10 +1,11 @@
 //! What a sidecar write refuses: a missing original, a newer or unreadable sidecar; and what it
-//! keeps: the keys a newer app added, which this version does not know.
+//! writes: the document's keys and nothing else.
 
 use oni_settings::cg::Point;
 use oni_settings::curves::CurveSet;
 use oni_settings::sidecar::{self, Error, url_for};
-use oni_settings::{Date, Medal, PipelineSettings, codec};
+use oni_settings::migrate::reshape;
+use oni_settings::{Date, Document, Medal, PipelineSettings, document};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
@@ -31,7 +32,6 @@ fn a_write_beside_a_missing_original_is_refused_as_unreachable() {
         sidecar::set_label(Medal::Gold, &moved, true).map(|_| true),
         sidecar::set_trashed(Some(Date::from_unix_seconds(1.0)), &moved, true),
         sidecar::set_trashed(None, &gone, true),
-        sidecar::set_roll_draft(None, &moved, true).map(|_| true),
     ] {
         assert!(matches!(result, Err(Error::Unreachable)), "{result:?}");
     }
@@ -40,7 +40,7 @@ fn a_write_beside_a_missing_original_is_refused_as_unreachable() {
     // Twin: the same gestures on a present photo write its sidecar.
     std::fs::write(&moved, b"").unwrap();
     sidecar::set_label(Medal::Gold, &moved, true).unwrap();
-    assert_eq!(sidecar::read(&moved, true, true).unwrap().label, Medal::Gold);
+    assert_eq!(sidecar::read(&moved, true).unwrap().label, Medal::Gold);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -50,7 +50,7 @@ fn a_newer_or_unparseable_sidecar_is_never_overwritten() {
     let photo = dir.join("P1.NEF");
     std::fs::write(&photo, b"").unwrap();
     sidecar::write(&edited(), &photo, Default::default()).unwrap();
-    let opened = sidecar::read(&photo, true, true).unwrap();
+    let opened = sidecar::read(&photo, true).unwrap();
     assert!(opened.writable);
     // Another app rewrites the sidecar after the photo opened here: the deferred write still trusts it.
     let newer = br#"{"version": 99, "label": "gold", "settings": {"density": 0.4}}"#;
@@ -68,9 +68,9 @@ fn a_newer_or_unparseable_sidecar_is_never_overwritten() {
         assert_eq!(std::fs::read(url_for(&photo)).unwrap(), bytes, "left as it was");
     }
     // Twin: today's version, read back whole, takes the write.
-    std::fs::write(url_for(&photo), codec::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
+    std::fs::write(url_for(&photo), document::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
     sidecar::write(&opened.settings, &photo, Default::default()).unwrap();
-    assert_eq!(sidecar::read(&photo, true, true).unwrap().settings.print.exposure, 0.7);
+    assert_eq!(sidecar::read(&photo, true).unwrap().settings.print.exposure, 0.7);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -78,57 +78,48 @@ fn document(path: &Path) -> Value {
     serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
 }
 
+/// Every key of `value` at every depth of objects, by its path.
+fn keys(value: &Value, at: &str, out: &mut Vec<String>) {
+    if let Value::Object(map) = value {
+        for (k, v) in map {
+            let path = format!("{at}/{k}");
+            keys(v, &path, out);
+            out.push(path);
+        }
+    }
+}
+
 #[test]
-fn an_unknown_key_survives_a_medal() {
+fn a_written_sidecar_holds_the_documents_keys_alone_and_an_unknown_one_is_gone_after_migration() {
     let dir = scratch("unknown");
     let photo = dir.join("P1.NEF");
     std::fs::write(&photo, b"").unwrap();
     sidecar::write(&edited(), &photo, Default::default()).unwrap();
-    let mut stored = document(&url_for(&photo));
-    // A newer Swift adds fields without moving the version: at the top, in the settings, deeper.
-    stored["swiftLater"] = json!({"kind": "dust", "amount": 0.25});
-    stored["settings"]["grainLater"] = json!(0.3);
-    stored["settings"]["print"]["toeLater"] = json!([1, 2, 3]);
-    std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
     sidecar::set_label(Medal::Gold, &photo, true).unwrap();
-    sidecar::set_trashed(Some(Date::from_unix_seconds(5.0)), &photo, true).unwrap();
-    let mut later = edited();
-    later.density = 0.2;
-    sidecar::write(&later, &photo, Default::default()).unwrap();
-    let kept = document(&url_for(&photo));
-    assert_eq!(kept["swiftLater"], json!({"kind": "dust", "amount": 0.25}));
-    assert_eq!((&kept["settings"]["grainLater"], &kept["settings"]["print"]["toeLater"]), (&json!(0.3), &json!([1, 2, 3])));
-    let read = sidecar::read(&photo, true, true).unwrap();
-    assert_eq!((read.label, read.settings.density, read.trashed_at.is_some()), (Medal::Gold, 0.2, true));
-    // A known key cleared stays cleared: the restore drops the mark, never carried back as unknown.
-    sidecar::set_trashed(None, &photo, true).unwrap();
-    assert!(document(&url_for(&photo)).get("trashedAt").is_none());
-    // Twin: a bare encode of the same document loses every one of them.
-    let bare: Value = serde_json::from_str(&codec::encode(&read.settings, None, Some(Medal::Gold), None, None, None).unwrap()).unwrap();
-    assert!(bare.get("swiftLater").is_none() && bare["settings"].get("grainLater").is_none());
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-#[test]
-fn an_unknown_key_of_the_previous_format_survives_its_first_rewrite() {
-    let dir = scratch("previous");
-    let photo = dir.join("P1.NEF");
-    std::fs::write(&photo, b"").unwrap();
-    let carried = |version: i64| {
-        sidecar::write(&edited(), &photo, Default::default()).unwrap();
-        let mut stored = document(&url_for(&photo));
-        stored["version"] = json!(version);
-        stored["settings"]["grainLater"] = json!(0.3);
-        std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
-        let read = sidecar::read(&photo, true, true).unwrap();
-        sidecar::write(&read.settings, &photo, Default::default()).unwrap();
-        let written = document(&url_for(&photo));
-        assert_eq!(written["version"], json!(codec::VERSION));
-        written["settings"].get("grainLater").cloned()
-    };
-    assert_eq!(carried(codec::KEYS_CARRIED_FROM), Some(json!(0.3)));
-    // Twin: below it a migration may have consumed the key, which is never carried.
-    assert_eq!(carried(codec::KEYS_CARRIED_FROM - 1), None);
+    let mut whole = Document::of(edited());
+    whole.label = Medal::Gold;
+    whole.trashed_at = Some(Date::from_unix_seconds(5.0));
+    whole.exif_line.lens = Some("50mm".into());
+    let mut known = Vec::new();
+    keys(&serde_json::to_value(&whole).unwrap(), "", &mut known);
+    let mut written = Vec::new();
+    keys(&document(&url_for(&photo)), "", &mut written);
+    let outside: Vec<&String> = written.iter().filter(|k| !known.contains(k) && !k.starts_with("/original")).collect();
+    assert!(outside.is_empty(), "{outside:?}");
+    // A file of format 21 carrying a key this build does not know loses it as it migrates.
+    let mut stored = reshape::as_stored(&Document::of(edited()), 21);
+    stored["swiftLater"] = json!({"kind": "dust"});
+    stored["settings"]["grainLater"] = json!(0.3);
+    std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
+    let read = sidecar::read(&photo, true).unwrap();
+    assert_eq!(read.settings, edited());
+    assert!(matches!(oni_settings::migrate::file(&photo, Some(true)), Ok(oni_settings::migrate::Outcome::Migrated { from: 21 })));
+    let migrated = document(&url_for(&photo));
+    assert!(migrated.get("swiftLater").is_none() && migrated["settings"].get("grainLater").is_none(), "{migrated}");
+    // Twin: the stored file held them, so the walk above sees an unknown key when there is one.
+    let mut carried = Vec::new();
+    keys(&stored, "", &mut carried);
+    assert!(carried.iter().any(|k| !known.contains(k) && k.contains("Later")));
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -140,19 +131,20 @@ fn a_retired_key_is_never_carried_to_be_read_twice() {
     sidecar::write(&edited(), &photo, Default::default()).unwrap();
     let mut colour = CurveSet::default();
     colour.linked.add(Point { x: 0.5, y: 0.7 });
-    let mut stored = document(&url_for(&photo));
+    let mut stored = reshape::as_stored(&Document::of(edited()), document::VERSION - 1);
     stored["settings"]["curves"] = serde_json::to_value(&colour).unwrap();
     std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
-    let folded = sidecar::read(&photo, true, true).unwrap();
+    let folded = sidecar::read(&photo, true).unwrap();
     assert!(!folded.settings.manual_curves.is_neutral(), "the retired curves fold on read");
     sidecar::write(&folded.settings, &photo, Default::default()).unwrap();
     let written = document(&url_for(&photo));
     assert!(written["settings"].get("curves").is_none(), "a key this version reads is never carried");
-    assert_eq!(sidecar::read(&photo, true, true).unwrap().settings, folded.settings, "folded once, not twice");
+    assert_eq!(sidecar::read(&photo, true).unwrap().settings, folded.settings, "folded once, not twice");
     // Twin: the retired key, carried as is, would fold a second time on the next read.
     let mut twice = written.clone();
     twice["settings"]["curves"] = stored["settings"]["curves"].clone();
+    twice["version"] = json!(document::VERSION - 1);
     let again = oni_settings::migrate::document(&serde_json::to_vec(&twice).unwrap()).unwrap();
-    assert_ne!(again.settings, folded.settings);
+    assert_ne!(again.document.settings, folded.settings);
     let _ = std::fs::remove_dir_all(&dir);
 }

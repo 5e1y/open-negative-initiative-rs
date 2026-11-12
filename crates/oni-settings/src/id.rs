@@ -1,4 +1,4 @@
-//! `UUID` as Foundation writes it: hyphenated, upper case.
+//! An identifier, hyphenated and upper case: compared as text across a roll's frames and in the index.
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use std::fmt;

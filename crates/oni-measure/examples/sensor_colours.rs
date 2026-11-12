@@ -11,7 +11,7 @@ use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::RollReference;
 use oni_settings::modes::{Face, ScannerMachine};
-use oni_settings::sidecar::{self, RollDraft};
+use oni_settings::sidecar;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -50,14 +50,15 @@ fn frames(roll: &Path) -> Vec<Frame> {
             if !["nef", "rw2"].contains(&ext.as_str()) {
                 return None;
             }
-            let loaded = sidecar::read(&path, true, false).ok()?;
+            let loaded = sidecar::read(&path, true).ok()?;
             loaded.settings.roll_reference.as_ref()?;
             let name = path.file_name()?.to_str()?.to_owned();
-            let draft: Option<RollDraft> = loaded.roll_draft;
+            let drafts = oni_settings::prepare::read(roll);
+            let draft = drafts.iter().find(|d| d.frames.contains_key(&name));
             let s = loaded.settings;
-            let film = draft.as_ref().map_or(s.mode, |d| d.film);
-            let window = draft.as_ref().and_then(|d| d.window).or(s.geometry.measure_window).expect("a measuring window");
-            let flagged = draft.as_ref().is_some_and(|d| d.flagged || !d.ticked);
+            let film = draft.map_or(s.mode, |d| d.film);
+            let window = draft.and_then(|d| d.window).or(s.geometry.measure_window).expect("a measuring window");
+            let flagged = draft.and_then(|d| d.frames.get(&name)).is_some_and(|m| m.flagged || !m.ticked);
             Some(Frame { path, name, settings: s, film, window, flagged })
         })
         .collect();

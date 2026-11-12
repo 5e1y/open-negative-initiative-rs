@@ -325,7 +325,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
 
     // What a hand set kept beside the photo, the artist remembered rather than frozen in it, the journal
     // noted and the settings remembered.
-    let exif = oni_settings::sidecar::read(Path::new(&first), true, false).unwrap().exif.unwrap_or_default();
+    let exif = oni_settings::sidecar::read(Path::new(&first), true).unwrap().exif;
     assert_eq!((exif.film.as_deref(), exif.artist), ((stock != "Kodak Gold").then_some("Kodak Gold"), None));
     assert!(support.join("Journal/events.bin").exists());
     let prefs: serde_json::Value = serde_json::from_slice(&std::fs::read(support.join("preferences.json")).unwrap()).unwrap();

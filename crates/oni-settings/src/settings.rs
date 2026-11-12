@@ -19,6 +19,7 @@ use std::collections::BTreeSet;
 
 /// Every setting, its serialised names the Swift app's. Optional fields are omitted when absent.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PipelineSettings {
     pub mode: ConversionMode,
     /// A positive read as its own negative, every density flipped before the negative's conversion

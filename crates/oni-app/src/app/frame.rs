@@ -24,6 +24,8 @@ pub(in crate::app) struct Frame {
     pub straightening: Option<(Geometry, Geometry, Instant)>,
     /// The stroke being painted, in fractions of the rendered frame, y down.
     pub painting_stroke: dedusting::live::Live,
+    /// Opened read-only as its original was in the cloud: read again once the decode downloaded it.
+    pub away: bool,
 }
 
 impl Frame {
@@ -43,6 +45,7 @@ impl Frame {
             frame_gesture: None,
             straightening: None,
             painting_stroke: Default::default(),
+            away: false,
         }
     }
 

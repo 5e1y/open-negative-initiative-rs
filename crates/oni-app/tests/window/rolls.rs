@@ -19,7 +19,7 @@ use std::time::Duration;
 use crate::common;
 
 fn settings_of(path: &Path) -> PipelineSettings {
-    sidecar::read(path, false, true).unwrap().settings
+    sidecar::read(path, false).unwrap().settings
 }
 
 /// A sidecar naming roll `id` and carrying `film`, as Prepare the Roll leaves a frame.

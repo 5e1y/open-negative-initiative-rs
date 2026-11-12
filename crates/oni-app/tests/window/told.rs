@@ -98,7 +98,7 @@ pub(crate) fn a_refused_trash_in_the_gallery_opens_a_notice() {
     let lib = shell.window.global::<oni_app::Library>();
 
     // Twin: a trash that lands, pressed on the bar's key, says so with its Undo, which brings the photo back.
-    let trashed = || oni_settings::sidecar::read(&scans.join("A.tif"), false, true).unwrap().trashed_at.is_some();
+    let trashed = || oni_settings::sidecar::read(&scans.join("A.tif"), false).unwrap().trashed_at.is_some();
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     common::click(&rig, &shell.window, common::the(&shell.window, i_slint_backend_testing::AccessibleRole::Button, "Trash").middle());

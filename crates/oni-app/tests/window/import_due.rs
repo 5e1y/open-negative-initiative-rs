@@ -15,7 +15,7 @@ fn starred_row(hand: &Hand, title: &str) -> Option<(usize, bool)> {
 
 pub(crate) fn an_import_due_is_shown_from_the_old_files_and_never_written() {
     let tones = [("Roll/A.tif", 0.3), ("Roll/B.tif", 0.6)];
-    let due = Brought { places_due: true, projects_due: true, notice: Some(NOT_BROUGHT) };
+    let due = Brought { places_due: true, projects_due: true, notice: Some(NOT_BROUGHT), tell: false };
     let hand = Hand::made_with(
         "due",
         &tones,
@@ -58,7 +58,7 @@ pub(crate) fn an_import_due_is_shown_from_the_old_files_and_never_written() {
     // The next launch brings both, and the same gestures are kept.
     let mut hand = hand;
     hand.shell.window.hide().unwrap();
-    assert_eq!(oni_app::migration::brought(&support, None), Brought::default());
+    assert_eq!(oni_app::migration::brought(&support, None), Brought { tell: true, ..Brought::default() });
     hand.shell = Hand::launch(&hand.root, Brought::default());
     assert_eq!(Places::load(&support).map(|p| p.paths()), Some(vec![paths::canonical(&hand.root.join("Scans"))]), "the favourite brought");
     hand.open("Roll");

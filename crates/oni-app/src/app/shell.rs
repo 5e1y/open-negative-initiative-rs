@@ -2,6 +2,8 @@
 
 use super::*;
 
+mod migrating;
+
 impl Shell {
     /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
     pub fn new(store: EditorStore, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
@@ -269,6 +271,14 @@ impl Shell {
     }
 
     /// `WelcomeSheet.isDue` at launch: shown once per edition, never under a bench.
+    /// The sheet saying the sidecars' new format, once; then the sweep over `caches`' indexes too,
+    /// which never waits for it.
+    pub fn migrate(&self, caches: &Path) {
+        self.ctl.tell_migration_if_due();
+        self.ctl.tell_left();
+        self.ctl.start_migration(Some(caches));
+    }
+
     pub fn welcome_if_due(&self) {
         if self.ctl.welcome_due() {
             self.ctl.open_welcome();
@@ -301,8 +311,9 @@ impl Ctl {
     pub fn last_writes(self: &Rc<Self>) -> Option<String> {
         // A frame's move under way ends whole before the process does.
         gestures::wait_for_disk();
-        // An export's frame under way lands whole, ledger included.
+        // An export's frame under way lands whole, ledger included; the sweep stops within one file.
         self.export.borrow_mut().writer.ended_whole();
+        migrating::stop_migration();
         self.commit_info_drafts();
         self.flush_drafts();
         // The journal's thread writes what it was handed before the process ends.

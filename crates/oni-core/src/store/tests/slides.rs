@@ -19,7 +19,7 @@ fn measured(white: f32, blue: f32) -> PipelineSettings {
 }
 
 fn written(path: &str) -> PipelineSettings {
-    sidecar::read(Path::new(path), false, true).unwrap().settings
+    sidecar::read(Path::new(path), false).unwrap().settings
 }
 
 /// A slide roll's contact sheet, measured with it.
@@ -70,7 +70,7 @@ fn paste_to_roll_on_a_slide_reaches_its_folder_s_slides() {
     store.open(&paths[0]).unwrap();
     let mut donor = slide(0.9);
     donor.vignette.stops = -0.6;
-    store.board.settings = Some(codec::encode_settings(&donor).unwrap());
+    store.board.settings = Some(oni_settings::document::encode_settings(&donor).unwrap());
     store.paste_to_roll();
     assert_eq!(store.settings().vignette.stops, -0.6);
     assert_eq!(written(&paths[1]).vignette.stops, -0.6, "the roll's other slide takes the look");

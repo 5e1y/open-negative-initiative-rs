@@ -11,7 +11,7 @@ use oni_library::roll_membership::{self, RollKey};
 use oni_library::{refusal, trash};
 use oni_i18n::{tr, trn};
 use oni_keys::{Channel, Effect, Letter, Machine};
-use oni_settings::codec;
+use oni_settings::document;
 use oni_settings::frame::Geometry;
 use oni_settings::settings::{look_settings, roll_settings};
 use oni_settings::sidecar::{self, WriteOptions};

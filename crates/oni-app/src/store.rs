@@ -169,7 +169,7 @@ pub(crate) mod tests {
             std::fs::write(p, b"").unwrap();
             oni_settings::sidecar::write(s, Path::new(p), Default::default()).unwrap();
         }
-        let read = |p: &str| oni_settings::sidecar::read(Path::new(p), false, true).unwrap().settings;
+        let read = |p: &str| oni_settings::sidecar::read(Path::new(p), false).unwrap().settings;
         let mut s = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
         s.open(&paths[0]).unwrap();
         s.set_together(vec![paths[1].clone()]);

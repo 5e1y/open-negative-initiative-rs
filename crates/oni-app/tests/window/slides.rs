@@ -81,7 +81,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     rig.pump();
 
     // A slide once measured as its own negative is measured again on its gains alone.
-    let mut once = sidecar::read(&canonical(&slides, 1), false, true).unwrap().settings;
+    let mut once = sidecar::read(&canonical(&slides, 1), false).unwrap().settings;
     (once.mode, once.inverted_source) = (ConversionMode::Negative, true);
     sidecar::write(&once, &canonical(&slides, 1), WriteOptions::default()).unwrap();
     lib.invoke_tile_clicked(first(), false, false);
@@ -111,7 +111,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     assert_eq!((p.get_step(), p.get_has_base()), (4, true), "the white picked leads straight to the window");
     assert_eq!(p.get_readouts().row_data(4).unwrap().as_str(), "1 / 3", "every slide measured");
     assert!(p.get_window_shown());
-    let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
+    let disk = |i: usize| sidecar::read(&canonical(&slides, i), false).unwrap().settings;
     let rest = disk(1);
     p.invoke_advance();
     rig.until("the slides levelled", Duration::from_secs(60), || !p.get_shown());

@@ -16,7 +16,7 @@ use std::time::Duration;
 use crate::common;
 
 fn exposure_of(path: &Path) -> f32 {
-    let loaded = sidecar::read(path, false, true).expect("the sidecar reads");
+    let loaded = sidecar::read(path, false).expect("the sidecar reads");
     Field::Exposure.knob().get(&loaded.settings)
 }
 
@@ -232,7 +232,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     ctl.act(oni_app::Act::Paste);
     rig.pump();
     for (name, was) in [("B.tif", own[1]), ("C.tif", own[2])] {
-        let pasted = sidecar::read(&canonical(name), false, true).unwrap().settings;
+        let pasted = sidecar::read(&canonical(name), false).unwrap().settings;
         assert!((Field::Vignette.knob().get(&pasted) - vignetted).abs() < 1e-5, "{name}: the vignette pasted");
         assert!((exposure_of(&canonical(name)) - was).abs() < 1e-6, "{name}: twin, the Lighting left out stays");
     }

@@ -2,7 +2,6 @@
 //! for the versions written before its change, in the order the format moved.
 
 use crate::blocks::{chroma_decompression, separation};
-use crate::codec::{SettingsDocument, VERSION};
 use crate::modes::ScannerMachine;
 use crate::settings::PipelineSettings;
 use crate::tolerant::{self, Object};
@@ -56,21 +55,10 @@ pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Obje
     aged
 }
 
-/// The resting document every stored one is laid over, built once.
+/// The resting settings every stored document of format 21 and under is laid over, built once.
 pub fn neutral_document() -> &'static Value {
     static NEUTRAL: OnceLock<Value> = OnceLock::new();
-    NEUTRAL.get_or_init(|| {
-        let document = SettingsDocument {
-            version: VERSION,
-            imported_at: None,
-            label: None,
-            exif: None,
-            roll_draft: None,
-            trashed_at: None,
-            settings: PipelineSettings::default(),
-        };
-        crate::json::to_node(&document).map(|n| n.to_value()).unwrap_or(Value::Null)
-    })
+    NEUTRAL.get_or_init(|| serde_json::json!({ "settings": serde_json::to_value(PipelineSettings::default()).unwrap_or(Value::Null) }))
 }
 
 /// Completes `stored` with the keys of `defaults`, recursively; the stored value always wins and

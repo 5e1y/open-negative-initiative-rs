@@ -297,7 +297,7 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
 /// The frame's own reading off its sidecar, a lead decoding its passes laid, those a grouping holds first.
 fn reading(path: &str) -> Reading {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    let mut r = oni_settings::sidecar::read(Path::new(path), mosaic, true).map(|l| Reading::of(&l.settings)).unwrap_or_default();
+    let mut r = oni_settings::sidecar::read(Path::new(path), mosaic).map(|l| Reading::of(&l.settings)).unwrap_or_default();
     if let Some(held) = oni_library::rgb_passes::held(path) {
         r.passes = Some(held);
     }

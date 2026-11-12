@@ -156,7 +156,8 @@ fn a_second_launch_writes_nothing() {
     std::fs::create_dir_all(&support).unwrap();
     std::fs::write(support.join("favourites.json"), br#"{"version":1,"paths":["\/Volumes\/T7\/Scans"]}"#).unwrap();
     std::fs::write(support.join("projects.json"), br#"{"version":1,"projects":[]}"#).unwrap();
-    assert_eq!(brought(&support, None), Brought::default());
+    assert_eq!(brought(&support, None), Brought { tell: true, ..Brought::default() });
+    told(&support);
     assert_eq!(ledger::read(&support).unwrap().support, SUPPORT);
     let files = [ledger::path(&support), oni_library::places::Places::file_path(&support), oni_library::project::file_path(&support)];
     let stamps: Vec<SystemTime> = files.iter().map(|f| modified(f)).collect();
@@ -164,7 +165,7 @@ fn a_second_launch_writes_nothing() {
     assert_eq!(brought(&support, None), Brought::default());
     assert_eq!(files.iter().map(|f| modified(f)).collect::<Vec<_>>(), stamps, "nothing written again");
     // Twin: a ledger that forgot the step runs it again and writes the ledger.
-    ledger::write(&support, &Ledger::default()).unwrap();
+    ledger::write(&support, &Ledger { told: oni_settings::document::VERSION, ..Ledger::default() }).unwrap();
     std::thread::sleep(Duration::from_millis(20));
     brought(&support, None);
     assert_ne!(modified(&files[0]), stamps[0]);
@@ -177,8 +178,9 @@ fn a_failed_import_stays_due_writes_nothing_and_is_said() {
     // Folders at the files' names: the disk refuses to read them, as a permission withheld does.
     std::fs::create_dir_all(support.join("favourites.json")).unwrap();
     std::fs::create_dir_all(support.join("projects.json")).unwrap();
-    let due = Brought { places_due: true, projects_due: true, notice: Some(NOT_BROUGHT) };
-    assert_eq!(brought(&support, None), due);
+    let due = Brought { places_due: true, projects_due: true, notice: Some(NOT_BROUGHT), tell: false };
+    assert_eq!(brought(&support, None), Brought { tell: true, ..due }, "the new format said once, to a folder holding files");
+    told(&support);
     assert_eq!(ledger::read(&support).unwrap().support, 0, "the ledger holds the steps due");
     assert!(!oni_library::places::Places::file_path(&support).exists() && !oni_library::project::file_path(&support).exists());
     assert_eq!(brought(&support, None), due, "tried and said at each launch");
@@ -209,7 +211,8 @@ fn an_old_file_that_does_not_parse_is_said_once() {
     let support = scratch.0.join("Support");
     std::fs::create_dir_all(&support).unwrap();
     std::fs::write(support.join("favourites.json"), b"{\"version\":1,\"paths\":[").unwrap();
-    assert_eq!(brought(&support, None), Brought { notice: Some(UNPARSED), ..Brought::default() });
+    assert_eq!(brought(&support, None), Brought { notice: Some(UNPARSED), tell: true, ..Brought::default() });
+    told(&support);
     assert_eq!(brought(&support, None), Brought::default(), "said once: nothing will ever parse in it");
 }
 
@@ -221,7 +224,8 @@ fn an_older_build_writing_its_files_after_the_import_is_said_once() {
     let favourites = support.join("favourites.json");
     std::fs::write(&favourites, br#"{"version":1,"paths":["/Volumes/T7/Scans"]}"#).unwrap();
     aged(&favourites, 60);
-    assert_eq!(brought(&support, None), Brought::default());
+    assert_eq!(brought(&support, None), Brought { tell: true, ..Brought::default() });
+    told(&support);
     assert_eq!(brought(&support, None), Brought::default(), "the old file untouched, nothing said");
     // 1.5.6 stars a folder after the update.
     std::fs::write(&favourites, br#"{"version":1,"paths":["/Volumes/T7/Scans","/Users/a/Rolls"]}"#).unwrap();
@@ -234,4 +238,68 @@ fn an_older_build_writing_its_files_after_the_import_is_said_once() {
     ledger.former_written = ledger.former_written.map(|t| t - 30.0);
     ledger::write(&support, &ledger).unwrap();
     assert_eq!(brought(&support, None), said);
+}
+
+#[test]
+fn the_new_format_is_told_once_shown_and_never_to_an_empty_support_folder() {
+    let scratch = Scratch::new("told");
+    let (held, empty) = (scratch.0.join("Held"), scratch.0.join("Empty"));
+    std::fs::create_dir_all(held.join("Thumbnails")).unwrap();
+    std::fs::create_dir_all(&empty).unwrap();
+    assert!(brought(&held, None).tell);
+    // A launch that never showed the sheet, a bench's or one that ended first, tells again.
+    assert!(brought(&held, None).tell, "not shown, still owed");
+    told(&held);
+    assert!(!brought(&held, None).tell, "once shown, never again");
+    assert!(!brought(&empty, None).tell, "a first launch has nothing to be told");
+    assert_eq!(ledger::read(&empty).unwrap().told, oni_settings::document::VERSION, "nor later");
+    // Twin: a ledger that never recorded the telling tells again.
+    ledger::write(&held, &Ledger { told: 0, ..ledger::read(&held).unwrap() }).unwrap();
+    assert!(brought(&held, None).tell);
+}
+
+/// `cameras.json` as the former version left it: a camera fitted, one it could not fit.
+fn table(support: &Path) {
+    std::fs::create_dir_all(support.join("Transition")).unwrap();
+    let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    let table = serde_json::json!({
+        "version": 1,
+        "cameras": [{ "make": "Nikon", "model": "Z f", "matrix": identity, "frames": [], "residual": 0.0 }],
+        "unmatched": [{ "make": "Canon", "model": "EOS 350D", "reason": "the two decoders could not be matched" }],
+    });
+    std::fs::write(support.join("Transition/cameras.json"), serde_json::to_vec(&table).unwrap()).unwrap();
+}
+
+#[test]
+fn a_camera_the_table_fitted_keeps_its_matrix_and_any_other_reads_as_none() {
+    let scratch = Scratch::new("table");
+    table(&scratch.0);
+    let known = facts::known(&scratch.0);
+    assert!(known.answer("Nikon", "Z f").is_some_and(|m| m[0][0] == 1.0), "the fitted camera's matrix");
+    // No build here decoded these through a matrix: what 1.5.2 to 1.5.6 showed, never a lock.
+    assert_eq!(known.answer("Canon", "EOS 350D"), None, "measured here, no fit");
+    assert_eq!(known.answer("Sony", "ILCE-7RM4"), None, "never named here");
+    // No table at all, Windows or a Mac the former version never ran on: none, every camera.
+    let bare = facts::known(&scratch.0.join("Nowhere"));
+    assert_eq!(bare.answer("Nikon", "Z f"), None);
+    // Twin: the table read wrong, its fitted camera would lose its matrix too.
+    assert_ne!(known.answer("Nikon", "Z f"), bare.answer("Nikon", "Z f"));
+}
+
+#[test]
+fn an_original_kept_in_the_cloud_is_asked_nothing() {
+    use oni_settings::migrate::{Facts, Refusal};
+    let scratch = Scratch::new("cloud");
+    // No such file: a fact read off it would say its camera unknown or its file plain, never `Away`.
+    let photo = scratch.0.join("DSC_0001.NEF");
+    let lookup = facts::lookup(facts::Known::default(), |_| true);
+    let rest = oni_settings::PipelineSettings::default();
+    let mut seen = Vec::new();
+    lookup(&photo, None, &mut |f: &Facts| seen.extend([f.mosaic.get().map(|_| ()), (f.matrix)().map(|_| ()), (f.scan)(&rest).map(|_| ())]));
+    assert_eq!(seen, [Err(Refusal::Away), Err(Refusal::Away), Err(Refusal::Away)]);
+    // Twin: on the disk, the same facts are read off the file.
+    let lookup = facts::lookup(facts::Known::default(), |_| false);
+    let mut read = Vec::new();
+    lookup(&photo, None, &mut |f: &Facts| read.extend([f.mosaic.get().map(|_| ()), (f.scan)(&rest).map(|_| ())]));
+    assert_eq!(read, [Ok(()), Err(Refusal::ScanUnknown)]);
 }

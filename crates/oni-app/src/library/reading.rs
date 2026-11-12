@@ -101,7 +101,12 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
         let read = if let Some(path) = waiting.pop_front() {
             // A file that cannot be read whole, that the cloud keeps away or that is still being
             // written, waits with no print.
-            let read = if survey.settling.contains(&path) { None } else { library::indexed(&path) };
+            let read = if survey.settling.contains(&path) {
+                None
+            } else {
+                crate::migration::gated(&path);
+                library::indexed(&path)
+            };
             if read.is_none() {
                 unreadable.push(path.clone());
             }
@@ -133,10 +138,15 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
 /// reads it whole. The row to write, `None` while the file cannot be read.
 fn look_again(again: Again) -> Option<(String, Entry)> {
     match again {
-        Again::Sidecar(row) => Some((row.path.clone(), refreshed(&row))),
+        Again::Sidecar(row) => Some((row.path.clone(), refreshed_with(&row, true))),
         Again::Original(row) => {
             let print = relink::stamp(Path::new(&row.path))?;
-            let entry = if print.fingerprint == row.fingerprint { refreshed(&row) } else { library::indexed(&row.path)? };
+            let entry = if print.fingerprint == row.fingerprint {
+                refreshed_with(&row, true)
+            } else {
+                crate::migration::gated(&row.path);
+                library::indexed(&row.path)?
+            };
             Some((row.path, entry))
         }
     }
@@ -152,9 +162,19 @@ pub fn read(folder: &Path, index: &LibraryIndex, filter: Option<Medal>, alive: &
 /// A row read again from its sidecar alone, its file's stamp kept: what a gesture on the sidecar
 /// moves, without the file read a fingerprint costs. A row whose sidecar cannot be seen stays as it was.
 pub fn refreshed(row: &Entry) -> Entry {
+    refreshed_with(row, false)
+}
+
+/// `refreshed`; with `gate`, a sidecar of an earlier format brought first, off the bytes this read took.
+fn refreshed_with(row: &Entry, gate: bool) -> Entry {
     let original = Path::new(&row.path);
     let envelope = match std::fs::read(oni_settings::sidecar::url_for(original)) {
-        Ok(data) => oni_settings::sidecar::identity::envelope(&data, original),
+        Ok(data) => {
+            if gate {
+                crate::migration::sweep::gated_bytes(&row.path, &data);
+            }
+            oni_settings::sidecar::identity::envelope(&data, original)
+        }
         // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
         Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
             return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, sheet: false, ..row.clone() };

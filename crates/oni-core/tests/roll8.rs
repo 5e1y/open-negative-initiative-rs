@@ -41,7 +41,7 @@ impl Roll {
         frames.sort();
         // Each sidecar as a write beside its stand-in leaves it, so the bytes a check compares are its gesture's.
         for frame in &frames {
-            let loaded = sidecar::read(Path::new(frame), true, true).unwrap();
+            let loaded = sidecar::read(Path::new(frame), true).unwrap();
             sidecar::write(&loaded.settings, Path::new(frame), sidecar::WriteOptions::default()).unwrap();
         }
         Some(Roll { dir, frames })
@@ -73,7 +73,7 @@ impl Roll {
     }
 
     fn settings(&self, frame: &str) -> PipelineSettings {
-        sidecar::read(Path::new(frame), true, true).unwrap().settings
+        sidecar::read(Path::new(frame), true).unwrap().settings
     }
 }
 
@@ -87,7 +87,7 @@ fn every_sidecar_of_the_roll_rewrites_to_its_own_bytes() {
     let Some(roll) = Roll::copy("rewrite") else { return };
     let before = roll.bytes();
     for frame in &roll.frames {
-        let loaded = sidecar::read(Path::new(frame), true, true).unwrap();
+        let loaded = sidecar::read(Path::new(frame), true).unwrap();
         sidecar::write(&loaded.settings, Path::new(frame), sidecar::WriteOptions::default()).unwrap();
     }
     assert_eq!(moved(&before, &roll.bytes()), Vec::<String>::new());
@@ -273,11 +273,11 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
     let (before, files, settings) = (roll.bytes(), roll.originals(), roll.settings(&frame));
     assert_eq!(store.move_to_trash(std::slice::from_ref(&frame)), 1);
     assert!(store.path().is_none(), "the open frame closes");
-    assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_some());
+    assert!(sidecar::read(Path::new(&frame), true).unwrap().trashed_at.is_some());
     assert_eq!(moved(&before, &roll.bytes()), std::slice::from_ref(&frame), "the marked frame's sidecar alone is written");
     assert_eq!(roll.originals(), files, "no original moves, vanishes or changes, nor any other member's");
     store.undo();
-    assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_none());
+    assert!(sidecar::read(Path::new(&frame), true).unwrap().trashed_at.is_none());
     assert_eq!(roll.settings(&frame), settings, "the mark and its removal leave the settings untouched");
     // Twin: a member's original moved away is seen, so a trash that moved a file would fail above.
     std::fs::rename(&roll.frames[3], roll.dir.join("moved.bin")).unwrap();

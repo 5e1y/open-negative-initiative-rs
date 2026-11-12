@@ -15,7 +15,7 @@ use std::time::Duration;
 use crate::common;
 
 fn exposure(path: &Path) -> f32 {
-    sidecar::read(path, false, true).map(|l| l.settings.print.exposure).unwrap_or_default()
+    sidecar::read(path, false).map(|l| l.settings.print.exposure).unwrap_or_default()
 }
 
 pub(crate) fn the_whole_roll_together_ends_when_another_roll_opens() {

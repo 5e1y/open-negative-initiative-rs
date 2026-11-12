@@ -143,7 +143,7 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
     let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone(), c.clone()], |_: &Path| false));
     store.open(&a).unwrap();
     let film = oni_settings::Film::new("Roll 3");
-    let read = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().settings.film;
+    let read = |p: &str| sidecar::read(Path::new(p), false).unwrap().settings.film;
     assert_eq!(store.set_film(&[a.clone(), b.clone()], Some(film.clone()), "Rename Roll"), 2);
     assert_eq!(store.settings().film.as_ref(), Some(&film), "the open frame takes it in memory");
     assert!(!sidecar::url_for(Path::new(&a)).exists(), "and writes it at rest, not at once");
@@ -179,7 +179,7 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_o
     let mut all = frames.clone();
     all.push(outside.clone());
     let mut store = EditorStore::new(Archive::new(all, |_: &Path| false));
-    let family = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().settings.separation_family;
+    let family = |p: &str| sidecar::read(Path::new(p), false).unwrap().settings.separation_family;
     let folder = roll.to_string_lossy().into_owned();
     let mut film = oni_settings::Film::new("2026-09-14");
     film.stock = Some("kodak-portra".into());
@@ -223,7 +223,7 @@ fn a_medal_laid_on_several_photos_undoes_as_one_step_to_each_one_s_own() {
     for p in [&a, &b] {
         std::fs::write(p, b"").unwrap();
     }
-    let medal = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().label;
+    let medal = |p: &str| sidecar::read(Path::new(p), false).unwrap().label;
     let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));
     store.lay_medal(std::slice::from_ref(&b), Medal::Bronze);
     let written = store.lay_medal(&[a.clone(), b.clone()], Medal::Gold);
@@ -312,7 +312,7 @@ fn a_flush_refused_on_switch_keeps_the_edits_and_asks() {
     std::fs::rename(dir.join("T7 away"), dir.join("T7")).unwrap();
     assert_eq!(store.retry_unsaved(), None, "the disk back, the retry writes");
     assert!(store.unsaved().is_empty());
-    let written = sidecar::read(Path::new(&a), false, true).unwrap().settings;
+    let written = sidecar::read(Path::new(&a), false).unwrap().settings;
     assert_eq!(Knob::Vignette.get(&written), 0.5);
     // Discard drops what a refusal kept.
     store.open(&a).unwrap();
@@ -329,7 +329,7 @@ fn a_flush_taken_on_switch_stays_silent() {
     // Twin: the disk there, the write takes the edits and nothing is kept to ask about.
     let (store, dir, a, _) = edited_then_switched("saved", false);
     assert!(store.unsaved().is_empty() && !store.inert());
-    let written = sidecar::read(Path::new(&a), false, true).unwrap().settings;
+    let written = sidecar::read(Path::new(&a), false).unwrap().settings;
     assert_eq!(Knob::Vignette.get(&written), 0.5);
     let _ = std::fs::remove_dir_all(&dir);
 }

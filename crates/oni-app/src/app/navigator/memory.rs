@@ -211,6 +211,8 @@ impl Ctl {
         }
         if arrived {
             self.rewatch_anew();
+            // A disk the sweep could not reach is brought once it is back.
+            self.start_migration(None);
         }
         self.publish_navigator();
         if moved {

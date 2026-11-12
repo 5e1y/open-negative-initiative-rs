@@ -1,74 +1,53 @@
-//! A preset as a settings document plus its `preset` block, written and read back.
+//! A preset as its file, `oni-preset`, written and read back; a file of an earlier version is read
+//! through `migrate`.
 
 use super::*;
+use serde::{Deserialize, Serialize};
 
-/// The old per-tab groups, read off what applying them did then.
-pub(super) fn legacy_rows(group: &str) -> &'static [&'static str] {
-    match group {
-        "convert" => &["gains", "levelsPerChannel"],
-        "look" => &["levelsGlobal", "curves", "spectrogram", "saturation"],
-        "detail" => &["chroma", "sharpen"],
-        _ => &[],
-    }
+/// What a preset file names itself.
+pub const FORMAT: &str = "oni-preset";
+
+/// A preset's own block in its file; a file edited by hand may leave all but its name out.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Block {
+    #[serde(default)]
+    id: Option<Id>,
+    name: String,
+    #[serde(default)]
+    parameters: BTreeSet<String>,
+    #[serde(default)]
+    tint: String,
+    #[serde(default)]
+    note: String,
 }
 
-pub fn encode(preset: &Preset) -> Result<String, json::Error> {
-    let document = SettingsDocument {
-        version: VERSION,
-        imported_at: None,
-        label: None,
-        exif: None,
-        roll_draft: None,
-        trashed_at: None,
-        settings: preset.settings.clone(),
-    };
-    let Node::Obj(mut entries) = json::to_node(&document)? else {
-        return Err(json::Error("a settings document is an object".into()));
-    };
-    let meta = Node::Obj(vec![
-        ("id".into(), Node::Str(preset.id.to_string())),
-        ("name".into(), Node::Str(preset.name.clone())),
-        ("parameters".into(), Node::Arr(preset.parameters.iter().cloned().map(Node::Str).collect())),
-        ("tint".into(), Node::Str(preset.tint.raw_value().into())),
-        ("note".into(), Node::Str(preset.note.clone())),
-    ]);
-    entries.push(("preset".into(), meta));
-    Ok(json::pretty_sorted(&Node::Obj(entries)))
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct File {
+    format: String,
+    version: i64,
+    preset: Block,
+    settings: PipelineSettings,
+}
+
+/// The preset's file, indented, a newline last.
+pub fn encode(preset: &Preset) -> Result<String, String> {
+    let block = Block { id: Some(preset.id), name: preset.name.clone(), parameters: preset.parameters.clone(), tint: preset.tint.raw_value().into(), note: preset.note.clone() };
+    let file = File { format: FORMAT.into(), version: VERSION, preset: block, settings: preset.settings.clone() };
+    serde_json::to_string_pretty(&file).map(|text| text + "\n").map_err(|e| e.to_string())
 }
 
 /// A preset from a file's bytes; a file from a newer version is skipped rather than half-applied.
 pub fn decode(data: &[u8]) -> Option<Preset> {
-    let decoded = oni_settings::migrate::document(data).ok().filter(|d| !d.is_from_future())?;
     let object: Value = serde_json::from_slice(data).ok()?;
-    let meta = object.get("preset").filter(|m| m.is_object()).unwrap_or(&object);
-    let name = meta.get("name")?.as_str()?.trim_matches(is_blank).to_string();
-    if name.is_empty() {
-        return None;
+    if object.get("format").and_then(Value::as_str) == Some(FORMAT) && object.get("version").and_then(Value::as_i64) == Some(VERSION) {
+        let file: File = serde_json::from_value(object).ok()?;
+        let name = file.preset.name.trim_matches(is_blank).to_string();
+        let b = file.preset;
+        let tint = Tint::from_raw(&b.tint).unwrap_or_default();
+        let id = b.id.unwrap_or_else(|| Id::of_bytes(data));
+        return (!name.is_empty()).then_some(Preset { id, name, parameters: b.parameters, tint, note: b.note, settings: file.settings });
     }
-    let id = meta.get("id").and_then(Value::as_str).and_then(Id::parse).unwrap_or_else(|| Id::of_bytes(data));
-    let parameters = match meta.get("parameters").and_then(Value::as_array) {
-        // Rows naming stages that no longer render go; the two saturation zones are one curve.
-        Some(written) => parameters::without_retired_methods(
-            written
-                .iter()
-                .filter_map(Value::as_str)
-                .filter(|p| !["contrast", "fade", "toneBalance", "colorCast"].contains(p))
-                .map(|p| if p == "saturation.shadows" || p == "saturation.highlights" { "saturation" } else { p })
-                .map(str::to_string)
-                .collect(),
-        ),
-        None => meta
-            .get("groups")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter_map(Value::as_str)
-            .flat_map(|g| legacy_rows(g).iter().map(|r| r.to_string()))
-            .collect(),
-    };
-    let tint = meta.get("tint").and_then(Value::as_str).and_then(Tint::from_raw).unwrap_or_default();
-    let note = meta.get("note").and_then(Value::as_str).unwrap_or_default().to_string();
-    Some(Preset { id, name, parameters, tint, note, settings: decoded.settings })
+    earlier(data, &object)
 }
 
 /// What `value` holds that `rest` does not: objects key by key, anything else whole.
@@ -92,7 +71,7 @@ pub(super) fn departures(value: &Value, rest: &Value) -> Option<Value> {
     (value != rest).then(|| value.clone())
 }
 
-/// `JSONSerialization` with `.sortedKeys`: compact, every object's keys in order.
+/// Compact, every object's keys in order, so one look gives one code.
 pub(super) fn sorted_compact(value: &Value) -> String {
     match value {
         Value::Object(map) => {

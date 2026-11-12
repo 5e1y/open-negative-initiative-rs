@@ -14,7 +14,7 @@ use crate::common;
 
 fn written_exposure(path: &Path) -> Option<f32> {
     let sidecar = oni_settings::sidecar::url_for(path);
-    sidecar.exists().then(|| Field::Exposure.knob().get(&oni_settings::sidecar::read(path, false, true).unwrap().settings))
+    sidecar.exists().then(|| Field::Exposure.knob().get(&oni_settings::sidecar::read(path, false).unwrap().settings))
 }
 
 pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {

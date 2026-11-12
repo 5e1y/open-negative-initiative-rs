@@ -89,8 +89,6 @@ pub(crate) struct Roll {
     stop: Arc<AtomicBool>,
     draft_id: Option<Id>,
     draftless: HashSet<String>,
-    /// The frames whose sidecar still keeps a draft of format 21 and under, cleared at the next write.
-    stored: HashSet<String>,
     /// A step taken before every frame was read, its draft written once the last one is.
     draft_waiting: bool,
     /// Bumped at each entry and landing, so a late post of a session gone lands nowhere.
@@ -165,7 +163,6 @@ impl Default for Roll {
             stop: Arc::default(),
             draft_id: None,
             draftless: HashSet::new(),
-            stored: HashSet::new(),
             draft_waiting: false,
             session: 0,
             previews: None,

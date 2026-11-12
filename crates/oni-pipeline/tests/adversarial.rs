@@ -36,7 +36,7 @@ fn settings(original: &Path, over: &serde_json::Value, scratch: &Path) -> oni_se
     merge(&mut doc["settings"], over);
     let copy = scratch.join(original.file_name().unwrap());
     std::fs::write(oni_settings::sidecar::url_for(&copy), serde_json::to_vec(&doc).unwrap()).unwrap();
-    oni_settings::sidecar::read(&copy, true, false).expect("the sidecar reads").settings
+    oni_settings::sidecar::read(&copy, true).expect("the sidecar reads").settings
 }
 
 /// The 99th-centile gap of `settings` from the frame at rest, on a LibRaw decode of `original`.

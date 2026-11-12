@@ -16,7 +16,7 @@ use std::time::Duration;
 use crate::common;
 
 fn exposure(path: &Path) -> f32 {
-    Field::Exposure.knob().get(&sidecar::read(path, false, true).unwrap().settings)
+    Field::Exposure.knob().get(&sidecar::read(path, false).unwrap().settings)
 }
 
 /// A and B in one folder, A open in the editor on the tab holding Exposure, and the rail's point.

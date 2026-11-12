@@ -129,7 +129,8 @@ pub fn kept(path: &str, s: &PipelineSettings) -> Option<Outcome> {
     let mut found = match held {
         Some(found) => found,
         None => {
-            let k = Kept::of(&oni_settings::sidecar::auto_balance(Path::new(path))?)?;
+            let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
+            let k = Kept::of(&oni_settings::sidecar::auto_balance(Path::new(path), mosaic)?);
             let found = k.outcome_for(&print)?;
             remember(path, k);
             found
@@ -170,9 +171,7 @@ pub fn measured(path: &str, s: &PipelineSettings) -> Option<Outcome> {
     if current && fingerprint(path, s).as_ref() == Some(&print) {
         let k = Kept::new(print, &found);
         remember(path, k.clone());
-        if let Some(value) = k.value() {
-            let _ = oni_settings::sidecar::set_auto_balance(Path::new(path), oni_decode::decodes_via_mosaic(Path::new(path)), &value);
-        }
+        let _ = oni_settings::sidecar::set_auto_balance(Path::new(path), oni_decode::decodes_via_mosaic(Path::new(path)), &k.stored());
     }
     Some(found)
 }
@@ -197,7 +196,7 @@ pub fn ahead(frames: Vec<Ahead>) {
                         break;
                     }
                     let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
-                    let Some(s) = s.or_else(|| oni_settings::sidecar::read(Path::new(&path), mosaic, true).ok().map(|l| l.settings)) else { continue };
+                    let Some(s) = s.or_else(|| oni_settings::sidecar::read(Path::new(&path), mosaic).ok().map(|l| l.settings)) else { continue };
                     // A frame that cannot be read leaves the frames after it to be read.
                     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         if prepare && let Some(m) = measurer() {

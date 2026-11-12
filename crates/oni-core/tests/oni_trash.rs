@@ -35,7 +35,7 @@ fn files(dir: &Path, sidecars: bool) -> BTreeMap<String, Vec<u8>> {
 }
 
 fn trashed(paths: &[String]) -> Vec<bool> {
-    paths.iter().map(|p| sidecar::read(Path::new(p), false, true).unwrap().trashed_at.is_some()).collect()
+    paths.iter().map(|p| sidecar::read(Path::new(p), false).unwrap().trashed_at.is_some()).collect()
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn a_triplet_goes_whole_in_one_step_and_undo_and_redo_hand_it_back() {
 
     store.undo();
     assert_eq!(trashed(&all), [false; 4], "one undo restores the three files");
-    assert_eq!(sidecar::read(Path::new(&lead), false, true).unwrap().settings, led, "the settings untouched");
+    assert_eq!(sidecar::read(Path::new(&lead), false).unwrap().settings, led, "the settings untouched");
     store.redo();
     assert_eq!(trashed(&all), [true, true, true, false], "redo marks them again");
 

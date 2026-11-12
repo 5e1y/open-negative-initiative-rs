@@ -35,6 +35,7 @@ impl AspectRatio {
 
 /// Stage 0: straightening and cropping, in fractions of the upright oriented box.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Geometry {
     #[serde(rename = "quarterTurns")]
     pub quarter_turns: i64,
@@ -100,6 +101,7 @@ pub enum FlatFieldMask {
 
 /// Divides the frame by the light the panel put on it, before stage 0.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct FlatField {
     pub mask: FlatFieldMask,
     #[serde(skip_serializing_if = "Option::is_none", default)]

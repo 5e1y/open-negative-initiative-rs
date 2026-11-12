@@ -35,7 +35,7 @@ fn frames(label: &str, laid: Vec<(&str, PipelineSettings)>) -> (EditorStore, std
 
 fn read(p: &str) -> PipelineSettings {
     let mosaic = p.ends_with(".NEF");
-    sidecar::read(Path::new(p), mosaic, true).unwrap().settings
+    sidecar::read(Path::new(p), mosaic).unwrap().settings
 }
 
 fn ceiling(id: Id, at: f32) -> PipelineSettings {

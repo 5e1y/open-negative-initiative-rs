@@ -50,13 +50,13 @@ fn a_foreign_sidecar_is_not_adopted() {
     sidecar::write(&edited, &photo, Default::default()).unwrap();
     sidecar::set_trashed(Some(Date::from_unix_seconds(1.0)), &photo, false).unwrap();
     sidecar::set_label(Medal::Gold, &photo, false).unwrap();
-    let print = stored(&photo)[identity::KEY].as_str().unwrap().to_owned();
+    let print = stored(&photo)["original"]["print"].as_str().unwrap().to_owned();
     assert!(print.contains("-2024:05:01 10:00:00-"), "{print}");
 
     // The frame deleted, another body's DSC_0001 copied in: its own capture date.
     std::fs::remove_file(&photo).unwrap();
     std::fs::write(&photo, shot("2026:10:25 09:00:00", 5)).unwrap();
-    let loaded = sidecar::read(&photo, false, false).unwrap();
+    let loaded = sidecar::read(&photo, false).unwrap();
     assert!(loaded.foreign && loaded.is_new, "read as no sidecar");
     assert_eq!((loaded.label, loaded.trashed_at), (Medal::None, None));
     assert_eq!(loaded.settings, PipelineSettings::rest(oni_settings::ConversionMode::Negative, false));
@@ -67,31 +67,31 @@ fn a_foreign_sidecar_is_not_adopted() {
     sidecar::set_label(Medal::Silver, &photo, false).unwrap();
     let aside = dir.join("DSC_0001.NEF (orphan).json");
     let kept: Value = serde_json::from_slice(&std::fs::read(&aside).unwrap()).unwrap();
-    assert_eq!((kept["label"].as_str(), kept[identity::KEY].as_str()), (Some("gold"), Some(print.as_str())));
+    assert_eq!((kept["label"].as_str(), kept["original"]["print"].as_str()), (Some("gold"), Some(print.as_str())));
     assert!(kept.get("trashedAt").is_some(), "the old photo's settings kept whole");
     let now = stored(&photo);
     assert_eq!(now["label"].as_str(), Some("silver"));
-    assert!(now[identity::KEY].as_str().unwrap().contains("-2026:10:25 09:00:00-"));
+    assert!(now["original"]["print"].as_str().unwrap().contains("-2026:10:25 09:00:00-"));
     assert!(now.get("trashedAt").is_none());
 
     // Twins: the same frame saved over by another app, its date kept, or its date set right in
     // place, its bytes kept, keeps its settings.
     std::fs::write(&photo, shot("2026:10:25 09:00:00", 7)).unwrap();
-    let saved = sidecar::read(&photo, false, false).unwrap();
+    let saved = sidecar::read(&photo, false).unwrap();
     assert!(!saved.foreign && saved.label == Medal::Silver);
     std::fs::write(&photo, shot("1999:12:31 23:59:59", 5)).unwrap();
-    let redated = sidecar::read(&photo, false, false).unwrap();
+    let redated = sidecar::read(&photo, false).unwrap();
     assert!(!redated.foreign && redated.label == Medal::Silver);
     std::fs::write(&photo, shot("2026:10:25 09:00:00", 5)).unwrap();
-    // Twin: a sidecar Swift wrote, with no key, is adopted as before.
+    // Twin: a sidecar naming no original is adopted as before.
     let swift = dir.join("DSC_0002.NEF");
     std::fs::write(&swift, shot("2026:10:25 09:00:01", 3)).unwrap();
     sidecar::set_label(Medal::Bronze, &swift, false).unwrap();
     let mut value = stored(&swift);
-    value.as_object_mut().unwrap().remove(identity::KEY);
+    value.as_object_mut().unwrap().remove("original");
     std::fs::write(url_for(&swift), serde_json::to_vec(&value).unwrap()).unwrap();
     std::fs::write(&swift, shot("2001:01:01 00:00:00", 9)).unwrap();
-    assert_eq!(sidecar::read(&swift, false, false).unwrap().label, Medal::Bronze);
+    assert_eq!(sidecar::read(&swift, false).unwrap().label, Medal::Bronze);
     // Twin: a second stray takes the next free name, the first one untouched.
     std::fs::write(&photo, shot("2027:01:01 00:00:00", 11)).unwrap();
     sidecar::set_label(Medal::Gold, &photo, false).unwrap();
@@ -111,14 +111,14 @@ fn an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar() {
         bytes
     };
     std::fs::write(&photo, rewritten("1987:06:15 12:00:00", 3)).unwrap();
-    let loaded = sidecar::read(&photo, false, false).unwrap();
+    let loaded = sidecar::read(&photo, false).unwrap();
     assert!(!loaded.foreign && loaded.label == Medal::Gold, "the same pixels, the same photo");
     sidecar::set_label(Medal::Silver, &photo, false).unwrap();
     assert!(!dir.join("SCAN_0001.tif (orphan).json").exists(), "nothing set aside");
-    assert!(stored(&photo)[identity::KEY].as_str().unwrap().contains("-1987:06:15 12:00:00-"));
+    assert!(stored(&photo)["original"]["print"].as_str().unwrap().contains("-1987:06:15 12:00:00-"));
     // Twin: another photo of that name, its date and its pixels its own, is still foreign.
     std::fs::write(&photo, rewritten("2001:02:03 04:05:06", 9)).unwrap();
-    assert!(sidecar::read(&photo, false, false).unwrap().foreign);
+    assert!(sidecar::read(&photo, false).unwrap().foreign);
 
     // A last block of one value, as a scan's black holder ends many files, tells no photo apart.
     let blank = dir.join("scan0001.tif");
@@ -131,9 +131,9 @@ fn an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar() {
     };
     std::fs::write(&blank, black("2024:05:01 10:00:00", 3, 0)).unwrap();
     sidecar::set_label(Medal::Gold, &blank, false).unwrap();
-    assert!(stored(&blank).get(identity::TAIL).is_none(), "no tail stored");
+    assert!(stored(&blank)["original"].get("tail").is_none(), "no tail stored");
     std::fs::write(&blank, black("2026:01:01 08:00:00", 9, 1000)).unwrap();
-    assert!(sidecar::read(&blank, false, false).unwrap().foreign, "another scan of that name stays foreign");
+    assert!(sidecar::read(&blank, false).unwrap().foreign, "another scan of that name stays foreign");
 }
 
 #[test]

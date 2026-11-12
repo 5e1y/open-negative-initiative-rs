@@ -90,7 +90,7 @@ pub fn passes_named_by(lead: &Path) -> Option<RgbPasses> {
     if !data.windows(key.len()).any(|w| w == key) {
         return None;
     }
-    sidecar::read(lead, oni_decode::decodes_via_mosaic(lead), false).ok()?.settings.rgb_passes
+    sidecar::read(lead, oni_decode::decodes_via_mosaic(lead)).ok()?.settings.rgb_passes
 }
 
 /// `CustomFlatFields.load`: decoded once by `decode` at the preview's side and kept as a half-float

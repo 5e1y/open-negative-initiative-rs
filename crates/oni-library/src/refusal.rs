@@ -3,6 +3,7 @@
 
 use crate::names::Platform;
 use oni_i18n::{tr, trn};
+use oni_settings::migrate::Refusal;
 use oni_settings::sidecar::Error;
 
 /// One refused write, its cause in words.
@@ -11,8 +12,25 @@ pub fn said(error: &Error) -> String {
         Error::Unreachable => tr("The original cannot be found, its disk disconnected or the file moved. Nothing was changed.").into(),
         Error::Newer => tr("A newer version of ONI wrote these settings, and this one never rewrites them.").into(),
         Error::TooLong => tr("The photo's name is too long for a settings file beside it. Shorten the name to keep its edits.").into(),
+        Error::Held(why) => held_back(why),
         other => other.to_string(),
     }
+}
+
+/// Why a photo's settings of an earlier format stay as they are, so it opens read-only.
+pub fn held_back(why: &Refusal) -> String {
+    match why {
+        Refusal::Unwritable(_) => tr("This photo's settings are in an earlier format and its disk refuses to be written."),
+        Refusal::ScanUnknown => tr("This photo's settings are in an earlier format and its original could not be read to place its dust strokes."),
+        Refusal::CameraUnknown => tr("This photo's settings are in an earlier format and its original could not be read to keep its colours."),
+        Refusal::Away => tr("This photo's settings are in an earlier format and its original is not downloaded."),
+        Refusal::MatrixUnknown => tr("This photo's settings are in an earlier format and this computer does not know the colour matrix its camera was edited under."),
+        Refusal::Foreign => tr("This photo's settings file was written for another photo of the same name."),
+        Refusal::Drafts(_) => tr("This photo's settings are in an earlier format and its folder's Prepare the Roll file could not be read or written."),
+        Refusal::Newer(_) => tr("A newer version of ONI wrote these settings, and this one never rewrites them."),
+        Refusal::Unreadable(_) | Refusal::Unverified | Refusal::Moved => tr("This photo's settings are in an earlier format and could not be brought up to date."),
+    }
+    .into()
 }
 
 /// What a refusal of the disk means, in words a reader knows; the system's own message for the rest.

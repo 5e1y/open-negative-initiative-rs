@@ -90,7 +90,7 @@ impl Rigged {
         if s.open_path() == Some(common::spelt(path).as_str()) {
             return s.store().settings().clone();
         }
-        sidecar::read(path, oni_decode::decodes_via_mosaic(path), true).map(|l| l.settings).unwrap_or_default()
+        sidecar::read(path, oni_decode::decodes_via_mosaic(path)).map(|l| l.settings).unwrap_or_default()
     }
 
     fn kept(&self, paths: &[PathBuf]) -> bool {

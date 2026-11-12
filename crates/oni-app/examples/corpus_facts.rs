@@ -16,7 +16,7 @@ fn main() {
     let away = std::fs::metadata(&original).is_ok_and(|m| oni_settings::sidecar::identity::in_cloud(&m));
     let present = original.is_file() && !away;
     let mosaic = if present { oni_decode::decodes_via_mosaic(&original) } else { oni_decode::is_raw(&original) };
-    let table = facts::matrices(support);
+    let table = facts::known(support);
     let matrix = present.then(|| facts::matrix_of(&table, &original).ok().flatten()).flatten();
     let scan = present.then(|| facts::scan_of(&original, &PipelineSettings::default())).flatten();
     let facts = serde_json::json!({ "mosaic": mosaic, "matrix": matrix, "scan": scan });

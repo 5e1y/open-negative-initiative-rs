@@ -234,7 +234,7 @@ impl Ctl {
                         s.store.settings().clone()
                     } else {
                         let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
-                        oni_settings::sidecar::read(Path::new(&path), mosaic, true).map(|l| l.settings).unwrap_or_default()
+                        oni_settings::sidecar::read(Path::new(&path), mosaic).map(|l| l.settings).unwrap_or_default()
                     };
                     (path, settings)
                 })

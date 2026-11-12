@@ -59,7 +59,7 @@ fn reduced(full: &oni_decode::Linear, side: usize) -> Picture {
 
 /// The frame's own sidecar on the Frontier, its neighbourhood stages left out as `--render` does.
 fn on_frontier(original: &Path) -> PipelineSettings {
-    let mut s = oni_settings::sidecar::read(original, true, false).expect("the sidecar reads").settings.per_pixel_only();
+    let mut s = oni_settings::sidecar::read(original, true).expect("the sidecar reads").settings.per_pixel_only();
     s.face = Face::Scanner;
     s.scanner_machine = ScannerMachine::Frontier;
     s

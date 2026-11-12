@@ -30,7 +30,7 @@ fn listed(folder: &Path) -> Vec<String> {
 }
 
 fn family(path: &Path) -> Option<SeparationFamily> {
-    sidecar::read(path, false, true).unwrap().settings.separation_family
+    sidecar::read(path, false).unwrap().settings.separation_family
 }
 
 fn stock(id: &str) -> i32 {
@@ -203,7 +203,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
 
     // A measured frame takes the banner away once the roll's frames are read again.
     let measured = frames[1].clone();
-    let mut b = sidecar::read(&measured, false, true).unwrap().settings;
+    let mut b = sidecar::read(&measured, false).unwrap().settings;
     b.roll_reference = Some(oni_settings::frame::RollReference { id: oni_settings::Id::new(), stops: [0.0; 3], black: [0.1; 3], white: [0.6; 3], base: None, median: None });
     sidecar::write(&b, &measured, WriteOptions::default()).unwrap();
     lib.invoke_select_roll_type();

@@ -3,7 +3,7 @@
 
 use crate::index::{Entry, LibraryIndex};
 use crate::relink;
-use oni_settings::codec::Envelope;
+use oni_settings::document::Envelope;
 use oni_settings::{Date, sidecar};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};

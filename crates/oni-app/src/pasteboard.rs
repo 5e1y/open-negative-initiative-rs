@@ -3,8 +3,11 @@
 
 use std::collections::HashMap;
 
-/// `Propagation.pasteboardType`.
-pub const SETTINGS: &str = "app.opennegative.settings";
+/// The settings of this format, under a type of their own: a build of an earlier format reads only
+/// `FORMER_SETTINGS`, so it never pastes a document it would misread.
+pub const SETTINGS: &str = "app.opennegative.settings.2";
+/// `Propagation.pasteboardType`, the settings an earlier build copied: read, never written.
+pub const FORMER_SETTINGS: &str = "app.opennegative.settings";
 /// `Propagation.framingType`.
 pub const FRAMING: &str = "app.opennegative.framing";
 /// `Propagation.measureWindowType`.
@@ -20,14 +23,21 @@ pub trait Board {
     fn set(&mut self, kind: &str, data: &[u8]);
 }
 
-/// Clearing is the only way to write the board, so the other copies are laid back after it.
+/// Clearing is the only way to write the board, so the other copies are laid back after it; settings
+/// of this format replace an earlier build's.
 pub fn write(board: &mut dyn Board, kind: &str, data: &[u8]) {
-    let kept: Vec<(&str, Vec<u8>)> = KINDS.iter().filter(|k| **k != kind).filter_map(|k| Some((*k, board.data(k)?))).collect();
+    let replaced = |k: &str| k == kind || (kind == SETTINGS && k == FORMER_SETTINGS);
+    let kept: Vec<(&str, Vec<u8>)> = KINDS.iter().chain([&FORMER_SETTINGS]).filter(|k| !replaced(k)).filter_map(|k| Some((*k, board.data(k)?))).collect();
     board.clear();
     board.set(kind, data);
     for (other, payload) in kept {
         board.set(other, &payload);
     }
+}
+
+/// The settings text on the board: this format's, else an earlier build's copy.
+pub fn settings(board: &dyn Board) -> Option<String> {
+    board.data(SETTINGS).or_else(|| board.data(FORMER_SETTINGS)).and_then(|d| String::from_utf8(d).ok())
 }
 
 /// A board of this process alone: the checks', and the fallback where the system has no typed one.
@@ -187,6 +197,22 @@ mod mac {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn settings_of_this_format_go_under_their_own_type_and_an_earlier_copy_still_pastes() {
+        let mut board = Memory::default();
+        board.set(FORMER_SETTINGS, b"{\"version\": 20}");
+        assert_eq!(settings(&board).as_deref(), Some("{\"version\": 20}"), "an earlier build's copy pastes here");
+        write(&mut board, FRAMING, b"{}");
+        assert!(board.data(FORMER_SETTINGS).is_some(), "a framing copy keeps it");
+        write(&mut board, SETTINGS, b"{\"format\": \"oni-frame\", \"version\": 22}");
+        // What an earlier build reads under its own type: nothing, so it never pastes this format.
+        assert_eq!(board.data("app.opennegative.settings"), None);
+        assert_eq!(settings(&board).as_deref(), Some("{\"format\": \"oni-frame\", \"version\": 22}"));
+        // Twin: under the earlier type, the same copy would reach that build.
+        board.set("app.opennegative.settings", b"22");
+        assert!(board.data(FORMER_SETTINGS).is_some());
+    }
 
     #[test]
     fn a_copy_keeps_the_other_two_copies_and_bumps_the_count() {

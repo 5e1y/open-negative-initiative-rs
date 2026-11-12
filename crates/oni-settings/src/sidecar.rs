@@ -1,15 +1,11 @@
 //! The sidecar: one JSON per photo, next to the original, and the only source of truth. It reads
 //! and edits by hand, and survives a folder move because it travels with the original.
 
-use crate::cg::Rect;
-use crate::codec::{self, Decoded, Failure};
+use crate::document::{self, AutoBalance, Document, Failure, Original};
 use crate::date::Date;
-use crate::frame::{FlatField, PassOrder};
-use crate::id::Id;
+use crate::migrate::{self, Refusal, Standing};
 use crate::modes::{ConversionMode, Medal};
 use crate::settings::PipelineSettings;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -19,43 +15,12 @@ use std::time::{Duration, SystemTime};
 
 mod exif_line;
 mod fields;
-mod held;
+pub(crate) mod held;
 pub mod identity;
 mod said;
 
-pub use exif_line::{ExifMetadata, TypedExif};
-pub use fields::{set_exif, set_label, set_roll_draft, set_trashed, update};
-
-/// A roll being prepared, written with each of its frames so a preparation left halfway resumes.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RollDraft {
-    pub id: Id,
-    /// The step reached, by its name, so a step added later moves no stored one.
-    pub step: String,
-    pub film: ConversionMode,
-    pub capture: String,
-    #[serde(rename = "passOrder", skip_serializing_if = "Option::is_none", default)]
-    pub pass_order: Option<PassOrder>,
-    /// The files skipped before the first triplet, so a roll shifted by a file resumes on its own leads.
-    #[serde(rename = "passOffset", skip_serializing_if = "Option::is_none", default)]
-    pub pass_offset: Option<usize>,
-    #[serde(rename = "flatField", skip_serializing_if = "Option::is_none", default)]
-    pub flat_field: Option<FlatField>,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub base: Option<DraftBase>,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub window: Option<Rect>,
-    pub ticked: bool,
-    pub flagged: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DraftBase {
-    pub path: String,
-    pub x: f64,
-    pub y: f64,
-    pub radius: f64,
-}
+pub use exif_line::{ExifLine, ExifMetadata};
+pub use fields::{set_exif, set_label, set_trashed, update};
 
 /// Delay after the last slider movement, coalescing writes instead of one per frame.
 pub const WRITE_DELAY: Duration = Duration::from_millis(400);
@@ -71,15 +36,17 @@ pub fn url_for(original: &Path) -> PathBuf {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Loaded {
     pub settings: PipelineSettings,
-    /// False for a sidecar from a newer format, or one whose strokes found no scan to move onto:
-    /// the photo opens read-only, never rewritten.
+    /// False for a sidecar from a newer format, or one of an earlier format kept as it is
+    /// (`held_back`): the photo opens read-only, never rewritten.
     pub writable: bool,
     pub is_new: bool,
     pub imported_at: Option<Date>,
     pub label: Medal,
-    pub exif: Option<TypedExif>,
-    pub roll_draft: Option<RollDraft>,
+    pub exif: ExifLine,
     pub trashed_at: Option<Date>,
+    pub auto_balance: Option<AutoBalance>,
+    /// Why a sidecar of an earlier format could not be brought to this one; shown in memory meanwhile.
+    pub held_back: Option<Refusal>,
     /// The sidecar beside it was written for another file of that name: read as none, and set aside
     /// at the first write.
     pub foreign: bool,
@@ -89,11 +56,12 @@ pub struct Loaded {
 pub enum Error {
     Io(io::Error),
     Codec(Failure),
-    Encode(crate::json::Error),
     /// The original is not on disk, its disk away or the file moved: nothing is written beside nothing.
     Unreachable,
     /// The sidecar on disk is from a newer format, which this version never rewrites.
     Newer,
+    /// The sidecar on disk is of an earlier format that could not be brought to this one.
+    Held(Refusal),
     /// The photo's name and `.json` pass the 255 characters a file system allows a name.
     TooLong,
 }
@@ -103,9 +71,9 @@ impl fmt::Display for Error {
         match self {
             Error::Io(e) => write!(f, "{e}"),
             Error::Codec(e) => write!(f, "{e}"),
-            Error::Encode(e) => write!(f, "{e}"),
             Error::Unreachable => f.write_str("The original cannot be found; its disk may be disconnected. Nothing was saved."),
             Error::Newer => f.write_str("A newer version of ONI wrote these settings, and this one never rewrites them."),
+            Error::Held(why) => write!(f, "These settings are in an earlier format and were kept as they are: {why}."),
             Error::TooLong => f.write_str("The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."),
         }
     }
@@ -125,12 +93,6 @@ impl From<Failure> for Error {
     }
 }
 
-impl From<crate::json::Error> for Error {
-    fn from(e: crate::json::Error) -> Self {
-        Error::Encode(e)
-    }
-}
-
 /// The guard of every write: a sidecar beside a missing original would be adopted by a later namesake.
 pub fn original_present(original: &Path) -> Result<(), Error> {
     match original.try_exists() {
@@ -140,49 +102,87 @@ pub fn original_present(original: &Path) -> Result<(), Error> {
     }
 }
 
-/// Reads an original's sidecar; `mosaic` says the original decodes through the RAW engine's mosaic.
-/// Absent and unreadable stay apart: an unreadable sidecar is an error, never a new photo.
-pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, Error> {
-    let path = url_for(original);
-    let fresh = |foreign: bool| Loaded {
+fn fresh(mosaic: bool, foreign: bool) -> Loaded {
+    Loaded {
         settings: PipelineSettings::rest(ConversionMode::Negative, mosaic),
         writable: true,
         is_new: true,
         imported_at: None,
         label: Medal::None,
-        exif: None,
-        roll_draft: None,
+        exif: ExifLine::default(),
         trashed_at: None,
+        auto_balance: None,
+        held_back: None,
         foreign,
-    };
-    if !path.exists() {
-        return Ok(fresh(false));
     }
-    let data = std::fs::read(&path)?;
-    if let Ok(value) = serde_json::from_slice::<Value>(&data)
-        && value.get(identity::KEY).is_some()
-        && identity::foreign(&value, identity::of(original).as_deref(), || identity::tail(original))
-    {
-        return Ok(fresh(true));
+}
+
+/// Reads an original's sidecar (`mosaic`: it decodes through the RAW engine's mosaic), writing nothing:
+/// unreadable is an error, never a new photo; an earlier format read-only while a fact it asks is missing.
+pub fn read(original: &Path, mosaic: bool) -> Result<Loaded, Error> {
+    let Some(bytes) = stored(original)? else { return Ok(fresh(mosaic, false)) };
+    if identity::foreign_bytes(&bytes, original) {
+        return Ok(fresh(mosaic, true));
     }
-    let converted = crate::migrate::asked(original, mosaic, |facts| crate::migrate::reading(&data, facts, catching_up))?;
-    Ok(Loaded::of(converted))
+    standing(&bytes, original, mosaic)
+}
+
+/// A sidecar's `bytes` read, written for this original.
+fn standing(bytes: &[u8], original: &Path, mosaic: bool) -> Result<Loaded, Error> {
+    match migrate::standing(bytes) {
+        Standing::Current => Ok(Loaded::of(document::decode(bytes)?, true, None)),
+        Standing::NotASidecar => Err(Error::Codec(Failure::NotAnObject)),
+        Standing::Newer(_) => {
+            let (c, _) = migrate::asked(original, Some(mosaic), |facts| migrate::reading(bytes, facts, true)).map_err(refused)?;
+            Ok(Loaded::of(c.document, false, None))
+        }
+        Standing::Older(_) => {
+            let (c, missing) = migrate::asked(original, Some(mosaic), |facts| migrate::reading(bytes, facts, false)).map_err(refused)?;
+            Ok(Loaded::of(c.document, missing.is_none(), missing))
+        }
+    }
+}
+
+fn refused(why: Refusal) -> Error {
+    match why {
+        Refusal::Unreadable(e) => Error::Codec(e),
+        Refusal::Newer(_) => Error::Newer,
+        other => Error::Held(other),
+    }
+}
+
+/// The sidecar's bytes, `None` when absent; a name too long for the file system names none.
+fn stored(original: &Path) -> Result<Option<Vec<u8>>, Error> {
+    match std::fs::read(url_for(original)) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(e) if matches!(e.kind(), io::ErrorKind::NotFound | io::ErrorKind::InvalidFilename) => Ok(None),
+        Err(e) => Err(e.into()),
+    }
 }
 
 impl Loaded {
-    /// A sidecar's conversion as a read gives it: written only from this format, its strokes placed.
-    pub fn of(converted: crate::migrate::Converted) -> Loaded {
-        let d = converted.decoded;
+    /// A document as a read gives it.
+    pub fn of(document: Document, writable: bool, held_back: Option<Refusal>) -> Loaded {
         Loaded {
-            writable: !d.is_from_future() && converted.placed,
+            writable: writable && document.version <= document::VERSION,
             is_new: false,
-            settings: d.settings,
-            imported_at: d.imported_at,
-            label: d.label,
-            exif: d.exif,
-            roll_draft: d.roll_draft,
-            trashed_at: d.trashed_at,
+            settings: document.settings,
+            imported_at: document.imported_at,
+            label: document.label,
+            exif: document.exif_line,
+            trashed_at: document.trashed_at,
+            auto_balance: document.auto_balance,
+            held_back,
             foreign: false,
+        }
+    }
+
+    /// Writable, or the reason it is not.
+    pub fn standing(&self) -> Result<(), Error> {
+        match (&self.held_back, self.writable) {
+            (_, true) => Ok(()),
+            (Some(why), false) => Err(Error::Held(why.clone())),
+            (None, false) => Err(Error::Newer),
         }
     }
 }
@@ -192,11 +192,11 @@ impl Loaded {
 pub struct WriteOptions {
     pub imported_at: Option<Date>,
     pub label: Option<Medal>,
-    pub exif: Option<TypedExif>,
-    /// `Some(None)` clears the draft on file.
-    pub roll_draft: Option<Option<RollDraft>>,
+    pub exif: Option<ExifLine>,
     /// `Some(None)` clears the ONI Trash mark.
     pub trashed_at: Option<Option<Date>>,
+    /// `Some(None)` drops a balance kept.
+    pub auto_balance: Option<Option<AutoBalance>>,
     /// Keeps the modification date, so the thumbnail key holds.
     pub preserving_revision: bool,
 }
@@ -213,24 +213,8 @@ fn restore_modified(path: &Path, time: Option<SystemTime>) {
     }
 }
 
-/// The sidecar as it stands when a write comes, `None` when absent. One from a newer format, or that
-/// this version cannot read, is refused: its fields would be lost under defaults.
-fn standing(path: &Path) -> Result<Option<(Value, Decoded)>, Error> {
-    let data = match std::fs::read(path) {
-        Ok(data) => data,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
-        Err(e) => return Err(e.into()),
-    };
-    let value: Value = serde_json::from_slice(&data).map_err(|_| Failure::NotAnObject)?;
-    if crate::tolerant::ns_integer(value.get("version")).unwrap_or(0) > codec::VERSION {
-        return Err(Error::Newer);
-    }
-    let decoded = crate::migrate::decoded_value(value.clone(), None, false)?;
-    Ok(Some((value, decoded)))
-}
-
-/// Writes the sidecar atomically, reading back the metadata the caller left out and keeping the
-/// keys a newer app added; never beside a missing original, nor over a newer or unreadable sidecar.
+/// Writes the sidecar atomically, reading back what the caller left out; never beside a missing
+/// original, nor over a newer, unreadable or held-back sidecar.
 pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
     let _held = held::hold(original);
     written(settings, original, options)
@@ -238,74 +222,78 @@ pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions
 
 /// `write`, the sidecar already held.
 fn written(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
-    written_with(settings, original, options, None).map(|_| ())
-}
-
-/// `written`, with `kept` set under `AUTO_BALANCE` over any stored value; one that would lose a key
-/// the sidecar holds is not written, and says so.
-fn written_with(settings: &PipelineSettings, original: &Path, options: WriteOptions, kept: Option<&Value>) -> Result<bool, Error> {
     original_present(original)?;
     let path = url_for(original);
     if path.file_name().is_some_and(|n| n.to_string_lossy().chars().count() > 255) {
         return Err(Error::TooLong);
     }
     let (print, tail) = (identity::of(original), identity::tail(original));
+    let mut bytes = stored(original)?;
     // Another file's settings are kept aside whole, never written over nor taken for this one's.
-    let aside = identity::stored(&path)?.is_some_and(|v| identity::foreign(&v, print.as_deref(), || tail.clone()));
+    let aside = bytes.as_ref().is_some_and(|b| identity::foreign_with(b, print.as_deref(), || tail.clone()));
     if aside {
         identity::set_aside(&path)?;
+        bytes = None;
+    }
+    // A write brings an earlier file to this format first, its roll draft kept in its folder's file;
+    // the settings it lays are its own, so a camera matrix it cannot learn holds nothing back.
+    let mut whole = false;
+    if let Some(b) = bytes.clone().filter(|b| matches!(migrate::standing(b), Standing::Older(_))) {
+        match migrate::file(original, Some(settings.decoded_from_mosaic)) {
+            Ok(_) => bytes = stored(original)?,
+            Err(Refusal::MatrixUnknown | Refusal::CameraUnknown) => {
+                migrate::draft::kept_from(original, &b).map_err(|e| Error::Held(Refusal::Drafts(e.to_string())))?;
+                whole = true;
+            }
+            Err(why) => return Err(refused(why)),
+        }
     }
     let prior = if options.preserving_revision && !aside { modified(&path) } else { None };
-    let standing = standing(&path)?;
-    let existing = standing.as_ref().map(|(_, decoded)| decoded);
-    let document = codec::document(
-        settings,
-        options.imported_at.or(existing.and_then(|e| e.imported_at)),
-        options.label.or(existing.map(|e| e.label)),
-        options.exif.or(existing.and_then(|e| e.exif.clone())),
-        options.roll_draft.unwrap_or_else(|| existing.and_then(|e| e.roll_draft.clone())),
-        options.trashed_at.unwrap_or_else(|| existing.and_then(|e| e.trashed_at)),
-    );
-    let mut own: Vec<(&str, Value)> = [(identity::KEY, print), (identity::TAIL, tail)].into_iter().filter_map(|(k, v)| Some((k, Value::String(v?)))).collect();
-    own.extend(kept.map(|v| (AUTO_BALANCE, v.clone())));
-    let text = crate::kept::encoded(&document, standing.as_ref(), &own)?;
-    if kept.is_some() && !standing.as_ref().is_none_or(|(stored, _)| serde_json::from_str(&text).is_ok_and(|now| crate::kept::holds(stored, &now))) {
-        return Ok(false);
-    }
-    write_atomically(&path, text.as_bytes())?;
+    let existing = match &bytes {
+        Some(b) => {
+            let loaded = standing(b, original, settings.decoded_from_mosaic)?;
+            if !whole {
+                loaded.standing()?;
+            }
+            Some(loaded)
+        }
+        None => None,
+    };
+    let existing = existing.as_ref();
+    let document = Document {
+        original: match print {
+            Some(print) => Some(Original { print, tail }),
+            None => bytes.as_deref().and_then(identity::original_in),
+        },
+        imported_at: options.imported_at.or(existing.and_then(|e| e.imported_at)),
+        label: options.label.or(existing.map(|e| e.label)).unwrap_or_default(),
+        trashed_at: options.trashed_at.unwrap_or_else(|| existing.and_then(|e| e.trashed_at)),
+        exif_line: options.exif.or_else(|| existing.map(|e| e.exif.clone())).unwrap_or_default(),
+        auto_balance: options.auto_balance.unwrap_or_else(|| existing.and_then(|e| e.auto_balance.clone())),
+        ..Document::of(settings.clone())
+    };
+    write_atomically(&path, &document::encode(&document)?)?;
     restore_modified(&path, prior);
-    Ok(true)
+    Ok(())
 }
 
-/// Auto White Balance kept with the frame under a key Rust alone writes: Swift decodes past it, and a
-/// Swift rewrite drops it, which only costs a reading again.
-pub const AUTO_BALANCE: &str = "autoBalance";
-
-/// The value kept under `AUTO_BALANCE`; `None` when absent, unreadable or written for another file.
-pub fn auto_balance(original: &Path) -> Option<Value> {
-    let data = std::fs::read(url_for(original)).ok()?;
-    let value: Value = serde_json::from_slice(&data).ok()?;
-    let kept = value.get(AUTO_BALANCE)?.clone();
-    let foreign = value.get(identity::KEY).is_some() && identity::foreign(&value, identity::of(original).as_deref(), || identity::tail(original));
-    (!foreign).then_some(kept)
+/// The balance kept with the frame; `None` when absent, unreadable or written for another file.
+pub fn auto_balance(original: &Path, mosaic: bool) -> Option<AutoBalance> {
+    read(original, mosaic).ok().filter(|l| !l.foreign)?.auto_balance
 }
 
-/// Sets `value` under `AUTO_BALANCE` around the settings as they stand, the revision kept; only in a
-/// sidecar of this version written for this file, never seeding nor migrating one. Whether it wrote.
-pub fn set_auto_balance(original: &Path, mosaic: bool, value: &Value) -> Result<bool, Error> {
+/// Keeps `balance` with the frame, the settings and the revision as they stand; only in a sidecar
+/// written for this file, never seeding one. Whether it wrote.
+pub fn set_auto_balance(original: &Path, mosaic: bool, balance: &AutoBalance) -> Result<bool, Error> {
     let _held = held::hold(original);
     original_present(original)?;
-    let Some((stored, decoded)) = standing(&url_for(original))? else { return Ok(false) };
-    if decoded.version != codec::VERSION || stored.get(AUTO_BALANCE).is_some_and(|v| crate::kept::same(v, value)) {
+    let existing = read(original, mosaic)?;
+    if !existing.writable || existing.foreign || existing.is_new || existing.auto_balance.as_ref() == Some(balance) {
         return Ok(false);
     }
-    let existing = read(original, mosaic, true)?;
-    // Written back as they stand: settings a read would move are never rewritten for a balance.
-    if !existing.writable || existing.foreign || existing.is_new || existing.settings != decoded.settings {
-        return Ok(false);
-    }
-    let options = WriteOptions { imported_at: existing.imported_at, label: Some(existing.label), preserving_revision: true, ..WriteOptions::default() };
-    written_with(&existing.settings, original, options, Some(value))
+    let options = WriteOptions { auto_balance: Some(Some(balance.clone())), preserving_revision: true, ..WriteOptions::default() };
+    written(&existing.settings, original, options)?;
+    Ok(true)
 }
 
 /// Deletes only the sidecar, never the original beside it; an absent sidecar is not an error.

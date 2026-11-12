@@ -13,7 +13,7 @@ use std::time::Duration;
 use crate::common;
 
 fn exposure(path: &Path) -> f32 {
-    sidecar::read(path, false, true).map(|l| l.settings.print.exposure).unwrap_or_default()
+    sidecar::read(path, false).map(|l| l.settings.print.exposure).unwrap_or_default()
 }
 
 pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_opened() {

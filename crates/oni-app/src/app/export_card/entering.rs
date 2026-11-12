@@ -39,7 +39,7 @@ impl Ctl {
                         current.clone()
                     } else {
                         let mosaic = oni_decode::decodes_via_mosaic(Path::new(&p));
-                        oni_settings::sidecar::read(Path::new(&p), mosaic, true).map(|l| l.settings).unwrap_or_default()
+                        oni_settings::sidecar::read(Path::new(&p), mosaic).map(|l| l.settings).unwrap_or_default()
                     };
                     Target { path: PathBuf::from(p), settings }
                 })

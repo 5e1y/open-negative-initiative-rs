@@ -26,7 +26,7 @@ fn a_step_sets_the_same_value_on_the_frames_together_keeps_their_own_and_undoes_
     next.vignette.stops = 0.5;
     next.manual_order = Some(9.0);
     store.apply_at(Command::Write(Box::new(next)), 0.0);
-    let read = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().settings;
+    let read = |p: &str| sidecar::read(Path::new(p), false).unwrap().settings;
     assert_eq!(store.together_live()[0].1.vignette.stops, 0.5, "shown as written");
     assert_eq!(read(&b).vignette.stops, 0.5, "the value set, not the difference");
     assert_eq!(read(&b).manual_order, Some(4.0), "a frame's own field stays its own");
@@ -57,7 +57,7 @@ fn three(label: &str, b_settings: PipelineSettings, c_settings: PipelineSettings
 }
 
 fn read(p: &str) -> PipelineSettings {
-    sidecar::read(Path::new(p), false, true).unwrap().settings
+    sidecar::read(Path::new(p), false).unwrap().settings
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn a_paste_on_frames_together_is_one_step_undone_to_each_one_s_own_settings() {
     let own = |stops| PipelineSettings { vignette: oni_settings::blocks::Vignette { stops }, ..PipelineSettings::default() };
     let (mut store, dir, [a, b, c]) = three("together-paste", own(-0.7), own(-0.4));
     store.set_together(vec![b.clone(), c.clone()]);
-    store.board.settings = Some(codec::encode_settings(&own(0.2)).unwrap());
+    store.board.settings = Some(oni_settings::document::encode_settings(&own(0.2)).unwrap());
     store.paste_settings(&[a.clone(), b.clone()]);
     assert_eq!((read(&b).vignette.stops, read(&c).vignette.stops), (0.2, 0.2), "a frame together left out of the targets takes the step");
     store.undo();

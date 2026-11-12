@@ -20,7 +20,7 @@ fn an_unreadable_sidecar_is_left_as_it_was() {
     s.print.exposure = 0.7;
     sidecar::write(&s, &kept, Default::default()).unwrap();
     set_label(Medal::Gold, &kept, true).unwrap();
-    let read = sidecar::read(&kept, true, true).unwrap();
+    let read = sidecar::read(&kept, true).unwrap();
     assert_eq!((read.label, read.settings.print.exposure), (Medal::Gold, 0.7));
     let _ = std::fs::remove_dir_all(&dir);
 }

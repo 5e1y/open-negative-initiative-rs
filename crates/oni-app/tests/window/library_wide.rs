@@ -110,7 +110,7 @@ fn trash_count(shell: &Shell) -> String {
 }
 
 fn trashed(path: &str) -> bool {
-    oni_settings::sidecar::read(Path::new(path), false, true).unwrap().trashed_at.is_some()
+    oni_settings::sidecar::read(Path::new(path), false).unwrap().trashed_at.is_some()
 }
 
 fn told(shell: &Shell) -> Option<(String, String)> {

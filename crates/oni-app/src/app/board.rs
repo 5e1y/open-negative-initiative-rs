@@ -14,7 +14,7 @@ impl Ctl {
             return;
         }
         s.board_seen = Some(count);
-        let settings = s.pasteboard.data(SETTINGS).and_then(|d| String::from_utf8(d).ok());
+        let settings = pasteboard::settings(&*s.pasteboard);
         let framing = s.pasteboard.data(FRAMING).and_then(|d| serde_json::from_slice(&d).ok());
         s.window_board = s.pasteboard.data(MEASURE_WINDOW).and_then(|d| serde_json::from_slice(&d).ok());
         s.store.board.settings = settings;

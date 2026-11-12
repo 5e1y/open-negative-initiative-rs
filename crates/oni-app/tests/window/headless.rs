@@ -61,7 +61,7 @@ fn stamps(dir: &Path) -> Vec<(String, u64, std::time::SystemTime)> {
 }
 
 fn label_of(path: &str) -> oni_settings::Medal {
-    oni_settings::sidecar::read(Path::new(path), true, true).unwrap().label
+    oni_settings::sidecar::read(Path::new(path), true).unwrap().label
 }
 
 pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
@@ -187,7 +187,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.chord(slint::platform::Key::Control, "g");
     assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");
     // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it; a contact sheet is no frame.
-    let frame = |p: &std::path::Path| oni_settings::sidecar::read(p, true, true).map_or(true, |l| l.settings.sheet.is_none());
+    let frame = |p: &std::path::Path| oni_settings::sidecar::read(p, true).map_or(true, |l| l.settings.sheet.is_none());
     let n = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") && frame(&e.path()) }).count();
     rig.until("every thumbnail", Duration::from_secs(600), || ctl.state.borrow().loaded() >= n);
     // The grid lays only the cells near its view: a walk down it meets every cell of the roll once.
@@ -223,7 +223,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
         let path = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).map(|e| e.path())
             .find(|p| p.file_stem().is_some_and(|s| *s == *t.caption.as_str()) && p.extension().is_some_and(|x| x != "json"))
             .unwrap_or_else(|| panic!("no file for {}", t.caption));
-        let face = oni_settings::sidecar::read(&path, true, true).unwrap().settings.face;
+        let face = oni_settings::sidecar::read(&path, true).unwrap().settings.face;
         assert!(t.picture.size().width > 0, "{}: {face:?} left empty", t.caption);
         scanner_drawn += usize::from(face == oni_settings::Face::Scanner);
     }
@@ -287,7 +287,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FaceScanner);
     let scanner = tiles
         .iter()
-        .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true, true).unwrap().settings.face == oni_settings::Face::Scanner)
+        .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true).unwrap().settings.face == oni_settings::Face::Scanner)
         .map(|t| (t.index, t.caption.to_string()))
         .expect("roll #8 holds a Scanner-face frame");
     let renders = ctl.state.borrow().renders();

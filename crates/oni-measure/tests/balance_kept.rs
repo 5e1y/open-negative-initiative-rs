@@ -235,7 +235,7 @@ fn roll8_the_half_decode_kept_reads_the_balance_libraw_reads() {
         .iter()
         .map(|n| roll.join(n))
         .map(|p| {
-            let s = oni_settings::sidecar::read(&p, true, true).expect("its sidecar").settings;
+            let s = oni_settings::sidecar::read(&p, true).expect("its sidecar").settings;
             (p, s)
         })
         .collect();

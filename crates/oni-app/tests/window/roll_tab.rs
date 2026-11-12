@@ -124,7 +124,7 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     assert_eq!(panel.get_flat_picked(), 1);
     panel.invoke_flat_apply_selection();
     rig.pump();
-    let b = oni_settings::sidecar::read(&canonical("B.tif"), false, true).unwrap().settings;
+    let b = oni_settings::sidecar::read(&canonical("B.tif"), false).unwrap().settings;
     assert_eq!(b.flat_field.custom.as_deref(), Some("a1"));
     let _ = std::fs::remove_dir_all(&root);
 }

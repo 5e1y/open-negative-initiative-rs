@@ -146,7 +146,7 @@ impl Ctl {
                 Some((at, settings)) if at == p => Some(settings.clone()),
                 _ => {
                     let path = std::path::Path::new(p);
-                    oni_settings::sidecar::read(path, mosaic(path), false).ok().map(|l| l.settings)
+                    oni_settings::sidecar::read(path, mosaic(path)).ok().map(|l| l.settings)
                 }
             });
             let read = Frames::read(settings);
@@ -182,7 +182,7 @@ pub(in crate::app) fn unprepared(folder: &std::path::Path) -> bool {
         if hidden || !oni_library::library::is_importable(&path) || !path.is_file() {
             continue;
         }
-        let Ok(loaded) = oni_settings::sidecar::read(&path, oni_decode::decodes_via_mosaic(&path), false) else { continue };
+        let Ok(loaded) = oni_settings::sidecar::read(&path, oni_decode::decodes_via_mosaic(&path)) else { continue };
         if loaded.trashed_at.is_some() {
             continue;
         }

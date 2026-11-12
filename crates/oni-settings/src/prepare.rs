@@ -71,24 +71,77 @@ struct Version {
     version: i64,
 }
 
-/// The folder's drafts; `Err` for a file of a newer version, none for an absent or unreadable one.
-fn kept(folder: &Path) -> Result<Vec<Draft>, Error> {
-    let Ok(bytes) = std::fs::read(path(folder)) else { return Ok(Vec::new()) };
+/// The folders whose file a read, a step or a migration holds, so no write of one drops another's.
+static HELD: std::sync::Mutex<Vec<PathBuf>> = std::sync::Mutex::new(Vec::new());
+static FREED: std::sync::Condvar = std::sync::Condvar::new();
+
+/// A folder's file held from its read to its rename, let go when dropped; two spellings of one
+/// folder are one file.
+struct Held(PathBuf);
+
+fn hold(folder: &Path) -> Held {
+    let key = std::fs::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf());
+    let mut held = HELD.lock().unwrap_or_else(|e| e.into_inner());
+    while held.contains(&key) {
+        held = FREED.wait(held).unwrap_or_else(|e| e.into_inner());
+    }
+    held.push(key.clone());
+    Held(key)
+}
+
+impl Drop for Held {
+    fn drop(&mut self) {
+        let mut held = HELD.lock().unwrap_or_else(|e| e.into_inner());
+        held.retain(|k| *k != self.0);
+        drop(held);
+        FREED.notify_all();
+    }
+}
+
+/// The folder's drafts, none for an absent file; `Err` for a file of a newer version or one the disk
+/// refuses. One that does not parse is none, and with `aside` moved beside as it is before a write.
+fn kept(folder: &Path, aside: bool) -> Result<Vec<Draft>, Error> {
+    let bytes = match std::fs::read(path(folder)) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(Error::Io(e)),
+    };
     if serde_json::from_slice::<Version>(&bytes).is_ok_and(|v| v.version > VERSION) {
         return Err(Error::Newer);
     }
-    Ok(serde_json::from_slice::<Kept>(&bytes).map(|k| k.drafts).unwrap_or_default())
+    match serde_json::from_slice::<Kept>(&bytes) {
+        Ok(k) => Ok(k.drafts),
+        Err(_) if aside => set_aside(folder).map(|_| Vec::new()).map_err(Error::Io),
+        Err(_) => Ok(Vec::new()),
+    }
+}
+
+/// The folder's file that does not parse moved whole to `.oni-prepare (unreadable).json`, numbered when
+/// taken: a frame's own settings never wait on it, and nothing of it is lost.
+fn set_aside(folder: &Path) -> io::Result<PathBuf> {
+    for rank in 1..1000 {
+        let name = if rank == 1 { ".oni-prepare (unreadable).json".to_owned() } else { format!(".oni-prepare (unreadable {rank}).json") };
+        let target = folder.join(name);
+        match std::fs::symlink_metadata(&target) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return std::fs::rename(path(folder), &target).map(|()| target),
+            Err(e) => return Err(e),
+            Ok(_) => {}
+        }
+    }
+    Err(io::ErrorKind::AlreadyExists.into())
 }
 
 /// Every roll being prepared in `folder`; none when absent, unreadable or written by a newer version.
 pub fn read(folder: &Path) -> Vec<Draft> {
-    kept(folder).unwrap_or_default()
+    let _held = hold(folder);
+    kept(folder, false).unwrap_or_default()
 }
 
 /// The `frames` of `folder` (file names) taken out of every draft it keeps, then `draft` laid in place
 /// of its id's: a draft left with no frame goes, and the file with the last one.
 pub fn write(folder: &Path, frames: &[String], draft: Option<&Draft>) -> Result<(), Error> {
-    let mut drafts = kept(folder)?;
+    let _held = hold(folder);
+    let mut drafts = kept(folder, true)?;
     let id = draft.map(|d| d.id);
     drafts.retain(|d| Some(d.id) != id);
     for d in &mut drafts {
@@ -96,6 +149,37 @@ pub fn write(folder: &Path, frames: &[String], draft: Option<&Draft>) -> Result<
     }
     drafts.retain(|d| !d.frames.is_empty());
     drafts.extend(draft.filter(|d| !d.frames.is_empty()).cloned());
+    stored(folder, drafts)
+}
+
+/// `draft` laid among the folder's drafts: its frames join its id's draft, or it stands as one of its
+/// own; a frame another draft lists already stays there.
+pub fn adopt(folder: &Path, draft: Draft) -> Result<(), Error> {
+    let _held = hold(folder);
+    let mut drafts = kept(folder, true)?;
+    if laid(&mut drafts, draft) {
+        stored(folder, drafts)?;
+    }
+    Ok(())
+}
+
+/// `draft` laid among `drafts` as `adopt` lays it; whether they changed.
+pub fn laid(drafts: &mut Vec<Draft>, draft: Draft) -> bool {
+    if drafts.iter().any(|d| d.frames.keys().any(|name| draft.frames.contains_key(name))) {
+        return false;
+    }
+    match drafts.iter_mut().find(|d| d.id == draft.id) {
+        Some(mine) => {
+            mine.frames.extend(draft.frames);
+            mine.base = mine.base.take().or(draft.base);
+        }
+        None => drafts.push(draft),
+    }
+    true
+}
+
+/// The folder's file holding `drafts`, removed with the last.
+fn stored(folder: &Path, drafts: Vec<Draft>) -> Result<(), Error> {
     let at = path(folder);
     if drafts.is_empty() {
         return match std::fs::remove_file(&at) {
@@ -155,6 +239,45 @@ mod tests {
         assert!(matches!(write(&dir, &names(&d), Some(&d)), Err(Error::Newer)));
         assert!(matches!(write(&dir, &names(&d), None), Err(Error::Newer)));
         assert_eq!(std::fs::read(path(&dir)).unwrap(), newer);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_file_that_does_not_parse_is_set_aside_whole_and_frames_adopted_at_once_are_all_kept() {
+        let dir = folder("held");
+        let broken = b"{\"version\": 1, \"drafts\": [ trunc";
+        std::fs::write(path(&dir), broken).unwrap();
+        assert_eq!(read(&dir), [], "it reads as none");
+        assert_eq!(std::fs::read(path(&dir)).unwrap(), broken, "a read moves nothing");
+        let d = draft(&["A.NEF"]);
+        adopt(&dir, d.clone()).unwrap();
+        assert_eq!(read(&dir), std::slice::from_ref(&d), "the frame's draft kept, never blocked by the broken file");
+        assert_eq!(std::fs::read(dir.join(".oni-prepare (unreadable).json")).unwrap(), broken, "set aside whole");
+        // Twin: a second broken file goes beside the first, never over it.
+        std::fs::write(path(&dir), broken).unwrap();
+        write(&dir, &names(&d), Some(&d)).unwrap();
+        assert_eq!(std::fs::read(dir.join(".oni-prepare (unreadable 2).json")).unwrap(), broken);
+        std::fs::remove_file(path(&dir)).unwrap();
+        // Many frames of one roll adopted from many threads at once: each frame kept, none dropped.
+        let roll = draft(&["A.NEF"]);
+        let threads: Vec<_> = (0..8)
+            .map(|t| {
+                let (dir, roll) = (dir.clone(), roll.clone());
+                std::thread::spawn(move || {
+                    for i in 0..25 {
+                        let name = format!("F{t}-{i}.NEF");
+                        adopt(&dir, Draft { frames: [(name, Mark::default())].into(), ..roll.clone() }).unwrap();
+                    }
+                })
+            })
+            .collect();
+        threads.into_iter().for_each(|t| t.join().unwrap());
+        assert_eq!(read(&dir).iter().map(|d| d.frames.len()).sum::<usize>(), 200);
+        // Twin: the same adoptions laid on a list read once each, as two writers do, lose frames.
+        let (mut first, mut second) = (Vec::new(), Vec::new());
+        laid(&mut first, Draft { frames: [("X.NEF".to_string(), Mark::default())].into(), ..roll.clone() });
+        laid(&mut second, Draft { frames: [("Y.NEF".to_string(), Mark::default())].into(), ..roll.clone() });
+        assert_eq!(second[0].frames.len(), 1, "the second writer's list knows nothing of the first's frame");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

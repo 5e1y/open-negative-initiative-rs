@@ -1,9 +1,8 @@
-//! Named presets: a stance restricted to the rows it was saved from, one JSON file each, written as
-//! a settings document plus a `preset` block so the codec's tolerance to absent keys reads it.
+//! Named presets: a stance restricted to the rows it was saved from, one JSON file each, `oni-preset`:
+//! its `preset` block, then its settings.
 
 use crate::parameters;
-use oni_settings::codec::{self, SettingsDocument, VERSION};
-use oni_settings::json::{self, Node};
+use oni_settings::document::VERSION;
 use oni_settings::{Id, PipelineSettings};
 use serde_json::Value;
 use std::collections::BTreeSet;
@@ -13,6 +12,7 @@ use std::path::{Path, PathBuf};
 mod tint;
 mod naming;
 mod document;
+mod migrate;
 mod shelf;
 mod retired;
 mod share_code;
@@ -20,6 +20,7 @@ mod share_code;
 pub use tint::*;
 pub use naming::*;
 pub use document::*;
+pub use migrate::*;
 pub use shelf::*;
 pub use retired::*;
 pub use share_code::*;
@@ -79,8 +80,6 @@ impl Preset {
 pub fn previewed(preset: Option<&Preset>, settings: &PipelineSettings) -> PipelineSettings {
     preset.map_or_else(|| settings.clone(), |p| p.apply(settings))
 }
-
-// MARK: - A preset as one line of text
 
 #[cfg(test)]
 mod tests;

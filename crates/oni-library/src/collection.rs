@@ -2,7 +2,6 @@
 //! `collection.json`, the last used first, and offered back where an export's EXIF is filled. A scan's
 //! own metadata names the camera that digitised the film, never the one that took it, so only a hand adds.
 
-use oni_settings::json;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -36,8 +35,8 @@ impl Collection {
 
     pub fn save(&self, support: &Path) -> std::io::Result<()> {
         std::fs::create_dir_all(support)?;
-        let node = json::to_node(self).map_err(std::io::Error::other)?;
-        crate::replace_readable(&Self::file_path(support), json::compact(&node).as_bytes())
+        let text = serde_json::to_vec(self).map_err(std::io::Error::other)?;
+        crate::replace_readable(&Self::file_path(support), &text)
     }
 
     pub fn list(&self, gear: Gear) -> &[String] {

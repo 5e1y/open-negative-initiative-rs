@@ -4,6 +4,7 @@
 use crate::axis::density_axis;
 use crate::blocks::Gains;
 use super::chain::MATRICES_RETIRED_VERSION;
+use super::Refusal;
 use crate::{ConversionMode, PipelineSettings};
 
 pub type M3 = [[f64; 3]; 3];
@@ -71,15 +72,15 @@ pub fn compensated(settings: &PipelineSettings, matrix: &M3) -> PipelineSettings
 }
 
 /// `compensated` for an edited frame whose sidecar predates the retirement; the camera is asked
-/// last, as asking reads the file.
-pub fn caught_up(version: i64, settings: PipelineSettings, matrix: &dyn Fn() -> Option<M3>) -> PipelineSettings {
+/// last, as asking reads the file; a camera it cannot say is refused, never taken for none.
+pub fn caught_up(version: i64, settings: PipelineSettings, matrix: &dyn Fn() -> Result<Option<M3>, Refusal>) -> Result<PipelineSettings, Refusal> {
     if version >= MATRICES_RETIRED_VERSION || !edited(&settings) {
-        return settings;
+        return Ok(settings);
     }
-    match matrix() {
+    Ok(match matrix()? {
         Some(matrix) => compensated(&settings, &matrix),
         None => settings,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -129,23 +130,24 @@ mod tests {
     #[test]
     fn an_edited_negative_keeps_its_look_and_a_slide_or_a_frame_at_rest_is_left_alone() {
         let s = edited_negative();
-                let by = on_base(&s, &Z_F).unwrap();
-        let out = caught_up(MATRICES_RETIRED_VERSION - 1, s.clone(), &|| Some(Z_F));
+        let by = on_base(&s, &Z_F).unwrap();
+        let out = caught_up(MATRICES_RETIRED_VERSION - 1, s.clone(), &|| Ok(Some(Z_F))).unwrap();
         let r = out.roll_reference.as_ref().unwrap();
         assert!((0..3).all(|c| (out.gains.stops[c] - s.gains.stops[c] - by[c]).abs() < 1e-6), "{:?}", out.gains);
         assert!((0..3).all(|c| (r.stops[c] - s.roll_reference.as_ref().unwrap().stops[c] - by[c]).abs() < 1e-6), "{r:?}");
         // Twins: a camera without a matrix, a sidecar of this version, a slide read either way and a
         // frame at rest keep their gains, all but the first without the file being asked.
-        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, s.clone(), &|| None), s);
-        let unasked = || -> Option<M3> { panic!("the camera was asked") };
-        assert_eq!(caught_up(MATRICES_RETIRED_VERSION, s.clone(), &unasked), s);
+        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, s.clone(), &|| Ok(None)), Ok(s.clone()));
+        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, s.clone(), &|| Err(Refusal::CameraUnknown)), Err(Refusal::CameraUnknown));
+        let unasked = || -> Result<Option<M3>, Refusal> { panic!("the camera was asked") };
+        assert_eq!(caught_up(MATRICES_RETIRED_VERSION, s.clone(), &unasked), Ok(s.clone()));
         let mut slide = s.clone();
         slide.mode = ConversionMode::Positive;
-        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, slide.clone(), &unasked), slide);
+        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, slide.clone(), &unasked), Ok(slide));
         let mut as_negative = s.clone();
         as_negative.inverted_source = true;
-        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, as_negative.clone(), &unasked), as_negative);
+        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, as_negative.clone(), &unasked), Ok(as_negative));
         let rest = PipelineSettings::rest(ConversionMode::Negative, true);
-        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, rest.clone(), &unasked), rest);
+        assert_eq!(caught_up(MATRICES_RETIRED_VERSION - 1, rest.clone(), &unasked), Ok(rest));
     }
 }

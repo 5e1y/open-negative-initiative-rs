@@ -172,12 +172,13 @@ pub fn expanded(paths: &[String]) -> Vec<String> {
     out
 }
 
-/// `RGBPasses.framings`: each lead's two other passes on the lead's framing, so a split keeps the crop drawn.
-pub fn framings(paths: &[String]) -> std::collections::HashMap<String, oni_settings::frame::Geometry> {
+/// `RGBPasses.framings`: each lead's two other passes on the lead's framing, so a split keeps the crop
+/// drawn; `mosaic` says how a lead decodes, which a sidecar of an earlier format is read by.
+pub fn framings(paths: &[String], mosaic: &dyn Fn(&Path) -> bool) -> std::collections::HashMap<String, oni_settings::frame::Geometry> {
     let mut out = std::collections::HashMap::new();
     for path in paths {
         let Some(passes) = named_by(path) else { continue };
-        let Ok(loaded) = sidecar::read(Path::new(path), false, false) else { continue };
+        let Ok(loaded) = sidecar::read(Path::new(path), mosaic(Path::new(path))) else { continue };
         for pass in paths_beside(&passes, path) {
             if pass != *path {
                 out.insert(pass, loaded.settings.geometry);

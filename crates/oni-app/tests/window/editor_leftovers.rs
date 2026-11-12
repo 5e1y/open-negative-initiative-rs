@@ -145,7 +145,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     w.global::<oni_app::Presets>().invoke_save_confirmed();
     let seen = board();
     let text = String::from_utf8(seen.data(pasteboard::SETTINGS).expect("the settings on the board")).unwrap();
-    let decoded = oni_settings::migrate::document(text.as_bytes()).unwrap().settings;
+    let decoded = oni_settings::migrate::document(text.as_bytes()).unwrap().document.settings;
     assert!((Field::Exposure.knob().get(&decoded) - donor).abs() < 1e-6, "the board holds the frame's settings");
     assert_eq!(seen.data(pasteboard::FRAMING), None, "twin: Copy Settings writes no framing");
 

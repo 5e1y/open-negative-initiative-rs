@@ -23,19 +23,17 @@ impl Ctl {
             // The flat-field sliders last dialled reach a frame that never had its own; a frame never
             // balanced opens with its measuring window proposed and armed.
             let armed = std::cell::Cell::new(false);
-            let opened = s
-                .store
-                .open_adjusted(path, |o| {
-                    o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, remembered);
-                    armed.set(oni_core::balance::opening_window(o));
-                })
-                .err()
-                .map(|e| e.to_string());
+            let opened = s.store.open_adjusted(path, |o| {
+                o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, remembered);
+                armed.set(oni_core::balance::opening_window(o));
+            });
+            let away = matches!(opened, Err(oni_settings::sidecar::Error::Held(oni_settings::migrate::Refusal::Away)));
+            let opened = opened.err().map(|e| oni_library::refusal::said(&e));
             s.route.armed = armed.get();
             // A frame of its own: nothing the canvas asked of the last one, its distributions included, stands under it.
             let reading = render::Reading::of(s.store.settings());
             let previous = s.frame.take();
-            s.frame = Some(frame::Frame::opened(path, reading, previous));
+            s.frame = Some(frame::Frame { away, ..frame::Frame::opened(path, reading, previous) });
             s.org.editing_project = if s.org.projects_surface { s.project_of(path) } else { None };
             s.opened_at = Instant::now();
             s.opens += 1;
@@ -118,6 +116,9 @@ impl Ctl {
             if let Some(f) = self.state.borrow_mut().frame_for(path) {
                 f.negative = Some(negative);
             }
+            if self.downloaded(path) {
+                return;
+            }
             self.request_render();
             return self.balance_ahead();
         }
@@ -128,6 +129,22 @@ impl Ctl {
             let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared_keeping(&engine, &path, converted.clone())) else { return };
             with_shell(move |c| c.opening_decoded(&path, &converted, prepared));
         });
+    }
+
+    /// Whether `path`, opened read-only as its original was in the cloud, was opened again now that its
+    /// decode has the file: its sidecar brought first, so the frame opens editable on it.
+    fn downloaded(self: &Rc<Self>, path: &str) -> bool {
+        let away = self.state.borrow_mut().frame_for(path).is_some_and(|f| std::mem::take(&mut f.away));
+        if !away {
+            return false;
+        }
+        crate::migration::gated(path);
+        let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
+        let still = oni_settings::sidecar::read(Path::new(path), mosaic).is_ok_and(|l| l.held_back == Some(oni_settings::migrate::Refusal::Away));
+        if !still {
+            self.open_photo(path);
+        }
+        !still
     }
 
     /// A preview decode of `path` under `reading`, kept among the previews and installed only while the
@@ -148,6 +165,9 @@ impl Ctl {
                         f.full = full;
                     }
                     f.negative = Some(negative);
+                }
+                if self.downloaded(path) {
+                    return;
                 }
                 self.request_render();
                 self.publish_roll_tab();

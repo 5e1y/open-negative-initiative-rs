@@ -19,7 +19,7 @@ use std::time::Duration;
 use crate::common;
 
 fn settings_of(path: &Path) -> PipelineSettings {
-    sidecar::read(path, false, true).unwrap().settings
+    sidecar::read(path, false).unwrap().settings
 }
 
 fn exposure(path: &Path) -> f32 {

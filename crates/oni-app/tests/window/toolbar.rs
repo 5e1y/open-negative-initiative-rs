@@ -337,7 +337,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(common::placed(w, Role::Button, "Whole Roll").is_empty(), "one name in both modes");
 
     // Off the bar the ONI Trash stays in reach: the menu bar's chord trashes the frame open, the editor going on.
-    let trashed = |name: &str| oni_settings::sidecar::read(&folder.join(name), false, true).unwrap().trashed_at.is_some();
+    let trashed = |name: &str| oni_settings::sidecar::read(&folder.join(name), false).unwrap().trashed_at.is_some();
     assert!(!trashed("A.tif"), "twin: nothing trashed before the chord");
     let backspace: slint::SharedString = slint::platform::Key::Backspace.into();
     rig.chord(slint::platform::Key::Control, &backspace);

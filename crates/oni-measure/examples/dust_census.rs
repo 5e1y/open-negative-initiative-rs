@@ -48,7 +48,7 @@ fn main() {
     for name in std::env::args().skip(1) {
         let path = Path::new(&name);
         let stem = path.file_stem().unwrap().to_str().unwrap().to_string();
-        let mut settings = sidecar::read(path, true, false).expect("a sidecar").settings;
+        let mut settings = sidecar::read(path, true).expect("a sidecar").settings;
         let painted = std::mem::take(&mut settings.corrections);
         let (d, _) = oni_decode::decode_for(path, 1.0, 0).expect("a decode");
         let source = graph.upload_half(d.width as u32, d.height as u32, &d.pixels).unwrap();

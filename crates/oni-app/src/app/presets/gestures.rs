@@ -62,7 +62,7 @@ impl Ctl {
 
     pub fn adopt_preset_code(&self, text: &str) {
         let Some(incoming) = presets::from_share_code(text) else {
-            let message = if text.contains(presets::SHARE_CODE_PREFIX) {
+            let message = if text.contains(presets::SHARE_CODE_PREFIX) || text.contains(presets::EARLIER_PREFIX) {
                 tr("The code is incomplete or was changed on the way. Ask for it to be copied again.").to_string()
             } else {
                 tr!("Copy a code starting with {prefix}, then paste it here.", prefix = presets::SHARE_CODE_PREFIX)

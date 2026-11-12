@@ -52,7 +52,7 @@ impl EditorStore {
                 let settings = if Some(path) == open.as_ref() {
                     self.settings.clone()
                 } else {
-                    sidecar::read(Path::new(path), self.mosaic(path), true).map(|l| l.settings).unwrap_or_default()
+                    sidecar::read(Path::new(path), self.mosaic(path)).map(|l| l.settings).unwrap_or_default()
                 };
                 (path.clone(), settings)
             })
@@ -147,7 +147,7 @@ impl EditorStore {
             .iter()
             .map(|path| {
                 let (original, mosaic) = (Path::new(path), self.mosaic(path));
-                let before = sidecar::read(original, mosaic, true).map_or(Medal::None, |l| l.label);
+                let before = sidecar::read(original, mosaic).map_or(Medal::None, |l| l.label);
                 let done = sidecar::set_label(medal, original, mosaic);
                 if done.is_ok() {
                     worn.insert(path.clone(), before);

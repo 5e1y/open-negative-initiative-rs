@@ -11,8 +11,8 @@ const MATRIX: [[f64; 3]; 3] = [[1.1242, -0.1665, -0.0092], [0.0277, 0.9493, -0.0
 
 fn aged(original: &Path, version: i64) {
     let path = sidecar::url_for(original);
-    let mut value: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
-    value["version"] = serde_json::json!(version);
+    let current = oni_settings::document::decode(&std::fs::read(&path).unwrap()).unwrap();
+    let value = oni_settings::migrate::reshape::as_stored(&current, version);
     std::fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
 }
 
@@ -23,7 +23,9 @@ fn a_sidecar_from_under_a_camera_matrix_keeps_its_look_through_its_gains_once() 
     std::fs::create_dir_all(&dir).unwrap();
     let (matched, other): (PathBuf, PathBuf) = (dir.join("P1070001.RW2"), dir.join("DSC_0001.ARW"));
     let held = matched.clone();
-    migrate::install(Some(Arc::new(move |p: &Path, mosaic: bool, then: &mut dyn FnMut(&Facts)| then(&Facts { mosaic, matrix: &|| (p == held).then_some(MATRIX), scan: &|_| None }))));
+    migrate::install(Some(Arc::new(move |p: &Path, mosaic: Option<bool>, then: &mut dyn FnMut(&Facts)| {
+        then(&Facts { mosaic: migrate::Mosaic::Known(mosaic.unwrap_or(true)), matrix: &|| Ok((p == held).then_some(MATRIX)), scan: &|_| Err(migrate::Refusal::ScanUnknown) })
+    })));
     let mut edited = PipelineSettings::rest(ConversionMode::Negative, true);
     edited.print.exposure = 0.4;
     edited.gains.stops = [0.1, 0.0, -0.2];
@@ -32,15 +34,20 @@ fn a_sidecar_from_under_a_camera_matrix_keeps_its_look_through_its_gains_once() 
         sidecar::write(&edited, original, WriteOptions::default()).unwrap();
         aged(original, migrate::chain::MATRICES_RETIRED_VERSION - 1);
     }
-    let read = sidecar::read(&matched, true, true).unwrap().settings;
+    let read = sidecar::read(&matched, true).unwrap().settings;
     let by = migrate::matrices::on_base(&edited, &MATRIX).unwrap();
     assert!(by.iter().all(|v| v.abs() > 0.01), "{by:?}");
     assert!((0..3).all(|c| (read.gains.stops[c] - edited.gains.stops[c] - by[c]).abs() < 1e-6), "{:?}", read.gains);
     // Twin: a camera without a matrix keeps its gains.
-    assert_eq!(sidecar::read(&other, true, true).unwrap().settings, edited);
-    // Written back, the file holds the moved gains and a later read moves them no further.
+    assert_eq!(sidecar::read(&other, true).unwrap().settings, edited);
+    // The read wrote nothing; a write brings the file, its gains moved once: a later read moves them no further.
+    assert!(matches!(migrate::standing(&std::fs::read(sidecar::url_for(&matched)).unwrap()), migrate::Standing::Older(_)));
     sidecar::write(&read, &matched, WriteOptions::default()).unwrap();
-    assert_eq!(sidecar::read(&matched, true, true).unwrap().settings, read);
+    assert_eq!(migrate::standing(&std::fs::read(sidecar::url_for(&matched)).unwrap()), migrate::Standing::Current);
+    assert_eq!(sidecar::read(&matched, true).unwrap().settings, read);
+    // Twin: the chain run again on a file already moved would move it twice.
+    let twice = migrate::matrices::caught_up(migrate::chain::MATRICES_RETIRED_VERSION - 1, read.clone(), &|| Ok(Some(MATRIX))).unwrap();
+    assert_ne!(twice.gains, read.gains);
     migrate::install(None);
     let _ = std::fs::remove_dir_all(&dir);
 }

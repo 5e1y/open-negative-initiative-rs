@@ -2,13 +2,13 @@
 //! with its twin, a variant built to fail when the property it guards is broken.
 
 use oni_settings::axis::{density_axis, pipeline};
-use oni_settings::cg::{Point, Rect};
-use oni_settings::codec;
-use oni_settings::frame::{Correction, FlatField, PassOrder};
+use oni_settings::cg::Point;
+use oni_settings::document;
+use oni_settings::frame::Correction;
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
-use oni_settings::sidecar::{self, DraftBase, WriteOptions};
+use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::tone::color_density;
-use oni_settings::{ConversionMode, ExifMetadata, Id, PipelineSettings, RollDraft, TypedExif};
+use oni_settings::{ConversionMode, ExifLine, ExifMetadata, Id, PipelineSettings};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
@@ -117,51 +117,6 @@ fn colour_density_keeps_a_neutral_and_raises_a_ratio_to_its_power() {
     assert_eq!(color_density::FULL_POWER, 2.0);
 }
 
-// MARK: - RollDraft.selfCheck
-
-fn draft() -> RollDraft {
-    RollDraft {
-        id: Id::new(),
-        step: "flags".into(),
-        film: ConversionMode::Negative,
-        capture: "camera".into(),
-        pass_order: Some(PassOrder::Bgr),
-        pass_offset: None,
-        flat_field: Some(FlatField::default()),
-        base: Some(DraftBase { path: "/r/1.RW2".into(), x: 0.1, y: 0.2, radius: 4.0 }),
-        window: Some(Rect::new(0.1, 0.1, 0.8, 0.8)),
-        ticked: true,
-        flagged: true,
-    }
-}
-
-#[test]
-fn a_roll_draft_rides_its_frames_sidecar_and_a_clear_takes_it_alone() {
-    let draft = draft();
-    let settings = PipelineSettings::rest(ConversionMode::Negative, true);
-    let written = codec::encode(&settings, None, None, None, Some(draft.clone()), None).unwrap();
-    let read = oni_settings::migrate::decoded(written.as_bytes(), Some(true), false).unwrap();
-    assert_eq!(read.roll_draft.as_ref(), Some(&draft));
-    assert_eq!(read.settings, settings);
-    // Twin: a document written with no draft reads none.
-    let bare = oni_settings::migrate::decoded(codec::encode_settings(&settings).unwrap().as_bytes(), Some(true), false).unwrap();
-    assert_eq!(bare.roll_draft, None);
-
-    let folder = scratch("roll-draft");
-    let photo = folder.join("frame.tif");
-    std::fs::write(&photo, [0]).unwrap();
-    sidecar::set_roll_draft(None, &photo, false).unwrap();
-    assert!(!sidecar::url_for(&photo).exists(), "clearing a draft on a frame never touched writes no sidecar");
-    sidecar::set_roll_draft(Some(draft.clone()), &photo, false).unwrap();
-    let mut moved = settings.clone();
-    moved.print.exposure += 0.5;
-    sidecar::write(&moved, &photo, WriteOptions::default()).unwrap();
-    assert_eq!(sidecar::read(&photo, false, true).unwrap().roll_draft, Some(draft), "a settings write keeps the draft");
-    sidecar::set_roll_draft(None, &photo, false).unwrap();
-    let cleared = sidecar::read(&photo, false, true).unwrap();
-    assert!(cleared.roll_draft.is_none() && cleared.settings.print.exposure == moved.print.exposure);
-}
-
 // MARK: - Sidecar.exifChecks
 
 #[test]
@@ -169,31 +124,31 @@ fn the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent() {
     let folder = scratch("sidecar-exif");
     let original = folder.join("frame.RW2");
     std::fs::write(&original, b"raw").unwrap();
-    let typed = TypedExif {
+    let typed = ExifLine {
         camera: Some("Nikon FM2".into()),
         film: Some("Kodak Portra 400".into()),
         date: Some("2024:05:01 10:00:00".into()),
-        ..TypedExif::default()
+        ..ExifLine::default()
     };
     let mut edited = PipelineSettings::default();
     edited.gains.stops = [0.5, 0.0, 0.0];
     sidecar::write(&edited, &original, WriteOptions::default()).unwrap();
-    assert_eq!(sidecar::read(&original, true, true).unwrap().exif, None);
+    assert!(sidecar::read(&original, true).unwrap().exif.is_empty());
 
     sidecar::set_exif(typed.clone(), &original, true).unwrap();
-    let loaded = sidecar::read(&original, true, true).unwrap();
-    assert!(loaded.exif.as_ref() == Some(&typed) && loaded.settings == edited, "setExif touches the EXIF alone");
+    let loaded = sidecar::read(&original, true).unwrap();
+    assert!(loaded.exif == typed && loaded.settings == edited, "setExif touches the EXIF alone");
 
     let mut later = edited.clone();
     later.gains.stops = [1.0, 0.0, 0.0];
     sidecar::write(&later, &original, WriteOptions::default()).unwrap();
-    assert_eq!(sidecar::read(&original, true, true).unwrap().exif, Some(typed), "a settings write keeps the EXIF");
-    // Twin: the encoder handed nothing drops it.
-    assert_eq!(oni_settings::migrate::document(codec::encode_settings(&later).unwrap().as_bytes()).unwrap().exif, None);
+    assert_eq!(sidecar::read(&original, true).unwrap().exif, typed, "a settings write keeps the EXIF");
+    // Twin: the encoder handed nothing writes no line.
+    assert!(!document::encode_settings(&later).unwrap().contains("exifLine"));
 
-    sidecar::set_exif(TypedExif::default(), &original, true).unwrap();
+    sidecar::set_exif(ExifLine::default(), &original, true).unwrap();
     let text = std::fs::read_to_string(sidecar::url_for(&original)).unwrap();
-    assert!(sidecar::read(&original, true, true).unwrap().exif.is_none() && !text.contains("\"exif\""));
+    assert!(sidecar::read(&original, true).unwrap().exif.is_empty() && !text.contains("\"exifLine\""));
 }
 
 #[test]
@@ -201,10 +156,10 @@ fn an_empty_line_gives_a_frame_never_touched_no_sidecar() {
     let folder = scratch("sidecar-exif-untouched");
     let original = folder.join("frame.RW2");
     std::fs::write(&original, b"raw").unwrap();
-    sidecar::set_exif(TypedExif::default(), &original, true).unwrap();
+    sidecar::set_exif(ExifLine::default(), &original, true).unwrap();
     assert!(!sidecar::url_for(&original).exists(), "nothing typed, nothing written");
     // Twin: a line holding a field is written beside the same frame.
-    sidecar::set_exif(TypedExif { film: Some("Kodak Portra 400".into()), ..TypedExif::default() }, &original, true).unwrap();
+    sidecar::set_exif(ExifLine { film: Some("Kodak Portra 400".into()), ..ExifLine::default() }, &original, true).unwrap();
     assert!(sidecar::url_for(&original).exists());
 }
 
@@ -212,12 +167,12 @@ fn an_empty_line_gives_a_frame_never_touched_no_sidecar() {
 fn a_block_written_whole_keeps_its_cleared_fields_and_a_sparse_one_derives_the_rest() {
     let derived = ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), artist: "Alice".into(), ..ExifMetadata::default() };
     let whole = r#"{"version":20,"settings":{},"exif":{"artist":"","camera":"","copyright":"","date":"","film":"","iso":"","lens":""}}"#;
-    let whole = oni_settings::migrate::document(whole.as_bytes()).unwrap().exif.unwrap();
+    let whole = oni_settings::migrate::document(whole.as_bytes()).unwrap().document.exif_line;
     let shown = whole.over(&derived);
     assert_eq!((shown.artist.as_str(), shown.camera.as_str()), ("", ""), "an artist and a camera cleared before stay cleared");
     // Twin: a block naming the film alone derives the artist and the camera.
     let sparse = r#"{"version":21,"settings":{},"exif":{"film":"Kodak Portra 400"}}"#;
-    let sparse = oni_settings::migrate::document(sparse.as_bytes()).unwrap().exif.unwrap();
+    let sparse = oni_settings::migrate::document(sparse.as_bytes()).unwrap().document.exif_line;
     assert_eq!(sparse.over(&derived), ExifMetadata { film: "Kodak Portra 400".into(), ..derived });
 }
 
@@ -239,13 +194,13 @@ fn a_correction_round_trips_and_its_absent_keys_read_their_defaults() {
     assert_eq!(Correction::DEFAULT_RADIUS, 12.0);
 
     let settings = PipelineSettings { corrections: vec![full.clone()], ..PipelineSettings::default() };
-    let decoded = oni_settings::migrate::document(codec::encode_settings(&settings).unwrap().as_bytes()).unwrap();
-    assert_eq!(decoded.settings.corrections, vec![full]);
+    let decoded = oni_settings::migrate::document(document::encode_settings(&settings).unwrap().as_bytes()).unwrap();
+    assert_eq!(decoded.document.settings.corrections, vec![full]);
 
-    let mut bare: Value = serde_json::from_str(&codec::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
+    let mut bare: Value = serde_json::from_str(&document::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
     assert!(bare["settings"].as_object_mut().unwrap().remove("corrections").is_some());
     let read = oni_settings::migrate::document(serde_json::to_string(&bare).unwrap().as_bytes()).unwrap();
-    assert!(read.settings.corrections.is_empty());
+    assert!(read.document.settings.corrections.is_empty());
 }
 
 // MARK: - ScannerFinish.selfCheck

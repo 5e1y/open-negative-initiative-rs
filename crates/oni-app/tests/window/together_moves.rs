@@ -16,7 +16,7 @@ use std::time::Duration;
 use crate::common;
 
 fn read(path: &Path) -> PipelineSettings {
-    sidecar::read(path, false, true).map(|l| l.settings).unwrap_or_default()
+    sidecar::read(path, false).map(|l| l.settings).unwrap_or_default()
 }
 
 pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {

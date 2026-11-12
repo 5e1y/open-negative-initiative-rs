@@ -187,9 +187,9 @@ pub(super) type Drafts = Vec<Part>;
 impl Roll {
     /// The drafts a step writes now, and the frames whose sidecar still keeps one, kept until a discard
     /// whatever the write; a step taken while a frame is still read waits for the last one.
-    pub(super) fn step_drafts(&mut self) -> Option<(Drafts, Vec<String>)> {
+    pub(super) fn step_drafts(&mut self) -> Option<Drafts> {
         self.draft_waiting = self.shown && self.read.len() < self.sources.len();
-        Some((self.drafts()?, self.stored.iter().cloned().collect()))
+        self.drafts()
     }
 
     /// Whether the frame just read was the last a step's draft waited for, which is then written once.

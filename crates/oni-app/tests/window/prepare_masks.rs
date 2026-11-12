@@ -17,7 +17,7 @@ use std::time::Duration;
 use crate::common;
 
 fn stops(path: &Path) -> [f32; 3] {
-    sidecar::read(path, false, true).unwrap().settings.roll_reference.expect("measured").stops
+    sidecar::read(path, false).unwrap().settings.roll_reference.expect("measured").stops
 }
 
 /// The mean distance of two pictures' bytes, over their colour channels.

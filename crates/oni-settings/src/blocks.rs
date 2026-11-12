@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// Stage 4: per-channel gains, in stops, `gain = 2^s`.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Gains {
     pub stops: [f32; 3],
 }
@@ -81,6 +82,7 @@ pub mod filter_balance {
 
 /// A radial darkening of the print, in stops; 0 is the identity.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Vignette {
     pub stops: f32,
 }
@@ -91,6 +93,7 @@ impl Vignette {
 
 /// Mid-frequency local contrast on the luma.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Texture {
     pub amount: f32,
 }
@@ -101,6 +104,7 @@ impl Texture {
 
 /// Stage 10: unsharp mask on the luma. Its rest is on, not off: neutralise with `is_neutral`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Sharpen {
     /// Blur radius in full-resolution pixels.
     pub radius: f32,
@@ -135,6 +139,7 @@ impl Sharpen {
 
 /// Chroma-only denoise after the inversion. Its rest is on; `OFF` is off.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ChromaDenoise {
     pub radius: f32,
     pub force: f32,
@@ -163,6 +168,7 @@ impl ChromaDenoise {
 
 /// Gains answering the paper the print is proofed on; inert on any other working space.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PaperCorrection {
     pub stops: [f32; 3],
 }
@@ -213,12 +219,13 @@ mod tests {
     }
 
     #[test]
-    fn the_paper_stops_serialise_as_the_swift_array() {
+    fn the_paper_stops_serialise_as_an_array() {
         let json = serde_json::to_value(PaperCorrection { stops: [0.25, 0.0, -0.5] }).unwrap();
         assert_eq!(json, serde_json::json!({ "stops": [0.25, 0.0, -0.5] }));
         let back: PaperCorrection = serde_json::from_str(r#"{"stops":[0.1,0.2,0.3]}"#).unwrap();
         assert_eq!(back.stops, [0.1, 0.2, 0.3]);
-        // Twin: a renamed field is refused.
-        assert!(serde_json::from_str::<PaperCorrection>(r#"{"gains":[0.1,0.2,0.3]}"#).is_err());
+        // Twin: a renamed field is not the stops: they read their rest.
+        let renamed: PaperCorrection = serde_json::from_str(r#"{"gains":[0.1,0.2,0.3]}"#).unwrap();
+        assert_eq!(renamed, PaperCorrection::default());
     }
 }

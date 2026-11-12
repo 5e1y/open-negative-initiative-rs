@@ -89,7 +89,7 @@ mod tests {
             std::fs::write(p, b"").unwrap();
             sidecar::write(&s, Path::new(p), Default::default()).unwrap();
         }
-        let read = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().settings;
+        let read = |p: &str| sidecar::read(Path::new(p), false).unwrap().settings;
         let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));
         store.open(&a).unwrap();
         store.set_together(vec![b.clone()]);

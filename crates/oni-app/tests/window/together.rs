@@ -14,7 +14,7 @@ use std::time::Duration;
 use crate::common;
 
 fn exposure(path: &Path) -> f32 {
-    sidecar::read(path, false, true).map(|l| l.settings.print.exposure).unwrap_or_default()
+    sidecar::read(path, false).map(|l| l.settings.print.exposure).unwrap_or_default()
 }
 
 pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own() {
@@ -134,7 +134,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     rig.pump();
     let back = ctl.state.borrow().store().settings().print.exposure;
     // Auto White Balance over frames together lays their average on all of them, without asking.
-    let filters = |p: &Path| sidecar::read(p, false, true).ok().and_then(|l| l.settings.balance_filters);
+    let filters = |p: &Path| sidecar::read(p, false).ok().and_then(|l| l.settings.balance_filters);
     ctl.act(oni_app::Act::AutoBalance);
     rig.until("the balance landed", Duration::from_secs(60), || filters(&path("A")).is_some() && filters(&path("C")).is_some());
     let lead = ctl.state.borrow().store().settings().balance_filters;

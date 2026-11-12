@@ -38,7 +38,7 @@ impl EditorStore {
         let mosaics: Vec<bool> = paths.iter().map(|p| self.mosaic(p)).collect();
         // A missing original reads as no photo, never as a fresh one its absent sidecar would suggest.
         let loaded = in_parallel(paths, |i, path| {
-            sidecar::original_present(Path::new(path)).and_then(|()| sidecar::read(Path::new(path), mosaics[i], true))
+            sidecar::original_present(Path::new(path)).and_then(|()| sidecar::read(Path::new(path), mosaics[i]))
         });
         let mut gone = 0;
         let mut writes = Vec::new();

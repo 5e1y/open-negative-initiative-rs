@@ -31,9 +31,9 @@ impl ExifMetadata {
     }
 
     /// What a hand set on this line: a field equal to any of `derived`'s is left to derive.
-    pub fn beyond(&self, derived: &[&ExifMetadata]) -> TypedExif {
+    pub fn beyond(&self, derived: &[&ExifMetadata]) -> ExifLine {
         let set = |get: fn(&ExifMetadata) -> &String| Some(get(self)).filter(|mine| derived.iter().all(|d| get(d) != *mine)).cloned();
-        TypedExif {
+        ExifLine {
             camera: set(|m| &m.camera),
             lens: set(|m| &m.lens),
             film: set(|m| &m.film),
@@ -48,7 +48,7 @@ impl ExifMetadata {
 /// The EXIF fields a hand set, as the sidecar keeps them: an absent field derives at each opening, an
 /// empty one was cleared, so a block written whole by an older build reads as set in full.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-pub struct TypedExif {
+pub struct ExifLine {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub camera: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -65,9 +65,9 @@ pub struct TypedExif {
     pub copyright: Option<String>,
 }
 
-impl TypedExif {
+impl ExifLine {
     pub fn is_empty(&self) -> bool {
-        *self == TypedExif::default()
+        *self == ExifLine::default()
     }
 
     /// The line shown: each field set here over `derived`'s.
@@ -87,17 +87,17 @@ impl TypedExif {
 
 #[cfg(test)]
 mod tests {
-    use super::{ExifMetadata, TypedExif};
+    use super::{ExifMetadata, ExifLine};
 
     #[test]
     fn a_line_kept_beyond_its_derived_one_comes_back_over_it() {
         let derived = ExifMetadata { camera: "Nikon FM2".into(), film: "Kodak Portra 400".into(), artist: "A".into(), ..ExifMetadata::default() };
         let shown = ExifMetadata { lens: "50mm".into(), artist: "B".into(), film: String::new(), ..derived.clone() };
         let kept = shown.beyond(&[&derived]);
-        let expected = TypedExif { lens: Some("50mm".into()), artist: Some("B".into()), film: Some(String::new()), ..TypedExif::default() };
+        let expected = ExifLine { lens: Some("50mm".into()), artist: Some("B".into()), film: Some(String::new()), ..ExifLine::default() };
         assert_eq!(kept, expected, "only what differs is kept, a cleared film as cleared");
         assert_eq!(kept.over(&derived), shown, "the film cleared by hand stays cleared");
         // Twin: without its empty key the cleared film derives again.
-        assert_ne!(TypedExif { film: None, ..kept }.over(&derived), shown);
+        assert_ne!(ExifLine { film: None, ..kept }.over(&derived), shown);
     }
 }

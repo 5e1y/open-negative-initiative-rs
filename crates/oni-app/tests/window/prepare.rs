@@ -17,7 +17,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::common;
-use crate::prepare_parts::{as_scanned, click, loaded, stored};
+use crate::prepare_parts::{as_scanned, click, keeps_draft, kept_in_frame, loaded, stored};
 
 pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step() {
     let gpu = match oni_app::render::Device::open() {
@@ -117,7 +117,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.until("the draft written", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "base"));
     let d = drafted().unwrap();
     assert!(["A.tif", "B.tif", "C.tif"].iter().all(|n| mark(&d, n).is_some()) && mark(&d, "D.tif").is_none(), "each frame's place, D left out");
-    assert!(["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "twin: no frame's sidecar carries it");
+    assert!(["A.tif", "B.tif", "C.tif"].iter().all(|n| !keeps_draft(&canonical(n))), "twin: no frame's sidecar carries it");
     assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_enabled()), ("No base picked yet.", "NEXT", true));
     let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
     assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
@@ -314,7 +314,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(dates(), before, "leaving moves no sidecar");
     // The roll as a quit of an earlier build leaves it: a draft in each frame's sidecar, gathered on entry.
     for n in roll {
-        sidecar::set_roll_draft(Some(stored(&draft, n, &canonical)), &canonical(n), false).unwrap();
+        kept_in_frame(&canonical(n), &stored(&draft, n, &canonical));
     }
 
     // B picked brings the same roll back where it stood.
@@ -340,7 +340,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(p.get_landed_alone() && !w.global::<Canvas>().get_together(), "twin: no frames together");
     let ids: Vec<Option<Id>> = ["B.tif", "C.tif"].iter().map(|n| loaded(&canonical(n)).settings.roll_reference.map(|r| r.id)).collect();
     assert!(ids[0].is_some() && ids[0] == ids[1], "B and the flagged C stand on one roll: {ids:?}");
-    assert!(["B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "a measure clears the frames' drafts");
+    assert!(["B.tif", "C.tif"].iter().all(|n| !keeps_draft(&canonical(n))), "no frame keeps a draft of its own");
     rig.until("the folder's draft dropped", Duration::from_secs(10), || drafted().is_none());
     assert_eq!(ctl.state.borrow().store().settings().roll_reference.as_ref().map(|r| r.id), ids[0], "A, open, landed in memory");
     assert!(loaded(&canonical("D.tif")).settings.roll_reference.map(|r| r.id) != ids[0], "twin: D keeps its own roll");

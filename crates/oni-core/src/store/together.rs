@@ -184,7 +184,7 @@ impl EditorStore {
         }
         let held = paths
             .iter()
-            .map(|p| sidecar::read(Path::new(p), self.mosaic(p), true).map(|l| l.settings).unwrap_or_default())
+            .map(|p| sidecar::read(Path::new(p), self.mosaic(p)).map(|l| l.settings).unwrap_or_default())
             .collect();
         self.together = Together { paths, held, took: Vec::new(), generation: self.together.generation + 1 };
     }

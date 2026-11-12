@@ -31,7 +31,7 @@ fn targets(paths: &[PathBuf]) -> Vec<Target> {
         .iter()
         .map(|p| {
             let mosaic = oni_decode::decodes_via_mosaic(p);
-            let settings = oni_settings::sidecar::read(p, mosaic, true).map(|l| l.settings).unwrap_or_default();
+            let settings = oni_settings::sidecar::read(p, mosaic).map(|l| l.settings).unwrap_or_default();
             Target { path: p.clone(), settings }
         })
         .collect()

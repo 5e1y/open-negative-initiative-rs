@@ -19,7 +19,7 @@ pub struct ScannerClicks {
 }
 
 impl ScannerClicks {
-    /// Steps in one unit of the screen, the unit Swift's sidecar counts in.
+    /// Steps in one unit of the screen.
     pub const PER_UNIT: i64 = 2;
     pub const DENSITY_RANGE: (i64, i64) = (-24 * Self::PER_UNIT, 24 * Self::PER_UNIT);
     pub const WARMTH_RANGE: (i64, i64) = (-10 * Self::PER_UNIT, 10 * Self::PER_UNIT);
@@ -49,21 +49,10 @@ impl ScannerClicks {
     }
 }
 
-/// Swift's whole units under each letter, toward zero, and the half step left over under `halves`,
-/// which Swift ignores; a keypad on whole units writes what Swift writes.
+/// Each letter's steps; a sidecar of format 21 and under counts whole units, `migrate`'s to read.
 impl Serialize for ScannerClicks {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut map = Map::new();
-        let mut halves = Map::new();
-        for (key, steps) in Self::KEYS.into_iter().zip(self.all()) {
-            map.insert(key.into(), Value::from(steps / Self::PER_UNIT));
-            if steps % Self::PER_UNIT != 0 {
-                halves.insert(key.into(), Value::from(steps % Self::PER_UNIT));
-            }
-        }
-        if !halves.is_empty() {
-            map.insert("halves".into(), Value::Object(halves));
-        }
+        let map: Map<String, Value> = Self::KEYS.into_iter().zip(self.all()).map(|(k, steps)| (k.to_owned(), Value::from(steps))).collect();
         map.serialize(serializer)
     }
 }
@@ -72,17 +61,14 @@ impl Serialize for ScannerClicks {
 impl<'de> Deserialize<'de> for ScannerClicks {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let map = tolerant::object(Value::deserialize(d)?, "ScannerClicks")?;
-        let halves = map.get("halves").and_then(Value::as_object);
-        let read = |key: &str| {
-            let half = halves.and_then(|h| tolerant::integer(h.get(key))).unwrap_or(0).clamp(-1, 1);
-            tolerant::integer(map.get(key)).unwrap_or(0).saturating_mul(Self::PER_UNIT).saturating_add(half)
-        };
+        let read = |key: &str| tolerant::integer(map.get(key)).unwrap_or(0);
         Ok(ScannerClicks::new(read("d"), read("c"), read("m"), read("y"), read("w")))
     }
 }
 
 /// The Color tab's finishing on the Scanner face, apart so a gesture on one face never moves the other.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ScannerFinish {
     pub contrast: f32,
     #[serde(rename = "manualCurves")]
@@ -102,27 +88,21 @@ mod tests {
     fn a_keypad_reads_absent_keys_at_rest_and_clamps_past_its_stops() {
         let absent: ScannerClicks = serde_json::from_str("{}").unwrap();
         assert_eq!(absent, ScannerClicks::default());
-        let past: ScannerClicks = serde_json::from_str(r#"{"d":25,"c":-30,"w":11}"#).unwrap();
+        let past: ScannerClicks = serde_json::from_str(r#"{"d":50,"c":-60,"w":21}"#).unwrap();
         assert_eq!(past, ScannerClicks::new(48, -48, 0, 0, 20));
-        // Twin: counts on and inside the stops read as written, in steps, a retired key ignored.
-        let inside: ScannerClicks = serde_json::from_str(r#"{"d":-24,"m":7,"y":-3,"w":-10,"s":20}"#).unwrap();
-        assert_eq!((inside.d, inside.m, inside.y, inside.w), (-48, 14, -6, -20));
-        assert_ne!(inside.m, 7, "a stored unit is two steps, so an old sidecar reads unchanged on screen");
+        // Twin: counts on and inside the stops read as written, in steps, an unknown key ignored.
+        let inside: ScannerClicks = serde_json::from_str(r#"{"d":-48,"m":7,"y":-3,"w":-20,"s":20}"#).unwrap();
+        assert_eq!((inside.d, inside.m, inside.y, inside.w), (-48, 7, -3, -20));
     }
 
     #[test]
-    fn a_half_step_survives_a_sidecar_and_whole_units_write_as_swift_does() {
-        let halves = ScannerClicks::new(3, -1, 4, -5, 1);
-        let written = serde_json::to_value(halves).unwrap();
-        assert_eq!(written, serde_json::json!({"d": 1, "c": 0, "m": 2, "y": -2, "w": 0, "halves": {"d": 1, "c": -1, "y": -1, "w": 1}}));
-        assert_eq!(serde_json::from_value::<ScannerClicks>(written).unwrap(), halves);
-        // Twin: on whole units the object is Swift's own, no `halves`, and reads back the same.
-        let whole = ScannerClicks::new(6, -2, 0, 48, -20);
-        let written = serde_json::to_value(whole).unwrap();
-        assert_eq!(written, serde_json::json!({"d": 3, "c": -1, "m": 0, "y": 24, "w": -10}));
-        assert_eq!(serde_json::from_value::<ScannerClicks>(written).unwrap(), whole);
-        // And a `halves` past one step is held to one, so it never reads as a unit of its own.
-        let wide: ScannerClicks = serde_json::from_str(r#"{"d":1,"halves":{"d":5,"c":-1.5}}"#).unwrap();
-        assert_eq!((wide.d, wide.c), (3, 0));
+    fn steps_are_written_as_they_stand_and_read_back_the_same() {
+        let odd = ScannerClicks::new(3, -1, 4, -5, 1);
+        let written = serde_json::to_value(odd).unwrap();
+        assert_eq!(written, serde_json::json!({"d": 3, "c": -1, "m": 4, "y": -5, "w": 1}));
+        assert_eq!(serde_json::from_value::<ScannerClicks>(written).unwrap(), odd);
+        // Twin: a keypad written in whole units would read half its steps back.
+        let halved = serde_json::json!({"d": 1, "c": 0, "m": 2, "y": -2, "w": 0});
+        assert_ne!(serde_json::from_value::<ScannerClicks>(halved).unwrap(), odd);
     }
 }

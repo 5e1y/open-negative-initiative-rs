@@ -1,29 +1,56 @@
-//! One writer at a time per sidecar across the process, from a helper's read to its rename.
+//! One writer at a time per sidecar across the process, from a helper's read to its rename; the
+//! thread holding one may hold it again, as a write migrates the file it reads first.
 
 use super::url_for;
 use std::path::{Path, PathBuf};
+use std::thread::ThreadId;
 
-/// The sidecars a write holds, one writer at a time each across the process: a field set on one
+/// The sidecars a write holds, each by one thread, as many times as it took it: a field set on one
 /// thread is never lost under a whole rewrite another read before it.
-static HELD: std::sync::Mutex<Vec<PathBuf>> = std::sync::Mutex::new(Vec::new());
+static HELD: std::sync::Mutex<Vec<(PathBuf, ThreadId, usize)>> = std::sync::Mutex::new(Vec::new());
 static FREED: std::sync::Condvar = std::sync::Condvar::new();
 
 /// A sidecar held, let go when dropped.
-pub(super) struct Held(PathBuf);
+pub(crate) struct Held(PathBuf);
 
-pub(super) fn hold(original: &Path) -> Held {
-    let path = url_for(original);
-    let mut held = HELD.lock().unwrap_or_else(|e| e.into_inner());
-    while held.contains(&path) {
-        held = FREED.wait(held).unwrap_or_else(|e| e.into_inner());
+/// The sidecar by its folder's resolved path: two spellings of one folder, `/tmp` and `/private/tmp`,
+/// are one file, so one writer.
+fn key(original: &Path) -> PathBuf {
+    let sidecar = url_for(original);
+    match (sidecar.parent().and_then(|p| std::fs::canonicalize(p).ok()), sidecar.file_name()) {
+        (Some(folder), Some(name)) => folder.join(name),
+        _ => sidecar,
     }
-    held.push(path.clone());
+}
+
+pub(crate) fn hold(original: &Path) -> Held {
+    let path = key(original);
+    let me = std::thread::current().id();
+    let mut held = HELD.lock().unwrap_or_else(|e| e.into_inner());
+    loop {
+        match held.iter_mut().find(|(p, _, _)| *p == path) {
+            None => break,
+            Some((_, owner, count)) if *owner == me => {
+                *count += 1;
+                return Held(path);
+            }
+            Some(_) => held = FREED.wait(held).unwrap_or_else(|e| e.into_inner()),
+        }
+    }
+    held.push((path.clone(), me, 1));
     Held(path)
 }
 
 impl Drop for Held {
     fn drop(&mut self) {
-        HELD.lock().unwrap_or_else(|e| e.into_inner()).retain(|p| *p != self.0);
+        let mut held = HELD.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(at) = held.iter().position(|(p, _, _)| *p == self.0) {
+            held[at].2 -= 1;
+            if held[at].2 == 0 {
+                held.remove(at);
+            }
+        }
+        drop(held);
         FREED.notify_all();
     }
 }
@@ -53,7 +80,22 @@ mod tests {
         set_label(Medal::Silver, &other, false).unwrap();
         drop(held);
         assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok(true), "once let go, the label is set");
-        assert_eq!(read(&photo, false, true).unwrap().label, Medal::Gold);
+        assert_eq!(read(&photo, false).unwrap().label, Medal::Gold);
+        // The thread holding a sidecar takes it again without waiting on itself.
+        let again = (hold(&other), hold(&other));
+        drop(again);
+        set_label(Medal::Gold, &other, false).unwrap();
+        // Another spelling of the same folder holds the same sidecar.
+        let long = Path::new("/private").join(photo.strip_prefix("/").unwrap());
+        if long.exists() {
+            let held = hold(&long);
+            let (tx, rx) = mpsc::channel();
+            let path = photo.clone();
+            std::thread::spawn(move || tx.send(set_label(Medal::Bronze, &path, false).is_ok()).unwrap());
+            assert!(rx.recv_timeout(Duration::from_millis(300)).is_err(), "the other spelling waits");
+            drop(held);
+            assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok(true));
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -199,7 +199,7 @@ fn a_disk_that_is_away_invents_nothing_and_plugging_it_back_is_the_repair() {
     let mut edited = PipelineSettings::default();
     edited.gains.stops = [1.0, 0.0, 0.0];
     sidecar::write(&edited, &raw, WriteOptions::default()).unwrap();
-    let after = sidecar::read(&raw, true, true).unwrap();
+    let after = sidecar::read(&raw, true).unwrap();
     assert!(after.imported_at == Some(now) && after.settings == edited, "a later setting keeps the import date");
 
     let away = sandbox.join("partie2.RW2");

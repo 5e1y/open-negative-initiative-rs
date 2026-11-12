@@ -21,7 +21,7 @@ impl Copied {
 
 /// The codec's text, naming the rows it carries when they are fewer than the look's.
 fn board_text(settings: &PipelineSettings, carries: &BTreeSet<String>) -> Result<String, String> {
-    let text = codec::encode_settings(settings).map_err(|e| e.to_string())?;
+    let text = document::encode_settings(settings).map_err(|e| e.to_string())?;
     if *carries == preset_parameters::pasted_rows() {
         return Ok(text);
     }
@@ -38,7 +38,7 @@ impl EditorStore {
             None => Ok(self.settings.clone()),
             Some(path) => {
                 let original = Path::new(path);
-                sidecar::original_present(original).and_then(|()| sidecar::read(original, self.mosaic(path), true)).map(|l| l.settings).map_err(|e| refusal::said(&e))
+                sidecar::original_present(original).and_then(|()| sidecar::read(original, self.mosaic(path))).map(|l| l.settings).map_err(|e| refusal::said(&e))
             }
         };
         match read.and_then(|settings| board_text(&settings, carries)) {
@@ -49,7 +49,7 @@ impl EditorStore {
 
     pub(super) fn paste_source(&self) -> Option<Copied> {
         let text = self.board.settings.as_ref()?;
-        let donor = oni_settings::migrate::document(text.as_bytes()).ok()?.settings;
+        let donor = oni_settings::migrate::document(text.as_bytes()).ok()?.document.settings;
         let named = serde_json::from_str::<serde_json::Value>(text).ok();
         let carries = named.as_ref().and_then(|v| v.get(CARRIES)).and_then(serde_json::Value::as_array);
         let left_out = match carries {

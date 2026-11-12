@@ -10007,5 +10007,285 @@
     "title": "The opening-reading check reads the canvas on the first render, before the full resolution can",
     "status": "done",
     "detail": "a_decode_under_a_reading_left_never_lands_on_the_canvas pumped 200 ms after the opening's render and required the full resolution not built, built once the frame stayed a second from its opening. On WARP the opening's render took 11 s, and under load on a Mac over a second, so the build was due at once and the check failed with the app right. The preview gate runs the two decodes in turn and the full resolution is asked only after a render lands, so the first render follows both decodes and no full-resolution render can land before the next pump: the canvas is read there, the drawn render asserted to be the preview's. Without #1730's reading check the canvas still shows the reading left (checked on the Mac)."
+  },
+  {
+    "id": 1960,
+    "type": "refactor",
+    "title": "The sidecar's document is ONI's own, oni-frame, written by plain serde_json from its types",
+    "status": "done",
+    "detail": "Cut the Swift cord, lot 3. oni_settings::codec becomes document.rs: Document { format: \"oni-frame\", version, original { print, tail }, importedAt, label (omitted when none), trashedAt, exifLine, autoBalance (typed, f32 digits), settings }, encode = serde_json::to_vec_pretty plus a newline, decode typed in one pass, version_of and sniffed read the top alone. Every settings container gains #[serde(default)], so an absent key reads its rest; no conversion parameter is renamed. json.rs (the former app's key order and number spelling, the typed Node tree, semantic_difference) and kept.rs (keys of a newer app carried through each rewrite) are deleted: a newer file is never rewritten, so nothing is carried. The roll marker keeps its name, keys and date scale, written by plain serde_json. Measured with examples/sidecar_bench.rs on the typical corpus frame: encode 8.8 us, decode 17.3 us, sniff 5.6 us (targets 12 and 35)."
+  },
+  {
+    "id": 1961,
+    "type": "change",
+    "title": "The Scanner keypad is kept in steps; halves go",
+    "status": "done",
+    "detail": "ScannerClicks serialises its five counts as they stand, in steps, and reads them back tolerant and clamped. A document of format 21 and under is read by migrate::reshape: steps = 2 x whole + the half step held to one, then the range's stop, exactly as the former reader computed. Checks: reshape whole_units_and_their_half_step_read_in_steps ({d: 3, halves: {d: 1}} is 7, -3/-1 is -7, past the range lands on the stop; twin: dropping the half reads 6), scanner steps_are_written_as_they_stand (twin: whole units read half the steps), oni-core scanner a_key_moves_half_a_unit (a key stores 1 step, twin 2)."
+  },
+  {
+    "id": 1962,
+    "type": "change",
+    "title": "The EXIF line is kept under exifLine, each field derived, cleared or set",
+    "status": "done",
+    "detail": "TypedExif is renamed ExifLine and the sidecar keeps it under exifLine: an absent field derives at each opening, an empty one was cleared by hand, a text was set. Renamed because the typed reader of 1.4.0 to 1.5.6 requires seven strings under exif and would call a whole sidecar unreadable; under another key it ignores it and opens read-only. A block of format 21 is carried with the meaning the reader before this one gave it (#1907: an empty string in a block written whole is a field cleared), so no line a person cleared comes back; the corpus goldens read every line over an empty derived one and hold."
+  },
+  {
+    "id": 1963,
+    "type": "feature",
+    "title": "migrate::file and migrate::folder bring a sidecar to this format in place, or leave it byte for byte",
+    "status": "done",
+    "detail": "migrate::standing (Current, Older, Newer, NotASidecar), converted (the frozen chain on the raw document, the merge over the resting one, reshape, the typed steps, then the camera matrix and the strokes on the scan asked of the original), file (held one writer a process, the original present, the roll draft adopted into its folder's .oni-prepare.json, then atomic::write_verified: the temporary read back must decode equal to the conversion and encode back to itself, the old file unmoved, one rename, its modification date set back) and folder (every X.json beside a file X right inside a folder, holding an object with settings). Refusal: Unreadable, Newer, ScanUnknown, CameraUnknown, Away (original kept in the cloud), Unwritable, Unverified, Moved; Facts now answer Result, so a camera the file cannot say now or an original away is refused, never taken for a camera without a matrix. migration/facts.rs installs those answers."
+  },
+  {
+    "id": 1964,
+    "type": "data-safety",
+    "title": "A sidecar read brings an earlier file to this format first, or shows it read-only and says why",
+    "status": "done",
+    "detail": "sidecar::read: Current decodes typed; Newer reads as far as these types do, read-only; Older runs migrate::file and reads the result, an unreadable one stays an error, never a new photo, and any other refusal shows the conversion in memory, writable false, Loaded::held_back saying why. Loaded loses roll_draft and gains auto_balance and held_back; a write meets an earlier file through the same path and never writes over one held back (Error::Held). The sidecar's hold is reentrant for the thread holding it, as a write migrates the file it reads. set_auto_balance is a field setter over the typed AutoBalance. The editor opens a held-back photo read-only with its reason (refusal::held_back, in French and Spanish too)."
+  },
+  {
+    "id": 1965,
+    "type": "change",
+    "title": "Roll drafts leave the frames: a migration lays each into its folder's file",
+    "status": "done",
+    "detail": "RollDraft and DraftBase move to migrate::draft as what format 21 kept; a frame's draft taken out by the conversion joins its folder's .oni-prepare.json (prepare::adopt: a frame the file lists keeps the file's word, a draft of the same id gains the frame, another id stands as its own). sidecar::set_roll_draft, WriteOptions::roll_draft and the Prepare machinery reading and clearing each frame's own draft go (draft::found reads the folders' files alone, Found and the stored set go, land_roll loses its prepared list)."
+  },
+  {
+    "id": 1966,
+    "type": "feature",
+    "title": "The sweep brings every sidecar a person keeps in the background, one thread a volume; an opened folder is gated",
+    "status": "done",
+    "detail": "oni_app::migration::sweep: started once Shell stands (Shell::migrate) when the ledger owes it (sidecars under this format, or pending or refused places), it walks the folder last opened, the favourites (State/places.json or the old files), the roots, recursively by roots::survey, then the distinct folders of every index*.sqlite of the caches (oni_library::index::listed, opened read-only) and of the projects' members, a folder inside a tree left to the tree (migration::walk). One thread per volume (Computer::volume_root), one file after another; alive is read before each file, and a quit joins the threads. At its end the ledger, State/migration.json version 2, holds sidecars = this format, pending (what did not answer) and refused (folders with files left as they are, with their counts); a disk back starts it again. read_rows gates every folder its survey lists before any row is read, once a run. Logs name a photo by its token and a refusal by its kind alone."
+  },
+  {
+    "id": 1967,
+    "type": "feature",
+    "title": "The person is told: one sheet at the first launch, a line while the sweep runs, a notice if files were left",
+    "status": "done",
+    "detail": "migration::brought reports tell once, where the support folder held something (preferences, roots, favourites, projects, library, thumbnails, presets or State files) and the ledger's told is below this format; a fresh support folder records it silently. UpgradedSheet (notice.slint, drawn over the welcome): 'Your Edits, Brought Up to Date' and its four lines, GOT IT. The status bar shows 'Bringing settings up to date: {done} of {total} folders' in the gallery, beside a folder's reading when both run. At the end, only when files were left, the Told notice '{n} photos keep their earlier settings file' with its reason. All texts in French and Spanish. Release-notes line, the owner's to publish: 'This version keeps each photo's settings in a new format and converts the ones you have, by itself. There is no way back: an older ONI opens converted photos read-only.'"
+  },
+  {
+    "id": 1968,
+    "type": "change",
+    "title": "Presets are oni-preset files of this format; share codes ONI2, ONI1 read for ever",
+    "status": "done",
+    "detail": "A preset file is { format: \"oni-preset\", version, preset { id, name, parameters, tint, note }, settings }, plain serde_json. presets::migrate holds what reads earlier ones (legacy_rows, the retired row names, the single-file presets.json takeover) and brought(), which rewrites each earlier file in place through write_verified, run at every launch by migration::support (a newer file is skipped and never listed). A new share code is ONI2: over this format's departures, completed over the resting settings when read; ONI1: codes go through the settings' chain for ever. The paste board's text is this format's document."
+  },
+  {
+    "id": 1969,
+    "type": "test",
+    "title": "The corpus migrates: each of the 40 files to this format and back to its golden, and the 348 of the wide corpus",
+    "status": "done",
+    "detail": "migrate::corpus: each corpus sidecar laid beside an empty original in a Roll folder of a scratch copy, migrate::file_with its facts, then sidecar::read and the folder's draft give the golden of the former reader, text for text; a migrated file is a fixed point (encode(decode(bytes)) == bytes) and a second pass is Current, bytes and date unchanged; a broken or newer one is refused and byte for byte what it was. Twins: dropping the half steps fails the files that have them; swapping d and c fails every Scanner frame; a field written under another name is no fixed point; a golden with one digit changed; facts without the matrix part in the gains. The wide corpus (ONI_SIDECAR_CORPUS, 348 sidecars, outside the repository, read only): every one migrated to its golden."
+  },
+  {
+    "id": 1970,
+    "type": "test",
+    "title": "A migration is never half-written, and an older build meets a file of this format read-only",
+    "status": "done",
+    "detail": "migrate::checks: a refused rename leaves the old bytes and no temporary, the next pass brings it; a child process killed once the temporary is written leaves the old file whole and the next run takes the temporary and migrates (twin: a writer truncating the target then writing leaves half a file under the same kill); a read-only folder (0555) refuses Unwritable, the photo opens read-only with its edits as read and the file untouched, and migrates once writable (twin: a fresh photo's rest differs); the reader of 1.5.6 (its typed tail over its resting document, its guard at format 20) reads a file of this format and may not write it (twin: the line under exif makes that reader fail, which is why the key is exifLine); a file of a newer format is left as it is and never written."
+  },
+  {
+    "id": 1971,
+    "type": "test",
+    "title": "The sweep over a scratch library; the gate; the telling; a window check of the whole path",
+    "status": "done",
+    "detail": "migration::sweep_tests: a library of 400 corpus copies in 20 folders ends with every sidecar in this format, no modification date moved (twin: a plain atomic write moves it), and no sweep owed after; a sweep stopped part way never says it ended, and the next brings the rest, each once (the two runs' counts sum to the file count); a root on a disk away is pending and brought once it answers (twin: a ledger that forgot it owes nothing and leaves the files old); a read-only folder is refused, counted for the end notice and listed in the ledger, then brought; an opened folder never known is gated before its rows land (twin: an earlier sidecar reaching the live decoder is refused). migration::tests the_new_format_is_told_once_and_never_to_an_empty_support_folder. Window check migration::an_earlier_library_is_brought_while_the_person_works: sheet shown and closed, the sweep brings three format-19 sidecars, each reading as before, double click, a notch, back: only the edited frame moves."
+  },
+  {
+    "id": 1972,
+    "type": "test",
+    "title": "The sidecar's checks rewritten on this format's files",
+    "status": "done",
+    "detail": "real_files reads a corpus sidecar into a scratch copy (it becomes this format at its first read) for the round trip, the label and trash keeping the revision, a newer format read-only and the absent and unreadable cases; swift_form and the roll #8 byte-identity checks go with the former writer. guarded_writes: a written sidecar holds Document's keys alone and a format 21 file's unknown key is gone after migration. auto_balance on the typed value, f32 digits kept. codec_checks ages documents through migrate::reshape::as_stored (the shape format 21 wrote). foreign_sidecar, strokes_on_scan (an unknown scan size: read-only, file untouched, a write refused Held) and retired_matrices (written once by the read; twin: the chain run again moves the gains twice) follow the new reader."
+  },
+  {
+    "id": 1973,
+    "type": "tooling",
+    "title": "examples/sidecar_bench.rs and examples/migrate.rs",
+    "status": "done",
+    "detail": "sidecar_bench times encode, decode, sniff and the conversion of a stored file (medians of 2 000 and 300 runs); migrate prints a sidecar's conversion to this format without writing (rewrite.rs goes); reading.rs prints a reading through migrate::reading with the draft as its folder gathers it."
+  },
+  {
+    "id": 1974,
+    "type": "fix",
+    "title": "A passes lead's sidecar is read with its own mosaic",
+    "status": "done",
+    "detail": "rgb_passes::framings read each lead's sidecar as a file outside the RAW engine; a read now brings an earlier file to this format, and a step of the chain depends on how the original decodes, so framings takes the store's mosaic rule."
+  },
+  {
+    "id": 1975,
+    "type": "docs",
+    "title": "CLAUDE.md names the sidecar format and its migration; comments of the value types say what, not where from",
+    "status": "done",
+    "detail": "The format line of 'Decisions that look like mistakes' names oni-frame, plain serde_json of oni_settings::document, the migration in oni_settings::migrate by the sweep or a first read, and an older build reading read-only. cg.rs, collation.rs and id.rs describe their values by what the sidecar and the index need."
+  },
+  {
+    "id": 1976,
+    "type": "measure",
+    "title": "The sweep's speed on a scratch library of synthetic sidecars",
+    "status": "done",
+    "detail": "On this Mac (M2 Max, internal SSD), the dev profile (workspace opt-level 1, dependencies 3), one volume: 30 400 sidecars of formats 19 and 20 copied from the corpus into 800 folders under one root, swept by migration::sweep_tests with ONI_SWEEP_FILES=30400: 18.2 s, 0.60 ms a file, every one brought to this format and none of their dates moved; the default run of the check, 400 files in 20 folders, takes about 0.6 s. A run of the real binary (ONI_BACKGROUND, scratch ONI_SUPPORT, ONI_CACHES and HOME) on a scratch copy of five frames of the reference roll's test copy: the gate brought the opened folder before its rows, the sweep then found nothing left, and each sidecar reads as its earlier file did."
+  },
+  {
+    "id": 1977,
+    "type": "data-safety",
+    "title": "Lot 3 lands at format 21's number: no build of the branch can write a file of format 22 before the last commit",
+    "status": "done",
+    "detail": "Every piece above is in this commit with document::VERSION still 21: a sidecar is Current only when it names itself oni-frame at this version, so files of format 21 written by earlier builds are Older and migrate. The flip to 22 is the lot's last commit."
+  },
+  {
+    "id": 1978,
+    "type": "data-safety",
+    "title": "Sidecar format 22",
+    "status": "done",
+    "detail": "document::VERSION moves to 22 in the lot's last commit, after every check passed at 21: every earlier file is Older and migrates, an older build reads a 22 file read-only. The demo scene oni-demos/scenes/P1071951.json is written again at 22 (examples/migrate). At 22: oni-settings (the corpus and the 348 of the wide corpus), oni-core, oni-library, oni-export, oni-i18n, oni-measure, oni-pipeline, oni-demos, oni-app --lib, every window check (260), architecture and scripts/lint pass."
+  },
+  {
+    "id": 1979,
+    "type": "fix",
+    "title": "One folder under two spellings is one folder to the sweep, and one sidecar is held by one writer whatever its spelling",
+    "status": "done",
+    "detail": "Found by the real app on a scratch library (scratch ONI_SUPPORT, ONI_CACHES and HOME; a copy of five frames of the reference roll's test copy, two in a read-only folder named as a root by its /private/tmp spelling): the sweep took that folder under both spellings and counted each refused file twice (the notice said 4 photos for 2), and the gate, by the opened folder's spelling, and the sweep, by the survey's, held one sidecar under two keys, so one file was refused as moved under the other's write. The plan spells every place as a survey does (paths::canonical); the hold keys a sidecar by its folder's resolved path; a file another writer brought meanwhile counts as current, not as left. Checks: sweep_tests' read-only folder rooted by its /private spelling (twin: without the spelling, 4 refused instead of 2), held's other spelling waits (twin: keyed by the spelling, it does not). The app again: 2 refused, the notice said 2, and the next launch, the folder writable, brought them; every sidecar reads as its earlier file did."
+  },
+  {
+    "id": 1980,
+    "type": "fix",
+    "title": "The sweep touches only ONI's sidecars",
+    "status": "done",
+    "detail": "Lot 3 review (data loss 1). migrate::folder took any X.json holding a settings key beside any regular file X, so another program's tool.json beside tool was rewritten as an oni-frame document with no backup. A sidecar is now X.json beside a file X the caller wants (the sweep passes library::is_importable, the survey's rule; hidden names skipped) carrying an earlier sidecar's marks (migrate::marked: a tolerant integer version and a settings object naming its mode). Check: oni-settings tests/sweep_pass a_pass_touches_only_a_sidecar_beside_a_photo_with_a_sidecars_marks (another program's file and a namesake JSON without the marks untouched; twins: the photo's own sidecar brought by the same pass, the converter alone takes the program's file)."
+  },
+  {
+    "id": 1981,
+    "type": "fix",
+    "title": "No cloud original is downloaded for a migration",
+    "status": "done",
+    "detail": "Lot 3 review (compat 1). The sweep and the gate called decodes_via_mosaic on every original before any cloud check, so a first launch downloaded every iCloud or OneDrive original beside a 1.5.x sidecar. Facts::mosaic is now Mosaic::Known or Mosaic::Asked, asked only by formats under 15 (the chain's only use); every fact the installed lookup reads (mosaic, camera, scan size, the green pass of a lead included) first checks identity::in_cloud of the file it would read and answers Away. A refusal Away leaves the sidecar as it is and its folder pending. Checks: tests/sweep_pass a_format_that_asks_no_fact_never_asks_the_original_and_the_oldest_ask_how_it_decodes (format 20 asks nothing; twin: a format 14 sidecar asks and an original away leaves it byte for byte); oni-app migration::tests an_original_kept_in_the_cloud_is_asked_nothing (twin: on the disk the same facts are read)."
+  },
+  {
+    "id": 1982,
+    "type": "fix",
+    "title": "A read writes nothing; a camera the table never named is never taken for one without a matrix",
+    "status": "done",
+    "detail": "Lot 3 review (compat 2). sidecar::read migrated and wrote the file, so tools (upgrade_check, sensor_colours, dust_census, look_lab_strip) rewrote whole folders, and with no facts installed Facts::bare answered no matrix, losing the compensation for good. Now sidecar::read reads an earlier format in memory and writes nothing (read-only with the reason when a fact is missing); a write by the person brings the file first through migrate::file (its draft adopted), and only the sweep, the gate and those writes migrate. Facts::bare answers MatrixUnknown; the installed table answers a matrix for a camera in cameras, none for one in unmatched (measured here, no fit), MatrixUnknown for any other and for no table at all (a fresh Mac, Windows), the file then left as it is and said once. Checks: tests/sweep_pass a_read_writes_nothing_and_no_table_never_says_a_camera_had_no_matrix (twin: a table that answers converts it, the gains moved); oni-app migration::tests a_camera_the_table_never_named_is_unknown_never_taken_for_one_without_a_matrix; checks.rs a_read_only_folder_reads_its_photo_as_it_read_refuses_a_write_and_is_brought_once_writable; retired_matrices and strokes_on_scan now bring the file at its first write."
+  },
+  {
+    "id": 1983,
+    "type": "fix",
+    "title": "Settings of format 22 go on the clipboard under their own type",
+    "status": "done",
+    "detail": "Lot 3 review (compat 3). The new build wrote a 22 document under app.opennegative.settings, which 1.5.6 pastes with no version check, doubling the keypad. Copies now go under app.opennegative.settings.2 (as ONI2: did for share codes), which replaces an earlier build's copy; app.opennegative.settings is still read, and kept across a framing or window copy. Check: pasteboard::tests settings_of_this_format_go_under_their_own_type_and_an_earlier_copy_still_pastes (twin: under the earlier type the copy reaches that build)."
+  },
+  {
+    "id": 1984,
+    "type": "fix",
+    "title": "One writer for a folder's Prepare file; an unreadable one is never written over",
+    "status": "done",
+    "detail": "Lot 3 reviews (data loss 3, compat 4). prepare::read, write and adopt hold the folder's .oni-prepare.json from read to rename (one lock per resolved folder across the process), so the sweep, the gate, a write's migration and a Prepare step never drop each other's frames; a file that cannot be read (I/O error or not parsing) is an error for write and adopt, never rewritten as empty, and reads as none. A migration whose draft cannot be kept leaves its sidecar as it is (Refusal::Drafts). Check: prepare::tests an_unreadable_file_is_never_written_over_and_frames_adopted_at_once_are_all_kept (200 frames adopted from 8 threads all kept)."
+  },
+  {
+    "id": 1985,
+    "type": "fix",
+    "title": "The sweep ends: pending only for a disk away, a file left said once and owing no sweep",
+    "status": "done",
+    "detail": "Lot 3 review (compat 5). A folder gone for good or one file that could never convert kept the sweep due forever, walking the whole library at every launch. Ledger 3: pending holds only places whose disk is away (presence Offline Disconnected) and folders holding a photo whose original is in the cloud; a place gone from a disk present is dropped, one refused by permissions logged; left lists each file left as it was by its original's path, with its reason (Why) and its sidecar's stamp, said once, and taken again only once its sidecar changed (skipped by a later pass otherwise). due is a whole sweep not yet ended at this format or a place pending; once one ended, a sweep takes the pending places alone. Checks: sweep_tests a_disk_away_is_pending_and_brought_once_it_answers_and_a_place_gone_is_dropped (a file laid in a swept folder is not walked again; twin: a place named pending is taken) and a_file_refused_is_said_once_owes_no_sweep_and_is_taken_again_once_it_changed."
+  },
+  {
+    "id": 1986,
+    "type": "fix",
+    "title": "The end notice says true reasons, once, after the sheet was shown",
+    "status": "done",
+    "detail": "Lot 3 review (compat 5, lower). The notice said read-only, full or not downloaded for every refusal, at the end of every sweep, and told was recorded before any window existed. The notice now counts the unsaid files of the ledger by reason, each line true of every file it counts (disk refused, settings or Prepare file unreadable, original not downloaded, original unreadable, matrix unknown here), is shown after the sheet closes or at the sweep's end, and marks them said; told is recorded when a window shows the sheet, so a bench or a launch that ended first tells again. Checks: migration::tests the_new_format_is_told_once_shown_and_never_to_an_empty_support_folder; window migration (twin: a sheet no window showed is told at the next launch)."
+  },
+  {
+    "id": 1987,
+    "type": "fix",
+    "title": "The gate brings a photo's sidecar as its row is read, after the rows land",
+    "status": "done",
+    "detail": "Lot 3 review (compat 6). read_rows read every sidecar of the opened tree before the first landing at every launch, and GATED marked a folder before converting it. The gate is now per photo, on the sidecars a row read takes anyway (a new row before library::indexed, a row whose sidecar or file moved off the bytes refreshed reads): nothing is read before the rows land, nothing more when nothing changed; a standing row is left to the sweep. Check: sweep_tests an_opened_folder_lands_its_rows_first_and_brings_a_new_rows_sidecar_as_it_reads_it (first landing before any sidecar brought; a standing row's sidecar not read; twin: its stamp moved, it is read and brought)."
+  },
+  {
+    "id": 1988,
+    "type": "fix",
+    "title": "A quit never waits on a sweep held by a mount that stopped answering",
+    "status": "done",
+    "detail": "Lot 3 review (compat lower). walk::planned reads alive before spelling each path; Sweep::drop waits for the sweep's end at most QUIT_WAIT (2 s), then leaves the thread to the process's end, which an unrenamed temporary survives whole: a network mount holds a read in the kernel as long as it likes. Check: sweep_tests a_quit_never_waits_on_a_sweep_held_by_a_disk_that_stopped_answering (a 30 s worker dropped in under 5 s; twins: a quick one is joined, planning alive spells both trees)."
+  },
+  {
+    "id": 1989,
+    "type": "fix",
+    "title": "Another file's sidecar is never converted with this file's facts",
+    "status": "done",
+    "detail": "Lot 3 review (compat lower). migrate::file checks the sidecar's print against the original (identity::foreign_bytes) before the first fact is asked and before its draft is adopted, so a namesake copied in keeps the other photo's settings unchanged (Refusal::Foreign, not listed, set aside at the photo's first write); a conversion that asks no fact never reads the original for it. Check: tests/sweep_pass another_files_sidecar_is_never_converted_with_this_files_facts (twin: beside its own photo the same sidecar takes the matrix)."
+  },
+  {
+    "id": 1990,
+    "type": "fix",
+    "title": "A Prepare base follows its folder renamed",
+    "status": "done",
+    "detail": "Lot 3 review (data loss 2). A draft's base was kept only where the stored path's folder name equals the folder's. It is now kept too when the stored folder is gone, its file in this folder is a frame of the roll (by its sidecar's draft or the folder's file), and no folder beside it holds a frame of the roll by that name. Check: draft::tests a_base_follows_its_folder_renamed_unless_a_folder_beside_holds_its_frame (twins: a folder beside with the frame, and the stored folder still there, keep no base)."
+  },
+  {
+    "id": 1991,
+    "type": "fix",
+    "title": "A photo held back in the ONI Trash says its own reason",
+    "status": "done",
+    "detail": "Lot 3 review (data loss 4). set_trashed returned false for a sidecar held back, which trash::mark counted as written by a newer version. It now returns Error::Held with the reason, said by refusal::held_back (new texts for MatrixUnknown, Foreign and Drafts). Check: oni-library tests/trash_refusals a_photo_held_back_in_an_earlier_format_says_its_own_reason (twin: the newer file said apart)."
+  },
+  {
+    "id": 1992,
+    "type": "fix",
+    "title": "Entering a roll brings its frames; a frame not brought resumes from its own sidecar",
+    "status": "done",
+    "detail": "As a read writes nothing (#1982), Prepare the Roll gathers a frame's draft from its sidecar of an earlier format (migrate::draft::found, read-only) and entering a roll first gates its frames, so the drafts its steps rewrite are their folders' alone and a later write never brings a stale one back. Check: draft::tests a_frame_not_brought_yet_resumes_its_roll_from_its_sidecar_unwritten (twin: the folder's file alone knows nothing of it); window prepare (a roll as an earlier build left it resumes)."
+  },
+  {
+    "id": 1993,
+    "type": "check",
+    "title": "The older-build check runs 1.5.6's own code",
+    "status": "done",
+    "detail": "Lot 3 review (compat lower). checks.rs the_shipped_build_reads_a_file_of_this_format_read_only_and_writes_nothing (ignored, about a minute: cargo test -p oni-settings -- --ignored the_shipped_build) archives crates/oni-settings/src at eac39604, builds it offline beside a small reader on the workspace's Cargo.lock, and runs 1.5.6's sidecar::read, set_label and write on a converted 22 file: read-only, both writes refused, the file unchanged; twin: on a format 20 file it reads writable and writes. The fast shipped_reader check stays."
+  },
+  {
+    "id": 1994,
+    "type": "fix",
+    "title": "A camera this computer never fitted reads as one with no matrix",
+    "status": "done",
+    "detail": "Lot 3 second review (blocking). Known::answer refused every camera the table did not fit and every camera with no table, so on Windows and on any Mac 1.4.0 to 1.5.1 never ran on every edited RAW negative of format 19 and under opened read-only and refused every write. Owner's lead: no build on a computer without a fit for a camera decoded it through a matrix, so the answer is none there, as 1.5.2 to 1.5.6 showed it: a camera in cameras keeps its matrix, any other (unmatched, never named, no table) none. MatrixUnknown now comes only from facts never asked (a tool with nothing installed), whose files are said with the originals that could not be read; the notice's matrix line is gone. Supersedes #1982's table rule. Check: migration::tests a_camera_the_table_fitted_keeps_its_matrix_and_any_other_reads_as_none (twin: the fitted camera keeps it)."
+  },
+  {
+    "id": 1995,
+    "type": "fix",
+    "title": "A write laying its own settings needs no camera matrix",
+    "status": "done",
+    "detail": "Lot 3 second review (blocking, second part). A write of an earlier file converted it whole first, so one whose camera matrix could not be learnt refused even a write replacing the settings. When the conversion stops on the matrix alone (MatrixUnknown, CameraUnknown), the write keeps the old file's envelope and roll draft (migrate::draft::kept_from) and lays its own settings; a label, an EXIF line or the ONI Trash, which keep the stored settings, still refuse. Check: tests/sweep_pass a_write_laying_its_own_settings_needs_no_matrix_and_keeps_the_envelope (twin: a label on such a file refused, the file unchanged)."
+  },
+  {
+    "id": 1996,
+    "type": "fix",
+    "title": "An original the opening downloads opens editable",
+    "status": "done",
+    "detail": "Lot 3 second review. The editor read an iCloud original's sidecar before its decode downloaded the file, so a frame needing a fact opened read-only for the session. Frame::away marks such an opening; once its preview lands (decoded or kept), the sidecar is gated and, unless it still waits on the cloud, the frame opened again on it, editable, its preview kept. facts::install_with takes the cloud test a check stands in for. Check: window migration::an_original_the_opening_downloads_opens_editable (twin: an original still in the cloud after its decode stays read-only, its sidecar untouched)."
+  },
+  {
+    "id": 1997,
+    "type": "fix",
+    "title": "A Prepare file that does not parse is set aside, never blocking a frame",
+    "status": "done",
+    "detail": "Lot 3 second review. A malformed .oni-prepare.json refused every write of a frame still carrying an old roll draft, with no way out in the app. A write or adoption now moves such a file whole to .oni-prepare (unreadable).json, numbered when taken, and goes on; a read moves nothing and reads none; a file the disk refuses to read still refuses. Checks: prepare::tests a_file_that_does_not_parse_is_set_aside_whole_and_frames_adopted_at_once_are_all_kept (twin: a second one beside the first, never over it); tests/sweep_pass a_prepare_file_that_does_not_parse_never_blocks_a_frames_own_write (twin: a file the disk refuses still blocks)."
+  },
+  {
+    "id": 1998,
+    "type": "fix",
+    "title": "The notice says what a file on a refusing disk does",
+    "status": "done",
+    "detail": "Lot 3 second review. As a read writes nothing, a sidecar the disk refused to replace opens with its edits and refuses a change; the notice said it opens read-only. Its line says so now, and an original in the cloud is converted once ONI opens it. Check: app::shell::migrating::tests each_reason_says_only_what_its_files_do (twin: a file held back for its original says read-only)."
+  },
+  {
+    "id": 1999,
+    "type": "fix",
+    "title": "An original in the cloud owes no sweep",
+    "status": "done",
+    "detail": "Lot 3 second review. A folder holding an undownloaded original went back to pending at every run and was walked again whole at each launch. Such a file is now listed once with its reason like any other, no place pending for it; the gate brings it once ONI opens it (#1996) or reads its row again. Check: sweep_tests an_original_in_the_cloud_is_said_once_owes_no_sweep_and_is_brought_once_opened (twin: downloaded, the gate brings it)."
   }
 ]

@@ -8,6 +8,7 @@ use serde_json::Value;
 
 /// A tone curve: control points joined by a natural cubic spline; overshoot is the accepted price.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Curve {
     pub points: Vec<Point>,
 }
@@ -136,6 +137,7 @@ impl Curve {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CurveSet {
     pub contrast: f32,
     pub luma: Curve,

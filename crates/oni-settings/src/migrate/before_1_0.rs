@@ -4,7 +4,7 @@
 use crate::axis::{density_axis, pipeline};
 use crate::blocks::{ChromaDenoise, Gains, Sharpen, chroma_decompression, separation};
 use super::chain::{number, with_settings};
-use crate::codec::RADIUS_REFERENCE_SIDE;
+use crate::document::RADIUS_REFERENCE_SIDE;
 use crate::levels::Levels;
 use crate::modes::ConversionMode;
 use crate::tolerant::{Object, number_f32};

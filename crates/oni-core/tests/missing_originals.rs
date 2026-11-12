@@ -54,7 +54,7 @@ fn a_gesture_on_a_missing_original_writes_no_sidecar() {
 
     assert_eq!(store.reset_frames(&targets), 1);
     untouched(&mut store, "reset");
-    assert_ne!(sidecar::read(Path::new(&present), false, true).unwrap().settings.print.exposure, 0.7, "reset");
+    assert_ne!(sidecar::read(Path::new(&present), false).unwrap().settings.print.exposure, 0.7, "reset");
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
     store.copy_settings(None, &pasted_rows());
     assert_eq!(store.paste_settings(&targets), 1);
@@ -69,7 +69,7 @@ fn a_gesture_on_a_missing_original_writes_no_sidecar() {
 
     // Twin: the present photo took every gesture in its sidecar.
     sidecar::set_label(Medal::Gold, Path::new(&present), false).unwrap();
-    let read = sidecar::read(Path::new(&present), false, true).unwrap();
+    let read = sidecar::read(Path::new(&present), false).unwrap();
     assert_eq!((read.label, read.trashed_at.is_some(), read.settings.vignette.stops), (Medal::Gold, true, 0.5));
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -101,7 +101,7 @@ fn a_restore_on_a_disk_away_changes_nothing_and_says_so() {
     // Twin: the disk back, the same restore lands and opens its step.
     assert_eq!(store.restore_from_trash(&frames), 2);
     assert_eq!((store.failure.take(), store.history().undo_label()), (None, Some("Restore 2 Photos")));
-    assert!(frames.iter().all(|f| sidecar::read(Path::new(f), true, true).unwrap().trashed_at.is_none()));
+    assert!(frames.iter().all(|f| sidecar::read(Path::new(f), true).unwrap().trashed_at.is_none()));
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -128,7 +128,7 @@ fn copy_settings_reads_a_photo_not_open_off_its_sidecar_and_never_a_missing_one(
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
     store.copy_settings(Some(&open), &pasted_rows());
     store.paste_settings(std::slice::from_ref(&other));
-    assert_eq!(sidecar::read(Path::new(&other), false, true).unwrap().settings.vignette.stops, 0.5);
+    assert_eq!(sidecar::read(Path::new(&other), false).unwrap().settings.vignette.stops, 0.5);
     let board = store.board.settings.clone();
 
     // Twin: an original moved away lends nothing, its orphan sidecar unread, and says why.

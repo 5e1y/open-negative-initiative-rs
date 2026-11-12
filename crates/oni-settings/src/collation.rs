@@ -1,5 +1,5 @@
-//! `localizedCaseInsensitiveCompare` as the English locale orders names: letters first, case and
-//! accents only where the letters tie, so "Élan" sits among the E's and never after "Zeiss".
+//! Names ordered as a person reads a list: letters first, case and accents only where the letters
+//! tie, so "Élan" sits among the E's and never after "Zeiss".
 
 use std::cmp::Ordering;
 
@@ -22,7 +22,7 @@ fn base(c: char) -> String {
     folded.to_string()
 }
 
-/// `localizedCaseInsensitiveCompare`: the base letters, then the accents, never the case.
+/// The base letters, then the accents, never the case.
 pub fn case_insensitive(a: &str, b: &str) -> Ordering {
     let letters = |s: &str| s.chars().map(base).collect::<String>();
     letters(a).cmp(&letters(b)).then_with(|| a.to_lowercase().cmp(&b.to_lowercase()))

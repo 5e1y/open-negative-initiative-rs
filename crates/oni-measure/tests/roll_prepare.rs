@@ -41,7 +41,7 @@ impl Roll {
         frames.sort();
         // Each sidecar as a write beside its stand-in leaves it, so the bytes a check compares are its gesture's.
         for frame in &frames {
-            let loaded = sidecar::read(Path::new(frame), true, true).unwrap();
+            let loaded = sidecar::read(Path::new(frame), true).unwrap();
             sidecar::write(&loaded.settings, Path::new(frame), sidecar::WriteOptions::default()).unwrap();
         }
         Some(Roll { dir, frames })
@@ -56,22 +56,8 @@ impl Roll {
     }
 
     fn settings(&self, frame: &str) -> PipelineSettings {
-        sidecar::read(Path::new(frame), true, true).unwrap().settings
+        sidecar::read(Path::new(frame), true).unwrap().settings
     }
-
-    fn draft(&self, frame: &str) -> Option<sidecar::RollDraft> {
-        sidecar::read(Path::new(frame), true, true).unwrap().roll_draft
-    }
-}
-
-/// The draft Swift leaves on a frame of a roll prepared up to its base step.
-fn base_draft() -> sidecar::RollDraft {
-    serde_json::from_value(serde_json::json!({
-        "capture": "camera", "film": "negative", "flagged": false, "id": oni_settings::Id::new().to_string(), "passOrder": "bgr",
-        "flatField": { "amount": 1, "mask": "None", "temperature": 0, "tint": 0 },
-        "step": "base", "ticked": true, "window": [[0.1, 0.1], [0.8, 0.8]],
-    }))
-    .unwrap()
 }
 
 fn moved(a: &BTreeMap<String, Vec<u8>>, b: &BTreeMap<String, Vec<u8>>) -> Vec<String> {
@@ -105,13 +91,7 @@ fn rewritten(roll: &Roll, open: &str, live: &PipelineSettings) -> Vec<WrittenFra
 #[test]
 fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoes_byte_for_byte() {
     let Some(roll) = Roll::copy("measure") else { return };
-    // The drafts go first, so the bytes before can be the bytes after an undo, which keeps no draft.
     let kept = roll.frames.last().unwrap().clone();
-    sidecar::set_roll_draft(Some(base_draft()), Path::new(&kept), true).unwrap();
-    assert!(roll.draft(&kept).is_some(), "the last frame carries the draft of a Prepare the Roll left at its base step");
-    for f in &roll.frames[..roll.frames.len() - 1] {
-        sidecar::set_roll_draft(None, Path::new(f), true).unwrap();
-    }
     let open = roll.frames[3].clone();
     let mut store = roll.store();
     store.open(&open).unwrap();
@@ -127,22 +107,18 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
     let wrong = oni_measure::roll::start(before, ConversionMode::Positive, before.geometry.measure_window.unwrap(), None, before.capture_stops);
     assert_ne!(measured_fields(&oni_core::balance::written(before.roll_reference.as_ref().unwrap(), &wrong)), measured_fields(before));
 
-    // One frame left out of the measure but prepared drops its draft; the open frame lands in memory.
+    // One frame left out of the measure; the open frame lands in memory.
     let measured: Vec<WrittenFrame> = written.iter().filter(|(f, _, _)| *f != kept).cloned().collect();
-    let frames = store.land_roll(&measured, &roll.frames);
+    let frames = store.land_roll(&measured);
     assert_eq!(frames, roll.frames.len() - 1);
     assert_eq!(store.history().undo_label(), Some(measure_label(frames).as_str()));
     store.flush();
     let landed = roll.bytes();
     for (f, _, after) in &measured {
         assert_eq!(&roll.settings(f), after, "{f}");
-        assert!(roll.draft(f).is_none(), "{f} keeps no draft once measured");
     }
-    assert!(roll.draft(&kept).is_none(), "a frame prepared but not measured drops its draft");
-    // A frame left untouched since Swift's measure lands its own bytes again; the one left out moves
-    // only by its dropped draft, its settings as they were.
+    // A frame left untouched since Swift's measure lands its own bytes again; the one left out stays.
     let mut expected: Vec<String> = measured.iter().filter(|(_, before, after)| before != after).map(|(f, _, _)| f.clone()).collect();
-    expected.push(kept.clone());
     expected.sort();
     assert!(expected.len() < frames, "some frames of roll #8 were left as Swift measured them");
     assert_eq!(moved(&original, &landed), expected);
@@ -152,9 +128,8 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
     store.undo();
     assert!(!store.can_undo(), "one measure, one step");
     store.flush();
-    // The undo writes back settings, never a draft: only the frame left out stays without its own.
-    assert_eq!(moved(&original, &roll.bytes()), vec![kept.clone()]);
-    assert!(roll.draft(&kept).is_none());
+    // The undo writes back every frame's settings as they were.
+    assert_eq!(moved(&original, &roll.bytes()), Vec::<String>::new());
     // Redo lands the same bytes again.
     store.redo();
     store.flush();

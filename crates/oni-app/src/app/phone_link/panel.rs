@@ -242,7 +242,7 @@ mod tests {
             store.apply(command);
         }
         let moved = store.settings().print.exposure - open;
-        let read = oni_settings::sidecar::read(std::path::Path::new(&b), false, true).unwrap().settings;
+        let read = oni_settings::sidecar::read(std::path::Path::new(&b), false).unwrap().settings;
         assert!(moved.abs() > 0.05 && (read.print.exposure - (-0.6 + moved)).abs() < 1e-5, "{moved} {}", read.print.exposure);
         // Twin: the open frame's value laid whole would have wiped the frame's own offset.
         assert!((read.print.exposure - store.settings().print.exposure).abs() > 0.1);

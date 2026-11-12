@@ -54,7 +54,7 @@ fn said(title: &str, samples: &[Sample]) {
 fn the_canvas_s_renders_timed_on_a_frame_holding_dust_patches() {
     let Some(folder) = std::env::var_os("ONI_DUST_PROBE") else { return };
     let raw = Path::new(&folder).join(std::env::var("ONI_DUST_PROBE_FILE").unwrap_or_else(|_| "P1072734.RW2".into()));
-    let loaded = oni_settings::sidecar::read(&raw, true, false).expect("the sidecar");
+    let loaded = oni_settings::sidecar::read(&raw, true).expect("the sidecar");
     let all = loaded.settings;
     let device = Device::open().expect("a GPU");
     let mut engine = Engine::on(&device);

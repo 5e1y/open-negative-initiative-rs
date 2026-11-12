@@ -1,5 +1,6 @@
 use super::*;
 
+mod format;
 mod takeover;
 mod writes;
 
@@ -45,7 +46,7 @@ fn a_preset_carries_its_rows_and_never_the_framing() {
 
 #[test]
 fn an_old_preset_reads_its_groups_and_its_retired_rows() {
-    let mut doc: Value = serde_json::from_str(&codec::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
+    let mut doc: Value = serde_json::from_str(&oni_settings::document::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
     doc["name"] = "Old".into();
     doc["groups"] = serde_json::json!(["detail", "nonsense"]);
     let read = decode(&serde_json::to_vec(&doc).unwrap()).unwrap();

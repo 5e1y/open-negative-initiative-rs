@@ -1,17 +1,14 @@
-//! The original a sidecar was written for, by its print (the library's fingerprint) under a key Swift
-//! skips: a namesake copied in later, another body's or a reset counter's, never adopts its settings.
+//! The original a sidecar was written for, by its print (the library's fingerprint): a namesake copied
+//! in later, another body's or a reset counter's, never adopts its settings.
 
-use crate::codec::{self, Envelope};
+use crate::document::{self, Envelope, Original};
 use crate::modes::{ConversionMode, Medal};
+use serde::Deserialize;
 use serde_json::Value;
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-/// The key, Rust's own: Swift decodes past it, and a Swift rewrite drops it, which reads as unknown.
-pub const KEY: &str = "originalPrint";
-/// The digest of the original's last block, Rust's own too: a tool rewriting the metadata keeps it.
-pub const TAIL: &str = "originalTail";
 
 const BLOCK: usize = 16 * 1024;
 const FRACTIONS: [f64; 3] = [0.25, 0.5, 0.75];
@@ -88,11 +85,43 @@ fn parts(print: &str) -> Option<(&str, &str)> {
 /// Whether `stored` was written for another file than one printed `now`: two dates and two digests,
 /// as a date set right in place keeps its bytes, a file saved over its date; no date is never foreign.
 /// A last block alike (`tail`) is the same photo whose date a tool set right by writing it anew.
-pub fn foreign(stored: &Value, now: Option<&str>, tail: impl FnOnce() -> Option<String>) -> bool {
-    let (Some(was), Some(now)) = (stored.get(KEY).and_then(Value::as_str).and_then(parts), now.and_then(parts)) else { return false };
+pub fn foreign(stored: &Original, now: Option<&str>, tail: impl FnOnce() -> Option<String>) -> bool {
+    let (Some(was), Some(now)) = (parts(&stored.print), now.and_then(parts)) else { return false };
     let dated = |d: &str| d != "no-date";
     let apart = dated(was.0) && dated(now.0) && was.0 != now.0 && was.1 != now.1;
-    apart && stored.get(TAIL).and_then(Value::as_str).is_none_or(|was| tail().as_deref() != Some(was))
+    apart && stored.tail.as_deref().is_none_or(|was| tail().as_deref() != Some(was))
+}
+
+/// Where a sidecar names its original: `original`, or beside the envelope in format 21 and under.
+#[derive(Deserialize)]
+struct Identity {
+    #[serde(default)]
+    original: Option<Value>,
+    #[serde(rename = "originalPrint", default)]
+    print: Option<Value>,
+    #[serde(rename = "originalTail", default)]
+    tail: Option<Value>,
+}
+
+/// The original a sidecar's `bytes` name, in either shape a version wrote it; `None` when they name none.
+pub fn original_in(bytes: &[u8]) -> Option<Original> {
+    let found: Identity = serde_json::from_slice(bytes).ok()?;
+    let text = |v: Option<&Value>| v.and_then(Value::as_str).map(str::to_owned);
+    match &found.original {
+        Some(o) => Some(Original { print: text(o.get("print"))?, tail: text(o.get("tail")) }),
+        None => Some(Original { print: text(found.print.as_ref())?, tail: text(found.tail.as_ref()) }),
+    }
+}
+
+/// Whether the sidecar `bytes` were written for another file than `original`; its print is read only
+/// when they name one.
+pub fn foreign_bytes(bytes: &[u8], original: &Path) -> bool {
+    original_in(bytes).is_some_and(|stored| foreign(&stored, of(original).as_deref(), || tail(original)))
+}
+
+/// `foreign_bytes` against a print and a tail already read.
+pub fn foreign_with(bytes: &[u8], now: Option<&str>, tail: impl FnOnce() -> Option<String>) -> bool {
+    original_in(bytes).is_some_and(|stored| foreign(&stored, now, tail))
 }
 
 /// `original`'s print, the one a write stores. Reads three blocks of the file.
@@ -123,22 +152,11 @@ pub fn tail(original: &Path) -> Option<String> {
     digest_at(original, metadata.len() as i64, &[1.0])
 }
 
-/// The sidecar's text as stored, `None` when absent or not JSON.
-pub(super) fn stored(path: &Path) -> io::Result<Option<Value>> {
-    match std::fs::read(path) {
-        Ok(data) => Ok(serde_json::from_slice(&data).ok()),
-        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(e),
-    }
-}
-
 /// What a photo with no sidecar says: no medal, no roll, not in the ONI Trash.
 pub fn blank() -> Envelope {
     Envelope {
         imported_at: None,
         label: Medal::None,
-        exif: None,
-        roll_draft: None,
         trashed_at: None,
         film: None,
         manual_order: None,
@@ -149,13 +167,12 @@ pub fn blank() -> Envelope {
     }
 }
 
-/// `codec::envelope` for `original`'s sidecar `data`: a foreign one reads blank, as no sidecar does.
+/// `document::envelope` for `original`'s sidecar `data`: a foreign one reads blank, as no sidecar does.
 pub fn envelope(data: &[u8], original: &Path) -> Option<Envelope> {
-    let value: Value = serde_json::from_slice(data).ok()?;
-    if value.get(KEY).is_some() && foreign(&value, of(original).as_deref(), || tail(original)) {
+    if foreign_bytes(data, original) {
         return Some(blank());
     }
-    codec::envelope(data)
+    document::envelope(data)
 }
 
 /// A foreign sidecar moved aside, never lost: `X.NEF (orphan).json`, which no survey reads as a

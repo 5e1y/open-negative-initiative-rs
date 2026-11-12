@@ -25,3 +25,32 @@ export component NoticeSheet inherits Sheet {
         committed => { Notice.close(); }
     }
 }
+
+// Shown once to a person whose support folder held something: the sidecars move to a new format,
+// converted in the background; nothing to choose, so the work never waits for it. Then its line.
+export global Upgraded {
+    in property <bool> shown;
+    in property <string> line;
+    in property <float> fraction: -1;
+    callback close();
+}
+
+export component UpgradedSheet inherits Sheet {
+    title: @tr("Your Edits, Brought Up to Date");
+    card-width: SheetStyle.notice-width;
+    gap: Gap.l;
+    dismissed => { Upgraded.close(); }
+    VerticalLayout {
+        spacing: Space.s;
+        for line in [
+            @tr("ONI now keeps each photo's settings in a new format. It is converting the ones you have, in the background: you can keep working."),
+            @tr("Your photos are never touched, only the small settings file beside each one."),
+            @tr("There is no way back: an older version of ONI opens these photos read-only and changes nothing."),
+            @tr("A disk that is not connected is converted the next time ONI sees it."),
+        ]: BulletLine { text: line; }
+    }
+    SheetFooter {
+        commit: @tr("GOT IT");
+        committed => { Upgraded.close(); }
+    }
+}

@@ -17,7 +17,7 @@ fn two(label: &str) -> (EditorStore, std::path::PathBuf, String, String) {
 }
 
 fn read(path: &str) -> PipelineSettings {
-    sidecar::read(Path::new(path), false, true).unwrap().settings
+    sidecar::read(Path::new(path), false).unwrap().settings
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn an_edit_on_a_frame_left_is_undone_after_the_switch_through_its_sidecar() {
 #[test]
 fn a_gesture_from_the_gallery_and_an_edit_in_the_editor_take_turns_on_one_history() {
     let (mut store, dir, a, b) = two("modes");
-    let medal = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().label;
+    let medal = |p: &str| sidecar::read(Path::new(p), false).unwrap().label;
     store.lay_medal(std::slice::from_ref(&b), Medal::Gold);
     store.open(&a).unwrap();
     store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);

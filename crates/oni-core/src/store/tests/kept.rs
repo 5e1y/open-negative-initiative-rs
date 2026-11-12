@@ -17,7 +17,7 @@ fn frames(label: &str, sidecars: &[(&str, Option<PipelineSettings>)]) -> (Editor
 }
 
 fn read(path: &str) -> PipelineSettings {
-    sidecar::read(Path::new(path), false, true).unwrap().settings
+    sidecar::read(Path::new(path), false).unwrap().settings
 }
 
 fn vignetted(stops: f32) -> PipelineSettings {
@@ -32,7 +32,7 @@ fn pasted_then_edited(label: &str, undone: bool) -> f32 {
     let (mut store, dir) = fresh(label);
     let frame = dir.join("frame.tif").to_string_lossy().into_owned();
     let rest = Knob::Vignette.get(store.settings());
-    store.board.settings = Some(codec::encode_settings(&vignetted(-0.7)).unwrap());
+    store.board.settings = Some(oni_settings::document::encode_settings(&vignetted(-0.7)).unwrap());
     assert_eq!(store.paste_settings(std::slice::from_ref(&frame)), 1);
     assert_eq!(Knob::Vignette.get(store.settings()), -0.7);
     if undone {
@@ -155,7 +155,7 @@ fn a_gesture_on_several_leaves_an_open_frame_out_of_sight_alone() {
     let present = dir.join("P2.tif").to_string_lossy().into_owned();
     std::fs::write(&present, b"").unwrap();
     let mut store = EditorStore::new(Archive::new(vec![gone.clone(), present.clone()], |_: &Path| false));
-    store.board.settings = Some(codec::encode_settings(&vignetted(-0.7)).unwrap());
+    store.board.settings = Some(oni_settings::document::encode_settings(&vignetted(-0.7)).unwrap());
     let _ = store.open(&gone);
     assert!(store.inert());
     let rest = Knob::Vignette.get(store.settings());

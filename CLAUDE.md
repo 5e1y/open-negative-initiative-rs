@@ -58,8 +58,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
 - **The Frontier is the ONI machine's render with its own baked look** (owner's call): ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
-- **The sidecar format is ONI's to change**: a new version is read and written freely, and every older file a
-  person has, Swift-written ones included, is migrated on its own at the update, never lost.
+- **The sidecar format is ONI's to change** (`oni-frame`, plain `serde_json` of `oni_settings::document`): every
+  older file migrates on its own (`oni_settings::migrate`, the launch's sweep or its first read), never lost; an older build opens it read-only.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,
   turns and angle, so no framing moves them.
 - **A dust patch lies on the decoded scan**, before the capture's exposure and the flat-field, and its file names the

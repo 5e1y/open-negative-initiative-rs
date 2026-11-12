@@ -197,7 +197,7 @@ fn the_trash_marks_sidecars_and_never_moves_a_file() {
     let untouched: Vec<(String, Vec<u8>)> =
         members.iter().filter(|m| !picked.contains(m)).map(|m| (m.clone(), bytes(m))).collect();
     let settings_before: Vec<_> =
-        picked.iter().map(|p| sidecar::read(Path::new(p), true, true).unwrap().settings).collect();
+        picked.iter().map(|p| sidecar::read(Path::new(p), true).unwrap().settings).collect();
 
     let when = Date::since_reference_date(812_345_678.0);
     let outcome = trash::mark(&picked, Some(when), &|_| true);
@@ -214,7 +214,7 @@ fn the_trash_marks_sidecars_and_never_moves_a_file() {
         "every original kept its bytes"
     );
     for (path, settings) in picked.iter().zip(&settings_before) {
-        let read = sidecar::read(Path::new(path), true, true).unwrap();
+        let read = sidecar::read(Path::new(path), true).unwrap();
         assert_eq!(read.trashed_at, Some(when));
         assert_eq!(&read.settings, settings, "the settings ride through the mark unchanged");
     }
@@ -373,7 +373,7 @@ fn roll8_capture_stops_read_off_the_exif_are_those_swift_wrote() {
     assert!(captures.iter().all(Option::is_some), "every NEF carries its exposure");
     let wrote: Vec<f32> = names
         .iter()
-        .map(|n| sidecar::read(&folder.join(n), true, false).unwrap().settings.capture_stops)
+        .map(|n| sidecar::read(&folder.join(n), true).unwrap().settings.capture_stops)
         .collect();
     let ours = CaptureExposure::offsets(&captures);
     for (((name, o), w), c) in names.iter().zip(&ours).zip(&wrote).zip(&captures) {

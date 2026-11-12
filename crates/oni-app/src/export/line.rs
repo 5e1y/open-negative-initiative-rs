@@ -2,7 +2,7 @@
 //! written, and over them what a hand set, which alone its sidecar keeps.
 
 use oni_export::{ExifMetadata, Row};
-use oni_settings::TypedExif;
+use oni_settings::ExifLine;
 use oni_settings::film::{Film, film_stock};
 use std::path::Path;
 
@@ -33,7 +33,7 @@ fn derived(facts: &ExifMetadata, artist: &str, copyright: &str) -> ExifMetadata 
 impl Line {
     /// What a hand set on the line against the artist and copyright just remembered: a field that
     /// derived at its opening, or derives under them, is left to derive.
-    pub fn typed(&self, artist: &str, copyright: &str) -> TypedExif {
+    pub fn typed(&self, artist: &str, copyright: &str) -> ExifLine {
         self.row.metadata.beyond(&[&self.opened, &derived(&self.facts, artist, copyright)])
     }
 }
@@ -42,14 +42,14 @@ impl Line {
 /// since reaches every field no hand set.
 pub fn opening_line(path: &Path, roll: Option<&Film>, artist: &str, copyright: &str) -> Line {
     let mosaic = oni_decode::decodes_via_mosaic(path);
-    let kept = oni_settings::sidecar::read(path, mosaic, false).ok().and_then(|l| l.exif).unwrap_or_default();
+    let kept = oni_settings::sidecar::read(path, mosaic).map(|l| l.exif).unwrap_or_default();
     let facts = facts(path, roll);
     let opened = derived(&facts, artist, copyright);
     Line { row: Row { name: oni_export::stem(path), metadata: kept.over(&opened) }, facts, opened }
 }
 
 /// What a hand set on `path`'s line kept in its sidecar, once its file is written.
-pub fn keep_line(path: &Path, typed: &TypedExif) {
+pub fn keep_line(path: &Path, typed: &ExifLine) {
     let _ = oni_settings::sidecar::set_exif(typed.clone(), path, oni_decode::decodes_via_mosaic(path));
 }
 
@@ -146,7 +146,7 @@ mod tests {
         keep_line(&fresh, &line.typed("Alice", ""));
         assert_eq!(opening_line(&fresh, None, "Alice", "").row.metadata.artist, "", "a clear typed now is kept");
         // Twin: a block without the artist's key derives it.
-        keep_line(&fresh, &TypedExif { film: Some(String::new()), ..TypedExif::default() });
+        keep_line(&fresh, &ExifLine { film: Some(String::new()), ..ExifLine::default() });
         assert_eq!(opening_line(&fresh, None, "Alice", "").row.metadata.artist, "Alice");
         cleared(&path);
         cleared(&fresh);

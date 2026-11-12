@@ -31,7 +31,7 @@ pub mod pipeline {
 
     /// Largest full-resolution radius a fitted preview leaves inert.
     pub fn preview_visible_radius() -> f64 {
-        BLUR_FLOOR * crate::codec::RADIUS_REFERENCE_SIDE / PREVIEW_SIDE
+        BLUR_FLOOR * crate::document::RADIUS_REFERENCE_SIDE / PREVIEW_SIDE
     }
 
     pub fn luma(rgb: [f32; 3]) -> f32 {

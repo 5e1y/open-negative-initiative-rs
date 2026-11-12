@@ -19,7 +19,7 @@ fn roll(label: &str, names: &[&str]) -> (PathBuf, Vec<String>) {
 }
 
 fn on_disk(path: &str) -> PipelineSettings {
-    sidecar::read(Path::new(path), false, true).unwrap().settings
+    sidecar::read(Path::new(path), false).unwrap().settings
 }
 
 fn rows(names: &[&str]) -> BTreeSet<String> {

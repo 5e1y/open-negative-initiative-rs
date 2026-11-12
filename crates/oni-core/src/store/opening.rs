@@ -48,12 +48,14 @@ impl EditorStore {
         let read = if absent {
             Err(sidecar::Error::Io(std::io::Error::new(std::io::ErrorKind::NotFound, tr(UNREACHABLE))))
         } else {
-            sidecar::read(Path::new(path), self.mosaic(path), true)
+            sidecar::read(Path::new(path), self.mosaic(path))
         };
         let (mut settings, writable, persisted, result) = match read {
             Ok(loaded) => {
                 let persisted = (!loaded.is_new).then(|| loaded.settings.clone());
-                (loaded.settings, loaded.writable, persisted, Ok(()))
+                // A sidecar of an earlier format kept as it is opens read-only and says why.
+                let result = loaded.held_back.map_or(Ok(()), |why| Err(sidecar::Error::Held(why)));
+                (loaded.settings, loaded.writable, persisted, result)
             }
             // A corrupt sidecar is reported and never overwritten, so it stays repairable by hand.
             Err(e) => (PipelineSettings::rest(ConversionMode::Negative, self.mosaic(path)), false, None, Err(e)),

@@ -1297,6 +1297,26 @@ msgstr "Encore un peu décalé ? Une pression sur votre bouton de balance habit
 msgid "GOT IT"
 msgstr "COMPRIS"
 
+#: crates/oni-ui/ui/notice.slint
+msgid "Your Edits, Brought Up to Date"
+msgstr "Vos retouches mises à jour"
+
+#: crates/oni-ui/ui/notice.slint
+msgid "ONI now keeps each photo's settings in a new format. It is converting the ones you have, in the background: you can keep working."
+msgstr "ONI garde désormais les réglages de chaque photo dans un nouveau format. Il convertit les vôtres en arrière-plan : vous pouvez continuer à travailler."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "Your photos are never touched, only the small settings file beside each one."
+msgstr "Vos photos ne sont jamais touchées, seulement le petit fichier de réglages à côté de chacune."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "There is no way back: an older version of ONI opens these photos read-only and changes nothing."
+msgstr "Il n’y a pas de retour possible : une version antérieure d’ONI ouvre ces photos en lecture seule et ne change rien."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "A disk that is not connected is converted the next time ONI sees it."
+msgstr "Un disque non branché est converti la prochaine fois qu’ONI le voit."
+
 #: crates/oni-ui/ui/pairing.slint
 msgid "Pair Phone"
 msgstr "Jumeler un téléphone"
@@ -4257,6 +4277,40 @@ msgstr[1] "Réinitialiser {n} photos"
 msgid "Version {version}"
 msgstr "Version {version}"
 
+#: crates/oni-app/src/app/shell/migrating.rs
+msgid "Bringing settings up to date: {done} of {total} folders"
+msgstr "Mise à jour des réglages : {done} dossiers sur {total}"
+
+#: crates/oni-app/src/app/shell/migrating.rs
+msgid "{n} photo keeps its earlier settings file"
+msgid_plural "{n} photos keep their earlier settings file"
+msgstr[0] "Une photo garde son ancien fichier de réglages"
+msgstr[1] "{n} photos gardent leur ancien fichier de réglages"
+
+#: crates/oni-app/src/app/shell/migrating.rs
+msgid "{n} on a disk that refused the new file: read-only, full or locked. It shows its edits, and a change to it is refused until the disk takes it."
+msgid_plural "{n} on a disk that refused the new file: read-only, full or locked. They show their edits, and a change to them is refused until the disk takes it."
+msgstr[0] "Une sur un disque qui a refusé le nouveau fichier : en lecture seule, plein ou verrouillé. Elle montre ses retouches, et une modification est refusée tant que le disque ne l’accepte pas."
+msgstr[1] "{n} sur un disque qui a refusé le nouveau fichier : en lecture seule, plein ou verrouillé. Elles montrent leurs retouches, et une modification est refusée tant que le disque ne l’accepte pas."
+
+#: crates/oni-app/src/app/shell/migrating.rs
+msgid "{n} whose settings file, or its folder's Prepare the Roll file, cannot be read. It is left exactly as it is."
+msgid_plural "{n} whose settings file, or their folder's Prepare the Roll file, cannot be read. They are left exactly as they are."
+msgstr[0] "Une dont le fichier de réglages, ou le fichier Préparer la pellicule de son dossier, ne peut pas être lu. Elle est laissée exactement telle quelle."
+msgstr[1] "{n} dont le fichier de réglages, ou le fichier Préparer la pellicule de leur dossier, ne peut pas être lu. Elles sont laissées exactement telles quelles."
+
+#: crates/oni-app/src/app/shell/migrating.rs
+msgid "{n} whose original is not downloaded. It is converted once ONI opens it."
+msgid_plural "{n} whose original is not downloaded. They are converted once ONI opens them."
+msgstr[0] "Une dont l’original n’est pas téléchargé. Elle est convertie quand ONI l’ouvre."
+msgstr[1] "{n} dont l’original n’est pas téléchargé. Elles sont converties quand ONI les ouvre."
+
+#: crates/oni-app/src/app/shell/migrating.rs
+msgid "{n} whose original could not be read to place its dust strokes or name its camera. It opens read-only."
+msgid_plural "{n} whose original could not be read to place their dust strokes or name their camera. They open read-only."
+msgstr[0] "Une dont l’original n’a pas pu être lu pour placer ses traits de poussière ou nommer son appareil. Elle s’ouvre en lecture seule."
+msgstr[1] "{n} dont l’original n’a pas pu être lu pour placer leurs traits de poussière ou nommer leur appareil. Elles s’ouvrent en lecture seule."
+
 #: crates/oni-app/src/app/shell.rs
 msgid "Wiring the interface"
 msgstr "Raccordement de l'interface"
@@ -5074,6 +5128,38 @@ msgstr "Une version plus récente d’ONI a écrit ces réglages, et celle-ci ne
 #: crates/oni-library/src/refusal.rs
 msgid "The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."
 msgstr "Le nom de la photo est trop long pour un fichier de réglages à côté d’elle. Raccourcissez-le pour garder ses modifications."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and its disk refuses to be written."
+msgstr "Les réglages de cette photo sont dans un format antérieur et son disque refuse l’écriture."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and its original could not be read to place its dust strokes."
+msgstr "Les réglages de cette photo sont dans un format antérieur et son original n’a pas pu être lu pour placer ses traits de dépoussiérage."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and its original could not be read to keep its colours."
+msgstr "Les réglages de cette photo sont dans un format antérieur et son original n’a pas pu être lu pour garder ses couleurs."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and its original is not downloaded."
+msgstr "Les réglages de cette photo sont dans un format antérieur et son original n’est pas téléchargé."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and this computer does not know the colour matrix its camera was edited under."
+msgstr "Les réglages de cette photo sont dans un format antérieur et cet ordinateur ne connaît pas la matrice de couleur de l’appareil sous laquelle elle a été retouchée."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings file was written for another photo of the same name."
+msgstr "Le fichier de réglages de cette photo a été écrit pour une autre photo du même nom."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and its folder's Prepare the Roll file could not be read or written."
+msgstr "Les réglages de cette photo sont dans un format antérieur et le fichier Préparer la pellicule de son dossier n’a pas pu être lu ou écrit."
+
+#: crates/oni-library/src/refusal.rs
+msgid "This photo's settings are in an earlier format and could not be brought up to date."
+msgstr "Les réglages de cette photo sont dans un format antérieur et n’ont pas pu être mis à jour."
 
 #: crates/oni-library/src/refusal.rs crates/oni-library/src/roll_folder/carry.rs
 msgid "another app is using it"

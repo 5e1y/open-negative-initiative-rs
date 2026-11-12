@@ -146,7 +146,7 @@ fn the_face_is_no_step_and_an_undo_turns_to_the_face_of_its_step() {
 
     // The next frame, stored on Pro, opens on the Scanner face; the undo takes back the machine set
     // on the frame left, and leaves the face this one opened on.
-    let machine = |p: &str| oni_settings::sidecar::read(Path::new(p), false, true).unwrap().settings.scanner_machine;
+    let machine = |p: &str| oni_settings::sidecar::read(Path::new(p), false).unwrap().settings.scanner_machine;
     store.open(&paths[1]).unwrap();
     assert_eq!(store.settings().face, Face::Scanner);
     store.apply(Command::Undo);
@@ -192,7 +192,7 @@ fn the_bar_s_reset_clears_the_edit_of_the_face_it_is_pressed_on() {
 }
 
 /// The phone's keys and the settings count the same steps: half a unit each, the stops on ±24 and ±10
-/// units, so a key saved to a sidecar reads back in Swift's unit, its half under `halves`.
+/// units; a sidecar keeps the steps as they stand.
 #[test]
 fn a_key_moves_half_a_unit_and_a_shift_press_one_and_a_half() {
     let (mut store, _, dir) = fresh("halves", 1);
@@ -200,9 +200,9 @@ fn a_key_moves_half_a_unit_and_a_shift_press_one_and_a_half() {
     store.apply(step(Letter::D, 1));
     store.apply(step(Letter::Y, 3));
     let stored = serde_json::to_value(store.settings().scanner).unwrap();
-    assert_eq!((&stored["d"], &stored["y"], &stored["halves"]), (&0.into(), &1.into(), &serde_json::json!({"d": 1, "y": 1})));
-    // Twin: a whole step would have stored a unit with no half.
-    assert_ne!(stored["d"], 1);
+    assert_eq!((&stored["d"], &stored["y"], stored.get("halves")), (&1.into(), &3.into(), None));
+    // Twin: a key of a whole unit would have stored two steps.
+    assert_ne!(stored["d"], 2);
     for (letter, (lo, hi)) in [(Letter::D, ScannerClicks::DENSITY_RANGE), (Letter::W, ScannerClicks::WARMTH_RANGE)] {
         let (a, b) = letter.range();
         assert_eq!((i64::from(a), i64::from(b)), (lo, hi));

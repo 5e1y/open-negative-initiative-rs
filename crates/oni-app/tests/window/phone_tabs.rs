@@ -97,7 +97,7 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
     assert_eq!(value(&stepped, Param::Exposure).unwrap(), store.get_exposure_value().as_str(), "the phone reads what the panel reads");
     assert!(stepped.state.can_undo);
     rig.until("the sidecar written", WAIT, || {
-        oni_settings::sidecar::read(&frame, true, false).is_ok_and(|l| (l.settings.print.exposure - moved).abs() < 1e-6)
+        oni_settings::sidecar::read(&frame, true).is_ok_and(|l| (l.settings.print.exposure - moved).abs() < 1e-6)
     });
     session.press(Command::Undo);
     let undone = until_shown(&rig, &session, "the undo", |d| d.state.applied == 2);

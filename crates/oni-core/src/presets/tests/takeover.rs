@@ -6,7 +6,7 @@ use super::*;
 fn the_single_file_list_is_taken_over_once_then_archived() {
     let support = folder("migrate");
     std::fs::create_dir_all(&support).unwrap();
-    let mut element: Value = serde_json::from_str(&codec::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
+    let mut element: Value = serde_json::from_str(&oni_settings::document::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
     element["name"] = "Old one".into();
     element["groups"] = serde_json::json!(["detail"]);
     std::fs::write(legacy_file(&support), serde_json::to_vec(&serde_json::json!([element, {"nothing": 1}])).unwrap()).unwrap();
@@ -92,7 +92,7 @@ fn refused_pass(label: &str, block_c: bool, rename: Rename, write: Write) -> Ref
     std::fs::create_dir_all(if block_c { &blocked } else { &shelf }).unwrap();
     let list = elements(&[&a, &b, &c]);
     std::fs::write(legacy_file(&support), serde_json::to_vec(&list).unwrap()).unwrap();
-    shelf::taken_over(&legacy_file(&support), &shelf, rename, write);
+    migrate::taken_over(&legacy_file(&support), &shelf, rename, write);
     let shown = load(&shelf);
     for preset in &shown {
         delete(preset, &shelf, &mut |f| std::fs::remove_file(f));

@@ -48,11 +48,12 @@ fn read_all(scans: &Path) -> usize {
         }
         sidecars += 1;
         let original = original_of(f);
-        match sidecar::read(&original, mosaic(&original), true) {
-            Ok(l) if l.is_new || l.foreign || !l.writable => {
+        match sidecar::read(&original, mosaic(&original)) {
+            Ok(l) if l.is_new || l.foreign || (!l.writable && l.held_back.is_none()) => {
                 failures += 1;
                 println!("FAIL {} new {} foreign {} writable {}", f.display(), l.is_new, l.foreign, l.writable);
             }
+            Ok(l) if !l.writable => println!("held back {}: {}", f.display(), l.held_back.map(|w| w.kind()).unwrap_or_default()),
             Ok(_) => {}
             Err(e) => {
                 failures += 1;
@@ -79,7 +80,7 @@ fn spread(rgba: &[u8]) -> f64 {
 
 /// `Thumbnails.render` as the gallery's worker runs it, the sRGB tile returned.
 fn tile(engine: &mut render::Engine, original: &Path) -> Result<Vec<u8>, String> {
-    let settings = sidecar::read(original, mosaic(original), true).map_err(|e| e.to_string())?.settings;
+    let settings = sidecar::read(original, mosaic(original)).map_err(|e| e.to_string())?.settings;
     if !oni_app::scans::is_converted(&settings)
         && let Some(jpeg) = oni_app::scans::scan(original)
     {
@@ -125,30 +126,27 @@ fn copies(rolls: &Path, support: &Path) -> usize {
                 println!("{} v{version} {name}: mean {mean:.3} sd {sd:.3} swift {}", if bad { "FAIL" } else { "ok" }, swift.map_or("-".into(), |s| format!("{s:.3}")));
             }
         }
-        let loaded = sidecar::read(&original, mosaic(&original), true).unwrap();
-        if std::fs::read(f).unwrap() != before {
+        // A read writes nothing and reads the file as an earlier build did; a write brings it.
+        let was = oni_settings::migrate::reading(&before, &oni_settings::migrate::Facts::bare(mosaic(&original)), true).map(|(c, _)| c.document);
+        let loaded = sidecar::read(&original, mosaic(&original)).unwrap();
+        if std::fs::read(f).unwrap() != before || was.as_ref().map(|d| &d.settings) != Ok(&loaded.settings) {
             failures += 1;
-            println!("FAIL {name}: rewritten by a read or a render");
+            println!("FAIL {name}: the read wrote the file or read other settings");
         }
-        let mut stored: Value = serde_json::from_slice(&before).unwrap();
-        stored["futureTop"] = Value::from("kept");
-        stored["settings"]["futureInner"] = Value::from(7);
-        std::fs::write(f, serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
         if let Err(e) = sidecar::write(&loaded.settings, &original, WriteOptions::default()) {
             failures += 1;
             println!("FAIL write {name}: {e}");
             continue;
         }
-        let again = sidecar::read(&original, mosaic(&original), true).unwrap();
-        let written: Value = serde_json::from_slice(&std::fs::read(f).unwrap()).unwrap();
-        // An older document's extra keys are the ones its migrations consumed: only the current one carries them.
-        let current = version == oni_settings::codec::VERSION;
-        let kept = !current || (written["futureTop"] == "kept" && written["settings"]["futureInner"] == 7);
-        let same = again.settings == loaded.settings && again.label == loaded.label && again.roll_draft == loaded.roll_draft && again.imported_at == loaded.imported_at;
-        let lost: Vec<&String> = stored.as_object().unwrap().keys().filter(|k| k.as_str() != "futureTop" && written.get(k.as_str()).is_none()).collect();
-        if !kept || !same || !lost.is_empty() {
+        if oni_settings::migrate::standing(&std::fs::read(f).unwrap()) != oni_settings::migrate::Standing::Current {
             failures += 1;
-            println!("FAIL round trip {name}: kept {kept} same {same} lost {lost:?}");
+            println!("FAIL {name}: the write did not bring it to this format");
+        }
+        let again = sidecar::read(&original, mosaic(&original)).unwrap();
+        let same = again.settings == loaded.settings && again.label == loaded.label && again.imported_at == loaded.imported_at;
+        if !same {
+            failures += 1;
+            println!("FAIL round trip {name}");
         }
     }
     println!("copies: {} frames, {compared} beside a Swift thumbnail, {failures} failures", files.len());

@@ -52,7 +52,7 @@ fn pass(path: &Path, frame: &[f32], band: usize, shift: f64) {
 }
 
 fn loaded(path: &Path) -> sidecar::Loaded {
-    sidecar::read(path, false, true).unwrap()
+    sidecar::read(path, false).unwrap()
 }
 
 fn strings(model: slint::ModelRc<slint::SharedString>) -> Vec<String> {

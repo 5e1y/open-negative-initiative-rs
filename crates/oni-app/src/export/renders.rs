@@ -110,7 +110,7 @@ pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings,
 
 /// One frame written: its full render, its file, then what a hand set of its line kept in its sidecar;
 /// a batch writes the same bytes through `batch::write_batch`.
-pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata, typed: &oni_settings::TypedExif) -> Result<(), Failure> {
+pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata, typed: &oni_settings::ExifLine) -> Result<(), Failure> {
     let render = || {
         let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
         render_full_beside(engine, decoded, &target.settings)

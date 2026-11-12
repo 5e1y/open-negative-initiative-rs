@@ -1,9 +1,9 @@
-//! Core Graphics values as `Codable` writes them: a point `[x, y]`, a size `[w, h]`, a rectangle
-//! `[[x, y], [w, h]]`, every component a `Double`.
+//! Points, sizes and rectangles as a sidecar keeps them: a point `[x, y]`, a size `[w, h]`, a
+//! rectangle `[[x, y], [w, h]]`, every component an `f64`.
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
-/// The leading `N` items of an array, as Core Graphics' decoders read them: extra items are ignored.
+/// The leading `N` items of an array: a document edited by hand may carry more, which are ignored.
 fn leading<'de, T: Deserialize<'de>, const N: usize, D: Deserializer<'de>>(d: D) -> Result<[T; N], D::Error> {
     let items = Vec::<T>::deserialize(d)?;
     let found = items.len();

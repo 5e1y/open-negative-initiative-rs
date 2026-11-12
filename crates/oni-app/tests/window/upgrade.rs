@@ -29,16 +29,15 @@ fn sidecars(dir: &Path) -> Vec<PathBuf> {
     out
 }
 
-/// How `now` parts from `was`, past the keys this app keeps beside a current sidecar for itself (the
-/// Auto Balance reading, the original's identity), which leave the settings and the revision alone.
-fn edited(was: &[u8], now: &[u8]) -> Option<String> {
-    let bare = |bytes: &[u8]| {
-        let mut v: serde_json::Value = serde_json::from_slice(bytes).unwrap();
-        let own = [oni_settings::sidecar::AUTO_BALANCE, oni_settings::sidecar::identity::KEY, oni_settings::sidecar::identity::TAIL];
-        v.as_object_mut().unwrap().retain(|k, _| !own.contains(&k.as_str()));
-        v
-    };
-    oni_settings::json::semantic_difference(&bare(was), &bare(now))
+/// What a sidecar's bytes say, of whatever format: its settings, its label and its import date.
+fn said(bytes: &[u8], mosaic: bool) -> Option<(oni_settings::PipelineSettings, oni_settings::Medal, Option<oni_settings::Date>)> {
+    let (c, _) = oni_settings::migrate::reading(bytes, &oni_settings::migrate::Facts::bare(mosaic), true).ok()?;
+    Some((c.document.settings, c.document.label, c.document.imported_at))
+}
+
+/// Whether `now` says another thing than `was`: a migration rewrites the bytes, never their meaning.
+fn edited(was: &[u8], now: &[u8], mosaic: bool) -> Option<String> {
+    (said(was, mosaic) != said(now, mosaic)).then(|| "the settings, the label or the import date moved".into())
 }
 
 fn settle(rig: &common::Rig, span: Duration) {
@@ -49,8 +48,8 @@ fn settle(rig: &common::Rig, span: Duration) {
     }
 }
 
-/// Each roll opened, its first frame edited by nothing but a double click and left again: no sidecar
-/// is rewritten but by a migration, which must keep every setting the Swift file says.
+/// Each roll opened, its first frame edited by nothing but a double click and left again: a sidecar
+/// is rewritten by its migration alone, which keeps every setting the earlier file says.
 pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     let Some(source) = std::env::var_os("ONI_UPGRADE_ROLLS").map(PathBuf::from) else {
         return eprintln!("ONI_UPGRADE_ROLLS is unset: the upgrade is not exercised");
@@ -107,16 +106,12 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
             if &now == was {
                 continue;
             }
-            if let Some(why) = edited(was, &now) {
-                rewritten.push(format!("{}: {why}", file.display()));
-            }
             let original = file.with_extension("");
             let mosaic = oni_decode::decodes_via_mosaic(&original);
-            let read = |bytes: &[u8]| {
-                oni_settings::migrate::decoded(bytes, Some(mosaic), true).ok().map(|d| (d.settings, d.label, d.roll_draft, d.imported_at))
-            };
-            if file.file_name().is_some_and(|n| n != oni_settings::film::roll_folder::ROLL_MARKER) && read(was) != read(&now) {
-                moved.push(file.clone());
+            if file.file_name().is_some_and(|n| n == oni_settings::film::roll_folder::ROLL_MARKER) {
+                rewritten.push(format!("{}: the roll marker", file.display()));
+            } else if let Some(why) = edited(was, &now, mosaic) {
+                moved.push(format!("{}: {why}", file.display()));
             }
         }
     }
@@ -135,7 +130,8 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     let frame = oni_settings::sidecar::url_for(Path::new(ctl.state.borrow().open_path().unwrap()));
     let was = std::fs::read(&frame).unwrap();
     w.global::<oni_app::Store>().invoke_step(oni_app::fields::Field::Exposure.index(), 1);
-    rig.until("the notch written", Duration::from_secs(5), || edited(&was, &std::fs::read(&frame).unwrap()).is_some());
+    let mosaic = oni_decode::decodes_via_mosaic(Path::new(ctl.state.borrow().open_path().unwrap()));
+    rig.until("the notch written", Duration::from_secs(5), || edited(&was, &std::fs::read(&frame).unwrap(), mosaic).is_some());
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

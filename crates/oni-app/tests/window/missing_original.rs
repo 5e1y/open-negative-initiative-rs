@@ -127,7 +127,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     assert_eq!(b.said().0, "", "twin: a photo there says nothing");
     assert!(!store.invoke_press(Field::Exposure.index(), false), "twin: its sliders take the hand");
     store.invoke_release(Field::Exposure.index());
-    let rested = Field::Exposure.knob().get(&oni_settings::sidecar::read(&b.roll.join("B00.tif"), false, true).unwrap().settings);
+    let rested = Field::Exposure.knob().get(&oni_settings::sidecar::read(&b.roll.join("B00.tif"), false).unwrap().settings);
     store.invoke_step(Field::Exposure.index(), 5);
     std::fs::rename(b.root.join("Volumes/T7"), b.root.join("T7 away")).unwrap();
     b.open("C00");
@@ -142,7 +142,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     b.rig.shot("missing-unplugged");
     // Kept for now by Escape after a press beside the card, then by its own key: the edits stay in memory.
     let held = || b.shell.ctl.state.borrow().store().unsaved().len();
-    let away = || Field::Exposure.knob().get(&oni_settings::sidecar::read(&b.root.join("T7 away/Scans/Roll 12/B00.tif"), false, true).unwrap().settings);
+    let away = || Field::Exposure.knob().get(&oni_settings::sidecar::read(&b.root.join("T7 away/Scans/Roll 12/B00.tif"), false).unwrap().settings);
     let kept = held();
     assert!(kept > 0);
     common::click(&b.rig, w, (12.0, 400.0));
@@ -168,7 +168,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     b.rig.settle();
     assert!(!u.get_shown());
     let side = oni_settings::sidecar::url_for(&b.roll.join("B00.tif"));
-    let written = oni_settings::sidecar::read(&b.roll.join("B00.tif"), false, true).unwrap().settings;
+    let written = oni_settings::sidecar::read(&b.roll.join("B00.tif"), false).unwrap().settings;
     assert!(side.exists() && Field::Exposure.knob().get(&written) != rested, "the kept edits reached the sidecar");
     let _ = std::fs::remove_dir_all(&b.root);
 }

@@ -8,7 +8,7 @@ use crate::latest::Taken;
 /// `id` was left meanwhile; a RAW's half decode is the editor's, kept on disk, which the balance's copy reads.
 pub(super) fn tile_source(engine: &Shared, path: &str, id: &Asked) -> Result<Arc<Negative>, String> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
+    let settings = oni_settings::sidecar::read(Path::new(path), mosaic).map_err(|e| e.to_string())?.settings;
     tile_decoded(engine, path, &settings, || id.current()).map(Arc::new)
 }
 
@@ -28,7 +28,7 @@ pub(super) fn tile_decoded(engine: &Shared, path: &str, settings: &PipelineSetti
 /// preview is found by, and its crop.
 pub(super) fn settings_of(path: &str) -> Option<PipelineSettings> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    oni_settings::sidecar::read(Path::new(path), mosaic, true).ok().map(|l| l.settings)
+    oni_settings::sidecar::read(Path::new(path), mosaic).ok().map(|l| l.settings)
 }
 
 /// A tile's longest side drawn at `scale`.

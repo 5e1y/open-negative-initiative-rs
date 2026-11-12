@@ -45,7 +45,7 @@ impl Ctl {
                     let (before, writable) = if Some(path) == open.as_deref() {
                         (live.clone(), true)
                     } else {
-                        sidecar::read(Path::new(path), mosaic(path), true).map(|l| (l.settings, l.writable)).unwrap_or_default()
+                        sidecar::read(Path::new(path), mosaic(path)).map(|l| (l.settings, l.writable)).unwrap_or_default()
                     };
                     let mut start = roll::start(&before, film, window, mask.as_ref(), stops(path));
                     start.inverted_source = false;
@@ -156,14 +156,14 @@ impl Ctl {
         let (failure, landed) = {
             let mut s = self.state.borrow_mut();
             let store = &mut s.store;
-            let landed = store.land_roll(&written, &prepared);
+            let landed = store.land_roll(&written);
             let failure = store.failure.take();
             s.last_change = Some(Instant::now());
             s.prepare.draft_id = None;
             s.prepare.shown = false;
             (failure, landed)
         };
-        self.drop_drafts(false);
+        self.drop_drafts();
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| left_out(asked, &written, blank));
@@ -236,9 +236,9 @@ impl Ctl {
         self.flush_open();
         let job = {
             let r = &mut self.state.borrow_mut().prepare;
-            let Some((drafts, stored)) = r.step_drafts() else { return };
+            let Some(drafts) = r.step_drafts() else { return };
             let job: Job = Box::new(move || {
-                let refused = draft::written(drafts, &stored);
+                let refused = draft::written(drafts);
                 if let Some(cause) = refused.first().cloned() {
                     let n = refused.len() as u64;
                     with_shell(move |c| c.told(tr("Prepare the Roll"), &trn("One frame's preparation could not be saved: {cause}", "{n} frames' preparation could not be saved: {cause}", n).replace("{cause}", &cause)));
@@ -253,19 +253,14 @@ impl Ctl {
     pub(in crate::app) fn discard_draft(&self) {
         self.flush_open();
         self.state.borrow_mut().prepare.draft_id = None;
-        self.drop_drafts(true);
+        self.drop_drafts();
     }
 
-    /// The roll's frames taken out of their folders' drafts on the serial thread, after the writes before
-    /// it; with `stored`, out of their own sidecars' too, which a measure clears itself.
-    fn drop_drafts(&self, stored: bool) {
-        let (drafts, stored) = {
-            let r = &mut self.state.borrow_mut().prepare;
-            let kept: Vec<String> = std::mem::take(&mut r.stored).into_iter().filter(|_| stored).collect();
-            (r.dropped(), kept)
-        };
+    /// The roll's frames taken out of their folders' drafts on the serial thread, after the writes before it.
+    fn drop_drafts(&self) {
+        let drafts = self.state.borrow().prepare.dropped();
         self.state.borrow().prepare.post(Box::new(move || {
-            let _ = draft::written(drafts, &stored);
+            let _ = draft::written(drafts);
         }));
     }
 

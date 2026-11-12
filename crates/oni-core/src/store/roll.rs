@@ -44,9 +44,9 @@ pub fn reset_label(frames: usize) -> String {
 }
 
 impl EditorStore {
-    /// `landRoll`: the open frame in memory, the others written with their draft cleared, a triplet's
-    /// passes joined to their lead, every frame read but not written losing its draft; one step.
-    pub fn land_roll(&mut self, written: &[WrittenFrame], prepared: &[String]) -> usize {
+    /// `landRoll`: the open frame in memory, the others written, a triplet's passes joined to their
+    /// lead; one step.
+    pub fn land_roll(&mut self, written: &[WrittenFrame]) -> usize {
         self.release();
         self.measured.clear();
         let open = self.path().map(str::to_string);
@@ -64,8 +64,7 @@ impl EditorStore {
                 }
                 continue;
             }
-            let options = WriteOptions { roll_draft: Some(None), ..WriteOptions::default() };
-            match sidecar::write(now, Path::new(path), options) {
+            match sidecar::write(now, Path::new(path), WriteOptions::default()) {
                 Ok(()) => {
                     before.insert(path.clone(), was.clone());
                     after.insert(path.clone(), now.clone());
@@ -82,7 +81,7 @@ impl EditorStore {
                 if pass == *lead {
                     continue;
                 }
-                let Ok(loaded) = sidecar::read(Path::new(&pass), self.mosaic(&pass), true) else { continue };
+                let Ok(loaded) = sidecar::read(Path::new(&pass), self.mosaic(&pass)) else { continue };
                 if !loaded.writable {
                     continue;
                 }
@@ -93,11 +92,6 @@ impl EditorStore {
                 before.insert(pass.clone(), loaded.settings);
                 after.insert(pass, next);
             }
-        }
-        // The open frame and those left out drop the draft here, before the open frame's deferred write reads its file.
-        let measured: BTreeSet<&String> = written.iter().map(|(p, _, _)| p).filter(|p| Some(*p) != open.as_ref()).collect();
-        for path in prepared.iter().filter(|p| !measured.contains(p)) {
-            let _ = sidecar::set_roll_draft(None, Path::new(path), self.mosaic(path));
         }
         let mut step = (before, after);
         gather(&mut step, beside);
@@ -130,7 +124,7 @@ impl EditorStore {
             }
         }
         let others: Vec<String> = files.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
-        for (pass, framing) in rgb_passes::framings(&others) {
+        for (pass, framing) in rgb_passes::framings(&others, &|p| self.mosaic(&p.to_string_lossy())) {
             framings.entry(pass).or_insert(framing);
         }
         gather(&mut step, self.modify(&others, |path, loaded| Some(defaulted(loaded, framings.get(path).copied()))));

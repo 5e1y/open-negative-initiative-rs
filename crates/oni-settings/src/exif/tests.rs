@@ -233,10 +233,11 @@ fn a_date_reaches_a_line_in_exifs_nineteen_characters() {
 #[test]
 fn a_sidecars_date_is_settled_as_it_is_read() {
     let stored = |date: &str| {
-        let document = format!(r#"{{"version": {}, "exif": {{{date}"artist": "A. Tester"}}}}"#, crate::codec::VERSION);
-        let decoded = crate::migrate::document(document.as_bytes()).unwrap().exif.unwrap();
-        let enveloped = crate::codec::envelope(document.as_bytes()).unwrap().exif.unwrap();
-        assert_eq!(decoded, enveloped, "both readings agree");
+        // As format 21 kept it, and as this format keeps it: both readings agree.
+        let earlier = format!(r#"{{"version": 21, "exif": {{{date}"artist": "A. Tester"}}}}"#);
+        let current = format!(r#"{{"format": "{}", "version": {}, "exifLine": {{{date}"artist": "A. Tester"}}}}"#, crate::document::FORMAT, crate::document::VERSION);
+        let decoded = crate::migrate::document(earlier.as_bytes()).unwrap().document.exif_line;
+        assert_eq!(crate::document::decode(current.as_bytes()).unwrap().exif_line, decoded);
         decoded
     };
     let kept = |date: &str| stored(&format!(r#""date": "{date}", "#)).date;

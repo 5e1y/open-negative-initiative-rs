@@ -3,7 +3,6 @@
 use crate::blocks::SeparationFamily;
 use crate::date::{self, Date};
 use crate::id::Id;
-use crate::json;
 use crate::modes::ConversionMode;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -169,7 +168,8 @@ pub fn default_stock_id(mode: ConversionMode) -> &'static str {
     }
 }
 
-/// The roll marker as a plain `JSONEncoder` writes it: compact, its date in reference seconds.
+/// The roll marker, compact, its date in reference seconds: builds that rewrite it with no version
+/// guard read these keys, so they never move.
 #[derive(Serialize, Deserialize)]
 struct MarkerWire {
     id: Id,
@@ -203,7 +203,7 @@ pub mod roll_folder {
             shot_date: film.shot_date,
             camera_body: film.camera_body.clone(),
         };
-        json::to_node(&wire).map(|node| json::compact(&node)).unwrap_or_default()
+        serde_json::to_string(&wire).unwrap_or_default()
     }
 
     pub fn decode(bytes: &[u8]) -> Option<Film> {
