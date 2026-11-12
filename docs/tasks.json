@@ -9055,5 +9055,12 @@
     "title": "The scan-kept stroke recorded as a departure from Swift",
     "status": "done",
     "detail": "docs/parity/hidden.md gains a departed row for the scan-kept stroke and the keyed patch, README.md names it beside the keypad's step for the owner to confirm, and CLAUDE.md lists it among the decisions that look like mistakes. The dust census example reads the stored strokes on the frame through on_frame."
+  },
+  {
+    "id": 1800,
+    "type": "change",
+    "title": "The window checks' list in a file of its own",
+    "status": "done",
+    "detail": "The bug hunt's merges brought tests/window/main.rs to 413 lines, past the 400-line ceiling. The checks' list moves to tests/window/checks.rs; main.rs keeps the modules and the runner's call. The prepare_ending check failed once under the full run's load and passes four times of four alone: a timing flake, logged here, not a regression."
   }
 ]
