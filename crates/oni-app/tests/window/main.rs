@@ -273,6 +273,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),
     ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
     ("full_release::a_full_resolution_landing_in_the_gallery_is_let_go", full_release::a_full_resolution_landing_in_the_gallery_is_let_go),
+    ("full_release::a_full_resolution_build_survives_a_quick_return", full_release::a_full_resolution_build_survives_a_quick_return),
+    ("full_release::every_way_out_lets_the_editor_go", full_release::every_way_out_lets_the_editor_go),
     ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
     ("freshness::two_refreshes_at_once_land_only_the_latest_read", freshness::two_refreshes_at_once_land_only_the_latest_read),
     ("freshness::a_rename_waits_for_a_move_under_way", freshness::a_rename_waits_for_a_move_under_way),

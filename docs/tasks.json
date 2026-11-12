@@ -8726,5 +8726,40 @@
     "title": "A decode failure and a render failure each say their own",
     "status": "done",
     "detail": "Both went through the render delivery's error arm, which called every failure a decode one and probed the file for Nikon HE before even checking the frame was open. The opening decode's failure now goes to Ctl::decode_failed, its error compared bare so a file cut short says so (the stem prefixed to it had made that card unreachable); a GPU render failure says the frame could not be rendered and probes no file. French and Spanish catalogues carry the new text."
+  },
+  {
+    "id": 1735,
+    "type": "fix",
+    "title": "One way out of the editor, which every exit takes",
+    "status": "done",
+    "detail": "Leaving the editor was coded four times and only ToggleMode let its memory and modes go. Trashing the open frame from the editor kept its full resolution (up to 1.6 GB), the engine's caches, Compare, the crop or De-dust tab and Together; the ONI Trash's row clicked beside the photo kept all of them with the frame; Move Out with no frame left skipped the modes, Together and the trim. Ctl::leave_editor is now the one exit: hover cleared, modes left, the gallery shown, Together left, the full resolution dropped, the engine trimmed, the tiles published. ToggleMode, a trashed open frame (closed_if_trashed), the trash's row (open_trash) and Move Out call it; leave_editor_memory is gone and only leave_editor and the launch set the gallery. Window check full_release::every_way_out_lets_the_editor_go leaves by the trash's row and by trashing the last frame of its roll with the full resolution, Compare and the crop held, twin asserting all three held before; the masks check moves the roll's last frame out with Compare on and finds it closed."
+  },
+  {
+    "id": 1736,
+    "type": "fix",
+    "title": "A full resolution under way keeps its mark when the editor is left",
+    "status": "done",
+    "detail": "The editor's exit cleared the full-resolution build's mark while its decode still ran: a return before it landed asked a second FULL decode of the same RAW, about 1 to 3 s and 0.4 to 0.7 GB wasted. The mark is now the build's own, set by ensure_full and cleared by its landing, which already drops a result landing in the gallery; the load bar says Loading full resolution while it runs. Window check full_release::a_full_resolution_build_survives_a_quick_return goes out and back before the landing, a notch at once asking a render, and counts one decode asked (decode_gate::Gate::asked), the bar shown in the gallery, twin the bar gone once it lands; the old exit asked two."
+  },
+  {
+    "id": 1737,
+    "type": "fix",
+    "title": "The canvas's last render let go with the editor",
+    "status": "done",
+    "detail": "The last canvas-sized rgba32float render (gpu.current, about 100 to 190 MB on a Retina window) stayed referenced in the gallery, so the engine's trim could not free it. leave_editor drops it with the full resolution; the next render in the editor sets it again."
+  },
+  {
+    "id": 1738,
+    "type": "fix",
+    "title": "Move Out moves before it closes the frame",
+    "status": "done",
+    "detail": "Move Out closed the open frame before touching the disk, so a refused move (a full disk, a copy that differs, a volume whose Trash refuses) left the editor on a closed frame: the old image over default settings, every control editing nothing. The sidecar is now flushed first, as the move takes it to the Trash, and the frame closed only once the move succeeded. The masks window check refuses the move with a read-only FlatField Presets: the notice is said, B stays open on its own flat-field, twin a step still edits it."
+  },
+  {
+    "id": 1739,
+    "type": "fix",
+    "title": "Move Out never replaces a file at its target",
+    "status": "done",
+    "detail": "flat_fields::Moving::through moved the original with std::fs::rename, which replaces silently on macOS and Windows a file that took the free name after the look. It now takes oni_library::roll_folder::rename_new, which never replaces. Unit check a_move_out_never_replaces_a_file_that_took_the_free_name plants a file inside the rename step: the move is refused, both files whole; twin a replacing rename overwrites it."
   }
 ]

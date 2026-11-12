@@ -4,7 +4,7 @@
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::flat_fields;
-use oni_app::{Advice, App, Library, MaskDialog, PanelState, Store as StoreGlobal};
+use oni_app::{Advice, App, Canvas, Library, MaskDialog, PanelState, Store as StoreGlobal};
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::FlatFieldMask;
 use slint::ComponentHandle;
@@ -150,6 +150,22 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     // Keep in Library: B stays where it is.
     rig.key("\u{1b}");
     assert!(!dialog.get_shown() && folder.join("B.tif").exists());
+    // A move the disk refuses keeps B open and live, its flat-field and all.
+    use std::os::unix::fs::PermissionsExt;
+    let presets = flat_fields::presets(&support);
+    std::fs::set_permissions(&presets, std::fs::Permissions::from_mode(0o555)).unwrap();
+    panel.invoke_take_mask();
+    rig.until("B taken to be refused", Duration::from_secs(60), || !panel.get_taking_mask());
+    dialog.invoke_answered(true, "".into());
+    rig.pump();
+    std::fs::set_permissions(&presets, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(w.global::<Canvas>().get_status(), "The photo could not be moved to FlatField Presets.");
+    assert!(folder.join("B.tif").exists() && !w.global::<App>().get_gallery());
+    assert_eq!(ctl.state.borrow().open_path(), Some(canonical("B.tif").as_str()), "B stays open");
+    assert_eq!(settings().flat_field.custom.as_deref(), Some(b_id.as_str()), "its settings, never the defaults of a closed frame");
+    let exposure = settings().print.exposure;
+    g.invoke_step(Field::Exposure.index(), 1);
+    assert_ne!(settings().print.exposure, exposure, "twin: a step still edits B");
     // Again, the mask known already, then Move Out: B leaves, C opens under B's flat-field.
     panel.invoke_take_mask();
     rig.until("B taken again", Duration::from_secs(60), || !panel.get_taking_mask());
@@ -165,5 +181,22 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     assert!(!w.global::<App>().get_gallery());
     let renders = ctl.state.borrow().renders();
     rig.until("C rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+
+    // C out, then A, the last of the roll, with Compare on: the gallery, the editor left whole.
+    let moved = |frame: &str| {
+        panel.invoke_take_mask();
+        rig.until("the frame taken", Duration::from_secs(60), || !panel.get_taking_mask() && dialog.get_shown());
+        dialog.invoke_answered(true, "".into());
+        rig.pump();
+        assert!(flat_fields::presets(&support).join(frame).exists(), "{frame} moved out");
+    };
+    moved("C.tif");
+    assert_eq!(ctl.state.borrow().open_path(), Some(canonical("A.tif").as_str()), "the frame before opens, none after");
+    rig.pump();
+    ctl.act(oni_app::Act::Compare);
+    assert!(ctl.state.borrow().split().is_some(), "twin: Compare on before the last move");
+    moved("A.tif");
+    assert!(w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_none(), "none left, the gallery");
+    assert!(ctl.state.borrow().split().is_none(), "Compare left with the editor");
     let _ = std::fs::remove_dir_all(&root);
 }

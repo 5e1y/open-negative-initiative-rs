@@ -159,9 +159,9 @@ pub struct Moving<'a> {
 }
 
 impl<'a> Moving<'a> {
-    /// The system's rename and a copy handed to the drive, then `trash`, the app's discard.
+    /// A rename that never replaces and a copy handed to the drive, then `trash`, the app's discard.
     pub fn through(trash: &'a dyn Fn(&Path) -> std::io::Result<()>) -> Moving<'a> {
-        Moving { rename: |from, to| std::fs::rename(from, to), copy: synced_copy, trash }
+        Moving { rename: oni_library::roll_folder::rename_new, copy: synced_copy, trash }
     }
 }
 
