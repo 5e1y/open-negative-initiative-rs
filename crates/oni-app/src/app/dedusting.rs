@@ -57,7 +57,7 @@ impl Ctl {
             }
             let s = &*s;
             // A heal waiting on the frame's full-resolution build is already under way.
-            let healing = s.open_path().is_some_and(|p| s.dust.healing.contains_key(p) || s.building_full.as_deref() == Some(p));
+            let healing = s.healing() || s.open_path().is_some_and(|p| s.building_full.as_deref() == Some(p));
             let upstream = oni_pipeline::corrections::upstream(s.store.settings());
             let key = |c: &oni_settings::frame::Correction| oni_pipeline::corrections::PatchKey { id: c.id, upstream };
             let pending = |c: &oni_settings::frame::Correction| healing && !s.dust.patched.contains(&key(c)) && !s.dust.unhealable.contains(&key(c));

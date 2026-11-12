@@ -10,6 +10,8 @@ pub(in crate::app) struct Frame {
     /// Its preview, which the canvas renders, and its full-resolution pixels once built.
     pub negative: Option<Arc<Negative>>,
     pub full: Option<oni_graph::Source>,
+    /// The heal run cutting patches on `full`, which ends with it.
+    pub heal: Option<rendering::Healing>,
     /// What the canvas asked of it and was given, and Compare over it.
     pub requests: rendering::Requests,
     pub compare: rendering::Compare,
@@ -26,15 +28,19 @@ pub(in crate::app) struct Frame {
 }
 
 impl Frame {
-    /// `path` opened under `reading`. The full resolution stays when `previous` held the same frame; the
-    /// last picture's place and size stay until this one's render lands, as its thumbnail is laid by them.
+    /// `path` opened under `reading`. The full resolution and its heal run stay when `previous` held the same
+    /// frame; the last picture's place and size stay until this one's render lands, as its thumbnail is laid by them.
     pub fn opened(path: &str, reading: render::Reading, previous: Option<Frame>) -> Frame {
-        let (full, placed, full_size) = previous.map_or((None, None, None), |p| (p.full.filter(|_| p.path == path), p.placed, p.full_size));
+        let (full, heal, placed, full_size) = previous.map_or((None, None, None, None), |mut p| {
+            let same = p.path == path;
+            (p.full.take().filter(|_| same), p.heal.take().filter(|_| same), p.placed, p.full_size)
+        });
         Frame {
             path: path.to_string(),
             reading,
             negative: None,
             full,
+            heal,
             requests: rendering::Requests::default(),
             compare: rendering::Compare::default(),
             placed,
@@ -46,9 +52,11 @@ impl Frame {
         }
     }
 
-    /// Its full resolution let go, up to 1.6 GB on a 24 MP frame; the view builds it again once it asks.
+    /// Its full resolution let go, up to 1.6 GB on a 24 MP frame, and the run cutting patches on it; the
+    /// view builds it again once it asks.
     pub fn release_full(&mut self) {
         self.full = None;
+        self.heal = None;
     }
 
     /// Read again under `reading`: what was decoded under the last one goes.
@@ -56,6 +64,7 @@ impl Frame {
         self.reading = reading;
         self.negative = None;
         self.full = None;
+        self.heal = None;
     }
 }
 
@@ -121,5 +130,36 @@ mod tests {
         assert!(next.full.is_none() && next.negative.is_none() && next.requests.rendered == 0);
         let first = Frame::opened("b", render::Reading::default(), None);
         assert_eq!(first.full_size, None, "twin: with no frame before, no size is guessed");
+    }
+
+    #[test]
+    fn a_heal_run_ends_with_the_full_resolution_it_reads() {
+        let running = |f: &mut Frame| {
+            let (run, latest) = rendering::Healing::new(oni_settings::PipelineSettings::default());
+            f.heal = Some(run);
+            latest
+        };
+        let reads = |latest: &std::sync::Arc<std::sync::Mutex<Option<oni_settings::PipelineSettings>>>| latest.lock().unwrap().is_some();
+        let mut f = held("a");
+        let latest = running(&mut f);
+        f.reread(render::Reading { slide: true, ..render::Reading::default() });
+        assert!(!reads(&latest), "a reread left the run cutting on the old decode");
+        let latest = running(&mut f);
+        f.release_full();
+        assert!(!reads(&latest), "the full resolution let go left its run");
+        let latest = running(&mut f);
+        let other = Frame::opened("b", render::Reading::default(), Some(f));
+        assert!(!reads(&latest), "another frame opened left the last one's run");
+        let mut f = other;
+        let latest = running(&mut f);
+        drop(f);
+        assert!(!reads(&latest), "a closed frame left its run");
+        // Twins: a frame still held, or opened again with its full resolution, keeps its run.
+        let mut f = held("a");
+        let latest = running(&mut f);
+        f.requests = rendering::Requests::default();
+        assert!(reads(&latest), "a run ended though its frame was held");
+        let again = Frame::opened("a", render::Reading::default(), Some(f));
+        assert!(reads(&latest) && again.heal.is_some(), "the same frame opened again lost its run");
     }
 }

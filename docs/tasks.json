@@ -9496,5 +9496,12 @@
     "title": "Every file written heals its strokes: an export or a contact sheet makes the patches not on disk",
     "status": "done",
     "detail": "A render lays only the patches on disk, and only the editor's open frame made them, so an export after a relaunch (patches purged at quit), after a roll-wide change of what they are keyed on, or of strokes never opened wrote the frame with its dust back and said nothing. The editor's heal loop is now one function, heal::ensure, with heal::pending; render_full_beside (the export, write_one included) runs it on the frame's whole decode before rendering, and the contact sheet runs it ahead (export::heal_ahead) for frames lacking a patch, decoding them whole only then. A patch that cannot be made fails the file with Failure::Dust, translated. render_full, which lays only what is on disk, is left to the tests. Checks: export/heal_tests.rs an_export_heals_strokes_whose_patch_was_never_made (never made, then purged as at a quit) and a_contact_sheet_heals_strokes_whose_patch_was_never_made, each with the bare render as its twin; both seen failing with the heal left out."
+  },
+  {
+    "id": 1876,
+    "type": "fix",
+    "title": "A heal run ends with the full resolution it cuts on",
+    "status": "done",
+    "detail": "The run's hand-off lived in Dust.healing beside the frame, and only another photo opened ended it: a close, a release on leaving the editor or a reread kept it going, holding up to 1.6 GB on the GPU, and after a reread it cut patches on the old decode and filed them under the new reading's key. The frame now owns its run (Frame.heal, a Healing whose drop ends the run) beside full: reread, release_full, a close or another frame let both go together, and the same frame opened again keeps both. Dust.healing and the stop in Dust::next_photo are deleted; State::healing reads the open frame's run; a run's end clears the frame's only when it is the same run. Check: frame.rs a_heal_run_ends_with_the_full_resolution_it_reads (reread, release, another frame, a close; twins: a frame held or opened again keeps its run), seen failing with the reread and release lines left out."
   }
 ]

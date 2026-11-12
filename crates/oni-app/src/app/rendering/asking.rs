@@ -83,15 +83,15 @@ impl Ctl {
             let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone(), coarse });
             // Each correction's patch is generated as its frame opens, the cache purged at every quit, on the
             // full resolution, built first when it is not; a run under way reads these settings before each patch.
-            if let Some(latest) = s.dust.healing.get(&path)
-                && let Ok(mut l) = latest.lock()
-            {
-                *l = Some(s.store.settings().clone());
+            if let Some(run) = s.frame.as_ref().and_then(|f| f.heal.as_ref()) {
+                run.read(s.store.settings().clone());
             }
-            let unhealed = !s.dust.healing.contains_key(&path) && s.unhealed();
+            let unhealed = s.frame.as_ref().is_some_and(|f| f.heal.is_none()) && s.unhealed();
             let heal = full.clone().filter(|_| unhealed).map(|full| {
-                let latest = std::sync::Arc::new(std::sync::Mutex::new(Some(s.store.settings().clone())));
-                s.dust.healing.insert(path.clone(), latest.clone());
+                let (run, latest) = Healing::new(s.store.settings().clone());
+                if let Some(f) = s.frame.as_mut() {
+                    f.heal = Some(run);
+                }
                 (path.clone(), latest, full)
             });
             // On the Settings' choice the full resolution is built as the photo opens; every render reads it once built.
@@ -160,12 +160,16 @@ impl Ctl {
             });
             let took = started.elapsed();
             with_shell(move |c| {
-                let open = c.state.borrow_mut().frame_for(&path).is_some();
-                {
+                let open = {
                     let mut s = c.state.borrow_mut();
-                    s.dust.healing.remove(&path);
                     s.dust.unhealable.extend(failed);
-                }
+                    let frame = s.frame_for(&path);
+                    // A run started since on the same frame stays its own.
+                    if let Some(f) = frame.filter(|f| f.heal.as_ref().is_some_and(|run| run.is(&latest))) {
+                        f.heal = None;
+                    }
+                    s.frame_for(&path).is_some()
+                };
                 if made > 0 {
                     timing::line(&format!("{}: {made} dust patches generated in {:.0} ms", crate::anonymity::token(&path), took.as_secs_f64() * 1000.0));
                 }
@@ -265,7 +269,39 @@ impl Ctl {
 }
 
 /// The frame's settings a heal run reads before each patch, `None` once the frame is left.
-pub(in crate::app) type Latest = std::sync::Arc<std::sync::Mutex<Option<oni_settings::PipelineSettings>>>;
+type Latest = std::sync::Arc<std::sync::Mutex<Option<oni_settings::PipelineSettings>>>;
+
+/// A heal run, owned by the frame beside the full resolution it cuts on: let go with it, by a close, a
+/// reread, a release or another frame, it stops the run after its patch, as no other way ends one early.
+pub(in crate::app) struct Healing(Latest);
+
+impl Healing {
+    /// A run reading `settings` first, and the hand-off its thread reads.
+    pub(in crate::app) fn new(settings: oni_settings::PipelineSettings) -> (Healing, Latest) {
+        let latest = std::sync::Arc::new(std::sync::Mutex::new(Some(settings)));
+        (Healing(latest.clone()), latest)
+    }
+
+    /// The settings the run reads before its next patch.
+    fn read(&self, settings: oni_settings::PipelineSettings) {
+        if let Ok(mut l) = self.0.lock() {
+            *l = Some(settings);
+        }
+    }
+
+    /// Whether this is the run reading `latest`.
+    fn is(&self, latest: &Latest) -> bool {
+        std::sync::Arc::ptr_eq(&self.0, latest)
+    }
+}
+
+impl Drop for Healing {
+    fn drop(&mut self) {
+        if let Ok(mut l) = self.0.lock() {
+            *l = None;
+        }
+    }
+}
 
 /// The patches made for corrections the frame still holds, and the keys of those removed meanwhile.
 fn landed(made: Vec<Made>, corrections: &[oni_settings::frame::Correction]) -> (Vec<Made>, Vec<PatchKey>) {
