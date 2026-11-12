@@ -16,13 +16,13 @@ use std::time::Duration;
 
 use crate::common;
 
-struct Disk {
-    root: PathBuf,
-    computer: Computer,
+pub(crate) struct Disk {
+    pub(crate) root: PathBuf,
+    pub(crate) computer: Computer,
 }
 
 /// A home and a volumes folder in the check's own scratch, `files` made under it.
-fn disk(label: &str, files: &[&str]) -> Disk {
+pub(crate) fn disk(label: &str, files: &[&str]) -> Disk {
     let root = std::env::temp_dir().join(format!("oni-app-fresh-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     for file in files {
@@ -36,7 +36,7 @@ fn disk(label: &str, files: &[&str]) -> Disk {
 }
 
 impl Disk {
-    fn launch(&self, gpu: &oni_app::render::Device) -> Shell {
+    pub(crate) fn launch(&self, gpu: &oni_app::render::Device) -> Shell {
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
         let options = Options {
             support: self.root.join("Support"),
@@ -50,7 +50,7 @@ impl Disk {
         shell
     }
 
-    fn path(&self, rel: &str) -> String {
+    pub(crate) fn path(&self, rel: &str) -> String {
         paths::normal(&self.root.join(rel).to_string_lossy()).into_owned()
     }
 
@@ -62,7 +62,7 @@ impl Disk {
     }
 }
 
-fn rig() -> common::Rig {
+pub(crate) fn rig() -> common::Rig {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
@@ -70,22 +70,22 @@ fn rig() -> common::Rig {
     rig
 }
 
-fn gpu(what: &str) -> Option<oni_app::render::Device> {
+pub(crate) fn gpu(what: &str) -> Option<oni_app::render::Device> {
     oni_app::render::Device::open().map_err(|e| eprintln!("{e}: {what} is not exercised")).ok()
 }
 
-fn names(shell: &Shell) -> Vec<String> {
+pub(crate) fn names(shell: &Shell) -> Vec<String> {
     let mut out: Vec<String> = shell.ctl.state.borrow().order().iter().map(|p| paths::name(p)).collect();
     out.sort();
     out
 }
 
-fn told(shell: &Shell) -> String {
+pub(crate) fn told(shell: &Shell) -> String {
     let t = shell.window.global::<Told>();
     if t.get_shown() { t.get_message().to_string() } else { String::new() }
 }
 
-fn opened(rig: &common::Rig, shell: &Shell, folder: &str, photos: usize) {
+pub(crate) fn opened(rig: &common::Rig, shell: &Shell, folder: &str, photos: usize) {
     shell.open_folder(Path::new(folder));
     let s = &shell.ctl.state;
     rig.until("the folder read", Duration::from_secs(30), || s.borrow().read_done() && s.borrow().photos() == photos);
@@ -317,12 +317,12 @@ pub(crate) fn two_refreshes_at_once_land_only_the_latest_read() {
     let _ = std::fs::remove_dir_all(&d.root);
 }
 
-fn row_titles(shell: &Shell) -> Vec<String> {
+pub(crate) fn row_titles(shell: &Shell) -> Vec<String> {
     let rows = shell.window.global::<Navigator>().get_rows();
     (0..rows.row_count()).filter_map(|i| rows.row_data(i)).map(|r| r.title.to_string()).collect()
 }
 
-fn rename(rig: &common::Rig, shell: &Shell, from: &str, to: &str) {
+pub(crate) fn rename(rig: &common::Rig, shell: &Shell, from: &str, to: &str) {
     let n = shell.window.global::<Navigator>();
     let at = |title: &str| row_titles(shell).iter().position(|t| t == title).unwrap_or_else(|| panic!("{title} not among {:?}", row_titles(shell)));
     assert!(n.invoke_row_menu(at(from) as i32));
@@ -335,7 +335,7 @@ fn rename(rig: &common::Rig, shell: &Shell, from: &str, to: &str) {
 }
 
 /// The folders in `folder` as the disk spells them.
-fn on_disk(folder: &Path) -> Vec<String> {
+pub(crate) fn on_disk(folder: &Path) -> Vec<String> {
     let mut out: Vec<String> = std::fs::read_dir(folder).unwrap().flatten().filter(|e| e.path().is_dir()).map(|e| e.file_name().to_string_lossy().into_owned()).collect();
     out.sort();
     out

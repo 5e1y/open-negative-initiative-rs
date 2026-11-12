@@ -133,3 +133,32 @@ fn a_slide_decodes_cooler_and_is_kept_under_its_own_key() {
     assert!(bits(&decode_on(&mosaic, 1.0, 0, Neutral::Slide).unwrap().0) == bits(&slide));
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// The size read from the metadata is the whole decode's: the maker's crop inside the active area,
+/// and a file turned a quarter by its orientation.
+#[test]
+fn the_full_size_is_the_whole_decode_s_without_decoding() {
+    let root = scratch("full-size");
+    let mosaic: Vec<u16> = (0..W * H).map(|i| at(i % W, i / W)).collect();
+    let framed = root.join("Framed.DNG");
+    let mut tags = vec![(50829, 4, 4, longs(&[2, 4, H, W]))];
+    tags.extend(crop((2, 2), (80, 52)));
+    dng(&framed, (W, H), 1, &mosaic, tags);
+    let turned = root.join("Turned.DNG");
+    let mut tags = crop((8, 4), (W - 16, H - 8));
+    tags.retain(|t| t.0 != 274);
+    dng(&turned, (W, H), 1, &mosaic, tags);
+    // The orientation tag rewritten to a quarter turn right.
+    let mut bytes = std::fs::read(&turned).unwrap();
+    let at274 = bytes.windows(8).position(|w| w == [0x12, 0x01, 3, 0, 1, 0, 0, 0]).unwrap();
+    bytes[at274 + 8] = 6;
+    std::fs::write(&turned, bytes).unwrap();
+    for file in [&framed, &turned] {
+        let whole = decode(file, 1.0).unwrap();
+        assert_eq!(crate::full_size(file), Some((whole.width, whole.height)), "{}", file.display());
+    }
+    assert_eq!(crate::full_size(&turned), Some((H - 8, W - 16)), "the turn swaps the sides");
+    // Twin: the sensor's own sides are not the decode's.
+    assert_ne!(crate::full_size(&framed), Some((W, H)));
+    let _ = std::fs::remove_dir_all(&root);
+}

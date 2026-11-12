@@ -219,10 +219,9 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     assert!(written[0].radius >= 8.0, "{}", written[0].radius);
     let (x, y) = (written[0].stroke[0].x * 1600.0, written[0].stroke[0].y * 1200.0);
     assert!((798.0..808.0).contains(&x) && (598.0..608.0).contains(&y), "{x},{y}");
-    let patch = oni_app::patches::file(&oni_app::patches::caches(), written[0].id);
     rig.until("the patch", Duration::from_secs(60), || {
         rig.pump();
-        patch.exists()
+        oni_app::patches::made(&oni_app::patches::caches(), ctl.state.borrow().store().settings(), &written[0])
     });
 
     d.invoke_detect();

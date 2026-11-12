@@ -18,16 +18,14 @@ impl Ctl {
             let i = f.index() as usize;
             let now = Instant::now();
             let double = {
-                let mut s = p.state.borrow_mut();
+                let s = &mut *p.state.borrow_mut();
                 let slide = &mut s.slides[i];
                 // `DSClick` reads AppKit's click count, which keeps counting past two.
                 let double = slide.last_press.is_some_and(|t| now.duration_since(t) <= system::double_click());
                 slide.last_press = Some(now);
-                slide.resetting = double;
-                slide.start = if double { None } else { Some(slide.shown) };
+                slide.drag = (!double).then(|| hands::Drag::at(slide.shown, &s.hands));
                 if !double {
                     s.store.hold();
-                    s.hands.fetch_add(1, Ordering::Relaxed);
                 }
                 double
             };
@@ -47,11 +45,11 @@ impl Ctl {
                 let mut s = p.state.borrow_mut();
                 let (range, rest) = (track_on(f, s.store.settings()), f.base(s.store.settings()));
                 let slide = &mut s.slides[i];
-                let (false, Some(start)) = (slide.resetting, slide.start) else { return };
-                let asked = track::clamped(track::asked(start, translation, span, fine));
+                let Some(drag) = slide.drag.as_mut() else { return };
+                let asked = track::clamped(track::asked(drag.from, translation, span, fine));
                 let live = crate::slider_track::landed(f, asked, &range, rest);
                 let now = Instant::now();
-                slide.live = Some(live);
+                drag.live = Some(live);
                 slide.moved_at = Some(now);
                 let offer = slide.hand.offer(now);
                 if offer == Offer::Now {
@@ -73,7 +71,7 @@ impl Ctl {
                             let mut s = q.state.borrow_mut();
                             s.slides[i].hand.trailed(Instant::now());
                             s.moved_at = s.slides[i].moved_at;
-                            s.slides[i].live
+                            s.slides[i].live()
                         };
                         if let Some(live) = live {
                             q.set(f, live);
@@ -85,41 +83,7 @@ impl Ctl {
         });
 
         let p = me.clone();
-        g.on_release(move |field| {
-            let Some(f) = Field::from_index(field) else { return };
-            let i = f.index() as usize;
-            let live = {
-                let mut s = p.state.borrow_mut();
-                let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
-                let slide = &mut s.slides[i];
-                slide.start = None;
-                slide.resetting = false;
-                slide.hand.released();
-                slide.live.take()
-            };
-            p.trailing[i].stop();
-            if let Some(live) = live {
-                let mut s = p.state.borrow_mut();
-                let command = store::moved(&*s.store, f, live);
-                s.store.apply(command);
-            }
-            let released = std::time::Instant::now();
-            p.state.borrow_mut().store.release();
-            // The step's record and any roll it reaches, read and written on this thread.
-            if released.elapsed() > std::time::Duration::from_millis(5) {
-                timing::line(&format!("a release recorded its step in {:.1} ms", released.elapsed().as_secs_f64() * 1000.0));
-            }
-            p.publish(false);
-            p.schedule_redraw();
-            if p.state.borrow().last_change.is_some() {
-                p.schedule_write();
-            }
-            // The readout leaves the hand's value for the store's, which a clamp may have moved.
-            if let Some(w) = p.window() {
-                let v = p.state.borrow().store.get(f);
-                set_readout(&w.global::<StoreGlobal>(), f, p.readout_at(f, v).into());
-            }
-        });
+        g.on_release(move |field| Field::from_index(field).into_iter().for_each(|f| p.let_go(f)));
 
         // A scroll along the track writes the store at each event; one across it scrolls the panel.
         let p = me.clone();

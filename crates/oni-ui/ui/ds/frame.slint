@@ -53,7 +53,8 @@ component Grab inherits TouchArea {
             self.from-y = self.absolute-position.y + self.mouse-y;
             root.grabbed(root.handle);
         }
-        if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) {
+        // A cancel ends the press as a release does: the area lets go of the hand on it.
+        if ((event.button == PointerEventButton.left && event.kind == PointerEventKind.up) || event.kind == PointerEventKind.cancel) {
             root.released();
         }
     }

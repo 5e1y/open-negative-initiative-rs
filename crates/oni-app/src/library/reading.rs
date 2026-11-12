@@ -98,21 +98,26 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
     let mut landed = Instant::now();
     let mut noted: Vec<(String, Stamped)> = Vec::new();
     while alive() {
-        if let Some(path) = waiting.pop_front() {
+        let read = if let Some(path) = waiting.pop_front() {
             // A file that cannot be read whole, that the cloud keeps away or that is still being
             // written, waits with no print.
             let read = if survey.settling.contains(&path) { None } else { library::indexed(&path) };
-            match read {
-                Some(entry) => {
-                    let _ = index.upsert(&entry);
-                    noted.extend(stamped(&survey, &path).map(|s| (path, s)));
-                }
-                None => unreadable.push(path),
+            if read.is_none() {
+                unreadable.push(path.clone());
             }
+            read.map(|entry| (path, entry))
         } else if let Some(row) = again.pop_front() {
-            noted.extend(look_again(index, row, &survey));
+            look_again(row)
         } else {
             break;
+        };
+        if let Some((path, entry)) = read {
+            // Superseded during the file read, by a move that may have taken the row: nothing is written back.
+            if !alive() {
+                break;
+            }
+            let _ = index.upsert(&entry);
+            noted.extend(stamped(&survey, &path).map(|s| (path, s)));
         }
         if landed.elapsed() >= LANDING && !(waiting.is_empty() && again.is_empty()) {
             let _ = index.note_stamps(&std::mem::take(&mut noted));
@@ -125,24 +130,16 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
 }
 
 /// A row whose file or sidecar moved, read again: a print that holds keeps the row, one that moved
-/// reads it whole. The stamp to keep, `None` while the file cannot be read.
-fn look_again(index: &LibraryIndex, again: Again, survey: &Survey) -> Option<(String, Stamped)> {
-    let row = match again {
-        Again::Sidecar(row) => {
-            let _ = index.upsert(&refreshed(&row));
-            row
-        }
+/// reads it whole. The row to write, `None` while the file cannot be read.
+fn look_again(again: Again) -> Option<(String, Entry)> {
+    match again {
+        Again::Sidecar(row) => Some((row.path.clone(), refreshed(&row))),
         Again::Original(row) => {
             let print = relink::stamp(Path::new(&row.path))?;
-            if print.fingerprint == row.fingerprint {
-                let _ = index.upsert(&refreshed(&row));
-            } else {
-                let _ = index.upsert(&library::indexed(&row.path)?);
-            }
-            row
+            let entry = if print.fingerprint == row.fingerprint { refreshed(&row) } else { library::indexed(&row.path)? };
+            Some((row.path, entry))
         }
-    };
-    stamped(survey, &row.path).map(|s| (row.path, s))
+    }
 }
 
 /// `read_rows` cut into archives, for a caller with no interface between the landings.
@@ -191,8 +188,28 @@ pub fn refresh(index: &LibraryIndex, paths: &[String]) {
     let _ = index.upsert_all(&entries);
 }
 
+/// What a gesture's sidecar writes leave in the index: their rows read again, then the opened
+/// folder's rows and the copies, cut on the thread the writes ran on.
+#[derive(Default)]
+pub struct Reread {
+    /// The folder `rows` are under, none when no folder was open.
+    pub folder: Option<String>,
+    pub rows: Vec<Entry>,
+    pub copies: HashSet<String>,
+}
+
+/// `refresh` of `paths`, then what the gallery of `opened` lays from the index.
+pub fn reread(index: &LibraryIndex, paths: &[String], opened: Option<&str>) -> Reread {
+    refresh(index, paths);
+    let rows = opened.map(|folder| shown_under(index, folder)).unwrap_or_default();
+    Reread { folder: opened.map(str::to_owned), rows, copies: index.copies() }
+}
+
 /// The index's rows for the gallery, the ONI Trash's, the contact sheets and the composed passes left
 /// out: a pass's lead lies beside it, so the folder's rows alone tell which passes it composes.
 pub fn shown_under(index: &LibraryIndex, folder: &str) -> Vec<Entry> {
     library_index::shown(&index.under(folder))
 }
+
+#[cfg(test)]
+mod tests;

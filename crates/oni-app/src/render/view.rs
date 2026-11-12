@@ -14,15 +14,6 @@ pub struct View {
     pub coarse: bool,
 }
 
-/// A view's identity for a kept render: the viewport, the canvas and which full frame.
-pub type ViewKey = (crate::viewport::Viewport, (f64, f64), Option<u64>, bool);
-
-impl View {
-    pub fn key(&self) -> ViewKey {
-        (self.viewport, self.size, self.full.as_ref().map(Source::id), self.coarse)
-    }
-}
-
 /// Where a render sits on the canvas, in drawable pixels, and what it covers.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Placed {
@@ -47,7 +38,13 @@ pub trait Renderer: Send {
         None
     }
 
-    /// The whole picture at the histogram's size when the settings moved since the last; `None` else.
+    /// Compare's before on `reference`, the same source while what it reads holds; `None` drops it.
+    fn before(&mut self, _negative: &Negative, _reference: Option<&PipelineSettings>, _view: Option<&View>) -> Option<(Source, Option<Placed>)> {
+        None
+    }
+
+    /// The whole picture at the histogram's size, the same source while what it reads holds; `None`
+    /// where nothing counts.
     fn counted(&mut self, _negative: &Negative, _settings: &PipelineSettings) -> Option<Source> {
         None
     }
@@ -62,7 +59,11 @@ impl Renderer for Shared {
         self.lock().ok()?.inputs(negative, settings, held)
     }
 
+    fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Option<(Source, Option<Placed>)> {
+        self.lock().ok()?.before(negative, reference, view).ok().flatten()
+    }
+
     fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Option<Source> {
-        self.lock().ok()?.counted(negative, settings).ok().flatten()
+        self.lock().ok()?.counted(negative, settings).ok()
     }
 }

@@ -67,15 +67,14 @@ impl Ctl {
                 };
                 let m = crate::measuring::measurer();
                 let film = ConversionMode::Positive;
-                // The white read first, on its slide uncropped at rest, its colour alone kept.
+                // The white read first, its colour alone kept, on the start its slide is read from.
                 let white = pick.and_then(|p| {
-                    let bare = if Some(&p.path) == open.as_ref() {
+                    let before = if Some(&p.path) == open.as_ref() {
                         live.clone()
                     } else {
                         sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
                     };
-                    let unit = Point::new(p.unit.0, p.unit.1);
-                    m?.with(&p.path, &bare, |r, copy| key::base(r, copy, &bare, film, mask.as_ref(), stops(&p.path), unit, p.radius))
+                    m?.base(&p.path, &roll::slide(&before, window, mask.as_ref(), stops(&p.path)), Point::new(p.unit.0, p.unit.1), p.radius)
                 });
                 let gains = white.and_then(|w| oni_measure::slide_gains::white(w, film));
                 let side = oni_measure::tiles::roll_tile();

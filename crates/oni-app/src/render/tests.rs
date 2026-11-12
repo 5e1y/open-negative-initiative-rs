@@ -285,7 +285,7 @@ fn a_dust_patch_from_the_cache_heals_its_stroke() {
     assert!(missing.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a[1] - b[1]).abs() < 1e-6), "no patch, no change");
     // A bright patch the size of the tile: the frame is 64 × 48, so the tile is the whole frame.
     std::fs::create_dir_all(caches.join("Corrections")).unwrap();
-    let out = std::fs::File::create(crate::patches::file(&caches, id)).unwrap();
+    let out = std::fs::File::create(crate::patches::file(&caches, oni_pipeline::corrections::PatchKey::of(&settings, &settings.corrections[0]))).unwrap();
     let bright: Vec<f32> = (0..w * h).flat_map(|_| [0.9f32, 0.9, 0.9, 1.0]).collect();
     tiff::encoder::TiffEncoder::new(out).unwrap().write_image::<tiff::encoder::colortype::RGBA32Float>(w as u32, h as u32, &bright).unwrap();
     let healed = engine.render(&negative, &settings, None).unwrap();

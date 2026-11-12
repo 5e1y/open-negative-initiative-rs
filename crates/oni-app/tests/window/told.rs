@@ -252,6 +252,7 @@ pub(crate) fn a_new_folder_refused_by_the_disk_is_said() {
     {
         locked(&scans, true);
         choose(&rig, w, "Scans", "New Folder Inside");
+        rig.landed(&shell.ctl);
         locked(&scans, false);
         let (title, message, _) = told(&shell).expect("the refusal is told");
         assert_eq!(title, "New Folder");
@@ -261,6 +262,7 @@ pub(crate) fn a_new_folder_refused_by_the_disk_is_said() {
     }
     // Twin: the disk writable, the folder is made and nothing is said.
     choose(&rig, w, "Scans", "New Folder Inside");
+    rig.landed(&shell.ctl);
     assert!(scans.join("New Folder").is_dir());
     assert_eq!(told(&shell), None, "a folder made says nothing");
     let _ = std::fs::remove_dir_all(&d.root);

@@ -181,6 +181,7 @@ impl Ctl {
             }
             let fingerprints = s.rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
             s.fingerprints = fingerprints;
+            survey_moved(Arc::make_mut(&mut s.survey), &moved);
             s.order.iter_mut().for_each(carry);
             // `selection` and `ring` follow too, so a photo moved is never opened where it was.
             let picks = &mut s.picks;
@@ -222,6 +223,27 @@ impl Ctl {
     }
 }
 
+/// The survey's paths where the disk moved them, so the archive laid before the next read keeps
+/// each photo's pair and its roll.
+fn survey_moved(survey: &mut Survey, moved: &impl Fn(&str) -> Option<String>) {
+    let carry = |path: String| moved(&path).unwrap_or(path);
+    fn keys<V>(map: &mut HashMap<String, V>, carry: &impl Fn(String) -> String) {
+        *map = std::mem::take(map).into_iter().map(|(k, v)| (carry(k), v)).collect();
+    }
+    for list in [&mut survey.images, &mut survey.folders, &mut survey.unreadable] {
+        *list = std::mem::take(list).into_iter().map(carry).collect();
+    }
+    for set in [&mut survey.cloud, &mut survey.settling] {
+        *set = std::mem::take(set).into_iter().map(carry).collect();
+    }
+    keys(&mut survey.made, &carry);
+    keys(&mut survey.dated, &carry);
+    keys(&mut survey.sizes, &carry);
+    keys(&mut survey.away, &carry);
+    keys(&mut survey.rolls, &carry);
+    keys(&mut survey.sidecars, &carry);
+}
+
 fn tree_moved(id: TreeId, moved: &impl Fn(&str) -> Option<String>) -> TreeId {
     match id {
         TreeId::Folder(p) => TreeId::Folder(moved(&p).unwrap_or(p)),
@@ -234,4 +256,20 @@ fn project_moved(id: ProjectNode, moved: &impl Fn(&str) -> Option<String>) -> Pr
         ProjectNode::Photo { path, project } => ProjectNode::Photo { path: moved(&path).unwrap_or(path), project },
         other => other,
     }
+}
+
+#[cfg(test)]
+#[test]
+fn a_survey_follows_a_move_with_each_path_it_records() {
+    let mut survey = Survey::default();
+    survey.images = vec!["/s/r/a.nef".into(), "/s/b.nef".into()];
+    survey.sidecars.insert("/s/r/a.nef".into(), oni_settings::Date::now());
+    survey.rolls.insert("/s/r".into(), oni_settings::Film::new("r"));
+    let moved = |p: &str| oni_library::paths::holds("/s/r", p).then(|| oni_library::paths::moved(p, "/s/r", "/s/t"));
+    // Twin: the survey left as it was pairs no sidecar with the photo at its new path.
+    assert!(!survey.sidecars.contains_key("/s/t/a.nef"));
+    survey_moved(&mut survey, &moved);
+    assert_eq!(survey.images, ["/s/t/a.nef", "/s/b.nef"]);
+    assert!(survey.sidecars.contains_key("/s/t/a.nef") && survey.rolls.contains_key("/s/t"));
+    assert_eq!(survey.sidecars.len() + survey.rolls.len(), 2, "nothing left under the old names");
 }

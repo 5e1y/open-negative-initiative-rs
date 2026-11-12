@@ -42,9 +42,8 @@ impl Geometry {
     /// The crop in whole pixels as stage 0 cuts it from the full frame, every pixel the frame touches:
     /// the one size the crop's readout, its badge, the status bar, the export panel and the file share.
     pub fn kept_pixels(&self, image: Size) -> Size {
-        let (w, h) = self.oriented_size(image);
-        let [x, y, fw, fh] = self.frame_in([0.0, 0.0, w, h], 1.0);
-        ((x + fw).ceil() - x.floor(), (y + fh).ceil() - y.floor())
+        let [_, _, w, h] = self.cut(image);
+        (w, h)
     }
 }
 

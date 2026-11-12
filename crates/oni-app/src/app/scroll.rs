@@ -6,7 +6,6 @@ use crate::track::{self, SCROLL_IDLE};
 use crate::viewport;
 use slint::{Timer, TimerMode};
 use std::rc::Rc;
-use std::sync::atomic::Ordering;
 
 thread_local! {
     /// The rest of a scroll on a slider outside the store, after which its release runs.
@@ -27,9 +26,8 @@ impl Ctl {
     pub(super) fn scroll_kept_alive(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            if !s.scrolling {
-                s.scrolling = true;
-                s.hands.fetch_add(1, Ordering::Relaxed);
+            if s.scrolling.is_none() {
+                s.scrolling = Some(super::hands::HandDown::on(&s.hands));
                 s.store.hold();
             }
         }
@@ -58,14 +56,12 @@ impl Ctl {
         Some(track::clamped(track::asked(from, Self::scroll_travel(dx), span, fine)))
     }
 
-    fn scroll_ended(self: &Rc<Self>) {
+    pub(super) fn scroll_ended(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            if !s.scrolling {
+            if s.scrolling.take().is_none() {
                 return;
             }
-            s.scrolling = false;
-            let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
             s.store.release();
         }
         self.publish(false);
@@ -79,6 +75,6 @@ impl Ctl {
 impl super::State {
     /// A scroll along a track holds the hand, read by the checks.
     pub fn scrolling(&self) -> bool {
-        self.scrolling
+        self.scrolling.is_some()
     }
 }

@@ -155,6 +155,14 @@ impl Ctl {
     }
 }
 
+impl Held {
+    /// What the loupe asked and shows no longer stands: a proof, a table or a patch changed what it reads.
+    pub(super) fn anew(&mut self) {
+        self.asked = None;
+        self.shown = None;
+    }
+}
+
 impl super::State {
     /// Forgets the loupe's picture once its frame is gone; true when there was one to clear.
     fn shown_loupe_cleared(&mut self) -> bool {

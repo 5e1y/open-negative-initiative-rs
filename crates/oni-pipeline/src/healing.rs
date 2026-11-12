@@ -24,7 +24,7 @@ struct Sheets {
     at: HashMap<u64, (usize, Rect)>,
 }
 
-/// A frame's corrections at one scale, ready to lay on its framed image.
+/// A frame's corrections at one scale, ready to lay on its scan.
 struct Recipe {
     framed: Rect,
     scale: u64,
@@ -88,7 +88,7 @@ fn gathered(graph: &mut Graph, named: &[(&Correction, &Source)]) -> Result<Sheet
 }
 
 impl Healing {
-    /// `image`, the framed frame at `scale`, with each of `named` laid: its patch through its feathered
+    /// `image`, the scan at `scale`, with each of `named` laid: its patch through its feathered
     /// stroke, in the corrections' order.
     pub(crate) fn laid(&mut self, graph: &mut Graph, image: Image, named: &[(&Correction, &Source)], scale: f64) -> Result<Image> {
         if named.is_empty() {

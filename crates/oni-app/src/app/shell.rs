@@ -121,7 +121,6 @@ impl Shell {
                 before: None,
                 current: None,
                 reads_back: !options.canvas,
-                uncounted: None,
                 seed: 0,
                 screen: options.screen,
                 counted_at: None,
@@ -147,8 +146,8 @@ impl Shell {
             pinch: 1.0,
             framing_memory: None,
             frame_gesture: None,
-            frame_cancelled: false,
-            scrolling: false,
+            scrolling: None,
+            plot_down: None,
             straightening: None,
             route: crate::tabs::Route::default(),
             tool_entry: None,
@@ -314,6 +313,8 @@ impl Ctl {
     pub fn last_writes(self: &Rc<Self>) -> Option<String> {
         // A frame's move under way ends whole before the process does.
         gestures::wait_for_disk();
+        // An export's frame under way lands whole, ledger included.
+        self.export.borrow_mut().writer.ended_whole();
         self.commit_info_drafts();
         self.flush_drafts();
         // The journal's thread writes what it was handed before the process ends.

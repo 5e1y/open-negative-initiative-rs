@@ -8838,5 +8838,257 @@
     "title": "A takeover rerun keeps the edits and deletions made since",
     "status": "done",
     "detail": "a_takeover_rerun_keeps_the_edits_and_deletions_made_since takes over A, B and C with C's path blocked, edits A, deletes B and reloads: the shelf reads A edited alone; twin, once C's path is clear C comes in and the list goes. On the code before the fix it reads A and B; with the list left whole (ids skipped but no shrink) it reads A edited and B."
+  },
+  {
+    "id": 1760,
+    "type": "fix",
+    "title": "The view turns sharp once the hand rests, on the timer's own clock",
+    "status": "done",
+    "detail": "A pan or zoom stored a std Instant and started a fresh single-shot timer per event, and the ask decided coarse again from the Instant. Slint's clock counts whole milliseconds, so the timer could fire up to a millisecond before the Instant reached SETTLE: the ask saw coarse, found the view unchanged and returned, leaving the light gesture render stretched on screen until the next move. Requests.hand is now one held slint::Timer restarted at each move, and coarse is whether it runs; a single-shot timer stops before its callback, so the settle always asks sharp. One timer replaces a timestamp and N timers a gesture."
+  },
+  {
+    "id": 1761,
+    "type": "check",
+    "title": "A window check moves Slint's clock alone: the view rests sharp after the last move",
+    "status": "done",
+    "detail": "The window rig's platform clock can run ahead of the real one (Rig::advance). hand_rest zooms with the wheel, sees the view asked lighter, zooms again 100 ms later, and at 150 ms after the first move still sees it lighter (twin: the rest counts from the last move); at 150 ms after the last, on Slint's clock alone, the view is asked sharp. State::coarse reads the last ask. Run against the code before #1760, it fails on the last assertion."
+  },
+  {
+    "id": 1762,
+    "type": "fix",
+    "title": "100 % is 1:1: the frame's full size is read on the full grid, not scaled up from the preview",
+    "status": "done",
+    "detail": "Engine::resident built the whole chain on the preview only to read its extent, then divided by the preview ratio: the preview's own rounding, stage 0's outer cut on its grid and a tilt's one-pixel bleed made the full size off by a few pixels, so at 100 % the full-resolution render was stretched (a turned 6048x4032 frame read 4031 wide; a crop off the preview grid a column wider). The size is now stage 0's cut of the full frame's rect, oni_pipeline::geometry::extent, and the preview chain built for it is gone."
+  },
+  {
+    "id": 1763,
+    "type": "refactor",
+    "title": "Stage 0 reads one plan for its render and its extent",
+    "status": "done",
+    "detail": "geometry::apply and the new geometry::extent share cuts(): the orientation, the rotation's box and the crop's outer frame, each with the extent it leaves, so the size the view reasons on and the pixels stage 0 cuts cannot drift."
+  },
+  {
+    "id": 1764,
+    "type": "check",
+    "title": "Checks for the 100 % size and stage 0's extent",
+    "status": "done",
+    "detail": "render::view_tests renders a turned frame cropped off the preview's grid at 100 % from its full resolution: its full size is stage 0's cut of the full rect and each texel lands on one drawable pixel; twin, the preview's cut scaled up says 900 against 899. geometry tests compare extent with apply's image extent for neutral, cropped, turned, mirrored, tilted and bypassed frames at two scales, and show the preview inference off for the off-grid crop and a tilt. Run against the code before #1762, view_tests fails with 900 against 899."
+  },
+  {
+    "id": 1770,
+    "type": "fix",
+    "title": "A frame held on the canvas ends with its overlay and its photo",
+    "status": "done",
+    "detail": "Slint drops a grab with the overlay that holds it and sends no release, so a crop or window drag left by Return, a tool key, a disarm or a walk kept its gesture and the store held: the next Escape laid the old crop or window on the open frame, the next drag after it moved nothing, every later edit joined one undo step and the crop's badge stayed. publish_framing, which decides both overlays, now ends a gesture whose overlay it hides, and open_photo ends one before the next frame opens; end_frame_gesture is the one way out, the release included."
+  },
+  {
+    "id": 1771,
+    "type": "refactor",
+    "title": "One FrameGesture replaces the gesture tuple and its cancelled flag",
+    "status": "done",
+    "detail": "The frame handlers move from dedusting.rs to cropping.rs beside publish_framing. Esc's spent mark lives in the gesture itself, so a new press always starts unspent and frame_cancelled goes."
+  },
+  {
+    "id": 1772,
+    "type": "fix",
+    "title": "A handle's grab ends on a cancel as on a release",
+    "status": "done",
+    "detail": "Grab (ds/frame.slint) ignored PointerEventKind.cancel, which a TouchArea sends as it lets go of the hand on an Exit; it now calls released, as the canvas's paint area already does."
+  },
+  {
+    "id": 1773,
+    "type": "fix",
+    "title": "A De-dust stroke goes with its overlay",
+    "status": "done",
+    "detail": "A stroke cut short by leaving De-dust kept its points, drawn again as a ghost on the next De-dust; publish_dedust clears it where it hides the painting overlay."
+  },
+  {
+    "id": 1774,
+    "type": "check",
+    "title": "Window check frame_gesture",
+    "status": "done",
+    "detail": "A stroke and a crop drag left mid-press by Return, then a window drag left by the walk to B: no stroke drawn again, Undo after the coalescing window takes back a later mirror alone, Esc beside the photo puts back no crop, no kept-size badge, the next window drag moves, B keeps its window under Esc. Twins: the stroke under the hand is drawn, and Esc under a live hand puts the crop back. Run against the code before the fix it failed at four steps, and without open_photo's end at the walk."
+  },
+  {
+    "id": 1745,
+    "type": "fix",
+    "title": "A roll resumed on RGB Passes groups its files again",
+    "status": "done",
+    "detail": "A Prepare the Roll draft walked on RGB Passes set the capture on resume without grouping the files, so PREPARE ROLL measured each single-colour pass as a colour frame and wrote a roll without passes. The capture, pass order and offset now have one setter, Roll::group_as, which regroups; the first frame's capture, the draft's values and the hand's three keys all go through it. A regrouping keeps each lead's tick and flag and counts the base step's frame among the new frames; a frame's EXIF lands on the sources too; a step's waiting draft is written even when the last file to land is a pass; the draft now carries passOffset, so a roll shifted by a file resumes on its own leads; the chips' pictures are read on resume without refitting the draft's order. Check: model.rs resumes a six-file roll in landing order and finds two leads holding their passes, the first flagged, the second on its own draft, the base frame back to 0, the offset restored; twins: the capture set alone leaves six frames, the sources alone hold no flag. Against the code before, the same resume left six frames."
+  },
+  {
+    "id": 1746,
+    "type": "fix",
+    "title": "The base and the slides' white are read on the decode their frames are measured on",
+    "status": "done",
+    "detail": "Prepare the Roll read the base (or a slide roll's white) on the base frame's own sidecar decode, while the frames were measured on the roll's start: a slide never prepared read its white at the negative's 5000 K and cast every slide, and a lead's base was read without its passes composed. measure.rs builds every frame's start in one closure, the base frame's too, and slides.rs reads the white on roll::slide; Measurer::base decodes and reads on one settings, key::bare strips it, and key::base lost its mode, mask and stops arguments, which the start already holds. Check: slide_roll.rs decodes warm at 5000 K and grey at 5500 K or composed; the white on the slide's start asks no gains and the base on the lead's start reads the composed grey; twins decoded on the sidecar read the cast. The app's calls before the fix failed both assertions."
+  },
+  {
+    "id": 1792,
+    "type": "fix",
+    "title": "A roll regrouped after its draft resumes on its last grouping",
+    "status": "done",
+    "detail": "The Prepare the Roll draft was written on the frames alone, so a file that stopped being one (a lead before Shift by One File, a pass after a switch to RGB Passes) kept the draft of the grouping before; landing first on resume, it regrouped the roll on the old triplets, or left it ungrouped, and PREPARE ROLL would write the wrong passes. Roll::drafts now covers every file the roll read: a frame takes the shared draft with its own tick and flag, any other file a clear, so no file keeps another grouping's draft and none gains a sidecar for it. drafts moved to model.rs beside step_drafts. Check: a seven-file roll walked at offset 0, shifted by one, saved as save_draft writes and entered again resumes on a2 and b2 at offset 1; a roll walked on Camera then switched to RGB Passes shifted by one resumes grouped; twin, the same drafts written on the frames alone resume on a1 and b1. Against the code before, the resume came back on a1 and b1 at offset 0."
+  },
+  {
+    "id": 1793,
+    "type": "check",
+    "title": "A check that sees a regrouping keep each frame's tick and flag",
+    "status": "done",
+    "detail": "The RGB resume check passed whether or not a regrouping kept the frames' places, since the draft's tick and flag were laid after the regroup, and its two twins asserted nothing a regroup did. a_regrouping_keeps_each_frames_tick_and_flag flags a lead and leaves another out by hand, changes the pass order, then the capture: both keep a1 flagged and b1 out; twin, the same regroup laid from the sources loses both. With either call to placed in passes.rs replaced by the bare frames it fails. The empty twins are replaced by a Camera draft that leaves six frames, and the checks that group take turns on the process-wide hold of triplets."
+  },
+  {
+    "id": 1794,
+    "type": "refactor",
+    "title": "Prepare's model checks in a file of their own, codec checks back under their ceiling",
+    "status": "done",
+    "detail": "model.rs had grown to 425 lines and codec_checks.rs to 736 with the draft's passOffset: model's checks move to model/tests.rs, the draft literal in codec_checks.rs is laid on two lines, and its grandfathered ceiling comes down to 725."
+  },
+  {
+    "id": 1795,
+    "type": "fix",
+    "title": "A quit waits for the export frame under way",
+    "status": "done",
+    "detail": "The export's thread is kept in Writer (export_card/writer.rs) with its stop, and Ctl::last_writes, which every quit path ends in, halts it and joins it: the frame under way lands whole, ledger note included, so no hidden temporary or unvouched file stays in the export folder. Check: writer tests a_quit_waits_for_the_frame_under_way and its twin a_stop_without_the_wait_cuts_the_frame; the first was run against a stop without the join and failed."
+  },
+  {
+    "id": 1780,
+    "type": "fix",
+    "title": "The folder menu's writes run off the window, in a gesture's turn",
+    "status": "done",
+    "detail": "Rename, New Folder Inside and Make a Roll (and Back to a Folder) renamed, made or marked the folder on the interface thread, outside the one-at-a-time turn and its busy bar: on a stalled share the window froze for seconds. Each now runs through on_disk and lands back on the window; the open frame's flush stays before the rename. New Folder no longer spells its made path again: the parent is a row in the archive's spelling and the name is plain. disk_turns::the_folder_menus_writes_run_off_the_window asserts each gesture is under way once asked and done once landed; twin, a refused name runs nothing. The navigator, tree_hand, told and editor_leftovers checks now wait for these gestures to land before looking at the disk."
+  },
+  {
+    "id": 1781,
+    "type": "fix",
+    "title": "A mark or a walk reads its sidecars back on its own thread",
+    "status": "done",
+    "detail": "After a trash mark, a restore or an undo/redo walk, the landing re-read every touched sidecar into the index, then cut the opened folder's rows and the copies, on the interface thread. library::reread does it on the gesture's thread, on a connection of its own, and the landing only lays what it hands back; the medal keys, written in place, use the same split on the window's connection. Checked by a_reread_cut_where_the_writes_ran_lays_the_marked_photo_out (twin, the index not read again still shows the photo) and disk_turns::a_marks_rows_are_read_back_off_the_window, where the row reads trashed while the window is never pumped."
+  },
+  {
+    "id": 1782,
+    "type": "fix",
+    "title": "A navigator row opens with no look at the disk; a favourite takes the archive's spelling",
+    "status": "done",
+    "detail": "A row click, the Open line and the navigator keys canonicalised the row's path on the interface thread, though every row is already in the archive's spelling but a favourite kept in another (the Swift app's, or through /private). The favourites' listing, already off the thread, now also spells a favourite as the archive does, and one kept otherwise follows it in favourites.json and the navigator; open_asked then opens the row as spelt. disk_turns::a_favourite_in_another_spelling_opens_in_the_archives writes a /private favourite, waits for it to be respelt and opens its row under the archive's spelling; twin, the /private spelling is not a fixed point of canonical."
+  },
+  {
+    "id": 1783,
+    "type": "fix",
+    "title": "A gesture moving or writing files owns the opened folder until it lands",
+    "status": "done",
+    "detail": "A folder read could survey the folder while New Roll, an undo walk or a mark moved its files, dropping the moved photos from the picks and resetting their import date, as nothing ordered the two. on_disk now supersedes a read under way and marks it owed; read_folder, the one gate every read goes through, holds any read asked while a gesture runs as owed; the landing pays the owed read once, unless it read again itself. followed also carries the survey's paths, so the archive laid before the read keeps each pair and roll. disk_turns::a_read_asked_while_a_gesture_writes_waits_for_it (twin, a read with no gesture starts at once) and a_survey_follows_a_move_with_each_path_it_records (twin, the survey left as it was pairs no sidecar)."
+  },
+  {
+    "id": 1784,
+    "type": "fix",
+    "title": "A superseded read writes no row after its file read",
+    "status": "done",
+    "detail": "read_rows checked its token at the loop's head only, so a read inside a file read when a move superseded it still wrote its row under the old path after the move rewrote it: a ghost row and a false copy. The token is now checked just before each index write, and look_again only reads, the loop writing for both kinds of row. a_read_superseded_during_a_file_read_writes_no_row_under_a_moved_path holds the read on a pipe sidecar while the move lands; twin, a read whose token holds writes the ghost row and one copy. Each new check was run against the code before the fix and failed there."
+  },
+  {
+    "id": 1775,
+    "type": "refactor",
+    "title": "A hand on a control is a token the thumbnails' decodes count while it lives",
+    "status": "done",
+    "detail": "HandDown raises State.hands when made and lowers it when dropped. The slider's drag, a scroll along a track (State.scrolling) and a plot's press (State.plot_down) each hold one, so the three paired fetch_add and fetch_update(checked_sub) go. A double press no longer lowers a count it never raised, which could take another holder's hand. Unit check: two tokens count two, dropping one counts one; twin: a token forgotten leaves its hand counted."
+  },
+  {
+    "id": 1776,
+    "type": "fix",
+    "title": "A slider's drag is one owned value with one idempotent ending",
+    "status": "done",
+    "detail": "Slide.start, live and resetting become Slide.drag: Option<Drag> (where the knob stood, the value under the hand, the hand's token). Ctl::let_go(f) in app/hands.rs is the release's body, taking the drag; on_release calls it. let_go_all ends every drag, the plots' press and a scroll. A double press leaves no drag, so a late drag moves nothing."
+  },
+  {
+    "id": 1777,
+    "type": "fix",
+    "title": "A walk under a held slider lands the drag on the frame it was on",
+    "status": "done",
+    "detail": "open_photo and move_out, the paths that leave a frame, call let_go_all first: the hand's value is applied and recorded on its own frame before the store leaves it, and the slider's later moves and release find no drag. Before, the next move wrote the old frame's start plus the hand's travel into the new frame and its sidecar, and hands stayed up."
+  },
+  {
+    "id": 1778,
+    "type": "fix",
+    "title": "The left button lifted ends a drag whose slider Slint destroyed",
+    "status": "done",
+    "detail": "Slint sends nothing to a grabbing item destroyed under the hand (HidePanel, the gallery, Export, Prepare), so the drag and its hand outlived the slider: the thumbnails' decodes waited for the session and the sidecar write was held back. The winit hook in main.rs calls Ctl::lifted on every left-button release, before Slint dispatches it. Window checks slider_hand: a walk under a drag (twin: the same travel with no walk moves the open frame) and a slider taken away under the hand (twin: the drag stands after the release until lifted). Both failed with the walk's let_go_all and lifted disabled."
+  },
+  {
+    "id": 1779,
+    "type": "fix",
+    "title": "A plot's press taken away under the hand ends with the button too",
+    "status": "done",
+    "detail": "Gestures::release takes no plot: the double click's size comes from the plot its hold names, and it clears the band knob. editors::let_go releases the held plot or band slider and let_go_all calls it, so the walk and the lifted button end a curve, levels, wheel or saturation press as they end a slider's. Window check editors::a_curve_taken_away_under_the_hand_lets_go_at_the_button (twin: the hand stands after the release until lifted); it failed with the plots left out of let_go_all."
+  },
+  {
+    "id": 1765,
+    "type": "fix",
+    "title": "A recipe's key names everything a render reads",
+    "status": "done",
+    "detail": "oni-graph's Image::key returns the last node's key from flatten, which folds in every source, stage, parameter and auxiliary image: the proof and its cube, the hand Frontier table's source, each laid patch and the custom mask. The engine's caches below a render now hang on it instead of on the settings, so nothing a render reads beyond its settings can be missed. Check a_recipe_s_key_names_its_sources_stages_parameters_and_auxiliary_images, with twins for a parameter, an auxiliary image and the source."
+  },
+  {
+    "id": 1766,
+    "type": "fix",
+    "title": "The histogram's picture follows a proof, a table or a patch, and never another frame's count",
+    "status": "done",
+    "detail": "Engine::counted keeps its picture by recipe key and returns the same source while the key holds, never None: a reproof, a new Frontier table or a patch landing under unchanged settings counts again. The app's Counting slot in Requests takes a picture once by id, and a count read back lands only when the slot that started it still stands, so open_photo's Requests reset drops the last frame's count and leaving a sheet counts the open frame again. Gpu.uncounted is deleted. Checks: a_proof_changed_under_the_same_settings_counts_and_compares_again, a_patch_landing_under_the_same_settings_counts_and_reads_again, a_count_lands_only_on_the_canvas_that_asked_it and the window check the_histogram_after_a_sheet_is_the_open_frame_s_own, each with its twin."
+  },
+  {
+    "id": 1767,
+    "type": "fix",
+    "title": "Compare's before is kept by what it reads",
+    "status": "done",
+    "detail": "The worker's kept before, keyed on path, reference settings and view, is deleted with ViewKey and View::key. Engine::before composes the reference's recipe and keeps its texture while the recipe key and region hold, so a new proof or table draws the before again and a notch never does. resident and before share Engine::composed."
+  },
+  {
+    "id": 1768,
+    "type": "fix",
+    "title": "The input distributions are kept by their recipe",
+    "status": "done",
+    "detail": "The worker's measured gate on path, settings and held is deleted; inputs::Read keeps the entering settings, whose windows it is read through, and the recipe key, which names the copy, the mask and every patch laid. forget_patch no longer resets the readings, as a patch read again is a new source. The app drops a reading equal to the one shown."
+  },
+  {
+    "id": 1769,
+    "type": "fix",
+    "title": "The loupe asks again whenever the canvas is asked anew",
+    "status": "done",
+    "detail": "State::render_anew, the one door for a proof, a table or a patch changing what renders read, now clears the loupe's asked and shown; the patch paths call render_anew instead of clearing requested_view by hand. A custom mask import changes the settings, so it needs no such door. Window check a_new_proof_draws_the_loupe_again, twin: nothing changed draws no loupe. The proof, patch and window checks were each run against the code before the fix and failed there."
+  },
+  {
+    "id": 1785,
+    "type": "fix",
+    "title": "Stage 0's map between the scan and the frame is one table, read by the pipeline and the canvas",
+    "status": "done",
+    "detail": "oni-settings::geometry::placing holds the turn and mirror table, the rotation matrix and its bounding box that oni-pipeline::geometry wrapped privately, and Geometry::frame_extent, the whole pixels stage 0 cuts (kept_pixels is its size). Placing::on_frame and on_scan carry a point between the scan and the frame stage 0 hands on, so the pipeline and the canvas cannot diverge. oni-pipeline/tests/placing.rs: a bright scan pixel lands where on_frame says on every turn, mirror, crop, 3 degrees and the bypassed crop, and comes back by on_scan; twin, the scan's fraction read on a turned frame misses it."
+  },
+  {
+    "id": 1786,
+    "type": "fix",
+    "title": "A dust patch is found under its correction and the settings upstream of it",
+    "status": "done",
+    "detail": "A patch is cut from the scan after the capture stops and the flat-field, yet was cached under the correction's id alone and kept by id in the engine, the measuring graphs and De-dust's sets: after a capture-stops or flat-field change, Prepare's included, a patch of the old exposure was laid as a darker or brighter square. PatchKey (id, FNV-1a of capture_stops, flat_field, mode, rgb_passes, primaries_converted, source_encoding) names the file <id>-<upstream>.tiff and keys Engine.patches, Resident, Dust.patched and unhealable; the heal writes under the settings it ran with, so a change made meanwhile leaves the frame unhealed and the existing loop runs again. inputs_tests::a_patch_made_under_one_exposure_is_never_laid_under_another: under one more stop or a flat-field the patch is neither found nor laid, under a turn and crop it is; twin, under its own settings it is laid. With id-only keys it fails."
+  },
+  {
+    "id": 1787,
+    "type": "fix",
+    "title": "Dust strokes live on the scan and are laid before stage 0",
+    "status": "done",
+    "detail": "A stroke was kept in fractions of the cropped, oriented frame and laid after geometry::apply, as in Swift: a crop, turn, mirror or angle, the Crop tab's uncropped view and Prepare's uncropped reading put it and its patch off the speck. Pipeline::healed lays capture stops, flat-field and corrections on the scan; framed is healed, stage 0, the reciprocal. search_region reads healed, the heal's sizes are the scan's, auto De-dust maps each found stroke through on_scan, and the canvas maps strokes, marks, waiting strokes, sources and the reminder tiles through on_frame with the frame's own geometry; a painted stroke goes through on_scan. tests/placing.rs::a_patch_painted_on_one_framing_heals_its_speck_on_every_other heals the speck on nine framings; twin, a frame-kept stroke laid after stage 0 leaves it bright; with the old order the check fails on the first framing. Window check dedust_turn: a click on a turned, cropped picture is kept at on_scan, and its marker follows a turn and a mirror; with the canvas fractions kept as the stroke it fails."
+  },
+  {
+    "id": 1788,
+    "type": "fix",
+    "title": "Sidecar format 21 moves an older stroke onto the scan once",
+    "status": "done",
+    "detail": "codec::VERSION 21 (STROKES_ON_SCAN_VERSION), field names unchanged. strokes_on_scan::caught_up, chained after retired_matrices in sidecar::read: a stroke before 21 under a non-neutral geometry is moved by geometry.placing(size).on_scan, the size asked of an installed lookup (oni_app::strokes_on_scan, backed by oni_decode::full_size: a LibRaw header probe with the maker's crop and flip, the container's size, a plain file's header, the green pass of RGB passes); no size known keeps the strokes as read and the photo read-only. tests/strokes_on_scan.rs: converted strokes equal on_scan and are written as 21, a neutral framing or a current file asks nothing; twin, each moved stroke lies over 0.05 from the stored one; without the conversion both checks fail. oni-decode frames::the_full_size_is_the_whole_decode_s_without_decoding matches the decode on a cropped and a turned DNG; twin, the sensor's sides differ."
+  },
+  {
+    "id": 1789,
+    "type": "docs",
+    "title": "The scan-kept stroke recorded as a departure from Swift",
+    "status": "done",
+    "detail": "docs/parity/hidden.md gains a departed row for the scan-kept stroke and the keyed patch, README.md names it beside the keypad's step for the owner to confirm, and CLAUDE.md lists it among the decisions that look like mistakes. The dust census example reads the stored strokes on the frame through on_frame."
   }
 ]

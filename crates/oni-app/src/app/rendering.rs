@@ -27,12 +27,14 @@ pub(in crate::app) struct Requests {
     pub requested_view: Option<(Viewport, (f64, f64), bool, bool, bool, bool)>,
     /// The settings the last render was asked with, so a crop moved while framing renders nothing.
     pub requested_live: Option<oni_settings::PipelineSettings>,
-    /// When the hand last moved the view, which renders lighter until it rests.
-    pub hand: Option<Instant>,
+    /// Runs from the hand's last move of the view for `SETTLE`: the view renders lighter while it runs.
+    pub hand: slint::Timer,
     /// The picture's histogram last counted, and the output and saturation plots on screen at the last
     /// ask: a render with neither counts nothing.
     pub histogram: Option<oni_measure::histogram::Histogram>,
     pub plots: [bool; 2],
+    /// The picture the histogram counts next and the count in flight.
+    pub count: super::canvas_gpu::Counting,
 }
 
 /// Compare Before/After: the split, a fraction of the canvas's width (none while off), where the

@@ -24,14 +24,16 @@ impl Engine {
     /// out, and asked for again on the next render.
     pub(super) fn read_patches(&mut self, settings: &PipelineSettings) {
         let Some(caches) = self.caches.clone() else { return };
+        let upstream = oni_pipeline::corrections::upstream(settings);
         for c in &settings.corrections {
-            if let Some(kept) = self.patches.get_mut(&c.id) {
+            let key = PatchKey { id: c.id, upstream };
+            if let Some(kept) = self.patches.get_mut(&key) {
                 kept.used = self.reads;
                 continue;
             }
-            let read = crate::patches::read(&caches, c.id).and_then(|(w, h, pixels)| self.graph.upload(w, h, &pixels).ok());
+            let read = crate::patches::read(&caches, key).and_then(|(w, h, pixels)| self.graph.upload(w, h, &pixels).ok());
             if let Some(patch) = read {
-                self.patches.insert(c.id, Kept::new(patch.clone(), &patch, self.reads));
+                self.patches.insert(key, Kept::new(patch.clone(), &patch, self.reads));
             }
         }
     }
@@ -77,8 +79,8 @@ impl Engine {
     }
 
     #[cfg(test)]
-    pub(crate) fn keeps_patch(&self, id: Id) -> bool {
-        self.patches.contains_key(&id)
+    pub(crate) fn keeps_patch(&self, key: PatchKey) -> bool {
+        self.patches.contains_key(&key)
     }
 
     /// The masks and patches held on the GPU, in bytes.
@@ -87,9 +89,10 @@ impl Engine {
     }
 }
 
-/// The patches of the settings' own corrections that have been generated.
-pub(crate) fn patches_for<'a>(kept: &'a HashMap<Id, Kept<Source>>, settings: &PipelineSettings) -> HashMap<Id, &'a Source> {
-    settings.corrections.iter().filter_map(|c| Some((c.id, &kept.get(&c.id)?.value))).collect()
+/// The patches of the settings' own corrections generated under their own upstream settings.
+pub(crate) fn patches_for<'a>(kept: &'a HashMap<PatchKey, Kept<Source>>, settings: &PipelineSettings) -> HashMap<Id, &'a Source> {
+    let upstream = oni_pipeline::corrections::upstream(settings);
+    settings.corrections.iter().filter_map(|c| Some((c.id, &kept.get(&PatchKey { id: c.id, upstream })?.value))).collect()
 }
 
 /// The custom mask read for the settings' own id, which the pipeline lays only when the ids match.

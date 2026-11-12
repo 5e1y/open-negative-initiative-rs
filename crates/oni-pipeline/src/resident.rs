@@ -1,11 +1,11 @@
 //! The images a frame's settings name but do not hold, read from their files onto a graph of its
 //! own: the custom mask the settings name, kept while asked again, and the dust patches.
 
+use crate::corrections::{self, PatchKey};
 use crate::flat_field::Mask;
 use crate::{CustomFlatField, Inputs};
 use oni_graph::{Graph, Source};
 use oni_settings::frame::FlatFieldMask;
-use oni_settings::id::Id;
 use oni_settings::PipelineSettings;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -14,8 +14,8 @@ use std::sync::Arc;
 pub trait Files: Send + Sync {
     /// A custom mask by its content id; `None` once its file is gone.
     fn mask(&self, id: &str) -> Option<Mask>;
-    /// A correction's patch at full resolution: width, height, pixels; `None` while not generated.
-    fn patch(&self, id: Id) -> Option<(u32, u32, Vec<[f32; 4]>)>;
+    /// A correction's patch at full resolution under its key: width, height, pixels; `None` while not generated.
+    fn patch(&self, key: PatchKey) -> Option<(u32, u32, Vec<[f32; 4]>)>;
 }
 
 /// What one graph holds of the named images; without files it holds nothing, so no input is laid.
@@ -23,7 +23,7 @@ pub trait Files: Send + Sync {
 pub struct Resident {
     files: Option<Arc<dyn Files>>,
     mask: Option<CustomFlatField>,
-    patches: HashMap<Id, Source>,
+    patches: HashMap<PatchKey, Source>,
 }
 
 impl Resident {
@@ -36,8 +36,8 @@ impl Resident {
         Resident { files: self.files, mask: None, patches: HashMap::new() }
     }
 
-    /// The patches dropped, so the next read takes them from their files: a correction's patch is
-    /// generated again under the same id.
+    /// The patches dropped, so the next read takes them from their files: a patch is written again
+    /// under its key once its file is purged.
     pub fn fresh(&mut self) {
         self.patches.clear();
     }
@@ -46,14 +46,16 @@ impl Resident {
     /// asked again next time, so a mask loaded later reaches the frames naming it.
     pub fn read(&mut self, graph: &mut Graph, s: &PipelineSettings) {
         let Some(files) = self.files.clone() else { return };
+        let upstream = corrections::upstream(s);
         for c in &s.corrections {
-            if self.patches.contains_key(&c.id) {
+            let key = PatchKey { id: c.id, upstream };
+            if self.patches.contains_key(&key) {
                 continue;
             }
-            if let Some((w, h, pixels)) = files.patch(c.id)
+            if let Some((w, h, pixels)) = files.patch(key)
                 && let Ok(source) = graph.upload(w, h, &pixels)
             {
-                self.patches.insert(c.id, source);
+                self.patches.insert(key, source);
             }
         }
         let f = &s.flat_field;
@@ -70,8 +72,9 @@ impl Resident {
 
     /// The inputs `s` names among those read; the pipeline lays a mask only when its id is the frame's.
     pub fn inputs(&self, s: &PipelineSettings) -> Inputs<'_> {
+        let upstream = corrections::upstream(s);
         Inputs {
-            patches: s.corrections.iter().filter_map(|c| Some((c.id, self.patches.get(&c.id)?))).collect(),
+            patches: s.corrections.iter().filter_map(|c| Some((c.id, self.patches.get(&PatchKey { id: c.id, upstream })?))).collect(),
             custom_flat_field: self.mask.as_ref(),
         }
     }

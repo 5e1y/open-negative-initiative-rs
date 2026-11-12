@@ -34,7 +34,7 @@ impl Ctl {
                     continue;
                 }
                 slide.published = Some(v);
-                out.push((f, v, slide.live.is_some()));
+                out.push((f, v, slide.live().is_some()));
             }
             (out, edited)
         };

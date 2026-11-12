@@ -303,18 +303,15 @@ impl Roll {
         }
     }
 
-    /// `resume(_:at:)`: the first draft found sets where the roll stands; each frame then takes its
-    /// own place in it, a frame of no draft or of another's left out.
-    fn resume(&mut self, draft: Option<&RollDraft>, index: usize) {
-        let Some(path) = self.frames.get(index).map(|f| f.path.clone()) else { return };
-        if let Some(d) = draft
-            && self.draft_id.is_none()
-        {
+    /// `resume(_:at:)`: the first draft found sets where the roll stands, its files grouped as it says;
+    /// each frame then takes its own place in it, a frame of no draft or of another's left out. True
+    /// for that first draft.
+    fn resume(&mut self, draft: Option<&RollDraft>, path: &str, known: &passes::Known) -> bool {
+        let first = draft.filter(|_| self.draft_id.is_none());
+        if let Some(d) = first {
             self.draft_id = Some(d.id);
             self.step = Step::named(&d.step).unwrap_or(self.step);
-            self.capture = Capture::from_raw(&d.capture).unwrap_or(self.capture);
             self.set_film(d.film);
-            self.pass_order = d.pass_order.unwrap_or(self.pass_order);
             self.flat = d.flat_field.clone().unwrap_or_else(|| self.flat.clone());
             // Written back in this machine's spelling with the next draft.
             self.base = d.base.as_ref().and_then(|b| Some(BasePick { path: draft_base::found(&b.path, &self.frames)?, unit: (b.x, b.y), radius: b.radius }));
@@ -325,36 +322,19 @@ impl Roll {
                 f.flagged = false;
             }
             self.draftless = draftless;
+            let capture = Capture::from_raw(&d.capture).unwrap_or(self.capture);
+            self.group_as(capture, d.pass_order.unwrap_or(self.pass_order), d.pass_offset.unwrap_or(self.pass_offset), known);
         }
         let Some(id) = self.draft_id else {
-            self.draftless.insert(path);
-            return;
+            self.draftless.insert(path.to_string());
+            return false;
         };
         let mine = draft.is_some_and(|d| d.id == id);
-        let f = &mut self.frames[index];
-        f.ticked = mine && draft.is_some_and(|d| d.ticked);
-        f.flagged = mine && draft.is_some_and(|d| d.flagged);
-    }
-
-    /// The draft every frame shares, its own ticked and flagged laid per frame; `None` until it may be written.
-    fn drafts(&mut self) -> Option<Vec<(String, RollDraft)>> {
-        if !self.shown || self.progress.is_some() || (self.step == Step::Film && self.draft_id.is_none()) || self.sources.is_empty() || self.read.len() < self.sources.len() {
-            return None;
+        if let Some(f) = self.frames.iter_mut().find(|f| f.path == path) {
+            f.ticked = mine && draft.is_some_and(|d| d.ticked);
+            f.flagged = mine && draft.is_some_and(|d| d.flagged);
         }
-        let id = *self.draft_id.get_or_insert_with(Id::new);
-        let shared = RollDraft {
-            id,
-            step: self.step.name().into(),
-            film: self.film,
-            capture: self.capture.raw().into(),
-            pass_order: Some(self.pass_order),
-            flat_field: Some(self.flat.clone()),
-            base: self.base.as_ref().map(|b| DraftBase { path: b.path.clone(), x: b.unit.0, y: b.unit.1, radius: b.radius }),
-            window: Some(self.window),
-            ticked: false,
-            flagged: false,
-        };
-        Some(self.frames.iter().map(|f| (f.path.clone(), RollDraft { ticked: f.ticked, flagged: f.flagged, ..shared.clone() })).collect())
+        first.is_some()
     }
 }
 

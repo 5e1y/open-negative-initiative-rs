@@ -64,7 +64,7 @@ impl Ctl {
             if !c.exporting {
                 return;
             }
-            c.stop.store(true, Ordering::Relaxed);
+            c.writer.halt();
             if let Some(job) = c.job.as_mut() {
                 job.stopping = true;
             }

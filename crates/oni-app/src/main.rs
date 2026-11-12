@@ -136,6 +136,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
                 // Frames edited while camera matrices shaped the decode keep their look through their gains.
                 oni_app::retired_matrices::install(&support);
+                // Dust strokes kept on the cropped frame before format 21 move onto their scan.
+                oni_app::strokes_on_scan::install();
                 oni_app::retired_matrices::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
             }
         }),
@@ -281,6 +283,12 @@ fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer
                 let (scale, (x, y)) = (f64::from(window.scale_factor()), cursor.get());
                 oni_app::editors::pressed_anywhere(&pressed, (x / scale, y / scale));
             }
+        }
+        // Before Slint's dispatch, which tells a slider destroyed under the hand nothing of the release.
+        if let WindowEvent::MouseInput { state: ElementState::Released, button: MouseButton::Left, .. } = event
+            && let Some(lifted) = ctl()
+        {
+            lifted.lifted();
         }
         if let WindowEvent::Focused(focused) = event
             && let Some(focus) = ctl()

@@ -52,6 +52,11 @@ impl State {
         self.opens
     }
 
+    /// The picture's histogram the plots trace, read by the checks.
+    pub fn histogram(&self) -> Option<&oni_measure::histogram::Histogram> {
+        self.requests.histogram.as_ref()
+    }
+
     /// The store revision the canvas last showed.
     pub fn rendered(&self) -> u64 {
         self.requests.rendered
@@ -199,6 +204,11 @@ impl State {
 
     pub fn placed(&self) -> Option<Placed> {
         self.placed
+    }
+
+    /// Whether the view last asked is the lighter one a moving hand gets.
+    pub fn coarse(&self) -> bool {
+        self.requests.requested_view.is_some_and(|v| v.5)
     }
 
     /// Whether a frame's dust patches are being generated.

@@ -28,7 +28,12 @@ impl Ctl {
     /// A picture waiting for its count is counted once the image's cadence allows; a count read back
     /// publishes itself, so nothing polls the device meanwhile.
     pub(in crate::app) fn watch_histogram(&self) {
-        let Some(wait) = self.state.borrow().gpu.count_wait() else { return };
+        let Some(wait) = ({
+            let s = self.state.borrow();
+            s.gpu.count_wait(&s.requests.count)
+        }) else {
+            return;
+        };
         if self.histogram_watch.running() {
             return;
         }
@@ -42,9 +47,11 @@ impl Ctl {
     pub(in crate::app) fn publish_histogram(&self) {
         let Some(w) = self.window() else { return };
         let (histogram, counted) = {
-            let mut s = self.state.borrow_mut();
-            let landed = s.gpu.landed();
-            drop(s);
+            let landed = {
+                let mut guard = self.state.borrow_mut();
+                let s = &mut *guard;
+                s.gpu.landed(&mut s.requests.count)
+            };
             self.watch_histogram();
             let mut s = self.state.borrow_mut();
             let counted = landed.as_ref().map(|(_, at)| *at);
@@ -101,7 +108,7 @@ impl Ctl {
             }
             let failure = {
                 let mut s = me.state.borrow_mut();
-                if s.slides.iter().any(|sl| sl.live.is_some()) {
+                if s.slides.iter().any(|sl| sl.live().is_some()) {
                     return;
                 }
                 s.last_change = None;

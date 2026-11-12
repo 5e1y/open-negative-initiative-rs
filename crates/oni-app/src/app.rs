@@ -53,6 +53,7 @@ mod workers;
 mod shell;
 mod canvas_gpu;
 mod opening;
+mod hands;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
 mod tree_column;
@@ -160,9 +161,7 @@ struct Shown {
 /// One slider's hand: the dragged value drawn at once, handed to the store thirty times a second.
 #[derive(Default)]
 struct Slide {
-    live: Option<f32>,
-    start: Option<f32>,
-    resetting: bool,
+    drag: Option<hands::Drag>,
     last_press: Option<Instant>,
     hand: Hand,
     /// Where the knob is drawn, as a fraction of the track.
@@ -186,8 +185,6 @@ struct Gpu {
     current: Option<oni_graph::Source>,
     /// The window cannot take the GPU's textures (Slint's software renderer): the canvas is read back.
     reads_back: bool,
-    /// The whole picture the histogram counts next, at one size whatever the zoom; none once counted.
-    uncounted: Option<canvas_gpu::Counted>,
     seed: u32,
     screen: display::Screen,
     /// When the last count started, which holds the counts to the image's cadence.
@@ -303,13 +300,11 @@ pub struct State {
     pinch: f32,
     /// The ratio and orientation last chosen, and the frame chosen on, handed to the next frame framed.
     framing_memory: Option<(Remembered, String)>,
-    /// A frame held on the canvas: the window's or the crop's, the handle, the frame at the press
-    /// and the shown image frame's size in points.
-    frame_gesture: Option<(bool, Handle, Fraction, (f64, f64))>,
-    /// Esc put the held frame back: the rest of that drag moves nothing.
-    frame_cancelled: bool,
+    frame_gesture: Option<cropping::FrameGesture>,
     /// A scroll along a track under way, its hand raised until the idle window passes.
-    scrolling: bool,
+    scrolling: Option<hands::HandDown>,
+    /// A plot under the hand, raised while the editors' gestures hold.
+    plot_down: Option<hands::HandDown>,
     /// The frame a straightening gesture set out from, the one it last wrote, and when.
     straightening: Option<(Geometry, Geometry, Instant)>,
     /// The tab shown, the last panel the hand was in and the measuring window armed.

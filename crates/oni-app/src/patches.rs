@@ -1,7 +1,7 @@
 //! `CorrectionCache`: each dust correction's patch, generated once at full resolution and kept in
-//! the caches folder under its correction's id, so a render needs no photo identity to find it.
+//! the caches folder under its key, so a render needs no photo identity to find it.
 
-use oni_settings::id::Id;
+use oni_pipeline::corrections::PatchKey;
 use std::path::{Path, PathBuf};
 
 /// This instance's folder of patches, under the caches folder every running ONI shares: one of its
@@ -17,13 +17,19 @@ fn instance(caches: &Path, support: &Path) -> PathBuf {
     caches.join("Instances").join(format!("{hash:016x}"))
 }
 
-pub fn file(caches: &Path, id: Id) -> PathBuf {
-    caches.join("Corrections").join(format!("{id}.tiff"))
+/// A patch's file: its correction's id and what was upstream of it, so a change there finds none.
+pub fn file(caches: &Path, key: PatchKey) -> PathBuf {
+    caches.join("Corrections").join(format!("{}-{:016x}.tiff", key.id, key.upstream))
 }
 
-/// Written where the render looks for it, in single float; the Swift app reads it as its own.
-pub fn write(caches: &Path, id: Id, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<(), String> {
-    let path = file(caches, id);
+/// Whether the patch of `c` under the frame's settings `s` is on disk.
+pub fn made(caches: &Path, s: &oni_settings::PipelineSettings, c: &oni_settings::frame::Correction) -> bool {
+    file(caches, PatchKey::of(s, c)).exists()
+}
+
+/// Written where the render looks for it, in single float.
+pub fn write(caches: &Path, key: PatchKey, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<(), String> {
+    let path = file(caches, key);
     std::fs::create_dir_all(path.parent().expect("a folder")).map_err(|e| e.to_string())?;
     let partial = path.with_extension("tiff.partial");
     let out = std::fs::File::create(&partial).map_err(|e| e.to_string())?;
@@ -42,31 +48,37 @@ pub fn purge(caches: &Path) {
 }
 
 /// The patch's pixels and size; `None` while it has not been generated.
-pub fn read(caches: &Path, id: Id) -> Option<(u32, u32, Vec<[f32; 4]>)> {
-    crate::flat_fields::read_tiff(&file(caches, id))
+pub fn read(caches: &Path, key: PatchKey) -> Option<(u32, u32, Vec<[f32; 4]>)> {
+    crate::flat_fields::read_tiff(&file(caches, key))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oni_settings::id::Id;
+
+    fn key(id: &str, upstream: u64) -> PatchKey {
+        PatchKey { id: Id::parse(id).unwrap(), upstream }
+    }
 
     #[test]
-    fn a_patch_is_found_under_its_corrections_id_as_swift_names_it() {
-        let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
+    fn a_patch_is_found_under_its_correction_and_what_was_upstream_of_it() {
+        let at = key("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B", 0x2a);
         let caches = std::env::temp_dir().join(format!("oni-patches-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&caches);
-        assert!(read(&caches, id).is_none(), "not generated yet");
+        assert!(read(&caches, at).is_none(), "not generated yet");
         std::fs::create_dir_all(caches.join("Corrections")).unwrap();
-        let path = file(&caches, id);
-        assert!(path.ends_with("Corrections/0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B.tiff"), "{}", path.display());
+        let path = file(&caches, at);
+        assert!(path.ends_with("Corrections/0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B-000000000000002a.tiff"), "{}", path.display());
         let out = std::fs::File::create(&path).unwrap();
         let pixels: Vec<f32> = (0..6).flat_map(|i| [i as f32 / 6.0, 0.5, 0.25, 1.0]).collect();
         tiff::encoder::TiffEncoder::new(out).unwrap().write_image::<tiff::encoder::colortype::RGBA32Float>(3, 2, &pixels).unwrap();
-        let (w, h, got) = read(&caches, id).unwrap();
+        let (w, h, got) = read(&caches, at).unwrap();
         assert_eq!((w, h), (3, 2));
         assert!((got[4][0] - 4.0 / 6.0).abs() < 1e-6, "row 1 column 1 in place");
-        // Twin: another correction's id finds nothing.
-        assert!(read(&caches, Id::parse("11111111-2222-3333-4444-555555555555").unwrap()).is_none());
+        // Twins: another correction's id, or the same one under other settings upstream, finds nothing.
+        assert!(read(&caches, key("11111111-2222-3333-4444-555555555555", 0x2a)).is_none());
+        assert!(read(&caches, PatchKey { upstream: 0x2b, ..at }).is_none());
         let _ = std::fs::remove_dir_all(&caches);
     }
 
@@ -75,7 +87,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("oni-patches-instances-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         let (mine, theirs) = (instance(&root, Path::new("/a/Open Negative Initiative")), instance(&root, Path::new("/b/scratch support")));
-        let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
+        let id = key("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B", 7);
         for folder in [&mine, &theirs] {
             write(folder, id, 2, 2, &[[0.5; 4]; 4]).unwrap();
         }

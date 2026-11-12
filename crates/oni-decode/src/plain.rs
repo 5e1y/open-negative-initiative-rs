@@ -61,6 +61,15 @@ fn read_within(path: &Path, longest_side: Option<f64>, allowed: u64) -> Option<E
     Some(Encoded { width, height, full, pixels, icc, grey })
 }
 
+/// The upright file's own size from its header, no sample read.
+pub fn size(path: &Path) -> Option<(usize, usize)> {
+    use image::metadata::Orientation;
+    let mut decoder = ImageReader::open(path).ok()?.with_guessed_format().ok()?.into_decoder().ok()?;
+    let (w, h) = decoder.dimensions();
+    let turned = matches!(decoder.orientation().ok(), Some(Orientation::Rotate90 | Orientation::Rotate270 | Orientation::Rotate90FlipH | Orientation::Rotate270FlipH));
+    Some(if turned { (h as usize, w as usize) } else { (w as usize, h as usize) })
+}
+
 /// A file no reader of ONI takes, named by its extension in capitals (`HEIC`); `None` when one takes
 /// it, or when the file cannot be opened, which its absence tells instead.
 pub fn unsupported(path: &Path) -> Option<String> {

@@ -384,7 +384,7 @@ mod reading;
 mod relaid;
 pub use relaid::{Relaid, cuts};
 use relaid::{Basis, ROW_LISTS};
-pub use reading::{Land, Place, read_rows, read, refreshed, refresh, shown_under};
+pub use reading::{Land, Place, Reread, read_rows, read, refreshed, refresh, reread, shown_under};
 pub mod tidy;
 
 #[cfg(test)]

@@ -15,10 +15,12 @@ mod canvas_keys;
 mod canvas_layout;
 mod canvas_switch;
 mod dedust_grid;
+mod dedust_turn;
 mod collection;
 mod column_edges;
 mod column_menu;
 mod crop_session;
+mod frame_gesture;
 mod face_turn;
 mod density;
 mod picture_plots;
@@ -42,6 +44,7 @@ mod extended;
 mod filmstrip;
 mod first_frame;
 mod freshness;
+mod disk_turns;
 mod full_release;
 mod frontier_look;
 mod gallery;
@@ -50,6 +53,7 @@ mod gallery_keys;
 mod unprepared;
 mod gallery_leftovers;
 mod gestures;
+mod hand_rest;
 mod headless;
 mod help;
 mod corners;
@@ -100,6 +104,7 @@ mod preset_deck;
 mod presets;
 mod presence;
 mod quit;
+mod render_identity;
 mod rgb_passes;
 mod roll_card;
 mod row_marks;
@@ -134,6 +139,7 @@ mod toolbar_accent;
 mod toolbar_fit;
 mod toolbar_keys;
 mod tooltip;
+mod slider_hand;
 mod tree_hand;
 mod tree_held;
 mod tree_cost;
@@ -155,6 +161,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("opening_reading::a_decode_under_a_reading_left_never_lands_on_the_canvas", opening_reading::a_decode_under_a_reading_left_never_lands_on_the_canvas),
     ("dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source", dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source),
+    ("dedust_turn::a_stroke_stays_on_its_scan_point_through_turns_and_mirrors", dedust_turn::a_stroke_stays_on_its_scan_point_through_turns_and_mirrors),
     ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),
@@ -172,9 +179,11 @@ const CHECKS: &[(&str, fn())] = &[
     ("crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it", crop_session::escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it),
     ("crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size", crop_session::the_arrows_move_the_crop_and_every_readout_says_one_kept_size),
     ("crop_session::the_crops_handles_take_a_hand_past_their_slim_lines", crop_session::the_crops_handles_take_a_hand_past_their_slim_lines),
+    ("frame_gesture::a_frame_held_ends_with_its_overlay_and_its_photo", frame_gesture::a_frame_held_ends_with_its_overlay_and_its_photo),
     ("editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step", editors::curves::a_point_dragged_on_the_curves_reaches_the_store_as_one_step),
     ("editors::a_double_click_on_a_point_removes_it_with_its_move_as_one_step", editors::curves::a_double_click_on_a_point_removes_it_with_its_move_as_one_step),
     ("editors::a_folded_curves_block_takes_no_press", editors::curves::a_folded_curves_block_takes_no_press),
+    ("editors::a_curve_taken_away_under_the_hand_lets_go_at_the_button", editors::curves::a_curve_taken_away_under_the_hand_lets_go_at_the_button),
     ("editors::a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo", editors::panel::a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo),
     ("editors::the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_their_bands", editors::panel::the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_their_bands),
     ("editors::the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have", editors::panel::the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have),
@@ -265,6 +274,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("tooltip::a_slider_s_tooltip_stays_down_through_its_drag", tooltip::a_slider_s_tooltip_stays_down_through_its_drag),
     ("tooltip::a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key", tooltip::a_tooltip_goes_with_the_screen_or_the_sheet_over_its_key),
     ("tooltip::a_slider_s_tooltip_covers_no_neighbour", tooltip::a_slider_s_tooltip_covers_no_neighbour),
+    ("slider_hand::a_walk_under_a_drag_leaves_the_drag_on_its_frame", slider_hand::a_walk_under_a_drag_leaves_the_drag_on_its_frame),
+    ("slider_hand::a_slider_taken_away_under_the_hand_lets_go_at_the_button", slider_hand::a_slider_taken_away_under_the_hand_lets_go_at_the_button),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one", picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one),
@@ -281,6 +292,10 @@ const CHECKS: &[(&str, fn())] = &[
     ("freshness::two_refreshes_at_once_land_only_the_latest_read", freshness::two_refreshes_at_once_land_only_the_latest_read),
     ("freshness::a_rename_waits_for_a_move_under_way", freshness::a_rename_waits_for_a_move_under_way),
     ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),
+    ("disk_turns::a_read_asked_while_a_gesture_writes_waits_for_it", disk_turns::a_read_asked_while_a_gesture_writes_waits_for_it),
+    ("disk_turns::the_folder_menus_writes_run_off_the_window", disk_turns::the_folder_menus_writes_run_off_the_window),
+    ("disk_turns::a_marks_rows_are_read_back_off_the_window", disk_turns::a_marks_rows_are_read_back_off_the_window),
+    ("disk_turns::a_favourite_in_another_spelling_opens_in_the_archives", disk_turns::a_favourite_in_another_spelling_opens_in_the_archives),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),
@@ -355,6 +370,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),
     ("tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click", tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click),
     ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),
+    ("render_identity::the_histogram_after_a_sheet_is_the_open_frame_s_own", render_identity::the_histogram_after_a_sheet_is_the_open_frame_s_own),
+    ("render_identity::a_new_proof_draws_the_loupe_again", render_identity::a_new_proof_draws_the_loupe_again),
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),
     ("together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame", together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
@@ -363,6 +380,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face", face_turn::an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_face),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen", toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen),
+    ("hand_rest::the_view_renders_sharp_once_the_hand_has_rested_on_the_timers_clock", hand_rest::the_view_renders_sharp_once_the_hand_has_rested_on_the_timers_clock),
     ("toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu", toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),
     ("toolbar_accent::the_accent_lands_on_each_screens_own_commit", toolbar_accent::the_accent_lands_on_each_screens_own_commit),
     ("toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit", toolbar_keys::every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit),

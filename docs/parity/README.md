@@ -60,6 +60,9 @@ tab's block order and the menu titles now read as Swift's.
 One departs on purpose, the owner's call: the Scanner keypad's step is half Swift's count, 0.5 on
 the screen and 1.5 with ⇧, its stops and every whole count unchanged (`hidden.md`, `editor.md`, #620).
 
+Another departs from Swift's result, to be confirmed by the owner: a dust stroke is kept on the scan and
+laid before the crop, turns and angle, so it stays on its speck whatever the framing (`hidden.md`, #1785).
+
 ## The eight largest gaps, in port order
 
 1. **Windows' own surfaces.** A signed build and its feed; ⌥⌘ shortcuts read as Ctrl+Alt, which

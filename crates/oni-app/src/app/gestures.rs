@@ -4,6 +4,7 @@ use super::*;
 
 mod busy;
 mod disk;
+mod reread;
 mod told;
 
 pub(in crate::app) use busy::wait_for_disk;
@@ -63,9 +64,15 @@ impl Ctl {
     }
 
     pub(super) fn landed(self: &Rc<Self>, touched: &[String]) {
+        self.landed_with(touched, None);
+    }
+
+    /// `landed`, its rows read again where the writes ran when `reread` holds them.
+    pub(super) fn landed_with(self: &Rc<Self>, touched: &[String], reread: Option<library::Reread>) {
         self.closed_if_trashed();
         self.publish(false);
-        self.reread(touched);
+        let reread = reread.unwrap_or_else(|| self.state.borrow().reread_here(touched));
+        self.reread_landed(touched, reread);
         let open = self.state.borrow().open.clone();
         for path in touched.iter().filter(|p| Some(*p) != open.as_ref()) {
             self.redraw(path);

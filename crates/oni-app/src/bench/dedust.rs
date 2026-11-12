@@ -38,7 +38,9 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let Some(ctl) = me.upgrade() else { return timer.stop() };
         let Some(w) = ctl.window() else { return };
         let (d, c) = (w.global::<crate::Dedust>(), w.global::<crate::Canvas>());
-        let corrections = || ctl.state.borrow().store().settings().corrections.clone();
+        let settings = || ctl.state.borrow().store().settings().clone();
+        let corrections = || settings().corrections;
+        let made = |c: &oni_settings::frame::Correction| crate::patches::made(&crate::patches::caches(), &settings(), c);
         let n = step.get();
         step.set(n + 1);
         match n {
@@ -55,13 +57,13 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             1 => {
                 // A frame holding strokes without patches is painted on while they are being made.
                 let own = corrections();
-                let made = own.iter().filter(|c| crate::patches::file(&crate::patches::caches(), c.id).exists()).count();
-                if made < own.len() && (!ctl.state.borrow().healing() || (made as f64) < during() * own.len() as f64) {
+                let landed = own.iter().filter(|c| made(c)).count();
+                if landed < own.len() && (!ctl.state.borrow().healing() || (landed as f64) < during() * own.len() as f64) {
                     step.set(1);
                     return;
                 }
                 if !own.is_empty() {
-                    lines.borrow_mut().push(format!("{made} of the frame's {} patches made", own.len()));
+                    lines.borrow_mut().push(format!("{landed} of the frame's {} patches made", own.len()));
                 }
                 lines.borrow_mut().push(format!("painting {}, brush {}", c.get_painting(), d.get_readout()));
                 let before: Vec<oni_settings::id::Id> = corrections().iter().map(|c| c.id).collect();
@@ -96,7 +98,7 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if list.is_empty() {
                     return finish(timer, &done, &lines, "no correction to wait on");
                 }
-                let healed = |id: &oni_settings::id::Id| crate::patches::file(&crate::patches::caches(), *id).exists();
+                let healed = |id: &oni_settings::id::Id| list.iter().any(|c| c.id == *id && made(c));
                 if hand_healed.get().is_none() && hand.borrow().iter().all(healed) {
                     hand_healed.set(painted.get().map(|t| t.elapsed()));
                 }
@@ -125,11 +127,11 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 ));
             }
             3 => {
-                let id = corrections().first().map(|c| c.id);
+                let (first, before) = (corrections().first().cloned(), settings());
                 for _ in 0..corrections().len() {
                     d.invoke_remove(0);
                 }
-                let gone = id.is_some_and(|id| !crate::patches::file(&crate::patches::caches(), id).exists());
+                let gone = first.is_some_and(|c| !crate::patches::made(&crate::patches::caches(), &before, &c));
                 lines.borrow_mut().push(format!("removed: {} corrections left, patch gone {gone}", corrections().len()));
                 ctl.act(crate::Act::Correction);
                 lines.borrow_mut().push(format!("left De-dust: painting {}", c.get_painting()));
@@ -156,7 +158,8 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let Some(ctl) = me.upgrade() else { return timer.stop() };
         let Some(w) = ctl.window() else { return };
         let (d, c) = (w.global::<crate::Dedust>(), w.global::<crate::Canvas>());
-        let corrections = || ctl.state.borrow().store().settings().corrections.clone();
+        let settings = || ctl.state.borrow().store().settings().clone();
+        let corrections = || settings().corrections;
         let n = step.get();
         step.set(n + 1);
         let waited = since.get().elapsed() > Duration::from_secs(120);
@@ -216,7 +219,7 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if waited {
                     return finish(timer, &done, &lines, "the patches never came");
                 }
-                if !corrections().iter().all(|c| crate::patches::file(&crate::patches::caches(), c.id).exists()) {
+                if !corrections().iter().all(|c| crate::patches::made(&crate::patches::caches(), &settings(), c)) {
                     step.set(3);
                     return;
                 }

@@ -20,12 +20,15 @@ static READS: AtomicU64 = AtomicU64::new(0);
 impl Ctl {
     /// The read on its own thread and its own connection; each landing comes back to this thread.
     pub(super) fn read_folder(self: &Rc<Self>, generation: u64, folder: String, index_path: PathBuf) {
-        let ticket = READS.fetch_add(1, Ordering::Relaxed) + 1;
         let (current, computer, filter) = {
             let mut s = self.state.borrow_mut();
+            if s.read_waits() {
+                return;
+            }
             s.org.reads += 1;
             (s.generation.clone(), s.nav.computer.clone(), s.filter)
         };
+        let ticket = READS.fetch_add(1, Ordering::Relaxed) + 1;
         std::thread::Builder::new()
             .name("library".into())
             .spawn(move || {
@@ -45,6 +48,11 @@ impl Ctl {
                 });
             })
             .expect("library thread");
+    }
+
+    /// The read under way stops and lands nothing, the folder left to the next read.
+    pub(in crate::app) fn read_superseded(&self) {
+        READS.fetch_add(1, Ordering::Relaxed);
     }
 
     /// `takeRows` then `layGallery`: the rows laid, the selection and the open photo kept by path.

@@ -7,6 +7,7 @@ mod inputs;
 mod kept;
 pub(crate) use kept::{INPUTS_KEPT, custom_for, patches_for};
 use kept::Kept;
+use oni_pipeline::corrections::PatchKey;
 pub(crate) mod prewarm;
 pub use prewarm::Kernels;
 mod originals;
@@ -108,7 +109,7 @@ pub struct Engine {
     custom: HashMap<String, Kept<CustomFlatField>>,
     /// Where the dust patches are kept, and those read lately.
     pub caches: Option<PathBuf>,
-    patches: HashMap<Id, Kept<Source>>,
+    patches: HashMap<PatchKey, Kept<Source>>,
     /// Counts the renders reading masks and patches, which date each one's last use.
     reads: u64,
     /// `Negative.measure` and `measureSmall` of the preview whose id leads: what the input
@@ -333,19 +334,19 @@ impl Engine {
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
     }
 
-    /// `Pipeline.correctionSource` read back where a search for `c` looks: the frame at full
-    /// resolution, framed with every other correction healed, and the framed extent's size.
+    /// `Pipeline.correctionSource` read back where a search for `c` looks: the scan at full
+    /// resolution, every other correction healed, and the scan's size.
     pub fn search_region(&mut self, full: &Source, settings: &PipelineSettings, c: &oni_settings::frame::Correction) -> Result<(crate::heal::Region, (f64, f64)), String> {
         let mut upstream = settings.clone();
         upstream.corrections.retain(|other| other.id != c.id);
         self.read_custom(&upstream);
         let inputs = Inputs { patches: patches_for(&self.patches, &upstream), custom_flat_field: custom_for(&self.custom, &upstream) };
-        let framed = self.pipeline.framed(&mut self.graph, Image::new(full), &upstream, 1.0, &inputs).map_err(|e| e.to_string())?;
-        let e = framed.extent();
+        let healed = self.pipeline.healed(&mut self.graph, Image::new(full), &upstream, 1.0, &inputs).map_err(|e| e.to_string())?;
+        let e = healed.extent();
         let size = (f64::from(e.w), f64::from(e.h));
         let win = crate::heal::search_window(c, size.0, size.1);
         let region = Rect::new(e.x + win[0] as i32, e.y + win[1] as i32, win[2] as u32, win[3] as u32);
-        let pixels = self.graph.render(&framed, region, None).map_err(|e| e.to_string())?;
+        let pixels = self.graph.render(&healed, region, None).map_err(|e| e.to_string())?;
         let r = crate::heal::Region { x: win[0] as i64, y: win[1] as i64, width: region.w as usize, height: region.h as usize, pixels, frame_width: size.0, frame_height: size.1 };
         Ok((r, size))
     }
@@ -380,10 +381,9 @@ impl Engine {
         self.graph.purge();
     }
 
-    /// Forgets a correction's patch, so the next render and input reading read it again from the cache.
-    pub fn forget_patch(&mut self, id: Id) {
-        self.patches.remove(&id);
-        self.read = [None, None];
+    /// Forgets a patch, so the next render and input reading read it again from the cache.
+    pub fn forget_patch(&mut self, key: PatchKey) {
+        self.patches.remove(&key);
     }
 
     /// `Pipeline.apply` unproofed, with the masks and patches the canvas reads: an export's render.

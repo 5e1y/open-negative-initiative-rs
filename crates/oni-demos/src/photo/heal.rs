@@ -1,4 +1,4 @@
-//! De-dust on the demo's frame: the framed frame's size, and a stroke's patch searched and made as
+//! De-dust on the demo's frame: the framed frame's size and its map to the scan, and a stroke's patch searched and made as
 //! the app's own heal does, written where this frame's engine alone reads it.
 
 use std::path::Path;
@@ -6,6 +6,7 @@ use std::path::Path;
 use oni_pipeline::Request;
 use oni_settings::PipelineSettings;
 use oni_settings::frame::Correction;
+use oni_settings::geometry::Placing;
 use oni_app::render::{self, Reading};
 
 use super::{Photo, Rgba};
@@ -19,22 +20,24 @@ impl Photo {
         Ok(self.full.clone().expect("decoded"))
     }
 
-    /// The full-resolution render's size, framed, in pixels: what a stroke's fractions are of.
-    pub fn framed_size(&mut self, s: &PipelineSettings) -> Result<(u32, u32), String> {
+    /// The full-resolution render's size, framed, in pixels, and the map from it to the scan a stroke is kept on.
+    pub fn framed_size(&mut self, s: &PipelineSettings) -> Result<((u32, u32), Placing), String> {
         let source = self.full_source(s)?;
         let e = self.engine.unproofed(&source, s, &Request::default())?.extent();
-        Ok((e.w, e.h))
+        let scan = source.extent();
+        Ok(((e.w, e.h), s.geometry.placing((f64::from(scan.w), f64::from(scan.h)))))
     }
 
     /// `c`'s patch, as the app's heal makes it, kept in `caches` for this frame's renders; where it
-    /// was copied from, in fractions of the framed frame, y down.
+    /// was copied from, in fractions of the scan, y down.
     pub fn heal(&mut self, s: &PipelineSettings, c: &Correction, caches: &Path) -> Result<(f64, f64), String> {
         let source = self.full_source(s)?;
         self.engine.caches = Some(caches.to_path_buf());
         let (region, size) = self.engine.search_region(&source, s, c)?;
         let patch = oni_app::heal::generate(&region, c, size.0, size.1);
-        oni_app::patches::write(caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
-        self.engine.forget_patch(c.id);
+        let key = oni_pipeline::corrections::PatchKey::of(s, c);
+        oni_app::patches::write(caches, key, patch.width as u32, patch.height as u32, &patch.pixels)?;
+        self.engine.forget_patch(key);
         Ok(patch.offset)
     }
 }
