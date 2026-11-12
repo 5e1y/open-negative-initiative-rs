@@ -1,8 +1,9 @@
 //! LibRaw's frame on DNGs built here: a LinearRaw file read whole at every size, a mosaic's default
 //! crop placed inside its ActiveArea.
 
-use crate::source::tests::{Tag, directory, scratch};
+use crate::source::tests::scratch;
 use crate::{HALF, Linear, Neutral, decode, decode_for, decode_on};
+use oni_fixtures::dng::{Tag, directory};
 use std::path::Path;
 
 const W: usize = 96;

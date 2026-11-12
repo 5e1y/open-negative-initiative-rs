@@ -88,8 +88,19 @@ pub fn superseded(images: &mut Vec<String>) {
     });
 }
 
-/// Each file converted to a lossless DNG 1.4 beside it, its mosaic kept; `going` hears how many are
-/// done and stops the rest by answering false. A file whose DNG already stands is never handed over.
+/// Whether the DNG this run wrote for `raw` reads; one that does not is removed, so its NEF stays listed
+/// and convertible, never trashed beside a broken twin.
+fn written(raw: &Path) -> bool {
+    let dng = twin(raw);
+    let reads = oni_decode::reads(&dng);
+    if !reads {
+        let _ = std::fs::remove_file(&dng);
+    }
+    reads
+}
+
+/// Each file converted to a lossless DNG 1.4 beside it, its mosaic kept; `going` hears how many are done
+/// and stops the rest by answering false. Only a DNG this run wrote that reads counts.
 pub fn convert(converter: &Path, raws: &[PathBuf], going: &dyn Fn(usize) -> bool) -> Result<Vec<PathBuf>, String> {
     let mut converted = Vec::new();
     let mut said = None;
@@ -108,7 +119,7 @@ pub fn convert(converter: &Path, raws: &[PathBuf], going: &dyn Fn(usize) -> bool
                 said = Some(e.to_string());
             }
         }
-        converted.extend(batch.iter().filter(|r| has_twin(r)).cloned());
+        converted.extend(fresh.into_iter().filter(|r| written(r)).cloned());
         if !going(converted.len()) {
             break;
         }

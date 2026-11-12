@@ -8761,5 +8761,12 @@
     "title": "Move Out never replaces a file at its target",
     "status": "done",
     "detail": "flat_fields::Moving::through moved the original with std::fs::rename, which replaces silently on macOS and Windows a file that took the free name after the look. It now takes oni_library::roll_folder::rename_new, which never replaces. Unit check a_move_out_never_replaces_a_file_that_took_the_free_name plants a file inside the rename step: the move is refused, both files whole; twin a replacing rename overwrites it."
+  },
+  {
+    "id": 1740,
+    "type": "fix",
+    "title": "A High Efficiency NEF counts as converted only when the DNG this run wrote reads",
+    "status": "done",
+    "detail": "adobe_dng::convert counted a NEF by a file named like its DNG, the whole batch included, so 'Keep the new DNGs only' could trash the only real NEF beside a cut or empty DNG, which then hid the NEF from every new offer. A run now counts the files it handed over whose DNG LibRaw unpacks (oni_decode::reads, a decode's own reading without the demosaic) and removes one that does not, so its NEF stays listed and convertible; the person's own DNG is no conversion. The synthetic mosaic DNG writer moves to oni-fixtures to serve both crates. The conversion check's stand-in cuts one DNG half way through its strip: before the fix it is returned as converted along with the person's own, after it is not and its file is gone, twin the same run with no cut counting it; a_dng_reads_unless_cut covers reads on a whole, a cut and an empty file."
   }
 ]
