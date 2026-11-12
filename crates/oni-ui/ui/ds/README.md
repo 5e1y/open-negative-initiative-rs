@@ -63,7 +63,7 @@ automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DET
 face's step keys, − and + beside each of its rails. A choice holding one keycap holds keycaps alone: its
 Cancel, its step back and its other answers are keycaps on the face of the ground they stand on (`ground`),
 the commit alone standing out; a choice with none, as a passing notice's OK or a question of options, stays
-flat. Tabs alike: every tab a key raised from the hollow, the one taken on the pill's face. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
+flat. Tabs are not keys: their one raised pill slides under the tab taken. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
 `Raster.keycap(KeycapLook)`; `oni_app::keycaps::serve` answers it on a window (the `Shell` does it for the
 main window and the console; a check building a window alone calls it); an unserved window, as slint-viewer's,
 shows each cap's flat stand-in. One cache by the look's numbers (oni-keycap's `look::Cache`, shared with
@@ -107,11 +107,13 @@ oni-lab) draws a still key once and a pressed one once a frame.
 - **Plates**: `ButtonGroup { plate: true }` is a socket of keycaps alone, the one place keys share a face:
   its caps flush on one face rounded as a key, as the panel's AUTO WHITE BALANCE with the crop's warning
   over it. Flat keys never stand on a plate.
-- **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the flat key that
+- **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the key that
   leaves (Cancel) at the left with what the sheet adds beside it, then apart at the right a step back and
-  the commit alone, the accent keycap, a flat key while it writes nothing (a failure's OK). A key that
-  removes (`remove`, a preset's Delete) stands alone at the left end, what the sheet adds then beside the
-  commit. Every DONE is that accent keycap, a tool's in the panel as a sheet's, the bar's export laying its
+  the commit alone, the accent keycap, a flat key while it writes nothing (a failure's OK); beside a keycap
+  commit, Cancel and the step back are keycaps on the ground's face. A key that removes (`remove`, a preset's
+  Delete) stands alone at the left end, what the sheet adds then beside the commit. Too narrow for its keys
+  on one line, as a panel's in French or Spanish, the footer lays the commit on a line of its own under the
+  others, as wide as the room. Every DONE is that accent keycap, a tool's in the panel as a sheet's, the bar's export laying its
   accent down while a tool is open. A question's answers (`AskSheet`) keep their own row.
 
 ## Keyboard

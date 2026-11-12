@@ -149,6 +149,21 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(common::placed(w, Role::Button, "Skip").is_empty(), "the keycap alone goes on");
     assert_eq!((cancel.y, cancel.height, p.get_footer_height()), (first.0.y, first.0.height, first.1), "one footer on every step");
     assert!(p.get_footer_height() > 32.0, "twin: keycaps lay the footer, taller than a flat key's 32 pt");
+    // A key named as long as French names the last step's: the commit takes a line of its own under Cancel
+    // and Back, as wide as the footer, every key inside it; twin: on one line the keys outrun the footer.
+    let title = p.get_action_title();
+    p.set_action_title("PRÉPARER LA PELLICULE".into());
+    rig.settle();
+    let (cancel, back, long) = (key("Cancel"), key("Back"), key("PRÉPARER LA PELLICULE"));
+    let (left, room) = (p.get_footer_x(), p.get_footer_width());
+    for k in [cancel, back, long] {
+        assert!(k.x >= left - 0.5 && k.x + k.width <= left + room + 0.5, "a key inside the footer: {k:?} in {left} + {room}");
+    }
+    assert!(long.y >= back.y + back.height && (long.width - room).abs() < 0.5, "the commit under the rest, the footer's width: {long:?} {back:?}");
+    assert!(cancel.width + back.width + long.width + 3.0 * 8.0 > room, "twin: one line outruns the footer: {room}");
+    p.set_action_title(title);
+    rig.settle();
+    assert_eq!(key("NEXT").y, key("Cancel").y, "the short key back on Cancel's line");
     // At the keycap's place, a click goes on without the base, which keeps no mark; Back returns to it.
     let (x, y) = action();
     click(&rig, x, y);

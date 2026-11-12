@@ -8684,5 +8684,19 @@
     "title": "A choice holding one keycap holds keycaps alone",
     "status": "done",
     "detail": "Owner's rule: where a choice has one key as a keycap, every key of it is a keycap, the others on the face of the ground they stand on. Button gains `ground`, the face of a keycap beside the one that stands out. SheetFooter's Cancel, step back and remove, a question's Cancel and answers once one confirms, and the panel header's Cancel beside DONE are keycaps on the ground's face; a choice with no keycap, as a passing notice's OK or a question of options, stays flat. Tabs alike: every tab a key raised from the hollow, the one taken on the pill's face, in place of one pill sliding."
+  },
+  {
+    "id": 1726,
+    "type": "fix",
+    "title": "The tabs back to their one sliding pill",
+    "status": "done",
+    "detail": "Owner's call: the tabs had nothing to change. #1725 had raised every tab as a key; the tab bar is back as it was, one raised pill sliding under the tab taken, the keycap rule holding for keys alone."
+  },
+  {
+    "id": 1727,
+    "type": "fix",
+    "title": "A footer too narrow for its keys lays its commit on a line of its own",
+    "status": "done",
+    "detail": "Owner's report: in French the prepare panel's footer ran past the panel, Cancel and Back now keycaps beside PRÉPARER LA PELLICULE. SheetFooter measures its keys on one line in an unseen copy of no height, so the choice never follows the lines it lays; too narrow, it lays the commit under the other keys, as wide as the room. The prepare check names the last step's key as French does: every key inside the footer, the commit under Back at the footer's width, twin one line outrunning it; with the footer forced to one line the check fails."
   }
 ]
