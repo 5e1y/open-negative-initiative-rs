@@ -138,7 +138,7 @@ impl Ctl {
         let folder = self.presets_folder();
         let preset = {
             let mut s = self.state.borrow_mut();
-            s.shelf.serial += 1;
+            s.shelf.serial.supersede();
             let Some(Form::Editing { working, selected: Some(i) }) = s.shelf.form.as_mut() else { return };
             let Some(p) = working.get_mut(*i) else { return };
             p.name = presets::writable_name(p, &folder);
@@ -177,22 +177,22 @@ impl Ctl {
 
     /// An edit of the form: the draft takes it, and the editor writes once the hand rests.
     pub(super) fn edit_form(self: &Rc<Self>, change: impl FnOnce(&mut Preset)) {
-        let serial = {
+        let asked = {
             let mut s = self.state.borrow_mut();
             let shelf = &mut s.shelf;
             let Some(form) = shelf.form.as_mut() else { return };
             let Some(current) = form.current() else { return };
             change(current);
-            shelf.serial += 1;
-            matches!(form, Form::Editing { .. }).then_some(shelf.serial)
+            let asked = shelf.serial.next();
+            matches!(form, Form::Editing { .. }).then_some(asked)
         };
         self.publish_form(false);
-        if let Some(serial) = serial {
+        if let Some(asked) = asked {
             let me = Rc::downgrade(self);
             // `Sidecar.writeDelay`, shared so the two never drift.
             slint::Timer::single_shot(WRITE_DELAY, move || {
                 let Some(c) = me.upgrade() else { return };
-                if c.state.borrow().shelf.serial != serial {
+                if !asked.current() {
                     return;
                 }
                 let preset = match c.state.borrow().shelf.form.as_ref() {
@@ -284,7 +284,7 @@ impl Ctl {
         g.set_form_balance(WhiteBalance::ALL.iter().position(|b| *b == carries::white_balance(&p.parameters)).unwrap_or(0) as i32);
         g.set_form_empty(p.parameters.is_empty());
         if fresh {
-            g.set_form_instance(ModelRc::new(VecModel::from(vec![s.shelf.serial as i32])));
+            g.set_form_instance(ModelRc::new(VecModel::from(vec![s.shelf.serial.count() as i32])));
         }
     }
 }

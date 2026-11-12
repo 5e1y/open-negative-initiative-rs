@@ -2,6 +2,7 @@
 //! chosen one offers in a card. A direct source lists and installs; any other opens its page.
 
 use super::super::{Ctl, with_shell};
+use crate::ticket::Ticket;
 use crate::{Exporting, PaperRow};
 use oni_colour::{InstallRecord, PaperSource, Reach, Space};
 use oni_i18n::{tr, trn};
@@ -10,7 +11,6 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
 use url::Url;
 
 pub type Fetch = Arc<dyn Fn(&str) -> Result<String, String> + Send + Sync>;
@@ -47,7 +47,7 @@ pub struct Sheet {
     pub installing: Option<Url>,
     pub message: Option<String>,
     /// Each read carries a generation; a later choice of source drops an earlier page.
-    reads: Arc<AtomicU64>,
+    reads: Ticket,
     pub web: Web,
 }
 
@@ -62,7 +62,7 @@ impl Default for Sheet {
             reading: false,
             installing: None,
             message: None,
-            reads: Arc::default(),
+            reads: Ticket::default(),
             web: Web::system(),
         }
     }
@@ -130,18 +130,17 @@ impl Ctl {
 
     /// `read()`: the chosen source's page read off this thread, its installed links marked on return.
     fn read_paper_page(self: &Rc<Self>) {
-        let (source, fetch, generation, reads) = {
+        let (source, fetch, asked) = {
             let mut c = self.export.borrow_mut();
             let p = &mut c.papers;
             (p.offered, p.filter, p.message, p.reading) = (Vec::new(), String::new(), None, true);
-            let generation = p.reads.fetch_add(1, Ordering::Relaxed) + 1;
-            (PaperSource::all()[p.source].clone(), p.web.fetch.clone(), generation, p.reads.clone())
+            (PaperSource::all()[p.source].clone(), p.web.fetch.clone(), p.reads.next())
         };
         self.publish_papers();
         std::thread::spawn(move || {
             let read = source.offered(|page| fetch(page));
             with_shell(move |c| {
-                if reads.load(Ordering::Relaxed) != generation {
+                if !asked.current() {
                     return;
                 }
                 let record = c.record();

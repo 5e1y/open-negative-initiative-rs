@@ -91,8 +91,8 @@ impl Ctl {
             if let Ok(mut room) = c.room.lock() {
                 *room = None;
             }
-            c.pass.fetch_add(1, Ordering::Relaxed);
-            c.weighing.fetch_add(1, Ordering::Relaxed);
+            c.pass.supersede();
+            c.weighing.supersede();
             c.return_gallery
         };
         if let Some(w) = self.window() {

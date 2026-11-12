@@ -33,7 +33,7 @@ pub(super) struct Shelf {
     /// Copy Settings told not to ask again: until the app quits, Copy takes the last boxes at once.
     copy_at_once: bool,
     /// Raised by every edit in the editor; a write armed under an older count is dropped.
-    serial: u64,
+    serial: crate::ticket::Ticket,
     /// The deck and the menu's list as last handed over: a new model would drop the hovered card.
     published: Option<(Vec<PresetCard>, Vec<SharedString>)>,
 }
