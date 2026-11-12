@@ -98,37 +98,34 @@ impl Ctl {
                 .zip(&c.rows)
                 .map(|((t, d), r)| (t.clone(), d, r.as_ref().map(|r| r.metadata.clone()).unwrap_or_default()))
                 .collect();
-            (plan, c.settings.clone(), c.stop.clone())
+            (plan, c.settings.clone(), c.writer.flag())
         };
         self.job_started(&started);
         let engine: Shared = self.export_engine();
         let support = self.export.borrow().support.clone();
         let journal = crate::app::year::journal_in(&support);
-        std::thread::Builder::new()
-            .name("export".into())
-            .spawn(move || {
-                let mut ledger = oni_export::file::Ledger::in_support(&support);
-                let jobs: Vec<export::batch::Job> = plan.into_iter().map(|(target, destination, metadata)| export::batch::Job { target, destination, metadata }).collect();
-                let (end, _) = export::batch::write_batch(&engine, &jobs, &export, &mut ledger, replacing, &stop, |i| {
-                    let subject = oni_library::paths::canonical(&jobs[i].target.path);
-                    journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
-                    with_shell(|c| {
-                        c.export.borrow_mut().progress += 1;
-                        c.publish_export();
-                    });
+        self.export.borrow_mut().writer.spawn("export", move || {
+            let mut ledger = oni_export::file::Ledger::in_support(&support);
+            let jobs: Vec<export::batch::Job> = plan.into_iter().map(|(target, destination, metadata)| export::batch::Job { target, destination, metadata }).collect();
+            let (end, _) = export::batch::write_batch(&engine, &jobs, &export, &mut ledger, replacing, &stop, |i| {
+                let subject = oni_library::paths::canonical(&jobs[i].target.path);
+                journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
+                with_shell(|c| {
+                    c.export.borrow_mut().progress += 1;
+                    c.publish_export();
                 });
-                match end {
-                    export::batch::End::Done => {}
-                    export::batch::End::Stopped => return with_shell(|c| c.export_ended(job::End::Stopped)),
-                    export::batch::End::Failed(i, e) => {
-                        let name = jobs[i].target.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                        let message = format!("{}: {e}", oni_i18n::named(&name));
-                        return with_shell(move |c| c.export_ended(job::End::Failed(message)));
-                    }
+            });
+            match end {
+                export::batch::End::Done => {}
+                export::batch::End::Stopped => return with_shell(|c| c.export_ended(job::End::Stopped)),
+                export::batch::End::Failed(i, e) => {
+                    let name = jobs[i].target.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    let message = format!("{}: {e}", oni_i18n::named(&name));
+                    return with_shell(move |c| c.export_ended(job::End::Failed(message)));
                 }
-                with_shell(|c| c.export_ended(job::End::Written));
-            })
-            .expect("export thread");
+            }
+            with_shell(|c| c.export_ended(job::End::Written));
+        });
     }
 }
 
@@ -138,7 +135,7 @@ impl Card {
         self.exporting = true;
         self.progress = 0;
         self.stopped = None;
-        self.stop.store(false, Ordering::Relaxed);
+        self.writer.begin();
         if let Some(Some(first)) = self.rows.first().cloned() {
             self.artist = first.metadata.artist.clone();
             self.copyright = first.metadata.copyright.clone();

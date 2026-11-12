@@ -8803,5 +8803,12 @@
     "title": "Checks for the sheets' keyboard and a field's undo",
     "status": "done",
     "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
+  },
+  {
+    "id": 1795,
+    "type": "fix",
+    "title": "A quit waits for the export frame under way",
+    "status": "done",
+    "detail": "The export's thread is kept in Writer (export_card/writer.rs) with its stop, and Ctl::last_writes, which every quit path ends in, halts it and joins it: the frame under way lands whole, ledger note included, so no hidden temporary or unvouched file stays in the export folder. Check: writer tests a_quit_waits_for_the_frame_under_way and its twin a_stop_without_the_wait_cuts_the_frame; the first was run against a stop without the join and failed."
   }
 ]

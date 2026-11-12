@@ -18,7 +18,7 @@ impl Ctl {
             let metadata = ExifMetadata { artist: first.artist, copyright: first.copyright, ..ExifMetadata::default() };
             // The sizes the panel laid its sheet on, so the file is the size it said.
             let sizes = c.sizes.iter().copied().collect::<Option<Vec<_>>>();
-            (c.targets.clone(), sizes, c.settings.clone(), c.stop.clone(), metadata)
+            (c.targets.clone(), sizes, c.settings.clone(), c.writer.flag(), metadata)
         };
         let paths: Vec<String> = targets.iter().map(|t| oni_library::paths::normal(&t.path.to_string_lossy()).into_owned()).collect();
         let folders = self.roll_folders(&paths);
@@ -26,38 +26,35 @@ impl Ctl {
         let engine: Shared = self.export_engine();
         let support = self.export.borrow().support.clone();
         let journal = crate::app::year::journal_in(&support);
-        std::thread::Builder::new()
-            .name("export sheet".into())
-            .spawn(move || {
-                let mut ledger = oni_export::file::Ledger::in_support(&support);
-                let written = (|| {
-                    for t in &targets {
-                        oni_export::lands(&t.path, &destination, &ledger, replacing)?;
-                    }
-                    let numbers = together::ranks(&paths, &folders);
-                    let captions = Captions { numbers, inks };
-                    let Some(sheet) = together::printed(&engine, &targets, sizes, &captions, &stop)? else { return Ok(false) };
-                    let first = &targets[0];
-                    let bytes = oni_export::file_bytes(&first.path, sheet, &first.settings.paper_correction, &export, &metadata, None)?;
-                    oni_export::land(oni_export::Landing { path: &destination, ledger: &mut ledger, replacing }, &bytes)?;
-                    Ok::<_, Failure>(true)
-                })();
-                match written {
-                    Ok(true) => {
-                        journal.note(Gesture::Exported, None, 0, 0, None, oni_settings::Date::now());
-                        with_shell(|c| {
-                            c.export.borrow_mut().progress = 1;
-                            c.export_ended(job::End::Written);
-                        });
-                    }
-                    Ok(false) => with_shell(|c| c.export_ended(job::End::Stopped)),
-                    Err(e) => {
-                        let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                        let message = format!("{}: {e}", oni_i18n::named(&name));
-                        with_shell(move |c| c.export_ended(job::End::Failed(message)));
-                    }
+        self.export.borrow_mut().writer.spawn("export sheet", move || {
+            let mut ledger = oni_export::file::Ledger::in_support(&support);
+            let written = (|| {
+                for t in &targets {
+                    oni_export::lands(&t.path, &destination, &ledger, replacing)?;
                 }
-            })
-            .expect("export sheet thread");
+                let numbers = together::ranks(&paths, &folders);
+                let captions = Captions { numbers, inks };
+                let Some(sheet) = together::printed(&engine, &targets, sizes, &captions, &stop)? else { return Ok(false) };
+                let first = &targets[0];
+                let bytes = oni_export::file_bytes(&first.path, sheet, &first.settings.paper_correction, &export, &metadata, None)?;
+                oni_export::land(oni_export::Landing { path: &destination, ledger: &mut ledger, replacing }, &bytes)?;
+                Ok::<_, Failure>(true)
+            })();
+            match written {
+                Ok(true) => {
+                    journal.note(Gesture::Exported, None, 0, 0, None, oni_settings::Date::now());
+                    with_shell(|c| {
+                        c.export.borrow_mut().progress = 1;
+                        c.export_ended(job::End::Written);
+                    });
+                }
+                Ok(false) => with_shell(|c| c.export_ended(job::End::Stopped)),
+                Err(e) => {
+                    let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    let message = format!("{}: {e}", oni_i18n::named(&name));
+                    with_shell(move |c| c.export_ended(job::End::Failed(message)));
+                }
+            }
+        });
     }
 }
