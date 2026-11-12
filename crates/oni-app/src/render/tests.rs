@@ -130,18 +130,25 @@ fn previews_keep_the_last_four_used() {
         Arc::new(e.prepare(Decoded { linear, full_width: 8.0, undeclared: None }).unwrap())
     };
     let mut kept = Previews::default();
+    let negative = Reading::default();
     for k in 0..4 {
-        kept.insert(k.to_string(), false, one(&mut engine));
+        kept.insert(k.to_string(), negative.clone(), one(&mut engine));
     }
-    assert!(kept.get("0", false).is_some(), "a use moves the frame to the back");
-    kept.insert("4".into(), false, one(&mut engine));
-    assert!(kept.get("1", false).is_none(), "the least recently used frame left");
+    assert!(kept.get("0", &negative).is_some(), "a use moves the frame to the back");
+    kept.insert("4".into(), negative.clone(), one(&mut engine));
+    assert!(kept.get("1", &negative).is_none(), "the least recently used frame left");
     // Twin: the frame used just before the insertion stayed.
-    assert!(kept.get("0", false).is_some());
+    assert!(kept.get("0", &negative).is_some());
     // A frame read as a negative is no slide's preview, and read as a slide replaces it.
-    assert!(kept.get("0", true).is_none() && kept.holds("0"));
-    kept.insert("0".into(), true, one(&mut engine));
-    assert!(kept.get("0", false).is_none() && kept.get("0", true).is_some());
+    let slide = Reading { slide: true, ..Reading::default() };
+    assert!(kept.get("0", &slide).is_none() && kept.holds("0"));
+    kept.insert("0".into(), slide.clone(), one(&mut engine));
+    assert!(kept.get("0", &negative).is_none() && kept.get("0", &slide).is_some());
+    // Nor is a preview read under one encoding another's, though both read it as a slide; twin: the
+    // slide flag alone, the key once held, takes the two for the same.
+    let linear = Reading { source_encoding: Some(oni_settings::SourceEncoding::Linear), ..slide.clone() };
+    assert!(kept.get("0", &linear).is_none() && kept.get("0", &slide).is_some());
+    assert_eq!(linear.slide, slide.slide, "twin: the slide flag cannot tell the two readings apart");
 }
 
 /// A zoomed view renders only what the canvas shows: at 100 % from the full frame, the canvas's

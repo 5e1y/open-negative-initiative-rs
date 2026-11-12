@@ -68,6 +68,11 @@ impl State {
         self.open.as_deref()
     }
 
+    /// Whether a decode of `path` under `reading` is the open frame's: any other is superseded.
+    pub(super) fn wants(&self, path: &str, reading: &render::Reading) -> bool {
+        self.open_path() == Some(path) && self.reading.as_ref() == Some(reading)
+    }
+
     /// The library column's height, which a check places a row in view against.
     pub fn tree_height(&self) -> f32 {
         self.tree.size.1
