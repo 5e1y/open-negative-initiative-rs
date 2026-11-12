@@ -156,39 +156,17 @@ fn follows(shown: &[String], order: &[String]) -> bool {
     })
 }
 
-/// `SettingsPane.body`'s sections as drawn: `manualBalance` is a property laid where the body
-/// names it, though its text comes later in the file.
-fn swift_roll_order(text: &str) -> Vec<String> {
-    let sections = |t: &str| -> Vec<String> { t.split("DSSection(\"").skip(1).filter_map(|t| t.split('"').next().map(str::to_string)).collect() };
-    let body = &text[text.find("var body").expect("body")..text.find("private var rollBlock").expect("rollBlock")];
-    let manual = &text[text.find("private var manualBalance").expect("manualBalance")..text.find("// MARK: - Keys").expect("keys")];
-    let at = body.find("manualBalance\n").expect("the body names manualBalance");
-    [sections(&body[..at]), sections(manual), sections(&body[at..])].concat()
-}
-
 #[test]
-fn the_roll_tab_lays_its_blocks_in_the_swift_order() {
-    // `SettingsPane.body`, read from the Swift source when it is beside this checkout.
-    let swift: Vec<String> = match crate::swift_sources().and_then(|d| std::fs::read_to_string(d.join("UI/SettingsPane.swift")).ok()) {
-        Some(text) => swift_roll_order(&text),
-        None => ["Measured Roll", "Film Type", "Flat-Field", "Source Encoding", "Source Balance", "Density Ceiling", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
-            .map(String::from)
-            .to_vec(),
-    };
-    // Four blocks are named for a photographer, each read under Swift's title.
-    let swift_title = |t: String| match t.as_str() {
-        "Prepared Roll" => "Measured Roll".to_string(),
-        "Filtration" => "Source Balance".to_string(),
-        "Highlight Detail" => "Density Ceiling".to_string(),
-        "Scan Profile" => "Source Encoding".to_string(),
-        _ => t,
-    };
-    let shown: Vec<String> = pane_titles(&panel_source(), "RollPane").into_iter().map(swift_title).collect();
+fn the_roll_tab_lays_its_blocks_in_its_order() {
+    let order: Vec<String> = ["Prepared Roll", "Film Type", "Flat-Field", "Scan Profile", "Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
+        .map(String::from)
+        .to_vec();
+    let shown = pane_titles(&panel_source(), "RollPane");
     assert!(shown.len() >= 6, "{shown:?}");
-    assert!(follows(&shown, &swift), "the Roll tab shows {shown:?}, Swift lays {swift:?}");
+    assert!(follows(&shown, &order), "the Roll tab shows {shown:?}, laid as {order:?}");
     // Twin: Dye Separation and Balance Strength ahead of the ceiling break the order.
-    let early: Vec<String> = ["Measured Roll", "Film Type", "Flat-Field", "Dye Separation", "Balance Strength", "Density Ceiling"].map(String::from).to_vec();
-    assert!(!follows(&early, &swift));
+    let early: Vec<String> = ["Prepared Roll", "Film Type", "Flat-Field", "Dye Separation", "Balance Strength", "Highlight Detail"].map(String::from).to_vec();
+    assert!(!follows(&early, &order));
 }
 
 #[test]

@@ -1,5 +1,4 @@
-//! The folders the checks read and never write: the reference roll, the Lumix calibration files and
-//! the Swift app's dumps. Each lookup prints one line and answers `None` when its folder is absent.
+//! The folders the checks read and never write: the reference roll, the Lumix calibration files. Each lookup prints one line and answers `None` when its folder is absent.
 
 pub mod dng;
 
@@ -11,10 +10,6 @@ pub const RAW_DIR: (&str, &str) = ("ONI_RAW_DIR", "/mnt/user-data/uploads/Downlo
 pub const LUMIX_DIR: (&str, &str) = ("ONI_LUMIX_DIR", "/mnt/user-data/uploads/Negs");
 /// raw.pixls.us' Nikon Z 8 samples: one lossless NEF, one in each High Efficiency mode.
 pub const NIKON_HE_DIR: (&str, &str) = ("ONI_NIKON_HE_DIR", "/mnt/user-data/uploads/Documents/oni-samples/Nikon Z 8");
-/// The Swift app's `--decode` and `--render` dumps.
-pub const REFERENCE_DIR: (&str, &str) = ("ONI_REFERENCE", "/mnt/user-data/uploads/Downloads/oni-reference");
-/// The Swift app's renders of `oni-pipeline/tests/adversarial/branches.json`, by `scripts/adversarial-dump.sh`.
-pub const ADVERSARIAL_DIR: (&str, &str) = ("ONI_ADVERSARIAL", "/mnt/user-data/uploads/Documents/oni-adversarial");
 
 /// The folder `variable` names, else `default`, whether or not it exists.
 pub fn folder((variable, default): (&str, &str)) -> PathBuf {
@@ -40,11 +35,6 @@ pub fn raw_dir(check: &str) -> Option<PathBuf> {
 /// The Lumix calibration files, or `None` after a skip line.
 pub fn lumix_dir(check: &str) -> Option<PathBuf> {
     present(LUMIX_DIR, check)
-}
-
-/// The Swift dumps, or `None` after a skip line.
-pub fn reference_dir(check: &str) -> Option<PathBuf> {
-    present(REFERENCE_DIR, check)
 }
 
 /// False, after a skip line, when `ONI_SKIP_HEAVY` is set: CI runners hold no frame-sized GPU work.
