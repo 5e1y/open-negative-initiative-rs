@@ -43,6 +43,7 @@ mod extended;
 mod filmstrip;
 mod first_frame;
 mod freshness;
+mod disk_turns;
 mod full_release;
 mod frontier_look;
 mod gallery;
@@ -284,6 +285,10 @@ const CHECKS: &[(&str, fn())] = &[
     ("freshness::two_refreshes_at_once_land_only_the_latest_read", freshness::two_refreshes_at_once_land_only_the_latest_read),
     ("freshness::a_rename_waits_for_a_move_under_way", freshness::a_rename_waits_for_a_move_under_way),
     ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),
+    ("disk_turns::a_read_asked_while_a_gesture_writes_waits_for_it", disk_turns::a_read_asked_while_a_gesture_writes_waits_for_it),
+    ("disk_turns::the_folder_menus_writes_run_off_the_window", disk_turns::the_folder_menus_writes_run_off_the_window),
+    ("disk_turns::a_marks_rows_are_read_back_off_the_window", disk_turns::a_marks_rows_are_read_back_off_the_window),
+    ("disk_turns::a_favourite_in_another_spelling_opens_in_the_archives", disk_turns::a_favourite_in_another_spelling_opens_in_the_archives),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),

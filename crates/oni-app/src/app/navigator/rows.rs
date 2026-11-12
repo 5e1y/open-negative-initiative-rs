@@ -182,8 +182,9 @@ impl Ctl {
     /// opening one reads every folder on the disk.
     pub(in crate::app) fn open_asked(self: &Rc<Self>, folder: &str) {
         let wide = self.state.borrow().nav.computer.is_wide(folder);
+        // A row is in the archive's spelling already: opening it reads no disk on this thread.
         if !wide {
-            return self.open_folder(Path::new(folder));
+            return self.open_spelt(folder.to_owned());
         }
         {
             let mut s = self.state.borrow_mut();
@@ -199,7 +200,7 @@ impl Ctl {
             &tr("ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it."),
             tr("Show Every Photo"),
             false,
-            Pending::Run(Box::new(move |c| c.open_folder(Path::new(&target)))),
+            Pending::Run(Box::new(move |c| c.open_spelt(target))),
         );
     }
 }

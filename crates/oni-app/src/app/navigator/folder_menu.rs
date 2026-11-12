@@ -27,6 +27,20 @@ fn renamed_on_disk(from: &str, to: &str) -> std::io::Result<()> {
     oni_library::roll_folder::rename_new(Path::new(from), Path::new(to))
 }
 
+/// "New Folder" made in `folder`, numbered as the Finder numbers one taken; the parent is in the
+/// archive's spelling and the name plain, so the path joined is too.
+fn made_inside(folder: &str) -> std::io::Result<String> {
+    let mut name = "New Folder".to_string();
+    let mut rank = 2;
+    while Path::new(&paths::join(folder, &name)).exists() {
+        name = format!("New Folder {rank}");
+        rank += 1;
+    }
+    let path = paths::join(folder, &name);
+    std::fs::create_dir(&path)?;
+    Ok(path)
+}
+
 impl State {
     /// The one folder menu, the navigator's and the tree's alike: Open, the favourite, Rename…, the
     /// roll, New Folder Inside, Show in Finder; out of reach, only what writes nothing under it.
@@ -184,32 +198,44 @@ impl Ctl {
             return self.publish_navigator();
         }
         let target = paths::join(&paths::parent(path), trimmed);
-        if let Err(e) = renamed_on_disk(path, &target) {
-            self.told(tr("Rename"), &renamed_refused(&e, Platform::THIS));
-            return self.publish_navigator();
-        }
-        if let Some(mut film) = folders::roll(&target) {
-            film.name = trimmed.to_owned();
-            let _ = folders::set_roll(Some(&film), &target);
-        }
-        self.follow_folder(path, &target, &[]);
+        let (from, to, name) = (path.to_owned(), target.clone(), trimmed.to_owned());
+        let run = move || {
+            renamed_on_disk(&from, &to)?;
+            if let Some(mut film) = folders::roll(&to) {
+                film.name = name;
+                let _ = folders::set_roll(Some(&film), &to);
+            }
+            Ok(())
+        };
+        let old = path.to_owned();
+        self.on_disk(tr("Rename"), run, move |c, renamed: std::io::Result<()>| match renamed {
+            Ok(()) => c.follow_folder(&old, &target, &[]),
+            Err(e) => {
+                c.told(tr("Rename"), &renamed_refused(&e, Platform::THIS));
+                c.publish_navigator();
+            }
+        });
+        self.publish_navigator();
     }
 
-    /// `newFolder(in:)`: "New Folder", numbered as the Finder numbers one taken, its name typed at
-    /// once in the column it was asked from: the navigator's row, or the tree's once it lands there.
+    /// `newFolder(in:)`: the folder made off this thread, its name typed once it lands, in the column
+    /// it was asked from: the navigator's row, or the tree's.
     pub(in crate::app) fn new_folder(self: &Rc<Self>, folder: &str, tree: bool) {
-        let mut name = "New Folder".to_string();
-        let mut rank = 2;
-        while Path::new(&paths::join(folder, &name)).exists() {
-            name = format!("New Folder {rank}");
-            rank += 1;
+        if self.busy_said(tr("New Folder")) {
+            return;
         }
-        let path = paths::join(folder, &name);
-        if let Err(e) = std::fs::create_dir(&path) {
-            let cause = oni_library::refusal::cause(&e);
-            return self.told(tr("New Folder"), &tr!("The folder could not be made inside “{folder}”: {cause}.", folder = paths::name(folder), cause = cause));
-        }
-        let made = paths::canonical(Path::new(&path));
+        let (inside, folder) = (folder.to_owned(), folder.to_owned());
+        self.on_disk(tr("New Folder"), move || made_inside(&inside), move |c, made| c.new_folder_landed(&folder, made, tree));
+    }
+
+    fn new_folder_landed(self: &Rc<Self>, folder: &str, made: std::io::Result<String>, tree: bool) {
+        let made = match made {
+            Ok(made) => made,
+            Err(e) => {
+                let cause = oni_library::refusal::cause(&e);
+                return self.told(tr("New Folder"), &tr!("The folder could not be made inside “{folder}”: {cause}.", folder = paths::name(folder), cause = cause));
+            }
+        };
         let inside = {
             let mut s = self.state.borrow_mut();
             let inside = s.opened.as_deref().is_some_and(|o| holds(o, &made));
@@ -234,19 +260,26 @@ impl Ctl {
 
     /// `makeRoll` and `unmakeRoll`: the folder's roll marker written or taken away.
     pub(in crate::app) fn make_roll(self: &Rc<Self>, folder: &str, make: bool) {
-        if make {
-            let film = oni_settings::Film::new(&paths::name(folder));
-            if let Err(e) = folders::set_roll(Some(&film), folder) {
-                let cause = oni_library::refusal::cause(&e);
-                return self.told(tr("Make a Roll"), &tr!("The folder could not be made a roll: {cause}.", cause = cause));
-            }
-            self.roll_written(folder, Some(film));
-        } else if let Err(e) = folders::set_roll(None, folder) {
-            let cause = oni_library::refusal::cause(&e);
-            return self.told(tr("Back to a Folder"), &tr!("The roll could not be made a folder again: {cause}.", cause = cause));
-        } else {
-            self.roll_written(folder, None);
+        let title = if make { tr("Make a Roll") } else { tr("Back to a Folder") };
+        if self.busy_said(title) {
+            return;
         }
+        let film = make.then(|| oni_settings::Film::new(&paths::name(folder)));
+        let (at, marker, folder) = (folder.to_owned(), film.clone(), folder.to_owned());
+        self.on_disk(title, move || folders::set_roll(marker.as_ref(), &at), move |c, set| c.roll_made(title, &folder, film, set));
+    }
+
+    fn roll_made(self: &Rc<Self>, title: &str, folder: &str, film: Option<oni_settings::Film>, set: std::io::Result<()>) {
+        if let Err(e) = set {
+            let cause = oni_library::refusal::cause(&e);
+            let said = match film {
+                Some(_) => tr!("The folder could not be made a roll: {cause}.", cause = cause),
+                None => tr!("The roll could not be made a folder again: {cause}.", cause = cause),
+            };
+            return self.told(title, &said);
+        }
+        let make = film.is_some();
+        self.roll_written(folder, film);
         self.state.borrow_mut().nav.roll_edits.insert(folder.to_owned(), make);
         self.lay_archive();
         self.publish_navigator();

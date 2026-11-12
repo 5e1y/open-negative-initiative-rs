@@ -8915,5 +8915,40 @@
     "title": "A quit waits for the export frame under way",
     "status": "done",
     "detail": "The export's thread is kept in Writer (export_card/writer.rs) with its stop, and Ctl::last_writes, which every quit path ends in, halts it and joins it: the frame under way lands whole, ledger note included, so no hidden temporary or unvouched file stays in the export folder. Check: writer tests a_quit_waits_for_the_frame_under_way and its twin a_stop_without_the_wait_cuts_the_frame; the first was run against a stop without the join and failed."
+  },
+  {
+    "id": 1780,
+    "type": "fix",
+    "title": "The folder menu's writes run off the window, in a gesture's turn",
+    "status": "done",
+    "detail": "Rename, New Folder Inside and Make a Roll (and Back to a Folder) renamed, made or marked the folder on the interface thread, outside the one-at-a-time turn and its busy bar: on a stalled share the window froze for seconds. Each now runs through on_disk and lands back on the window; the open frame's flush stays before the rename. New Folder no longer spells its made path again: the parent is a row in the archive's spelling and the name is plain. disk_turns::the_folder_menus_writes_run_off_the_window asserts each gesture is under way once asked and done once landed; twin, a refused name runs nothing. The navigator, tree_hand, told and editor_leftovers checks now wait for these gestures to land before looking at the disk."
+  },
+  {
+    "id": 1781,
+    "type": "fix",
+    "title": "A mark or a walk reads its sidecars back on its own thread",
+    "status": "done",
+    "detail": "After a trash mark, a restore or an undo/redo walk, the landing re-read every touched sidecar into the index, then cut the opened folder's rows and the copies, on the interface thread. library::reread does it on the gesture's thread, on a connection of its own, and the landing only lays what it hands back; the medal keys, written in place, use the same split on the window's connection. Checked by a_reread_cut_where_the_writes_ran_lays_the_marked_photo_out (twin, the index not read again still shows the photo) and disk_turns::a_marks_rows_are_read_back_off_the_window, where the row reads trashed while the window is never pumped."
+  },
+  {
+    "id": 1782,
+    "type": "fix",
+    "title": "A navigator row opens with no look at the disk; a favourite takes the archive's spelling",
+    "status": "done",
+    "detail": "A row click, the Open line and the navigator keys canonicalised the row's path on the interface thread, though every row is already in the archive's spelling but a favourite kept in another (the Swift app's, or through /private). The favourites' listing, already off the thread, now also spells a favourite as the archive does, and one kept otherwise follows it in favourites.json and the navigator; open_asked then opens the row as spelt. disk_turns::a_favourite_in_another_spelling_opens_in_the_archives writes a /private favourite, waits for it to be respelt and opens its row under the archive's spelling; twin, the /private spelling is not a fixed point of canonical."
+  },
+  {
+    "id": 1783,
+    "type": "fix",
+    "title": "A gesture moving or writing files owns the opened folder until it lands",
+    "status": "done",
+    "detail": "A folder read could survey the folder while New Roll, an undo walk or a mark moved its files, dropping the moved photos from the picks and resetting their import date, as nothing ordered the two. on_disk now supersedes a read under way and marks it owed; read_folder, the one gate every read goes through, holds any read asked while a gesture runs as owed; the landing pays the owed read once, unless it read again itself. followed also carries the survey's paths, so the archive laid before the read keeps each pair and roll. disk_turns::a_read_asked_while_a_gesture_writes_waits_for_it (twin, a read with no gesture starts at once) and a_survey_follows_a_move_with_each_path_it_records (twin, the survey left as it was pairs no sidecar)."
+  },
+  {
+    "id": 1784,
+    "type": "fix",
+    "title": "A superseded read writes no row after its file read",
+    "status": "done",
+    "detail": "read_rows checked its token at the loop's head only, so a read inside a file read when a move superseded it still wrote its row under the old path after the move rewrote it: a ghost row and a false copy. The token is now checked just before each index write, and look_again only reads, the loop writing for both kinds of row. a_read_superseded_during_a_file_read_writes_no_row_under_a_moved_path holds the read on a pipe sidecar while the move lands; twin, a read whose token holds writes the ghost row and one copy. Each new check was run against the code before the fix and failed there."
   }
 ]

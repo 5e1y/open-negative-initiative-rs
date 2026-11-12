@@ -54,6 +54,7 @@ impl Ctl {
         land: impl FnOnce(&Rc<Ctl>, T) + Send + 'static,
     ) {
         self.state.borrow_mut().org.disk_busy = Some(busy.to_owned());
+        self.reads_held();
         let said = busy.to_owned();
         let flight = Flight::new();
         let spawned = std::thread::Builder::new().name("disk gesture".into()).spawn(move || {
@@ -69,11 +70,13 @@ impl Ctl {
                     Ok(done) => land(c, done),
                     Err(_) => c.told(&said, tr("It stopped halfway: read the folder again to see where each file is.")),
                 }
+                c.reads_freed();
             });
         });
         if spawned.is_err() {
             self.state.borrow_mut().org.disk_busy = None;
             self.told(busy, tr("It could not start: nothing was changed."));
+            self.reads_freed();
         }
     }
 
@@ -90,11 +93,24 @@ impl Ctl {
         };
         self.closed_if_trashed();
         let busy = if date.is_some() { tr("Moving to the ONI Trash") } else { tr("Restoring from the ONI Trash") };
-        let run = targets.clone();
-        self.on_disk(busy, move || oni_core::store::mark_run(&run, date, &|p: &Path| mosaic(p)), move |c, outcome| c.marks_landed(title, &targets, &outcome, date));
+        let (run, apart) = (targets.clone(), self.reread_apart());
+        let marked = move || {
+            let outcome = oni_core::store::mark_run(&run, date, &|p: &Path| mosaic(p));
+            (outcome, apart(&run))
+        };
+        self.on_disk(busy, marked, move |c, (outcome, reread)| c.marks_landed(title, &targets, &outcome, date, reread));
     }
 
-    fn marks_landed(self: &Rc<Self>, title: &str, targets: &[String], outcome: &oni_library::trash::Outcome, date: Option<oni_settings::Date>) {
+    /// `library::reread` for a gesture's thread, on a connection of its own, of the folder open now.
+    fn reread_apart(&self) -> impl FnOnce(&[String]) -> library::Reread + Send + 'static {
+        let (index_path, opened) = {
+            let s = self.state.borrow();
+            (s.index_path.clone(), s.opened.clone())
+        };
+        move |paths| LibraryIndex::open(&index_path).map(|index| library::reread(&index, paths, opened.as_deref())).unwrap_or_default()
+    }
+
+    fn marks_landed(self: &Rc<Self>, title: &str, targets: &[String], outcome: &oni_library::trash::Outcome, date: Option<oni_settings::Date>, reread: library::Reread) {
         let (failure, frames, folder) = {
             let mut s = self.state.borrow_mut();
             let folder = s.org.restore_told.take().filter(|(_, asked)| asked == targets).map(|(f, _)| f);
@@ -112,7 +128,7 @@ impl Ctl {
             let said = trn("One photo of “{folder}” is back in its folder.", "{n} photos of “{folder}” are back in their folder.", frames as u64);
             self.told_step(title, &said.replace("{folder}", &oni_library::paths::name(&folder)));
         }
-        self.landed(targets);
+        self.landed_with(targets, Some(reread));
         if date.is_none() {
             let gone: HashSet<String> = targets.iter().cloned().collect();
             self.state.borrow_mut().trash_picks.forget(&gone);
@@ -124,10 +140,15 @@ impl Ctl {
     pub(in crate::app) fn walk_off_thread(self: &Rc<Self>, title: &'static str, walk: roll_folder::Walk, touched: Vec<String>) {
         let undoing = walk.undoing;
         let busy = if undoing { tr("Putting the photos back") } else { tr("Moving the photos into the roll again") };
-        self.on_disk(busy, move || roll_folder::walk(&walk, &roll_folder::rename_new), move |c, walked| c.walked(title, undoing, &touched, walked));
+        let (read, apart) = (touched.clone(), self.reread_apart());
+        let run = move || {
+            let walked = roll_folder::walk(&walk, &roll_folder::rename_new);
+            (walked, apart(&read))
+        };
+        self.on_disk(busy, run, move |c, (walked, reread)| c.walked(title, undoing, &touched, walked, reread));
     }
 
-    fn walked(self: &Rc<Self>, title: &str, undoing: bool, touched: &[String], walked: Walked) {
+    fn walked(self: &Rc<Self>, title: &str, undoing: bool, touched: &[String], walked: Walked, reread: library::Reread) {
         if walked.refused
             && let Some(store) = self.state.borrow_mut().store.editor()
         {
@@ -136,7 +157,7 @@ impl Ctl {
         if let Some(message) = &walked.said {
             self.told_with(title, message, walked.left_in.clone());
         }
-        self.landed(touched);
+        self.landed_with(touched, Some(reread));
         if !walked.made.is_empty() {
             self.followed(&walked.made);
         }
