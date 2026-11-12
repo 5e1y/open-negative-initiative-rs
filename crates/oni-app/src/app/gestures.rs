@@ -21,7 +21,7 @@ impl Ctl {
 impl State {
     pub(in crate::app) fn targets_in(&self, gallery: bool) -> Vec<String> {
         if self.picks.selection.is_empty() {
-            return self.open.clone().filter(|_| !gallery).into_iter().collect();
+            return self.open_path().map(str::to_string).filter(|_| !gallery).into_iter().collect();
         }
         self.selected()
     }
@@ -29,7 +29,7 @@ impl State {
     /// How many photos a gesture reaches now, the bar's and the menus' count alike.
     pub(in crate::app) fn target_count(&self, gallery: bool) -> usize {
         match self.picks.selection.len() {
-            0 => usize::from(self.open.is_some() && !gallery),
+            0 => usize::from(self.frame.is_some() && !gallery),
             n => n,
         }
     }
@@ -73,7 +73,7 @@ impl Ctl {
         self.publish(false);
         let reread = reread.unwrap_or_else(|| self.state.borrow().reread_here(touched));
         self.reread_landed(touched, reread);
-        let open = self.state.borrow().open.clone();
+        let open = self.state.borrow().open_path().map(str::to_string);
         for path in touched.iter().filter(|p| Some(*p) != open.as_ref()) {
             self.redraw(path);
         }
@@ -82,18 +82,11 @@ impl Ctl {
     /// `took(_:at:)`: a trashed open frame leaves the editor, which falls back on the gallery.
     pub(super) fn closed_if_trashed(self: &Rc<Self>) {
         let closed = {
-            let mut s = self.state.borrow_mut();
-            let held = s.store.path().map(str::to_string);
-            match held {
-                None if s.open.is_some() => {
-                    s.open = None;
-                    s.negative = None;
-                    true
-                }
-                _ => false,
-            }
+            let s = self.state.borrow();
+            s.store.path().is_none() && s.frame.is_some()
         };
         if closed {
+            self.close_frame();
             self.leave_editor();
             self.blank_canvas();
         }
@@ -164,7 +157,9 @@ impl Ctl {
         {
             // A full resolution under way keeps its mark: its landing clears it and drops what lands here.
             let mut s = self.state.borrow_mut();
-            s.full = None;
+            if let Some(f) = s.frame.as_mut() {
+                f.release_full();
+            }
             s.gpu.current = None;
         }
         if let Ok(mut engine) = self.engine.lock() {
@@ -203,7 +198,7 @@ impl Ctl {
     pub(super) fn show_selected(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            let at = s.open.as_ref().and_then(|p| s.order.iter().position(|o| o == p)).or_else(|| s.order.iter().position(|o| s.picks.selection.contains(o)));
+            let at = s.open_path().and_then(|p| s.order.iter().position(|o| o == p)).or_else(|| s.order.iter().position(|o| s.picks.selection.contains(o)));
             let Some(at) = at else { return };
             if let Some(top) = s.layout.reveal(at, s.scroll, s.grid.1) {
                 s.scroll = top;
@@ -243,7 +238,7 @@ impl Ctl {
         self.board_in();
         let check = {
             let mut s = self.state.borrow_mut();
-            let Some(open) = s.open.clone() else { return };
+            let Some(open) = s.open_path().map(str::to_string) else { return };
             let roll = s.store.settings().roll_reference.is_some();
             let store = &mut s.store;
             if !store.has_copied_settings() {
@@ -263,7 +258,7 @@ impl Ctl {
         }
         let (touched, rewritten) = {
             let mut s = self.state.borrow_mut();
-            let open = s.open.clone();
+            let open = s.open_path().map(str::to_string);
             let store = &mut s.store;
             let key = store.roll_key();
             let rewritten = told::rewritten(store, oni_core::EditorStore::paste_to_roll);
@@ -284,7 +279,7 @@ impl Ctl {
     pub(super) fn paste_framing_to_roll(self: &Rc<Self>) {
         let targets: Vec<String> = {
             let mut s = self.state.borrow_mut();
-            let Some(open) = s.open.clone() else { return };
+            let Some(open) = s.open_path().map(str::to_string) else { return };
             let store = &mut s.store;
             let members = store.roll_key().map(|k| store.measured_with(k)).unwrap_or_default();
             std::iter::once(open.clone()).chain(members.into_iter().filter(|m| *m != open)).collect()
@@ -309,7 +304,7 @@ impl Ctl {
         let beside = self.window().is_some_and(|w| !w.global::<App>().get_gallery());
         let next = if beside { self.state.borrow().after_trash(&targets) } else { None };
         self.move_paths_to_trash(&targets);
-        if let Some(next) = next.filter(|_| self.state.borrow().open.is_none()) {
+        if let Some(next) = next.filter(|_| self.state.borrow().frame.is_none()) {
             self.state.borrow_mut().designate(&next);
             self.open_photo(&next);
             if let Some(w) = self.window() {

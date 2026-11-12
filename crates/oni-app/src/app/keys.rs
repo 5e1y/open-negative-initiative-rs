@@ -143,7 +143,7 @@ impl Ctl {
         }
         let solo = {
             let s = self.state.borrow();
-            if gallery { s.picks.cursor.clone().filter(|c| s.picks.selection.contains(c)).or_else(|| s.selected().first().cloned()) } else { s.open.clone() }
+            if gallery { s.picks.cursor.clone().filter(|c| s.picks.selection.contains(c)).or_else(|| s.selected().first().cloned()) } else { s.open_path().map(str::to_string) }
         };
         let Some(path) = solo else { return };
         {
@@ -176,5 +176,5 @@ fn column_whole(s: &State) -> HashSet<String> {
         .flatten()
         .filter_map(|paths| Some((oni_library::paths::parent(paths.first()?), paths)))
         .collect();
-    crate::picking::column_select_all(&groups, &s.picks.selection, None, s.open.as_deref())
+    crate::picking::column_select_all(&groups, &s.picks.selection, None, s.open_path())
 }

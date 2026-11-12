@@ -177,7 +177,8 @@ impl Ctl {
         let shown = self.picture_plots();
         let again = {
             let mut s = self.state.borrow_mut();
-            let was = std::mem::replace(&mut s.requests.plots, shown);
+            let Some(f) = s.frame.as_mut() else { return };
+            let was = std::mem::replace(&mut f.requests.plots, shown);
             let again = shown.iter().zip(was).any(|(now, before)| *now && !before);
             if again && !was.contains(&true) {
                 s.render_anew();
@@ -206,11 +207,12 @@ impl Ctl {
         };
         let inputs = {
             let mut s = self.state.borrow_mut();
-            if s.requests.inputs_drawn == Some(focus) {
+            let Some(f) = s.frame.as_mut() else { return };
+            if f.requests.inputs_drawn == Some(focus) {
                 return;
             }
-            s.requests.inputs_drawn = Some(focus);
-            s.requests.inputs.clone()
+            f.requests.inputs_drawn = Some(focus);
+            f.requests.inputs.clone()
         };
         let (levels, curves) = (crate::editors::size(self, Plot::LevelsHistogram), crate::editors::size(self, Plot::Curves));
         let Some(i) = inputs else {
@@ -239,7 +241,9 @@ impl Ctl {
     pub(crate) fn plot_resized(&self, plot: Plot) {
         match plot {
             Plot::Curves | Plot::LevelsHistogram => {
-                self.state.borrow_mut().requests.inputs_drawn = None;
+                if let Some(f) = self.state.borrow_mut().frame.as_mut() {
+                    f.requests.inputs_drawn = None;
+                }
                 self.publish_inputs();
             }
             Plot::Saturation => self.state.borrow_mut().histogram_dirty = true,

@@ -38,7 +38,7 @@ impl Ctl {
         }
         let (path, negative, settings, screen, placing) = {
             let s = self.state.borrow();
-            let Some((path, negative)) = s.negative.clone() else { return };
+            let Some((path, negative)) = s.decoded() else { return };
             if s.open_path() != Some(path.as_str()) || s.hands.load(Ordering::Relaxed) > 0 {
                 return;
             }

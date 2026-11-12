@@ -84,7 +84,7 @@ impl Ctl {
             let s = self.state.borrow();
             let path = match &s.org.project_ring {
                 Some(ProjectNode::Photo { path, .. }) => Some(path.clone()),
-                _ => s.open.clone(),
+                _ => s.open_path().map(str::to_string),
             };
             path.and_then(|path| s.project_of(&path).map(|project| ProjectNode::Photo { path, project }))
         };

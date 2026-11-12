@@ -30,7 +30,7 @@ impl Ctl {
     pub(in crate::app) fn watch_histogram(&self) {
         let Some(wait) = ({
             let s = self.state.borrow();
-            s.gpu.count_wait(&s.requests.count)
+            s.frame.as_ref().and_then(|f| s.gpu.count_wait(&f.requests.count))
         }) else {
             return;
         };
@@ -50,20 +50,24 @@ impl Ctl {
             let landed = {
                 let mut guard = self.state.borrow_mut();
                 let s = &mut *guard;
-                s.gpu.landed(&mut s.requests.count)
+                // With no frame open the device is polled all the same, a count left in flight read and dropped.
+                let mut none = crate::app::canvas_gpu::Counting::default();
+                let counting = s.frame.as_mut().map_or(&mut none, |f| &mut f.requests.count);
+                s.gpu.landed(counting)
             };
             self.watch_histogram();
-            let mut s = self.state.borrow_mut();
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
             let counted = landed.as_ref().map(|(_, at)| *at);
-            if let Some((h, _)) = landed {
-                s.requests.histogram = Some(h);
+            if let (Some((h, _)), Some(f)) = (landed, s.frame.as_mut()) {
+                f.requests.histogram = Some(h);
                 s.histogram_dirty = true;
             }
             if !s.histogram_dirty {
                 return;
             }
             s.histogram_dirty = false;
-            (s.requests.histogram.clone(), counted)
+            (s.histogram().cloned(), counted)
         };
         // Only the plots on screen are traced; one hidden is traced again as it shows.
         let shown = self.picture_plots();

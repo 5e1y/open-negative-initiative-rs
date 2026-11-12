@@ -94,7 +94,7 @@ impl Ctl {
     pub(super) fn render_previews(self: &Rc<Self>, targets: Vec<Target>, generation: u64, pass: Arc<AtomicU64>) {
         let (engine, previews, screen, open) = {
             let s = self.state.borrow();
-            (self.engine.clone(), s.previews.clone(), s.screen, s.negative.clone())
+            (self.engine.clone(), s.previews.clone(), s.screen, s.decoded())
         };
         let room = self.export.borrow().room.clone();
         let (targets, next, asked) = (Arc::new(targets), Arc::new(std::sync::atomic::AtomicUsize::new(0)), std::time::Instant::now());

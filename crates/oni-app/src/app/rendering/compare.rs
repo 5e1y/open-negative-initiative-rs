@@ -17,7 +17,7 @@ impl Ctl {
             let (target, shown) = g.encode(g.before.as_ref().map(|(t, _)| t), (e.w, e.h), &view, &k, (e.w, e.h));
             let imported = shown.ok().flatten();
             if g.before.as_ref().is_none_or(|(_, kept)| kept.id() != before.id()) {
-                s.compare.befores += 1;
+                s.befores += 1;
             }
             s.gpu.before = Some((target, before));
             imported
@@ -33,7 +33,9 @@ impl Ctl {
     /// Compare's before laid where `placed` puts it on the canvas.
     pub(in crate::app) fn lay_before(&self, placed: Option<Placed>) {
         let Some(w) = self.window() else { return };
-        self.state.borrow_mut().compare.before_placed = placed;
+        if let Some(f) = self.state.borrow_mut().frame.as_mut() {
+            f.compare.before_placed = placed;
+        }
         let Some(p) = placed else { return };
         let (c, scale) = (w.global::<Canvas>(), f64::from(w.window().scale_factor()));
         c.set_before_x((p.x / scale) as f32);
@@ -44,21 +46,27 @@ impl Ctl {
 
     /// Compare Before/After on and off, the split at half the canvas.
     pub(in crate::app) fn toggle_compare(self: &Rc<Self>) {
-        let split = {
-            let mut s = self.state.borrow_mut();
-            s.compare.split = if s.compare.split.is_some() { None } else { Some(0.5) };
-            // The before is a texture the size of the view: Compare off lets it go.
-            if s.compare.split.is_none() {
-                s.gpu.before = None;
-            }
-            s.compare.split
+        let Some(split) = self.state.borrow_mut().frame.as_mut().map(|f| {
+            f.compare.split = if f.compare.split.is_some() { None } else { Some(0.5) };
+            f.compare.split
+        }) else {
+            return;
         };
+        self.show_split(split);
+        self.request_render();
+    }
+
+    /// The split on the canvas, none while Compare is off.
+    pub(in crate::app) fn show_split(&self, split: Option<f32>) {
+        // The before is a texture the size of the view: Compare off lets it go.
+        if split.is_none() {
+            self.state.borrow_mut().gpu.before = None;
+        }
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_split(split.unwrap_or(-1.0));
             if split.is_none() {
                 w.global::<Canvas>().set_before(Image::default());
             }
         }
-        self.request_render();
     }
 }

@@ -198,7 +198,7 @@ impl Ctl {
             let found = std::mem::take(&mut s.org.found).into_iter();
             s.org.found = found.map(|(m, at)| (oni_library::project::moved_member(&m, &pairs), oni_library::project::carried(&at, &pairs))).collect();
             // A photo that stays where it was is not opened again.
-            (s.open.as_deref().and_then(|p| moved(p).filter(|to| to != p)), folded, recorded)
+            (s.open_path().and_then(|p| moved(p).filter(|to| to != p)), folded, recorded)
         };
         if recorded {
             self.save_projects();

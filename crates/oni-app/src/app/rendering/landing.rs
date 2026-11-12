@@ -17,7 +17,7 @@ impl Ctl {
         let done = match done {
             Ok(d) => d,
             Err((path, e)) => {
-                if self.state.borrow().open_path().map(PathBuf::from) != Some(path.clone()) {
+                if self.state.borrow_mut().frame_for(&path.to_string_lossy()).is_none() {
                     return;
                 }
                 let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -25,9 +25,8 @@ impl Ctl {
             }
         };
         {
-            let s = self.state.borrow();
-            let current = s.open_path().map(PathBuf::from);
-            if current.as_ref() != Some(&done.path) || done.revision < s.requests.rendered {
+            let mut s = self.state.borrow_mut();
+            if s.frame_for(&done.path.to_string_lossy()).is_none_or(|f| done.revision < f.requests.rendered) {
                 return;
             }
         }
@@ -43,7 +42,9 @@ impl Ctl {
         }
         {
             let mut s = self.state.borrow_mut();
-            s.requests.rendered = done.revision.max(1);
+            if let Some(f) = s.frame.as_mut() {
+                f.requests.rendered = done.revision.max(1);
+            }
             s.renders += 1;
         }
         self.encode(done.picture, shown, None);
@@ -98,13 +99,14 @@ impl Ctl {
     /// The histogram's picture of the open frame, counted at the image's cadence; another photo's is dropped.
     fn counted_landed(&self, path: &Path, picture: oni_graph::Source) {
         {
-            let mut s = self.state.borrow_mut();
-            if s.open_path().map(Path::new) != Some(path) {
+            let mut guard = self.state.borrow_mut();
+            if guard.frame_for(&path.to_string_lossy()).is_none() {
                 return;
             }
-            let s = &mut *s;
-            if s.requests.count.take(picture, false) {
-                s.gpu.count_due(&mut s.requests.count);
+            let s = &mut *guard;
+            let Some(f) = s.frame.as_mut() else { return };
+            if f.requests.count.take(picture, false) {
+                s.gpu.count_due(&mut f.requests.count);
             }
         }
         self.watch_histogram();
@@ -114,14 +116,12 @@ impl Ctl {
     fn inputs_landed(&self, path: &Path, inputs: InputHistograms) {
         {
             let mut s = self.state.borrow_mut();
-            if s.open_path().map(Path::new) != Some(path) {
+            let Some(f) = s.frame_for(&path.to_string_lossy()) else { return };
+            if f.requests.inputs.as_ref() == Some(&inputs) {
                 return;
             }
-            if s.requests.inputs.as_ref() == Some(&inputs) {
-                return;
-            }
-            s.requests.inputs = Some(inputs);
-            s.requests.inputs_drawn = None;
+            f.requests.inputs = Some(inputs);
+            f.requests.inputs_drawn = None;
         }
         self.publish_inputs();
     }
@@ -135,7 +135,7 @@ impl Ctl {
             (Some(p), _) => (p.x, p.y, p.width, p.height),
             (None, Some(view)) => {
                 let s = self.state.borrow();
-                s.viewport.placement(super::placeholder::guessed_full((size.0 as f64, size.1 as f64), s.full_size), view).image
+                s.viewport.placement(super::placeholder::guessed_full((size.0 as f64, size.1 as f64), s.full_size()), view).image
             }
             (None, None) => return,
         };
@@ -143,15 +143,14 @@ impl Ctl {
         let c = w.global::<Canvas>();
         // A render landing where the last one lay, as every notch's does, moves nothing to publish.
         let at = [rect.0, rect.1, rect.2, rect.3].map(|v| (v / scale) as f32);
-        let unmoved = placed.is_some() && self.state.borrow().placed == placed && at == [c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height()];
+        let unmoved = placed.is_some() && self.state.borrow().placed() == placed && at == [c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height()];
         if unmoved {
             return;
         }
-        {
-            let mut s = self.state.borrow_mut();
-            s.placed = placed;
+        if let Some(f) = self.state.borrow_mut().frame.as_mut() {
+            f.placed = placed;
             if let Some(p) = placed {
-                s.full_size = Some(p.full);
+                f.full_size = Some(p.full);
             }
         }
         crate::hz::changed();
@@ -164,7 +163,7 @@ impl Ctl {
             match (placed, self.canvas_size()) {
                 (Some(p), Some(size)) => {
                     let current = s.viewport.effective_scale(p.full, size);
-                    let ratio = s.negative.as_ref().filter(|(_, n)| n.full_width > 0.0).map_or(1.0, |(_, n)| f64::from(n.size().0) / n.full_width);
+                    let ratio = s.negative().filter(|n| n.full_width > 0.0).map_or(1.0, |n| f64::from(n.size().0) / n.full_width);
                     let enlarged = viewport::enlarged(current, ratio, p.at_full_resolution);
                     Some((viewport::zoom_label(current), enlarged, s.viewport.rung(-1, p.full, size).is_some(), s.viewport.rung(1, p.full, size).is_some()))
                 }
@@ -204,7 +203,7 @@ impl Ctl {
             let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
             g.seed = g.seed.wrapping_add(1);
             let seed = g.seed;
-            let k = grounded(s, zebra(s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas));
+            let k = grounded(s, zebra(s, Params::new(screen, wd, ht, seed), s.placed(), wd, canvas));
             let g = &mut s.gpu;
             let (target, encoded) = g.encode(g.target.as_ref(), (bw, bh), &source, &k, (wd, ht));
             let imported = match encoded {
@@ -219,10 +218,12 @@ impl Ctl {
             };
             g.current = Some(picture);
             // The histogram describes the whole picture at one size, never the zoom's part of it.
-            if let Some(picture) = counted {
-                s.requests.count.take(picture, true);
+            if let Some(f) = s.frame.as_mut() {
+                if let Some(picture) = counted {
+                    f.requests.count.take(picture, true);
+                }
+                s.gpu.count_due(&mut f.requests.count);
             }
-            s.gpu.count_due(&mut s.requests.count);
             (imported, shown, (wd, ht))
         };
         self.watch_histogram();

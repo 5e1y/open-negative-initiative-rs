@@ -165,7 +165,7 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             s.dust.detecting = false;
-            let current = s.open_path().is_some_and(|p| Read::of(p, s.store.settings()) == read);
+            let current = s.frame_for(&read.path).is_some() && Read::of(&read.path, s.store.settings()) == read;
             match result {
                 Ok((reading, placing)) => {
                     let count = reading.at(s.dust.sensitivity).len();

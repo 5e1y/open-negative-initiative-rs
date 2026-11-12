@@ -7,10 +7,17 @@ impl State {
     /// The canvas asked again at the next render though no setting moved, one frame or frames together:
     /// a proof, a table or a measure changed what they show.
     pub(in crate::app) fn render_anew(&mut self) {
-        self.requests.requested_view = None;
+        self.ask_view_again();
         self.loupe.anew();
         if let Some(g) = self.together.as_mut() {
             g.anew();
+        }
+    }
+
+    /// The open frame's view asked again at the next render, a hovered preset's included.
+    pub(in crate::app) fn ask_view_again(&mut self) {
+        if let Some(f) = self.frame.as_mut() {
+            f.requests.requested_view = None;
         }
     }
 }
@@ -28,15 +35,17 @@ impl Ctl {
         let size = self.canvas_size();
         let cropping = self.cropping();
         let (job, wants_full, heal) = {
-            let mut s = self.state.borrow_mut();
-            let Some(path) = s.open_path().map(str::to_string) else { return };
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            let Some(f) = s.frame.as_ref() else { return };
+            let path = f.path.clone();
             let revision = s.store.revision();
             let moved_at = s.moved_at.take();
-            let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let coarse = s.requests.hand.running();
-            let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.compare.split.is_some(), cropping, coarse));
-            let moved = revision != s.requests.requested || s.requests.rendered == 0;
-            if !moved && view_key == s.requests.requested_view {
+            let full = f.full.clone();
+            let coarse = f.requests.hand.running();
+            let view_key = size.map(|size| (s.viewport, size, full.is_some(), f.compare.split.is_some(), cropping, coarse));
+            let moved = revision != f.requests.requested || f.requests.rendered == 0;
+            if !moved && view_key == f.requests.requested_view {
                 return;
             }
             // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
@@ -44,24 +53,26 @@ impl Ctl {
             if cropping {
                 live.geometry = live.geometry.without_crop();
             }
-            if s.requests.rendered != 0 && view_key == s.requests.requested_view && s.requests.requested_live.as_ref() == Some(&live) {
-                s.requests.requested = revision;
+            let Some(f) = s.frame.as_mut() else { return };
+            if f.requests.rendered != 0 && view_key == f.requests.requested_view && f.requests.requested_live.as_ref() == Some(&live) {
+                f.requests.requested = revision;
                 return;
             }
             // A pan `navigate` already laid asks no render while the picture rendered, its margin around the
             // view included, still covers all the view shows: on a 5K canvas each render is 15 MP or more.
             let laid = |k: &Option<(Viewport, (f64, f64), bool, bool, bool, bool)>| k.map(|(v, size, full, split, crop, coarse)| (v.scale, size, full, split, crop, coarse));
-            let covered = size.zip(s.placed).is_some_and(|(size, p)| s.viewport.placement(p.full, size).covered_by((p.x, p.y, p.width, p.height)));
-            if !moved && covered && laid(&view_key) == laid(&s.requests.requested_view) && s.requests.requested_live.as_ref() == Some(&live) {
-                s.requests.requested_view = view_key;
+            let covered = size.zip(f.placed).is_some_and(|(size, p)| s.viewport.placement(p.full, size).covered_by((p.x, p.y, p.width, p.height)));
+            if !moved && covered && laid(&view_key) == laid(&f.requests.requested_view) && f.requests.requested_live.as_ref() == Some(&live) {
+                f.requests.requested_view = view_key;
                 return;
             }
-            let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
-            s.requests.requested = revision;
-            s.requests.requested_view = view_key;
-            s.requests.requested_live = Some(live.clone());
+            let Some(negative) = f.negative.clone() else { return };
+            f.requests.requested = revision;
+            f.requests.requested_view = view_key;
+            f.requests.requested_live = Some(live.clone());
+            let (first, comparing, counted) = (f.requests.rendered == 0, f.compare.split.is_some(), f.requests.plots.contains(&true));
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
-            let (kind, asked) = if s.requests.rendered == 0 {
+            let (kind, asked) = if first {
                 (Kind::Open, s.opened_at)
             } else if moved {
                 (Kind::Notch, moved_at.unwrap_or_else(Instant::now))
@@ -84,10 +95,9 @@ impl Ctl {
             });
             // On the Settings' choice the full resolution is built as the photo opens; every render reads it once built.
             let wants_full = full.is_none() && (unhealed || render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed));
-            let reference = s.compare.split.map(|_| oni_core::compare::reference(&live));
+            let reference = comparing.then(|| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
             let held = kind == Kind::Notch;
-            let counted = s.requests.plots.contains(&true);
             (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held, counted }, wants_full, heal)
         };
         self.worker.submit(job);
@@ -106,11 +116,11 @@ impl Ctl {
     pub(in crate::app) fn ensure_full(self: &Rc<Self>) -> Option<oni_graph::Source> {
         let asked = {
             let mut s = self.state.borrow_mut();
-            let path = s.open_path()?.to_string();
-            if let Some((_, full)) = s.full.as_ref().filter(|(p, _)| *p == path) {
+            let f = s.frame.as_ref()?;
+            if let Some(full) = &f.full {
                 return Some(full.clone());
             }
-            let decoded = s.negative.as_ref().is_some_and(|(p, _)| *p == path);
+            let (path, decoded) = (f.path.clone(), f.negative.is_some());
             if !decoded || s.building_full.is_some() || s.full_failed.contains(&path) {
                 return None;
             }
@@ -156,7 +166,7 @@ impl Ctl {
             }
             let took = started.elapsed();
             with_shell(move |c| {
-                let open = c.state.borrow().open_path() == Some(path.as_str());
+                let open = c.state.borrow_mut().frame_for(&path).is_some();
                 {
                     let mut s = c.state.borrow_mut();
                     s.dust.healing.remove(&path);
@@ -187,7 +197,7 @@ impl Ctl {
     fn patch_landed(self: &Rc<Self>, path: &str, one: Made) {
         {
             let mut s = self.state.borrow_mut();
-            if s.open_path() != Some(path) {
+            if s.frame_for(path).is_none() {
                 s.dust.patched.insert(one.0);
                 return;
             }
@@ -239,7 +249,11 @@ impl Ctl {
                     }
                     let current = editing && s.wants(&path, &reading);
                     match built {
-                        Some(Ok(full)) if current => s.full = Some((path, full)),
+                        Some(Ok(full)) if current => {
+                            if let Some(f) = s.frame_for(&path) {
+                                f.full = Some(full);
+                            }
+                        }
                         Some(Ok(_)) | None => {}
                         Some(Err(e)) => {
                             timing::line(&format!("full resolution not built: {e}"));

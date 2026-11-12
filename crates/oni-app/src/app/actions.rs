@@ -33,7 +33,7 @@ impl Ctl {
             }
             Act::Smaller | Act::Larger => self.step_zoom(if action == Act::Larger { 1 } else { -1 }),
             Act::Fit => self.navigate(|v, _, _| v.fit()),
-            Act::Compare if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
+            Act::Compare if !app.get_gallery() && self.state.borrow().frame.is_some() => self.toggle_compare(),
             Act::ScreenGamut => {
                 self.toggle_screen_gamut();
                 self.gamut_kept();
@@ -51,8 +51,8 @@ impl Ctl {
                 self.publish_dedust();
             }
             Act::BiggerBrush | Act::SmallerBrush => {}
-            Act::Correction if self.state.borrow().open.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::DEDUST),
-            Act::Framing if self.state.borrow().open.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::CROP),
+            Act::Correction if self.state.borrow().frame.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::DEDUST),
+            Act::Framing if self.state.borrow().frame.is_some() && !self.together_shown() => self.toggle_tool(crate::tabs::CROP),
             Act::CancelTool => {
                 self.cancel_frame_tools();
             }

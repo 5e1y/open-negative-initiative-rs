@@ -20,13 +20,13 @@ impl Ctl {
         let Some(size) = self.canvas_size() else { return };
         let moved = {
             let mut s = self.state.borrow_mut();
-            let Some(full) = s.full_size else { return };
+            let Some(full) = s.full_size() else { return };
             let before = s.viewport;
             change(&mut s.viewport, full, size);
             if s.viewport == before {
                 return;
             }
-            s.placed.map(|p| {
+            s.placed().map(|p| {
                 let r = super::resizing::followed((p.x, p.y, p.width, p.height), before.placement(p.full, size).image, s.viewport.placement(p.full, size).image);
                 Placed { x: r.0, y: r.1, width: r.2, height: r.3, ..p }
             })
@@ -42,11 +42,13 @@ impl Ctl {
     pub(in crate::app) fn by_hand(self: &Rc<Self>, change: impl FnOnce(&mut Viewport, (f64, f64), (f64, f64))) {
         // One timer restarted at each move is the only clock: stopped before its call runs, the call asks sharp.
         let me = Rc::downgrade(self);
-        self.state.borrow().requests.hand.start(slint::TimerMode::SingleShot, SETTLE, move || {
-            if let Some(me) = me.upgrade() {
-                me.request_render();
-            }
-        });
+        if let Some(f) = self.state.borrow().frame.as_ref() {
+            f.requests.hand.start(slint::TimerMode::SingleShot, SETTLE, move || {
+                if let Some(me) = me.upgrade() {
+                    me.request_render();
+                }
+            });
+        }
         self.navigate(change);
     }
 
@@ -54,7 +56,7 @@ impl Ctl {
     pub(in crate::app) fn step_zoom(self: &Rc<Self>, by: i32) {
         let rung = {
             let s = self.state.borrow();
-            let (Some(full), Some(size)) = (s.full_size, self.canvas_size()) else { return };
+            let (Some(full), Some(size)) = (s.full_size(), self.canvas_size()) else { return };
             s.viewport.rung(by, full, size)
         };
         if let Some(rung) = rung {

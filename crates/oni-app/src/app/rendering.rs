@@ -14,8 +14,8 @@ mod resizing;
 pub(in crate::app) use asking::Latest;
 pub(in crate::app) use resizing::resizing;
 
-/// What the canvas asked of the open frame and was given: reset whole when another frame opens or
-/// Edit Together closes, so nothing of one frame's renders stands under the next.
+/// What the canvas asked of the open frame and was given: each frame opened has its own, and Edit
+/// Together closing resets it, so nothing of one frame's renders stands under the next.
 #[derive(Default)]
 pub(in crate::app) struct Requests {
     pub rendered: u64,
@@ -37,12 +37,11 @@ pub(in crate::app) struct Requests {
     pub count: super::canvas_gpu::Counting,
 }
 
-/// Compare Before/After: the split, a fraction of the canvas's width (none while off), where the
-/// before lies, and how many distinct befores were encoded, which a kept one does not add to.
+/// Compare Before/After: the split, a fraction of the canvas's width (none while off), and where the
+/// before lies.
 #[derive(Default)]
 pub(in crate::app) struct Compare {
     pub split: Option<f32>,
     pub before_placed: Option<Placed>,
-    pub befores: usize,
 }
 

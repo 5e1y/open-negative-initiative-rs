@@ -44,7 +44,7 @@ impl State {
     /// A hand moving them moves its roll's with them.
     pub(in crate::app) fn open_bearing(&self) -> String {
         let s = self.store.settings();
-        format!("{:?}", self.open.as_ref().map(|p| (p, s.separation_family, unmixed(s), measured_or_slide(s))))
+        format!("{:?}", self.open_path().map(|p| (p, s.separation_family, unmixed(s), measured_or_slide(s))))
     }
 
     /// The photos a folder's marker gathers: every frame lying in it, passes and trashed photos aside.
@@ -137,7 +137,7 @@ impl Ctl {
             let last = s.org.frames.as_ref().filter(|(held, _)| held.0 == key.0).and_then(|(_, read)| read.clone());
             s.org.frames = Some((key.clone(), last.clone()));
             s.org.frames_due = false;
-            let open = s.open.clone().map(|p| (p, s.store.settings().clone()));
+            let open = s.open_path().map(str::to_string).map(|p| (p, s.store.settings().clone()));
             (key, s.store.mosaic_rule(), open, last)
         };
         let frames = frames.to_vec();

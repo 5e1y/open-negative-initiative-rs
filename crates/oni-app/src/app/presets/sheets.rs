@@ -6,7 +6,7 @@ impl Ctl {
     /// `savePreset`: the sheet opens on the first free name and the rows the photo moved; never
     /// over an open sheet, whose edit it would drop.
     pub(in crate::app) fn save_preset(self: &Rc<Self>) {
-        if self.state.borrow().open.is_none() || self.state.borrow().shelf_form_open() {
+        if self.state.borrow().frame.is_none() || self.state.borrow().shelf_form_open() {
             return;
         }
         self.clear_hover();
@@ -24,7 +24,7 @@ impl Ctl {
     /// Copy Settings: the sheet on the boxes the last copy carried, the look's all at first, for the
     /// photo `from` or the open one, never over an open sheet; told not to ask again, those at once.
     pub(in crate::app) fn ask_copy(self: &Rc<Self>, from: Option<String>) {
-        if (from.is_none() && self.state.borrow().open.is_none()) || self.state.borrow().shelf_form_open() {
+        if (from.is_none() && self.state.borrow().frame.is_none()) || self.state.borrow().shelf_form_open() {
             return;
         }
         let (rows, at_once) = {

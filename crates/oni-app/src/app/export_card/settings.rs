@@ -43,8 +43,10 @@ impl Ctl {
     pub(super) fn reproof(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            s.requests.requested = u64::MAX;
-            s.requests.requested_live = None;
+            if let Some(f) = s.frame.as_mut() {
+                f.requests.requested = u64::MAX;
+                f.requests.requested_live = None;
+            }
             s.render_anew();
         }
         self.request_render();

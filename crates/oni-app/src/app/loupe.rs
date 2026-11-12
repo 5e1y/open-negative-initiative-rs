@@ -49,7 +49,7 @@ fn render_loupes(engine: crate::render::Shared) {
         let (_, viewport, drawable, m, _, _) = key;
         let made = engine.lock().and_then(|mut e| e.loupe(&full, &settings, &viewport, drawable, m)).map(|laid| laid.map(|(source, _)| source));
         with_shell(move |c| {
-            let open = c.state.borrow().open_path() == Some(path.as_str());
+            let open = c.state.borrow_mut().frame_for(&path).is_some();
             match made {
                 Ok(Some(source)) if open => c.show_loupe(&source, m, key),
                 Ok(_) => {}
@@ -80,14 +80,14 @@ impl Ctl {
     /// The Details tab open on a photo in the editor.
     fn loupe_wanted(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 3 && self.state.borrow().open.is_some()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 3 && self.state.borrow().frame.is_some()
     }
 
     /// Asks the loupe's render when what it shows has changed; the full frame is built first.
     pub(super) fn request_loupe(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
         let band = w.global::<DetailLoupe>();
-        band.set_ratio_shown(self.state.borrow().open.is_some());
+        band.set_ratio_shown(self.state.borrow().frame.is_some());
         if !self.loupe_wanted() {
             return;
         }

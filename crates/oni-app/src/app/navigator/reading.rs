@@ -136,7 +136,7 @@ impl Ctl {
         let gallery = w.global::<App>().get_gallery();
         {
             let mut s = self.state.borrow_mut();
-            let current = if gallery { None } else { s.open.as_deref().map(paths::parent) };
+            let current = if gallery { None } else { s.open_path().map(paths::parent) };
             if current == s.nav.current {
                 return;
             }

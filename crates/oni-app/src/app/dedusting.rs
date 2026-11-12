@@ -18,7 +18,7 @@ impl Ctl {
     /// The De-dust pane open on a photo in the editor: a drag on the canvas paints.
     pub(super) fn painting(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 4 && self.state.borrow().open.is_some() && !self.together_shown()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 4 && self.state.borrow().frame.is_some() && !self.together_shown()
     }
 
     /// The brush, the corrections' rows and the canvas's marks from the open frame; a stroke's
@@ -29,7 +29,9 @@ impl Ctl {
         // Tiles, marks and strokes show in De-dust alone: a notch or a zoom elsewhere builds none of them.
         if !self.painting() {
             // A stroke goes with its overlay, whose release Slint never sends once the overlay is gone.
-            self.state.borrow_mut().painting_stroke.clear();
+            if let Some(f) = self.state.borrow_mut().frame.as_mut() {
+                f.painting_stroke.clear();
+            }
             c.set_painting(false);
             self.publish_found(None);
             c.set_space_held(false);
@@ -47,8 +49,8 @@ impl Ctl {
                     s.dust.next_number += 1;
                 }
             }
-            if let Some(f) = frame {
-                s.painting_stroke.relaid(f);
+            if let (Some(f), Some(open)) = (frame, s.frame.as_mut()) {
+                open.painting_stroke.relaid(f);
             }
             if s.dust.shown.is_some_and(|id| !corrections.iter().any(|c| c.id == id)) {
                 s.dust.shown = None;
@@ -76,7 +78,7 @@ impl Ctl {
             // One correction shown alone, its source with it; else every marker and no source at all.
             let shown = |c: &oni_settings::frame::Correction| s.dust.shown.is_none_or(|id| id == c.id);
             let sourced = |c: &&oni_settings::frame::Correction| s.dust.shown == Some(c.id);
-            let rendered = s.full_size;
+            let rendered = s.full_size();
             let marks: Vec<(f64, f64, f64, f64, usize)> = match (frame, rendered) {
                 (Some(f), Some(r)) => on_frame
                     .iter()
@@ -110,7 +112,8 @@ impl Ctl {
                 .collect();
             // A stroke stays painted until its patch lands, so the dust is never shown bare meanwhile.
             let waiting: Vec<Shape> = on_frame.iter().filter(|c| pending(c)).map(|c| (c.stroke.iter().map(|p| (p.x, p.y)).collect(), c.radius)).collect();
-            (rows, marks, s.brush, SharedString::from(s.painting_stroke.commands()), rendered, sources, lines, waiting)
+            let stroke = s.frame.as_ref().map(|f| SharedString::from(f.painting_stroke.commands())).unwrap_or_default();
+            (rows, marks, s.brush, stroke, rendered, sources, lines, waiting)
         };
         let d = w.global::<crate::Dedust>();
         let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
@@ -168,12 +171,13 @@ impl Ctl {
         let Some(f) = self.image_frame(false) else { return };
         let commands = {
             let mut s = self.state.borrow_mut();
+            let Some(stroke) = s.frame.as_mut().map(|o| &mut o.painting_stroke) else { return };
             if start {
-                s.painting_stroke.clear();
+                stroke.clear();
             }
             let p = ((f64::from(x) - f.0) / f.2, (f64::from(y) - f.1) / f.3);
             let on = (0.0..=1.0).contains(&p.0) && (0.0..=1.0).contains(&p.1);
-            (on && s.painting_stroke.push(p, f)).then(|| SharedString::from(s.painting_stroke.commands()))
+            (on && stroke.push(p, f)).then(|| SharedString::from(stroke.commands()))
         };
         if let Some(commands) = commands {
             w.global::<Canvas>().set_stroke(commands);
@@ -185,7 +189,7 @@ impl Ctl {
     pub(super) fn paint_end(self: &Rc<Self>) {
         let (mut stroke, radius, placing) = {
             let mut s = self.state.borrow_mut();
-            (s.painting_stroke.take(), s.brush, s.placing())
+            (s.frame.as_mut().map(|f| f.painting_stroke.take()).unwrap_or_default(), s.brush, s.placing())
         };
         let (Some(&(x, y)), Some(placing)) = (stroke.last(), placing) else { return self.publish_dedust() };
         if stroke.len() == 1 {
@@ -243,7 +247,7 @@ impl Ctl {
         }
         let due = {
             let s = self.state.borrow();
-            s.requests.rendered != 0 && ahead(self.painting(), s.opened_at.elapsed(), s.hands.load(Ordering::Relaxed) > 0)
+            s.rendered() != 0 && ahead(self.painting(), s.opened_at.elapsed(), s.hands.load(Ordering::Relaxed) > 0)
         };
         if due {
             self.ensure_full();

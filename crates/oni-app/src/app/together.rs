@@ -147,7 +147,7 @@ impl Ctl {
             return self.leave_together();
         }
         self.leave_landed();
-        let open = self.state.borrow().open.clone();
+        let open = self.state.borrow().open_path().map(str::to_string);
         let others = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         {
             let mut s = self.state.borrow_mut();
@@ -187,7 +187,7 @@ impl Ctl {
     pub(in crate::app) fn follow_selection(self: &Rc<Self>) {
         let (selected, open) = {
             let s = self.state.borrow();
-            (s.selected(), s.open.clone())
+            (s.selected(), s.open_path().map(str::to_string))
         };
         if selected.len() < 2 {
             if self.together_shown() {
@@ -197,7 +197,7 @@ impl Ctl {
             return;
         }
         let lead = open.filter(|o| selected.contains(o)).unwrap_or_else(|| selected[0].clone());
-        if self.state.borrow().open.as_deref() != Some(lead.as_str()) {
+        if self.state.borrow().open_path() != Some(lead.as_str()) {
             self.open_photo(&lead);
         }
         self.edit_together(selected);
@@ -220,7 +220,7 @@ impl Ctl {
         let whole = (window.2, window.3) == drawn;
         let placed = Placed { x: p.0 + x * k, y: p.1 + y * k, width: w * k, height: h * k, full, whole, at_full_resolution: true };
         self.lay(Some(placed), size);
-        if self.state.borrow().compare.split.is_some() {
+        if self.state.borrow().split().is_some() {
             self.lay_before(Some(placed));
         }
         self.publish_numbers(p, full.0);
@@ -244,10 +244,9 @@ impl Ctl {
         self.unnumbered();
         self.publish_readouts(Field::ALL);
         self.state.borrow_mut().viewport.fit();
-        {
-            let mut s = self.state.borrow_mut();
-            s.requests.rendered = 0;
-            s.requests.requested_view = None;
+        if let Some(f) = self.state.borrow_mut().frame.as_mut() {
+            f.requests.rendered = 0;
+            f.requests.requested_view = None;
         }
         self.publish_bar();
     }
@@ -260,7 +259,7 @@ impl Ctl {
     pub(in crate::app) fn render_together(self: &Rc<Self>) {
         let (revision, lead, open) = {
             let s = self.state.borrow();
-            (s.store.revision(), s.store.settings().clone(), s.open.clone())
+            (s.store.revision(), s.store.settings().clone(), s.open_path().map(str::to_string))
         };
         let live: HashMap<String, PipelineSettings> =
             self.state.borrow().store.together_live().into_iter().collect();
@@ -270,7 +269,7 @@ impl Ctl {
             (s.previewed(lead), live.into_iter().map(|(path, settings)| (path, s.previewed(settings))).collect::<HashMap<_, _>>())
         };
         let (view, viewport) = (self.canvas_size(), self.state.borrow().viewport);
-        let (hovered, comparing) = (self.state.borrow().shelf.hovered, self.state.borrow().compare.split.is_some());
+        let (hovered, comparing) = (self.state.borrow().shelf.hovered, self.state.borrow().split().is_some());
         let ask = (|| {
             let mut s = self.state.borrow_mut();
             let g = s.together.as_mut()?;
@@ -371,7 +370,7 @@ impl Ctl {
         let c = w.global::<Canvas>();
         let placed = self.lay_sheet((size, window, scale));
         // Compare turned off while the grid was drawn takes no before.
-        if let Some(before) = before.filter(|_| self.state.borrow().compare.split.is_some()) {
+        if let Some(before) = before.filter(|_| self.state.borrow().split().is_some()) {
             self.encode_before(before, placed);
         }
         let frame = format!("{count} frames together");

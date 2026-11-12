@@ -64,7 +64,7 @@ impl Ctl {
     pub(super) fn journal_settled(&self) {
         let (path, settings, before) = {
             let s = self.state.borrow();
-            let Some(path) = s.open.clone() else { return };
+            let Some(path) = s.open_path().map(str::to_string) else { return };
             let settings = s.store.settings().clone();
             let before = s.year.last.get(&path).cloned();
             (path, settings, before)

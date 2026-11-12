@@ -72,7 +72,7 @@ impl Ctl {
     pub(super) fn publish_masks(&self, panel: &PanelState, flat: &FlatField) {
         let (open, setting, loading) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.masking.setting, s.masking.loading)
+            (s.frame.is_some(), s.masking.setting, s.masking.loading)
         };
         panel.set_can_take_mask(open && !setting);
         panel.set_taking_mask(setting);
@@ -93,7 +93,7 @@ impl Ctl {
     fn take_mask(self: &Rc<Self>) {
         let (path, support) = {
             let mut s = self.state.borrow_mut();
-            let Some(path) = s.open.clone().filter(|_| !s.masking.setting) else { return };
+            let Some(path) = s.open_path().map(str::to_string).filter(|_| !s.masking.setting) else { return };
             s.masking.setting = true;
             // The decode reads the frame's sidecar: its passes and its encoding as the hand left them.
             let _ = s.store.flush();
@@ -111,7 +111,7 @@ impl Ctl {
         self.state.borrow_mut().masking.setting = false;
         self.masks_changed();
         match result {
-            Ok(entry) if self.state.borrow().open.as_deref() == Some(path) => {
+            Ok(entry) if self.state.borrow_mut().frame_for(path).is_some() => {
                 self.write_settings(|s| {
                     s.flat_field.mask = FlatFieldMask::Custom;
                     s.flat_field.custom = Some(entry.id.clone());
@@ -187,7 +187,7 @@ impl Ctl {
         self.let_go_all();
         let (was_open, neighbour, carried) = {
             let s = self.state.borrow();
-            let was_open = s.open.as_deref() == Some(path);
+            let was_open = s.open_path() == Some(path);
             let walked = s.lab_frames();
             let frames: Vec<&str> = walked.iter().map(|e| e.path.as_str()).collect();
             let at = frames.iter().position(|p| *p == path);
@@ -206,13 +206,12 @@ impl Ctl {
             self.say(tr("The photo could not be moved to FlatField Presets."));
             return;
         }
+        if was_open {
+            self.state.borrow_mut().store.close();
+            self.close_frame();
+        }
         {
             let mut s = self.state.borrow_mut();
-            if was_open {
-                s.store.close();
-                s.open = None;
-                s.negative = None;
-            }
             s.previews.lock().expect("previews").remove(path);
             s.rows.retain(|e| e.path != path);
             s.order.retain(|p| p != path);

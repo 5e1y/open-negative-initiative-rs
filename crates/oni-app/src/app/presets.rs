@@ -161,7 +161,7 @@ impl super::State {
 
     /// `propagationTargets`: the selection, else the open photo.
     pub(super) fn preset_targets(&self) -> Vec<String> {
-        if self.picks.selection.is_empty() { self.open.clone().into_iter().collect() } else { self.selected() }
+        if self.picks.selection.is_empty() { self.open_path().map(str::to_string).into_iter().collect() } else { self.selected() }
     }
 
     /// The open frame's settings as the canvas and the loupe show them, a hovered preset laid over.
@@ -175,7 +175,7 @@ impl super::State {
         let Some(preset) = self.shelf.hovered.and_then(|id| self.shelf.held.iter().find(|p| p.id == id)) else { return settings };
         let laid = presets::previewed(Some(preset), &settings);
         match &self.shelf.hover_balance {
-            Some((on, through, outcome)) if self.open.as_ref() == Some(on) && *through == settings && oni_core::parameters::auto_balances(&preset.parameters) => {
+            Some((on, through, outcome)) if self.open_path() == Some(on.as_str()) && *through == settings && oni_core::parameters::auto_balances(&preset.parameters) => {
                 balance::applied_outcome(outcome, &laid)
             }
             _ => laid,

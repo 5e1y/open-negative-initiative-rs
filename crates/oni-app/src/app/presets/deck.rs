@@ -14,7 +14,7 @@ impl Ctl {
             }
             s.shelf.hovered = id;
             // A new card asks the canvas again, whatever else stands still.
-            s.requests.requested_view = None;
+            s.ask_view_again();
         }
         self.measure_hover_balance();
         self.publish_presets();
@@ -29,7 +29,7 @@ impl Ctl {
                 return;
             }
             s.shelf.hovered = None;
-            s.requests.requested_view = None;
+            s.ask_view_again();
         }
         self.publish_presets();
         // Asked from the loop, as a shelf write reaches here without the shell's handle.
@@ -42,7 +42,7 @@ impl Ctl {
         let (path, through) = {
             let mut s = self.state.borrow_mut();
             let automatic = s.shelf.hovered.is_some_and(|id| s.shelf.held.iter().any(|p| p.id == id && oni_core::parameters::auto_balances(&p.parameters)));
-            let Some(path) = s.open.clone().filter(|_| automatic && !s.shelf.measuring) else { return };
+            let Some(path) = s.open_path().map(str::to_string).filter(|_| automatic && !s.shelf.measuring) else { return };
             let fresh = s.shelf.hover_balance.as_ref().is_some_and(|(on, through, _)| *on == path && through == s.store.settings());
             if fresh {
                 return;
@@ -57,7 +57,7 @@ impl Ctl {
                     let mut s = c.state.borrow_mut();
                     s.shelf.measuring = false;
                     // Dropped if a slider or the photo moved meanwhile: it would show a balance of settings gone.
-                    let moved = s.store.settings() != &through || s.open.as_deref() != Some(path.as_str());
+                    let moved = s.frame_for(&path).is_none() || s.store.settings() != &through;
                     if let Some(o) = outcome.filter(|_| !moved) {
                         s.shelf.hover_balance = Some((path, through, o));
                         s.render_anew();
@@ -100,7 +100,7 @@ impl Ctl {
         let (id, name, open) = {
             let s = self.state.borrow();
             let Some(p) = i.and_then(|i| s.shelf.held.get(i)) else { return false };
-            (p.id, p.name.clone(), s.open.is_some())
+            (p.id, p.name.clone(), s.frame.is_some())
         };
         self.state.borrow_mut().shelf.menu = Some(id);
         let lines: Vec<MenuLine> = CARD_MENU

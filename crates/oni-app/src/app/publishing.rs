@@ -69,7 +69,7 @@ impl Ctl {
         }
         let reread = edited && {
             let s = self.state.borrow();
-            s.open.is_some() && s.reading.as_ref().is_some_and(|r| *r != render::Reading::of(s.store.settings()))
+            s.frame.as_ref().is_some_and(|f| f.reading != render::Reading::of(s.store.settings()))
         };
         if reread {
             self.redecode();
@@ -98,7 +98,7 @@ impl Ctl {
         let (has_photo, single, targets, archive) = {
             let s = self.state.borrow();
             let archive = !s.org.projects_surface && !s.trash_shown();
-            (s.open.is_some(), s.together.is_none(), s.target_count(gallery), archive)
+            (s.frame.is_some(), s.together.is_none(), s.target_count(gallery), archive)
         };
         let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);

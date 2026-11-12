@@ -266,9 +266,9 @@ impl Ctl {
         let path = path.to_string();
         self.roll_of(picked, move |c, paths, left| {
             let still = {
-                let s = c.state.borrow();
                 let gallery = c.window().is_none_or(|w| w.global::<App>().get_gallery());
-                s.open.as_deref() == Some(path.as_str()) && s.store.settings().roll_reference.is_none() && !gallery && !s.prepare.shown
+                let mut s = c.state.borrow_mut();
+                s.frame_for(&path).is_some() && s.store.settings().roll_reference.is_none() && !gallery && !s.prepare.shown
             };
             if !still {
                 return;
