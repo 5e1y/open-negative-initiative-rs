@@ -100,6 +100,33 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     e.invoke_full_size();
     rig.settle();
     assert_eq!(export_card::lines(w)[0].date, "2026-09-14 16:46:19");
+    // Let go, the field shows the date the file will carry: words keep the last, a day takes midnight,
+    // and a cleared field writes none.
+    let settled = |typed: &str| {
+        e.invoke_edited(0, "date".into(), typed.into());
+        e.invoke_date_settled(0);
+        rig.settle();
+        export_card::lines(w)[0].date.to_string()
+    };
+    assert_eq!(settled("summer 1998"), "2026-09-14 16:46:19");
+    assert_eq!(settled("2026-09-15"), "2026-09-15 00:00:00");
+    assert_eq!(settled(""), "");
+    // Twin: a date left unsettled is kept, never yet shown again.
+    e.invoke_edited(0, "date".into(), "2026-09-14 16:46:19".into());
+    assert_eq!(export_card::lines(w)[0].date, "");
+    assert_eq!(settled("2026-09-14 16:46:19"), "2026-09-14 16:46:19");
+    // By hand: words typed over the date, which entering selects, keep it, and Return shows it again.
+    let field = || {
+        let found = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "Date").find(|e| e.accessible_role() == Some(Role::TextInput));
+        found.and_then(|e| e.accessible_value()).unwrap_or_default().to_string()
+    };
+    common::click(&rig, w, common::the(w, Role::TextInput, "Date").middle());
+    rig.key("summer 1998");
+    rig.settle();
+    assert_eq!(field(), "summer 1998", "twin: the words stand until let go");
+    rig.key(&slint::SharedString::from(slint::platform::Key::Return));
+    rig.settle();
+    assert_eq!(field(), "2026-09-14 16:46:19");
     presets_keep_the_rows_in_place(&rig, &shell);
     let _ = std::fs::remove_dir_all(&root);
 }

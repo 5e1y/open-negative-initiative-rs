@@ -21,7 +21,7 @@ fn frame() -> Result<Image, Failure> {
 
 fn export(source: &Path, path: &Path, ledger: &mut Ledger, replacing: bool) -> Result<(), Failure> {
     let to = Landing { path, ledger, replacing };
-    write(source, to, frame, &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default(), None)
+    write(source, to, frame, &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default())
 }
 
 fn is_jpeg(path: &Path) -> bool {
@@ -161,7 +161,7 @@ fn a_failed_export_keeps_the_previous_one() {
     // A render that fails writes nothing.
     let mut ledger = Ledger::in_support(&support);
     let to = Landing { path: &path, ledger: &mut ledger, replacing: true };
-    let failed = write(&source, to, || Err(Failure::Render), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default(), None);
+    let failed = write(&source, to, || Err(Failure::Render), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default());
     assert_eq!(failed, Err(Failure::Render));
     assert_eq!(std::fs::read(&path).unwrap(), before);
 
@@ -171,7 +171,7 @@ fn a_failed_export_keeps_the_previous_one() {
     bright.jpeg_quality = 0.3;
     let mut ledger = Ledger::in_support(&support);
     let to = Landing { path: &path, ledger: &mut ledger, replacing: true };
-    let refused = write(&source, to, frame, &PaperCorrection::default(), &bright, &ExifMetadata::default(), None);
+    let refused = write(&source, to, frame, &PaperCorrection::default(), &bright, &ExifMetadata::default());
     std::fs::set_permissions(&out, std::fs::Permissions::from_mode(0o755)).unwrap();
     assert_eq!(refused, Err(Failure::Write(std::io::ErrorKind::PermissionDenied)));
     assert!(refused.unwrap_err().to_string().contains("not allowed"));
@@ -181,7 +181,7 @@ fn a_failed_export_keeps_the_previous_one() {
     // Twin: the same write in a folder that accepts it replaces the file.
     let mut ledger = Ledger::in_support(&support);
     let to = Landing { path: &path, ledger: &mut ledger, replacing: true };
-    write(&source, to, frame, &PaperCorrection::default(), &bright, &ExifMetadata::default(), None).unwrap();
+    write(&source, to, frame, &PaperCorrection::default(), &bright, &ExifMetadata::default()).unwrap();
     assert_ne!(std::fs::read(&path).unwrap(), before);
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -195,12 +195,12 @@ fn a_frame_past_a_jpeg_s_side_says_so() {
     let mut ledger = Ledger::in_support(&dir.join("Support"));
     let path = dir.join("wide.jpg");
     let to = Landing { path: &path, ledger: &mut ledger, replacing: false };
-    let refused = write(&source, to, wide(65536), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default(), None);
+    let refused = write(&source, to, wide(65536), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default());
     assert_eq!(refused, Err(Failure::TooLargeForJpeg));
     assert_ne!(Failure::TooLargeForJpeg.to_string(), Failure::Write(std::io::ErrorKind::InvalidData).to_string(), "a message of its own");
     assert!(!path.exists());
     // Twin: one pixel narrower is a JPEG.
     let to = Landing { path: &path, ledger: &mut ledger, replacing: false };
-    write(&source, to, wide(65535), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default(), None).unwrap();
+    write(&source, to, wide(65535), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default()).unwrap();
     assert!(is_jpeg(&path));
 }

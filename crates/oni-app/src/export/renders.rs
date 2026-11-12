@@ -78,8 +78,7 @@ pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, 
         let mut engine = engine.lock().map_err(|_| Failure::Render)?;
         render_full(&mut engine, decoded, &target.settings)
     };
-    let date = (!metadata.date.is_empty()).then_some(metadata.date.as_str());
-    oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata, date)?;
+    oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata)?;
     let mosaic = oni_decode::decodes_via_mosaic(&target.path);
     let _ = oni_settings::sidecar::set_exif(metadata.clone(), &target.path, mosaic);
     Ok(())

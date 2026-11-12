@@ -59,6 +59,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar", export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar),
     ("export_flow::the_estimate_weighs_the_file_the_export_writes", export_flow::the_estimate_weighs_the_file_the_export_writes),
     ("export_sheet::a_selection_exports_as_one_contact_sheet_black_and_numbered", export_sheet::a_selection_exports_as_one_contact_sheet_black_and_numbered),
+    ("sheet_paper::each_frame_of_a_sheet_on_a_paper_takes_its_own_correction", sheet_paper::each_frame_of_a_sheet_on_a_paper_takes_its_own_correction),
     ("extended::a_decode_outside_libraw_is_swift_s", extended::a_decode_outside_libraw_is_swift_s),
     ("extended::a_patch_is_swift_s_on_swift_s_source", extended::a_patch_is_swift_s_on_swift_s_source),
     ("extended::a_frame_renders_its_swift_patches_as_swift_does", extended::a_frame_renders_its_swift_patches_as_swift_does),

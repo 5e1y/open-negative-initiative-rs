@@ -41,6 +41,27 @@ fn temporary(path: &Path, rank: usize) -> PathBuf {
     directory.join(format!(".oni-{hash:016x}-{rank}.tmp"))
 }
 
+/// Whether `name` is a temporary's, whatever its target.
+fn temporary_named(name: &str) -> bool {
+    let Some(inner) = name.strip_prefix(".oni-").and_then(|n| n.strip_suffix(".tmp")) else { return false };
+    let Some((hash, rank)) = inner.split_once('-') else { return false };
+    hash.len() == 16 && hash.bytes().all(|b| b.is_ascii_hexdigit()) && !rank.is_empty() && rank.bytes().all(|b| b.is_ascii_digit())
+}
+
+/// Every temporary in `dir` no write of this process holds, as a write cut short leaves one: an
+/// export reclaims its folder's, whose next write may never come under the same name.
+pub fn reclaimed(dir: &Path) {
+    let flying = in_flight();
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let held = flying.iter().any(|t| t.file_name() == Some(name.as_os_str()));
+        if temporary_named(&name.to_string_lossy()) && !held {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+}
+
 /// A temporary held for its write until dropped, named from its target and the lowest rank no
 /// write of that target in flight holds: an interrupted write's leftover is taken by the next one.
 pub struct Staged(PathBuf);
@@ -311,6 +332,26 @@ mod tests {
         write_atomically(&target, b"first").unwrap();
         assert!(renamed(&third, &target).is_err());
         assert_eq!((std::fs::read(&target).unwrap(), listing(&dir)), (b"first".to_vec(), vec!["Portra.json".to_string()]));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_folder_reclaimed_loses_every_leftover_and_keeps_the_writes_in_flight() {
+        let dir = std::env::temp_dir().join(format!("oni-atomic-reclaimed-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let flying = staged(&dir.join("P1.tif"), b"in flight").unwrap();
+        let left = staged(&dir.join("P2.tif"), b"cut").unwrap().to_path_buf();
+        for kept in ["P3.tif", ".oni-roll.json", ".oni-0123-0.tmp", ".oni-0123456789abcdef-.tmp"] {
+            std::fs::write(dir.join(kept), b"").unwrap();
+        }
+        assert!(left.exists());
+        reclaimed(&dir);
+        let names = listing(&dir);
+        assert!(!left.exists() && flying.exists(), "{names:?}");
+        // Twin: nothing but a temporary's name goes, whatever it opens on.
+        assert_eq!(names.len(), 5, "{names:?}");
+        drop(flying);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

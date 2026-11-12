@@ -9489,5 +9489,40 @@
     "title": "Swift is dead: no rule imposes its behaviour",
     "status": "done",
     "detail": "Owner's call (2026-11-12): the Swift app is totally deprecated and every rule imposing a behaviour that comes from it is killed. CLAUDE.md no longer asks for a strict behavioural copy of Swift's result, Swift parity, proof against Swift's outputs, Swift-format sidecars or Swift attributions; docs/parity/ is history. Kept: reading the sidecars a person already has, Swift-written included, as their data."
+  },
+  {
+    "id": 1880,
+    "type": "fix",
+    "title": "A contact sheet on a paper lays each frame's Paper Correction on its own tile",
+    "status": "done",
+    "detail": "The sheet's file laid frame 1's correction on every pixel (contact.rs passed it to file_bytes once), while the panel shows each frame under its own. together::printed now takes the export space and, on a paper, lays each frame's gains on the pixels its tile was drawn on, the gaps, numbers and logo none; the whole-file step gets no correction. Checks: print.rs a_frames_correction_is_laid_on_its_tile_alone (twin: frame 1's gains on the whole band move tile 2 and the gaps) and window sheet_paper::each_frame_of_a_sheet_on_a_paper_takes_its_own_correction (failed before: tile 2's blue 78 against 177; twin: frame 1's own tile moves). The engine-fallback double proof the finding named is unreachable: apart() fails only on a poisoned engine, which the fallback is too."
+  },
+  {
+    "id": 1881,
+    "type": "fix",
+    "title": "The export date is the line's alone: a cleared Date writes none",
+    "status": "done",
+    "detail": "file_bytes fell back to the scan's capture date whenever the line's date was empty, so a cleared field still wrote 306 and 36867. The separate date argument is gone from oni_export::write, file_bytes (and its now unused source path), encoded and metadata::stated: the date is ExifMetadata.date like every other field, empty writes no tag. The line still opens on the scan's date (opening_row). Check: oni-export tests/dates.rs a_cleared_date_writes_no_date_even_from_a_dated_source (failed before; twin: the source carries a date a fallback would leak)."
+  },
+  {
+    "id": 1882,
+    "type": "fix",
+    "title": "A typed date reaches the file in EXIF's nineteen characters",
+    "status": "done",
+    "detail": "dated::exif only swapped the dashes, so 2026-09-14 reached EXIF as ten characters and words verbatim. It now returns the 19-character form for a day dashed or in colons with an optional HH:MM[:SS] (midnight when none), empty for empty, nothing otherwise; a keystroke that reads as no date keeps the line's last. The field let go (Return or focus leaving) calls Exporting.date-settled and shows the line again, so it shows what the file will carry. Checks: dated.rs a_typed_date_reaches_the_file_in_exifs_nineteen_characters (twin: the old dash swap fails the EXIF shape); export_panel window check types words over the date and Return shows the date back (fails without the re-show)."
+  },
+  {
+    "id": 1883,
+    "type": "fix",
+    "title": "The contact sheet carries the first line's date",
+    "status": "done",
+    "detail": "write_sheet built its metadata from the first line's artist and copyright and let the scan's capture date fill in. sheet_metadata now keeps the first line's artist, copyright and date, never a camera, lens, ISO or film. Check: contact.rs a_sheet_states_the_first_lines_artist_copyright_and_date_alone (failed on the former construction; twin: an empty first date gives the sheet none)."
+  },
+  {
+    "id": 1884,
+    "type": "fix",
+    "title": "An export cut short takes no name and leaves no hidden temporary",
+    "status": "done",
+    "detail": "file::create held the destination with an empty create_new placeholder before renaming over it, so a process killed in between left a 0-byte file that later read as an original; and a cut write's .oni-<hash>-<n>.tmp was reclaimed only by a later write of the same name. create now renames the staged bytes where nothing stands in one step through roll_folder::rename_new (renamex_np RENAME_EXCL on macOS, a look before the rename where a volume refuses the flag, as frame moves already do), and file::put first calls the new atomic::reclaimed on its folder, which removes every temporary no write of this process holds. Checks: file.rs an_export_cut_short_takes_no_name_and_its_leftover_goes_at_the_next_export (a child quits before the rename; failed before on both halves; twins: an empty placeholder reads as an original, a file standing at the name is refused and kept); atomic.rs a_folder_reclaimed_loses_every_leftover_and_keeps_the_writes_in_flight (twin: only temporaries' names go)."
   }
 ]

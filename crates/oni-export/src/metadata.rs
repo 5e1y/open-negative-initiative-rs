@@ -27,9 +27,9 @@ pub struct Row {
     pub metadata: ExifMetadata,
 }
 
-/// The primary directory's stated fields and the Exif directory's, from the hand's metadata and
-/// the date; an empty field writes no tag at all.
-pub(crate) fn stated(metadata: &ExifMetadata, date: Option<&str>) -> (Directory, Directory) {
+/// The primary directory's stated fields and the Exif directory's, from the hand's metadata; an
+/// empty field writes no tag at all.
+pub(crate) fn stated(metadata: &ExifMetadata) -> (Directory, Directory) {
     let mut primary = Directory::default();
     let mut exif = Directory::default();
     let text = |s: &str| Value::Ascii(s.to_owned());
@@ -52,9 +52,9 @@ pub(crate) fn stated(metadata: &ExifMetadata, date: Option<&str>) -> (Directory,
         // A SHORT field: Exif states 65535 for any rating at or past it.
         exif.set(tag::ISO_SPEED_RATINGS, Value::Short(vec![iso.min(65535) as u16]));
     }
-    if let Some(date) = date {
-        primary.set(tag::DATE_TIME, text(date));
-        exif.set(tag::DATE_TIME_ORIGINAL, text(date));
+    if !metadata.date.is_empty() {
+        primary.set(tag::DATE_TIME, text(&metadata.date));
+        exif.set(tag::DATE_TIME_ORIGINAL, text(&metadata.date));
     }
     (primary, exif)
 }

@@ -98,7 +98,7 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
     let staging = std::env::var_os("ONI_BENCH_UNSTAGED").is_none();
     let staged = root.join("staged");
     std::fs::create_dir_all(&staged).unwrap();
-    let mut sums = [0.0f64; 7];
+    let mut sums = [0.0f64; 6];
     let mut hashes = String::new();
     for (t, m) in all.iter().zip(&metadata).filter(|_| staging) {
         let mut at = Instant::now();
@@ -119,15 +119,13 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
         let rendered = oni_export::converted(&out, &export).unwrap();
         drop(out);
         lap(3, &mut at);
-        let date = oni_export::capture_date(&t.path);
+        let data = oni_export::encoded(&rendered, &export, m).unwrap();
         lap(4, &mut at);
-        let data = oni_export::encoded(&rendered, &export, date.as_deref(), m).unwrap();
-        lap(5, &mut at);
         let to = staged.join(oni_export::name(&t.path, "", export.format()));
         oni_export::file::put(&to, &data, &oni_export::file::Ledger::none(), false).unwrap();
-        lap(6, &mut at);
+        lap(5, &mut at);
     }
-    let names = ["decode", "upload, render, readback", "resize and paper", "convert", "capture date", "encode", "write"];
+    let names = ["decode", "upload, render, readback", "resize and paper", "convert", "encode", "write"];
     let count = all.len() as f64;
     for (name, sum) in names.iter().zip(sums) {
         println!("  {name:<26} {:>8.0} ms a frame", sum / count);

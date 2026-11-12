@@ -1,7 +1,6 @@
 //! Writing a file ONI makes without ever landing on an original: what stands at a destination, the
 //! ledger of ONI's own exports, and every write through a temporary file then a rename.
 
-use std::fs::OpenOptions;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
@@ -103,20 +102,16 @@ impl From<io::Error> for Refused {
 
 /// A new file: refused when anything stands at `destination`, even one appearing while it is written.
 pub fn create(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
+    create_with(destination, bytes, &oni_library::roll_folder::rename_new)
+}
+
+/// The bytes staged, then renamed where nothing stands in one step: a write cut anywhere leaves the
+/// name free, its temporary taken by the next export into the folder.
+fn create_with(destination: &Path, bytes: &[u8], rename: &dyn Fn(&Path, &Path) -> io::Result<()>) -> Result<(), Refused> {
     let staged = oni_settings::atomic::staged(destination, bytes)?;
-    // The name is held before the rename, so a file arriving meanwhile finds it taken.
-    let held = OpenOptions::new().write(true).create_new(true).open(destination);
-    if let Err(e) = held {
+    rename(&staged, destination).map_err(|e| {
         let _ = std::fs::remove_file(&staged);
-        return Err(if e.kind() == io::ErrorKind::AlreadyExists { Refused::Taken } else { Refused::Io(e) });
-    }
-    drop(held);
-    oni_settings::atomic::renamed(&staged, destination).map_err(|e| {
-        let _ = std::fs::remove_file(&staged);
-        if std::fs::metadata(destination).is_ok_and(|m| m.len() == 0) {
-            let _ = std::fs::remove_file(destination);
-        }
-        Refused::Io(e)
+        if e.kind() == io::ErrorKind::AlreadyExists { Refused::Taken } else { Refused::Io(e) }
     })
 }
 
@@ -129,8 +124,10 @@ pub fn replace(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
     })
 }
 
-/// An export: a new file, or an earlier export replaced when `replacing`; never anything else.
+/// An export: a new file, or an earlier export replaced when `replacing`; never anything else. The
+/// leftovers of exports cut short in its folder go first.
 pub fn put(destination: &Path, bytes: &[u8], ledger: &Ledger, replacing: bool) -> Result<(), Refused> {
+    oni_settings::atomic::reclaimed(destination.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new(".")));
     match standing(destination, ledger) {
         Standing::Free => create(destination, bytes),
         Standing::Export if replacing => replace(destination, bytes),
@@ -151,5 +148,51 @@ pub(crate) fn canonical(path: &Path) -> PathBuf {
             }
         }
         _ => PathBuf::from(oni_colour::profile::standardized(path)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::OpenOptions;
+
+    /// Set in a child of the check below: the destination of an export it quits before the rename.
+    const CUTTING: &str = "ONI_EXPORT_CUTTING";
+
+    fn listing(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn an_export_cut_short_takes_no_name_and_its_leftover_goes_at_the_next_export() {
+        let test = "file::tests::an_export_cut_short_takes_no_name_and_its_leftover_goes_at_the_next_export";
+        if let Ok(target) = std::env::var(CUTTING) {
+            // The bytes staged, then gone without unwinding before the rename, as a force-quit.
+            let _ = create_with(Path::new(&target), b"whole", &|_, _| std::process::exit(0));
+            return;
+        }
+        let dir = std::env::temp_dir().join(format!("oni-export-cut-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let p1 = dir.join("P1.tif");
+        let child = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", test]).env(CUTTING, &p1).output().unwrap();
+        assert!(child.status.success(), "{child:?}");
+        assert_eq!(standing(&p1, &Ledger::none()), Standing::Free, "a cut export takes no name: {:?}", listing(&dir));
+        assert!(listing(&dir).iter().all(|n| n.ends_with(".tmp")), "{:?}", listing(&dir));
+        // Twin: a name held by an empty file before the rename, cut there, reads as an original.
+        let held = dir.join("P0.tif");
+        drop(OpenOptions::new().write(true).create_new(true).open(&held).unwrap());
+        assert_eq!(standing(&held, &Ledger::none()), Standing::Original);
+        std::fs::remove_file(&held).unwrap();
+        // Another export into the folder, under another name, takes the leftover.
+        put(&dir.join("Q.tif"), b"q", &Ledger::none(), false).unwrap();
+        assert_eq!(listing(&dir), ["Q.tif"]);
+        // Twin: a file standing at the name is never replaced, and its export leaves no temporary.
+        std::fs::write(&p1, b"original").unwrap();
+        assert!(matches!(create(&p1, b"new"), Err(Refused::Taken)));
+        assert_eq!((std::fs::read(&p1).unwrap(), listing(&dir)), (b"original".to_vec(), vec!["P1.tif".to_string(), "Q.tif".to_string()]));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

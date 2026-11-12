@@ -170,8 +170,8 @@ pub fn preview(image: &Image, export: &Settings) -> Result<Rendered, Failure> {
 }
 
 /// One function for the written file and the estimate, so the estimate weighs what the file carries.
-pub fn encoded(rendered: &Rendered, export: &Settings, date: Option<&str>, metadata: &ExifMetadata) -> Option<Vec<u8>> {
-    let (primary, exif) = metadata::stated(metadata, date);
+pub fn encoded(rendered: &Rendered, export: &Settings, metadata: &ExifMetadata) -> Option<Vec<u8>> {
+    let (primary, exif) = metadata::stated(metadata);
     let (w, h) = (rendered.width, rendered.height);
     match export.format() {
         Format::Tiff16 => tiff::encoded(w, h, &rendered.pixels, export.compress_tiff, &rendered.icc, &primary, &exif),
@@ -198,10 +198,9 @@ pub fn write(
     paper: &PaperCorrection,
     export: &Settings,
     metadata: &ExifMetadata,
-    date_override: Option<&str>,
 ) -> Result<(), Failure> {
     lands(source, to.path, to.ledger, to.replacing)?;
-    let bytes = file_bytes(source, render()?, paper, export, metadata, date_override)?;
+    let bytes = file_bytes(render()?, paper, export, metadata)?;
     land(to, &bytes)
 }
 
@@ -220,8 +219,8 @@ pub fn lands(source: &Path, destination: &Path, ledger: &file::Ledger, replacing
 }
 
 /// The file's bytes from the full frame: resized, its paper laid, converted, then encoded with its
-/// metadata; the date stated, else the scan's own.
-pub fn file_bytes(source: &Path, full: Image, paper: &PaperCorrection, export: &Settings, metadata: &ExifMetadata, date_override: Option<&str>) -> Result<Vec<u8>, Failure> {
+/// line's metadata, its date included: a cleared one writes none.
+pub fn file_bytes(full: Image, paper: &PaperCorrection, export: &Settings, metadata: &ExifMetadata) -> Result<Vec<u8>, Failure> {
     let scale = export.resize.scale(full.width as f64, full.height as f64);
     let mut out = resized(full, scale);
     let icc = export.space().icc_data().map_or(0, |icc| icc.len());
@@ -231,8 +230,7 @@ pub fn file_bytes(source: &Path, full: Image, paper: &PaperCorrection, export: &
     oni_colour::paper::laid(paper, &mut out.pixels, export.space());
     let rendered = converted(&out, export)?;
     drop(out);
-    let date = date_override.map(str::to_owned).or_else(|| capture_date(source));
-    encoded(&rendered, export, date.as_deref(), metadata).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))
+    encoded(&rendered, export, metadata).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))
 }
 
 /// The bytes written at the landing, which the ledger then vouches for.
@@ -259,6 +257,6 @@ pub fn estimate(preview: &Image, full_pixels: f64, export: &Settings) -> u64 {
         return full_pixels as u64 * 8;
     }
     let Ok(rendered) = converted(preview, export) else { return 0 };
-    let Some(data) = encoded(&rendered, export, None, &ExifMetadata::default()) else { return 0 };
+    let Some(data) = encoded(&rendered, export, &ExifMetadata::default()) else { return 0 };
     (data.len() as f64 * (full_pixels / preview_pixels)) as u64
 }

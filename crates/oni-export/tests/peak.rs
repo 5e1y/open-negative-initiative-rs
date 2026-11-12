@@ -48,7 +48,7 @@ fn peak_of_export(dir: &std::path::Path, held: Option<&Image>) -> usize {
     let start = LIVE.load(Ordering::Relaxed);
     PEAK.store(start, Ordering::Relaxed);
     let twin = held.cloned();
-    write(&source, to, render, &PaperCorrection::default(), &export, &ExifMetadata::default(), None).unwrap();
+    write(&source, to, render, &PaperCorrection::default(), &export, &ExifMetadata::default()).unwrap();
     drop(twin);
     PEAK.load(Ordering::Relaxed) - start
 }
