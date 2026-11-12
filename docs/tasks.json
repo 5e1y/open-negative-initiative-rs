@@ -9503,5 +9503,12 @@
     "title": "A heal run ends with the full resolution it cuts on",
     "status": "done",
     "detail": "The run's hand-off lived in Dust.healing beside the frame, and only another photo opened ended it: a close, a release on leaving the editor or a reread kept it going, holding up to 1.6 GB on the GPU, and after a reread it cut patches on the old decode and filed them under the new reading's key. The frame now owns its run (Frame.heal, a Healing whose drop ends the run) beside full: reread, release_full, a close or another frame let both go together, and the same frame opened again keeps both. Dust.healing and the stop in Dust::next_photo are deleted; State::healing reads the open frame's run; a run's end clears the frame's only when it is the same run. Check: frame.rs a_heal_run_ends_with_the_full_resolution_it_reads (reread, release, another frame, a close; twins: a frame held or opened again keeps its run), seen failing with the reread and release lines left out."
+  },
+  {
+    "id": 1877,
+    "type": "refactor",
+    "title": "Reading lives in oni-settings, with its stamp",
+    "status": "done",
+    "detail": "render::Reading (the decode's choices: primaries converted, source encoding, RGB passes, slide) moves unchanged to oni_settings::Reading, re-exported by render, and gains stamp(), FNV-1a over its JSON, so the decode and the dust patch key can read one value. No behaviour change; the key moves to it in #1878."
   }
 ]
