@@ -9699,5 +9699,47 @@
     "title": "The export preference is plain serde_json",
     "status": "done",
     "detail": "Settings::raw_value writes its fields by serde_json::to_string in place of the former encoder's mimicry (sorted keys, escaped slashes, whole numbers without .0); from_raw_value reads both. Check: the_preference_text_is_plain_compact_json, the former text reading alike, with a twin missing its resize."
+  },
+  {
+    "id": 1940,
+    "type": "data-safety",
+    "title": "An older build writing its favourites or projects after the import is said once",
+    "status": "done",
+    "detail": "The ledger keeps formerWritten, migrate::last_written at the import: the newest modification of favourites.json and projects.json (bookmarks.json carries no change of the person's). At each later launch a newer one shows one notice, 'Favourites and Projects', saying an earlier version's changes are not carried over, and the mark moves so it is said once. Re-importing additions would bring back the merge lot 1 removed; the notice is the simplest answer that hides nothing. Check: an_older_build_writing_its_files_after_the_import_is_said_once (twin: the mark set back says it again); the_old_files_last_write_moves_when_an_older_build_writes_them (twin: bookmarks.json moves nothing)."
+  },
+  {
+    "id": 1941,
+    "type": "data-safety",
+    "title": "A failed import stays due: nothing seeds or writes over it, and it is said",
+    "status": "done",
+    "detail": "migrate::places and projects return Imported {Brought, Nothing, Unparsed} or an error; an old file the disk refuses to read is an error (it was Ok(false), which advanced the ledger for ever). An error leaves the ledger behind and migration::support returns Brought {places_due, projects_due, notice}, carried by Options to the navigator: the favourites shown are migrate::places_held (the old files' as they read, else the roots'), the projects the old file's, every change taken back and said, identities not recorded, nothing written under State/, so the next launch imports. An old file that does not parse is what its own build set aside: nothing is taken, said once, the ledger advances, as retrying it would hold every star back for ever. Checks: an_old_file_the_disk_refuses_keeps_its_import_due_and_nothing_is_written_over_it (twin: the roots seeded and written over the pending import lose the old favourites), a_failed_import_stays_due_writes_nothing_and_is_said (twin: a ledger advanced over the failure never brings it), an_old_file_that_does_not_parse_gives_nothing_and_stays, an_old_file_that_does_not_parse_is_said_once, an_import_that_does_not_read_back_is_taken_away_and_due_again (verified's failure path; twin: a file read back as built stays and the next import finds nothing); window check import_due::an_import_due_is_shown_from_the_old_files_and_never_written (twin: the next launch, nothing due, writes the same gesture)."
+  },
+  {
+    "id": 1942,
+    "type": "fix",
+    "title": "The tiles check writes no colon on Windows",
+    "status": "done",
+    "detail": "a_tile_under_its_old_name_takes_the_portable_one_unless_a_newer_stands_there returns before it writes any name, as NTFS refuses a colon and Windows never wrote one."
+  },
+  {
+    "id": 1943,
+    "type": "data-safety",
+    "title": "The former app's preferences are taken only where this line of ONI never ran",
+    "status": "done",
+    "detail": "migration::defaults imports nothing where preferences.json or Logs/oni.previous.log stands (timing::PREVIOUS_LOG): a build of this line ran there, and a key it never set must keep reading as its default, or a 1.4.0 to 1.5.6 user's exports would change unseen. lastLaunchedVersion was no signal: it is written only once the installation ping answers. The per-key test goes, as no key can be held where nothing ran. Check: the_former_preferences_land_once_and_only_where_this_line_never_ran (twin: the values taken laid where this line ran change its export)."
+  },
+  {
+    "id": 1944,
+    "type": "fix",
+    "title": "A favourite moved drops the identity of where it was",
+    "status": "done",
+    "detail": "Places::follow keeps a place's volume and file id only when its path is unchanged; a moved one is read afresh by the record its save starts, as noted keeps a known volume over a differing read for ever. Checks: a_favourite_moved_to_another_volume_takes_that_volume (twin: a place carrying the old volume keeps it through noted), favourites_star_beside_each_other_and_follow_a_rename."
+  },
+  {
+    "id": 1945,
+    "type": "test",
+    "title": "The migration twins run the code they guard",
+    "status": "done",
+    "detail": "The newer-file twin reads through state::read blind to the version (it sets the file aside); the starred twin runs the same check with a save that skips the write; the defaults twin lays defaults::taken where this line ran; the refused-value twin reads each value through defaults::extracted; the tiles twin runs tiles::renamed over an old-named tile newer than the portable one; the second-import twin rebuilds through former_places. Each new check was seen to fail on the head's behaviour put back."
   }
 ]

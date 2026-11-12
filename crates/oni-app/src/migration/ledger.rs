@@ -13,11 +13,14 @@ pub struct Ledger {
     /// The support folder's layout reached, `migration::SUPPORT` once brought.
     #[serde(default)]
     pub support: i64,
+    /// `migrate::last_written` as the import found it: newer at a launch, an older build wrote since.
+    #[serde(rename = "formerWritten", default, skip_serializing_if = "Option::is_none")]
+    pub former_written: Option<f64>,
 }
 
 impl Default for Ledger {
     fn default() -> Self {
-        Ledger { version: VERSION, support: 0 }
+        Ledger { version: VERSION, support: 0, former_written: None }
     }
 }
 

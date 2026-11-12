@@ -28,6 +28,11 @@ impl Hand {
 
     /// `new`, with `before` laying what the support folder holds when the app starts, on the root.
     pub(crate) fn made(label: &str, files: &[(&str, f32)], before: impl FnOnce(&std::path::Path)) -> Hand {
+        Hand::made_with(label, files, before, Default::default())
+    }
+
+    /// `made` at a launch whose support folder was brought as `brought` says.
+    pub(crate) fn made_with(label: &str, files: &[(&str, f32)], before: impl FnOnce(&std::path::Path), brought: oni_app::migration::Brought) -> Hand {
         let root = std::env::temp_dir().join(format!("oni-app-projects-{label}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         // Each file dated a second after the one before, in the order given: the gallery lays the newest
@@ -44,12 +49,18 @@ impl Hand {
         let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
         let rig = common::rig(shots);
         rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+        let shell = Hand::launch(&root, brought);
+        Hand { rig, shell, root }
+    }
+
+    /// The app on the root's support folder, as a launch that brought it as `brought` says.
+    pub(crate) fn launch(root: &std::path::Path, brought: oni_app::migration::Brought) -> Shell {
         let gpu = oni_app::render::Device::open().expect("a GPU");
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-        let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+        let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), brought, ..Options::default() };
         let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
         shell.window.show().unwrap();
-        Hand { rig, shell, root }
+        shell
     }
 
     pub(crate) fn at(&self, file: &str) -> String {

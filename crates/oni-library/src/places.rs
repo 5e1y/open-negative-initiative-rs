@@ -109,14 +109,14 @@ impl Places {
         }
     }
 
-    /// A favourite renamed or moved on the disk follows it, a folder carrying those inside it; one
-    /// landing on a favourite already there is kept once, in the earlier place.
+    /// A favourite moved on the disk follows it, a folder carrying those inside it, two landing as one
+    /// kept in the earlier place; one moved drops where it was, which `noted` would keep, to be read afresh.
     pub fn follow(&mut self, old: &str, new: &str) {
         let mut followed: Vec<Place> = Vec::with_capacity(self.places.len());
         for place in &self.places {
             let moved = paths::moved(&place.path, old, new);
             if !followed.iter().any(|p| same(&p.path, &moved)) {
-                followed.push(Place { path: moved, ..place.clone() });
+                followed.push(if moved == place.path { place.clone() } else { Place::at(&moved) });
             }
         }
         self.places = followed;

@@ -1,5 +1,5 @@
 //! The former app's preferences taken once into `preferences.json` on macOS, the export's choices
-//! foremost: read with `/usr/bin/plutil`, each value checked, never over one ONI holds already.
+//! foremost: read with `/usr/bin/plutil`, each value checked, never where this line of ONI ran.
 
 use crate::preferences::{self, Preferences};
 use serde_json::Value;
@@ -23,25 +23,29 @@ const KEYS: [(&str, &str); 8] = [
     (crate::updates::LAST_LAUNCHED_KEY, "string"),
 ];
 
-/// How many keys were taken; none where the file is absent or `plutil` refuses.
+/// How many keys were taken; none where the file is absent, `plutil` refuses, or this line of ONI
+/// ran already, as a key it never set reads as its default and must stay so.
 pub fn import(support: &Path, plist: &Path) -> usize {
-    if !cfg!(target_os = "macos") || !plist.is_file() {
+    if !cfg!(target_os = "macos") || !plist.is_file() || ran(support) {
         return 0;
     }
     let mut prefs = Preferences::load(support);
-    let mut taken = 0;
-    for (key, kind) in KEYS {
-        if prefs.value(key).is_some() {
-            continue;
-        }
-        let Some(value) = extracted(plist, key, kind).filter(|v| fits(key, v)) else { continue };
-        taken += usize::from(prefs.set(key, value).is_ok());
-    }
-    taken
+    taken(plist).into_iter().map(|(key, value)| usize::from(prefs.set(key, value).is_ok())).sum()
+}
+
+/// Each key the former file holds with a value ONI reads.
+pub(super) fn taken(plist: &Path) -> Vec<(&'static str, Value)> {
+    KEYS.iter().filter_map(|&(key, kind)| Some((key, extracted(plist, key, kind).filter(|v| fits(key, v))?))).collect()
+}
+
+/// Whether a build of this line ran in the folder before this run: its preferences file, or the log
+/// a run before this one left, neither of which the former app wrote.
+fn ran(support: &Path) -> bool {
+    Preferences::file_path(support).exists() || crate::timing::log_path(support).with_file_name(crate::timing::PREVIOUS_LOG).exists()
 }
 
 /// `plutil -extract <key> raw`, which prints the value and a line's end; `None` for another type.
-fn extracted(plist: &Path, key: &str, kind: &str) -> Option<Value> {
+pub(super) fn extracted(plist: &Path, key: &str, kind: &str) -> Option<Value> {
     let out = std::process::Command::new("/usr/bin/plutil").args(["-extract", key, "raw", "-expect", kind, "-o", "-"]).arg(plist).output().ok()?;
     let text = String::from_utf8(out.stdout).ok().filter(|_| out.status.success())?;
     let text = text.strip_suffix('\n').unwrap_or(&text);

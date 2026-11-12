@@ -103,10 +103,12 @@ pub(super) struct Nav {
     fresh: freshness::Fresh,
     /// A favourite just taken away, which the notice's Undo stars again.
     pub unstarred: Option<String>,
+    /// The launch's imports due, the projects' included, and the notice it says once.
+    pub brought: crate::migration::Brought,
 }
 
 impl Nav {
-    pub fn new(computer: Computer, identify: places::Identify) -> Nav {
+    pub fn new(computer: Computer, identify: places::Identify, brought: crate::migration::Brought) -> Nav {
         Nav {
             computer,
             model: Navigation::default(),
@@ -134,6 +136,7 @@ impl Nav {
             leads: locate::Leads::default(),
             fresh: Default::default(),
             unstarred: None,
+            brought,
         }
     }
 
@@ -243,12 +246,16 @@ impl State {
         self.nav.remembered = Some(now);
     }
 
-    /// Written whole, this app being the file's one writer, then each favourite's volume noted beside
-    /// it. A newer build's file is never written: the change is taken back and the refusal said.
+    /// Written whole, this app being the file's one writer, then each favourite's volume noted beside it.
+    /// A newer build's file, or one whose import is due, is never written: the change is taken back, said.
     fn save_favourites(&mut self) -> Option<String> {
         if self.nav.favourites.is_newer() {
             self.nav.favourites = Places::load(&self.support).unwrap_or_else(|| self.nav.favourites.clone());
             return Some(oni_library::state::left_newer().to_string());
+        }
+        if self.nav.brought.places_due {
+            self.nav.favourites = oni_library::migrate::places_held(&self.support);
+            return Some(tr(crate::migration::NOT_BROUGHT).to_string());
         }
         let saved = self.nav.favourites.save(&self.support);
         if saved.is_ok() {

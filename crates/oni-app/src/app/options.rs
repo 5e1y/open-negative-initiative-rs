@@ -30,6 +30,8 @@ pub struct Options {
     pub identify: oni_library::places::Identify,
     /// The phone link offered at all (`phone::offered`): off, no entry to it shows and nothing listens.
     pub phone: bool,
+    /// What the launch's `migration::support` left: imports due, never written this run, and its notice.
+    pub brought: crate::migration::Brought,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -62,6 +64,7 @@ impl Default for Options {
             pasteboard: Box::new(crate::pasteboard::Memory::default()),
             identify: oni_library::places::system(),
             phone: phone::offered(),
+            brought: Default::default(),
         }
     }
 }

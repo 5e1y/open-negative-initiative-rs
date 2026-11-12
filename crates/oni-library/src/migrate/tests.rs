@@ -52,7 +52,7 @@ fn places_import_keeps_the_favourites_order_and_lays_each_place_on_its_path() {
     let order = ["/Volumes/T7/Scans", "/Users/a/Archive", "/Users/a/Rolls"];
     let favourites = favourites_file(support, &order);
     let bookmarks = bookmarks_file(support);
-    assert!(places(support).unwrap());
+    assert_eq!(places(support).unwrap(), Imported::Brought);
     let read = Places::load(support).unwrap();
     assert_eq!(read.paths(), order, "the favourites' order");
     let t7 = Volume { uuid: Some("6C1E0D7A-1F1B-4C55-9A3E-2B0F3C7D1E11".into()), mount: "/Volumes/T7".into() };
@@ -80,24 +80,24 @@ fn a_second_import_writes_nothing_and_keeps_a_star_added_since() {
     let support = scratch.path();
     favourites_file(support, &["/Volumes/T7/Scans"]);
     std::fs::write(support.join("projects.json"), br#"{"version":1,"projects":[]}"#).unwrap();
-    assert!(places(support).unwrap() && projects(support).unwrap());
+    assert_eq!((places(support).unwrap(), projects(support).unwrap()), (Imported::Brought, Imported::Brought));
     let mut held = Places::load(support).unwrap();
     held.toggle("/Users/a/Rolls");
     held.save(support).unwrap();
     let stamps = (modified(&Places::file_path(support)), modified(&project::file_path(support)));
     std::thread::sleep(Duration::from_millis(20));
-    assert!(!places(support).unwrap() && !projects(support).unwrap(), "nothing imported twice");
+    assert_eq!((places(support).unwrap(), projects(support).unwrap()), (Imported::Nothing, Imported::Nothing), "nothing imported twice");
     assert_eq!((modified(&Places::file_path(support)), modified(&project::file_path(support))), stamps);
     assert_eq!(Places::load(support).unwrap().paths(), ["/Volumes/T7/Scans", "/Users/a/Rolls"]);
     // Twin: without the test of the new file, the second run writes over the star added since.
-    assert!(places_imported(support).unwrap());
+    former_places(support).unwrap().read().unwrap().save(support).unwrap();
     assert_eq!(Places::load(support).unwrap().paths(), ["/Volumes/T7/Scans"]);
 }
 
 #[test]
 fn nothing_is_imported_where_no_favourite_was_ever_kept() {
     let scratch = Scratch::new("migrate-none");
-    assert!(!places(scratch.path()).unwrap() && !projects(scratch.path()).unwrap());
+    assert_eq!((places(scratch.path()).unwrap(), projects(scratch.path()).unwrap()), (Imported::Nothing, Imported::Nothing));
     assert!(!crate::state::folder(scratch.path()).exists(), "the roots seed the favourites, as at a first launch");
 }
 
@@ -129,7 +129,7 @@ fn projects_import_each_former_format_to_the_members_its_reader_gave() {
         let support = scratch.path();
         let text = serde_json::to_vec(&serde_json::json!({"version": version, "projects": [project.clone()]})).unwrap();
         std::fs::write(support.join("projects.json"), &text).unwrap();
-        assert!(projects(support).unwrap(), "format {version}");
+        assert_eq!(projects(support).unwrap(), Imported::Brought, "format {version}");
         let read = project::load(support).projects;
         assert_eq!(read[0].members, members, "format {version}");
         assert_eq!(read[0].created_at, Date::since_reference_date(8.0e8), "whole seconds, as the file keeps them");
@@ -155,8 +155,13 @@ fn a_newer_places_file_is_shown_and_left_as_it_is() {
     held.toggle("/Users/a/Rolls");
     assert!(held.save(support).is_err(), "the star is refused");
     assert_eq!(std::fs::read(&path).unwrap(), newer, "untouched");
-    // Twin: a reader that sets a newer file aside leaves nothing at its name.
-    crate::set_aside(&path);
+    // A newer shape this build cannot parse is read as nothing and left too.
+    let reshaped = br#"{"version": 2, "places": {"/Volumes/T7/Scans": {}}}"#;
+    std::fs::write(&path, reshaped).unwrap();
+    assert_eq!(state::read::<Places>(&path, crate::places::VERSION), state::Read::Newer(2, None));
+    assert_eq!(std::fs::read(&path).unwrap(), reshaped, "untouched");
+    // Twin: a reader blind to the version sets the newer file aside, leaving nothing at its name.
+    assert_eq!(state::read::<Places>(&path, i64::MAX), state::Read::Unreadable);
     assert!(std::fs::read(&path).is_err());
 }
 
@@ -190,16 +195,93 @@ fn an_unreadable_places_file_is_set_aside_at_the_first_read_with_no_wait() {
     assert!(began.elapsed() >= Duration::from_millis(20));
 }
 
-#[test]
-fn a_favourite_starred_is_there_at_the_next_launch() {
+/// A star toggled, saved by `save`, then the places read as the next launch reads them.
+fn starred_survives(save: impl Fn(&Places, &Path) -> std::io::Result<()>) -> bool {
     let scratch = Scratch::new("migrate-starred");
     let support = scratch.path();
     let mut held = Places::load(support).unwrap_or_default();
     held.toggle("/Volumes/T7/Scans");
-    held.save(support).unwrap();
-    assert!(Places::load(support).unwrap().contains("/Volumes/T7/Scans"), "read again as written");
+    save(&held, support).unwrap();
+    Places::load(support).is_some_and(|read| read.contains("/Volumes/T7/Scans"))
+}
+
+#[test]
+fn a_favourite_starred_is_there_at_the_next_launch() {
+    assert!(starred_survives(|places, support| places.save(support)), "read again as written");
     // Twin: a save that skips the write leaves the star out of the next launch.
-    let mut skipped = Places::load(support).unwrap();
-    skipped.toggle("/Users/a/Rolls");
-    assert!(!Places::load(support).unwrap().contains("/Users/a/Rolls"));
+    assert!(!starred_survives(|_, _| Ok(())));
+}
+
+#[test]
+fn an_import_that_does_not_read_back_is_taken_away_and_due_again() {
+    let scratch = Scratch::new("migrate-verified");
+    let support = scratch.path();
+    favourites_file(support, &["/Volumes/T7/Scans"]);
+    let built = former_places(support).unwrap().read().unwrap();
+    built.save(support).unwrap();
+    let path = Places::file_path(support);
+    let other = Places { places: vec![Place::at("/Users/a/Rolls")], ..built.clone() };
+    assert!(verified(&path, state::Read::Current(other), built.clone()).is_err());
+    assert!(!path.exists(), "the file that differs is taken away");
+    assert_eq!(places(support).unwrap(), Imported::Brought, "so the next launch imports again");
+    // Twin: a file that reads back as built stays, and the next launch finds nothing to import.
+    assert_eq!(verified(&path, state::read(&path, crate::places::VERSION), built).unwrap(), Imported::Brought);
+    assert!(path.exists());
+    assert_eq!(places(support).unwrap(), Imported::Nothing);
+}
+
+#[test]
+fn an_old_file_the_disk_refuses_keeps_its_import_due_and_nothing_is_written_over_it() {
+    let scratch = Scratch::new("migrate-refused");
+    let support = scratch.path();
+    std::fs::write(support.join("roots.json"), br#"{"version":1,"paths":["/Users/a/Roots"]}"#).unwrap();
+    // A folder at the file's name: the disk refuses to read it, as a file a permission withholds.
+    std::fs::create_dir_all(support.join("favourites.json")).unwrap();
+    std::fs::create_dir_all(support.join("projects.json")).unwrap();
+    assert!(places(support).is_err() && projects(support).is_err(), "an error, not nothing to import");
+    assert_eq!(places_held(support).paths(), ["/Users/a/Roots"], "shown from the roots meanwhile");
+    assert!(!crate::state::folder(support).exists(), "and written nowhere");
+    std::fs::remove_dir(support.join("favourites.json")).unwrap();
+    std::fs::remove_dir(support.join("projects.json")).unwrap();
+    favourites_file(support, &["/Volumes/T7/Scans"]);
+    assert_eq!(places_held(support).paths(), ["/Volumes/T7/Scans"], "the old file's favourites once it reads");
+    assert_eq!(places(support).unwrap(), Imported::Brought, "the next launch brings it");
+    assert_eq!(Places::load(support).unwrap().paths(), ["/Volumes/T7/Scans"]);
+    // Twin: the roots seeded and written over the pending import make the next launch import nothing.
+    std::fs::remove_file(Places::file_path(support)).unwrap();
+    Places::seeded(&Roots::load(support)).save(support).unwrap();
+    assert_eq!(places(support).unwrap(), Imported::Nothing);
+    assert_eq!(Places::load(support).unwrap().paths(), ["/Users/a/Roots"], "the old favourites lost");
+}
+
+#[test]
+fn an_old_file_that_does_not_parse_gives_nothing_and_stays() {
+    let scratch = Scratch::new("migrate-unparsed");
+    let support = scratch.path();
+    std::fs::write(support.join("favourites.json"), b"{\"version\":1,\"paths\":[").unwrap();
+    std::fs::write(support.join("projects.json"), b"{\"version\":1,").unwrap();
+    assert_eq!((places(support).unwrap(), projects(support).unwrap()), (Imported::Unparsed, Imported::Unparsed));
+    assert_eq!(std::fs::read(support.join("favourites.json")).unwrap(), b"{\"version\":1,\"paths\":[", "left as it is");
+    assert!(!crate::state::folder(support).exists());
+    // Twin: a file that parses is brought.
+    favourites_file(support, &["/Volumes/T7/Scans"]);
+    assert_eq!(places(support).unwrap(), Imported::Brought);
+}
+
+#[test]
+fn the_old_files_last_write_moves_when_an_older_build_writes_them() {
+    let scratch = Scratch::new("migrate-written");
+    let support = scratch.path();
+    assert_eq!(last_written(support), None);
+    favourites_file(support, &["/Volumes/T7/Scans"]);
+    let file = std::fs::File::options().write(true).open(support.join("favourites.json")).unwrap();
+    file.set_modified(SystemTime::now() - Duration::from_secs(60)).unwrap();
+    let then = last_written(support).unwrap();
+    std::fs::write(support.join("projects.json"), br#"{"version":1,"projects":[]}"#).unwrap();
+    assert!(last_written(support).unwrap() > then, "the newer of the two");
+    // Twin: `bookmarks.json`, which carries no change of the person's, moves nothing.
+    let now = last_written(support);
+    std::thread::sleep(Duration::from_millis(20));
+    bookmarks_file(support);
+    assert_eq!(last_written(support), now);
 }

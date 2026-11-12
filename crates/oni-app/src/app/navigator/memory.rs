@@ -70,7 +70,7 @@ impl Ctl {
     }
 
     /// `FolderNavigation.init` and the launch's favourites: the remembered sections, rows and height;
-    /// the places file, seeded once from `roots.json`; a former library's folders.
+    /// the places file, seeded once from `roots.json`; a former library's folders; the launch's notice.
     pub(super) fn load_navigator(&self) {
         let (height, catching_up, failure) = {
             let mut s = self.state.borrow_mut();
@@ -89,6 +89,11 @@ impl Ctl {
             s.org.trash_unfolded = s.nav.model.unfolded.contains(TRASH_ROW);
             let roots = Roots::load(&s.support);
             let failure = match Places::load(&s.support) {
+                // Their import is due: shown as the old files hold them, written over by nothing.
+                _ if s.nav.brought.places_due => {
+                    s.nav.favourites = oni_library::migrate::places_held(&s.support);
+                    None
+                }
                 Some(read) => {
                     s.nav.favourites = read;
                     if !s.nav.favourites.is_newer() {
@@ -114,6 +119,10 @@ impl Ctl {
         if let Some(message) = failure {
             self.say(&message);
         }
+        let notice = self.state.borrow().nav.brought.notice;
+        if let Some(notice) = notice {
+            self.told(tr("Favourites and Projects"), tr(notice));
+        }
         if let Some(w) = self.window() {
             let n = w.global::<crate::Navigator>();
             n.set_height(height as f32);
@@ -126,7 +135,7 @@ impl Ctl {
     /// a support folder removed meanwhile, a check's own, is not made again.
     pub(super) fn places_noted(&self, noted: Places) {
         let mut s = self.state.borrow_mut();
-        if s.nav.favourites.is_newer() || !s.support.is_dir() {
+        if s.nav.favourites.is_newer() || s.nav.brought.places_due || !s.support.is_dir() {
             return;
         }
         if s.nav.favourites.take_identities(&noted) {

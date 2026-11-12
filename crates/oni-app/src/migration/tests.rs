@@ -31,35 +31,38 @@ fn aged(path: &Path, by: u64) {
 const DATED: &str = "30046636-2026:09:14 16:47:13-e4e6a64ce12647a6";
 const OLDER: &str = "25331200-2025:01:02 03:04:05-77";
 
-/// The old names of two dated tiles, the portable name of the second written later, and a file
-/// that is no tile.
-fn tiles(folder: &Path) {
+/// The old names of two dated tiles, the portable name of the second written `later` seconds after
+/// its old name, and a file that is no tile.
+fn tiles(folder: &Path, later: i64) {
     std::fs::create_dir_all(folder).unwrap();
     std::fs::write(folder.join(format!("{DATED}.jpg")), b"dated").unwrap();
     std::fs::write(folder.join(format!("{OLDER}.jpg")), b"old name").unwrap();
-    aged(&folder.join(format!("{OLDER}.jpg")), 60);
     std::fs::write(folder.join(thumbnails::file_name(OLDER)), b"redrawn").unwrap();
+    aged(&folder.join(format!("{OLDER}.jpg")), (120 + later) as u64);
+    aged(&folder.join(thumbnails::file_name(OLDER)), 120);
     std::fs::write(folder.join("notes: kept.txt"), b"not a tile").unwrap();
 }
 
 #[test]
 fn a_tile_under_its_old_name_takes_the_portable_one_unless_a_newer_stands_there() {
-    let scratch = Scratch::new("tiles");
-    let folder = scratch.0.join("Thumbnails");
-    tiles(&folder);
-    assert_eq!(tiles::renamed(&folder), usize::from(!cfg!(windows)));
+    // Windows never wrote a colon in a name, nor takes one.
     if cfg!(windows) {
         return;
     }
+    let scratch = Scratch::new("tiles");
+    let folder = scratch.0.join("Thumbnails");
+    tiles(&folder, 60);
+    assert_eq!(tiles::renamed(&folder), 1);
     assert_eq!(std::fs::read(folder.join(thumbnails::file_name(DATED))).unwrap(), b"dated");
     assert!(!folder.join(format!("{DATED}.jpg")).exists() && !folder.join(format!("{OLDER}.jpg")).exists());
     assert_eq!(std::fs::read(folder.join(thumbnails::file_name(OLDER))).unwrap(), b"redrawn", "the newer tile wins");
     assert!(folder.join("notes: kept.txt").exists(), "a file that is no tile stays");
     assert_eq!(tiles::renamed(&folder), 0, "a second pass finds nothing to rename");
-    // Twin: a rename that overwrites the newer tile leaves the older bytes under its name.
-    tiles(&folder);
-    std::fs::rename(folder.join(format!("{OLDER}.jpg")), folder.join(thumbnails::file_name(OLDER))).unwrap();
-    assert_ne!(std::fs::read(folder.join(thumbnails::file_name(OLDER))).unwrap(), b"redrawn");
+    // Twin: the old-named tile the newer one, the rename overwrites, and the bytes tell.
+    let twin = scratch.0.join("Twin");
+    tiles(&twin, -60);
+    assert_eq!(tiles::renamed(&twin), 2);
+    assert_eq!(std::fs::read(twin.join(thumbnails::file_name(OLDER))).unwrap(), b"old name");
 }
 
 #[test]
@@ -88,12 +91,11 @@ fn fixture(scratch: &Scratch, edit: impl Fn(String) -> String) -> PathBuf {
 
 #[cfg(target_os = "macos")]
 #[test]
-fn the_former_preferences_land_once_never_over_a_value_held() {
+fn the_former_preferences_land_once_and_only_where_this_line_never_ran() {
     let scratch = Scratch::new("defaults");
     let support = scratch.0.join("Support");
     let plist = fixture(&scratch, |xml| xml);
-    Preferences::load(&support).set(preferences::GALLERY_COLUMNS, Value::from(12)).unwrap();
-    assert_eq!(defaults::import(&support, &plist), 7);
+    assert_eq!(defaults::import(&support, &plist), 8);
     let read = Preferences::load(&support);
     let settings = read.string(oni_export::settings::PREFERENCE_KEY).and_then(oni_export::Settings::from_raw_value).unwrap();
     assert_eq!(settings.format(), oni_export::Format::Tiff16);
@@ -102,12 +104,25 @@ fn the_former_preferences_land_once_never_over_a_value_held() {
     assert_eq!(read.string(crate::app::export_card::LAST_PROFILE), Some("/Library/ColorSync/Profiles/Paper.icc"));
     assert_eq!(read.value(preferences::BRUSH_RADIUS).and_then(Value::as_f64), Some(11.6409));
     assert_eq!((read.bool(preferences::SOUND_MUTED), read.string(crate::updates::LAST_LAUNCHED_KEY)), (Some(false), Some("1.3.1")));
-    assert_eq!(read.int(preferences::GALLERY_COLUMNS), Some(12), "the value held keeps");
+    assert_eq!(read.int(preferences::GALLERY_COLUMNS), Some(4));
     assert!(read.value("NSWindow Frame Main").is_none(), "a key not asked stays out");
     assert_eq!(defaults::import(&support, &plist), 0, "nothing taken twice");
-    // Twin: an import that writes over the value held loses it.
-    Preferences::load(&support).set(preferences::GALLERY_COLUMNS, Value::from(4)).unwrap();
-    assert_ne!(Preferences::load(&support).int(preferences::GALLERY_COLUMNS), Some(12));
+    // Where a build of this line ran, its preferences file or its last log stands: none is taken, so
+    // a key it never set keeps reading as its default.
+    for (ran, mark) in [("Ran", Preferences::file_path(Path::new(""))), ("Logged", crate::timing::log_path(Path::new("")).with_file_name(crate::timing::PREVIOUS_LOG))] {
+        let support = scratch.0.join(ran);
+        std::fs::create_dir_all(support.join(&mark).parent().unwrap()).unwrap();
+        std::fs::write(support.join(&mark), b"{}").unwrap();
+        assert_eq!(defaults::import(&support, &plist), 0, "{ran}");
+        assert!(Preferences::load(&support).value(oni_export::settings::PREFERENCE_KEY).is_none(), "{ran}: the export as it was");
+    }
+    // Twin: the values taken laid where this line ran change the export it had.
+    let ran = scratch.0.join("Ran");
+    let mut prefs = Preferences::load(&ran);
+    for (key, value) in defaults::taken(&plist) {
+        prefs.set(key, value).unwrap();
+    }
+    assert!(Preferences::load(&ran).value(oni_export::settings::PREFERENCE_KEY).is_some());
 }
 
 #[cfg(target_os = "macos")]
@@ -123,8 +138,9 @@ fn a_former_value_onis_readers_refuse_is_left_out() {
     let read = Preferences::load(&support);
     assert!(read.value(oni_export::settings::PREFERENCE_KEY).is_none(), "not the export's document");
     assert!(read.value(preferences::GALLERY_COLUMNS).is_none() && read.value(crate::updates::LAST_LAUNCHED_KEY).is_none());
-    // Twin: an import skipping the check stores a text the export card cannot read.
-    assert_eq!(oni_export::Settings::from_raw_value("Web"), None);
+    // Twin: the file holds each value, which only the check keeps out.
+    assert_eq!(defaults::extracted(&plist, oni_export::settings::PREFERENCE_KEY, "string"), Some(Value::from("Web")));
+    assert_eq!(defaults::extracted(&plist, preferences::GALLERY_COLUMNS, "integer"), Some(Value::from(40)));
     // A file absent imports nothing and says nothing.
     assert_eq!(defaults::import(&scratch.0.join("Other"), &scratch.0.join("absent.plist")), 0);
 }
@@ -140,15 +156,82 @@ fn a_second_launch_writes_nothing() {
     std::fs::create_dir_all(&support).unwrap();
     std::fs::write(support.join("favourites.json"), br#"{"version":1,"paths":["\/Volumes\/T7\/Scans"]}"#).unwrap();
     std::fs::write(support.join("projects.json"), br#"{"version":1,"projects":[]}"#).unwrap();
-    assert_eq!(brought(&support, None).support, SUPPORT);
+    assert_eq!(brought(&support, None), Brought::default());
+    assert_eq!(ledger::read(&support).unwrap().support, SUPPORT);
     let files = [ledger::path(&support), oni_library::places::Places::file_path(&support), oni_library::project::file_path(&support)];
     let stamps: Vec<SystemTime> = files.iter().map(|f| modified(f)).collect();
     std::thread::sleep(Duration::from_millis(20));
-    assert_eq!(brought(&support, None).support, SUPPORT);
+    assert_eq!(brought(&support, None), Brought::default());
     assert_eq!(files.iter().map(|f| modified(f)).collect::<Vec<_>>(), stamps, "nothing written again");
     // Twin: a ledger that forgot the step runs it again and writes the ledger.
     ledger::write(&support, &Ledger::default()).unwrap();
     std::thread::sleep(Duration::from_millis(20));
     brought(&support, None);
     assert_ne!(modified(&files[0]), stamps[0]);
+}
+
+#[test]
+fn a_failed_import_stays_due_writes_nothing_and_is_said() {
+    let scratch = Scratch::new("due");
+    let support = scratch.0.join("Support");
+    // Folders at the files' names: the disk refuses to read them, as a permission withheld does.
+    std::fs::create_dir_all(support.join("favourites.json")).unwrap();
+    std::fs::create_dir_all(support.join("projects.json")).unwrap();
+    let due = Brought { places_due: true, projects_due: true, notice: Some(NOT_BROUGHT) };
+    assert_eq!(brought(&support, None), due);
+    assert_eq!(ledger::read(&support).unwrap().support, 0, "the ledger holds the steps due");
+    assert!(!oni_library::places::Places::file_path(&support).exists() && !oni_library::project::file_path(&support).exists());
+    assert_eq!(brought(&support, None), due, "tried and said at each launch");
+    let readable = |support: &Path| {
+        std::fs::remove_dir(support.join("favourites.json")).unwrap();
+        std::fs::remove_dir(support.join("projects.json")).unwrap();
+        std::fs::write(support.join("favourites.json"), br#"{"version":1,"paths":["/Volumes/T7/Scans"]}"#).unwrap();
+        std::fs::write(support.join("projects.json"), br#"{"version":1,"projects":[]}"#).unwrap();
+    };
+    readable(&support);
+    assert_eq!(brought(&support, None), Brought::default());
+    assert_eq!(oni_library::places::Places::load(&support).unwrap().paths(), ["/Volumes/T7/Scans"], "brought once it reads");
+    assert_eq!(ledger::read(&support).unwrap().support, SUPPORT);
+    // Twin: a ledger advanced over the failure, as when a refused file counted as none, never brings it.
+    let twin = scratch.0.join("Twin");
+    std::fs::create_dir_all(twin.join("favourites.json")).unwrap();
+    std::fs::create_dir_all(twin.join("projects.json")).unwrap();
+    brought(&twin, None);
+    ledger::write(&twin, &Ledger { support: SUPPORT, ..Ledger::default() }).unwrap();
+    readable(&twin);
+    brought(&twin, None);
+    assert_eq!(oni_library::places::Places::load(&twin), None);
+}
+
+#[test]
+fn an_old_file_that_does_not_parse_is_said_once() {
+    let scratch = Scratch::new("unparsed");
+    let support = scratch.0.join("Support");
+    std::fs::create_dir_all(&support).unwrap();
+    std::fs::write(support.join("favourites.json"), b"{\"version\":1,\"paths\":[").unwrap();
+    assert_eq!(brought(&support, None), Brought { notice: Some(UNPARSED), ..Brought::default() });
+    assert_eq!(brought(&support, None), Brought::default(), "said once: nothing will ever parse in it");
+}
+
+#[test]
+fn an_older_build_writing_its_files_after_the_import_is_said_once() {
+    let scratch = Scratch::new("older");
+    let support = scratch.0.join("Support");
+    std::fs::create_dir_all(&support).unwrap();
+    let favourites = support.join("favourites.json");
+    std::fs::write(&favourites, br#"{"version":1,"paths":["/Volumes/T7/Scans"]}"#).unwrap();
+    aged(&favourites, 60);
+    assert_eq!(brought(&support, None), Brought::default());
+    assert_eq!(brought(&support, None), Brought::default(), "the old file untouched, nothing said");
+    // 1.5.6 stars a folder after the update.
+    std::fs::write(&favourites, br#"{"version":1,"paths":["/Volumes/T7/Scans","/Users/a/Rolls"]}"#).unwrap();
+    let said = brought(&support, None);
+    assert_eq!(said, Brought { notice: Some(OLDER_SINCE), ..Brought::default() });
+    assert_eq!(oni_library::places::Places::load(&support).unwrap().paths(), ["/Volumes/T7/Scans"], "not carried over");
+    assert_eq!(brought(&support, None), Brought::default(), "said once");
+    // Twin: the ledger's mark of the old files' last write is what says it once.
+    let mut ledger = ledger::read(&support).unwrap();
+    ledger.former_written = ledger.former_written.map(|t| t - 30.0);
+    ledger::write(&support, &ledger).unwrap();
+    assert_eq!(brought(&support, None), said);
 }

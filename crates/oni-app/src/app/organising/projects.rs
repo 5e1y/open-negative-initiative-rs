@@ -3,26 +3,28 @@
 use super::*;
 
 impl Ctl {
+    /// The projects file; while its import is due, the old file's projects, which nothing writes.
     pub(in crate::app) fn load_projects(&self) {
         let mut s = self.state.borrow_mut();
-        let file = project::load(&s.support);
+        let file = s.projects_read();
         (s.org.projects, s.org.projects_version) = (file.projects, file.version);
     }
 
     /// `saveProjects`: the one file, written whole, this app being its one writer. A newer build's
-    /// file is never written: the change is taken back and the refusal said.
+    /// file, or one whose import is due, is never written: the change is taken back and the refusal said.
     pub(in crate::app) fn save_projects(&self) {
         let failure = {
             let mut s = self.state.borrow_mut();
-            let file = project::ProjectsFile { version: s.org.projects_version, projects: s.org.projects.clone() };
-            let saved = project::save(&s.support, &file);
-            if saved.is_err() && file.is_newer() {
-                s.org.projects = project::load(&s.support).projects;
+            if let Some(refused) = s.projects_refused() {
+                s.org.projects = s.projects_read().projects;
+                Some(refused)
+            } else {
+                let file = project::ProjectsFile { version: s.org.projects_version, projects: s.org.projects.clone() };
+                project::save(&s.support, &file).err().map(|e| tr!("The projects could not be saved: {error}", error = e))
             }
-            saved.err()
         };
-        if let Some(e) = failure {
-            self.told(tr("Something Went Wrong"), &tr!("The projects could not be saved: {error}", error = e));
+        if let Some(message) = failure {
+            self.told(tr("Something Went Wrong"), &message);
         }
     }
 
@@ -57,6 +59,12 @@ impl Ctl {
     /// Every gesture on the projects' members, a drag and a drop included: one step the Undo key
     /// takes back, saved and laid; whether it moved any.
     pub(in crate::app) fn regroup(self: &Rc<Self>, label: &str, gesture: impl FnOnce(&mut Vec<Project>, &project::Reach) -> bool) -> bool {
+        // A gesture that could not be kept never happens, so no step nor notice says it did.
+        let refused = self.state.borrow().projects_refused();
+        if let Some(refused) = refused {
+            self.told(tr("Something Went Wrong"), &refused);
+            return false;
+        }
         let moved = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
@@ -280,5 +288,24 @@ impl State {
             out.extend(paths.into_iter().filter(|p| seen.insert(p.clone())));
         }
         out
+    }
+}
+
+impl State {
+    /// Why no change to the projects can be kept: a newer build's file, or their import due.
+    fn projects_refused(&self) -> Option<String> {
+        if self.nav.brought.projects_due {
+            Some(tr(crate::migration::NOT_BROUGHT).to_string())
+        } else {
+            (self.org.projects_version > project::FORMAT).then(|| oni_library::state::left_newer().to_string())
+        }
+    }
+
+    /// The projects as their file holds them; while their import is due, as the old file does, or none.
+    fn projects_read(&self) -> project::ProjectsFile {
+        if !self.nav.brought.projects_due {
+            return project::load(&self.support);
+        }
+        oni_library::migrate::former_projects(&self.support).ok().and_then(oni_library::migrate::Old::read).unwrap_or_default()
     }
 }

@@ -24,8 +24,8 @@ fn favourites_star_beside_each_other_and_follow_a_rename() {
     moved.places[0].file_id = Some(7);
     moved.follow("/r/trip", "/s/trip");
     assert_eq!(moved.paths(), ["/s/trip", "/s/trip/day2", "/r/tripod"]);
-    assert_eq!(moved.places[0].file_id, Some(7), "its identity follows it");
-    // Followed onto a favourite already there: kept once, where the earlier one stood.
+    let first = &moved.places[0];
+    assert_eq!((&first.volume, first.file_id), (&None, None), "where it was says nothing of where it is");    // Followed onto a favourite already there: kept once, where the earlier one stood.
     let mut both = at(&["/x/new", "/r/old", "/r/old/in"]);
     both.follow("/r/old", "/x/new");
     assert_eq!(both.paths(), ["/x/new", "/x/new/in"]);

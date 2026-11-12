@@ -33,6 +33,20 @@ fn a_disk_away_or_another_volume_keeps_the_identity_known() {
     assert!(!held.take_identities(&known.noted(|_| Some(refreshed.clone()))));
 }
 
+#[test]
+fn a_favourite_moved_to_another_volume_takes_that_volume() {
+    let on = |uuid: &str, path: &str, id: u64| Place { path: path.into(), volume: Some(Volume { uuid: Some(uuid.into()), mount: format!("/Volumes/{uuid}") }), file_id: Some(id) };
+    let read = |p: &str| Some(on("B", p, 9));
+    let mut followed = Places { version: VERSION, places: vec![on("A", "/Volumes/A/Scans", 7), on("A", "/Volumes/A/Kept", 3)] };
+    followed.follow("/Volumes/A/Scans", "/Volumes/B/Scans");
+    let noted = followed.noted(read);
+    assert_eq!(noted.places[0], on("B", "/Volumes/B/Scans", 9), "the volume it lies on now");
+    assert_eq!(noted.places[1], on("A", "/Volumes/A/Kept", 3), "one not moved keeps the identity known");
+    // Twin: a place carrying the old volume to its new path keeps it for ever, as `noted` holds it.
+    let carried = Places { version: VERSION, places: vec![on("A", "/Volumes/B/Scans", 7)] };
+    assert_eq!(carried.noted(read).places[0], on("A", "/Volumes/B/Scans", 7));
+}
+
 /// Each volume of `computer` named by the UUID `uuids` gives its folder's name.
 fn fake(computer: &Computer, uuids: &[(&str, &str)]) -> Identify {
     let (computer, uuids): (Computer, Vec<(String, String)>) = (computer.clone(), uuids.iter().map(|(n, u)| (n.to_string(), u.to_string())).collect());
