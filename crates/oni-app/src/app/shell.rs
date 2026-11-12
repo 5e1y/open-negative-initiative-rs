@@ -313,6 +313,8 @@ impl Ctl {
     pub fn last_writes(self: &Rc<Self>) -> Option<String> {
         // A frame's move under way ends whole before the process does.
         gestures::wait_for_disk();
+        // An export's frame under way lands whole, ledger included.
+        self.export.borrow_mut().writer.ended_whole();
         self.commit_info_drafts();
         self.flush_drafts();
         // The journal's thread writes what it was handed before the process ends.

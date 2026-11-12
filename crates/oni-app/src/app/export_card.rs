@@ -18,7 +18,7 @@ use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::Instant;
 
 mod entering;
@@ -26,6 +26,7 @@ mod targets;
 mod settings;
 mod quality;
 mod writing;
+pub mod writer;
 mod contact;
 mod dated;
 mod sheet_view;
@@ -99,7 +100,7 @@ pub struct Card {
     pub exporting: bool,
     pub progress: usize,
     stopped: Option<usize>,
-    stop: Arc<AtomicBool>,
+    pub writer: writer::Writer,
     /// Each batch's pass and each estimate carry a generation; a newer one makes them stop.
     pass: Arc<AtomicU64>,
     weighing: Arc<AtomicU64>,
@@ -192,7 +193,7 @@ impl Card {
             exporting: false,
             progress: 0,
             stopped: None,
-            stop: Arc::default(),
+            writer: writer::Writer::default(),
             pass: Arc::default(),
             weighing: Arc::default(),
             reading: Arc::default(),

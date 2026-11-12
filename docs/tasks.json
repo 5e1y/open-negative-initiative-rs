@@ -8908,5 +8908,12 @@
     "title": "Prepare's model checks in a file of their own, codec checks back under their ceiling",
     "status": "done",
     "detail": "model.rs had grown to 425 lines and codec_checks.rs to 736 with the draft's passOffset: model's checks move to model/tests.rs, the draft literal in codec_checks.rs is laid on two lines, and its grandfathered ceiling comes down to 725."
+  },
+  {
+    "id": 1795,
+    "type": "fix",
+    "title": "A quit waits for the export frame under way",
+    "status": "done",
+    "detail": "The export's thread is kept in Writer (export_card/writer.rs) with its stop, and Ctl::last_writes, which every quit path ends in, halts it and joins it: the frame under way lands whole, ledger note included, so no hidden temporary or unvouched file stays in the export folder. Check: writer tests a_quit_waits_for_the_frame_under_way and its twin a_stop_without_the_wait_cuts_the_frame; the first was run against a stop without the join and failed."
   }
 ]
