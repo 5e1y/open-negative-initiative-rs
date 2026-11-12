@@ -8635,5 +8635,12 @@
     "title": "A correction sliding under the hand after a removal shows alone",
     "status": "done",
     "detail": "With De-dust's rows now written one by one (#1720), a removal no longer rebuilds the tiles: the tile under the hand takes the next correction while its hand state stays, so its key showed but the canvas isolated nothing. A tile whose correction changes under the hand now names it shown in turn, as any tile the hand enters. The grid check's click on a key, with real pointer events, failed on the merge and passes."
+  },
+  {
+    "id": 1724,
+    "type": "check",
+    "title": "The batch and De-dust's corrections laid together hold on Windows: DirectX 12's software adapter, through FXC and DXC",
+    "status": "done",
+    "detail": "#1722 and #1723 had run on Metal only, and their instanced shaders (a stage's frame and parameters read from storage tables of structs, a cell aligned on 16 bytes, private copies, a work-group depth an instance) reach DirectX 12 through naga's HLSL. On a GitHub runner (windows-2025, Microsoft Basic Render Driver, wgpu compiling through FXC as no dxcompiler.dll is on the PATH, which is what the shipped app does too), commit e0c139c9: the whole suite as ci.yml runs it is green, 107 binaries and 1 504 checks, then the phone link's 8 and 70, with oni-graph's batch and oni-pipeline's healing in it, 3 checks each. Those two run alone with their output shown: no shader refused; a batch lies 0 from its members chained and the corrections 0 from each laid in turn at scales 1, 0.37 and 0.06, where Metal gives 1.0e-6, then 0, 1.5e-6 and 2.6e-7; the twins lie 0.06 to 0.80 away on both; 7 passes for 4 members as for 200 (chained 26 and 1 202), 6 then 8 for 5 corrections as for 200 (in turn 30 and 1 200, then 40 and 1 600). With the runner's own DXC 1.9 on the PATH, which wgpu then picks (shader model 6): the same six checks pass, 2.6e-7 and 6.2e-8 from their references at most. The tolerance (1e-5) stays as Metal set it. Not verified: a real Windows GPU, the runner's adapter being software, whose driver may round the two compilations apart as Metal does; the whole suite through DXC; any timing on Windows."
   }
 ]
