@@ -106,7 +106,7 @@ impl Roll {
 
     /// `laid` from the sources, each file keeping the tick and flag it holds as a frame now.
     fn placed(&self, mut laid: Vec<Frame>) -> Vec<Frame> {
-        let places: HashMap<&str, (bool, bool)> = self.frames.iter().map(|f| (f.path.as_str(), (f.ticked, f.flagged))).collect();
+        let places = self.places();
         for f in &mut laid {
             if let Some(&(ticked, flagged)) = places.get(f.path.as_str()) {
                 (f.ticked, f.flagged) = (ticked, flagged);

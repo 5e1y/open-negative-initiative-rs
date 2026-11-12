@@ -90,19 +90,8 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     filed.rgb_passes = Some(RgbPasses { red: "r.ARW".into(), green: "g.ARW".into(), blue: "b.ARW".into(), registration: None });
     let stamped = Date::from_unix_seconds(1_700_000_000.0);
     let typed = ExifMetadata { camera: "Leica M6".into(), ..ExifMetadata::default() };
-    let draft = RollDraft {
-        id: Id::new(),
-        step: "Frames".into(),
-        film: ConversionMode::Positive,
-        capture: "camera".into(),
-        pass_order: None,
-        pass_offset: None,
-        flat_field: None,
-        base: None,
-        window: None,
-        ticked: true,
-        flagged: false,
-    };
+    let (id, step, film, capture) = (Id::new(), "Frames".into(), ConversionMode::Positive, "camera".into());
+    let draft = RollDraft { id, step, film, capture, pass_order: None, pass_offset: None, flat_field: None, base: None, window: None, ticked: true, flagged: false };
     let text = codec::encode(&filed, Some(stamped), Some(Medal::Silver), Some(typed), Some(draft), Some(stamped)).unwrap();
     assert!(text.contains("\"importedAt\" : \"2023-11-14T22:13:20Z\""), "{text}");
     let whole = codec::decode(text.as_bytes()).unwrap();

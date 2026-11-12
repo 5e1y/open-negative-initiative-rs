@@ -8817,5 +8817,26 @@
     "title": "Checks for the sheets' keyboard and a field's undo",
     "status": "done",
     "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
+  },
+  {
+    "id": 1792,
+    "type": "fix",
+    "title": "A roll regrouped after its draft resumes on its last grouping",
+    "status": "done",
+    "detail": "The Prepare the Roll draft was written on the frames alone, so a file that stopped being one (a lead before Shift by One File, a pass after a switch to RGB Passes) kept the draft of the grouping before; landing first on resume, it regrouped the roll on the old triplets, or left it ungrouped, and PREPARE ROLL would write the wrong passes. Roll::drafts now covers every file the roll read: a frame takes the shared draft with its own tick and flag, any other file a clear, so no file keeps another grouping's draft and none gains a sidecar for it. drafts moved to model.rs beside step_drafts. Check: a seven-file roll walked at offset 0, shifted by one, saved as save_draft writes and entered again resumes on a2 and b2 at offset 1; a roll walked on Camera then switched to RGB Passes shifted by one resumes grouped; twin, the same drafts written on the frames alone resume on a1 and b1. Against the code before, the resume came back on a1 and b1 at offset 0."
+  },
+  {
+    "id": 1793,
+    "type": "check",
+    "title": "A check that sees a regrouping keep each frame's tick and flag",
+    "status": "done",
+    "detail": "The RGB resume check passed whether or not a regrouping kept the frames' places, since the draft's tick and flag were laid after the regroup, and its two twins asserted nothing a regroup did. a_regrouping_keeps_each_frames_tick_and_flag flags a lead and leaves another out by hand, changes the pass order, then the capture: both keep a1 flagged and b1 out; twin, the same regroup laid from the sources loses both. With either call to placed in passes.rs replaced by the bare frames it fails. The empty twins are replaced by a Camera draft that leaves six frames, and the checks that group take turns on the process-wide hold of triplets."
+  },
+  {
+    "id": 1794,
+    "type": "refactor",
+    "title": "Prepare's model checks in a file of their own, codec checks back under their ceiling",
+    "status": "done",
+    "detail": "model.rs had grown to 425 lines and codec_checks.rs to 736 with the draft's passOffset: model's checks move to model/tests.rs, the draft literal in codec_checks.rs is laid on two lines, and its grandfathered ceiling comes down to 725."
   }
 ]

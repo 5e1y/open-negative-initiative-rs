@@ -231,7 +231,7 @@ impl Ctl {
         }
     }
 
-    /// `saveRollDraft`: each frame's draft written on the serial thread, after the writes before it.
+    /// `saveRollDraft`: each file's draft written or cleared on the serial thread, after the writes before it.
     pub(in crate::app) fn save_draft(&self) {
         self.flush_open();
         let job = {
@@ -239,7 +239,7 @@ impl Ctl {
             let Some(drafts) = r.step_drafts() else { return };
             let job: Job = Box::new(move || {
                 let refused: Vec<String> =
-                    drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(Some(draft), Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
+                    drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(draft, Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
                 if let Some(cause) = refused.first().cloned() {
                     let n = refused.len() as u64;
                     with_shell(move |c| c.told(tr("Prepare the Roll"), &trn("One frame's preparation could not be saved: {cause}", "{n} frames' preparation could not be saved: {cause}", n).replace("{cause}", &cause)));

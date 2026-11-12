@@ -336,28 +336,6 @@ impl Roll {
         }
         first.is_some()
     }
-
-    /// The draft every frame shares, its own ticked and flagged laid per frame; `None` until it may be written.
-    fn drafts(&mut self) -> Option<Vec<(String, RollDraft)>> {
-        if !self.shown || self.progress.is_some() || (self.step == Step::Film && self.draft_id.is_none()) || self.sources.is_empty() || self.read.len() < self.sources.len() {
-            return None;
-        }
-        let id = *self.draft_id.get_or_insert_with(Id::new);
-        let shared = RollDraft {
-            id,
-            step: self.step.name().into(),
-            film: self.film,
-            capture: self.capture.raw().into(),
-            pass_order: Some(self.pass_order),
-            pass_offset: Some(self.pass_offset),
-            flat_field: Some(self.flat.clone()),
-            base: self.base.as_ref().map(|b| DraftBase { path: b.path.clone(), x: b.unit.0, y: b.unit.1, radius: b.radius }),
-            window: Some(self.window),
-            ticked: false,
-            flagged: false,
-        };
-        Some(self.frames.iter().map(|f| (f.path.clone(), RollDraft { ticked: f.ticked, flagged: f.flagged, ..shared.clone() })).collect())
-    }
 }
 
 /// A frame as Prepare the Roll shows and measures it: its whole scan, whatever its crop.
