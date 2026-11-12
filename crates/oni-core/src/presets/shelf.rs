@@ -20,7 +20,7 @@ pub fn directory(support: &Path) -> PathBuf {
     support.join("Presets")
 }
 
-/// The single-file list of earlier versions, read once by the migration and never written.
+/// The single-file list of earlier versions; the migration leaves in it only what it could not take.
 pub fn legacy_file(support: &Path) -> PathBuf {
     support.join("presets.json")
 }
@@ -75,20 +75,30 @@ pub fn shareable(preset: &Preset) -> Result<String, json::Error> {
     encode(preset)
 }
 
-/// Takes over the single-file list once, then archives it beside itself; idempotent, the files
-/// deriving from ids, and the new files land before the old one moves.
+/// Takes the single-file list over, then archives it beside itself. Only adds: an id on the shelf
+/// is left as the person keeps it, and what fails stays in the list for the next pass alone.
 pub fn migrate(legacy: &Path, directory: &Path) -> usize {
     let Some(list) = std::fs::read(legacy).ok().and_then(|d| serde_json::from_slice::<Value>(&d).ok()) else { return 0 };
     let Some(list) = list.as_array() else { return 0 };
+    let held: Vec<Id> = load(directory).into_iter().map(|p| p.id).collect();
     let mut migrated = 0;
-    // The list stays where it is until every preset is on the shelf: the next launch takes it over again.
+    let mut left = Vec::new();
     for element in list {
-        let Ok(bytes) = serde_json::to_vec(element) else { continue };
-        let Some(preset) = decode(&bytes) else { continue };
-        if save(&preset, directory).is_err() {
-            return migrated;
+        let Some(preset) = serde_json::to_vec(element).ok().and_then(|b| decode(&b)) else { continue };
+        if held.contains(&preset.id) {
+            continue;
         }
-        migrated += 1;
+        match save(&preset, directory) {
+            Ok(()) => migrated += 1,
+            Err(_) => left.push(element.clone()),
+        }
+    }
+    if !left.is_empty() {
+        // A list that cannot shrink is read again whole: the ids already held keep it from overwriting.
+        if let Ok(bytes) = serde_json::to_vec(&left) {
+            let _ = oni_library::write_atomically(legacy, &bytes);
+        }
+        return migrated;
     }
     let mut archive = legacy.as_os_str().to_owned();
     archive.push(".migrated");

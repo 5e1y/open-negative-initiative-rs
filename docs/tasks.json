@@ -8824,5 +8824,19 @@
     "title": "Checks for the sheets' keyboard and a field's undo",
     "status": "done",
     "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
+  },
+  {
+    "id": 1790,
+    "type": "fix",
+    "title": "The presets takeover only adds, and its list keeps only what failed",
+    "status": "done",
+    "detail": "migrate runs on every shelf reload, and a takeover that stopped partway saved the whole list again on the next one: an edit or rename made since was overwritten and its file removed as a twin, a deleted preset came back, on every gesture while one save kept failing. migrate now reads the shelf's ids once and skips any it holds, carries on past a failed save, and writes back to presets.json only the elements it could not take, archiving the list once none is left."
+  },
+  {
+    "id": 1791,
+    "type": "check",
+    "title": "A takeover rerun keeps the edits and deletions made since",
+    "status": "done",
+    "detail": "a_takeover_rerun_keeps_the_edits_and_deletions_made_since takes over A, B and C with C's path blocked, edits A, deletes B and reloads: the shelf reads A edited alone; twin, once C's path is clear C comes in and the list goes. On the code before the fix it reads A and B; with the list left whole (ids skipped but no shrink) it reads A edited and B."
   }
 ]
