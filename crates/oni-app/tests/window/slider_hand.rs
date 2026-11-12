@@ -125,3 +125,36 @@ pub(crate) fn a_slider_taken_away_under_the_hand_lets_go_at_the_button() {
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+pub(crate) fn a_scanner_slider_taken_away_under_the_hand_lets_go_at_the_button() {
+    let Some((rig, shell, root, _)) = editor("slider-scanner") else { return };
+    let ctl = shell.ctl.clone();
+    ctl.act(oni_app::Act::FaceScanner);
+    rig.settle();
+    let slider = common::the(&shell.window, Role::Slider, "D");
+    let at = (slider.x + slider.width / 2.0, slider.y + slider.height - 13.0);
+    moved(&rig, at.0, at.1);
+    button(&rig, at, true);
+    assert_eq!(ctl.state.borrow().hands(), 1, "the Scanner slider's press counts a hand");
+    // Escape's way back to Pro takes the slider away; the button then rises over the canvas.
+    ctl.act(oni_app::Act::FacePro);
+    rig.pump();
+    moved(&rig, 600.0, 400.0);
+    button(&rig, (600.0, 400.0), false);
+    let top = || format!("{:?}", ctl.state.borrow().store().history().next_undo().map(|s| s.after.clone()));
+    let write = || shell.window.global::<oni_app::Lab>().invoke_press(1, 1);
+    let before = top();
+    write();
+    // Twin: Slint told no one, so the hand stands and the next edit waits for a step that never lands.
+    assert_eq!((ctl.state.borrow().hands(), top()), (1, before.clone()), "the destroyed slider sent no release");
+    ctl.lifted();
+    assert_eq!(ctl.state.borrow().hands(), 0, "the lifted button ends the hand");
+    assert_ne!(top(), before, "and the edit is recorded");
+    // Twin: a slider alive records at its own release, and the button's rising finds nothing left to lift.
+    button(&rig, at, true);
+    ctl.act(oni_app::Act::FaceScanner);
+    ctl.lifted();
+    assert_eq!(ctl.state.borrow().hands(), 0);
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}

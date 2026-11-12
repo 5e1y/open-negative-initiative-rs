@@ -293,10 +293,7 @@ pub struct State {
     pinch: f32,
     /// The ratio and orientation last chosen, and the frame chosen on, handed to the next frame framed.
     framing_memory: Option<(Remembered, String)>,
-    /// A scroll along a track under way, its hand raised until the idle window passes.
-    scrolling: Option<hands::HandDown>,
-    /// A plot under the hand, raised while the editors' gestures hold.
-    plot_down: Option<hands::HandDown>,
+    down: hands::Down,
     /// The tab shown, the last panel the hand was in and the measuring window armed.
     route: crate::tabs::Route,
     brush_start: Option<f32>,
