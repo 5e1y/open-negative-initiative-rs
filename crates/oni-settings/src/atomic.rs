@@ -56,11 +56,12 @@ pub fn reclaimed(dir: &Path) {
         if !temporary_named(&entry.file_name().to_string_lossy()) {
             continue;
         }
+        let temporary = entry.path();
         // A write holds its temporary's lock until its rename; the system lets it go when the writer dies.
-        if let Ok(file) = File::open(entry.path())
+        if let Ok(file) = File::open(&temporary)
             && file.try_lock().is_ok()
         {
-            let _ = std::fs::remove_file(entry.path());
+            let _ = std::fs::remove_file(&temporary);
         }
     }
 }

@@ -1,5 +1,13 @@
 use super::*;
 
+/// A child holds a copy of every descriptor open at its spawn until its exec, a lock's included, so
+/// a check judging a lock let go never runs while a sibling spawns.
+static SPAWNS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn no_spawn() -> std::sync::MutexGuard<'static, ()> {
+    SPAWNS.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 #[test]
 fn a_long_name_writes_through_a_short_temporary() {
     let dir = std::env::temp_dir().join(format!("oni-atomic-{}", std::process::id()));
@@ -103,7 +111,9 @@ fn a_write_cut_short_by_a_quit_leaves_nothing_once_its_file_is_written_again() {
     let (key, list) = (dir.join("host.key"), dir.join("trusted.txt"));
     let quit = |target: &Path| {
         let test = "atomic::tests::a_write_cut_short_by_a_quit_leaves_nothing_once_its_file_is_written_again";
+        let spawning = no_spawn();
         let child = std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact", test]).env(QUITTING, target).output().unwrap();
+        drop(spawning);
         assert!(child.status.success(), "{child:?}");
     };
     quit(&key);
@@ -141,6 +151,7 @@ fn a_write_in_flight_keeps_its_temporary_while_its_file_is_written_again() {
 
 #[test]
 fn a_folder_reclaimed_loses_every_leftover_and_keeps_the_writes_in_flight() {
+    let _alone = no_spawn();
     let dir = std::env::temp_dir().join(format!("oni-atomic-reclaimed-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
@@ -161,6 +172,7 @@ fn a_folder_reclaimed_loses_every_leftover_and_keeps_the_writes_in_flight() {
 
 #[test]
 fn a_temporary_another_process_holds_is_never_reclaimed() {
+    let _alone = no_spawn();
     let dir = std::env::temp_dir().join(format!("oni-atomic-other-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
