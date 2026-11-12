@@ -8719,5 +8719,110 @@
     "title": "A preset file without an id keeps one identity",
     "status": "done",
     "detail": "decode gave a missing id a random one on every read, so edits duplicated and delete trashed nothing. The id is now Id::of_bytes of the file (128-bit FNV-1a); the check on load, edit and delete fails on the old code."
+  },
+  {
+    "id": 1730,
+    "type": "fix",
+    "title": "An opening decode under a reading the frame has left never lands on the canvas",
+    "status": "done",
+    "detail": "The opening decode's landing checked only the frame's path: a decode already running when an edit changed the reading (Positive mode, the scan profile, the passes, the primaries) installed its negative and rendered the new settings on it, and the right decode then asked no render, its revision already asked. State::wants (path and reading) now gates the landing, Ok and Err alike, and the full-resolution build's landing uses it too. The window check opening_reading holds every decode place, opens a frame, changes its scan profile before the decode lands, and compares the picture with a re-render on the frame's own negative; twin: the two readings render apart. Without the fix the canvas kept the old reading's picture."
+  },
+  {
+    "id": 1731,
+    "type": "fix",
+    "title": "The previews kept are keyed by their whole reading, not the slide flag alone",
+    "status": "done",
+    "detail": "A preview read under one scan profile, passes or primaries was served to an asking under another, the key holding only the slide flag. Previews::get and insert take the Reading; the editor, the thumbnails, Edit Together and the export read it so. The previews test asks a slide preview under another encoding and finds none; twin: the slide flag cannot tell the two apart."
+  },
+  {
+    "id": 1732,
+    "type": "fix",
+    "title": "A render landed takes the failure card away",
+    "status": "done",
+    "detail": "The canvas's failure card was cleared only by opening a photo: a frame decoded again under another reading after a failure rendered under the stale card, and Auto De-dust dropped its ask on it. A render of the open frame that lands now clears the card and the conversion offer. The layout check opens an undecodable file, changes its reading (twin: still bad, the card stays over an empty canvas), mends the file and changes it back: the render clears the card. Without the fix the card stayed."
+  },
+  {
+    "id": 1733,
+    "type": "fix",
+    "title": "A decode failure and a render failure each say their own",
+    "status": "done",
+    "detail": "Both went through the render delivery's error arm, which called every failure a decode one and probed the file for Nikon HE before even checking the frame was open. The opening decode's failure now goes to Ctl::decode_failed, its error compared bare so a file cut short says so (the stem prefixed to it had made that card unreachable); a GPU render failure says the frame could not be rendered and probes no file. French and Spanish catalogues carry the new text."
+  },
+  {
+    "id": 1735,
+    "type": "fix",
+    "title": "One way out of the editor, which every exit takes",
+    "status": "done",
+    "detail": "Leaving the editor was coded four times and only ToggleMode let its memory and modes go. Trashing the open frame from the editor kept its full resolution (up to 1.6 GB), the engine's caches, Compare, the crop or De-dust tab and Together; the ONI Trash's row clicked beside the photo kept all of them with the frame; Move Out with no frame left skipped the modes, Together and the trim. Ctl::leave_editor is now the one exit: hover cleared, modes left, the gallery shown, Together left, the full resolution dropped, the engine trimmed, the tiles published. ToggleMode, a trashed open frame (closed_if_trashed), the trash's row (open_trash) and Move Out call it; leave_editor_memory is gone and only leave_editor and the launch set the gallery. Window check full_release::every_way_out_lets_the_editor_go leaves by the trash's row and by trashing the last frame of its roll with the full resolution, Compare and the crop held, twin asserting all three held before; the masks check moves the roll's last frame out with Compare on and finds it closed."
+  },
+  {
+    "id": 1736,
+    "type": "fix",
+    "title": "A full resolution under way keeps its mark when the editor is left",
+    "status": "done",
+    "detail": "The editor's exit cleared the full-resolution build's mark while its decode still ran: a return before it landed asked a second FULL decode of the same RAW, about 1 to 3 s and 0.4 to 0.7 GB wasted. The mark is now the build's own, set by ensure_full and cleared by its landing, which already drops a result landing in the gallery; the load bar says Loading full resolution while it runs. Window check full_release::a_full_resolution_build_survives_a_quick_return goes out and back before the landing, a notch at once asking a render, and counts one decode asked (decode_gate::Gate::asked), the bar shown in the gallery, twin the bar gone once it lands; the old exit asked two."
+  },
+  {
+    "id": 1737,
+    "type": "fix",
+    "title": "The canvas's last render let go with the editor",
+    "status": "done",
+    "detail": "The last canvas-sized rgba32float render (gpu.current, about 100 to 190 MB on a Retina window) stayed referenced in the gallery, so the engine's trim could not free it. leave_editor drops it with the full resolution; the next render in the editor sets it again."
+  },
+  {
+    "id": 1738,
+    "type": "fix",
+    "title": "Move Out moves before it closes the frame",
+    "status": "done",
+    "detail": "Move Out closed the open frame before touching the disk, so a refused move (a full disk, a copy that differs, a volume whose Trash refuses) left the editor on a closed frame: the old image over default settings, every control editing nothing. The sidecar is now flushed first, as the move takes it to the Trash, and the frame closed only once the move succeeded. The masks window check refuses the move with a read-only FlatField Presets: the notice is said, B stays open on its own flat-field, twin a step still edits it."
+  },
+  {
+    "id": 1739,
+    "type": "fix",
+    "title": "Move Out never replaces a file at its target",
+    "status": "done",
+    "detail": "flat_fields::Moving::through moved the original with std::fs::rename, which replaces silently on macOS and Windows a file that took the free name after the look. It now takes oni_library::roll_folder::rename_new, which never replaces. Unit check a_move_out_never_replaces_a_file_that_took_the_free_name plants a file inside the rename step: the move is refused, both files whole; twin a replacing rename overwrites it."
+  },
+  {
+    "id": 1740,
+    "type": "fix",
+    "title": "A High Efficiency NEF counts as converted only when the DNG this run wrote reads",
+    "status": "done",
+    "detail": "adobe_dng::convert counted a NEF by a file named like its DNG, the whole batch included, so 'Keep the new DNGs only' could trash the only real NEF beside a cut or empty DNG, which then hid the NEF from every new offer. A run now counts the files it handed over whose DNG LibRaw unpacks (oni_decode::reads, a decode's own reading without the demosaic) and removes one that does not, so its NEF stays listed and convertible; the person's own DNG is no conversion. The synthetic mosaic DNG writer moves to oni-fixtures to serve both crates. The conversion check's stand-in cuts one DNG half way through its strip: before the fix it is returned as converted along with the person's own, after it is not and its file is gone, twin the same run with no cut counting it; a_dng_reads_unless_cut covers reads on a whole, a cut and an empty file."
+  },
+  {
+    "id": 1750,
+    "type": "fix",
+    "title": "⌘Z and ⌘⇧Z typed in a field step the field's typing, not the photos' history",
+    "status": "done",
+    "detail": "Slint serves the menu bar's shortcuts before the focused item, so Undo and Redo, live from the history alone, took ⌘Z from every field (the gallery's info fields, the export's EXIF and names) and undid a medal or a move out of sight. They now follow the rule the digits and ⌘⌫ follow: live only while no field holds the keyboard (`keys.held`). The field_undo window check labels a photo, types in a sidebar field and presses ⌘Z: the field's text comes back, the medal stays; twin, the photos holding the keyboard, ⌘Z and ⌘⇧Z step the medal. Before the fix the check fails on the medal undone."
+  },
+  {
+    "id": 1751,
+    "type": "fix",
+    "title": "The unsaved-edits sheet has a Keep for Now key",
+    "status": "done",
+    "detail": "The sheet said ONI keeps the edits while it runs, yet offered only Discard and Retry: with the disk away, a Retry asks again and the mouse could only discard. Its AskSheet cancel is Keep for Now, the answer -1 that keeps them in memory, translated in French and Spanish. missing_original clicks it with the disk away: the sheet goes, the edits stay held and unwritten."
+  },
+  {
+    "id": 1752,
+    "type": "fix",
+    "title": "A sheet holds the keyboard, so Escape always reaches its own dismiss",
+    "status": "done",
+    "detail": "Escape under a sheet went to the sheet when its key held the keyboard, else to a hand-kept Rust list that lacked Unsaved and Converting; any press gave the keyboard to the window's monitor, so after a click the unsaved sheet and the DNG conversion ignored Escape. A sheet now takes the keyboard as it shows (its scope, then its field or default key), the monitor no longer takes it on a press under a sheet nor as the sheet shows, and a refocus under a sheet hands it back to the sheet. sheet_escape shows the unsaved sheet, the conversion at work, a removing question and the notice, presses beside each card and sends Escape: each answers its dismiss; twin, the DNG choice stays. Before the fix it fails on the unsaved sheet."
+  },
+  {
+    "id": 1753,
+    "type": "refactor",
+    "title": "The Rust per-sheet Escape and Return lists go",
+    "status": "done",
+    "detail": "escape_sheet, return_sheet and the welcome's key branch are deleted: each sheet answers Escape through dismissed and Return through its default key, or `returned` where it has none (the welcome, whose commit would scroll it away, and the library catch-up). The key path keeps one rule for a sheet: no key reaches behind it. The sheets check now expects the sheet, not the monitor, to hold the keyboard under a confirm."
+  },
+  {
+    "id": 1754,
+    "type": "check",
+    "title": "Checks for the sheets' keyboard and a field's undo",
+    "status": "done",
+    "detail": "New window checks sheet_escape and field_undo, and missing_original extended: Escape after a press beside the unsaved sheet keeps the edits, the keep key keeps them, twin Return is Retry's and leaves the sheet while the disk is away. Each was run against the code before its fix and failed there."
   }
 ]

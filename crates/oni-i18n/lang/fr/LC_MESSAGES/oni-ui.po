@@ -1213,6 +1213,10 @@ msgstr "Afficher le dossier"
 msgid "Back to the Gallery"
 msgstr "Retour à la galerie"
 
+#: crates/oni-ui/ui/missing.slint
+msgid "Keep for Now"
+msgstr "Garder pour l’instant"
+
 #: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
 msgid "Discard"
 msgstr "Abandonner"
@@ -1269,7 +1273,7 @@ msgstr "Trop large, ONI lit tout ; trop étroit, des photos restent à l’éca
 msgid "Add"
 msgstr "Ajouter"
 
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint
 msgid "DONE"
 msgstr "TERMINÉ"
 
@@ -4158,6 +4162,14 @@ msgid "The picture cannot be shown on this graphics card; the log names why."
 msgstr "L’image ne peut pas être affichée sur cette carte graphique ; le journal en indique la raison."
 
 #: crates/oni-app/src/app/rendering/landing.rs
+msgid "{name}: could not be rendered"
+msgstr "{name} : rendu impossible"
+
+#: crates/oni-app/src/app/rendering/landing.rs
+msgid "Frame {number} of {count}"
+msgstr "Vue {number} sur {count}"
+
+#: crates/oni-app/src/app/rendering/landing.rs
 msgid "{name}: cut short"
 msgstr "{name} : fichier incomplet"
 
@@ -4168,10 +4180,6 @@ msgstr "{name} : décodage impossible"
 #: crates/oni-app/src/app/rendering/landing.rs
 msgid "Not rendered: {e}"
 msgstr "Rendu impossible : {e}"
-
-#: crates/oni-app/src/app/rendering/landing.rs
-msgid "Frame {number} of {count}"
-msgstr "Vue {number} sur {count}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Not from a film stock"

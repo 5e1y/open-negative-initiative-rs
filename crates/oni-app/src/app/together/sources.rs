@@ -25,8 +25,8 @@ impl Ctl {
                         return;
                     }
                     let settings = drawing::settings_of(&path);
-                    let slide = settings.as_ref().is_some_and(|s| render::Reading::of(s).slide);
-                    let preview = previews.lock().expect("previews").get(&path, slide);
+                    let reading = settings.as_ref().map(render::Reading::of).unwrap_or_default();
+                    let preview = previews.lock().expect("previews").get(&path, &reading);
                     let made = match (preview, settings) {
                         (Some(p), Some(s)) => engine.lock().and_then(|mut e| e.tile_of(&p, source_side(&s, (p.size().0 as usize, p.size().1 as usize)))).map(Arc::new),
                         _ => tile_source(&engine, &path, id),

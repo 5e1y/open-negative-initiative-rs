@@ -17,20 +17,11 @@ impl Ctl {
         let done = match done {
             Ok(d) => d,
             Err((path, e)) => {
-                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                let convertible = crate::adobe_dng::is_nikon_he(&path);
-                if self.state.borrow().open_path().map(PathBuf::from) != Some(path) {
+                if self.state.borrow().open_path().map(PathBuf::from) != Some(path.clone()) {
                     return;
                 }
-                // The canvas never keeps another photo's picture under this one's name.
-                self.blank_canvas();
-                w.global::<Canvas>().set_busy(false);
-                let failure = if e == crate::render::cut_short() { tr!("{name}: cut short", name = name) } else { tr!("{name}: could not be decoded", name = name) };
-                w.global::<Canvas>().set_failure(failure.into());
-                w.global::<Canvas>().set_convertible(convertible);
-                self.clear_output();
-                self.say(&tr!("Not rendered: {e}", e = e));
-                return;
+                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                return self.canvas_failed(tr!("{name}: could not be rendered", name = name), false, &e);
             }
         };
         {
@@ -40,6 +31,9 @@ impl Ctl {
                 return;
             }
         }
+        // A render of the open frame that landed is the truth about it: no failure stands over it.
+        w.global::<Canvas>().set_failure("".into());
+        w.global::<Canvas>().set_convertible(false);
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: crate::anonymity::token(&done.path.to_string_lossy()) };
         let e = done.picture.extent();
         let (width, height) = (e.w as usize, e.h as usize);
@@ -71,6 +65,26 @@ impl Ctl {
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
+    }
+
+    /// The open frame's decode failed under the reading it still wants: the card says why, and offers
+    /// the conversion when the file is a Nikon HE RAW.
+    pub(in crate::app) fn decode_failed(self: &Rc<Self>, path: &str, e: String) {
+        let name = Path::new(path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let failure = if e == crate::render::cut_short() { tr!("{name}: cut short", name = name) } else { tr!("{name}: could not be decoded", name = name) };
+        let convertible = crate::adobe_dng::is_nikon_he(Path::new(path));
+        self.canvas_failed(failure, convertible, &format!("{}: {e}", stem(path)));
+    }
+
+    /// The canvas emptied under a failure card, as it never keeps another picture under this frame's name.
+    fn canvas_failed(&self, failure: String, convertible: bool, said: &str) {
+        let Some(w) = self.window() else { return };
+        self.blank_canvas();
+        w.global::<Canvas>().set_busy(false);
+        w.global::<Canvas>().set_failure(failure.into());
+        w.global::<Canvas>().set_convertible(convertible);
+        self.clear_output();
+        self.say(&tr!("Not rendered: {e}", e = said));
     }
 
     /// The output histogram emptied, for a frame with no render to count.

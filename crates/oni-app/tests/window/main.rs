@@ -72,6 +72,7 @@ mod masks;
 mod missing_original;
 mod navigator;
 mod new_roll;
+mod opening_reading;
 mod outside;
 mod panel_bindings;
 mod panel_frame;
@@ -112,6 +113,8 @@ mod scroll;
 mod session;
 mod sheet_layout;
 mod sheets;
+mod sheet_escape;
+mod field_undo;
 mod sheet_keys;
 mod sidebar_reveal;
 mod sidebars;
@@ -150,6 +153,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is", column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is),
     ("column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset", column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
+    ("opening_reading::a_decode_under_a_reading_left_never_lands_on_the_canvas", opening_reading::a_decode_under_a_reading_left_never_lands_on_the_canvas),
     ("dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source", dedust_grid::a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source),
     ("depth_lip::a_section_ending_on_a_well_draws_its_lip_whole", depth_lip::a_section_ending_on_a_well_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
@@ -271,6 +275,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),
     ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
     ("full_release::a_full_resolution_landing_in_the_gallery_is_let_go", full_release::a_full_resolution_landing_in_the_gallery_is_let_go),
+    ("full_release::a_full_resolution_build_survives_a_quick_return", full_release::a_full_resolution_build_survives_a_quick_return),
+    ("full_release::every_way_out_lets_the_editor_go", full_release::every_way_out_lets_the_editor_go),
     ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
     ("freshness::two_refreshes_at_once_land_only_the_latest_read", freshness::two_refreshes_at_once_land_only_the_latest_read),
     ("freshness::a_rename_waits_for_a_move_under_way", freshness::a_rename_waits_for_a_move_under_way),
@@ -342,6 +348,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("sheets::a_clash_with_an_original_offers_rename_and_keeps_it", sheets::a_clash_with_an_original_offers_rename_and_keeps_it),
     ("sheets::the_preset_name_sheet_holds_the_keys_and_answers_them", sheets::the_preset_name_sheet_holds_the_keys_and_answers_them),
+    ("sheet_escape::escape_answers_every_sheet_after_a_press_beside_it", sheet_escape::escape_answers_every_sheet_after_a_press_beside_it),
+    ("field_undo::undo_in_a_field_steps_its_typing_and_leaves_the_photos_history", field_undo::undo_in_a_field_steps_its_typing_and_leaves_the_photos_history),
     ("roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes", roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
     ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),

@@ -1,6 +1,8 @@
 //! The folders the checks read and never write: the reference roll, the Lumix calibration files and
 //! the Swift app's dumps. Each lookup prints one line and answers `None` when its folder is absent.
 
+pub mod dng;
+
 use std::path::PathBuf;
 
 /// Roll #8, the reference roll of Nikon NEFs.

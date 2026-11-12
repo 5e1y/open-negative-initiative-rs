@@ -183,6 +183,8 @@ export component Sheet inherits Rectangle {
     // The step between the content's groups; a notice's are a wider step apart.
     in property <Gap> gap: Gap.m;
     callback dismissed();
+    // Return on a sheet whose default key would scroll away or that has none.
+    callback returned();
     // The height the sheet takes, its margins included, in a room that holds it whole.
     out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
     property <bool> fixed: root.card-height > 0;
@@ -204,9 +206,17 @@ export component Sheet inherits Rectangle {
         height: 100%;
         focus-on-click: false;
         focus-on-tab-navigation: false;
+        // Shown, it holds the keyboard, its field or default key taking it next: no key reaches behind it.
+        init => {
+            if (!TextInputInterface.text-input-focused) { self.focus(); }
+        }
         key-pressed(event) => {
             if (event.text == Key.Escape) {
                 root.dismissed();
+                return accept;
+            }
+            if (event.text == Key.Return) {
+                root.returned();
                 return accept;
             }
             reject
