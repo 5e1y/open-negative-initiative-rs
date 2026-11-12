@@ -9237,5 +9237,26 @@
     "title": "An interrupted write's temporary is removed by the next write of its file",
     "status": "done",
     "detail": "Since #1801 every temporary had a unique hidden name, so a crash or force-quit mid-write left it for good: N interrupted DNG Converter downloads left N hidden 1.8 GB files in the caches, an interrupted host key write a copy of the private key. oni_settings::atomic now names a temporary from its target alone, `.oni-<hash of the target's name>-<rank>.tmp`, the rank the lowest no write of that target in flight in this process holds (a small static set, released when the write's `Staged` drops). A write removes whatever stands at that name, then creates its own: an interrupted write's leftover is taken by the next write of its file, one at most a rank, with no folder listing, and two writes of one file in flight in one process never share. Removing before creating, rather than truncating, keeps a leftover's mode or a link at the name out of the new file. `staged` returns the held `Staged`. The per-write clock stamp and the process serial are gone. Checks: a child process quits mid-write twice, one leftover stays and the next write leaves only its file (fails on 4c6582dc: three leftovers); a write in flight keeps its temporary, its twin letting go before the rename loses it. Review points: the presets, flat-field and atomic twins now run the code under test, the private-mode twin holds under umask 077, the phone check fails at the rename on every system and as root. Known limit: a second ONI process writing the same file at the same instant can take the same temporary."
+  },
+  {
+    "id": 1825,
+    "type": "refactor",
+    "title": "The decode cache's code stamp covers every source a decode runs through, built by build.rs; LibRaw builds in a crate of its own",
+    "status": "done",
+    "detail": "cache.rs hashed a hand-kept list (pinned.c, stream.cpp, lib.rs, source.rs, camera.rs) and missed neutral.rs, m3.rs, the rest of src/ and the LibRaw version, so retuning them kept serving older decodes. oni-decode/build.rs now prints ONI_DECODE_STAMP (src/stamp.rs: FNV-1a 128 over each file's name from the crate, written with `/`, its length and bytes, sorted, hidden files aside) over src/, ../oni-libraw/LIBRAW_VERSION, ../oni-libraw/csrc and ../oni-libraw/build.rs (the compile's defines), with one rerun-if-changed a part; CODE is env!(\"ONI_DECODE_STAMP\") and the include_str! list is gone. A build script reruns whole, so LibRaw (11 s, 34 s of CPU) moved into the new crate oni-libraw (libraw/, csrc/, LIBRAW_VERSION, its build.rs and pinned_knobs.rs, by git mv), linked through `use oni_libraw as _`: an edit of oni-decode/src reprints the stamp in about 2 s and compiles no LibRaw. Paths updated in CLAUDE.md, README.md, docs/research/libraw-knobs.md and oni-measure/build.rs. cargo hakari generate was already stale on canvas (vendored notify, resvg, usvg) and its manage-deps adds oni-hack to vendor/notify, a cycle: left untouched, oni-libraw depends on oni-hack by hand."
+  },
+  {
+    "id": 1826,
+    "type": "refactor",
+    "title": "The decode cache writes through oni_settings::atomic::cached_with",
+    "status": "done",
+    "detail": "store() loses its own part name, rename and cleanup, the seventh write-then-rename copy: oni-settings becomes a dependency of oni-decode and the write goes through cached_with (no flush, a decode is made again when lost). trim() lets stale `.tmp` temporaries go after 600 s, and the `.part` of earlier builds that share the folder. Checks: a stale temporary and a former part go, a temporary in flight stays (twin); a write stopped midway leaves the kept decode whole and its temporary is taken by the next write of the frame (twin: two names before it, one after)."
+  },
+  {
+    "id": 1827,
+    "type": "check",
+    "title": "The decoder's stamp moves with one byte of any listed file and with nothing else",
+    "status": "done",
+    "detail": "stamp.rs tests: one byte changed in a nested source or in the version file changes the stamp, an unchanged tree keeps it, a file outside the parts or a hidden file inside them moves nothing (twin); one tree in two folders prints alike, a renamed file prints otherwise (twin), a missing part is an error; the built ONI_DECODE_STAMP equals the stamp of today's sources (twin: the former five-file list prints otherwise). Shown live: appending a line to src/m3.rs rebuilt oni-decode alone and the built stamp followed; a line in csrc/stream.cpp rebuilt oni-libraw and the stamp followed."
   }
 ]

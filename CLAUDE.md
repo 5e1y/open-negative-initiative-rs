@@ -15,7 +15,7 @@ maths and constants, and the sidecar format it reads.
    reductions (preview, halvings) are held in `rgba16float` (owner's call, half the memory); the render
    graph accepts no other texture format.
 3. **Never a home-made demosaicer.** LibRaw demosaics, with every automatic knob pinned
-   (`crates/oni-decode/csrc/pinned.c`). Changing one moves every render.
+   (`crates/oni-libraw/csrc/pinned.c`). Changing one moves every render.
 4. **Zero anticipation.** A constant before a slider; a slider once use proves the constant wrong.
 5. **Every change is logged in `docs/tasks.json`** before its commit, cited as `(#id)`.
 6. **Every comment follows the comment rules**, in every file.
@@ -77,7 +77,7 @@ the code; a costly trap keeps its constraint and its number in two lines.
 ## Build
 
 `scripts/check` runs every check: one build, then every test binary at once (about 30 s);
-`--release` is the shipped build and the benches' only. LibRaw is vendored in `crates/oni-decode/libraw` (0.22.2) and
+`--release` is the shipped build and the benches' only. LibRaw is vendored in `crates/oni-libraw/libraw` (0.22.2) and
 built by `build.rs`, so a new camera arrives by updating that copy, never from the system.
 
 - **The loop stays under a minute, build and checks included.** The dev profile is incremental, the

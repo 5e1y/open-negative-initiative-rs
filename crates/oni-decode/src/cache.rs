@@ -4,8 +4,7 @@
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{LazyLock, RwLock};
+use std::sync::RwLock;
 use std::time::{Duration, SystemTime};
 
 /// Where decodes are kept and the bytes they may take; none keeps nothing.
@@ -13,14 +12,8 @@ static PLACE: RwLock<Option<(PathBuf, u64)>> = RwLock::new(None);
 
 const MAGIC: &[u8; 8] = b"ONIDEC1\0";
 
-/// The decoder's own code, so a change to how a file is read never serves an older decode.
-static CODE: LazyLock<u64> = LazyLock::new(|| {
-    let mut h = std::collections::hash_map::DefaultHasher::new();
-    for part in [include_str!("../csrc/pinned.c"), include_str!("../csrc/stream.cpp"), include_str!("lib.rs"), include_str!("source.rs"), include_str!("camera.rs")] {
-        part.hash(&mut h);
-    }
-    h.finish()
-});
+/// The decoder's own code (`stamp.rs`), so a change to how a file is read never serves an older decode.
+const CODE: &str = env!("ONI_DECODE_STAMP");
 
 /// Keeps full decodes in `dir`, the oldest let go past `cap` bytes.
 pub fn keep_in(dir: PathBuf, cap: u64) {
@@ -43,7 +36,7 @@ pub(crate) struct Kept {
 pub(crate) fn key(path: &Path, reading: &str) -> Option<String> {
     let m = std::fs::metadata(path).ok()?;
     let at = m.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_nanos();
-    Some(format!("{:016x}|{}|{}|{at}|{reading}", *CODE, path.display(), m.len()))
+    Some(format!("{CODE}|{}|{}|{at}|{reading}", path.display(), m.len()))
 }
 
 fn file(dir: &Path, key: &str) -> PathBuf {
@@ -101,14 +94,12 @@ pub(crate) fn write<'a>(key: &str, head: &Kept, rows: impl Iterator<Item = &'a [
     trim(&dir, cap);
 }
 
-/// The decode written whole under a name of its own, then renamed, so a reader never meets half a file;
+/// The decode written whole beside its name, then renamed, so a reader never meets half a file;
 /// `head`'s samples are not read, `rows` are.
 fn store<'a>(dir: &Path, key: &str, kept: &Kept, rows: impl Iterator<Item = &'a [u16]>) {
     let _ = std::fs::create_dir_all(dir);
-    let at = file(dir, key);
-    let part = part_of(&at);
-    let written = (|| -> std::io::Result<()> {
-        let mut out = std::io::BufWriter::new(std::fs::File::create(&part)?);
+    let _ = oni_settings::atomic::cached_with(&file(dir, key), |f| {
+        let mut out = std::io::BufWriter::new(f);
         out.write_all(MAGIC)?;
         out.write_all(&(key.len() as u32).to_le_bytes())?;
         out.write_all(key.as_bytes())?;
@@ -124,24 +115,14 @@ fn store<'a>(dir: &Path, key: &str, kept: &Kept, rows: impl Iterator<Item = &'a 
             bytes.extend(row.iter().flat_map(|v| v.to_le_bytes()));
             out.write_all(&bytes)?;
         }
-        out.flush()?;
-        std::fs::rename(&part, &at)
-    })();
-    if written.is_err() {
-        let _ = std::fs::remove_file(&part);
-    }
+        out.flush()
+    });
 }
 
-/// A name of this writer's own: two decodes of one frame at once never write into one file.
-fn part_of(at: &Path) -> PathBuf {
-    static NEXT: AtomicU64 = AtomicU64::new(0);
-    at.with_extension(format!("{}-{}.part", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)))
-}
+/// A temporary older than this is a writer's that stopped: a whole decode is written in seconds.
+const STALE_TEMPORARY: Duration = Duration::from_secs(600);
 
-/// A part older than this is a writer's that stopped: a whole decode is written in seconds.
-const STALE_PART: Duration = Duration::from_secs(600);
-
-/// The oldest decodes let go until the folder holds `cap` bytes at most, and stale parts with them.
+/// The oldest decodes let go until the folder holds `cap` bytes at most, and stale temporaries with them.
 fn trim(dir: &Path, cap: u64) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
     let now = SystemTime::now();
@@ -149,9 +130,10 @@ fn trim(dir: &Path, cap: u64) {
         .flatten()
         .filter(|e| {
             let kept = e.path();
-            if kept.extension().is_some_and(|x| x == "part") {
+            // `part` is the temporary of builds before the shared writer, which share this folder.
+            if kept.extension().is_some_and(|x| x == "tmp" || x == "part") {
                 let at = e.metadata().and_then(|m| m.modified());
-                if at.is_ok_and(|at| now.duration_since(at).is_ok_and(|age| age > STALE_PART)) {
+                if at.is_ok_and(|at| now.duration_since(at).is_ok_and(|age| age > STALE_TEMPORARY)) {
                     let _ = std::fs::remove_file(&kept);
                 }
                 return false;
@@ -205,21 +187,38 @@ mod tests {
     }
 
     #[test]
-    fn two_writers_of_one_frame_never_share_a_part_and_a_stale_part_goes() {
+    fn a_stale_temporary_goes_and_a_write_in_flight_stays() {
         let dir = temporary("parts");
         std::fs::create_dir_all(&dir).unwrap();
-        let at = file(&dir, "frame");
-        assert_ne!(part_of(&at), part_of(&at), "each writer its own part");
-        let (stale, fresh) = (part_of(&at), part_of(&at));
-        for p in [&stale, &fresh] {
+        let (stale, former, fresh) = (dir.join(".oni-0123456789abcdef-0.tmp"), dir.join("0123456789abcdef.1-0.part"), dir.join(".oni-0123456789abcdef-1.tmp"));
+        for p in [&stale, &former, &fresh] {
             std::fs::write(p, b"half a decode").unwrap();
         }
-        let old = SystemTime::now() - STALE_PART - Duration::from_secs(60);
-        std::fs::File::options().write(true).open(&stale).unwrap().set_modified(old).unwrap();
+        let old = SystemTime::now() - STALE_TEMPORARY - Duration::from_secs(60);
+        for p in [&stale, &former] {
+            std::fs::File::options().write(true).open(p).unwrap().set_modified(old).unwrap();
+        }
         trim(&dir, u64::MAX);
-        assert!(!stale.exists(), "a writer stopped long ago leaves nothing");
-        // Twin: a part still being written stays.
+        assert!(!stale.exists() && !former.exists(), "a writer stopped long ago leaves nothing");
+        // Twin: a temporary still being written stays.
         assert!(fresh.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_decode_stopped_midway_leaves_the_kept_one_whole() {
+        let dir = temporary("stopped");
+        let kept = Kept { width: 2, height: 2, flip: 0, factor: 1, matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], raw: Vec::new() };
+        let samples = vec![7u16; 12];
+        store(&dir, "frame", &kept, samples.chunks(6));
+        let failing = std::iter::once(&samples[..6]).chain(std::iter::from_fn(|| panic!("the decoder stopped")));
+        assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| store(&dir, "frame", &kept, failing))).is_err());
+        assert_eq!(read_in(&dir, "frame").expect("kept").raw, samples);
+        // Twin: the temporary left by the stop is taken by the next write of the frame.
+        let names = || std::fs::read_dir(&dir).unwrap().count();
+        assert_eq!(names(), 2, "the stopped write's temporary is there");
+        store(&dir, "frame", &kept, samples.chunks(6));
+        assert_eq!(names(), 1);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
