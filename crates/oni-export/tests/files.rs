@@ -207,13 +207,30 @@ fn an_empty_field_writes_no_tag() {
     assert_eq!(text(&file, exif::Tag::PhotographicSensitivity).as_deref(), Some("65535"));
 }
 
-/// A profile on disk standing in for a paper's: ProPhoto's own bytes, a matrix-shaper profile.
-fn profile_space() -> Space {
+/// Where the stand-in profile `name` lies; a file of its own, as a test rewriting another's reads
+/// it empty halfway through and the space as gone.
+fn stand_in(name: &str) -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!("oni-export-profile-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join("ROMM.icc");
+    dir.join(format!("{name}.icc"))
+}
+
+/// A profile on disk standing in for a paper's: ProPhoto's own bytes, a matrix-shaper profile.
+fn profile_space(name: &str) -> Space {
+    let path = stand_in(name);
     std::fs::write(&path, Space::ProPhoto.icc_data().unwrap()).unwrap();
     Space::Profile(oni_colour::OutputProfile::new(path.to_string_lossy()))
+}
+
+#[test]
+fn a_stand_in_profile_rewritten_leaves_every_other_whole() {
+    let kept = profile_space("kept");
+    let rewritten = profile_space("rewritten");
+    // What a write does first: the file emptied before its bytes land.
+    std::fs::write(stand_in("rewritten"), []).unwrap();
+    assert!(kept.icc_data().is_some(), "another test's stand-in is never this one's file");
+    // Twin: the stand-in caught halfway through its own rewrite reads as gone.
+    assert!(rewritten.icc_data().is_none());
 }
 
 #[test]
@@ -221,7 +238,7 @@ fn every_format_declares_the_profile_of_its_space() {
     let image = frame(16, 16);
     let variants = [(Format::Jpeg, false), (Format::Jpeg, true), (Format::Tiff16, false)];
     let mut p3_jpeg = None;
-    let profile = profile_space();
+    let profile = profile_space("declared");
     assert!(profile.icc_data().is_some(), "the stand-in profile loads");
     for space in Space::BUILT_IN.into_iter().chain([profile]) {
         for (format, hdr) in variants {
@@ -282,7 +299,7 @@ fn a_wide_green_survives_prophoto_and_clips_in_adobe_rgb() {
     let green = [0.01, 0.6, 0.01];
     let pro_photo = read_back_gap(Space::ProPhoto, green, None);
     assert!(pro_photo < 2e-3, "ProPhoto TIFF gap {pro_photo}");
-    let through_profile = read_back_gap(profile_space(), green, None);
+    let through_profile = read_back_gap(profile_space("green"), green, None);
     assert!(through_profile < 2e-3, "ProPhoto as an ICC profile, gap {through_profile}");
     // A grey sits in every space: Adobe RGB and sRGB hold it, so their clip below is the green's.
     for space in [Space::AdobeRgb, Space::Srgb, Space::DisplayP3] {

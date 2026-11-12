@@ -9769,5 +9769,12 @@
     "title": "A date kept on a frame's EXIF line is settled as it is read, on the line types fix/exif-zoom brought",
     "status": "done",
     "detail": "fix/export-files settled a date where read through ExifMetadata, while canvas had moved the sidecar's line to TypedExif (a missing key derives, an empty one was cleared by hand). Merging both, ExifMetadata.date and TypedExif.date are settled at deserialisation: a kept date that reads as no date is a date cleared (Some(\"\")), never one left to derive, and an absent one still derives; the Date field writes exif::date_of over the row, the export writes the line's date as it stands and keeps what a hand set through keep_line. Check: exif a_sidecars_date_is_settled_as_it_is_read, on TypedExif (words read as cleared, an absent date as None, the whole line settled too; twin: the document read as plain JSON keeps the ten characters EXIF refuses)."
+  },
+  {
+    "id": 1931,
+    "type": "fix",
+    "title": "The export's profile checks each read a stand-in profile file of their own",
+    "status": "done",
+    "detail": "every_format_declares_the_profile_of_its_space failed in a full run with 'Jpeg hdr false in ProPhoto RGB': the file declared the profile while the space's icc_data() read None. Both it and a_wide_green_survives_prophoto_and_clips_in_adobe_rgb wrote the same ROMM.icc in the same process; OutputProfile::loaded re-reads a file whose stamp changed, so one test caught the other's write between its truncation and its bytes and read the space as gone, which is the app's intended answer for a profile gone or unreadable. The app was right, the check shared a file: each stand-in is now a file of its own name. Reproduced once in 900 runs of the binary under load before, none in 900 after. Check: files a_stand_in_profile_rewritten_leaves_every_other_whole (failed with the shared file; twin: the stand-in caught halfway through its own rewrite reads as gone)."
   }
 ]
