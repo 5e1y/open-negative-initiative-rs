@@ -8,9 +8,8 @@ use oni_measure::key::{Decoded, Measurer, PREVIEW_SIDE};
 use oni_measure::truncate::Stage;
 use oni_measure::{auto_levels, key, pipette, roll};
 use oni_pipeline::{Inputs, Pipeline, Request};
-use oni_settings::blocks::Gains;
 use oni_settings::cg::{Point, Rect};
-use oni_settings::frame::{Geometry, RollReference};
+use oni_settings::frame::RollReference;
 use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::sidecar::{self, RollDraft};
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -78,16 +77,6 @@ fn measurer() -> Measurer {
     )
 }
 
-/// `key::base`'s bare frame: framing, gains and dust stripped, on the roll's film.
-fn bare(open: &PipelineSettings, film: ConversionMode) -> PipelineSettings {
-    let mut bare = oni_core::parameters::imported(open);
-    bare.mode = film;
-    bare.geometry = Geometry::default();
-    bare.gains = Gains::default();
-    bare.corrections = Vec::new();
-    bare
-}
-
 fn worst(a: [f32; 3], b: [f32; 3]) -> f32 {
     (0..3).map(|c| (a[c] - b[c]).abs()).fold(0.0, f32::max)
 }
@@ -96,7 +85,7 @@ fn worst(a: [f32; 3], b: [f32; 3]) -> f32 {
 fn find_base(m: &Measurer, frames: &[Frame], film: ConversionMode, recorded: [f32; 3]) -> (usize, Point, f32) {
     let mut best = (0, Point::new(0.5, 0.5), f32::INFINITY);
     for (i, f) in frames.iter().enumerate() {
-        let s = bare(&f.settings, film);
+        let s = key::bare(&roll::start(&f.settings, film, f.window, None, f.settings.capture_stops));
         let Some(plane) = m.with(&f.name_path(), &s, |r, copy| r.plane(copy, &s, Stage::Levels)) else { continue };
         for gy in 1..BASE_GRID {
             for gx in 1..BASE_GRID {
@@ -223,8 +212,8 @@ fn main() {
             }
         }
         let pick = &frames[at];
-        let open = bare(&pick.settings, film);
-        let base = m.with(&pick.name_path(), &open, |r, copy| key::base(r, copy, &pick.settings, film, None, pick.settings.capture_stops, unit, roll::BASE_RADIUS));
+        let start = roll::start(&pick.settings, film, pick.window, None, pick.settings.capture_stops);
+        let base = m.base(&pick.name_path(), &start, unit, roll::BASE_RADIUS);
         let reference = roll::combined(&measured, film, base).expect("the roll combines");
         println!("{label}: {} frames, stops {:?}, black {:?}, white {:?}", measured.len(), reference.stops, reference.black, reference.white);
         report.push(format!("\"{label}\": {}", reference_json(&reference)));

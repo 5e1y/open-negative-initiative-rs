@@ -8698,5 +8698,19 @@
     "title": "A footer too narrow for its keys lays its commit on a line of its own",
     "status": "done",
     "detail": "Owner's report: in French the prepare panel's footer ran past the panel, Cancel and Back now keycaps beside PRÉPARER LA PELLICULE. SheetFooter measures its keys on one line in an unseen copy of no height, so the choice never follows the lines it lays; too narrow, it lays the commit under the other keys, as wide as the room. The prepare check names the last step's key as French does: every key inside the footer, the commit under Back at the footer's width, twin one line outrunning it; with the footer forced to one line the check fails."
+  },
+  {
+    "id": 1745,
+    "type": "fix",
+    "title": "A roll resumed on RGB Passes groups its files again",
+    "status": "done",
+    "detail": "A Prepare the Roll draft walked on RGB Passes set the capture on resume without grouping the files, so PREPARE ROLL measured each single-colour pass as a colour frame and wrote a roll without passes. The capture, pass order and offset now have one setter, Roll::group_as, which regroups; the first frame's capture, the draft's values and the hand's three keys all go through it. A regrouping keeps each lead's tick and flag and counts the base step's frame among the new frames; a frame's EXIF lands on the sources too; a step's waiting draft is written even when the last file to land is a pass; the draft now carries passOffset, so a roll shifted by a file resumes on its own leads; the chips' pictures are read on resume without refitting the draft's order. Check: model.rs resumes a six-file roll in landing order and finds two leads holding their passes, the first flagged, the second on its own draft, the base frame back to 0, the offset restored; twins: the capture set alone leaves six frames, the sources alone hold no flag. Against the code before, the same resume left six frames."
+  },
+  {
+    "id": 1746,
+    "type": "fix",
+    "title": "The base and the slides' white are read on the decode their frames are measured on",
+    "status": "done",
+    "detail": "Prepare the Roll read the base (or a slide roll's white) on the base frame's own sidecar decode, while the frames were measured on the roll's start: a slide never prepared read its white at the negative's 5000 K and cast every slide, and a lead's base was read without its passes composed. measure.rs builds every frame's start in one closure, the base frame's too, and slides.rs reads the white on roll::slide; Measurer::base decodes and reads on one settings, key::bare strips it, and key::base lost its mode, mask and stops arguments, which the start already holds. Check: slide_roll.rs decodes warm at 5000 K and grey at 5500 K or composed; the white on the slide's start asks no gains and the base on the lead's start reads the composed grey; twins decoded on the sidecar read the cast. The app's calls before the fix failed both assertions."
   }
 ]

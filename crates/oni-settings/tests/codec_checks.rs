@@ -96,6 +96,7 @@ fn the_envelope_reads_what_the_full_decode_reads() {
         film: ConversionMode::Positive,
         capture: "camera".into(),
         pass_order: None,
+        pass_offset: None,
         flat_field: None,
         base: None,
         window: None,

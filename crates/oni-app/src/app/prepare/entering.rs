@@ -98,8 +98,10 @@ impl Ctl {
                     if s.prepare.session != session {
                         return;
                     }
+                    // On the sources too, which a regrouping lays the frames from.
+                    let r = &mut s.prepare;
                     for (path, capture) in reading.iter().zip(captures) {
-                        if let Some(f) = s.prepare.frames.iter_mut().find(|f| &f.path == path) {
+                        for f in r.sources.iter_mut().chain(r.frames.iter_mut()).filter(|f| &f.path == path) {
                             f.capture = capture;
                         }
                     }
@@ -126,7 +128,9 @@ impl Ctl {
 
     /// `landRollFrame`: the frame's framing, its preview asked, the roll's values off the first.
     pub(in crate::app) fn land_frame(self: &Rc<Self>, session: u64, path: &str, read: PipelineSettings, draft: Option<RollDraft>, first: bool, aspect: Option<f64>) {
-        let waited = {
+        // Only the first frame and a draft group the roll's files.
+        let known = if first || draft.is_some() { self.known() } else { passes::Known::new() };
+        let (waited, grouped) = {
             let kept = self.remembered_flat_field();
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
@@ -143,15 +147,15 @@ impl Ctl {
                     source.passes = read.rgb_passes.clone();
                 }
             }
-            let Some(index) = r.frames.iter().position(|f| f.path == path) else { return };
-            let f = &mut r.frames[index];
-            if read.rgb_passes.is_some() && f.passes.is_none() {
-                f.passes = read.rgb_passes.clone();
-            }
-            f.crop = whole.geometry.crop;
-            f.aspect = aspect;
-            if let Some(p) = &r.previews {
-                p.add(path, &whole);
+            if let Some(f) = r.frames.iter_mut().find(|f| f.path == path) {
+                if read.rgb_passes.is_some() && f.passes.is_none() {
+                    f.passes = read.rgb_passes.clone();
+                }
+                f.crop = whole.geometry.crop;
+                f.aspect = aspect;
+                if let Some(p) = &r.previews {
+                    p.add(path, &whole);
+                }
             }
             if first {
                 if let Some(a) = aspect {
@@ -162,17 +166,21 @@ impl Ctl {
                 r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
                 // A slide once read as its own negative comes back as the positive it is.
                 r.film = if read.inverted_source { ConversionMode::Positive } else { read.mode };
-                r.capture = if read.rgb_passes.is_some() {
+                let capture = if read.rgb_passes.is_some() {
                     Capture::RgbPasses
                 } else if read.decoded_from_mosaic {
                     Capture::Camera
                 } else {
                     Capture::Scanner
                 };
+                r.group_as(capture, r.pass_order, r.pass_offset, &known);
             }
-            r.resume(draft.as_ref(), index);
-            r.draft_landed()
+            let resumed = r.resume(draft.as_ref(), path, &known);
+            (r.draft_landed(), resumed && r.grouping.is_some())
         };
+        if grouped {
+            self.read_passes(false);
+        }
         if waited {
             self.save_draft();
         }

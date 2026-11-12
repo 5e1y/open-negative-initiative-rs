@@ -55,9 +55,18 @@ pub fn moved(order: PassOrder, from: usize, to: usize) -> Option<PassOrder> {
 }
 
 impl Roll {
+    /// The roll's capture, pass order and offset, the one way each is set: the files regrouped on
+    /// them, and the previews asked again for the frames the roll then has.
+    pub(super) fn group_as(&mut self, capture: Capture, order: PassOrder, offset: usize, known: &Known) {
+        (self.capture, self.pass_order, self.pass_offset) = (capture, order, offset);
+        if self.regroup(known) {
+            self.refresh_previews();
+        }
+    }
+
     /// `regroupRoll`: on RGB Passes, the files grouped from the offset and held, the frames their
     /// leads; else, or once every file leads passes, the files as they came. True when they changed.
-    pub(super) fn regroup(&mut self, known: &Known) -> bool {
+    fn regroup(&mut self, known: &Known) -> bool {
         if !self.shown || self.progress.is_some() {
             return false;
         }
@@ -66,7 +75,8 @@ impl Roll {
             rgb_passes::release();
             self.grouping = None;
             if self.frames.iter().map(|f| &f.path).ne(self.sources.iter().map(|f| &f.path)) {
-                self.frames = self.sources.clone();
+                self.frames = self.placed(self.sources.clone());
+                (self.at, self.base_frame) = (0, 0);
                 return true;
             }
             return false;
@@ -79,7 +89,7 @@ impl Roll {
         }
         rgb_passes::hold(held);
         let sources: HashMap<&String, &Frame> = self.sources.iter().map(|f| (&f.path, f)).collect();
-        self.frames = grouping
+        let leads = grouping
             .frames
             .iter()
             .filter_map(|g| {
@@ -88,9 +98,21 @@ impl Roll {
                 Some(lead)
             })
             .collect();
+        self.frames = self.placed(leads);
         self.grouping = Some(grouping);
-        self.at = 0;
+        (self.at, self.base_frame) = (0, 0);
         true
+    }
+
+    /// `laid` from the sources, each file keeping the tick and flag it holds as a frame now.
+    fn placed(&self, mut laid: Vec<Frame>) -> Vec<Frame> {
+        let places: HashMap<&str, (bool, bool)> = self.frames.iter().map(|f| (f.path.as_str(), (f.ticked, f.flagged))).collect();
+        for f in &mut laid {
+            if let Some(&(ticked, flagged)) = places.get(f.path.as_str()) {
+                (f.ticked, f.flagged) = (ticked, flagged);
+            }
+        }
+        laid
     }
 
     /// The first frame's three files, slot by slot: the order's bands pick them out of the triplet.
@@ -102,68 +124,58 @@ impl Roll {
 }
 
 impl Ctl {
-    fn known(&self) -> Known {
+    pub(super) fn known(&self) -> Known {
         self.state.borrow().rows.iter().map(|e| (e.path.clone(), (e.captured_at, e.leads_passes))).collect()
-    }
-
-    /// The roll regrouped, its previews asked again for the frames it now has.
-    pub(super) fn regroup_roll(self: &Rc<Self>) {
-        let known = self.known();
-        let mut s = self.state.borrow_mut();
-        let r = &mut s.prepare;
-        if r.regroup(&known) {
-            r.refresh_previews();
-        }
     }
 
     /// `rollCaptureBinding`: a new capture regroups, and RGB Passes reads the first frame's files.
     pub(super) fn capture_picked(self: &Rc<Self>, capture: Capture) {
+        let known = self.known();
         {
             let r = &mut self.state.borrow_mut().prepare;
             if r.capture == capture {
                 return;
             }
-            r.capture = capture;
+            r.group_as(capture, r.pass_order, r.pass_offset, &known);
         }
-        self.regroup_roll();
         if capture == Capture::RgbPasses {
-            self.read_passes();
+            self.read_passes(true);
         }
         self.publish_prepare();
     }
 
     /// `rollPassOrderBinding`: the hand's order regroups the roll.
     pub(super) fn pass_moved(self: &Rc<Self>, from: usize, to: usize) {
+        let known = self.known();
         {
             let r = &mut self.state.borrow_mut().prepare;
             match moved(r.pass_order, from, to) {
-                Some(now) if now != r.pass_order => r.pass_order = now,
+                Some(now) if now != r.pass_order => r.group_as(r.capture, now, r.pass_offset, &known),
                 _ => return,
             }
         }
-        self.regroup_roll();
         self.publish_prepare();
     }
 
     /// `onShiftGrouping`: the triplets start one file later, three shifts coming back.
     pub(super) fn shift_grouping(self: &Rc<Self>) {
+        let known = self.known();
         {
             let r = &mut self.state.borrow_mut().prepare;
-            r.pass_offset = (r.pass_offset + 1) % 3;
+            r.group_as(r.capture, r.pass_order, (r.pass_offset + 1) % 3, &known);
         }
-        self.regroup_roll();
-        self.read_passes();
+        self.read_passes(true);
         self.publish_prepare();
     }
 
     /// `readRollPasses`: the first frame's three files decoded alone off this thread; their pictures
-    /// go on the chips and, the order untouched meanwhile, the order their light fits replaces it.
-    pub(super) fn read_passes(self: &Rc<Self>) {
+    /// go on the chips and, when `fit` and the order untouched meanwhile, the order their light fits replaces it.
+    pub(super) fn read_passes(self: &Rc<Self>, fit: bool) {
         let (files, asked, ticket) = {
             let r = &mut self.state.borrow_mut().prepare;
             let Some(files) = r.first_files() else { return };
             r.passes_asked += 1;
-            (files, r.pass_order, r.passes_asked)
+            (files, fit.then_some(r.pass_order), r.passes_asked)
         };
         std::thread::spawn(move || {
             let reads: Option<Vec<PassRead>> = files.iter().map(|f| passes::read(f)).collect();
@@ -171,23 +183,17 @@ impl Ctl {
         });
     }
 
-    fn passes_read(self: &Rc<Self>, files: &[String], asked: PassOrder, ticket: u64, reads: Option<Vec<PassRead>>) {
-        let fitted = {
+    fn passes_read(self: &Rc<Self>, files: &[String], asked: Option<PassOrder>, ticket: u64, reads: Option<Vec<PassRead>>) {
+        let known = self.known();
+        {
             let r = &mut self.state.borrow_mut().prepare;
             let current = r.shown && r.passes_asked == ticket && r.capture == Capture::RgbPasses && r.first_files().as_deref() == Some(files);
             let Some(reads) = reads.filter(|_| current) else { return };
             r.pass_pictures = reads.iter().map(|p| (p.path.clone(), picture(&p.picture))).collect();
             let shares: Vec<[f64; 3]> = reads.iter().map(|p| p.share).collect();
-            match PassOrder::fitting(&shares) {
-                Some(order) if r.pass_order == asked && order != asked => {
-                    r.pass_order = order;
-                    true
-                }
-                _ => false,
+            if let Some(order) = PassOrder::fitting(&shares).filter(|o| asked == Some(r.pass_order) && Some(*o) != asked) {
+                r.group_as(r.capture, order, r.pass_offset, &known);
             }
-        };
-        if fitted {
-            self.regroup_roll();
         }
         self.publish_prepare();
     }

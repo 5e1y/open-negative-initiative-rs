@@ -284,21 +284,23 @@ mod tests {
             film: ConversionMode::Negative,
             capture: "scanner".into(),
             pass_order: None,
+            pass_offset: None,
             flat_field: None,
             base: Some(DraftBase { path: "b".into(), x: 0.1, y: 0.2, radius: 3.0 }),
             window: None,
             ticked: true,
             flagged: true,
         };
-        r.resume(None, 0);
+        let known = passes::Known::new();
+        r.resume(None, "a", &known);
         assert!(r.frames[0].ticked, "with no draft yet a frame keeps its tick");
-        r.resume(Some(&draft), 1);
+        r.resume(Some(&draft), "b", &known);
         assert_eq!((r.step, r.film, r.capture), (Step::Flags, ConversionMode::Negative, Capture::Scanner));
         assert_eq!(r.base, Some(BasePick { path: "b".into(), unit: (0.1, 0.2), radius: 3.0 }));
         assert!(!r.frames[0].ticked, "a frame landed before the draft, of none, is left out");
         assert!(r.frames[1].ticked && r.frames[1].flagged);
         let other = RollDraft { id: Id::new(), ..draft.clone() };
-        r.resume(Some(&other), 2);
+        r.resume(Some(&other), "c", &known);
         assert!(!r.frames[2].ticked, "twin: another draft's frame is left out");
         // The draft written back carries each frame's own place; none before every frame is read, the
         // step then written once the last one lands.
@@ -314,6 +316,57 @@ mod tests {
         let drafts = r.drafts().unwrap();
         assert_eq!(drafts.iter().map(|(_, d)| (d.ticked, d.flagged, d.id)).collect::<Vec<_>>(), [(false, false, id), (true, true, id), (false, false, id)]);
         assert_eq!(drafts[0].1.step, "flags");
+    }
+
+    /// A draft walked on RGB Passes rides its leads alone; resumed, the roll's files are grouped
+    /// again whatever order they land in, each lead keeping its own place.
+    #[test]
+    fn a_roll_resumed_on_rgb_passes_groups_its_files_and_keeps_each_leads_place() {
+        let files = ["/r/a1", "/r/a2", "/r/a3", "/r/b1", "/r/b2", "/r/b3"].map(frame).to_vec();
+        let fresh = || Roll { shown: true, sources: files.clone(), frames: files.clone(), base_frame: 4, ..Roll::default() };
+        let id = Id::new();
+        let draft = RollDraft {
+            id,
+            step: "flags".into(),
+            film: ConversionMode::Negative,
+            capture: "rgbPasses".into(),
+            pass_order: Some(PassOrder::Rgb),
+            pass_offset: Some(0),
+            flat_field: None,
+            base: None,
+            window: None,
+            ticked: true,
+            flagged: true,
+        };
+        let known = passes::Known::new();
+        let mut r = fresh();
+        // The files land in their order: a lead with its draft, its two passes with none, the next lead.
+        assert!(r.resume(Some(&draft), "/r/a1", &known), "the first draft found sets the roll");
+        r.resume(None, "/r/a2", &known);
+        r.resume(None, "/r/a3", &known);
+        r.resume(Some(&RollDraft { ticked: false, flagged: false, ..draft.clone() }), "/r/b1", &known);
+        assert_eq!((r.capture, r.pass_order), (Capture::RgbPasses, PassOrder::Rgb));
+        assert_eq!(r.frame_paths(), ["/r/a1", "/r/b1"], "the roll's frames are its leads");
+        assert!(r.grouping.is_some() && r.frames.iter().all(|f| f.passes.is_some()));
+        assert_eq!(oni_library::rgb_passes::named_by("/r/a1").map(|p| p.green), Some("a2".into()), "the measure finds each lead's passes");
+        assert!(r.frames[0].ticked && r.frames[0].flagged, "the lead landed before the grouping keeps its flag");
+        assert!(!r.frames[1].ticked, "the lead landed after it takes its own draft's place");
+        assert_eq!(r.base_frame, 0, "the base step's frame is counted among the leads");
+        // The draft written back names the grouping it was made on.
+        r.read = r.sources.iter().map(|f| (f.path.clone(), PipelineSettings::default())).collect();
+        let written = r.drafts().unwrap();
+        assert_eq!(written.iter().map(|(p, d)| (p.as_str(), d.capture.as_str(), d.pass_offset)).collect::<Vec<_>>(), [("/r/a1", "rgbPasses", Some(0)), ("/r/b1", "rgbPasses", Some(0))]);
+        // Twin: the capture set without the grouping, as the draft once was, leaves six colour frames.
+        let mut bare = fresh();
+        bare.capture = Capture::RgbPasses;
+        assert_eq!((bare.frames.len(), bare.grouping.is_some()), (6, false));
+        // Twin: a regrouping laid from the sources alone would drop the flag the draft gave.
+        assert!(!r.sources[0].flagged);
+        // A draft shifted by one file resumes on its own leads.
+        let mut shifted = fresh();
+        shifted.resume(Some(&RollDraft { pass_offset: Some(1), ..draft.clone() }), "/r/a2", &known);
+        assert_eq!(shifted.frame_paths(), ["/r/a2"], "one triplet from the second file, the rest left over");
+        oni_library::rgb_passes::release();
     }
 
     #[test]
