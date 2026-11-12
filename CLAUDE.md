@@ -4,8 +4,8 @@ The Rust rewrite of Open Negative Initiative (ONI), the film negative converter 
 macOS and Windows. The Swift app (`5e1y/open-negative-initiative`) is dead (owner's call, 2026-11-12): no
 rule, constant, flow or behaviour is kept because Swift had it, and no check compares with it. The
 conversion is ONI's own; flows, UX and UI answer to the benches (`docs/ux-bench.md`, `docs/ui-bench.md`).
-The one thing kept is reading the sidecars a person already has, Swift-written ones included: that is
-their data, not Swift's behaviour.
+Everything may change, the sidecar format included, as long as an update migrates what a person already
+has on its own, so no one loses an edit.
 
 ## Hard rules
 
@@ -58,8 +58,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
 - **The Frontier is the ONI machine's render with its own baked look** (owner's call): ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
-- **Sidecars a person already has always read**, Swift-written ones included; ONI's own format changes freely,
-  its version bumped, and nothing is written for Swift to read.
+- **The sidecar format is ONI's to change**: a new version is read and written freely, and every older file a
+  person has, Swift-written ones included, is migrated on its own at the update, never lost.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,
   turns and angle, so no framing moves them, and a patch's file names the exposure and flat-field it was cut under.
 - **The editor reads a RAW at LibRaw's half size** (owner's call, 2026-10-22): 3 to 5 times faster to open, no
