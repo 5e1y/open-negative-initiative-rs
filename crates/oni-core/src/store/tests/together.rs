@@ -238,3 +238,31 @@ fn a_scanner_key_presses_each_frame_s_own_counts() {
     assert_ne!(store.settings().scanner.c, s.c);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// A lifted hand's step waits `SETTLE_DELAY` before it reaches the frames together; what leaves for the
+/// disk, an export or a quit, takes it first.
+#[test]
+fn a_flush_records_a_lifted_hands_step_on_the_frames_together_a_hand_still_down_is_left_alone() {
+    let steps = || {
+        let (mut store, dir, [_, b, _]) = three("together-flush", PipelineSettings::default(), PipelineSettings::default());
+        store.set_together(vec![b.clone()]);
+        store.defer_at(1.0);
+        let mut next = store.settings().clone();
+        next.vignette.stops = 0.5;
+        store.apply_at(Command::Write(Box::new(next)), 1.0);
+        (store, dir, b)
+    };
+    let (mut store, dir, b) = steps();
+    assert_eq!(read(&b).vignette.stops, 0.0, "twin: before the delay the frame together holds nothing, which an export would read");
+    store.flush();
+    assert_eq!(read(&b).vignette.stops, 0.5, "the flush lays the step on it");
+    store.undo();
+    assert_eq!((read(&b).vignette.stops, store.settings().vignette.stops, store.can_undo()), (0.0, 0.0, false), "one step for both");
+    let _ = std::fs::remove_dir_all(&dir);
+    // Twin: a hand still down keeps its drag one step.
+    let (mut store, dir, b) = steps();
+    store.hold();
+    store.flush();
+    assert_eq!((read(&b).vignette.stops, store.can_undo()), (0.0, false), "a hand down is never split");
+    let _ = std::fs::remove_dir_all(&dir);
+}

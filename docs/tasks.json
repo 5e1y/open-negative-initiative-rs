@@ -9496,5 +9496,12 @@
     "title": "The second-launch refusal goes through the log's one writer",
     "status": "done",
     "detail": "instance::refused wrote the support folder's path, account name included, straight to stderr; it now says the notice through timing::shown, which scrubs every line, and leaves the path out. Check: only_the_log_writes_stderr (no source but timing.rs writes io::stderr, with a planted twin) and the second-instance launch check asserting the line names no folder."
+  },
+  {
+    "id": 1896,
+    "type": "change",
+    "title": "A flush records a lifted hand's step before it writes",
+    "status": "done",
+    "detail": "EditorStore::flush recorded nothing of a step whose hand had lifted and still waited SETTLE_DELAY, so an export (and a quit, a file move, a folder rename) read the frames together and the roll without it. flush now settles that step first, a hand still down being left alone, and export_now flushes before it reads its targets. Check: a_flush_records_a_lifted_hands_step_on_the_frames_together_a_hand_still_down_is_left_alone, with its twins."
   }
 ]
