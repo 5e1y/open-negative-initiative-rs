@@ -1,6 +1,7 @@
 //! The Color tab's marks play their own demos: Lighting's card plays the lighting clip, frame
 //! after frame, and Effects' card plays another.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{PanelState, Tip};
 use slint::platform::WindowEvent;
@@ -18,8 +19,8 @@ pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
     let Some((rig, shell, root)) = opened("help-demo-color") else { return };
     let w = &shell.window;
     let tip = w.global::<Tip>();
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
 
     press_help(&rig, w, "Lighting");

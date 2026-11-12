@@ -89,9 +89,9 @@ impl Ctl {
         };
         let panel = w.global::<PanelState>();
         panel.set_roll_state(match (scope.reference, scope.measured) {
-            (false, _) => 0,
-            (true, Some(_)) => 1,
-            (true, None) => 2,
+            (false, _) => crate::RollState::Alone,
+            (true, Some(_)) => crate::RollState::Prepared,
+            (true, None) => crate::RollState::Finding,
         });
         panel.set_roll_measured(scope.measured.unwrap_or(0) as i32);
         panel.set_roll_unmeasured(scope.unmeasured.len() as i32);
@@ -327,7 +327,7 @@ impl Ctl {
 
 /// The tabs whose strokes and fields the balance is read again for only once they are left: the
 /// Roll's, the crop's and De-dust's.
-const READ_ON_LEAVING: [i32; 3] = [crate::tabs::ROLL, crate::tabs::CROP, crate::tabs::DEDUST];
+const READ_ON_LEAVING: [crate::PanelTab; 3] = [crate::PanelTab::Roll, crate::PanelTab::Crop, crate::PanelTab::Dedust];
 
 impl Ctl {
     /// Every frame shown read ahead for the balance key, nothing laid: the open one first, on its live
@@ -354,7 +354,7 @@ impl Ctl {
     }
 
     /// A tab left: one read again only once left asks the balance again, once.
-    pub(super) fn balance_on_leaving(&self, left: i32, now: i32) {
+    pub(super) fn balance_on_leaving(&self, left: crate::PanelTab, now: crate::PanelTab) {
         if left != now && READ_ON_LEAVING.contains(&left) {
             self.balance_ahead();
         }

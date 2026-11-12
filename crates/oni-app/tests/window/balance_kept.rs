@@ -2,6 +2,7 @@
 //! with no reading and no count on the key; an input moved reads it again. De-dust's strokes are read
 //! once the tab is left, never stroke by stroke. Roll #8's frames when `ONI_RAW_DIR` holds them.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::measuring::{self, READINGS};
@@ -127,7 +128,7 @@ impl Rigged {
 
     /// Twin: an input moved on the frames, and the press reads each again, counting on the key. On the
     /// Roll tab, read again only once left, the frames stay unread however long the hand rests.
-    fn pressed_after_an_input(&self, paths: &[PathBuf], field: Field, tab: i32, what: &str) -> Duration {
+    fn pressed_after_an_input(&self, paths: &[PathBuf], field: Field, tab: PanelTab, what: &str) -> Duration {
         let (ctl, w) = (&self.shell.ctl, &self.shell.window);
         ctl.act(oni_app::Act::Undo);
         self.rig.pump();
@@ -141,7 +142,7 @@ impl Rigged {
         g.invoke_drag(field.index(), 40.0, 300.0, false);
         g.invoke_release(field.index());
         self.rig.until(&format!("{what}: the input on every frame"), Duration::from_secs(10), || paths.iter().zip(&before).all(|(p, b)| self.settings(p) != *b));
-        if tab == 0 {
+        if tab == PanelTab::Roll {
             rested(&self.rig);
         }
         let readings = READINGS.load(Ordering::SeqCst);
@@ -155,8 +156,8 @@ impl Rigged {
         assert_eq!(read, paths.len(), "{what}: each frame read again");
         ctl.act(oni_app::Act::Undo);
         self.rig.pump();
-        panel.set_tab(2);
-        panel.invoke_tab_picked(2);
+        panel.set_tab(PanelTab::Color);
+        panel.invoke_tab_picked(PanelTab::Color);
         took
     }
 }
@@ -180,7 +181,7 @@ pub(crate) fn a_kept_balance_lands_at_once_alone_and_six_together() {
     r.rig.until("the first render", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     let open = vec![PathBuf::from(ctl.state.borrow().open_path().unwrap())];
     r.pressed_at_once(&open, "the open frame");
-    r.pressed_after_an_input(&open, Field::GainRed, 2, "the open frame");
+    r.pressed_after_an_input(&open, Field::GainRed, PanelTab::Color, "the open frame");
 
     ctl.act(oni_app::Act::ToggleMode);
     r.rig.pump();
@@ -192,7 +193,7 @@ pub(crate) fn a_kept_balance_lands_at_once_alone_and_six_together() {
     let canvas = w.global::<Canvas>();
     r.rig.until("six frames together", Duration::from_secs(120), || canvas.get_status().as_str() == format!("{FRAMES} frames together"));
     r.pressed_at_once(&r.paths, "six frames together");
-    r.pressed_after_an_input(&r.paths, Field::ColorDensity, 0, "six frames together");
+    r.pressed_after_an_input(&r.paths, Field::ColorDensity, PanelTab::Roll, "six frames together");
     drop(r.shell);
     let _ = std::fs::remove_dir_all(&r.root);
 }
@@ -231,8 +232,8 @@ pub(crate) fn de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke() {
     assert_eq!(READINGS.load(Ordering::SeqCst), readings, "a stroke was read before the tab was left");
 
     let panel = w.global::<PanelState>();
-    panel.set_tab(2);
-    panel.invoke_tab_picked(2);
+    panel.set_tab(PanelTab::Color);
+    panel.invoke_tab_picked(PanelTab::Color);
     r.rig.until("the balance read on leaving", Duration::from_secs(60), || READINGS.load(Ordering::SeqCst) > readings);
     rested();
     assert_eq!(READINGS.load(Ordering::SeqCst), readings + 1, "the tab left reads the balance once");
@@ -241,8 +242,8 @@ pub(crate) fn de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke() {
     // Twin: in and out with no stroke reads nothing.
     ctl.act(oni_app::Act::Correction);
     r.rig.pump();
-    panel.set_tab(2);
-    panel.invoke_tab_picked(2);
+    panel.set_tab(PanelTab::Color);
+    panel.invoke_tab_picked(PanelTab::Color);
     rested();
     assert_eq!(READINGS.load(Ordering::SeqCst), readings + 1, "a tab left unchanged read the balance again");
     drop(r.shell);

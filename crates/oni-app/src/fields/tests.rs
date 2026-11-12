@@ -335,3 +335,37 @@ fn each_blocks_reset_key_clears_the_block_it_shows() {
     // Twin: Sharpening at the index it held beside a Balance Strength block resets Chroma Denoise.
     assert_ne!(Block::from_index(6), of("sharpening"));
 }
+
+/// Every `field: N` a slider wires, with the `Store.<stem>-fraction` it shows beside it: the pairs
+/// the line holds, and the lines naming a field with no such fraction.
+fn slider_pairs(panel: &str) -> (Vec<(i32, String)>, usize) {
+    let mut pairs = Vec::new();
+    let mut unpaired = 0;
+    for line in panel.lines() {
+        // A bare `field: -1` is a component's default, not a slider.
+        let Some(n) = field_of(line).filter(|n| *n >= 0) else { continue };
+        let stem = line.split("fraction: Store.").nth(1).and_then(|t| t.split("-fraction;").next());
+        match stem {
+            Some(stem) => pairs.push((n, stem.to_string())),
+            None => unpaired += 1,
+        }
+    }
+    (pairs, unpaired)
+}
+
+/// The sliders whose `field:` index names another field than their fraction's.
+fn crossed(panel: &str) -> Vec<(i32, String)> {
+    slider_pairs(panel).0.into_iter().filter(|(n, stem)| Field::from_index(*n).map(Field::slint_name) != Some(stem.as_str())).collect()
+}
+
+#[test]
+fn every_slider_names_one_field_twice() {
+    let panel = panel_source();
+    let (pairs, unpaired) = slider_pairs(&panel);
+    assert_eq!((crossed(&panel), unpaired), (vec![], 0), "a slider's index and its Store fraction name two fields");
+    assert!(pairs.len() >= 32, "the panes' sliders are all read: {}", pairs.len());
+    // Twin: an index shifted by one on the Exposure slider is caught.
+    let shifted = panel.replace("field: 3; label: @tr(\"Exposure\")", "field: 4; label: @tr(\"Exposure\")");
+    assert_ne!(shifted, panel);
+    assert_eq!(crossed(&shifted), [(4, "exposure".to_string())]);
+}

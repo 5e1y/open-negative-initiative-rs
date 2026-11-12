@@ -80,7 +80,7 @@ impl Ctl {
     /// The Details tab open on a photo in the editor.
     fn loupe_wanted(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 3 && self.state.borrow().frame.is_some()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == crate::PanelTab::Details && self.state.borrow().frame.is_some()
     }
 
     /// Asks the loupe's render when what it shows has changed; the full frame is built first.

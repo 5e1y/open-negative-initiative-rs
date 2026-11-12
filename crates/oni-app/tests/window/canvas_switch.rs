@@ -2,6 +2,7 @@
 //! its own render shown on the emptied canvas, its corrections numbered from one; the De-dust key
 //! and brush; a heal that failed is not started again on every notch.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Dedust, Library, PanelState, Store};
@@ -94,11 +95,11 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
 
     // The De-dust key is on while the tab it opens shows, and goes dark when the header's DONE leaves it.
     ctl.act(oni_app::Act::Correction);
-    assert_eq!(w.global::<PanelState>().get_tab(), 4, "the key lights on De-dust");
+    assert_eq!(w.global::<PanelState>().get_tab(), PanelTab::Dedust, "the key lights on De-dust");
     rig.until("B's patches", Duration::from_secs(60), || rows(w).len() == 2 && healed(w));
     assert_eq!(labels(w), ["Correction 1", "Correction 2"], "B's corrections number from one, as A's did");
     d.invoke_act(oni_app::Act::Correction);
-    assert_ne!(w.global::<PanelState>().get_tab(), 4, "twin: DONE leaving De-dust darkens it");
+    assert_ne!(w.global::<PanelState>().get_tab(), PanelTab::Dedust, "twin: DONE leaving De-dust darkens it");
     ctl.act(oni_app::Act::Correction);
 
     // A double press on the brush resets its size at once, before the release.

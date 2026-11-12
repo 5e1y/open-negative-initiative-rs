@@ -2,11 +2,12 @@
 //! for the last panel, its Cancel or Escape puts its work back first, and every photo opens with no mode.
 
 use super::*;
-use crate::tabs::{self, Validated};
+use crate::PanelTab;
+use crate::tabs::Validated;
 
 impl Ctl {
     /// A tab shown by a route of the app's own; the tab bar's reaches `tab_opened` directly.
-    fn route_to(self: &Rc<Self>, next: i32) {
+    fn route_to(self: &Rc<Self>, next: PanelTab) {
         let Some(w) = self.window() else { return };
         let panel = w.global::<PanelState>();
         self.sync_route(panel.get_tab());
@@ -15,19 +16,19 @@ impl Ctl {
     }
 
     /// A tab set where no route sees it, as the benches do, is read back before any route reads.
-    fn sync_route(&self, tab: i32) {
+    fn sync_route(&self, tab: PanelTab) {
         if self.state.borrow().route.shown != tab {
             self.route_moved(tab);
         }
     }
 
     /// The route moved: a canvas tool entered keeps its frame's settings as found, for its Cancel.
-    pub(super) fn route_moved(&self, tab: i32) {
+    pub(super) fn route_moved(&self, tab: PanelTab) {
         let mut s = self.state.borrow_mut();
         let left = s.route.shown;
         s.route.moved(tab);
         if tab != left {
-            let found = (tab == tabs::CROP || tab == tabs::DEDUST).then(|| s.store.settings().clone());
+            let found = matches!(tab, PanelTab::Crop | PanelTab::Dedust).then(|| s.store.settings().clone());
             if let Some(f) = s.frame.as_mut() {
                 f.tool_entry = found;
             }
@@ -36,9 +37,9 @@ impl Ctl {
 
     /// `toggleFraming()` and `toggleCorrecting()`: a tool's key, menu item or shortcut opens it, or
     /// leaves it for the last panel; De-dust, a tool of Pro's face, leaves the Lab first.
-    pub(super) fn toggle_tool(self: &Rc<Self>, tool: i32) {
+    pub(super) fn toggle_tool(self: &Rc<Self>, tool: PanelTab) {
         let Some(w) = self.window() else { return };
-        if tool == tabs::DEDUST {
+        if tool == PanelTab::Dedust {
             self.leave_lab();
         }
         self.sync_route(w.global::<PanelState>().get_tab());
@@ -51,7 +52,7 @@ impl Ctl {
     pub(super) fn leave_frame_tools(self: &Rc<Self>) -> bool {
         let Some(w) = self.window() else { return false };
         let tab = w.global::<PanelState>().get_tab();
-        if tab != tabs::CROP && tab != tabs::DEDUST {
+        if !matches!(tab, PanelTab::Crop | PanelTab::Dedust) {
             return false;
         }
         self.sync_route(tab);
@@ -74,7 +75,7 @@ impl Ctl {
     pub(super) fn cancel_frame_tools(self: &Rc<Self>) -> bool {
         let Some(w) = self.window() else { return false };
         let tab = w.global::<PanelState>().get_tab();
-        if tab != tabs::CROP && tab != tabs::DEDUST {
+        if !matches!(tab, PanelTab::Crop | PanelTab::Dedust) {
             return false;
         }
         self.sync_route(tab);
@@ -82,8 +83,8 @@ impl Ctl {
             let s = self.state.borrow();
             let now = s.store.settings();
             match s.frame.as_ref().and_then(|f| f.tool_entry.as_ref()) {
-                Some(was) if tab == tabs::CROP && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry.clone(), ..now.clone() }),
-                Some(was) if tab == tabs::DEDUST && was.corrections != now.corrections => Some(oni_settings::PipelineSettings { corrections: was.corrections.clone(), ..now.clone() }),
+                Some(was) if tab == PanelTab::Crop && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry.clone(), ..now.clone() }),
+                Some(was) if tab == PanelTab::Dedust && was.corrections != now.corrections => Some(oni_settings::PipelineSettings { corrections: was.corrections.clone(), ..now.clone() }),
                 _ => None,
             }
         };

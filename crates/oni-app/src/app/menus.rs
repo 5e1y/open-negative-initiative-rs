@@ -10,7 +10,7 @@ impl Ctl {
         self.board_in();
         let app = w.global::<App>();
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
-        let dedust = w.global::<PanelState>().get_tab() == 4;
+        let dedust = w.global::<PanelState>().get_tab() == crate::PanelTab::Dedust;
         let (painting, canvas) = (self.painting(), self.canvas_size());
         let whole = self.roll_whole(gallery);
         let (titles, live, film_type, targets, filter, select_all) = {

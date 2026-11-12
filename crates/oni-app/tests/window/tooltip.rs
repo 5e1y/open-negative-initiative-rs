@@ -3,6 +3,7 @@
 //! takes it down with the key it replaced or covered, so no old tooltip stays floating. A slider's covers
 //! none of its neighbours.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{App, Tip};
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -78,8 +79,8 @@ pub(crate) fn a_slider_s_tooltip_stays_down_through_its_drag() {
     let Some((rig, shell, root)) = opened("tooltip-drag") else { return };
     let w = &shell.window;
     let tip = w.global::<Tip>();
-    w.global::<oni_app::PanelState>().set_tab(2);
-    w.global::<oni_app::PanelState>().invoke_tab_picked(2);
+    w.global::<oni_app::PanelState>().set_tab(PanelTab::Color);
+    w.global::<oni_app::PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     // Exposure's rail, found down the slider by the tooltip it shows.
     let slider = common::the(w, i_slint_backend_testing::AccessibleRole::Slider, "Exposure");
@@ -175,8 +176,8 @@ pub(crate) fn a_slider_s_tooltip_covers_no_neighbour() {
     let Some((rig, shell, root)) = opened("tooltip-neighbour") else { return };
     let w = &shell.window;
     let tip = w.global::<Tip>();
-    w.global::<oni_app::PanelState>().set_tab(2);
-    w.global::<oni_app::PanelState>().invoke_tab_picked(2);
+    w.global::<oni_app::PanelState>().set_tab(PanelTab::Color);
+    w.global::<oni_app::PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     let sliders = |names: [&str; 3]| names.map(|name| common::the(w, Role::Slider, name));
 

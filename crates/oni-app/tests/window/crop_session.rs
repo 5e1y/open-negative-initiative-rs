@@ -2,6 +2,7 @@
 //! tool found it and leaves, DONE or Return keeps its work, De-dust alike; the arrows move the frame,
 //! the crop's readout and the status bar say one kept size, and its handles reach past their lines.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::{Canvas, Framing, PanelState};
 use slint::platform::{Key, PointerEventButton, WindowEvent};
@@ -87,7 +88,7 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     let crop = |rig: &common::Rig| {
         ctl.act(oni_app::Act::Framing);
         rig.settle();
-        assert_eq!(panel.get_tab(), 1, "the crop opens");
+        assert_eq!(panel.get_tab(), PanelTab::Crop, "the crop opens");
     };
     let entry = geometry();
 
@@ -99,7 +100,7 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     let worked = geometry();
     assert_ne!(worked, entry);
     rig.key(&escape);
-    assert_eq!(panel.get_tab(), 2, "Escape leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Escape leaves the crop");
     assert_eq!(geometry(), entry, "and puts back the frame the crop found");
     // The putting back is a step of its own: Undo brings the crop's work again.
     ctl.act(oni_app::Act::Undo);
@@ -112,19 +113,19 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     framing.invoke_act(oni_app::Act::Mirror);
     rig.settle();
     common::click(&rig, w, common::the(w, Role::Button, "Cancel").middle());
-    assert_eq!((panel.get_tab(), geometry()), (2, found), "Cancel puts the frame back and leaves");
+    assert_eq!((panel.get_tab(), geometry()), (PanelTab::Color, found), "Cancel puts the frame back and leaves");
     crop(&rig);
     framing.invoke_act(oni_app::Act::Mirror);
     rig.settle();
     common::click(&rig, w, common::the(w, Role::Button, "DONE").middle());
-    assert_eq!(panel.get_tab(), 2, "DONE leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "DONE leaves the crop");
     assert_ne!(geometry(), found, "twin: DONE keeps the mirror");
     let kept = geometry();
     crop(&rig);
     framing.invoke_act(oni_app::Act::Rotate);
     rig.settle();
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "Return leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Return leaves the crop");
     assert_ne!(geometry(), kept, "twin: Return keeps the turn");
 
     // De-dust by the same rule: Escape takes back the correction painted, Return keeps one.
@@ -132,7 +133,7 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     let paint = |rig: &common::Rig| {
         ctl.act(oni_app::Act::Correction);
         rig.settle();
-        assert_eq!(panel.get_tab(), 4, "De-dust opens");
+        assert_eq!(panel.get_tab(), PanelTab::Dedust, "De-dust opens");
         let (fx, fy, fw, fh) = (c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height());
         c.invoke_paint_start(fx + fw * 0.4, fy + fh * 0.4);
         c.invoke_paint_move(fx + fw * 0.5, fy + fh * 0.4);
@@ -141,10 +142,10 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     };
     paint(&rig);
     rig.key(&escape);
-    assert_eq!((panel.get_tab(), corrections()), (2, 0), "Escape leaves De-dust, its correction taken back");
+    assert_eq!((panel.get_tab(), corrections()), (PanelTab::Color, 0), "Escape leaves De-dust, its correction taken back");
     paint(&rig);
     rig.key("\r");
-    assert_eq!((panel.get_tab(), corrections()), (2, 1), "twin: Return keeps the correction");
+    assert_eq!((panel.get_tab(), corrections()), (PanelTab::Color, 1), "twin: Return keeps the correction");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -168,7 +169,7 @@ pub(crate) fn the_arrows_move_the_crop_and_every_readout_says_one_kept_size() {
     assert!(geometry().measure_window != window && crop() == at, "the arrow moves the window, the crop kept");
     rig.key("\r");
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "Return applies the window, then leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Return applies the window, then leaves the crop");
     // 1:1 on the 3:2 photo leaves the crop room sideways; on Colour an arrow walks the photos, the frame kept.
     rig.key(&right);
     assert_eq!(crop(), at, "twin: beside a pane the arrow leaves the frame");
@@ -210,7 +211,7 @@ pub(crate) fn the_arrows_move_the_crop_and_every_readout_says_one_kept_size() {
     let full = ctl.state.borrow().placed().expect("a placed render").full;
     assert_eq!(format!("{:.0} × {:.0} px", full.0, full.1), kept, "the render cuts what the readouts say");
     assert_ne!(format!("{:.0} × 64 px", width().round()), kept);
-    assert_eq!(panel.get_tab(), 2);
+    assert_eq!(panel.get_tab(), PanelTab::Color);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -31,8 +31,8 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 start.set(crate::store::get(ctl.state.borrow().store(), Field::SharpenAmount));
-                panel.set_tab(3);
-                panel.invoke_tab_picked(3);
+                panel.set_tab(crate::PanelTab::Details);
+                panel.invoke_tab_picked(crate::PanelTab::Details);
                 asked.set(Some((Instant::now(), loupes)));
                 step.set(1);
             }
@@ -71,8 +71,8 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let back = crate::store::get(ctl.state.borrow().store(), Field::SharpenAmount) == start.get();
                 lines.borrow_mut().push(format!("undone to the amount it started from: {back}"));
                 timer.stop();
-                panel.set_tab(2);
-                panel.invoke_tab_picked(2);
+                panel.set_tab(crate::PanelTab::Color);
+                panel.invoke_tab_picked(crate::PanelTab::Color);
                 let mut t = times.borrow().clone();
                 t.sort_by(f64::total_cmp);
                 let report = format!(

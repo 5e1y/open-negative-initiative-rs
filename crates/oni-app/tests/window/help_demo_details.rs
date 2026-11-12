@@ -1,6 +1,8 @@
 //! The Dust & Scratches mark plays its own demo on its card; the Info sidebar's Film Stock mark, a note no
 //! wordless clip can show, opens its card with no clip box.
 
+use oni_app::InfoKind;
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::{PanelState, Tip};
 use oni_core::{Archive, EditorStore};
@@ -55,7 +57,7 @@ pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip
     // The gallery's Info sidebar, right of the window, on the roll a selected tile stands on.
     lib.invoke_tile_clicked(0, false, false);
     rig.settle();
-    assert_eq!(lib.get_info_kind(), 1, "the selection stands on a roll");
+    assert_eq!(lib.get_info_kind(), InfoKind::Roll, "the selection stands on a roll");
     press_help(&rig, w, "Film Stock");
     assert_eq!(tip.get_open(), FILM_STOCK, "the Film Stock mark opens its card");
     assert_eq!(tip.get_demo(), "", "the mark names no topic");
@@ -71,8 +73,8 @@ pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    w.global::<PanelState>().set_tab(4);
-    w.global::<PanelState>().invoke_tab_picked(4);
+    w.global::<PanelState>().set_tab(PanelTab::Dedust);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Dedust);
     rig.settle();
     press_help(&rig, w, "Dust & Scratches");
     assert_eq!(tip.get_open(), DUST, "the Dust & Scratches mark opens its card");

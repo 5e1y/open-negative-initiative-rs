@@ -1,6 +1,8 @@
 //! The right column's frame: one width from the gallery to the editor, so the card's edge holds,
 //! and every block's title row leads with its fold's chevron at the column's inset however long its title.
 
+use oni_app::InfoKind;
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Library, PanelState};
@@ -65,7 +67,7 @@ pub(crate) fn the_right_column_keeps_its_width_and_its_rows_keep_their_keys() {
     // The gallery's column: its blocks start where the editor's do, a panel's width from the edge.
     lib.invoke_tile_clicked(0, false, false);
     rig.settle();
-    assert_eq!(lib.get_info_kind(), 1, "the selection stands on a roll");
+    assert_eq!(lib.get_info_kind(), InfoKind::Roll, "the selection stands on a roll");
     let stock = common::the(w, Role::Text, "Film Stock");
     assert_eq!(stock.x, WIDTH - PANEL + INSET + FOLD + STEP, "the gallery's column is the editor's panel wide: {stock:?}");
     // Twin: a column 60 points narrower puts its blocks off the editor's edge.
@@ -76,8 +78,8 @@ pub(crate) fn the_right_column_keeps_its_width_and_its_rows_keep_their_keys() {
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     assert_eq!(w.get_panel_x(), WIDTH - PANEL, "the editor's panel");
     // The block's title, which the tab bar's word, in mid-bar, names too.

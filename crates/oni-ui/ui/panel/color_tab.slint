@@ -4,7 +4,7 @@ import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
 import { Exporting } from "../export.slint";
-import { Plots, PanelState, Lab } from "state.slint";
+import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
 
 export component ColorPane inherits Pane {
@@ -99,7 +99,7 @@ export component ColorPane inherits Pane {
         // The key's dose, behind its settings key; the roll's, so it says which photos it reaches. Its
         // reset is its own double click: the block's would rewrite every photo of the roll.
         if root.balance-settings: StoreSlider { field: 11; label: @tr("Auto White Balance Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
-        if root.balance-settings && PanelState.roll-state == 1 && PanelState.roll-measured > 1: Label {
+        if root.balance-settings && PanelState.roll-state == RollState.prepared && PanelState.roll-measured > 1: Label {
             role: TextRole.note;
             text: @tr("Shared by the {} photos of this roll.", PanelState.roll-measured);
         }

@@ -1,6 +1,7 @@
 //! The straighten's dial by the pointer: a press anywhere on its ring leaves the angle, and a drag
 //! carries the scale with the hand, a drag right bringing the lower degrees under the index.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::PanelState;
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -17,8 +18,8 @@ fn pointer(rig: &common::Rig, event: WindowEvent) {
 pub(crate) fn the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it() {
     let Some((rig, shell, root)) = opened("dial") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    w.global::<PanelState>().set_tab(1);
-    w.global::<PanelState>().invoke_tab_picked(1);
+    w.global::<PanelState>().set_tab(PanelTab::Crop);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Crop);
     rig.settle();
     let angle = || ctl.state.borrow().store().settings().geometry.angle;
     // The ring is the slider's lower part, under its name and value, as wide as the slider.

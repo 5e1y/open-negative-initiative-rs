@@ -1,6 +1,7 @@
 //! The whole window on Slint's software renderer, no screen: roll #8 opened from a mirror of hard
 //! links, so no sidecar is written beside the originals; screenshots go to `ONI_SHOTS`.
 
+use oni_app::PanelTab;
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{App, Bar, Library, MainWindow, PanelState, Store};
@@ -178,10 +179,10 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.chord(slint::platform::Key::Control, "z");
 
     // The Roll tab, then the bar's other face, the gallery, once every thumbnail is in.
-    w.global::<PanelState>().set_tab(0);
+    w.global::<PanelState>().set_tab(PanelTab::Roll);
     rig.settle();
     println!("shot {}", rig.shot("editor-roll").display());
-    w.global::<PanelState>().set_tab(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
 
     rig.chord(slint::platform::Key::Control, "g");
     assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");

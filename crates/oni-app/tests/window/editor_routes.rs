@@ -4,6 +4,7 @@
 //! beside a photo showing its folder together and a plain click on the lead showing it alone, a frame
 //! trashed there handing on to its neighbour, and the bar's select-all key.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
 use oni_app::{App, Canvas, Choice, Framing, Lab, Library, Menus, PanelState, Presets};
@@ -45,7 +46,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, panel, framing, canvas) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
-    let pick = |tab: i32| {
+    let pick = |tab: PanelTab| {
         panel.set_tab(tab);
         panel.invoke_tab_picked(tab);
         rig.pump();
@@ -70,31 +71,31 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
         rig.pump();
         canvas.get_window_shown()
     });
-    pick(3);
+    pick(PanelTab::Details);
     assert!(!canvas.get_window_shown() && framing.get_armed(), "Details hides the window, still armed");
     rig.key("\r");
     assert!(framing.get_armed(), "twin: Return on Details applies nothing");
-    pick(2);
+    pick(PanelTab::Color);
     assert!(canvas.get_window_shown());
     rig.key("\r");
     assert!(!framing.get_armed() && !canvas.get_window_shown(), "Return applies the window");
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "Return on Color leaves nothing");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Return on Color leaves nothing");
 
     // Tab from the photo hands the keyboard to a control; canvas_keys walks the whole order.
     rig.key("\t");
     assert!(!w.get_keys_focused() && w.get_keys_held(), "Tab from the photo hands the keyboard to a control");
     w.invoke_refocus();
-    pick(2);
+    pick(PanelTab::Color);
 
     // ⌘K opens the crop and a second leaves it for the last panel, as De-dust's key; so does Escape.
     rig.chord(Key::Control, "k");
-    assert_eq!(panel.get_tab(), 1, "⌘K opens the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Crop, "⌘K opens the crop");
     rig.chord(Key::Control, "k");
-    assert_eq!(panel.get_tab(), 2, "a second ⌘K leaves it");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "a second ⌘K leaves it");
     rig.chord(Key::Control, "k");
     rig.key("\u{1b}");
-    assert!(panel.get_tab() == 2 && !w.global::<App>().get_gallery(), "Escape leaves the crop");
+    assert!(panel.get_tab() == PanelTab::Color && !w.global::<App>().get_gallery(), "Escape leaves the crop");
     // With nothing open the photos' Escape leaves the editor, and Return on the grid comes back to A.
     rig.key("\u{1b}");
     assert!(w.global::<App>().get_gallery(), "twin: Escape on Color leaves the editor");
@@ -105,25 +106,25 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     framing.invoke_act(oni_app::Act::WindowArm);
     assert!(framing.get_armed() && canvas.get_window_shown());
     rig.key("\r");
-    assert_eq!((panel.get_tab(), framing.get_armed()), (1, false));
+    assert_eq!((panel.get_tab(), framing.get_armed()), (PanelTab::Crop, false));
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "the second Return leaves the crop");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "the second Return leaves the crop");
     // The last panel is recorded on the tab bar's route too.
-    pick(3);
+    pick(PanelTab::Details);
     rig.chord(Key::Control, "k");
-    pick(2);
-    pick(1);
+    pick(PanelTab::Color);
+    pick(PanelTab::Crop);
     rig.key("\r");
-    assert_eq!(panel.get_tab(), 2, "twin: the panel picked last, not Details where ⌘K was pressed");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "twin: the panel picked last, not Details where ⌘K was pressed");
     // Leaving the crop disarms the window, leaving Color does not.
-    pick(1);
+    pick(PanelTab::Crop);
     framing.invoke_act(oni_app::Act::WindowArm);
-    pick(2);
+    pick(PanelTab::Color);
     assert!(!framing.get_armed(), "leaving the crop disarms");
     framing.invoke_act(oni_app::Act::WindowArm);
-    pick(3);
+    pick(PanelTab::Details);
     assert!(framing.get_armed(), "twin: leaving Color keeps it armed");
-    pick(2);
+    pick(PanelTab::Color);
     rig.key("\r");
 
     // De-dust leaves the Lab first; the brush is the size the last session left, and kept.
@@ -133,25 +134,25 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert!(w.global::<Lab>().get_shown());
     ctl.act(oni_app::Act::Correction);
     rig.pump();
-    assert!(!w.global::<Lab>().get_shown() && panel.get_tab() == 4, "De-dust on Pro's face");
+    assert!(!w.global::<Lab>().get_shown() && panel.get_tab() == PanelTab::Dedust, "De-dust on Pro's face");
     rig.key("]");
     assert_eq!(ctl.state.borrow().brush(), 44.0);
     let kept = Preferences::load(&support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64);
     assert_eq!(kept, Some(44.0), "twin: the 40 read at launch is written over");
     ctl.act(oni_app::Act::Correction);
     rig.pump();
-    assert_eq!(panel.get_tab(), 2);
+    assert_eq!(panel.get_tab(), PanelTab::Color);
     ctl.act(oni_app::Act::Correction);
     rig.key("\u{1b}");
-    assert_eq!(panel.get_tab(), 2, "Escape leaves De-dust");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "Escape leaves De-dust");
 
     // Escape leaves the innermost mode, Compare before the crop; the next photo opens with none.
     rig.chord(Key::Control, "k");
     ctl.act(oni_app::Act::Compare);
     rig.pump();
-    assert!(panel.get_tab() == 1 && canvas.get_split() >= 0.0, "the crop and Compare open together");
+    assert!(panel.get_tab() == PanelTab::Crop && canvas.get_split() >= 0.0, "the crop and Compare open together");
     rig.key("\u{1b}");
-    assert!(panel.get_tab() == 1 && canvas.get_split() < 0.0, "Escape closes Compare first");
+    assert!(panel.get_tab() == PanelTab::Crop && canvas.get_split() < 0.0, "Escape closes Compare first");
     ctl.act(oni_app::Act::Compare);
     // Beside the crop the arrow moves its frame and walks nowhere; B opened from the column ends both modes.
     rig.key("\u{F703}");
@@ -159,7 +160,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert!(ctl.state.borrow().open_path() == Some(names[0].as_str()), "beside the crop the arrow walks nowhere");
     open(1);
     assert!(ctl.state.borrow().open_path() == Some(names[1].as_str()), "B opens");
-    assert!(panel.get_tab() == 2 && canvas.get_split() < 0.0, "B opens with no mode");
+    assert!(panel.get_tab() == PanelTab::Color && canvas.get_split() < 0.0, "B opens with no mode");
     rig.key("\u{F702}");
     rig.pump();
     // The gallery ends them too: A shown again from it opens with none.
@@ -169,7 +170,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path() == Some(names[0].as_str()));
-    assert!(panel.get_tab() == 2 && canvas.get_split() < 0.0, "A opens again with no mode");
+    assert!(panel.get_tab() == PanelTab::Color && canvas.get_split() < 0.0, "A opens again with no mode");
 
     // Space leaves the Lab for the gallery, the menu item lit beside a photo only.
     w.global::<App>().invoke_menu(oni_app::Act::Emulator);

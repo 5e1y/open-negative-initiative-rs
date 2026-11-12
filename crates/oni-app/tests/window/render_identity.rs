@@ -1,6 +1,7 @@
 //! What a render reads beyond its settings reaches what the screen keeps of it: the histogram after a
 //! contact sheet is the open frame's again, and a new proof draws the Details loupe again.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::{Canvas, Exporting, Library, PanelState};
 use oni_core::{Archive, EditorStore};
@@ -67,8 +68,8 @@ pub(crate) fn a_new_proof_draws_the_loupe_again() {
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    panel.set_tab(3);
-    panel.invoke_tab_picked(3);
+    panel.set_tab(PanelTab::Details);
+    panel.invoke_tab_picked(PanelTab::Details);
     rig.until("the loupe", Duration::from_secs(60), || {
         rig.pump();
         ctl.state.borrow().loupe_shown()

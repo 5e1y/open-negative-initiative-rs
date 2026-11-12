@@ -4,7 +4,7 @@
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::fields::Field;
-use oni_app::{Act, Bar, Editors, Lab, PanelState, Plots, Store};
+use oni_app::{Act, Bar, Editors, Lab, PanelState, PanelTab, Plots, Store};
 use slint::ComponentHandle;
 use std::time::Duration;
 
@@ -15,12 +15,12 @@ pub(crate) fn the_readout_is_its_plot_alone() {
     let Some((rig, shell, root)) = opened("readout-alone") else { return };
     let w = &shell.window;
     let (panel, plots) = (w.global::<PanelState>(), w.global::<Plots>());
-    for tab in [2, 0] {
+    for tab in [PanelTab::Color, PanelTab::Roll] {
         panel.set_tab(tab);
         panel.invoke_tab_picked(tab);
         rig.settle();
         let named: usize = ["Histogram", "Print curve", "Inverse curve"].iter().map(|n| common::placed(w, Role::Text, n).len()).sum();
-        assert_eq!(named, 0, "no word under the plot on tab {tab}");
+        assert_eq!(named, 0, "no word under the plot on tab {tab:?}");
         // The plot takes the readout's whole height, `PlotStyle.main`.
         let height = plots.get_output_height();
         assert!((height - 150.0).abs() < 0.5, "the plot fills the readout: {height} pt");

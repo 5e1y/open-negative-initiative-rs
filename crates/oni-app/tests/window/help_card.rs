@@ -2,6 +2,7 @@
 //! moved or covered; the hand leaving or Escape closes it, and it goes with its mark. A block folds by a chevron; its Reset
 //! shows once the block moves.
 
+use oni_app::PanelTab;
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::{Act, App, Bar, Canvas, Exporting, PanelState, Tip};
 use slint::ComponentHandle;
@@ -48,8 +49,8 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
     let tip = w.global::<Tip>();
     // Tall enough to hold the Lighting block's sliders on screen.
     rig.window.set_size(slint::PhysicalSize::new(1280, 1400));
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
 
     // Each mark is named with its block, none with what any block does.
@@ -133,8 +134,8 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
     let Some((rig, shell, root)) = opened("help-card-close") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (tip, app, bar) = (w.global::<Tip>(), w.global::<App>(), w.global::<Bar>());
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     let closed = |why: &str| {
         rig.settle();
@@ -164,11 +165,11 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
 
     // Whatever takes its mark away takes the card: the pane, the face, the panel hidden, a sheet, the gallery.
     lighting_card(&rig, w);
-    w.global::<PanelState>().set_tab(3);
-    w.global::<PanelState>().invoke_tab_picked(3);
+    w.global::<PanelState>().set_tab(PanelTab::Details);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Details);
     closed("another pane");
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     lighting_card(&rig, w);
     bar.invoke_act(Act::FaceScanner);
@@ -194,8 +195,8 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
 pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column() {
     let Some((rig, shell, root)) = opened("help-card-room") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    w.global::<PanelState>().set_tab(2);
-    w.global::<PanelState>().invoke_tab_picked(2);
+    w.global::<PanelState>().set_tab(PanelTab::Color);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     // The window at its smallest: the card lifted to keep to it, its top rising past the tab bar's foot.
     rig.window.set_size(slint::PhysicalSize::new(1100, 680));
     rig.settle();

@@ -20,8 +20,14 @@ export global Plots {
     in property <int> curves-revision;
 }
 
+// The panel's five faces: the bar lists roll, color and details, the crop and De-dust are its canvas tools.
+export enum PanelTab { roll, crop, color, details, dedust }
+
+// `RollScope`: never measured, measured, or its frames still being found.
+export enum RollState { alone, prepared, finding }
+
 export global PanelState {
-    in-out property <int> tab: 2;
+    in-out property <PanelTab> tab: PanelTab.color;
     // The header's height, plot band and tab bar down to its rule, laid by the panel.
     in-out property <length> header;
     // `DSSection`'s fold under `sectionFold.<title>`: the stored one, else the block's default.
@@ -80,9 +86,8 @@ export global PanelState {
     // A positive is a plain RAW: no roll measure, dyes or ceiling, its cast in a temperature and a tint.
     in property <bool> slide;
     callback auto-balance();
-    callback tab-picked(int);
-    // `RollScope`: 0 never measured, 1 measured, 2 its frames still being found.
-    in property <int> roll-state: 1;
+    callback tab-picked(PanelTab);
+    in property <RollState> roll-state: RollState.prepared;
     in property <int> roll-measured;
     in property <int> roll-unmeasured;
     in property <bool> can-prepare;

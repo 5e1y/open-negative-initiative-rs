@@ -31,8 +31,8 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 *start.borrow_mut() = Some(geometry());
-                panel.set_tab(1);
-                panel.invoke_tab_picked(1);
+                panel.set_tab(crate::PanelTab::Crop);
+                panel.invoke_tab_picked(crate::PanelTab::Crop);
             }
             1 => {
                 note(&format!("framing {}", if c.get_cropping() { "on" } else { "off" }));
@@ -81,8 +81,8 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 note("undone");
                 let back = start.borrow().clone() == Some(geometry());
                 timer.stop();
-                panel.set_tab(2);
-                panel.invoke_tab_picked(2);
+                panel.set_tab(crate::PanelTab::Color);
+                panel.invoke_tab_picked(crate::PanelTab::Color);
                 let report = format!("bench, crop:\n{}\nundone to the frame it started from: {back}", lines.borrow().join("\n"));
                 if let Some(done) = done.borrow_mut().take() {
                     done(report);

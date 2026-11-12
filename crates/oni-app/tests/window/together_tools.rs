@@ -2,6 +2,7 @@
 //! before drawn on each frame's own before; the face and the proof redraw every tile; the crop, the
 //! measuring window and De-dust, each frame's own, cannot be opened.
 
+use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Bar, Canvas, Exporting, Library, Menus, PanelState, Store};
@@ -109,10 +110,10 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
     assert!(!canvas.get_window_shown(), "no measuring window over the sheet");
     ctl.act(oni_app::Act::Framing);
     rig.pump();
-    assert_ne!(panel.get_tab(), 1, "⌘K opens no crop on frames together");
+    assert_ne!(panel.get_tab(), PanelTab::Crop, "⌘K opens no crop on frames together");
     ctl.act(oni_app::Act::Correction);
     rig.pump();
-    assert_ne!(panel.get_tab(), 4, "nor De-dust");
+    assert_ne!(panel.get_tab(), PanelTab::Dedust, "nor De-dust");
     assert!(!bar.get_single());
 
     // Twin: one frame alone again, the crop opens.
@@ -122,11 +123,11 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
     assert!(bar.get_single());
     ctl.act(oni_app::Act::Framing);
     rig.pump();
-    assert_eq!(panel.get_tab(), 1, "twin: ⌘K opens the crop on one frame");
+    assert_eq!(panel.get_tab(), PanelTab::Crop, "twin: ⌘K opens the crop on one frame");
     // A frame joining from the crop takes the panel out of it.
     lib.invoke_row_clicked(row("A"), true, false);
     rig.until("B and A together", Duration::from_secs(30), || canvas.get_status().as_str() == "2 frames together");
-    assert_eq!(panel.get_tab(), 2, "the crop left for the Color tab");
+    assert_eq!(panel.get_tab(), PanelTab::Color, "the crop left for the Color tab");
     assert!(!canvas.get_cropping());
     let _ = std::fs::remove_dir_all(&root);
 }

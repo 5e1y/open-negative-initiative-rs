@@ -1,6 +1,7 @@
 //! The Roll tab's marks play their own demos: Film Type's card plays the film type's clip, frame
 //! after frame, and Prepared Roll's another one, so each card shows the topic it names.
 
+use oni_app::PanelTab;
 use oni_app::{PanelState, Tip};
 use slint::ComponentHandle;
 use std::time::{Duration, Instant};
@@ -28,8 +29,8 @@ pub(crate) fn the_roll_tabs_marks_play_each_its_own_demo() {
     let Some((rig, shell, root)) = opened("help-demo-roll") else { return };
     let w = &shell.window;
     let tip = w.global::<Tip>();
-    w.global::<PanelState>().set_tab(0);
-    w.global::<PanelState>().invoke_tab_picked(0);
+    w.global::<PanelState>().set_tab(PanelTab::Roll);
+    w.global::<PanelState>().invoke_tab_picked(PanelTab::Roll);
     rig.settle();
 
     press_help(&rig, w, "Film Type");

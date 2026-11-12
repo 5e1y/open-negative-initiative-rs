@@ -112,7 +112,7 @@ pub(super) fn opened(label: &str) -> Option<Opened> {
 }
 
 /// Lays out the panel on `tab`, as the app's next frame does.
-pub(super) fn on_tab(o: &Opened, tab: i32, unfold: impl FnOnce(&Editors)) {
+pub(super) fn on_tab(o: &Opened, tab: oni_app::PanelTab, unfold: impl FnOnce(&Editors)) {
     o.shell.window.global::<PanelState>().set_tab(tab);
     unfold(&o.shell.window.global::<Editors>());
     o.rig.shot("editors-opened");

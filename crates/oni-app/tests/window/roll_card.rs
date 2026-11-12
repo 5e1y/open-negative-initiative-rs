@@ -3,6 +3,7 @@
 //! undoable step, a focus passing through the date writes nothing, and the stock's dyes land on
 //! every frame of the roll as one step.
 
+use oni_app::InfoKind;
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::app::{Options, Shell};
 use oni_app::{Library, Menus, Stocks};
@@ -79,7 +80,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
 
     // Nothing picked, the folder opened is the roll shown: its card, the editor and Prepare are live.
     rig.pump();
-    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "{}", lib.get_info_empty());
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Roll, "Scans"), "{}", lib.get_info_empty());
     let live = menus.get_live();
     assert!(live.toggle_mode && live.measure_roll && live.reset_to_default, "the open roll stands for a pick");
     assert!(w.global::<oni_app::Bar>().get_can_toggle_mode(), "the bar's mode key reads the menu's rule");
@@ -94,7 +95,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     lib.invoke_filter_picked(1);
     rig.pump();
     assert!(ctl.state.borrow().order().is_empty(), "no photo is gold");
-    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "{}", lib.get_info_empty());
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Roll, "Scans"), "{}", lib.get_info_empty());
     assert!(menus.get_live().measure_roll, "Prepare stands on the roll the filter hides");
     lib.invoke_filter_picked(0);
     rig.pump();
@@ -135,7 +136,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
     assert_eq!(marker(), None, "one undo takes the marker away");
-    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Scans"), "the folder stays the roll shown");
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Roll, "Scans"), "the folder stays the roll shown");
 
     // The roll's name heads the column, the warning under it, and Film Stock is its first block.
     let first = common::the(w, AccessibleRole::Text, "Film Stock");
@@ -215,7 +216,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
 
     // A photo of another folder picked: that folder is the roll shown, its card and no guide.
     pick(&["D.tif"]);
-    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (1, "Other"));
+    assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Roll, "Other"));
 
     // The frame open in the editor takes the roll's new dyes at once, its Roll tab with it.
     let renders = ctl.state.borrow().renders();

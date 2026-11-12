@@ -3,6 +3,7 @@
 //! lands in the support folder's file, a body typed for a roll joins it, a pick shows the roll again, an
 //! export's Camera fills from it, and an empty list's key says how a name comes.
 
+use oni_app::InfoKind;
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::app::{Options, Shell, export_card};
 use oni_app::{Exporting, Gear, Library};
@@ -69,11 +70,11 @@ pub(crate) fn the_collection_shows_where_nothing_is_picked_and_fills_the_exif() 
 
     // A folder opened, nothing picked: the column stands on its roll. A click on the gallery's empty room,
     // under its last row, turns it to the collection; twin: before it, no collection.
-    assert_eq!(lib.get_info_kind(), 1, "the opened roll's column");
+    assert_eq!(lib.get_info_kind(), InfoKind::Roll, "the opened roll's column");
     assert!(common::placed(w, Role::TextInput, "Add a body\u{2026}").is_empty(), "twin: no collection on a roll");
     common::click(&rig, w, (500.0, 700.0));
     rig.settle();
-    assert_eq!(lib.get_info_kind(), 4, "the collection where nothing is picked");
+    assert_eq!(lib.get_info_kind(), InfoKind::Collection, "the collection where nothing is picked");
     println!("shot {}", rig.shot("collection-empty").display());
 
     // A body added in its field joins the list, first, and the support folder's file.
@@ -86,7 +87,7 @@ pub(crate) fn the_collection_shows_where_nothing_is_picked_and_fills_the_exif() 
     // A pick shows the roll again; the body typed for it joins the collection, first.
     lib.invoke_tile_clicked(0, false, false);
     rig.settle();
-    assert_eq!(lib.get_info_kind(), 1, "a pick shows its roll again");
+    assert_eq!(lib.get_info_kind(), InfoKind::Roll, "a pick shows its roll again");
     common::click(&rig, w, common::the(w, Role::TextInput, "Camera Body").middle());
     typed("Nikon F3");
     rig.landed(&ctl);

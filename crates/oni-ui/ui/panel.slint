@@ -3,14 +3,14 @@ import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, 
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
-import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
+import { Plots, PanelState, PanelTab, RollState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { ModeHeader } from "panel/parts.slint";
 import { RollPane } from "panel/roll_tab.slint";
 import { CropPane } from "panel/crop_tab.slint";
 import { DedustPane } from "panel/dedust_tab.slint";
 import { ColorPane } from "panel/color_tab.slint";
 import { DetailsPane } from "panel/details_tab.slint";
-export { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
+export { Plots, PanelState, PanelTab, RollState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
 
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
@@ -26,7 +26,7 @@ export component Panel inherits Surface {
             Rectangle {
                 height: PlotStyle.main;
                 // The plot alone, one height on every tab, so the tab bar never moves.
-                if !Lab.shown && PanelState.tab != 3: VerticalLayout {
+                if !Lab.shown && PanelState.tab != PanelTab.details: VerticalLayout {
                     width: parent.width;
                     height: parent.height;
                     Plot {
@@ -39,7 +39,7 @@ export component Panel inherits Surface {
                         radius: PlotStyle.readout-radius;
                         histogram: Plots.output;
                         histogram-revision: Plots.output-revision;
-                        lines: PanelState.tab == 2 ? Editors.print-lines : [];
+                        lines: PanelState.tab == PanelTab.color ? Editors.print-lines : [];
                         // The trace's size, set by the plot itself so it is known before any histogram lands.
                         resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
                         property <int> epoch: Editors.epoch;
@@ -47,7 +47,7 @@ export component Panel inherits Surface {
                     }
                 }
                 // Under Details the output histogram cannot move, so the readout holds the loupe.
-                if PanelState.tab == 3: LoupeBand {
+                if PanelState.tab == PanelTab.details: LoupeBand {
                     width: parent.width;
                     height: parent.height;
                     radius: PlotStyle.readout-radius;
@@ -59,7 +59,7 @@ export component Panel inherits Surface {
                     ratio-shown: DetailLoupe.ratio-shown;
                     toggled => { DetailLoupe.toggled(); }
                 }
-                if Lab.shown && PanelState.tab != 3: LabScreen {
+                if Lab.shown && PanelState.tab != PanelTab.details: LabScreen {
                     width: parent.width;
                     height: parent.height;
                     radius: PlotStyle.readout-radius;
@@ -82,18 +82,18 @@ export component Panel inherits Surface {
             Rectangle {
                 height: TabsStyle.height;
                 tabs := Tabs {
-                    visible: PanelState.tab != 1 && PanelState.tab != 4;
+                    visible: PanelState.tab != PanelTab.crop && PanelState.tab != PanelTab.dedust;
                     tabs: [@tr("Roll"), @tr("Colour"), @tr("Details")];
                     marked: [false, false, false];
                     // Each pane's place in the bar, none for a tool.
-                    selected: [0, -1, 1, 2, -1][PanelState.tab];
+                    selected: PanelState.tab == PanelTab.roll ? 0 : PanelState.tab == PanelTab.color ? 1 : PanelState.tab == PanelTab.details ? 2 : -1;
                     picked(i) => {
-                        let tab = [0, 2, 3][i];
+                        let tab = i == 0 ? PanelTab.roll : i == 1 ? PanelTab.color : PanelTab.details;
                         PanelState.tab = tab;
                         PanelState.tab-picked(tab);
                     }
                 }
-                if PanelState.tab == 1: ModeHeader {
+                if PanelState.tab == PanelTab.crop: ModeHeader {
                     title: @tr("Crop");
                     demo: "crop";
                     note: root.crop-note;
@@ -102,7 +102,7 @@ export component Panel inherits Surface {
                     done => { Framing.act(Act.framing); }
                     cancel => { Framing.act(Act.cancel-tool); }
                 }
-                if PanelState.tab == 4: ModeHeader {
+                if PanelState.tab == PanelTab.dedust: ModeHeader {
                     title: @tr("De-dust");
                     help: @tr("Leave De-dust");
                     cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
@@ -115,11 +115,11 @@ export component Panel inherits Surface {
         rule := Divider { }
         Rectangle {
             vertical-stretch: 1;
-            RollPane { shown: PanelState.tab == 0; }
-            CropPane { shown: PanelState.tab == 1; }
-            ColorPane { shown: PanelState.tab == 2; }
-            DetailsPane { shown: PanelState.tab == 3; }
-            DedustPane { shown: PanelState.tab == 4; }
+            RollPane { shown: PanelState.tab == PanelTab.roll; }
+            CropPane { shown: PanelState.tab == PanelTab.crop; }
+            ColorPane { shown: PanelState.tab == PanelTab.color; }
+            DetailsPane { shown: PanelState.tab == PanelTab.details; }
+            DedustPane { shown: PanelState.tab == PanelTab.dedust; }
         }
     }
 }
