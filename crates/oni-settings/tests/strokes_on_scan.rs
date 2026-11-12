@@ -2,10 +2,12 @@
 //! they move onto the scan through the geometry they were painted under, and are written so.
 
 use oni_settings::cg::{Point, Rect};
-use oni_settings::codec::{self, STROKES_ON_SCAN_VERSION};
+use oni_settings::codec;
+use oni_settings::migrate::chain::STROKES_ON_SCAN_VERSION;
+use oni_settings::migrate::{self, Facts};
 use oni_settings::frame::{Correction, Geometry};
 use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::strokes_on_scan::caught_up_by;
+use oni_settings::migrate::strokes::caught_up;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::path::Path;
 use std::sync::Arc;
@@ -33,11 +35,10 @@ fn stored(version: i64, settings: &PipelineSettings, original: &Path) {
 
 #[test]
 fn an_older_stroke_moves_onto_the_scan_once_and_an_unknown_size_keeps_it_read_only() {
-    let at = Path::new("/roll/DSC_0001.NEF");
     let before = STROKES_ON_SCAN_VERSION - 1;
     let old = painted(framed());
     let placing = framed().placing(SCAN);
-    let (moved, writable) = caught_up_by(at, before, old.clone(), |_, _| Some(SCAN));
+    let (moved, writable) = caught_up(before, old.clone(), &|_| Some(SCAN));
     assert!(writable);
     for (c, was) in moved.corrections.iter().zip(&old.corrections) {
         for (p, q) in c.stroke.iter().zip(&was.stroke) {
@@ -49,14 +50,14 @@ fn an_older_stroke_moves_onto_the_scan_once_and_an_unknown_size_keeps_it_read_on
     }
     assert_eq!((moved.id_of_corrections(), moved.geometry), (old.id_of_corrections(), old.geometry), "only the points move");
     // A stroke of this format, a neutral framing and no stroke at all ask nothing and stay.
-    let unasked = |_: &Path, _: &PipelineSettings| -> Option<(f64, f64)> { panic!("the size was asked") };
-    assert_eq!(caught_up_by(at, STROKES_ON_SCAN_VERSION, old.clone(), unasked), (old.clone(), true));
+    let unasked = |_: &PipelineSettings| -> Option<(f64, f64)> { panic!("the size was asked") };
+    assert_eq!(caught_up(STROKES_ON_SCAN_VERSION, old.clone(), &unasked), (old.clone(), true));
     let whole = painted(Geometry::default());
-    assert_eq!(caught_up_by(at, before, whole.clone(), unasked), (whole, true));
+    assert_eq!(caught_up(before, whole.clone(), &unasked), (whole, true));
     let bare = PipelineSettings { corrections: Vec::new(), ..old.clone() };
-    assert_eq!(caught_up_by(at, before, bare.clone(), unasked), (bare, true));
+    assert_eq!(caught_up(before, bare.clone(), &unasked), (bare, true));
     // No size known: the strokes stay as read and the frame is never written under format 21.
-    assert_eq!(caught_up_by(at, before, old.clone(), |_, _| None), (old, false));
+    assert_eq!(caught_up(before, old.clone(), &|_| None), (old, false));
 }
 
 #[test]
@@ -66,7 +67,7 @@ fn a_sidecar_read_through_the_installed_size_is_written_back_on_the_scan() {
     std::fs::create_dir_all(&dir).unwrap();
     let (known, unknown) = (dir.join("DSC_0001.NEF"), dir.join("DSC_0002.NEF"));
     let held = known.clone();
-    oni_settings::strokes_on_scan::install(Some(Arc::new(move |p: &Path, _: &PipelineSettings| (p == held).then_some(SCAN))));
+    migrate::install(Some(Arc::new(move |p: &Path, mosaic: bool, then: &mut dyn FnMut(&Facts)| then(&Facts { mosaic, matrix: &|| None, scan: &|_| (p == held).then_some(SCAN) }))));
     let old = painted(framed());
     for original in [&known, &unknown] {
         std::fs::write(original, b"raw").unwrap();
@@ -83,7 +84,7 @@ fn a_sidecar_read_through_the_installed_size_is_written_back_on_the_scan() {
     let stays = sidecar::read(&unknown, true, true).unwrap();
     assert!(!stays.writable);
     assert_eq!(stays.settings.corrections, old.corrections);
-    oni_settings::strokes_on_scan::install(None);
+    migrate::install(None);
     let _ = std::fs::remove_dir_all(&dir);
 }
 

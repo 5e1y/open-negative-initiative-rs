@@ -163,6 +163,7 @@ impl Ctl {
             s.prepare.shown = false;
             (failure, landed)
         };
+        self.drop_drafts(false);
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| left_out(asked, &written, blank));
@@ -229,15 +230,15 @@ impl Ctl {
         }
     }
 
-    /// `saveRollDraft`: each file's draft written or cleared on the serial thread, after the writes before it.
+    /// `saveRollDraft`: each folder's draft written or removed on the serial thread, after the writes
+    /// before it, one file a folder whatever its frames.
     pub(in crate::app) fn save_draft(&self) {
         self.flush_open();
         let job = {
             let r = &mut self.state.borrow_mut().prepare;
-            let Some(drafts) = r.step_drafts() else { return };
+            let Some((drafts, stored)) = r.step_drafts() else { return };
             let job: Job = Box::new(move || {
-                let refused: Vec<String> =
-                    drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(draft, Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
+                let refused = draft::written(drafts, &stored);
                 if let Some(cause) = refused.first().cloned() {
                     let n = refused.len() as u64;
                     with_shell(move |c| c.told(tr("Prepare the Roll"), &trn("One frame's preparation could not be saved: {cause}", "{n} frames' preparation could not be saved: {cause}", n).replace("{cause}", &cause)));
@@ -248,19 +249,23 @@ impl Ctl {
         self.state.borrow().prepare.post(job);
     }
 
-    /// A roll left unmeasured keeps nothing: every frame's draft dropped on the serial thread, after
-    /// the writes before it, so the roll opens again on its first step.
+    /// A roll left unmeasured keeps nothing: so the roll opens again on its first step.
     pub(in crate::app) fn discard_draft(&self) {
         self.flush_open();
-        let paths = {
+        self.state.borrow_mut().prepare.draft_id = None;
+        self.drop_drafts(true);
+    }
+
+    /// The roll's frames taken out of their folders' drafts on the serial thread, after the writes before
+    /// it; with `stored`, out of their own sidecars' too, which a measure clears itself.
+    fn drop_drafts(&self, stored: bool) {
+        let (drafts, stored) = {
             let r = &mut self.state.borrow_mut().prepare;
-            r.draft_id = None;
-            r.roll()
+            let kept: Vec<String> = std::mem::take(&mut r.stored).into_iter().filter(|_| stored).collect();
+            (r.dropped(), kept)
         };
         self.state.borrow().prepare.post(Box::new(move || {
-            for path in paths {
-                let _ = sidecar::set_roll_draft(None, Path::new(&path), mosaic(&path));
-            }
+            let _ = draft::written(drafts, &stored);
         }));
     }
 

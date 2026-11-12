@@ -53,8 +53,7 @@ pub fn framed(mut s: PipelineSettings) -> PipelineSettings {
 
 /// A sidecar's settings read from bytes held in this crate.
 pub fn settings(json: &[u8]) -> Result<PipelineSettings, String> {
-    let source = oni_settings::codec::Source { mosaic: &|| true, plain: &|| false };
-    oni_settings::codec::decode_with(json, &source, true).map(|d| d.settings).map_err(|e| format!("{e:?}"))
+    oni_settings::migrate::decoded(json, Some(true), true).map(|d| d.settings).map_err(|e| format!("{e:?}"))
 }
 
 impl Photo {

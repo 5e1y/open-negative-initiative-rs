@@ -5,8 +5,8 @@ use oni_render::{Stage47, cpu};
 use oni_settings::axis::density_axis;
 use oni_settings::codec;
 use oni_settings::curves::CurveSet;
-use oni_settings::legacy;
-use oni_settings::lighting_catch_up::{self, Curves, display, former_pixel};
+use oni_settings::migrate::before_1_0;
+use oni_settings::migrate::lighting::{self as lighting, Curves, display, former_pixel};
 use oni_settings::tone::{Print, Tone, color_density};
 use oni_settings::PipelineSettings;
 use serde_json::{Value, json};
@@ -105,7 +105,7 @@ fn former_document() -> (Vec<u8>, Value) {
     settings.insert("exposure".into(), json!(1.2));
     settings.insert("toneBalance".into(), json!({"white": {"colour": [0.8, 0, -1.6]}, "shadows": {"colour": [0, 0.3, 0]}}));
     let raw = Value::Object(settings.clone());
-    document["version"] = json!(legacy::LIGHTING_VERSION - 1);
+    document["version"] = json!(before_1_0::LIGHTING_VERSION - 1);
     (serde_json::to_vec(&document).unwrap(), raw)
 }
 
@@ -139,9 +139,9 @@ fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
 #[test]
 fn a_former_document_renders_its_greys_through_the_kernel_as_it_did() {
     let (data, raw) = former_document();
-    let read = codec::decode(&data).unwrap().settings;
+    let read = oni_settings::migrate::document(&data).unwrap().settings;
     assert_eq!(read.print.black_point, 0.0, "the fit renders with the points at rest");
-    let f = lighting_catch_up::former(&raw).expect("a former document");
+    let f = lighting::former(&raw).expect("a former document");
     let identity = Curves::new(&CurveSet::default());
     let n = |t: f32| {
         let ceiling = density_axis::base();

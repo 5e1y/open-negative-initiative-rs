@@ -1,0 +1,483 @@
+{
+  "autoBalance" : {
+    "filters" : [
+      0.46896976232528687,
+      0.23008392751216888,
+      -0.6990537047386169
+    ],
+    "fingerprint" : "4e43244458700ca374346f3659487a11",
+    "reference" : {
+      "base" : [
+        0.044707443565130234,
+        0.11302977055311203,
+        0.10748852789402008
+      ],
+      "black" : [
+        0.044707443565130234,
+        0.11302977055311203,
+        0.10748852789402008
+      ],
+      "id" : "E10DC15F-BE94-4657-B2FB-2F9C5F034D63",
+      "median" : [
+        0.5695422291755676,
+        0.5456174612045288,
+        0.5557184815406799
+      ],
+      "stops" : [
+        0.5067452788352966,
+        0,
+        1.0624433755874634
+      ],
+      "white" : [
+        0.9257515072822571,
+        0.9797635078430176,
+        0.8893649578094482
+      ]
+    }
+  },
+  "exif" : {
+    "artist" : "",
+    "camera" : "Camera",
+    "copyright" : "",
+    "date" : "2000:01:01 00:00:00",
+    "film" : "",
+    "iso" : "100",
+    "lens" : ""
+  },
+  "label" : "gold",
+  "originalPrint" : "0-no-date-0",
+  "originalTail" : "1c8e9deeff8bdef8",
+  "rollDraft" : {
+    "capture" : "camera",
+    "film" : "positive",
+    "flagged" : false,
+    "flatField" : {
+      "amount" : 1,
+      "mask" : "None",
+      "temperature" : 0,
+      "tint" : 0
+    },
+    "id" : "74ABB1F1-CD52-4E0E-8261-89F5A929113A",
+    "passOrder" : "bgr",
+    "step" : "window",
+    "ticked" : true,
+    "window" : [
+      [
+        0.18650405534351144,
+        0.20906935830152673
+      ],
+      [
+        0.6391168608920265,
+        0.618991158754771
+      ]
+    ]
+  },
+  "settings" : {
+    "balanceFilters" : [
+      0.2453099,
+      -0.2851665,
+      0.039856598
+    ],
+    "balanceStrength" : 0.67,
+    "captureStops" : 0,
+    "chroma" : {
+      "force" : 0.2,
+      "radius" : 4
+    },
+    "chromaDecompression" : 0.5,
+    "chromaDecompressionByHand" : false,
+    "corrections" : [
+
+    ],
+    "decodedFromMosaic" : true,
+    "density" : 0,
+    "densityCeiling" : 2.09691,
+    "face" : "pro",
+    "flatField" : {
+      "amount" : 1,
+      "mask" : "None",
+      "temperature" : 0,
+      "tint" : 0
+    },
+    "gains" : {
+      "stops" : [
+        -0.13843898,
+        0,
+        -0.28319663
+      ]
+    },
+    "geometry" : {
+      "angle" : 0,
+      "crop" : [
+        [
+          0.13152031549712276,
+          0.05496390132139817
+        ],
+        [
+          0.7451017273417518,
+          0.9450360986786018
+        ]
+      ],
+      "measureWindow" : [
+        [
+          0.18650405534351144,
+          0.20906935830152673
+        ],
+        [
+          0.6391168608920265,
+          0.618991158754771
+        ]
+      ],
+      "mirrored" : false,
+      "mirroredVertically" : false,
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "lensCorrected" : false,
+    "levels" : {
+      "blue" : {
+        "black" : 0.90309,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 3
+      },
+      "green" : {
+        "black" : 0.90309,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 3
+      },
+      "red" : {
+        "black" : 0.90309,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 3
+      }
+    },
+    "manualCurves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "measuredGains" : [
+      -0.13843898,
+      0,
+      -0.28319663
+    ],
+    "mode" : "positive",
+    "paperCorrection" : {
+      "stops" : [
+        0,
+        0,
+        0
+      ]
+    },
+    "primariesConverted" : false,
+    "print" : {
+      "blackPoint" : 0,
+      "blue" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : -0.7874944,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "contrast" : 0,
+      "exposure" : 0.981184,
+      "green" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0.28031465,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "highlights" : 0.04017663,
+      "red" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0.50717974,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "shadows" : -0.03717813,
+      "whitePoint" : -0.013405949
+    },
+    "rollReferenceDeclined" : false,
+    "saturation" : {
+      "points" : [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.75,
+          0.5
+        ],
+        [
+          1,
+          0.5
+        ]
+      ]
+    },
+    "scanner" : {
+      "c" : -2,
+      "d" : 0,
+      "halves" : {
+        "c" : -1
+      },
+      "m" : -2,
+      "w" : 0,
+      "y" : 3
+    },
+    "scannerFinish" : {
+      "contrast" : 0,
+      "manualCurves" : {
+        "blue" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "contrast" : 0,
+        "green" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "linked" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "luma" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "red" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      },
+      "saturation" : {
+        "points" : [
+          [
+            0,
+            0.5
+          ],
+          [
+            0.25,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.75,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "secretSauce" : 0,
+      "spectrogram" : {
+        "hue" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "luma" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "saturation" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "vignette" : {
+        "stops" : 0
+      }
+    },
+    "scannerMachine" : "oni",
+    "secretSauce" : 0,
+    "separation" : 0.6,
+    "separationByHand" : false,
+    "separationFamily" : "fujiC41",
+    "sharpen" : {
+      "amount" : 1,
+      "halo" : 0.5,
+      "radius" : 2.092
+    },
+    "spectrogram" : {
+      "hue" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "vignette" : {
+      "stops" : 0
+    }
+  },
+  "version" : 21
+}

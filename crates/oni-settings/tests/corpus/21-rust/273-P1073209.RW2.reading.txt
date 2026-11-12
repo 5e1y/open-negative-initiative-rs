@@ -1,0 +1,687 @@
+writable: true
+label: Gold
+imported: None
+trashed: None
+exif: ExifMetadata {
+    camera: "Camera",
+    lens: "",
+    film: "",
+    iso: "100",
+    date: "2000:01:01 00:00:00",
+    artist: "",
+    copyright: "",
+}
+draft: 938D6748-8C34-440E-B2A2-A9364E9EBD0F flags Negative camera
+  passes: Some(Bgr) None
+  flat field: Some(FlatField { mask: None, custom: None, amount: 1.0, temperature: 0.0, tint: 0.0 })
+  base: None
+  window: Some(Rect { x: 0.18155787810114504, y: 0.20962845896946566, width: 0.6541343048328663, height: 0.6412545473520992 })
+  ticked true flagged false
+settings: PipelineSettings {
+    mode: Negative,
+    inverted_source: false,
+    film: None,
+    manual_order: None,
+    sheet: None,
+    decoded_from_mosaic: true,
+    capture_stops: 0.0,
+    lens_corrected: false,
+    primaries_converted: false,
+    source_encoding: None,
+    rgb_passes: None,
+    pass_of: None,
+    geometry: Geometry {
+        quarter_turns: 0,
+        angle: 0.0,
+        crop: Rect {
+            x: 0.12769919103343286,
+            y: 0.16168085866105403,
+            width: 0.7265637744103578,
+            height: 0.725656703530944,
+        },
+        ratio: Some(
+            ThreeTwo,
+        ),
+        portrait: false,
+        mirrored: false,
+        mirrored_vertically: false,
+        measure_window: Some(
+            Rect {
+                x: 0.18155787810114504,
+                y: 0.20962845896946566,
+                width: 0.6541343048328663,
+                height: 0.6412545473520992,
+            },
+        ),
+        crop_bypassed: false,
+    },
+    chroma: ChromaDenoise {
+        radius: 4.0,
+        force: 0.2,
+    },
+    gains: Gains {
+        stops: [
+            -0.8821925,
+            -0.035999283,
+            0.5965971,
+        ],
+    },
+    density_ceiling: 3.5,
+    separation: 0.6,
+    separation_family: Some(
+        KodakC41,
+    ),
+    separation_by_hand: false,
+    flat_field: FlatField {
+        mask: None,
+        custom: None,
+        amount: 1.0,
+        temperature: 0.0,
+        tint: 0.0,
+    },
+    corrections: [
+        Correction {
+            id: 41E49BED-42A8-40B0-A78E-99D64211A1E3,
+            stroke: [
+                Point {
+                    x: 0.45669246708485484,
+                    y: 0.5549357232969501,
+                },
+                Point {
+                    x: 0.4572568399753106,
+                    y: 0.5550696867310884,
+                },
+                Point {
+                    x: 0.45782122744264186,
+                    y: 0.5552036501652268,
+                },
+                Point {
+                    x: 0.45838560033309766,
+                    y: 0.5553376135993652,
+                },
+                Point {
+                    x: 0.45894998780042906,
+                    y: 0.5554715988872448,
+                },
+                Point {
+                    x: 0.45951436069088486,
+                    y: 0.5556055623213831,
+                },
+                Point {
+                    x: 0.46007874815821614,
+                    y: 0.5557395257555214,
+                },
+                Point {
+                    x: 0.4606431210486719,
+                    y: 0.5558734891896598,
+                },
+                Point {
+                    x: 0.4612074939391277,
+                    y: 0.5560074526237981,
+                },
+                Point {
+                    x: 0.4617718814064591,
+                    y: 0.5561414160579365,
+                },
+                Point {
+                    x: 0.46233625429691483,
+                    y: 0.556275379492075,
+                },
+                Point {
+                    x: 0.46290064176424617,
+                    y: 0.5564093429262131,
+                },
+                Point {
+                    x: 0.46346501465470197,
+                    y: 0.5565433063603515,
+                },
+                Point {
+                    x: 0.4640294021220332,
+                    y: 0.5566772916482312,
+                },
+                Point {
+                    x: 0.464593775012489,
+                    y: 0.5568112550823696,
+                },
+                Point {
+                    x: 0.4651581624798204,
+                    y: 0.5569452185165079,
+                },
+                Point {
+                    x: 0.4657225353702762,
+                    y: 0.5570791819506463,
+                },
+            ],
+            radius: 12.0,
+        },
+        Correction {
+            id: 019B5C4B-7EF1-4C9D-8B3D-0B06D82C09A2,
+            stroke: [
+                Point {
+                    x: 0.4462090260001462,
+                    y: 0.5632465262815082,
+                },
+                Point {
+                    x: 0.4468601021463406,
+                    y: 0.5635039852077046,
+                },
+                Point {
+                    x: 0.44751117829253495,
+                    y: 0.5637614222801597,
+                },
+                Point {
+                    x: 0.44816223986185383,
+                    y: 0.5640188593526148,
+                },
+                Point {
+                    x: 0.44881331600804814,
+                    y: 0.5642763182788112,
+                },
+                Point {
+                    x: 0.44946439215424255,
+                    y: 0.5645337772050076,
+                },
+                Point {
+                    x: 0.4501154683004369,
+                    y: 0.5647912142774626,
+                },
+                Point {
+                    x: 0.4507665444466313,
+                    y: 0.5650486513499178,
+                },
+                Point {
+                    x: 0.4514176060159501,
+                    y: 0.5653061102761142,
+                },
+                Point {
+                    x: 0.4520686821621445,
+                    y: 0.5655635692023107,
+                },
+                Point {
+                    x: 0.4527197583083388,
+                    y: 0.5658210062747656,
+                },
+                Point {
+                    x: 0.45337083445453324,
+                    y: 0.5660784433472208,
+                },
+                Point {
+                    x: 0.45402191060072755,
+                    y: 0.5663359022734171,
+                },
+                Point {
+                    x: 0.454672986746922,
+                    y: 0.5665933611996136,
+                },
+                Point {
+                    x: 0.45532404831624085,
+                    y: 0.5668507982720686,
+                },
+                Point {
+                    x: 0.45597512446243516,
+                    y: 0.5671082353445237,
+                },
+                Point {
+                    x: 0.45662620060862963,
+                    y: 0.5673656942707201,
+                },
+            ],
+            radius: 12.0,
+        },
+        Correction {
+            id: 3C5D0172-5710-4B8F-AF58-DB852C0B3A2D,
+            stroke: [
+                Point {
+                    x: 0.4111754151996754,
+                    y: 0.5467096472673927,
+                },
+                Point {
+                    x: 0.41182345935575654,
+                    y: 0.5469640466698078,
+                },
+                Point {
+                    x: 0.41247151808871313,
+                    y: 0.5472184679259642,
+                },
+                Point {
+                    x: 0.4131195622447943,
+                    y: 0.5474728673283792,
+                },
+                Point {
+                    x: 0.4137676064008754,
+                    y: 0.5477272885845357,
+                },
+                Point {
+                    x: 0.4144156505569565,
+                    y: 0.5479816879869507,
+                },
+                Point {
+                    x: 0.41506369471303767,
+                    y: 0.5482361092431071,
+                },
+                Point {
+                    x: 0.4157117534459943,
+                    y: 0.5484905086455222,
+                },
+                Point {
+                    x: 0.4163597976020755,
+                    y: 0.5487449299016787,
+                },
+                Point {
+                    x: 0.4170078417581566,
+                    y: 0.5489993293040938,
+                },
+                Point {
+                    x: 0.41765590049111323,
+                    y: 0.5492537287065088,
+                },
+                Point {
+                    x: 0.41830394464719434,
+                    y: 0.5495081499626652,
+                },
+                Point {
+                    x: 0.41895198880327544,
+                    y: 0.5497625493650803,
+                },
+                Point {
+                    x: 0.4196000329593566,
+                    y: 0.5500169706212367,
+                },
+                Point {
+                    x: 0.4202480771154377,
+                    y: 0.5502713700236518,
+                },
+                Point {
+                    x: 0.4208961358483944,
+                    y: 0.5505257912798082,
+                },
+                Point {
+                    x: 0.4215441800044755,
+                    y: 0.5507801906822233,
+                },
+            ],
+            radius: 12.0,
+        },
+    ],
+    levels: LevelsSet {
+        red: Levels {
+            black: 0.21848163,
+            white: 1.5358393,
+            mid: 0.5,
+            shadows: 0.25,
+            highlights: 0.75,
+        },
+        green: Levels {
+            black: 0.21303985,
+            white: 1.6917979,
+            mid: 0.5,
+            shadows: 0.25,
+            highlights: 0.75,
+        },
+        blue: Levels {
+            black: 0.31801888,
+            white: 1.9171377,
+            mid: 0.5,
+            shadows: 0.25,
+            highlights: 0.75,
+        },
+    },
+    chroma_decompression: 0.5,
+    chroma_decompression_by_hand: false,
+    roll_reference: Some(
+        RollReference {
+            id: D57ADC74-00F4-49ED-B8E9-5EA6F2A4C849,
+            stops: [
+                -0.8821925,
+                -0.035999283,
+                0.5965971,
+            ],
+            black: [
+                0.169696,
+                0.1680716,
+                0.19940862,
+            ],
+            white: [
+                0.56293714,
+                0.60949194,
+                0.6767576,
+            ],
+            base: Some(
+                [
+                    0.169696,
+                    0.1680716,
+                    0.19940862,
+                ],
+            ),
+            median: Some(
+                [
+                    0.23521712,
+                    0.2307885,
+                    0.21936676,
+                ],
+            ),
+        },
+    ),
+    roll_reference_declined: false,
+    measured_gains: None,
+    balance_method: None,
+    balance_filters: Some(
+        [
+            -0.02193957,
+            -0.057474505,
+            0.07941408,
+        ],
+    ),
+    balance_strength: 0.67,
+    print: Print {
+        exposure: 3.230414,
+        contrast: 0.0,
+        shadows: 0.20238227,
+        highlights: 0.0,
+        red: Tone {
+            exposure: -0.110787794,
+            contrast: 0.0,
+            blacks: 0.0,
+            shadows: 0.0,
+            highlights: 0.0,
+            whites: 0.0,
+            mids: 0.0,
+        },
+        green: Tone {
+            exposure: -0.13566908,
+            contrast: 0.0,
+            blacks: 0.0,
+            shadows: 0.0,
+            highlights: 0.0,
+            whites: 0.0,
+            mids: 0.0,
+        },
+        blue: Tone {
+            exposure: 0.24645685,
+            contrast: 0.0,
+            blacks: 0.0,
+            shadows: 0.0,
+            highlights: 0.0,
+            whites: 0.0,
+            mids: 0.0,
+        },
+        hunt_base: None,
+        black_point: 0.021957532,
+        white_point: 0.28713688,
+        bypassed: false,
+    },
+    density: 0.40069318,
+    manual_curves: CurveSet {
+        contrast: 0.0,
+        luma: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        linked: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        red: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        green: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        blue: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+    },
+    spectrogram: Spectrogram {
+        hue: [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+        saturation: [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+        luma: [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+    },
+    saturation: SaturationCurve {
+        points: [
+            Point {
+                x: 0.0,
+                y: 0.5,
+            },
+            Point {
+                x: 0.25,
+                y: 0.5,
+            },
+            Point {
+                x: 0.5,
+                y: 0.5,
+            },
+            Point {
+                x: 0.75,
+                y: 0.5,
+            },
+            Point {
+                x: 1.0,
+                y: 0.5,
+            },
+        ],
+    },
+    vignette: Vignette {
+        stops: 0.0,
+    },
+    secret_sauce: 0.0,
+    paper_correction: PaperCorrection {
+        stops: [
+            0.0,
+            0.0,
+            0.0,
+        ],
+    },
+    face: Pro,
+    scanner: ScannerClicks {
+        d: 0,
+        c: 0,
+        m: 0,
+        y: 0,
+        w: 0,
+    },
+    scanner_machine: Oni,
+    scanner_finish: ScannerFinish {
+        contrast: 0.0,
+        manual_curves: CurveSet {
+            contrast: 0.0,
+            luma: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            linked: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            red: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            green: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            blue: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+        },
+        spectrogram: Spectrogram {
+            hue: [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            saturation: [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            luma: [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        },
+        saturation: SaturationCurve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.5,
+                },
+                Point {
+                    x: 0.25,
+                    y: 0.5,
+                },
+                Point {
+                    x: 0.5,
+                    y: 0.5,
+                },
+                Point {
+                    x: 0.75,
+                    y: 0.5,
+                },
+                Point {
+                    x: 1.0,
+                    y: 0.5,
+                },
+            ],
+        },
+        vignette: Vignette {
+            stops: 0.0,
+        },
+        secret_sauce: 0.0,
+    },
+    texture: Texture {
+        amount: 0.0,
+    },
+    sharpen: Sharpen {
+        radius: 2.092,
+        amount: 1.0,
+        halo: 0.5,
+    },
+}

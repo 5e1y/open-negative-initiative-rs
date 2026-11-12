@@ -2,7 +2,7 @@
 //! and edits by hand, and survives a folder move because it travels with the original.
 
 use crate::cg::Rect;
-use crate::codec::{self, Decoded, Failure, Source};
+use crate::codec::{self, Decoded, Failure};
 use crate::date::Date;
 use crate::frame::{FlatField, PassOrder};
 use crate::id::Id;
@@ -21,6 +21,7 @@ mod exif_line;
 mod fields;
 mod held;
 pub mod identity;
+mod said;
 
 pub use exif_line::{ExifMetadata, TypedExif};
 pub use fields::{set_exif, set_label, set_roll_draft, set_trashed, update};
@@ -164,22 +165,26 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
     {
         return Ok(fresh(true));
     }
-    let source = Source { mosaic: &|| mosaic, plain: &|| !mosaic };
-    let decoded = codec::decode_with(&data, &source, catching_up)?;
-    let current = !decoded.is_from_future();
-    let settings = crate::retired_matrices::caught_up(original, decoded.version, decoded.settings);
-    let (settings, placed) = crate::strokes_on_scan::caught_up(original, decoded.version, settings);
-    Ok(Loaded {
-        writable: current && placed,
-        is_new: false,
-        settings,
-        imported_at: decoded.imported_at,
-        label: decoded.label,
-        exif: decoded.exif,
-        roll_draft: decoded.roll_draft,
-        trashed_at: decoded.trashed_at,
-        foreign: false,
-    })
+    let converted = crate::migrate::asked(original, mosaic, |facts| crate::migrate::reading(&data, facts, catching_up))?;
+    Ok(Loaded::of(converted))
+}
+
+impl Loaded {
+    /// A sidecar's conversion as a read gives it: written only from this format, its strokes placed.
+    pub fn of(converted: crate::migrate::Converted) -> Loaded {
+        let d = converted.decoded;
+        Loaded {
+            writable: !d.is_from_future() && converted.placed,
+            is_new: false,
+            settings: d.settings,
+            imported_at: d.imported_at,
+            label: d.label,
+            exif: d.exif,
+            roll_draft: d.roll_draft,
+            trashed_at: d.trashed_at,
+            foreign: false,
+        }
+    }
 }
 
 /// What a write sets around the settings; `None` keeps what the file already says.
@@ -220,7 +225,7 @@ fn standing(path: &Path) -> Result<Option<(Value, Decoded)>, Error> {
     if crate::tolerant::ns_integer(value.get("version")).unwrap_or(0) > codec::VERSION {
         return Err(Error::Newer);
     }
-    let decoded = codec::decode_value(value.clone(), &Source::none(), false)?;
+    let decoded = crate::migrate::decoded_value(value.clone(), None, false)?;
     Ok(Some((value, decoded)))
 }
 

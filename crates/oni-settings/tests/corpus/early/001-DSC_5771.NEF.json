@@ -1,0 +1,224 @@
+{
+  "label" : "none",
+  "settings" : {
+    "chroma" : {
+      "force" : 0,
+      "radius" : 0
+    },
+    "curves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            0.5,
+            0.6180408075451851
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "density" : 0,
+    "densityCeiling" : 2.09691,
+    "flatField" : {
+      "amount" : 0.2,
+      "mask" : "None"
+    },
+    "gains" : {
+      "stops" : [
+        3,
+        0,
+        0
+      ]
+    },
+    "geometry" : {
+      "angle" : 0,
+      "crop" : [
+        [
+          0.01,
+          0.01
+        ],
+        [
+          0.98,
+          0.98
+        ]
+      ],
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "levels" : {
+      "blue" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 3
+      },
+      "green" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 3
+      },
+      "linked" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.67,
+        "shadows" : 0.25,
+        "white" : 1
+      },
+      "luma" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1
+      },
+      "red" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 3
+      }
+    },
+    "mode" : "negative",
+    "saturation" : {
+      "highlights" : 0,
+      "shadows" : 0
+    },
+    "sharpen" : {
+      "amount" : 0.67,
+      "radius" : 2.092
+    },
+    "sheetMode" : false,
+    "spectrogram" : {
+      "hue" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "toneBalance" : {
+      "black" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "highlights" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "midtones" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "shadows" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "white" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "version" : 5
+}

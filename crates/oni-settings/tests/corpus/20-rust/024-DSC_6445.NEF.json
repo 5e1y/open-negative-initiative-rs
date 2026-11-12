@@ -1,0 +1,464 @@
+{
+  "autoBalance" : {
+    "filters" : [
+      0.2887845039367676,
+      0.0342608205974102,
+      -0.3230453133583069
+    ],
+    "fingerprint" : "10284fd20df0892c3f5dd3c4f869ac6b",
+    "reference" : {
+      "base" : [
+        0.3628122806549072,
+        0.3463389277458191,
+        0.31338125467300415
+      ],
+      "black" : [
+        0.3628122806549072,
+        0.3463389277458191,
+        0.31338125467300415
+      ],
+      "id" : "02463EE7-DB88-473D-B0EE-10090DFAA9A6",
+      "median" : [
+        0.46590328216552734,
+        0.46821045875549316,
+        0.46585702896118164
+      ],
+      "stops" : [
+        -1.0920798778533936,
+        0,
+        1.2282207012176514
+      ],
+      "white" : [
+        0.6740211248397827,
+        0.6984602212905884,
+        0.773019552230835
+      ]
+    }
+  },
+  "label" : "gold",
+  "originalPrint" : "29829902-2000:01:01 00:00:00-79c66b7fd6c462f5",
+  "originalTail" : "46c0615361597974",
+  "settings" : {
+    "balanceStrength" : 0.67,
+    "captureStops" : 0,
+    "chroma" : {
+      "force" : 0.2,
+      "radius" : 4
+    },
+    "chromaDecompression" : 0.5,
+    "chromaDecompressionByHand" : false,
+    "corrections" : [
+
+    ],
+    "decodedFromMosaic" : true,
+    "density" : 0,
+    "densityCeiling" : 3.5,
+    "face" : "pro",
+    "flatField" : {
+      "amount" : 1,
+      "mask" : "None",
+      "temperature" : 0,
+      "tint" : 0
+    },
+    "gains" : {
+      "stops" : [
+        -1.0920799,
+        0,
+        1.2282207
+      ]
+    },
+    "geometry" : {
+      "angle" : 0,
+      "crop" : [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "measureWindow" : [
+        [
+          0.1,
+          0.1
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
+      "mirrored" : false,
+      "mirroredVertically" : false,
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "lensCorrected" : false,
+    "levels" : {
+      "blue" : {
+        "black" : 0.6998272,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 2.2396154
+      },
+      "green" : {
+        "black" : 0.8102354,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.9898416
+      },
+      "red" : {
+        "black" : 0.86542106,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.9079708
+      }
+    },
+    "manualCurves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "mode" : "negative",
+    "paperCorrection" : {
+      "stops" : [
+        0,
+        0,
+        0
+      ]
+    },
+    "primariesConverted" : false,
+    "print" : {
+      "blackPoint" : 0,
+      "blue" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "contrast" : 0,
+      "exposure" : 1.5,
+      "green" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "highlights" : 0,
+      "red" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "shadows" : 0,
+      "whitePoint" : 0
+    },
+    "rollReference" : {
+      "base" : [
+        0.36281228,
+        0.34633893,
+        0.31338125
+      ],
+      "black" : [
+        0.36281228,
+        0.34633893,
+        0.31338125
+      ],
+      "id" : "02463EE7-DB88-473D-B0EE-10090DFAA9A6",
+      "median" : [
+        0.46590328,
+        0.46821046,
+        0.46585703
+      ],
+      "stops" : [
+        -1.0920799,
+        0,
+        1.2282207
+      ],
+      "white" : [
+        0.6740211,
+        0.6984602,
+        0.77301955
+      ]
+    },
+    "rollReferenceDeclined" : false,
+    "saturation" : {
+      "points" : [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.75,
+          0.5
+        ],
+        [
+          1,
+          0.5
+        ]
+      ]
+    },
+    "scanner" : {
+      "c" : 0,
+      "d" : -1,
+      "m" : 0,
+      "w" : 0,
+      "y" : 4
+    },
+    "scannerFinish" : {
+      "contrast" : 0,
+      "manualCurves" : {
+        "blue" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "contrast" : 0,
+        "green" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "linked" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "luma" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "red" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      },
+      "saturation" : {
+        "points" : [
+          [
+            0,
+            0.5
+          ],
+          [
+            0.25,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.75,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "secretSauce" : 0,
+      "spectrogram" : {
+        "hue" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "luma" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "saturation" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "vignette" : {
+        "stops" : 0
+      }
+    },
+    "scannerMachine" : "frontier",
+    "secretSauce" : 0,
+    "separation" : 0.6,
+    "separationByHand" : false,
+    "separationFamily" : "kodakC41",
+    "sharpen" : {
+      "amount" : 1,
+      "halo" : 0.5,
+      "radius" : 2.092
+    },
+    "spectrogram" : {
+      "hue" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "vignette" : {
+      "stops" : 0
+    }
+  },
+  "version" : 20
+}

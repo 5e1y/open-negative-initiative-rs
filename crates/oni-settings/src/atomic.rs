@@ -2,7 +2,7 @@
 //! The one writer of the app's files, sidecars, presets, preferences, index and exports alike.
 
 use std::fs::{File, OpenOptions};
-use std::io::{self, Write};
+use std::io::{self, Read, Seek, Write};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -71,7 +71,7 @@ pub fn reclaimed(dir: &Path) {
 /// Its file stays open and locked, so no reclaim takes it while it waits for its rename.
 pub struct Staged {
     path: PathBuf,
-    _locked: Option<File>,
+    locked: Option<File>,
 }
 
 impl Staged {
@@ -79,7 +79,16 @@ impl Staged {
         let mut flying = in_flight();
         let free = (0..).map(|rank| temporary(path, rank)).find(|t| !flying.contains(t)).unwrap_or_default();
         flying.insert(free.clone());
-        Staged { path: free, _locked: None }
+        Staged { path: free, locked: None }
+    }
+
+    /// Its bytes read back through the handle that holds its lock: on Windows the lock refuses any other.
+    fn read_back(&mut self) -> io::Result<Vec<u8>> {
+        let file = self.locked.as_mut().ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+        file.rewind()?;
+        let mut back = Vec::new();
+        file.read_to_end(&mut back)?;
+        Ok(back)
     }
 }
 
@@ -156,7 +165,7 @@ fn staged_with(path: &Path, private: bool, flush: bool, write: impl FnOnce(&mut 
     // ONI process writing the same file at the same instant can take the same name: a known limit.
     let _ = std::fs::remove_file(&temporary);
     let mut options = OpenOptions::new();
-    options.write(true).create_new(true);
+    options.read(true).write(true).create_new(true);
     #[cfg(unix)]
     if private {
         std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
@@ -171,7 +180,7 @@ fn staged_with(path: &Path, private: bool, flush: bool, write: impl FnOnce(&mut 
     });
     match result {
         Ok(file) => {
-            temporary._locked = Some(file);
+            temporary.locked = Some(file);
             Ok(temporary)
         }
         Err(e) => {
@@ -202,6 +211,68 @@ pub fn write_atomically(path: &Path, bytes: &[u8]) -> io::Result<()> {
 /// `write_atomically` through its own rename, which a check makes fail.
 pub fn written(path: &Path, bytes: &[u8], rename: &dyn Fn(&Path, &Path) -> io::Result<()>) -> io::Result<()> {
     landed(path, staged_with(path, false, true, |file| file.write_all(bytes)), rename)
+}
+
+/// Why a verified write left its target byte for byte as it was.
+#[derive(Debug)]
+pub enum Unwritten {
+    Io(io::Error),
+    /// The bytes read back did not say what was meant.
+    Unverified,
+    /// The target changed while the bytes were staged: another writer's are kept.
+    Moved,
+}
+
+/// `bytes` over `path` in one rename, once flushed and read back as the file system holds them, accepted
+/// by `verify`, the target still what the caller read (`unmoved`); a refusal leaves it and no temporary.
+pub fn write_verified(path: &Path, bytes: &[u8], verify: &dyn Fn(&[u8]) -> bool, unmoved: &dyn Fn() -> bool, keep_modified: bool) -> Result<(), Unwritten> {
+    verified_by(path, bytes, verify, unmoved, keep_modified, &renamed)
+}
+
+/// `write_verified` through its own rename, which a check makes fail.
+pub fn verified_by(
+    path: &Path,
+    bytes: &[u8],
+    verify: &dyn Fn(&[u8]) -> bool,
+    unmoved: &dyn Fn() -> bool,
+    keep_modified: bool,
+    rename: &dyn Fn(&Path, &Path) -> io::Result<()>,
+) -> Result<(), Unwritten> {
+    staged_and_verified(path, bytes, verify, unmoved, keep_modified, rename, |file| file.write_all(bytes))
+}
+
+/// `verified_by` with `bytes` staged by `stage`, which a check makes seal the temporary.
+fn staged_and_verified(
+    path: &Path,
+    bytes: &[u8],
+    verify: &dyn Fn(&[u8]) -> bool,
+    unmoved: &dyn Fn() -> bool,
+    keep_modified: bool,
+    rename: &dyn Fn(&Path, &Path) -> io::Result<()>,
+    stage: impl FnOnce(&mut File) -> io::Result<()>,
+) -> Result<(), Unwritten> {
+    let modified = keep_modified.then(|| std::fs::metadata(path).and_then(|m| m.modified()).ok()).flatten();
+    let mut temporary = staged_with(path, false, true, stage).map_err(Unwritten::Io)?;
+    let back = temporary.read_back();
+    let refused = |why: Unwritten| {
+        let _ = std::fs::remove_file(&temporary);
+        Err(why)
+    };
+    match back {
+        Err(e) => return refused(Unwritten::Io(e)),
+        Ok(back) if back != bytes || !verify(&back) => return refused(Unwritten::Unverified),
+        Ok(_) => {}
+    }
+    if !unmoved() {
+        return refused(Unwritten::Moved);
+    }
+    landed(path, Ok(temporary), rename).map_err(Unwritten::Io)?;
+    if let Some(time) = modified
+        && let Ok(file) = OpenOptions::new().write(true).open(path)
+    {
+        let _ = file.set_modified(time);
+    }
+    Ok(())
 }
 
 /// `write_atomically` readable by its owner alone on Unix; on Windows the support folder sits in

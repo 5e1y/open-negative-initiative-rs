@@ -46,8 +46,6 @@ pub mod preferences;
 pub mod starter;
 pub mod proof;
 pub mod report;
-pub mod retired_matrices;
-pub mod strokes_on_scan;
 pub mod render;
 pub mod roll_previews;
 pub mod scans;

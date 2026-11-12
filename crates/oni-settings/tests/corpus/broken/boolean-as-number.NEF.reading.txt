@@ -1,0 +1,1 @@
+refused: Unreadable settings: invalid type: integer `0`, expected a boolean

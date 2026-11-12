@@ -100,6 +100,7 @@ mod prepare_loupe;
 mod prepare_frames;
 mod prepare_ending;
 mod prepare_walk;
+mod prepare_parts;
 mod slides;
 mod project_steps;
 mod project_filing;

@@ -4,7 +4,7 @@
 use oni_pipeline::conversion;
 use oni_render::cpu;
 use oni_settings::axis::density_axis;
-use oni_settings::retired_matrices::{M3, compensated, on_greys};
+use oni_settings::migrate::matrices::{M3, compensated, on_greys};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const Z_F: M3 = [[1.1242, -0.1665, -0.0092], [0.0277, 0.9493, -0.0627], [0.0104, -0.0133, 0.8966]];

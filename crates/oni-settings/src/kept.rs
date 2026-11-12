@@ -48,7 +48,7 @@ fn carried(document: &SettingsDocument, stored: Option<&(Value, Decoded)>) -> Re
     }
     // A carried key must change nothing this version reads, as a retired key would; else none is.
     let (plain, text) = (json::pretty_sorted(&bare), json::pretty_sorted(&node));
-    let same = matches!((codec::decode(plain.as_bytes()), codec::decode(text.as_bytes())), (Ok(a), Ok(b)) if a == b);
+    let same = matches!((crate::migrate::document(plain.as_bytes()), crate::migrate::document(text.as_bytes())), (Ok(a), Ok(b)) if a == b);
     Ok(if same { node } else { bare })
 }
 

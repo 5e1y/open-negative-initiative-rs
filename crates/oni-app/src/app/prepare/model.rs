@@ -2,6 +2,7 @@
 //! shape and the loupe's cut, each checked against Swift's self-checks.
 
 use super::*;
+use oni_library::paths;
 
 mod step;
 pub use step::*;
@@ -173,14 +174,22 @@ pub fn loupe(pointer: (f64, f64), rect: (f64, f64, f64, f64), display_width: usi
     }
 }
 
-/// Each file's draft: `None` clears it, so a file no longer a frame keeps no other grouping's draft.
-pub(super) type Drafts = Vec<(String, Option<RollDraft>)>;
+/// A folder's part of the roll: its frames by file name, taken out of any other roll's draft there,
+/// and its own draft, `None` keeping none, so a folder no longer holding a frame keeps no other grouping's.
+pub(super) struct Part {
+    pub folder: String,
+    pub frames: Vec<String>,
+    pub draft: Option<oni_settings::prepare::Draft>,
+}
+
+pub(super) type Drafts = Vec<Part>;
 
 impl Roll {
-    /// The drafts a step writes now; a step taken while a frame is still read waits for the last one.
-    pub(super) fn step_drafts(&mut self) -> Option<Drafts> {
+    /// The drafts a step writes now, and the frames whose sidecar still keeps one, kept until a discard
+    /// whatever the write; a step taken while a frame is still read waits for the last one.
+    pub(super) fn step_drafts(&mut self) -> Option<(Drafts, Vec<String>)> {
         self.draft_waiting = self.shown && self.read.len() < self.sources.len();
-        self.drafts()
+        Some((self.drafts()?, self.stored.iter().cloned().collect()))
     }
 
     /// Whether the frame just read was the last a step's draft waited for, which is then written once.
@@ -190,29 +199,48 @@ impl Roll {
         landed
     }
 
-    /// The draft every frame shares, its own ticked and flagged laid per frame, on every file the roll
-    /// read: whichever lands first on a resume finds the grouping. `None` until it may be written.
+    /// The draft the roll's folders share, each listing its own frames' places, the base only in the
+    /// base's folder, so any folder's resumes the grouping. `None` until it may be written.
     pub(super) fn drafts(&mut self) -> Option<Drafts> {
+        use oni_settings::prepare::{Base, Draft, Mark};
         if !self.shown || self.progress.is_some() || (self.step == Step::Film && self.draft_id.is_none()) || self.sources.is_empty() || self.read.len() < self.sources.len() {
             return None;
         }
         let id = *self.draft_id.get_or_insert_with(Id::new);
-        let shared = RollDraft {
-            id,
-            step: self.step.name().into(),
-            film: self.film,
-            capture: self.capture.raw().into(),
-            pass_order: Some(self.pass_order),
-            pass_offset: Some(self.pass_offset),
-            flat_field: Some(self.flat.clone()),
-            base: self.base.as_ref().map(|b| DraftBase { path: b.path.clone(), x: b.unit.0, y: b.unit.1, radius: b.radius }),
-            window: Some(self.window),
-            ticked: false,
-            flagged: false,
-        };
         let places = self.places();
-        let drafts = self.sources.iter().map(|f| (f.path.clone(), places.get(f.path.as_str()).map(|&(ticked, flagged)| RollDraft { ticked, flagged, ..shared.clone() })));
-        Some(drafts.collect())
+        let parts = self.dropped().into_iter().map(|part| {
+            let here = self.sources.iter().filter(|f| paths::parent(&f.path) == part.folder);
+            let frames: std::collections::BTreeMap<String, Mark> =
+                here.filter_map(|f| places.get(f.path.as_str()).map(|&(ticked, flagged)| (paths::name(&f.path), Mark { ticked, flagged }))).collect();
+            let base = self.base.as_ref().filter(|b| paths::parent(&b.path) == part.folder).map(|b| Base { file: paths::name(&b.path), x: b.unit.0, y: b.unit.1, radius: b.radius });
+            let draft = (!frames.is_empty()).then(|| Draft {
+                id,
+                step: self.step.name().into(),
+                film: self.film,
+                capture: self.capture.raw().into(),
+                pass_order: Some(self.pass_order),
+                pass_offset: Some(self.pass_offset),
+                flat_field: Some(self.flat.clone()),
+                base,
+                window: Some(self.window),
+                frames,
+            });
+            Part { draft, ..part }
+        });
+        Some(parts.collect())
+    }
+
+    /// Each folder of the roll's files with its frames, keeping no draft.
+    pub(super) fn dropped(&self) -> Drafts {
+        let mut parts: Drafts = Vec::new();
+        for f in &self.sources {
+            let (folder, name) = (paths::parent(&f.path), paths::name(&f.path));
+            match parts.iter_mut().find(|p| p.folder == folder) {
+                Some(part) => part.frames.push(name),
+                None => parts.push(Part { folder, frames: vec![name], draft: None }),
+            }
+        }
+        parts
     }
 
     /// Each frame's tick and flag, by its path.

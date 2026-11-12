@@ -38,7 +38,7 @@ pub fn encode(preset: &Preset) -> Result<String, json::Error> {
 
 /// A preset from a file's bytes; a file from a newer version is skipped rather than half-applied.
 pub fn decode(data: &[u8]) -> Option<Preset> {
-    let decoded = codec::decode(data).ok().filter(|d| !d.is_from_future())?;
+    let decoded = oni_settings::migrate::document(data).ok().filter(|d| !d.is_from_future())?;
     let object: Value = serde_json::from_slice(data).ok()?;
     let meta = object.get("preset").filter(|m| m.is_object()).unwrap_or(&object);
     let name = meta.get("name")?.as_str()?.trim_matches(is_blank).to_string();

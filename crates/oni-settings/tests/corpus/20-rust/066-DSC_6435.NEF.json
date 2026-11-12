@@ -1,0 +1,464 @@
+{
+  "autoBalance" : {
+    "filters" : [
+      0.19486168026924133,
+      0.06663297116756439,
+      -0.26149463653564453
+    ],
+    "fingerprint" : "7f953a92850973b51c49217df29f6309",
+    "reference" : {
+      "base" : [
+        0.362215131521225,
+        0.34805065393447876,
+        0.319454550743103
+      ],
+      "black" : [
+        0.362215131521225,
+        0.34805065393447876,
+        0.319454550743103
+      ],
+      "id" : "4CAE802A-4DB0-455F-B4BB-65014273176D",
+      "median" : [
+        0.46613073348999023,
+        0.46818724274635315,
+        0.4659905433654785
+      ],
+      "stops" : [
+        -1.0909756422042847,
+        0,
+        1.2311618328094482
+      ],
+      "white" : [
+        0.7156137228012085,
+        0.7537709474563599,
+        0.850059449672699
+      ]
+    }
+  },
+  "label" : "none",
+  "originalPrint" : "30046636-2000:01:01 00:00:00-e4e6a64ce12647a6",
+  "originalTail" : "def0265e3abc752d",
+  "settings" : {
+    "balanceStrength" : 0.67,
+    "captureStops" : 0,
+    "chroma" : {
+      "force" : 0.2,
+      "radius" : 4
+    },
+    "chromaDecompression" : 0.5,
+    "chromaDecompressionByHand" : false,
+    "corrections" : [
+
+    ],
+    "decodedFromMosaic" : true,
+    "density" : 0,
+    "densityCeiling" : 3.5,
+    "face" : "pro",
+    "flatField" : {
+      "amount" : 1,
+      "mask" : "None",
+      "temperature" : 0,
+      "tint" : 0
+    },
+    "gains" : {
+      "stops" : [
+        -1.0909756,
+        0,
+        1.2311618
+      ]
+    },
+    "geometry" : {
+      "angle" : 0,
+      "crop" : [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "measureWindow" : [
+        [
+          0.1,
+          0.1
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
+      "mirrored" : false,
+      "mirroredVertically" : false,
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "lensCorrected" : false,
+    "levels" : {
+      "blue" : {
+        "black" : 0.72017264,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 2.4976993
+      },
+      "green" : {
+        "black" : 0.8159696,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 2.1751328
+      },
+      "red" : {
+        "black" : 0.8634206,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 2.047306
+      }
+    },
+    "manualCurves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "mode" : "negative",
+    "paperCorrection" : {
+      "stops" : [
+        0,
+        0,
+        0
+      ]
+    },
+    "primariesConverted" : false,
+    "print" : {
+      "blackPoint" : 0,
+      "blue" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "contrast" : 0,
+      "exposure" : 1.5,
+      "green" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "highlights" : 0,
+      "red" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "shadows" : 0,
+      "whitePoint" : 0
+    },
+    "rollReference" : {
+      "base" : [
+        0.36221513,
+        0.34805065,
+        0.31945455
+      ],
+      "black" : [
+        0.36221513,
+        0.34805065,
+        0.31945455
+      ],
+      "id" : "4CAE802A-4DB0-455F-B4BB-65014273176D",
+      "median" : [
+        0.46613073,
+        0.46818724,
+        0.46599054
+      ],
+      "stops" : [
+        -1.0909756,
+        0,
+        1.2311618
+      ],
+      "white" : [
+        0.7156137,
+        0.75377095,
+        0.85005945
+      ]
+    },
+    "rollReferenceDeclined" : false,
+    "saturation" : {
+      "points" : [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.75,
+          0.5
+        ],
+        [
+          1,
+          0.5
+        ]
+      ]
+    },
+    "scanner" : {
+      "c" : 0,
+      "d" : 0,
+      "m" : 0,
+      "w" : 0,
+      "y" : 0
+    },
+    "scannerFinish" : {
+      "contrast" : 0,
+      "manualCurves" : {
+        "blue" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "contrast" : 0,
+        "green" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "linked" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "luma" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "red" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      },
+      "saturation" : {
+        "points" : [
+          [
+            0,
+            0.5
+          ],
+          [
+            0.25,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.75,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "secretSauce" : 0,
+      "spectrogram" : {
+        "hue" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "luma" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "saturation" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "vignette" : {
+        "stops" : 0
+      }
+    },
+    "scannerMachine" : "oni",
+    "secretSauce" : 0,
+    "separation" : 0.6,
+    "separationByHand" : false,
+    "separationFamily" : "kodakC41",
+    "sharpen" : {
+      "amount" : 1,
+      "halo" : 0.5,
+      "radius" : 2.092
+    },
+    "spectrogram" : {
+      "hue" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "vignette" : {
+      "stops" : 0
+    }
+  },
+  "version" : 20
+}

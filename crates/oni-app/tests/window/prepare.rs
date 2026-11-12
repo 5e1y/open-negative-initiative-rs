@@ -6,38 +6,18 @@ use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{App, Bar, Canvas, Clicks, Confirm, Library, Menus, Preparing};
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
+use oni_settings::prepare::{self, Draft};
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::cell::Cell;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
 use crate::common;
-
-fn loaded(path: &Path) -> sidecar::Loaded {
-    sidecar::read(path, false, true).unwrap()
-}
-
-/// Whether a picture of a graded scan reads as the scan does: darker at its top left than at its
-/// bottom right, as the gradient was written; an inverted picture reads the other way.
-fn as_scanned(rgba: &[u8], width: usize, height: usize) -> bool {
-    let luma = |fx: f32, fy: f32| {
-        let at = ((fy * height as f32) as usize * width + (fx * width as f32) as usize) * 4;
-        rgba[at..at + 3].iter().map(|v| f32::from(*v)).sum::<f32>()
-    };
-    luma(0.1, 0.1) + 6.0 < luma(0.9, 0.9)
-}
-
-fn click(rig: &common::Rig, x: f32, y: f32) {
-    let at = LogicalPosition::new(x, y);
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position: at });
-    rig.window.dispatch_event(WindowEvent::PointerPressed { position: at, button: PointerEventButton::Left });
-    rig.window.dispatch_event(WindowEvent::PointerReleased { position: at, button: PointerEventButton::Left });
-    rig.pump();
-}
+use crate::prepare_parts::{as_scanned, click, loaded, stored};
 
 pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step() {
     let gpu = match oni_app::render::Device::open() {
@@ -51,6 +31,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
     let canonical = |n: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(n)));
+    let drafted = || prepare::read(canonical("A.tif").parent().unwrap()).pop();
+    let mark = |d: &Draft, n: &str| d.frames.get(n).copied();
     // D stands on another roll: a frame of this folder the measure leaves out.
     let mut other = PipelineSettings::rest(ConversionMode::Negative, false);
     other.roll_reference = Some(RollReference { id: Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
@@ -97,7 +79,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let behind = [live.export, live.framing, live.correction, live.mirror, live.smaller, live.larger, live.remove, live.undo, live.redo, live.reset];
     let more = [live.copy_settings, live.paste_settings, live.paste_to_roll, live.medal, live.new_roll, live.save_preset, live.apply_preset];
     assert!(behind.iter().chain(more.iter()).all(|on| !on), "nothing reaches the editor the roll hides: {live:?}");
-    assert!(loaded(&canonical("B.tif")).roll_draft.is_none(), "twin: the film step writes no draft");
+    assert!(drafted().is_none(), "twin: the film step writes no draft");
     rig.settle();
     println!("shot {}", rig.shot("prepare-film").display());
 
@@ -132,8 +114,10 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let (x, y) = action();
     click(&rig, x, y);
     assert_eq!(p.get_step(), 2);
-    rig.until("the drafts written", Duration::from_secs(10), || ["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "base")));
-    assert!(loaded(&canonical("D.tif")).roll_draft.is_none(), "the frame left out carries no draft");
+    rig.until("the draft written", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "base"));
+    let d = drafted().unwrap();
+    assert!(["A.tif", "B.tif", "C.tif"].iter().all(|n| mark(&d, n).is_some()) && mark(&d, "D.tif").is_none(), "each frame's place, D left out");
+    assert!(["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "twin: no frame's sidecar carries it");
     assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str(), p.get_action_enabled()), ("No base picked yet.", "NEXT", true));
     let done = || (0..5).map(|i| p.get_done().row_data(i).unwrap()).collect::<Vec<bool>>();
     assert_eq!(done(), [true, false, false, false, false], "the film step behind is done; the flat-field not walked and the current base are not");
@@ -269,11 +253,11 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     click(&rig, x, y);
     assert!(p.get_cells().row_data(2).unwrap().flagged);
     // The flag rides in the draft only at a step change, so closing the window writes it.
-    rig.until("the flags step's drafts", Duration::from_secs(10), || loaded(&canonical("C.tif")).roll_draft.is_some_and(|d| d.step == "flags"));
-    assert!(!loaded(&canonical("C.tif")).roll_draft.unwrap().flagged, "twin: the click alone writes nothing");
+    rig.until("the flags step's draft", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "flags"));
+    assert!(!mark(&drafted().unwrap(), "C.tif").unwrap().flagged, "twin: the click alone writes nothing");
     rig.window.dispatch_event(WindowEvent::CloseRequested);
     rig.pump();
-    assert!(loaded(&canonical("C.tif")).roll_draft.unwrap().flagged, "closing wrote the step as it stands");
+    assert!(mark(&drafted().unwrap(), "C.tif").unwrap().flagged, "closing wrote the step as it stands");
     assert!(p.get_shown());
     rig.settle();
     println!("shot {}", rig.shot("prepare-flags").display());
@@ -303,11 +287,14 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!((p.get_window_x() - (wx - 10.0)).abs() < 1.0 && (p.get_window_y() - (wy - 6.0)).abs() < 1.0, "the body moves the window");
     println!("shot {}", rig.shot("prepare-window").display());
 
-    // Each step reached rides in every frame's sidecar, a quit's to resume from.
+    // Each step reached rides in the folder's draft, a quit's to resume from.
     let roll = ["A.tif", "B.tif", "C.tif"];
-    rig.until("the drafts written", Duration::from_secs(10), || roll.iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "window")));
-    let drafts: Vec<_> = roll.iter().map(|n| loaded(&canonical(n)).roll_draft.unwrap()).collect();
-    assert!(drafts[2].flagged && drafts[2].ticked && drafts[2].base.as_ref().is_some_and(|b| b.path.ends_with("A.tif")));
+    rig.until("the draft written", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "window"));
+    let draft = drafted().unwrap();
+    let c = mark(&draft, "C.tif").unwrap();
+    assert!(c.flagged && c.ticked && draft.base.as_ref().is_some_and(|b| b.file == "A.tif"));
+    let dates = || roll.iter().map(|n| std::fs::metadata(sidecar::url_for(&canonical(n))).and_then(|m| m.modified()).ok()).collect::<Vec<_>>();
+    let before = dates();
 
     // Escape asks before it drops a roll holding a pick, a flag and a drawn window; the sheet's Cancel keeps it.
     let confirm = w.global::<Confirm>();
@@ -323,10 +310,11 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     confirm.invoke_answered(true);
     rig.pump();
     assert!(!p.get_shown() && app.get_gallery());
-    rig.until("the drafts dropped", Duration::from_secs(10), || roll.iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()));
-    // The roll as a quit leaves it, its drafts on disk.
-    for (n, d) in roll.iter().zip(drafts) {
-        sidecar::set_roll_draft(Some(d), &canonical(n), false).unwrap();
+    rig.until("the draft dropped", Duration::from_secs(10), || drafted().is_none());
+    assert_eq!(dates(), before, "leaving moves no sidecar");
+    // The roll as a quit of an earlier build leaves it: a draft in each frame's sidecar, gathered on entry.
+    for n in roll {
+        sidecar::set_roll_draft(Some(stored(&draft, n, &canonical)), &canonical(n), false).unwrap();
     }
 
     // B picked brings the same roll back where it stood.
@@ -352,7 +340,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(p.get_landed_alone() && !w.global::<Canvas>().get_together(), "twin: no frames together");
     let ids: Vec<Option<Id>> = ["B.tif", "C.tif"].iter().map(|n| loaded(&canonical(n)).settings.roll_reference.map(|r| r.id)).collect();
     assert!(ids[0].is_some() && ids[0] == ids[1], "B and the flagged C stand on one roll: {ids:?}");
-    assert!(["B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "a measure clears the draft");
+    assert!(["B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "a measure clears the frames' drafts");
+    rig.until("the folder's draft dropped", Duration::from_secs(10), || drafted().is_none());
     assert_eq!(ctl.state.borrow().store().settings().roll_reference.as_ref().map(|r| r.id), ids[0], "A, open, landed in memory");
     assert!(loaded(&canonical("D.tif")).settings.roll_reference.map(|r| r.id) != ids[0], "twin: D keeps its own roll");
     ctl.act(oni_app::Act::ToggleMode);

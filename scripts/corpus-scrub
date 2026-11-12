@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Scrubs sidecar copies for the public corpus in place, only their strings and dates, each where it
+stands: `corpus-scrub <name.json>...`. A file whose parse moved beyond them is left and named."""
+
+import json
+import re
+import sys
+
+EXIF = {
+    "camera": "Camera",
+    "lens": "Lens",
+    "film": "Film",
+    "iso": "100",
+    "date": "2000:01:01 00:00:00",
+    "artist": "Artist",
+    "copyright": "Copyright",
+}
+BASE_FOLDER = "/Volumes/Scans/Roll"
+ROLL = "Roll"
+PRINT_DATE = "2000:01:01 00:00:00"
+# The day a photo was imported and trashed, in their order, so no corpus file dates a person's work.
+DATES = {"importedAt": "2000-01-01T00:00:00Z", "trashedAt": "2000-01-02T00:00:00Z"}
+
+
+def literals(text):
+    """A string's spellings in a sidecar: plain, and with each slash escaped as Foundation writes it."""
+    plain = json.dumps(text, ensure_ascii=False)
+    return [plain, plain.replace("/", "\\/")]
+
+
+def replaced(raw, key, old, new):
+    """`raw` with the value of `key` spelled `old` rewritten as `new`, once per occurrence."""
+    for spelling in literals(old):
+        pattern = re.compile(r'("' + re.escape(key) + r'"\s*:\s*)' + re.escape(spelling))
+        raw, n = pattern.subn(lambda m: m.group(1) + json.dumps(new, ensure_ascii=False), raw)
+        if n:
+            return raw
+    raise ValueError(f"{key}: {old!r} not found")
+
+
+def scrubbed(raw):
+    document = json.loads(raw)
+    expected = json.loads(raw)
+    if not isinstance(document, dict):
+        return raw
+    exif = document.get("exif")
+    if isinstance(exif, dict):
+        for key, word in EXIF.items():
+            value = exif.get(key)
+            if isinstance(value, str) and value and value != word:
+                raw = replaced(raw, key, value, word)
+                expected["exif"][key] = word
+    draft = document.get("rollDraft")
+    base = draft.get("base") if isinstance(draft, dict) else None
+    if isinstance(base, dict) and isinstance(base.get("path"), str):
+        path = base["path"]
+        name = re.split(r"[\\/]", path)[-1]
+        moved = f"{BASE_FOLDER}/{name}"
+        if path != moved:
+            raw = replaced(raw, "path", path, moved)
+            expected["rollDraft"]["base"]["path"] = moved
+    film = document.get("settings", {}).get("film")
+    if isinstance(film, dict) and isinstance(film.get("name"), str) and film["name"] != ROLL:
+        raw = replaced(raw, "name", film["name"], ROLL)
+        expected["settings"]["film"]["name"] = ROLL
+    stamp = document.get("originalPrint")
+    if isinstance(stamp, str):
+        size, _, rest = stamp.partition("-")
+        date, _, digest = rest.rpartition("-")
+        if date not in ("no-date", PRINT_DATE):
+            moved = f"{size}-{PRINT_DATE}-{digest}"
+            raw = replaced(raw, "originalPrint", stamp, moved)
+            expected["originalPrint"] = moved
+    for key, fixed in DATES.items():
+        value = document.get(key)
+        if isinstance(value, str) and value != fixed:
+            raw = replaced(raw, key, value, fixed)
+            expected[key] = fixed
+        elif value is not None and not isinstance(value, str):
+            raise ValueError(f"{key}: a date not written as text")
+    if json.loads(raw) != expected:
+        raise ValueError("the scrub moved more than its strings")
+    return raw
+
+
+def main(paths):
+    failed = 0
+    for path in paths:
+        with open(path, encoding="utf-8") as f:
+            raw = f.read()
+        try:
+            out = scrubbed(raw)
+        except (ValueError, json.JSONDecodeError) as e:
+            print(f"{path}: left as it is ({e})", file=sys.stderr)
+            failed += 1
+            continue
+        if out != raw:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(out)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

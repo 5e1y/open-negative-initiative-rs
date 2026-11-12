@@ -225,7 +225,7 @@ pub fn marked(set: &LevelsSet, mode: ConversionMode, ceiling: f32) -> Vec<bool> 
 mod tests {
     use super::*;
     use oni_settings::axis::{graduation, pipeline};
-    use oni_settings::density_migration::apply_levels;
+    use oni_settings::migrate::density::apply_levels;
 
     const MODES: [ConversionMode; 3] = [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Monochrome];
 

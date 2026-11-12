@@ -1,0 +1,1 @@
+refused: The settings file is not a JSON object.

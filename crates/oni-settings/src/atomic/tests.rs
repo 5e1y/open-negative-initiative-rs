@@ -210,3 +210,84 @@ fn a_private_file_is_readable_by_its_owner_alone() {
     assert_eq!(mode(&plain), mode(&reference));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// A folder holding `target` at `old`, its date a day back, so a kept date is told from a new one.
+fn dated(name: &str, old: &[u8]) -> (PathBuf, PathBuf, std::time::SystemTime) {
+    let dir = std::env::temp_dir().join(format!("oni-atomic-{name}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let target = dir.join("A.NEF.json");
+    std::fs::write(&target, old).unwrap();
+    let day = std::time::SystemTime::now() - Duration::from_secs(86_400);
+    File::options().write(true).open(&target).unwrap().set_modified(day).unwrap();
+    let day = std::fs::metadata(&target).unwrap().modified().unwrap();
+    (dir, target, day)
+}
+
+fn leftovers(dir: &Path) -> usize {
+    std::fs::read_dir(dir).unwrap().flatten().filter(|e| temporary_named(&e.file_name().to_string_lossy())).count()
+}
+
+#[test]
+fn a_verified_write_lands_once_read_back_and_a_refused_one_leaves_the_target_as_it_was() {
+    let (dir, target, day) = dated("verified", b"old");
+    let refused = write_verified(&target, b"new", &|_| false, &|| true, true);
+    assert!(matches!(refused, Err(Unwritten::Unverified)), "{refused:?}");
+    assert_eq!((std::fs::read(&target).unwrap(), leftovers(&dir)), (b"old".to_vec(), 0));
+    assert_eq!(std::fs::metadata(&target).unwrap().modified().unwrap(), day);
+    // A rename refused leaves it too.
+    let failing = |_: &Path, _: &Path| Err(io::Error::other("refused"));
+    assert!(matches!(verified_by(&target, b"new", &|_| true, &|| true, true, &failing), Err(Unwritten::Io(_))));
+    assert_eq!((std::fs::read(&target).unwrap(), leftovers(&dir)), (b"old".to_vec(), 0));
+    // Accepted, it lands with the date the target had.
+    write_verified(&target, b"new", &|back| back == b"new", &|| true, true).unwrap();
+    assert_eq!((std::fs::read(&target).unwrap(), leftovers(&dir)), (b"new".to_vec(), 0));
+    assert_eq!(std::fs::metadata(&target).unwrap().modified().unwrap(), day);
+    // Twin: a verify judging the bytes read back, wrongly expecting others, is heard and lands nothing.
+    std::fs::write(&target, b"old").unwrap();
+    let seen = std::cell::RefCell::new(Vec::new());
+    let wrong = |back: &[u8]| {
+        seen.replace(back.to_vec());
+        back == b"other"
+    };
+    assert!(matches!(write_verified(&target, b"new", &wrong, &|| true, true), Err(Unwritten::Unverified)));
+    assert_eq!((seen.take(), std::fs::read(&target).unwrap(), leftovers(&dir)), (b"new".to_vec(), b"old".to_vec(), 0));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// As Windows' lock does to every other handle, the temporary sealed against a new one by its mode.
+#[cfg(unix)]
+#[test]
+fn a_verified_write_reads_back_through_the_handle_it_holds() {
+    use std::os::unix::fs::PermissionsExt;
+    let (dir, target, _) = dated("sealed", b"old");
+    let opened = std::cell::Cell::new(None);
+    let sealed = |file: &mut File| {
+        file.write_all(b"new")?;
+        file.set_permissions(std::fs::Permissions::from_mode(0o200))?;
+        opened.set(Some(std::fs::read(temporary(&target, 0)).is_ok()));
+        Ok(())
+    };
+    staged_and_verified(&target, b"new", &|back| back == b"new", &|| true, false, &renamed, sealed).unwrap();
+    std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o600)).unwrap();
+    assert_eq!((std::fs::read(&target).unwrap(), leftovers(&dir)), (b"new".to_vec(), 0));
+    // Twin: the seal holds, so a read through a new handle, as the path gives, is refused.
+    assert_eq!(opened.get(), Some(false));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_target_another_writer_moves_meanwhile_is_kept_whole() {
+    let (dir, target, _) = dated("moved", b"old");
+    // The other writer lands while the bytes are staged, between the read and the rename.
+    let other = |_: &[u8]| std::fs::write(&target, b"theirs").is_ok();
+    let unmoved = || std::fs::read(&target).is_ok_and(|now| now == b"old");
+    let refused = write_verified(&target, b"mine", &other, &unmoved, true);
+    assert!(matches!(refused, Err(Unwritten::Moved)), "{refused:?}");
+    assert_eq!((std::fs::read(&target).unwrap(), leftovers(&dir)), (b"theirs".to_vec(), 0));
+    // Twin: with `unmoved` always true, the other writer's bytes are lost.
+    std::fs::write(&target, b"old").unwrap();
+    write_verified(&target, b"mine", &other, &|| true, true).unwrap();
+    assert_eq!(std::fs::read(&target).unwrap(), b"mine");
+    let _ = std::fs::remove_dir_all(&dir);
+}

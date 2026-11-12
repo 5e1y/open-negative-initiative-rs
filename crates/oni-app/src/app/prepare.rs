@@ -1,5 +1,5 @@
-//! Prepare the Roll (`.roll`): five steps over the roll's frames, a draft in every sidecar, the
-//! measure off this thread with its progress and Stop, landed as one gallery step, then the editor.
+//! Prepare the Roll (`.roll`): five steps over the roll's frames, a draft in each of their folders,
+//! the measure off this thread with its progress and Stop, landed as one gallery step, then the editor.
 
 use super::{Ctl, State, frames, position, stored_at, with_shell};
 use crate::fields::Field;
@@ -12,7 +12,7 @@ use oni_library::{rgb_passes, roll_membership};
 use oni_measure::{key, pipette, roll};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::{FlatField, Geometry, PassOrder, RgbPasses};
-use oni_settings::sidecar::{self, DraftBase, RollDraft};
+use oni_settings::sidecar;
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::{ComponentHandle, Image, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, VecModel};
 use std::collections::{HashMap, HashSet};
@@ -35,7 +35,7 @@ mod previews;
 mod publishing;
 mod flat_masks;
 mod tutorial;
-mod draft_base;
+mod draft;
 mod trace;
 mod negative;
 mod slides;
@@ -89,6 +89,8 @@ pub(crate) struct Roll {
     stop: Arc<AtomicBool>,
     draft_id: Option<Id>,
     draftless: HashSet<String>,
+    /// The frames whose sidecar still keeps a draft of format 21 and under, cleared at the next write.
+    stored: HashSet<String>,
     /// A step taken before every frame was read, its draft written once the last one is.
     draft_waiting: bool,
     /// Bumped at each entry and landing, so a late post of a session gone lands nowhere.
@@ -163,6 +165,7 @@ impl Default for Roll {
             stop: Arc::default(),
             draft_id: None,
             draftless: HashSet::new(),
+            stored: HashSet::new(),
             draft_waiting: false,
             session: 0,
             previews: None,
@@ -301,40 +304,6 @@ impl Roll {
         if let Some(s) = &self.serial {
             let _ = s.send(job);
         }
-    }
-
-    /// `resume(_:at:)`: the first draft found sets where the roll stands, its files grouped as it says;
-    /// each frame then takes its own place in it, a frame of no draft or of another's left out. True
-    /// for that first draft.
-    fn resume(&mut self, draft: Option<&RollDraft>, path: &str, known: &passes::Known) -> bool {
-        let first = draft.filter(|_| self.draft_id.is_none());
-        if let Some(d) = first {
-            self.draft_id = Some(d.id);
-            self.step = Step::named(&d.step).unwrap_or(self.step);
-            self.set_film(d.film);
-            self.flat = d.flat_field.clone().unwrap_or_else(|| self.flat.clone());
-            // Written back in this machine's spelling with the next draft.
-            self.base = d.base.as_ref().and_then(|b| Some(BasePick { path: draft_base::found(&b.path, &self.frames)?, unit: (b.x, b.y), radius: b.radius }));
-            self.window = d.window.unwrap_or(self.window);
-            let draftless = std::mem::take(&mut self.draftless);
-            for f in self.frames.iter_mut().filter(|f| draftless.contains(&f.path)) {
-                f.ticked = false;
-                f.flagged = false;
-            }
-            self.draftless = draftless;
-            let capture = Capture::from_raw(&d.capture).unwrap_or(self.capture);
-            self.group_as(capture, d.pass_order.unwrap_or(self.pass_order), d.pass_offset.unwrap_or(self.pass_offset), known);
-        }
-        let Some(id) = self.draft_id else {
-            self.draftless.insert(path.to_string());
-            return false;
-        };
-        let mine = draft.is_some_and(|d| d.id == id);
-        if let Some(f) = self.frames.iter_mut().find(|f| f.path == path) {
-            f.ticked = mine && draft.is_some_and(|d| d.ticked);
-            f.flagged = mine && draft.is_some_and(|d| d.flagged);
-        }
-        first.is_some()
     }
 }
 

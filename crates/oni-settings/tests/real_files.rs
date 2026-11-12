@@ -1,6 +1,7 @@
 //! The real sidecars: roll #8 (format 19) and two Lumix frames from version 14.
 
-use oni_settings::codec::{self, Source};
+use oni_settings::codec;
+use oni_settings::migrate;
 use oni_settings::json::semantic_difference;
 use oni_settings::sidecar::{self, RollDraft, TypedExif, WriteOptions};
 use oni_settings::{ConversionMode, Date, Face, Id, Medal, PipelineSettings, ScannerMachine, roll_folder};
@@ -23,8 +24,7 @@ fn sidecars(folder: &Path) -> Vec<PathBuf> {
 /// The sidecar re-encoded as `Sidecar.write` lays it: the envelope read back, the settings decoded.
 fn rewritten(path: &Path, mosaic: bool) -> String {
     let data = std::fs::read(path).unwrap();
-    let source = Source { mosaic: &|| mosaic, plain: &|| !mosaic };
-    let decoded = codec::decode_with(&data, &source, true).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let decoded = migrate::decoded(&data, Some(mosaic), true).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     codec::encode(&decoded.settings, decoded.imported_at, Some(decoded.label), decoded.exif, decoded.roll_draft, decoded.trashed_at)
         .unwrap()
 }
@@ -111,7 +111,7 @@ fn twin_a_moved_field_in_a_roll_8_sidecar_is_seen() {
     let path = roll.join("DSC_6442.NEF.json");
     let original = current(&swift_form(&std::fs::read_to_string(&path).unwrap()));
     let data = original.as_bytes();
-    let decoded = codec::decode(data).unwrap();
+    let decoded = migrate::document(data).unwrap();
     let encode = |settings: &PipelineSettings, label: Medal| {
         codec::encode(settings, decoded.imported_at, Some(label), decoded.exif.clone(), decoded.roll_draft.clone(), decoded.trashed_at)
             .unwrap()
@@ -190,12 +190,12 @@ fn the_version_14_lumix_frames_read_the_migrations_they_are_due() {
         assert_eq!(plain["settings"]["primariesConverted"], json!(true));
         // A second pass is a fixed point, byte for byte.
         let data = rewritten(path, true);
-        let again = codec::decode(data.as_bytes()).unwrap();
+        let again = migrate::document(data.as_bytes()).unwrap();
         let text = codec::encode(&again.settings, again.imported_at, Some(again.label), again.exif, again.roll_draft, again.trashed_at)
             .unwrap();
         assert_eq!(text, data);
     }
-    let decoded = codec::decode(&std::fs::read(&files[0]).unwrap()).unwrap();
+    let decoded = migrate::document(&std::fs::read(&files[0]).unwrap()).unwrap();
     assert_eq!(decoded.settings.scanner_machine, ScannerMachine::Frontier);
 }
 

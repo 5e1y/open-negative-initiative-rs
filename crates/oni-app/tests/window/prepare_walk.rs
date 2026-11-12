@@ -5,7 +5,6 @@ use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Clicks, Library, Preparing};
 use oni_core::{Archive, EditorStore};
-use oni_settings::sidecar;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::cell::Cell;
@@ -97,8 +96,8 @@ pub(crate) fn next_alone_passes_an_empty_step_and_a_pick_on_the_film_goes_straig
     rig.pump();
     assert_eq!((p.get_step(), p.get_has_base(), presses.get()), (3, true, keys + 1), "a pick goes straight on, with a click");
     assert_eq!(marks(), [true, false, true, false, false], "the base behind holds its mark");
-    let drafted = |n: &str| sidecar::read(std::path::Path::new(&oni_library::paths::canonical(&folder.join(n))), false, true).unwrap().roll_draft;
-    rig.until("the pick in the drafts", Duration::from_secs(10), || ["A.tif", "B.tif", "C.tif"].iter().all(|n| drafted(n).is_some_and(|d| d.step == "flags" && d.base.is_some())));
+    let drafted = || oni_settings::prepare::read(std::path::Path::new(&oni_library::paths::canonical(&folder))).pop();
+    rig.until("the pick in the draft", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "flags" && d.base.is_some() && d.frames.len() == 3));
 
     // The pick stays reachable: its step, by the bar's tab, shows it, the loupe gone with the hand until it comes over the scan.
     press(Role::Tab, "Base");

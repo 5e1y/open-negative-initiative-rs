@@ -3,7 +3,6 @@
 use crate::cg::Point;
 use crate::levels::LevelsChannel;
 use crate::tolerant;
-use crate::tone::{Print, contrast};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
@@ -147,8 +146,6 @@ pub struct CurveSet {
 }
 
 impl CurveSet {
-    pub const FOLD_POINTS: usize = 16;
-
     pub fn get(&self, channel: LevelsChannel) -> &Curve {
         match channel {
             LevelsChannel::Luma => &self.luma,
@@ -175,48 +172,6 @@ impl CurveSet {
 
     pub fn is_neutral(&self) -> bool {
         self.touched().is_empty() && self.contrast == 0.0
-    }
-
-    /// The retired colour curves a stored document carries under `key`, channels and contrast retired.
-    pub fn retired(settings: Option<&Value>, key: &str) -> Option<CurveSet> {
-        let raw = settings?.as_object()?.get(key)?;
-        let mut set: CurveSet = serde_json::from_value(raw.clone()).ok()?;
-        set.red = Curve::default();
-        set.green = Curve::default();
-        set.blue = Curve::default();
-        set.contrast = 0.0;
-        (!set.is_neutral()).then_some(set)
-    }
-
-    /// These curves with `colour`'s linked and luma tables run after them, sampled on display values.
-    pub fn folding(&self, colour: &CurveSet) -> CurveSet {
-        let mut out = self.clone();
-        let xs: Vec<f64> = (0..=Self::FOLD_POINTS)
-            .map(|i| (i as f64 / Self::FOLD_POINTS as f64).powf(f64::from(Print::DISPLAY_GAMMA)))
-            .collect();
-        let held = |v: f64| v.clamp(0.0, 1.0);
-        if !colour.linked.is_neutral() {
-            let mine = self.linked.evaluated();
-            let theirs = colour.linked.evaluated();
-            out.linked = Curve {
-                points: xs
-                    .iter()
-                    .map(|&x| {
-                        let bent = mine.value(x) as f32;
-                        let contrasted =
-                            if self.contrast != 0.0 { contrast::apply(bent, self.contrast, 0.5) } else { bent };
-                        Point::new(x, held(theirs.value(f64::from(contrasted))))
-                    })
-                    .collect(),
-            };
-            out.contrast = 0.0;
-        }
-        if !colour.luma.is_neutral() {
-            let mine = self.luma.evaluated();
-            let theirs = colour.luma.evaluated();
-            out.luma = Curve { points: xs.iter().map(|&x| Point::new(x, held(theirs.value(mine.value(x))))).collect() };
-        }
-        out
     }
 }
 
@@ -292,35 +247,6 @@ impl SaturationCurve {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_folded_colour_curve_runs_after_the_hand_s() {
-        let hand = CurveSet {
-            linked: Curve { points: vec![Point::new(0.0, 0.0), Point::new(0.2, 0.26), Point::new(1.0, 1.0)] },
-            contrast: 0.2,
-            ..CurveSet::default()
-        };
-        let colour = CurveSet {
-            linked: Curve { points: vec![Point::new(0.0, 0.0), Point::new(0.3, 0.42), Point::new(1.0, 1.0)] },
-            ..CurveSet::default()
-        };
-        let folded = hand.folding(&colour);
-        assert_eq!(folded.contrast, 0.0);
-        let composed = |x: f64| {
-            let bent = contrast::apply(hand.linked.value(x) as f32, hand.contrast, 0.5);
-            colour.linked.value(f64::from(bent)).clamp(0.0, 1.0)
-        };
-        let mut worst: f64 = 0.0;
-        let mut unfolded: f64 = 0.0;
-        for i in 0..=200 {
-            let x = i as f64 / 200.0;
-            worst = worst.max((folded.linked.value(x) - composed(x)).abs());
-            unfolded = unfolded.max((hand.linked.value(x) - composed(x)).abs());
-        }
-        assert!(worst < 0.01, "the fold departs from the two passes by {worst}");
-        // Twin: the hand's curve alone is far from the two passes, so the fold is doing work.
-        assert!(unfolded > 5.0 * worst && unfolded > 0.02, "{unfolded}");
-    }
 
     #[test]
     fn the_former_zones_win_over_resting_points() {

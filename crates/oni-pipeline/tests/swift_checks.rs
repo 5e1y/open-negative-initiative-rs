@@ -155,7 +155,7 @@ fn the_colour_filters_move_the_render_and_reach_no_gain() {
     assert_ne!(recoupled.gains, written);
     // A sidecar carrying the three filters reads them back unchanged.
     let text = oni_settings::codec::encode_settings(&filtered).unwrap();
-    let read = oni_settings::codec::decode(text.as_bytes()).unwrap();
+    let read = oni_settings::migrate::document(text.as_bytes()).unwrap();
     assert_eq!(read.settings.print, filtered.print);
 }
 
@@ -290,7 +290,7 @@ fn a_retired_colour_curve_renders_as_its_two_passes_did() {
     hand.manual_curves.contrast = 0.2;
     let mut object: serde_json::Value = serde_json::from_str(&oni_settings::codec::encode_settings(&hand).unwrap()).unwrap();
     object["settings"]["curves"] = serde_json::to_value(&colour).unwrap();
-    let back = oni_settings::codec::decode(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().settings;
+    let back = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().settings;
     let display = |v: V3| v.map(|x| x.max(0.0).powf(1.0 / 2.2));
     let measured = windows_only(&mut g, &hand, true);
     let k = finishing::curves(&colour).expect("the colour curves bake a table");
@@ -332,7 +332,7 @@ fn every_curve_moves_the_render_alone_and_a_written_one_renders_as_one_built() {
     for (channel, y) in [LevelsChannel::Red, LevelsChannel::Green, LevelsChannel::Blue].into_iter().zip(mid) {
         built.manual_curves.get_mut(channel).points = vec![Point::new(0.0, 0.0), Point::new(0.5, y), Point::new(1.0, 1.0)];
     }
-    let typed = oni_settings::codec::decode(literal.as_bytes()).unwrap().settings;
+    let typed = oni_settings::migrate::document(literal.as_bytes()).unwrap().settings;
     let after = windows_only(&mut g, &typed, false);
     assert_eq!(after, windows_only(&mut g, &built, false), "a hand-written sidecar renders to the bits of one built");
     // Twin: the three keys taken out neutralise the pass.
@@ -340,7 +340,7 @@ fn every_curve_moves_the_render_alone_and_a_written_one_renders_as_one_built() {
     for key in ["red", "green", "blue"] {
         object["settings"]["manualCurves"].as_object_mut().unwrap().remove(key);
     }
-    let plain = oni_settings::codec::decode(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().settings;
+    let plain = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().settings;
     let gap = worst(after, windows_only(&mut g, &plain, false));
     assert!(plain.manual_curves.touched().is_empty() && gap > 0.01, "dropping the keys moves the pixel by only {gap:.4}");
 }
@@ -357,7 +357,7 @@ fn frozen(source: V3, stops: V3, levels: &LevelsSet) -> V3 {
     let lv = [&levels.red, &levels.green, &levels.blue];
     std::array::from_fn(|i| {
         let d = -((source[i] + FROZEN_PEDESTAL) * stops[i].exp2()).clamp(FROZEN_PEDESTAL / 8.0, 1.0).log10();
-        oni_settings::density_migration::apply_levels(d / pipeline::DMAX, lv[i])
+        oni_settings::migrate::density::apply_levels(d / pipeline::DMAX, lv[i])
     })
 }
 
@@ -386,7 +386,7 @@ fn live(arm: &Arm) -> PipelineSettings {
     s.gains.stops = arm.stops;
     s.density_ceiling = -FROZEN_PEDESTAL.log10();
     s.separation = 0.0;
-    s.levels = if arm.migrating { oni_settings::density_migration::migrate(&arm.frozen) } else { arm.frozen };
+    s.levels = if arm.migrating { oni_settings::migrate::density::migrate(&arm.frozen) } else { arm.frozen };
     s.vignette = Default::default();
     s.chroma = oni_settings::blocks::ChromaDenoise::OFF;
     s.spectrogram = Default::default();
@@ -421,13 +421,13 @@ fn reduced(image: &oni_decode::Linear, side: usize) -> (u32, u32, Vec<[f32; 4]>)
 
 /// The worst post-clip gap between the frozen kernel and `rendered`, and between the closed new form and it.
 fn gaps(source: &[[f32; 4]], rendered: &[[f32; 4]], arm: &Arm) -> (f32, f32) {
-    let migrated = oni_settings::density_migration::migrate(&arm.frozen);
+    let migrated = oni_settings::migrate::density::migrate(&arm.frozen);
     let ceiling = -FROZEN_PEDESTAL.log10();
     let (mut against, mut residue) = (0.0f32, 0.0f32);
     for (p, out) in source.iter().zip(rendered) {
         let s = [p[0], p[1], p[2]];
         let old = frozen(s, arm.stops, &arm.frozen);
-        let new = oni_settings::density_migration::new(
+        let new = oni_settings::migrate::density::new(
             s,
             arm.stops,
             &migrated,

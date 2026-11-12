@@ -7,7 +7,7 @@ use oni_measure::auto_levels::*;
 use oni_settings::axis::{graduation, pipeline};
 use oni_settings::blocks::Gains;
 use oni_settings::cg::{Point, Rect};
-use oni_settings::density_migration;
+use oni_settings::migrate::density;
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::{ConversionMode, PipelineSettings};
 
@@ -115,7 +115,7 @@ fn simulate(densities: &[Vec<f32>; 3], stops: [f32; 3]) -> Histogram {
     for (c, list) in densities.iter().enumerate() {
         for &d in list {
             let t = 10f32.powf(-d) - pipeline::tpedestal();
-            let m = density_migration::new([t; 3], [stops[c]; 3], &measuring, NEG, pipeline::tpedestal(), pipeline::tmin());
+            let m = density::new([t; 3], [stops[c]; 3], &measuring, NEG, pipeline::tpedestal(), pipeline::tmin());
             let bin = (m[0].min(1.0) * 1023.0).round() as i64;
             counts[bin.clamp(0, 1023) as usize][c] += 1.0;
         }

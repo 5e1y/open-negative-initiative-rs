@@ -1,5 +1,5 @@
-//! Every serialised settings type of Open Negative Initiative, the sidecar codec with each migration
-//! a stored version still needs, and the roll marker, written as the Swift app writes them.
+//! Every serialised settings type of Open Negative Initiative, the sidecar codec, each migration a
+//! stored version still needs (`migrate`), and the roll marker, written as the Swift app writes them.
 
 pub mod collation;
 pub mod atomic;
@@ -10,20 +10,17 @@ pub mod codec;
 pub mod curves;
 pub mod date;
 pub mod exif;
-pub mod density_migration;
 pub mod film;
 pub mod frame;
 pub mod geometry;
 pub mod id;
 pub mod json;
 mod kept;
-pub mod legacy;
 pub mod levels;
-pub mod lighting_catch_up;
+pub mod migrate;
 pub mod modes;
+pub mod prepare;
 mod reading;
-pub mod retired_matrices;
-pub mod strokes_on_scan;
 pub mod scanner;
 pub mod settings;
 pub mod sidecar;

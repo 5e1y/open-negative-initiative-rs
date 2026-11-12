@@ -113,8 +113,7 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
             let original = file.with_extension("");
             let mosaic = oni_decode::decodes_via_mosaic(&original);
             let read = |bytes: &[u8]| {
-                let source = oni_settings::codec::Source { mosaic: &|| mosaic, plain: &|| !mosaic };
-                oni_settings::codec::decode_with(bytes, &source, true).ok().map(|d| (d.settings, d.label, d.roll_draft, d.imported_at))
+                oni_settings::migrate::decoded(bytes, Some(mosaic), true).ok().map(|d| (d.settings, d.label, d.roll_draft, d.imported_at))
             };
             if file.file_name().is_some_and(|n| n != oni_settings::film::roll_folder::ROLL_MARKER) && read(was) != read(&now) {
                 moved.push(file.clone());

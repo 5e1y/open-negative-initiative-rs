@@ -1,0 +1,430 @@
+writable: true
+label: Gold
+imported: None
+trashed: None
+exif: ExifMetadata {
+    camera: "Camera",
+    lens: "",
+    film: "",
+    iso: "100",
+    date: "2000:01:01 00:00:00",
+    artist: "",
+    copyright: "",
+}
+draft: none
+settings: PipelineSettings {
+    mode: Positive,
+    inverted_source: false,
+    film: None,
+    manual_order: None,
+    sheet: None,
+    decoded_from_mosaic: true,
+    capture_stops: 0.0,
+    lens_corrected: false,
+    primaries_converted: false,
+    source_encoding: None,
+    rgb_passes: None,
+    pass_of: None,
+    geometry: Geometry {
+        quarter_turns: 0,
+        angle: 0.0,
+        crop: Rect {
+            x: 0.13152031549712276,
+            y: 0.05496390132139817,
+            width: 0.7451017273417518,
+            height: 0.9450360986786018,
+        },
+        ratio: None,
+        portrait: false,
+        mirrored: false,
+        mirrored_vertically: false,
+        measure_window: Some(
+            Rect {
+                x: 0.18650405534351144,
+                y: 0.20906935830152673,
+                width: 0.6391168608920265,
+                height: 0.618991158754771,
+            },
+        ),
+        crop_bypassed: false,
+    },
+    chroma: ChromaDenoise {
+        radius: 4.0,
+        force: 0.2,
+    },
+    gains: Gains {
+        stops: [
+            -0.13843898,
+            0.0,
+            -0.28319663,
+        ],
+    },
+    density_ceiling: 2.09691,
+    separation: 0.6,
+    separation_family: Some(
+        FujiC41,
+    ),
+    separation_by_hand: false,
+    flat_field: FlatField {
+        mask: None,
+        custom: None,
+        amount: 1.0,
+        temperature: 0.0,
+        tint: 0.0,
+    },
+    corrections: [],
+    levels: LevelsSet {
+        red: Levels {
+            black: 0.90309,
+            white: 3.0,
+            mid: 0.5,
+            shadows: 0.25,
+            highlights: 0.75,
+        },
+        green: Levels {
+            black: 0.90309,
+            white: 3.0,
+            mid: 0.5,
+            shadows: 0.25,
+            highlights: 0.75,
+        },
+        blue: Levels {
+            black: 0.90309,
+            white: 3.0,
+            mid: 0.5,
+            shadows: 0.25,
+            highlights: 0.75,
+        },
+    },
+    chroma_decompression: 0.5,
+    chroma_decompression_by_hand: false,
+    roll_reference: None,
+    roll_reference_declined: false,
+    measured_gains: Some(
+        [
+            -0.13843898,
+            0.0,
+            -0.28319663,
+        ],
+    ),
+    balance_method: None,
+    balance_filters: Some(
+        [
+            0.2453099,
+            -0.2851665,
+            0.039856598,
+        ],
+    ),
+    balance_strength: 0.67,
+    print: Print {
+        exposure: 0.981184,
+        contrast: 0.0,
+        shadows: -0.03717813,
+        highlights: 0.04017663,
+        red: Tone {
+            exposure: 0.50717974,
+            contrast: 0.0,
+            blacks: 0.0,
+            shadows: 0.0,
+            highlights: 0.0,
+            whites: 0.0,
+            mids: 0.0,
+        },
+        green: Tone {
+            exposure: 0.28031465,
+            contrast: 0.0,
+            blacks: 0.0,
+            shadows: 0.0,
+            highlights: 0.0,
+            whites: 0.0,
+            mids: 0.0,
+        },
+        blue: Tone {
+            exposure: -0.7874944,
+            contrast: 0.0,
+            blacks: 0.0,
+            shadows: 0.0,
+            highlights: 0.0,
+            whites: 0.0,
+            mids: 0.0,
+        },
+        hunt_base: None,
+        black_point: 0.0,
+        white_point: -0.013405949,
+        bypassed: false,
+    },
+    density: 0.0,
+    manual_curves: CurveSet {
+        contrast: 0.0,
+        luma: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        linked: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        red: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        green: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+        blue: Curve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 1.0,
+                },
+            ],
+        },
+    },
+    spectrogram: Spectrogram {
+        hue: [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+        saturation: [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+        luma: [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+    },
+    saturation: SaturationCurve {
+        points: [
+            Point {
+                x: 0.0,
+                y: 0.5,
+            },
+            Point {
+                x: 0.25,
+                y: 0.5,
+            },
+            Point {
+                x: 0.5,
+                y: 0.5,
+            },
+            Point {
+                x: 0.75,
+                y: 0.5,
+            },
+            Point {
+                x: 1.0,
+                y: 0.5,
+            },
+        ],
+    },
+    vignette: Vignette {
+        stops: 0.0,
+    },
+    secret_sauce: 0.0,
+    paper_correction: PaperCorrection {
+        stops: [
+            0.0,
+            0.0,
+            0.0,
+        ],
+    },
+    face: Pro,
+    scanner: ScannerClicks {
+        d: 0,
+        c: -5,
+        m: -4,
+        y: 6,
+        w: 0,
+    },
+    scanner_machine: Oni,
+    scanner_finish: ScannerFinish {
+        contrast: 0.0,
+        manual_curves: CurveSet {
+            contrast: 0.0,
+            luma: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            linked: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            red: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            green: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+            blue: Curve {
+                points: [
+                    Point {
+                        x: 0.0,
+                        y: 0.0,
+                    },
+                    Point {
+                        x: 1.0,
+                        y: 1.0,
+                    },
+                ],
+            },
+        },
+        spectrogram: Spectrogram {
+            hue: [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            saturation: [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            luma: [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        },
+        saturation: SaturationCurve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.5,
+                },
+                Point {
+                    x: 0.25,
+                    y: 0.5,
+                },
+                Point {
+                    x: 0.5,
+                    y: 0.5,
+                },
+                Point {
+                    x: 0.75,
+                    y: 0.5,
+                },
+                Point {
+                    x: 1.0,
+                    y: 0.5,
+                },
+            ],
+        },
+        vignette: Vignette {
+            stops: 0.0,
+        },
+        secret_sauce: 0.0,
+    },
+    texture: Texture {
+        amount: 0.0,
+    },
+    sharpen: Sharpen {
+        radius: 2.092,
+        amount: 1.0,
+        halo: 0.5,
+    },
+}

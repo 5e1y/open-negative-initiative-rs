@@ -4,11 +4,12 @@
 use oni_settings::axis::{density_axis, pipeline};
 use oni_settings::blocks::{ChromaDenoise, Gains, SeparationFamily, Sharpen, Vignette, separation};
 use oni_settings::cg::{Point, Rect};
-use oni_settings::codec::{self, Source, VERSION};
+use oni_settings::codec::{self, VERSION};
+use oni_settings::migrate::{self, chain};
 use oni_settings::curves::SaturationCurve;
-use oni_settings::density_migration;
+use oni_settings::migrate::density;
 use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
-use oni_settings::legacy::{self, former_axis};
+use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::sidecar::{RollDraft, TypedExif};
@@ -37,11 +38,12 @@ fn aged(settings: &PipelineSettings, version: i64, edit: impl FnOnce(&mut Object
 }
 
 fn decode(data: &[u8]) -> PipelineSettings {
-    codec::decode(data).unwrap().settings
+    migrate::document(data).unwrap().settings
 }
 
-fn decode_from(data: &[u8], mosaic: bool, plain: bool) -> PipelineSettings {
-    codec::decode_with(data, &Source { mosaic: &|| mosaic, plain: &|| plain }, false).unwrap().settings
+/// `file` says whether the document's file decodes through the mosaic, `None` for no file.
+fn decode_from(data: &[u8], file: Option<bool>) -> PipelineSettings {
+    migrate::decoded(data, file, false).unwrap().settings
 }
 
 fn full() -> PipelineSettings {
@@ -94,7 +96,7 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     let draft = RollDraft { id, step, film, capture, pass_order: None, pass_offset: None, flat_field: None, base: None, window: None, ticked: true, flagged: false };
     let text = codec::encode(&filed, Some(stamped), Some(Medal::Silver), Some(typed), Some(draft), Some(stamped)).unwrap();
     assert!(text.contains("\"importedAt\" : \"2023-11-14T22:13:20Z\""), "{text}");
-    let whole = codec::decode(text.as_bytes()).unwrap();
+    let whole = migrate::document(text.as_bytes()).unwrap();
     let light = codec::envelope(text.as_bytes()).unwrap();
     assert_eq!(
         (light.imported_at, light.label, &light.exif, &light.roll_draft, light.trashed_at),
@@ -117,11 +119,11 @@ fn the_envelope_reads_what_the_full_decode_reads() {
 fn every_stage_makes_an_exact_round_trip() {
     let full = full();
     let text = codec::encode_settings(&full).unwrap();
-    let back = codec::decode(text.as_bytes()).unwrap();
+    let back = migrate::document(text.as_bytes()).unwrap();
     assert_eq!(back.settings, full);
     assert_eq!(back.version, VERSION);
     assert_eq!(back.settings.sharpen.radius, 3.1373);
-    let bare = codec::decode(codec::encode_settings(&PipelineSettings::default()).unwrap().as_bytes()).unwrap();
+    let bare = migrate::document(codec::encode_settings(&PipelineSettings::default()).unwrap().as_bytes()).unwrap();
     assert_eq!(bare.settings.film, None);
     // Twin: one field moved by one ulp is a different document.
     let mut moved = full.clone();
@@ -186,14 +188,14 @@ fn the_crop_display_flag_stays_out_of_the_sidecar() {
 
 #[test]
 fn empty_reads_neutral_garbage_fails_and_the_future_is_flagged() {
-    let empty = codec::decode(b"{}").unwrap();
+    let empty = migrate::document(b"{}").unwrap();
     assert_eq!((empty.settings, empty.version), (PipelineSettings::default(), 0));
-    assert!(codec::decode(b"this is not JSON").is_err());
-    assert!(codec::decode(b"[1, 2]").is_err());
-    let future = codec::decode(&aged(&full(), VERSION + 1, |_| {})).unwrap();
+    assert!(migrate::document(b"this is not JSON").is_err());
+    assert!(migrate::document(b"[1, 2]").is_err());
+    let future = migrate::document(&aged(&full(), VERSION + 1, |_| {})).unwrap();
     assert!(future.is_from_future());
     // Twin: today's version is not.
-    assert!(!codec::decode(&aged(&full(), VERSION, |_| {})).unwrap().is_from_future());
+    assert!(!migrate::document(&aged(&full(), VERSION, |_| {})).unwrap().is_from_future());
 }
 
 // MARK: - Rests that moved
@@ -219,7 +221,7 @@ fn the_chroma_doses_nobody_chose_retire_on_version_one() {
 fn a_positive_from_before_the_move_opens_on_the_new_rest() {
     let read = |mode: ConversionMode, levels: LevelsSet| {
         let written = PipelineSettings { mode, levels, ..PipelineSettings::default() };
-        decode(&aged(&written, legacy::POSITIVE_REST_VERSION - 1, |_| {})).levels
+        decode(&aged(&written, before_1_0::POSITIVE_REST_VERSION - 1, |_| {})).levels
     };
     let stale = LevelsSet { red: Levels::on_axis(), green: Levels::on_axis(), blue: Levels::on_axis() };
     let resting = read(ConversionMode::Positive, stale);
@@ -240,16 +242,16 @@ fn separation_rests_move_only_where_nobody_chose() {
         let written = PipelineSettings { separation: dose, separation_by_hand: by_hand, ..PipelineSettings::default() };
         decode(&aged(&written, version, |_| {})).separation
     };
-    let before_7 = legacy::SEPARATION_REST_VERSION - 1;
+    let before_7 = before_1_0::SEPARATION_REST_VERSION - 1;
     assert_eq!(read(separation::FORMER_BASE, false, before_7), separation::FORMER_REST);
     assert_eq!(read(1.6, false, before_7), 1.6);
     // Twin: 100 % written after the move stays 100 %.
-    assert_eq!(read(separation::FORMER_BASE, false, legacy::SEPARATION_REST_VERSION), separation::FORMER_BASE);
-    let previous = codec::SEPARATION_LITERATURE_VERSION - 1;
+    assert_eq!(read(separation::FORMER_BASE, false, before_1_0::SEPARATION_REST_VERSION), separation::FORMER_BASE);
+    let previous = chain::SEPARATION_LITERATURE_VERSION - 1;
     assert_eq!(read(separation::PREVIOUS_BASE, false, previous), separation::BASE);
     // Twin: the hand's 18 %, or one written after the move, stays.
     assert_eq!(read(separation::PREVIOUS_BASE, true, previous), separation::PREVIOUS_BASE);
-    assert_eq!(read(separation::PREVIOUS_BASE, false, codec::SEPARATION_LITERATURE_VERSION), separation::PREVIOUS_BASE);
+    assert_eq!(read(separation::PREVIOUS_BASE, false, chain::SEPARATION_LITERATURE_VERSION), separation::PREVIOUS_BASE);
 }
 
 #[test]
@@ -273,17 +275,17 @@ fn sharpen_chroma_and_black_point_rests_move_once() {
         w.sharpen.amount = amount;
         decode(&aged(&w, version, |_| {})).sharpen.amount
     };
-    assert_eq!(sharpen(Sharpen::FORMER_AMOUNT, legacy::SHARPEN_REST_VERSION - 1), Sharpen::default().amount);
-    assert_eq!(sharpen(0.8, legacy::SHARPEN_REST_VERSION - 1), 0.8);
-    assert_eq!(sharpen(Sharpen::FORMER_AMOUNT, legacy::SHARPEN_REST_VERSION), Sharpen::FORMER_AMOUNT);
+    assert_eq!(sharpen(Sharpen::FORMER_AMOUNT, before_1_0::SHARPEN_REST_VERSION - 1), Sharpen::default().amount);
+    assert_eq!(sharpen(0.8, before_1_0::SHARPEN_REST_VERSION - 1), 0.8);
+    assert_eq!(sharpen(Sharpen::FORMER_AMOUNT, before_1_0::SHARPEN_REST_VERSION), Sharpen::FORMER_AMOUNT);
 
     let chroma = |dose: ChromaDenoise, version: i64| {
         decode(&aged(&PipelineSettings { chroma: dose, ..PipelineSettings::default() }, version, |_| {})).chroma
     };
-    assert_eq!(chroma(ChromaDenoise::OFF, legacy::CHROMA_REST_VERSION - 1), ChromaDenoise::default());
+    assert_eq!(chroma(ChromaDenoise::OFF, before_1_0::CHROMA_REST_VERSION - 1), ChromaDenoise::default());
     let dosed = ChromaDenoise { radius: 1.5, force: 0.6 };
-    assert_eq!(chroma(dosed, legacy::CHROMA_REST_VERSION - 1), dosed);
-    assert_eq!(chroma(ChromaDenoise::OFF, legacy::CHROMA_REST_VERSION), ChromaDenoise::OFF);
+    assert_eq!(chroma(dosed, before_1_0::CHROMA_REST_VERSION - 1), dosed);
+    assert_eq!(chroma(ChromaDenoise::OFF, before_1_0::CHROMA_REST_VERSION), ChromaDenoise::OFF);
 
     let black = |version: i64, writing: bool, value: Option<f32>| {
         decode(&aged(&PipelineSettings::default(), version, |s| {
@@ -298,7 +300,7 @@ fn sharpen_chroma_and_black_point_rests_move_once() {
         .print
         .black_point
     };
-    assert_eq!(black(legacy::BLACK_POINT_REST_VERSION - 1, false, None), 0.0);
+    assert_eq!(black(before_1_0::BLACK_POINT_REST_VERSION - 1, false, None), 0.0);
     assert_eq!(PipelineSettings::default().print.black_point, Print::RESTING_BLACK_POINT);
     assert_eq!(black(VERSION, true, None), Print::RESTING_BLACK_POINT);
     assert_eq!(black(VERSION, true, Some(-0.06)), -0.06);
@@ -328,7 +330,7 @@ fn decompression_rests_move_off_the_key_and_keep_the_hand() {
     let off_rest = read(Some(0.3), None, 12);
     assert_eq!((off_rest.chroma_decompression, off_rest.chroma_decompression_by_hand), (0.3, true));
     // Twin: written since, a 0 is a dose and stays.
-    assert_eq!(read(Some(0.0), Some(false), codec::DECOMPRESSION_MID_VERSION).chroma_decompression, 0.0);
+    assert_eq!(read(Some(0.0), Some(false), chain::DECOMPRESSION_MID_VERSION).chroma_decompression, 0.0);
 }
 
 // MARK: - Unit changes, whose order is load-bearing
@@ -340,22 +342,22 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     placed.levels.green = Levels { black: 0.1279, white: 0.7411, mid: 0.6413, ..Levels::default() };
     placed.levels.blue = Levels { black: 0.2113, white: 0.9337, mid: 0.5, ..Levels::default() };
     placed.gains.stops = [1.5, -0.5, 2.125];
-    let scaled = density_migration::migrate(&placed.levels);
-    for stamp in [0, legacy::DENSITY_AXIS_VERSION - 1, legacy::DENSITY_AXIS_VERSION, VERSION + 1] {
+    let scaled = density::migrate(&placed.levels);
+    for stamp in [0, before_1_0::DENSITY_AXIS_VERSION - 1, before_1_0::DENSITY_AXIS_VERSION, VERSION + 1] {
         let read = decode(&aged(&placed, stamp, |_| {}));
-        let wanted = if stamp < legacy::DENSITY_AXIS_VERSION { scaled } else { placed.levels };
+        let wanted = if stamp < before_1_0::DENSITY_AXIS_VERSION { scaled } else { placed.levels };
         assert_eq!(read.levels, wanted, "version {stamp}");
     }
     // Twin: the placed windows really move under the scaling.
     assert_ne!(placed.levels, scaled);
-    let old = aged(&placed, legacy::DENSITY_AXIS_VERSION - 1, |_| {});
+    let old = aged(&placed, before_1_0::DENSITY_AXIS_VERSION - 1, |_| {});
     let read = decode(&old);
     for c in LevelsChannel::PER_CHANNEL {
         assert_eq!(read.levels.get(c).mid, placed.levels.get(c).mid);
     }
     assert_eq!((read.gains, &read.manual_curves, read.print), (placed.gains, &placed.manual_curves, placed.print));
 
-    let missing = aged(&placed, legacy::DENSITY_AXIS_VERSION - 1, |s| {
+    let missing = aged(&placed, before_1_0::DENSITY_AXIS_VERSION - 1, |s| {
         s["levels"].as_object_mut().unwrap().remove("red");
     });
     let holed = decode(&missing);
@@ -363,12 +365,12 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     assert_eq!((holed.levels.green, holed.levels.blue), (scaled.green, scaled.blue));
     // Twin: the forbidden order, defaults then scale, triples the absent default.
     let stored: Value = serde_json::from_slice(&missing).unwrap();
-    let completed = codec::merged(&stored, codec::neutral_document());
-    let wrong = legacy::in_density(completed.as_object().unwrap().clone());
+    let completed = migrate::merged(&stored, migrate::neutral_document());
+    let wrong = before_1_0::in_density(completed.as_object().unwrap().clone());
     let wrong: codec::SettingsDocument = serde_json::from_value(Value::Object(wrong)).unwrap();
     assert_eq!(wrong.settings.levels.red.white, LevelsSet::default().red.white * pipeline::DMAX);
 
-    let partial = decode(&aged(&placed, legacy::DENSITY_AXIS_VERSION - 1, |s| {
+    let partial = decode(&aged(&placed, before_1_0::DENSITY_AXIS_VERSION - 1, |s| {
         s["levels"]["blue"].as_object_mut().unwrap().remove("white");
     }));
     assert_eq!(partial.levels.blue.white, LevelsSet::default().blue.white);
@@ -393,21 +395,21 @@ fn the_two_radii_move_onto_pixels_before_the_defaults() {
     };
     let hand = (0.0005f32, 0.62f32);
     let sharpened = 0.00037f32;
-    for stamp in [0, legacy::RADIUS_PIXELS_VERSION - 1, legacy::RADIUS_PIXELS_VERSION, VERSION + 1] {
+    for stamp in [0, before_1_0::RADIUS_PIXELS_VERSION - 1, before_1_0::RADIUS_PIXELS_VERSION, VERSION + 1] {
         let read = decode(&document(Some(hand), Some(sharpened), stamp, false));
-        let migrates = stamp < legacy::RADIUS_PIXELS_VERSION;
+        let migrates = stamp < before_1_0::RADIUS_PIXELS_VERSION;
         let wanted = if migrates { (hand.0 * side, sharpened * side) } else { (hand.0, sharpened) };
         assert!((read.chroma.radius - wanted.0).abs() < 1e-4, "version {stamp}: {}", read.chroma.radius);
         assert!((read.sharpen.radius - wanted.1).abs() < 1e-4, "version {stamp}: {}", read.sharpen.radius);
     }
-    let holed = document(Some(hand), None, legacy::RADIUS_PIXELS_VERSION - 1, true);
+    let holed = document(Some(hand), None, before_1_0::RADIUS_PIXELS_VERSION - 1, true);
     let read = decode(&holed);
     assert_eq!(read.sharpen.radius, Sharpen::default().radius);
     assert!((read.chroma.radius - hand.0 * side).abs() < 1e-4);
     // Twin: the forbidden order puts the absent default on the track's stop.
     let stored: Value = serde_json::from_slice(&holed).unwrap();
-    let completed = codec::merged(&stored, codec::neutral_document());
-    let wrong = legacy::in_pixels(completed.as_object().unwrap().clone(), false);
+    let completed = migrate::merged(&stored, migrate::neutral_document());
+    let wrong = before_1_0::in_pixels(completed.as_object().unwrap().clone(), false);
     let wrong: codec::SettingsDocument = serde_json::from_value(Value::Object(wrong)).unwrap();
     assert_eq!(wrong.settings.sharpen.radius, Sharpen::radius_range().1);
     assert_ne!(wrong.settings.sharpen.radius, Sharpen::default().radius);
@@ -415,12 +417,12 @@ fn the_two_radii_move_onto_pixels_before_the_defaults() {
     for (r, f) in ChromaDenoise::FORMER_RESTS {
         assert_eq!(decode(&document(Some((r, f)), Some(sharpened), 1, false)).chroma, ChromaDenoise::default());
     }
-    let former = decode(&document(None, Some(Sharpen::FORMER_REST), legacy::RADIUS_PIXELS_VERSION - 1, false));
+    let former = decode(&document(None, Some(Sharpen::FORMER_REST), before_1_0::RADIUS_PIXELS_VERSION - 1, false));
     assert_eq!(former.sharpen.radius, Sharpen::RADIUS_ANCHOR);
     // Twin: one percent off that floor is a decision, and is scaled.
-    let nearby = decode(&document(None, Some(Sharpen::FORMER_REST * 1.01), legacy::RADIUS_PIXELS_VERSION - 1, false));
+    let nearby = decode(&document(None, Some(Sharpen::FORMER_REST * 1.01), before_1_0::RADIUS_PIXELS_VERSION - 1, false));
     assert!(nearby.sharpen.radius != Sharpen::RADIUS_ANCHOR && nearby.sharpen.radius > 0.0);
-    let past = decode(&document(Some((0.01, 1.0)), Some(0.002), legacy::RADIUS_PIXELS_VERSION - 1, false));
+    let past = decode(&document(Some((0.01, 1.0)), Some(0.002), before_1_0::RADIUS_PIXELS_VERSION - 1, false));
     assert_eq!(past.chroma.radius, ChromaDenoise::RADIUS_RANGE.1);
     assert_eq!(past.sharpen.radius, Sharpen::radius_range().1);
 }
@@ -428,16 +430,15 @@ fn the_two_radii_move_onto_pixels_before_the_defaults() {
 #[test]
 fn a_mosaic_gain_shifts_for_the_decode_change_and_a_scanner_gain_never() {
     let hand = [0.6f32, -0.3, 0.9];
-    let delta = legacy::NEUTRAL_DECODE_RATIO.map(f32::log2);
+    let delta = before_1_0::NEUTRAL_DECODE_RATIO.map(f32::log2);
     let expected: [f32; 3] = std::array::from_fn(|i| hand[i] - delta[i]);
     for mode in ConversionMode::ALL {
-        for stamp in [0, legacy::NEUTRAL_DECODE_GAINS_VERSION - 1, legacy::NEUTRAL_DECODE_GAINS_VERSION, VERSION + 1] {
+        for stamp in [0, before_1_0::NEUTRAL_DECODE_GAINS_VERSION - 1, before_1_0::NEUTRAL_DECODE_GAINS_VERSION, VERSION + 1] {
             let mut written = PipelineSettings { mode, ..PipelineSettings::default() };
             written.gains.stops = hand;
             let data = aged(&written, stamp, |_| {});
-            let source = Source { mosaic: &|| true, plain: &|| false };
-            let mosaic = codec::decode_with(&data, &source, true).unwrap().settings;
-            let migrates = stamp < legacy::NEUTRAL_DECODE_GAINS_VERSION;
+            let mosaic = migrate::decoded(&data, Some(true), true).unwrap().settings;
+            let migrates = stamp < before_1_0::NEUTRAL_DECODE_GAINS_VERSION;
             assert_eq!(mosaic.gains.stops, if migrates { expected } else { hand }, "{mode:?} v{stamp}");
             // Twin: read as scanner-sourced, the same document keeps its gains at every version.
             assert_eq!(decode(&data).gains.stops, hand);
@@ -445,7 +446,7 @@ fn a_mosaic_gain_shifts_for_the_decode_change_and_a_scanner_gain_never() {
     }
     let mut near = PipelineSettings::default();
     near.gains.stops = [-2.9, 0.0, 2.9];
-    let read = codec::decode_with(&aged(&near, 0, |_| {}), &Source { mosaic: &|| true, plain: &|| false }, true)
+    let read = migrate::decoded(&aged(&near, 0, |_| {}), Some(true), true)
         .unwrap()
         .settings;
     assert_eq!((read.gains.stops[0], read.gains.stops[2]), (Gains::RANGE.0, Gains::RANGE.1));
@@ -463,8 +464,8 @@ fn a_mosaic_raw_never_balanced_rests_knee_free_and_a_balanced_one_keeps_its_axis
             inner.remove("decodedFromMosaic");
         })
     };
-    let v = legacy::MOSAIC_AXIS_VERSION - 1;
-    let read = |data: &[u8], mosaic: bool| decode_from(data, mosaic, false);
+    let v = before_1_0::MOSAIC_AXIS_VERSION - 1;
+    let read = |data: &[u8], mosaic: bool| decode_from(data, mosaic.then_some(true));
     let untouched = stamped(&|_| {}, v);
     let rested = read(&untouched, true);
     assert_eq!(rested.density_ceiling, density_axis::MOSAIC_REST);
@@ -484,7 +485,7 @@ fn a_mosaic_raw_never_balanced_rests_knee_free_and_a_balanced_one_keeps_its_axis
     );
     assert!((kept.density_ceiling - former_axis(density_axis::base())).abs() < 1e-6);
     assert_eq!((kept.levels.blue.white, kept.levels.red.black), (2.21, 0.37));
-    let former = density_axis::pedestal(density_axis::base()) - legacy::FORMER_SHADOW_BIAS;
+    let former = density_axis::pedestal(density_axis::base()) - before_1_0::FORMER_SHADOW_BIAS;
     let rebuilt = density_axis::pedestal(former_axis(density_axis::base()));
     assert!((rebuilt - former).abs() / former < 1e-5, "{rebuilt} against {former}");
     let dialled = read(
@@ -509,7 +510,7 @@ fn a_mosaic_raw_never_balanced_rests_knee_free_and_a_balanced_one_keeps_its_axis
         true,
     );
     assert_eq!(past.density_ceiling, density_axis::MOSAIC_REST);
-    let current = read(&stamped(&|_| {}, legacy::MOSAIC_AXIS_VERSION), true);
+    let current = read(&stamped(&|_| {}, before_1_0::MOSAIC_AXIS_VERSION), true);
     assert_eq!(current.density_ceiling, density_axis::base());
     let slide = read(
         &stamped(
@@ -538,11 +539,11 @@ fn a_scan_from_before_keeps_its_converted_primaries() {
             inner.remove("primariesConverted");
         })
     };
-    let before = codec::PRIMARIES_HELD_VERSION - 1;
-    assert!(decode_from(&stamped(before), false, true).primaries_converted);
+    let before = chain::PRIMARIES_HELD_VERSION - 1;
+    assert!(decode_from(&stamped(before), Some(false)).primaries_converted);
     // Twin: a RAW's sidecar from before, and a scan's written since, are left alone.
-    assert!(!decode_from(&stamped(before), true, false).primaries_converted);
-    assert!(!decode_from(&stamped(codec::PRIMARIES_HELD_VERSION), false, true).primaries_converted);
+    assert!(!decode_from(&stamped(before), Some(true)).primaries_converted);
+    assert!(!decode_from(&stamped(chain::PRIMARIES_HELD_VERSION), Some(false)).primaries_converted);
 }
 
 #[test]
@@ -551,13 +552,13 @@ fn a_scanner_edit_from_before_reads_its_counts_doubled() {
         let settings = PipelineSettings { scanner: ScannerClicks::new(6, -10, 14, -24, 8), ..PipelineSettings::default() };
         aged(&settings, version, |_| {})
     };
-    let before = decode_from(&stamped(codec::SCANNER_HALF_STEP_VERSION - 1), false, false).scanner;
+    let before = decode_from(&stamped(chain::SCANNER_HALF_STEP_VERSION - 1), None).scanner;
     assert_eq!(before, ScannerClicks::new(12, -20, 28, -48, 8));
     // Twin: written since, the counts read as stored.
-    let since = decode_from(&stamped(codec::SCANNER_HALF_STEP_VERSION), false, false).scanner;
+    let since = decode_from(&stamped(chain::SCANNER_HALF_STEP_VERSION), None).scanner;
     assert_eq!(since, ScannerClicks::new(6, -10, 14, -24, 8));
-    let older = decode_from(&stamped(codec::ONI_MACHINE_VERSION - 1), false, false).scanner_machine;
-    let newer = decode_from(&stamped(codec::ONI_MACHINE_VERSION), false, false).scanner_machine;
+    let older = decode_from(&stamped(chain::ONI_MACHINE_VERSION - 1), None).scanner_machine;
+    let newer = decode_from(&stamped(chain::ONI_MACHINE_VERSION), None).scanner_machine;
     assert_eq!((older, newer), (ScannerMachine::Frontier, ScannerMachine::Oni));
 }
 
@@ -575,16 +576,15 @@ fn a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not() {
             s["levels"].as_object_mut().unwrap().insert("linked".into(), json!({"black": 0.05, "white": 0.92, "mid": 0.6}));
         })
     };
-    let fitted = decode(&former(legacy::LIGHTING_VERSION - 1, false));
+    let fitted = decode(&former(before_1_0::LIGHTING_VERSION - 1, false));
     assert_ne!(fitted.print, Print::default(), "the fit placed Lighting");
     assert_eq!(fitted.print.black_point, 0.0);
     assert!(fitted.print.exposure > 0.0, "a brighter former exposure reads brighter: {}", fitted.print.exposure);
     // Twin: the same keys beside a Lighting block, or written since, are left to the decoder.
-    assert_eq!(decode(&former(legacy::LIGHTING_VERSION - 1, true)).print, Print::default());
-    assert_eq!(decode(&former(legacy::LIGHTING_VERSION, false)).print, Print::default());
+    assert_eq!(decode(&former(before_1_0::LIGHTING_VERSION - 1, true)).print, Print::default());
+    assert_eq!(decode(&former(before_1_0::LIGHTING_VERSION, false)).print, Print::default());
     // And a read that does not catch up leaves the former document unfitted.
-    let source = Source::none();
-    let raw = codec::decode_with(&former(legacy::LIGHTING_VERSION - 1, false), &source, false).unwrap();
+    let raw = migrate::decoded(&former(before_1_0::LIGHTING_VERSION - 1, false), None, false).unwrap();
     assert_eq!(raw.settings.print, Print::default());
 }
 
@@ -659,19 +659,19 @@ fn the_rest_is_the_import_state_of_each_mode() {
 #[test]
 fn a_former_balance_lands_in_the_filters_and_its_greys_render_as_they_did() {
     use oni_settings::curves::CurveSet;
-    use oni_settings::lighting_catch_up::{self, Curves, display, former_pixel, new_pixel};
+    use oni_settings::migrate::lighting::{self as lighting, Curves, display, former_pixel, new_pixel};
     use oni_settings::tone::Tone;
     let mut raw = Object::new();
-    let data = aged(&PipelineSettings::default(), legacy::LIGHTING_VERSION - 1, |s| {
+    let data = aged(&PipelineSettings::default(), before_1_0::LIGHTING_VERSION - 1, |s| {
         s.remove("print");
         s.insert("exposure".into(), json!(1.2));
         s.insert("toneBalance".into(), json!({"white": {"colour": [0.8, 0, -1.6]}, "shadows": {"colour": [0, 0.3, 0]}}));
         raw = s.clone();
     });
     let read = decode(&data);
-    let f = lighting_catch_up::former(&Value::Object(raw.clone())).expect("a former document");
+    let f = lighting::former(&Value::Object(raw.clone())).expect("a former document");
     let started = std::time::Instant::now();
-    let fit = lighting_catch_up::fitted(&f, &CurveSet::default(), &CurveSet::default(), [1.0; 3]);
+    let fit = lighting::fitted(&f, &CurveSet::default(), &CurveSet::default(), [1.0; 3]);
     eprintln!("fit: {:.1} ms, worst residual {:.4}", started.elapsed().as_secs_f64() * 1000.0, fit.worst);
     // The kernel replica on windows set to `n = D / 2`, so a grey's window output is known.
     let n = |t: f32| {
@@ -699,12 +699,12 @@ fn a_former_balance_lands_in_the_filters_and_its_greys_render_as_they_did() {
     let mut own = raw.clone();
     own.insert("print".into(), json!({"exposure": 0.5}));
     let mut current = encoded(&PipelineSettings::default());
-    current.insert("version".into(), json!(legacy::LIGHTING_VERSION - 1));
+    current.insert("version".into(), json!(before_1_0::LIGHTING_VERSION - 1));
     current.insert("settings".into(), Value::Object(own));
     let kept = decode(&serde_json::to_vec(&Value::Object(current)).unwrap());
     assert_eq!(kept.print.exposure, 0.5);
     assert_eq!((kept.print.red, kept.print.blue), (Tone::NEUTRAL, Tone::NEUTRAL));
-    assert!(lighting_catch_up::former(&json!({})).is_none());
+    assert!(lighting::former(&json!({})).is_none());
 }
 
 #[test]
@@ -715,11 +715,11 @@ fn a_document_from_before_folds_its_scanner_look_and_one_since_carries_none() {
             s.insert("look".into(), json!({"model": "frontier", "amount": 1.0}));
         }))
     };
-    let older = read(codec::LOOK_FOLDED_VERSION - 1);
+    let older = read(chain::LOOK_FOLDED_VERSION - 1);
     assert!((older.density - 0.25).abs() < 1e-6, "{}", older.density);
     assert!(!older.manual_curves.red.is_neutral());
     // Twin: written since, the retired key is read as it stands, which is not at all.
-    let newer = read(codec::LOOK_FOLDED_VERSION);
+    let newer = read(chain::LOOK_FOLDED_VERSION);
     assert_eq!(newer.density, 0.1);
     assert!(newer.manual_curves.is_neutral());
 }

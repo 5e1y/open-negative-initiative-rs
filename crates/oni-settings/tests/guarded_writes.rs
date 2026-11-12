@@ -152,7 +152,7 @@ fn a_retired_key_is_never_carried_to_be_read_twice() {
     // Twin: the retired key, carried as is, would fold a second time on the next read.
     let mut twice = written.clone();
     twice["settings"]["curves"] = stored["settings"]["curves"].clone();
-    let again = codec::decode(&serde_json::to_vec(&twice).unwrap()).unwrap();
+    let again = oni_settings::migrate::document(&serde_json::to_vec(&twice).unwrap()).unwrap();
     assert_ne!(again.settings, folded.settings);
     let _ = std::fs::remove_dir_all(&dir);
 }

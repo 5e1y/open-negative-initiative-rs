@@ -2,7 +2,8 @@
 //! base into its gains, at its first read; written back, it is never moved again.
 
 use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::{ConversionMode, PipelineSettings, codec};
+use oni_settings::migrate::{self, Facts};
+use oni_settings::{ConversionMode, PipelineSettings};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -22,17 +23,17 @@ fn a_sidecar_from_under_a_camera_matrix_keeps_its_look_through_its_gains_once() 
     std::fs::create_dir_all(&dir).unwrap();
     let (matched, other): (PathBuf, PathBuf) = (dir.join("P1070001.RW2"), dir.join("DSC_0001.ARW"));
     let held = matched.clone();
-    oni_settings::retired_matrices::install(Some(Arc::new(move |p: &Path| (p == held).then_some(MATRIX))));
+    migrate::install(Some(Arc::new(move |p: &Path, mosaic: bool, then: &mut dyn FnMut(&Facts)| then(&Facts { mosaic, matrix: &|| (p == held).then_some(MATRIX), scan: &|_| None }))));
     let mut edited = PipelineSettings::rest(ConversionMode::Negative, true);
     edited.print.exposure = 0.4;
     edited.gains.stops = [0.1, 0.0, -0.2];
     for original in [&matched, &other] {
         std::fs::write(original, b"raw").unwrap();
         sidecar::write(&edited, original, WriteOptions::default()).unwrap();
-        aged(original, codec::MATRICES_RETIRED_VERSION - 1);
+        aged(original, migrate::chain::MATRICES_RETIRED_VERSION - 1);
     }
     let read = sidecar::read(&matched, true, true).unwrap().settings;
-    let by = oni_settings::retired_matrices::on_base(&edited, &MATRIX).unwrap();
+    let by = migrate::matrices::on_base(&edited, &MATRIX).unwrap();
     assert!(by.iter().all(|v| v.abs() > 0.01), "{by:?}");
     assert!((0..3).all(|c| (read.gains.stops[c] - edited.gains.stops[c] - by[c]).abs() < 1e-6), "{:?}", read.gains);
     // Twin: a camera without a matrix keeps its gains.
@@ -40,6 +41,6 @@ fn a_sidecar_from_under_a_camera_matrix_keeps_its_look_through_its_gains_once() 
     // Written back, the file holds the moved gains and a later read moves them no further.
     sidecar::write(&read, &matched, WriteOptions::default()).unwrap();
     assert_eq!(sidecar::read(&matched, true, true).unwrap().settings, read);
-    oni_settings::retired_matrices::install(None);
+    migrate::install(None);
     let _ = std::fs::remove_dir_all(&dir);
 }

@@ -83,6 +83,7 @@ impl Ctl {
             r.laid_window = r.window;
             r.draft_id = None;
             r.draftless.clear();
+            r.stored.clear();
             r.draft_waiting = false;
             r.tutorial_hidden = false;
             r.shown = true;
@@ -113,15 +114,15 @@ impl Ctl {
                 c.publish_prepare();
             });
         });
-        // Framings land frame by frame, so nothing waits for the slowest file before the first scan
-        // shows; on the drafts' thread, so a roll left a moment ago is read once its drafts are dropped.
+        // The sidecars read first, as a frame's draft is the roll's choice; then framings land frame by frame,
+        // none waiting for a slower scan. On the drafts' thread, so a roll just left is read once its drafts go.
         self.state.borrow().prepare.post(Box::new(move || {
-            for (index, path) in paths.into_iter().enumerate() {
-                let loaded = sidecar::read(Path::new(&path), mosaic(&path), false).ok();
-                let read = loaded.as_ref().map(|l| l.settings.clone()).unwrap_or_default();
-                let draft = loaded.and_then(|l| l.roll_draft);
+            let loaded: Vec<Option<sidecar::Loaded>> = paths.iter().map(|p| sidecar::read(Path::new(p), mosaic(p), false).ok()).collect();
+            let found = draft::found(&paths, &loaded);
+            for (index, ((path, loaded), found)) in paths.into_iter().zip(loaded).zip(found).enumerate() {
+                let read = loaded.map(|l| l.settings).unwrap_or_default();
                 let aspect = aspect(scan_size(&path), &read.geometry);
-                with_shell(move |c| c.land_frame(session, &path, read, draft, index == 0, aspect));
+                with_shell(move |c| c.land_frame(session, &path, read, found, index == 0, aspect));
             }
         }));
         self.publish_menus();
@@ -131,7 +132,8 @@ impl Ctl {
     }
 
     /// `landRollFrame`: the frame's framing, its preview asked, the roll's values off the first.
-    pub(in crate::app) fn land_frame(self: &Rc<Self>, session: u64, path: &str, read: PipelineSettings, draft: Option<RollDraft>, first: bool, aspect: Option<f64>) {
+    pub(in crate::app) fn land_frame(self: &Rc<Self>, session: u64, path: &str, read: PipelineSettings, found: draft::Found, first: bool, aspect: Option<f64>) {
+        let draft = found.draft;
         // Only the first frame and a draft group the roll's files.
         let known = if first || draft.is_some() { self.known() } else { passes::Known::new() };
         let (waited, grouped) = {
@@ -142,6 +144,9 @@ impl Ctl {
                 return;
             }
             r.read.insert(path.to_string(), read.clone());
+            if found.stored {
+                r.stored.insert(path.to_string());
+            }
             // Prepare the Roll shows and measures each scan whole, whatever its crop (owner's call).
             let whole = uncropped(&read);
             if let Some(source) = r.sources.iter_mut().find(|f| f.path == path) {

@@ -1,5 +1,5 @@
-//! What a launch brings up to date before anything reads the support folder: its files whose shape
-//! changed moved under `State/`, the thumbnails' names, the former app's preferences. Each step once.
+//! What a launch brings up to date from an earlier format: the support folder's files whose shape
+//! changed, the thumbnails' names, the former app's preferences, each once; the facts an old sidecar asks.
 
 use crate::timing;
 use oni_i18n::marked;
@@ -7,6 +7,7 @@ use oni_library::migrate::{self, Imported};
 use std::path::Path;
 
 pub mod defaults;
+pub mod facts;
 pub mod ledger;
 pub mod tiles;
 

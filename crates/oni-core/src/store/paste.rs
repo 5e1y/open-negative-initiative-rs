@@ -49,7 +49,7 @@ impl EditorStore {
 
     pub(super) fn paste_source(&self) -> Option<Copied> {
         let text = self.board.settings.as_ref()?;
-        let donor = codec::decode(text.as_bytes()).ok()?.settings;
+        let donor = oni_settings::migrate::document(text.as_bytes()).ok()?.settings;
         let named = serde_json::from_str::<serde_json::Value>(text).ok();
         let carries = named.as_ref().and_then(|v| v.get(CARRIES)).and_then(serde_json::Value::as_array);
         let left_out = match carries {

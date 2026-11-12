@@ -67,8 +67,9 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     // A roll whose first frame was never dialled opens on the colour kept, its Amount whole.
     prepare("A.tif", 4);
     p.invoke_advance();
-    rig.until("the drafts written", Duration::from_secs(10), || loaded(&path("R1", "B.tif")).roll_draft.is_some());
-    let flat = loaded(&path("R1", "B.tif")).roll_draft.unwrap().flat_field.unwrap();
+    let drafted = |roll: &str| oni_settings::prepare::read(path(roll, "B.tif").parent().unwrap()).pop();
+    rig.until("the draft written", Duration::from_secs(10), || drafted("R1").is_some());
+    let flat = drafted("R1").unwrap().flat_field.unwrap();
     assert_eq!((flat.temperature, flat.tint), (0.4, -0.3), "the colour kept");
     assert_eq!(flat.amount, FlatField::default().amount, "twin: the Amount kept is never laid on a frame");
 
@@ -92,8 +93,8 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     // A roll whose first frame was dialled keeps its own colour.
     prepare("E.tif", 2);
     p.invoke_advance();
-    rig.until("R2's drafts written", Duration::from_secs(10), || loaded(&path("R2", "F.tif")).roll_draft.is_some());
-    let own = loaded(&path("R2", "F.tif")).roll_draft.unwrap().flat_field.unwrap();
+    rig.until("R2's draft written", Duration::from_secs(10), || drafted("R2").is_some());
+    let own = drafted("R2").unwrap().flat_field.unwrap();
     assert_eq!((own.temperature, own.tint), (0.2, 0.0), "a frame's own sliders win over the ones kept");
     rig.key("\u{1b}");
 
