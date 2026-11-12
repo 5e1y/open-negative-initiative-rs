@@ -4683,6 +4683,7 @@ dependencies = [
 name = "oni-settings"
 version = "0.1.0"
 dependencies = [
+ "libm",
  "oni-fixtures",
  "oni-hack",
  "oni-render",

@@ -123,7 +123,7 @@ impl Geometry {
             return;
         }
         let t = f64::from(self.angle).to_radians();
-        let (c, s) = (t.cos(), t.sin());
+        let (c, s) = (libm::cos(t), libm::sin(t));
         let crop = self.crop;
         let mut a = crop.width * size.0 / 2.0;
         let mut b = crop.height * size.1 / 2.0;
@@ -254,7 +254,7 @@ pub fn straighten_scale(angle: f32, size: Size) -> f64 {
         return 1.0;
     }
     let t = f64::from(angle).abs().to_radians();
-    let (c, s) = (t.cos(), t.sin());
+    let (c, s) = (libm::cos(t), libm::sin(t));
     (size.0 / (size.0 * c + size.1 * s)).min(size.1 / (size.0 * s + size.1 * c))
 }
 

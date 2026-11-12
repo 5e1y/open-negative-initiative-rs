@@ -12,7 +12,7 @@ pub const WINDOW: f32 = pipeline::DMAX;
 
 /// The kernel's `applyLevels`; its span floor is the one place the identity is inexact.
 pub fn apply_levels(e: f32, lv: &Levels) -> f32 {
-    ((e - lv.black) / (lv.white - lv.black).max(1e-4)).max(0.0).powf(lv.gamma())
+    libm::powf(((e - lv.black) / (lv.white - lv.black).max(1e-4)).max(0.0), lv.gamma())
 }
 
 /// The kernel's `applyWindow`: the three-point pass, then the degree-4 Bezier on its two handles.
@@ -37,7 +37,7 @@ pub fn per_channel_window(e: V3, lv: &LevelsSet) -> V3 {
 
 /// The density-native form: no clamp, a guard under the log, no division.
 pub fn new(source: V3, stops: V3, levels: &LevelsSet, mode: ConversionMode, pedestal: f32, guard_floor: f32) -> V3 {
-    let d: V3 = std::array::from_fn(|i| -((source[i] + pedestal) * stops[i].exp2()).max(guard_floor).log10());
+    let d: V3 = std::array::from_fn(|i| -libm::log10f(((source[i] + pedestal) * libm::exp2f(stops[i])).max(guard_floor)));
     let e = if mode.invert_flag() > 0.5 { d } else { d.map(|v| WINDOW - v) };
     per_channel_window(e, levels)
 }

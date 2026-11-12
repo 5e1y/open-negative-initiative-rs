@@ -130,7 +130,7 @@ fn a_render_counts_its_picture_only_for_a_plot_on_screen() {
 struct Delivered {
     before: Source,
     counted: Option<Source>,
-    inputs: Option<InputHistograms>,
+    inputs: InputHistograms,
 }
 
 /// A worker on `engine` that renders `negative` under `settings`, Compare and a plot on screen.
@@ -144,15 +144,20 @@ fn asking(engine: &Shared, negative: Negative, settings: PipelineSettings) -> im
         let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
         let (reference, negative) = (Some(settings.clone()), negative.clone());
         worker.submit(Job { revision, path: PathBuf::new(), negative, settings: settings.clone(), kind, asked, view: None, reference, held: false, counted: true });
-        let (mut before, mut counted, mut inputs) = (None, None, None);
-        while let Ok(delivery) = rx.recv_timeout(Duration::from_secs(if before.is_none() { 10 } else { 1 })) {
-            match delivery {
-                Delivery::Render(done) => before = done.ok().and_then(|d| d.before).map(|(s, _)| s),
+        let (mut before, mut counted, mut drawn) = (None, None, Instant::now());
+        // A job alone in the slot ends on its distributions, however long a CPU adapter takes to read them.
+        loop {
+            match rx.recv().expect("the render thread runs") {
+                Delivery::Render(done) => {
+                    (before, drawn) = (done.expect("the render").before.map(|(s, _)| s), Instant::now());
+                }
                 Delivery::Counted { picture, .. } => counted = Some(picture),
-                Delivery::Inputs { inputs: read, .. } => inputs = Some(read),
+                Delivery::Inputs { inputs, .. } => {
+                    println!("the distributions landed {:.0} ms after the render", drawn.elapsed().as_secs_f64() * 1000.0);
+                    return Delivered { before: before.expect("the before"), counted, inputs };
+                }
             }
         }
-        Delivered { before: before.expect("the before"), counted, inputs }
     }
 }
 
@@ -209,7 +214,7 @@ fn a_patch_landing_under_the_same_settings_counts_and_reads_again() {
     let healed = ask();
     let counted = |d: &Delivered| d.counted.as_ref().map(Source::id);
     assert!(counted(&healed).is_some() && counted(&healed) != counted(&first), "the histogram counts the patch");
-    assert!(healed.inputs.is_some() && healed.inputs != first.inputs, "the distributions read the patch");
+    assert_ne!(healed.inputs, first.inputs, "the distributions read the patch");
     // Twin: nothing landed since, the same picture and distributions.
     let again = ask();
     assert_eq!((counted(&again), &again.inputs), (counted(&healed), &healed.inputs));

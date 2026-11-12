@@ -85,7 +85,7 @@ pub fn former_axis(ceiling: f32) -> f32 {
     if lift <= density_axis::pedestal(density_axis::MOSAIC_REST) {
         return density_axis::MOSAIC_REST;
     }
-    (-lift.log10()).min(*density_axis::mosaic_range().end())
+    (-libm::log10f(lift)).min(*density_axis::mosaic_range().end())
 }
 
 fn mode_is(settings: &Object, mode: ConversionMode) -> bool {
@@ -155,7 +155,7 @@ pub fn neutral_decode_gains(document: Object) -> Object {
             return;
         }
         let shifted: Vec<Value> = (0..3)
-            .map(|i| number((stored[i] - NEUTRAL_DECODE_RATIO[i].log2()).clamp(Gains::RANGE.0, Gains::RANGE.1)))
+            .map(|i| number((stored[i] - libm::log2f(NEUTRAL_DECODE_RATIO[i])).clamp(Gains::RANGE.0, Gains::RANGE.1)))
             .collect();
         gains.insert("stops".into(), Value::Array(shifted));
     })

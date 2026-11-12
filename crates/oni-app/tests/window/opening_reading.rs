@@ -75,10 +75,9 @@ pub(crate) fn a_decode_under_a_reading_left_never_lands_on_the_canvas() {
     assert_eq!(renders(), 0, "nothing renders before a decode lands");
     drop(held);
     rendered_past(0, "the opening's render");
-    // Both decodes landed; the full resolution, built once the frame stayed a second, not yet, as its
-    // render under the new reading would hide a preview decoded under the old one.
-    pump_for(200);
-    assert!(!ctl.state.borrow().full_built(), "the picture is the preview's");
+    // Read on the first render, after both decodes as the preview gate runs them in turn: the full
+    // resolution, due once the frame stayed a second, renders later and would hide a stale preview.
+    assert!(ctl.state.borrow().placed().is_some_and(|p| !p.at_full_resolution), "the picture is the preview's");
     let shown = mean(&c);
 
     // The same settings rendered again on the negative the frame holds now: its own reading's.

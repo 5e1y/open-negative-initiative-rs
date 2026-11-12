@@ -27,7 +27,7 @@ pub fn orientation(g: &Geometry, (w, h): Size) -> ([i32; 4], [f64; 2], Size) {
 /// from an output point to the input point, and the bounding box's whole-pixel corners.
 pub fn rotation(degrees: f32, upright: [f64; 4]) -> ([[f64; 3]; 2], [f64; 4]) {
     let t = f64::from(degrees).to_radians();
-    let (c, s) = (t.cos(), t.sin());
+    let (c, s) = (libm::cos(t), libm::sin(t));
     let (cx, cy) = (upright[0] + upright[2] / 2.0, upright[1] + upright[3] / 2.0);
     // On screen, y running down, a positive angle turns counter-clockwise.
     let m = [[c, -s, cx - c * cx + s * cy], [s, c, cy - s * cx - c * cy]];

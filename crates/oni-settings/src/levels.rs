@@ -111,7 +111,7 @@ impl Levels {
     }
 
     pub fn gamma(&self) -> f32 {
-        0.5f32.ln() / self.mid.clamp(Self::MID_RANGE.0, Self::MID_RANGE.1).ln()
+        libm::logf(0.5) / libm::logf(self.mid.clamp(Self::MID_RANGE.0, Self::MID_RANGE.1))
     }
 
     pub fn shadow_ordinate(&self) -> f32 {
