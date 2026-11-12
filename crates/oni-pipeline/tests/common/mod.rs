@@ -1,10 +1,9 @@
 //! What the pipeline tests share: a noise source, the judges of a stage against its reference, and
-//! the Swift app's render dumps with the gap between two renders.
+//! the gap between two renders.
 
 #![allow(dead_code)]
 
 use oni_graph::{Graph, Image};
-use std::path::Path;
 
 pub type V4 = [f32; 4];
 
@@ -57,22 +56,6 @@ pub fn whole(g: &mut Graph, image: &Image) -> Vec<V4> {
 
 pub fn mapped(pixels: &[V4], f: impl Fn(V4) -> V4) -> Vec<V4> {
     pixels.iter().map(|&p| f(p)).collect()
-}
-
-pub struct Dump {
-    pub width: u32,
-    pub height: u32,
-    pub pixels: Vec<V4>,
-}
-
-/// `RenderDump`'s format: width and height as `Int32`, then RGBA `Float`, top row first.
-pub fn dump(path: &Path) -> Dump {
-    let b = std::fs::read(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let int = |i: usize| i32::from_le_bytes(b[i..i + 4].try_into().unwrap()) as u32;
-    let (width, height) = (int(0), int(4));
-    let floats: Vec<f32> = b[8..].chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect();
-    assert_eq!(floats.len(), (width * height * 4) as usize, "{}: truncated", path.display());
-    Dump { width, height, pixels: floats.chunks_exact(4).map(|c| [c[0], c[1], c[2], c[3]]).collect() }
 }
 
 /// Mean, 99th centile and worst of the worst channel's gap, after the output clip both sides share.

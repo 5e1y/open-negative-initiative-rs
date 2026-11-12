@@ -9608,5 +9608,40 @@
     "title": "A hidden column's reveal ends with its column",
     "status": "done",
     "detail": "The reveal flags lived on the window while their column existed only as long as it floated, so the Opt+Cmd shortcuts, the gallery, export, Prepare the Roll or the trash brought a column back slid over the photo. The flags now clear whenever the column starts or stops floating (library-floats, panel-floats name its one condition), and the column keys' column-toggled callback, which cleared them at one caller, is gone. Check: a_column_removed_while_revealed_comes_back_hidden, with live-reveal twins."
+  },
+  {
+    "id": 1900,
+    "type": "change",
+    "title": "Measure checks stop reading Swift's dumps",
+    "status": "done",
+    "detail": "The roll #8 measure checks that compared with Swift's decode dumps, its written filters and roll reference, and its measure.json are removed; the second-press and pipette checks stay on LibRaw's decode of two frames."
+  },
+  {
+    "id": 1901,
+    "type": "change",
+    "title": "Pipeline and decode checks stop comparing with Swift renders",
+    "status": "done",
+    "detail": "The roll #8 render comparison and the decode comparison against Swift dumps are removed; the adversarial branches now assert each reaches the render on LibRaw's decode, with the frame at rest as twin."
+  },
+  {
+    "id": 1902,
+    "type": "change",
+    "title": "Window and app checks stop reading Swift's sources and probe dumps",
+    "status": "done",
+    "detail": "The extended probe checks, the Swift help-string check and swift_sources() are removed; the Roll tab's block order is pinned on ONI's own titles."
+  },
+  {
+    "id": 1903,
+    "type": "change",
+    "title": "Swift render scripts removed",
+    "status": "done",
+    "detail": "adversarial-dump, extended-dump, frontier-swift-dump, swift-probe, decoder-gap, sensor-colours and the decoder_gap example, which rendered Swift pairs, are removed; look_lab_strip no longer compares with Swift's render."
+  },
+  {
+    "id": 1904,
+    "type": "change",
+    "title": "Swift reference folders leave the fixtures and the README",
+    "status": "done",
+    "detail": "ONI_REFERENCE and ONI_ADVERSARIAL leave oni-fixtures and the README; docs/parity/README.md is marked as history."
   }
 ]

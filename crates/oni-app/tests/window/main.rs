@@ -45,7 +45,6 @@ mod export_window;
 mod export_panel;
 mod export_columns;
 mod export_speed;
-mod extended;
 mod filmstrip;
 mod first_frame;
 mod freshness;

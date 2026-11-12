@@ -118,8 +118,6 @@ The checks that need real files read them from these folders, kept out of the re
 | `ONI_RAW_DIR` | The reference roll of Nikon NEFs |
 | `ONI_LUMIX_DIR` | The Lumix S1R calibration RW2 files |
 | `ONI_NIKON_HE_DIR` | Nikon Z 8 samples from raw.pixls.us: one lossless NEF, one in each High Efficiency mode |
-| `ONI_REFERENCE` | The Swift app's `--decode` and `--render` dumps |
-| `ONI_ADVERSARIAL` | The Swift app's renders of `oni-pipeline/tests/adversarial/branches.json` |
 
 GitHub Actions runs Windows only, on every push (`ci.yml`); the macOS checks run locally.
 `windows-package.yml`, started by hand, keeps a tester's build and its installer as artifacts for 14 days.
