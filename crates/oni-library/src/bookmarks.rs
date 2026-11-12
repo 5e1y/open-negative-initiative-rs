@@ -119,7 +119,7 @@ impl Bookmarks {
     }
 
     fn by_volume(&self, path: &str, computer: &Computer, mounted: &[String], identify: &Identify) -> Option<Lead> {
-        let root = crate::absence::volume_root(computer, path)?;
+        let root = computer.volume_root(path)?;
         let uuid = self.places.iter().filter(|(p, _)| holds(&root, p)).find_map(|(_, place)| place.volume.as_ref()?.uuid.clone())?;
         let known = |v: &str| identify(v).and_then(|v| v.uuid).is_some_and(|u| u == uuid);
         // Its own disk under its own name: whatever is gone moved on it, not with it.

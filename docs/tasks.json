@@ -9552,5 +9552,33 @@
     "title": "CLAUDE.md states where a dust patch lies and what keys it",
     "status": "done",
     "detail": "The dust stroke decision no longer says a patch's file names the exposure and flat-field; a new line says a patch lies on the decoded scan before the capture's exposure and the flat-field, keyed on the reading alone (#1878). docs/parity/ is history (#1865) and is left as it is."
+  },
+  {
+    "id": 1885,
+    "type": "fix",
+    "title": "Windows update: the new ONI.exe is laid before the app quits",
+    "status": "done",
+    "detail": "update_install::windows only wrote a PowerShell script and spawned it, then the app quit: write access, unpacking and the swap were first tried by a helper with no way to report. A Program Files install (oni.iss allows it) without rights relaunched the old build in a loop, with no word. `lay` now unpacks the archive's ONI.exe in process (the zip crate already in the workspace), writes it as ONI.exe.next, renames the running ONI.exe to ONI.exe.previous (Windows renames a running image) and the new one into place; any failure leaves ONI.exe as it was and returns Err, which reaches the existing 'install by hand' message. A helper that cannot be spawned puts the old one back. Checks on every system: a folder named 'Apps [portable]' takes the new bytes and keeps the old as .previous; twins: an archive without ONI.exe and a folder closed to writing leave it untouched; a lay that does nothing fails both."
+  },
+  {
+    "id": 1886,
+    "type": "fix",
+    "title": "Windows update helper: no wildcard path, the process it started judged, itself deleted",
+    "status": "done",
+    "detail": "SWAP_WINDOWS kept only what the helper alone can do: wait for the app, start the new ONI.exe, keep it if the process it started still runs after $Wait ms (8000), else put .previous back and start it. Every path goes through .NET calls ([IO.File], [Diagnostics.Process]), which read no `[` or `]` as a wildcard; no path-spelling compare decides liveness; the script deletes itself. A helper blocked by policy now leaves the new build in place for the next launch. A Windows-only check runs it in a bracketed folder with cmd (stays) and hostname (ends) as stand-ins; it waits for the Windows CI."
+  },
+  {
+    "id": 1887,
+    "type": "fix",
+    "title": "An offline network share reads as a disk away, not a file gone",
+    "status": "done",
+    "detail": "On Windows a path on //server/share was on no volume, so absence::refusal took the system's NotFound (ERROR_BAD_NETPATH 53, ERROR_BAD_NET_NAME 67) as Gone: 'Not found, moved, renamed or deleted', Locate and Remove from Library, and Locate forgot the share's rows. Computer::volume_root now names a share's root, //server/share (never a server alone nor a device path), so its root not being a folder reads as Unplugged. Checks: a share's root on a Windows computer, twins for the home's drive, a server alone, a device path and the Mac; refusal of NotFound on a share is Unplugged, twin Gone on the home's drive (fails before the fix); a Windows-only check names the system's mapping of 53 and 67, twin 5."
+  },
+  {
+    "id": 1888,
+    "type": "simplification",
+    "title": "One definition of a disk that comes and goes",
+    "status": "done",
+    "detail": "absence::volume_root became Computer::volume_root and every caller (refusal, bookmarks, reach's caption, the locate window check) uses it; index pruning drops its own `starts_with(\"//\")` and asks volume_root, so a share's rows wait for its read as everywhere else. is_on_volume keeps meaning a disk Computer's rows list, which no share is. Check: a share whose folder lists keeps its row while the home's is pruned; dropping the share case fails it."
   }
 ]

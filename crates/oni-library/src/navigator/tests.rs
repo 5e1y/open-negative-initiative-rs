@@ -244,6 +244,20 @@ fn on_windows_each_drive_is_a_volume() {
     assert!(!mac().is_volume_root(r"D:\"));
 }
 
+/// A network share comes and goes like a drive: its root is `//server/share`, whatever lies under it.
+#[test]
+fn a_share_is_a_volume_on_windows() {
+    let c = Computer { home: "C:/Users/someone".into(), volumes: DRIVES.into() };
+    assert_eq!(c.volume_root("//nas/film/Roll 8/A.NEF").as_deref(), Some("//nas/film"));
+    assert_eq!(c.volume_root(r"\\nas\film").as_deref(), Some("//nas/film"));
+    assert_eq!(c.volume_root("D:/Scans").as_deref(), Some("D:/"));
+    // Twins: the home's drive, a server alone and a device path are no volume, nor a share on the Mac.
+    assert_eq!(c.volume_root("C:/Users/someone/Scans"), None);
+    assert_eq!((c.volume_root("//nas"), c.volume_root("//?/C:/x")), (None, None));
+    assert_eq!(mac().volume_root("//nas/film/A.NEF"), None);
+    assert!(!c.is_on_volume("//nas/film/A.NEF"), "Computer's rows list no share");
+}
+
 /// A volumes' folder handed in Windows' own spelling, `\` and another case, holds the archive's `/` paths.
 #[cfg(windows)]
 #[test]
@@ -253,7 +267,7 @@ fn an_injected_volumes_folder_is_read_in_any_spelling_on_windows() {
     assert!(c.is_volume_root("C:/x/Volumes/T7") && !c.is_volume_root("C:/x/Volumes/T7/Roll"));
     // Twin: a sibling named like it, and the folder itself, lie on no volume.
     assert!(!c.is_on_volume("C:/x/Volumesque/T7") && !c.is_on_volume("C:/x/Volumes"));
-    assert_eq!(crate::absence::volume_root(&c, "C:/x/Volumes/T7/Roll/A.NEF").as_deref(), Some("C:/x/Volumes/T7"));
+    assert_eq!(c.volume_root("C:/x/Volumes/T7/Roll/A.NEF").as_deref(), Some("C:/x/Volumes/T7"));
 }
 
 /// A disk image formatted exFAT like the T7, attached inside the scratch folder, detached on drop.

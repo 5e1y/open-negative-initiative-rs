@@ -57,7 +57,7 @@ fn a_disk_away_or_another_volume_keeps_the_identity_known() {
 fn fake(computer: &Computer, uuids: &[(&str, &str)]) -> Identify {
     let (computer, uuids): (Computer, Vec<(String, String)>) = (computer.clone(), uuids.iter().map(|(n, u)| (n.to_string(), u.to_string())).collect());
     Arc::new(move |path: &str| {
-        let root = crate::absence::volume_root(&computer, path)?;
+        let root = computer.volume_root(path)?;
         let uuid = uuids.iter().find(|(n, _)| *n == paths::name(&root)).map(|(_, u)| u.clone());
         Some(Volume { uuid, mount: root })
     })
