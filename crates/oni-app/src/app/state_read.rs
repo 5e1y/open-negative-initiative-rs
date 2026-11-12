@@ -28,6 +28,11 @@ impl State {
         self.full.as_ref().is_some_and(|(p, _)| self.open.as_ref() == Some(p))
     }
 
+    /// A full resolution held, whichever frame it belongs to.
+    pub fn full_resident(&self) -> bool {
+        self.full.is_some()
+    }
+
     /// The settings the canvas was last asked to show, a hovered preset's preview included.
     pub fn shown_settings(&self) -> Option<&oni_settings::PipelineSettings> {
         self.requests.requested_live.as_ref()

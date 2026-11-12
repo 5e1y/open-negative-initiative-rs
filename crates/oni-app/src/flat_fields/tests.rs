@@ -247,6 +247,36 @@ fn a_move_across_volumes_syncs_checks_then_trashes_the_source() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A file taking the free name between the look and the move, as another app may.
+fn raced(from: &Path, to: &Path) -> std::io::Result<()> {
+    std::fs::write(to, b"taken meanwhile")?;
+    (Moving::through(&trashed).rename)(from, to)
+}
+
+fn raced_replacing(from: &Path, to: &Path) -> std::io::Result<()> {
+    std::fs::write(to, b"taken meanwhile")?;
+    std::fs::rename(from, to)
+}
+
+#[test]
+fn a_move_out_never_replaces_a_file_that_took_the_free_name() {
+    let root = scratch("move-out-raced");
+    let presets = presets(&root);
+    let (photo, path, index) = panel(&root);
+    assert!(move_out(&path, &presets, Some(&index), &Moving { rename: raced, copy: copied, trash: &trashed }).is_none());
+    assert_eq!(std::fs::read(presets.join("Panel.NEF")).unwrap(), b"taken meanwhile", "the file there stays whole");
+    assert_eq!(std::fs::read(&photo).unwrap(), b"panel bytes");
+    assert!(sidecar::url_for(&photo).exists() && index.all().len() == 1, "nothing of the photo left");
+    // Twin: a rename that replaces moves the photo over the other file.
+    let root2 = scratch("move-out-raced-twin");
+    let (_, path, index) = panel(&root2);
+    let presets = super::presets(&root2);
+    assert!(move_out(&path, &presets, Some(&index), &Moving { rename: raced_replacing, copy: copied, trash: &trashed }).is_some());
+    assert_ne!(std::fs::read(presets.join("Panel.NEF")).unwrap(), b"taken meanwhile", "twin: the other file replaced");
+    let _ = std::fs::remove_dir_all(&root);
+    let _ = std::fs::remove_dir_all(&root2);
+}
+
 /// The masks the Swift app saved on this machine, read in place and never written.
 #[test]
 fn the_swift_apps_own_masks_read_whole() {
