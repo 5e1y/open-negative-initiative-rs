@@ -26,6 +26,7 @@ impl Ctl {
     /// `exportNow` on `export_targets`, each its own file until the panel's Export As lays them on one sheet.
     pub fn export_now(self: &Rc<Self>) {
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
+        self.flush();
         let targets = {
             let s = self.state.borrow();
             let paths = s.export_targets(gallery);
@@ -47,7 +48,6 @@ impl Ctl {
         if targets.is_empty() {
             return;
         }
-        self.flush();
         self.export.borrow_mut().sheet = false;
         self.enter_export(targets);
     }

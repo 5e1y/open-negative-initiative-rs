@@ -80,3 +80,55 @@ pub(crate) fn a_revealed_column_stays_while_its_menu_holds_the_pointer() {
     assert!(!w.get_revealed_library(), "left for the card, it hides");
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// A hidden panel slid over the card from its trailing edge and the pointer laid on it.
+fn revealed_panel(rig: &common::Rig, w: &MainWindow) {
+    let width = rig.window.size().width as f32;
+    let edge = (1..24).map(|x| width - x as f32).find(|&x| {
+        moved(rig, x, 300.0);
+        w.get_revealed_panel()
+    });
+    assert!(edge.is_some(), "the card's trailing edge reveals the hidden panel");
+    rig.settle();
+}
+
+pub(crate) fn a_column_removed_while_revealed_comes_back_hidden() {
+    let Some((rig, shell, root)) = opened("column-gone") else { return };
+    let (ctl, w) = (shell.ctl.clone(), &shell.window);
+    ctl.act(oni_app::Act::HideLibrary);
+    ctl.act(oni_app::Act::HidePanel);
+    rig.settle();
+
+    // Twin: revealed, a column lives and stays revealed under the pointer.
+    revealed(&rig, w);
+    assert!(w.get_revealed_library(), "twin: a live reveal reads true");
+    // The shortcut shows the library again, as no column key does: no reveal outlives its column.
+    ctl.act(oni_app::Act::HideLibrary);
+    rig.settle();
+    assert!(!w.get_revealed_library(), "the library shown again is no reveal");
+    ctl.act(oni_app::Act::HideLibrary);
+    rig.settle();
+    moved(&rig, 700.0, 400.0);
+    assert!(!w.get_revealed_library(), "hidden again, it waits at the edge");
+
+    // The gallery takes the column away under the pointer, and the editor brings it back hidden.
+    revealed(&rig, w);
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.settle();
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.settle();
+    moved(&rig, 700.0, 400.0);
+    assert!(!w.get_revealed_library(), "back from the gallery, the library is still at the edge");
+
+    // The panel follows the same rule.
+    revealed_panel(&rig, w);
+    assert!(w.get_revealed_panel(), "twin: a live panel reveal reads true");
+    ctl.act(oni_app::Act::HidePanel);
+    rig.settle();
+    assert!(!w.get_revealed_panel(), "the panel shown again is no reveal");
+    ctl.act(oni_app::Act::HidePanel);
+    rig.settle();
+    moved(&rig, 700.0, 400.0);
+    assert!(!w.get_revealed_panel(), "hidden again, it waits at the edge");
+    let _ = std::fs::remove_dir_all(&root);
+}
