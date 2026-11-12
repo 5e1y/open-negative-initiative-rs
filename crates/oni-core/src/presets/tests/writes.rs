@@ -25,11 +25,10 @@ fn a_save_under_a_refused_rename_keeps_the_old_file_and_leaves_no_temporary() {
     edited.settings.sharpen.amount = 0.25;
     assert!(saved(&edited, &dir, &refused).is_err());
     assert_eq!((std::fs::read(&path).unwrap(), listing(&dir)), (before.clone(), vec![file_name(&preset)]));
-    // Twin: the former save, a fixed temporary renamed bare, leaves its temporary behind.
-    let fixed = path.with_extension("json.tmp");
-    let former = std::fs::write(&fixed, encode(&edited).unwrap()).and_then(|()| refused(&fixed, &path));
-    assert!(former.is_err());
-    assert_eq!(listing(&dir).len(), 2, "the former save's temporary stays");
+    // Twin: the same save through a rename that lands changes the file the check above found unchanged.
+    saved(&edited, &dir, &oni_settings::atomic::renamed).unwrap();
+    assert_ne!(std::fs::read(&path).unwrap(), before);
+    assert_eq!(listing(&dir), vec![file_name(&preset)]);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -55,12 +54,13 @@ fn two_saves_of_one_preset_never_share_a_temporary() {
     assert_ne!(seen[0], seen[1]);
     assert_eq!(load(&dir), [preset.clone()], "the first save, renamed last, stands whole");
     assert_eq!(listing(&dir), [file_name(&preset)]);
-    // Twin: two saves through one fixed temporary; the second takes the first's and the first's rename finds none.
-    let fixed = dir.join(file_name(&preset)).with_extension("json.tmp");
-    let target = dir.join(file_name(&preset));
-    std::fs::write(&fixed, encode(&preset).unwrap()).unwrap();
-    std::fs::write(&fixed, encode(&later).unwrap()).and_then(|()| std::fs::rename(&fixed, &target)).unwrap();
-    assert!(std::fs::rename(&fixed, &target).is_err());
+    // Twin: the same two saves with the first's temporary taken from under it: the first fails, the later stands.
+    let lost = |from: &Path, to: &Path| {
+        saved(&later, &dir, &oni_settings::atomic::renamed)?;
+        std::fs::remove_file(from)?;
+        oni_settings::atomic::renamed(from, to)
+    };
+    assert!(saved(&preset, &dir, &lost).is_err());
     assert_eq!(load(&dir)[0].settings.sharpen.amount, 0.25, "the first save is lost");
     let _ = std::fs::remove_dir_all(&dir);
 }

@@ -304,7 +304,11 @@ fn a_photo_with_no_extension_moved_out_takes_a_number_and_no_dot() {
     std::fs::write(presets.join("Panel"), b"an earlier panel").unwrap();
     let target = move_out(&oni_library::paths::canonical(&photo), &presets, None, &Moving::through(&trashed)).expect("moved");
     assert_eq!((target.clone(), std::fs::read(&target).unwrap()), (presets.join("Panel 2"), b"panel bytes".to_vec()));
-    // Twin: the stem and extension joined bare, as the move once named it, end in a dot.
-    assert_ne!(presets.join(format!("{} {}.{}", "Panel", 2, "")), target);
+    // Twin: a photo with an extension keeps it after its number, which a bare name has none to keep.
+    let named = root.join("Scans/Panel.tif");
+    std::fs::write(&named, b"tif bytes").unwrap();
+    std::fs::write(presets.join("Panel.tif"), b"an earlier tif").unwrap();
+    let target = move_out(&oni_library::paths::canonical(&named), &presets, None, &Moving::through(&trashed)).expect("moved");
+    assert_eq!(target, presets.join("Panel 2.tif"));
     let _ = std::fs::remove_dir_all(&root);
 }

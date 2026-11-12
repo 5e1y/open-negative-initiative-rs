@@ -56,22 +56,28 @@ fn the_key_and_the_trusted_phones_are_written_whole_and_owner_only() {
     for path in [trusted_path(&dir), folder(&dir).join("host.key")] {
         assert_eq!(mode(&path), 0o600, "{}", path.display());
     }
+    // A write that cannot land, a folder standing where the list goes, fails on every system, even
+    // as root, and leaves what stood there and no temporary.
+    std::fs::remove_file(trusted_path(&dir)).unwrap();
+    std::fs::create_dir_all(trusted_path(&dir).join("kept")).unwrap();
+    assert!(trust(&dir, Identity::generate().public()).is_err());
+    assert!(trusted_path(&dir).join("kept").is_dir());
+    assert!(listed().iter().all(|n| !n.ends_with(".tmp")), "no temporary stays behind: {:?}", listed());
+    // Twin: the same write once the place is free lands.
+    std::fs::remove_dir_all(trusted_path(&dir)).unwrap();
+    trust(&dir, first).unwrap();
+    assert_eq!(trusted(&dir), vec![first]);
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        // A write that cannot finish leaves the list as it was, never half of it.
-        std::fs::set_permissions(folder(&dir), std::fs::Permissions::from_mode(0o500)).unwrap();
-        assert!(trust(&dir, Identity::generate().public()).is_err());
-        std::fs::set_permissions(folder(&dir), std::fs::Permissions::from_mode(0o700)).unwrap();
-        assert_eq!(trusted(&dir), vec![first]);
         let key = folder(&dir).join("host.key");
-        std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let open = std::fs::Permissions::from_mode(0o644);
+        std::fs::set_permissions(&key, open.clone()).unwrap();
+        std::fs::set_permissions(trusted_path(&dir), open).unwrap();
         identity(&dir).unwrap();
         assert_eq!(mode(&key), 0o600, "a key left readable by others is closed on the next start");
-        // Twin: a plain write, as the key was written before, is readable by others.
-        let plain = folder(&dir).join("plain");
-        std::fs::write(&plain, b"key").unwrap();
-        assert_ne!(mode(&plain), 0o600);
+        // Twin: the list, which the start does not read as a key, stays as it was left.
+        assert_eq!(mode(&trusted_path(&dir)), 0o644);
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
