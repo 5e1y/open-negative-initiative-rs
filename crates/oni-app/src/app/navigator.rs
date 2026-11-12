@@ -215,7 +215,7 @@ impl State {
         if !self.present(path) || self.org.left.iter().any(|v| holds(v, path)) {
             return Presence::Offline(Away::Disconnected);
         }
-        if self.opened.as_deref().is_some_and(|o| paths::same(o, path)) {
+        if self.opened().is_some_and(|o| paths::same(o, path)) {
             return self.opened_presence();
         }
         self.nav.presence.get(path).copied().unwrap_or_default()

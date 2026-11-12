@@ -89,11 +89,6 @@ impl State {
         self.org.thumbnails_landed
     }
 
-    /// Whether the opened folder's read has landed whole.
-    pub fn read_done(&self) -> bool {
-        self.read_done
-    }
-
     /// Whether a gesture's writes or moves are still running off the interface's thread.
     pub fn disk_busy(&self) -> bool {
         self.org.disk_busy.is_some()
@@ -117,10 +112,6 @@ impl State {
     /// The frames whose full resolution the base step's loupe holds ready.
     pub fn roll_fulls(&self) -> Vec<String> {
         self.prepare.fulls.iter().map(|(p, _, _)| p.clone()).collect()
-    }
-
-    pub fn opened(&self) -> Option<&str> {
-        self.opened.as_deref()
     }
 
     pub fn filter(&self) -> Option<Medal> {
@@ -235,9 +226,11 @@ impl State {
         if done < total {
             return Some(LoadBar::counted(tr("Creating thumbnails"), done, total));
         }
-        if !self.read_done && self.opened.is_some() {
-            let waiting = self.rows.iter().filter(|e| e.fingerprint.starts_with(thumbnails::PENDING)).count();
-            return Some(LoadBar::counted(tr("Reading the library"), self.rows.len() - waiting, self.rows.len()));
+        // A folder asked counts the rows shown until its own land.
+        if !self.read_done() && self.opened().is_some() {
+            let rows = self.rows();
+            let waiting = rows.iter().filter(|e| e.fingerprint.starts_with(thumbnails::PENDING)).count();
+            return Some(LoadBar::counted(tr("Reading the library"), rows.len() - waiting, rows.len()));
         }
         if let Some((done, total)) = self.together.as_ref().map(|g| g.loaded()).filter(|(done, total)| done < total) {
             return Some(LoadBar::counted(tr("Opening the frames together"), done, total));

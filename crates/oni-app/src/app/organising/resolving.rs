@@ -25,7 +25,7 @@ impl State {
     /// The stock of the open photo's roll: its folder's marker, else the roll its sidecar names.
     pub(in crate::app) fn open_stock(&self) -> Option<&'static FilmStockKind> {
         let folder = oni_library::paths::parent(self.open_path()?);
-        let rolls = &self.survey.rolls;
+        let rolls = &self.survey().rolls;
         let marker = rolls.get(&folder).or_else(|| rolls.iter().find(|(f, _)| oni_library::paths::same(f, &folder)).map(|(_, film)| film));
         film_stock(marker.or(self.store.settings().film.as_ref())?.stock.as_deref())
     }
@@ -43,7 +43,7 @@ impl State {
         }
         let archive = self.archive.as_ref()?;
         let anchored = self.picks.anchor.as_deref().filter(|a| self.order.iter().any(|p| p == a));
-        anchored.and_then(|a| archive.band(&oni_library::paths::parent(a))).or_else(|| archive.band(self.opened.as_deref()?))
+        anchored.and_then(|a| archive.band(&oni_library::paths::parent(a))).or_else(|| archive.band(self.shown()?))
     }
 
     /// The roll the gallery stands on. A folder is one: its marker, else the roll every member's

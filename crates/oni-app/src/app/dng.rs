@@ -335,7 +335,7 @@ impl Ctl {
                 };
                 let listed = {
                     let s = me.state.borrow();
-                    s.read_done() && wanted.iter().all(|p| s.rows.iter().any(|e| e.path == *p))
+                    s.read_done() && wanted.iter().all(|p| s.rows().iter().any(|e| e.path == *p))
                 };
                 if !listed && started.elapsed() < SETTLED {
                     return;

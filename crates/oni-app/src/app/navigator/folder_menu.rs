@@ -238,9 +238,10 @@ impl Ctl {
         };
         let inside = {
             let mut s = self.state.borrow_mut();
-            let inside = s.opened.as_deref().is_some_and(|o| holds(o, &made));
-            if inside {
-                std::sync::Arc::make_mut(&mut s.survey).folders.push(made.clone());
+            let shown = s.folder.as_mut().filter(|f| holds(&f.path, &made));
+            let inside = shown.is_some();
+            if let Some(shown) = shown {
+                std::sync::Arc::make_mut(&mut shown.survey).folders.push(made.clone());
                 if let Some(archive) = s.archive.as_mut() {
                     archive.unfold(NodeId::Folder(folder.to_owned()));
                 }

@@ -95,7 +95,7 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             if s.nav.model.selected.is_none() {
-                s.nav.model.selected = s.opened.clone();
+                s.nav.model.selected = s.opened().map(str::to_owned);
             }
         }
         self.publish_navigator();

@@ -140,9 +140,6 @@ pub struct Organising {
     pub missing: HashSet<String>,
     /// `tile_flags` of the bands and the missing above, cut once each time they are laid.
     pub flags: HashMap<String, (i32, bool, bool)>,
-    /// The archive a read cut off this thread from the rows it landed, which the next lay takes
-    /// when they are still the rows held.
-    pub staged: Option<crate::library::Archive>,
     /// Every thumbnail drawn and landed since launch, a redraw included.
     pub thumbnails_landed: usize,
     /// Each photo's state as the reads and the looks off this thread last published it.
@@ -247,7 +244,7 @@ impl State {
     }
 
     fn entry(&self, path: &str) -> Option<&Entry> {
-        self.rows.iter().chain(&self.org.standing).chain(&self.org.trashed).find(|e| e.path == path)
+        self.rows().iter().chain(&self.org.standing).chain(&self.org.trashed).find(|e| e.path == path)
     }
 
     fn bands(&self) -> Vec<Band> {

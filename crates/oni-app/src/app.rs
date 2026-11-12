@@ -54,6 +54,7 @@ mod shell;
 mod canvas_gpu;
 mod opening;
 mod frame;
+mod folder;
 mod hands;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
@@ -117,8 +118,8 @@ pub use options::{Options, PICKER_MESSAGE};
 struct Paint {
     /// An edit's redraws by path, with the fingerprint the index knows.
     redraws: VecDeque<(String, Option<String>)>,
-    /// The pass a folder asked last, by generation, and the thumbnails its unreachable photos need.
-    pass: Option<(u64, Vec<(String, String)>, Vec<String>)>,
+    /// The pass a folder asked last, under its opening, and the thumbnails its unreachable photos need.
+    pass: Option<(crate::ticket::Asked, Vec<(String, String)>, Vec<String>)>,
     /// The redraw under way, by path.
     drawing: Option<String>,
 }
@@ -197,19 +198,18 @@ pub struct State {
     archive: Option<Archive>,
     /// Every photo's path in gallery order.
     order: Vec<String>,
-    /// Each photo's tile key (`thumbnails::key`); `copies`, the prints two rows hold, keyed by path too.
+    /// Each tile's key (`thumbnails::key`) by path, on every surface.
     fingerprints: HashMap<String, String>,
-    copies: std::collections::HashSet<String>,
-    /// `opened`: the folder the archive shows, remembered under `openedFolder`.
-    opened: Option<String>,
+    /// The folder the archive shows, and the one asked since whose read has not landed.
+    folder: Option<folder::Folder>,
+    heading: Option<String>,
     preferences: Preferences,
     /// The interface thread's own connection to the index; a read opens its own.
     index: Option<LibraryIndex>,
     index_path: PathBuf,
-    survey: Arc<Survey>,
-    /// Bumped by every folder opened, which stops the previous folder's read and pass.
-    generation: Arc<AtomicU64>,
-    read_done: bool,
+    /// A folder read asked stops the one under way; a folder opened or moved, the thumbnails' pass.
+    reads: crate::ticket::Ticket,
+    folder_turns: crate::ticket::Ticket,
     /// A file to open in the editor once its folder is read, as a dropped file is.
     opening: Option<String>,
     filter: Option<Medal>,
@@ -225,8 +225,6 @@ pub struct State {
     failed: HashSet<String>,
     /// Redraws asked and not landed.
     drawing: usize,
-    /// Every row the index shows under the opened folder, before the filter.
-    rows: Vec<oni_library::Entry>,
     /// The photo the editor holds, which need not be under the opened folder, and all it holds of it.
     frame: Option<frame::Frame>,
     /// What a confirm sheet goes ahead with once its key is pressed.

@@ -34,8 +34,7 @@ impl Shell {
         let painter: Painter = Arc::default();
         let previews: Arc<Mutex<Previews>> = Arc::default();
         let hands: Arc<AtomicUsize> = Arc::default();
-        let generation: Arc<AtomicU64> = Arc::default();
-        paint(painter.clone(), engine.clone(), previews.clone(), hands.clone(), generation.clone(), options.support.clone(), options.screen);
+        paint(painter.clone(), engine.clone(), previews.clone(), hands.clone(), options.support.clone(), options.screen);
         let disk = read_disk(options.support.clone(), options.screen);
         laps.lap("the painter and the disk's state");
         let keep = Preferences::load(&options.support).bool(preferences::KEEP_ZOOM).unwrap_or(false);
@@ -58,14 +57,13 @@ impl Shell {
             archive: None,
             order: Vec::new(),
             fingerprints: HashMap::new(),
-            copies: Default::default(),
-            opened: None,
+            folder: None,
+            heading: None,
             preferences: Preferences::load(&options.support),
             index,
             index_path,
-            survey: Arc::default(),
-            generation,
-            read_done: false,
+            reads: Default::default(),
+            folder_turns: Default::default(),
             opening: None,
             filter: None,
             painter,
@@ -75,7 +73,6 @@ impl Shell {
             creating: (0, 0),
             failed: HashSet::new(),
             drawing: 0,
-            rows: Vec::new(),
             pending: None,
             muted: Preferences::load(&options.support).bool(preferences::SOUND_MUTED).unwrap_or(true),
             frame: None,

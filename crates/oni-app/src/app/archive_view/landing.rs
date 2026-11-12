@@ -2,6 +2,8 @@
 //! and the tile keys, taken on this thread as they come.
 
 use super::*;
+use crate::app::folder::Folder;
+use crate::ticket::Asked;
 
 /// What a read cuts beside the rows it lands, off the interface thread.
 pub(super) struct Landed {
@@ -13,29 +15,25 @@ pub(super) struct Landed {
     fingerprints: HashMap<String, String>,
 }
 
-/// The folder read asked last: a read still running when another starts stops and lands nothing,
-/// so an older survey never lands after a newer one, and the thumbnails' pass runs on.
-static READS: AtomicU64 = AtomicU64::new(0);
-
 impl Ctl {
     /// The read on its own thread and its own connection; each landing comes back to this thread.
-    pub(super) fn read_folder(self: &Rc<Self>, generation: u64, folder: String, index_path: PathBuf) {
-        let (current, computer, filter) = {
+    /// A read asked after it stops it and lands nothing, so an older survey never lands after a newer one.
+    pub(super) fn read_folder(self: &Rc<Self>, folder: String, index_path: PathBuf) {
+        let (asked, computer, filter) = {
             let mut s = self.state.borrow_mut();
             if s.read_waits() {
                 return;
             }
             s.org.reads += 1;
-            (s.generation.clone(), s.nav.computer.clone(), s.filter)
+            (s.reads.next(), s.nav.computer.clone(), s.filter)
         };
-        let ticket = READS.fetch_add(1, Ordering::Relaxed) + 1;
         std::thread::Builder::new()
             .name("library".into())
             .spawn(move || {
                 let Some(index) = LibraryIndex::open(&index_path) else {
                     return with_shell(|c| c.told(tr("Something Went Wrong"), tr("The library index cannot be opened")));
                 };
-                let alive = || current.load(Ordering::Relaxed) == generation && READS.load(Ordering::Relaxed) == ticket;
+                let alive = || asked.current();
                 let kept = index_path.parent().map(|caches| caches.join("Surveys"));
                 let place = library::Place { computer: &computer, kept: kept.as_deref() };
                 library::read_rows(&folder, &index, &place, &alive, &mut |rows, done, survey| {
@@ -44,7 +42,8 @@ impl Ctl {
                     let fingerprints = rows.iter().map(|e| (e.path.clone(), thumbnails::key(&e.fingerprint, &e.path, &copies))).collect();
                     let landed = Landed { staged: Archive::from_rows(&folder, &rows, survey, filter), copies, fingerprints };
                     let survey = survey.clone();
-                    with_shell(move |c| c.take_rows((generation, ticket), rows, done, survey, landed));
+                    let (asked, folder) = (asked.clone(), folder.clone());
+                    with_shell(move |c| c.take_rows(asked, folder, rows, done, survey, landed));
                 });
             })
             .expect("library thread");
@@ -52,22 +51,20 @@ impl Ctl {
 
     /// The read under way stops and lands nothing, the folder left to the next read.
     pub(in crate::app) fn read_superseded(&self) {
-        READS.fetch_add(1, Ordering::Relaxed);
+        self.state.borrow().reads.supersede();
     }
 
-    /// `takeRows` then `layGallery`: the rows laid, the selection and the open photo kept by path.
-    pub(super) fn take_rows(self: &Rc<Self>, (generation, ticket): (u64, u64), rows: Vec<oni_library::Entry>, done: bool, survey: Arc<Survey>, landed: Landed) {
+    /// `takeRows` then `layGallery`: the folder read replaces the one shown whole, its rows laid,
+    /// the selection and the open photo kept by path.
+    pub(super) fn take_rows(self: &Rc<Self>, asked: Asked, path: String, rows: Vec<oni_library::Entry>, done: bool, survey: Arc<Survey>, landed: Landed) {
         {
             let mut s = self.state.borrow_mut();
-            if s.generation.load(Ordering::Relaxed) != generation || READS.load(Ordering::Relaxed) != ticket {
+            if !asked.current() {
                 return;
             }
-            s.copies = landed.copies;
-            s.org.staged = Some(landed.staged);
+            s.folder = Some(Folder { path, rows, survey, copies: landed.copies, staged: Some(landed.staged), read_done: done });
+            s.heading = None;
             s.fingerprints = landed.fingerprints;
-            s.rows = rows;
-            s.survey = survey;
-            s.read_done = done;
             s.org.reads_whole += usize::from(done);
             s.landed_presence();
         }
@@ -96,9 +93,9 @@ impl Ctl {
     /// A read that left files still being written reads the folder again once they may rest, so a
     /// copy that ends with no further change is still printed whole.
     fn read_once_settled(self: &Rc<Self>) {
-        let (settling, generation) = {
+        let (settling, opening) = {
             let s = self.state.borrow();
-            (!s.survey.settling.is_empty(), s.generation.load(Ordering::Relaxed))
+            (!s.survey().settling.is_empty(), s.folder_turns.standing())
         };
         if !settling {
             return;
@@ -106,7 +103,7 @@ impl Ctl {
         let me = Rc::downgrade(self);
         Timer::single_shot(oni_library::roots::SETTLE * 2, move || {
             if let Some(me) = me.upgrade()
-                && me.state.borrow().generation.load(Ordering::Relaxed) == generation
+                && opening.current()
             {
                 me.read_again();
             }

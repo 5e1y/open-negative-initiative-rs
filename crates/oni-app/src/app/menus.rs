@@ -33,7 +33,7 @@ impl Ctl {
             let preparing = s.prepare.shown;
             // The bar's ⌘A: the gallery's photos, or those beside the one open.
             let select_all = !modal && !preparing && if gallery { !s.order.is_empty() } else { open };
-            let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
+            let (opened, read_done, filter, muted, columns) = (s.opened().is_some(), s.read_done(), s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split().is_some(), s.screen_gamut, s.negative().is_some());
             // The crop and De-dust are each frame's own, out of reach while frames show together.
             let single = s.together.is_none();

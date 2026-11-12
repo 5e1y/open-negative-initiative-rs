@@ -57,6 +57,7 @@ pub mod store;
 pub mod system;
 pub mod tabs;
 pub mod thumbnails;
+pub mod ticket;
 pub mod timing;
 pub mod track;
 pub mod tutorial;

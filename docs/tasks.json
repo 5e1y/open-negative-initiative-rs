@@ -9335,5 +9335,33 @@
     "title": "The headless check walks the gallery to meet every cell of a roll taller than its view",
     "status": "done",
     "detail": "Cause of #1833: the gallery gives Slint only the cells in view and one row either side (Layout::cells, since #11), and since #1095 (84dbbbe6) it opens on four columns. In the check's 1280 by 800 window the grid is 680 by 662 pt: at six columns the 38 frames took 601 pt and were all laid, at four they take 1178 pt and 28 are laid (seven rows), so the check's count of the laid tiles held on the ten-frame fixture and failed on a tester's whole roll from #1095 on, not from #1830. The check now scrolls the grid from top to bottom, waits for each laid cell's picture and meets every cell once, in index order, before counting and reading each face. Twin: where the content passes the view and a row of slack each side, the top's cells alone fall short (28 of 38), and a walk that never scrolls fails the count (28 against 38). Two more stale expectations met on the same runs: library::tests::roll_8_opens_as_one_named_roll_of_its_photos counted the contact sheet, which #1252 leaves out of the roll's photos (39 against 38), and now counts frames by the sidecar's sheet as the headless check does; the gallery_cell checks wrote their shots into a folder nothing made in a fresh target, so common::rig makes its shots' folder and the 124 checks' own create_dir_all go."
+  },
+  {
+    "id": 1840,
+    "type": "refactor",
+    "title": "The folder shown is one Folder the state owns, the folder asked its heading",
+    "status": "done",
+    "detail": "app/folder.rs: Folder { path, rows, survey, copies, staged, read_done } replaces State.opened, rows, survey, copies, read_done and org.staged; State.folder is the folder the archive shows, State.heading the folder asked whose read has not landed. open_spelt sets the heading and leaves the shown folder whole; take_rows on a current read assigns a whole Folder and clears the heading. State::opened() (heading, else shown) serves the navigator's row, the openedFolder preference, the watches, Refresh, the banner, the load bar's condition and read_again; State::shown() serves the archive's lay, the band, the medal's reread (on the window and off it), the survey's marker and folder writes and the member rolls. read_done() is the asked folder read whole. The fresh unfold is taken by the first lay after the heading lands. Seen through it: a medal given while another folder's read ran reread the rows under the folder asked and laid them with the old survey; it now rereads the shown folder's rows under its own path. fingerprints stays in State, the tile keys of every surface (the ONI Trash's and the projects' too)."
+  },
+  {
+    "id": 1841,
+    "type": "refactor",
+    "title": "One Ticket type numbers the folder reads and the thumbnails' pass",
+    "status": "done",
+    "detail": "ticket.rs: Ticket (next, supersede, standing) and Asked (current). State.reads replaces the static READS and the read half of State.generation: open_spelt and followed supersede it, every read takes next(), the read thread and take_rows test current(). State.folder_turns replaces generation's other half: a folder opened or moved stops the thumbnails' pass and a settling read; fill takes standing(), so a read again leaves the pass running as before. Two tickets, not one: merging them would stop the pass at every read again."
+  },
+  {
+    "id": 1842,
+    "type": "check",
+    "title": "A folder asked keeps the one shown whole until its read lands",
+    "status": "done",
+    "detail": "window check folder_owner: B asked while A shows, B's landings held unpumped: opened() is B, shown() A, the load bar counts A's 3 rows; a medal on A2's tile rereads A's rows under A's path, A's tiles and the bar stay, the medal shows; released, the first landing makes B asked and shown with no tile of A. Twins: the same rows reread under B's path hold none of A's; A2's tile is gone once B lands. With the medal's reread under the folder asked the check fails at 'the medal lands on A's tile'."
+  },
+  {
+    "id": 1843,
+    "type": "check",
+    "title": "An ask stays current until a newer one or a supersession",
+    "status": "done",
+    "detail": "ticket::tests: next() and standing() current until another next() or supersede(); twins: the older asks read stale. architecture.rs: app.rs's ceiling lowered to 463."
   }
 ]

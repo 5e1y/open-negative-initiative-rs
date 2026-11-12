@@ -11,7 +11,7 @@ impl Ctl {
     }
 
     /// The gallery laid from rows a gesture's sidecar writes left in the index; rows cut for a
-    /// folder no longer open are left out.
+    /// folder no longer shown are left out.
     pub(in crate::app) fn reread_landed(self: &Rc<Self>, paths: &[String], reread: library::Reread) {
         if paths.is_empty() {
             return;
@@ -21,16 +21,18 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             // A sidecar written may measure the roll shown or change its dyes: its card is read again.
             s.org.frames_due = true;
-            // With no folder open, a photo restored from the ONI Trash leaves it all the same.
-            if s.opened.is_some() && s.opened == reread.folder {
+            // With no folder shown, a photo restored from the ONI Trash leaves it all the same.
+            let shown = s.folder.as_mut().filter(|f| reread.folder.as_deref() == Some(f.path.as_str()));
+            if let Some(shown) = shown {
                 let mut rows = reread.rows;
                 let held: HashSet<String> = rows.iter().map(|e| e.path.clone()).collect();
                 let waiting: Vec<oni_library::Entry> =
-                    s.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
+                    shown.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
                 rows.extend(waiting);
-                s.copies = reread.copies;
-                s.fingerprints = rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
-                s.rows = rows;
+                shown.copies = reread.copies;
+                shown.rows = rows;
+                let fingerprints = s.rows().iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
+                s.fingerprints = fingerprints;
             }
         }
         self.lay_archive();
@@ -41,7 +43,7 @@ impl State {
     /// `library::reread` on this thread's connection, for writes that ran on it.
     pub(in crate::app) fn reread_here(&self, paths: &[String]) -> library::Reread {
         match &self.index {
-            Some(index) if !paths.is_empty() => library::reread(index, paths, self.opened.as_deref()),
+            Some(index) if !paths.is_empty() => library::reread(index, paths, self.shown()),
             _ => library::Reread::default(),
         }
     }

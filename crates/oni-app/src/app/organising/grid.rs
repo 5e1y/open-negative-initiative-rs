@@ -69,7 +69,7 @@ impl Ctl {
             (tr("No Photos in a Project").into(), tr("Make a project here, then add photos to it in the Archive: Add to Project is in their right-click menu.").into(), tr("New Project").into())
         } else if s.org.trash_open {
             (tr("ONI Trash Is Empty").into(), tr("A photo deleted in ONI waits here, its file untouched, until it is restored.").into(), String::new())
-        } else if s.opened.is_none() {
+        } else if s.opened().is_none() {
             (
                 tr("No Folder Open").into(),
                 tr("Click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved.").into(),

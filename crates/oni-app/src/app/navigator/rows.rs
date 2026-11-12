@@ -16,7 +16,7 @@ impl Ctl {
                 s.nav.model.list(path, false);
             }
             let rolls = s.nav.rolls();
-            let opened = if s.org.trash_open { None } else { s.opened.clone() };
+            let opened = if s.org.trash_open { None } else { s.opened().map(str::to_owned) };
             let model = &s.nav.model;
             let side = crate::stocks::row_side(&w);
             // Two favourites named alike carry the folders above them, in their own section alone.
@@ -90,10 +90,10 @@ impl Ctl {
                     WelcomeLine { title: title.into(), path: p.clone().into(), enabled: !away }
                 })
                 .collect();
-            let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
+            let welcome_shown = s.opened().is_none() && !s.nav.welcome.is_empty();
             s.nav.rows = paths;
             let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
-            refused.extend(s.opened.clone().filter(|o| s.survey.unreadable.contains(o)));
+            refused.extend(s.opened().map(str::to_owned).filter(|o| s.survey().unreadable.contains(o)));
             *s.nav.refused.lock().expect("refused") = refused;
             s.remember();
             (lines, welcome, welcome_shown, reveal)

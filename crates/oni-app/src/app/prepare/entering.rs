@@ -41,7 +41,7 @@ impl Ctl {
         let wanted: HashSet<&String> = paths.iter().collect();
         let (ordered, session) = {
             let mut s = self.state.borrow_mut();
-            let ordered: Vec<(String, String)> = s.rows.iter().filter(|e| wanted.contains(&e.path)).map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+            let ordered: Vec<(String, String)> = s.rows().iter().filter(|e| wanted.contains(&e.path)).map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
             if ordered.is_empty() || s.prepare.progress.is_some() {
                 return;
             }

@@ -8,9 +8,9 @@ impl State {
     /// The rows projects resolve against: the opened folder's first, then the members beyond it.
     pub(in crate::app) fn reach(&self) -> Cow<'_, [Entry]> {
         if self.org.standing.is_empty() {
-            return Cow::Borrowed(&self.rows);
+            return Cow::Borrowed(self.rows());
         }
-        Cow::Owned(self.rows.iter().chain(&self.org.standing).cloned().collect())
+        Cow::Owned(self.rows().iter().chain(&self.org.standing).cloned().collect())
     }
 
     /// Every project with the rows its members stand for this read, newest first.
@@ -31,11 +31,11 @@ impl State {
     /// projects' members beyond it.
     pub(in crate::app) fn roll_markers(&self) -> HashMap<String, Film> {
         let beyond = self.org.member_rolls.iter().filter_map(|(folder, film)| Some((folder.clone(), film.clone()?)));
-        beyond.chain(self.survey.rolls.iter().map(|(folder, film)| (folder.clone(), film.clone()))).collect()
+        beyond.chain(self.survey().rolls.iter().map(|(folder, film)| (folder.clone(), film.clone()))).collect()
     }
 }
 
-/// Whether the opened folder's survey covers `folder`, which reads its marker afresh.
+/// Whether the shown folder's survey covers `folder`, which reads its marker afresh.
 fn surveyed(opened: Option<&str>, folder: &str) -> bool {
     opened.is_some_and(|opened| oni_library::paths::holds(opened, folder))
 }
@@ -49,10 +49,11 @@ impl Ctl {
             let s = &mut *guard;
             let (learned, standing) = match &s.index {
                 Some(index) if !s.org.projects.is_empty() => {
-                    let stood = oni_library::project_standing::standing(&s.org.projects, &s.rows, index, &s.org.found);
-                    let learned = oni_library::project_standing::learn(&mut s.org.projects, &s.rows, index, &stood);
+                    let rows = s.folder.as_ref().map_or(&[][..], |f| &f.rows);
+                    let stood = oni_library::project_standing::standing(&s.org.projects, rows, index, &s.org.found);
+                    let learned = oni_library::project_standing::learn(&mut s.org.projects, rows, index, &stood);
                     // A member that learned its print is found by it: the read looks again.
-                    (learned, if learned { oni_library::project_standing::standing(&s.org.projects, &s.rows, index, &s.org.found) } else { stood })
+                    (learned, if learned { oni_library::project_standing::standing(&s.org.projects, rows, index, &s.org.found) } else { stood })
                 }
                 _ => (false, Default::default()),
             };
@@ -72,7 +73,7 @@ impl Ctl {
         let unread: Vec<String> = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
-            let opened = s.opened.as_deref();
+            let opened = s.folder.as_ref().map(|f| f.path.as_str());
             s.org.member_rolls.retain(|folder, _| !surveyed(opened, folder));
             let members = s.org.projects.iter().flat_map(|p| &p.members);
             let standing = members.filter_map(|m| s.org.found.get(m).or(m.path.as_ref()));

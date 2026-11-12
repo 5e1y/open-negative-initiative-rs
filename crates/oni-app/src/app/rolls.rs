@@ -48,7 +48,7 @@ impl super::State {
             return Vec::new();
         }
         let targets: HashSet<String> = self.preset_targets().into_iter().collect();
-        self.rows.iter().filter(|e| e.film.is_some() && targets.contains(&e.path)).map(|e| e.path.clone()).collect()
+        self.rows().iter().filter(|e| e.film.is_some() && targets.contains(&e.path)).map(|e| e.path.clone()).collect()
     }
 
     /// `rollScope`: the frames measured with the open frame's roll, and those of its folder not.
@@ -152,7 +152,7 @@ impl Ctl {
     /// `askResetToDefault`: the reach read off this thread, then a confirm naming what goes.
     pub(super) fn ask_reset_to_default(self: &Rc<Self>) {
         let picked = self.roll_targets();
-        let library: Vec<String> = self.state.borrow().rows.iter().map(|e| e.path.clone()).collect();
+        let library: Vec<String> = self.state.borrow().rows().iter().map(|e| e.path.clone()).collect();
         if picked.is_empty() {
             return;
         }

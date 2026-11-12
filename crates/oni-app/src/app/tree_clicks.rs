@@ -39,7 +39,7 @@ impl Ctl {
             let Some(id) = s.org.tree_ids.get(i).cloned() else { return };
             // Beside a photo, frames shown together are the pick a ⌘ or ⇧ click starts from, whoever
             // chose them (⌘A, the gallery, the contact-sheet key); else the frame on screen joins it.
-            let members = s.filter_shows().unwrap_or_else(|| s.survey.images.clone());
+            let members = s.filter_shows().unwrap_or_else(|| s.survey().images.clone());
             if beside && s.picks.selection.len() > 1 && crate::tree_pick::picked_photos(&s.org.tree_pick.selection, &members) != s.picks.selection {
                 s.org.tree_pick.selection = s.picks.selection.iter().cloned().map(NodeId::Photo).collect();
             }
