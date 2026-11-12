@@ -171,7 +171,7 @@ impl Ctl {
     fn set_face(self: &Rc<Self>, face: Face) {
         let (open, current) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.store.face())
+            (s.frame.is_some(), s.store.face())
         };
         if face == current || (face == Face::Scanner && !open) {
             return self.publish_bar();

@@ -62,10 +62,10 @@ impl Ctl {
             if let Some((start, from)) = BEGAN.with(Cell::get) {
                 s.viewport = covering(start, from, view);
             }
-            if let Some(full) = s.full_size {
+            if let Some(full) = s.full_size() {
                 s.viewport.clamp(full, view);
             }
-            match (s.placed, LAID_IN.with(Cell::get)) {
+            match (s.placed(), LAID_IN.with(Cell::get)) {
                 (Some(p), Some(old)) => {
                     let r = followed((p.x, p.y, p.width, p.height), before.placement(p.full, old).image, s.viewport.placement(p.full, view).image);
                     Some(Placed { x: r.0, y: r.1, width: r.2, height: r.3, ..p })
@@ -73,7 +73,7 @@ impl Ctl {
                 _ => None,
             }
         };
-        let unplaced = self.state.borrow().placed.is_none();
+        let unplaced = self.state.borrow().placed().is_none();
         match (moved, self.window()) {
             // A contact sheet's overlays follow the view with its texture, not at its next render.
             _ if self.lay_together() => {}

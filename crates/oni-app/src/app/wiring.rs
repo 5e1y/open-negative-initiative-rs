@@ -258,11 +258,11 @@ impl Ctl {
         let p = me.clone();
         c.on_split_dragged(move |x| {
             let width = p.window().map_or(0.0, |w| w.global::<Canvas>().get_width());
-            if width <= 0.0 || p.state.borrow().compare.split.is_none() {
-                return;
-            }
             let split = (x / width).clamp(0.0, 1.0);
-            p.state.borrow_mut().compare.split = Some(split);
+            match p.state.borrow_mut().frame.as_mut().filter(|f| width > 0.0 && f.compare.split.is_some()) {
+                Some(f) => f.compare.split = Some(split),
+                None => return,
+            }
             if let Some(w) = p.window() {
                 w.global::<Canvas>().set_split(split);
             }
@@ -283,7 +283,7 @@ impl Ctl {
 
         let p = me.clone();
         c.on_scrolled(move |dx, dy, x, y, command| {
-            if p.state.borrow().full_size.is_none() {
+            if p.state.borrow().full_size().is_none() {
                 return false;
             }
             let b = backing(&p);

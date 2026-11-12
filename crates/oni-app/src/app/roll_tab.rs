@@ -132,7 +132,7 @@ impl Ctl {
         panel.on_flat_apply_selection(move || {
             let picked: Vec<String> = {
                 let s = p.state.borrow();
-                s.selected().into_iter().filter(|q| Some(q) != s.open.as_ref()).collect()
+                s.selected().into_iter().filter(|q| Some(q.as_str()) != s.open_path()).collect()
             };
             p.gesture(&picked, |store| store.apply_flat_field(&picked));
         });
@@ -182,8 +182,8 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (settings, undeclared, entries, picked) = {
             let s = self.state.borrow();
-            let undeclared = s.negative.as_ref().and_then(|(_, n)| n.undeclared);
-            let picked = s.picks.selection.iter().filter(|p| Some(*p) != s.open.as_ref()).count();
+            let undeclared = s.negative().and_then(|n| n.undeclared);
+            let picked = s.picks.selection.iter().filter(|p| Some(p.as_str()) != s.open_path()).count();
             (s.store.settings().clone(), undeclared, s.masks.clone(), picked)
         };
         let panel = w.global::<PanelState>();

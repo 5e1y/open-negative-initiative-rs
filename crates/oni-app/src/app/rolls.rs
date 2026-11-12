@@ -55,7 +55,7 @@ impl super::State {
     pub(super) fn roll_scope(&mut self) -> RollScope {
         let Some(id) = self.store.settings().roll_reference.as_ref().map(|r| r.id) else { return RollScope::default() };
         let members = self.store.measured_with(id);
-        let open = self.open.clone();
+        let open = self.open_path().map(str::to_string);
         let folder: Vec<String> = self
             .org
             .bands
@@ -84,7 +84,7 @@ impl Ctl {
         let (scope, count, open_alone) = {
             let mut s = self.state.borrow_mut();
             let targets = s.balance_targets();
-            let open_alone = targets.len() == 1 && s.open.as_ref() == targets.first();
+            let open_alone = targets.len() == 1 && s.open_path() == targets.first().map(String::as_str);
             (s.roll_scope(), targets.len(), open_alone)
         };
         let panel = w.global::<PanelState>();
@@ -120,7 +120,7 @@ impl Ctl {
         let all: HashSet<String> = {
             let mut s = self.state.borrow_mut();
             let Some(id) = s.store.settings().roll_reference.as_ref().map(|r| r.id) else { return };
-            let open = s.open.clone();
+            let open = s.open_path().map(str::to_string);
             let store = &mut s.store;
             let mut all: HashSet<String> = store.measured_with(id).into_iter().collect();
             all.extend(open);

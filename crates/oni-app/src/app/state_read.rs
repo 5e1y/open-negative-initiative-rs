@@ -25,17 +25,17 @@ impl State {
 
     /// The open frame's full resolution, once built.
     pub fn full_built(&self) -> bool {
-        self.full.as_ref().is_some_and(|(p, _)| self.open.as_ref() == Some(p))
+        self.frame.as_ref().is_some_and(|f| f.full.is_some())
     }
 
-    /// A full resolution held, whichever frame it belongs to.
+    /// A full resolution held, which only the open frame may hold.
     pub fn full_resident(&self) -> bool {
-        self.full.is_some()
+        self.full_built()
     }
 
     /// The settings the canvas was last asked to show, a hovered preset's preview included.
     pub fn shown_settings(&self) -> Option<&oni_settings::PipelineSettings> {
-        self.requests.requested_live.as_ref()
+        self.frame.as_ref()?.requests.requested_live.as_ref()
     }
 
     /// Every preview kept in memory let go, as a launch finds them: the next opening decodes.
@@ -54,12 +54,12 @@ impl State {
 
     /// The picture's histogram the plots trace, read by the checks.
     pub fn histogram(&self) -> Option<&oni_measure::histogram::Histogram> {
-        self.requests.histogram.as_ref()
+        self.frame.as_ref()?.requests.histogram.as_ref()
     }
 
     /// The store revision the canvas last showed.
     pub fn rendered(&self) -> u64 {
-        self.requests.rendered
+        self.frame.as_ref().map_or(0, |f| f.requests.rendered)
     }
 
     pub fn store(&self) -> &EditorStore {
@@ -72,15 +72,6 @@ impl State {
             Some(path) => format!("editing photo {}", crate::anonymity::token(path)),
             None => "the gallery".into(),
         }
-    }
-
-    pub fn open_path(&self) -> Option<&str> {
-        self.open.as_deref()
-    }
-
-    /// Whether a decode of `path` under `reading` is the open frame's: any other is superseded.
-    pub(super) fn wants(&self, path: &str, reading: &render::Reading) -> bool {
-        self.open_path() == Some(path) && self.reading.as_ref() == Some(reading)
     }
 
     /// The library column's height, which a check places a row in view against.
@@ -203,12 +194,12 @@ impl State {
     }
 
     pub fn placed(&self) -> Option<Placed> {
-        self.placed
+        self.frame.as_ref()?.placed
     }
 
     /// Whether the view last asked is the lighter one a moving hand gets.
     pub fn coarse(&self) -> bool {
-        self.requests.requested_view.is_some_and(|v| v.5)
+        self.frame.as_ref().and_then(|f| f.requests.requested_view).is_some_and(|v| v.5)
     }
 
     /// Whether a frame's dust patches are being generated.
@@ -221,11 +212,11 @@ impl State {
     }
 
     pub fn split(&self) -> Option<f32> {
-        self.compare.split
+        self.frame.as_ref()?.compare.split
     }
 
     pub fn befores(&self) -> usize {
-        self.compare.befores
+        self.befores
     }
 
     pub fn phone(&self) -> Option<&Phone> {

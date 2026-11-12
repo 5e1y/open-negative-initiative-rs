@@ -27,7 +27,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             // The archive's tree beside the photo is gone, and its pick with it.
             s.org.tree_pick = crate::tree_pick::TreePick::default();
-            let open = s.open.clone().filter(|_| !s.trash_shown());
+            let open = s.open_path().map(str::to_string).filter(|_| !s.trash_shown());
             let at = open.and_then(|p| s.order.iter().position(|o| *o == p));
             s.scroll = s.layout.landing(at, s.grid.1);
         }
@@ -176,7 +176,7 @@ impl Ctl {
         if self.busy_said(tr("Edit")) {
             return;
         }
-        let reopened = self.state.borrow().open.as_deref() == Some(path);
+        let reopened = self.state.borrow().open_path() == Some(path);
         let together = self.state.borrow().selected();
         let together = if together.len() > 1 && together.iter().any(|p| p == path) { together } else { Vec::new() };
         self.state.borrow_mut().designate(path);

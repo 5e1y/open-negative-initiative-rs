@@ -10,7 +10,7 @@ impl Ctl {
             return false;
         }
         let keys = s.whole_groups();
-        let focus = s.open.as_deref().and_then(|c| keys.iter().find(|(_, p)| p.iter().any(|x| x == c))).map(|(k, _)| k.clone());
+        let focus = s.open_path().and_then(|c| keys.iter().find(|(_, p)| p.iter().any(|x| x == c))).map(|(k, _)| k.clone());
         crate::picking::select_all(&keys, &s.picks.selection, focus.as_ref()) == s.picks.selection
     }
 
@@ -30,7 +30,7 @@ impl Ctl {
             let keys = if matches!(key, GridKey::SelectAll) { s.whole_groups() } else { s.band_keys() };
             let order = s.order.clone();
             let shown = Shown { order: &order, groups: &keys, columns: s.layout.columns };
-            let current = s.open.clone();
+            let current = s.open_path().map(str::to_string);
             let focus = current.as_deref().and_then(|c| keys.iter().find(|(_, p)| p.iter().any(|x| x == c))).map(|(k, _)| k.clone());
             let trash = s.trash_shown();
             let shift_held = shift && !matches!(key, GridKey::SelectAll);

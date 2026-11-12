@@ -47,7 +47,7 @@ impl Ctl {
     pub(super) fn prepare_slides(self: &Rc<Self>) {
         let job = {
             let mut s = self.state.borrow_mut();
-            let open = s.open.clone();
+            let open = s.open_path().map(str::to_string);
             let live = s.store.settings().clone();
             let screen = s.screen;
             let r = &mut s.prepare;

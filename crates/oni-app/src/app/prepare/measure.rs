@@ -13,7 +13,7 @@ impl Ctl {
         }
         let (job, session) = {
             let mut s = self.state.borrow_mut();
-            let open = s.open.clone();
+            let open = s.open_path().map(str::to_string);
             let live = s.store.settings().clone();
             let r = &mut s.prepare;
             let picked: Vec<Frame> = r.frames.iter().filter(|f| f.ticked).cloned().collect();
@@ -166,7 +166,7 @@ impl Ctl {
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| left_out(asked, &written, blank));
-        let open = self.state.borrow().open.clone();
+        let open = self.state.borrow().open_path().map(str::to_string);
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }

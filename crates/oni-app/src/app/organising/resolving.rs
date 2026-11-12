@@ -24,7 +24,7 @@ impl State {
 
     /// The stock of the open photo's roll: its folder's marker, else the roll its sidecar names.
     pub(in crate::app) fn open_stock(&self) -> Option<&'static FilmStockKind> {
-        let folder = oni_library::paths::parent(self.open.as_deref()?);
+        let folder = oni_library::paths::parent(self.open_path()?);
         let rolls = &self.survey.rolls;
         let marker = rolls.get(&folder).or_else(|| rolls.iter().find(|(f, _)| oni_library::paths::same(f, &folder)).map(|(_, film)| film));
         film_stock(marker.or(self.store.settings().film.as_ref())?.stock.as_deref())
@@ -78,7 +78,7 @@ impl State {
     pub(in crate::app) fn editor_subject(&self) -> Option<String> {
         let shown = |p: &String| self.order.contains(p);
         let gallery = (!self.trash_shown()).then(|| self.picks.anchor.clone().filter(shown).or_else(|| self.order.first().cloned()));
-        gallery.flatten().or_else(|| self.open.clone())
+        gallery.flatten().or_else(|| self.open_path().map(str::to_string))
     }
 
     pub(super) fn project_group(&self) -> Option<project::ProjectGroup> {

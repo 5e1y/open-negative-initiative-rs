@@ -53,6 +53,7 @@ mod workers;
 mod shell;
 mod canvas_gpu;
 mod opening;
+mod frame;
 mod hands;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
@@ -226,8 +227,8 @@ pub struct State {
     drawing: usize,
     /// Every row the index shows under the opened folder, before the filter.
     rows: Vec<oni_library::Entry>,
-    /// The photo the editor holds, which need not be under the opened folder.
-    open: Option<String>,
+    /// The photo the editor holds, which need not be under the opened folder, and all it holds of it.
+    frame: Option<frame::Frame>,
     /// What a confirm sheet goes ahead with once its key is pressed.
     pending: Option<Pending>,
     muted: bool,
@@ -249,8 +250,7 @@ pub struct State {
     layout: Layout,
     visible: std::ops::Range<usize>,
     thumbs: Memory<Image>,
-    /// The open frame's preview, which the canvas renders; the previews kept besides it.
-    negative: Option<(String, Arc<Negative>)>,
+    /// The previews kept besides the open frame's.
     previews: Arc<Mutex<Previews>>,
     /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
     pub(crate) hands: Arc<AtomicUsize>,
@@ -261,8 +261,6 @@ pub struct State {
     last_change: Option<Instant>,
     /// The store revision `publish` last saw, so any edit of the open frame arms its write.
     published_revision: u64,
-    /// How the open frame's preview was decoded: a sidecar naming another reading decodes it again.
-    reading: Option<render::Reading>,
     /// Where the stock picker's choice lands while it shows.
     stock_target: Option<StockTarget>,
     /// The window may close: a failed write was answered with Quit Anyway.
@@ -282,38 +280,26 @@ pub struct State {
     moved_at: Option<Instant>,
     viewport: Viewport,
     views: Notches,
-    /// The open frame's full-resolution pixels once built, and the frame one is being built for.
-    full: Option<(String, oni_graph::Source)>,
+    /// The frame a full resolution is being built for.
     building_full: Option<String>,
     /// The frames whose full-resolution decode failed under their current reading.
     full_failed: HashSet<String>,
     loupe: loupe::Held,
-    /// What the canvas asked of the open frame and was given, reset whole for another frame.
-    requests: rendering::Requests,
     dust: dedusting::Dust,
-    compare: rendering::Compare,
+    /// How many distinct befores Compare encoded, a kept one adding none.
+    befores: usize,
     /// The frames edited together, when more than one is.
     together: Option<gallery_view::together::Group>,
-    /// The displayed image's size in full-resolution pixels, from the last render placed.
-    full_size: Option<(f64, f64)>,
-    placed: Option<Placed>,
     grab: Option<(f32, f32)>,
     pinch: f32,
     /// The ratio and orientation last chosen, and the frame chosen on, handed to the next frame framed.
     framing_memory: Option<(Remembered, String)>,
-    frame_gesture: Option<cropping::FrameGesture>,
     /// A scroll along a track under way, its hand raised until the idle window passes.
     scrolling: Option<hands::HandDown>,
     /// A plot under the hand, raised while the editors' gestures hold.
     plot_down: Option<hands::HandDown>,
-    /// The frame a straightening gesture set out from, the one it last wrote, and when.
-    straightening: Option<(Geometry, Geometry, Instant)>,
     /// The tab shown, the last panel the hand was in and the measuring window armed.
     route: crate::tabs::Route,
-    /// The frame a canvas tool opened on and its settings then, which the tool's Cancel puts back.
-    tool_entry: Option<(String, oni_settings::PipelineSettings)>,
-    /// The stroke being painted, in fractions of the rendered frame, y down.
-    painting_stroke: dedusting::live::Live,
     brush_start: Option<f32>,
     brush_pressed_at: Option<Instant>,
     /// `Propagation`'s copied measuring window.

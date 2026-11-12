@@ -131,7 +131,7 @@ impl Ctl {
                 s.shelf.hovered.and_then(|id| held.iter().position(|p| p.id == id)).map_or(-1, |i| i as i32),
                 targets.len(),
                 title,
-                s.open.is_some(),
+                s.frame.is_some(),
             )
         };
         let g = w.global::<Presets>();

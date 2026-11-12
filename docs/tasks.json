@@ -1962,7 +1962,7 @@
     "type": "refactor",
     "title": "State split per feature, reset by assignment",
     "status": "done",
-    "detail": "State's per-photo fields are grouped: rendering::Requests (rendered, requested, inputs, inputs_drawn, requested_view, requested_live, hand), dedusting::Dust (numbers, sources, fallback, healing, patched, unhealable) and rendering::Compare (split, before_placed, befores). Opening a photo resets them with Dust::next_photo and one Requests assignment instead of fourteen field writes; leaving Together keeps its two. app.rs ceiling 540 to 517. The use super::* imports stay as they are."
+    "detail": "State's per-photo fields are grouped: rendering::Requests (rendered, requested, inputs, inputs_drawn, requested_view, requested_live, hand), dedusting::Dust (numbers, sources, fallback, healing, patched, unhealable) and rendering::Compare (split, before_placed, befores). Opening a photo resets Dust with Dust::next_photo and Requests with one assignment instead of fourteen field writes; Compare is not reset by the opening, whose leave_modes turns its split off, and befores counts across photos. Leaving Together keeps its two writes. app.rs ceiling 540 to 517. The use super::* imports stay as they are. Since #1830 Requests and Compare's split and before_placed belong to app/frame.rs's Frame, befores to State."
   },
   {
     "id": 272,
@@ -9293,5 +9293,40 @@
     "title": "Hakari unifies every command again, with no cycle through the vendored crates",
     "status": "done",
     "detail": "oni-hack's generated path to the patched vendor/notify made cargo adopt it as a workspace member, so `cargo hakari manage-deps` wired oni-hack into notify, a cycle; the workspace now excludes vendor/. The phone-link crates and oni-keys were traversal-excluded, so the features oni-app and oni-core pull through oni-link and oni-keys (serde alloc, tracing attributes, getrandom sys_rng, tokio...) were missing from oni-hack and `cargo test -p oni-settings` rebuilt slint and wgpu after `cargo build -p oni-app`; they are now final-excluded only: traversed, yet never wired to oni-hack, so no phone build sees it. generate, manage-deps and verify are clean; after `cargo build -p oni-app`, `cargo test -p oni-settings --lib --no-run` compiles oni-settings alone."
+  },
+  {
+    "id": 1830,
+    "type": "refactor",
+    "title": "The open frame is one Frame the state owns",
+    "status": "done",
+    "detail": "State's open, negative, full, reading, requests, compare, placed, full_size, tool_entry, frame_gesture, straightening and painting_stroke are one app/frame.rs Frame, State.frame: Option<Frame>; negative, full and tool_entry carry no path tag any more. Compare's befores, a session count the checks read, stays in State as befores, beside building_full, full_failed, dust, viewport, loupe, together and framing_memory. Frame::opened is the only constructor: the full resolution stays for the same path, and the last picture's place and size stay until the new frame's render lands, as its thumbnail is laid by them. State::frame_for(path) is the only stale guard and every background landing goes through it (the opening decode, the full build, a render, a histogram count, the input distributions, a heal run and its patches, the loupe, a mask taken, a dust reading, the hovered preset's balance, the roll's requirement); wants(path, reading) is built on it. Ctl::close_frame is the only close (a frame trashed, a frame moved out to FlatField Presets): it lets a held crop handle go and takes Compare's split off the canvas with the frame. leave_editor calls frame.release_full(), redecode frame.reread(reading). toggle_compare's canvas half is show_split. What the structure alone changes: a frame closed leaves no place, full size, histogram or count behind, so the next opening lays its thumbnail at its own size; between an opening and its decode the Roll tab reads no undeclared encoding off the frame left; a crop handle held as its frame is trashed is let go at the close, not at the next opening. app.rs 479 to 465 lines, its ceiling 519 to 465; twelve State fields gone, two added."
+  },
+  {
+    "id": 1831,
+    "type": "check",
+    "title": "A frame trashed or left owns nothing on the canvas",
+    "status": "done",
+    "detail": "tests/window/frame_owner.rs: after the open frame, alone in its roll, goes to the ONI Trash, placed() and full_size() read None (twin: both read Some before). A preview decode of A landed by hand (Ctl::opening_decoded) while B is open, every decode place held so B's own full resolution waits, keeps no full resolution and leaves B's size on the canvas after a notch; twin: the same decode landed under B's path and reading is installed, kept as the full resolution and lays A's size. With the landing's frame_for and wants guard removed the check fails on its first assertion."
+  },
+  {
+    "id": 1832,
+    "type": "check",
+    "title": "Another frame opened finds only the last picture's place",
+    "status": "done",
+    "detail": "app/frame.rs: Frame::opened on a previous frame keeps its full size and nothing decoded or asked (negative, full, requests); twin: opened with no previous frame it guesses no size."
+  },
+  {
+    "id": 1833,
+    "type": "bug",
+    "title": "The headless check counts 28 tiles of the 38-frame test copy",
+    "status": "open",
+    "detail": "With ONI_RAW_DIR on the test copy of roll #8 (38 NEFs), headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas fails at 'every cell of the roll is laid out': 28 tiles against 38. The build before #1830 fails the same way, so the cause lies in the check or the copy, not in the frame's ownership; left for its own task."
+  },
+  {
+    "id": 1834,
+    "type": "docs",
+    "title": "#271's detail says what the opening resets",
+    "status": "done",
+    "detail": "#271 said the opening reset Requests, Dust and Compare whole; it resets Dust and Requests, Compare's split is turned off by leave_modes and befores counts across photos. The detail now says so, and where #1830 moved them."
   }
 ]

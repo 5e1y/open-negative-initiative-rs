@@ -72,7 +72,7 @@ impl Ctl {
         let can_paste = self.can_paste();
         let (items, path) = {
             let s = self.state.borrow();
-            let Some(path) = s.open.clone() else { return false };
+            let Some(path) = s.open_path().map(str::to_string) else { return false };
             let scope = organise::cell_scope(&path, &s.picks.selection);
             (self.cell_items(&s, &path, &scope, false, can_paste), path)
         };

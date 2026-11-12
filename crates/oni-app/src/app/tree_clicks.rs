@@ -44,7 +44,7 @@ impl Ctl {
                 s.org.tree_pick.selection = s.picks.selection.iter().cloned().map(NodeId::Photo).collect();
             }
             if beside && s.org.tree_pick.selection.is_empty()
-                && let Some(open) = s.open.clone()
+                && let Some(open) = s.open_path().map(str::to_string)
             {
                 s.org.tree_pick.anchor = Some(NodeId::Photo(open));
             }
@@ -82,7 +82,7 @@ impl Ctl {
 
     /// The photo a row opens, the roll being prepared left first.
     fn open_from_row(self: &Rc<Self>, path: &str) {
-        let reopened = self.state.borrow().open.as_deref() == Some(path);
+        let reopened = self.state.borrow().open_path() == Some(path);
         {
             let mut s = self.state.borrow_mut();
             s.designate(path);
@@ -195,7 +195,7 @@ impl Ctl {
                 s.designate(path);
                 s.project_anchored(path);
             }
-            path.filter(|p| s.open.as_deref() != Some(p.as_str()))
+            path.filter(|p| s.open_path() != Some(p.as_str()))
         };
         if let Some(path) = open {
             self.open_photo(&path);

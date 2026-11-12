@@ -15,7 +15,7 @@ impl Ctl {
         let whole = self.roll_whole(gallery);
         let (titles, live, film_type, targets, filter, select_all) = {
             let mut s = self.state.borrow_mut();
-            let open = s.open.is_some();
+            let open = s.frame.is_some();
             let selected = s.picks.selection.len();
             let trash = s.trash_shown() && gallery;
             let restoring = s.trash_picks.selection.len();
@@ -34,17 +34,17 @@ impl Ctl {
             // The bar's ⌘A: the gallery's photos, or those beside the one open.
             let select_all = !modal && !preparing && if gallery { !s.order.is_empty() } else { open };
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
-            let (split, screen_gamut, decoded) = (s.compare.split.is_some(), s.screen_gamut, s.negative.is_some());
+            let (split, screen_gamut, decoded) = (s.split().is_some(), s.screen_gamut, s.negative().is_some());
             // The crop and De-dust are each frame's own, out of reach while frames show together.
             let single = s.together.is_none();
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
-            let rung = |by: i32| match (s.full_size, canvas) {
+            let rung = |by: i32| match (s.full_size(), canvas) {
                 (Some(full), Some(view)) if !gallery && decoded => s.viewport.rung(by, full, view).is_some(),
                 _ => false,
             };
             let (zoom_out, zoom_in) = (rung(-1), rung(1));
             let settings = s.store.settings().clone();
-            let open_path = s.open.clone();
+            let open_path = s.open_path().map(str::to_string);
             let store = &mut s.store;
             // A slide roll is scanned once for the title's count, then kept until a frame joins or leaves it.
             if let Some(key @ oni_library::roll_membership::RollKey::Slides(_)) = store.roll_key()

@@ -27,8 +27,10 @@ impl Ctl {
         let left = s.route.shown;
         s.route.moved(tab);
         if tab != left {
-            let found = (tab == tabs::CROP || tab == tabs::DEDUST).then(|| s.open_path().map(str::to_string)).flatten();
-            s.tool_entry = found.map(|path| (path, s.store.settings().clone()));
+            let found = (tab == tabs::CROP || tab == tabs::DEDUST).then(|| s.store.settings().clone());
+            if let Some(f) = s.frame.as_mut() {
+                f.tool_entry = found;
+            }
         }
     }
 
@@ -61,7 +63,7 @@ impl Ctl {
 
     /// Every photo opens with no mode: Compare closed, the crop and De-dust left for the last panel.
     pub(super) fn leave_modes(self: &Rc<Self>) {
-        if self.state.borrow().compare.split.is_some() {
+        if self.state.borrow().split().is_some() {
             self.toggle_compare();
         }
         self.leave_frame_tools();
@@ -79,9 +81,9 @@ impl Ctl {
         let found = {
             let s = self.state.borrow();
             let now = s.store.settings();
-            match s.tool_entry.as_ref().filter(|(path, _)| s.open_path() == Some(path.as_str())) {
-                Some((_, was)) if tab == tabs::CROP && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry.clone(), ..now.clone() }),
-                Some((_, was)) if tab == tabs::DEDUST && was.corrections != now.corrections => Some(oni_settings::PipelineSettings { corrections: was.corrections.clone(), ..now.clone() }),
+            match s.frame.as_ref().and_then(|f| f.tool_entry.as_ref()) {
+                Some(was) if tab == tabs::CROP && was.geometry != now.geometry => Some(oni_settings::PipelineSettings { geometry: was.geometry.clone(), ..now.clone() }),
+                Some(was) if tab == tabs::DEDUST && was.corrections != now.corrections => Some(oni_settings::PipelineSettings { corrections: was.corrections.clone(), ..now.clone() }),
                 _ => None,
             }
         };
@@ -97,7 +99,7 @@ impl Ctl {
         if self.window().is_none_or(|w| w.global::<App>().get_gallery()) {
             return false;
         }
-        let compare = self.state.borrow().compare.split.is_some();
+        let compare = self.state.borrow().split().is_some();
         if compare {
             self.toggle_compare();
         } else if !self.cancel_frame_tools() {

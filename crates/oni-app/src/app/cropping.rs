@@ -8,12 +8,12 @@ impl Ctl {
     /// The Crop tab open on a photo alone in the editor: the canvas shows the frame uncropped.
     pub(super) fn cropping(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 1 && self.state.borrow().open.is_some() && !self.together_shown()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 1 && self.state.borrow().frame.is_some() && !self.together_shown()
     }
 
     /// The open frame's raw size in full-resolution pixels; `Geometry` alone applies the quarter turns.
     pub(super) fn image_size(&self) -> Option<(f64, f64)> {
-        Some(self.state.borrow().negative.as_ref()?.1.full())
+        Some(self.state.borrow().negative()?.full())
     }
 
     /// The open frame's kept size in whole pixels, which the crop's readout, its badge and the status
@@ -39,12 +39,13 @@ impl Ctl {
         let fitted = {
             let mut s = self.state.borrow_mut();
             let current = s.store.settings().geometry.clone();
-            let base = match &s.straightening {
+            let Some(f) = s.frame.as_mut() else { return };
+            let base = match &f.straightening {
                 Some((base, written, at)) if at.elapsed() < STRAIGHTEN_IDLE && *written == current => base.clone(),
                 _ => current,
             };
             let fitted = base.straightened(angle, image);
-            s.straightening = Some((base, fitted.clone(), Instant::now()));
+            f.straightening = Some((base, fitted.clone(), Instant::now()));
             fitted
         };
         self.write_geometry(fitted);
@@ -58,7 +59,7 @@ impl Ctl {
         let view = self.canvas_size()?;
         let image = self.image_size()?;
         let s = self.state.borrow();
-        let rendered = s.full_size?;
+        let rendered = s.full_size()?;
         let full = if framing { s.store.settings().geometry.oriented_size(image) } else { rendered };
         let scale = s.viewport.effective_scale(rendered, view) / backing;
         let (cx, cy) = Viewport::centre((view.0 / backing, view.1 / backing), (s.viewport.offset.0 / backing, s.viewport.offset.1 / backing));
@@ -80,7 +81,7 @@ impl Ctl {
         // The window is the open frame's own: a sheet of frames together shows none.
         let window_shown = crate::tabs::window_shown(armed, tab) && window_frame.is_some() && !self.together_shown();
         // A frame held lives as long as its overlay: Slint drops the grab with it and sends no release.
-        let orphaned = self.state.borrow().frame_gesture.is_some_and(|h| !if h.window { window_shown } else { crop_shown });
+        let orphaned = self.held_frame().is_some_and(|h| !if h.window { window_shown } else { crop_shown });
         if orphaned && self.end_frame_gesture() {
             self.publish_bar();
         }
@@ -116,7 +117,7 @@ impl Ctl {
             c.set_crop_width(wd as f32);
             c.set_crop_height(ht as f32);
             // `liveSize`: the kept pixels above the frame while a handle is held, inside the view.
-            let held = self.state.borrow().frame_gesture.is_some_and(|h| !h.window);
+            let held = self.held_frame().is_some_and(|h| !h.window);
             let view = (f64::from(c.get_width()), f64::from(c.get_height()));
             c.set_crop_badge(if held { kept.as_str() } else { "" }.into());
             c.set_crop_badge_x((x + wd / 2.0).clamp(BADGE_MARGIN, (view.0 - BADGE_MARGIN).max(BADGE_MARGIN)) as f32);
@@ -140,14 +141,15 @@ impl Ctl {
         let mut s = self.state.borrow_mut();
         let g = s.store.settings().geometry.clone();
         let from = if window { frames::window_shown(&g, cropping) } else { g.crop };
-        s.frame_gesture = Some(FrameGesture { window, handle, from, size: (frame.2, frame.3), spent: false });
+        let Some(f) = s.frame.as_mut() else { return };
+        f.frame_gesture = Some(FrameGesture { window, handle, from, size: (frame.2, frame.3), spent: false });
         s.store.hold();
     }
 
     pub(super) fn frame_dragged(self: &Rc<Self>, dx: f32, dy: f32) {
         let Some(image) = self.image_size() else { return };
         let cropping = self.cropping();
-        let Some(held) = self.state.borrow().frame_gesture.filter(|h| !h.spent) else { return };
+        let Some(held) = self.held_frame().filter(|h| !h.spent) else { return };
         let proposed = frames::apply(held.handle, held.from, held.size, (f64::from(dx), f64::from(dy)));
         let g = self.state.borrow().store.settings().geometry.clone();
         let next = if held.window {
@@ -164,7 +166,7 @@ impl Ctl {
         let cropping = self.cropping();
         let (window, from) = {
             let mut s = self.state.borrow_mut();
-            let Some(held) = s.frame_gesture.as_mut().filter(|h| !h.spent) else { return false };
+            let Some(held) = s.frame.as_mut().and_then(|f| f.frame_gesture.as_mut()).filter(|h| !h.spent) else { return false };
             held.spent = true;
             (held.window, held.from)
         };
@@ -184,11 +186,16 @@ impl Ctl {
     /// The held frame let go, by the hand, its overlay gone or its photo left: the drag is one step.
     pub(super) fn end_frame_gesture(&self) -> bool {
         let mut s = self.state.borrow_mut();
-        let ended = s.frame_gesture.take().is_some();
+        let ended = s.frame.as_mut().and_then(|f| f.frame_gesture.take()).is_some();
         if ended {
             s.store.release();
         }
         ended
+    }
+
+    /// The frame held on the canvas, a crop's or the measuring window's.
+    fn held_frame(&self) -> Option<FrameGesture> {
+        self.state.borrow().frame.as_ref()?.frame_gesture
     }
 
     /// An arrow beside the crop moves its frame rather than walk the photos, as on the canvas.

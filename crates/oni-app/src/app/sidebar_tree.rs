@@ -8,7 +8,7 @@ impl Ctl {
     /// The photo the column follows: the open one, else the first picked.
     pub(super) fn tree_target(&self) -> Option<String> {
         let s = self.state.borrow();
-        s.open.clone().or_else(|| s.picks.anchor.clone())
+        s.open_path().map(str::to_string).or_else(|| s.picks.anchor.clone())
     }
 
     /// `TreeEngine.reveal`: the column centred on the photo it follows.

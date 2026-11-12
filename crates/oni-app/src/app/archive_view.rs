@@ -149,7 +149,7 @@ impl Ctl {
             let path = {
                 let s = me.state.borrow();
                 let held = s.hands.load(Ordering::Relaxed) > 0 || s.last_change.is_some();
-                s.open.clone().filter(|_| !held)
+                s.open_path().map(str::to_string).filter(|_| !held)
             };
             if let Some(path) = path {
                 me.redraw(&path);
