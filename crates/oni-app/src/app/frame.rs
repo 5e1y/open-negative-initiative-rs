@@ -15,9 +15,8 @@ pub(in crate::app) struct Frame {
     /// What the canvas asked of it and was given, and Compare over it.
     pub requests: rendering::Requests,
     pub compare: rendering::Compare,
-    /// The last render placed, and the displayed image's size in full-resolution pixels.
+    /// The last render of it placed.
     pub placed: Option<Placed>,
-    pub full_size: Option<(f64, f64)>,
     /// Its settings as a canvas tool found them, which the tool's Cancel puts back.
     pub tool_entry: Option<oni_settings::PipelineSettings>,
     pub frame_gesture: Option<cropping::FrameGesture>,
@@ -28,13 +27,9 @@ pub(in crate::app) struct Frame {
 }
 
 impl Frame {
-    /// `path` opened under `reading`. The full resolution and its heal run stay when `previous` held the same
-    /// frame; the last picture's place and size stay until this one's render lands, as its thumbnail is laid by them.
+    /// `path` opened under `reading`. The full resolution and its heal run stay when `previous` held the same frame.
     pub fn opened(path: &str, reading: render::Reading, previous: Option<Frame>) -> Frame {
-        let (full, heal, placed, full_size) = previous.map_or((None, None, None, None), |mut p| {
-            let same = p.path == path;
-            (p.full.take().filter(|_| same), p.heal.take().filter(|_| same), p.placed, p.full_size)
-        });
+        let (full, heal) = previous.filter(|p| p.path == path).map_or((None, None), |mut p| (p.full.take(), p.heal.take()));
         Frame {
             path: path.to_string(),
             reading,
@@ -43,8 +38,7 @@ impl Frame {
             heal,
             requests: rendering::Requests::default(),
             compare: rendering::Compare::default(),
-            placed,
-            full_size,
+            placed: None,
             tool_entry: None,
             frame_gesture: None,
             straightening: None,
@@ -94,11 +88,6 @@ impl State {
         let f = self.frame.as_ref()?;
         Some((f.path.clone(), f.negative.clone()?))
     }
-
-    /// The displayed image's size in full-resolution pixels, from the last render placed.
-    pub fn full_size(&self) -> Option<(f64, f64)> {
-        self.frame.as_ref()?.full_size
-    }
 }
 
 impl Ctl {
@@ -119,17 +108,16 @@ mod tests {
 
     fn held(path: &str) -> Frame {
         let mut f = Frame::opened(path, render::Reading::default(), None);
-        f.full_size = Some((6048.0, 4032.0));
+        f.placed = Some(Placed { x: 0.0, y: 0.0, width: 600.0, height: 400.0, full: (6048.0, 4032.0), whole: true, at_full_resolution: false });
         f
     }
 
     #[test]
-    fn another_frame_opened_finds_only_the_last_pictures_place() {
+    fn another_frame_opened_takes_no_place_from_the_last() {
         let next = Frame::opened("b", render::Reading::default(), Some(held("a")));
-        assert_eq!(next.full_size, Some((6048.0, 4032.0)), "the last picture's size lays the thumbnail");
+        assert!(next.placed.is_none(), "the last picture's place is not this one's");
         assert!(next.full.is_none() && next.negative.is_none() && next.requests.rendered == 0);
-        let first = Frame::opened("b", render::Reading::default(), None);
-        assert_eq!(first.full_size, None, "twin: with no frame before, no size is guessed");
+        assert!(held("a").placed.is_some(), "twin: a frame whose render was placed holds its place");
     }
 
     #[test]

@@ -323,9 +323,10 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     let swapped: Vec<[f64; 3]> = canvas.iter().map(|p| [p[2], p[1], p[0]]).collect();
     assert!(worst(&written, &swapped) > 0.02);
 
-    // The line kept beside the photo, the journal noted, the settings and the artist remembered.
-    let exif = oni_settings::sidecar::read(Path::new(&first), true, false).unwrap().exif.expect("the line is kept in the sidecar");
-    assert_eq!(exif.artist, "A. Tester");
+    // What a hand set kept beside the photo, the artist remembered rather than frozen in it, the journal
+    // noted and the settings remembered.
+    let exif = oni_settings::sidecar::read(Path::new(&first), true, false).unwrap().exif.unwrap_or_default();
+    assert_eq!((exif.film.as_deref(), exif.artist), ((stock != "Kodak Gold").then_some("Kodak Gold"), None));
     assert!(support.join("Journal/events.bin").exists());
     let prefs: serde_json::Value = serde_json::from_slice(&std::fs::read(support.join("preferences.json")).unwrap()).unwrap();
     assert_eq!(prefs["exportArtist"], "A. Tester");

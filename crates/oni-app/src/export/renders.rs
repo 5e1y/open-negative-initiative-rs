@@ -108,17 +108,16 @@ pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings,
     read_back(engine.parts().0, &image).ok()
 }
 
-/// One frame written: its full render, its file, then its line kept in its sidecar; a batch writes the
-/// same bytes through `batch::write_batch`.
-pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata) -> Result<(), Failure> {
+/// One frame written: its full render, its file, then what a hand set of its line kept in its sidecar;
+/// a batch writes the same bytes through `batch::write_batch`.
+pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata, typed: &oni_settings::TypedExif) -> Result<(), Failure> {
     let render = || {
         let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
         render_full_beside(engine, decoded, &target.settings)
     };
     let date = (!metadata.date.is_empty()).then_some(metadata.date.as_str());
     oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata, date)?;
-    let mosaic = oni_decode::decodes_via_mosaic(&target.path);
-    let _ = oni_settings::sidecar::set_exif(metadata.clone(), &target.path, mosaic);
+    super::keep_line(&target.path, typed);
     Ok(())
 }
 

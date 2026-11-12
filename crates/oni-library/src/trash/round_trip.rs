@@ -6,7 +6,7 @@ use crate::index::{self, LibraryIndex};
 use crate::project::{self, Project};
 use crate::scratch::Scratch;
 use oni_settings::frame::RgbPasses;
-use oni_settings::sidecar::{ExifMetadata, WriteOptions};
+use oni_settings::sidecar::{TypedExif, WriteOptions};
 use oni_settings::PipelineSettings;
 use std::collections::BTreeMap;
 
@@ -44,7 +44,7 @@ fn a_mark_rides_in_the_sidecar_alone_and_a_restore_clears_its_key() {
     edited.gains.stops = [0.5, 0.0, -0.25];
     let frame = photo(scratch.path(), "frame.RW2", Some(&edited));
     assert_eq!(read(&frame).trashed_at, None, "a sidecar without the key reads not trashed");
-    let exif = ExifMetadata { camera: "Nikon FM2".into(), ..ExifMetadata::default() };
+    let exif = TypedExif { camera: Some("Nikon FM2".into()), ..TypedExif::default() };
     sidecar::set_exif(exif, Path::new(&frame), true).unwrap();
     let before = listing(scratch.path());
 
@@ -52,7 +52,7 @@ fn a_mark_rides_in_the_sidecar_alone_and_a_restore_clears_its_key() {
     assert_eq!((marked.done.clone(), report(&marked, false)), (vec![frame.clone()], None));
     let loaded = read(&frame);
     assert_eq!((loaded.trashed_at, &loaded.settings), (Some(when()), &edited), "the date round-trips, the settings ride through");
-    assert_eq!(loaded.exif.map(|e| e.camera).as_deref(), Some("Nikon FM2"), "the EXIF left as it was");
+    assert_eq!(loaded.exif.and_then(|e| e.camera).as_deref(), Some("Nikon FM2"), "the EXIF left as it was");
     let after = listing(scratch.path());
     assert_eq!(after.keys().collect::<Vec<_>>(), before.keys().collect::<Vec<_>>(), "no file moved, appeared or vanished");
     assert_eq!(after["frame.RW2"], b"raw", "the photograph's own file is not touched by a byte");

@@ -38,4 +38,4 @@ pub use id::Id;
 pub use modes::{ConversionMode, Face, Medal, ScannerMachine, SourceEncoding};
 pub use reading::Reading;
 pub use settings::PipelineSettings;
-pub use sidecar::{ExifMetadata, Loaded, RollDraft};
+pub use sidecar::{ExifMetadata, Loaded, RollDraft, TypedExif};

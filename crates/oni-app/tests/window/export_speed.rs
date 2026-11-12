@@ -90,7 +90,7 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
         export.set_format(Format::Tiff16);
     }
     let engine = Engine::shared(&gpu);
-    let metadata: Vec<_> = all.iter().map(|t| export::opening_row(&t.path, None, "", "").metadata).collect();
+    let lines: Vec<_> = all.iter().map(|t| export::opening_line(&t.path, None, "", "")).collect();
     println!("{} frames, {:?}, {}", all.len(), export.format(), engine.lock().unwrap().adapter());
 
     // Each stage on its own, frame by frame, the decodes kept in a folder of their own.
@@ -100,7 +100,7 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
     std::fs::create_dir_all(&staged).unwrap();
     let mut sums = [0.0f64; 7];
     let mut hashes = String::new();
-    for (t, m) in all.iter().zip(&metadata).filter(|_| staging) {
+    for (t, m) in all.iter().zip(lines.iter().map(|l| &l.row.metadata)).filter(|_| staging) {
         let mut at = Instant::now();
         let mut lap = |i: usize, at: &mut Instant| {
             sums[i] += ms(*at);
@@ -144,12 +144,12 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
     let mut ledger = oni_export::file::Ledger::in_support(&root.join("support"));
     let mut held = 1;
     if std::env::var_os("ONI_BENCH_SEQUENTIAL").is_some() {
-        for ((t, d), m) in all.iter().zip(&destinations).zip(&metadata) {
+        for ((t, d), l) in all.iter().zip(&destinations).zip(&lines) {
             let to = oni_export::Landing { path: d, ledger: &mut ledger, replacing: false };
-            export::write_one(&engine, t, to, &export, m).unwrap();
+            export::write_one(&engine, t, to, &export, &l.row.metadata, &l.typed("", "")).unwrap();
         }
     } else {
-        let jobs: Vec<export::batch::Job> = all.iter().zip(&destinations).zip(&metadata).map(|((t, d), m)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: m.clone() }).collect();
+        let jobs: Vec<export::batch::Job> = all.iter().zip(&destinations).zip(&lines).map(|((t, d), l)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: l.row.metadata.clone(), typed: l.typed("", "") }).collect();
         let stop = std::sync::atomic::AtomicBool::new(false);
         // The engine apart the surface writes on, as the app runs it.
         let apart = engine.apart().unwrap();

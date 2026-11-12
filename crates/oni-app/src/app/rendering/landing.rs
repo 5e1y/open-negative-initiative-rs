@@ -147,10 +147,13 @@ impl Ctl {
         if unmoved {
             return;
         }
-        if let Some(f) = self.state.borrow_mut().frame.as_mut() {
-            f.placed = placed;
+        {
+            let mut s = self.state.borrow_mut();
             if let Some(p) = placed {
-                f.full_size = Some(p.full);
+                s.full_size = Some(p.full);
+            }
+            if let Some(f) = s.frame.as_mut() {
+                f.placed = placed;
             }
         }
         crate::hz::changed();

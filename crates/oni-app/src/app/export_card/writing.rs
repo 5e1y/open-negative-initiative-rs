@@ -18,7 +18,7 @@ impl Ctl {
         let sheet = self.export.borrow().on_sheet();
         let single = targets.len() == 1 || sheet;
         let destinations = if single {
-            let typed = if sheet { tr("Contact Sheet") } else { rows[0].as_ref().map_or("", |r| r.name.as_str()) };
+            let typed = if sheet { tr("Contact Sheet") } else { rows[0].as_ref().map_or("", |r| r.row.name.as_str()) };
             let name = oni_export::name(&targets[0].path, typed, format);
             let Some(destination) = self.ask_paths(&Ask::Save { name, extension: format.file_extension().into() }).into_iter().next() else { return };
             vec![destination]
@@ -64,7 +64,7 @@ impl Ctl {
             c.typed_gear
                 .iter()
                 .filter_map(|&(at, gear)| {
-                    let m = &c.rows.get(at)?.as_ref()?.metadata;
+                    let m = &c.rows.get(at)?.as_ref()?.row.metadata;
                     Some((gear, if gear == oni_library::collection::Gear::Body { m.camera.clone() } else { m.lens.clone() }))
                 })
                 .collect()
@@ -88,17 +88,22 @@ impl Ctl {
             return self.write_sheet(destinations, replacing);
         }
         let started = destinations.clone();
-        let (plan, export, stop) = {
+        let (jobs, export, stop) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();
-            let plan: Vec<(Target, PathBuf, ExifMetadata)> = c
+            // What a hand set is told from what derived at each line's opening and what derives under the
+            // artist and copyright just remembered.
+            let jobs: Vec<export::batch::Job> = c
                 .targets
                 .iter()
                 .zip(destinations)
                 .zip(&c.rows)
-                .map(|((t, d), r)| (t.clone(), d, r.as_ref().map(|r| r.metadata.clone()).unwrap_or_default()))
+                .map(|((t, d), l)| {
+                    let (metadata, typed) = l.as_ref().map(|l| (l.row.metadata.clone(), l.typed(&c.artist, &c.copyright))).unwrap_or_default();
+                    export::batch::Job { target: t.clone(), destination: d, metadata, typed }
+                })
                 .collect();
-            (plan, c.settings.clone(), c.writer.flag())
+            (jobs, c.settings.clone(), c.writer.flag())
         };
         self.job_started(&started);
         let engine: Shared = self.export_engine();
@@ -106,7 +111,6 @@ impl Ctl {
         let journal = crate::app::year::journal_in(&support);
         self.export.borrow_mut().writer.spawn("export", move || {
             let mut ledger = oni_export::file::Ledger::in_support(&support);
-            let jobs: Vec<export::batch::Job> = plan.into_iter().map(|(target, destination, metadata)| export::batch::Job { target, destination, metadata }).collect();
             let (end, _) = export::batch::write_batch(&engine, &jobs, &export, &mut ledger, replacing, &stop, |i| {
                 let subject = oni_library::paths::canonical(&jobs[i].target.path);
                 journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
@@ -137,10 +141,10 @@ impl Card {
         self.stopped = None;
         self.writer.begin();
         if let Some(Some(first)) = self.rows.first().cloned() {
-            self.artist = first.metadata.artist.clone();
-            self.copyright = first.metadata.copyright.clone();
-            self.save(ARTIST, Value::from(first.metadata.artist));
-            self.save(COPYRIGHT, Value::from(first.metadata.copyright));
+            self.artist = first.row.metadata.artist.clone();
+            self.copyright = first.row.metadata.copyright.clone();
+            self.save(ARTIST, Value::from(first.row.metadata.artist));
+            self.save(COPYRIGHT, Value::from(first.row.metadata.copyright));
         }
     }
 }

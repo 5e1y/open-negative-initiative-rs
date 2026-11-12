@@ -1,7 +1,7 @@
 //! The field setters: each reads the sidecar, changes one field and writes it back, the sidecar
 //! held from the read to the rename.
 
-use super::{Error, ExifMetadata, RollDraft, WriteOptions, held, original_present, read, written};
+use super::{Error, RollDraft, TypedExif, WriteOptions, held, original_present, read, written};
 use crate::date::Date;
 use crate::modes::Medal;
 use crate::settings::PipelineSettings;
@@ -44,14 +44,19 @@ pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Erro
     )
 }
 
-/// Sets the frame's EXIF, the settings and the revision untouched.
-pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(), Error> {
+/// Sets the frame's EXIF, the settings and the revision untouched; a frame never touched gains no
+/// sidecar for an empty line.
+pub fn set_exif(exif: TypedExif, original: &Path, mosaic: bool) -> Result<(), Error> {
     let _held = held::hold(original);
     original_present(original)?;
     // An unreadable sidecar is an error, never rewritten as defaults around the one field.
     let existing = read(original, mosaic, true)?;
     if !existing.writable {
         return Err(Error::Newer);
+    }
+    // The same line, an empty one beside no sidecar included, writes nothing.
+    if existing.exif.clone().unwrap_or_default() == exif {
+        return Ok(());
     }
     let settings = existing.settings.clone();
     written(

@@ -2,15 +2,15 @@
 //! exports alone, Rename the Finder's way as soon as an original or a file of another app is met.
 
 use oni_export::landing::Plan;
-use oni_export::{Format, Row};
+use oni_export::Format;
 use oni_i18n::{tr, trn};
 use std::path::{Path, PathBuf};
 
 use super::Target;
 
 /// The destinations of a batch in a folder: each file the name under its preview, inside the folder.
-pub fn destinations(folder: &Path, targets: &[Target], rows: &[Option<Row>], format: Format) -> Vec<PathBuf> {
-    targets.iter().zip(rows).map(|(t, r)| oni_export::destination(folder, &t.path, r.as_ref().map_or("", |r| r.name.as_str()), format)).collect()
+pub fn destinations(folder: &Path, targets: &[Target], rows: &[Option<super::Line>], format: Format) -> Vec<PathBuf> {
+    targets.iter().zip(rows).map(|(t, r)| oni_export::destination(folder, &t.path, r.as_ref().map_or("", |r| r.row.name.as_str()), format)).collect()
 }
 
 /// What the dialog says, its one key, and the files that key writes.

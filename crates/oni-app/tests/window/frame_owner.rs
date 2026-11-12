@@ -1,10 +1,10 @@
-//! The open frame owns what was decoded and rendered of it: a frame trashed leaves no place or size
-//! behind, and a preview decode landing for a frame left changes nothing of the open one.
+//! The open frame owns what was decoded and rendered of it: a frame trashed leaves no place behind, its
+//! size staying the canvas's, and a preview decode landing for a frame left changes nothing of the open one.
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::render::{Reading, Shared};
-use oni_app::{App, Library, Store};
+use oni_app::{App, Canvas, Library, Store};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
@@ -40,7 +40,7 @@ fn opened(gpu: &oni_app::render::Device, label: &str, frames: &[(&str, usize, us
     (rig, shell, root, engine)
 }
 
-pub(crate) fn a_trashed_frame_leaves_no_place_or_size_behind() {
+pub(crate) fn a_trashed_frame_leaves_its_size_to_the_canvas_and_no_place() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: a trashed frame's leftovers are not exercised"),
@@ -49,13 +49,52 @@ pub(crate) fn a_trashed_frame_leaves_no_place_or_size_behind() {
     let ctl = shell.ctl.clone();
     let left = || {
         let s = ctl.state.borrow();
-        (s.placed().is_some(), s.full_size().is_some())
+        (s.placed().is_some(), s.full_size())
     };
-    assert_eq!(left(), (true, true), "twin: the open frame's render is placed and sized");
+    assert_eq!(left(), (true, Some((600.0, 400.0))), "twin: the open frame's render is placed and sized");
     ctl.act(oni_app::Act::Remove);
     rig.landed(&ctl);
     assert!(shell.window.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_none(), "the last frame of its roll trashed, the gallery");
-    assert_eq!(left(), (false, false), "nothing of the trashed frame's render stays");
+    assert_eq!(left(), (false, Some((600.0, 400.0))), "no place stays, the size the kept zoom is counted in does");
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// Keep Zoom at 100 %: the frame opened after a trashed one lies at its photo's size before its render lands.
+pub(crate) fn the_frame_after_a_trashed_one_is_laid_at_the_kept_zoom() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the kept zoom across a trash is not exercised"),
+    };
+    let (rig, shell, root, _) = opened(&gpu, "frame-kept-zoom", &[("A.tif", 2400, 1600, 0.5), ("B.tif", 2400, 1600, 0.5)]);
+    // Set once the shell has read its preferences, which set it.
+    let kept = oni_app::viewport::KEEP_ZOOM.swap(true, std::sync::atomic::Ordering::Relaxed);
+    let ctl = shell.ctl.clone();
+    for _ in 0..oni_app::viewport::ZOOM_STEPS.len() {
+        if ctl.state.borrow().viewport().scale == Some(1.0) {
+            break;
+        }
+        let n = ctl.state.borrow().renders();
+        ctl.act(oni_app::Act::Larger);
+        rig.until("a rung's render", Duration::from_secs(60), || ctl.state.borrow().renders() > n);
+    }
+    assert_eq!(ctl.state.borrow().viewport().scale, Some(1.0), "the view at 100 %");
+    // Every decode place held, so B's preview waits and the canvas shows its thumbnail.
+    let held = [oni_app::decode_gate::slot(), oni_app::decode_gate::slot()];
+    let renders = ctl.state.borrow().renders();
+    ctl.act(oni_app::Act::Remove);
+    rig.landed(&ctl);
+    rig.until("B open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("B.tif")));
+    assert_eq!(ctl.state.borrow().renders(), renders, "B's render has not landed");
+    assert_eq!(ctl.state.borrow().viewport().scale, Some(1.0), "the zoom kept");
+    let canvas = shell.window.global::<Canvas>();
+    assert_eq!(canvas.get_frame_width(), 2400.0, "B's thumbnail lies where 100 % puts its photo");
+    assert_eq!(ctl.state.borrow().full_size(), Some((2400.0, 1600.0)), "the canvas keeps the size its zoom is counted in");
+    // Twin: the thumbnail at its own size at 100 %, the width a forgotten size lays it at, is far narrower.
+    let thumbnail = canvas.get_frame().size();
+    assert!(thumbnail.width < 2400, "the picture shown is the thumbnail: {thumbnail:?}");
+    drop(held);
+    oni_app::viewport::KEEP_ZOOM.store(kept, std::sync::atomic::Ordering::Relaxed);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

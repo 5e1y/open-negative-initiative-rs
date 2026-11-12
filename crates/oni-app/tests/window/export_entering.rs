@@ -48,12 +48,12 @@ pub(crate) fn entering_the_export_reads_no_scan_on_the_interface_thread() {
     println!("entering the export on {} frames: {:.1} ms", names.len(), entered.as_secs_f64() * 1e3);
     assert!(export_card::card(&ctl).rows.iter().all(Option::is_none), "no scan is read before the surface shows");
     rig.until("the lines", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some));
-    let landed: Vec<String> = export_card::card(&ctl).rows.iter().map(|r| r.as_ref().unwrap().metadata.camera.clone()).collect();
+    let landed: Vec<String> = export_card::card(&ctl).rows.iter().map(|r| r.as_ref().unwrap().row.metadata.camera.clone()).collect();
     assert!(landed.iter().all(|c| c == "NIKON CORPORATION NIKON Z f"), "{landed:?}");
     assert!(export_card::lines(&shell.window).iter().all(|l| l.camera == "NIKON CORPORATION NIKON Z f"), "the lines show what landed");
     // Twin: read on this thread, as entering did, the same lines are there before any landing.
     let started = std::time::Instant::now();
-    let read: Vec<String> = targets.iter().map(|t| oni_app::export::opening_row(&t.path, None, "", "").metadata.camera).collect();
+    let read: Vec<String> = targets.iter().map(|t| oni_app::export::opening_line(&t.path, None, "", "").row.metadata.camera).collect();
     println!("the same lines read on this thread: {:.1} ms", started.elapsed().as_secs_f64() * 1e3);
     assert_eq!(read, landed);
 

@@ -17,30 +17,13 @@ use std::path::{Path, PathBuf};
 pub(crate) use crate::atomic::write_atomically;
 use std::time::{Duration, SystemTime};
 
+mod exif_line;
 mod fields;
 mod held;
 pub mod identity;
 
+pub use exif_line::{ExifMetadata, TypedExif};
 pub use fields::{set_exif, set_label, set_roll_draft, set_trashed, update};
-
-/// The EXIF a hand set for the export; every key is required, as the document writes them all.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-pub struct ExifMetadata {
-    pub camera: String,
-    pub lens: String,
-    pub film: String,
-    pub iso: String,
-    /// EXIF form, `YYYY:MM:DD HH:MM:SS`.
-    pub date: String,
-    pub artist: String,
-    pub copyright: String,
-}
-
-impl ExifMetadata {
-    pub fn is_empty(&self) -> bool {
-        *self == ExifMetadata::default()
-    }
-}
 
 /// A roll being prepared, written with each of its frames so a preparation left halfway resumes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -93,7 +76,7 @@ pub struct Loaded {
     pub is_new: bool,
     pub imported_at: Option<Date>,
     pub label: Medal,
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     pub roll_draft: Option<RollDraft>,
     pub trashed_at: Option<Date>,
     /// The sidecar beside it was written for another file of that name: read as none, and set aside
@@ -204,7 +187,7 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
 pub struct WriteOptions {
     pub imported_at: Option<Date>,
     pub label: Option<Medal>,
-    pub exif: Option<ExifMetadata>,
+    pub exif: Option<TypedExif>,
     /// `Some(None)` clears the draft on file.
     pub roll_draft: Option<Option<RollDraft>>,
     /// `Some(None)` clears the ONI Trash mark.

@@ -2,7 +2,7 @@
 
 use oni_settings::codec::{self, Source};
 use oni_settings::json::semantic_difference;
-use oni_settings::sidecar::{self, ExifMetadata, RollDraft, WriteOptions};
+use oni_settings::sidecar::{self, RollDraft, TypedExif, WriteOptions};
 use oni_settings::{ConversionMode, Date, Face, Id, Medal, PipelineSettings, ScannerMachine, roll_folder};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
@@ -239,7 +239,7 @@ fn copied(roll: &Path, dir: &Path, frame: &str) -> (PathBuf, String) {
     std::fs::write(&original, b"").unwrap();
     std::fs::write(sidecar::url_for(&original), &text).unwrap();
     let loaded = sidecar::read(&original, true, true).unwrap();
-    let exif = ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), ..Default::default() };
+    let exif = TypedExif { camera: Some("NIKON CORPORATION NIKON Z f".into()), ..Default::default() };
     let options = WriteOptions {
         label: Some(Medal::None),
         exif: loaded.exif.is_none().then_some(exif),

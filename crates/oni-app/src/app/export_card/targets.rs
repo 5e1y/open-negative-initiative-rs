@@ -3,7 +3,7 @@
 use super::*;
 
 impl Ctl {
-    /// Each line from its sidecar or the scan's head, and each frame decoded once for its size and
+    /// Each line, its sidecar's fields over the scan's head, and each frame decoded once for its size and
     /// preview, in order, off this thread; a newer pass stops them.
     pub(super) fn read_targets(self: &Rc<Self>) {
         let (targets, asked) = {
@@ -41,7 +41,7 @@ impl Ctl {
                     if !asked.current() {
                         return;
                     }
-                    let row = export::opening_row(&target.path, roll.as_ref(), &artist, &copyright);
+                    let row = export::opening_line(&target.path, roll.as_ref(), &artist, &copyright);
                     low += usize::from(oni_decode::is_low_precision(&target.path));
                     let asked = asked.clone();
                     with_shell(move |c| c.row_landed(asked, i, row));
@@ -61,7 +61,7 @@ impl Ctl {
     }
 
     /// A line typed in before it lands keeps the typing.
-    fn row_landed(self: &Rc<Self>, asked: Asked, i: usize, row: Row) {
+    fn row_landed(self: &Rc<Self>, asked: Asked, i: usize, row: export::Line) {
         {
             let mut c = self.export.borrow_mut();
             if !asked.current() || c.rows.get(i).is_none_or(Option::is_some) {
@@ -80,7 +80,7 @@ impl Ctl {
         let (targets, rolls, artist, copyright) = self.row_sources();
         for (i, (target, roll)) in targets.iter().zip(&rolls).enumerate() {
             if self.export.borrow().rows.get(i).is_some_and(Option::is_none) {
-                let row = export::opening_row(&target.path, roll.as_ref(), &artist, &copyright);
+                let row = export::opening_line(&target.path, roll.as_ref(), &artist, &copyright);
                 self.export.borrow_mut().rows[i] = Some(row);
                 self.publish_line(i);
             }
