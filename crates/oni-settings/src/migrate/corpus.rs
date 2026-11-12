@@ -162,3 +162,67 @@ fn the_wide_corpus_reads_as_its_goldens() {
     assert!(wrong.is_empty(), "{} of {}: {wrong:#?}", wrong.len(), files.len());
     println!("wide corpus: {} sidecars read as their goldens", files.len());
 }
+
+/// The calls Rust hands to each system's own libm, whose last bit differs from one system to the next.
+const SYSTEM_MATHS: [&str; 22] = [
+    "powf", "powi", "exp", "exp2", "exp_m1", "ln", "ln_1p", "log", "log2", "log10", "sin", "cos", "tan", "sin_cos", "asin", "acos",
+    "atan", "atan2", "sinh", "cosh", "tanh", "cbrt",
+];
+
+/// Each line of `sources` calling the system's maths, past the `#[cfg(test)]` module each file ends on.
+fn system_maths(sources: &[(PathBuf, String)]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (path, text) in sources {
+        let lines: Vec<&str> = text.lines().collect();
+        let end = lines.windows(2).position(|w| w[0].trim() == "#[cfg(test)]" && w[1].starts_with("mod ") && w[1].ends_with('{'));
+        for (n, line) in lines[..end.unwrap_or(lines.len())].iter().enumerate() {
+            let calls = |m: &&str| line.contains(&format!(".{m}(")) || ["f32", "f64"].iter().any(|t| line.contains(&format!("{t}::{m}")));
+            if SYSTEM_MATHS.iter().any(calls) {
+                out.push(format!("{}:{}: {}", path.display(), n + 1, line.trim()));
+            }
+        }
+    }
+    out
+}
+
+/// The crate's sources, the files of test modules declared `mod name;` left out.
+fn crate_sources() -> Vec<(PathBuf, String)> {
+    let mut files = Vec::new();
+    let mut stack = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("src")];
+    while let Some(dir) = stack.pop() {
+        for path in std::fs::read_dir(&dir).unwrap().flatten().map(|e| e.path()) {
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                files.push((path.clone(), std::fs::read_to_string(&path).unwrap()));
+            }
+        }
+    }
+    let tests: Vec<PathBuf> = files
+        .iter()
+        .flat_map(|(path, text)| {
+            let lines: Vec<&str> = text.lines().collect();
+            let folder = if path.ends_with("lib.rs") { path.with_file_name("") } else { path.with_extension("") };
+            let declared = lines.windows(2).filter(|w| w[0].trim() == "#[cfg(test)]").filter_map(|w| w[1].strip_prefix("mod ")?.strip_suffix(';'));
+            declared.map(|name| folder.join(format!("{name}.rs"))).collect::<Vec<_>>()
+        })
+        .collect();
+    files.into_iter().filter(|(path, _)| !tests.contains(path)).collect()
+}
+
+/// A sidecar reads the same on every system only through maths that round alike everywhere: a fit
+/// turns one last bit into the third decimal of a print, so the reader calls `libm` alone.
+#[test]
+fn the_reader_rounds_alike_on_every_system() {
+    let sources = crate_sources();
+    assert!(sources.iter().any(|(p, _)| p.ends_with("migrate/lighting.rs")) && !sources.iter().any(|(p, _)| p.ends_with("migrate/corpus.rs")));
+    let found = system_maths(&sources);
+    assert!(found.is_empty(), "the system's maths in the reader: {found:#?}");
+    // Twin: the system's `powf` planted in a function, and `exp2` passed by name, are caught; a test module's are not.
+    let planted = concat!(
+        "fn lit(x: f32) -> f32 {\n    x.powf(2.2)\n}\n",
+        "fn gains(s: [f32; 3]) -> [f32; 3] {\n    s.map(f32::exp2)\n}\n",
+        "#[cfg(test)]\nmod tests {\n    fn f(x: f32) -> f32 {\n        x.ln()\n    }\n}\n",
+    );
+    assert_eq!(system_maths(&[(PathBuf::from("planted.rs"), planted.into())]).len(), 2);
+}

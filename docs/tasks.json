@@ -9972,5 +9972,40 @@
     "title": "Two window checks build on Windows again",
     "status": "done",
     "detail": "Windows CI failed to compile the window checks: masks.rs refused the move to FlatField Presets through Unix permissions, editor_leftovers.rs named the macOS board on every system. The refused move is now a file standing where the presets' folder goes, refused on every system; the board's name is macOS only."
+  },
+  {
+    "id": 2000,
+    "type": "fix",
+    "title": "A sidecar reads the same on every system: the reader's maths are libm's",
+    "status": "done",
+    "detail": "Windows CI read the corpus file early/001 with exposure 0.462294 where its golden, made on a Mac, says 0.46263927. Rust's powf, exp, exp2, ln, log2, log10, sin and cos call each system's own libm, whose last bit differs from Apple's to Microsoft's, and the Lighting fit (an f32 Gauss-Newton on finite differences) turns one last bit into the third decimal of the fitted print: the same document migrated to another Lighting on each system. Every such call in oni-settings outside its checks now goes to the libm crate (a pure Rust port of musl's), so the reader is bit for bit the same on macOS and Windows. Only the two early corpus files, the two fitted, read otherwise; their goldens were made again (exposure 0.4619318, curve points moving in the eighth decimal), and of the wide corpus's 348 the same two alone change. The codec check of the mosaic gains takes its expected log2 from libm too."
+  },
+  {
+    "id": 2001,
+    "type": "check",
+    "title": "The reader's sources call no system maths",
+    "status": "done",
+    "detail": "the_reader_rounds_alike_on_every_system (migrate/corpus.rs) lists every line of oni-settings outside its test modules calling powf, exp, ln, log2, sin and the like by method or as f32::/f64:: paths, so a call that would read otherwise on Windows fails on the Mac. Twin: a planted powf and a map(f32::exp2) are both caught, the same call in a test module is not; the reverted exp2f of the former exposure was caught."
+  },
+  {
+    "id": 2002,
+    "type": "fix",
+    "title": "The door check waits for the released thread to finish, however slow the adapter",
+    "status": "done",
+    "detail": "the_holding_thread_passes_its_own_door_and_no_other gave the thread waiting at the door ten seconds once released. On the Windows runner's WARP adapter, beside the door checks' 12 MP export renders running at once, its 64 x 48 prepare took longer and the check failed with the door working. The check now waits for the thread's answer itself, which it always sends; its twin (no pass while the door is held) is unchanged."
+  },
+  {
+    "id": 2003,
+    "type": "fix",
+    "title": "The inputs checks wait for a job's distributions, its last delivery",
+    "status": "done",
+    "detail": "The asking helper of inputs_tests stopped listening one second after the render's last delivery, so on WARP the distributions, read after the render and the count, could arrive after it stopped: a_patch_landing_under_the_same_settings_counts_and_reads_again then found none. A job alone in the slot and not held always ends on its distributions (Worker), so the helper now waits for them, fails at once on a render error, and prints how long they took after the render."
+  },
+  {
+    "id": 2004,
+    "type": "fix",
+    "title": "The opening-reading check reads the canvas on the first render, before the full resolution can",
+    "status": "done",
+    "detail": "a_decode_under_a_reading_left_never_lands_on_the_canvas pumped 200 ms after the opening's render and required the full resolution not built, built once the frame stayed a second from its opening. On WARP the opening's render took 11 s, and under load on a Mac over a second, so the build was due at once and the check failed with the app right. The preview gate runs the two decodes in turn and the full resolution is asked only after a render lands, so the first render follows both decodes and no full-resolution render can land before the next pump: the canvas is read there, the drawn render asserted to be the preview's. Without #1730's reading check the canvas still shows the reading left (checked on the Mac)."
   }
 ]

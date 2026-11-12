@@ -179,7 +179,7 @@ impl PaperCorrection {
     }
 
     pub fn gains(&self) -> [f32; 3] {
-        self.stops.map(f32::exp2)
+        self.stops.map(libm::exp2f)
     }
 
     /// The gains on interleaved RGBA pixels, alpha untouched.

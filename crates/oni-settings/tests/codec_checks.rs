@@ -430,7 +430,7 @@ fn the_two_radii_move_onto_pixels_before_the_defaults() {
 #[test]
 fn a_mosaic_gain_shifts_for_the_decode_change_and_a_scanner_gain_never() {
     let hand = [0.6f32, -0.3, 0.9];
-    let delta = before_1_0::NEUTRAL_DECODE_RATIO.map(f32::log2);
+    let delta = before_1_0::NEUTRAL_DECODE_RATIO.map(libm::log2f);
     let expected: [f32; 3] = std::array::from_fn(|i| hand[i] - delta[i]);
     for mode in ConversionMode::ALL {
         for stamp in [0, before_1_0::NEUTRAL_DECODE_GAINS_VERSION - 1, before_1_0::NEUTRAL_DECODE_GAINS_VERSION, VERSION + 1] {

@@ -149,7 +149,8 @@ fn the_holding_thread_passes_its_own_door_and_no_other() {
     });
     assert!(rx.recv_timeout(Duration::from_millis(300)).is_err(), "another thread submits while the door is held");
     shared.release();
-    assert_eq!(rx.recv_timeout(Duration::from_secs(10)), Ok(true), "it passes once released");
+    // Waited to its end: on a CPU adapter its prepare queues behind other checks' renders for seconds.
+    assert_eq!(rx.recv(), Ok(true), "it passes once released");
 }
 
 /// The window's first locks during the launch prewarm wait one variant, not the whole compilation:

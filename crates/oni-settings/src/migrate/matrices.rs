@@ -24,7 +24,7 @@ fn inverse(m: &M3) -> Option<M3> {
 /// A matrix's move on greys in stops, each row's sum.
 pub fn on_greys(matrix: &M3) -> Option<[f32; 3]> {
     let sums = matrix.map(|row| row.iter().sum::<f64>());
-    sums.iter().all(|s| s.is_finite() && *s > 0.0).then(|| sums.map(|s| s.log2() as f32))
+    sums.iter().all(|s| s.is_finite() && *s > 0.0).then(|| sums.map(|s| libm::log2(s) as f32))
 }
 
 /// The stops that keep each channel's black point on the light it stood on, the film's base on a
@@ -33,11 +33,11 @@ pub fn on_base(settings: &PipelineSettings, matrix: &M3) -> Option<[f32; 3]> {
     let p = f64::from(density_axis::pedestal(settings.density_ceiling));
     let black = [settings.levels.red.black, settings.levels.green.black, settings.levels.blue.black];
     // Stage 47 reads density as -log10((x + pedestal) * gain): the decode's value under each black point.
-    let before: [f64; 3] = std::array::from_fn(|c| 10f64.powf(-f64::from(black[c])) / f64::from(settings.gains.stops[c]).exp2() - p);
+    let before: [f64; 3] = std::array::from_fn(|c| libm::pow(10.0, -f64::from(black[c])) / libm::exp2(f64::from(settings.gains.stops[c])) - p);
     let after = inverse(matrix).map(|m| apply(&m, before));
     match after {
         Some(after) if (0..3).all(|c| before[c] > 0.0 && after[c] > 0.0) => {
-            Some(std::array::from_fn(|c| ((before[c] + p) / (after[c] + p)).log2() as f32))
+            Some(std::array::from_fn(|c| libm::log2((before[c] + p) / (after[c] + p)) as f32))
         }
         _ => on_greys(matrix),
     }
@@ -46,7 +46,7 @@ pub fn on_base(settings: &PipelineSettings, matrix: &M3) -> Option<[f32; 3]> {
 /// A matrix's move on each channel read from a pass of its own, lit by that colour alone: its diagonal.
 pub fn on_passes(matrix: &M3) -> Option<[f32; 3]> {
     let d = [matrix[0][0], matrix[1][1], matrix[2][2]];
-    d.iter().all(|v| v.is_finite() && *v > 0.0).then(|| d.map(|v| v.log2() as f32))
+    d.iter().all(|v| v.is_finite() && *v > 0.0).then(|| d.map(|v| libm::log2(v) as f32))
 }
 
 /// A frame the hand touched: a slide, read as itself or as its own negative, decodes plain, and a

@@ -108,7 +108,7 @@ pub fn former(settings: &Value) -> Option<Former> {
 // MARK: - The former chain on the grey axis
 
 fn window(e: f32, lv: &Levels) -> f32 {
-    let t = ((e - lv.black) / (lv.white - lv.black).max(1e-4)).max(0.0).powf(lv.gamma());
+    let t = libm::powf(((e - lv.black) / (lv.white - lv.black).max(1e-4)).max(0.0), lv.gamma());
     let (c1, c3) = (lv.shadow_ordinate(), lv.highlight_ordinate());
     if c1 == 0.25 && c3 == 0.75 {
         return t;
@@ -122,7 +122,7 @@ fn balanced(x: f32, channel: usize, f: &Former) -> f32 {
     let raw: Vec<f32> = (0..5)
         .map(|i| {
             let offset = f.balance[i][channel] * 0.25;
-            let soft = 0.25 * (1.0 - (-offset.abs() / 0.25).exp());
+            let soft = 0.25 * (1.0 - libm::expf(-offset.abs() / 0.25));
             i as f32 / 4.0 + if offset < 0.0 { -soft } else { soft }
         })
         .collect();
@@ -158,7 +158,7 @@ fn faded(x: f32, amount: f32) -> f32 {
     let (mut low, mut high) = (target, 1e4f32);
     for _ in 0..60 {
         let room = (low + high) / 2.0;
-        if room * (1.0 - (-span / room).exp()) < target {
+        if room * (1.0 - libm::expf(-span / room)) < target {
             low = room;
         } else {
             high = room;
@@ -166,7 +166,7 @@ fn faded(x: f32, amount: f32) -> f32 {
     }
     let room = (low + high) / 2.0;
     let u = o / room;
-    v + amount * 0.01 * t * t - room * (u - 1.0 + (-u).exp())
+    v + amount * 0.01 * t * t - room * (u - 1.0 + libm::expf(-u))
 }
 
 /// A curve set evaluated once, read past 1 on its last slope.
@@ -206,12 +206,12 @@ impl Curves {
 
 /// One factor on three channels: a stop moved shouldered into three quarters of the top channel's room.
 fn former_exposure(peak: f32, stops: f32) -> f32 {
-    let k = stops.exp2();
+    let k = libm::exp2f(stops);
     if k == 1.0 || peak <= 0.0 {
         return k;
     }
     let room = (1.0 - peak).max(1e-6) * 0.75;
-    let travel = room * (1.0 - (-peak * (k - 1.0).abs() / room).exp());
+    let travel = room * (1.0 - libm::expf(-peak * (k - 1.0).abs() / room));
     (if k > 1.0 { peak + travel } else { peak - travel }) / peak
 }
 
@@ -268,7 +268,7 @@ pub fn new_pixel(n: V3, print: &Print, density: f32, gammas: V3, monochrome: boo
 
 /// The grey axis sampled where the eye reads it.
 fn greys() -> Vec<V3> {
-    (0..=48).map(|i| [(i as f32 / 48.0).powf(1.3); 3]).collect()
+    (0..=48).map(|i| [libm::powf(i as f32 / 48.0, 1.3); 3]).collect()
 }
 
 /// Each channel pushed either way about six lightnesses, where the two exposures part.
@@ -290,7 +290,7 @@ fn colours() -> Vec<V3> {
 const COLOUR_WEIGHT: f32 = 1.2;
 
 pub fn display(v: f32) -> f32 {
-    v.clamp(0.0, 1.0).powf(1.0 / Print::DISPLAY_GAMMA)
+    libm::powf(v.clamp(0.0, 1.0), 1.0 / Print::DISPLAY_GAMMA)
 }
 
 fn tone_bounds() -> Vec<Bounds> {

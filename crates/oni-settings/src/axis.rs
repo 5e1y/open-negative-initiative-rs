@@ -46,11 +46,11 @@ pub mod density_axis {
 
     /// How far under the ceiling the guard sits, in density: `log10(8)`.
     pub fn guard_offset() -> f32 {
-        8f64.log10() as f32
+        libm::log10(8.0) as f32
     }
 
     pub fn pedestal(ceiling: f32) -> f32 {
-        10f32.powf(-ceiling)
+        libm::powf(10.0, -ceiling)
     }
 
     /// An eighth of the pedestal, exact in binary so −3 stops of gain reach it.
@@ -106,7 +106,7 @@ pub mod graduation {
 
     /// The densest value the axis can express, tied to the guard at the resting ceiling.
     pub fn top() -> f32 {
-        -pipeline::tmin().log10()
+        -libm::log10f(pipeline::tmin())
     }
 
     pub fn span() -> f32 {

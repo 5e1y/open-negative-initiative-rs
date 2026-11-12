@@ -150,8 +150,8 @@ impl ScannerLook {
             return light;
         }
         let g = Print::DISPLAY_GAMMA;
-        let p = self.graded_display(light.map(|v| v.max(0.0).powf(1.0 / g)));
-        p.map(|v| v.max(0.0).powf(g))
+        let p = self.graded_display(light.map(|v| libm::powf(v.max(0.0), 1.0 / g)));
+        p.map(|v| libm::powf(v.max(0.0), g))
     }
 
     /// The settings with this look carried by their own fields: each channel's curve composed after
@@ -168,7 +168,7 @@ impl ScannerLook {
             let hand = settings.manual_curves.get(channel).evaluated();
             let points = (0..=FOLD_POINTS)
                 .map(|i| {
-                    let x = (i as f32 / FOLD_POINTS as f32).powf(g);
+                    let x = libm::powf(i as f32 / FOLD_POINTS as f32, g);
                     let looked = self.graded([x; 3])[index];
                     Point::new(f64::from(x), hand.value(f64::from(looked)).clamp(0.0, 1.0))
                 })
@@ -202,7 +202,7 @@ impl CurveSet {
     pub fn folding(&self, colour: &CurveSet) -> CurveSet {
         let mut out = self.clone();
         let xs: Vec<f64> = (0..=FOLD_POINTS)
-            .map(|i| (i as f64 / FOLD_POINTS as f64).powf(f64::from(Print::DISPLAY_GAMMA)))
+            .map(|i| libm::pow(i as f64 / FOLD_POINTS as f64, f64::from(Print::DISPLAY_GAMMA)))
             .collect();
         let held = |v: f64| v.clamp(0.0, 1.0);
         if !colour.linked.is_neutral() {

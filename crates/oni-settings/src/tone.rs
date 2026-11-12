@@ -18,8 +18,8 @@ pub mod contrast {
         if pivot == 0.5 || (travel.abs() * FULL_STEEPNESS) <= DEAD {
             return symmetric(x, travel);
         }
-        let warp = 0.5f32.ln() / pivot.ln();
-        symmetric(x.clamp(0.0, 1.0).powf(warp), travel).powf(1.0 / warp)
+        let warp = libm::logf(0.5) / libm::logf(pivot);
+        libm::powf(symmetric(libm::powf(x.clamp(0.0, 1.0), warp), travel), 1.0 / warp)
     }
 
     fn symmetric(x: f32, travel: f32) -> f32 {
@@ -33,11 +33,11 @@ pub mod contrast {
             return (logistic(x, b) - low) / (high - low);
         }
         let g = low + x.clamp(0.0, 1.0) * (high - low);
-        (0.5 - (1.0 / g - 1.0).ln() / b).clamp(0.0, 1.0)
+        (0.5 - libm::logf(1.0 / g - 1.0) / b).clamp(0.0, 1.0)
     }
 
     fn logistic(x: f32, b: f32) -> f32 {
-        1.0 / (1.0 + (-b * (x - 0.5)).exp())
+        1.0 / (1.0 + libm::expf(-b * (x - 0.5)))
     }
 }
 
@@ -51,7 +51,7 @@ pub mod color_density {
     pub const FULL_POWER: f32 = 2.0;
 
     pub fn factor(travel: f32) -> f32 {
-        FULL_POWER.powf(travel)
+        libm::powf(FULL_POWER, travel)
     }
 
     pub fn rendered(rgb: V3, travel: f32) -> V3 {
@@ -59,12 +59,12 @@ pub mod color_density {
         if m == 1.0 {
             return rgb;
         }
-        let p = rgb.map(|c| c.max(0.0).powf(m));
+        let p = rgb.map(|c| libm::powf(c.max(0.0), m));
         let y = pipeline::luma(p);
         if y <= 1e-12 {
             return rgb;
         }
-        let k = y.powf((1.0 / m) - 1.0);
+        let k = libm::powf(y, (1.0 / m) - 1.0);
         p.map(|c| c * k)
     }
 }
@@ -154,9 +154,9 @@ impl Tone {
         let mut p = contrast::apply(held, self.contrast, Print::CONTRAST_PIVOT) + (value - held);
         if stops != 0.0 && p > 0.0 {
             let top = p.min(1.0);
-            let g = stops.exp2();
-            let v = top.powf(Print::DISPLAY_GAMMA);
-            p = (v * g / (1.0 + v * (g - 1.0))).powf(1.0 / Print::DISPLAY_GAMMA) + (p - top);
+            let g = libm::exp2f(stops);
+            let v = libm::powf(top, Print::DISPLAY_GAMMA);
+            p = libm::powf(v * g / (1.0 + v * (g - 1.0)), 1.0 / Print::DISPLAY_GAMMA) + (p - top);
         }
         let bends = self.blacks != 0.0
             || self.shadows != 0.0
@@ -353,14 +353,14 @@ impl Print {
         let mut out = n;
         for i in 0..3 {
             let g = gammas[i].max(1e-3);
-            let t = n[i].max(0.0).powf(1.0 / g);
-            out[i] = ((t - black) / (1.0 - black - white)).max(0.0).powf(g);
+            let t = libm::powf(n[i].max(0.0), 1.0 / g);
+            out[i] = libm::powf(((t - black) / (1.0 - black - white)).max(0.0), g);
         }
         out
     }
 
     pub fn hunt_factor(&self, g: f32) -> f32 {
-        (-(self.master().shaped(g, self.exposure) - g)).exp()
+        libm::expf(-(self.master().shaped(g, self.exposure) - g))
     }
 
     /// What the kernel prints for output `n`, as linear light; `bent` off leaves the RGB curve out.
@@ -373,7 +373,7 @@ impl Print {
         if channel != LevelsChannel::Linked && channel != LevelsChannel::Luma {
             p = Tone::NEUTRAL.shaped(p, self.channel(channel).exposure);
         }
-        p.max(0.0).powf(Self::DISPLAY_GAMMA)
+        libm::powf(p.max(0.0), Self::DISPLAY_GAMMA)
     }
 
     /// The kernel's block on one pixel's window outputs.
@@ -400,14 +400,13 @@ impl Print {
         let power = color_density::factor(travel) * self.hunt_factor(g);
         if follow < 1.0 && self.master() != base && g > 1e-3 {
             let local = |tone: Tone| {
-                (tone.shaped(g * (1.0 + Self::CONTRAST_STEP), tone.exposure).max(1e-6).powf(Self::DISPLAY_GAMMA)
-                    / tone.shaped(g * (1.0 - Self::CONTRAST_STEP), tone.exposure).max(1e-6).powf(Self::DISPLAY_GAMMA))
-                .ln()
+                let shown = |v: f32| libm::powf(tone.shaped(v, tone.exposure).max(1e-6), Self::DISPLAY_GAMMA);
+                libm::logf(shown(g * (1.0 + Self::CONTRAST_STEP)) / shown(g * (1.0 - Self::CONTRAST_STEP)))
             };
             let reference = local(base);
             let k = if reference.abs() > 1e-6 { (local(self.master()) / reference).clamp(0.25, 4.0) } else { 1.0 };
             let grey = [self.output(g, LevelsChannel::Linked, true); 3];
-            let share = k.powf(follow - 1.0).min(1.0);
+            let share = libm::powf(k, follow - 1.0).min(1.0);
             let held: V3 = std::array::from_fn(|i| (grey[i] + (after[i] - grey[i]) * share).max(0.0));
             let lit = pipeline::luma(held);
             if lit > 1e-6 {
@@ -415,7 +414,7 @@ impl Print {
                 after = held.map(|c| c * scale);
             }
         }
-        color_density::rendered(after, power.log2() / color_density::FULL_POWER.log2())
+        color_density::rendered(after, libm::log2f(power) / libm::log2f(color_density::FULL_POWER))
     }
 }
 
