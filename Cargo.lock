@@ -4288,6 +4288,7 @@ dependencies = [
  "windows-sys 0.61.2",
  "winresource",
  "x25519-dalek",
+ "zip",
 ]
 
 [[package]]

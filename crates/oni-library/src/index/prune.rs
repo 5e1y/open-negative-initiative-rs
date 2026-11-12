@@ -30,7 +30,7 @@ struct Looks {
 impl Looks {
     fn dead(&mut self, path: &str, computer: &Computer, kept: &[String]) -> bool {
         // A volume, a drive or a share may be another disk under the same name: its rows wait for its read.
-        if computer.volumes.is_empty() || computer.is_on_volume(path) || path.starts_with("//") {
+        if computer.volumes.is_empty() || computer.volume_root(path).is_some() {
             return false;
         }
         if !still_gone(path) {
@@ -113,6 +113,19 @@ mod tests {
         let blind = Computer { home: computer.home.clone(), volumes: "/nowhere".into() };
         let would = dead(&rows, &blind, &kept);
         assert!(would.contains(&at("Volumes/T7/Film/E.NEF")) && would.contains(&at("Volumes/T8/Film/F.NEF")), "{would:?}");
+    }
+
+    #[test]
+    fn a_share_s_rows_wait_for_its_read_on_windows() {
+        let scratch = Scratch::new("prune-share");
+        let root = paths::canonical(scratch.path());
+        let computer = Computer { home: root.clone(), volumes: crate::navigator::DRIVES.into() };
+        std::fs::create_dir_all(paths::join(&root, "Scans")).unwrap();
+        // Unix reads a leading `//` as `/`: there the share's folder lists, and alone would prune its row.
+        let share = if cfg!(unix) { format!("/{root}/Scans/A.NEF") } else { "//oni-no-such-host/film/Roll/A.NEF".into() };
+        let rows = [share, paths::join(&root, "Scans/B.NEF")];
+        // Twin: the home's row whose folder lists is pruned, the share's is kept.
+        assert_eq!(dead(&rows, &computer, &[]), [rows[1].clone()]);
     }
 
     #[cfg(unix)]

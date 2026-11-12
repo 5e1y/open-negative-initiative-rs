@@ -2,7 +2,6 @@
 //! banner, a missing original's picture in grey, and a triplet's pass gone. Reads no disk.
 
 use super::*;
-use oni_library::absence;
 use oni_library::navigator::Computer;
 use oni_library::paths;
 use oni_library::presence::{Away, Presence};
@@ -70,7 +69,7 @@ pub(in crate::app) fn reach(presence: Presence) -> crate::Reach {
 
 /// The volume `path` lies on, by its name, when it may come and go.
 fn volume(computer: &Computer, path: &str) -> Option<String> {
-    absence::volume_root(computer, path).map(|root| paths::name(&root).trim_end_matches(['/', '\\']).to_string()).filter(|n| !n.is_empty())
+    computer.volume_root(path).map(|root| paths::name(&root).trim_end_matches(['/', '\\']).to_string()).filter(|n| !n.is_empty())
 }
 
 /// A folder's row out of reach: its caption in words, then its tooltip; empty for one there.

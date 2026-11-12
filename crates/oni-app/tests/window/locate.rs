@@ -296,7 +296,7 @@ pub(crate) fn forget_touches_no_file() {
 fn fake(computer: &Computer, uuids: &'static [(&'static str, &'static str)]) -> bookmarks::Identify {
     let computer = computer.clone();
     Arc::new(move |path: &str| {
-        let root = oni_library::absence::volume_root(&computer, path)?;
+        let root = computer.volume_root(path)?;
         let uuid = uuids.iter().find(|(n, _)| *n == paths::name(&root)).map(|(_, u)| u.to_string());
         Some(Volume { uuid, mount: root })
     })
