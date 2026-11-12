@@ -9090,5 +9090,19 @@
     "title": "The scan-kept stroke recorded as a departure from Swift",
     "status": "done",
     "detail": "docs/parity/hidden.md gains a departed row for the scan-kept stroke and the keyed patch, README.md names it beside the keypad's step for the owner to confirm, and CLAUDE.md lists it among the decisions that look like mistakes. The dust census example reads the stored strokes on the frame through on_frame."
+  },
+  {
+    "id": 1758,
+    "type": "fix",
+    "title": "The presets takeover moves the list out of the way before it takes anything",
+    "status": "done",
+    "detail": "migrate renamed presets.json only once every preset was saved and shrank it in place otherwise, so a refused shrink (disk full) or a refused rename (the file held open on Windows) left the whole list, and every preset deleted since came back on the next reload; and an element decode refused was dropped from the shrunk list, the archive then holding only the last leftovers. The list now leaves its place first, in one rename through oni_settings::atomic::renamed with its Windows retry: the first one becomes presets.json.migrated whole, a later one a staging copy read then removed. Only the elements whose save failed are written back to presets.json; a refused write leaves them in the archive alone."
+  },
+  {
+    "id": 1759,
+    "type": "check",
+    "title": "A refused takeover never brings a deleted preset back, and the archive keeps the list whole",
+    "status": "done",
+    "detail": "presets/tests/takeover.rs: a_preset_taken_then_deleted_stays_deleted_when_the_disk_refuses_the_rest takes [A, B, C] with C blocked and the write-back refused, then with the rename refused (error 32), deletes what shows and reloads: nothing deleted returns and the list is whole in place or archived; twin, with the write-back allowed C comes in once clear. an_element_the_takeover_cannot_read_stays_in_the_archive: [A, X, C] with X unreadable ends with the archive equal to the list. a_list_written_again_only_adds_to_the_shelf covers the held ids. On the code before (seam only) the first reads A and B back (disk full) and A, B, C (held), the second finds the archive [C]; the fix without the write-back, with every list renamed over the archive, or without the held ids each fails one of them."
   }
 ]

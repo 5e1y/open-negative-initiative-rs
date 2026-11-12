@@ -1,5 +1,7 @@
 use super::*;
 
+mod takeover;
+
 fn folder(label: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("oni-core-presets-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -230,24 +232,6 @@ fn untouched_shipped_presets_are_taken_back_once() {
 }
 
 #[test]
-fn the_single_file_list_is_taken_over_once_then_archived() {
-    let support = folder("migrate");
-    std::fs::create_dir_all(&support).unwrap();
-    let mut element: Value = serde_json::from_str(&codec::encode_settings(&PipelineSettings::default()).unwrap()).unwrap();
-    element["name"] = "Old one".into();
-    element["groups"] = serde_json::json!(["detail"]);
-    std::fs::write(legacy_file(&support), serde_json::to_vec(&serde_json::json!([element, {"nothing": 1}])).unwrap()).unwrap();
-    let shelf = load_shelf(&support);
-    assert_eq!(shelf.len(), 1);
-    assert_eq!(shelf[0].parameters, BTreeSet::from(["chroma".to_string(), "sharpen".to_string()]));
-    assert!(!legacy_file(&support).exists() && support.join("presets.json.migrated").exists());
-    // Twin: a second load finds no list and keeps the one file.
-    assert_eq!(load_shelf(&support).len(), 1);
-    assert_eq!(files(&directory(&support)).len(), 1);
-    let _ = std::fs::remove_dir_all(&support);
-}
-
-#[test]
 fn a_blank_name_keeps_the_one_on_disk() {
     let dir = folder("blank");
     let mut p = sample();
@@ -308,47 +292,6 @@ fn a_file_without_an_id_keeps_one_identity() {
     let ids: BTreeSet<String> = load(&dir).iter().map(|p| p.id.to_string()).collect();
     assert_eq!(ids.len(), 2);
     let _ = std::fs::remove_dir_all(&dir);
-}
-
-fn named(name: &str) -> Preset {
-    Preset::new(name, BTreeSet::from(["sharpen".to_string()]), Tint::Moss, PipelineSettings::default())
-}
-
-#[test]
-fn a_failed_takeover_keeps_the_list() {
-    let support = folder("takeover");
-    std::fs::create_dir_all(&support).unwrap();
-    std::fs::write(directory(&support), b"a file where the folder goes").unwrap();
-    let element: Value = serde_json::from_str(&encode(&sample()).unwrap()).unwrap();
-    std::fs::write(legacy_file(&support), serde_json::to_vec(&serde_json::json!([element])).unwrap()).unwrap();
-    assert!(load_shelf(&support).is_empty());
-    assert!(legacy_file(&support).exists() && !support.join("presets.json.migrated").exists());
-    // Twin: with the folder writable the list is archived.
-    std::fs::remove_file(directory(&support)).unwrap();
-    assert_eq!(load_shelf(&support).len(), 1);
-    assert!(!legacy_file(&support).exists() && support.join("presets.json.migrated").exists());
-    let _ = std::fs::remove_dir_all(&support);
-}
-
-#[test]
-fn a_takeover_rerun_keeps_the_edits_and_deletions_made_since() {
-    let support = folder("rerun");
-    let shelf = directory(&support);
-    let (a, b, c) = (named("A"), named("B"), named("C"));
-    let blocked = shelf.join(file_name(&c));
-    std::fs::create_dir_all(&blocked).unwrap();
-    let list: Vec<Value> = [&a, &b, &c].iter().map(|p| serde_json::from_str(&encode(p).unwrap()).unwrap()).collect();
-    std::fs::write(legacy_file(&support), serde_json::to_vec(&list).unwrap()).unwrap();
-    assert_eq!(load_shelf(&support).len(), 2);
-    save(&Preset { name: "A edited".into(), ..a.clone() }, &shelf).unwrap();
-    delete(&b, &shelf, &mut |f| std::fs::remove_file(f));
-    let names = |s: &Path| load_shelf(s).into_iter().map(|p| p.name).collect::<Vec<_>>();
-    assert_eq!(names(&support), ["A edited"]);
-    // Twin: what never reached the shelf still comes in once the way is clear, and the list goes.
-    std::fs::remove_dir(&blocked).unwrap();
-    assert_eq!(names(&support), ["A edited", "C"]);
-    assert!(!legacy_file(&support).exists());
-    let _ = std::fs::remove_dir_all(&support);
 }
 
 #[test]
