@@ -31,11 +31,8 @@ impl Ctl {
                 c.targets.clone()
             };
             self.publish_lines();
-            let (generation, pass) = {
-                let c = self.export.borrow();
-                (c.pass.fetch_add(1, Ordering::Relaxed) + 1, c.pass.clone())
-            };
-            self.render_previews(targets, generation, pass);
+            let asked = self.export.borrow().pass.next();
+            self.render_previews(targets, asked);
         }
     }
 

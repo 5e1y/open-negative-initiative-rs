@@ -8,12 +8,13 @@ use super::sheet::Area;
 
 impl Ctl {
     /// Each frame's place on its roll, read off this thread.
-    pub(super) fn number_frames(&self, id: u64) {
+    pub(super) fn number_frames(&self, id: &Asked) {
         let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
         let folders = self.roll_folders(&paths);
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_together(true);
         }
+        let id = id.clone();
         std::thread::spawn(move || {
             let numbers = ranks(&paths, &folders);
             with_shell(move |c| c.numbers_landed(id, numbers));
@@ -31,11 +32,12 @@ impl Ctl {
     }
 
     /// The logo of a sheet whose band is `band` wide, drawn off this thread; none under fewer than a row.
-    pub(super) fn draw_logo(&self, id: u64, band: Option<usize>) {
+    pub(super) fn draw_logo(&self, id: &Asked, band: Option<usize>) {
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_logo(slint::Image::default());
         }
         let (Some(band), Some(inks)) = (band, self.inks()) else { return };
+        let id = id.clone();
         std::thread::spawn(move || {
             let plate = super::logo::drawn(band, inks.logo);
             let logo = (plate.rgba8(), plate.width, plate.height);
@@ -43,8 +45,8 @@ impl Ctl {
         });
     }
 
-    fn logo_landed(&self, id: u64, (bytes, width, height): (Vec<u8>, usize, usize)) {
-        let current = self.state.borrow().together.as_ref().is_some_and(|g| g.id == id);
+    fn logo_landed(&self, id: Asked, (bytes, width, height): (Vec<u8>, usize, usize)) {
+        let current = self.state.borrow().together.as_ref().is_some() && id.current();
         if let (true, Some(w)) = (current, self.window()) {
             w.global::<Canvas>().set_logo(image(&bytes, width, height));
         }
@@ -57,9 +59,9 @@ impl Ctl {
         folders.into_iter().map(|f| (f.clone(), s.archive.as_ref().map(|a| a.folder_photos(&f)).unwrap_or_default())).collect()
     }
 
-    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>) {
+    fn numbers_landed(&self, id: Asked, numbers: Vec<Option<usize>>) {
         let shown = match self.state.borrow_mut().together.as_mut() {
-            Some(g) if g.id == id => {
+            Some(g) if id.current() => {
                 g.numbers = numbers;
                 Some(g.shown)
             }

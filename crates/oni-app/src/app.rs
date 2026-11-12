@@ -29,7 +29,7 @@ use oni_settings::{ConversionMode, Medal};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
@@ -288,6 +288,7 @@ pub struct State {
     befores: usize,
     /// The frames edited together, when more than one is.
     together: Option<gallery_view::together::Group>,
+    asks: crate::ticket::Asks,
     grab: Option<(f32, f32)>,
     pinch: f32,
     /// The ratio and orientation last chosen, and the frame chosen on, handed to the next frame framed.
@@ -319,8 +320,6 @@ pub struct State {
     reporter: Reporter,
     /// The notes read this session, which keep their pill until the app quits.
     news_kept: HashSet<String>,
-    /// Bumped at each opening of Report a Bug, so a post answering a sheet closed since lands nowhere.
-    report_round: u64,
     /// The console window while it is open, and the timer that reads the log into it.
     console: Option<(crate::ConsoleWindow, Timer)>,
     nav: navigator::Nav,

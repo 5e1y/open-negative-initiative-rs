@@ -7,6 +7,7 @@ use crate::export::{self, Target, label};
 use crate::preferences::Preferences;
 use crate::proof::{self, Wanted};
 use crate::render::Shared;
+use crate::ticket::{Asked, Ticket};
 use crate::track::{self, DOUBLE_CLICK};
 use crate::{App, ExportLine, Exporting, MainWindow};
 use oni_colour::{OutputProfile, Proof, Space};
@@ -18,7 +19,7 @@ use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 mod entering;
@@ -102,10 +103,10 @@ pub struct Card {
     stopped: Option<usize>,
     pub writer: writer::Writer,
     /// Each batch's pass and each estimate carry a generation; a newer one makes them stop.
-    pass: Arc<AtomicU64>,
-    weighing: Arc<AtomicU64>,
+    pass: Ticket,
+    weighing: Ticket,
     /// The lines' reading, its own: a preview pass started again leaves the lines to land.
-    reading: Arc<AtomicU64>,
+    reading: Ticket,
     /// The estimate weighed on a thread of its own, on the latest settings asked.
     weigher: crate::latest::Worker<targets::Weigh>,
     /// The weighings run, read back by the checks.
@@ -194,9 +195,9 @@ impl Card {
             progress: 0,
             stopped: None,
             writer: writer::Writer::default(),
-            pass: Arc::default(),
-            weighing: Arc::default(),
-            reading: Arc::default(),
+            pass: Ticket::default(),
+            weighing: Ticket::default(),
+            reading: Ticket::default(),
             weigher: targets::weigher(weighed.clone()),
             weighed,
             saver,

@@ -6,6 +6,7 @@ use crate::render::Laid;
 use oni_settings::PipelineSettings;
 use std::sync::atomic::AtomicUsize;
 use crate::latest::Latest;
+use crate::ticket::Asked;
 
 #[path = "together/sheet.rs"]
 mod sheet;
@@ -72,7 +73,7 @@ const DECODERS: usize = 3;
 
 /// The frames shown together, in the gallery's order, each one's source once decoded.
 pub(in crate::app) struct Group {
-    id: u64,
+    id: Asked,
     paths: Vec<String>,
     negatives: Vec<Option<Arc<Negative>>>,
     /// Each frame's thumbnail on the GPU, shown in its tile until its source is decoded.
@@ -92,8 +93,6 @@ pub(in crate::app) struct Group {
     /// The reset keys a frame beside the open one stands off rest for, and what they were read on.
     beside: std::cell::RefCell<Option<(beside::Read, Beside)>>,
 }
-
-static GROUPS: AtomicU64 = AtomicU64::new(0);
 
 impl Group {
     /// The frames whose sources are decoded, and how many there are.
@@ -121,7 +120,7 @@ enum Tile {
 
 /// A grid to draw: its group, each tile in order, the screen it is encoded for.
 struct Ask {
-    group: u64,
+    group: Asked,
     revision: u64,
     at: Instant,
     tiles: Vec<Option<Tile>>,
@@ -154,7 +153,7 @@ impl Ctl {
             s.store.set_together(others);
             s.picks.selection = paths.iter().cloned().collect();
         }
-        let id = GROUPS.fetch_add(1, Ordering::Relaxed) + 1;
+        let id = self.state.borrow().asks.groups.next();
         let (negatives, fresh) = {
             let s = self.state.borrow();
             let g = s.together.as_ref();
@@ -165,7 +164,7 @@ impl Ctl {
         let (stand_ins, numbers, sheet) = (vec![None; paths.len()], vec![None; paths.len()], laid(&vec![UNKNOWN; paths.len()]));
         // A full row's band is as wide whatever the frames' proportions: its logo is drawn once.
         let band = sheet.band.map(|b| b.2 as usize);
-        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new(), spans: Vec::new(), beside: Default::default() };
+        let group = Group { id: id.clone(), paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new(), spans: Vec::new(), beside: Default::default() };
         self.state.borrow_mut().together = Some(group);
         self.publish_spans();
         if fresh {
@@ -174,10 +173,10 @@ impl Ctl {
         self.leave_frame_tools();
         // The reset keys read the frames beside the open one too.
         self.publish(false);
-        self.stand_in(id, &lacking);
-        self.decode_together(id, lacking);
-        self.number_frames(id);
-        self.draw_logo(id, band);
+        self.stand_in(&id, &lacking);
+        self.decode_together(&id, lacking);
+        self.number_frames(&id);
+        self.draw_logo(&id, band);
         self.request_render();
         self.publish_tiles();
     }
@@ -239,7 +238,7 @@ impl Ctl {
         if self.state.borrow_mut().together.take().is_none() {
             return;
         }
-        GROUPS.fetch_add(1, Ordering::Relaxed);
+        self.state.borrow().asks.groups.supersede();
         self.state.borrow_mut().store.set_together(Vec::new());
         self.unnumbered();
         self.publish_readouts(Field::ALL);
@@ -325,7 +324,7 @@ impl Ctl {
             let before = comparing.then(|| {
                 all.iter().zip(&shows).map(|(frame, shown)| frame.as_ref().filter(|_| *shown).map(|(n, s)| (n.clone(), oni_core::compare::reference(s)))).collect()
             });
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, sheet: g.sheet.clone(), scale, window, counted: moved.then_some(all), before })
+            Some(Ask { group: g.id.clone(), revision, at: Instant::now(), tiles, sheet: g.sheet.clone(), scale, window, counted: moved.then_some(all), before })
         })();
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
         let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
@@ -355,10 +354,10 @@ impl Ctl {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>, before: Option<oni_graph::Source>) {
+    fn grid_landed(&self, group: Asked, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>, before: Option<oni_graph::Source>) {
         let size = (sheet.extent().w as usize, sheet.extent().h as usize);
         let count = match self.state.borrow_mut().together.as_mut() {
-            Some(g) if g.id == group => {
+            Some(g) if group.current() => {
                 g.shown = Some((size, window, scale));
                 g.drawn = revision;
                 g.latencies.push(at.elapsed());

@@ -7,9 +7,6 @@ use crate::histogram::{PlotSize, Tracer};
 use oni_measure::histogram::Histogram;
 use std::sync::{OnceLock, mpsc};
 
-/// The levels' and curves' traces asked last: one overtaken by a later reading is dropped.
-static INPUT_TRACES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
 /// Each slot's clears: a trace asked before one lands nowhere, so a photo left never shows its plots
 /// on the next. Its texture goes with the clear, so the next trace imports a new one.
 static CLEARS: [std::sync::atomic::AtomicU64; 4] = [const { std::sync::atomic::AtomicU64::new(0) }; 4];
@@ -221,10 +218,10 @@ impl Ctl {
             return;
         };
         // Traced off this thread, 1.5 ms a plot, as the picture's histogram is.
-        let (scale, ticket, writer) = (w.window().scale_factor(), INPUT_TRACES.fetch_add(1, Ordering::SeqCst) + 1, self.plot_writer());
+        let (scale, asked, writer) = (w.window().scale_factor(), self.state.borrow().asks.input_traces.next(), self.plot_writer());
         let since = (clears(Slot::Levels), clears(Slot::Curves));
         plot(move |p| {
-            if INPUT_TRACES.load(Ordering::SeqCst) != ticket {
+            if !asked.current() {
                 return;
             }
             let levels = p.trace(&writer, Slot::Levels, &i.levels, focus.0, (levels.w, levels.h), scale);

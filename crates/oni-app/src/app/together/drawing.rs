@@ -6,10 +6,10 @@ use crate::latest::Taken;
 
 /// A frame decoded at half size, reduced so its crop spans a tile and laid on the GPU, unless the group
 /// `id` was left meanwhile; a RAW's half decode is the editor's, kept on disk, which the balance's copy reads.
-pub(super) fn tile_source(engine: &Shared, path: &str, id: u64) -> Result<Arc<Negative>, String> {
+pub(super) fn tile_source(engine: &Shared, path: &str, id: &Asked) -> Result<Arc<Negative>, String> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
     let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
-    tile_decoded(engine, path, &settings, || GROUPS.load(Ordering::Relaxed) == id).map(Arc::new)
+    tile_decoded(engine, path, &settings, || id.current()).map(Arc::new)
 }
 
 /// A frame on `settings` decoded at half size and reduced so its crop spans a tile, laid on the GPU
@@ -51,7 +51,7 @@ fn same(a: &Befores, b: &Befores) -> bool {
 /// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
 pub(super) fn draw_grids(engine: Shared) {
     // Compare's before last drawn, kept while its frames, box and scale hold: a step moves the after alone.
-    let mut kept: Option<((u64, Window, f64, Befores), oni_graph::Source)> = None;
+    let mut kept: Option<((Asked, Window, f64, Befores), oni_graph::Source)> = None;
     loop {
         let Taken::Value(ask) = SLOT.take(None) else { return };
         let started = Instant::now();
@@ -87,7 +87,7 @@ pub(super) fn draw_grids(engine: Shared) {
                 None
             }
             Some(tiles) => match &kept {
-                Some(((group, window, scale, held), source)) if (*group, *window, *scale) == (ask.group, ask.window, ask.scale) && same(held, &tiles) => Some(source.clone()),
+                Some(((group, window, scale, held), source)) if (group, *window, *scale) == (&ask.group, ask.window, ask.scale) && same(held, &tiles) => Some(source.clone()),
                 _ => {
                     let cells: Vec<usize> = tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
                     let present: Vec<Laid> = tiles.iter().flatten().map(|(n, s)| Laid::Frame(n.as_ref(), s)).collect();
@@ -96,14 +96,14 @@ pub(super) fn draw_grids(engine: Shared) {
                         (x - wx as i32, y - wy as i32)
                     };
                     let drawn = guard.render_laid(&present, side(scale), &at, size).ok();
-                    kept = drawn.clone().map(|d| ((ask.group, ask.window, ask.scale, tiles), d));
+                    kept = drawn.clone().map(|d| ((ask.group.clone(), ask.window, ask.scale, tiles), d));
                     drawn
                 }
             },
         };
         // The gaps are clear, so the screen's encoding lays the sheet's black under them.
         drop(guard);
-        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
+        let (group, revision, at, pipeline, laid) = (ask.group.clone(), ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
         with_shell(move |c| c.grid_landed(group, revision, at, drawn, pipeline, laid, counted, before));
     }
 }

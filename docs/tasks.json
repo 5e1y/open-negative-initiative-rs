@@ -9377,5 +9377,40 @@
     "title": "library/tests.rs back under its ceiling",
     "status": "done",
     "detail": "#1836 brought crates/oni-app/src/library/tests.rs to 401 lines; the roll #8 test folds its skip and its frame filter."
+  },
+  {
+    "id": 1855,
+    "type": "refactor",
+    "title": "Supersession by Ticket in the group, trace and prefetch work",
+    "status": "done",
+    "detail": "Edit Together's group counter, the histogram and input trace counters and the neighbour prefetch's counter were statics beside Ticket; each is now a Ticket in State.asks (ticket::Asks), the threads taking an Asked and testing current()."
+  },
+  {
+    "id": 1856,
+    "type": "refactor",
+    "title": "The export card's supersession by Ticket",
+    "status": "done",
+    "detail": "The export card's pass, weighing and lines' reading counters and the paper page's reads are Tickets; every landing takes an Asked and tests current()."
+  },
+  {
+    "id": 1857,
+    "type": "refactor",
+    "title": "The preset form's serial and Report a Bug's round by Ticket",
+    "status": "done",
+    "detail": "shelf.serial and the report round are Tickets (Ticket::count keys the form's instance); the delayed write and the post answering a closed sheet test an Asked."
+  },
+  {
+    "id": 1858,
+    "type": "test",
+    "title": "Ticket equality and count checked with their twins",
+    "status": "done",
+    "detail": "Asked equals itself and no later ask; the count moves with each ask and supersession."
+  },
+  {
+    "id": 1859,
+    "type": "chore",
+    "title": "app.rs ceiling lowered to 462",
+    "status": "done",
+    "detail": "The tickets moved into one Asks field of State, which leaves app.rs one line shorter."
   }
 ]

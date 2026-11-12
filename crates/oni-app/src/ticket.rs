@@ -15,6 +15,20 @@ pub struct Asked {
     n: u64,
 }
 
+/// The background work the editor supersedes, each kind under its own ticket.
+#[derive(Default)]
+pub struct Asks {
+    /// The group of frames opened together last: an older group's decode or drawing lands nothing.
+    pub groups: Ticket,
+    /// The picture's histogram traces, and the levels' and curves' input traces: a trace overtaken by a later ask is dropped.
+    pub traces: Ticket,
+    pub input_traces: Ticket,
+    /// The neighbour prefetch, which a later opening stops.
+    pub near: Ticket,
+    /// Report a Bug's sheet, opened last: a post answering a sheet closed since lands nowhere.
+    pub report: Ticket,
+}
+
 impl Ticket {
     /// A new ask, which supersedes every older one.
     pub fn next(&self) -> Asked {
@@ -27,9 +41,20 @@ impl Ticket {
         self.0.fetch_add(1, Ordering::Relaxed);
     }
 
+    /// How many asks and supersessions so far: a number that moves with each, for a view to key on.
+    pub fn count(&self) -> u64 {
+        self.0.load(Ordering::Relaxed)
+    }
+
     /// The ask standing now, superseding none: several pieces of work under one ask share it.
     pub fn standing(&self) -> Asked {
         Asked { of: self.clone(), n: self.0.load(Ordering::Relaxed) }
+    }
+}
+
+impl PartialEq for Asked {
+    fn eq(&self, other: &Self) -> bool {
+        self.n == other.n && Arc::ptr_eq(&self.of.0, &other.of.0)
     }
 }
 
@@ -56,5 +81,7 @@ mod tests {
         ticket.supersede();
         assert!(!second.current(), "twin: a supersession leaves the last ask behind");
         assert!(ticket.clone().next().current() && !second.current(), "a clone counts on the same ticket");
+        assert!(second == second.clone() && second != ticket.next(), "twin: an ask equals itself and no later one");
+        assert_eq!(ticket.count(), 5, "each ask and each supersession moved the count");
     }
 }

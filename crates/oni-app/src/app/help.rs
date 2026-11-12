@@ -229,7 +229,7 @@ impl Ctl {
 
     pub(super) fn open_report(&self) {
         let Some(w) = self.window() else { return };
-        self.state.borrow_mut().report_round += 1;
+        self.state.borrow().asks.report.supersede();
         let h = w.global::<Help>();
         h.set_report_message(Default::default());
         h.set_report_log(true);
@@ -259,7 +259,7 @@ impl Ctl {
         h.set_report_failure(Default::default());
         let (reporter, log, round) = {
             let s = self.state.borrow();
-            (s.reporter.clone(), crate::timing::log_path(&s.support), s.report_round)
+            (s.reporter.clone(), crate::timing::log_path(&s.support), s.asks.report.standing())
         };
         std::thread::spawn(move || {
             let sealed = with_log.then(|| {
@@ -269,7 +269,7 @@ impl Ctl {
             let outcome = reporter(&message, sealed);
             with_shell(move |c| {
                 let Some(w) = c.window() else { return };
-                if c.state.borrow().report_round != round {
+                if !round.current() {
                     return;
                 }
                 let h = w.global::<Help>();

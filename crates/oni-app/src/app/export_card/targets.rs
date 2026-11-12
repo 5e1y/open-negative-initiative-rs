@@ -6,12 +6,12 @@ impl Ctl {
     /// Each line from its sidecar or the scan's head, and each frame decoded once for its size and
     /// preview, in order, off this thread; a newer pass stops them.
     pub(super) fn read_targets(self: &Rc<Self>) {
-        let (targets, generation, pass) = {
+        let (targets, asked) = {
             let c = self.export.borrow();
-            (c.targets.clone(), c.pass.fetch_add(1, Ordering::Relaxed) + 1, c.pass.clone())
+            (c.targets.clone(), c.pass.next())
         };
         self.read_rows();
-        self.render_previews(targets, generation, pass);
+        self.render_previews(targets, asked);
     }
 
     /// What every line opens on: the targets, their roll, and the artist and copyright last written.
@@ -32,26 +32,24 @@ impl Ctl {
     /// The lines land one by one from their own thread, so the surface shows before any scan is read.
     fn read_rows(self: &Rc<Self>) {
         let (targets, rolls, artist, copyright) = self.row_sources();
-        let (reading, generation) = {
-            let c = self.export.borrow();
-            (c.reading.clone(), c.reading.fetch_add(1, Ordering::Relaxed) + 1)
-        };
+        let asked = self.export.borrow().reading.next();
         std::thread::Builder::new()
             .name("export rows".into())
             .spawn(move || {
                 let mut low = 0;
                 for (i, (target, roll)) in targets.iter().zip(&rolls).enumerate() {
-                    if reading.load(Ordering::Relaxed) != generation {
+                    if !asked.current() {
                         return;
                     }
                     let row = export::opening_row(&target.path, roll.as_ref(), &artist, &copyright);
                     low += usize::from(oni_decode::is_low_precision(&target.path));
-                    with_shell(move |c| c.row_landed(generation, i, row));
+                    let asked = asked.clone();
+                    with_shell(move |c| c.row_landed(asked, i, row));
                 }
                 with_shell(move |c| {
                     {
                         let mut card = c.export.borrow_mut();
-                        if card.reading.load(Ordering::Relaxed) != generation {
+                        if !asked.current() {
                             return;
                         }
                         card.low_precision = low;
@@ -63,10 +61,10 @@ impl Ctl {
     }
 
     /// A line typed in before it lands keeps the typing.
-    fn row_landed(self: &Rc<Self>, generation: u64, i: usize, row: Row) {
+    fn row_landed(self: &Rc<Self>, asked: Asked, i: usize, row: Row) {
         {
             let mut c = self.export.borrow_mut();
-            if c.reading.load(Ordering::Relaxed) != generation || c.rows.get(i).is_none_or(Option::is_some) {
+            if !asked.current() || c.rows.get(i).is_none_or(Option::is_some) {
                 return;
             }
             c.rows[i] = Some(row);
@@ -91,16 +89,19 @@ impl Ctl {
 
     /// The previews on `PREVIEW_WORKERS` threads, each taking the next frame in order, so a decode
     /// waits on no other frame's render; a newer pass stops them.
-    pub(super) fn render_previews(self: &Rc<Self>, targets: Vec<Target>, generation: u64, pass: Arc<AtomicU64>) {
+    pub(super) fn render_previews(self: &Rc<Self>, targets: Vec<Target>, asked: Asked) {
         let (engine, previews, screen, open) = {
             let s = self.state.borrow();
             (self.engine.clone(), s.previews.clone(), s.screen, s.decoded())
         };
         let room = self.export.borrow().room.clone();
-        let (targets, next, asked) = (Arc::new(targets), Arc::new(std::sync::atomic::AtomicUsize::new(0)), std::time::Instant::now());
+        let (targets, next, started) = (Arc::new(targets), Arc::new(std::sync::atomic::AtomicUsize::new(0)), std::time::Instant::now());
         for _ in 0..PREVIEW_WORKERS {
-            let (engine, previews, open, room, pass, targets, next) = (engine.clone(), previews.clone(), open.clone(), room.clone(), pass.clone(), targets.clone(), next.clone());
-            let live = move || pass.load(Ordering::Relaxed) == generation;
+            let (engine, previews, open, room, asked, targets, next) = (engine.clone(), previews.clone(), open.clone(), room.clone(), asked.clone(), targets.clone(), next.clone());
+            let live = {
+                let asked = asked.clone();
+                move || asked.current()
+            };
             std::thread::Builder::new()
                 .name("export previews".into())
                 .spawn(move || {
@@ -121,8 +122,9 @@ impl Ctl {
                         let size = full.map(|f| export::cropped_size(f, &target.settings));
                         let first = negative.as_ref().ok().filter(|_| i == 0).cloned();
                         // The size lands at once, as the size boxes wait for it; the render waits for the room.
-                        with_shell(move |c| c.size_landed(generation, i, size, first));
-                        while live() && asked.elapsed() < ROOM_WAIT && room.lock().is_ok_and(|r| r.is_none()) {
+                        let landing = asked.clone();
+                        with_shell(move |c| c.size_landed(landing, i, size, first));
+                        while live() && started.elapsed() < ROOM_WAIT && room.lock().is_ok_and(|r| r.is_none()) {
                             std::thread::sleep(std::time::Duration::from_millis(5));
                         }
                         let side = full.zip(size).zip(room.lock().ok().and_then(|r| *r)).map_or(PREVIEW_SIDE as usize, |((f, s), r)| preview_side(s, f.0.max(f.1), r));
@@ -132,8 +134,9 @@ impl Ctl {
                             let k = Params::new(screen, linear.width as u32, linear.height as u32, i as u32);
                             Ok((crate::render::encoded(&linear, &k, 1), linear.width, linear.height))
                         });
+                        let asked = asked.clone();
                         with_shell(move |c| {
-                            if c.export.borrow().pass.load(Ordering::Relaxed) != generation {
+                            if !asked.current() {
                                 return;
                             }
                             c.export.borrow_mut().previews[i] = match picture {
@@ -150,10 +153,10 @@ impl Ctl {
 
     /// A target's size after its turns and crop, published and weighed when it changed; the first
     /// target's decode kept for the estimate.
-    fn size_landed(self: &Rc<Self>, generation: u64, i: usize, size: Option<(f64, f64)>, first: Option<Arc<crate::render::Negative>>) {
+    fn size_landed(self: &Rc<Self>, asked: Asked, i: usize, size: Option<(f64, f64)>, first: Option<Arc<crate::render::Negative>>) {
         {
             let mut card = self.export.borrow_mut();
-            if card.pass.load(Ordering::Relaxed) != generation {
+            if !asked.current() {
                 return;
             }
             if i == 0 {
@@ -178,9 +181,9 @@ impl Ctl {
         let weigh = {
             let mut c = self.export.borrow_mut();
             c.estimate = None;
-            let generation = c.weighing.fetch_add(1, Ordering::Relaxed) + 1;
+            let asked = c.weighing.next();
             let (Some(target), Some(negative), Some((scale, pixels))) = (c.targets.first(), c.first.clone(), c.written()) else { return };
-            Weigh { settings: target.settings.clone(), negative, scale, pixels, export: c.settings.clone(), generation, weighing: c.weighing.clone(), engine: self.engine.clone() }
+            Weigh { settings: target.settings.clone(), negative, scale, pixels, export: c.settings.clone(), asked, engine: self.engine.clone() }
         };
         self.export.borrow().weigher.ask(weigh);
     }
@@ -194,8 +197,7 @@ pub(super) struct Weigh {
     scale: f64,
     pixels: f64,
     export: Settings,
-    generation: u64,
-    weighing: Arc<AtomicU64>,
+    asked: Asked,
     engine: Shared,
 }
 
@@ -203,14 +205,14 @@ pub(super) struct Weigh {
 /// which past the reduced decode a JPEG's grain makes an overestimate of a few percent.
 pub(super) fn weigher(runs: Arc<std::sync::atomic::AtomicUsize>) -> crate::latest::Worker<Weigh> {
     crate::latest::Worker::spawn("export estimate", move |w: Weigh| {
-        if w.weighing.load(Ordering::Relaxed) != w.generation {
+        if !w.asked.current() {
             return;
         }
         runs.fetch_add(1, Ordering::SeqCst);
         let weighed = export::sample(&w.engine, &w.negative, &w.settings, w.scale).map(|s| oni_export::estimate(&s, w.pixels, &w.export));
-        let generation = w.generation;
+        let asked = w.asked.clone();
         with_shell(move |c| {
-            if c.export.borrow().weighing.load(Ordering::Relaxed) != generation {
+            if !asked.current() {
                 return;
             }
             c.export.borrow_mut().estimate = weighed;
@@ -250,11 +252,11 @@ impl Ctl {
             c.shown && before.is_some_and(|b| room.0 > b.0 || room.1 > b.1)
         };
         if grown {
-            let (targets, generation, pass) = {
+            let (targets, asked) = {
                 let c = self.export.borrow();
-                (c.targets.clone(), c.pass.fetch_add(1, Ordering::Relaxed) + 1, c.pass.clone())
+                (c.targets.clone(), c.pass.next())
             };
-            self.render_previews(targets, generation, pass);
+            self.render_previews(targets, asked);
         }
     }
 }
