@@ -9790,5 +9790,12 @@
     "title": "A resize's 637 ms wait during an export in a full run was the machine's load, not the door",
     "status": "done",
     "detail": "render::door_tests a_resize_during_an_export_waits_one_submission_not_the_render failed once in the full run of canvas (longest hold 636.7 ms, p99 62.3 ms, median 0): the same export render took 10 409 ms there against 264 to 548 ms alone, 20 to 40 times slower, with every test binary and the window checks sharing the GPU at a load average of about 25. Alone, five runs in a row passed, longest hold 8 to 63 ms, the twin's whole-render gate 193 to 328 ms. No change: the check judges the door, a GPU shared by a hundred binaries makes one submission long; it stays as it is."
+  },
+  {
+    "id": 1934,
+    "type": "refactor",
+    "title": "The export's profile checks are a file of their own, under the 400-line limit",
+    "status": "done",
+    "detail": "The stand-in check of #1931 took oni-export/tests/files.rs to 487 lines, past its grandfathered 470. The profile checks (every format declaring its space's, the wide green read back by lcms2, the stand-in rewritten) and their helpers move to tests/profiles.rs, the frame, settings and readers both use to tests/common; files.rs is 337 lines and leaves the grandfathered list. Check: architecture no_source_file_grows_past_its_ceiling (failed at 487; its twin twin_a_file_past_the_limit_is_caught), the 14 checks unchanged and passing."
   }
 ]
