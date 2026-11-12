@@ -27,7 +27,6 @@ pub(crate) fn a_phone_step_reaches_the_canvas_with_the_panel_folded() {
     let _ = std::fs::remove_dir_all(&root);
     common::linear_tiff(&root.join("Roll").join("A.tif"), 96, 64, 0.6);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| false));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), phone: true, ..Options::default() };

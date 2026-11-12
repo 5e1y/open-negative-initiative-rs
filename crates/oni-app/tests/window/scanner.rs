@@ -81,7 +81,6 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
         std::fs::write(folder.join(name), b"not a raw").unwrap();
     }
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     // Tall enough for every block of the keypad, Density's first.
@@ -304,7 +303,6 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
 /// count whole; sized for a one-glyph count, at the screen's full size, the same counts run over them.
 pub(crate) fn the_lab_screen_holds_its_widest_count_whole() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = oni_app::ScreenProbe::new().unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });

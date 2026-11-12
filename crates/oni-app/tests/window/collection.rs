@@ -34,7 +34,6 @@ pub(crate) fn the_collection_shows_where_nothing_is_picked_and_fills_the_exif() 
         common::linear_tiff(&scans.join(name), 48, 32, 0.5);
     }
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     // A roll read before, its body typed by hand: the collection takes it in as the app starts.
     let caches = root.join("Caches");

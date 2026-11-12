@@ -65,7 +65,6 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     std::fs::create_dir_all(&volumes).unwrap();
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));

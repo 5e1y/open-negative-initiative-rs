@@ -65,7 +65,6 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
     let frame = root.join("Roll").join("A.NEF");
     std::fs::write(&frame, b"not a raw").unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let engine = Engine::shared(&gpu);
     let shell = launch(&rig, &engine, &root);

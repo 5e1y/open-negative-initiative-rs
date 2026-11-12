@@ -52,7 +52,6 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     std::fs::write(elsewhere.join("notes.txt"), b"not a photo").unwrap();
     let originals: Vec<(PathBuf, Vec<u8>)> = ["E1.tif", "E2.tif", "notes.txt"].iter().map(|n| (elsewhere.join(n), bytes(&elsewhere.join(n)))).collect();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);

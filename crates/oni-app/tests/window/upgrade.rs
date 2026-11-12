@@ -66,7 +66,6 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     let (rolls, support, caches) = (root.join("Rolls"), root.join("Support"), root.join("Caches"));
     mirror(&source, &rolls);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };

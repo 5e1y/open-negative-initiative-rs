@@ -26,7 +26,6 @@ pub(crate) fn an_undo_reaches_past_a_face_turn_and_shows_its_step_on_its_own_fac
     }
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1728, 1017));

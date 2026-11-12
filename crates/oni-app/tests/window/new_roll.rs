@@ -40,7 +40,6 @@ pub(crate) fn a_new_roll_asks_names_the_folder_and_counts_files() {
     let root = PathBuf::from(paths::canonical(&root));
     let scans = root.join("Home/Scans");
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));

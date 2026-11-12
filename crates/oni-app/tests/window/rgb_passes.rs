@@ -77,7 +77,6 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     pass(&folder.join("P6.tif"), &texture(7), 1, 0.0);
     let canonical = |n: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(n)));
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);

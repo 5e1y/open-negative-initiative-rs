@@ -24,7 +24,6 @@ pub(crate) fn a_full_resolution_landing_in_the_gallery_is_let_go() {
     // Past the preview's side, so the full resolution is a build of its own.
     common::graded_tiff(&folder.join("A.tif"), 3000, 2000, 0.6);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
@@ -76,7 +75,6 @@ fn opened(gpu: &oni_app::render::Device, label: &str) -> (common::Rig, Shell, Pa
     let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
     common::graded_tiff(&folder.join("A.tif"), 3000, 2000, 0.6);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(gpu);

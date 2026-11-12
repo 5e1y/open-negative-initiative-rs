@@ -11,7 +11,6 @@ use crate::common;
 
 pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = FieldProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

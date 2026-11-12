@@ -63,7 +63,6 @@ pub(crate) fn a_detect_pressed_before_the_frame_landed_reads_once_it_lands() {
     (settings.levels.red, settings.levels.green, settings.levels.blue) = (window, window, window);
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
@@ -121,7 +120,6 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     (settings.levels.red, settings.levels.green, settings.levels.blue) = (window, window, window);
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };

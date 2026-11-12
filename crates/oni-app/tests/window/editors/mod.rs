@@ -93,7 +93,6 @@ pub(super) fn opened(label: &str) -> Option<Opened> {
     let shots = std::env::var_os("ONI_SHOTS")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let dir = std::env::temp_dir().join(format!("oni-app-editors-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);

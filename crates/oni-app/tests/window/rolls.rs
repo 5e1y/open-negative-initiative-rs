@@ -45,7 +45,6 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     measured(&canonical("A.tif"), id, &film);
     measured(&canonical("B.tif"), id, &film);
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
@@ -202,7 +201,6 @@ pub(crate) fn a_rolls_row_draws_its_stock() {
     // A folder made a roll carries it in its marker, the stock never picked.
     oni_settings::film::roll_folder::set_roll(Some(&Film::new("Roll 9")), &rolled).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
@@ -252,7 +250,6 @@ pub(crate) fn the_navigators_rolls_draw_their_stock() {
     oni_settings::film::roll_folder::set_roll(Some(&roll("Listed Roll", Some("ilford-hp5"))), &home.join("Away/Listed")).unwrap();
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = oni_library::navigator::Computer { home: p(&home), volumes: p(&volumes) };

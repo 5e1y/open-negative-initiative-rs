@@ -23,7 +23,6 @@ fn lip(w: usize, px: &[Rgb565Pixel], x: f32, y: f32, h: f32) -> (u32, u32, u32) 
 
 pub(crate) fn a_section_ending_on_a_well_draws_its_lip_whole() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = DepthProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

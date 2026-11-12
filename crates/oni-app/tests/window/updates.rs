@@ -40,7 +40,6 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     let _ = std::fs::remove_dir_all(&root);
     let (support, downloads) = (root.join("Support"), root.join("Downloads"));
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
 
     // A key pair of the check's own: the archive signed with it, a forged one beside it.

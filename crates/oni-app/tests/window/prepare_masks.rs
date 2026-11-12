@@ -126,7 +126,6 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     let path = |roll: &str, n: &str| PathBuf::from(oni_library::paths::canonical(&scans.join(roll).join(n)));
     let chosen: Rc<RefCell<Option<PathBuf>>> = Rc::new(RefCell::new(None));
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);

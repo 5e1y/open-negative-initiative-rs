@@ -62,7 +62,6 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
         std::fs::write(root.join("Roll").join(name), b"not a raw").unwrap();
     }
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let engine = Engine::shared(&gpu);
     let shell = launch(&rig, &engine, &root);
@@ -185,7 +184,6 @@ pub(crate) fn the_switch_off_hides_the_link_and_listens_nowhere() {
     let support = root.join("Support");
     oni_app::phone::trust(&support, oni_link::Identity::generate().public()).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let engine = Engine::shared(&gpu);
     let shell = |phone: bool| {

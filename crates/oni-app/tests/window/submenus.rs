@@ -14,7 +14,6 @@ const REST: Duration = Duration::from_millis(400);
 
 fn probe() -> (common::Rig, SubmenuProbe) {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = SubmenuProbe::new().unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

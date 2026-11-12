@@ -42,7 +42,6 @@ impl Hand {
         let root = PathBuf::from(paths::canonical(&root));
         before(&root);
         let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-        std::fs::create_dir_all(&shots).unwrap();
         let rig = common::rig(shots);
         rig.window.set_size(slint::PhysicalSize::new(1280, 800));
         let gpu = oni_app::render::Device::open().expect("a GPU");

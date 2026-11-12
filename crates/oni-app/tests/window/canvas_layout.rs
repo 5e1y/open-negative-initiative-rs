@@ -61,7 +61,6 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     common::plain_tiff(&folder.join("Roll B").join("B00.tif"), 48, 32, 0.5);
     std::fs::write(folder.join("Roll B").join("Bad.tif"), b"II*\0not a picture").unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);

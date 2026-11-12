@@ -41,7 +41,6 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     let kept = || oni_app::preferences::Preferences::load(&support).value(oni_app::flat_fields::SLIDERS_KEY).cloned();
     oni_app::preferences::Preferences::load(&support).set(oni_app::flat_fields::SLIDERS_KEY, serde_json::json!([0.5, 0.4, -0.3])).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
