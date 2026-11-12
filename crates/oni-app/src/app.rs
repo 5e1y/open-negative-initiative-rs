@@ -303,11 +303,7 @@ pub struct State {
     pinch: f32,
     /// The ratio and orientation last chosen, and the frame chosen on, handed to the next frame framed.
     framing_memory: Option<(Remembered, String)>,
-    /// A frame held on the canvas: the window's or the crop's, the handle, the frame at the press
-    /// and the shown image frame's size in points.
-    frame_gesture: Option<(bool, Handle, Fraction, (f64, f64))>,
-    /// Esc put the held frame back: the rest of that drag moves nothing.
-    frame_cancelled: bool,
+    frame_gesture: Option<cropping::FrameGesture>,
     /// A scroll along a track under way, its hand raised until the idle window passes.
     scrolling: bool,
     /// The frame a straightening gesture set out from, the one it last wrote, and when.

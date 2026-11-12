@@ -147,7 +147,6 @@ impl Shell {
             pinch: 1.0,
             framing_memory: None,
             frame_gesture: None,
-            frame_cancelled: false,
             scrolling: false,
             straightening: None,
             route: crate::tabs::Route::default(),
