@@ -110,6 +110,11 @@ impl State {
     pub fn dragging(&self) -> bool {
         self.slides.iter().any(|s| s.drag.is_some())
     }
+
+    /// How many times the panel's knobs began springing, read by the checks.
+    pub fn arrivals(&self) -> u32 {
+        self.arrivals
+    }
 }
 
 #[cfg(test)]

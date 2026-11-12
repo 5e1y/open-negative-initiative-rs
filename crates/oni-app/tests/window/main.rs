@@ -67,6 +67,7 @@ mod help_demo_language;
 mod keyboard;
 mod keycap;
 mod keycap_cost;
+mod knob_arrival;
 mod medal_keys;
 mod launch;
 mod library_column;

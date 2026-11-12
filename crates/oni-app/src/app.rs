@@ -18,7 +18,7 @@ use crate::{Act, App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, 
 use oni_core::{Command, PasteCheck};
 use crate::link::Outward;
 use oni_link::HostEvent;
-use crate::motion::Spring;
+use crate::motion::Sprung;
 use crate::system;
 use oni_i18n::{tr, trn};
 use crate::track::{self, Hand, Offer};
@@ -165,8 +165,7 @@ struct Slide {
     last_press: Option<Instant>,
     hand: Hand,
     /// Where the knob is drawn, as a fraction of the track.
-    shown: f32,
-    arrival: Option<(f32, f32, Instant)>,
+    knob: Sprung,
     /// The stored value last published, so a field holding several sliders publishes only the moved one.
     published: Option<f32>,
     /// When the hand last moved the value, which the notch showing it is timed from.
@@ -256,6 +255,8 @@ pub struct State {
     /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
     pub(crate) hands: Arc<AtomicUsize>,
     slides: Vec<Slide>,
+    /// The arrival timer's starts, read by the checks.
+    arrivals: u32,
     histogram_dirty: bool,
     last_change: Option<Instant>,
     /// The store revision `publish` last saw, so any edit of the open frame arms its write.
@@ -350,7 +351,8 @@ pub struct Ctl {
     engine: Shared,
     worker: Worker,
     trailing: Vec<Timer>,
-    arrivals: Vec<Timer>,
+    /// Draws every sprung knob once a frame until the last rests.
+    arrival: Timer,
     pulse: Timer,
     /// Polls the histogram's readback while one is under way, so it lands within a frame.
     histogram_watch: Timer,

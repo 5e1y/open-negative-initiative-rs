@@ -23,7 +23,7 @@ impl Ctl {
                 // `DSClick` reads AppKit's click count, which keeps counting past two.
                 let double = slide.last_press.is_some_and(|t| now.duration_since(t) <= system::double_click());
                 slide.last_press = Some(now);
-                slide.drag = (!double).then(|| hands::Drag::at(slide.shown, &s.hands));
+                slide.drag = (!double).then(|| hands::Drag::at(slide.knob.at(now), &s.hands));
                 if !double {
                     s.store.hold();
                 }
@@ -92,7 +92,7 @@ impl Ctl {
             if dx == 0.0 || dx.abs() <= dy.abs() {
                 return false;
             }
-            let from = p.state.borrow().slides[f.index() as usize].shown;
+            let from = p.state.borrow().slides[f.index() as usize].knob.at(Instant::now());
             let asked = track::clamped(track::asked(from, Ctl::scroll_travel(dx), span, fine));
             p.scroll_kept_alive();
             p.place(f, asked);
