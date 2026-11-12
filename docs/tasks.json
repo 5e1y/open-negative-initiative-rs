@@ -9125,5 +9125,19 @@
     "title": "The settings' relative reads a side not a number as the whole window",
     "status": "done",
     "detail": "oni_settings::geometry::relative tested `base.width <= 0 || … || cut.height <= 0`, which lets a NaN through and computes a NaN window, while oni_measure::window::relative, the one the measures read, returned the whole window. The settings take the measure's form, `!(base.width > 0 && … && cut.height > 0)`, so one rule can serve both (structure plan, measure-window-once). Its other reader, the Crop tool's window placing (framing.rs), differs only on a crop with a side not a number."
+  },
+  {
+    "id": 1808,
+    "type": "refactor",
+    "title": "The measuring window's rule lives in the settings alone",
+    "status": "done",
+    "detail": "oni_measure::window kept its own relative, absolute, in_crop, proposal, propose, MEASURE_WINDOW_INSET and FULL_WINDOW beside oni_settings::geometry's, the two already parting on a NaN (#1807). They go: measurement_windows reads Geometry::measure_window_in_crop and, untouched, geometry::proposal(Rect::UNIT, false) (bit for bit the inline rect it built); Prepare the Roll's resting and laid windows (prepare.rs, entering.rs) and slide_roll.rs call the settings. window.rs keeps the rect arithmetic, contains, contains_point, intersection, measurement_windows and the sheet's cells; its two tests of the deleted copy go with it, their cases held by #1809. window.rs 65 lines shorter, no change to what a measure reads (#1806 proved both copies equal before the deletion)."
+  },
+  {
+    "id": 1809,
+    "type": "check",
+    "title": "What a measure reads, on fixed expectations",
+    "status": "done",
+    "detail": "oni-settings/tests/measure_window.rs replaces the equality grid (#1806): thirteen windows and bases, inside, clipped, equal to the crop, outside, touching an edge, zero and negative sides, a base of zero, negative or NaN side, each with its literal relative, its measure_window_in_crop under the crop and under a bypassed crop, and None untouched; the frame's proposal a tenth inside, the sheet's the whole crop, a placed window kept. Twins: the settings' former relative, computing through a NaN, misses exactly the two NaN rows; a bypassed crop reads the window in the frame's fractions, not the crop's; a frame's proposal is not the sheet's."
   }
 ]

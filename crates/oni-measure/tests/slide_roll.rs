@@ -4,7 +4,6 @@
 use oni_measure::key::{self, Decoded, Measurer};
 use oni_measure::truncate::Stage;
 use oni_measure::{pipette, roll};
-use oni_measure::window::in_crop;
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::RgbPasses;
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -101,7 +100,7 @@ fn the_roll_s_window_is_laid_whole_on_frames_of_different_crops() {
     assert!(laid.iter().all(|s| s.geometry.measure_window == Some(WINDOW)), "the same window in the scan's fractions");
     assert_eq!(laid.iter().map(|s| s.geometry.crop).collect::<Vec<_>>(), crops, "each frame keeps its crop");
     // Twin: seen from inside each crop the window differs, so a window copied in crop space would move.
-    assert_ne!(in_crop(&laid[0].geometry), in_crop(&laid[1].geometry));
+    assert_ne!(laid[0].geometry.measure_window_in_crop(), laid[1].geometry.measure_window_in_crop());
 }
 
 /// A uniform frame decoded as the app decodes it: `grey` reads grey on any settings; any other file
