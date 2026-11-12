@@ -134,6 +134,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("slider_hand::a_slider_taken_away_under_the_hand_lets_go_at_the_button", slider_hand::a_slider_taken_away_under_the_hand_lets_go_at_the_button),
     ("slider_hand::a_scanner_slider_taken_away_under_the_hand_lets_go_at_the_button", slider_hand::a_scanner_slider_taken_away_under_the_hand_lets_go_at_the_button),
     ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
+    ("column_menu::a_column_removed_while_revealed_comes_back_hidden", column_menu::a_column_removed_while_revealed_comes_back_hidden),
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one", picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one),
     ("picture_plots::the_readout_is_its_plot_alone", picture_plots::the_readout_is_its_plot_alone),

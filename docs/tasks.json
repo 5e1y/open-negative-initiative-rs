@@ -9510,5 +9510,12 @@
     "title": "A Scanner slider's hand is owned by the hands",
     "status": "done",
     "detail": "The Scanner sliders held the store with a bare hold and release, outside the hands, so a slider destroyed under the press (Escape, the face turned, the gallery, the panel hidden) left the store held: later edits merged into one undo step and the bar's Undo lagged. The hold is now a hand beside the scroll and the plot (hands::Down, which also shrinks app.rs), counted for the thumbnails and lifted with the button wherever the slider went; a normal release now also publishes. Check: a_scanner_slider_taken_away_under_the_hand_lets_go_at_the_button."
+  },
+  {
+    "id": 1895,
+    "type": "change",
+    "title": "A hidden column's reveal ends with its column",
+    "status": "done",
+    "detail": "The reveal flags lived on the window while their column existed only as long as it floated, so the Opt+Cmd shortcuts, the gallery, export, Prepare the Roll or the trash brought a column back slid over the photo. The flags now clear whenever the column starts or stops floating (library-floats, panel-floats name its one condition), and the column keys' column-toggled callback, which cleared them at one caller, is gone. Check: a_column_removed_while_revealed_comes_back_hidden, with live-reveal twins."
   }
 ]

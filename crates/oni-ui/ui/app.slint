@@ -69,10 +69,14 @@ export component MainWindow inherits AppWindow {
     // The column holding the help marks, at the window's right, and where a mark's card tops beside it.
     property <length> column-x: root.width - (Exporting.shown ? FormStyle.panel-width : ShellStyle.panel-width) - (root.beside-photo && App.panel-hidden ? Space.s : 0px);
     property <length> card-top: root.beside-photo ? root.tabs-foot : (Exporting.shown ? 0px : ShellStyle.bar-height) + Space.s;
-    // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer.
+    // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer, only while it floats.
     out property <bool> revealed-library;
     out property <bool> revealed-panel;
     property <bool> beside-photo: !App.gallery && !Exporting.shown && !Preparing.shown;
+    property <bool> library-floats: root.beside-photo && App.library-hidden;
+    property <bool> panel-floats: root.beside-photo && App.panel-hidden;
+    changed library-floats => { root.revealed-library = false; }
+    changed panel-floats => { root.revealed-panel = false; }
     // `mode == .gallery`: the grid mounts afresh each time it shows, and lands on the open photo.
     out property <bool> grid-shown: App.gallery && !Exporting.shown && !Preparing.shown;
     // A new screen gives the keyboard to its photos and takes the tooltip down, a key of the last one gone
@@ -261,9 +265,6 @@ export component MainWindow inherits AppWindow {
                         panel-hidden: App.panel-hidden;
                         menu(m) => { App.menu(m); }
                         refocused => { root.refocus(); }
-                        column-toggled(leading) => {
-                            if (leading) { root.revealed-library = false; } else { root.revealed-panel = false; }
-                        }
                     }
                     Card {
                         x: 0;
@@ -298,28 +299,27 @@ export component MainWindow inherits AppWindow {
                         editor-line: Canvas.status;
                     }
                     // `floating(_:)`: a hidden column's edge strip slides it over the card while hovered.
-                    if root.beside-photo && App.library-hidden: TouchArea {
-                        y: 0;
-                        x: 0;
+                    if root.library-floats: TouchArea {
+                        x: 0; y: 0;
                         width: Space.m;
                         height: card.height;
                         changed has-hover => { if (self.has-hover) { root.revealed-library = true; } }
                     }
-                    if root.beside-photo && App.panel-hidden: TouchArea {
+                    if root.panel-floats: TouchArea {
                         y: 0;
                         x: parent.width - self.width;
                         width: Space.m;
                         height: card.height;
                         changed has-hover => { if (self.has-hover) { root.revealed-panel = true; } }
                     }
-                    if root.beside-photo && App.library-hidden: FloatingColumn {
+                    if root.library-floats: FloatingColumn {
                         revealed <=> root.revealed-library;
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.library-width + 2 * Space.s; height: card.height;
                         // Laid by the card's column, inside its inset: sized on the strip, it ran past the card.
                         Tree { beside-photo: true; floating: true; cache-rendering-hint: true; }
                     }
-                    if root.beside-photo && App.panel-hidden: FloatingColumn {
+                    if root.panel-floats: FloatingColumn {
                         revealed <=> root.revealed-panel; trailing: true;
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.panel-width + 2 * Space.s; height: card.height;
