@@ -294,6 +294,7 @@ export component RootsCatchUpSheet inherits Sheet {
     // Its groups a wider step apart than a plain sheet's lines, the steps a medium one.
     gap: Gap.l;
     dismissed => { Navigator.catch-up-done(); }
+    returned => { Navigator.catch-up-done(); }
     VerticalLayout {
         spacing: Space.m;
         for step[i] in [

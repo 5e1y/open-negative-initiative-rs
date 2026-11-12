@@ -1213,6 +1213,10 @@ msgstr "Mostrar la carpeta"
 msgid "Back to the Gallery"
 msgstr "Volver a la galería"
 
+#: crates/oni-ui/ui/missing.slint
+msgid "Keep for Now"
+msgstr "Conservar por ahora"
+
 #: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
 msgid "Discard"
 msgstr "Descartar"

@@ -93,20 +93,25 @@ export component MainWindow inherits AppWindow {
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Exporting.naming-shown || Stocks.shown
         || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
         || Advice.shown || Wrapped.shown || Unsaved.shown || Converting.shown;
-    // A sheet shown takes the keyboard from a control behind it, a field it opens on aside, and the tooltip,
-    // as a new screen does; closed, it hands the keyboard back, its own field going with it.
+    // A sheet shown takes the keyboard from what is behind it (`Sheet`), and the tooltip, as a new screen
+    // does; closed, it hands the keyboard back, its own field going with it.
     changed sheet-shown => {
         App.sheet-changed();
         Keyboard.covered = self.sheet-shown;
         Tip.shown = false;
         Tips.close();
-        if (!self.sheet-shown || !TextInputInterface.text-input-focused) { keys.focus(); }
+        if (!self.sheet-shown) { keys.focus(); }
     }
-    // Gives the key monitor the keyboard back after a click elsewhere than a field.
-    public function refocus() { keys.focus(); }
+    // Gives the key monitor the keyboard back after a click elsewhere than a field, and from a field
+    // behind a sheet; the sheet then takes it, as Tab entering it does.
+    public function refocus() {
+        keys.focus();
+        if (root.sheet-shown) { Keyboard.entered += 1; }
+    }
 
     // `EditorCommands`: Swift's titles, shortcuts and live rules, read from `Menus`, which Rust fills.
-    // Bare keys are live only while no field holds the keyboard, or the menu would take the digit first.
+    // A key a field answers itself (a digit, ⌘⌫, ⌘Z) is live only while no field holds the keyboard:
+    // the menu hears a key before the field does.
     MenuBar {
         Menu {
             title: @tr("File");
@@ -126,8 +131,8 @@ export component MainWindow inherits AppWindow {
         }
         Menu {
             title: @tr("Edit");
-            MenuItem { title: Menus.titles.undo; shortcut: @keys(Control + "z"); enabled: Menus.live.undo; activated => { App.menu(Act.undo); } }
-            MenuItem { title: Menus.titles.redo; shortcut: @keys(Control + Shift + "z"); enabled: Menus.live.redo; activated => { App.menu(Act.redo); } }
+            MenuItem { title: Menus.titles.undo; shortcut: @keys(Control + "z"); enabled: Menus.live.undo && keys.held; activated => { App.menu(Act.undo); } }
+            MenuItem { title: Menus.titles.redo; shortcut: @keys(Control + Shift + "z"); enabled: Menus.live.redo && keys.held; activated => { App.menu(Act.redo); } }
             MenuSeparator { }
             MenuItem { title: @tr("Reset Settings"); shortcut: @keys(Control + Shift + "r"); enabled: Menus.live.reset; activated => { App.menu(Act.reset); } }
         }

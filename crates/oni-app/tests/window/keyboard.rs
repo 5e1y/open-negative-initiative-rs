@@ -132,8 +132,12 @@ pub(crate) fn a_press_gives_the_keyboard_back_to_the_photos_and_a_key_whose_hold
 pub(crate) fn a_sheet_keeps_tab_inside_it_while_it_covers_the_window() {
     let (rig, p) = probe();
     p.set_covered(true);
+    rig.drawn();
     rig.pump();
-    // Tab from the window enters the sheet at its first key, never a control behind it.
+    assert!(!p.get_monitor_focused(), "shown and drawn, the sheet holds the keyboard");
+    // Given back to the window, Tab enters the sheet at its first key, never a control behind it.
+    p.invoke_refocus();
+    rig.pump();
     key(&rig, &p, "\t");
     key(&rig, &p, "\t");
     key(&rig, &p, " ");
