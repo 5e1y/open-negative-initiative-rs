@@ -162,7 +162,7 @@ impl Files for Patches {
         None
     }
 
-    fn patch(&self, _: Id) -> Option<(u32, u32, Vec<[f32; 4]>)> {
+    fn patch(&self, _: oni_pipeline::corrections::PatchKey) -> Option<(u32, u32, Vec<[f32; 4]>)> {
         Some((W, H, vec![[0.02, 0.2, 0.3, 1.0]; (W * H) as usize]))
     }
 }

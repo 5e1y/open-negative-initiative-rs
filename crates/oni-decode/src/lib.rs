@@ -10,6 +10,8 @@ mod linear;
 mod source;
 mod neutral;
 mod m3;
+mod size;
+pub use size::full_size;
 use m3::{apply, inverse, mul};
 pub use neutral::{Neutral, SLIDE_KELVIN};
 

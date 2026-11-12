@@ -9020,5 +9020,40 @@
     "title": "The loupe asks again whenever the canvas is asked anew",
     "status": "done",
     "detail": "State::render_anew, the one door for a proof, a table or a patch changing what renders read, now clears the loupe's asked and shown; the patch paths call render_anew instead of clearing requested_view by hand. A custom mask import changes the settings, so it needs no such door. Window check a_new_proof_draws_the_loupe_again, twin: nothing changed draws no loupe. The proof, patch and window checks were each run against the code before the fix and failed there."
+  },
+  {
+    "id": 1785,
+    "type": "fix",
+    "title": "Stage 0's map between the scan and the frame is one table, read by the pipeline and the canvas",
+    "status": "done",
+    "detail": "oni-settings::geometry::placing holds the turn and mirror table, the rotation matrix and its bounding box that oni-pipeline::geometry wrapped privately, and Geometry::frame_extent, the whole pixels stage 0 cuts (kept_pixels is its size). Placing::on_frame and on_scan carry a point between the scan and the frame stage 0 hands on, so the pipeline and the canvas cannot diverge. oni-pipeline/tests/placing.rs: a bright scan pixel lands where on_frame says on every turn, mirror, crop, 3 degrees and the bypassed crop, and comes back by on_scan; twin, the scan's fraction read on a turned frame misses it."
+  },
+  {
+    "id": 1786,
+    "type": "fix",
+    "title": "A dust patch is found under its correction and the settings upstream of it",
+    "status": "done",
+    "detail": "A patch is cut from the scan after the capture stops and the flat-field, yet was cached under the correction's id alone and kept by id in the engine, the measuring graphs and De-dust's sets: after a capture-stops or flat-field change, Prepare's included, a patch of the old exposure was laid as a darker or brighter square. PatchKey (id, FNV-1a of capture_stops, flat_field, mode, rgb_passes, primaries_converted, source_encoding) names the file <id>-<upstream>.tiff and keys Engine.patches, Resident, Dust.patched and unhealable; the heal writes under the settings it ran with, so a change made meanwhile leaves the frame unhealed and the existing loop runs again. inputs_tests::a_patch_made_under_one_exposure_is_never_laid_under_another: under one more stop or a flat-field the patch is neither found nor laid, under a turn and crop it is; twin, under its own settings it is laid. With id-only keys it fails."
+  },
+  {
+    "id": 1787,
+    "type": "fix",
+    "title": "Dust strokes live on the scan and are laid before stage 0",
+    "status": "done",
+    "detail": "A stroke was kept in fractions of the cropped, oriented frame and laid after geometry::apply, as in Swift: a crop, turn, mirror or angle, the Crop tab's uncropped view and Prepare's uncropped reading put it and its patch off the speck. Pipeline::healed lays capture stops, flat-field and corrections on the scan; framed is healed, stage 0, the reciprocal. search_region reads healed, the heal's sizes are the scan's, auto De-dust maps each found stroke through on_scan, and the canvas maps strokes, marks, waiting strokes, sources and the reminder tiles through on_frame with the frame's own geometry; a painted stroke goes through on_scan. tests/placing.rs::a_patch_painted_on_one_framing_heals_its_speck_on_every_other heals the speck on nine framings; twin, a frame-kept stroke laid after stage 0 leaves it bright; with the old order the check fails on the first framing. Window check dedust_turn: a click on a turned, cropped picture is kept at on_scan, and its marker follows a turn and a mirror; with the canvas fractions kept as the stroke it fails."
+  },
+  {
+    "id": 1788,
+    "type": "fix",
+    "title": "Sidecar format 21 moves an older stroke onto the scan once",
+    "status": "done",
+    "detail": "codec::VERSION 21 (STROKES_ON_SCAN_VERSION), field names unchanged. strokes_on_scan::caught_up, chained after retired_matrices in sidecar::read: a stroke before 21 under a non-neutral geometry is moved by geometry.placing(size).on_scan, the size asked of an installed lookup (oni_app::strokes_on_scan, backed by oni_decode::full_size: a LibRaw header probe with the maker's crop and flip, the container's size, a plain file's header, the green pass of RGB passes); no size known keeps the strokes as read and the photo read-only. tests/strokes_on_scan.rs: converted strokes equal on_scan and are written as 21, a neutral framing or a current file asks nothing; twin, each moved stroke lies over 0.05 from the stored one; without the conversion both checks fail. oni-decode frames::the_full_size_is_the_whole_decode_s_without_decoding matches the decode on a cropped and a turned DNG; twin, the sensor's sides differ."
+  },
+  {
+    "id": 1789,
+    "type": "docs",
+    "title": "The scan-kept stroke recorded as a departure from Swift",
+    "status": "done",
+    "detail": "docs/parity/hidden.md gains a departed row for the scan-kept stroke and the keyed patch, README.md names it beside the keypad's step for the owner to confirm, and CLAUDE.md lists it among the decisions that look like mistakes. The dust census example reads the stored strokes on the frame through on_frame."
   }
 ]

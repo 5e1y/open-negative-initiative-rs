@@ -17,7 +17,7 @@ fn the_patches_kept_stay_under_their_budget_and_go_with_the_editor() {
         (0..n)
             .map(|_| {
                 let c = Correction { id: Id::new(), stroke: Vec::new(), radius: 20.0 };
-                crate::patches::write(&caches, c.id, side, side, &vec![[0.5; 4]; (side * side) as usize]).unwrap();
+                crate::patches::write(&caches, oni_pipeline::corrections::PatchKey::of(&PipelineSettings::rest(oni_settings::ConversionMode::Negative, true), &c), side, side, &vec![[0.5; 4]; (side * side) as usize]).unwrap();
                 c
             })
             .collect()
@@ -32,8 +32,9 @@ fn the_patches_kept_stay_under_their_budget_and_go_with_the_editor() {
     assert_eq!(engine.inputs_kept(), 5 * patch, "a frame's five patches kept");
     engine.render(&negative, &with(&b), Some(32)).unwrap();
     assert!(engine.inputs_kept() <= INPUTS_KEPT, "{} bytes kept past the budget", engine.inputs_kept());
-    assert!(b.iter().all(|c| engine.keeps_patch(c.id)), "the render's own patches stay");
-    assert!(a.iter().any(|c| !engine.keeps_patch(c.id)), "the older frame's let go");
+    let key = |c: &Correction| oni_pipeline::corrections::PatchKey::of(&with(&[]), c);
+    assert!(b.iter().all(|c| engine.keeps_patch(key(c))), "the render's own patches stay");
+    assert!(a.iter().any(|c| !engine.keeps_patch(key(c))), "the older frame's let go");
     // Twin: a render naming more than the budget keeps every patch it names.
     let many = corrections(10);
     engine.render(&negative, &with(&many), Some(32)).unwrap();
@@ -62,7 +63,7 @@ fn a_search_costs_what_lies_in_its_window_however_many_patches_the_frame_holds()
     let dot = |x: f64, y: f64| {
         let point = |x: f64| oni_settings::cg::Point { x, y };
         let c = Correction { id: Id::new(), stroke: vec![point(x), point(x + 0.002)], radius: 12.0 };
-        crate::patches::write(&caches, c.id, 40, 40, &vec![[0.9, 0.9, 0.9, 1.0]; 1600]).unwrap();
+        crate::patches::write(&caches, oni_pipeline::corrections::PatchKey::of(&PipelineSettings::rest(oni_settings::ConversionMode::Negative, true), &c), 40, 40, &vec![[0.9, 0.9, 0.9, 1.0]; 1600]).unwrap();
         c
     };
     let (searched, near) = (dot(0.05, 0.5), dot(0.1, 0.4));

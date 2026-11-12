@@ -1,8 +1,32 @@
-//! Where a dust correction's patch lands and how its seam is feathered, as `CorrectionRenderer` places
-//! them; the patches themselves are the caller's, generated once at full resolution.
+//! Where a dust correction's patch lands on the scan and how its seam is feathered, as
+//! `CorrectionRenderer` places them; the patches are the caller's, generated once at full resolution.
 
 use oni_graph::Rect;
+use oni_settings::PipelineSettings;
 use oni_settings::frame::Correction;
+use oni_settings::id::Id;
+
+/// A patch as made: its correction, and the settings upstream of the corrections it was cut under,
+/// so a patch of another exposure or flat-field is never laid.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct PatchKey {
+    pub id: Id,
+    pub upstream: u64,
+}
+
+impl PatchKey {
+    pub fn of(s: &PipelineSettings, c: &Correction) -> PatchKey {
+        PatchKey { id: c.id, upstream: upstream(s) }
+    }
+}
+
+/// FNV-1a over what the scan reads before its corrections: the decode's choices, the capture's
+/// stops and the flat-field. A stroke is never edited once made, so its id names it.
+pub fn upstream(s: &PipelineSettings) -> u64 {
+    let read = (s.capture_stops, &s.flat_field, s.mode, &s.rgb_passes, s.primaries_converted, s.source_encoding);
+    let bytes = serde_json::to_vec(&read).unwrap_or_default();
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3))
+}
 
 /// `CorrectionRenderer.tileSide`.
 pub const TILE_SIDE: f64 = 800.0;
@@ -60,7 +84,7 @@ pub fn patch_rect(c: &Correction, extent: Area) -> Area {
     intersection(integral([hole[0] - reach, hole[1] - reach, hole[2] + 2.0 * reach, hole[3] + 2.0 * reach]), tile)
 }
 
-/// Where a patch of `size` full-resolution pixels lands on `framed` at `scale`: a patch cut to the
+/// Where a patch of `size` full-resolution pixels lands on the scan `framed` at `scale`: a patch cut to the
 /// tile goes on the tile, any other on its patch rectangle. A reduced one covers the whole pixels its
 /// exact edges touch, with the shifts (left, bottom) that set its content where the full one lies.
 pub fn placed(c: &Correction, size: (u32, u32), framed: Rect, scale: f64) -> (Rect, (f64, f64)) {
@@ -79,7 +103,7 @@ pub fn placed(c: &Correction, size: (u32, u32), framed: Rect, scale: f64) -> (Re
     (Rect::new(x0 as i32, (y1 - f64::from(h)) as i32, w, h), shift)
 }
 
-/// The stroke's points on `framed`, in its pixels, as the stroke mask's input row.
+/// The stroke's points on the scan `framed`, in its pixels, as the stroke mask's input row.
 pub fn stroke_points(c: &Correction, framed: Rect) -> Vec<[f32; 4]> {
     let extent = [f64::from(framed.x), f64::from(framed.y), f64::from(framed.w), f64::from(framed.h)];
     points(c, extent).map(|(x, y)| [x as f32, y as f32, 0.0, 1.0]).collect()

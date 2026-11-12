@@ -22,6 +22,7 @@ pub mod levels;
 pub mod lighting_catch_up;
 pub mod modes;
 pub mod retired_matrices;
+pub mod strokes_on_scan;
 pub mod scanner;
 pub mod settings;
 pub mod sidecar;

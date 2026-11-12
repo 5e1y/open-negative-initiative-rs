@@ -6,6 +6,9 @@ use crate::cg::Rect;
 use crate::frame::{AspectRatio, Geometry};
 
 mod pixels;
+pub mod placing;
+
+pub use placing::Placing;
 
 /// A width and a height, in pixels.
 pub type Size = (f64, f64);

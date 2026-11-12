@@ -7,7 +7,6 @@ use oni_pipeline::flat_field::Mask;
 use oni_pipeline::resident::Files;
 use oni_settings::cg::Point;
 use oni_settings::frame::{Correction, FlatFieldMask};
-use oni_settings::id::Id;
 use oni_settings::PipelineSettings;
 use std::sync::Arc;
 
@@ -25,7 +24,7 @@ impl Files for Fake {
         (self.present && id == "panel").then(|| Mask { width: w, height: h, pixels, peaks: [1.0; 3], per_channel: false })
     }
 
-    fn patch(&self, _: Id) -> Option<(u32, u32, Vec<[f32; 4]>)> {
+    fn patch(&self, _: oni_pipeline::corrections::PatchKey) -> Option<(u32, u32, Vec<[f32; 4]>)> {
         self.present.then(|| (SIZE.0, SIZE.1, vec![[0.9, 0.9, 0.9, 1.0]; (SIZE.0 * SIZE.1) as usize]))
     }
 }

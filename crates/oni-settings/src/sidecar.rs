@@ -87,7 +87,8 @@ pub fn url_for(original: &Path) -> PathBuf {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Loaded {
     pub settings: PipelineSettings,
-    /// False for a sidecar from a newer format: the photo opens read-only, never rewritten.
+    /// False for a sidecar from a newer format, or one whose strokes found no scan to move onto:
+    /// the photo opens read-only, never rewritten.
     pub writable: bool,
     pub is_new: bool,
     pub imported_at: Option<Date>,
@@ -182,10 +183,13 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
     }
     let source = Source { mosaic: &|| mosaic, plain: &|| !mosaic };
     let decoded = codec::decode_with(&data, &source, catching_up)?;
+    let current = !decoded.is_from_future();
+    let settings = crate::retired_matrices::caught_up(original, decoded.version, decoded.settings);
+    let (settings, placed) = crate::strokes_on_scan::caught_up(original, decoded.version, settings);
     Ok(Loaded {
-        writable: !decoded.is_from_future(),
+        writable: current && placed,
         is_new: false,
-        settings: crate::retired_matrices::caught_up(original, decoded.version, decoded.settings),
+        settings,
         imported_at: decoded.imported_at,
         label: decoded.label,
         exif: decoded.exif,

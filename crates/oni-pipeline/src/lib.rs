@@ -144,17 +144,22 @@ impl Pipeline {
         Ok((region, graph.render(&image, region, cache)?))
     }
 
-    /// `Pipeline.framed`: the capture's exposure evened, the flat-field in the scan's own frame,
-    /// stage 0, the corrections in the cropped frame a stroke is painted on, a positive read as a negative last.
+    /// `Pipeline.framed`: the scan healed, stage 0, a positive read as a negative last.
     pub fn framed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
+        let healed = self.healed(graph, image, s, scale, inputs)?;
+        let out = geometry::apply(healed, &s.geometry, scale);
+        Ok(if s.inverted_source { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
+    }
+
+    /// The scan in its own frame, before stage 0: the capture's exposure evened, the flat-field, then
+    /// the corrections, so neither slides as the crop, the turns or the angle move.
+    pub fn healed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let mut out = image;
         if s.capture_stops != 0.0 {
             out = out.then(stages::exposure(-s.capture_stops));
         }
         out = self.flat_field(graph, out, s, inputs)?;
-        out = geometry::apply(out, &s.geometry, scale);
-        let out = self.corrections(graph, out, s, scale, inputs)?;
-        Ok(if s.inverted_source { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
+        self.corrections(graph, out, s, scale, inputs)
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {

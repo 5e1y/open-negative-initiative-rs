@@ -123,7 +123,7 @@ impl Demo for Dust {
     fn prepare(&mut self, stage: &Stage, photo: &mut Photo) -> Result<(), String> {
         let (w, h) = Picture::of(stage).pixels();
         let (rw, rh) = (w.div_ceil(ZOOM), h.div_ceil(ZOOM));
-        let (fw, fh) = photo.framed_size(&self.settings)?;
+        let ((fw, fh), placing) = photo.framed_size(&self.settings)?;
         // Where `Photo::detail` lays the region about the speck, in the frame's pixels.
         let x0 = ((f64::from(fw) * SPECK.0) as i64 - i64::from(rw / 2)).clamp(0, i64::from(fw - rw)) as f64;
         let y0 = ((f64::from(fh) * SPECK.1) as i64 - i64::from(rh / 2)).clamp(0, i64::from(fh - rh)) as f64;
@@ -147,7 +147,7 @@ impl Demo for Dust {
             .map(|(t, (x, y))| (t, (x - px, y - py)))
             .collect();
         self.stroke.dedup_by(|a, b| a.1 == b.1);
-        let fraction = |(x, y): (f32, f32)| Point { x: (x0 + f64::from(x) / points) / f64::from(fw), y: (y0 + f64::from(y) / points) / f64::from(fh) };
+        let fraction = |(x, y): (f32, f32)| placing.on_scan(Point { x: (x0 + f64::from(x) / points) / f64::from(fw), y: (y0 + f64::from(y) / points) / f64::from(fh) });
         let id = Id::parse(ID).ok_or("the correction's id")?;
         let correction = Correction { id, stroke: self.stroke.iter().map(|(_, p)| fraction(*p)).collect(), radius: RADIUS };
         let mut healed = self.settings.clone();
@@ -159,8 +159,10 @@ impl Demo for Dust {
             Ok((picture(&self.settings, photo)?, picture(&healed, photo)?))
         });
         let _ = std::fs::remove_dir_all(&caches);
-        let offset = offset?;
-        self.offset = ((offset.0 * f64::from(fw) * points) as f32, (offset.1 * f64::from(fh) * points) as f32);
+        // The offset found on the scan, seen on the frame shown.
+        let (o, from) = (offset?, correction.stroke[0]);
+        let (at, copied) = (placing.on_frame(from), placing.on_frame(Point { x: from.x + o.0, y: from.y + o.1 }));
+        self.offset = (((copied.x - at.x) * f64::from(fw) * points) as f32, ((copied.y - at.y) * f64::from(fh) * points) as f32);
         self.pictures = Some(pictures?);
         stage.set("brush-diameter", Value::Number(2.0 * RADIUS * points));
         stage.set("stroke-width", Value::Number(2.0 * RADIUS * points));

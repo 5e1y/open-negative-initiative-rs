@@ -52,12 +52,16 @@ fn main() {
         let painted = std::mem::take(&mut settings.corrections);
         let (d, _) = oni_decode::decode_for(path, 1.0, 0).expect("a decode");
         let source = graph.upload_half(d.width as u32, d.height as u32, &d.pixels).unwrap();
+        let scan = (d.width, d.height);
         drop(d);
         let framed = pipeline.framed(&mut graph, Image::new(&source), &settings, 1.0, &Inputs::default()).unwrap();
         let e = framed.extent();
         let pixels = graph.render(&framed, e, None).unwrap();
         graph.purge();
         let (width, height) = (e.w as usize, e.h as usize);
+        // A stroke is kept on the scan; the census reads it on the frame.
+        let placing = settings.geometry.placing((scan.0 as f64, scan.1 as f64));
+        let painted: Vec<Correction> = painted.into_iter().map(|c| Correction { stroke: c.stroke.iter().map(|p| placing.on_frame(*p)).collect(), ..c }).collect();
         let limits = Limits::of(&settings);
         let started = std::time::Instant::now();
         let reading = dust::read(&pixels, width, &limits, 3072);

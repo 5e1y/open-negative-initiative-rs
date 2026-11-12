@@ -59,6 +59,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   density table: ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
 - **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.
+- **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,
+  turns and angle, so no framing moves them, and a patch's file names the exposure and flat-field it was cut under.
 - **The editor reads a RAW at LibRaw's half size** (owner's call, 2026-10-22): 3 to 5 times faster to open, no
   difference on screen; the whole decode is a Settings choice, and Details, De-dust and every export read it.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
