@@ -7,8 +7,8 @@ and every screen picks it up.
 
 | File | What it holds | Who writes it |
 |---|---|---|
-| `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `tokens.slint` | `DS`, the design system's constants under flat names, each named by a screen, the lab or the Rust side | By hand |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever one exists |
 | `theme_type.slint` | `Type`, the type scale, re-exported by `theme.slint` | By hand |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
 | `theme_sliders.slint` | `SliderStyle`, `DialStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
@@ -19,15 +19,11 @@ and every screen picks it up.
 | `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `notices.slint` (the notice that passes, the banner that stays), `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
-The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
-Swift source, so the generator stays the only source of `DS`.
-
 ## Changing a token
 
 - **Restyle one kind of element** (all buttons, all sliders): edit its group in `theme.slint`, for example
   `ButtonStyle.radius` or `SliderStyle.track`.
-- **Change a value the Swift app also uses** (a space, a colour of the palette): change it in
-  `DSTokens.swift`, then run `cargo run -p oni-app --bin oni-tokens`.
+- **Change a constant of `DS`** (a space, a colour of the palette): edit it in `tokens.slint`; a token nothing names is deleted.
 - **One name per value**: a group never renames another's value (a field's height is
   `ButtonStyle.height`, a socket `Colour.well`); it names only a role of its own that borrows a step
   of a scale (`SectionStyle.gap: Space.s`).

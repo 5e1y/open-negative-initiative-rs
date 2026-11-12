@@ -72,7 +72,7 @@ use std::path::PathBuf;
 
 pub use oni_ui::*;
 
-/// The Swift app's `Sources/OpenNegative`, which the token generator reads: `ONI_SWIFT_APP`, else
+/// The Swift app's `Sources/OpenNegative`, which the Swift comparison checks read: `ONI_SWIFT_APP`, else
 /// a checkout beside this workspace.
 pub fn swift_sources() -> Option<PathBuf> {
     if let Some(dir) = std::env::var_os("ONI_SWIFT_APP") {

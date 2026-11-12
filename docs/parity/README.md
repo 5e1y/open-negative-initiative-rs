@@ -41,8 +41,8 @@ and Tint track ends, Show Presets Folder and Roll of the N.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **103 have a Rust twin, 36 a partial one,
-9 none, and 12 are blocked on a behaviour the port lacks**; two the owner chose to leave.
+[checks.md](checks.md) lists the 162 checks `--check` runs: **103 have a Rust twin, 35 a partial one,
+10 none, and 12 are blocked on a behaviour the port lacks**; two the owner chose to leave.
 
 ### Pipeline branches against Swift
 

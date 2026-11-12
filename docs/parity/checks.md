@@ -10,7 +10,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **blocked**: the check guards a behaviour the port does not have yet, named beside it.
 - **departed**: the check guards a behaviour the owner chose to leave; not counted.
 
-Of 162 checks: 103 twin, 36 partial, 9 none, 12 blocked; two departed.
+Of 162 checks: 103 twin, 35 partial, 10 none, 12 blocked; two departed.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -168,7 +168,7 @@ Of 162 checks: 103 twin, 36 partial, 9 none, 12 blocked; two departed.
 | 152 | `AutoLevels.selfCheck` (RAW) | `Checks/Pipeline/AutoLevels+Checks.swift:10` | channel alignment holds | partial | `oni-measure/tests/roll8.rs::roll8_a_second_press_finds_nothing_and_a_paste_places_ends_on_held_gains`, on the Swift decode; the residual of the two steps on the real path is not |
 | 153 | `ColorDensity.selfCheck` | `Checks/Pipeline/ColorDensity+Checks.swift:4` | colour density factor and render | twin | `oni-settings/tests/swift_checks.rs::colour_density_keeps_a_neutral_and_raises_a_ratio_to_its_power`, `oni-pipeline/tests/branches.rs::stage47_reaches_every_branch` |
 | 154 | `MetalImageView.Renderer.groundSelfCheck` | `Checks/UI/MetalImageView+Checks.swift:7` | the ground behind the frame | none | none |
-| 155 | `DS.Typo.selfCheck` | `Checks/DesignSystem/DSPlayground+Checks.swift:6` | type scale complete | partial | `oni-app/src/bin/oni-tokens/tokens.rs::the_committed_tokens_are_the_swift_ones` |
+| 155 | `DS.Typo.selfCheck` | `Checks/DesignSystem/DSPlayground+Checks.swift:6` | type scale complete | none | none |
 | 156 | `DSKeyMonitor.exclusiveSurfaces` | `Checks/DesignSystem/DSKeyboard+Checks.swift:5` | bare keys reach one surface | none | none |
 | 157 | `RawDecode.isLinear (RAW)` | `Pipeline/SelfCheck.swift:378` | the decode is linear | twin | `oni-decode/tests/linearity.rs::one_stop_doubles_every_channel` |
 | 158 | `RawDecode.pinningCheck (RAW)` | `Checks/Pipeline/RawDecode+Checks.swift:10` | every decode knob pinned | twin | `oni-decode/tests/swift_checks.rs::nothing_the_pinned_decode_hands_out_piles_at_the_resting_ceiling`, `oni-decode/src/lib.rs::the_5000_k_white_reads_neutral_at_the_baseline`; LibRaw keeps what `csrc/pinned.c` writes, so its knobs are not read back |
