@@ -103,6 +103,7 @@ mod preset_deck;
 mod presets;
 mod presence;
 mod quit;
+mod render_identity;
 mod rgb_passes;
 mod roll_card;
 mod row_marks;
@@ -367,6 +368,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),
     ("tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click", tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click),
     ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),
+    ("render_identity::the_histogram_after_a_sheet_is_the_open_frame_s_own", render_identity::the_histogram_after_a_sheet_is_the_open_frame_s_own),
+    ("render_identity::a_new_proof_draws_the_loupe_again", render_identity::a_new_proof_draws_the_loupe_again),
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),
     ("together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame", together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),

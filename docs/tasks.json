@@ -8985,5 +8985,40 @@
     "title": "A plot's press taken away under the hand ends with the button too",
     "status": "done",
     "detail": "Gestures::release takes no plot: the double click's size comes from the plot its hold names, and it clears the band knob. editors::let_go releases the held plot or band slider and let_go_all calls it, so the walk and the lifted button end a curve, levels, wheel or saturation press as they end a slider's. Window check editors::a_curve_taken_away_under_the_hand_lets_go_at_the_button (twin: the hand stands after the release until lifted); it failed with the plots left out of let_go_all."
+  },
+  {
+    "id": 1765,
+    "type": "fix",
+    "title": "A recipe's key names everything a render reads",
+    "status": "done",
+    "detail": "oni-graph's Image::key returns the last node's key from flatten, which folds in every source, stage, parameter and auxiliary image: the proof and its cube, the hand Frontier table's source, each laid patch and the custom mask. The engine's caches below a render now hang on it instead of on the settings, so nothing a render reads beyond its settings can be missed. Check a_recipe_s_key_names_its_sources_stages_parameters_and_auxiliary_images, with twins for a parameter, an auxiliary image and the source."
+  },
+  {
+    "id": 1766,
+    "type": "fix",
+    "title": "The histogram's picture follows a proof, a table or a patch, and never another frame's count",
+    "status": "done",
+    "detail": "Engine::counted keeps its picture by recipe key and returns the same source while the key holds, never None: a reproof, a new Frontier table or a patch landing under unchanged settings counts again. The app's Counting slot in Requests takes a picture once by id, and a count read back lands only when the slot that started it still stands, so open_photo's Requests reset drops the last frame's count and leaving a sheet counts the open frame again. Gpu.uncounted is deleted. Checks: a_proof_changed_under_the_same_settings_counts_and_compares_again, a_patch_landing_under_the_same_settings_counts_and_reads_again, a_count_lands_only_on_the_canvas_that_asked_it and the window check the_histogram_after_a_sheet_is_the_open_frame_s_own, each with its twin."
+  },
+  {
+    "id": 1767,
+    "type": "fix",
+    "title": "Compare's before is kept by what it reads",
+    "status": "done",
+    "detail": "The worker's kept before, keyed on path, reference settings and view, is deleted with ViewKey and View::key. Engine::before composes the reference's recipe and keeps its texture while the recipe key and region hold, so a new proof or table draws the before again and a notch never does. resident and before share Engine::composed."
+  },
+  {
+    "id": 1768,
+    "type": "fix",
+    "title": "The input distributions are kept by their recipe",
+    "status": "done",
+    "detail": "The worker's measured gate on path, settings and held is deleted; inputs::Read keeps the entering settings, whose windows it is read through, and the recipe key, which names the copy, the mask and every patch laid. forget_patch no longer resets the readings, as a patch read again is a new source. The app drops a reading equal to the one shown."
+  },
+  {
+    "id": 1769,
+    "type": "fix",
+    "title": "The loupe asks again whenever the canvas is asked anew",
+    "status": "done",
+    "detail": "State::render_anew, the one door for a proof, a table or a patch changing what renders read, now clears the loupe's asked and shown; the patch paths call render_anew instead of clearing requested_view by hand. A custom mask import changes the settings, so it needs no such door. Window check a_new_proof_draws_the_loupe_again, twin: nothing changed draws no loupe. The proof, patch and window checks were each run against the code before the fix and failed there."
   }
 ]

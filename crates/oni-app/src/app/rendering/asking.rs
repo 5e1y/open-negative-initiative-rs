@@ -7,6 +7,7 @@ impl State {
     /// a proof, a table or a measure changed what they show.
     pub(in crate::app) fn render_anew(&mut self) {
         self.requests.requested_view = None;
+        self.loupe.anew();
         if let Some(g) = self.together.as_mut() {
             g.anew();
         }
@@ -167,7 +168,7 @@ impl Ctl {
                 }
                 // Strokes painted as the run ended are healed next.
                 if open {
-                    c.state.borrow_mut().requests.requested_view = None;
+                    c.state.borrow_mut().render_anew();
                     c.request_render();
                 }
                 // A patch the balance reads landed after its tab was left.
@@ -199,7 +200,7 @@ impl Ctl {
                 }
                 s.dust.sources.insert(id, offset);
             }
-            s.requests.requested_view = None;
+            s.render_anew();
         }
         self.request_render();
         self.publish_dedust();

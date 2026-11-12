@@ -52,6 +52,11 @@ impl State {
         self.opens
     }
 
+    /// The picture's histogram the plots trace, read by the checks.
+    pub fn histogram(&self) -> Option<&oni_measure::histogram::Histogram> {
+        self.requests.histogram.as_ref()
+    }
+
     /// The store revision the canvas last showed.
     pub fn rendered(&self) -> u64 {
         self.requests.rendered

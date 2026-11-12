@@ -7,19 +7,17 @@ use oni_measure::histogram::Histogram;
 use oni_measure::reader::{Copy, Laying, Reader};
 use oni_measure::truncate::{Stage, truncated};
 
-/// One stage's last reading: the preview and copy it was read on, the settings entering the stage.
+/// One stage's last reading: the settings entering the stage, whose windows it is read through, and
+/// the recipe read, which names the copy, the mask and every patch laid.
 pub(super) struct Read {
-    preview: u64,
-    held: bool,
     entering: PipelineSettings,
-    /// How many patches and whether the mask were laid: one read later moves the reading.
-    laid: (usize, bool),
+    recipe: u64,
     histogram: Histogram,
 }
 
 impl Engine {
     /// Both distributions through the measuring windows, the curves' on the face that renders, on the small
-    /// copy while `held`; a stage whose entering settings and copy hold keeps its reading.
+    /// copy while `held`; a stage whose entering settings and recipe hold keeps its reading.
     pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
         let id = negative.preview.id();
         self.read_custom(settings);
@@ -35,18 +33,17 @@ impl Engine {
         let mut read = |slot: usize, stage: Stage| -> Histogram {
             let entering = truncated(settings, stage);
             let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
-            let laid = (inputs.patches.len(), inputs.custom_flat_field.is_some());
+            let copy = Copy { source: &source, full_width: Some(negative.full_width) };
+            let mut reader = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, laying: Laying::Held(inputs) };
+            let recipe = reader.image(copy, settings, stage).map(|image| image.key());
             if let Some(r) = &self.read[slot]
-                && r.preview == id
-                && r.held == held
                 && r.entering == entering
-                && r.laid == laid
+                && Some(r.recipe) == recipe
             {
                 return r.histogram.clone();
             }
-            let copy = Copy { source: &source, full_width: Some(negative.full_width) };
-            let histogram = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, laying: Laying::Held(inputs) }.reading(copy, settings, stage).histogram;
-            self.read[slot] = Some(Read { preview: id, held, entering, laid, histogram: histogram.clone() });
+            let histogram = reader.reading(copy, settings, stage).histogram;
+            self.read[slot] = recipe.map(|recipe| Read { entering, recipe, histogram: histogram.clone() });
             histogram
         };
         let levels = read(0, Stage::Levels);
