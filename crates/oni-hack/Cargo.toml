@@ -19,13 +19,24 @@ doctest = false
 
 ### BEGIN HAKARI SECTION
 [dependencies]
+aead = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
+anstyle = { version = "1" }
 arrayvec = { version = "0.7", default-features = false, features = ["std"] }
 bytemuck = { version = "1", default-features = false, features = ["aarch64_simd", "align_offset", "derive", "extern_crate_alloc", "min_const_generics"] }
+camino = { version = "1", default-features = false, features = ["serde1"] }
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc", "getrandom"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "wasmbind"] }
 crc32fast = { version = "1" }
+crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
+curve25519-dalek = { version = "4", default-features = false, features = ["alloc", "precomputed-tables", "zeroize"] }
 derive_more = { version = "2", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "display", "error", "from", "into", "mul", "not", "std"] }
+digest = { version = "0.10", features = ["mac", "std"] }
 either = { version = "1", default-features = false, features = ["use_std"] }
 flate2 = { version = "1" }
+form_urlencoded = { version = "1" }
+futures-core = { version = "0.3" }
+futures-task = { version = "0.3", default-features = false, features = ["std"] }
+futures-util = { version = "0.3" }
 hashbrown = { version = "0.17", default-features = false, features = ["default-hasher", "inline-more", "raw-entry"] }
 i-slint-common = { version = "1", features = ["locale-decimal-separator", "markdown", "shared-fontique", "svg-text"] }
 i-slint-compiler = { version = "1", features = ["bundle-translations", "display-diagnostics", "proc_macro_span", "renderer-software", "rust"] }
@@ -33,51 +44,72 @@ icu_locale_core = { version = "2", default-features = false, features = ["alloc"
 icu_properties = { version = "2" }
 icu_provider = { version = "2", default-features = false, features = ["alloc", "baked"] }
 image = { version = "0.25", default-features = false, features = ["gif", "ico", "jpeg", "tiff", "webp"] }
-indexmap = { version = "2" }
+indexmap = { version = "2", features = ["serde"] }
 litemap = { version = "0.8", default-features = false, features = ["alloc"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 naga-types = { version = "30", default-features = false, features = ["std"] }
-notify = { version = "8", default-features = false, features = ["macos_fsevent", "macos_kqueue"] }
+notify = { path = "../../vendor/notify", default-features = false, features = ["macos_fsevent", "macos_kqueue"] }
 num-traits = { version = "0.2", features = ["libm"] }
-once_cell = { version = "1", default-features = false, features = ["critical-section", "std"] }
+once_cell = { version = "1", features = ["critical-section"] }
 percent-encoding = { version = "2" }
 portable-atomic = { version = "1", features = ["critical-section"] }
 potential_utf = { version = "0.1", default-features = false, features = ["alloc", "zerovec"] }
 proc-macro2 = { version = "1" }
 quote = { version = "1" }
 read-fonts = { version = "0.41", default-features = false, features = ["experimental_font_api", "std"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls-no-provider", "stream"] }
+resvg = { version = "0.48", default-features = false, features = ["raster-images", "svgz", "text"] }
+ring = { version = "0.17", features = ["std"] }
 rustc-hash = { version = "1" }
-serde_core = { version = "1", default-features = false, features = ["result", "std"] }
-serde_json = { version = "1", features = ["float_roundtrip"] }
+semver = { version = "1", features = ["serde"] }
+serde = { version = "1", features = ["alloc", "derive"] }
+serde_core = { version = "1", features = ["alloc"] }
+serde_json = { version = "1", features = ["float_roundtrip", "raw_value", "unbounded_depth"] }
+sha2 = { version = "0.10" }
 simd-adler32 = { version = "0.3" }
+slab = { version = "0.4", default-features = false, features = ["std"] }
 slint = { version = "1", default-features = false, features = ["accessibility", "compat-1-2", "live-preview", "renderer-femtovg-wgpu", "renderer-software", "software-renderer-path", "unstable-wgpu-30", "unstable-winit-030"] }
 slint-interpreter = { version = "1", default-features = false, features = ["accessibility", "backend-winit", "compat-1-2", "display-diagnostics", "internal", "renderer-femtovg-wgpu", "renderer-software"] }
 slotmap = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
 stable_deref_trait = { version = "1", default-features = false, features = ["alloc"] }
 strict-num = { version = "0.1" }
+subtle = { version = "2", default-features = false, features = ["std"] }
 swash = { version = "0.2" }
 sys-locale = { version = "0.3", default-features = false, features = ["js"] }
 thiserror = { version = "2" }
 tinystr = { version = "0.8", default-features = false, features = ["alloc", "zerovec"] }
-tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
+tokio = { version = "1", features = ["full", "test-util"] }
+toml_datetime = { version = "1", features = ["serde"] }
+toml_parser = { version = "1" }
+toml_writer = { version = "1" }
+tracing = { version = "0.1" }
+tracing-core = { version = "0.1", default-features = false, features = ["std"] }
+typenum = { version = "1", default-features = false, features = ["const-generics"] }
+uniffi = { version = "0.32", features = ["cli"] }
+usvg = { version = "0.48", default-features = false, features = ["svgz", "text"] }
 wgpu = { version = "30" }
 wgpu-types = { version = "30", default-features = false, features = ["std", "web"] }
+winnow = { version = "1", features = ["simd"] }
 writeable = { version = "0.6", default-features = false, features = ["alloc"] }
 yoke = { version = "0.8", default-features = false, features = ["alloc", "derive"] }
 zerofrom = { version = "0.1", default-features = false, features = ["alloc", "derive"] }
+zeroize = { version = "1", features = ["zeroize_derive"] }
 zerotrie = { version = "0.2", default-features = false, features = ["alloc", "yoke", "zerofrom"] }
 zerovec = { version = "0.11", default-features = false, features = ["alloc", "derive", "yoke"] }
 
 [build-dependencies]
+anstyle = { version = "1" }
 arrayvec = { version = "0.7", default-features = false, features = ["std"] }
 bytemuck = { version = "1", default-features = false, features = ["aarch64_simd", "align_offset", "derive", "extern_crate_alloc", "min_const_generics"] }
+camino = { version = "1", default-features = false, features = ["serde1"] }
 cc = { version = "1", default-features = false, features = ["parallel"] }
 crc32fast = { version = "1" }
 derive_more = { version = "2", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "display", "error", "from", "into", "mul", "not", "std"] }
 either = { version = "1", default-features = false, features = ["use_std"] }
 flate2 = { version = "1" }
+form_urlencoded = { version = "1" }
 hashbrown = { version = "0.17", default-features = false, features = ["default-hasher", "inline-more", "raw-entry"] }
 i-slint-common = { version = "1", features = ["locale-decimal-separator", "markdown", "shared-fontique", "svg-text"] }
 i-slint-compiler = { version = "1", features = ["bundle-translations", "display-diagnostics", "proc_macro_span", "renderer-software", "rust"] }
@@ -85,21 +117,24 @@ icu_locale_core = { version = "2", default-features = false, features = ["alloc"
 icu_properties = { version = "2" }
 icu_provider = { version = "2", default-features = false, features = ["alloc", "baked"] }
 image = { version = "0.25", default-features = false, features = ["gif", "ico", "jpeg", "tiff", "webp"] }
-indexmap = { version = "2" }
+indexmap = { version = "2", features = ["serde"] }
 litemap = { version = "0.8", default-features = false, features = ["alloc"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 num-traits = { version = "0.2", features = ["libm"] }
-once_cell = { version = "1", default-features = false, features = ["critical-section", "std"] }
+once_cell = { version = "1", features = ["critical-section"] }
 percent-encoding = { version = "2" }
 portable-atomic = { version = "1", features = ["critical-section"] }
 potential_utf = { version = "0.1", default-features = false, features = ["alloc", "zerovec"] }
 proc-macro2 = { version = "1" }
 quote = { version = "1" }
 read-fonts = { version = "0.41", default-features = false, features = ["experimental_font_api", "std"] }
+resvg = { version = "0.48", default-features = false, features = ["raster-images", "svgz", "text"] }
 rustc-hash = { version = "1" }
-serde_core = { version = "1", default-features = false, features = ["result", "std"] }
-serde_json = { version = "1", features = ["float_roundtrip"] }
+semver = { version = "1", features = ["serde"] }
+serde = { version = "1", features = ["alloc", "derive"] }
+serde_core = { version = "1", features = ["alloc"] }
+serde_json = { version = "1", features = ["float_roundtrip", "raw_value", "unbounded_depth"] }
 simd-adler32 = { version = "0.3" }
 slotmap = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
@@ -110,7 +145,12 @@ syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3", features = ["extra-trai
 syn-f595c2ba2a3f28df = { package = "syn", version = "2", features = ["extra-traits", "full", "visit", "visit-mut"] }
 thiserror = { version = "2" }
 tinystr = { version = "0.8", default-features = false, features = ["alloc", "zerovec"] }
+toml_datetime = { version = "1", features = ["serde"] }
 toml_edit = { version = "0.25" }
+toml_parser = { version = "1" }
+toml_writer = { version = "1" }
+usvg = { version = "0.48", default-features = false, features = ["svgz", "text"] }
+winnow = { version = "1", features = ["simd"] }
 writeable = { version = "0.6", default-features = false, features = ["alloc"] }
 yoke = { version = "0.8", default-features = false, features = ["alloc", "derive"] }
 zerofrom = { version = "0.1", default-features = false, features = ["alloc", "derive"] }
@@ -121,44 +161,49 @@ zerovec = { version = "0.11", default-features = false, features = ["alloc", "de
 bitflags = { version = "2", default-features = false, features = ["serde", "std"] }
 block2 = { version = "0.6" }
 crossbeam-utils = { version = "0.8" }
+errno = { version = "0.3" }
+getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 half = { version = "2", features = ["num-traits"] }
+hyper = { version = "1", features = ["client", "http1", "server"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "client-proxy", "http1", "server", "service"] }
 libc = { version = "0.2" }
 mio = { version = "1", features = ["net", "os-ext"] }
 objc2 = { version = "0.6", features = ["relax-sign-encoding"] }
 objc2-app-kit = { version = "0.3", default-features = false, features = ["NSAlert", "NSAppearance", "NSApplication", "NSButton", "NSCell", "NSColor", "NSControl", "NSEvent", "NSImage", "NSMenu", "NSMenuItem", "NSOpenPanel", "NSPanel", "NSPasteboard", "NSPasteboardItem", "NSResponder", "NSRunningApplication", "NSSavePanel", "NSSound", "NSStatusBar", "NSStatusBarButton", "NSStatusItem", "NSView", "NSWindow", "NSWorkspace", "block2", "objc2-core-foundation", "objc2-core-graphics", "objc2-quartz-core", "std"] }
 objc2-core-foundation = { version = "0.3", default-features = false, features = ["CFArray", "CFAttributedString", "CFBase", "CFCGTypes", "CFCalendar", "CFCharacterSet", "CFData", "CFDate", "CFDictionary", "CFError", "CFFileSecurity", "CFLocale", "CFMachPort", "CFMessagePort", "CFNumber", "CFRunLoop", "CFSet", "CFStream", "CFString", "CFURL", "CFUserNotification", "objc2", "std"] }
-objc2-core-graphics = { version = "0.3", default-features = false, features = ["CGColor", "CGColorSpace", "CGContext", "CGDataProvider", "CGDirectDisplay", "CGEventTypes", "CGFont", "CGImage", "CGLayer", "CGPath", "objc2", "std"] }
+objc2-core-graphics = { version = "0.3", default-features = false, features = ["CGColor", "CGColorSpace", "CGContext", "CGDataProvider", "CGDirectDisplay", "CGEventTypes", "CGFont", "CGImage", "CGPath", "objc2", "std"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["NSAppleEventDescriptor", "NSArray", "NSAttributedString", "NSBundle", "NSCoder", "NSData", "NSDate", "NSDictionary", "NSEnumerator", "NSError", "NSException", "NSFileManager", "NSFileWrapper", "NSFormatter", "NSGeometry", "NSItemProvider", "NSKeyValueObserving", "NSLocale", "NSNotification", "NSNull", "NSObjCRuntime", "NSObject", "NSOperation", "NSPathUtilities", "NSProcessInfo", "NSRange", "NSRunLoop", "NSSet", "NSString", "NSThread", "NSURL", "NSUndoManager", "NSUserActivity", "NSUserDefaults", "NSValue", "NSZone", "block2", "objc2-core-foundation", "std"] }
 objc2-quartz-core = { version = "0.3", default-features = false, features = ["CADisplayLink", "CALayer", "CAMediaTiming", "CAMediaTimingFunction", "CAMetalLayer", "CAOpenGLLayer", "CATransaction", "objc2-core-foundation", "objc2-core-graphics", "objc2-metal", "std"] }
-once_cell = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
-tokio = { version = "1", default-features = false, features = ["io-util"] }
-tracing = { version = "0.1", default-features = false, features = ["std"] }
-tracing-core = { version = "0.1", default-features = false, features = ["std"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["logging", "ring", "tls12"] }
+tokio-util = { version = "0.7", features = ["io", "rt"] }
+tower = { version = "0.5", default-features = false, features = ["make", "retry", "timeout"] }
 uuid = { version = "1", features = ["v4"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 bitflags = { version = "2", default-features = false, features = ["serde", "std"] }
 block2 = { version = "0.6" }
 crossbeam-utils = { version = "0.8" }
+errno = { version = "0.3" }
+getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 half = { version = "2", features = ["num-traits"] }
 libc = { version = "0.2" }
 objc2 = { version = "0.6", features = ["relax-sign-encoding"] }
 objc2-core-foundation = { version = "0.3", default-features = false, features = ["CFArray", "CFAttributedString", "CFBase", "CFCGTypes", "CFCalendar", "CFCharacterSet", "CFData", "CFDate", "CFDictionary", "CFError", "CFFileSecurity", "CFLocale", "CFMachPort", "CFMessagePort", "CFNumber", "CFRunLoop", "CFSet", "CFStream", "CFString", "CFURL", "CFUserNotification", "objc2", "std"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["NSAppleEventDescriptor", "NSArray", "NSAttributedString", "NSBundle", "NSCoder", "NSData", "NSDate", "NSDictionary", "NSEnumerator", "NSError", "NSException", "NSFileManager", "NSFileWrapper", "NSFormatter", "NSGeometry", "NSItemProvider", "NSKeyValueObserving", "NSLocale", "NSNotification", "NSNull", "NSObjCRuntime", "NSObject", "NSOperation", "NSPathUtilities", "NSProcessInfo", "NSRange", "NSRunLoop", "NSSet", "NSString", "NSThread", "NSURL", "NSUndoManager", "NSUserActivity", "NSUserDefaults", "NSValue", "NSZone", "block2", "objc2-core-foundation", "std"] }
-once_cell = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 
 [target.x86_64-pc-windows-msvc.dependencies]
 bitflags = { version = "2", default-features = false, features = ["serde"] }
 crossbeam-utils = { version = "0.8" }
-getrandom = { version = "0.4", default-features = false, features = ["std"] }
+getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 half = { version = "2", features = ["num-traits"] }
-once_cell = { version = "1" }
+hyper = { version = "1", features = ["client", "http1", "server"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "client-proxy", "http1", "server", "service"] }
 smallvec = { version = "1", default-features = false, features = ["union"] }
-tokio = { version = "1", default-features = false, features = ["io-util"] }
-tracing = { version = "0.1", default-features = false, features = ["std"] }
-tracing-core = { version = "0.1", default-features = false, features = ["std"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["logging", "ring", "tls12"] }
+tokio-util = { version = "0.7", features = ["io", "rt"] }
+tower = { version = "0.5", default-features = false, features = ["make", "retry", "timeout"] }
 uuid = { version = "1", features = ["v4"] }
 windows = { version = "0.62", features = ["Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Display", "Win32_Globalization", "Win32_Graphics_Direct3D12", "Win32_Graphics_Direct3D_Dxc", "Win32_Graphics_Direct3D_Fxc", "Win32_Graphics_DirectComposition", "Win32_Graphics_DirectWrite", "Win32_Graphics_Dwm", "Win32_Graphics_Dxgi_Common", "Win32_Graphics_Gdi", "Win32_Graphics_OpenGL", "Win32_Security", "Win32_System_Com", "Win32_System_Diagnostics_Debug", "Win32_System_Kernel", "Win32_System_LibraryLoader", "Win32_System_Ole", "Win32_System_Performance", "Win32_System_Threading", "Win32_System_Variant", "Win32_UI_Accessibility", "Win32_UI_HiDpi", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 windows-core = { version = "0.62" }
@@ -167,11 +212,11 @@ windows-sys = { version = "0.61", features = ["Wdk_Foundation", "Wdk_Storage_Fil
 [target.x86_64-pc-windows-msvc.build-dependencies]
 bitflags = { version = "2", default-features = false, features = ["serde"] }
 crossbeam-utils = { version = "0.8" }
-getrandom = { version = "0.4", default-features = false, features = ["std"] }
+getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 half = { version = "2", features = ["num-traits"] }
-once_cell = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 windows = { version = "0.62", features = ["Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Display", "Win32_Globalization", "Win32_Graphics_Direct3D12", "Win32_Graphics_Direct3D_Dxc", "Win32_Graphics_Direct3D_Fxc", "Win32_Graphics_DirectComposition", "Win32_Graphics_DirectWrite", "Win32_Graphics_Dwm", "Win32_Graphics_Dxgi_Common", "Win32_Graphics_Gdi", "Win32_Graphics_OpenGL", "Win32_Security", "Win32_System_Com", "Win32_System_Diagnostics_Debug", "Win32_System_Kernel", "Win32_System_LibraryLoader", "Win32_System_Ole", "Win32_System_Performance", "Win32_System_Threading", "Win32_System_Variant", "Win32_UI_Accessibility", "Win32_UI_HiDpi", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 windows-core = { version = "0.62" }
+windows-sys = { version = "0.61", features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Wdk_System_IO", "Win32_Globalization", "Win32_Graphics_Gdi", "Win32_Media_Audio", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Console", "Win32_System_DataExchange", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Ole", "Win32_System_Pipes", "Win32_System_ProcessStatus", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming", "Win32_UI_Accessibility", "Win32_UI_Controls", "Win32_UI_HiDpi", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell_Common", "Win32_UI_WindowsAndMessaging"] }
 
 ### END HAKARI SECTION

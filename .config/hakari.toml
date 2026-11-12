@@ -26,10 +26,7 @@ platforms = [
 # Write out exact versions rather than a semver range. (Defaults to false.)
 # exact-versions = true
 
-# The phone link builds for Android from the mobile repository: it keeps its own features, so the
-# desktop's never reach a phone build.
-[traversal-excludes]
-workspace-members = ["oni-link-ffi", "oni-link", "oni-localsend", "oni-link-demo", "oni-keys"]
-
+# The phone link builds for Android from the mobile repository: it never depends on oni-hack, so the
+# desktop's features never reach a phone build, yet its own count, as oni-app and oni-core build it.
 [final-excludes]
 workspace-members = ["oni-link-ffi", "oni-link", "oni-localsend", "oni-link-demo", "oni-keys"]

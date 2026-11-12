@@ -9286,5 +9286,12 @@
     "title": "The store's tests read it through the free functions",
     "status": "done",
     "detail": "store.rs's drag and reset tests call changed(&mut s) and get(&s, field) in place of the trait's methods, and editors/tests.rs calls the store's own apply and can_undo; no expectation changed."
+  },
+  {
+    "id": 1835,
+    "type": "build",
+    "title": "Hakari unifies every command again, with no cycle through the vendored crates",
+    "status": "done",
+    "detail": "oni-hack's generated path to the patched vendor/notify made cargo adopt it as a workspace member, so `cargo hakari manage-deps` wired oni-hack into notify, a cycle; the workspace now excludes vendor/. The phone-link crates and oni-keys were traversal-excluded, so the features oni-app and oni-core pull through oni-link and oni-keys (serde alloc, tracing attributes, getrandom sys_rng, tokio...) were missing from oni-hack and `cargo test -p oni-settings` rebuilt slint and wgpu after `cargo build -p oni-app`; they are now final-excluded only: traversed, yet never wired to oni-hack, so no phone build sees it. generate, manage-deps and verify are clean; after `cargo build -p oni-app`, `cargo test -p oni-settings --lib --no-run` compiles oni-settings alone."
   }
 ]
