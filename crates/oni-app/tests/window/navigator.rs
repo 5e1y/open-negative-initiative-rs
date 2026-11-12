@@ -305,7 +305,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     // Twin: a name taken is refused, both folders left as they were.
     choose(&rig, w, "New Folder 2", "Rename…");
     n.invoke_rename_committed(at(w, "New Folder 2") as i32, "Roll 3".into());
-    rig.pump();
+    rig.landed(&ctl);
     let told = w.global::<Told>();
     assert!(told.get_shown() && told.get_title() == "Rename");
     assert_eq!(told.get_message(), "The folder could not be renamed: an item of that name is already there");
@@ -313,15 +313,18 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     told.invoke_closed();
     // Make a Roll writes the folder's marker, Back to a Folder takes it away.
     choose(&rig, w, "Roll 3", "Make a Roll");
+    rig.landed(&ctl);
     let roll3 = p(&home.join("Scans/Roll 3"));
     assert_eq!(oni_library::folders::roll(&roll3).map(|f| f.name), Some("Roll 3".to_string()));
     assert_eq!(row(w, "Roll 3").kind, 1);
     assert_eq!(menu(w, "Roll 3")[3].0, "Back to a Folder");
     choose(&rig, w, "Roll 3", "Back to a Folder");
+    rig.landed(&ctl);
     assert!(oni_library::folders::roll(&roll3).is_none() && row(w, "Roll 3").kind == 0);
     assert_eq!(menu(w, "Roll 3")[3].0, "Make a Roll", "twin: a folder again");
     // A roll renamed carries its name into its marker.
     choose(&rig, w, "Roll 3", "Make a Roll");
+    rig.landed(&ctl);
     choose(&rig, w, "Roll 3", "Rename…");
     n.invoke_rename_committed(at(w, "Roll 3") as i32, "Roll 4".into());
     rig.until("Roll 4 listed", Duration::from_secs(10), || titles(w).contains(&"Roll 4".to_string()));

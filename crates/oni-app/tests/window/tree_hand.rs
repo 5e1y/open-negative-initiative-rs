@@ -162,12 +162,12 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     // Make a Roll writes the folder's marker, Back to a Folder takes it away.
     let roll_a = oni_library::paths::canonical(&scans.join("Roll A"));
     choose(&lib, "Make a Roll");
-    rig.pump();
+    rig.landed(&ctl);
     assert!(oni_library::folders::roll(&roll_a).is_some(), "the folder is a roll");
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));
     assert_eq!(lines(&lib)[3], "Back to a Folder");
     choose(&lib, "Back to a Folder");
-    rig.pump();
+    rig.landed(&ctl);
     assert!(oni_library::folders::roll(&roll_a).is_none(), "twin: the marker is gone");
 
     // New Folder Inside makes "New Folder", then "New Folder 2", each named in the tree it was asked from.

@@ -4,8 +4,9 @@
 use super::*;
 
 /// One folder's listing: its subfolders (`None` while the disk refuses it), its state, whether
-/// its roll marker is there, the stock the marker names, and whether its photos ask for Prepare Roll.
-type Listing = (Option<Vec<String>>, Presence, bool, Option<&'static str>, bool);
+/// its roll marker is there, the stock the marker names, whether its photos ask for Prepare Roll, and
+/// a favourite's spelling in the archive's when it was kept in another.
+type Listing = (Option<Vec<String>>, Presence, bool, Option<&'static str>, bool, Option<String>);
 
 impl Ctl {
     /// The navigator waits for the folder opened, whose read marks its rolls.
@@ -30,7 +31,10 @@ impl Ctl {
     /// The folders asked, listed apart: a favourite is a bookmark, so a row reads its own folder
     /// and its marker, never a tree.
     pub(super) fn list_apart(&self, wanted: Vec<String>) {
-        let computer = self.state.borrow().nav.computer.clone();
+        let (computer, favourites) = {
+            let s = self.state.borrow();
+            (s.nav.computer.clone(), s.nav.favourites.paths.clone())
+        };
         let read = move |folder: &str| -> Listing {
             let children = walk::children(folder);
             // A folder refused is told offline or missing here, off the interface thread.
@@ -45,18 +49,23 @@ impl Ctl {
                 .and_then(|film| oni_settings::film::film_stock(film.stock.as_deref()))
                 .map(|kind| kind.id);
             let unprepared = children.is_some() && super::super::organising::roll_card::unprepared(Path::new(folder));
-            (children, state, roll, stock, unprepared)
+            // Spelt as the archive spells it here, a favourite's row opens with no look at the disk.
+            let favourite = children.is_some() && favourites.iter().any(|f| f == folder);
+            let spelt = favourite.then(|| paths::canonical(Path::new(folder))).filter(|c| c != folder);
+            (children, state, roll, stock, unprepared, spelt)
         };
         favourites::read_apart(wanted, LISTERS, favourites::STUCK, read, |landed| with_shell(move |c| c.listed_apart(landed)));
     }
 
     fn listed_apart(self: &Rc<Self>, landed: Vec<(String, Listing)>) {
-        let (listed, marked) = {
+        let (listed, marked, respelt) = {
             let mut s = self.state.borrow_mut();
             let mut found = Vec::with_capacity(landed.len());
             let mut listed = Vec::with_capacity(landed.len());
+            let mut respelt = Vec::new();
             let mut marked = false;
-            for (folder, (children, state, roll, stock, unprepared)) in landed {
+            for (folder, (children, state, roll, stock, unprepared, spelt)) in landed {
+                respelt.extend(spelt.map(|to| (folder.clone(), to)));
                 if children.is_some() {
                     marked |= if unprepared { s.nav.unprepared.insert(folder.clone()) } else { s.nav.unprepared.remove(&folder) };
                     // A mark of the hand's that the disk now shows is no longer needed.
@@ -77,12 +86,34 @@ impl Ctl {
                 listed.push((folder, children));
             }
             s.noted(found);
-            (listed, marked)
+            (listed, marked, respelt)
         };
         self.listed(listed);
+        if !respelt.is_empty() {
+            return self.favourites_respelt(&respelt);
+        }
         if marked {
             self.publish_navigator();
         }
+    }
+
+    /// Favourites kept in another spelling, the Swift app's or a link's, take the archive's.
+    fn favourites_respelt(&self, respelt: &[(String, String)]) {
+        let failure = {
+            let mut s = self.state.borrow_mut();
+            for (old, new) in respelt {
+                if s.nav.favourites.paths.contains(old) {
+                    s.nav.model.follow(old, new);
+                    s.nav.favourites.follow(old, new);
+                }
+            }
+            s.save_favourites()
+        };
+        if let Some(message) = failure {
+            self.told(tr("Something Went Wrong"), &message);
+        }
+        self.list_wanted();
+        self.publish_navigator();
     }
 
     /// Sidecars the app wrote: their rows' folders listed again, as a roll prepared or reset

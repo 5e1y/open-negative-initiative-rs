@@ -129,6 +129,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     rig.shot("leftovers-new-roll");
     // A name typed over it renames the folder on disk and names its roll.
     lib.invoke_row_rename_committed(row as i32, "  Holiday \n".into());
+    rig.landed(&ctl);
     rig.until("the roll renamed", Duration::from_secs(30), || ctl.state.borrow().read_done());
     assert!(scans.join("Holiday/B.tif").exists() && !scans.join(&dated).exists());
     assert_eq!(oni_library::folders::roll(&scans.join("Holiday").to_string_lossy()).map(|f| f.name), Some("Holiday".to_string()));

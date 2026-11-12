@@ -233,34 +233,6 @@ impl Ctl {
         self.journal_medal(&written, label);
         self.reread(&written);
     }
-
-    /// Rows whose sidecar a gesture wrote, read again into the index, then the gallery laid from
-    /// the index, so a photo marked or restored leaves or joins it.
-    pub(super) fn reread(self: &Rc<Self>, paths: &[String]) {
-        if paths.is_empty() {
-            return;
-        }
-        self.navigator_wrote(paths);
-        {
-            let mut s = self.state.borrow_mut();
-            // A sidecar written may measure the roll shown or change its dyes: its card is read again.
-            s.org.frames_due = true;
-            let Some(index) = &s.index else { return };
-            library::refresh(index, paths);
-            // With no folder open, a photo restored from the ONI Trash leaves it all the same.
-            if let Some(folder) = s.opened.clone() {
-                let mut rows = library::shown_under(index, &folder);
-                let held: HashSet<String> = rows.iter().map(|e| e.path.clone()).collect();
-                let waiting: Vec<oni_library::Entry> =
-                    s.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
-                rows.extend(waiting);
-                s.copies = index.copies();
-                s.fingerprints = rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
-                s.rows = rows;
-            }
-        }
-        self.lay_archive();
-    }
 }
 
 /// The first read of a launch landed whole: the tidy runs once, whichever folder it was.

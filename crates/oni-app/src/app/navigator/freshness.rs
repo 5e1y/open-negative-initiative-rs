@@ -15,7 +15,8 @@ pub(in crate::app) struct Fresh {
     pub on: bool,
     watch: Option<Watch>,
     watched: (Vec<String>, Vec<String>),
-    /// A change seen while the opened folder's read ran, which reads it again once that one lands.
+    /// A change seen while the opened folder's read ran, or a read asked while a gesture's writes
+    /// or moves ran: the folder is read again once that read or that gesture lands.
     stale: bool,
     /// The photos held when Refresh was asked, which its answer counts against.
     refreshing: Option<HashSet<String>>,
@@ -105,6 +106,23 @@ impl Ctl {
         if opened.is_some() {
             self.read_again();
             self.note_listing();
+        }
+    }
+
+    /// A gesture's writes or moves begin: a read under way surveys what they change, so it stops and is owed.
+    pub(in crate::app) fn reads_held(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            let running = !s.read_done;
+            s.nav.fresh.stale |= running;
+        }
+        self.read_superseded();
+    }
+
+    /// A gesture's writes or moves landed: the read held back or asked meanwhile, once.
+    pub(in crate::app) fn reads_freed(self: &Rc<Self>) {
+        if std::mem::take(&mut self.state.borrow_mut().nav.fresh.stale) {
+            self.read_again();
         }
     }
 
@@ -204,6 +222,12 @@ impl Ctl {
 }
 
 impl State {
+    /// A read asked: owed while a gesture's writes or moves run, as they own the folder until they land.
+    pub(in crate::app) fn read_waits(&mut self) -> bool {
+        self.nav.fresh.stale = self.org.disk_busy.is_some();
+        self.nav.fresh.stale
+    }
+
     /// Whether the opened folder's listing is kept for the window's return.
     pub fn listing_kept(&self) -> bool {
         let fresh = &self.nav.fresh;
