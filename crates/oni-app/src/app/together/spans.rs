@@ -42,7 +42,7 @@ impl Ctl {
         for f in fields {
             let (v, held) = {
                 let s = self.state.borrow();
-                (s.store.get(f), s.slides[f.index() as usize].live.is_some())
+                (s.store.get(f), s.slides[f.index() as usize].live().is_some())
             };
             let text: SharedString = self.readout_at(f, v).into();
             set_value(&g, f, text.clone());

@@ -21,7 +21,7 @@ use oni_settings::levels::{LevelsChannel, LevelsSet};
 use oni_settings::spectrogram::{Band, Spectrogram};
 use std::time::Instant;
 
-pub use shell::{Shell, origin, pressed_anywhere, publish, size, wire, writes};
+pub use shell::{Shell, let_go, origin, pressed_anywhere, publish, size, wire, writes};
 pub use stored::{RESETS, face, lay, rest_of, rested_levels, resting_levels};
 
 /// The plots, as the interface numbers them in every callback.
@@ -336,21 +336,21 @@ impl Gestures {
         self.offer(store, now)
     }
 
-    /// The press's end: a double click's second release removes the disc under it, or puts the
-    /// saturation point back on neutral; then the last value lands and the step closes.
-    pub fn release(&mut self, store: &mut dyn Store, plot: Plot) -> Then {
+    /// The press's end, on whichever plot holds it: a double click's second release removes the disc
+    /// under it, or puts the saturation point back on neutral; then the last value lands and the step closes.
+    pub fn release(&mut self, store: &mut dyn Store) -> Then {
         let Some(held) = self.held.take() else { return Then::Nothing };
-        let size = self.sizes[plot as usize];
         let channel = self.curve_channel();
+        self.band_shown = None;
         match (held, self.live.as_mut()) {
             (Held::Curve { double: true, at, .. }, Some(Edit::Curves(curves))) => {
                 let curve = curves.get_mut(channel);
-                if let Some(i) = curve::dot_under(curve, at, size) {
+                if let Some(i) = curve::dot_under(curve, at, self.sizes[Plot::Curves as usize]) {
                     curve.remove(i);
                 }
             }
             (Held::Saturation { double: true, at }, Some(Edit::Saturation(curve))) => {
-                if let Some(next) = self.saturation.double(curve, at, size) {
+                if let Some(next) = self.saturation.double(curve, at, self.sizes[Plot::Saturation as usize]) {
                     *curve = next;
                 }
             }
@@ -494,8 +494,7 @@ impl Gestures {
         if !matches!(self.held, Some(Held::Band { .. })) {
             return Then::Nothing;
         }
-        self.band_shown = None;
-        self.release(store, Plot::Wheel)
+        self.release(store)
     }
 
     pub fn band_scroll(&mut self, store: &mut dyn Store, field: usize, dx: f32, dy: f32, span: f32, fine: bool) -> bool {

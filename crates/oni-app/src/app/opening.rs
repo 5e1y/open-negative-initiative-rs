@@ -7,6 +7,8 @@ mod missing;
 impl Ctl {
     /// Opens a photo in the store, with no mode; the canvas renders once its negative is decoded.
     pub(super) fn open_photo(self: &Rc<Self>, path: &str) {
+        // A hand still down lands on the frame it was on, before that frame is left.
+        self.let_go_all();
         self.leave_together();
         self.leave_landed();
         self.leave_modes();

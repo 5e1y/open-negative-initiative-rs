@@ -282,6 +282,12 @@ fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer
                 oni_app::editors::pressed_anywhere(&pressed, (x / scale, y / scale));
             }
         }
+        // Before Slint's dispatch, which tells a slider destroyed under the hand nothing of the release.
+        if let WindowEvent::MouseInput { state: ElementState::Released, button: MouseButton::Left, .. } = event
+            && let Some(lifted) = ctl()
+        {
+            lifted.lifted();
+        }
         if let WindowEvent::Focused(focused) = event
             && let Some(focus) = ctl()
         {
