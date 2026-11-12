@@ -201,6 +201,11 @@ impl State {
         self.placed
     }
 
+    /// Whether the view last asked is the lighter one a moving hand gets.
+    pub fn coarse(&self) -> bool {
+        self.requests.requested_view.is_some_and(|v| v.5)
+    }
+
     /// Whether a frame's dust patches are being generated.
     pub fn healing(&self) -> bool {
         !self.dust.healing.is_empty()

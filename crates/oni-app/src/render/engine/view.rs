@@ -17,11 +17,10 @@ impl Engine {
             return Ok((self.one_texture(&image, None)?, None));
         };
         let ratio = negative.size().0 as f64 / negative.full_width;
-        let shown = {
-            let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
-            self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?.extent()
-        };
-        let full = (shown.w as f64 / ratio, shown.h as f64 / ratio);
+        // Stage 0's cut on the full frame's own grid: the preview's, scaled up, is a few pixels off 1:1.
+        let whole = Rect::new(0, 0, negative.full_width.round() as u32, negative.full_height.round() as u32);
+        let cut = oni_pipeline::geometry::extent(&settings.geometry, whole, 1.0);
+        let full = (f64::from(cut.w), f64::from(cut.h));
         let vp = view.viewport;
         let scale = vp.effective_scale(full, view.size);
         let placement = vp.placement(full, view.size);
