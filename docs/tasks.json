@@ -9202,5 +9202,12 @@
     "title": "The presets takeover test names no library member",
     "status": "done",
     "detail": "swift_checks' no_crate_trashes_or_removes_a_library_member reads the word `pass` as a library member, so the takeover test's local named so (#1759) read as removing members. The local is now `run`; the check passes 9/9."
+  },
+  {
+    "id": 1821,
+    "type": "fix",
+    "title": "Prepare's ending check reads the status bar once it is idle",
+    "status": "done",
+    "detail": "prepare_ending read the hint 0.9 s after the first frame opened, at the edge of DWELL (1 s), when the editor builds the frame's full resolution ahead and the bar, busy with \"Loading full resolution\", gives the hint's row to it. Under load the read slipped into that build (2 of 20 runs failed with the bar busy). The check now waits for the frame's full resolution built and the bar idle, the condition the hint depends on; the app was right. 20 of 20 pass under the same load."
   }
 ]
