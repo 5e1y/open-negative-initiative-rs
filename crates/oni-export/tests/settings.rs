@@ -77,8 +77,7 @@ fn the_settings_round_trip_through_their_preference() {
 }
 
 #[test]
-fn the_preference_text_is_the_swift_encoders() {
-    // `JSONEncoder` with `.sortedKeys`: no optional written as null, whole numbers without `.0`.
+fn the_preference_text_is_plain_compact_json() {
     assert_eq!(
         Settings::default().raw_value(),
         r#"{"compressTIFF":true,"format":"jpeg","hdr":false,"jpegQuality":0.85,"resizeEdge":"full","space":"p3"}"#
@@ -87,10 +86,13 @@ fn the_preference_text_is_the_swift_encoders() {
     print.resize = Resize::LongestEdge(4000);
     assert_eq!(
         print.raw_value(),
-        r#"{"compressTIFF":true,"format":"tiff16","hdr":false,"jpegQuality":1,"resizeEdge":"long","resizePixels":4000,"space":"adobergb"}"#
+        r#"{"compressTIFF":true,"format":"tiff16","hdr":false,"jpegQuality":1.0,"resizeEdge":"long","resizePixels":4000,"space":"adobergb"}"#
     );
-    // Twin: serde's own text writes `1.0`, which the Swift encoder never does.
-    assert!(serde_json::to_string(&1.0f64).unwrap().contains('.'));
+    // The text the former app wrote, a whole number without its `.0`, reads alike.
+    let former = r#"{"compressTIFF":true,"format":"tiff16","hdr":false,"jpegQuality":1,"resizeEdge":"long","resizePixels":4000,"space":"adobergb"}"#;
+    assert_eq!(Settings::from_raw_value(former), Some(print.clone()));
+    // Twin: a document missing its resize reads the full size, not the print's.
+    assert_ne!(Settings::from_raw_value(&former.replace(r#""resizeEdge":"long","#, "")), Some(print));
 }
 
 #[test]
