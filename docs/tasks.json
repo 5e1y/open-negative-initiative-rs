@@ -9244,5 +9244,26 @@
     "title": "Prepare's ending check reads the status bar once it is idle",
     "status": "done",
     "detail": "prepare_ending read the hint 0.9 s after the first frame opened, at the edge of DWELL (1 s), when the editor builds the frame's full resolution ahead and the bar, busy with \"Loading full resolution\", gives the hint's row to it. Under load the read slipped into that build (2 of 20 runs failed with the bar busy). The check now waits for the frame's full resolution built and the bar idle, the condition the hint depends on; the app was right. 20 of 20 pass under the same load."
+  },
+  {
+    "id": 1825,
+    "type": "refactor",
+    "title": "The decode cache's code stamp covers every source a decode runs through, built by build.rs; LibRaw builds in a crate of its own",
+    "status": "done",
+    "detail": "cache.rs hashed a hand-kept list (pinned.c, stream.cpp, lib.rs, source.rs, camera.rs) and missed neutral.rs, m3.rs, the rest of src/ and the LibRaw version, so retuning them kept serving older decodes. oni-decode/build.rs now prints ONI_DECODE_STAMP (src/stamp.rs: FNV-1a 128 over each file's name from the crate, written with `/`, its length and bytes, sorted, hidden files aside) over src/, ../oni-libraw/LIBRAW_VERSION, ../oni-libraw/csrc and ../oni-libraw/build.rs (the compile's defines), with one rerun-if-changed a part; CODE is env!(\"ONI_DECODE_STAMP\") and the include_str! list is gone. A build script reruns whole, so LibRaw (11 s, 34 s of CPU) moved into the new crate oni-libraw (libraw/, csrc/, LIBRAW_VERSION, its build.rs and pinned_knobs.rs, by git mv), linked through `use oni_libraw as _`: an edit of oni-decode/src reprints the stamp in about 2 s and compiles no LibRaw. Paths updated in CLAUDE.md, README.md, docs/research/libraw-knobs.md and oni-measure/build.rs. cargo hakari generate was already stale on canvas (vendored notify, resvg, usvg) and its manage-deps adds oni-hack to vendor/notify, a cycle: left untouched, oni-libraw depends on oni-hack by hand."
+  },
+  {
+    "id": 1826,
+    "type": "refactor",
+    "title": "The decode cache writes through oni_settings::atomic::cached_with",
+    "status": "done",
+    "detail": "store() loses its own part name, rename and cleanup, the seventh write-then-rename copy: oni-settings becomes a dependency of oni-decode and the write goes through cached_with (no flush, a decode is made again when lost). trim() lets stale `.tmp` temporaries go after 600 s, and the `.part` of earlier builds that share the folder. Checks: a stale temporary and a former part go, a temporary in flight stays (twin); a write stopped midway leaves the kept decode whole and its temporary is taken by the next write of the frame (twin: two names before it, one after)."
+  },
+  {
+    "id": 1827,
+    "type": "check",
+    "title": "The decoder's stamp moves with one byte of any listed file and with nothing else",
+    "status": "done",
+    "detail": "stamp.rs tests: one byte changed in a nested source or in the version file changes the stamp, an unchanged tree keeps it, a file outside the parts or a hidden file inside them moves nothing (twin); one tree in two folders prints alike, a renamed file prints otherwise (twin), a missing part is an error; the built ONI_DECODE_STAMP equals the stamp of today's sources (twin: the former five-file list prints otherwise). Shown live: appending a line to src/m3.rs rebuilt oni-decode alone and the built stamp followed; a line in csrc/stream.cpp rebuilt oni-libraw and the stamp followed."
   }
 ]

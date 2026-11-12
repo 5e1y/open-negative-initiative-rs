@@ -214,6 +214,6 @@ Each one keeps LibRaw as the only demosaicer and decides nothing on its own: the
 
 - **The harness.** It lives outside the repository: `apple.swift`, `lr.c` and two readers. It builds
   with the toolchain `swiftc` and `clang` as `scripts/decoder-gap/run` does. LibRaw comes from
-  `crates/oni-decode/libraw`, compiled apart with `-O2`, with no cargo involved.
+  `crates/oni-libraw/libraw`, compiled apart with `-O2`, with no cargo involved.
 - **If it should stay,** `scripts/decoder-gap/` is the natural home. One frame takes about 45 s for
   every arm.

@@ -7,13 +7,11 @@ license.workspace = true
 [dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "tiff", "gif", "bmp", "ico", "webp"] }
 oni-hack = { version = "0.1", path = "../oni-hack" }
+oni-libraw = { path = "../oni-libraw" }
+oni-settings.workspace = true
 
 [dev-dependencies]
 oni-fixtures.workspace = true
-oni-settings.workspace = true
-
-[build-dependencies]
-cc = { version = "1.8.0", features = ["parallel"] }
 
 [lib]
 doctest = false
