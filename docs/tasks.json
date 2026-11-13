@@ -10350,5 +10350,19 @@
     "title": "The welcome plays its page's film on the Help contract",
     "status": "done",
     "detail": "Help.welcome-clip, welcome-clip-revision and welcome-turned(int) (the page now shown, -1 as the sheet closes) declared as the lead plan fixes them; the card calls welcome-turned. Opening the sheet turns to page 0 and closing it to -1 from Rust too. A page with a film loops it, under Reduce Motion shows its last frame still, any other page or the sheet closing drops the decoder and the texture; a check hands its own films through Options.films. Check: welcome_clip on synthetic films (page 1 shows the film's size and more frames than it has on the rig's clock; twin: on page 0 the revision stands; page 2 its own film; Reduce Motion stands on the last frame, twin: not the first; closed, no picture and no frame asked)."
+  },
+  {
+    "id": 2030,
+    "type": "feature",
+    "title": "The welcome's wipe: the before and the after joined in their real frames",
+    "status": "done",
+    "detail": "oni_demos::wipe joins two frames of one region by a hard edge travelling left to right: the after's pixels left of it, the before's right of it, no line, no mix. frames() gives the wipe at the film's rate, the edge eased, the first frame already moved and the last the after whole. Check wipe::tests: progress 0 is the before, 1 the after, halfway every column is its version's to the bit; twin: the halfway frame differs from both; frames of two sizes are refused."
+  },
+  {
+    "id": 2031,
+    "type": "feature",
+    "title": "The welcome's before: the real 1.5.6 window filmed on the app stage",
+    "status": "done",
+    "detail": "Lives on branch welcome/before-1.5.6 (cc93f509), cut from Version 1.5.6 and never merged: the app stage of #2010 laid into that tree and a before binary writing shot A's region of the real 1.5.6 window as RGBA8 PNG frames, the hand drawn, outside the repository. Only this entry reaches canvas."
   }
 ]
