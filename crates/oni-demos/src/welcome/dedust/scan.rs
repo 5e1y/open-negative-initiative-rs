@@ -47,14 +47,15 @@ impl Scan {
     }
 
     /// The app's reading of the framed frame, and how long it took.
-    pub fn read(&self) -> Result<(dust::Reading, Duration), String> {
+    pub fn read(&self) -> Result<(dust::Reading, Duration, Structure), String> {
         let started = Instant::now();
         let (width, pixels) = self.engine.lock()?.framed_whole(&self.full, &self.settings)?;
         let reading = dust::read(&pixels, width, &Limits::of(&self.settings), MASK_SIDE);
         if (reading.width, reading.height) != (self.size.0 as usize, self.size.1 as usize) {
             return Err(format!("the reading's frame is {}×{}, the render's {:?}", reading.width, reading.height, self.size));
         }
-        Ok((reading, started.elapsed()))
+        let took = started.elapsed();
+        Ok((reading, took, Structure::of(&pixels, width)))
     }
 
     /// The view of `s` at the strip's pixels, as the canvas zoomed past one to one shows it.
@@ -179,22 +180,32 @@ pub fn found(reading: &dust::Reading, sensitivity: f32) -> Vec<Found> {
 }
 
 /// `picture` reduced `by` times to `width` × `height` from its top left, each pixel the mean of the
-/// block it stands for, as a canvas zoomed under one to one shows it.
-pub fn reduced(picture: &Rgba, by: u32, width: u32, height: u32) -> Rgba {
+/// area it stands for, partial pixels by their share, as a canvas zoomed under one to one shows it.
+pub fn reduced(picture: &Rgba, by: f32, width: u32, height: u32) -> Rgba {
+    // Each output pixel's sources along one axis, with the share of each.
+    let spans = |n: u32, limit: u32| -> Vec<Vec<(u32, f32)>> {
+        (0..n)
+            .map(|o| {
+                let (a, b) = (o as f32 * by, (o + 1) as f32 * by);
+                (a.floor() as u32..(b.ceil() as u32).min(limit)).map(|i| (i, (b.min(i as f32 + 1.0) - a.max(i as f32)).max(0.0))).collect()
+            })
+            .collect()
+    };
+    let (xs, ys) = (spans(width, picture.width), spans(height, picture.height));
     let mut pixels = Vec::with_capacity((width * height * 4) as usize);
-    for y in 0..height {
-        for x in 0..width {
-            let (mut sum, mut n) = ([0u32; 4], 0u32);
-            for (px, py) in (0..by * by).map(|k| (x * by + k % by, y * by + k / by)) {
-                if px < picture.width && py < picture.height {
+    for row in &ys {
+        for column in &xs {
+            let (mut sum, mut weight) = ([0f32; 4], 0f32);
+            for &(py, wy) in row {
+                for &(px, wx) in column {
                     let at = ((py * picture.width + px) * 4) as usize;
                     for (c, total) in sum.iter_mut().enumerate() {
-                        *total += u32::from(picture.pixels[at + c]);
+                        *total += f32::from(picture.pixels[at + c]) * wx * wy;
                     }
-                    n += 1;
+                    weight += wx * wy;
                 }
             }
-            pixels.extend(sum.map(|v| (v + n / 2).checked_div(n).unwrap_or(0) as u8));
+            pixels.extend(sum.map(|v| if weight > 0.0 { (v / weight).round() as u8 } else { 0 }));
         }
     }
     Rgba { width, height, pixels }
@@ -202,7 +213,7 @@ pub fn reduced(picture: &Rgba, by: u32, width: u32, height: u32) -> Rgba {
 
 /// `picture`, a view's region, at the view's zoom.
 pub(super) fn zoomed(picture: &Rgba, view: View) -> Rgba {
-    if view.zoom >= 1.0 { magnified(picture, view.zoom as u32, view.width, view.height) } else { reduced(picture, (1.0 / view.zoom).round() as u32, view.width, view.height) }
+    if view.zoom >= 1.0 { magnified(picture, view.zoom as u32, view.width, view.height) } else { reduced(picture, 1.0 / view.zoom, view.width, view.height) }
 }
 
 /// `w` × `h` of `p` from `(x, y)`.

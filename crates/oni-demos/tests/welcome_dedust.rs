@@ -1,5 +1,5 @@
-//! The welcome's De-dust scene on a synthetic dusty negative: DETECT rings what the app's reading found,
-//! REMOVE marks each speck and heals it; twins: an idle hand shows nothing, a clean frame offers nothing.
+//! The welcome's De-dust scene on a synthetic dusty negative: DETECT rings what the reading found in view, REMOVE
+//! marks and heals each under the number of its tile; twins: the whole frame, an idle hand, a clean frame.
 
 use std::path::Path;
 
@@ -10,14 +10,16 @@ use oni_settings::levels::Levels;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
 
-/// Six specks a few pixels wide, apart enough for their numbers, in the frame's pixels.
-const SPECKS: [(usize, usize); 6] = [(780, 420), (820, 500), (780, 580), (820, 660), (780, 740), (820, 820)];
+/// Four specks a few pixels wide, apart enough for their numbers, and two far off any detail holding them,
+/// in the frame's pixels.
+const SPECKS: [(usize, usize); 4] = [(780, 420), (820, 500), (780, 580), (820, 660)];
+const FAR: [(usize, usize); 2] = [(150, 150), (1400, 1000)];
 const SIDE: usize = 6;
 
 /// A negative of a grainy grey, past its window only where a speck lies, with its sidecar.
 fn negative(path: &Path, dusty: bool) {
     oni_fixtures::tiff::pixels_tiff(path, 1600, 1200, |x, y| {
-        let speck = dusty && SPECKS.iter().any(|&(sx, sy)| (sx..sx + SIDE).contains(&x) && (sy..sy + SIDE).contains(&y));
+        let speck = dusty && SPECKS.iter().chain(&FAR).any(|&(sx, sy)| (sx..sx + SIDE).contains(&x) && (sy..sy + SIDE).contains(&y));
         let v = if speck { 0.0 } else { 0.8 + 0.1 * ((x as f32 * 0.13).sin() * (y as f32 * 0.17).cos()) };
         [v, v, v]
     });
@@ -48,6 +50,18 @@ fn in_strip(shot: &Shot, (sx, sy): (usize, usize)) -> (f32, f32) {
     (middle(sx, shot.view.x), middle(sy, shot.view.y))
 }
 
+/// Whether the pane and the strip show the same dust: on every ringed frame the count is the rings the strip
+/// holds, and at the end the tiles' numbers are the marks' numbers the strip holds.
+fn agrees(shot: &Shot) -> bool {
+    let (w, h) = (shot.region.width as f32 / SCALE, shot.region.height as f32 / SCALE);
+    let inside = |p: &(f32, f32)| p.0 > 0.0 && p.1 > 0.0 && p.0 < w && p.1 < h;
+    let counted = shot.seen.iter().filter(|s| !s.rings.is_empty()).all(|s| s.found == s.rings.iter().filter(|r| inside(r)).count() as i32);
+    let last = shot.seen.last().unwrap();
+    let mut numbers: Vec<i32> = last.marks.iter().filter(|m| inside(&m.1)).map(|m| m.0).collect();
+    numbers.sort();
+    counted && numbers == last.rows
+}
+
 #[test]
 fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
     if oni_app::render::Device::open().is_err() {
@@ -63,8 +77,9 @@ fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
     assert!(shot.detected && shot.removed, "the hand's clicks reached both keys");
     let ringed: Vec<_> = shot.seen.iter().filter(|s| !s.rings.is_empty()).collect();
     assert!(!ringed.is_empty(), "rings show after DETECT");
+    assert!(agrees(&shot), "the count is the strip's rings, each tile's number a mark in the strip");
     for seen in &ringed {
-        assert_eq!((seen.rings.len(), seen.found), (SPECKS.len(), SPECKS.len() as i32), "every ring the pane counts, every speck laid");
+        assert_eq!((seen.rings.len(), seen.found), (SPECKS.len(), SPECKS.len() as i32), "the specks in view, none far off");
         for &ring in &seen.rings {
             let (x, y) = on_frame(&shot, ring);
             let on = SPECKS.iter().any(|&(sx, sy)| (x - (sx as f32 + 3.0)).abs() <= 2.0 && (y - (sy as f32 + 3.0)).abs() <= 2.0);
@@ -72,9 +87,6 @@ fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
         }
     }
     let last = shot.seen.last().unwrap();
-    let mut numbers: Vec<i32> = last.marks.iter().map(|m| m.0).collect();
-    numbers.sort();
-    assert_eq!(numbers, last.rows, "each tile's number has its mark");
     assert_eq!((last.rows.len(), last.pending, last.found), (SPECKS.len(), 0, 0), "every patch landed, the reading gone");
     // The pane ends under its tiles' last whole row, inside the stage; the idle twin's shows whole.
     let foot = last.foot.expect("the pane ends under its tiles");
@@ -87,6 +99,10 @@ fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
         let off = |frame: usize| (0..3).map(|c| (pixel(&shot, frame, at)[c] - pixel(&shot, frame, beside)[c]).abs()).max().unwrap();
         assert!(off(0) > 40 && off(end) < off(0) / 3, "the speck at {speck:?} healed: {} then {}", off(0), off(end));
     }
+
+    // Twin: the whole frame's dust ringed and removed: the count and the tiles outrun the strip.
+    let whole = dedust::shoot(&dusty, Ask { whole: true, ..Ask::default() }).unwrap();
+    assert!(!agrees(&whole), "a frame read whole is caught");
 
     // Twin: the same frame and hand, never pressing, shows no ring, no count and no tile.
     let idle = dedust::shoot(&dusty, Ask { still_hand: true, ..Ask::default() }).unwrap();

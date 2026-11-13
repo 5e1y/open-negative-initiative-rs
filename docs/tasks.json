@@ -10546,5 +10546,12 @@
     "title": "The De-dust film ships in the three languages, every healed pixel drawn",
     "status": "done",
     "detail": "Filmed on P1072734 read as the negative it is, its hand strokes cleared on a copy: 38 specks at Sensitivity at rest, 6 whole and apart in the detail at 50 %, read in 0.6 s and healed in 1 s. The GIF writes every changed pixel of the photograph (tolerance 0), so a faint heal is never left undrawn; dedust.gif, dedust.fr.gif and dedust.es.gif join SHIPPED. Each film's ceiling is 2 MB and the six's 12 MB, the owner allowing 20. The tool lays the under-ring crops from the GIF's decoded frames. Checks: welcome (every shipped film fits and speaks every language; the six at their ceilings are the budget, a byte over fails), window welcome, welcome_dedust."
+  },
+  {
+    "id": 2059,
+    "type": "fix",
+    "title": "The De-dust film's strip and pane show the same dust: four specks in view, at rest",
+    "status": "done",
+    "detail": "After R4b and R9d: the reading stays the app's on the whole frame, but what is ringed, counted, written and healed is what it found in the detail in view, so the count is the rings, the marks run from 1 and each has its tile. The detail holds four specks, one row of tiles in every language, at Sensitivity at rest; among tying details the rule takes the one holding most of the picture's forms (the mean step of its log light over 16-pixel cells), not a plain ground. The canvas's pinch zooms between 200 % and 50 % are searched, a reduction by any amount. Check: welcome_dedust lays four specks in view and two far off; the count is the strip's rings and the tiles' numbers its marks; twin: the whole frame read and removed is caught."
   }
 ]
