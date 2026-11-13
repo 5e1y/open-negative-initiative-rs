@@ -1,5 +1,121 @@
-// The welcome's scene of the fixes.
-import { SceneFrame, Cycle } from "welcome.slint";
+// The welcome's scene of the fixes: six areas ticked one after another, their bugs gone, and the
+// count of fixes rising to 70 beside them.
+import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
+import { Label, Icon, Tone, TextRole } from "base.slint";
+import { Icons } from "icons.slint";
+import { SceneFrame, Cycle, Phase, WelcomeStyle } from "welcome.slint";
+
+export global FixesStyle {
+    out property <int> total: 70;
+    out property <length> row: 44px;
+    out property <length> box: 24px;
+    out property <length> list-width: 244px;
+    out property <length> list-left: 56px;
+    out property <length> bug: 18px;
+    out property <length> number: 112px;
+    out property <length> top: (WelcomeStyle.scene-height - 6 * FixesStyle.row) / 2;
+    // Where the count's column starts, after the list and a hairline.
+    out property <length> count-left: FixesStyle.list-left + FixesStyle.list-width + Space.l + Space.m;
+    // When the first tick lands, the time between two, and how long a tick takes, as parts of the loop.
+    out property <float> first: 0.12;
+    out property <float> step: 0.11;
+    out property <float> tick: 0.05;
+    out property <float> fade-in: 0.05;
+}
+
+// One area: its box, its name, and the bug it had, which leaves as the box is ticked.
+component Area inherits Rectangle {
+    in property <int> index;
+    in property <float> t;
+    in property <string> name;
+    width: FixesStyle.list-width;
+    height: FixesStyle.row;
+    ticked := Phase {
+        t: root.t;
+        from: FixesStyle.first + root.index * FixesStyle.step;
+        to: FixesStyle.first + root.index * FixesStyle.step + FixesStyle.tick;
+    }
+    Rectangle {
+        x: 0px;
+        y: (parent.height - FixesStyle.box) / 2;
+        width: FixesStyle.box;
+        height: FixesStyle.box;
+        border-radius: Radius.badge;
+        border-width: Stroke.line;
+        border-color: Colour.separator.mix(Colour.confirm, ticked.v);
+        background: Colour.confirm.with-alpha(ticked.v);
+        Icon {
+            width: ticked.v * 16px;
+            height: ticked.v * 16px;
+            source: Icons.done;
+            tone: Tone.on-fill;
+        }
+    }
+    Label {
+        x: FixesStyle.box + Space.m;
+        width: parent.width - FixesStyle.box - Space.m - FixesStyle.bug - Space.s;
+        height: parent.height;
+        text: root.name;
+        ink: Colour.ink-secondary.mix(Colour.ink, ticked.v);
+    }
+    Icon {
+        x: parent.width - FixesStyle.bug;
+        y: (parent.height - FixesStyle.bug) / 2;
+        width: FixesStyle.bug;
+        height: FixesStyle.bug;
+        source: Icons.feedback;
+        ink: Colour.warning;
+        opacity: 1 - ticked.v;
+    }
+}
 
 export component FixesScene inherits SceneFrame {
+    cycle := Cycle { period: 7s; }
+    property <float> t: cycle.t;
+    property <[string]> areas: [@tr("Editor"), @tr("Gallery"), @tr("Export"), @tr("Prepare the Roll"), @tr("De-dust"), @tr("Files")];
+    counted := Phase {
+        t: root.t;
+        from: FixesStyle.first;
+        to: FixesStyle.first + 5 * FixesStyle.step + FixesStyle.tick;
+    }
+    Rectangle {
+        opacity: max(0.0, min(1.0, root.t / FixesStyle.fade-in));
+        for name[i] in root.areas: Area {
+            x: FixesStyle.list-left;
+            y: FixesStyle.top + i * FixesStyle.row;
+            index: i;
+            t: root.t;
+            name: name;
+        }
+        Rectangle {
+            x: FixesStyle.list-left + FixesStyle.list-width + Space.l;
+            y: FixesStyle.top + Space.s;
+            width: Stroke.line;
+            height: 6 * FixesStyle.row - 2 * Space.s;
+            background: Colour.separator;
+        }
+        Text {
+            x: FixesStyle.count-left;
+            y: FixesStyle.top + 6 * FixesStyle.row / 2 - FixesStyle.number * 0.8;
+            width: parent.width - FixesStyle.count-left - Space.l;
+            height: FixesStyle.number * 1.2;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            font-family: Type.family;
+            font-size: FixesStyle.number;
+            font-weight: Type.bold;
+            color: counted.v >= 1 ? Colour.confirm : Colour.ink;
+            text: @tr("{}", Math.round(counted.v * FixesStyle.total));
+        }
+        Label {
+            x: FixesStyle.count-left;
+            y: FixesStyle.top + 6 * FixesStyle.row / 2 + FixesStyle.number * 0.4;
+            width: parent.width - FixesStyle.count-left - Space.l;
+            height: 24px;
+            centred: true;
+            role: TextRole.title;
+            tone: Tone.secondary;
+            text: @tr("fixes");
+        }
+    }
 }

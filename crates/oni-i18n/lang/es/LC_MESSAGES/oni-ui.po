@@ -269,7 +269,7 @@ msgstr "Cancelar"
 msgid "The DNGs Are Written"
 msgstr "Los DNG están escritos"
 
-#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/dng.slint
 msgid "Nikon High Efficiency RAW"
 msgstr "RAW High Efficiency de Nikon"
 
@@ -453,6 +453,46 @@ msgstr "Haz doble clic para volver al reposo"
 msgid "Photo"
 msgstr "Foto"
 
+#: crates/oni-ui/ui/ds/welcome_edits.slint
+msgid "Bringing settings up to date: {} of {} folders"
+msgstr "Actualizando los ajustes: {} de {} carpetas"
+
+#: crates/oni-ui/ui/ds/welcome_edits.slint
+msgid "Settings up to date: {} of {} folders"
+msgstr "Ajustes al día: {} de {} carpetas"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/settings.slint
+msgid "Editor"
+msgstr "Editor"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/menus.slint
+msgid "Gallery"
+msgstr "Galería"
+
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/export.slint
+msgid "Export"
+msgstr "Exportar"
+
+#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/toolbar.slint
+msgid "Prepare the Roll"
+msgstr "Preparar el rollo"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Polvo"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Files"
+msgstr "Archivos"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "{}"
+msgstr "{}"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "fixes"
+msgstr "correcciones"
+
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
 msgstr "Tu año"
@@ -584,10 +624,6 @@ msgstr "Mostrar solo la variación de color (no recomendado)"
 #: crates/oni-ui/ui/export.slint
 msgid "Get Paper Profiles…"
 msgstr "Obtener perfiles de papel…"
-
-#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
-msgid "Export"
-msgstr "Exportar"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Export as"
@@ -834,116 +870,160 @@ msgid "Show What This Screen Cannot Show"
 msgstr "Mostrar lo que esta pantalla no puede mostrar"
 
 #: crates/oni-ui/ui/help.slint
-msgid "ONI {}, the slide film and contact sheet update"
-msgstr "ONI {}, la actualización de diapositivas y hojas de contactos"
+msgid "ONI {}, the calm and clean update"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Contact sheets, slides, and the whole roll at a glance."
-msgstr "Hojas de contactos, diapositivas y todo el rollo de un vistazo."
+msgid "A quieter interface around your scans, dust found on its own, and many fixes."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "The whole roll, once prepared"
-msgstr "Todo el rollo, una vez preparado"
+msgid "A calmer interface"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "After Prepare the Roll, Select All ({}) shows every frame together, numbered by its place on the film."
-msgstr "Tras Preparar el rollo, Seleccionar todo ({}) muestra todos los fotogramas juntos, numerados según su lugar en la película."
+msgid "Automatic De-dust"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Contact sheets"
-msgstr "Hojas de contactos"
+msgid "Your edits, brought up to date"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Select a few frames, or press the key for the whole roll: they lie together on one sheet."
-msgstr "Selecciona algunos fotogramas, o pulsa la tecla para todo el rollo: se colocan juntos en una hoja."
+msgid "About 70 fixes"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Export a contact sheet"
-msgstr "Exportar una hoja de contactos"
+msgid "Less distraction around your scans"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "The export panel exports the selection as one sheet, with a preview: pick Contact Sheet under Export As."
-msgstr "El panel de exportación exporta la selección como una sola hoja, con vista previa: elige Hoja de contactos en Exportar como."
+msgid "Flat keys that light up under the hand, coloured rails faint until you use them: the photo is what stands out."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slide films"
-msgstr "Diapositivas"
+msgid "More intuitive"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
-msgstr "Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara."
+msgid "Every key is an icon over its word, in the same place in every mode. A keycap means the screen's main action."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slides on white"
-msgstr "Diapositivas sobre blanco"
+msgid "Type any value"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "A contact sheet of slides lies on white, numbered in red under a black logo."
-msgstr "Una hoja de contactos de diapositivas va sobre blanco, numerada en rojo bajo un logotipo negro."
+msgid "Click a slider's number to type it, or nudge it with − and +."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "The whole scan in Prepare"
-msgstr "El escaneo entero en Preparar"
+msgid "Your folders at hand"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll shows and measures every scan uncropped."
-msgstr "Preparar el rollo muestra y mide cada escaneo sin recortar."
+msgid "Favourites and Computer fold like a Finder sidebar, and the rating filter stays beside the open photo."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "RESET SCAN keeps your crop"
-msgstr "RESTABLECER ESCANEO conserva tu recorte"
+msgid "The dust found in one press"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Everything goes back to rest but the crop and the conversion."
-msgstr "Todo vuelve a reposo salvo el recorte y la conversión."
+msgid "In De-dust, DETECT rings every speck it finds, from a single pixel to a large flake. Sensitivity recounts as you slide it."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Trash from the editor"
-msgstr "Papelera desde el editor"
+msgid "Healed when you say so"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "The next frame of the roll opens in its place."
-msgstr "El siguiente fotograma del rollo se abre en su lugar."
+msgid "REMOVE lays a patch on each ringed speck. Each patch is a numbered tile you can check and remove one by one."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "{} beside a photo"
-msgstr "{} junto a una foto"
+msgid "Fast with hundreds of patches"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "The folder's photos show together; a click on one shows it alone again."
-msgstr "Las fotos de la carpeta se muestran juntas; un clic en una la vuelve a mostrar sola."
+msgid "A frame with 200 patches edits as smoothly as a clean one."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "No more flicker on Windows"
-msgstr "Sin parpadeo en Windows"
+msgid "Look before you remove"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Clicking outside the window and back no longer blanks it for an instant."
-msgstr "Hacer clic fuera de la ventana y volver ya no la deja en blanco un instante."
+msgid "A speck across a sharp edge can be missed, and a high Sensitivity can ring fine detail."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Large 16-bit TIFFs"
-msgstr "TIFF de 16 bits grandes"
+msgid "Converted on their own"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "A 16-bit TIFF of 45 Mpx and more opens, in the editor and in Prepare the Roll."
-msgstr "Un TIFF de 16 bits de 45 Mpx o más se abre, en el editor y en Preparar el rollo."
+msgid "At the first launch, the settings beside each photo move to a new format while you work. Your photos are never touched."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "A scan that cannot be read says why"
-msgstr "Un escaneo ilegible dice por qué"
+msgid "No way back"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll no longer waits on it."
-msgstr "Preparar el rollo ya no se queda esperándolo."
+msgid "ONI 1.5 and earlier open converted photos read-only. Keep editing them in this version."
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
-msgid "A click converts a folder’s HE and HE* NEF files to lossless DNGs through Adobe DNG Converter, which ONI downloads and installs when it is missing."
-msgstr "Un clic convierte los NEF HE y HE* de una carpeta en DNG sin pérdida con Adobe DNG Converter, que ONI descarga e instala si falta."
+msgid "Disks away"
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "A disk not connected is converted when it comes back."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Two habits change"
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Keys 1, 2 and 3 now give gold, silver and bronze. The Scanner face no longer applies Auto White Balance: it shows exactly what its keypad reads."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Editing a whole roll moves each frame from its own values, never overwriting its balance."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Undo keeps its history from frame to frame, and names what it takes back."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Dust patches stay on their speck after a crop or a turn, and are back in every export."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "Prepare the Roll: Cancel leaves nothing half done, and frames keep their look from step to step."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint
+msgid "No more freezes on slow or network disks; a move never replaces a file."
+msgstr ""
+
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
+msgid "Back"
+msgstr "Atrás"
 
 #: crates/oni-ui/ui/help.slint
 msgid "GET STARTED"
 msgstr "EMPEZAR"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Next"
+msgstr ""
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
@@ -1120,10 +1200,6 @@ msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-app/src/app/organising/projects.rs crates/oni-ui/ui/library_tree.slint
 msgid "New Project"
 msgstr "Nuevo proyecto"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
-msgid "Gallery"
-msgstr "Galería"
 
 #: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
 msgid "Export…"
@@ -2086,10 +2162,6 @@ msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Devuelve a esta foto el recorte que tenía al abrirse el recorte, y sale."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Polvo"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
 msgstr "Salir de Eliminar polvo"
 
@@ -2164,10 +2236,6 @@ msgstr "Ocultar"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Show How"
 msgstr "Mostrar cómo"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Back"
-msgstr "Atrás"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Measuring…"
@@ -2377,10 +2445,6 @@ msgstr "Informar de un problema…"
 msgid "General"
 msgstr "General"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/settings.slint
-msgid "Editor"
-msgstr "Editor"
-
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone"
 msgstr "Teléfono"
@@ -2480,10 +2544,6 @@ msgstr "Pegar todo"
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
 msgstr "PREPARAR ROLLO"
-
-#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
-msgid "Prepare the Roll"
-msgstr "Preparar el rollo"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "ADD FOLDER…"

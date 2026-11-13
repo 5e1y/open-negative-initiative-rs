@@ -1,5 +1,169 @@
-// The welcome's scene of the edits brought up to date.
-import { SceneFrame, Cycle } from "welcome.slint";
+// The welcome's scene of the edits brought up to date: a row of photos that never move, each with its
+// settings card turned from the old format to the new as a light passes along the row.
+import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
+import { Label, Icon, Tone, TextRole } from "base.slint";
+import { Icons } from "icons.slint";
+import { SceneFrame, Cycle, Phase, WelcomeStyle } from "welcome.slint";
+
+export global EditsStyle {
+    out property <int> count: 5;
+    out property <length> pitch: 104px;
+    out property <length> photo-width: 80px;
+    out property <length> photo-height: 54px;
+    out property <length> card-width: 56px;
+    out property <length> card-height: 72px;
+    // The link from a photo down to the card that holds its settings.
+    out property <length> reach: 36px;
+    out property <length> seal: 18px;
+    out property <length> light-width: 90px;
+    out property <length> bar-width: 160px;
+    out property <length> bar-height: 3px;
+    out property <length> top: (WelcomeStyle.scene-height - EditsStyle.photo-height - EditsStyle.reach - EditsStyle.card-height) / 2 - 24px;
+    out property <length> left: (WelcomeStyle.scene-width - EditsStyle.pitch * EditsStyle.count) / 2;
+    // When the first card turns, the time between two, and how long a turn lasts, as parts of the loop.
+    out property <float> first: 0.16;
+    out property <float> step: 0.12;
+    out property <float> turn: 0.08;
+    // The light's speed: the time it takes to cross one pitch is one step.
+    out property <float> fade-in: 0.05;
+}
+
+// One settings card seen from the front: the old format dull, the new lit and sealed with a check.
+component Face inherits Rectangle {
+    in property <bool> fresh;
+    width: EditsStyle.card-width;
+    height: EditsStyle.card-height;
+    border-radius: Radius.badge;
+    border-width: Stroke.line;
+    background: root.fresh ? Colour.raised : Colour.well;
+    border-color: root.fresh ? Colour.confirm : Colour.separator;
+    Label {
+        x: Space.xs;
+        y: Space.xs;
+        width: parent.width - 2 * Space.xs;
+        text: root.fresh ? "1.6" : "1.5";
+        role: TextRole.caption;
+        tone: root.fresh ? Tone.primary : Tone.tertiary;
+    }
+    for k in 3: Rectangle {
+        x: Space.xs;
+        y: 26px + k * 11px;
+        width: parent.width - 2 * Space.xs - (k == 2 ? Space.m : 0px);
+        height: 5px;
+        border-radius: 2px;
+        background: root.fresh ? Colour.skeleton : Colour.separator;
+    }
+    if root.fresh: Rectangle {
+        x: parent.width - EditsStyle.seal + Space.xs;
+        y: parent.height - EditsStyle.seal + Space.xs;
+        width: EditsStyle.seal;
+        height: EditsStyle.seal;
+        border-radius: EditsStyle.seal / 2;
+        background: Colour.confirm;
+        Icon {
+            width: 12px;
+            height: 12px;
+            source: Icons.done;
+            tone: Tone.on-fill;
+        }
+    }
+}
+
+// A photo, its link and its card; the card turns edge-on at the half of its turn and comes back new.
+component Pair inherits Rectangle {
+    in property <int> index;
+    in property <float> t;
+    in property <color> hue;
+    width: EditsStyle.pitch;
+    height: EditsStyle.photo-height + EditsStyle.reach + EditsStyle.card-height;
+    turn := Phase {
+        t: root.t;
+        from: EditsStyle.first + root.index * EditsStyle.step;
+        to: EditsStyle.first + root.index * EditsStyle.step + EditsStyle.turn;
+    }
+    Rectangle {
+        x: (parent.width - EditsStyle.photo-width) / 2;
+        y: 0px;
+        width: EditsStyle.photo-width;
+        height: EditsStyle.photo-height;
+        border-radius: Radius.picture;
+        clip: true;
+        background: @linear-gradient(150deg, root.hue.brighter(0.3) 0%, root.hue.darker(0.7) 100%);
+        Rectangle {
+            y: parent.height * 0.62;
+            height: parent.height * 0.38;
+            background: Colour.black.with-alpha(0.3);
+        }
+    }
+    Rectangle {
+        x: (parent.width - Stroke.line) / 2;
+        y: EditsStyle.photo-height;
+        width: Stroke.line;
+        height: EditsStyle.reach;
+        background: Colour.separator;
+    }
+    Rectangle {
+        x: (parent.width - EditsStyle.card-width) / 2;
+        y: EditsStyle.photo-height + EditsStyle.reach;
+        width: EditsStyle.card-width;
+        height: EditsStyle.card-height;
+        transform-scale-x: max(0.03, abs(Math.cos(turn.v * 180deg)));
+        Face { fresh: false; visible: turn.v < 0.5; }
+        Face { fresh: true; visible: turn.v >= 0.5; }
+    }
+}
 
 export component EditsScene inherits SceneFrame {
+    cycle := Cycle { period: 7s; }
+    property <float> t: cycle.t;
+    // How many cards have turned by now.
+    property <int> done: Math.round(max(0, min(EditsStyle.count, Math.floor((root.t - EditsStyle.first - EditsStyle.turn / 2) / EditsStyle.step) + 1)));
+    property <[color]> hues: [Colour.channel-cyan, Colour.channel-blue, Colour.channel-yellow, Colour.channel-green, Colour.channel-red];
+    property <float> progress: max(0, min(1, (root.t - EditsStyle.first) / ((EditsStyle.count - 1) * EditsStyle.step + EditsStyle.turn)));
+    Rectangle {
+        opacity: max(0.0, min(1.0, root.t / EditsStyle.fade-in));
+        for hue[i] in root.hues: Pair {
+            x: EditsStyle.left + i * EditsStyle.pitch;
+            y: EditsStyle.top;
+            index: i;
+            t: root.t;
+            hue: hue;
+        }
+        // The light, over the cards' band alone so no photo is ever lit.
+        Rectangle {
+            x: EditsStyle.left;
+            y: EditsStyle.top + EditsStyle.photo-height + EditsStyle.reach - Space.s;
+            width: EditsStyle.pitch * EditsStyle.count;
+            height: EditsStyle.card-height + 2 * Space.s;
+            clip: true;
+            // Three nested bands, so the light is brightest at its heart.
+            for k in 3: Rectangle {
+                y: 0px;
+                x: EditsStyle.pitch / 2 + (root.t - EditsStyle.first - EditsStyle.turn / 2) / EditsStyle.step * EditsStyle.pitch - EditsStyle.light-width * (3 - k) / 6;
+                width: EditsStyle.light-width * (3 - k) / 3;
+                background: Colour.white.with-alpha(0.04);
+            }
+        }
+        Label {
+            y: EditsStyle.top + EditsStyle.photo-height + EditsStyle.reach + EditsStyle.card-height + Space.l + Space.s;
+            width: parent.width;
+            height: 20px;
+            centred: true;
+            role: TextRole.caption;
+            text: root.done < EditsStyle.count ? @tr("Bringing settings up to date: {} of {} folders", root.done, EditsStyle.count) : @tr("Settings up to date: {} of {} folders", root.done, EditsStyle.count);
+        }
+        Rectangle {
+            x: (parent.width - EditsStyle.bar-width) / 2;
+            y: EditsStyle.top + EditsStyle.photo-height + EditsStyle.reach + EditsStyle.card-height + Space.l + Space.s + 28px;
+            width: EditsStyle.bar-width;
+            height: EditsStyle.bar-height;
+            border-radius: EditsStyle.bar-height / 2;
+            background: Colour.track;
+            Rectangle {
+                width: parent.width * root.progress;
+                border-radius: parent.border-radius;
+                background: Colour.confirm;
+            }
+        }
+    }
 }
