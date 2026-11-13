@@ -5,9 +5,10 @@ import { Colour, Motion } from "theme.slint";
 import { Dot } from "marks.slint";
 
 export global WelcomeStyle {
-    // The stage at 4:3 beside a column of words as tall as it, so the card fits the smallest window whole.
+    // The stage beside a column of words as tall as it, so the card fits the smallest window whole; 460
+    // tall, a film's crop holds the bar down through a slider's row.
     out property <length> stage-width: DS.control-dialog-wide-width;
-    out property <length> stage-height: root.stage-width * 3 / 4;
+    out property <length> stage-height: DS.control-welcome-stage-height;
     out property <length> words-width: DS.control-welcome-words-width;
     out property <length> card-width: root.stage-width + root.words-width;
     out property <length> card-height: root.stage-height;

@@ -14,7 +14,7 @@ use crate::common::{self, Placed};
 
 /// `WelcomeStyle`: the stage, the words beside it, the card they make; `SheetStyle`'s margin and rest.
 const STAGE: f32 = 560.0;
-const CARD: (f32, f32) = (960.0, 420.0);
+const CARD: (f32, f32) = (960.0, 460.0);
 const MARGIN: f32 = 24.0;
 const REST: f32 = 0.42;
 /// A word each page shows once, at the top of its words.

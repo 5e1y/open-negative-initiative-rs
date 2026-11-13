@@ -280,7 +280,7 @@ Every overlay takes one of two forms, the help cards (`HelpLayer`) and the menus
 - Three widths: `width` for a question or a one-field form, `notice-width` for a form of several groups (a
   notice, the report, the catch-up), `wide-width` for a wide form (a preset's save). A board keeps a
   gauge of its own (Settings, the papers, the stocks, the preset editor, the welcome).
-- The welcome is a card of `WelcomeStyle`: a 4:3 stage for the page's photo or film on the left, the words
+- The welcome is a card of `WelcomeStyle`: a 560 by 460 stage for the page's photo or film on the left, the words
   and the footer on the right, only the words scrolling; the stage crops before the words give up their width.
 - It comes in as one at `Motion.overlay-in`, the scrim darkening as the card rises `SheetStyle.rise`.
 - Its footer puts what leaves at the left, then apart at the right a step back and the commit, the accent keycap:
