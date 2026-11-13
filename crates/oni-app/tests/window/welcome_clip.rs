@@ -62,7 +62,7 @@ pub(crate) fn the_welcome_plays_its_pages_film_and_drops_it_as_it_closes() {
     let revision = || help.get_welcome_clip_revision();
 
     // The cover: no film, and the clock moving asks no frame.
-    shell.welcome_if_due();
+    shell.launch_sheets();
     assert!(help.get_welcome_shown());
     let opened = revision();
     watch(&rig, Duration::from_millis(500));

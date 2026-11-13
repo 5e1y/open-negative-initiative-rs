@@ -10504,5 +10504,40 @@
     "title": "The help card's demo on the shared clip player",
     "status": "todo",
     "detail": "help/clip.rs still runs a player of its own (its own thread, a new image per frame). After the 1.6 welcome ships, it takes a third seat on help::player::Player like Prepare's demos and the welcome's films, so every clip decodes on one thread with bounded frames and redraws only what moved."
+  },
+  {
+    "id": 2053,
+    "type": "fix",
+    "title": "A sheet closing over another hands the keyboard to the one beneath",
+    "status": "done",
+    "detail": "Cause: a sheet takes the keyboard as it shows (Sheet's scope.focus()), but a sheet removed while holding it leaves the keyboard on no item, and nothing gave it to a sheet still shown, so the welcome under the conversion notice heard no arrow once the notice closed. Fix in Sheet: each takes a serial as it shows; the window counts the sheets shown (sheet_count.slint's Shown, the conversion notice now counted too) and, when the count falls, every sheet still laid (its owner's flag, `shown`, read so a sheet on its way out never wins) offers itself and the latest takes the keyboard. Check: sheet_stack (two stacked, the top closed, the welcome's page turned by the right arrow; twin: under the top sheet the arrow does not reach it; run without the hand-back it fails)."
+  },
+  {
+    "id": 2054,
+    "type": "fix",
+    "title": "Launch sheets one at a time: the welcome, then the conversion notice",
+    "status": "done",
+    "detail": "Cause: the launch raised the conversion notice (migrate) and then the welcome, each on its own, so the notice lay over the welcome. Fix: the order lives where launch sheets are raised (shell/launch_sheets.rs, LaunchSheet): Shell::launch_sheets raises the first owed, and the welcome's closing raises the next, so the notice follows the welcome whether or not anything was refused, and with no welcome due shows at once; the notice of files left waits for both. Checks: migration (the notice not shown while the welcome is, shown as it closes, its GOT IT holding the keys); twin migration::with_no_welcome_due_the_notice_shows_at_once."
+  },
+  {
+    "id": 2055,
+    "type": "change",
+    "title": "The welcome's last page stops repeating the conversion",
+    "status": "done",
+    "detail": "The conversion is told once, by the notice, to those it concerns. Page 3's right column under Good to know keeps two points: Medals on 1, 2 and 3 / Keys 1, 2 and 3 now give gold, silver and bronze., and The Scanner face shows its keypad / It no longer applies Auto White Balance: it shows exactly what its keypad reads. The two conversion points and the combined habits point leave the page and the catalogues; French and Spanish translated."
+  },
+  {
+    "id": 2056,
+    "type": "fix",
+    "title": "The gallery's bar inside the narrowest window in French",
+    "status": "done",
+    "detail": "Cause: at the narrowest window the bar gave only its flat keys' words way; the gallery's keycaps (PRÉPARER LA PELLICULE, AJOUTER UN DOSSIER…) kept theirs, and in French the bar at its least ran past the window, EXPORTER 2 pt over its edge. Fix in the bar's layout: it reads a second width, the bar at its least with those keycaps worded (Bar.least); narrower, they wear their glyphs alone, and the zone's least is the bare set's. Check: toolbar_fit::the_bars_last_key_stays_inside_the_narrowest_window_in_every_language (editor and gallery, en/fr/es under the compiled interface, the last key inside by the bar's end; worded at Bar.least, glyphs alone a point under; French needs more than the narrowest window with words)."
+  },
+  {
+    "id": 2057,
+    "type": "interface",
+    "title": "The welcome's page dots named for assistive technology",
+    "status": "done",
+    "detail": "Each dot of PageDots is a tab named Page {n} of {count} through the catalogues, the count from the sheet, the shown one selected, its default action showing its page. Check: sheet_stack (the four names found, the selection following a turn; twin: no dot answers a count of three)."
   }
 ]

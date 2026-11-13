@@ -60,7 +60,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
 
     // The welcome sheet: due on a fresh Mac, its pages turned by Return, closed by the last, not due again.
     assert!(first.ctl.welcome_due());
-    first.welcome_if_due();
+    first.launch_sheets();
     let help = first.window.global::<Help>();
     assert!(help.get_welcome_shown());
     for page in 1..4 {

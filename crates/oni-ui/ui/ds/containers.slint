@@ -195,7 +195,13 @@ export component Sheet inherits Rectangle {
     out property <length> shown-width: card.width;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;
     property <float> come;
-    init => { root.come = 1; }
+    // Its owner's flag, false on a sheet on its way out, which never takes the keyboard handed down; its
+    // place among the sheets shown, the latest highest, wins the keyboard as a sheet over it closes.
+    in property <bool> shown: true;
+    property <int> serial;
+    init => { root.come = 1; Keyboard.opened += 1; root.serial = Keyboard.opened; }
+    property <int> closed: Keyboard.closed;
+    changed closed => { if (root.shown && root.serial > Keyboard.top) { Keyboard.top = root.serial; scope.focus(); } }
     animate come { duration: Motion.overlay-in; easing: ease-out; }
     Rectangle { width: 100%; height: 100%; background: Colour.scrim; opacity: root.come; }
     TouchArea { }

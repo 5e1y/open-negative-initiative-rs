@@ -261,7 +261,7 @@ msgstr "Añadir un objetivo…"
 msgid "No lens yet"
 msgstr "Aún no hay objetivos"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/panel/parts.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -385,6 +385,10 @@ msgstr "Después"
 msgid "REMEASURE ROLL"
 msgstr "VOLVER A MEDIR"
 
+#: crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint
+msgid "DONE"
+msgstr "OK"
+
 #: crates/oni-ui/ui/ds/notices.slint
 msgid "Dismiss"
 msgstr "Cerrar"
@@ -452,6 +456,10 @@ msgstr "Haz doble clic para volver al reposo"
 #: crates/oni-ui/ui/ds/splash.slint
 msgid "Photo"
 msgstr "Foto"
+
+#: crates/oni-ui/ui/ds/welcome.slint
+msgid "Page {} of {}"
+msgstr "Página {} de {}"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
@@ -934,28 +942,20 @@ msgid "Good to know"
 msgstr "Conviene saber"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Your edits are converted"
-msgstr "Tus ediciones se convierten"
+msgid "Medals on 1, 2 and 3"
+msgstr "Medallas en 1, 2 y 3"
 
 #: crates/oni-ui/ui/help.slint
-msgid "At the first launch, the settings beside each photo move to a new format. Your photos are never touched; a disk away is converted when it comes back."
-msgstr "En el primer arranque, los ajustes junto a cada foto pasan a un nuevo formato. Tus fotos nunca se tocan; un disco ausente se convierte cuando vuelve."
+msgid "Keys 1, 2 and 3 now give gold, silver and bronze."
+msgstr "Las teclas 1, 2 y 3 ahora dan oro, plata y bronce."
 
 #: crates/oni-ui/ui/help.slint
-msgid "No way back"
-msgstr "Sin vuelta atrás"
+msgid "The Scanner face shows its keypad"
+msgstr "La cara Escáner muestra su teclado"
 
 #: crates/oni-ui/ui/help.slint
-msgid "ONI 1.5 and earlier open converted photos read-only."
-msgstr "ONI 1.5 y anteriores abren las fotos convertidas en solo lectura."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Two habits change"
-msgstr "Cambian dos costumbres"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Keys 1, 2 and 3 give gold, silver and bronze. The Scanner face no longer applies Auto White Balance."
-msgstr "Las teclas 1, 2 y 3 dan oro, plata y bronce. La cara Scanner ya no aplica el balance de blancos automático."
+msgid "It no longer applies Auto White Balance: it shows exactly what its keypad reads."
+msgstr "Ya no aplica el balance de blancos automático: muestra exactamente lo que lee su teclado."
 
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
 msgid "Back"
@@ -1296,10 +1296,6 @@ msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fu
 #: crates/oni-ui/ui/navigator.slint
 msgid "Add"
 msgstr "Añadir"
-
-#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/panel/parts.slint
-msgid "DONE"
-msgstr "OK"
 
 #: crates/oni-ui/ui/notice.slint
 msgid "RAW Colour, Recalibrated"

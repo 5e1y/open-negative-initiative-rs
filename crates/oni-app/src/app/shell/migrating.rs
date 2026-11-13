@@ -40,20 +40,22 @@ impl Ctl {
     }
 
     /// The sheet saying the sidecars' new format, once, where the support folder held something: the
-    /// ledger records it only once a window shows it.
-    pub fn tell_migration_if_due(&self) {
-        let due = std::mem::take(&mut self.state.borrow_mut().nav.brought.tell);
-        if let (true, Some(w)) = (due, self.window()) {
-            w.global::<Upgraded>().set_shown(true);
-            migration::told(&self.state.borrow().support);
+    /// ledger records it only once a window shows it. Whether it was raised.
+    pub(in crate::app) fn tell_migration_if_due(&self) -> bool {
+        let Some(w) = self.window() else { return false };
+        if !std::mem::take(&mut self.state.borrow_mut().nav.brought.tell) {
+            return false;
         }
+        w.global::<Upgraded>().set_shown(true);
+        migration::told(&self.state.borrow().support);
+        true
     }
 
     /// The files a sweep left as they were and has not said yet, said once in one notice by their
-    /// reasons, never over the sheet: shown after it closes.
+    /// reasons, never before the sheet nor over it: shown after it closes.
     pub(in crate::app) fn tell_left(&self) {
         let Some(w) = self.window() else { return };
-        if w.global::<Upgraded>().get_shown() {
+        if w.global::<Upgraded>().get_shown() || self.state.borrow().nav.brought.tell {
             return;
         }
         let support = self.state.borrow().support.clone();

@@ -197,8 +197,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     let _ = slint::quit_event_loop();
                 });
             } else {
+                shell.launch_sheets();
                 shell.migrate(&oni_app::system::caches());
-                shell.welcome_if_due();
                 shell.offer_wrapped();
                 *hz.borrow_mut() = oni_app::hz::watch(&shell.window);
             }

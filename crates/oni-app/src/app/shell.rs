@@ -2,7 +2,10 @@
 
 use super::*;
 
+mod launch_sheets;
 mod migrating;
+
+pub(in crate::app) use launch_sheets::LaunchSheet;
 
 impl Shell {
     /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
@@ -270,19 +273,16 @@ impl Shell {
         self.ctl.state.borrow_mut().opening.get_or_insert_with(String::new);
     }
 
-    /// `WelcomeSheet.isDue` at launch: shown once per edition, never under a bench.
-    /// The sheet saying the sidecars' new format, once; then the sweep over `caches`' indexes too,
-    /// which never waits for it.
-    pub fn migrate(&self, caches: &Path) {
-        self.ctl.tell_migration_if_due();
-        self.ctl.tell_left();
-        self.ctl.start_migration(Some(caches));
+    /// The sheets the launch owes, one at a time, never under a bench: the welcome once per edition, then
+    /// the sidecars' new format said once.
+    pub fn launch_sheets(&self) {
+        self.ctl.launch_sheet_after(None);
     }
 
-    pub fn welcome_if_due(&self) {
-        if self.ctl.welcome_due() {
-            self.ctl.open_welcome();
-        }
+    /// The sweep over `caches`' indexes too, which never waits for a sheet.
+    pub fn migrate(&self, caches: &Path) {
+        self.ctl.tell_left();
+        self.ctl.start_migration(Some(caches));
     }
 
     /// `offerWrapped()` at launch: December's summary, once a year, never under a bench.

@@ -30,6 +30,7 @@ import { Told, ToldNotice } from "told.slint";
 import { KeyWords } from "key_words.slint";
 import { Converting, DngSheet, DngStage } from "dng.slint";
 import { Menus, MenuTitles, MenuLive } from "menus.slint";
+import { Shown } from "sheet_count.slint";
 
 export { DS, Motion, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, PanelTab, RollState, InfoKind, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Upgraded, Starter, Exporting, ExportLine, PaperRow, SheetTile }
 export { Editors } from "editors.slint";
@@ -92,11 +93,10 @@ export component MainWindow inherits AppWindow {
     changed face => { Tips.close(); }
     changed info => { Tips.close(); }
     changed panel-seen => { Tips.close(); }
-    // Any sheet over the window, every flag that lays one below.
-    out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || AppSettings.shown || Notice.shown
-        || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Exporting.naming-shown || Stocks.shown
-        || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
-        || Advice.shown || Wrapped.shown || Unsaved.shown || Converting.shown;
+    // Any sheet over the window (`Shown`); one closing over another hands the keyboard down (`Sheet`).
+    out property <bool> sheet-shown: Shown.sheets > 0;
+    property <int> sheets: Shown.sheets;
+    changed sheets => { if (self.sheets < Keyboard.sheets) { Keyboard.top = 0; Keyboard.closed += 1; } Keyboard.sheets = self.sheets; }
     // A sheet shown takes the keyboard from what is behind it (`Sheet`), and the tooltip, as a new screen
     // does; closed, it hands the keyboard back, its own field going with it.
     changed sheet-shown => {
@@ -336,31 +336,31 @@ export component MainWindow inherits AppWindow {
 
     if Tip.open != "": HelpLayer { width: root.width; height: root.height; column-x: root.column-x; top: root.card-top; }
 
-    if Presets.saving: PresetSaveSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Presets.editing: PresetEditorSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Presets.saving: PresetSaveSheet { shown: Presets.saving; x: 0; y: 0; width: root.width; height: root.height; }
+    if Presets.editing: PresetEditorSheet { shown: Presets.editing; x: 0; y: 0; width: root.width; height: root.height; }
 
-    if Pairing.shown: PairingSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if AppSettings.shown: SettingsSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Pairing.shown: PairingSheet { shown: Pairing.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if AppSettings.shown: SettingsSheet { shown: AppSettings.shown; x: 0; y: 0; width: root.width; height: root.height; }
 
-    if Notice.shown: NoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Navigator.catch-up-shown: RootsCatchUpSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.confirm-shown: ExportConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.naming-shown: PresetNameSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Stocks.shown: StockPickerSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Notice.shown: NoticeSheet { shown: Notice.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Navigator.catch-up-shown: RootsCatchUpSheet { shown: Navigator.catch-up-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.confirm-shown: ExportConfirmSheet { shown: Exporting.confirm-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.notice-shown: ExportNoticeSheet { shown: Exporting.notice-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.naming-shown: PresetNameSheet { shown: Exporting.naming-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Stocks.shown: StockPickerSheet { shown: Stocks.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.papers-shown: PaperSheet { shown: Exporting.papers-shown; x: 0; y: 0; width: root.width; height: root.height; }
 
-    if Help.welcome-shown: WelcomeSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Upgraded.shown: UpgradedSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Help.report-shown: ReportSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Choice.shown: ChoiceSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if MaskDialog.shown: MaskDialogSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Help.welcome-shown: WelcomeSheet { shown: Help.welcome-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Upgraded.shown: UpgradedSheet { shown: Upgraded.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Help.report-shown: ReportSheet { shown: Help.report-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Choice.shown: ChoiceSheet { shown: Choice.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if MaskDialog.shown: MaskDialogSheet { shown: MaskDialog.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Advice.shown: AdviceSheet { shown: Advice.shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Wrapped.shown: WrappedView { x: 0; y: 0; width: root.width; height: root.height; }
-    if Unsaved.shown: UnsavedSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Converting.shown: DngSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Unsaved.shown: UnsavedSheet { shown: Unsaved.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    if Converting.shown: DngSheet { shown: Converting.shown; x: 0; y: 0; width: root.width; height: root.height; }
     // Last, so a question asked over another sheet, as quitting's, is drawn over it.
-    if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Confirm.shown: ConfirmSheet { shown: Confirm.shown; x: 0; y: 0; width: root.width; height: root.height; }
 
     // Where the content starts in the window: under Slint's own menu bar where the system has none.
     origin := Rectangle { x: 0; y: 0; width: 0; height: 0; }

@@ -62,8 +62,10 @@ export global Bar {
     in property <length> traffic-lights;
     // The bar's height, which the traffic lights are centred in.
     out property <length> height: ShellStyle.bar-height;
-    // The window's width under which the flat keys' words give way to their glyphs.
+    // The window's width under which the flat keys' words give way to their glyphs, and the one under
+    // which the gallery's keycaps give theirs way too.
     in-out property <length> needed;
+    in-out property <length> least;
     callback act(Act);
     // Where each canvas tool's key stands in the window, as the key shown publishes it, for its tab and its
     // ring around the card to meet it.
@@ -252,11 +254,13 @@ component EditorKeys inherits Centre {
 }
 
 component GalleryKeys inherits Centre {
+    // Its keycaps' glyphs alone, where even the glyphs of the flat keys leave too little room for their words.
+    in property <bool> bare;
     // The photos picked, opening on the key the editor's first opens on; the rating filter is the library's.
     SelectAll { compact: root.compact; publishes: !root.measuring; }
     Cap {
         action: Act.prepare-roll;
-        text: @tr("PREPARE ROLL");
+        text: root.bare ? "" : @tr("PREPARE ROLL");
         icon: Icons.prepare;
         kind: Bar.prepare-first ? ButtonKind.accent : ButtonKind.plain;
         help: @tr("Prepare the Roll");
@@ -264,7 +268,7 @@ component GalleryKeys inherits Centre {
     }
     Cap {
         action: Act.add-folder;
-        text: @tr("ADD FOLDER…");
+        text: root.bare ? "" : @tr("ADD FOLDER…");
         icon: Icons.add-folder;
         kind: Bar.add-first ? ButtonKind.accent : ButtonKind.plain;
         help: @tr("Star a folder of scans and open it");
@@ -279,18 +283,25 @@ export component Toolbar inherits Surface {
     property <length> full: root.start + ShellStyle.bar-end + mode.preferred-width + history-sizing.preferred-width
         + max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width)
         + own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
+    // The bar at its least with the gallery's keycaps worded, the flat keys' glyphs alone: narrower, the
+    // keycaps lose their words too.
+    property <length> least: root.start + ShellStyle.bar-end + mode.preferred-width + compact-history-sizing.preferred-width
+        + max(compact-gallery-sizing.preferred-width, compact-sizing.min-width, steps-sizing.min-width)
+        + compact-own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
     // Settled once the bar is laid: the history's and the app's keys stand in the bar's own layout, so
     // a binding would feed their widths back into the width that decides them.
     property <bool> compact;
-    init => {
+    property <bool> bare;
+    function fit() {
         root.compact = root.width < root.full;
+        root.bare = root.width < root.least;
         Bar.needed = root.full;
+        Bar.least = root.least;
     }
-    changed width => { root.compact = root.width < root.full; }
-    changed full => {
-        root.compact = root.width < root.full;
-        Bar.needed = root.full;
-    }
+    init => { root.fit(); }
+    changed width => { root.fit(); }
+    changed full => { root.fit(); }
+    changed least => { root.fit(); }
     // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
     property <bool> tool: Bar.editing && (PanelState.tab == PanelTab.crop || PanelState.tab == PanelTab.dedust);
     // Out of the gallery, the mode key goes back to it.
@@ -324,15 +335,18 @@ export component Toolbar inherits Surface {
         // giving way; the set shown sits on the window's centre if it can, its faces narrowing first.
         Rectangle {
             horizontal-stretch: 1;
-            min-width: max(compact-sizing.min-width, compact-gallery-sizing.min-width, steps-sizing.min-width);
+            min-width: max(compact-sizing.min-width, bare-gallery-sizing.min-width, steps-sizing.min-width);
             preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width);
             sizing := EditorKeys { visible: false; measuring: true; }
             gallery-sizing := GalleryKeys { visible: false; measuring: true; }
             compact-sizing := EditorKeys { visible: false; measuring: true; compact: true; }
             compact-gallery-sizing := GalleryKeys { visible: false; measuring: true; compact: true; }
+            bare-gallery-sizing := GalleryKeys { visible: false; measuring: true; compact: true; bare: true; }
             steps-sizing := RollStepKeys { visible: false; }
             history-sizing := History { visible: false; }
+            compact-history-sizing := History { visible: false; compact: true; }
             own-sizing := Own { visible: false; }
+            compact-own-sizing := Own { visible: false; compact: true; }
             edit-sizing := Cap { visible: false; text: @tr("EDIT"); icon: Icons.edit; }
             back-sizing := Cap { visible: false; text: @tr("BACK"); icon: Icons.back; }
             if Preparing.shown: RollStepKeys {
@@ -346,6 +360,7 @@ export component Toolbar inherits Surface {
             }
             if !Bar.editing && !Preparing.shown: GalleryKeys {
                 compact: root.compact;
+                bare: root.bare;
                 width: min(self.preferred-width, parent.width);
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
