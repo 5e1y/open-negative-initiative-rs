@@ -1,5 +1,5 @@
-//! Prepare the Roll's tutorials, Swift's `TutorialVideo`: one square clip a step, muted, played once
-//! when asked. Each is a GIF at 20 fps decoded frame by frame, so every system plays the same file.
+//! Prepare the Roll's tutorials: one square clip a step, muted, played once when asked. Each is a GIF
+//! at 20 fps decoded frame by frame, so every system plays the same file; the welcome's films too.
 
 use std::io::Cursor;
 use std::time::Duration;
@@ -38,23 +38,46 @@ impl Frames {
         self.size
     }
 
-    /// The next picture, RGBA rows, and how long it shows; none past the last frame.
-    pub fn next(&mut self) -> Option<(&[u8], Duration)> {
+    /// The picture the frames read so far laid.
+    pub fn picture(&self) -> &[u8] {
+        &self.picture
+    }
+
+    /// The next picture, RGBA rows, how long it shows, and whether it differs from the last; none
+    /// past the last frame.
+    pub fn next(&mut self) -> Option<(&[u8], Duration, bool)> {
         let frame = self.decoder.read_next_frame().ok()??;
         let width = self.size.0 as usize;
         let (left, top, w) = (usize::from(frame.left), usize::from(frame.top), usize::from(frame.width));
+        let mut moved = false;
         // Transparent pixels keep what the frames before laid, as each frame writes only what moved.
         for (y, row) in frame.buffer.chunks_exact(w * 4).enumerate() {
             for (x, pixel) in row.chunks_exact(4).enumerate() {
                 if pixel[3] > 0 {
                     let at = ((top + y) * width + left + x) * 4;
+                    moved |= self.picture[at..at + 4] != *pixel;
                     self.picture[at..at + 4].copy_from_slice(pixel);
                 }
             }
         }
         let delay = Duration::from_millis(u64::from(frame.delay.max(1)) * 10);
-        Some((&self.picture, delay))
+        Some((&self.picture, delay, moved))
     }
+}
+
+/// A clip of a light bar over a grey ground, one frame per place given, 20 a second: the checks'
+/// stand-in for a film. A place repeated is a frame where nothing moves.
+pub fn synthetic(width: u16, height: u16, places: &[u16]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let mut encoder = gif::Encoder::new(&mut bytes, width, height, &[96, 96, 96, 240, 220, 160]).expect("a header");
+    for &place in places {
+        let bar = (width / 8).max(1);
+        let buffer: Vec<u8> = (0..height).flat_map(|_| (0..width).map(move |x| u8::from(x >= place && x < place + bar))).collect();
+        let frame = gif::Frame { width, height, delay: 5, buffer: buffer.into(), ..gif::Frame::default() };
+        encoder.write_frame(&frame).expect("a frame");
+    }
+    drop(encoder);
+    bytes
 }
 
 #[cfg(test)]
@@ -67,7 +90,7 @@ mod tests {
             let mut frames = Frames::new(clip(step).expect("a clip")).expect("a GIF");
             let (w, h) = frames.size();
             assert!(w.abs_diff(h) <= 1, "step {step} is square to a pixel: {w} × {h}");
-            let first = frames.next().map(|(p, d)| (p.to_vec(), d)).expect("a first frame");
+            let first = frames.next().map(|(p, d, _)| (p.to_vec(), d)).expect("a first frame");
             assert_eq!(first.1, Duration::from_millis(50));
             assert!(first.0.chunks_exact(4).any(|p| p[..3] != first.0[..3]), "step {step}'s first frame is a picture, not a fill");
             let mut count = 1;

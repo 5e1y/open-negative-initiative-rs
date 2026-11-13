@@ -159,6 +159,8 @@ impl Shell {
             reporter: options.reporter,
             news_kept: HashSet::new(),
             console: None,
+            welcome_clip: None,
+            films: options.films,
             nav,
             prepare: prepare::Roll::new(options.require_roll),
             updates: updates::Updates::new(options.updates),

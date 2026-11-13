@@ -32,6 +32,7 @@ pub struct Options {
     pub phone: bool,
     /// What the launch's `migration::support` left: imports due, never written this run, and its notice.
     pub brought: crate::migration::Brought,
+    pub films: super::Films,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -65,6 +66,7 @@ impl Default for Options {
             identify: oni_library::places::system(),
             phone: phone::offered(),
             brought: Default::default(),
+            films: Box::new(|film| crate::welcome::clip(film, oni_i18n::current())),
         }
     }
 }

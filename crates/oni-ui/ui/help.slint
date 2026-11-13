@@ -34,6 +34,9 @@ export global Help {
     callback welcome-closed();
     callback website();
     callback feedback();
+    in property <image> welcome-clip;
+    in property <int> welcome-clip-revision;
+    callback welcome-turned(int);   // the page now shown, -1 as the sheet closes
     // `ReportSheet`
     in property <bool> report-shown;
     in-out property <string> report-message;

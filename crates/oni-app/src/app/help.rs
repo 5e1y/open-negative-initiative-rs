@@ -1,5 +1,5 @@
 //! The Help menu in the window: What's New's notes on the headings they changed, the welcome sheet
-//! shown once per release, Report a Bug sending its sealed log off this thread, and the console.
+//! shown once per release with its films, Report a Bug sending its sealed log off this thread, the console.
 
 use super::{Ctl, with_shell};
 use crate::{ConsoleWindow, Help, News, report, system};
@@ -116,6 +116,8 @@ impl Ctl {
         let help = window.global::<Help>();
         let p = me.clone();
         help.on_welcome_closed(move || p.welcome_closed());
+        let p = me.clone();
+        help.on_welcome_turned(move |page| p.welcome_turned(page));
         help.on_website(|| system::open_url(SITE));
         let p = me.clone();
         help.on_feedback(move || {
@@ -212,6 +214,7 @@ impl Ctl {
         h.set_welcome_credit(crate::starter::credit(version).into());
         h.set_welcome_page(0);
         h.set_welcome_shown(true);
+        self.welcome_turned(0);
     }
 
     /// However it closes, it is not shown again on the next launch.
@@ -221,6 +224,7 @@ impl Ctl {
             return;
         }
         w.global::<Help>().set_welcome_shown(false);
+        self.welcome_turned(-1);
         let written = self.state.borrow_mut().preferences.set(WELCOME_KEY, EDITION.into());
         if let Err(e) = written {
             self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
@@ -335,5 +339,6 @@ impl Ctl {
 }
 
 mod clip;
+mod welcome_clip;
 #[cfg(test)]
 mod tests;

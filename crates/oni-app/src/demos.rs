@@ -121,10 +121,10 @@ mod tests {
             let mut frames = Frames::new(bytes).expect("a GIF");
             let (w, h) = frames.size();
             assert_eq!(w, h, "{topic} is square");
-            let (_, delay) = frames.next().expect("a first frame");
+            let (_, delay, _) = frames.next().expect("a first frame");
             assert_eq!(delay.as_millis() % 50, 0, "{topic} runs on 20 fps steps: {delay:?}");
             let mut shown = delay;
-            while let Some((_, d)) = frames.next() {
+            while let Some((_, d, _)) = frames.next() {
                 shown += d;
                 assert!(shown < Duration::from_secs(10), "{topic} lasts over ten seconds");
             }
