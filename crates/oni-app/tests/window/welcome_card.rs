@@ -1,7 +1,7 @@
 //! The welcome's card at the smallest window and below: the stage on the left of the words, the
-//! footer inside the card and the window, the words still in every language; in a short window the
-//! words scroll alone and NEXT stays in reach. Twins: a page too long scrolls, a short window's card
-//! is shorter than the stage.
+//! footer inside the card and the window, the words still in every language, each page dot a hand's
+//! least target; in a short window the words scroll alone and NEXT stays in reach. Twins: a page too
+//! long scrolls, a short window's card is shorter than the stage, a click past a dot's reach misses it.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Help, MainWindow};
@@ -17,6 +17,8 @@ const STAGE: f32 = 560.0;
 const CARD: (f32, f32) = (960.0, 502.0);
 const MARGIN: f32 = 24.0;
 const REST: f32 = 0.42;
+/// `DS.control-grab-size`, the hand's least target: a page dot's touch at the least, about its 6 pt dot.
+const REACH: f32 = 24.0;
 /// A word each page shows once, at the top of its words.
 const FIRSTS: [&str; 4] = [
     "A quieter interface around your scans, dust found on its own, and about 70 fixes.",
@@ -45,6 +47,20 @@ fn scrolled(rig: &common::Rig, window: &MainWindow, page: usize) -> f32 {
     rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 4000.0 });
     rig.pump();
     moved
+}
+
+/// The dot that turns to `page`, named by its place among the four.
+fn dot(window: &MainWindow, page: usize) -> Placed {
+    let label = tr("Page {} of {}").replacen("{}", &(page + 1).to_string(), 1).replacen("{}", "4", 1);
+    common::the(window, Role::Tab, &label)
+}
+
+fn tap(rig: &common::Rig, (x, y): (f32, f32)) {
+    let position = LogicalPosition::new(x, y);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
+    rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
+    rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
+    rig.pump();
 }
 
 fn sized(rig: &common::Rig, (w, h): (u32, u32)) {
@@ -87,11 +103,28 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
                 assert!(words.x < left + STAGE / 4.0, "{language:?}: the last page's words take the card, at {}", words.x);
             }
             assert!(key.x + key.width <= left + CARD.0 && key.y + key.height <= top + CARD.1 + 0.5, "{language:?} page {page}: the key inside the card, {key:?}");
+            let (first, last) = (dot(&window, 0), dot(&window, 3));
+            let back = common::placed(&window, Role::Button, tr("Back"));
+            let end = back.first().map_or(key.x, |back| back.x);
+            assert!(first.x >= left && last.x + last.width <= end, "{language:?} page {page}: the dots between the card's edge and the keys, {first:?} {last:?}");
             let moved = scrolled(&rig, &window, page);
             assert!(moved.abs() < 0.5, "{language:?} page {page}: the words fit, a wheel moved them {moved}");
         }
     }
     oni_app::language::speak(Some(Language::English));
+
+    // Each dot's touch is the hand's least target, and a click inside it turns to its page.
+    help.set_welcome_page(0);
+    rig.settle();
+    for page in 0..4 {
+        let touch = dot(&window, page);
+        assert!(touch.width >= REACH && touch.height >= REACH, "dot {page}: a touch of {REACH} at the least, {touch:?}");
+    }
+    let (x, y) = dot(&window, 2).middle();
+    tap(&rig, (x, y - REACH / 2.0 - 1.0));
+    assert_eq!(help.get_welcome_page(), 0, "twin: a click past the dot's reach turns no page");
+    tap(&rig, (x, y - REACH / 2.0 + 1.0));
+    assert_eq!(help.get_welcome_page(), 2, "a click at the edge of the dot's reach turns to its page");
 
     // Twin: a heading far longer than any page's does scroll, so the wheel above could see it.
     help.set_welcome_page(0);

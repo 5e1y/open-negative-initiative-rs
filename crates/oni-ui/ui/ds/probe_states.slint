@@ -1,8 +1,8 @@
 // The states a check reads off the drawn window, each at a fixed place: a key and a keycap out of reach, an
 // idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals, a
-// tool's header.
+// tool's header, a row of keys.
 import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill, ScannerStyle, ToggleStyle, AppWindow } from "ds.slint";
-import { Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal, Section, SectionStyle, ShellStyle, ModeHeader } from "ds.slint";
+import { Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal, Section, SectionStyle, ShellStyle, ModeHeader, ButtonRows, Label } from "ds.slint";
 import { MedalStyle } from "theme.slint";
 import { Figure } from "marks.slint";
 import { LabScreen } from "keypad.slint";
@@ -253,5 +253,21 @@ export component HeaderProbe inherits AppWindow {
         padding-right: Space.m;
         alignment: start;
         ModeHeader { title: root.name; }
+    }
+}
+
+// A row of keys over a line of words, both the check's, at the window's width: where the lines fall.
+export component RowsProbe inherits AppWindow {
+    in property <[string]> keys;
+    in property <string> words;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 400px;
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.s;
+        alignment: start;
+        ButtonRows { keys: root.keys; }
+        Label { text: root.words; }
     }
 }

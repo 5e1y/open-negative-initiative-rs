@@ -2,7 +2,7 @@
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
 import { Pairing } from "pairing.slint";
-import { Sheet, SheetHeader, SheetStyle, SectionStyle, Button, ButtonGroup, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, Tone, Field, FieldLayout } from "ds/ds.slint";
+import { Sheet, SheetHeader, SheetStyle, SectionStyle, ButtonRows, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, Tone, Field, FieldLayout } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -26,12 +26,12 @@ export global AppSettings {
     callback close();
 }
 
-// A gesture that opens a sheet of its own closes this one first, so the two never stack.
-component SheetKey inherits Button {
-    in property <Act> act;
-    clicked => {
+// Keys whose gesture opens a sheet of its own close this one first, so the two never stack.
+component SheetKeys inherits ButtonRows {
+    in property <[Act]> acts;
+    pressed(i) => {
         AppSettings.close();
-        AppSettings.flip(root.act);
+        AppSettings.flip(root.acts[i]);
     }
 }
 
@@ -136,9 +136,9 @@ component FrontierPage inherits Page {
             Label { tone: Tone.secondary; overflow: elide; text: AppSettings.frontier-file != "" ? AppSettings.frontier-file : @tr("Measured"); }
         }
         Label { role: TextRole.note; text: @tr("A colour table laid over ONI's conversion, in sRGB. Export it as a .cube file, edit it in any app that opens one, then use the file: each save shows at once, until Reset returns to the measured table."); }
-        ButtonGroup {
-            Button { text: @tr("Export…"); clicked => { AppSettings.flip(Act.frontier-export); } }
-            Button { text: @tr("Use a File…"); clicked => { AppSettings.flip(Act.frontier-choose); } }
+        ButtonRows {
+            keys: [@tr("Export…"), @tr("Use a File…")];
+            pressed(i) => { AppSettings.flip([Act.frontier-export, Act.frontier-choose][i]); }
         }
     }
 }
@@ -153,9 +153,14 @@ component PhonePage inherits Page {
         title: @tr("Phone Remote");
         Label { role: TextRole.note; text: @tr("The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."); }
         if AppSettings.phones != "": Label { role: TextRole.note; text: AppSettings.phones; }
-        ButtonGroup {
-            SheetKey { text: @tr("Pair Phone…"); act: Act.pair-phone; }
-            Button { text: @tr("Forget Phones"); enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
+        ButtonRows {
+            keys: [@tr("Pair Phone…"), @tr("Forget Phones")];
+            enabled: [true, AppSettings.can-forget];
+            // Pairing opens a sheet of its own, so Settings closes first; forgetting opens none.
+            pressed(i) => {
+                if (i == 0) { AppSettings.close(); }
+                AppSettings.flip([Act.pair-phone, Act.forget-phones][i]);
+            }
         }
     }
 }
@@ -173,9 +178,9 @@ component AboutPage inherits Page {
             alignment: start;
             LcdReadout { text: AppSettings.version; }
         }
-        ButtonGroup {
-            SheetKey { text: @tr("Check for Updates"); act: Act.check-updates; }
-            SheetKey { text: @tr("What's New"); act: Act.whats-new; }
+        SheetKeys {
+            keys: [@tr("Check for Updates"), @tr("What's New")];
+            acts: [Act.check-updates, Act.whats-new];
         }
     }
     Section {
@@ -183,10 +188,9 @@ component AboutPage inherits Page {
         foldable: false;
         before: SectionStyle.sheet-before;
         title: @tr("Help");
-        ButtonGroup {
-            SheetKey { text: @tr("Welcome"); act: Act.welcome; }
-            SheetKey { text: @tr("Report a Problem…"); act: Act.report; }
-            SheetKey { text: @tr("Diagnostic Log"); act: Act.console; }
+        SheetKeys {
+            keys: [@tr("Welcome"), @tr("Report a Problem…"), @tr("Diagnostic Log")];
+            acts: [Act.welcome, Act.report, Act.console];
         }
     }
 }

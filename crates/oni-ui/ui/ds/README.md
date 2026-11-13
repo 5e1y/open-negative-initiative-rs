@@ -94,8 +94,10 @@ oni-lab) draws a still key once and a pressed one once a frame.
   A key that shows or hides what it governs, a "?"'s card or a block's fold, sets `expandable`, and
   `expanded` while it stands open: the key tells assistive tools itself, never its use site.
 - **Groups**: related keys stand in a `ButtonGroup`, `ButtonStyle.group-gap` (`Space.s`) apart as Swift's
-  `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A key unrelated to its
-  neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`
+  `HStack` of keys, each on its own face; `align: fill` shares the row's width out. A page's row of worded
+  keys that a longer language may not fit on one line is a `ButtonRows` (its `keys`, `pressed` saying which),
+  which carries the keys past the line's end onto the next by its layout, as the Settings pages' keys. A key
+  unrelated to its neighbour, or one that removes, resets or empties beside one that keeps, stands `ButtonStyle.apart`
   (twice the group's gap) from it: an `AskSheet` sets its destructive answer so. The bar has two gaps
   alone, none within a group (`ButtonGroup { joined: true }`, its flat keys touching) and `ShellStyle.bar-gap`
   between groups, its groups by job; its Reset, with Trash in the gallery, ends the centre as one group past a
