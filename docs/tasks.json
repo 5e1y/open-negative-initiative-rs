@@ -10497,5 +10497,12 @@
     "title": "The De-dust scene on a finished export, shown as it is",
     "status": "done",
     "detail": "A plain image with no edit opens in De-dust as the positive it is (PipelineSettings::rest(Positive)), the reading taking it at its blacks. The strip shows the export's own code values; once patches land, the decoded scan they lie on, framed as the reading reads it, is brought back by its curve alone while its primaries are held (the file's own), so where nothing is laid it gives back the export's values to the bit, and the film refuses a drift over 1. Probe: --probe DIR FILE writes each file's ring stills at rest and 50 %. Check: welcome_dedust (an export's values on screen, speck included; the healed path's drift; twin: the matrix path strays and fails it). The scene holds no colour (the veil read from the exported DustStyle), and the timeline is split by part under the 400-line ceiling: scan, framing, answers, the shoot."
+  },
+  {
+    "id": 2052,
+    "type": "refactor",
+    "title": "The help card's demo on the shared clip player",
+    "status": "todo",
+    "detail": "help/clip.rs still runs a player of its own (its own thread, a new image per frame). After the 1.6 welcome ships, it takes a third seat on help::player::Player like Prepare's demos and the welcome's films, so every clip decodes on one thread with bounded frames and redraws only what moved."
   }
 ]
