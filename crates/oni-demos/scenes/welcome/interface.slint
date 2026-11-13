@@ -1,0 +1,119 @@
+// The welcome's interface film in 1.6, staged: the owner's photograph as a strip at the left, and beside it
+// a column at the panel's width, stacked as the app stacks it: the bar's last keys, the tabs, Colour.
+import { Type, Space, ShellStyle, TabsStyle, Icons, Button, ButtonGroup, ButtonKind, Surface, Picture, Fit, Ground, Divider, Tabs, SectionStyle, Stroke } from "../../../oni-ui/ui/ds/ds.slint";
+import { ColorPane } from "../../../oni-ui/ui/panel/color_tab.slint";
+export { Raster, Depth, Readouts } from "../../../oni-ui/ui/ds/ds.slint";
+export { Store } from "../../../oni-ui/ui/store.slint";
+
+// `Toolbar`'s keys as `AppBar.item` lays them: a glyph over its word, flat, lit under the hand alone; the
+// glyph alone on a square short of room.
+component Key inherits Button {
+    in property <bool> compact;
+    in property <string> word;
+    stacked: true;
+    in-bar: true;
+    has-icon: true;
+    text: root.compact ? "" : root.word;
+}
+
+// The editor's keys a wipe turns from the former keycaps: the settings carried from photo to photo, then
+// Reset, then EXPORT, the screen's one keycap, at the column's edge.
+component Keys inherits HorizontalLayout {
+    in property <bool> compact;
+    in property <bool> can-reset;
+    out property <length> copy-x: copy.absolute-position.x + copy.width / 2;
+    out property <length> copy-y: copy.absolute-position.y + copy.height / 2;
+    out property <length> paste-x: paste.absolute-position.x + paste.width / 2;
+    out property <length> paste-y: paste.absolute-position.y + paste.height / 2;
+    padding-right: ShellStyle.bar-end;
+    padding-top: ShellStyle.bar-padding;
+    padding-bottom: ShellStyle.bar-padding;
+    spacing: ShellStyle.bar-gap;
+    alignment: end;
+    // A copy stands made, so the paste keys are in reach.
+    ButtonGroup {
+        joined: true;
+        copy := Key { compact: root.compact; icon: Icons.copy; word: @tr("Copy"); }
+        paste := Key { compact: root.compact; icon: Icons.paste; word: @tr("Paste"); }
+        Key { compact: root.compact; icon: Icons.film-roll; word: @tr("Paste All"); }
+    }
+    ButtonGroup {
+        joined: true;
+        Key { compact: root.compact; icon: Icons.reset; word: @tr("Reset"); enabled: root.can-reset; }
+    }
+    Button {
+        stacked: true;
+        in-bar: true;
+        has-icon: true;
+        keycap: true;
+        kind: ButtonKind.accent;
+        icon: Icons.export;
+        text: @tr("EXPORT");
+        fixed-width: ShellStyle.export-width;
+    }
+}
+
+export component Interface inherits Window {
+    in property <image> photo;
+    // The bar's Reset, awake while a block stands off its rest, as `Bar.can-reset` says it.
+    in property <bool> can-reset;
+    out property <length> photo-x: picture.absolute-position.x;
+    out property <length> photo-y: picture.absolute-position.y;
+    out property <length> photo-width: picture.width;
+    out property <length> photo-height: picture.height;
+    out property <length> copy-x: keys.copy-x;
+    out property <length> copy-y: keys.copy-y;
+    out property <length> paste-x: keys.paste-x;
+    out property <length> paste-y: keys.paste-y;
+    // The pane ends on a whole row: its height, which the timeline reads off the layout, and what it reads it with.
+    in property <length> pane-height;
+    out property <length> pane-y: pane.absolute-position.y;
+    out property <length> section-after: SectionStyle.after;
+    out property <length> line: Stroke.line;
+    default-font-family: Type.family;
+    Surface {
+        HorizontalLayout {
+            // The photograph edge to edge and square, as the before lays it, so the wipe runs through one picture.
+            picture := Picture { source: root.photo; fit: Fit.cover; ground: Ground.canvas; horizontal-stretch: 1; }
+            VerticalLayout {
+                width: ShellStyle.panel-width;
+                // The keys with every word, read off a hidden copy as the bar reads its own: short of room,
+                // the flat keys' words give way to their glyphs.
+                Rectangle {
+                    height: ShellStyle.bar-height;
+                    sizing := Keys { visible: false; }
+                    keys := Keys {
+                        width: parent.width;
+                        height: parent.height;
+                        compact: sizing.min-width > parent.width;
+                        can-reset: root.can-reset;
+                    }
+                }
+                // `Panel`'s pinned header: the three panes' tabs, Colour shown, down to its rule.
+                HorizontalLayout {
+                    padding-left: Space.m;
+                    padding-right: Space.m;
+                    padding-top: Space.s;
+                    padding-bottom: Space.s;
+                    Tabs {
+                        height: TabsStyle.height;
+                        tabs: [@tr("Roll"), @tr("Colour"), @tr("Details")];
+                        marked: [false, false, false];
+                        selected: 1;
+                    }
+                }
+                Divider { }
+                room := Rectangle {
+                    vertical-stretch: 1;
+                    // Laid whole as in the panel, shown down to the row the timeline names; the panel's ground below.
+                    pane := Rectangle {
+                        y: 0;
+                        height: root.pane-height > 0 ? root.pane-height : room.height;
+                        clip: true;
+                        ColorPane { y: 0; width: room.width; height: room.height; shown: true; }
+                    }
+                }
+            }
+        }
+    }
+}

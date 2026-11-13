@@ -38,6 +38,14 @@ pub trait Demo {
     fn worded(&self) -> bool {
         false
     }
+    /// The scene's size in points: the help card's square unless the demo has a stage of its own.
+    fn size(&self) -> (f32, f32) {
+        (SIDE, SIDE)
+    }
+    /// The photograph it is made of: the help cards' RAW unless the demo shows another.
+    fn source(&self) -> PathBuf {
+        photo::source()
+    }
     /// How its GIF is packed under the weight ceiling.
     fn tuning(&self) -> Tuning {
         Tuning { tolerance: 10, colours: 128 }
@@ -51,8 +59,8 @@ pub fn scenes() -> PathBuf {
 /// Every frame of `demo`, the hand drawn on each, and where its photograph lies.
 pub fn shoot(demo: &mut dyn Demo) -> Result<(Vec<Rgba>, Region), String> {
     let file = scenes().join(format!("{}.slint", demo.topic()));
-    let mut stage = Stage::new(&file, demo.component(), (SIDE, SIDE))?;
-    let mut photo = Photo::open(&photo::source())?;
+    let mut stage = Stage::new(&file, demo.component(), demo.size())?;
+    let mut photo = Photo::open(&demo.source())?;
     demo.prepare(&stage, &mut photo)?;
     stage.settle();
     let px = |name: &str| (stage.number(name) * SCALE).round() as u32;

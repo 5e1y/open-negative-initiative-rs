@@ -93,7 +93,9 @@ pub fn trn(one: &'static str, many: &'static str, n: u64) -> String {
     chosen.replace("{n}", &n.to_string())
 }
 
-fn translated(language: Language, english: &str, form: Option<usize>) -> Option<&'static str> {
+/// `english` in `language`, a plural's `form` when given; none where the catalogue lacks it, and for
+/// English, written in the source.
+pub fn translated(language: Language, english: &str, form: Option<usize>) -> Option<&'static str> {
     let forms = language.catalogue()?.get(english)?;
     let text = forms.get(form.unwrap_or(0))?;
     (!text.is_empty()).then_some(text.as_str())
