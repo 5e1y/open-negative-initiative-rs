@@ -10,7 +10,7 @@ fn the_notes_are_swifts_and_each_names_its_heading_once() {
     let mut unique = ids.clone();
     unique.dedup();
     assert_eq!(unique.len(), ids.len());
-    assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.5"));
+    assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.6"));
 }
 
 #[test]

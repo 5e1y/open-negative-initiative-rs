@@ -10287,5 +10287,12 @@
     "title": "An original in the cloud owes no sweep",
     "status": "done",
     "detail": "Lot 3 second review. A folder holding an undownloaded original went back to pending at every run and was walked again whole at each launch. Such a file is now listed once with its reason like any other, no place pending for it; the gate brings it once ONI opens it (#1996) or reads its row again. Check: sweep_tests an_original_in_the_cloud_is_said_once_owes_no_sweep_and_is_brought_once_opened (twin: downloaded, the gate brings it)."
+  },
+  {
+    "id": 2005,
+    "type": "feature",
+    "title": "The 1.6 welcome told in pages",
+    "status": "done",
+    "detail": "The welcome sheet becomes five pages over one 3:2 stage: the version photo and the release in four lines, then the calmer interface, Automatic De-dust, the edits brought up to date (format 22, no way back, two changed habits) and about 70 fixes. BACK, NEXT, Return, the arrows and the dots turn them; GET STARTED closes on the last. Scenes loop on a clock that rests on their last state under Reduce Motion. Edition 1.6, version 1.6.0. Checks: help (Return turns each page, the last closes; twin: a page before the last stays open), sheet_layout (GET STARTED on the last page fits or scrolls)."
   }
 ]

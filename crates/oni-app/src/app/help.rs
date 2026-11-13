@@ -22,7 +22,7 @@ pub const SEEN_KEY: &str = "whatsNewSeen";
 /// `WelcomeSheet.preferenceKey` and `edition`: the release the sheet speaks of, 1.X; a new one shows it
 /// to everyone again, a patch of a release seen never does.
 pub const WELCOME_KEY: &str = "welcomeSeen";
-pub const EDITION: &str = "1.5";
+pub const EDITION: &str = "1.6";
 const SITE: &str = "https://open-negative-initiative.com";
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);
@@ -210,6 +210,7 @@ impl Ctl {
         h.set_welcome_picture(crate::starter::picture(version) as i32);
         h.set_welcome_line(format!("V{version}").into());
         h.set_welcome_credit(crate::starter::credit(version).into());
+        h.set_welcome_page(0);
         h.set_welcome_shown(true);
     }
 

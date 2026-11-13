@@ -1,0 +1,66 @@
+// The welcome's pages: the stage every page's picture or scene fills, the clock its scenes loop on,
+// and the dots that say which page shows and take a click to another.
+import { DS } from "tokens.slint";
+import { Colour, Space, Motion } from "theme.slint";
+import { SplashStyle } from "splash.slint";
+import { Dot } from "marks.slint";
+
+export global WelcomeStyle {
+    // The scene fills the wide sheet edge to edge at the version photo's 3:2, so no page moves the card.
+    out property <length> scene-width: DS.control-dialog-wide-width;
+    out property <length> scene-height: DS.control-dialog-wide-width / SplashStyle.welcome-aspect;
+    // The words under the scene; a page longer than this scrolls inside it, the card never grows.
+    out property <length> words-height: 340px;
+    out property <length> dot: 6px;
+    out property <length> dot-reach: 16px;
+}
+
+// A scene's clock: `t` runs from 0 to 1 over `period` from the moment the scene shows, then again;
+// under Reduce Motion it rests at `rest`, the scene's last state, so the page still says it all.
+export component Cycle {
+    in property <duration> period;
+    in property <float> rest: 1;
+    property <duration> start;
+    init => { root.start = animation-tick(); }
+    out property <float> t: Motion.reduced ? root.rest : Math.mod((animation-tick() - root.start) / root.period, 1);
+    width: 0px;
+    height: 0px;
+}
+
+// A stretch of a cycle: 0 before `from`, 1 after `to`, eased between, so a scene writes its steps as times.
+export component Phase {
+    in property <float> t;
+    in property <float> from;
+    in property <float> to;
+    property <float> p: max(0, min(1, (root.t - root.from) / (root.to - root.from)));
+    out property <float> v: root.p * root.p * (3 - 2 * root.p);
+    width: 0px;
+    height: 0px;
+}
+
+// The stage under every page's words: the scene drawn on the canvas's ground, cut at its edge.
+export component SceneFrame inherits Rectangle {
+    width: WelcomeStyle.scene-width;
+    height: WelcomeStyle.scene-height;
+    background: Colour.canvas;
+    clip: true;
+}
+
+// One dot a page, the shown one lit; a click on a dot shows its page.
+export component PageDots inherits HorizontalLayout {
+    in property <int> count;
+    in property <int> at;
+    callback picked(int);
+    alignment: center;
+    for page in root.count: TouchArea {
+        width: WelcomeStyle.dot-reach;
+        height: WelcomeStyle.dot-reach;
+        mouse-cursor: pointer;
+        clicked => { root.picked(page); }
+        Dot {
+            size: WelcomeStyle.dot;
+            ink: page == root.at ? Colour.ink : Colour.ink-tertiary;
+            animate background { duration: Motion.quick; }
+        }
+    }
+}

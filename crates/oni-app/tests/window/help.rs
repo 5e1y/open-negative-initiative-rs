@@ -58,14 +58,19 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     let seen = Preferences::load(&support).value("whatsNewSeen").cloned();
     assert_eq!(seen, Some(serde_json::json!(["lighting.1.3.1"])));
 
-    // The welcome sheet: due on a fresh Mac, closed by Return, not due again.
+    // The welcome sheet: due on a fresh Mac, its pages turned by Return, closed by the last, not due again.
     assert!(first.ctl.welcome_due());
     first.welcome_if_due();
     let help = first.window.global::<Help>();
     assert!(help.get_welcome_shown());
+    for page in 1..5 {
+        rig.key("\n");
+        assert!(help.get_welcome_shown(), "twin: Return on a page before the last turns it");
+        assert_eq!(help.get_welcome_page(), page);
+    }
     rig.key("\n");
     assert!(!help.get_welcome_shown());
-    assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.5"));
+    assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.6"));
 
     // Report a Bug: a refused post stays on the sheet with its reason; an accepted one thanks.
     first.ctl.act(oni_app::Act::Report);

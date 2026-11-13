@@ -60,6 +60,8 @@ pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
     let closed = Rc::new(Cell::new(false));
     let heard = closed.clone();
     help.on_welcome_closed(move || heard.set(true));
+    // GET STARTED is the last page's commit.
+    help.set_welcome_page(4);
     help.set_welcome_shown(true);
 
     // Tall: GET STARTED in the window as it opens, the card's foot a margin above the window's.
@@ -68,8 +70,8 @@ pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
     window.show().unwrap();
     rig.settle();
     println!("shot {}", rig.shot("welcome-tall").display());
-    // The key's band: the card's right part, clear of Website and Feedback on the left.
-    let keys = |w: f32| (w / 2.0 + 120.0, w / 2.0 + 280.0 - 24.0);
+    // The key's band: the card's right end, clear of Back beside it and of Website and Feedback on the left.
+    let keys = |w: f32| (w / 2.0 + 170.0, w / 2.0 + 280.0 - 24.0);
     let tall = find(&rig, &closed, keys(w), (0.0, h)).expect("GET STARTED shows in a tall window");
     assert!(tall.1 < h - 24.0 - 24.0, "the card stops a margin above the window's foot");
     // Nothing to scroll: the wheel leaves the key where it was.
@@ -81,19 +83,15 @@ pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
     click(&rig, 40.0, h / 2.0);
     assert!(!closed.get(), "a click beside the welcome leaves it open");
 
-    // Short: the key below the window's foot until the wheel brings it up inside the card.
-    let (w, h) = (1280.0, 700.0);
+    // Short: the words give up their height and scroll, the keys stay in reach without a wheel.
+    let (w, h) = (1280.0, 560.0);
     rig.window.set_size(PhysicalSize::new(w as u32, h as u32));
     rig.settle();
     println!("shot {}", rig.shot("welcome-short").display());
-    assert!(find(&rig, &closed, keys(w), (0.0, h)).is_none(), "twin: in a short window GET STARTED is out of reach unscrolled");
-    for _ in 0..4 {
-        wheel(&rig, w / 2.0, h / 2.0, -600.0);
-    }
-    rig.settle();
-    println!("shot {}", rig.shot("welcome-short-scrolled").display());
-    let short = find(&rig, &closed, keys(w), (0.0, h)).expect("scrolled, GET STARTED is reached");
-    assert!(short.1 < h - 24.0, "the scrolled card still stops a margin above the window's foot");
+    let short = find(&rig, &closed, keys(w), (0.0, h)).expect("in a short window GET STARTED is reached unscrolled");
+    assert!(short.1 < h - 24.0, "the short card still stops a margin above the window's foot");
+    // Twin: the key is not where the tall card held it, the card did give up height.
+    assert!(short.1 < tall.1 - 200.0);
     help.set_welcome_shown(false);
 
     // A notice: its title and message on the left, OK on the right of the card.

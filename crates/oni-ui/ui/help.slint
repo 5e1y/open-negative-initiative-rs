@@ -1,5 +1,5 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
-import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField, SheetFooter } from "ds/ds.slint";
+import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField, SheetFooter, BulletLine, WelcomeStyle, PageDots, InterfaceScene, DedustScene, EditsScene, FixesScene } from "ds/ds.slint";
 import { KeyWords } from "key_words.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
@@ -26,6 +26,8 @@ export global Help {
     in property <int> welcome-picture;
     in property <string> welcome-line;
     in property <string> welcome-credit;
+    // The page shown, the first as the sheet opens.
+    in-out property <int> welcome-page;
     callback welcome-closed();
     callback website();
     callback feedback();
@@ -50,48 +52,99 @@ component Point inherits VerticalLayout {
     Label { text: root.text; role: TextRole.note; }
 }
 
-// `WelcomeSheet`: the version's photo edge to edge, then what changed, and GET STARTED; one column
-// that scrolls once the window is shorter than it. Modal: only its keys close it.
+// `WelcomeSheet`: the release told in pages, each a picture or a scene over its words; BACK and NEXT
+// or the arrows turn them, the dots jump, GET STARTED on the last. Modal: only its keys close it.
 export component WelcomeSheet inherits Sheet {
     wide: true;
     bleed: true;
+    paging: true;
+    property <int> count: 5;
+    property <int> page: Help.welcome-page;
+    property <bool> last: root.page == root.count - 1;
+    function turn(by: int) { Help.welcome-page = max(0, min(root.count - 1, root.page + by)); }
     dismissed => { Help.welcome-closed(); }
-    returned => { Help.welcome-closed(); }
-    WelcomePhoto {
+    returned => {
+        if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
+    }
+    paged(by) => { root.turn(by); }
+    if root.page == 0: WelcomePhoto {
         picture: Help.welcome-picture;
         line: Help.welcome-line;
         credit: Help.welcome-credit;
     }
+    if root.page == 1: InterfaceScene { }
+    if root.page == 2: DedustScene { }
+    if root.page == 3: EditsScene { }
+    if root.page == 4: FixesScene { }
     VerticalLayout {
         padding: Space.l;
-        spacing: Space.l;
-        VerticalLayout {
-            spacing: Space.s;
-            Label { text: @tr("ONI {}, the slide film and contact sheet update", Help.release); role: TextRole.heading; wrap: word-wrap; }
-            Label { text: @tr("Contact sheets, slides, and the whole roll at a glance."); role: TextRole.note; }
+        spacing: Space.m;
+        height: WelcomeStyle.words-height;
+        Scroller {
+            vertical-stretch: 1;
+            content-height: words.preferred-height;
+            words := VerticalLayout {
+                width: parent.width;
+                spacing: Space.m;
+                if root.page == 0: VerticalLayout {
+                    spacing: Space.m;
+                    Label { text: @tr("ONI {}, the calm and clean update", Help.release); role: TextRole.heading; wrap: word-wrap; }
+                    Label { text: @tr("A quieter interface around your scans, dust found on its own, and many fixes."); role: TextRole.note; wrap: word-wrap; }
+                    BulletLine { text: @tr("A calmer interface"); }
+                    BulletLine { text: @tr("Automatic De-dust"); }
+                    BulletLine { text: @tr("Your edits, brought up to date"); }
+                    BulletLine { text: @tr("About 70 fixes"); }
+                }
+                if root.page == 1: VerticalLayout {
+                    spacing: Space.m;
+                    Label { text: @tr("A calmer interface"); role: TextRole.heading; wrap: word-wrap; }
+                    Point { title: @tr("Less distraction around your scans"); text: @tr("Flat keys that light up under the hand, coloured rails faint until you use them: the photo is what stands out."); }
+                    Point { title: @tr("More intuitive"); text: @tr("Every key is an icon over its word, in the same place in every mode. A keycap means the screen's main action."); }
+                    Point { title: @tr("Type any value"); text: @tr("Click a slider's number to type it, or nudge it with − and +."); }
+                    Point { title: @tr("Your folders at hand"); text: @tr("Favourites and Computer fold like a Finder sidebar, and the rating filter stays beside the open photo."); }
+                }
+                if root.page == 2: VerticalLayout {
+                    spacing: Space.m;
+                    Label { text: @tr("Automatic De-dust"); role: TextRole.heading; wrap: word-wrap; }
+                    Point { title: @tr("The dust found in one press"); text: @tr("In De-dust, DETECT rings every speck it finds, from a single pixel to a large flake. Sensitivity recounts as you slide it."); }
+                    Point { title: @tr("Healed when you say so"); text: @tr("REMOVE lays a patch on each ringed speck. Each patch is a numbered tile you can check and remove one by one."); }
+                    Point { title: @tr("Fast with hundreds of patches"); text: @tr("A frame with 200 patches edits as smoothly as a clean one."); }
+                    Point { title: @tr("Look before you remove"); text: @tr("A speck across a sharp edge can be missed, and a high Sensitivity can ring fine detail."); }
+                }
+                if root.page == 3: VerticalLayout {
+                    spacing: Space.m;
+                    Label { text: @tr("Your edits, brought up to date"); role: TextRole.heading; wrap: word-wrap; }
+                    Point { title: @tr("Converted on their own"); text: @tr("At the first launch, the settings beside each photo move to a new format while you work. Your photos are never touched."); }
+                    Point { title: @tr("No way back"); text: @tr("ONI 1.5 and earlier open converted photos read-only. Keep editing them in this version."); }
+                    Point { title: @tr("Disks away"); text: @tr("A disk not connected is converted when it comes back."); }
+                    Point { title: @tr("Two habits change"); text: @tr("Keys 1, 2 and 3 now give gold, silver and bronze. The Scanner face no longer applies Auto White Balance: it shows exactly what its keypad reads."); }
+                }
+                if root.page == 4: VerticalLayout {
+                    spacing: Space.m;
+                    Label { text: @tr("About 70 fixes"); role: TextRole.heading; wrap: word-wrap; }
+                    BulletLine { text: @tr("Editing a whole roll moves each frame from its own values, never overwriting its balance."); }
+                    BulletLine { text: @tr("Undo keeps its history from frame to frame, and names what it takes back."); }
+                    BulletLine { text: @tr("Dust patches stay on their speck after a crop or a turn, and are back in every export."); }
+                    BulletLine { text: @tr("Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."); }
+                    BulletLine { text: @tr("Prepare the Roll: Cancel leaves nothing half done, and frames keep their look from step to step."); }
+                    BulletLine { text: @tr("No more freezes on slow or network disks; a move never replaces a file."); }
+                }
+            }
         }
-        Point { title: @tr("The whole roll, once prepared"); text: @tr("After Prepare the Roll, Select All ({}) shows every frame together, numbered by its place on the film.", KeyWords.command + "A"); }
-        Point { title: @tr("Contact sheets"); text: @tr("Select a few frames, or press the key for the whole roll: they lie together on one sheet."); }
-        Point { title: @tr("Export a contact sheet"); text: @tr("The export panel exports the selection as one sheet, with a preview: pick Contact Sheet under Export As."); }
-        Point { title: @tr("Slide films"); text: @tr("Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."); }
-        Point { title: @tr("Slides on white"); text: @tr("A contact sheet of slides lies on white, numbered in red under a black logo."); }
-        Point { title: @tr("The whole scan in Prepare"); text: @tr("Prepare the Roll shows and measures every scan uncropped."); }
-        Point { title: @tr("RESET SCAN keeps your crop"); text: @tr("Everything goes back to rest but the crop and the conversion."); }
-        Point { title: @tr("Trash from the editor"); text: @tr("The next frame of the roll opens in its place."); }
-        Point { title: @tr("{} beside a photo", KeyWords.command + "A"); text: @tr("The folder's photos show together; a click on one shows it alone again."); }
-        Point { title: @tr("No more flicker on Windows"); text: @tr("Clicking outside the window and back no longer blanks it for an instant."); }
-        Point { title: @tr("Large 16-bit TIFFs"); text: @tr("A 16-bit TIFF of 45 Mpx and more opens, in the editor and in Prepare the Roll."); }
-        Point { title: @tr("A scan that cannot be read says why"); text: @tr("Prepare the Roll no longer waits on it."); }
-        Point { title: @tr("Nikon High Efficiency RAW"); text: @tr("A click converts a folder’s HE and HE* NEF files to lossless DNGs through Adobe DNG Converter, which ONI downloads and installs when it is missing."); }
         SheetFooter {
-            default-commit: false;
-            commit: @tr("GET STARTED");
-            committed => { Help.welcome-closed(); }
-            Button { text: @tr("Website"); clicked => { Help.website(); } }
-            Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
+            back: root.page > 0 ? @tr("Back") : "";
+            commit: root.last ? @tr("GET STARTED") : @tr("Next");
+            backed => { root.turn(-1); }
+            committed => {
+                if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
+            }
+            if root.last: Button { text: @tr("Website"); clicked => { Help.website(); } }
+            if root.last: Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
+            PageDots { count: root.count; at: root.page; picked(page) => { Help.welcome-page = page; } }
         }
     }
 }
+
 
 // `ReportSheet`: the message, the sealed log's switch, and Send; then a thank-you.
 export component ReportSheet inherits Sheet {
