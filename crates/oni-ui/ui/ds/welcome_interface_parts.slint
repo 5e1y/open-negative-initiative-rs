@@ -1,6 +1,7 @@
 // The pieces of the welcome's interface scene: a miniature of the window at six tenths of its size,
 // every length times the camera's `z`, so the same drawing serves the wide view and the close one.
 import { Colour, Type } from "theme.slint";
+import { Easing } from "welcome.slint";
 
 export global InterfaceSceneStyle {
     // The miniature window inset in the stage, and its regions, at the wide view's six tenths.
@@ -65,13 +66,16 @@ export global InterfaceSceneStyle {
 // The scene's beats, as shares of its 10 s loop, so the story is retimed in one place.
 export global InterfaceBeats {
     out property <duration> period: 10s;
-    // The pouf, a group in 440 ms: press 80, swap to 240, veil 60 up then down to 380, marks to 400.
+    // The pouf, a group in 440 ms: press 80; the old gone in 90, the new in 90 from 70 later, so they
+    // barely meet; veil 60 up then down to 380, marks to 400, settle 240 to 440.
     out property <float> header: 0.16;
     out property <float> cluster-step: 0.007;
     out property <float> sidebar: 0.196;
     out property <float> sliders: 0.232;
     out property <float> press: 0.008;
-    out property <float> swap: 0.016;
+    out property <float> gone: 0.009;
+    out property <float> come-after: 0.007;
+    out property <float> come: 0.009;
     out property <float> veil-up: 0.006;
     out property <float> veil-down: 0.024;
     out property <float> marks: 0.032;
@@ -117,25 +121,21 @@ export global InterfaceBeats {
     out property <float> fade-in: 0.015;
 }
 
-// The scenes' curves on a stretch of `t`: `p` linear, then ease, arrive (out), leave (in), land (back).
-export global Curves {
+// A stretch of `t`: 0 before `from`, 1 after `span`, linear between; `Easing` curves it.
+export global Stretch {
     public pure function p(t: float, from: float, span: float) -> float { return max(0, min(1, (t - from) / span)); }
-    public pure function ease(p: float) -> float { return p * p * (3 - 2 * p); }
-    public pure function arrive(p: float) -> float { return 1 - (1 - p) * (1 - p) * (1 - p); }
-    public pure function leave(p: float) -> float { return p * p * p; }
-    public pure function land(p: float) -> float { return 1 + 2 * (p - 1) * (p - 1) * (p - 1) + (p - 1) * (p - 1); }
 }
 
-// One group's pouf at `t`, its turn at `at`: the press, the swap out and in, the settle.
+// One group's pouf at `t`, its turn at `at`: the press, the old gone then the new come, the settle.
 export component Pouf {
     in property <float> t;
     in property <float> at;
-    out property <float> press: Curves.leave(Curves.p(root.t, root.at, InterfaceBeats.press));
-    out property <float> gone: Curves.leave(Curves.p(root.t, root.at + InterfaceBeats.press, InterfaceBeats.swap));
-    out property <float> come: Curves.arrive(Curves.p(root.t, root.at + InterfaceBeats.press, InterfaceBeats.swap));
-    property <float> settle-p: Curves.p(root.t, root.at + InterfaceBeats.settle, InterfaceBeats.settled);
-    out property <float> settle: Curves.arrive(root.settle-p);
-    out property <float> rise: Curves.land(root.settle-p);
+    out property <float> press: Easing.leave(Stretch.p(root.t, root.at, InterfaceBeats.press));
+    out property <float> gone: Easing.leave(Stretch.p(root.t, root.at + InterfaceBeats.press, InterfaceBeats.gone));
+    out property <float> come: Easing.arrive(Stretch.p(root.t, root.at + InterfaceBeats.press + InterfaceBeats.come-after, InterfaceBeats.come));
+    property <float> settle-p: Stretch.p(root.t, root.at + InterfaceBeats.settle, InterfaceBeats.settled);
+    out property <float> settle: Easing.arrive(root.settle-p);
+    out property <float> rise: Easing.land(root.settle-p);
     width: 0px;
     height: 0px;
 }
@@ -147,10 +147,10 @@ export component Breath inherits Rectangle {
     in property <float> zoom: 1;
     property <float> start: root.at + InterfaceBeats.press;
     property <float> veil: root.t < root.start + InterfaceBeats.veil-up
-        ? InterfaceSceneStyle.veil * Curves.p(root.t, root.start, InterfaceBeats.veil-up)
-        : InterfaceSceneStyle.veil * (1 - Curves.arrive(Curves.p(root.t, root.start + InterfaceBeats.veil-up, InterfaceBeats.veil-down)));
-    property <float> m: Curves.p(root.t, root.start, InterfaceBeats.marks);
-    property <float> go: Curves.arrive(root.m);
+        ? InterfaceSceneStyle.veil * Stretch.p(root.t, root.start, InterfaceBeats.veil-up)
+        : InterfaceSceneStyle.veil * (1 - Easing.arrive(Stretch.p(root.t, root.start + InterfaceBeats.veil-up, InterfaceBeats.veil-down)));
+    property <float> m: Stretch.p(root.t, root.start, InterfaceBeats.marks);
+    property <float> go: Easing.arrive(root.m);
     property <bool> marking: root.m > 0 && root.m < 1;
     Rectangle {
         border-radius: InterfaceSceneStyle.card-radius * root.zoom;

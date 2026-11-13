@@ -23,6 +23,7 @@ export global SideStyle {
     out property <color> line-lit: #ffffffb0;
     out property <color> count-ink: #ffffff30;
     out property <length> pill-radius: 7px;
+    out property <length> breath-margin: 2px;
     // Computer's heading, from the column's top: where the hand clicks to fold it.
     out property <length> computer-y: 115px;
 }
@@ -281,13 +282,14 @@ export component Side inherits Rectangle {
             visible: pouf.come > 0 && root.fold < 1;
         }
     }
+    // The breath on the header row alone, the one that changes in place; the rows below take none.
     Breath {
         t: root.t;
         at: InterfaceBeats.sidebar;
         zoom: root.zoom;
         x: SideStyle.old-inset * root.zoom;
-        y: SideStyle.head-y * root.zoom;
+        y: (SideStyle.head-y - SideStyle.breath-margin) * root.zoom;
         width: root.width - 2 * SideStyle.old-inset * root.zoom;
-        height: (SideStyle.rows-y + 7 * SideStyle.row - SideStyle.head-y) * root.zoom;
+        height: (SideStyle.pill-height + 2 * SideStyle.breath-margin) * root.zoom;
     }
 }

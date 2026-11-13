@@ -87,9 +87,12 @@ pub(crate) fn the_interface_scene_shows_the_old_keycaps_then_the_new_look_and_a_
     window.show().unwrap();
     rig.settle();
 
-    let moments = [("s0", 0.0), ("s1", 1.0), ("opening", 0.10), ("pouf-172", 0.172), ("pouf-215", 0.215), ("new", 0.33), ("typing", 0.585), ("pull-back", 0.80)];
+    let moments = [
+        ("s0", 0.0), ("s1", 1.0), ("opening", 0.10), ("pouf-172", 0.172), ("pouf-215", 0.215), ("new", 0.33), ("typing", 0.585),
+        ("pull-back", 0.80), ("rewind-015", 0.015), ("rewind-030", 0.030), ("knob", 0.70),
+    ];
     let taken: Vec<Shot> = moments.iter().map(|&(_, at)| held(&rig, &window, at)).collect();
-    let [s0, s1, opening, peak, _, new, typing, _] = &taken[..] else { unreachable!() };
+    let [s0, s1, opening, peak, _, new, typing, ..] = &taken[..] else { unreachable!() };
 
     // The stage is what the close view and the opening differ by: all of it, 560 by 373.
     let stage = moved(opening, typing);
@@ -119,8 +122,14 @@ pub(crate) fn the_interface_scene_shows_the_old_keycaps_then_the_new_look_and_a_
     // Twin: in the wide view at rest no ring shows there.
     assert!(count(new, below, accent, 30) < 4, "at rest the panel shows no focus ring");
 
-    // For the director: every 100 ms of the loop, the stage alone.
+    // For the director: every 100 ms of the loop, and the pouf every 40 ms, the stage alone.
     if std::env::var_os("ONI_SCENE_FRAMES").is_some() {
+        let pouf = shots.join("interface-pouf");
+        std::fs::create_dir_all(&pouf).unwrap();
+        for step in 0..=30 {
+            let at = 0.160 + 0.004 * step as f32;
+            save(&held(&rig, &window, at), stage, &pouf.join(format!("t-{at:.3}.png")));
+        }
         let frames = shots.join("interface-frames");
         std::fs::create_dir_all(&frames).unwrap();
         for ms in (0..=10_000).step_by(100) {
