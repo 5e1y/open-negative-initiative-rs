@@ -854,12 +854,12 @@ msgid "About 70 fixes, and what changes"
 msgstr "Environ 70 corrections, et ce qui change"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The photo stands out"
-msgstr "La photo ressort"
+msgid "Before, then now"
+msgstr "Avant, puis maintenant"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Keys are flat and light up under the hand. Coloured rails stay faint until you use them."
-msgstr "Les touches sont plates et s’éclairent sous la main. Les rails colorés restent discrets jusqu’à ce que vous les utilisiez."
+msgid "The same window, quieter: keys are flat and light up under the hand, coloured rails stay faint until you use them."
+msgstr "La même fenêtre, plus calme : les touches sont plates et s’éclairent sous la main, les rails colorés restent discrets jusqu’à ce que vous les utilisiez."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Type any value"
@@ -915,7 +915,7 @@ msgstr "Annuler garde son historique d’une vue à l’autre, et nomme ce qu’
 
 #: crates/oni-ui/ui/help.slint
 msgid "Dust patches stay on their speck after a crop or a turn, and are back in every export."
-msgstr "Les retouches de poussière restent sur leur poussière après un recadrage ou une rotation, et sont de retour dans chaque export."
+msgstr "Les retouches de poussière restent à leur place après un recadrage ou une rotation, et reviennent dans chaque export."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."
@@ -935,7 +935,7 @@ msgstr "Bon à savoir"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Your edits are converted"
-msgstr "Vos retouches sont converties"
+msgstr "Vos réglages sont convertis"
 
 #: crates/oni-ui/ui/help.slint
 msgid "At the first launch, the settings beside each photo move to a new format. Your photos are never touched; a disk away is converted when it comes back."
@@ -1323,7 +1323,7 @@ msgstr "COMPRIS"
 
 #: crates/oni-ui/ui/notice.slint
 msgid "Your Edits, Brought Up to Date"
-msgstr "Vos retouches mises à jour"
+msgstr "Vos réglages mis à jour"
 
 #: crates/oni-ui/ui/notice.slint
 msgid "ONI now keeps each photo's settings in a new format. It is converting the ones you have, in the background: you can keep working."

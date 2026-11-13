@@ -2,7 +2,7 @@
 //! on its last frame, by the shared clip player.
 
 use super::*;
-use crate::app::player::{Pace, Player};
+use crate::app::help::player::{Pace, Player};
 use crate::tutorial;
 
 pub(in crate::app) struct Playing {

@@ -89,7 +89,6 @@ mod masks;
 mod navigator;
 mod organising;
 mod help;
-mod player;
 mod prepare;
 mod presets;
 mod roll_tab;
@@ -104,9 +103,6 @@ mod tree_rename;
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 pub use help::Reporter;
 pub use updates::{Fetch, Reveal, Updater};
-
-/// The welcome's films: the app's own, in its language; a check hands its own.
-pub type Films = Box<dyn Fn(crate::welcome::Film) -> Option<&'static [u8]>>;
 
 /// Where a deleted preset file goes: the system's Trash, or a check's own folder.
 pub type Discard = Box<dyn Fn(&Path) -> std::io::Result<()>>;
@@ -323,11 +319,8 @@ pub struct State {
     reporter: Reporter,
     /// The notes read this session, which keep their pill until the app quits.
     news_kept: HashSet<String>,
-    /// The console window while it is open, and the timer that reads the log into it.
-    console: Option<(crate::ConsoleWindow, Timer)>,
-    /// The welcome's film playing on its stage, while its page shows.
-    welcome_clip: Option<(crate::welcome::Film, player::Player)>,
-    films: Films,
+    /// The Help menu's console window and the welcome's film, while each shows.
+    help: help::Surfaces,
     nav: navigator::Nav,
     pub(crate) prepare: prepare::Roll,
     pub(crate) updates: updates::Updates,

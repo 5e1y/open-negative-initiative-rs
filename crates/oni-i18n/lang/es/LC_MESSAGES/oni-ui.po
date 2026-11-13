@@ -854,12 +854,12 @@ msgid "About 70 fixes, and what changes"
 msgstr "Unas 70 correcciones, y lo que cambia"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The photo stands out"
-msgstr "La foto destaca"
+msgid "Before, then now"
+msgstr "Antes y ahora"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Keys are flat and light up under the hand. Coloured rails stay faint until you use them."
-msgstr "Las teclas son planas y se iluminan bajo la mano. Los rieles de color quedan tenues hasta que los usas."
+msgid "The same window, quieter: keys are flat and light up under the hand, coloured rails stay faint until you use them."
+msgstr "La misma ventana, más tranquila: las teclas son planas y se iluminan bajo la mano, los rieles de color quedan tenues hasta que los usas."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Type any value"

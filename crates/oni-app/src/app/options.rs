@@ -32,7 +32,7 @@ pub struct Options {
     pub phone: bool,
     /// What the launch's `migration::support` left: imports due, never written this run, and its notice.
     pub brought: crate::migration::Brought,
-    pub films: super::Films,
+    pub films: crate::welcome::Films,
 }
 
 /// `EditorScene.open`'s panel message.

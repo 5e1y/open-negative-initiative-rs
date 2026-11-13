@@ -10385,5 +10385,12 @@
     "title": "A sheet no wider than its window",
     "status": "done",
     "detail": "Sheet's card takes its gauge or the window's width less its two margins, whichever is less, and says it as shown-width; the welcome lays its stage from it. Every other sheet is narrower than the smallest window, so none of them moves. Check: welcome_card at 900 wide (key inside the window), sheet_layout's centring of every modal sheet."
+  },
+  {
+    "id": 2036,
+    "type": "refactor",
+    "title": "The Help menu's surfaces held together; the welcome copy after the lead's R2",
+    "status": "done",
+    "detail": "State holds the console window, the welcome's film and where films come from as one help::Surfaces, and the clip player sits beside the help clips (help::player), so app.rs keeps its ceiling. Page 1 opens on 'Before, then now'; French names the edits 'réglages' and the dust patches 'retouches'. Checks: architecture (ceiling), welcome_clip, prepare, tutorial, catalogue."
   }
 ]

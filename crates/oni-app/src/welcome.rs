@@ -9,6 +9,9 @@ pub const SIZE: (u32, u32) = (1120, 840);
 /// The films together, two in three languages.
 pub const TOTAL: usize = 6 * 1024 * 1024;
 
+/// The welcome's films: the app's own, in its language; a check hands its own.
+pub type Films = Box<dyn Fn(Film) -> Option<&'static [u8]>>;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Film {
     Interface,

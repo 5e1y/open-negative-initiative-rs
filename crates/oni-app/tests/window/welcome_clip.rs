@@ -1,7 +1,8 @@
 //! The welcome's film on its stage: a page with a film plays it in a loop on the rig's clock, the cover
 //! plays none, Reduce Motion stands on the last frame, and the sheet closing drops the player.
 
-use oni_app::app::{Films, Options, Shell};
+use oni_app::app::{Options, Shell};
+use oni_app::welcome::Films;
 use oni_app::tutorial::{Frames, synthetic};
 use oni_app::welcome::Film;
 use oni_app::{Help, Motion};

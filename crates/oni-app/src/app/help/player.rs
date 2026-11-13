@@ -1,7 +1,7 @@
 //! The one clip player, Prepare the Roll's demos and the welcome's films: a GIF decoded on a thread of
 //! its own, one frame queued, each written into one texture and announced by a revision.
 
-use super::{Ctl, Gpu, SHELL};
+use crate::app::{Ctl, Gpu, SHELL};
 use crate::tutorial::Frames;
 use slint::{Image, SharedPixelBuffer, Timer, TimerMode};
 use std::sync::mpsc::{Receiver, Sender, SyncSender, TryRecvError, channel, sync_channel};

@@ -14,6 +14,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+/// The Help menu's surfaces that live past a call: the console window with the timer that reads the
+/// log into it, and the welcome's film playing on its stage with where films come from.
+pub struct Surfaces {
+    pub(super) console: Option<(ConsoleWindow, Timer)>,
+    pub(super) clip: Option<(crate::welcome::Film, player::Player)>,
+    pub(super) films: crate::welcome::Films,
+}
+
 /// Sends one report: the message and, when ticked, the sealed log; a check hands its own.
 pub type Reporter = Arc<dyn Fn(&str, Option<String>) -> Result<(), String> + Send + Sync>;
 
@@ -289,12 +297,12 @@ impl Ctl {
 
     /// What the console window shows, while it is open.
     pub(crate) fn console_log(&self) -> Option<String> {
-        self.state.borrow().console.as_ref().filter(|(c, _)| c.window().is_visible()).map(|(c, _)| c.get_log().to_string())
+        self.state.borrow().help.console.as_ref().filter(|(c, _)| c.window().is_visible()).map(|(c, _)| c.get_log().to_string())
     }
 
     /// `openWindow(id: "console")`: one window, polled while it shows.
     pub(super) fn open_console(self: &Rc<Self>) {
-        let existing = self.state.borrow().console.as_ref().map(|c| c.0.clone_strong());
+        let existing = self.state.borrow().help.console.as_ref().map(|c| c.0.clone_strong());
         let console = match existing {
             Some(c) => c,
             None => {
@@ -330,7 +338,7 @@ impl Ctl {
                 let _ = console.show();
                 refresh();
                 timer.start(TimerMode::Repeated, CONSOLE_REFRESH, refresh);
-                self.state.borrow_mut().console = Some((console.clone_strong(), timer));
+                self.state.borrow_mut().help.console = Some((console.clone_strong(), timer));
                 console
             }
         };
@@ -339,6 +347,7 @@ impl Ctl {
 }
 
 mod clip;
+pub(super) mod player;
 mod welcome_clip;
 #[cfg(test)]
 mod tests;
