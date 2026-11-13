@@ -25,20 +25,34 @@ export global SceneClock {
 export component Cycle {
     in property <duration> period;
     in property <float> rest: 1;
+    // The still dissolve from the last state back to the first that opens every turn but the first.
+    in property <duration> rewind-time: 450ms;
     property <duration> start;
     init => { root.start = animation-tick(); }
-    out property <float> t: SceneClock.held >= 0 ? SceneClock.held : Motion.reduced ? root.rest : Math.mod((animation-tick() - root.start) / root.period, 1);
+    property <bool> held: SceneClock.held >= 0;
+    out property <float> t: root.held ? SceneClock.held : Motion.reduced ? root.rest : Math.mod((animation-tick() - root.start) / root.period, 1);
+    // The first turn opens on the first state, so a page never shows its ending before its story.
+    out property <bool> first: !root.held && !Motion.reduced && animation-tick() - root.start < root.period;
+    // 1 on the last state, falling to 0 over the rewind; a step's progress is max(its own, rewind).
+    property <float> r: max(0, min(1, root.t * root.period / root.rewind-time));
+    out property <float> rewind: root.first ? 0 : 1 - root.r * root.r * (3 - 2 * root.r);
     width: 0px;
     height: 0px;
 }
 
-// A stretch of a cycle: 0 before `from`, 1 after `to`, eased between, so a scene writes its steps as times.
+// A stretch of a cycle, `t` from `from` to `to` as `p`, 0 before and 1 after, under the scenes' curves:
+// `ease` starts and ends at rest, `arrive` lands (ease-out), `leave` departs (ease-in), `land` lands a
+// small mark with a 3.7 % overshoot, never text or layout.
 export component Phase {
     in property <float> t;
     in property <float> from;
     in property <float> to;
-    property <float> p: max(0, min(1, (root.t - root.from) / (root.to - root.from)));
-    out property <float> v: root.p * root.p * (3 - 2 * root.p);
+    out property <float> p: max(0, min(1, (root.t - root.from) / (root.to - root.from)));
+    out property <float> ease: root.p * root.p * (3 - 2 * root.p);
+    out property <float> v: root.ease;
+    out property <float> arrive: 1 - (1 - root.p) * (1 - root.p) * (1 - root.p);
+    out property <float> leave: root.p * root.p * root.p;
+    out property <float> land: 1 + 2 * (root.p - 1) * (root.p - 1) * (root.p - 1) + (root.p - 1) * (root.p - 1);
     width: 0px;
     height: 0px;
 }
