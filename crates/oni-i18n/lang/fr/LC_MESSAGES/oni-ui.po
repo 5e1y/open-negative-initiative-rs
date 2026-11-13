@@ -453,9 +453,45 @@ msgstr "Double-cliquez pour revenir au repos"
 msgid "Photo"
 msgstr "Photo"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/menus.slint
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/help.slint
+msgid "Automatic De-dust"
+msgstr "Dépoussiérage automatique"
+
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "DETECT"
+msgstr "DÉTECTER"
+
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "REMOVE"
+msgstr "RETIRER"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/settings.slint
+msgid "Editor"
+msgstr "Éditeur"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/menus.slint
 msgid "Gallery"
 msgstr "Galerie"
+
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/export.slint
+msgid "Export"
+msgstr "Exporter"
+
+#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/toolbar.slint
+msgid "Prepare the Roll"
+msgstr "Préparer la pellicule"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Dépoussiérage"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Files"
+msgstr "Fichiers"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "fixes"
+msgstr "corrections"
 
 #: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/rating_filter.slint
 msgid "All"
@@ -668,10 +704,6 @@ msgstr "N’afficher que la variation de couleur (déconseillé)"
 #: crates/oni-ui/ui/export.slint
 msgid "Get Paper Profiles…"
 msgstr "Obtenir des profils papier…"
-
-#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
-msgid "Export"
-msgstr "Exporter"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Export as"
@@ -924,10 +956,6 @@ msgstr "Une interface plus discrète autour de vos scans, la poussière trouvée
 #: crates/oni-ui/ui/help.slint
 msgid "A calmer interface"
 msgstr "Une interface plus calme"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Automatic De-dust"
-msgstr "Dépoussiérage automatique"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Your edits, brought up to date"
@@ -1818,16 +1846,8 @@ msgid "Detect veils the photo but for its pixels past the roll's whites on a neg
 msgstr "Détecter voile la photo sauf ses pixels au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin dans la fenêtre et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "DETECT"
-msgstr "DÉTECTER"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."
 msgstr "Cherche sur cette photo les poussières au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; rien ne change tant que vous ne les retirez pas."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "REMOVE"
-msgstr "RETIRER"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Lays one patch on each speck of dust ringed."
@@ -2154,10 +2174,6 @@ msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Rend à cette photo le recadrage qu’elle avait à l’ouverture du recadrage, puis le quitte."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Dépoussiérage"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
 msgstr "Quitter le dépoussiérage"
 
@@ -2433,10 +2449,6 @@ msgstr "Signaler un problème…"
 msgid "General"
 msgstr "Général"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/settings.slint
-msgid "Editor"
-msgstr "Éditeur"
-
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone"
 msgstr "Téléphone"
@@ -2528,10 +2540,6 @@ msgstr "Tout coller"
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
 msgstr "PRÉPARER LA PELLICULE"
-
-#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
-msgid "Prepare the Roll"
-msgstr "Préparer la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "ADD FOLDER…"

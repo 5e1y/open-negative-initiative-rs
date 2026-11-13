@@ -1,7 +1,7 @@
 // The welcome's pages: the stage every page's picture or scene fills, the clock its scenes loop on,
 // and the dots that say which page shows and take a click to another.
 import { DS } from "tokens.slint";
-import { Colour, Space, Motion } from "theme.slint";
+import { Colour, Space, Motion, Type } from "theme.slint";
 import { SplashStyle } from "splash.slint";
 import { Dot } from "marks.slint";
 
@@ -40,21 +40,57 @@ export component Cycle {
     height: 0px;
 }
 
-// A stretch of a cycle, `t` from `from` to `to` as `p`, 0 before and 1 after, under the scenes' curves:
-// `ease` starts and ends at rest, `arrive` lands (ease-out), `leave` departs (ease-in), `land` lands a
-// small mark with a 3.7 % overshoot, never text or layout.
+// The scenes' curves on a progress `p` 0 to 1: `ease` starts and ends at rest, `arrive` lands (ease-out),
+// `leave` departs (ease-in), `land` lands a small mark with a 3.7 % overshoot, never text or layout.
+export global Easing {
+    public pure function ease(p: float) -> float { p * p * (3 - 2 * p) }
+    public pure function arrive(p: float) -> float { 1 - (1 - p) * (1 - p) * (1 - p) }
+    public pure function leave(p: float) -> float { p * p * p }
+    public pure function land(p: float) -> float { 1 + 2 * (p - 1) * (p - 1) * (p - 1) + (p - 1) * (p - 1) }
+}
+
+// A stretch of a cycle, `t` from `from` to `to` as `p`, 0 before and 1 after, under `Easing`'s curves.
 export component Phase {
     in property <float> t;
     in property <float> from;
     in property <float> to;
     out property <float> p: max(0, min(1, (root.t - root.from) / (root.to - root.from)));
-    out property <float> ease: root.p * root.p * (3 - 2 * root.p);
+    out property <float> ease: Easing.ease(root.p);
     out property <float> v: root.ease;
-    out property <float> arrive: 1 - (1 - root.p) * (1 - root.p) * (1 - root.p);
-    out property <float> leave: root.p * root.p * root.p;
-    out property <float> land: 1 + 2 * (root.p - 1) * (root.p - 1) * (root.p - 1) + (root.p - 1) * (root.p - 1);
+    out property <float> arrive: Easing.arrive(root.p);
+    out property <float> leave: Easing.leave(root.p);
+    out property <float> land: Easing.land(root.p);
     width: 0px;
     height: 0px;
+}
+
+// A count in two fixed cells, right-aligned, so a step never shifts it; `centred` moves a lone figure
+// half a cell left so it keeps its label's axis, `blank-zero` shows nothing before the first.
+export component Figures inherits Rectangle {
+    in property <int> n;
+    in property <length> cell;
+    in property <length> size;
+    in property <int> weight: Type.strong;
+    in property <color> ink: Colour.ink;
+    in property <bool> centred;
+    in property <bool> blank-zero;
+    in property <float> scale: 1;
+    width: 2 * root.cell;
+    for k in 2: Text {
+        x: k * root.cell - (root.centred && root.n < 10 ? root.cell / 2 : 0px);
+        width: root.cell;
+        height: root.height;
+        transform-scale-x: root.scale;
+        transform-scale-y: root.scale;
+        transform-origin: { x: root.width / 2 - self.x, y: self.height / 2 };
+        horizontal-alignment: right;
+        vertical-alignment: center;
+        font-family: Type.family;
+        font-size: root.size;
+        font-weight: root.weight;
+        color: root.ink;
+        text: k == 0 ? (root.n >= 10 ? Math.floor(root.n / 10) : "") : (root.blank-zero && root.n == 0 ? "" : mod(root.n, 10));
+    }
 }
 
 // The stage under every page's words: the scene drawn on the canvas's ground, cut at its edge.

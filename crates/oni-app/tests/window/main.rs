@@ -42,6 +42,7 @@ mod export_modal;
 mod export_flow;
 mod export_sheet;
 mod sheet_paper;
+mod welcome_scenes_pages;
 mod export_window;
 mod export_panel;
 mod export_columns;
@@ -156,6 +157,7 @@ mod tree_cost;
 mod tree_leftovers;
 mod updates;
 mod visible;
+mod welcome_scenes_dedust;
 mod whole_roll;
 mod wrapped;
 
