@@ -2,21 +2,13 @@
 import { Colour, Type, Radius } from "theme.slint";
 import { WelcomeDedust as W, DedustSpeck } from "welcome_dedust_style.slint";
 
-// The scan the scene cleans: a dusk sky, a low sun and two hills, drawn, never a photo.
+// The scan the scene cleans: a daylight sky over two hills, drawn, never a photo.
 export component Landscape inherits Rectangle {
     width: W.picture-width;
     height: W.picture-height;
     border-radius: Radius.picture;
     clip: true;
     background: @linear-gradient(180deg, W.sky-top 0%, W.sky-mid 42%, W.sky-low 62%, W.sky-horizon 75%);
-    Rectangle {
-        x: 216px;
-        y: 98px;
-        width: 44px;
-        height: 44px;
-        border-radius: 22px;
-        background: W.sun;
-    }
     Path {
         width: parent.width;
         height: parent.height;
@@ -37,14 +29,15 @@ export component Landscape inherits Rectangle {
     }
 }
 
-// A speck's mark centred on its box, `zoom` times its size: a soft dot, or a flake.
+// A speck's mark centred on its box, `zoom` times its size: a soft dot, a flake, or a hair.
 export component Mote inherits Rectangle {
     in property <DedustSpeck> speck;
     in property <float> zoom: 1;
     in property <color> ink;
-    width: (root.speck.flake ? root.speck.size : root.speck.size * W.soft) * root.zoom;
-    height: root.speck.flake ? self.width * 0.8 : self.width;
-    if !root.speck.flake: Rectangle {
+    property <bool> dot: !root.speck.flake && !root.speck.hair;
+    width: (root.dot ? root.speck.size * W.soft : root.speck.size) * root.zoom;
+    height: root.speck.flake ? self.width * 0.8 : root.speck.hair ? self.width * 8 / 11 : self.width;
+    if root.dot: Rectangle {
         border-radius: self.width / 2;
         background: @radial-gradient(circle, root.ink 0%, root.ink 38%, root.ink.with-alpha(0) 72%);
     }
@@ -56,6 +49,17 @@ export component Mote inherits Rectangle {
         commands: "M 1 4 C 1 1 5 0 7 1 C 9 2 8 5 6 6 C 4 7 1 7 1 4 Z";
         fill: root.ink;
         stroke-width: 0;
+    }
+    if root.speck.hair: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 11;
+        viewbox-height: 8;
+        commands: "M 0 6 C 3 0 7 8 11 2";
+        stroke: root.ink;
+        stroke-width: W.hair-line * root.zoom;
+        stroke-line-cap: round;
+        fill: transparent;
     }
 }
 
@@ -125,7 +129,7 @@ export component SceneTile inherits Rectangle {
         clip: true;
         Mote {
             speck: root.speck;
-            zoom: (root.speck.flake ? 1.6 : W.tile-zoom) * root.scale;
+            zoom: (root.speck.flake || root.speck.hair ? W.tile-zoom-shape : W.tile-zoom) * root.scale;
             ink: W.ink(root.speck).transparentize(1 - root.shown);
         }
     }

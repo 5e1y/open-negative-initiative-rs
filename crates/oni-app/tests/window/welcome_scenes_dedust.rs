@@ -69,7 +69,7 @@ pub(crate) fn the_dedust_scene_rings_then_heals_every_speck() {
     assert!(ends[0] == ends[1], "the frames at 0 and 1 are identical");
 
     let mut seen = Vec::new();
-    for (name, moment) in [("opening", 0.07), ("pointer", 0.155), ("sweep", 0.27), ("ringed", 0.40), ("remove", 0.525), ("heal", 0.68), ("end", 0.90)] {
+    for (name, moment) in [("opening", 0.07), ("pointer", 0.155), ("sweep", 0.27), ("ringed", 0.40), ("remove", 0.525), ("heal", 0.68), ("end", 0.90), ("rewind", 0.03), ("entering", 0.20)] {
         clock.set_held(moment);
         rig.pump();
         println!("shot {}", rig.shot(&format!("welcome-dedust-{name}")).display());
