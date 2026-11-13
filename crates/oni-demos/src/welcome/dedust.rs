@@ -1,4 +1,4 @@
-//! The welcome's De-dust film: a dusty negative's detail under the canvas's overlays beside the app's pane;
+//! The welcome's De-dust film: a dusty photograph's detail under the canvas's overlays beside the app's pane;
 //! DETECT runs the app's reading, REMOVE writes a correction a speck and the app heals each, at their pace.
 
 use std::cell::Cell;
@@ -31,7 +31,7 @@ use crate::track::{Presses, Track};
 
 /// The welcome's stage in points, `WelcomeStyle.stage-width` by `stage-height`.
 pub const STAGE: (f32, f32) = (560.0, 502.0);
-/// The variable naming the dusty negative: its path is the owner's, never written in the repository.
+/// The variable naming the dusty photograph: its path is the owner's, never written in the repository.
 pub const SOURCE: &str = "ONI_WELCOME_DUST";
 /// The app's auto De-dust mask side (`MASK_SIDE` in its reading): the veil's texels, shown pixelated.
 const MASK_SIDE: usize = 3072;
@@ -52,11 +52,11 @@ pub const FEWEST: usize = 6;
 const ZOOMS: [f32; 3] = [2.0, 1.0, 0.5];
 
 pub fn source() -> Result<PathBuf, String> {
-    let path = std::env::var_os(SOURCE).map(PathBuf::from).ok_or(format!("set {SOURCE} to the dusty negative"))?;
+    let path = std::env::var_os(SOURCE).map(PathBuf::from).ok_or(format!("set {SOURCE} to the dusty photograph"))?;
     path.is_file().then_some(path).ok_or(format!("{SOURCE} names no file"))
 }
 
-/// The negative opened as De-dust opens it: its sidecar's settings without a correction, its full
+/// The photograph opened as De-dust opens it: its sidecar's settings without a correction, its full
 /// decode on the GPU, and its preview for the tiles' reminders. Nothing is written beside it.
 pub struct Scan {
     engine: Shared,
@@ -68,11 +68,16 @@ pub struct Scan {
     origin: (i32, i32),
     placing: Placing,
     caches: PathBuf,
+    /// A finished photograph's own code values, shown as they are: a JPEG export is never converted.
+    as_is: Option<Rgba>,
 }
 
 impl Scan {
     pub fn open(path: &Path) -> Result<Scan, String> {
-        let mut settings = oni_settings::sidecar::read(path, oni_decode::decodes_via_mosaic(path)).map_err(|e| format!("its sidecar: {e:?}"))?.settings;
+        let plain = oni_decode::route(path) == oni_decode::Branch::Plain;
+        let loaded = oni_settings::sidecar::read(path, oni_decode::decodes_via_mosaic(path)).map_err(|e| format!("its sidecar: {e:?}"))?;
+        // An export with no edit is read as the positive it is, which the reading takes at its blacks.
+        let mut settings = if plain && loaded.is_new { PipelineSettings::rest(oni_settings::ConversionMode::Positive, false) } else { loaded.settings };
         settings.corrections.clear();
         let device = Device::open()?;
         let engine = Engine::shared(&device);
@@ -84,7 +89,11 @@ impl Scan {
         let e = engine.lock()?.unproofed(&full, &settings, &Request::default())?.extent();
         let scan = full.extent();
         let placing = settings.geometry.placing((f64::from(scan.w), f64::from(scan.h)));
-        Ok(Scan { engine, full, preview, settings, size: (e.w, e.h), origin: (e.x, e.y), placing, caches })
+        let as_is = if plain { Some(code_values(path)?) } else { None };
+        if as_is.as_ref().is_some_and(|p| (p.width, p.height) != (e.w, e.h)) {
+            return Err("the export's pixels and its render differ in size".into());
+        }
+        Ok(Scan { engine, full, preview, settings, size: (e.w, e.h), origin: (e.x, e.y), placing, caches, as_is })
     }
 
     /// The app's reading of the framed frame, and how long it took.
@@ -101,6 +110,12 @@ impl Scan {
     /// The view of `s` at the strip's pixels, as the canvas zoomed past one to one shows it.
     pub fn detail(&self, s: &PipelineSettings, view: View) -> Result<Rgba, String> {
         let (w, h) = view.region();
+        if let Some(whole) = &self.as_is {
+            if s.corrections.is_empty() {
+                return Ok(zoomed(&crop(whole, view.x, view.y, w, h), view));
+            }
+            return Ok(zoomed(&self.healed_as_is(s, view)?, view));
+        }
         let mut e = self.engine.lock()?;
         let image = e.unproofed(&self.full, s, &Request::default())?;
         let (graph, _) = e.parts();
@@ -108,7 +123,31 @@ impl Scan {
         let pixels = graph.render(&image, rect, None).map_err(|e| e.to_string())?;
         graph.purge();
         let picture = photo::encoded(&render::Linear { width: w as usize, height: h as usize, pixels });
-        Ok(if view.zoom >= 1.0 { magnified(&picture, view.zoom as u32, view.width, view.height) } else { reduced(&picture, (1.0 / view.zoom).round() as u32, view.width, view.height) })
+        Ok(zoomed(&picture, view))
+    }
+
+    /// A finished photograph's view with its patches laid, still never converted: the decoded scan the
+    /// patches lie on, framed as the reading reads it, brought back to the screen's encoding.
+    fn healed_as_is(&self, s: &PipelineSettings, view: View) -> Result<Rgba, String> {
+        let (w, h) = view.region();
+        let (width, pixels) = self.engine.lock()?.framed_whole(&self.full, s)?;
+        let rows = (view.y as usize..(view.y + h) as usize).flat_map(|y| pixels[y * width + view.x as usize..][..w as usize].iter().copied());
+        let mut params = Params::new(Screen::Srgb, w, h, 0);
+        params.dither = 0.0;
+        // Primaries held, the scan is in the file's own, an sRGB export's: only its curve is laid back.
+        if !s.primaries_converted {
+            params.rows = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]];
+        }
+        let linear = render::Linear { width: w as usize, height: h as usize, pixels: rows.collect() };
+        Ok(Rgba { width: w, height: h, pixels: render::encoded(&linear, &params, 1) })
+    }
+
+    /// How far the healed path strays from the export's own values with nothing laid: 0 to 255.
+    pub fn as_is_drift(&self, view: View) -> Result<u8, String> {
+        let Some(whole) = &self.as_is else { return Ok(0) };
+        let (w, h) = view.region();
+        let (a, b) = (crop(whole, view.x, view.y, w, h), self.healed_as_is(&self.settings, view)?);
+        Ok(a.pixels.iter().zip(&b.pixels).map(|(x, y)| x.abs_diff(*y)).max().unwrap_or(0))
     }
 
     /// Each correction's reminder of its dust, as the tab's tiles show them, for an sRGB screen.
@@ -339,7 +378,7 @@ struct Answers {
     originals_at: f32,
 }
 
-/// The De-dust film shot from the negative at `path`, in the current language.
+/// The De-dust film shot from the photograph at `path`, in the current language.
 pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
     let file = crate::film::scenes().join("welcome/dedust.slint");
     let mut stage = Stage::new(&file, "DedustShot", STAGE)?;
@@ -388,6 +427,11 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
     let reading_for = took.as_secs_f32();
     if reading_for > READING.1 {
         return Err(format!("the reading took {reading_for:.1} s, past the film's {} s", READING.1));
+    }
+    // An export shown as it is: its healed path must give back its own values where nothing is laid.
+    let drift = scan.as_is_drift(view)?;
+    if drift > 1 {
+        return Err(format!("the healed export strays {drift} from its own values"));
     }
     let answers = answers_of(&scan, &reading, &all, view, sensitivity, veil)?;
     let healing_for = answers.landed.last().map_or(0.0, |l| l.1).max(answers.originals_at);
@@ -480,19 +524,41 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
     Ok(Shot { frames, seen, region, view, detected: asked.get().is_some(), removed: removing.get().is_some(), stills, report })
 }
 
-/// What a negative offers the film: its specks at a few Sensitivities, and how many each zoom's best
+/// What a photograph offers the film: its specks at a few Sensitivities, and how many each zoom's best
 /// detail shows apart, for choosing the frame before it is filmed.
-pub fn probe(path: &Path) -> Result<String, String> {
-    let stage = Stage::new(&crate::film::scenes().join("welcome/dedust.slint"), "DedustShot", STAGE)?;
+pub fn probe(path: &Path, stills: Option<&Path>) -> Result<String, String> {
+    let mut stage = Stage::new(&crate::film::scenes().join("welcome/dedust.slint"), "DedustShot", STAGE)?;
+    stage.settle();
     let strip = ((stage.number("photo-width") * SCALE).round() as u32, (stage.number("photo-height") * SCALE).round() as u32);
     let least_ring = f64::from(stage.number("ring-least"));
     let scan = Scan::open(path)?;
     let (reading, took) = scan.read()?;
-    let mut lines = vec![format!("read in {:.2} s, {} px past the window", took.as_secs_f32(), reading.past)];
+    let mut lines = vec![format!("{:?}, read in {:.2} s, {} px past the window", scan.settings.mode, took.as_secs_f32(), reading.past)];
     for s in [0.0, 0.1, 0.25, 0.5, 0.75, 1.0] {
         let all = found(&reading, s);
         let best: Vec<String> = ZOOMS.iter().map(|&z| framing(&all, scan.size, strip, z, least_ring).map_or(format!("{z}×: none"), |(v, n)| format!("{z}×: {n} at ({}, {})", v.x, v.y))).collect();
         lines.push(format!("Sensitivity {s:.2}: {} specks; {}", all.len(), best.join(", ")));
+    }
+    // At rest and at 50 %, the detail at 100 % holding the most rings, as the canvas shows them.
+    if let Some(out) = stills {
+        let veil = veil_of(&stage)?;
+        let stem = path.file_stem().map_or("frame".into(), |s| s.to_string_lossy().to_string());
+        for (s, name) in [(0.0, "rest"), (0.5, "50")] {
+            let all = found(&reading, s);
+            let Some((view, n)) = framing(&all, scan.size, strip, 1.0, least_ring).or_else(|| busiest(&all, scan.size, strip, 1.0)) else { continue };
+            let answers = answers_of(&scan, &reading, &[], view, s, veil)?;
+            let dedust = |name: &str, value: Value| stage.instance().set_global_property("Dedust", name, value).map_err(|e| format!("Dedust.{name}: {e}"));
+            dedust("sensitivity", Value::Number(f64::from(s)))?;
+            dedust("sensitivity-text", Value::String(Readout::Percent.format(s).into()))?;
+            stage.set_image("photo", &answers.pictures[0]);
+            stage.set_image("veil-mask", &answers.mask);
+            stage.set("veiled", Value::Bool(true));
+            stage.set("rings", model(all.iter().map(|f| mark(view.ring(f, scan.size), 0)).collect()));
+            lines.push(format!("the healed path strays {} from the export's values", scan.as_is_drift(view)?));
+            let file = out.join(format!("probe-{stem}-{name}.png"));
+            stage.shoot(Duration::ZERO)?.png(&file)?;
+            lines.push(format!("{name}: {n} rings in the detail at ({}, {}), {}", view.x, view.y, file.display()));
+        }
     }
     Ok(lines.join("\n"))
 }
@@ -716,4 +782,49 @@ pub fn reduced(picture: &Rgba, by: u32, width: u32, height: u32) -> Rgba {
         }
     }
     Rgba { width, height, pixels }
+}
+
+/// `picture`, a view's region, at the view's zoom.
+fn zoomed(picture: &Rgba, view: View) -> Rgba {
+    if view.zoom >= 1.0 { magnified(picture, view.zoom as u32, view.width, view.height) } else { reduced(picture, (1.0 / view.zoom).round() as u32, view.width, view.height) }
+}
+
+/// `w` × `h` of `p` from `(x, y)`.
+fn crop(p: &Rgba, x: u32, y: u32, w: u32, h: u32) -> Rgba {
+    let mut pixels = Vec::with_capacity((w * h * 4) as usize);
+    for row in y..y + h {
+        let at = ((row * p.width + x) * 4) as usize;
+        pixels.extend_from_slice(&p.pixels[at..at + (w * 4) as usize]);
+    }
+    Rgba { width: w, height: h, pixels }
+}
+
+/// An export's own code values, read as the app reads a plain image: an sRGB file's are the screen's.
+fn code_values(path: &Path) -> Result<Rgba, String> {
+    let read = oni_decode::plain::read(path, None).ok_or("the export does not decode")?;
+    let srgb = |icc: &Vec<u8>| icc.windows(4).any(|t| t == b"sRGB") || icc.windows(8).any(|t| t == b"\0s\0R\0G\0B");
+    if read.icc.as_ref().is_some_and(|icc| !srgb(icc)) {
+        return Err("the export's profile is not sRGB: its values are not the screen's".into());
+    }
+    let pixels = read.pixels.iter().flat_map(|p| [p[0], p[1], p[2]].map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8).into_iter().chain([255])).collect();
+    Ok(Rgba { width: read.width as u32, height: read.height as u32, pixels })
+}
+
+/// The view at `zoom` holding the most specks, about the one with most neighbours, for a probe's look
+/// when no detail holds them apart.
+fn busiest(found: &[Found], size: (u32, u32), strip: (u32, u32), zoom: f32) -> Option<(View, usize)> {
+    let blank = View { x: 0, y: 0, zoom, width: strip.0, height: strip.1 };
+    let (rw, rh) = blank.region();
+    if rw > size.0 || rh > size.1 {
+        return None;
+    }
+    found
+        .iter()
+        .map(|f| {
+            let (cx, cy) = ((f.bounds[0] + f.bounds[2]) / 2, (f.bounds[1] + f.bounds[3]) / 2);
+            let view = View { x: cx.saturating_sub(rw / 2).min(size.0 - rw), y: cy.saturating_sub(rh / 2).min(size.1 - rh), ..blank };
+            let inside = |g: &Found| g.bounds[0] >= view.x && g.bounds[2] <= view.x + rw && g.bounds[1] >= view.y && g.bounds[3] <= view.y + rh;
+            (view, found.iter().filter(|g| inside(g)).count())
+        })
+        .max_by_key(|(_, n)| *n)
 }
