@@ -4,8 +4,8 @@
 use oni_i18n::Language;
 use std::io::Cursor;
 
-/// Every film's size in pixels: the 560 × 420 stage at two pixels a point.
-pub const SIZE: (u32, u32) = (1120, 840);
+/// Every film's size in pixels: the 560 × 502 stage at two pixels a point.
+pub const SIZE: (u32, u32) = (1120, 1004);
 /// The films together, two in three languages.
 pub const TOTAL: usize = 6 * 1024 * 1024;
 
@@ -109,19 +109,19 @@ mod tests {
     #[test]
     fn a_file_a_byte_over_its_ceiling_or_off_size_fails() {
         for film in Film::ALL {
-            assert_eq!(fits(film, file(1120, 840, film.ceiling())), Ok(()), "{film:?} at its ceiling ships");
-            assert!(fits(film, file(1120, 840, film.ceiling() + 1)).is_err(), "twin: {film:?} a byte over fails");
-            assert!(fits(film, file(1119, 840, 4096)).is_err(), "twin: {film:?} off the stage's size fails");
+            assert_eq!(fits(film, file(1120, 1004, film.ceiling())), Ok(()), "{film:?} at its ceiling ships");
+            assert!(fits(film, file(1120, 1004, film.ceiling() + 1)).is_err(), "twin: {film:?} a byte over fails");
+            assert!(fits(film, file(1119, 1004, film.ceiling() / 2)).is_err(), "twin: {film:?} off the stage's size fails");
         }
     }
 
     #[test]
     fn a_film_missing_a_language_or_the_six_too_heavy_fail() {
-        let all = |film: Film, _: Language| Some(file(1120, 840, film.ceiling() / 2));
+        let all = |film: Film, _: Language| Some(file(1120, 1004, film.ceiling() / 2));
         assert!(weigh(all).is_ok(), "every film in every language, light enough");
-        let english = |film: Film, l: Language| (l == Language::English).then(|| file(1120, 840, film.ceiling() / 2));
+        let english = |film: Film, l: Language| (l == Language::English).then(|| file(1120, 1004, film.ceiling() / 2));
         assert!(weigh(english).is_err(), "twin: a film in English alone fails");
-        let full = |film: Film, _: Language| Some(file(1120, 840, film.ceiling()));
+        let full = |film: Film, _: Language| Some(file(1120, 1004, film.ceiling()));
         assert!(weigh(full).is_err(), "twin: the six at their ceilings weigh more than {TOTAL}");
     }
 }

@@ -153,7 +153,7 @@ impl Stage {
     /// The component `name` of the scene file `file`, laid at `size` points.
     pub fn new(file: &Path, name: &str, size: (f32, f32)) -> Result<Stage, String> {
         let Platformed { window, clock, .. } = platform()?;
-        let result = oni_lab::compile(file);
+        let result = crate::words::compile(file, oni_i18n::current());
         if result.has_errors() {
             return Err(format!("{} does not compile", file.display()));
         }
@@ -169,7 +169,7 @@ impl Stage {
         Ok(Stage { instance, window, clock, pointer: None, origin })
     }
 
-    /// The scene's instance, whose globals the app's own blocks read and call back through.
+    /// The scene itself, for its globals, its keyboard and its elements where the layout put them.
     pub fn instance(&self) -> &ComponentInstance {
         &self.instance
     }

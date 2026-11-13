@@ -10,6 +10,7 @@ use oni_pipeline::Request;
 use oni_settings::PipelineSettings;
 
 mod heal;
+pub mod plain;
 pub use heal::magnified;
 
 /// RGBA rows, 8 bits a channel, opaque.

@@ -1,10 +1,12 @@
 // The welcome's De-dust shot: a detail of a dusty negative under the canvas's own overlays, beside the
 // panel's De-dust header and pane as the editor stacks them, fed through the pane's own global.
-import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface, Space, Type, Colour, ShellStyle, TabsStyle, WelcomeStyle, ModeHeader } from "../../../oni-ui/ui/ds/ds.slint";
+import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface } from "../../../oni-ui/ui/ds/ds.slint";
+import { Space, Type, ShellStyle, TabsStyle, WelcomeStyle, ModeHeader } from "../../../oni-ui/ui/ds/ds.slint";
 import { Mark } from "../../../oni-ui/ui/canvas_state.slint";
 import { DedustPane } from "../../../oni-ui/ui/panel/dedust_tab.slint";
 export { Dedust } from "../../../oni-ui/ui/panel/state.slint";
-export { Raster, Depth } from "../../../oni-ui/ui/ds/ds.slint";
+// `DustStyle` exported for the timeline, which tints the reading's veil as the canvas does.
+export { Raster, Depth, DustStyle } from "../../../oni-ui/ui/ds/ds.slint";
 
 export component DedustShot inherits Window {
     // The detail rendered at the strip's pixels, and the reading's veil over it at the same pixels.
@@ -15,7 +17,6 @@ export component DedustShot inherits Window {
     in property <[Mark]> rings;
     in property <[Mark]> marks;
     in property <[{commands: string, width: length}]> pending;
-    out property <color> veil: DustStyle.veil;
     out property <length> ring-least: DustStyle.ring;
     out property <length> stage-width: WelcomeStyle.stage-width;
     out property <length> stage-height: WelcomeStyle.stage-height;
@@ -26,7 +27,6 @@ export component DedustShot inherits Window {
     // Where the pane is shown down to, from its top, so the stage's foot cuts no row; 0 shows it whole.
     in property <length> foot;
     out property <length> pane-y: pane.absolute-position.y;
-    background: Colour.ground;
     default-font-family: Type.family;
     HorizontalLayout {
         strip := Picture {
