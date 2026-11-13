@@ -10546,5 +10546,12 @@
     "title": "The De-dust film ships in the three languages, every healed pixel drawn",
     "status": "done",
     "detail": "Filmed on P1072734 read as the negative it is, its hand strokes cleared on a copy: 38 specks at Sensitivity at rest, 6 whole and apart in the detail at 50 %, read in 0.6 s and healed in 1 s. The GIF writes every changed pixel of the photograph (tolerance 0), so a faint heal is never left undrawn; dedust.gif, dedust.fr.gif and dedust.es.gif join SHIPPED. Each film's ceiling is 2 MB and the six's 12 MB, the owner allowing 20. The tool lays the under-ring crops from the GIF's decoded frames. Checks: welcome (every shipped film fits and speaks every language; the six at their ceilings are the budget, a byte over fails), window welcome, welcome_dedust."
+  },
+  {
+    "id": 2059,
+    "type": "fix",
+    "title": "The films' total stays a bound of its own",
+    "status": "done",
+    "detail": "With every film's ceiling at 2 MB the six at their ceilings made exactly the 12 MB total, so the total could never fail. TOTAL is 8 MB: the six shipped weigh 4.65 MB, and six at their ceilings are refused. Check: welcome::tests (twin: six at their ceilings fail)."
   }
 ]
