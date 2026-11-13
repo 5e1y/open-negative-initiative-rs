@@ -453,14 +453,6 @@ msgstr "Haz doble clic para volver al reposo"
 msgid "Photo"
 msgstr "Foto"
 
-#: crates/oni-ui/ui/ds/welcome_edits.slint
-msgid "Bringing settings up to date: {} of {} folders"
-msgstr "Actualizando los ajustes: {} de {} carpetas"
-
-#: crates/oni-ui/ui/ds/welcome_edits.slint
-msgid "Settings up to date: {} of {} folders"
-msgstr "Ajustes al día: {} de {} carpetas"
-
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/settings.slint
 msgid "Editor"
 msgstr "Editor"
@@ -484,10 +476,6 @@ msgstr "Polvo"
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "Files"
 msgstr "Archivos"
-
-#: crates/oni-ui/ui/ds/welcome_fixes.slint
-msgid "{}"
-msgstr "{}"
 
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "fixes"
@@ -871,149 +859,6 @@ msgstr "Mostrar lo que esta pantalla no puede mostrar"
 
 #: crates/oni-ui/ui/help.slint
 msgid "ONI {}, the calm and clean update"
-<<<<<<< HEAD
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "A quieter interface around your scans, dust found on its own, and many fixes."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "A calmer interface"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Automatic De-dust"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Your edits, brought up to date"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "About 70 fixes"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Less distraction around your scans"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Flat keys that light up under the hand, coloured rails faint until you use them: the photo is what stands out."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "More intuitive"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Every key is an icon over its word, in the same place in every mode. A keycap means the screen's main action."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Type any value"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Click a slider's number to type it, or nudge it with − and +."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Your folders at hand"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Favourites and Computer fold like a Finder sidebar, and the rating filter stays beside the open photo."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "The dust found in one press"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "In De-dust, DETECT rings every speck it finds, from a single pixel to a large flake. Sensitivity recounts as you slide it."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Healed when you say so"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "REMOVE lays a patch on each ringed speck. Each patch is a numbered tile you can check and remove one by one."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Fast with hundreds of patches"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "A frame with 200 patches edits as smoothly as a clean one."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Look before you remove"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "A speck across a sharp edge can be missed, and a high Sensitivity can ring fine detail."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Converted on their own"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "At the first launch, the settings beside each photo move to a new format while you work. Your photos are never touched."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "No way back"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "ONI 1.5 and earlier open converted photos read-only. Keep editing them in this version."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Disks away"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "A disk not connected is converted when it comes back."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Two habits change"
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Keys 1, 2 and 3 now give gold, silver and bronze. The Scanner face no longer applies Auto White Balance: it shows exactly what its keypad reads."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Editing a whole roll moves each frame from its own values, never overwriting its balance."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Undo keeps its history from frame to frame, and names what it takes back."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Dust patches stay on their speck after a crop or a turn, and are back in every export."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll: Cancel leaves nothing half done, and frames keep their look from step to step."
-msgstr ""
-
-#: crates/oni-ui/ui/help.slint
-msgid "No more freezes on slow or network disks; a move never replaces a file."
-msgstr ""
-=======
 msgstr "ONI {}, la actualización tranquila y limpia"
 
 #: crates/oni-ui/ui/help.slint
@@ -1155,7 +1000,6 @@ msgstr "Preparar el rollo: Cancelar no deja nada a medias, y los fotogramas cons
 #: crates/oni-ui/ui/help.slint
 msgid "No more freezes on slow or network disks; a move never replaces a file."
 msgstr "Se acabaron los bloqueos en discos lentos o de red; mover nunca reemplaza un archivo."
->>>>>>> canvas
 
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
 msgid "Back"
@@ -1167,11 +1011,7 @@ msgstr "EMPEZAR"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Next"
-<<<<<<< HEAD
-msgstr ""
-=======
 msgstr "Siguiente"
->>>>>>> canvas
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"

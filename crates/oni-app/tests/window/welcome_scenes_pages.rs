@@ -1,6 +1,6 @@
-//! The welcome's third and fourth scenes, held at the start, the middle and the end of their loops:
-//! each settings card of the edits scene changes while every photo's pixels stay put, and the fixes
-//! scene ticks and counts. Each assertion carries a twin that looks where the change is and must see it.
+//! The welcome's third and fourth scenes held at the moments of their review: the first and last frame
+//! alike, the opening, the middle and the end. The edits scene turns its cards while every picture's pixels
+//! stay put; the fixes scene ticks and counts. Each assertion has a twin that looks where the change is.
 
 use oni_app::{Help, MainWindow, SceneClock};
 use slint::platform::software_renderer::Rgb565Pixel;
@@ -48,7 +48,6 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
     let clock = window.global::<SceneClock>();
     let width = w as usize;
     let whole = (0, 0, width, h as usize);
-    // A moment of the scene, drawn and kept.
     let at = |held: f32, name: &str| -> Frame {
         clock.set_held(held);
         rig.pump();
@@ -56,37 +55,48 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
         println!("shot {}", rig.shot(name).display());
         rig.drawn().1
     };
+    // The stage's corner in the window, found where the canvas colour begins.
+    let (sx, sy) = ((width - 560) / 2, 144usize);
+    let canvas = at(1.0, "welcome-edits-end");
+    assert_ne!(canvas[(sy + 5) * width + sx + 5].0, canvas[(sy - 5) * width + sx + 5].0, "the stage starts where the check expects it");
 
-    let start = at(0.06, "welcome-edits-start");
-    let middle = at(0.42, "welcome-edits-middle");
-    let end = at(1.0, "welcome-edits-end");
-    let again = at(1.0, "welcome-edits-end-again");
-
-    // The cards: what differs from the start to the end, five new cards and a status line.
-    let cards = changes(&start, &end, width, whole).expect("the cards turn between the start and the end");
-    assert!(changes(&end, &again, width, whole).is_none(), "a held moment draws the same twice");
-    assert!(changes(&start, &middle, width, whole).is_some() && changes(&middle, &end, width, whole).is_some(), "the middle is neither the start nor the end");
-    // The photos lie above the cards: 36 px of link and 54 px of photo, across the row of five.
-    let (left, top) = (cards.0 - 12, cards.1 - 90);
-    let photos = (left, top, left + 496, top + 54);
-    for (name, frame) in [("middle", &middle), ("end", &end)] {
-        assert!(changes(&start, frame, width, photos).is_none(), "a photo's pixels stay put to the {name}");
+    // The edits: eight cells in four columns, a picture 96 by 60 over a card 28 high, laid out as the scene does.
+    let cell = |i: usize, thumb: bool| -> Box4 {
+        let (c, r) = (i % 4, i / 4);
+        let (x, y) = (sx + 40 + c * 128, sy + 55 + r * 124 + if thumb { 0 } else { 66 });
+        (x + 2, y + 2, x + 94, y + if thumb { 58 } else { 26 })
+    };
+    let s0 = at(0.0, "welcome-edits-s0");
+    let opening = at(0.12, "welcome-edits-opening");
+    let middle = at(0.40, "welcome-edits-middle");
+    let s1 = at(1.0, "welcome-edits-s1");
+    println!("s0 vs s1 {:?}", changes(&s0, &s1, width, whole));
+    assert!(changes(&s0, &s1, width, whole).is_none(), "the first and the last frame are the same");
+    for i in 0..8 {
+        for (name, frame) in [("s0", &s0), ("middle", &middle), ("end", &s1)] {
+            assert!(changes(&opening, frame, width, cell(i, true)).is_none(), "picture {i} stays put to {name}");
+        }
+        assert!(changes(&opening, &s1, width, cell(i, false)).is_some(), "card {i} turns by the end");
     }
-    // Twin: the same box moved down onto the cards sees them change.
-    let wrong = (left, top + 90, left + 496, top + 144);
-    assert!(changes(&start, &end, width, wrong).is_some(), "a box on the cards must see the turn");
+    // Twin: a box on a card, where the change is, must see it; a card is not a picture.
+    assert!(changes(&opening, &s1, width, cell(0, false)).is_some());
+    assert!(changes(&opening, &middle, width, cell(0, false)).is_some(), "the first card has turned by the middle");
+    assert!(changes(&opening, &middle, width, cell(7, false)).is_none(), "the last card waits at the middle");
+    assert!(changes(&middle, &s1, width, cell(7, false)).is_some(), "and turns after it");
 
-    // The fixes: the boxes tick one after another and the count rises.
+    // The fixes: the first and last frames alike, the rows ticking one after another, the count rising.
     help.set_welcome_page(4);
     rig.settle();
-    let first = at(0.06, "welcome-fixes-start");
-    let half = at(0.4, "welcome-fixes-middle");
-    let last = at(1.0, "welcome-fixes-end");
-    let ticked = changes(&first, &last, width, whole).expect("the fixes change between the start and the end");
-    let so_far = changes(&first, &half, width, whole).expect("the fixes change by the middle");
-    assert!(so_far.3 < ticked.3 || so_far.1 > ticked.1 || so_far != ticked, "the middle has ticked part of the list");
-    assert!(changes(&half, &last, width, whole).is_some(), "the end ticks what the middle has not");
-    // Twin: a frame held at the end twice shows no change, so the diff above is the clock's.
-    assert!(changes(&last, &at(1.0, "welcome-fixes-end-again"), width, whole).is_none());
+    let f0 = at(0.0, "welcome-fixes-s0");
+    let opening = at(0.11, "welcome-fixes-opening");
+    let half = at(0.40, "welcome-fixes-middle");
+    let f1 = at(1.0, "welcome-fixes-s1");
+    assert!(changes(&f0, &f1, width, whole).is_none(), "the fixes' first and last frame are the same");
+    let ticked = changes(&opening, &f1, width, whole).expect("the fixes change between the opening and the end");
+    let so_far = changes(&opening, &half, width, whole).expect("the fixes change by the middle");
+    assert!(so_far != ticked, "the middle has ticked part of the list only");
+    assert!(changes(&half, &f1, width, whole).is_some(), "the end ticks what the middle has not");
+    // Twin: a frame held twice shows no change, so the differences above are the clock's.
+    assert!(changes(&f1, &at(1.0, "welcome-fixes-s1-again"), width, whole).is_none());
     clock.set_held(-1.0);
 }

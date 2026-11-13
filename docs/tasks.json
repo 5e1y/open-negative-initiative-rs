@@ -10300,6 +10300,6 @@
     "type": "feature",
     "title": "The welcome's scenes of the edits and the fixes",
     "status": "done",
-    "detail": "Page 3 shows a row of still photos with a settings card each, turned from 1.5 to 1.6 and checked as a light passes, a status line counting the folders; page 4 ticks six areas one after another, their bugs leaving, while the count rises to 70. Both are expressions of the scene clock, so Reduce Motion rests on the finished state. Check: welcome_scenes_pages (a card changes from start to end while its photo's pixels do not; twin: the same box on the cards sees the change)."
+    "detail": "Page 3 shows a row of still photos with a settings card each, turned from 1.5 to 1.6 and checked as a light passes, a status line counting the folders; page 4 ticks six areas one after another, their bugs leaving, while the count rises to 70. Both follow the animation direction: eight pictures in a 4x2 grid, a count in fixed digit cells, no colour for done, a rewind dissolve at each turn. Both are expressions of the scene clock, so Reduce Motion rests on the finished state. Check: welcome_scenes_pages (a card changes from start to end while its photo's pixels do not; twin: the same box on the cards sees the change)."
   }
 ]
