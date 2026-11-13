@@ -71,6 +71,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target", gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target),
     ("headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas", headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas),
     ("help::the_help_menus_surfaces_behave_as_swifts", help::the_help_menus_surfaces_behave_as_swifts),
+    ("welcome_clip::the_welcome_plays_its_pages_film_and_drops_it_as_it_closes", welcome_clip::the_welcome_plays_its_pages_film_and_drops_it_as_it_closes),
     ("keycap::a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once", keycap::a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once),
     ("button_group::a_plate_s_keycaps_touch_and_a_group_s_flat_keys_stand_apart_on_their_faces", button_group::a_plate_s_keycaps_touch_and_a_group_s_flat_keys_stand_apart_on_their_faces),
     ("button_group::capitals_are_the_keycap_s_alone", button_group::capitals_are_the_keycap_s_alone),

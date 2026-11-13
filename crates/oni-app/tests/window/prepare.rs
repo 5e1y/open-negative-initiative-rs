@@ -158,13 +158,13 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
 
     // The base's demo plays as its step shows; Hide puts it away, Show How plays it again.
     let demo = || p.get_tutorial().size().width;
-    assert!(p.get_has_tutorial() && demo() > 0, "played with its step, unasked");
+    assert!(p.get_has_tutorial(), "the base offers its demo");
+    rig.until("the base's demo, played with its step, unasked", Duration::from_secs(5), || demo() > 0);
     p.invoke_tutorial_toggled();
     rig.pump();
     assert_eq!(demo(), 0, "Hide puts it away");
     p.invoke_tutorial_toggled();
-    rig.pump();
-    assert!(demo() > 0, "twin: Show How plays it again");
+    rig.until("twin: Show How plays it again", Duration::from_secs(5), || demo() > 0);
 
     // Picker Size: held in memory while it slides, written once let go.
     let before = radius();
@@ -234,7 +234,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let (x, y) = action();
     click(&rig, x, y);
     assert_eq!(p.get_step(), 3, "NEXT goes on to the flags");
-    assert!(demo() > 0 && p.get_has_tutorial(), "the flags' own demo plays as its step shows");
+    assert!(p.get_has_tutorial(), "the flags offer their own demo");
+    rig.until("the flags' own demo, played as its step shows", Duration::from_secs(5), || demo() > 0);
     assert_eq!(done(), [true, false, true, false, false], "the base behind is done once it holds its pick");
 
     // A click on the sheet flags C; Clear Flags takes every flag off; a second click flags it again.

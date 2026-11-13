@@ -50,7 +50,7 @@ fn play(w: &MainWindow, topic: &str) {
     let spawned = std::thread::Builder::new().name("help demo".into()).spawn(move || {
         while let Some(mut decoder) = Frames::new(clip) {
             let size = decoder.size();
-            while let Some((picture, delay)) = decoder.next() {
+            while let Some((picture, delay, _)) = decoder.next() {
                 if sender.send((picture.to_vec(), size, delay)).is_err() {
                     return;
                 }

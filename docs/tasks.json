@@ -10322,5 +10322,26 @@
     "title": "One set of scene curves and one count for the welcome",
     "status": "done",
     "detail": "The four curves lived in Phase, in the De-dust scene and in the interface scene, and the fixed-cell count twice. Easing (pure functions) and Figures in ds/welcome.slint now serve every scene; Phase reads Easing. Checks: welcome_scenes_dedust and welcome_scenes_pages, unchanged pixels asserted."
+  },
+  {
+    "id": 2020,
+    "type": "refactor",
+    "title": "One clip player for Prepare the Roll's demos and the welcome's films",
+    "status": "done",
+    "detail": "Prepare's player decoded each frame on the interface thread. The shared player (app/player.rs) decodes on a thread of its own with one frame queued and the shown buffers handed back, writes each frame into one Rgba8Unorm texture and bumps a revision (read back as an image on the software renderer); a frame that moves nothing is neither written nor redrawn (Frames::next says whether it moved). Paces: once, resting on the last frame (Prepare), a loop (the welcome), still on the last frame (Reduce Motion). Dropping the player ends its decoder. Checks: app::player unit tests (once ends after every frame and an unmoved frame carries no pixels, twin: its neighbours do; a loop's fourth frame is the first, twin: the third is not; still hands the last frame alone, twin: not the first); window prepare waits for the demo's first frame, now a few milliseconds after its step."
+  },
+  {
+    "id": 2021,
+    "type": "feature",
+    "title": "The welcome's films by page and language, each under its ceiling",
+    "status": "done",
+    "detail": "oni_app::welcome: Film (interface on page 1, De-dust on page 2), the shipped table by film and language (empty until the films are made), the ceilings (1200 KiB interface, 900 KiB De-dust, 6 MiB for the six) and fits / weigh. Checks: every shipped film fits and ships in every language or none; twins: a file at its ceiling fits and a byte over fails, a width off the 1120 x 840 stage fails, a film in English alone fails, the six at their ceilings weigh over 6 MiB."
+  },
+  {
+    "id": 2022,
+    "type": "feature",
+    "title": "The welcome plays its page's film on the Help contract",
+    "status": "done",
+    "detail": "Help.welcome-clip, welcome-clip-revision and welcome-turned(int) (the page now shown, -1 as the sheet closes) declared as the lead plan fixes them; the card calls welcome-turned. Opening the sheet turns to page 0 and closing it to -1 from Rust too. A page with a film loops it, under Reduce Motion shows its last frame still, any other page or the sheet closing drops the decoder and the texture; a check hands its own films through Options.films. Check: welcome_clip on synthetic films (page 1 shows the film's size and more frames than it has on the rig's clock; twin: on page 0 the revision stands; page 2 its own film; Reduce Motion stands on the last frame, twin: not the first; closed, no picture and no frame asked)."
   }
 ]

@@ -16,7 +16,7 @@ use crate::panel_bindings::opened;
 fn pictures(clip: &'static [u8]) -> Vec<Vec<u8>> {
     let mut frames = Frames::new(clip).expect("a GIF");
     let mut out: Vec<Vec<u8>> = Vec::new();
-    while let Some((picture, _)) = frames.next() {
+    while let Some((picture, _, _)) = frames.next() {
         if out.first().is_some_and(|p| p == picture) || out.len() > 400 {
             break;
         }
