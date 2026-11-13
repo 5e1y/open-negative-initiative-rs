@@ -1,6 +1,7 @@
 // The states a check reads off the drawn window, each at a fixed place: a key and a keycap out of reach, an
-// idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals.
-import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal, Section, SectionStyle } from "ds.slint";
+// idle tab, a destructive glyph, a latching key, a switch, a tile under the hand, readouts, the medals, a
+// tool's header.
+import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill, ScannerStyle, ToggleStyle, AppWindow, Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal, Section, SectionStyle, ShellStyle, ModeHeader } from "ds.slint";
 import { MedalStyle } from "theme.slint";
 import { Figure } from "marks.slint";
 import { LabScreen } from "keypad.slint";
@@ -237,5 +238,19 @@ export component ScreenProbe inherits AppWindow {
         height: 108px;
         widest: root.widest;
         cells: [{ title: "D", value: "−" + root.count }, { title: "C", value: "+" + root.count }, { title: "M", value: "−" + root.count }, { title: "Y", value: "+" + root.count }, { title: "T", value: "−" + root.count }];
+    }
+}
+
+// A canvas tool's header across the panel's width, its name the check's.
+export component HeaderProbe inherits AppWindow {
+    in property <string> name;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: ShellStyle.panel-width;
+    VerticalLayout {
+        padding-left: Space.m;
+        padding-right: Space.m;
+        alignment: start;
+        ModeHeader { title: root.name; }
     }
 }

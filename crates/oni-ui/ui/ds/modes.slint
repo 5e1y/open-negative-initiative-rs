@@ -1,7 +1,10 @@
 // A canvas tool held: a ring of its colour around the card, a stroke wide, set in by the rings outside it,
-// and its tab hanging from its key in the bar down onto its ring, over the rings outside it.
-import { CardStyle, Motion } from "theme.slint";
+// its tab hanging from its key in the bar down onto its ring, over the rings outside it; its header in the panel.
+import { CardStyle, Motion, Colour, Space, SectionStyle, TabsStyle } from "theme.slint";
 import { ToolStyle } from "theme_views.slint";
+import { Label, TextRole } from "base.slint";
+import { Button, ButtonKind } from "controls.slint";
+import { HelpMark } from "containers.slint";
 
 // Laid in the window's space: the card's place and the key's, as the window reads them.
 export component ModeRing {
@@ -44,5 +47,60 @@ export component ModeRing {
         background: root.ink;
         border-top-left-radius: ToolStyle.marker / 2;
         border-top-right-radius: ToolStyle.marker / 2;
+    }
+}
+
+// A tool of the canvas, the crop or De-dust, named where the tab bar stands beside its two ways out:
+// Cancel, Escape's, puts back what the tool changed on the photo; DONE, Return's, keeps it, as a sheet's.
+// Too narrow for its name beside the keys, as a panel's in a longer language, it lays the name over them.
+export component ModeHeader inherits Rectangle {
+    in property <string> title;
+    // The "?" beside the name, none when empty, and the help topic whose demo its card plays.
+    in property <string> note;
+    in property <string> demo;
+    in property <string> help;
+    in property <string> cancel-help;
+    callback done();
+    callback cancel();
+    // Its lines follow its width, so it places them itself: a layout around it asks it a height alone.
+    min-height: lines.preferred-height;
+    preferred-height: lines.preferred-height;
+    // The name and keys on one line, unseen: whether they fit never follows the lines it lays.
+    measure := HorizontalLayout {
+        x: 0;
+        y: 0;
+        visible: false;
+        spacing: Space.s;
+        Label { text: root.title; role: TextRole.title; min-width: 0; }
+        if root.note != "": Rectangle { width: SectionStyle.help-mark; }
+        Rectangle { width: 0px; }
+        Button { text: @tr("Cancel"); keycap: true; }
+        Button { text: @tr("DONE"); keycap: true; }
+    }
+    property <bool> stacked: root.width < measure.preferred-width;
+    lines := VerticalLayout {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        spacing: Space.s;
+        if root.stacked: HorizontalLayout {
+            spacing: Space.s;
+            alignment: start;
+            cross-axis-alignment: center;
+            Label { text: root.title; role: TextRole.title; overflow: elide; min-width: 0; }
+            if root.note != "": HelpMark { note: root.note; demo: root.demo; subject: root.title; }
+        }
+        HorizontalLayout {
+            height: TabsStyle.height;
+            spacing: Space.s;
+            cross-axis-alignment: center;
+            if !root.stacked: Label { text: root.title; role: TextRole.title; overflow: elide; min-width: 0; horizontal-stretch: 0; }
+            if !root.stacked && root.note != "": HelpMark { note: root.note; demo: root.demo; subject: root.title; }
+            if !root.stacked: Rectangle { horizontal-stretch: 1; }
+            // Under the name, the two keys share the line as a pane's pair does.
+            Button { text: @tr("Cancel"); keycap: true; fills: root.stacked; ground: Colour.ground; help: root.cancel-help; clicked => { root.cancel(); } }
+            Button { text: @tr("DONE"); keycap: true; fills: root.stacked; kind: ButtonKind.accent; help: root.help; clicked => { root.done(); } }
+        }
     }
 }

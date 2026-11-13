@@ -1,6 +1,6 @@
 // The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
-// store, the scrolled pane, the Scanner's sliders, and a tool's header.
-import { Icons, Colour, Slider, SliderFill, Section, Scroller, Label, Button, ButtonKind, ButtonSize, TextRole, TabsStyle, Space, HelpMark } from "../ds/ds.slint";
+// store, the scrolled pane, the Scanner's sliders.
+import { Icons, Slider, SliderFill, Section, Scroller, Button, ButtonSize, Space } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
 import { PanelState, Lab } from "state.slint";
@@ -94,25 +94,4 @@ export component Pane inherits Scroller {
 // `DetailsPane.offOnSheet`: greyed and out of reach on a sheet, the values kept.
 export component DetailSlider inherits StoreSlider {
     enabled: !PanelState.sheet;
-}
-
-// A tool of the canvas, the crop or De-dust, named where the tab bar stands beside its two ways out:
-// Cancel, Escape's, puts back what the tool changed on the photo; DONE, Return's, keeps it, as a sheet's.
-export component ModeHeader inherits HorizontalLayout {
-    in property <string> title;
-    // The "?" beside the name, none when empty, and the help topic whose demo its card plays.
-    in property <string> note;
-    in property <string> demo;
-    in property <string> help;
-    in property <string> cancel-help;
-    callback done();
-    callback cancel();
-    height: TabsStyle.height;
-    spacing: Space.s;
-    cross-axis-alignment: center;
-    Label { text: root.title; role: TextRole.title; overflow: elide; min-width: 0; horizontal-stretch: 0; }
-    if root.note != "": HelpMark { note: root.note; demo: root.demo; subject: root.title; }
-    Rectangle { horizontal-stretch: 1; }
-    Button { text: @tr("Cancel"); keycap: true; ground: Colour.ground; help: root.cancel-help; clicked => { root.cancel(); } }
-    Button { text: @tr("DONE"); keycap: true; kind: ButtonKind.accent; help: root.help; clicked => { root.done(); } }
 }
