@@ -10322,5 +10322,40 @@
     "title": "One set of scene curves and one count for the welcome",
     "status": "done",
     "detail": "The four curves lived in Phase, in the De-dust scene and in the interface scene, and the fixed-cell count twice. Easing (pure functions) and Figures in ds/welcome.slint now serve every scene; Phase reads Easing. Checks: welcome_scenes_dedust and welcome_scenes_pages, unchanged pixels asserted."
+  },
+  {
+    "id": 2015,
+    "type": "feature",
+    "title": "The welcome as a horizontal card",
+    "status": "done",
+    "detail": "WelcomeSheet is a 960 by 420 card in the sheet's fixed mode: a 560 by 420 stage on the left (WelcomeStyle.stage-width, 4:3), a 400 column of words on the right (DS.control-welcome-words-width) with the footer at its foot. The card fits the 1100 by 680 window whole, so the sheet's own scroller never moves; in a shorter window the card takes the room between its margins, the stage crops (cover) and only the words scroll; narrower than 960 plus the margins, the words keep 400 and the stage takes the rest, and under 160 (WelcomeStyle.stage-least) the words take the card. Each page's words sit in a scroller of their own: a layout made by `if` inside the scroller's layout measured its wrapped lines unwrapped, so a long page could never be scrolled to its foot. Check: welcome_card (at 1100 by 680 on each page the words right of the stage, the key inside the card and the words still under the wheel, in each language the interface speaks; 1728 by 1017, 900 by 560 and 900 by 440 keep the key in the window; at 900 by 440 the last page scrolls and NEXT answers a click; twins: a page given a long heading scrolls, a 1100 by 300 window's card is shorter than the stage)."
+  },
+  {
+    "id": 2016,
+    "type": "feature",
+    "title": "The welcome in four pages",
+    "status": "done",
+    "detail": "Cover, A calmer interface, Automatic De-dust, About 70 fixes and what changes. The conversion page goes: its three facts (converted on their own, a disk away converted when it comes back, 1.5 reads them read-only, two habits change) join the six fixes on the last page, Fixed on the left and Good to know on the right, the page without a stage. Each film page says three points, each one the film beside it shows. French and Spanish in the catalogues. Checks: help (Return turns the four pages and closes on the last), sheets, the catalogue."
+  },
+  {
+    "id": 2017,
+    "type": "refactor",
+    "title": "The welcome's drawn scenes withdrawn",
+    "status": "done",
+    "detail": "The interface, De-dust, edits and fixes scenes drawn in Slint give way to films of the real app: welcome_interface*, welcome_dedust*, welcome_edits and welcome_fixes go with Cycle, Phase, Easing, Figures and SceneClock, and the three welcome_scenes window checks with them. ds/welcome.slint keeps WelcomeStyle, the stage and the dots; the photo's 3:2 token goes, WelcomePhoto takes the size it is given."
+  },
+  {
+    "id": 2018,
+    "type": "feature",
+    "title": "The welcome's film contract",
+    "status": "done",
+    "detail": "Help.welcome-clip, Help.welcome-clip-revision and Help.welcome-turned(int), as the plan fixes them: the film the stage shows on pages 1 and 2 is a texture rewritten in place, read through Picture.revision so the GPU path redraws it, empty until a player fills it, which leaves the stage's canvas ground. The sheet calls welcome-turned at each turn of its page; the shell names the first page as it opens and -1 as it closes."
+  },
+  {
+    "id": 2019,
+    "type": "feature",
+    "title": "A sheet no wider than its window",
+    "status": "done",
+    "detail": "Sheet's card takes its gauge or the window's width less its two margins, whichever is less, and says it as shown-width; the welcome lays its stage from it. Every other sheet is narrower than the smallest window, so none of them moves. Check: welcome_card at 900 wide (key inside the window), sheet_layout's centring of every modal sheet."
   }
 ]

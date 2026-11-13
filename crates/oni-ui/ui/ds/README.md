@@ -275,10 +275,13 @@ Every overlay takes one of two forms, the help cards (`HelpLayer`) and the menus
 
 **Sheet**, modal. Every question, form and board is a `Sheet`; a question is an `AskSheet`.
 - It sits over the one scrim, centred across, resting at `SheetStyle.rest` of the window's free height, a margin
-  kept above and below. Its content scrolls past the window's room.
+  kept above and below and on either side. Its content scrolls past the window's room; a sheet given a
+  `card-height` is that tall at most and lays its content in the height it has, scrolling only where it says.
 - Three widths: `width` for a question or a one-field form, `notice-width` for a form of several groups (a
-  notice, the report, the catch-up), `wide-width` for a wide form (the welcome, a preset's save). A board keeps a
-  gauge of its own (Settings, the papers, the stocks, the preset editor).
+  notice, the report, the catch-up), `wide-width` for a wide form (a preset's save). A board keeps a
+  gauge of its own (Settings, the papers, the stocks, the preset editor, the welcome).
+- The welcome is a card of `WelcomeStyle`: a 4:3 stage for the page's photo or film on the left, the words
+  and the footer on the right, only the words scrolling; the stage crops before the words give up their width.
 - It comes in as one at `Motion.overlay-in`, the scrim darkening as the card rises `SheetStyle.rise`.
 - Its footer puts what leaves at the left, then apart at the right a step back and the commit, the accent keycap:
   `SheetFooter`, and an `AskSheet`'s keys alike. A key that removes is red, apart, and never the default.

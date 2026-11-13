@@ -17,9 +17,8 @@ export global SplashStyle {
     out property <length> inset-bottom: DS.space-lg + DS.space-xs;
     out property <length> lines: DS.space-sm + DS.space-xs;
     out property <length> line-indent: DS.space-xs;
-    // `welcomeCaptionScale` and `welcomePhotoAspect`: the welcome's photo carries a smaller caption.
+    // `welcomeCaptionScale`: the welcome's photo carries a smaller caption.
     out property <float> welcome-scale: DS.control-welcome-caption-scale / 1px;
-    out property <float> welcome-aspect: DS.control-welcome-photo-aspect / 1px;
 }
 
 // `SplashCaption`: the logo over the version line at the foot's leading corner, "Photo" over the
@@ -65,15 +64,14 @@ export component SplashCaption inherits Rectangle {
     }
 }
 
-// A version's photo cropped to fill, the splash's caption over its foot; on the welcome sheet edge
-// to edge at 3:2 on the wide sheet, its caption at the welcome's scale.
+// A version's photo cropped to fill, the splash's caption over its foot; on the welcome's stage at
+// the welcome's scale.
 export component WelcomePhoto inherits Picture {
     // The version's picture, oldest first.
     in property <int> picture;
     in property <string> line;
     in property <string> credit;
     in property <float> scale: SplashStyle.welcome-scale;
-    height: DS.control-dialog-wide-width / SplashStyle.welcome-aspect;
     clip: true;
     ground: Ground.canvas;
     fit: Fit.cover;
