@@ -4,13 +4,12 @@
 use std::cell::Cell;
 use std::path::Path;
 use std::rc::{Rc, Weak};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use i_slint_core::window::WindowAdapterInternal;
 use oni_lab::raster::Raster;
 use slint::platform::femtovg_renderer::FemtoVGWGPURenderer;
-use slint::platform::{EventLoopProxy, Platform, PointerEventButton, Renderer, WindowAdapter, WindowEvent};
+use slint::platform::{Platform, PointerEventButton, Renderer, WindowAdapter, WindowEvent};
 use slint::{LogicalPosition, LogicalSize, PhysicalSize, PlatformError, Window, WindowSize};
 use slint_interpreter::{ComponentHandle, ComponentInstance, Value};
 
@@ -57,28 +56,11 @@ impl WindowAdapterInternal for Offscreen {
     }
 }
 
-/// What the app's threads post to the interface's, run when the stage pumps.
-pub(crate) type Queue = Arc<Mutex<Vec<Box<dyn FnOnce() + Send>>>>;
-
-struct Proxy(Queue);
-
-impl EventLoopProxy for Proxy {
-    fn quit_event_loop(&self) -> Result<(), slint::EventLoopError> {
-        Ok(())
-    }
-
-    fn invoke_from_event_loop(&self, event: Box<dyn FnOnce() + Send>) -> Result<(), slint::EventLoopError> {
-        self.0.lock().map_err(|_| slint::EventLoopError::EventLoopTerminated)?.push(event);
-        Ok(())
-    }
-}
-
 /// One offscreen window for the process, as Slint takes one platform; time is the clock's alone, so
 /// a film's animations land on the same frame at every run.
 struct Headless {
     window: Rc<Offscreen>,
     clock: Rc<Cell<Duration>>,
-    queue: Queue,
 }
 
 impl Platform for Headless {
@@ -89,31 +71,13 @@ impl Platform for Headless {
     fn duration_since_start(&self) -> Duration {
         self.clock.get()
     }
-
-    fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
-        Some(Box::new(Proxy(self.queue.clone())))
-    }
 }
 
-/// The process's offscreen window, its clock and the queue the app's threads post to.
+/// The process's offscreen window and its clock.
 #[derive(Clone)]
 pub(crate) struct Platformed {
     pub(crate) window: Rc<Offscreen>,
     pub(crate) clock: Rc<Cell<Duration>>,
-    pub(crate) queue: Queue,
-}
-
-impl Platformed {
-    /// Runs what the app's threads posted, then the timers the clock reached; whether anything was posted.
-    pub(crate) fn pump(&self) -> bool {
-        let jobs = self.queue.lock().map(|mut q| std::mem::take(&mut *q)).unwrap_or_default();
-        let posted = !jobs.is_empty();
-        for job in jobs {
-            job();
-        }
-        slint::platform::update_timers_and_animations();
-        posted
-    }
 }
 
 thread_local! {
@@ -126,11 +90,10 @@ thread_local! {
             size: Cell::new(PhysicalSize::new(1, 1)),
         });
         let clock = Rc::new(Cell::new(Duration::ZERO));
-        let queue = Queue::default();
-        let headless = Headless { window: window.clone(), clock: clock.clone(), queue: queue.clone() };
+        let headless = Headless { window: window.clone(), clock: clock.clone() };
         slint::platform::set_platform(Box::new(headless)).map_err(|e| e.to_string())?;
         window.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
-        Ok(Platformed { window, clock, queue })
+        Ok(Platformed { window, clock })
     };
 }
 
