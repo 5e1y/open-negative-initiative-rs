@@ -148,7 +148,9 @@ fn a_disk_away_is_pending_and_brought_once_it_answers_and_a_place_gone_is_droppe
     swept(&place);
     assert_eq!(current(&present), present.len());
     let ledger = ledger::read(&place.support).unwrap();
-    assert_eq!(ledger.pending, [away.to_string_lossy().into_owned()], "the disk away pending, the place gone from a disk present dropped");
+    // The ledger keeps a place in the archive's spelling, `/` on Windows.
+    let away_spelt = oni_library::paths::normal(&away.to_string_lossy()).into_owned();
+    assert_eq!(ledger.pending, [away_spelt], "the disk away pending, the place gone from a disk present dropped");
     // A file of an earlier format laid in a folder already swept: the next sweep takes the pending place alone.
     let since = library(&here.join("Since"), 1, 1);
     // The disk back: the next sweep brings it and empties the pending list.

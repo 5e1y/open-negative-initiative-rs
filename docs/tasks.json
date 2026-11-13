@@ -10616,5 +10616,12 @@
     "title": "The welcome's films and their player wiring leave the app",
     "status": "done",
     "detail": "The live scenes replace the six GIF films (4.6 MB): oni_app::welcome, the welcome's clip on the Help global, its player wiring and the welcome_clip window check are removed; the clip player stays for Prepare the Roll's demos. oni-demos keeps its filming tool with the stage's size of its own."
+  },
+  {
+    "id": 2069,
+    "type": "fix",
+    "title": "The migration sweep's check reads a pending place in the archive's spelling",
+    "status": "done",
+    "detail": "Windows CI: the ledger keeps a pending place as the archive spells it, '/' on Windows (oni_library::paths::normal), while the check compared it with the path's own spelling, '\\\\' there. The check now spells it the archive's way; macOS unchanged."
   }
 ]
