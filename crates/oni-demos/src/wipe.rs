@@ -5,14 +5,15 @@ use crate::film::FPS;
 use crate::photo::Rgba;
 use crate::track::ease;
 
-/// `before` with `after` laid left of an edge at `progress` of the width: 0 is the before whole, 1
-/// the after whole. The two frames are shot of the same region and so have one size.
-pub fn wipe(before: &Rgba, after: &Rgba, progress: f32) -> Result<Rgba, String> {
+/// `before` with `after` laid left of an edge at `progress` of the way from column `from` to the right
+/// edge: 0 is the before, 1 the after whole. Left of `from` the two are one picture, the photograph.
+pub fn wipe(before: &Rgba, after: &Rgba, from: u32, progress: f32) -> Result<Rgba, String> {
     if (before.width, before.height) != (after.width, after.height) {
         let (b, a) = ((before.width, before.height), (after.width, after.height));
         return Err(format!("a wipe joins frames of one size, not {b:?} and {a:?}"));
     }
-    let edge = (progress.clamp(0.0, 1.0) * before.width as f32).round() as usize * 4;
+    let from = from.min(before.width) as f32;
+    let edge = (from + progress.clamp(0.0, 1.0) * (before.width as f32 - from)).round() as usize * 4;
     let row = before.width as usize * 4;
     let mut pixels = before.pixels.clone();
     for (shown, from) in pixels.chunks_exact_mut(row).zip(after.pixels.chunks_exact(row)) {
@@ -21,11 +22,11 @@ pub fn wipe(before: &Rgba, after: &Rgba, progress: f32) -> Result<Rgba, String> 
     Ok(Rgba { width: before.width, height: before.height, pixels })
 }
 
-/// The wipe's frames over `seconds` at the film's rate, the edge eased: the first already moved from
-/// the before held on the frame ahead of it, the last the after whole, where the film goes on.
-pub fn frames(before: &Rgba, after: &Rgba, seconds: f32) -> Result<Vec<Rgba>, String> {
+/// The wipe's frames over `seconds` at the film's rate, the edge eased from column `from`: the first
+/// already moved from the before held ahead of it, the last the after whole, where the film goes on.
+pub fn frames(before: &Rgba, after: &Rgba, from: u32, seconds: f32) -> Result<Vec<Rgba>, String> {
     let count = (seconds * FPS as f32).round().max(1.0) as u32;
-    (1..=count).map(|i| wipe(before, after, ease(i as f32 / count as f32))).collect()
+    (1..=count).map(|i| wipe(before, after, from, ease(i as f32 / count as f32))).collect()
 }
 
 #[cfg(test)]
@@ -46,9 +47,9 @@ mod tests {
     #[test]
     fn the_wipe_runs_from_the_before_to_the_after_and_halfway_each_side_is_its_own_version() {
         let (before, after) = (frame(0), frame(101));
-        assert!(wipe(&before, &after, 0.0).unwrap() == before, "progress 0 is the before");
-        assert!(wipe(&before, &after, 1.0).unwrap() == after, "progress 1 is the after");
-        let half = wipe(&before, &after, 0.5).unwrap();
+        assert!(wipe(&before, &after, 0, 0.0).unwrap() == before, "progress 0 is the before");
+        assert!(wipe(&before, &after, 0, 1.0).unwrap() == after, "progress 1 is the after");
+        let half = wipe(&before, &after, 0, 0.5).unwrap();
         let edge = (0.5 * before.width as f32).round() as u32;
         for x in 0..before.width {
             let version = if x < edge { &after } else { &before };
@@ -57,9 +58,22 @@ mod tests {
         // Twin: a wipe that kept either frame whole, or mixed them, would match one or neither side.
         assert!(half != before && half != after, "halfway differs from both");
 
-        let shown = frames(&before, &after, 0.9).unwrap();
+        let shown = frames(&before, &after, 0, 0.9).unwrap();
         assert_eq!(shown.len(), 18, "0.9 s at the film's rate");
         assert!(shown[0] != before && *shown.last().unwrap() == after, "it leaves the before and lands on the after");
-        assert!(wipe(&before, &Rgba { width: 239, ..after.clone() }, 0.5).is_err(), "frames of two sizes are refused");
+        assert!(wipe(&before, &Rgba { width: 239, ..after.clone() }, 0, 0.5).is_err(), "frames of two sizes are refused");
+    }
+
+    #[test]
+    fn from_a_column_on_the_edge_crosses_only_what_lies_right_of_it() {
+        let (before, after) = (frame(0), frame(101));
+        let half = wipe(&before, &after, 120, 0.5).unwrap();
+        for x in 0..before.width {
+            let version = if x < 180 { &after } else { &before };
+            assert_eq!(column(&half, x), column(version, x), "column {x}: halfway from 120 is 180");
+        }
+        assert!(wipe(&before, &after, 120, 1.0).unwrap() == after, "it lands on the after whole");
+        // Twin: timed over the whole width, halfway would stand at 120.
+        assert!(half != wipe(&before, &after, 0, 0.5).unwrap());
     }
 }

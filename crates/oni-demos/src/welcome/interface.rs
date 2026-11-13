@@ -35,7 +35,7 @@ pub type Rect = (f32, f32, f32, f32);
 /// The strip's moments, two rows of six, in seconds.
 pub const STRIP: [f32; 12] = [0.3, 0.8, 1.15, 1.75, 2.2, 2.45, 2.85, 3.1, 3.58, 4.15, 4.9, 6.6];
 /// The joined film's: the before at rest and under the hand, the wipe, then this film's from 2.9 s.
-pub const JOINED: [f32; 12] = [0.3, 1.0, 2.2, 2.45, 2.7, 3.2, 4.65, 5.35, 6.0, 6.48, 7.05, 9.5];
+pub const JOINED: [f32; 12] = [0.3, 1.1, 1.6, 2.75, 3.0, 3.25, 3.75, 5.2, 5.9, 6.55, 7.6, 10.05];
 
 pub const STILLS: [(f32, &str); 8] = [
     (0.30, "rest"),

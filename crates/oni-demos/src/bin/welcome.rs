@@ -45,7 +45,7 @@ fn run() -> Result<(), String> {
         println!("{}", file.display());
     }
     let (all, moments) = match before {
-        Some(folder) => (welcome::joined(welcome::frames(&folder)?, frames)?, &interface::JOINED[..]),
+        Some(folder) => (welcome::joined(welcome::frames(&folder)?, frames, photo.x + photo.width)?, &interface::JOINED[..]),
         None => (frames, &interface::STRIP[..]),
     };
     if let Some(strip) = strip {

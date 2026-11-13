@@ -111,3 +111,45 @@ fn a_demo_showing_words_is_one_the_app_plays_per_language() {
     // Twin: a demo without words is filmed once.
     assert!(!worded.contains(&"lighting"));
 }
+
+/// A many-coloured photograph above a wide gradient rail, a knob moving along it; on the last frame
+/// the photograph changes when `moving`.
+fn rich(moving: bool) -> Vec<Rgba> {
+    (0..6)
+        .map(|n| {
+            let (w, h) = (320u32, 120u32);
+            let mut pixels = Vec::with_capacity((w * h * 4) as usize);
+            for y in 0..h {
+                for x in 0..w {
+                    let p = if y < 80 {
+                        let shift = u32::from(moving && n == 5) * 40;
+                        [((x + shift) * 255 / w) as u8, (y * 3) as u8, ((x * y) % 251) as u8, 255]
+                    } else if (x as i32 - 40 * n).abs() < 4 {
+                        [40, 40, 40, 255]
+                    } else {
+                        [(x * 255 / w) as u8, (60 + y) as u8, (255 - x * 255 / w) as u8, 255]
+                    };
+                    pixels.extend_from_slice(&p);
+                }
+            }
+            Rgba { width: w, height: h, pixels }
+        })
+        .collect()
+}
+
+#[test]
+fn a_still_photograph_is_drawn_once_by_its_own_colours_and_the_rails_take_the_palette() {
+    let shades = |frames: Vec<Rgba>| {
+        let bytes = encode::gif(&Clip { frames, delay: 5, photo: Region { x: 0, y: 0, width: 320, height: 80 } }, TUNING).unwrap();
+        let shown = played(&bytes);
+        // The rail's shades once the hand has moved: the more the palette gives it, the smoother it runs.
+        let rail: std::collections::BTreeSet<&[u8]> = shown[1][80 * 320 * 4..].chunks_exact(4).collect();
+        (rail.len(), shown)
+    };
+    let (still, shown) = shades(rich(false));
+    let photo = |f: &Vec<u8>| f[..80 * 320 * 4].to_vec();
+    assert!(shown.iter().all(|f| photo(f) == photo(&shown[0])), "a still photograph is never drawn again");
+    // Twin: a photograph that changes shares the palette, and the rail has fewer shades.
+    let (moving, _) = shades(rich(true));
+    assert!(still > moving + moving / 4, "the rail's shades: {still} with the photograph still, {moving} with it moving");
+}

@@ -19,7 +19,11 @@ pub enum Film {
 }
 
 /// Each film shipped, in each language, as `resources/welcome/<film>[.<language>].gif` (`demos::file`).
-const SHIPPED: &[(Film, Language, &[u8])] = &[];
+const SHIPPED: &[(Film, Language, &[u8])] = &[
+    (Film::Interface, Language::English, include_bytes!("../resources/welcome/interface.gif")),
+    (Film::Interface, Language::French, include_bytes!("../resources/welcome/interface.fr.gif")),
+    (Film::Interface, Language::Spanish, include_bytes!("../resources/welcome/interface.es.gif")),
+];
 
 impl Film {
     pub const ALL: [Film; 2] = [Film::Interface, Film::Dedust];

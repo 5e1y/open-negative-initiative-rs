@@ -1,5 +1,5 @@
-//! A clip to a small looping GIF: one palette, the interface's flat colours exact, then each frame
-//! only where it changed over the frame before. Same frames in, same bytes out.
+//! A clip to a small looping GIF: the interface's flat colours exact, each frame only where it changed
+//! over the frame before; a photograph that never changes has a colour table of its own. Same frames in, same bytes out.
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -62,20 +62,30 @@ pub fn gif(clip: &Clip, tuning: Tuning) -> Result<Vec<u8>, String> {
     if clip.frames.iter().any(|f| (f.width, f.height) != (w, h)) {
         return Err("the frames differ in size".into());
     }
-    let palette = Palette::learnt(&clip.frames, clip.photo, tuning.colours);
+    // A photograph the same on every frame is drawn once, by the first frame's own table, every colour
+    // of the photograph's share its; the global palette then goes to the interface, whose rails it smooths.
+    let still = clip.frames.iter().all(|f| same_in(f, first, clip.photo));
+    let palette = Palette::learnt(&clip.frames, clip.photo, if still { 0 } else { tuning.colours });
+    let opening = still.then(|| Palette::learnt(&clip.frames[..1], clip.photo, CLEAR as usize));
+    let skipped = still.then_some(clip.photo);
     let mut out = Vec::new();
     {
         let mut encoder = gif::Encoder::new(&mut out, w as u16, h as u16, &palette.rgb()).map_err(|e| e.to_string())?;
         encoder.set_repeat(gif::Repeat::Infinite).map_err(|e| e.to_string())?;
-        let mut shown: Option<Vec<u8>> = None;
+        let mut shown: Option<Vec<[u8; 3]>> = None;
         let mut pending: Option<gif::Frame<'static>> = None;
         for frame in &clip.frames {
-            let indices = palette.map(frame);
             let next = match shown.as_mut() {
-                Some(shown) => changed(&indices, &palette, shown, w, tuning.tolerance),
-                None => Some(whole(&indices, w, h)),
+                Some(shown) => changed(&palette.map(frame), &palette, shown, w, tuning.tolerance, skipped),
+                None => {
+                    let first = opening.as_ref().unwrap_or(&palette);
+                    let indices = first.map(frame);
+                    shown = Some(indices.iter().map(|i| first.colours[*i as usize]).collect());
+                    let mut f = whole(&indices, w, h);
+                    f.palette = opening.as_ref().map(Palette::rgb);
+                    Some(f)
+                }
             };
-            shown.get_or_insert_with(|| indices.clone());
             match next {
                 // Nothing new: the frame before shows longer.
                 None => pending.iter_mut().for_each(|p| p.delay += clip.delay),
@@ -99,13 +109,26 @@ fn whole(indices: &[u8], w: u32, h: u32) -> gif::Frame<'static> {
     gif::Frame { width: w as u16, height: h as u16, buffer: indices.to_vec().into(), ..gif::Frame::default() }
 }
 
-/// The rectangle of what changed, laid over `shown`; `None` when nothing did. Inside it, what kept
-/// its place is either transparent or written again as it stands, whichever packs smaller.
-fn changed(indices: &[u8], palette: &Palette, shown: &mut [u8], w: u32, tolerance: u8) -> Option<gif::Frame<'static>> {
+/// Whether `f` holds `first`'s pixels inside `region`.
+fn same_in(f: &Rgba, first: &Rgba, region: Region) -> bool {
+    fn row(p: &Rgba, region: Region, y: u32) -> &[u8] {
+        let at = ((y * p.width + region.x) * 4) as usize;
+        &p.pixels[at..at + region.width as usize * 4]
+    }
+    (region.y..region.y + region.height).all(|y| row(f, region, y) == row(first, region, y))
+}
+
+/// The rectangle of what changed, laid over the colours `shown`; `None` when nothing did. Inside it,
+/// what kept its place is transparent or written again as it stands, whichever packs smaller and can;
+/// `skipped`, a still photograph drawn once, is never written again.
+fn changed(indices: &[u8], palette: &Palette, shown: &mut [[u8; 3]], w: u32, tolerance: u8, skipped: Option<Region>) -> Option<gif::Frame<'static>> {
     let mut mask = vec![CLEAR; indices.len()];
     let (mut x0, mut y0, mut x1, mut y1) = (u32::MAX, u32::MAX, 0, 0);
     for (i, &index) in indices.iter().enumerate() {
-        let (now, was) = (palette.colours[index as usize], palette.colours[shown[i] as usize]);
+        if skipped.is_some_and(|r| r.holds(i as u32 % w, i as u32 / w)) {
+            continue;
+        }
+        let (now, was) = (palette.colours[index as usize], shown[i]);
         let stray = was.iter().zip(now).map(|(a, b)| a.abs_diff(b)).max().unwrap_or(0);
         // The interface is drawn exact, so a knob that moved on leaves no trace on the ground.
         if stray == 0 || (palette.loose(index) && stray <= tolerance) {
@@ -119,23 +142,31 @@ fn changed(indices: &[u8], palette: &Palette, shown: &mut [u8], w: u32, toleranc
         return None;
     }
     let (fw, fh) = (x1 - x0 + 1, y1 - y0 + 1);
-    let (mut clear, mut opaque) = (Vec::with_capacity((fw * fh) as usize), Vec::with_capacity((fw * fh) as usize));
+    let (mut clear, mut opaque) = (Vec::with_capacity((fw * fh) as usize), Some(Vec::with_capacity((fw * fh) as usize)));
     for y in y0..=y1 {
         for i in (y * w + x0) as usize..=(y * w + x1) as usize {
-            if mask[i] != CLEAR {
-                shown[i] = mask[i];
-            }
+            let index = if mask[i] != CLEAR {
+                shown[i] = palette.colours[mask[i] as usize];
+                Some(mask[i])
+            } else {
+                palette.index.get(&shown[i]).copied()
+            };
             clear.push(mask[i]);
-            opaque.push(shown[i]);
+            // A colour drawn by the first frame's own table may have no index here: then only clear holds.
+            match (opaque.as_mut(), index) {
+                (Some(o), Some(k)) => o.push(k),
+                _ => opaque = None,
+            }
         }
     }
-    let transparent = packed(&clear) < packed(&opaque);
+    let opaque = opaque.filter(|o| packed(o) <= packed(&clear));
+    let transparent = opaque.is_none();
     Some(gif::Frame {
         left: x0 as u16,
         top: y0 as u16,
         width: fw as u16,
         height: fh as u16,
-        buffer: if transparent { clear } else { opaque }.into(),
+        buffer: opaque.unwrap_or(clear).into(),
         transparent: transparent.then_some(CLEAR),
         dispose: gif::DisposalMethod::Keep,
         ..gif::Frame::default()
@@ -155,6 +186,8 @@ struct Learnt {
 
 struct Palette {
     colours: Vec<[u8; 3]>,
+    /// Each colour's first index, to write again a pixel that kept its place.
+    index: HashMap<[u8; 3], u8>,
     flat: HashMap<[u8; 3], u8>,
     /// Where the grey ramp starts.
     ramp: usize,
@@ -208,7 +241,11 @@ impl Palette {
         let photo = learn(&inside, room, &mut colours);
         let interface = learn(&outside, CLEAR as usize - colours.len(), &mut colours);
         colours.resize(256, [0, 0, 0]);
-        Palette { colours, flat: flat_set, ramp, photo, interface, region, width }
+        let mut index = HashMap::new();
+        for (i, c) in colours.iter().enumerate().take(CLEAR as usize) {
+            index.entry(*c).or_insert(i as u8);
+        }
+        Palette { colours, index, flat: flat_set, ramp, photo, interface, region, width }
     }
 
     fn rgb(&self) -> Vec<u8> {

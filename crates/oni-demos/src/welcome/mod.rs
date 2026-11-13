@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 
 use crate::photo::Rgba;
 
-/// The welcome's stage in points, `WelcomeStyle`'s, filmed at two pixels a point: 1120 × 1004.
-pub const SIZE: (f32, f32) = (560.0, 502.0);
+/// The welcome's stage in points: the films' size, at two pixels a point.
+pub const SIZE: (f32, f32) = (oni_app::welcome::SIZE.0 as f32 / crate::stage::SCALE, oni_app::welcome::SIZE.1 as f32 / crate::stage::SCALE);
 
 /// The welcome's scenes.
 pub fn scenes() -> PathBuf {
@@ -114,11 +114,36 @@ fn bare(source: &str) -> String {
 /// How long the edge takes to cross from the before to the after.
 pub const WIPE: f32 = 0.9;
 
-/// The 1.5.6 before's frames, the wipe from its last frame to the after's first, then the after.
-pub fn joined(before: Vec<Rgba>, after: Vec<Rgba>) -> Result<Vec<Rgba>, String> {
+/// The least a hand rests where it rests, in frames: 0.45 s, so a key under it is seen to answer.
+pub const REST: usize = 9;
+
+/// The 1.5.6 before's frames, each rest of its hand held to `REST`, the wipe from its last frame to the
+/// after's first across the columns right of `from` (the photograph is one in both), then the after.
+pub fn joined(before: Vec<Rgba>, after: Vec<Rgba>, from: u32) -> Result<Vec<Rgba>, String> {
+    let before = rested(before, REST);
     let (last, first) = (before.last().ok_or("no frame before")?, after.first().ok_or("no frame after")?);
-    let wipe = crate::wipe::frames(last, first, WIPE)?;
+    let wipe = crate::wipe::frames(last, first, from, WIPE)?;
     Ok(before.into_iter().chain(wipe).chain(after).collect())
+}
+
+/// `frames` with every still run between two moves held to `least` frames; the opening and closing
+/// rests, which no move bounds on both sides, are kept as they are.
+pub fn rested(frames: Vec<Rgba>, least: usize) -> Vec<Rgba> {
+    let mut runs: Vec<(usize, usize)> = Vec::new();
+    for (i, f) in frames.iter().enumerate() {
+        match runs.last_mut() {
+            Some((start, len)) if frames[*start] == *f => *len += 1,
+            _ => runs.push((i, 1)),
+        }
+    }
+    let inner = 1..runs.len().saturating_sub(1);
+    let mut out = Vec::with_capacity(frames.len());
+    for (k, (start, len)) in runs.iter().enumerate() {
+        // A run of one is a frame of a move; a run of two or more, the hand at rest.
+        let held = if inner.contains(&k) && *len > 1 { (*len).max(least) } else { *len };
+        out.extend(std::iter::repeat_n(frames[*start].clone(), held));
+    }
+    out
 }
 
 /// Every PNG of `folder`, in their names' order: a film's frames shot elsewhere.
@@ -158,7 +183,7 @@ mod tests {
     #[test]
     fn the_before_runs_into_the_after_through_the_wipe() {
         let (before, after) = (vec![flat(10), flat(20)], vec![flat(200), flat(210)]);
-        let all = joined(before, after).unwrap();
+        let all = joined(before, after, 0).unwrap();
         let wiped = (WIPE * crate::film::FPS as f32).round() as usize;
         assert_eq!(all.len(), 2 + wiped + 2);
         assert!(all[0] == flat(10) && all[1] == flat(20), "the before first, as shot");
@@ -166,6 +191,20 @@ mod tests {
         assert!(all[1 + wiped] == flat(200) && all[2 + wiped] == flat(200), "the wipe lands on the after's first");
         // Twin: a hard cut would have no frame mixing the two.
         assert!(all.iter().any(|f| f.pixels.contains(&20) && f.pixels.contains(&200)));
-        assert!(joined(Vec::new(), vec![flat(1)]).is_err(), "no before, no join");
+        assert!(joined(Vec::new(), vec![flat(1)], 0).is_err(), "no before, no join");
+    }
+
+    #[test]
+    fn each_rest_of_the_hand_between_two_moves_is_held() {
+        let f = |v: u8| flat(v);
+        // At rest, a move, a short rest, a move, a rest to the end.
+        let frames = vec![f(0), f(0), f(1), f(2), f(2), f(3), f(4), f(4)];
+        let held = rested(frames.clone(), 5);
+        assert_eq!(held.iter().filter(|x| **x == f(2)).count(), 5, "the short rest held");
+        assert_eq!(held.iter().filter(|x| **x == f(0)).count(), 2, "the opening rest kept");
+        assert_eq!(held.iter().filter(|x| **x == f(4)).count(), 2, "the closing rest kept");
+        assert_eq!(held.len(), frames.len() + 3);
+        // Twin: a frame of a move is never held.
+        assert_eq!(held.iter().filter(|x| **x == f(1)).count(), 1);
     }
 }
