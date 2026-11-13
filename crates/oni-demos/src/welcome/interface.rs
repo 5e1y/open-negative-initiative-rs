@@ -34,6 +34,8 @@ pub type Rect = (f32, f32, f32, f32);
 /// The film's moments, in seconds, each a still named for what it shows.
 /// The strip's moments, two rows of six, in seconds.
 pub const STRIP: [f32; 12] = [0.3, 0.8, 1.15, 1.75, 2.2, 2.45, 2.85, 3.1, 3.58, 4.15, 4.9, 6.6];
+/// The joined film's: the before at rest and under the hand, the wipe, then this film's from 2.9 s.
+pub const JOINED: [f32; 12] = [0.3, 1.1, 1.6, 2.75, 3.0, 3.25, 3.75, 5.2, 5.9, 6.55, 7.6, 10.05];
 
 pub const STILLS: [(f32, &str); 8] = [
     (0.30, "rest"),
@@ -226,15 +228,17 @@ impl Demo for Interface {
         let (copy, paste) = (key("copy"), key("paste"));
         let slider = row(stage)?;
         let number = figure(stage, slider)?;
-        // On the rail a third along, under the header: the hand on the row, not on its knob.
-        let rail = (slider.0 + slider.2 * 0.3, slider.1 + slider.3 * 0.78);
+        // Down between Auto White Balance's keycap and the key beside it, so neither answers a hand passing.
+        let balance = the(stage, AccessibleRole::Button, oni_i18n::tr("AUTO WHITE BALANCE"))?;
+        let options = the(stage, AccessibleRole::Button, oni_i18n::tr("Show Auto White Balance Strength"))?;
+        let gap = ((balance.0 + balance.2 + options.0) / 2.0, balance.1 + balance.3 / 2.0);
         // Down the panel's left margin, over no control, to rest on its ground under the pane's last row.
         let margin = stage.number("photo-x") + stage.number("photo-width") + 4.0;
         let rest = (margin, (foot + super::SIZE.1) / 2.0);
         let above = (copy.0 - 30.0, -30.0);
         let (click, typed_from) = (2.95, 3.2);
-        let path = Track::from(above).hold(0.5).to(0.85, copy).hold(1.3).to(1.45, paste).hold(1.9).to(2.4, rail);
-        self.path = path.hold(2.5).to(2.75, number).hold(4.22).to(4.75, (margin, number.1)).to(5.15, rest);
+        let path = Track::from(above).hold(0.5).to(0.85, copy).hold(1.3).to(1.45, paste).hold(1.9).to(2.35, gap);
+        self.path = path.to(2.75, number).hold(4.22).to(4.75, (margin, number.1)).to(5.15, rest);
         if self.clicks {
             self.presses = Presses(vec![(click, click + 0.09)]);
             let keys = TYPED.chars().map(|c| SharedString::from(c.to_string())).chain([SharedString::from(Key::Return)]);

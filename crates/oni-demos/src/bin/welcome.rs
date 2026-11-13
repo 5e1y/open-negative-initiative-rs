@@ -39,9 +39,18 @@ fn run() -> Result<(), String> {
     let name = |n: &str| out.join(format!("{}-{n}", language.key()));
     let mut demo = interface::Interface::new(welcome::photo()?);
     let (frames, photo) = film::shoot(&mut demo)?;
+    for (at, still) in interface::still_frames(frames.len()) {
+        let file = name(&format!("{still}.png"));
+        frames[at].png(&file)?;
+        println!("{}", file.display());
+    }
+    let (all, moments) = match before {
+        Some(folder) => (welcome::joined(welcome::frames(&folder)?, frames, photo.x + photo.width)?, &interface::JOINED[..]),
+        None => (frames, &interface::STRIP[..]),
+    };
     if let Some(strip) = strip {
         let row = strip.width as usize * 4;
-        for (n, frame) in frames.iter().enumerate() {
+        for (n, frame) in all.iter().enumerate() {
             let held = (0..strip.height as usize).all(|y| {
                 let at = ((photo.y as usize + y) * frame.width as usize + photo.x as usize) * 4;
                 frame.pixels[at..at + row] == strip.pixels[y * row..(y + 1) * row]
@@ -51,20 +60,11 @@ fn run() -> Result<(), String> {
             }
         }
     }
-    for (at, still) in interface::still_frames(frames.len()) {
-        let file = name(&format!("{still}.png"));
-        frames[at].png(&file)?;
-        println!("{}", file.display());
-    }
-    let at = |s: &f32| ((s * FPS as f32) as usize).min(frames.len() - 1);
-    let moments: Vec<Rgba> = interface::STRIP.iter().map(|s| frames[at(s)].clone()).collect();
-    let rows: Vec<Vec<Rgba>> = moments.chunks(6).map(<[Rgba]>::to_vec).collect();
+    let at = |s: &f32| ((s * FPS as f32) as usize).min(all.len() - 1);
+    let shown: Vec<Rgba> = moments.iter().map(|s| all[at(s)].clone()).collect();
+    let rows: Vec<Vec<Rgba>> = shown.chunks(6).map(<[Rgba]>::to_vec).collect();
     let sheet = name("interface-strip.png");
     oni_demos::sheet::write(&rows, &sheet)?;
-    let all = match before {
-        Some(folder) => welcome::joined(welcome::frames(&folder)?, frames),
-        None => frames,
-    };
     let seconds = all.len() as f32 / FPS as f32;
     let tuning: Tuning = demo.tuning();
     let gif = encode::gif(&Clip { frames: all, delay: (100 / FPS) as u16, photo }, tuning)?;
