@@ -20,6 +20,18 @@ pub struct Rgba {
     pub pixels: Vec<u8>,
 }
 
+impl Rgba {
+    /// Written as an 8-bit RGBA PNG.
+    pub fn png(&self, out: &Path) -> Result<(), String> {
+        let file = std::fs::File::create(out).map_err(|e| format!("{}: {e}", out.display()))?;
+        let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), self.width, self.height);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
+        writer.write_image_data(&self.pixels).map_err(|e| e.to_string())
+    }
+}
+
 /// The photograph opened read-only: its preview for whole-frame pictures, its full decode
 /// for a detail at one pixel a pixel. Nothing is written beside it.
 pub struct Photo {

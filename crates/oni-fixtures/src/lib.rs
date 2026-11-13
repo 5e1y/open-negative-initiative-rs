@@ -1,6 +1,7 @@
 //! The folders the checks read and never write: the reference roll, the Lumix calibration files. Each lookup prints one line and answers `None` when its folder is absent.
 
 pub mod dng;
+pub mod tiff;
 
 use std::path::PathBuf;
 

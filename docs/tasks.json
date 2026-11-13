@@ -10322,5 +10322,12 @@
     "title": "One set of scene curves and one count for the welcome",
     "status": "done",
     "detail": "The four curves lived in Phase, in the De-dust scene and in the interface scene, and the fixed-cell count twice. Easing (pure functions) and Figures in ds/welcome.slint now serve every scene; Phase reads Easing. Checks: welcome_scenes_dedust and welcome_scenes_pages, unchanged pixels asserted."
+  },
+  {
+    "id": 2010,
+    "type": "feature",
+    "title": "The app stage: the real window and shell filmed offscreen on the app's own renderer",
+    "status": "done",
+    "detail": "oni-demos' offscreen FemtoVG-wgpu platform gains the event-loop proxy the shell's threads post to, and claims the system's menu bar as the app's macOS window does. AppStage hosts Shell::new and its MainWindow with the canvas texture shared with Slint (canvas: true, Display P3 as in the app): real pointer and key events through the window's own hooks, elements placed by accessible label or component, a film clock moved a frame at a time with the app left to rest at each (no render, write, heal or load in flight), real-pace gates, 8-bit snapshots and crops. World makes a folder of its own: photos copied under neutral names (Home / Scans / Roll 1), its own support and caches, a navigator rooted in it, no volume named, the roll kept as the last opened, the recalibration notice answered. The synthetic TIFF writer moves to oni_fixtures::tiff, shared with the window checks. Check tests/app_stage.rs: the canvas holds the photo's ramp (twin: the ground above it is flat), a bar key lights under the pointer, twin: a parked pointer changes no pixel. examples/app_stills shoots four states of the minimum window; against the running app driven through Slint's MCP server they are identical to the bit below the bar."
   }
 ]
