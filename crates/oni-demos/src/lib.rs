@@ -14,6 +14,7 @@ pub mod track;
 pub mod wipe;
 pub mod welcome;
 pub mod words;
+pub mod welcome;
 pub mod world;
 
 use std::path::{Path, PathBuf};

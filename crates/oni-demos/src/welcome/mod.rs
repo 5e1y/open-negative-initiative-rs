@@ -137,3 +137,6 @@ pub fn read_png(file: &Path) -> Result<Rgba, String> {
     pixels.truncate(info.buffer_size());
     Ok(Rgba { width: info.width, height: info.height, pixels })
 }
+//! The welcome sheet's films: staged shots of the interface's own components, filmed on the stage.
+
+pub mod dedust;

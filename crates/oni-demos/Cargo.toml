@@ -28,6 +28,7 @@ oni-graph = { path = "../oni-graph" }
 oni-i18n = { path = "../oni-i18n" }
 oni-lab = { path = "../oni-lab" }
 oni-library = { path = "../oni-library" }
+oni-measure = { path = "../oni-measure" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 png = "0.18"

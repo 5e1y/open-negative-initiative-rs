@@ -10455,5 +10455,33 @@
     "title": "scripts/welcome shoots the interface film in three languages",
     "status": "done",
     "detail": "A thin script: ONI_WELCOME_PHOTO alone names the photograph, no path is written in the repository; the dev profile's interpreter speaks English, French and Spanish, so no compiled build is needed. The welcome binary writes each language's GIF, strip and stills; --before lays the 1.5.6 frames ahead (the wipe's join to come), --strip refuses a frame whose photograph is not the before's."
+  },
+  {
+    "id": 2045,
+    "type": "feature",
+    "title": "The welcome's De-dust scene, composed of the app's own blocks",
+    "status": "done",
+    "detail": "scenes/welcome/dedust.slint lays, at the welcome's stage size, a strip of the detail under the canvas's own DustVeil, Ring, CorrectionMark and Trace, beside the panel's De-dust ModeHeader, its rule and the app's DedustPane fed through its exported Dedust global. Layout and wiring only: no Path, no literal colour or size. Stage::instance gives the timeline the scene's globals."
+  },
+  {
+    "id": 2046,
+    "type": "feature",
+    "title": "The De-dust film plays the app's reading and heal at their pace",
+    "status": "done",
+    "detail": "welcome::dedust opens the negative ONI_WELCOME_DUST names as De-dust does (sidecar settings without a correction, full decode, preview), runs the app's reading (framed_whole, oni_measure::dust::read), frames the detail holding the most specks whole and apart at the least Sensitivity and the closest zoom (6 at least, else refused but in a rehearsal), writes one correction a speck and heals them through oni_app::heal::ensure, each landing re-rendered, the tiles' reminders through Engine::originals. The pane's DETECT and REMOVE take real clicks; the reading and the patches show at their measured pace, 0.3 to 3 s and 4 s at most, else the film fails. Probe and rehearsal: examples/welcome_dedust."
+  },
+  {
+    "id": 2047,
+    "type": "test",
+    "title": "The De-dust scene's rings are the reading's, its marks the tiles', its specks healed",
+    "status": "done",
+    "detail": "tests/welcome_dedust.rs on a synthetic negative holding six specks: after DETECT every ring the pane counts lies on a speck laid; after REMOVE each tile's number has its mark, no patch is awaited and each speck no longer stands out. Twins: an idle hand shows no ring, count or tile and changes no pixel; a clean frame finds nothing and leaves REMOVE out of reach. Each assertion seen failing on a deliberately wrong variant (rings moved 6 pt, the dusty picture kept)."
+  },
+  {
+    "id": 2048,
+    "type": "fix",
+    "title": "The De-dust scene's pane ends on a whole row of tiles; its header as the panel lays it",
+    "status": "done",
+    "detail": "After R9: once REMOVE lays the tiles, the pane is shown down to the foot of the last row the stage holds whole, measured on the layout from each tile's remove key, the panel's ground below; before, it shows whole. The header follows canvas's #2037: ModeHeader from the design system in the panel's own room for it. Check: welcome_dedust (the pane's foot inside the stage after REMOVE; the idle twin's pane whole)."
   }
 ]
