@@ -221,6 +221,8 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height", sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),
     ("sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections", sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections),
     ("sheet_layout::a_footer_sets_cancel_apart_from_the_commit", sheet_layout::a_footer_sets_cancel_apart_from_the_commit),
+    ("settings_rows::every_settings_key_stays_on_its_page_in_every_language", settings_rows::every_settings_key_stays_on_its_page_in_every_language),
+    ("settings_rows::a_row_too_long_for_its_width_lays_its_keys_on_lines_apart", settings_rows::a_row_too_long_for_its_width_lays_its_keys_on_lines_apart),
     ("sheet_keys::a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_it", sheet_keys::a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_it),
     ("sheet_stack::a_sheet_closing_over_another_hands_it_the_keyboard", sheet_stack::a_sheet_closing_over_another_hands_it_the_keyboard),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),

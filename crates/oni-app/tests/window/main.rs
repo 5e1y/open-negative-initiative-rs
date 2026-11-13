@@ -127,6 +127,7 @@ mod slider_rest;
 mod scroll;
 mod session;
 mod sheet_layout;
+mod settings_rows;
 mod sheet_stack;
 mod welcome_card;
 mod mode_header;

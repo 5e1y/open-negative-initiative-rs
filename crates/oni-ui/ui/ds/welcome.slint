@@ -15,7 +15,8 @@ export global WelcomeStyle {
     // Narrower than this, the stage would show too little of its picture: the words take the card.
     out property <length> stage-least: 160px;
     out property <length> dot: 6px;
-    out property <length> dot-reach: 16px;
+    // A dot's touch, the hand's least target around a dot drawn small.
+    out property <length> dot-reach: DS.control-grab-size;
 }
 
 // The stage: the picture on the canvas's ground, cropped to the room the card gives it.

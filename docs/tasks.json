@@ -10553,5 +10553,26 @@
     "title": "The films' total stays a bound of its own",
     "status": "done",
     "detail": "With every film's ceiling at 2 MB the six at their ceilings made exactly the 12 MB total, so the total could never fail. TOTAL is 8 MB: the six shipped weigh 4.65 MB, and six at their ceilings are refused. Check: welcome::tests (twin: six at their ceilings fail)."
+  },
+  {
+    "id": 2060,
+    "type": "fix",
+    "title": "A welcome page dot takes the hand's least target",
+    "status": "done",
+    "detail": "Each page dot's touch was 16 pt, under the 24 pt every other target keeps. WelcomeStyle.dot-reach is now DS.control-grab-size, the hand's least target, the dot drawn 6 as before; the four dots take 96 pt and the footer holds them on every page at 1100×680 in English, French and Spanish. Check: window welcome_card (each dot's touch at least the token, a click 11 pt above a dot's middle turns to its page; twin: a click 13 pt above turns none; the dots between the card's edge and the keys)."
+  },
+  {
+    "id": 2061,
+    "type": "fix",
+    "title": "A Settings row of keys too long for one line carries on to the next",
+    "status": "done",
+    "detail": "In French, Settings > About's Help keys ran 8 pt past the page's edge: ButtonGroup is one HorizontalLayout, which overflows rather than wraps. ButtonRows (ds/controls.slint) is a FlexboxLayout of worded keys at the group's gap, given as `keys` with `pressed(i)` (and `enabled`), that carries the keys past the line's end onto the next by its layout, its height following its width; every Settings row of keys is one (SheetKeys closes Settings before a key that opens a sheet). Each key states its height where it stands: Slint 1.18's flexbox drops the height a component sets on its own root once it holds height-for-width content (Button's labels and icons), so with keys as children the lines stood 22 pt apart, the label's 14 pt and the gap, and overlapped; a plain fixed-height component keeps its 32. SheetFooter and ModeHeader keep their measure: what they lay on two lines is another arrangement (the commit alone, the name over its keys), not a wrap."
+  },
+  {
+    "id": 2062,
+    "type": "check",
+    "title": "Settings' rows of keys inside the page in every language",
+    "status": "done",
+    "detail": "Window checks settings_rows: at 1100×680, Frontier Look's and About's rows in English, French and Spanish under the compiled interface (--profile app with SLINT_EMIT_DEBUG_INFO=1; the live interface reads English alone): every key ends inside the page, a row longer than the page on one line is found on two, one that fits keeps one line; Diagnostic Log closes Settings before it flips, Use a File… only flips. RowsProbe at 300 wide: the second line a group's gap under the first and the words below it (the keys-as-children form failed, 22 pt apart). Twins: some language's row would run past the page on one line (French's Help row); a key opening no sheet leaves Settings open; at 600 wide every key keeps one line."
   }
 ]

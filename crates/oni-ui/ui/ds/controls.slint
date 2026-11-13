@@ -46,6 +46,23 @@ export component ButtonGroup inherits HorizontalLayout {
     }
 }
 
+// Worded keys a group's gap apart, carried on to the next line by their layout where one line is too narrow.
+// Each key states its height: a Slint 1.18 flex line reads a key's own height as its words' 14 pt.
+export component ButtonRows inherits FlexboxLayout {
+    in property <[string]> keys;
+    // Each key's reach in its order, a key past the list's end in reach.
+    in property <[bool]> enabled;
+    callback pressed(int);
+    spacing: ButtonStyle.group-gap;
+    cross-axis-alignment: center;
+    for key[i] in root.keys: Button {
+        text: key;
+        height: ButtonStyle.height;
+        enabled: i >= root.enabled.length || root.enabled[i];
+        clicked => { root.pressed(i); }
+    }
+}
+
 // Where a switch's words sit: `after` it as `DSToggle`, `before` it across the row's room, `none` the
 // switch named for accessibility alone.
 export enum LabelSide { none, after, before }
