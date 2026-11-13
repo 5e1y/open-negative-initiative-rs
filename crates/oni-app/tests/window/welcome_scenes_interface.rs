@@ -89,7 +89,7 @@ pub(crate) fn the_interface_scene_shows_the_old_keycaps_then_the_new_look_and_a_
 
     let moments = [
         ("s0", 0.0), ("s1", 1.0), ("opening", 0.10), ("pouf-172", 0.172), ("pouf-215", 0.215), ("new", 0.33), ("typing", 0.585),
-        ("pull-back", 0.80), ("rewind-015", 0.015), ("rewind-030", 0.030), ("knob", 0.70),
+        ("pull-back", 0.80), ("rewind-015", 0.015), ("rewind-030", 0.030), ("knob", 0.70), ("panel-breath", 0.244),
     ];
     let taken: Vec<Shot> = moments.iter().map(|&(_, at)| held(&rig, &window, at)).collect();
     let [s0, s1, opening, peak, _, new, typing, ..] = &taken[..] else { unreachable!() };

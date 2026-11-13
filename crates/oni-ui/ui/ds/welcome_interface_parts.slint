@@ -54,6 +54,8 @@ export global InterfaceSceneStyle {
     out property <float> pressed: 0.97;
     out property <float> grown: 0.96;
     out property <float> veil: 0.1;
+    // The sliders' block is the largest group, so its veil is lighter to read as the same breath.
+    out property <float> panel-veil: 0.06;
     out property <float> mark-alpha: 0.22;
     out property <length> mark: 4px;
     out property <length> mark-reach: 12px;
@@ -145,10 +147,11 @@ export component Breath inherits Rectangle {
     in property <float> t;
     in property <float> at;
     in property <float> zoom: 1;
+    in property <float> dose: InterfaceSceneStyle.veil;
     property <float> start: root.at + InterfaceBeats.press;
     property <float> veil: root.t < root.start + InterfaceBeats.veil-up
-        ? InterfaceSceneStyle.veil * Stretch.p(root.t, root.start, InterfaceBeats.veil-up)
-        : InterfaceSceneStyle.veil * (1 - Easing.arrive(Stretch.p(root.t, root.start + InterfaceBeats.veil-up, InterfaceBeats.veil-down)));
+        ? root.dose * Stretch.p(root.t, root.start, InterfaceBeats.veil-up)
+        : root.dose * (1 - Easing.arrive(Stretch.p(root.t, root.start + InterfaceBeats.veil-up, InterfaceBeats.veil-down)));
     property <float> m: Stretch.p(root.t, root.start, InterfaceBeats.marks);
     property <float> go: Easing.arrive(root.m);
     property <bool> marking: root.m > 0 && root.m < 1;

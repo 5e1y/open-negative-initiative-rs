@@ -132,10 +132,11 @@ export component InterfaceMoment inherits Rectangle {
                 background: @linear-gradient(180deg,
                     PictureStyle.sky-1.mix(PictureStyle.warm, self.keep) 0%, PictureStyle.sky-2.mix(PictureStyle.warm, self.keep) 42%,
                     PictureStyle.sky-3.mix(PictureStyle.warm, self.keep) 62%, PictureStyle.sky-4.mix(PictureStyle.warm, self.keep) 75%);
+                // The hill at its viewbox's own proportions, so it runs edge to edge; its foot meets the ground.
                 Path {
-                    y: parent.height * 0.56;
                     width: parent.width;
-                    height: parent.height * 0.2;
+                    height: parent.width * 0.3;
+                    y: parent.height * 0.76 - self.height;
                     viewbox-width: 100;
                     viewbox-height: 30;
                     fill: PictureStyle.hill;
