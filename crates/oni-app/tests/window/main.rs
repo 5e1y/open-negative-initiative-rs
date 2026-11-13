@@ -127,6 +127,7 @@ mod slider_rest;
 mod scroll;
 mod session;
 mod sheet_layout;
+mod welcome_scenes_interface;
 mod sheets;
 mod sheet_escape;
 mod field_undo;

@@ -1,0 +1,324 @@
+// The pieces of the welcome's interface scene: a miniature of the window at six tenths of its size,
+// every length times the camera's `z`, so the same drawing serves the wide view and the close one.
+import { Colour, Type } from "theme.slint";
+import { Easing } from "welcome.slint";
+
+export global InterfaceSceneStyle {
+    // The miniature window inset in the stage, and its regions, at the wide view's six tenths.
+    out property <length> inset: 14px;
+    out property <length> window-radius: 10px;
+    out property <color> window-rim: #ffffff14;
+    out property <length> bar: 38px;
+    out property <length> side: 156px;
+    out property <length> panel: 204px;
+    out property <length> card-radius: 8px;
+    out property <length> pad: 10px;
+    out property <length> group-gap: 6px;
+    out property <length> cluster-gap: 14px;
+    out property <length> lights: 7px;
+    out property <length> lights-gap: 5px;
+    // The camera: the close view is the real size, its fixed point set so Temperature lands at y 170.
+    out property <float> close: 5 / 3;
+    out property <length> fixed-x: 525px;
+    out property <length> fixed-y: 145px;
+    // The type: a key's word, a label, a block's title; a glyph.
+    out property <length> word: 6.6px;
+    out property <length> label: 7.8px;
+    out property <length> title: 9px;
+    out property <length> glyph: 10px;
+    out property <length> glyph-small: 7px;
+    // The look before: 40 tall keycaps, words beside glyphs, deep walls, black plates.
+    out property <length> old-key: 24px;
+    out property <length> old-word-pad: 10px;
+    out property <length> old-wall: 2.5px;
+    out property <length> old-foot: 3.8px;
+    out property <length> old-radius: 5px;
+    out property <length> plate-rim: 2px;
+    out property <color> plate: #000000;
+    out property <float> old-top: 0.88;
+    out property <float> old-side: 0.9;
+    out property <float> old-bottom: 0.67;
+    // The look now: 48 tall glyph-over-word keys, a softer relief on the keycaps left.
+    out property <length> new-key: 29px;
+    out property <length> new-flat-pad: 3.5px;
+    out property <length> new-cap-pad: 7px;
+    out property <length> new-wall: 2px;
+    out property <length> new-foot: 3px;
+    out property <float> new-top: 0.91;
+    out property <float> new-side: 0.94;
+    out property <float> new-bottom: 0.78;
+    out property <length> export-width: 62px;
+    out property <length> divider: 20px;
+    out property <color> sheet: #ff9f0a;
+    // The pouf's doses: the press, the new pieces' growth, the veil, six marks thrown 12 px out.
+    out property <float> pressed: 0.97;
+    out property <float> grown: 0.96;
+    out property <float> veil: 0.1;
+    // The sliders' block is the largest group, so its veil is lighter to read as the same breath.
+    out property <float> panel-veil: 0.06;
+    out property <float> mark-alpha: 0.22;
+    out property <length> mark: 4px;
+    out property <length> mark-reach: 12px;
+    out property <float> mark-end: 0.4;
+    // A target's veil under the hand and pressed, white at #11 and #26.
+    out property <float> hover: 0.067;
+    out property <float> press: 0.15;
+}
+
+// The scene's beats, as shares of its 10 s loop, so the story is retimed in one place.
+export global InterfaceBeats {
+    out property <duration> period: 10s;
+    // The pouf, a group in 440 ms: press 80; the old gone in 90, the new in 90 from 70 later, so they
+    // barely meet; veil 60 up then down to 380, marks to 400, settle 240 to 440.
+    out property <float> header: 0.16;
+    out property <float> cluster-step: 0.007;
+    out property <float> sidebar: 0.196;
+    out property <float> sliders: 0.232;
+    out property <float> press: 0.008;
+    out property <float> gone: 0.009;
+    out property <float> come-after: 0.007;
+    out property <float> come: 0.009;
+    out property <float> veil-up: 0.006;
+    out property <float> veil-down: 0.024;
+    out property <float> marks: 0.032;
+    out property <float> settle: 0.024;
+    out property <float> settled: 0.02;
+    // The camera in and out.
+    out property <float> push: 0.376;
+    out property <float> pushed: 0.436;
+    out property <float> pull: 0.715;
+    out property <float> pulled: 0.77;
+    // The typing: the hand in, the hues up, the field, the click, four keys, the commit, the knob.
+    out property <float> hand-in: 0.436;
+    out property <float> at-value: 0.486;
+    out property <float> hues-up: 0.46;
+    out property <float> hues-span: 0.02;
+    out property <float> opened: 0.498;
+    out property <float> click: 0.52;
+    out property <float> ringed: 0.529;
+    out property <float> rung: 0.541;
+    out property <float> picked: 0.533;
+    out property <float> keys: 0.56;
+    out property <float> key-step: 0.011;
+    out property <float> commit: 0.628;
+    out property <float> committed: 0.64;
+    out property <float> slide: 0.63;
+    out property <float> slid: 0.675;
+    out property <float> hand-out: 0.68;
+    out property <float> hand-gone: 0.7;
+    out property <float> hues-down: 0.7;
+    out property <float> hues-down-span: 0.025;
+    // The fold: the hand in from the left, the heading clicked, the rows closing, the hand out.
+    out property <float> hand-back: 0.77;
+    out property <float> at-heading: 0.815;
+    out property <float> fold-click: 0.835;
+    out property <float> fold: 0.85;
+    out property <float> folded: 0.876;
+    out property <float> hand-away: 0.876;
+    out property <float> hand-left: 0.9;
+    // A click: the hand down 90 ms, back 140; its ring 300 ms; the hand fades in over 150.
+    out property <float> click-down: 0.009;
+    out property <float> click-up: 0.014;
+    out property <float> ring: 0.03;
+    out property <float> fade-in: 0.015;
+}
+
+// A stretch of `t`: 0 before `from`, 1 after `span`, linear between; `Easing` curves it.
+export global Stretch {
+    public pure function p(t: float, from: float, span: float) -> float { return max(0, min(1, (t - from) / span)); }
+}
+
+// One group's pouf at `t`, its turn at `at`: the press, the old gone then the new come, the settle.
+export component Pouf {
+    in property <float> t;
+    in property <float> at;
+    out property <float> press: Easing.leave(Stretch.p(root.t, root.at, InterfaceBeats.press));
+    out property <float> gone: Easing.leave(Stretch.p(root.t, root.at + InterfaceBeats.press, InterfaceBeats.gone));
+    out property <float> come: Easing.arrive(Stretch.p(root.t, root.at + InterfaceBeats.press + InterfaceBeats.come-after, InterfaceBeats.come));
+    property <float> settle-p: Stretch.p(root.t, root.at + InterfaceBeats.settle, InterfaceBeats.settled);
+    out property <float> settle: Easing.arrive(root.settle-p);
+    out property <float> rise: Easing.land(root.settle-p);
+    width: 0px;
+    height: 0px;
+}
+
+// A group's breath: a faint white veil on its bounds and six marks thrown out from its outline.
+export component Breath inherits Rectangle {
+    in property <float> t;
+    in property <float> at;
+    in property <float> zoom: 1;
+    in property <float> dose: InterfaceSceneStyle.veil;
+    property <float> start: root.at + InterfaceBeats.press;
+    property <float> veil: root.t < root.start + InterfaceBeats.veil-up
+        ? root.dose * Stretch.p(root.t, root.start, InterfaceBeats.veil-up)
+        : root.dose * (1 - Easing.arrive(Stretch.p(root.t, root.start + InterfaceBeats.veil-up, InterfaceBeats.veil-down)));
+    property <float> m: Stretch.p(root.t, root.start, InterfaceBeats.marks);
+    property <float> go: Easing.arrive(root.m);
+    property <bool> marking: root.m > 0 && root.m < 1;
+    Rectangle {
+        border-radius: InterfaceSceneStyle.card-radius * root.zoom;
+        background: Colour.white.with-alpha(root.veil);
+        visible: root.veil > 0;
+    }
+    // Two marks on each long side at a third and two thirds, one on each short side's middle.
+    for mark in [
+        { u: 1 / 3, v: 0, dx: 0, dy: -1 }, { u: 2 / 3, v: 0, dx: 0, dy: -1 },
+        { u: 1 / 3, v: 1, dx: 0, dy: 1 }, { u: 2 / 3, v: 1, dx: 0, dy: 1 },
+        { u: 0, v: 0.5, dx: -1, dy: 0 }, { u: 1, v: 0.5, dx: 1, dy: 0 },
+    ]: Rectangle {
+        property <length> across: InterfaceSceneStyle.mark * root.zoom * (1 - (1 - InterfaceSceneStyle.mark-end) * root.go);
+        visible: root.marking;
+        x: root.width * mark.u + mark.dx * InterfaceSceneStyle.mark-reach * root.zoom * root.go - self.width / 2;
+        y: root.height * mark.v + mark.dy * InterfaceSceneStyle.mark-reach * root.zoom * root.go - self.height / 2;
+        width: self.across;
+        height: self.across;
+        border-radius: self.width / 2;
+        background: Colour.white.with-alpha(InterfaceSceneStyle.mark-alpha * (1 - root.go));
+    }
+}
+
+// A keycap's body at scale `k`: walls lit from above, the face inset by them and sunk by `sink` of
+// its bottom wall; `walls` lifts them from flat to full as a keycap comes back up.
+export component CapBody inherits Rectangle {
+    in property <color> face: Colour.raised;
+    in property <bool> old;
+    in property <float> k: 1;
+    in property <float> sink;
+    in property <float> walls: 1;
+    in property <length> radius: InterfaceSceneStyle.old-radius;
+    in property <bool> level;
+    property <length> wall: (root.old ? InterfaceSceneStyle.old-wall : InterfaceSceneStyle.new-wall) * root.k * root.walls;
+    property <length> foot: root.level ? root.wall : (root.old ? InterfaceSceneStyle.old-foot : InterfaceSceneStyle.new-foot) * root.k * root.walls;
+    property <color> top: root.face.mix(#ffffff, root.old ? InterfaceSceneStyle.old-top : InterfaceSceneStyle.new-top);
+    property <color> side: root.face.mix(#000000, root.old ? InterfaceSceneStyle.old-side : InterfaceSceneStyle.new-side);
+    property <color> bottom: root.face.mix(#000000, root.old ? InterfaceSceneStyle.old-bottom : InterfaceSceneStyle.new-bottom);
+    border-radius: root.radius * root.k;
+    background: @linear-gradient(180deg, root.top 0%, root.side 25%, root.side 60%, root.bottom 100%);
+    Rectangle {
+        x: root.wall;
+        y: root.wall + root.sink * (root.foot - root.wall);
+        width: root.width - 2 * root.wall;
+        height: root.height - root.wall - root.foot;
+        border-radius: max(0, root.radius * root.k - 1px);
+        background: root.face;
+        @children
+    }
+}
+
+// A key's ink: dark on a light face, white on any other.
+export global KeyFaces {
+    public pure function ink(face: color) -> color { return face.to-oklch().lightness > 0.72 ? Colour.ink-on-light : Colour.white; }
+}
+
+// The look before's keycap: a word or a glyph on a coloured or grey face; pressed, then gone.
+export component OldKey inherits Rectangle {
+    in property <float> zoom: 1;
+    in property <float> press;
+    in property <float> gone;
+    in property <string> word;
+    in property <image> glyph;
+    in property <bool> glyphed;
+    in property <color> face: Colour.raised;
+    property <color> ink: KeyFaces.ink(root.face);
+    property <float> k: root.zoom * (1 - (1 - InterfaceSceneStyle.pressed) * root.press);
+    measure := Text { visible: false; text: root.word; font-family: Type.family; font-size: InterfaceSceneStyle.word; font-weight: Type.bold; letter-spacing: 0.3px; }
+    width: (root.word == "" ? InterfaceSceneStyle.old-key : measure.preferred-width + 2 * InterfaceSceneStyle.old-word-pad) * root.zoom;
+    min-height: InterfaceSceneStyle.old-key * root.zoom;
+    CapBody {
+        old: true;
+        k: root.k;
+        sink: root.press;
+        face: root.face;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        width: root.width * root.k / root.zoom;
+        height: InterfaceSceneStyle.old-key * root.k;
+        opacity: 1 - root.gone;
+        visible: root.gone < 1;
+        HorizontalLayout {
+            alignment: center;
+            if root.glyphed: VerticalLayout {
+                alignment: center;
+                Image { source: root.glyph; colorize: root.ink; width: InterfaceSceneStyle.glyph * root.k; height: self.width; }
+            }
+            if root.word != "": Text {
+                text: root.word;
+                font-family: Type.family;
+                font-size: InterfaceSceneStyle.word * root.k;
+                font-weight: Type.bold;
+                letter-spacing: 0.3px * root.k;
+                color: root.ink;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// The black socket that set the look before's keys flush; it fades with them.
+export component OldPlate inherits Rectangle {
+    in property <float> zoom: 1;
+    in property <float> press;
+    in property <float> gone;
+    property <float> k: 1 - (1 - InterfaceSceneStyle.pressed) * root.press;
+    width: keys.preferred-width;
+    Rectangle {
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        width: root.width * root.k;
+        height: keys.height * root.k;
+        border-radius: (InterfaceSceneStyle.old-radius + InterfaceSceneStyle.plate-rim) * root.zoom * root.k;
+        background: InterfaceSceneStyle.plate;
+        opacity: 1 - root.gone;
+        visible: root.gone < 1;
+    }
+    keys := HorizontalLayout {
+        y: (root.height - self.height) / 2;
+        height: self.preferred-height;
+        padding: InterfaceSceneStyle.plate-rim * root.zoom;
+        @children
+    }
+}
+
+// The look now's key: a glyph over its word, bare, or on a keycap whose walls rise with `rise`.
+export component NewKey inherits Rectangle {
+    in property <float> zoom: 1;
+    in property <float> come;
+    in property <float> rise: 1;
+    in property <string> word;
+    in property <image> glyph;
+    in property <bool> cap;
+    in property <color> face: Colour.raised;
+    in property <length> wide;
+    property <string> shown: root.cap ? root.word.to-uppercase() : root.word;
+    property <color> ink: root.cap ? KeyFaces.ink(root.face) : Colour.white;
+    property <float> k: root.zoom * (InterfaceSceneStyle.grown + (1 - InterfaceSceneStyle.grown) * root.come);
+    measure := Text { visible: false; text: root.shown; font-family: Type.family; font-size: InterfaceSceneStyle.word; font-weight: root.cap ? Type.bold : Type.strong; }
+    width: max(max(root.wide, InterfaceSceneStyle.new-key), measure.preferred-width + 2 * (root.cap ? InterfaceSceneStyle.new-cap-pad : InterfaceSceneStyle.new-flat-pad)) * root.zoom;
+    min-height: InterfaceSceneStyle.new-key * root.zoom;
+    Rectangle {
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        width: root.width * root.k / root.zoom;
+        height: InterfaceSceneStyle.new-key * root.k;
+        opacity: root.come;
+        visible: root.come > 0;
+        if root.cap: CapBody { old: false; k: root.k; walls: root.rise; face: root.face; }
+        VerticalLayout {
+            alignment: center;
+            spacing: 1px * root.k;
+            padding-bottom: root.cap ? (InterfaceSceneStyle.new-foot - InterfaceSceneStyle.new-wall) * root.k * root.rise : 0;
+            HorizontalLayout {
+                alignment: center;
+                Image { source: root.glyph; colorize: root.ink; width: InterfaceSceneStyle.glyph * root.k; height: self.width; }
+            }
+            Text {
+                text: root.shown;
+                font-family: Type.family;
+                font-size: InterfaceSceneStyle.word * root.k;
+                font-weight: root.cap ? Type.bold : Type.strong;
+                color: root.ink;
+                horizontal-alignment: center;
+            }
+        }
+    }
+}
