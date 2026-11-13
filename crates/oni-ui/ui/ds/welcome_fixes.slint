@@ -10,7 +10,7 @@ export global FixesStyle {
     out property <length> row: 44px;
     out property <length> box: 22px;
     out property <length> check: 14px;
-    out property <length> list-left: 300px;
+    out property <length> list-left: 312px;
     out property <length> number: 88px;
     out property <length> digit: 54px;
     out property <length> top: (WelcomeStyle.scene-height - 6 * FixesStyle.row) / 2;
@@ -23,10 +23,11 @@ export global FixesStyle {
     out property <float> mark-from: 80 / 7000;
     out property <float> mark-to: 260 / 7000;
     out property <float> run-to: 430 / 7000;
-    // The 70 settles once the last stop is reached.
-    out property <float> settle-from: 4530 / 7000;
-    out property <float> settle-to: 4790 / 7000;
-    out property <float> pop: 0.06;
+    // The 70 rises from the last stop for 80 ms, then settles back over 220.
+    out property <float> rise-from: 4530 / 7000;
+    out property <float> rise-to: 4610 / 7000;
+    out property <float> settle-to: 4830 / 7000;
+    out property <float> pop: 0.05;
 }
 
 // One area: its empty box, filled and checked when ticked, its name turning from secondary to primary ink.
@@ -48,7 +49,7 @@ component Area inherits Rectangle {
         height: FixesStyle.box;
         border-radius: Radius.badge;
         border-width: Stroke.line;
-        border-color: Colour.separator;
+        border-color: Colour.white.with-alpha(0.25);
         background: Colour.white.with-alpha(0.153 * root.done);
         Icon {
             width: FixesStyle.check * (0.6 + 0.4 * max(marked.land, root.rewind));
@@ -74,7 +75,7 @@ component Digits inherits Rectangle {
     width: 2 * FixesStyle.digit;
     height: FixesStyle.number * 1.2;
     for k in 2: Text {
-        x: k * FixesStyle.digit;
+        x: k * FixesStyle.digit - (root.n < 10 ? FixesStyle.digit / 2 : 0px);
         width: FixesStyle.digit;
         height: root.height;
         transform-scale-x: root.scale;
@@ -100,7 +101,8 @@ export component FixesScene inherits SceneFrame {
         return max(0, min(1, (root.t - FixesStyle.first - i * FixesStyle.step - FixesStyle.mark-from) / (FixesStyle.run-to - FixesStyle.mark-from)));
     }
     property <int> n: Math.round(FixesStyle.stops[0] * root.run(0) + FixesStyle.stops[1] * root.run(1) + FixesStyle.stops[2] * root.run(2) + FixesStyle.stops[3] * root.run(3) + FixesStyle.stops[4] * root.run(4) + FixesStyle.stops[5] * root.run(5));
-    settled := Phase { t: root.t; from: FixesStyle.settle-from; to: FixesStyle.settle-to; }
+    rising := Phase { t: root.t; from: FixesStyle.rise-from; to: FixesStyle.rise-to; }
+    settled := Phase { t: root.t; from: FixesStyle.rise-to; to: FixesStyle.settle-to; }
     property <length> number-left: (FixesStyle.list-left - 2 * FixesStyle.digit) / 2;
     property <length> number-top: (root.height - FixesStyle.number * 1.2) / 2 - Space.m;
     // The last state is a second layer, cross-faded with the live count under the rewind.
@@ -114,7 +116,7 @@ export component FixesScene inherits SceneFrame {
         x: root.number-left;
         y: root.number-top;
         n: root.n;
-        scale: settled.p > 0 ? 1 + FixesStyle.pop * (1 - settled.arrive) : 1;
+        scale: 1 + FixesStyle.pop * (rising.arrive - settled.ease);
         opacity: 1 - root.rewind;
     }
     Label {

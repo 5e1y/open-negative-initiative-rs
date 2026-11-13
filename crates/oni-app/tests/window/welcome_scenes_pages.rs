@@ -55,6 +55,19 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
         println!("shot {}", rig.shot(name).display());
         rig.drawn().1
     };
+    // With ONI_SCENE_FRAMES set, a frame every 100 ms of the 7 s loop and the review's stills are shot too.
+    let framed = std::env::var_os("ONI_SCENE_FRAMES").is_some();
+    let frames = |scene: &str, stills: &[f32]| {
+        if !framed {
+            return;
+        }
+        for k in 0..=70 {
+            at(k as f32 / 70.0, &format!("frame-{scene}-{k:03}"));
+        }
+        for t in stills {
+            at(*t, &format!("still-{scene}-{:03}", (t * 1000.0).round() as u32));
+        }
+    };
     // The stage's corner in the window, found where the canvas colour begins.
     let (sx, sy) = ((width - 560) / 2, 144usize);
     let canvas = at(1.0, "welcome-edits-end");
@@ -70,7 +83,6 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
     let opening = at(0.12, "welcome-edits-opening");
     let middle = at(0.40, "welcome-edits-middle");
     let s1 = at(1.0, "welcome-edits-s1");
-    println!("s0 vs s1 {:?}", changes(&s0, &s1, width, whole));
     assert!(changes(&s0, &s1, width, whole).is_none(), "the first and the last frame are the same");
     for i in 0..8 {
         for (name, frame) in [("s0", &s0), ("middle", &middle), ("end", &s1)] {
@@ -83,6 +95,8 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
     assert!(changes(&opening, &middle, width, cell(0, false)).is_some(), "the first card has turned by the middle");
     assert!(changes(&opening, &middle, width, cell(7, false)).is_none(), "the last card waits at the middle");
     assert!(changes(&middle, &s1, width, cell(7, false)).is_some(), "and turns after it");
+
+    frames("edits", &[0.03, 0.196, 0.214, 0.243, 0.672]);
 
     // The fixes: the first and last frames alike, the rows ticking one after another, the count rising.
     help.set_welcome_page(4);
@@ -98,5 +112,6 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
     assert!(changes(&half, &f1, width, whole).is_some(), "the end ticks what the middle has not");
     // Twin: a frame held twice shows no change, so the differences above are the clock's.
     assert!(changes(&f1, &at(1.0, "welcome-fixes-s1-again"), width, whole).is_none());
+    frames("fixes", &[0.03, 0.175, 0.657]);
     clock.set_held(-1.0);
 }
