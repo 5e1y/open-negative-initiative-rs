@@ -15,6 +15,11 @@ export global WelcomeStyle {
     out property <length> dot-reach: 16px;
 }
 
+// A moment every scene holds while `held` is 0 to 1, so a check or the lab looks at one step of it.
+export global SceneClock {
+    in-out property <float> held: -1;
+}
+
 // A scene's clock: `t` runs from 0 to 1 over `period` from the moment the scene shows, then again;
 // under Reduce Motion it rests at `rest`, the scene's last state, so the page still says it all.
 export component Cycle {
@@ -22,7 +27,7 @@ export component Cycle {
     in property <float> rest: 1;
     property <duration> start;
     init => { root.start = animation-tick(); }
-    out property <float> t: Motion.reduced ? root.rest : Math.mod((animation-tick() - root.start) / root.period, 1);
+    out property <float> t: SceneClock.held >= 0 ? SceneClock.held : Motion.reduced ? root.rest : Math.mod((animation-tick() - root.start) / root.period, 1);
     width: 0px;
     height: 0px;
 }
