@@ -91,7 +91,8 @@ export component InterfaceMoment inherits Rectangle {
     // The fold of Computer: hovered on arrival, pressed, closed.
     property <float> hover: Easing.arrive(Stretch.p(root.t, InterfaceBeats.at-heading, InterfaceBeats.click-down))
         * (1 - Stretch.p(root.t, InterfaceBeats.hand-away, InterfaceBeats.hand-left - InterfaceBeats.hand-away));
-    property <float> pressed: Stretch.p(root.t, InterfaceBeats.fold-click, InterfaceBeats.click-down) * (1 - Stretch.p(root.t, InterfaceBeats.fold-click + InterfaceBeats.click-down, InterfaceBeats.click-up));
+    property <float> pressed: Stretch.p(root.t, InterfaceBeats.fold-click, InterfaceBeats.click-down)
+        * (1 - Stretch.p(root.t, InterfaceBeats.fold-click + InterfaceBeats.click-down, InterfaceBeats.click-up));
 
     win := Rectangle {
         x: InterfaceSceneStyle.fixed-x + (InterfaceSceneStyle.inset - InterfaceSceneStyle.fixed-x) * root.zoom;
@@ -167,8 +168,12 @@ export component InterfaceMoment inherits Rectangle {
     // The hand on the stage, one size whatever the camera: in from the right to the value, then in from
     // the left to Computer's heading; each leg bows a little off its line, as a hand does.
     property <bool> second: root.t >= (InterfaceBeats.hand-gone + InterfaceBeats.hand-back) / 2;
-    property <length> value-x: InterfaceSceneStyle.fixed-x + (InterfaceSceneStyle.inset + root.wide-w - InterfaceSceneStyle.pad - PanelStyle.field-width / 2 - InterfaceSceneStyle.fixed-x) * InterfaceSceneStyle.close + PointerStyle.figure-dx;
-    property <length> value-y: InterfaceSceneStyle.fixed-y + (InterfaceSceneStyle.inset + InterfaceSceneStyle.bar + PanelStyle.temperature-y + PanelStyle.readout / 2 - InterfaceSceneStyle.fixed-y) * InterfaceSceneStyle.close + PointerStyle.figure-dy;
+    property <length> value-x: InterfaceSceneStyle.fixed-x
+        + (InterfaceSceneStyle.inset + root.wide-w - InterfaceSceneStyle.pad - PanelStyle.field-width / 2 - InterfaceSceneStyle.fixed-x)
+        * InterfaceSceneStyle.close + PointerStyle.figure-dx;
+    property <length> value-y: InterfaceSceneStyle.fixed-y
+        + (InterfaceSceneStyle.inset + InterfaceSceneStyle.bar + PanelStyle.temperature-y + PanelStyle.readout / 2 - InterfaceSceneStyle.fixed-y)
+        * InterfaceSceneStyle.close + PointerStyle.figure-dy;
     property <length> heading-x: InterfaceSceneStyle.inset + PointerStyle.heading-x;
     property <length> heading-y: InterfaceSceneStyle.inset + InterfaceSceneStyle.bar + SideStyle.computer-y + SideStyle.row / 2;
     property <float> go: root.second

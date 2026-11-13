@@ -994,8 +994,8 @@ msgid "Your folders at hand"
 msgstr "Vos dossiers sous la main"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Favourites and Computer fold like a Finder sidebar, and the rating filter stays beside the open photo."
-msgstr "Favoris et Ordinateur se replient comme dans la barre latérale du Finder, et le filtre de notes reste à côté de la photo ouverte."
+msgid "Favourites and Computer fold away, and the rating filter stays beside the open photo."
+msgstr "Favoris et Ordinateur se replient, et le filtre de notes reste à côté de la photo ouverte."
 
 #: crates/oni-ui/ui/help.slint
 msgid "The dust found in one press"

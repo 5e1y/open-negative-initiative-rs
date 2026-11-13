@@ -94,13 +94,27 @@ component Header inherits Rectangle {
             y: (parent.height - self.height) / 2;
             width: parent.height;
             height: parent.height;
-            Image { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; source: root.open ? Icons.chevron-down : Icons.chevron-right; colorize: Colour.white; width: InterfaceSceneStyle.glyph-small * root.zoom; height: self.width; }
+            Image {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                source: root.open ? Icons.chevron-down : Icons.chevron-right;
+                colorize: Colour.white;
+                width: InterfaceSceneStyle.glyph-small * root.zoom;
+                height: self.width;
+            }
         }
     }
     Rectangle {
         opacity: root.come;
         visible: root.come > 0;
-        Image { x: 0; y: (parent.height - self.height) / 2; source: root.open ? Icons.chevron-down : Icons.chevron-right; colorize: Colour.ink-secondary; width: InterfaceSceneStyle.glyph-small * root.zoom; height: self.width; }
+        Image {
+            x: 0;
+            y: (parent.height - self.height) / 2;
+            source: root.open ? Icons.chevron-down : Icons.chevron-right;
+            colorize: Colour.ink-secondary;
+            width: InterfaceSceneStyle.glyph-small * root.zoom;
+            height: self.width;
+        }
         for copy in [
             { dy: -1px, ink: PanelStyle.engrave-dark },
             { dy: 1px, ink: PanelStyle.engrave-light },
@@ -157,7 +171,16 @@ component Slider inherits Rectangle {
     property <length> mid: PanelStyle.rail-gap * root.zoom + root.lane / 2;
     property <float> full: (1 - root.tone) + root.tone * root.hues;
     height: PanelStyle.rail-gap * root.zoom + root.lane;
-    Text { x: 0; y: 0; height: PanelStyle.readout * root.zoom; text: root.name; font-family: Type.family; font-size: InterfaceSceneStyle.label * root.zoom; color: Colour.ink; vertical-alignment: center; }
+    Text {
+        x: 0;
+        y: 0;
+        height: PanelStyle.readout * root.zoom;
+        text: root.name;
+        font-family: Type.family;
+        font-size: InterfaceSceneStyle.label * root.zoom;
+        color: Colour.ink;
+        vertical-alignment: center;
+    }
     Text {
         x: parent.width - self.width;
         y: 0;

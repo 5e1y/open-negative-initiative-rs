@@ -78,7 +78,9 @@ export component FixesScene inherits SceneFrame {
     pure function run(i: int) -> float {
         return max(0, min(1, (root.t - FixesStyle.first - i * FixesStyle.step - FixesStyle.mark-from) / (FixesStyle.run-to - FixesStyle.mark-from)));
     }
-    property <int> n: Math.round(FixesStyle.stops[0] * root.run(0) + FixesStyle.stops[1] * root.run(1) + FixesStyle.stops[2] * root.run(2) + FixesStyle.stops[3] * root.run(3) + FixesStyle.stops[4] * root.run(4) + FixesStyle.stops[5] * root.run(5));
+    property <int> n: Math.round(FixesStyle.stops[0] * root.run(0) + FixesStyle.stops[1] * root.run(1)
+        + FixesStyle.stops[2] * root.run(2) + FixesStyle.stops[3] * root.run(3)
+        + FixesStyle.stops[4] * root.run(4) + FixesStyle.stops[5] * root.run(5));
     rising := Phase { t: root.t; from: FixesStyle.rise-from; to: FixesStyle.rise-to; }
     settled := Phase { t: root.t; from: FixesStyle.rise-to; to: FixesStyle.settle-to; }
     property <length> number-left: (FixesStyle.list-left - 2 * FixesStyle.digit) / 2;

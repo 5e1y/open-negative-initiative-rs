@@ -67,7 +67,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.settle();
     let live = menus.get_live();
     assert!(live.remove && live.medal && live.export, "twin: with no sheet, the selection's items are live");
-    assert_eq!(help.get_release().as_str(), "1.5", "the menu and the welcome's heading name one release");
+    assert_eq!(help.get_release().as_str(), "1.6", "the menu and the welcome's heading name one release");
 
     // Report a Bug: its field takes the keys, the menus go dark behind it.
     ctl.act(oni_app::Act::Report);
@@ -96,14 +96,18 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.pump();
     assert!(w.get_keys_focused() && w.get_keys_held(), "back, the key monitor holds the keyboard again");
 
-    // The welcome is as modal as Swift's sheet: a click beside it leaves it, Return closes it.
+    // The welcome is modal: a click beside it leaves it, Return turns its pages and closes it on the last.
     ctl.act(oni_app::Act::Welcome);
     rig.pump();
     assert!(help.get_welcome_shown());
     click(&rig, 12.0, 400.0);
     assert!(help.get_welcome_shown(), "a click beside the welcome leaves it open");
+    for _ in 0..4 {
+        rig.key("\n");
+    }
+    assert!(help.get_welcome_shown(), "Return on a page before the last turns it");
     rig.key("\n");
-    assert!(!help.get_welcome_shown(), "twin: its default key closes it");
+    assert!(!help.get_welcome_shown(), "twin: Return on the last page closes it");
 
     // A post answered after its sheet closed and opened again does not thank the new report.
     hold.store(true, Ordering::Relaxed);

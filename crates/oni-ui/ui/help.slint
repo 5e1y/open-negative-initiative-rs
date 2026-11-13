@@ -1,6 +1,9 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
-import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField, SheetFooter, BulletLine, WelcomeStyle, PageDots, InterfaceScene, DedustScene, EditsScene, FixesScene } from "ds/ds.slint";
+import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField, SheetFooter } from "ds/ds.slint";
+import { BulletLine, WelcomeStyle, PageDots, InterfaceScene, DedustScene, EditsScene, FixesScene } from "ds/ds.slint";
 import { KeyWords } from "key_words.slint";
+// The scenes' held moment, for the checks that look at one step of them.
+export { SceneClock } from "ds/ds.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
@@ -98,26 +101,62 @@ export component WelcomeSheet inherits Sheet {
                 if root.page == 1: VerticalLayout {
                     spacing: Space.m;
                     Label { text: @tr("A calmer interface"); role: TextRole.heading; wrap: word-wrap; }
-                    Point { title: @tr("Less distraction around your scans"); text: @tr("Flat keys that light up under the hand, coloured rails faint until you use them: the photo is what stands out."); }
-                    Point { title: @tr("More intuitive"); text: @tr("Every key is an icon over its word, in the same place in every mode. A keycap means the screen's main action."); }
-                    Point { title: @tr("Type any value"); text: @tr("Click a slider's number to type it, or nudge it with − and +."); }
-                    Point { title: @tr("Your folders at hand"); text: @tr("Favourites and Computer fold like a Finder sidebar, and the rating filter stays beside the open photo."); }
+                    Point {
+                        title: @tr("Less distraction around your scans");
+                        text: @tr("Flat keys that light up under the hand, coloured rails faint until you use them: the photo is what stands out.");
+                    }
+                    Point {
+                        title: @tr("More intuitive");
+                        text: @tr("Every key is an icon over its word, in the same place in every mode. A keycap means the screen's main action.");
+                    }
+                    Point {
+                        title: @tr("Type any value");
+                        text: @tr("Click a slider's number to type it, or nudge it with − and +.");
+                    }
+                    Point {
+                        title: @tr("Your folders at hand");
+                        text: @tr("Favourites and Computer fold away, and the rating filter stays beside the open photo.");
+                    }
                 }
                 if root.page == 2: VerticalLayout {
                     spacing: Space.m;
                     Label { text: @tr("Automatic De-dust"); role: TextRole.heading; wrap: word-wrap; }
-                    Point { title: @tr("The dust found in one press"); text: @tr("In De-dust, DETECT rings every speck it finds, from a single pixel to a large flake. Sensitivity recounts as you slide it."); }
-                    Point { title: @tr("Healed when you say so"); text: @tr("REMOVE lays a patch on each ringed speck. Each patch is a numbered tile you can check and remove one by one."); }
-                    Point { title: @tr("Fast with hundreds of patches"); text: @tr("A frame with 200 patches edits as smoothly as a clean one."); }
-                    Point { title: @tr("Look before you remove"); text: @tr("A speck across a sharp edge can be missed, and a high Sensitivity can ring fine detail."); }
+                    Point {
+                        title: @tr("The dust found in one press");
+                        text: @tr("In De-dust, DETECT rings every speck it finds, from a single pixel to a large flake. Sensitivity recounts as you slide it.");
+                    }
+                    Point {
+                        title: @tr("Healed when you say so");
+                        text: @tr("REMOVE lays a patch on each ringed speck. Each patch is a numbered tile you can check and remove one by one.");
+                    }
+                    Point {
+                        title: @tr("Fast with hundreds of patches");
+                        text: @tr("A frame with 200 patches edits as smoothly as a clean one.");
+                    }
+                    Point {
+                        title: @tr("Look before you remove");
+                        text: @tr("A speck across a sharp edge can be missed, and a high Sensitivity can ring fine detail.");
+                    }
                 }
                 if root.page == 3: VerticalLayout {
                     spacing: Space.m;
                     Label { text: @tr("Your edits, brought up to date"); role: TextRole.heading; wrap: word-wrap; }
-                    Point { title: @tr("Converted on their own"); text: @tr("At the first launch, the settings beside each photo move to a new format while you work. Your photos are never touched."); }
-                    Point { title: @tr("No way back"); text: @tr("ONI 1.5 and earlier open converted photos read-only. Keep editing them in this version."); }
-                    Point { title: @tr("Disks away"); text: @tr("A disk not connected is converted when it comes back."); }
-                    Point { title: @tr("Two habits change"); text: @tr("Keys 1, 2 and 3 now give gold, silver and bronze. The Scanner face no longer applies Auto White Balance: it shows exactly what its keypad reads."); }
+                    Point {
+                        title: @tr("Converted on their own");
+                        text: @tr("At the first launch, the settings beside each photo move to a new format while you work. Your photos are never touched.");
+                    }
+                    Point {
+                        title: @tr("No way back");
+                        text: @tr("ONI 1.5 and earlier open converted photos read-only. Keep editing them in this version.");
+                    }
+                    Point {
+                        title: @tr("Disks away");
+                        text: @tr("A disk not connected is converted when it comes back.");
+                    }
+                    Point {
+                        title: @tr("Two habits change");
+                        text: @tr("Keys 1, 2 and 3 now give gold, silver and bronze. The Scanner face no longer applies Auto White Balance: it shows exactly what its keypad reads.");
+                    }
                 }
                 if root.page == 4: VerticalLayout {
                     spacing: Space.m;

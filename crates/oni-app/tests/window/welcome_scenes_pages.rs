@@ -29,7 +29,7 @@ fn changes(a: &Frame, b: &Frame, width: usize, within: Box4) -> Option<Box4> {
     found
 }
 
-pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes_tick() {
+pub(crate) fn the_edits_cards_turn_never_their_photos_and_the_fixes_tick() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

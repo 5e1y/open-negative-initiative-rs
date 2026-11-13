@@ -1,6 +1,6 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
 import { Act } from "act.slint";
-import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, SceneClock, TextRole, Tone, Sheet, Space, Ground, CardStyle, SheetStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, SheetStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, LabCell, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, PanelTab, RollState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
@@ -16,7 +16,7 @@ import { Pairing, PairingSheet } from "pairing.slint";
 import { AppSettings, SettingsSheet } from "settings.slint";
 import { Notice, NoticeSheet, Upgraded, UpgradedSheet } from "notice.slint";
 import { Stocks, StockBrand, StockRow, StockCell, StockPickerSheet } from "stocks.slint";
-import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow } from "help.slint";
+import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow, SceneClock } from "help.slint";
 import { Wrapped, WrappedFace, WrappedView } from "wrapped.slint";
 import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
@@ -31,9 +31,9 @@ import { KeyWords } from "key_words.slint";
 import { Converting, DngSheet, DngStage } from "dng.slint";
 import { Menus, MenuTitles, MenuLive } from "menus.slint";
 
-export { DS, Motion, SceneClock, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, PanelTab, RollState, InfoKind, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Upgraded, Starter, Exporting, ExportLine, PaperRow, SheetTile }
+export { DS, Motion, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, PanelTab, RollState, InfoKind, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Upgraded, Starter, Exporting, ExportLine, PaperRow, SheetTile }
 export { Editors } from "editors.slint";
-export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
+export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, SceneClock, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
 export { Gear, GearKind } from "gear_state.slint";
 export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage, Menus, MenuTitles, MenuLive }

@@ -156,7 +156,14 @@ export component Side inherits Rectangle {
                 old: true;
                 k: root.k * 0.6;
                 sink: pouf.press;
-                Image { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; source: glyph; colorize: Colour.white; width: InterfaceSceneStyle.glyph-small * root.k; height: self.width; }
+                Image {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    source: glyph;
+                    colorize: Colour.white;
+                    width: InterfaceSceneStyle.glyph-small * root.k;
+                    height: self.width;
+                }
             }
         }
     }
@@ -179,7 +186,14 @@ export component Side inherits Rectangle {
             color: Colour.ink;
             vertical-alignment: center;
         }
-        Image { x: parent.width - 12px * root.zoom; y: (parent.height - self.height) / 2; source: Icons.chevron-down; colorize: Colour.ink-secondary; width: InterfaceSceneStyle.glyph-small * root.zoom; height: self.width; }
+        Image {
+            x: parent.width - 12px * root.zoom;
+            y: (parent.height - self.height) / 2;
+            source: Icons.chevron-down;
+            colorize: Colour.ink-secondary;
+            width: InterfaceSceneStyle.glyph-small * root.zoom;
+            height: self.width;
+        }
     }
     // Before: a year open on its rolls, two more closed.
     for row[i] in [

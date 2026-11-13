@@ -44,7 +44,8 @@ fn gears(files: &[(PathBuf, String)]) -> Vec<String> {
 #[test]
 fn the_gear_names_the_apps_settings_alone() {
     let mut files = ui();
-    assert_eq!(gears(&files), ["toolbar.slint"], "a block's options wear their own glyph");
+    // The welcome's picture of the bar draws that same key.
+    assert_eq!(gears(&files), ["toolbar.slint", "welcome_interface_bar.slint"], "a block's options wear their own glyph");
     let options = files.iter().filter(|(_, t)| t.contains("Icons.options")).count();
     assert!(options >= 2, "the panel's and Prepare the Roll's options keys: {options}");
     // Twin: a block's key drawn with the gear is caught.

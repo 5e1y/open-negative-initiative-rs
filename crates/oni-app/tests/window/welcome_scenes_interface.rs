@@ -73,7 +73,7 @@ fn save(shot: &Shot, (x0, y0, x1, y1): Area, path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
-pub(crate) fn the_interface_scene_shows_the_old_keycaps_then_the_new_look_and_a_typed_value() {
+pub(crate) fn the_interface_scene_turns_old_into_new_and_types_a_value() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots.clone());
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
