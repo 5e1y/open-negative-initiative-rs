@@ -6,7 +6,7 @@ mod framing;
 mod scan;
 
 pub use answers::Seen;
-pub use framing::{View, framing};
+pub use framing::{Structure, View, framing, within};
 pub use scan::{Found, Scan, found, reduced};
 
 use std::cell::Cell;
@@ -50,11 +50,11 @@ pub const SOURCE: &str = "ONI_WELCOME_DUST";
 const READING: (f32, f32) = (0.3, 3.0);
 const HEALING: f32 = 4.0;
 
-/// The fewest specks a detail must show.
-pub const FEWEST: usize = 6;
+/// The specks a detail shows: one row of the pane's tiles in every language.
+pub const SPECKS: usize = 4;
 /// The zooms a detail is looked for at, closest first: the strip's pixels a frame pixel, as the canvas's
-/// 200 %, 100 % and 50 % show it on a Retina screen.
-const ZOOMS: [f32; 3] = [2.0, 1.0, 0.5];
+/// pinch leaves it between 200 % and 50 % on a Retina screen.
+const ZOOMS: [f32; 6] = [2.0, 1.0, 0.875, 0.75, 0.625, 0.5];
 
 pub fn source() -> Result<PathBuf, String> {
     let path = std::env::var_os(SOURCE).map(PathBuf::from).ok_or(format!("set {SOURCE} to the dusty photograph"))?;
@@ -62,15 +62,17 @@ pub fn source() -> Result<PathBuf, String> {
 }
 
 /// What the film is asked: the Sensitivity the pane rests at and the zoom, else the least that frames
-/// `FEWEST` specks.
+/// `SPECKS` specks.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ask {
     pub sensitivity: Option<f32>,
     pub zoom: Option<f32>,
-    /// A rehearsal on another roll: fewer specks than `FEWEST` are filmed, not refused.
+    /// A rehearsal on another roll: fewer specks than `SPECKS` are filmed, not refused.
     pub rehearsal: bool,
     /// The hand goes its way and never presses, as a check's twin asks.
     pub still_hand: bool,
+    /// Every speck of the frame ringed and removed, beyond the strip: a check's twin.
+    pub whole: bool,
 }
 
 /// The film's shots in order, the frames each still is drawn from, and where the photograph lies.
@@ -103,7 +105,7 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
     // The detail rendered once before the reading, so its time holds no pipeline's first build.
     let warm = View { x: 0, y: 0, zoom: 1.0, width: 64, height: 64 };
     scan.detail(&scan.settings, warm)?;
-    let (reading, took) = scan.read()?;
+    let (reading, took, forms) = scan.read()?;
     let sensitivities: Vec<f32> = match ask.sensitivity {
         Some(s) => vec![s],
         None => (0..=20).map(|k| k as f32 / 20.0).collect(),
@@ -114,11 +116,11 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
     'search: for &s in &sensitivities {
         let all = found(&reading, s);
         for &z in &zooms {
-            if let Some((view, n)) = framing(&all, scan.size, strip, z, least_ring)
+            if let Some((view, n)) = framing(&all, scan.size, strip, z, least_ring, SPECKS, &forms)
                 && best.as_ref().is_none_or(|b| n > b.2)
             {
                 best = Some((s, view, n, all.clone()));
-                if n >= FEWEST {
+                if n == SPECKS {
                     break 'search;
                 }
             }
@@ -130,10 +132,12 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
         let (w, h) = View { x: 0, y: 0, zoom: z, width: strip.0, height: strip.1 }.region();
         Some((sensitivities[0], View { x: (scan.size.0 - w) / 2, y: scan.size.1.saturating_sub(h) / 2, zoom: z, width: strip.0, height: strip.1 }, 0, Vec::new()))
     };
-    let (sensitivity, view, shown, all) = best.or_else(middle).ok_or("the frame is smaller than the strip")?;
-    if shown < FEWEST && !ask.rehearsal {
-        return Err(format!("no detail shows {FEWEST} specks apart at any Sensitivity, {shown} at most"));
+    let (sensitivity, view, shown, whole) = best.or_else(middle).ok_or("the frame is smaller than the strip")?;
+    if shown < SPECKS && !ask.rehearsal {
+        return Err(format!("no detail shows {SPECKS} specks apart at any Sensitivity, {shown} at most"));
     }
+    // The reading is the frame's; what the strip rings, counts and removes is what it found in view.
+    let all = if ask.whole { whole.clone() } else { within(&whole, view, scan.size, least_ring) };
     let reading_for = took.as_secs_f32();
     if reading_for > READING.1 {
         return Err(format!("the reading took {reading_for:.1} s, past the film's {} s", READING.1));
@@ -149,9 +153,10 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
         return Err(format!("the patches took {healing_for:.1} s, past the film's {HEALING} s"));
     }
     let report = format!(
-        "{} specks at Sensitivity {}, {shown} in the detail at {}×, {} px from the left and {} from the top; read in {:.2} s, healed in {:.2} s",
-        all.len(),
+        "{} specks in the frame at Sensitivity {}, {} in the detail at {}×, {} px from the left and {} from the top; read in {:.2} s, healed in {:.2} s",
+        whole.len(),
         Readout::Percent.format(sensitivity),
+        all.len(),
         view.zoom,
         view.x,
         view.y,
@@ -242,11 +247,12 @@ pub fn probe(path: &Path, stills: Option<&Path>) -> Result<String, String> {
     let strip = ((stage.number("photo-width") * SCALE).round() as u32, (stage.number("photo-height") * SCALE).round() as u32);
     let least_ring = f64::from(stage.number("ring-least"));
     let scan = Scan::open(path)?;
-    let (reading, took) = scan.read()?;
+    let (reading, took, forms) = scan.read()?;
     let mut lines = vec![format!("{:?}, read in {:.2} s, {} px past the window", scan.settings.mode, took.as_secs_f32(), reading.past)];
     for s in [0.0, 0.1, 0.25, 0.5, 0.75, 1.0] {
         let all = found(&reading, s);
-        let best: Vec<String> = ZOOMS.iter().map(|&z| framing(&all, scan.size, strip, z, least_ring).map_or(format!("{z}×: none"), |(v, n)| format!("{z}×: {n} at ({}, {})", v.x, v.y))).collect();
+        let at = |z: f32| framing(&all, scan.size, strip, z, least_ring, usize::MAX, &forms);
+        let best: Vec<String> = ZOOMS.iter().map(|&z| at(z).map_or(format!("{z}×: none"), |(v, n)| format!("{z}×: {n} at ({}, {})", v.x, v.y))).collect();
         lines.push(format!("Sensitivity {s:.2}: {} specks; {}", all.len(), best.join(", ")));
     }
     // At rest and at 50 %, the detail at 100 % holding the most rings, as the canvas shows them.
@@ -255,7 +261,7 @@ pub fn probe(path: &Path, stills: Option<&Path>) -> Result<String, String> {
         let stem = path.file_stem().map_or("frame".into(), |s| s.to_string_lossy().to_string());
         for (s, name) in [(0.0, "rest"), (0.5, "50")] {
             let all = found(&reading, s);
-            let Some((view, n)) = framing(&all, scan.size, strip, 1.0, least_ring).or_else(|| busiest(&all, scan.size, strip, 1.0)) else { continue };
+            let Some((view, n)) = framing(&all, scan.size, strip, 1.0, least_ring, usize::MAX, &forms).or_else(|| busiest(&all, scan.size, strip, 1.0)) else { continue };
             let answers = answers_of(&scan, &reading, &[], view, s, veil)?;
             let dedust = |name: &str, value: Value| stage.instance().set_global_property("Dedust", name, value).map_err(|e| format!("Dedust.{name}: {e}"));
             dedust("sensitivity", Value::Number(f64::from(s)))?;

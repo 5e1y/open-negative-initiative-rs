@@ -10553,5 +10553,12 @@
     "title": "The films' total stays a bound of its own",
     "status": "done",
     "detail": "With every film's ceiling at 2 MB the six at their ceilings made exactly the 12 MB total, so the total could never fail. TOTAL is 8 MB: the six shipped weigh 4.65 MB, and six at their ceilings are refused. Check: welcome::tests (twin: six at their ceilings fail)."
+  },
+  {
+    "id": 2063,
+    "type": "fix",
+    "title": "The De-dust film's strip and pane show the same dust: four specks in view, at rest",
+    "status": "done",
+    "detail": "After R4b and R9d: the reading stays the app's on the whole frame, but what is ringed, counted, written and healed is what it found in the detail in view, so the count is the rings, the marks run from 1 and each has its tile. The detail holds four specks, one row of tiles in every language, at Sensitivity at rest; among tying details the rule takes the one holding most of the picture's forms (the mean step of its log light over 16-pixel cells), not a plain ground. The canvas's pinch zooms between 200 % and 50 % are searched, a reduction by any amount. Check: welcome_dedust lays four specks in view and two far off; the count is the strip's rings and the tiles' numbers its marks; twin: the whole frame read and removed is caught. The three films, filmed on P1072734 at 75 %, replace the 38-count ones in resources/welcome."
   }
 ]

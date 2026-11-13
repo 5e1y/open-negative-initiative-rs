@@ -59,23 +59,60 @@ impl View {
     }
 }
 
-/// The view at `zoom` over the frame `size` that shows the most of `found` whole and apart: every speck it
-/// touches lies `MARGIN` inside the strip, and no two footprints come within `GAP`; the middlemost on a tie.
-pub fn framing(found: &[Found], size: (u32, u32), strip: (u32, u32), zoom: f32, least_ring: f64) -> Option<(View, usize)> {
+/// The picture's forms, a cell of `CELL` pixels a value: how much its light, in log, steps from its neighbours'.
+/// The cells average the film's grain away, so a plain ground reads low and an edge or a form high.
+pub struct Structure {
+    width: usize,
+    height: usize,
+    edges: Vec<f32>,
+}
+
+/// A structure cell's side in the frame's pixels.
+const CELL: usize = 16;
+
+impl Structure {
+    pub fn of(pixels: &[[f32; 4]], width: usize) -> Structure {
+        let height = pixels.len() / width.max(1);
+        let (w, h) = (width / CELL, height / CELL);
+        let light: Vec<f32> = (0..w * h)
+            .map(|i| {
+                let (cx, cy) = (i % w * CELL, i / w * CELL);
+                let sum: f32 = (cy..cy + CELL).flat_map(|y| pixels[y * width + cx..][..CELL].iter()).map(|p| 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]).sum();
+                (sum / (CELL * CELL) as f32).max(1e-4).log10()
+            })
+            .collect();
+        let at = |x: usize, y: usize| light[y.min(h - 1) * w + x.min(w - 1)];
+        let edges = (0..w * h).map(|i| (at(i % w + 1, i / w) - at(i % w, i / w)).abs() + (at(i % w, i / w + 1) - at(i % w, i / w)).abs()).collect();
+        Structure { width: w, height: h, edges }
+    }
+
+    /// The mean step over the frame's pixels `x`, `y`, `w` × `h`.
+    fn over(&self, x: u32, y: u32, w: u32, h: u32) -> f32 {
+        let cells = |a: u32, n: u32, limit: usize| (a as usize / CELL).min(limit)..((a + n) as usize / CELL).min(limit);
+        let (xs, ys) = (cells(x, w, self.width), cells(y, h, self.height));
+        let n = (xs.len() * ys.len()).max(1) as f32;
+        ys.flat_map(|cy| xs.clone().map(move |cx| (cx, cy))).map(|(cx, cy)| self.edges[cy * self.width + cx]).sum::<f32>() / n
+    }
+}
+
+/// The view at `zoom` over the frame `size` showing the most of `found`, `most` at most, whole and apart: every
+/// speck it touches lies `MARGIN` inside the strip, no two footprints within `GAP`. On a tie, the one holding
+/// most of the picture's forms, so a detail shows an edge or a form rather than a plain ground.
+pub fn framing(found: &[Found], size: (u32, u32), strip: (u32, u32), zoom: f32, least_ring: f64, most: usize, forms: &Structure) -> Option<(View, usize)> {
     let blank = View { x: 0, y: 0, zoom, width: strip.0, height: strip.1 };
     let (rw, rh) = blank.region();
     if rw > size.0 || rh > size.1 {
         return None;
     }
     let (pw, ph) = (f64::from(strip.0) / f64::from(SCALE), f64::from(strip.1) / f64::from(SCALE));
-    let step = 16;
-    let mut best: Option<(View, usize, f64)> = None;
+    let step = 8;
+    let mut best: Option<(View, usize, f32)> = None;
     for y in (0..=size.1 - rh).step_by(step) {
         for x in (0..=size.0 - rw).step_by(step) {
             let view = View { x, y, ..blank };
             let prints: Vec<[f64; 4]> = found.iter().map(|f| view.footprint(f, size, least_ring)).filter(|b| b[0] + b[2] > 0.0 && b[1] + b[3] > 0.0 && b[0] < pw && b[1] < ph).collect();
             let m = f64::from(MARGIN);
-            if prints.is_empty() || prints.iter().any(|b| b[0] < m || b[1] < m || b[0] + b[2] > pw - m || b[1] + b[3] > ph - m) {
+            if prints.is_empty() || prints.len() > most || prints.iter().any(|b| b[0] < m || b[1] < m || b[0] + b[2] > pw - m || b[1] + b[3] > ph - m) {
                 continue;
             }
             let g = f64::from(GAP);
@@ -85,14 +122,20 @@ pub fn framing(found: &[Found], size: (u32, u32), strip: (u32, u32), zoom: f32, 
                 continue;
             }
             let n = prints.len();
-            let (cx, cy) = prints.iter().fold((0.0, 0.0), |(x, y), b| (x + b[0] + b[2] / 2.0, y + b[1] + b[3] / 2.0));
-            let off = (cx / n as f64 - pw / 2.0).hypot(cy / n as f64 - ph / 2.0);
-            if best.as_ref().is_none_or(|(_, bn, boff)| n > *bn || (n == *bn && off < *boff)) {
-                best = Some((view, n, off));
+            let held = forms.over(x, y, rw, rh);
+            if best.as_ref().is_none_or(|(_, bn, bheld)| n > *bn || (n == *bn && held > *bheld)) {
+                best = Some((view, n, held));
             }
         }
     }
     best.map(|(v, n, _)| (v, n))
+}
+
+/// The specks of `found` the strip shows in `view`, in the reading's order.
+pub fn within(found: &[Found], view: View, size: (u32, u32), least_ring: f64) -> Vec<Found> {
+    let (pw, ph) = (f64::from(view.width) / f64::from(SCALE), f64::from(view.height) / f64::from(SCALE));
+    let shown = |b: [f64; 4]| b[0] + b[2] > 0.0 && b[1] + b[3] > 0.0 && b[0] < pw && b[1] < ph;
+    found.iter().filter(|f| shown(view.footprint(f, size, least_ring))).cloned().collect()
 }
 
 /// The view at `zoom` holding the most specks, about the one with most neighbours, for a probe's look
