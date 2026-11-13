@@ -112,6 +112,6 @@ pub(crate) fn the_edits_scene_turns_its_cards_and_never_its_photos_and_the_fixes
     assert!(changes(&half, &f1, width, whole).is_some(), "the end ticks what the middle has not");
     // Twin: a frame held twice shows no change, so the differences above are the clock's.
     assert!(changes(&f1, &at(1.0, "welcome-fixes-s1-again"), width, whole).is_none());
-    frames("fixes", &[0.03, 0.175, 0.657]);
+    frames("fixes", &[0.016, 0.03, 0.032, 0.048, 0.175, 0.657]);
     clock.set_held(-1.0);
 }

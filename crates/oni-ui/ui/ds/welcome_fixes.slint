@@ -105,19 +105,19 @@ export component FixesScene inherits SceneFrame {
     settled := Phase { t: root.t; from: FixesStyle.rise-to; to: FixesStyle.settle-to; }
     property <length> number-left: (FixesStyle.list-left - 2 * FixesStyle.digit) / 2;
     property <length> number-top: (root.height - FixesStyle.number * 1.2) / 2 - Space.m;
-    // The last state is a second layer, cross-faded with the live count under the rewind.
+    // The last state is a second layer, faded out before the live count fades in under the rewind.
     Digits {
         x: root.number-left;
         y: root.number-top;
         n: 70;
-        opacity: root.rewind;
+        opacity: max(0, 2 * root.rewind - 1);
     }
     Digits {
         x: root.number-left;
         y: root.number-top;
         n: root.n;
         scale: 1 + FixesStyle.pop * (rising.arrive - settled.ease);
-        opacity: 1 - root.rewind;
+        opacity: max(0, 1 - 2 * root.rewind);
     }
     Label {
         x: root.number-left;
