@@ -10581,5 +10581,12 @@
     "title": "Settings' rows of keys inside the page in every language",
     "status": "done",
     "detail": "Window checks settings_rows: at 1100×680, Frontier Look's and About's rows in English, French and Spanish under the compiled interface (--profile app with SLINT_EMIT_DEBUG_INFO=1; the live interface reads English alone): every key ends inside the page, a row longer than the page on one line is found on two, one that fits keeps one line; Diagnostic Log closes Settings before it flips, Use a File… only flips. RowsProbe at 300 wide: the second line a group's gap under the first and the words below it (the keys-as-children form failed, 22 pt apart). Twins: some language's row would run past the page on one line (French's Help row); a key opening no sheet leaves Settings open; at 600 wide every key keeps one line."
+  },
+  {
+    "id": 2064,
+    "type": "change",
+    "title": "French keeps the gallery's main actions worded at the narrowest window",
+    "status": "done",
+    "detail": "Owner's call: PREPARE ROLL reads PRÉPARER and ADD FOLDER… reads AJOUTER… in French, so at 1100 pt the gallery's two keycaps keep their words instead of going glyph-only. Check: toolbar_fit, every language's keycaps worded at the narrowest window, under the compiled interface (twin: a point under the width the bar reads, the words give way)."
   }
 ]

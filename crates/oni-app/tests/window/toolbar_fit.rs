@@ -120,9 +120,8 @@ pub(crate) fn the_bars_last_key_stays_inside_the_narrowest_window_in_every_langu
         assert!(worded() && end <= least - END + 0.5, "{language:?}: worded at {least} pt, the last key ends at {end} pt");
         right_end(&rig, w, least - 1.0, height);
         assert!(!worded(), "twin, {language:?}: a point narrower the words would pass the edge, and give way");
-        if language == oni_i18n::Language::French {
-            assert!(least > NARROWEST, "twin: French words cannot fit the narrowest window, {least} pt");
-        }
+        // The gallery's main actions keep their words at the narrowest window in every language.
+        assert!(least <= NARROWEST, "{language:?}: the gallery's keycaps need {least} pt to keep their words");
         rig.chord(slint::platform::Key::Control, "g");
     }
     oni_app::language::speak(Some(oni_i18n::Language::English));

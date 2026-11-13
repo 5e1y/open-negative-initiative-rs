@@ -2495,7 +2495,7 @@ msgstr "Tout coller"
 
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
-msgstr "PRÉPARER LA PELLICULE"
+msgstr "PRÉPARER"
 
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
@@ -2503,7 +2503,7 @@ msgstr "Préparer la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "ADD FOLDER…"
-msgstr "AJOUTER UN DOSSIER…"
+msgstr "AJOUTER…"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Star a folder of scans and open it"
