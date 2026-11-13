@@ -10468,7 +10468,7 @@
     "type": "feature",
     "title": "The De-dust film plays the app's reading and heal at their pace",
     "status": "done",
-    "detail": "welcome::dedust opens the negative ONI_WELCOME_DUST names as De-dust does (sidecar settings without a correction, full decode, preview), runs the app's reading (framed_whole, oni_measure::dust::read), frames the detail holding the most specks whole and apart at the least Sensitivity and the closest zoom (6 at least, else refused but in a rehearsal), writes one correction a speck and heals them through oni_app::heal::ensure, each landing re-rendered, the tiles' reminders through Engine::originals. The pane's DETECT and REMOVE take real clicks; the reading and the patches show at their measured pace, 0.3 to 3 s and 4 s at most, else the film fails. Probe and rehearsal: examples/welcome_dedust."
+    "detail": "welcome::dedust opens the negative ONI_WELCOME_DUST names as De-dust does (sidecar settings without a correction, full decode, preview), runs the app's reading (framed_whole, oni_measure::dust::read), frames the detail holding the most specks whole and apart at the least Sensitivity and the closest zoom (6 at least, else refused but in a rehearsal), writes one correction a speck and heals them through oni_app::heal::ensure, each landing re-rendered, the tiles' reminders through Engine::originals. The pane's DETECT and REMOVE take real clicks; the reading and the patches show at their measured pace, 0.3 to 3 s and 4 s at most, else the film fails. Probe and rehearsal: examples/welcome_dedust, which also lays the scan at 100 % and the film's stills at four times under each ring. A mark's number badge is reserved at its laid size, 30 by 28 pt, so a speck outside the strip shows no number at its edge."
   },
   {
     "id": 2047,
@@ -10539,5 +10539,12 @@
     "title": "The welcome's page dots named for assistive technology",
     "status": "done",
     "detail": "Each dot of PageDots is a tab named Page {n} of {count} through the catalogues, the count from the sheet, the shown one selected, its default action showing its page. Check: sheet_stack (the four names found, the selection following a turn; twin: no dot answers a count of three)."
+  },
+  {
+    "id": 2058,
+    "type": "feature",
+    "title": "The De-dust film ships in the three languages, every healed pixel drawn",
+    "status": "done",
+    "detail": "Filmed on P1072734 read as the negative it is, its hand strokes cleared on a copy: 38 specks at Sensitivity at rest, 6 whole and apart in the detail at 50 %, read in 0.6 s and healed in 1 s. The GIF writes every changed pixel of the photograph (tolerance 0), so a faint heal is never left undrawn; dedust.gif, dedust.fr.gif and dedust.es.gif join SHIPPED. Each film's ceiling is 2 MB and the six's 12 MB, the owner allowing 20. The tool lays the under-ring crops from the GIF's decoded frames. Checks: welcome (every shipped film fits and speaks every language; the six at their ceilings are the budget, a byte over fails), window welcome, welcome_dedust."
   }
 ]

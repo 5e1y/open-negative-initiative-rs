@@ -7,7 +7,7 @@ use std::io::Cursor;
 /// Every film's size in pixels: the 560 × 502 stage at two pixels a point.
 pub const SIZE: (u32, u32) = (1120, 1004);
 /// The films together, two in three languages.
-pub const TOTAL: usize = 6 * 1024 * 1024;
+pub const TOTAL: usize = 12 * 1024 * 1024;
 
 /// The welcome's films: the app's own, in its language; a check hands its own.
 pub type Films = Box<dyn Fn(Film) -> Option<&'static [u8]>>;
@@ -23,6 +23,9 @@ const SHIPPED: &[(Film, Language, &[u8])] = &[
     (Film::Interface, Language::English, include_bytes!("../resources/welcome/interface.gif")),
     (Film::Interface, Language::French, include_bytes!("../resources/welcome/interface.fr.gif")),
     (Film::Interface, Language::Spanish, include_bytes!("../resources/welcome/interface.es.gif")),
+    (Film::Dedust, Language::English, include_bytes!("../resources/welcome/dedust.gif")),
+    (Film::Dedust, Language::French, include_bytes!("../resources/welcome/dedust.fr.gif")),
+    (Film::Dedust, Language::Spanish, include_bytes!("../resources/welcome/dedust.es.gif")),
 ];
 
 impl Film {
@@ -44,12 +47,9 @@ impl Film {
         }
     }
 
-    /// Its file's ceiling: the interface's carries the former interface before the new one.
+    /// Its file's ceiling, alike for both: a photograph's every changed pixel is written, so no heal goes undrawn.
     pub fn ceiling(self) -> usize {
-        match self {
-            Film::Interface => 1200 * 1024,
-            Film::Dedust => 900 * 1024,
-        }
+        2 * 1024 * 1024
     }
 }
 
@@ -120,12 +120,15 @@ mod tests {
     }
 
     #[test]
-    fn a_film_missing_a_language_or_the_six_too_heavy_fail() {
+    fn a_film_missing_a_language_or_one_too_heavy_fails_the_six() {
         let all = |film: Film, _: Language| Some(file(1120, 1004, film.ceiling() / 2));
         assert!(weigh(all).is_ok(), "every film in every language, light enough");
         let english = |film: Film, l: Language| (l == Language::English).then(|| file(1120, 1004, film.ceiling() / 2));
         assert!(weigh(english).is_err(), "twin: a film in English alone fails");
+        // The six at their ceilings are the whole budget; one a byte past its own fails the whole.
         let full = |film: Film, _: Language| Some(file(1120, 1004, film.ceiling()));
-        assert!(weigh(full).is_err(), "twin: the six at their ceilings weigh more than {TOTAL}");
+        assert_eq!(weigh(full), Ok(TOTAL));
+        let over = |film: Film, l: Language| Some(file(1120, 1004, film.ceiling() + usize::from(l == Language::Spanish)));
+        assert!(weigh(over).is_err(), "twin: a film a byte over fails the six");
     }
 }

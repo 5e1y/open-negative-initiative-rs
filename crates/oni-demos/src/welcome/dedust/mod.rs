@@ -310,5 +310,6 @@ fn centre_of(stage: &Stage, label: &str) -> Result<(f32, f32), String> {
 /// The shot as a GIF, packed as the help demos are.
 pub fn gif(shot: &Shot) -> Result<Vec<u8>, String> {
     let clip = Clip { frames: shot.frames.clone(), delay: (100 / FPS) as u16, photo: shot.region };
-    encode::gif(&clip, Tuning { tolerance: 8, colours: 128 })
+    // Every changed pixel of the photograph written, so the faintest heal is drawn.
+    encode::gif(&clip, Tuning { tolerance: 0, colours: 128 })
 }
