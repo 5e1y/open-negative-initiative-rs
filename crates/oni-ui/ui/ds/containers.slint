@@ -191,6 +191,8 @@ export component Sheet inherits Rectangle {
     // The height the sheet takes, its margins included, in a room that holds it whole.
     out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
     property <bool> fixed: root.card-height > 0;
+    // The card's width as laid: its gauge, or the window's room under it.
+    out property <length> shown-width: card.width;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;
     property <float> come;
     init => { root.come = 1; }
@@ -232,7 +234,7 @@ export component Sheet inherits Rectangle {
             lift: Lift.sheet;
             y: (root.height - self.height) * SheetStyle.rest + (1 - root.come) * SheetStyle.rise;
             opacity: root.come;
-            width: root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width;
+            width: min(root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width, root.width - 2 * SheetStyle.margin);
             height: min(root.fixed ? root.card-height : column.preferred-height, root.height - 2 * SheetStyle.margin);
             Scroller {
                 content-height: root.fixed ? self.visible-height : column.preferred-height;

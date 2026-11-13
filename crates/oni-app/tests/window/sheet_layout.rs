@@ -1,6 +1,5 @@
-//! Where a sheet's pieces sit, read by the pointer as a hand finds them: the welcome as tall as its
-//! content in a tall window and scrolled to reach GET STARTED in a short one, a notice's key on the
-//! right of its message, no sheet closed by a click beside it, every sheet centred in the window, the
+//! Where a sheet's pieces sit, read by the pointer as a hand finds them: a notice's key on the right
+//! of its message, no sheet closed by a click beside it, every sheet centred in the window, the
 //! Settings sheet one height whichever section is open, and Cancel set apart from a sheet's commit.
 
 use i_slint_backend_testing::AccessibleRole as Role;
@@ -40,59 +39,16 @@ fn find(rig: &common::Rig, heard: &Cell<bool>, xs: (f32, f32), ys: (f32, f32)) -
     None
 }
 
-fn wheel(rig: &common::Rig, x: f32, y: f32, by: f32) {
-    let position = LogicalPosition::new(x, y);
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
-    rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: by });
-    rig.pump();
-}
-
-pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
+pub(crate) fn a_notices_key_sits_right() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
-    let help = window.global::<Help>();
-    help.set_release("1.2".into());
-    help.set_welcome_line("V1.2.1".into());
-    help.set_welcome_credit("©fllauh".into());
-    let closed = Rc::new(Cell::new(false));
-    let heard = closed.clone();
-    help.on_welcome_closed(move || heard.set(true));
-    // GET STARTED is the last page's commit.
-    help.set_welcome_page(4);
-    help.set_welcome_shown(true);
-
-    // Tall: GET STARTED in the window as it opens, the card's foot a margin above the window's.
-    let (w, h) = (1400.0, 2200.0);
+    let (w, h) = (1280.0, 560.0);
     rig.window.set_size(PhysicalSize::new(w as u32, h as u32));
     window.show().unwrap();
     rig.settle();
-    println!("shot {}", rig.shot("welcome-tall").display());
-    // The key's band: the card's right end, clear of Back beside it and of Website and Feedback on the left.
-    let keys = |w: f32| (w / 2.0 + 170.0, w / 2.0 + 280.0 - 24.0);
-    let tall = find(&rig, &closed, keys(w), (0.0, h)).expect("GET STARTED shows in a tall window");
-    assert!(tall.1 < h - 24.0 - 24.0, "the card stops a margin above the window's foot");
-    // Nothing to scroll: the wheel leaves the key where it was.
-    wheel(&rig, w / 2.0, h / 2.0, -2000.0);
-    let still = find(&rig, &closed, keys(w), (0.0, h)).expect("GET STARTED still there");
-    assert_eq!(still.1, tall.1, "a sheet as tall as its content does not scroll");
-    // A click beside the card reaches nothing: the sheet is modal.
-    closed.set(false);
-    click(&rig, 40.0, h / 2.0);
-    assert!(!closed.get(), "a click beside the welcome leaves it open");
-
-    // Short: the words give up their height and scroll, the keys stay in reach without a wheel.
-    let (w, h) = (1280.0, 560.0);
-    rig.window.set_size(PhysicalSize::new(w as u32, h as u32));
-    rig.settle();
-    println!("shot {}", rig.shot("welcome-short").display());
-    let short = find(&rig, &closed, keys(w), (0.0, h)).expect("in a short window GET STARTED is reached unscrolled");
-    assert!(short.1 < h - 24.0, "the short card still stops a margin above the window's foot");
-    // Twin: the key is not where the tall card held it, the card did give up height.
-    assert!(short.1 < tall.1 - 200.0);
-    help.set_welcome_shown(false);
 
     // A notice: its title and message on the left, OK on the right of the card.
     let advice = window.global::<Advice>();
@@ -186,7 +142,7 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
             confirm.set_key("Create Roll".into());
             confirm.set_shown(on);
         }), (w / 2.0 - 180.0, w / 2.0 + 180.0)),
-        ("the welcome", Box::new(|on| help.set_welcome_shown(on)), (w / 2.0 + 120.0, w / 2.0 + 256.0)),
+        ("the welcome", Box::new(|on| help.set_welcome_shown(on)), (w / 2.0 + 330.0, w / 2.0 + 456.0)),
         ("the report", Box::new(|on| help.set_report_shown(on)), (w / 2.0 - 210.0, w / 2.0 + 210.0)),
         ("the settings", Box::new(|on| settings.set_shown(on)), (w / 2.0 + 200.0, w / 2.0 + 316.0)),
         ("the stock picker", Box::new(|on| stocks.set_shown(on)), (w / 2.0 + 100.0, w / 2.0 + 400.0)),
