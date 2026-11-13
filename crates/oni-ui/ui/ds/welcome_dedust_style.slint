@@ -1,0 +1,164 @@
+// The De-dust scene's sizes, colours, times and specks: stage points, and times in ms of the loop.
+import { Colour } from "theme.slint";
+
+// One speck on the picture: its centre, its size, light or dark, the ground it lies on (0 sky, 1 far
+// hill, 2 near hill), and whether it is a flake rather than a dot.
+export struct DedustSpeck { x: length, y: length, size: length, light: bool, ground: int, flake: bool }
+
+export global WelcomeDedust {
+    // The picture on the canvas, 3:2, and the panel's column at the right, its keys and grid level with it.
+    out property <length> picture-x: 18px;
+    out property <length> picture-y: 75px;
+    out property <length> picture-width: 336px;
+    out property <length> picture-height: 224px;
+    out property <length> panel-x: 372px;
+    out property <length> panel-y: 16px;
+    out property <length> panel-inset: 14px;
+    out property <length> key-height: 32px;
+    out property <length> count-height: 24px;
+    out property <length> gap: 6px;
+    out property <int> columns: 6;
+    out property <length> tile-gap: 4px;
+    out property <length> tile-under: 12px;
+    out property <length> digit: 10px;
+    // The read band at full brightness while the rest of the picture is veiled, soft at its two edges.
+    out property <length> band: 56px;
+    out property <length> band-edge: 8px;
+    // A ring: the speck and this much more across, never under `ring-least`.
+    out property <length> ring-room: 8px;
+    out property <length> ring-least: 12px;
+    out property <length> ring-line: 1.5px;
+    out property <length> ring-halo: 1px;
+    out property <color> ring-halo-ink: #00000080;
+    // A dot's soft edge around its core; a tile's speck drawn this much larger than on the picture.
+    out property <float> soft: 1.8;
+    out property <float> tile-zoom: 2.2;
+
+    // The macOS arrow in its 12 by 19 box, drawn at 1.15, and the ring a click sends from its tip.
+    out property <float> pointer-scale: 1.15;
+    out property <color> pointer-shade: #00000059;
+    out property <length> click-from: 3px;
+    out property <length> click-to: 14px;
+    out property <length> bow: 8px;
+    out property <length> drift: 12px;
+    out property <length> enter-x: 574px;
+    out property <length> enter-y: 132px;
+
+    out property <color> sky-top: #2e3a63;
+    out property <color> sky-mid: #7d6f9a;
+    out property <color> sky-low: #d49a8c;
+    out property <color> sky-horizon: #f0c193;
+    out property <color> sun: #fff3dc;
+    out property <color> far-hill: #6a5878;
+    out property <color> far-hill-low: #4d4060;
+    out property <color> near-hill: #2c3a3c;
+    out property <color> near-hill-low: #1d2627;
+    out property <color> dust-dark: #20160fd9;
+    out property <color> dust-light: #f6f1e6e6;
+
+    // The beats, in ms of the 9 s loop; the first 450 ms are the clock's rewind.
+    out property <float> period-ms: 9000;
+    out property <float> enter: 750;
+    out property <float> travel: 500;
+    out property <float> fade-in: 150;
+    out property <float> detect: 1450;
+    out property <float> sweep-from: 1650;
+    out property <float> sweep-to: 3150;
+    out property <float> dim-time: 150;
+    out property <float> lift-time: 250;
+    out property <float> ring-time: 180;
+    out property <float> to-remove: 3900;
+    out property <float> remove: 4650;
+    out property <float> exit: 5100;
+    out property <float> fade-out: 200;
+    out property <float> heal-from: 4900;
+    out property <float> heal-slow: 200;
+    out property <float> heal-step: 110;
+    out property <float> heal-time: 220;
+    out property <float> tile-after: 60;
+    out property <float> tile-time: 160;
+    // A press: down, held, up; a click's pointer dips and its ring spreads.
+    out property <float> down: 70;
+    out property <float> held: 60;
+    out property <float> up: 140;
+    out property <float> depth: 0.6;
+    out property <float> dip: 90;
+    out property <float> rise: 140;
+    out property <float> click-time: 300;
+
+    // In reading order, row by row, as their tiles are numbered.
+    out property <[DedustSpeck]> specks: [
+        { x: 24px, y: 40px, size: 2.5px, light: true, ground: 0, flake: false },
+        { x: 104px, y: 30px, size: 3px, light: true, ground: 0, flake: false },
+        { x: 204px, y: 50px, size: 2px, light: true, ground: 0, flake: false },
+        { x: 254px, y: 26px, size: 4px, light: true, ground: 0, flake: false },
+        { x: 38px, y: 98px, size: 4.5px, light: false, ground: 0, flake: false },
+        { x: 70px, y: 66px, size: 3px, light: false, ground: 0, flake: false },
+        { x: 136px, y: 84px, size: 6px, light: false, ground: 0, flake: false },
+        { x: 172px, y: 108px, size: 2px, light: false, ground: 0, flake: false },
+        { x: 222px, y: 92px, size: 3.5px, light: false, ground: 0, flake: false },
+        { x: 272px, y: 104px, size: 3px, light: false, ground: 0, flake: false },
+        { x: 308px, y: 70px, size: 2.5px, light: false, ground: 0, flake: false },
+        { x: 328px, y: 118px, size: 3px, light: false, ground: 0, flake: false },
+        { x: 6px, y: 196px, size: 2.5px, light: true, ground: 2, flake: false },
+        { x: 52px, y: 208px, size: 3px, light: true, ground: 2, flake: false },
+        { x: 158px, y: 152px, size: 2.5px, light: true, ground: 1, flake: false },
+        { x: 186px, y: 210px, size: 9px, light: true, ground: 2, flake: true },
+        { x: 238px, y: 160px, size: 2px, light: true, ground: 1, flake: false },
+        { x: 290px, y: 200px, size: 3px, light: true, ground: 2, flake: false },
+    ];
+
+    // A time of the loop as the cycle's fraction.
+    public pure function at(ms: float) -> float { ms / period-ms }
+
+    // A stretch's linear progress, `from` for `span` ms.
+    public pure function progress(t: float, from: float, span: float) -> float {
+        max(0, min(1, (t - at(from)) / at(span)))
+    }
+
+    public pure function ease(p: float) -> float { p * p * (3 - 2 * p) }
+    public pure function arrive(p: float) -> float { 1 - (1 - p) * (1 - p) * (1 - p) }
+    public pure function leave(p: float) -> float { p * p * p }
+    public pure function land(p: float) -> float { 1 + 2 * (p - 1) * (p - 1) * (p - 1) + (p - 1) * (p - 1) }
+
+    // A key's travel pressed at `at`: down on `in`, held, up on `out`, to `depth` of its wall.
+    public pure function press(t: float, from: float) -> float {
+        depth * (leave(progress(t, from, down)) - arrive(progress(t, from + down + held, up)))
+    }
+
+    // The band's trailing edge in the picture: from its own width left of the picture to its right edge.
+    public pure function trailing(t: float) -> length {
+        -band + progress(t, sweep-from, sweep-to - sweep-from) * (picture-width + band)
+    }
+
+    // When a speck's ring lands: as the band's trailing edge passes it.
+    public pure function ringed-at(i: int) -> float {
+        sweep-from + (sweep-to - sweep-from) * (specks[i].x + band) / (picture-width + band)
+    }
+
+    // The rings landed so far, so the count steps with each one.
+    public pure function counted(t: float) -> int {
+        rung(t, 0) + rung(t, 1) + rung(t, 2) + rung(t, 3) + rung(t, 4) + rung(t, 5)
+            + rung(t, 6) + rung(t, 7) + rung(t, 8) + rung(t, 9) + rung(t, 10) + rung(t, 11)
+            + rung(t, 12) + rung(t, 13) + rung(t, 14) + rung(t, 15) + rung(t, 16) + rung(t, 17)
+    }
+
+    pure function rung(t: float, i: int) -> int { t >= at(ringed-at(i)) ? 1 : 0 }
+
+    // Three slow heals so the eye learns the gesture, then the rest at a quicker step.
+    public pure function healed-at(i: int) -> float {
+        i < 3 ? heal-from + heal-slow * i : heal-from + heal-slow * 2 + heal-step * (i - 2)
+    }
+
+    // The picture's colour under a speck, which its tile shows around it.
+    public pure function ground(s: DedustSpeck) -> color {
+        let f = s.y / picture-height;
+        s.ground == 2 ? near-hill : s.ground == 1 ? far-hill
+            : f < 0.42 ? sky-top.mix(sky-mid, 1 - f / 0.42)
+            : f < 0.62 ? sky-mid.mix(sky-low, 1 - (f - 0.42) / 0.2)
+            : f < 0.75 ? sky-low.mix(sky-horizon, 1 - (f - 0.62) / 0.13)
+            : sky-horizon
+    }
+
+    public pure function ink(s: DedustSpeck) -> color { s.light ? dust-light : dust-dark }
+}

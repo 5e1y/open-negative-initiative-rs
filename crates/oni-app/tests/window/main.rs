@@ -155,6 +155,7 @@ mod tree_cost;
 mod tree_leftovers;
 mod updates;
 mod visible;
+mod welcome_scenes_dedust;
 mod whole_roll;
 mod wrapped;
 

@@ -1,0 +1,170 @@
+// The De-dust scene's pieces: the picture, a speck with its ring, a tile of the corrections grid, the pointer.
+import { Colour, Type, Radius } from "theme.slint";
+import { WelcomeDedust as W, DedustSpeck } from "welcome_dedust_style.slint";
+
+// The scan the scene cleans: a dusk sky, a low sun and two hills, drawn, never a photo.
+export component Landscape inherits Rectangle {
+    width: W.picture-width;
+    height: W.picture-height;
+    border-radius: Radius.picture;
+    clip: true;
+    background: @linear-gradient(180deg, W.sky-top 0%, W.sky-mid 42%, W.sky-low 62%, W.sky-horizon 75%);
+    Rectangle {
+        x: 216px;
+        y: 98px;
+        width: 44px;
+        height: 44px;
+        border-radius: 22px;
+        background: W.sun;
+    }
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 336;
+        viewbox-height: 224;
+        commands: "M 0 146 C 48 124 104 126 150 140 C 196 154 252 120 336 134 L 336 224 L 0 224 Z";
+        fill: @linear-gradient(180deg, W.far-hill 0%, W.far-hill-low 100%);
+        stroke-width: 0;
+    }
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 336;
+        viewbox-height: 224;
+        commands: "M 0 186 C 64 166 132 172 196 188 C 250 200 296 180 336 172 L 336 224 L 0 224 Z";
+        fill: @linear-gradient(180deg, W.near-hill 0%, W.near-hill-low 100%);
+        stroke-width: 0;
+    }
+}
+
+// A speck's mark centred on its box, `zoom` times its size: a soft dot, or a flake.
+export component Mote inherits Rectangle {
+    in property <DedustSpeck> speck;
+    in property <float> zoom: 1;
+    in property <color> ink;
+    width: (root.speck.flake ? root.speck.size : root.speck.size * W.soft) * root.zoom;
+    height: root.speck.flake ? self.width * 0.8 : self.width;
+    if !root.speck.flake: Rectangle {
+        border-radius: self.width / 2;
+        background: @radial-gradient(circle, root.ink 0%, root.ink 38%, root.ink.with-alpha(0) 72%);
+    }
+    if root.speck.flake: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 9;
+        viewbox-height: 7;
+        commands: "M 1 4 C 1 1 5 0 7 1 C 9 2 8 5 6 6 C 4 7 1 7 1 4 Z";
+        fill: root.ink;
+        stroke-width: 0;
+    }
+}
+
+// The reading's ring, as the canvas draws it: white on a dark halo, seen on any photo.
+export component SceneRing inherits Rectangle {
+    in property <length> diameter;
+    in property <float> strength;
+    width: root.diameter + W.ring-line + 2 * W.ring-halo;
+    height: self.width;
+    border-radius: self.width / 2;
+    border-width: W.ring-line + 2 * W.ring-halo;
+    border-color: W.ring-halo-ink.transparentize(1 - root.strength);
+    Rectangle {
+        width: root.diameter + W.ring-line;
+        height: self.width;
+        border-radius: self.width / 2;
+        border-width: W.ring-line;
+        border-color: Colour.handle-active.transparentize(1 - root.strength);
+    }
+}
+
+// The `i`-th speck, its dust under the reading's veil or its ring over it: dust until its heal, ringed
+// from the band's passing until it heals. `rewind` holds the healed state, faded back to dust.
+export component SceneSpeck inherits Rectangle {
+    in property <float> t;
+    in property <float> rewind;
+    in property <int> i;
+    in property <DedustSpeck> speck;
+    in property <bool> ring;
+    property <float> rung: W.land(W.progress(root.t, W.ringed-at(root.i), W.ring-time));
+    property <float> healing: max(W.leave(W.progress(root.t, W.healed-at(root.i), W.heal-time)), root.rewind);
+    property <length> diameter: max(W.ring-least, root.speck.size + W.ring-room);
+    x: root.speck.x - self.width / 2;
+    y: root.speck.y - self.height / 2;
+    width: 2 * W.ring-least + W.ring-room;
+    height: self.width;
+    if !root.ring && root.healing < 1: Mote {
+        speck: root.speck;
+        ink: W.ink(root.speck).transparentize(root.healing);
+    }
+    // Lands a little wide and settles; closes to 0.6 as its speck fades.
+    if root.ring && root.rung > 0 && root.healing < 1: SceneRing {
+        diameter: root.diameter * (1.6 - 0.6 * root.rung) * (1 - 0.4 * root.healing);
+        strength: min(1, root.rung) * (1 - root.healing);
+    }
+}
+
+// A correction's tile: the dust its patch covers on its own ground, its number under it.
+export component SceneTile inherits Rectangle {
+    in property <float> t;
+    in property <float> rewind;
+    in property <int> i;
+    in property <DedustSpeck> speck;
+    in property <length> side;
+    property <float> landed: W.land(W.progress(root.t, W.healed-at(root.i) + W.tile-after, W.tile-time));
+    property <float> shown: max(min(1, root.landed), root.rewind);
+    // Over the rewind it only fades: nothing shrinks backwards.
+    property <float> scale: root.rewind > 0 ? 1 : 0.8 + 0.2 * root.landed;
+    visible: root.shown > 0;
+    Rectangle {
+        x: root.side * (1 - root.scale) / 2;
+        y: root.side * (1 - root.scale) / 2;
+        width: root.side * root.scale;
+        height: self.width;
+        border-radius: Radius.picture;
+        background: W.ground(root.speck).transparentize(1 - root.shown);
+        clip: true;
+        Mote {
+            speck: root.speck;
+            zoom: (root.speck.flake ? 1.6 : W.tile-zoom) * root.scale;
+            ink: W.ink(root.speck).transparentize(1 - root.shown);
+        }
+    }
+    Text {
+        y: root.side + 1px;
+        width: root.side;
+        height: W.tile-under;
+        text: root.i + 1;
+        font-size: Type.micro;
+        color: Colour.ink-secondary.transparentize(1 - root.shown);
+    }
+}
+
+// The macOS arrow, its tip at the box's top left; `dip` shrinks it about the tip as a click does.
+export component ScenePointer inherits Rectangle {
+    in property <float> dip: 1;
+    in property <float> strength;
+    property <float> s: W.pointer-scale * root.dip;
+    width: 12px * root.s;
+    height: 19px * root.s;
+    Path {
+        y: 1px;
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 12;
+        viewbox-height: 19;
+        commands: "M 0 0 L 0 16 L 4 12.5 L 6.8 18.6 L 9 17.6 L 6.3 11.7 L 11.5 11.7 Z";
+        fill: W.pointer-shade.transparentize(1 - root.strength);
+        stroke: W.pointer-shade.transparentize(1 - root.strength);
+        stroke-width: 2px;
+    }
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 12;
+        viewbox-height: 19;
+        commands: "M 0 0 L 0 16 L 4 12.5 L 6.8 18.6 L 9 17.6 L 6.3 11.7 L 11.5 11.7 Z";
+        fill: Colour.black.transparentize(1 - root.strength);
+        stroke: Colour.white.transparentize(1 - root.strength);
+        stroke-width: 1px;
+    }
+}
