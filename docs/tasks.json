@@ -10406,5 +10406,19 @@
     "title": "The welcome's stage at 502, its films 1120 × 1004, page 1's keycap point",
     "status": "done",
     "detail": "From the lead's R3: the stage is 502 tall so a film's crop ends in the free band under Tint's knob in 1.5.6 and 1.6 alike; the card is 960 × 502 and still fits 1100 × 680 whole; films are 1120 × 1004; page 1's third point says one keycap means the main action. Checks: welcome_card (card size, scroll twin), welcome::tests (size ceiling twins), catalogue."
+  },
+  {
+    "id": 2030,
+    "type": "feature",
+    "title": "The welcome's wipe: the before and the after joined in their real frames",
+    "status": "done",
+    "detail": "oni_demos::wipe joins two frames of one region by a hard edge travelling left to right: the after's pixels left of it, the before's right of it, no line, no mix. frames() gives the wipe at the film's rate, the edge eased, the first frame already moved and the last the after whole. Check wipe::tests: progress 0 is the before, 1 the after, halfway every column is its version's to the bit; twin: the halfway frame differs from both; frames of two sizes are refused."
+  },
+  {
+    "id": 2031,
+    "type": "feature",
+    "title": "The welcome's before: the real 1.5.6 window filmed on the app stage",
+    "status": "done",
+    "detail": "Lives on branch welcome/before-1.5.6 (cc93f509), cut from Version 1.5.6 and never merged: the app stage of #2010 laid into that tree and a before binary writing shot A's region of the real 1.5.6 window as RGBA8 PNG frames, the hand drawn, outside the repository. Only this entry reaches canvas."
   }
 ]
