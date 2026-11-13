@@ -20,9 +20,9 @@ use crate::track::{Presses, Track};
 
 /// What the hand types over Temperature's number, then Return: short, signed, with a decimal.
 pub const TYPED: &str = "-1.2";
-/// Where the strip of the photograph is centred, a fraction of its width: the front table and its lamp,
-/// as the before cuts it.
-pub const CENTRE: f64 = 0.24;
+/// The photograph's strip, as the before cuts it: the front table and its lamp, past the film's black
+/// edge above and the holder's notches below (6272 × 4179 reduced to 1600 × 1066, from row 28).
+pub const CUT: plain::Cut = plain::Cut { side: 1600.0, centre: 0.24, top: 28 };
 /// The film's length, from the wipe's last frame: the beat sheet's 2.9 s to 9.6 s.
 const SECONDS: f32 = 6.7;
 /// A character every 100 ms, as a hand types a short figure.
@@ -216,7 +216,7 @@ impl Demo for Interface {
         serve(instance);
         publish(instance, &opened());
         let size = |w: f32, h: f32| ((w * SCALE).round() as u32, (h * SCALE).round() as u32);
-        let strip = plain::cover(&self.source, size(stage.number("photo-width"), stage.number("photo-height")), CENTRE)?;
+        let strip = plain::window(&self.source, size(stage.number("photo-width"), stage.number("photo-height")), CUT)?;
         stage.set_image("photo", &strip);
         slint::platform::update_timers_and_animations();
         let foot = foot(stage)?;

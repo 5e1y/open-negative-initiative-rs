@@ -93,7 +93,7 @@ fn the_typed_figure_moves_temperature_alone_to_its_place_and_the_photograph_hold
     drop(stage);
 
     // The photograph's pixels are the export's, on every frame of both films.
-    let strip = plain::cover(&source, (photo.width, photo.height), interface::CENTRE).unwrap();
+    let strip = plain::window(&source, (photo.width, photo.height), interface::CUT).unwrap();
     for frame in typed.iter().chain(&untouched) {
         for y in 0..photo.height {
             let at = (((photo.y + y) * frame.width + photo.x) * 4) as usize;

@@ -10433,7 +10433,7 @@
     "type": "feature",
     "title": "An export shown as it is",
     "status": "done",
-    "detail": "photo::plain::cover reads a JPEG export as the app reads a plain image (oni_decode::plain::read, the app's own Catmull-Rom reduction), its sRGB code values kept, cut to cover a box about a centre: never the conversion, never Prepare the Roll. The interface film's strip is bit for bit the 1.5.6 before's. Check: plain (a file's own values come back; twin: another centre is another cut)."
+    "detail": "photo::plain::cover reads a JPEG export as the app reads a plain image (oni_decode::plain::read, the app's own Catmull-Rom reduction), its sRGB code values kept, cut to cover a box about a centre: never the conversion, never Prepare the Roll. The interface film's strip is bit for bit the 1.5.6 before's. Check: plain (a file's own values come back; twin: another centre is another cut). After R4: the strip is a window cut from the export reduced to 1600 on its long side (plain::window: 1600 by 1066, 440 by 1004 from row 28 about 0.24 of the width), past the film's black edge above and the holder's notches below, as the before cuts it; the films are shipped again from S2's frames recut alike. Check: plain (a window past the foot refused)."
   },
   {
     "id": 2042,
