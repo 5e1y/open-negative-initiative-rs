@@ -61,7 +61,6 @@ mod gestures;
 mod hand_rest;
 mod headless;
 mod help;
-mod welcome_clip;
 mod corners;
 mod help_card;
 mod import_due;

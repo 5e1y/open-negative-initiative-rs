@@ -43,11 +43,19 @@ export component KeyScope inherits FocusScope {
     // A list that rings the item its keys act on rather than itself, as the grid its photo.
     in property <bool> ring: true;
     focus-on-click: false;
-    focus-gained(reason) => { if (reason != FocusReason.window-activation) { Keyboard.held = true; } }
+    // Rung only when the keyboard brought it, by Tab: a sheet's default key holds the keyboard from the
+    // start so Return reaches it, which is no reason to ring it; a window coming back keeps what it had.
+    property <bool> tabbed;
+    focus-gained(reason) => {
+        if (reason != FocusReason.window-activation) {
+            Keyboard.held = true;
+            root.tabbed = reason == FocusReason.tab-navigation;
+        }
+    }
     focus-lost(reason) => { if (reason != FocusReason.window-activation) { Keyboard.held = false; } }
     property <int> presses: Outside.presses;
     changed presses => { if (root.control && self.has-focus) { Outside.released += 1; } }
-    if root.ring && root.control && root.has-focus: FocusRing { radius: root.radius; }
+    if root.ring && root.control && root.has-focus && root.tabbed: FocusRing { radius: root.radius; }
 }
 
 // A wall at an end of the window's controls: Tab reaching it while a sheet covers them enters the sheet.

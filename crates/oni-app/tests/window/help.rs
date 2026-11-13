@@ -63,7 +63,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     first.launch_sheets();
     let help = first.window.global::<Help>();
     assert!(help.get_welcome_shown());
-    for page in 1..4 {
+    for page in 1..7 {
         rig.key("\n");
         assert!(help.get_welcome_shown(), "twin: Return on a page before the last turns it");
         assert_eq!(help.get_welcome_page(), page);

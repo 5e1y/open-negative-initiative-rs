@@ -1,0 +1,133 @@
+// The welcome's typing scene, where the focus scene ended: the hand comes onto Temperature's value, whose
+// face opens; a click enters it, a value is typed, Return lands the knob on it; two presses of + step it.
+import { Colour, Space, ButtonStyle, CardStyle, SliderStyle, SectionStyle } from "theme.slint";
+import { Look } from "controls.slint";
+import { Divider } from "base.slint";
+import { SliderFill } from "rail.slint";
+import { FocusBeats, Morphing, Heading, Backdrop } from "welcome_focus.slint";
+import { Arrow, Curves } from "welcome_clarity.slint";
+
+export global EditBeats {
+    out property <float> hand-in: 0.8;
+    out property <float> to-value-for: 0.8;
+    out property <float> click: 2.1;
+    out property <float> press-for: 0.13;
+    // The keys typed, one every `key-every`, from `type-from`; Return at `enter`.
+    out property <float> type-from: 2.5;
+    out property <float> key-every: 0.12;
+    out property <float> enter: 3.25;
+    out property <float> land-for: 0.45;
+    out property <float> to-plus-from: 3.9;
+    out property <float> to-plus-for: 0.35;
+    out property <float> plus-1: 4.55;
+    out property <float> plus-2: 4.95;
+    out property <float> away-from: 5.5;
+    out property <float> away-for: 0.9;
+    out property <float> rest: 2.0;
+}
+
+export component EditScene inherits Rectangle {
+    clip: true;
+    property <duration> start;
+    init => { root.start = animation-tick(); }
+    property <float> t: Math.mod((animation-tick() - root.start) / 1s, EditBeats.away-from + EditBeats.away-for + EditBeats.rest);
+    function progress(from: float, length: float) -> float { max(0, min(1, (root.t - from) / length)) }
+    function glided(from: float, length: float) -> float { Curves.glide(root.progress(from, length)) }
+    function settled(from: float, length: float) -> float { Curves.settle(root.progress(from, length)) }
+    function pressing(at: float) -> bool { root.t >= at - EditBeats.press-for && root.t < at }
+    // The panel's geometry, the focus scene's own, in the window's points before the framing's zoom.
+    property <length> panel: 340px;
+    property <length> inset: SectionStyle.inset;
+    property <length> width-in: root.panel - 2 * root.inset;
+    property <length> frame-x: root.width - FocusBeats.margin - root.panel * FocusBeats.zoom;
+    property <length> head-y: FocusBeats.panel-y;
+    // Temperature's value face, in the column's coordinates: its figure, its +.
+    property <length> face-width: 2 * ButtonStyle.small-height + SliderStyle.figure;
+    property <length> line-y: temp.y + Space.l / 2;
+    property <length> hand-dip: Space.xs;
+    // The hand rests just under the figure's right end, so the digits stay in sight.
+    property <length> figure-x: root.width-in - root.face-width / 2 + Space.m;
+    property <length> plus-x: root.width-in - ButtonStyle.small-height / 2;
+    // The hand, in the window's points: from the photograph onto the figure, then onto +, then back.
+    property <length> rest-x: -root.frame-x / FocusBeats.zoom * 0.55;
+    property <length> rest-y: root.head-y + 300px;
+    property <float> go1: root.glided(EditBeats.hand-in, EditBeats.to-value-for);
+    property <float> go2: root.glided(EditBeats.to-plus-from, EditBeats.to-plus-for);
+    property <float> go3: root.glided(EditBeats.away-from, EditBeats.away-for);
+    property <length> hand-x: root.rest-x + (root.inset + root.figure-x - root.rest-x) * root.go1 + (root.plus-x - root.figure-x) * root.go2
+        + (root.rest-x - root.inset - root.plus-x) * root.go3;
+    property <length> hand-y: root.rest-y + (root.head-y + root.line-y + root.hand-dip - root.rest-y) * root.go1 + (root.rest-y - root.head-y - root.line-y) * root.go3
+        - Space.l * Math.sin(root.go1 * 180deg) * (1 - root.go2);
+    // The hand on the value's face: it opens, and closes once the hand leaves and nothing is typed.
+    property <length> col-x: root.hand-x - root.inset;
+    property <length> col-y: root.hand-y - root.head-y;
+    property <bool> on-face: root.col-x >= root.width-in - root.face-width && root.col-x <= root.width-in
+        && root.col-y >= root.line-y - ButtonStyle.small-height / 2 && root.col-y <= root.line-y + ButtonStyle.small-height / 2;
+    property <bool> entering: root.t >= EditBeats.click && root.t < EditBeats.enter;
+    property <bool> open: root.on-face || root.entering;
+    // What the face shows: the value, then the keys typed one by one, then the steps of +.
+    property <int> typed: max(0, min(5, floor((root.t - EditBeats.type-from) / EditBeats.key-every) + 1));
+    property <string> keys: root.typed == 0 ? "" : root.typed == 1 ? "−" : root.typed == 2 ? "−1" : root.typed == 3 ? "−1." : "−1.2";
+    property <int> plus: (root.t >= EditBeats.plus-1 ? 1 : 0) + (root.t >= EditBeats.plus-2 ? 1 : 0);
+    property <string> figure: root.t < EditBeats.click ? "+0.46" : root.t < EditBeats.type-from ? "+0.46" : root.entering ? root.keys
+        : root.plus == 0 ? "−1.20" : root.plus == 1 ? "−1.10" : "−1.00";
+    property <string> readout: root.t < EditBeats.enter ? @tr("Warm") + " " + @tr("{} EV", "+0.46")
+        : (@tr("Cool") + " " + @tr("{} EV", root.plus == 0 ? "−1.20" : root.plus == 1 ? "−1.10" : "−1.00"));
+    // The knob lands on the typed value, then takes each step.
+    property <float> landed: root.settled(EditBeats.enter, EditBeats.land-for);
+    property <float> fraction: 0.62 + (0.24 - 0.62) * root.landed + 0.02 * root.settled(EditBeats.plus-1, 0.25) + 0.02 * root.settled(EditBeats.plus-2, 0.25);
+    property <bool> near: root.col-x >= 0 && root.col-x <= root.width-in && root.col-y >= 0 && root.col-y <= sat.y + sat.height;
+    Image {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        source: @image-url("../splash/1.5.0.jpg");
+        image-fit: cover;
+    }
+    Rectangle {
+        x: root.frame-x;
+        y: 0;
+        width: root.panel;
+        height: root.height / FocusBeats.zoom;
+        transform-scale: FocusBeats.zoom;
+        transform-origin: { x: 0, y: 0 };
+        Backdrop { frame-x: root.frame-x; panel: root.panel; height: parent.height; }
+        VerticalLayout {
+            x: root.inset;
+            y: root.head-y;
+            width: root.width-in;
+            spacing: Space.m;
+            Heading { title: @tr("Colour"); modified: true; turned: 1; help: @tr("The frame's colour: its temperature, its tint and its saturation."); }
+            temp := Morphing {
+                label: @tr("Temperature"); readout: root.readout; fraction: root.fraction;
+                low: Colour.channel-blue; high: Colour.channel-yellow;
+                hand-x: root.col-x; hand-y: root.col-y; turned: 1; awake: root.near;
+                open: root.open; figure: root.figure; entering: root.entering;
+                selected: root.entering && root.typed == 0;
+                plus-look: root.pressing(EditBeats.plus-1) || root.pressing(EditBeats.plus-2) ? Look.pressed
+                    : root.open && root.col-x >= root.width-in - ButtonStyle.small-height ? Look.hover : Look.live;
+            }
+            Morphing {
+                label: @tr("Tint"); readout: @tr("Green") + " " + @tr("{} EV", "−0.06"); fraction: 0.48;
+                low: Colour.channel-green; high: Colour.channel-magenta;
+                hand-x: root.col-x; hand-y: root.col-y; turned: 1; awake: root.near;
+            }
+            sat := Morphing { label: @tr("Saturation"); readout: "0%"; fraction: 0.5; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; awake: root.near; }
+            Divider { }
+            Heading { title: @tr("Lighting"); turned: 1; help: @tr("The negative back to light: exposure, contrast, highlights and shadows, the black and white points."); }
+            Morphing { label: @tr("Exposure"); readout: @tr("{} EV", "+1.50"); fraction: 0.65; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
+            Morphing { label: @tr("Contrast"); readout: "0"; fraction: 0.5; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
+            Morphing { label: @tr("Highlights"); readout: "−12"; fraction: 0.44; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
+            Morphing { label: @tr("Shadows"); readout: "+8"; fraction: 0.54; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
+            Morphing { label: @tr("White point"); readout: "0"; fraction: 1.0; fill: SliderFill.ramp; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
+        }
+        Arrow {
+            x: root.hand-x;
+            y: root.hand-y;
+            transform-scale: root.pressing(EditBeats.click) || root.pressing(EditBeats.plus-1) || root.pressing(EditBeats.plus-2) ? 0.9 : 1;
+            transform-origin: { x: 0, y: 0 };
+            opacity: root.progress(EditBeats.hand-in - 0.15, 0.3) * (1 - root.progress(EditBeats.away-from + EditBeats.away-for - 0.3, 0.3));
+        }
+    }
+}

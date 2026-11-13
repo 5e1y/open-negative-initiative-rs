@@ -102,7 +102,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     assert!(help.get_welcome_shown());
     click(&rig, 12.0, 400.0);
     assert!(help.get_welcome_shown(), "a click beside the welcome leaves it open");
-    for _ in 0..3 {
+    for _ in 0..6 {
         rig.key("\n");
     }
     assert!(help.get_welcome_shown(), "Return on a page before the last turns it");

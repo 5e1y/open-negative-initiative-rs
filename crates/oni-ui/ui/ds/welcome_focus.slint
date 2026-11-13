@@ -1,0 +1,283 @@
+// The welcome's focus scene: a close framing of the window's panel beside the canvas's photograph. 1.5's
+// rails, thick and in full colour, thin down and go quiet; then a hand comes onto the Colour block, whose
+// rails of hues wake under it, and goes back to the photograph, where they rest again.
+import { Colour, Space, ButtonStyle, CardStyle, SliderStyle, SectionStyle, Type, FieldStyle } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Button, ButtonSize, ButtonKind, Look } from "controls.slint";
+import { FieldFace } from "fields.slint";
+import { Label, Engraved, TextRole, Tone, Divider } from "base.slint";
+import { Rail, SliderFill } from "rail.slint";
+import { Knob } from "knob.slint";
+import { Section, HelpMark } from "containers.slint";
+import { Arrow, Curves } from "welcome_clarity.slint";
+
+export global FocusBeats {
+    out property <float> header-from: 1.0;
+    out property <float> header-for: 0.5;
+    out property <float> rails-from: 1.25;
+    out property <float> rails-for: 0.7;
+    out property <float> stagger: 0.08;
+    out property <float> hand-in: 2.9;
+    out property <float> to-block-for: 0.8;
+    out property <float> back-from: 5.1;
+    out property <float> back-for: 0.9;
+    out property <float> rest: 2.2;
+    out property <float> zoom: 1.15;
+    // 1.5's rail and knob, before they thinned.
+    out property <length> old-track: 14px;
+    out property <float> old-knob: 1.3;
+    // Where the panel's top lies above the stage, and the photograph's band on the window's right.
+    out property <length> panel-y: 18px;
+    out property <length> margin: 24px;
+}
+
+// One slider, 1.5's turning into 1.6's: the rail thins and its hues go quiet, the knob shrinks to its new
+// size, the readout says it in words; awake, the rail of hues shows them whole again.
+export component Morphing inherits Rectangle {
+    in property <string> label;
+    in property <string> old-readout;
+    in property <string> readout;
+    in property <float> fraction;
+    in property <SliderFill> fill: SliderFill.bipolar;
+    in property <color> low;
+    in property <color> high;
+    in property <float> turned;
+    in property <bool> awake;
+    // The hand, in the coordinates of the column the slider is laid in: on this slider's own line, its
+    // value takes the primary ink, as the app's does; the block's hues answer the block alone.
+    in property <length> hand-x;
+    in property <length> hand-y;
+    // The value's face open under the hand, as the app opens it: its figure between − and +, entered by a
+    // click (selected whole, then a caret after what is typed), the keys lit or pressed by the hand.
+    in property <bool> open;
+    in property <string> figure;
+    in property <bool> entering;
+    in property <bool> selected;
+    in property <Look> minus-look: Look.live;
+    in property <Look> plus-look: Look.live;
+    property <bool> handled: root.hand-x >= 0 && root.hand-x <= root.width && root.hand-y >= root.y && root.hand-y <= root.y + root.height;
+    property <length> track: FocusBeats.old-track + (SliderStyle.track - FocusBeats.old-track) * root.turned;
+    property <length> line: SliderStyle.row * (FocusBeats.old-knob + (1 - FocusBeats.old-knob) * root.turned);
+    height: Space.l + root.line;
+    Label { x: 0; y: 0; text: root.label; }
+    Label { x: parent.width - self.width; y: 0; text: root.old-readout; role: TextRole.caption; tone: Tone.secondary; opacity: 1 - root.turned; }
+    Label { x: parent.width - self.width; y: 0; text: root.readout; role: TextRole.caption; tone: root.handled ? Tone.primary : Tone.secondary; opacity: root.open ? 0 : root.turned; }
+    if root.open: FieldFace {
+        x: parent.width - self.width;
+        y: (Space.l - self.height) / 2;
+        width: 2 * ButtonStyle.small-height + SliderStyle.figure;
+        height: ButtonStyle.small-height;
+        lit: root.entering;
+        HorizontalLayout {
+            Button { kind: ButtonKind.ghost; size: ButtonSize.mini; square: true; has-icon: true; icon: Icons.zoom-out; look: root.minus-look; }
+            Rectangle {
+                horizontal-stretch: 1;
+                figure := Label { x: (parent.width - self.width) / 2; width: self.preferred-width; height: parent.height; text: root.figure; role: TextRole.value; tone: Tone.primary; }
+                if root.selected: Rectangle {
+                    x: figure.x - 1px;
+                    y: (parent.height - figure.preferred-height) / 2;
+                    width: figure.width + 2px;
+                    height: figure.preferred-height;
+                    background: FieldStyle.selection;
+                }
+                if root.selected: Label { x: figure.x; width: figure.width; height: parent.height; text: root.figure; role: TextRole.value; tone: Tone.primary; }
+                if root.entering && !root.selected: Rectangle { x: figure.x + figure.width + 1px; y: (parent.height - figure.preferred-height) / 2; width: 1px; height: figure.preferred-height; background: Colour.ink; }
+            }
+            Button { kind: ButtonKind.ghost; size: ButtonSize.mini; square: true; has-icon: true; icon: Icons.zoom-in; look: root.plus-look; }
+        }
+    }
+    Rail {
+        x: 0;
+        y: Space.l + (root.line - self.height) / 2;
+        width: parent.width;
+        height: root.track;
+        fill: root.fill;
+        low: root.low;
+        high: root.high;
+        at: root.fraction;
+        rest: 0.5;
+        // 1.6 shows a rail's hues whole only near the hand.
+        vivid: root.awake;
+    }
+    // 1.5's hues, whole on every rail, fading off the quiet rail as it thins.
+    Rail {
+        x: 0;
+        y: Space.l + (root.line - self.height) / 2;
+        width: parent.width;
+        height: root.track;
+        fill: root.fill;
+        low: root.low;
+        high: root.high;
+        at: root.fraction;
+        vivid: true;
+        opacity: 1 - root.turned;
+    }
+    Rectangle {
+        x: root.fraction * parent.width - SliderStyle.knob-width / 2;
+        y: Space.l + (root.line - SliderStyle.row) / 2;
+        width: SliderStyle.knob-width;
+        height: SliderStyle.row;
+        transform-scale: root.line / SliderStyle.row;
+        Knob { centre: SliderStyle.knob-width / 2; grown: root.handled; }
+    }
+}
+
+// A block's title, 1.5's turning into 1.6's: the plain name with its reset and fold as small keycaps at
+// the far end gives way to the fold's chevron before an engraved name, its help mark, a flat reset.
+export component Heading inherits Rectangle {
+    in property <string> title;
+    in property <string> help;
+    in property <bool> modified;
+    in property <float> turned;
+    height: ButtonStyle.small-height;
+    Rectangle {
+        opacity: 1 - root.turned;
+        Label { x: 0; y: (parent.height - self.height) / 2; text: root.title; }
+        HorizontalLayout {
+            x: parent.width - self.preferred-width;
+            y: (parent.height - self.preferred-height) / 2;
+            width: self.preferred-width;
+            height: self.preferred-height;
+            spacing: Space.xs;
+            if root.modified: Button { keycap: true; size: ButtonSize.mini; text: @tr("Reset"); }
+            Button { keycap: true; size: ButtonSize.mini; square: true; has-icon: true; icon: Icons.chevron-down; }
+        }
+    }
+    Section {
+        x: -SectionStyle.inset;
+        y: -SectionStyle.before;
+        width: parent.width + 2 * SectionStyle.inset;
+        title: root.title;
+        help: root.help;
+        block: 0;
+        modified: root.modified;
+        separated: false;
+        opacity: root.turned;
+    }
+}
+
+// The window behind the panel, the same in the focus and the typing scenes so one follows the other: the
+// window's ground to the stage's left edge, the canvas and its photograph left of the panel.
+export component Backdrop inherits Rectangle {
+    in property <length> frame-x;
+    in property <length> panel;
+    x: 0;
+    y: 0;
+    width: root.panel;
+    Rectangle {
+        x: -root.frame-x / FocusBeats.zoom;
+        y: 0;
+        width: root.frame-x / FocusBeats.zoom + root.panel;
+        height: parent.height;
+        background: Colour.ground;
+        drop-shadow-blur: Space.l;
+        drop-shadow-color: Colour.black.with-alpha(0.45);
+    }
+    Rectangle {
+        x: -root.frame-x / FocusBeats.zoom - CardStyle.radius;
+        y: 0;
+        width: root.frame-x / FocusBeats.zoom + CardStyle.radius - Space.s;
+        height: parent.height + CardStyle.radius;
+        background: Colour.canvas;
+        border-radius: CardStyle.radius;
+        clip: true;
+        Image {
+            x: parent.width - self.width - Space.l * 2;
+            y: Space.l * 2;
+            width: parent.width * 1.6;
+            height: parent.height - Space.l * 4;
+            source: @image-url("../splash/1.0.0.jpg");
+            image-fit: cover;
+        }
+    }
+}
+
+export component FocusScene inherits Rectangle {
+    clip: true;
+    property <duration> start;
+    init => { root.start = animation-tick(); }
+    property <float> t: Math.mod((animation-tick() - root.start) / 1s, FocusBeats.back-from + FocusBeats.back-for + FocusBeats.rest);
+    function progress(from: float, length: float) -> float { max(0, min(1, (root.t - from) / length)) }
+    function settled(from: float, length: float) -> float { Curves.settle(root.progress(from, length)) }
+    function glided(from: float, length: float) -> float { Curves.glide(root.progress(from, length)) }
+    property <float> header: root.settled(FocusBeats.header-from, FocusBeats.header-for);
+    function turned(i: int) -> float { root.settled(FocusBeats.rails-from + i * FocusBeats.stagger, FocusBeats.rails-for) }
+    // The panel's geometry, in the window's points before the framing's zoom.
+    property <length> panel: 340px;
+    property <length> inset: SectionStyle.inset;
+    property <length> width-in: root.panel - 2 * root.inset;
+    property <length> frame-x: root.width - FocusBeats.margin - root.panel * FocusBeats.zoom;
+    property <length> head-y: FocusBeats.panel-y;
+    property <length> sliders-y: root.head-y + ButtonStyle.small-height + Space.m;
+    // The hand, in the window's points: in from the photograph onto the Colour block, then back.
+    property <length> rest-x: -root.frame-x / FocusBeats.zoom * 0.55;
+    property <length> rest-y: root.sliders-y + 140px;
+    property <length> block-x: root.inset + root.width-in * 0.6;
+    property <length> block-y: root.sliders-y + 30px;
+    property <float> go1: root.glided(FocusBeats.hand-in, FocusBeats.to-block-for);
+    property <float> go2: root.glided(FocusBeats.back-from, FocusBeats.back-for);
+    property <length> hand-x: root.rest-x + (root.block-x - root.rest-x) * (root.go1 - root.go2);
+    property <length> hand-y: root.rest-y + (root.block-y - root.rest-y) * (root.go1 - root.go2) - Space.l * Math.sin((root.go1 - root.go2) * 180deg);
+    // The hand on the Colour block: its header, its sliders and the room between.
+    property <bool> awake: root.t >= FocusBeats.hand-in && root.hand-x >= 0 && root.hand-x <= root.panel
+        && root.hand-y >= root.head-y && root.hand-y <= root.head-y + sat.y + sat.height;
+    Image {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        source: @image-url("../splash/1.5.0.jpg");
+        image-fit: cover;
+    }
+    // The window's right part, the panel at its edge and the canvas beside it, at the framing's zoom.
+    Rectangle {
+        x: root.frame-x;
+        y: 0;
+        width: root.panel;
+        height: root.height / FocusBeats.zoom;
+        transform-scale: FocusBeats.zoom;
+        transform-origin: { x: 0, y: 0 };
+        Backdrop { frame-x: root.frame-x; panel: root.panel; height: parent.height; }
+        // The panel's blocks, Colour then Lighting, each title and slider turning in its turn.
+        VerticalLayout {
+            x: root.inset;
+            y: root.head-y;
+            width: root.width-in;
+            spacing: Space.m;
+            colour := Heading {
+                title: @tr("Colour"); modified: true; turned: root.header;
+                help: @tr("The frame's colour: its temperature, its tint and its saturation.");
+            }
+            Morphing {
+                label: @tr("Temperature"); old-readout: "+0.46"; readout: @tr("Warm") + " " + @tr("{} EV", "+0.46");
+                fraction: 0.62; low: Colour.channel-blue; high: Colour.channel-yellow;
+                hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(0); awake: root.awake;
+            }
+            Morphing {
+                label: @tr("Tint"); old-readout: "−0.06"; readout: @tr("Green") + " " + @tr("{} EV", "−0.06");
+                fraction: 0.48; low: Colour.channel-green; high: Colour.channel-magenta;
+                hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(1); awake: root.awake;
+            }
+            sat := Morphing {
+                label: @tr("Saturation"); old-readout: "+0 %"; readout: "0%";
+                fraction: 0.5; fill: SliderFill.level; low: Colour.white; high: Colour.white;
+                hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(2); awake: root.awake;
+            }
+            Divider { }
+            Heading {
+                title: @tr("Lighting"); turned: root.settled(FocusBeats.header-from + 0.15, FocusBeats.header-for);
+                help: @tr("The negative back to light: exposure, contrast, highlights and shadows, the black and white points.");
+            }
+            Morphing { label: @tr("Exposure"); old-readout: "+1.50"; readout: @tr("{} EV", "+1.50"); fraction: 0.65; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(3); awake: root.awake; }
+            Morphing { label: @tr("Contrast"); old-readout: "+0"; readout: "0"; fraction: 0.5; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(4); awake: root.awake; }
+            Morphing { label: @tr("Highlights"); old-readout: "−12"; readout: "−12"; fraction: 0.44; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(5); awake: root.awake; }
+            Morphing { label: @tr("Shadows"); old-readout: "+8"; readout: "+8"; fraction: 0.54; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(6); awake: root.awake; }
+            Morphing { label: @tr("White point"); old-readout: "+0"; readout: "0"; fraction: 1.0; fill: SliderFill.ramp; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(7); awake: root.awake; }
+        }
+        Arrow {
+            x: root.hand-x;
+            y: root.hand-y;
+            opacity: root.progress(FocusBeats.hand-in - 0.15, 0.3) * (1 - root.progress(FocusBeats.back-from + FocusBeats.back-for - 0.3, 0.3));
+        }
+    }
+}

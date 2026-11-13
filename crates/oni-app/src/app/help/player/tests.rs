@@ -24,15 +24,6 @@ fn once_hands_every_frame_then_ends_and_an_unmoved_frame_carries_no_pixels() {
 }
 
 #[test]
-fn a_loop_starts_again_from_its_first_frame() {
-    let frames = handed(clip(&[0, 10, 20]), Pace::Loop, 7);
-    assert_eq!(frames.len(), 7, "a loop never ends while it is watched");
-    assert_eq!(frames[3].0, frames[0].0, "the fourth frame is the first again");
-    // Twin: the frame before it is not.
-    assert_ne!(frames[2].0, frames[0].0);
-}
-
-#[test]
 fn still_hands_the_last_frame_alone() {
     let places = [0, 10, 20];
     let all = handed(clip(&places), Pace::Once, 100);

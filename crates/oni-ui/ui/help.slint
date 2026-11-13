@@ -1,6 +1,6 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
 import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField, SheetFooter } from "ds/ds.slint";
-import { BulletLine, WelcomeStyle, PageDots, SceneFrame, Picture, Fit, Ground } from "ds/ds.slint";
+import { BulletLine, WelcomeStyle, PageDots, StageDots, SceneFrame, Picture, Fit, Ground, ClarityScene, FavouritesScene, FocusScene, EditScene, DustScene, FixesScene } from "ds/ds.slint";
 import { KeyWords } from "key_words.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
@@ -32,9 +32,6 @@ export global Help {
     callback welcome-closed();
     callback website();
     callback feedback();
-    in property <image> welcome-clip;
-    in property <int> welcome-clip-revision;
-    callback welcome-turned(int);   // the page now shown, -1 as the sheet closes
     // `ReportSheet`
     in property <bool> report-shown;
     in-out property <string> report-message;
@@ -69,14 +66,12 @@ export component WelcomeSheet inherits Sheet {
     card-height: WelcomeStyle.card-height;
     bleed: true;
     paging: true;
-    property <int> count: 4;
+    property <int> count: 7;
     property <int> page: Help.welcome-page;
     property <bool> last: root.page == root.count - 1;
-    // The last page's words take the whole card, as do every page's on a card too narrow for a stage.
-    property <bool> staged: !root.last && root.shown-width - WelcomeStyle.words-width >= WelcomeStyle.stage-least;
+    // Every page's words take the whole card on a card too narrow for a stage.
+    property <bool> staged: root.shown-width - WelcomeStyle.words-width >= WelcomeStyle.stage-least;
     function turn(by: int) { Help.welcome-page = max(0, min(root.count - 1, root.page + by)); }
-    // Rust names the first page as the sheet opens and -1 as it closes; each turn is the sheet's to tell.
-    changed page => { Help.welcome-turned(root.page); }
     dismissed => { Help.welcome-closed(); }
     returned => {
         if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
@@ -93,13 +88,36 @@ export component WelcomeSheet inherits Sheet {
                 line: Help.welcome-line;
                 credit: Help.welcome-credit;
             }
-            if root.page > 0: Picture {
+            if root.page == 1: ClarityScene {
                 width: parent.width;
                 height: parent.height;
-                source: Help.welcome-clip;
-                revision: Help.welcome-clip-revision;
-                fit: Fit.cover;
-                ground: Ground.canvas;
+            }
+            if root.page == 2: FavouritesScene {
+                width: parent.width;
+                height: parent.height;
+            }
+            if root.page == 3: FocusScene {
+                width: parent.width;
+                height: parent.height;
+            }
+            if root.page == 4: EditScene {
+                width: parent.width;
+                height: parent.height;
+            }
+            if root.page == 5: DustScene {
+                width: parent.width;
+                height: parent.height;
+            }
+            if root.page == 6: FixesScene {
+                width: parent.width;
+                height: parent.height;
+            }
+            StageDots {
+                x: (parent.width - self.width) / 2;
+                y: parent.height - self.height - Space.m;
+                count: root.count;
+                at: root.page;
+                picked(page) => { Help.welcome-page = page; }
             }
         }
         VerticalLayout {
@@ -127,18 +145,18 @@ export component WelcomeSheet inherits Sheet {
                 page1 := VerticalLayout {
                     width: parent.width;
                     spacing: Space.m;
-                    Label { text: @tr("A calmer interface"); role: TextRole.heading; wrap: word-wrap; }
+                    Label { text: @tr("A clearer interface"); role: TextRole.heading; wrap: word-wrap; }
                     Point {
-                        title: @tr("Before, then now");
-                        text: @tr("The same window, quieter: keys are flat and light up under the hand, coloured rails stay faint until you use them.");
+                        title: @tr("Every key says what it does");
+                        text: @tr("The bar's keys show their name under their glyph, in the same place in every mode.");
                     }
                     Point {
-                        title: @tr("Type any value");
-                        text: @tr("Click a slider's number to type it, or nudge it with − and +.");
+                        title: @tr("You see which tool is at work");
+                        text: @tr("A tool's key wears a coloured tab, and the canvas a frame of the same colour, for as long as the tool is on.");
                     }
                     Point {
-                        title: @tr("One key stands out");
-                        text: @tr("A keycap now means the screen's main action: here, EXPORT.");
+                        title: @tr("Nothing to guess");
+                        text: @tr("A glyph alone no longer stands for a tool: its word is always beside it.");
                     }
                 }
             }
@@ -146,6 +164,69 @@ export component WelcomeSheet inherits Sheet {
                 vertical-stretch: 1;
                 content-height: page2.preferred-height;
                 page2 := VerticalLayout {
+                    width: parent.width;
+                    spacing: Space.m;
+                    Label { text: @tr("Your favourites at hand"); role: TextRole.heading; wrap: word-wrap; }
+                    Point {
+                        title: @tr("Favourites first, then your computer");
+                        text: @tr("The column opens on two sections: the folders you starred, then every folder of your computer.");
+                    }
+                    Point {
+                        title: @tr("A star on every folder");
+                        text: @tr("Hover a folder or a roll and click its star: it joins the favourites at once. Click again to take it out.");
+                    }
+                    Point {
+                        title: @tr("Nothing to switch");
+                        text: @tr("No more filter key to show the favourites: they are always there, above the rest.");
+                    }
+                }
+            }
+            if root.page == 3: Scroller {
+                vertical-stretch: 1;
+                content-height: page3.preferred-height;
+                page3 := VerticalLayout {
+                    width: parent.width;
+                    spacing: Space.m;
+                    Label { text: @tr("Less distraction, your scans first"); role: TextRole.heading; wrap: word-wrap; }
+                    Point {
+                        title: @tr("Quiet until you reach for it");
+                        text: @tr("The rails of hues stay faint while you look at the photo, and show their colours as soon as your hand comes onto their block.");
+                    }
+                    Point {
+                        title: @tr("Lighter controls");
+                        text: @tr("Thinner rails and smaller knobs leave the colour to your photograph.");
+                    }
+                    Point {
+                        title: @tr("Clearer blocks");
+                        text: @tr("Each block opens on its name; its reset shows only once something moved.");
+                    }
+                }
+            }
+            if root.page == 4: Scroller {
+                vertical-stretch: 1;
+                content-height: page4.preferred-height;
+                page4 := VerticalLayout {
+                    width: parent.width;
+                    spacing: Space.m;
+                    Label { text: @tr("Type the exact value"); role: TextRole.heading; wrap: word-wrap; }
+                    Point {
+                        title: @tr("The value opens under your hand");
+                        text: @tr("Hover a slider's value: it becomes a small field, its figure between − and +.");
+                    }
+                    Point {
+                        title: @tr("Click, type, Return");
+                        text: @tr("Click the figure to type the value you want; Return sets it and the knob lands on it. Escape leaves it as it was.");
+                    }
+                    Point {
+                        title: @tr("Or step by step");
+                        text: @tr("− and + move it by one shown unit, as the arrow keys do.");
+                    }
+                }
+            }
+            if root.page == 5: Scroller {
+                vertical-stretch: 1;
+                content-height: page5.preferred-height;
+                page5 := VerticalLayout {
                     width: parent.width;
                     spacing: Space.m;
                     Label { text: @tr("Automatic De-dust"); role: TextRole.heading; wrap: word-wrap; }
@@ -163,41 +244,34 @@ export component WelcomeSheet inherits Sheet {
                     }
                 }
             }
-            if root.page == 3: Scroller {
+            if root.page == 6: Scroller {
                 vertical-stretch: 1;
-                content-height: page3.preferred-height;
-                page3 := VerticalLayout {
+                content-height: page6.preferred-height;
+                page6 := VerticalLayout {
                     width: parent.width;
                     spacing: Space.m;
                     Label { text: @tr("About 70 fixes, and what changes"); role: TextRole.heading; wrap: word-wrap; }
+                    VerticalLayout {
+                        spacing: Space.s;
+                        BulletLine { text: @tr("Your edits hold, across a roll and through Undo"); }
+                        BulletLine { text: @tr("Dust patches stay put, in every export"); }
+                        BulletLine { text: @tr("Exports come out as you set them"); }
+                        BulletLine { text: @tr("Steadier with slow and network disks"); }
+                    }
+                    Eyebrow { text: @tr("Good to know"); }
+                    Point {
+                        title: @tr("Medals on 1, 2 and 3");
+                        text: @tr("Keys 1, 2 and 3 now give gold, silver and bronze.");
+                    }
+                    Point {
+                        title: @tr("The Scanner face shows its keypad");
+                        text: @tr("No more Auto White Balance under it: it shows what its keypad reads.");
+                    }
                     HorizontalLayout {
-                        spacing: Space.l;
-                        VerticalLayout {
-                            width: (parent.width - Space.l) / 2;
-                            alignment: start;
-                            spacing: Space.s;
-                            Eyebrow { text: @tr("Fixed"); }
-                            BulletLine { text: @tr("Editing a whole roll moves each frame from its own values, never overwriting its balance."); }
-                            BulletLine { text: @tr("Undo keeps its history from frame to frame, and names what it takes back."); }
-                            BulletLine { text: @tr("Dust patches stay on their speck after a crop or a turn, and are back in every export."); }
-                            BulletLine { text: @tr("Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."); }
-                            BulletLine { text: @tr("Prepare the Roll: Cancel leaves nothing half done, and frames keep their look from step to step."); }
-                            BulletLine { text: @tr("No more freezes on slow or network disks; a move never replaces a file."); }
-                        }
-                        VerticalLayout {
-                            width: (parent.width - Space.l) / 2;
-                            alignment: start;
-                            spacing: Space.s;
-                            Eyebrow { text: @tr("Good to know"); }
-                            Point {
-                                title: @tr("Medals on 1, 2 and 3");
-                                text: @tr("Keys 1, 2 and 3 now give gold, silver and bronze.");
-                            }
-                            Point {
-                                title: @tr("The Scanner face shows its keypad");
-                                text: @tr("It no longer applies Auto White Balance: it shows exactly what its keypad reads.");
-                            }
-                        }
+                        alignment: start;
+                        spacing: Space.s;
+                        Button { text: @tr("Website"); clicked => { Help.website(); } }
+                        Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
                     }
                 }
             }
@@ -208,9 +282,7 @@ export component WelcomeSheet inherits Sheet {
                 committed => {
                     if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
                 }
-                if root.last: Button { text: @tr("Website"); clicked => { Help.website(); } }
-                if root.last: Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
-                PageDots { count: root.count; at: root.page; picked(page) => { Help.welcome-page = page; } }
+                if !root.staged: PageDots { count: root.count; at: root.page; picked(page) => { Help.welcome-page = page; } }
             }
         }
     }

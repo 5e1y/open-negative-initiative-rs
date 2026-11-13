@@ -1,0 +1,300 @@
+// The welcome's first scene: a close framing of the window's bar under the 1.5 photograph. The canvas
+// tools' former keycaps turn into the bar's worded keys, then a hand lays Crop on, then De-dust; it plays
+// once, rests on its last state, and starts again.
+import { Colour, Space, ButtonStyle, ShellStyle, CardStyle, ScannerStyle } from "theme.slint";
+import { ToolStyle } from "theme_views.slint";
+import { Icons } from "icons.slint";
+import { Button, Look } from "controls.slint";
+import { Tabs } from "tabs.slint";
+import { ModeRing } from "modes.slint";
+
+export global ClarityBeats {
+    // When each step starts and how long it lasts, in seconds; keys follow one another by `stagger`.
+    out property <float> flat-from: 0.9;
+    out property <float> flat-for: 0.4;
+    out property <float> slide-from: 1.3;
+    out property <float> slide-for: 0.85;
+    out property <float> word-from: 2.05;
+    out property <float> word-for: 0.45;
+    out property <float> stagger: 0.07;
+    // The hand: in, onto Crop, a press, across to De-dust, a press, away.
+    out property <float> hand-in: 2.9;
+    out property <float> to-crop-for: 0.75;
+    out property <float> crop-press: 3.95;
+    out property <float> to-dust-from: 4.55;
+    out property <float> to-dust-for: 0.55;
+    out property <float> dust-press: 5.35;
+    out property <float> press-for: 0.14;
+    out property <float> away-from: 5.95;
+    out property <float> away-for: 0.9;
+    // How long the last state rests before the loop starts again.
+    out property <float> rest: 2.0;
+    // How close the framing is: the window drawn this many times its size, from the bar's left part.
+    out property <float> zoom: 1.6;
+    // The photograph above the window, and where the bar's keys begin from the framing's left edge.
+    out property <length> above: 226px;
+    out property <length> keys-x: 53px;
+    // How far a glyph alone sits under where the worded key draws it, and how far a passing key leaves
+    // the line, under it or over it.
+    out property <length> glyph-rise: 8px;
+    out property <length> dip: 18px;
+    out property <length> rise: -16px;
+}
+
+// The scene's curves on a progress 0 to 1: `settle` arrives and slows into place, `glide` gathers speed
+// then eases into place, as a hand or a key with some weight moves.
+export global Curves {
+    public pure function settle(p: float) -> float { 1 - (1 - p) * (1 - p) * (1 - p) * (1 - p) }
+    public pure function glide(p: float) -> float {
+        p < 0.5 ? 8 * p * p * p * p : 1 - 8 * (1 - p) * (1 - p) * (1 - p) * (1 - p)
+    }
+}
+
+// The macOS arrow, the hand that lays the tools on.
+export component Arrow inherits Path {
+    width: 14px;
+    height: 22px;
+    viewbox-width: 12;
+    viewbox-height: 19;
+    fill: Colour.black;
+    stroke: Colour.white;
+    stroke-width: 1px;
+    commands: "M 0 0 L 0 16 L 4 12.5 L 6.8 18.6 L 9 17.6 L 6.3 11.7 L 11.5 11.7 Z";
+}
+
+// One tool's key turning in three steps: the keycap loses its relief to the flat key of its glyph alone,
+// as the bar shows it short of room; that key slides to its new place; there its word comes under it.
+component Morph inherits Rectangle {
+    in property <image> icon;
+    in property <string> word;
+    in property <float> flat;
+    in property <float> slide;
+    in property <float> worded;
+    in property <bool> on;
+    in property <Look> look: Look.live;
+    in property <color> fill: transparent;
+    in property <length> old-x;
+    in property <length> new-x;
+    in property <length> new-width;
+    // A key passing the others on its way leaves their line, so no two glyphs ever cross.
+    in property <length> dip;
+    property <length> lift: root.dip * 4 * root.slide * (1 - root.slide);
+    property <length> centre: root.old-x + ButtonStyle.cap-height / 2 + (root.new-x + root.new-width / 2 - root.old-x - ButtonStyle.cap-height / 2) * root.slide;
+    Button {
+        x: root.centre - self.width / 2;
+        y: (ShellStyle.bar-height - self.height) / 2;
+        width: self.preferred-width;
+        keycap: true;
+        has-icon: true;
+        square: true;
+        icon: root.icon;
+        fill: root.fill;
+        opacity: 1 - root.flat;
+        transform-scale: 1 - 0.08 * root.flat;
+    }
+    Button {
+        x: root.centre - self.width / 2;
+        width: self.preferred-width;
+        stacked: true;
+        has-icon: true;
+        icon: root.icon;
+        // It rises to where the worded key draws its glyph and is gone within the first third of the word's
+        // coming, so the two glyphs never show apart.
+        opacity: root.flat * (1 - min(1, 3 * root.worded));
+        y: (ShellStyle.bar-height - self.height) / 2 + root.lift - ClarityBeats.glyph-rise * min(1, 3 * root.worded);
+    }
+    Button {
+        x: root.centre - self.width / 2;
+        y: (ShellStyle.bar-height - self.height) / 2 + ClarityBeats.glyph-rise * (1 - root.worded) * 0.5;
+        width: self.preferred-width;
+        stacked: true;
+        has-icon: true;
+        icon: root.icon;
+        text: root.word;
+        on: root.on;
+        on-apart: true;
+        look: root.look;
+        opacity: root.worded;
+    }
+}
+
+// A plate of 1.5's bar, the dark socket its keycaps sat in flush.
+component Plate inherits Rectangle {
+    in property <int> keys;
+    width: self.keys * ButtonStyle.cap-height;
+    height: ButtonStyle.cap-height;
+    y: (ShellStyle.bar-height - ButtonStyle.cap-height) / 2;
+    border-radius: ButtonStyle.radius;
+    background: Colour.black;
+}
+
+export component ClarityScene inherits Rectangle {
+    clip: true;
+    property <duration> start;
+    init => { root.start = animation-tick(); }
+    // Seconds into the loop: the scene plays, rests on its last state, then starts again with a cut.
+    property <float> t: Math.mod((animation-tick() - root.start) / 1s, ClarityBeats.away-from + ClarityBeats.away-for + ClarityBeats.rest);
+    function progress(from: float, length: float) -> float { max(0, min(1, (root.t - from) / length)) }
+    function settled(from: float, length: float) -> float { Curves.settle(root.progress(from, length)) }
+    function glided(from: float, length: float) -> float { Curves.glide(root.progress(from, length)) }
+    function flat(i: int) -> float { root.settled(ClarityBeats.flat-from + i * ClarityBeats.stagger, ClarityBeats.flat-for) }
+    function slide(i: int) -> float { root.glided(ClarityBeats.slide-from + i * ClarityBeats.stagger, ClarityBeats.slide-for) }
+    function worded(i: int) -> float { root.settled(ClarityBeats.word-from + i * ClarityBeats.stagger, ClarityBeats.word-for) }
+    property <bool> crop: root.t >= ClarityBeats.crop-press && root.t < ClarityBeats.dust-press;
+    property <bool> dust: root.t >= ClarityBeats.dust-press;
+    // The window's geometry, in its own points before the framing's zoom.
+    property <length> win-width: root.width / ClarityBeats.zoom;
+    property <length> win-height: (root.height - ClarityBeats.above) / ClarityBeats.zoom;
+    property <length> plate-x: ClarityBeats.keys-x;
+    property <length> lone-x: root.plate-x + 3 * ButtonStyle.cap-height + ShellStyle.bar-gap;
+    property <float> plates: 1 - root.flat(0);
+    property <length> card-x: -CardStyle.radius;
+    property <length> card-y: ShellStyle.bar-height;
+    property <length> card-width: root.win-width + 2 * CardStyle.radius;
+    property <length> card-height: root.win-height;
+    // The hand, in the window's points: up from the canvas onto Crop, across to De-dust, then away.
+    property <length> rest-x: row.x + k2.x + k2.width;
+    property <length> rest-y: root.win-height * 0.85;
+    property <length> crop-x: row.x + k1.x + k1.width * 0.55;
+    property <length> dust-x: row.x + k2.x + k2.width * 0.5;
+    property <length> key-y: ShellStyle.bar-height * 0.45;
+    property <length> away-x: row.x + k3.x + k3.width * 1.2;
+    property <float> go1: root.glided(ClarityBeats.hand-in, ClarityBeats.to-crop-for);
+    property <float> go2: root.glided(ClarityBeats.to-dust-from, ClarityBeats.to-dust-for);
+    property <float> go3: root.glided(ClarityBeats.away-from, ClarityBeats.away-for);
+    // A hand's path bows a little: up from below it comes in a curve, across the keys it barely sags.
+    property <length> hand-x: root.rest-x + (root.crop-x - root.rest-x) * root.go1 + (root.dust-x - root.crop-x) * root.go2 + (root.away-x - root.dust-x) * root.go3
+        + Space.l * Math.sin(root.go1 * 180deg) * (1 - root.go2);
+    property <length> hand-y: root.rest-y + (root.key-y - root.rest-y) * root.go1 + Space.xs * Math.sin(root.go2 * 180deg)
+        + (root.rest-y - root.key-y) * root.go3;
+    property <bool> hand-shown: root.t >= ClarityBeats.hand-in && root.t < ClarityBeats.away-from + ClarityBeats.away-for;
+    // The key under the hand, lit as the bar lights it; pressed while the hand presses it.
+    function over(x: length, width: length) -> bool {
+        root.hand-shown && root.hand-y >= 0 && root.hand-y <= ShellStyle.bar-height && root.hand-x >= x && root.hand-x <= x + width
+    }
+    function pressing(at: float) -> bool { root.t >= at - ClarityBeats.press-for && root.t < at }
+    function look(x: length, width: length, press: float) -> Look {
+        root.pressing(press) ? Look.pressed : root.over(x, width) ? Look.hover : Look.live
+    }
+    Image {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        source: @image-url("../splash/1.5.0.jpg");
+        image-fit: cover;
+    }
+    // The window from its top edge down, drawn at the framing's zoom; the stage cuts the rest.
+    Rectangle {
+        x: 0;
+        y: ClarityBeats.above;
+        width: root.win-width;
+        height: root.win-height;
+        transform-scale: ClarityBeats.zoom;
+        transform-origin: { x: 0, y: 0 };
+        background: Colour.ground;
+        // The new keys laid by the bar's own layout, unseen, so each key turns to the place it will hold.
+        row := HorizontalLayout {
+            x: ClarityBeats.keys-x;
+            y: 0;
+            width: self.preferred-width;
+            height: ShellStyle.bar-height;
+            visible: false;
+            k0 := Button { stacked: true; has-icon: true; icon: Icons.contact-sheet; text: @tr("Sheet"); }
+            k1 := Button { stacked: true; has-icon: true; icon: Icons.framing; text: @tr("Crop"); }
+            k2 := Button { stacked: true; has-icon: true; icon: Icons.correction; text: @tr("De-dust"); }
+            k3 := Button { stacked: true; has-icon: true; icon: Icons.compare; text: @tr("Compare"); }
+        }
+        // 1.5's bar: Crop, Compare and the orange Sheet on one plate, De-dust on its own beside it.
+        Plate { x: root.plate-x; keys: 3; opacity: root.plates; }
+        Plate { x: root.lone-x; keys: 1; opacity: root.plates; }
+        // The canvas card under the bar, the top of a photograph on it.
+        Rectangle {
+            x: root.card-x;
+            y: root.card-y;
+            width: root.card-width;
+            height: root.card-height;
+            background: Colour.canvas;
+            border-radius: CardStyle.radius;
+            clip: true;
+            Image {
+                x: CardStyle.radius + Space.l;
+                y: Space.l * 3;
+                width: parent.width;
+                height: parent.height;
+                source: @image-url("../splash/1.3.0.jpg");
+                image-fit: cover;
+            }
+        }
+        Morph {
+            x: 0; y: 0; width: parent.width; height: parent.height;
+            dip: ClarityBeats.dip; icon: Icons.contact-sheet; word: @tr("Sheet"); fill: Colour.warning;
+            flat: root.flat(0); slide: root.slide(0); worded: root.worded(0);
+            old-x: root.plate-x + 2 * ButtonStyle.cap-height; new-x: row.x + k0.x; new-width: k0.width;
+            look: root.look(row.x + k0.x, k0.width, -1);
+        }
+        Morph {
+            x: 0; y: 0; width: parent.width; height: parent.height;
+            icon: Icons.framing; word: @tr("Crop"); on: root.crop;
+            flat: root.flat(1); slide: root.slide(1); worded: root.worded(1);
+            old-x: root.plate-x; new-x: row.x + k1.x; new-width: k1.width;
+            look: root.look(row.x + k1.x, k1.width, ClarityBeats.crop-press);
+        }
+        Morph {
+            x: 0; y: 0; width: parent.width; height: parent.height;
+            icon: Icons.correction; word: @tr("De-dust"); on: root.dust;
+            flat: root.flat(2); slide: root.slide(2); worded: root.worded(2);
+            old-x: root.lone-x; new-x: row.x + k2.x; new-width: k2.width;
+            look: root.look(row.x + k2.x, k2.width, ClarityBeats.dust-press);
+        }
+        Morph {
+            x: 0; y: 0; width: parent.width; height: parent.height;
+            dip: ClarityBeats.rise; icon: Icons.compare; word: @tr("Compare");
+            flat: root.flat(3); slide: root.slide(3); worded: root.worded(3);
+            old-x: root.plate-x + ButtonStyle.cap-height; new-x: row.x + k3.x; new-width: k3.width;
+            look: root.look(row.x + k3.x, k3.width, -1);
+        }
+        // Pro and Scanner after the tools, cut by the stage's edge, moving with the last key.
+        Tabs {
+            x: root.lone-x + ButtonStyle.cap-height + ShellStyle.bar-gap + (row.x + row.preferred-width - root.lone-x - ButtonStyle.cap-height) * root.slide(3);
+            y: (ShellStyle.bar-height - self.height) / 2;
+            width: ScannerStyle.face-bar;
+            tabs: [@tr("Pro"), @tr("Scanner")];
+            selected: 0;
+        }
+        if root.crop: ModeRing {
+            x: 0;
+            y: 0;
+            width: parent.width;
+            height: parent.height;
+            ink: ToolStyle.crop;
+            card-x: root.card-x;
+            card-y: root.card-y;
+            card-width: root.card-width;
+            card-height: root.card-height;
+            key-x: row.x + k1.x;
+            key-width: k1.width;
+        }
+        if root.dust: ModeRing {
+            x: 0;
+            y: 0;
+            width: parent.width;
+            height: parent.height;
+            ink: ToolStyle.dust;
+            card-x: root.card-x;
+            card-y: root.card-y;
+            card-width: root.card-width;
+            card-height: root.card-height;
+            key-x: row.x + k2.x;
+            key-width: k2.width;
+        }
+        Arrow {
+            x: root.hand-x;
+            y: root.hand-y;
+            // The arrow dips a hair as it presses, as the system's does under a click.
+            transform-scale: root.pressing(ClarityBeats.crop-press) || root.pressing(ClarityBeats.dust-press) ? 0.9 : 1;
+            transform-origin: { x: 0, y: 0 };
+            opacity: root.progress(ClarityBeats.hand-in - 0.15, 0.3) * (1 - root.progress(ClarityBeats.away-from + ClarityBeats.away-for - 0.35, 0.35));
+        }
+    }
+}

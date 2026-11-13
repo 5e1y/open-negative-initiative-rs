@@ -1,4 +1,4 @@
-//! The one clip player, Prepare the Roll's demos and the welcome's films: a GIF decoded on a thread of
+//! The one clip player, Prepare the Roll's demos: a GIF decoded on a thread of
 //! its own, one frame queued, each written into one texture and announced by a revision.
 
 use crate::app::{Ctl, Gpu, SHELL};
@@ -15,8 +15,6 @@ const RETRY: Duration = Duration::from_millis(5);
 pub(in crate::app) enum Pace {
     /// Once, resting on its last frame.
     Once,
-    /// From its start again for as long as it shows.
-    Loop,
     /// Its last frame alone, still: Reduce Motion.
     Still,
 }
@@ -106,18 +104,14 @@ fn decode(clip: &'static [u8], pace: Pace, sender: &SyncSender<Decoded>, spares:
         });
         sender.send(Decoded { pixels, delay }).is_ok()
     };
-    while let Some(mut frames) = Frames::new(clip) {
-        if pace == Pace::Still {
-            while frames.next().is_some() {}
-            hand(frames.picture(), Duration::ZERO, true);
-            return;
-        }
-        while let Some((picture, delay, moved)) = frames.next() {
-            if !hand(picture, delay, moved) {
-                return;
-            }
-        }
-        if pace == Pace::Once {
+    let Some(mut frames) = Frames::new(clip) else { return };
+    if pace == Pace::Still {
+        while frames.next().is_some() {}
+        hand(frames.picture(), Duration::ZERO, true);
+        return;
+    }
+    while let Some((picture, delay, moved)) = frames.next() {
+        if !hand(picture, delay, moved) {
             return;
         }
     }

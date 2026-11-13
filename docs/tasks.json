@@ -10588,5 +10588,33 @@
     "title": "French keeps the gallery's main actions worded at the narrowest window",
     "status": "done",
     "detail": "Owner's call: PREPARE ROLL reads PRÉPARER and ADD FOLDER… reads AJOUTER… in French, so at 1100 pt the gallery's two keycaps keep their words instead of going glyph-only. Check: toolbar_fit, every language's keycaps worded at the narrowest window, under the compiled interface (twin: a point under the width the bar reads, the words give way)."
+  },
+  {
+    "id": 2065,
+    "type": "change",
+    "title": "The 1.6 welcome tells each improvement in a live scene of the real components",
+    "status": "done",
+    "detail": "Pages 1 to 5 of the welcome are Slint scenes in crates/oni-ui/ui/ds/welcome_*.slint, built from the design system's own components over the 1.5 photograph, framed close: the worded tool keys (clarity), the Favourites and Computer sections with a star (favourites), the quiet rails waking on hover (focus), a value typed in a slider's field (edit), and automatic De-dust detecting, removing and listing its patches on a detail of an owner's export (dust). Each old state turns into the new in steps, a hand with the keys' hover and press, weighted easing, a loop with a plain cut. Words beside each page, translated. Stills: oni-demos example clarity_stills (SCENE=...)."
+  },
+  {
+    "id": 2066,
+    "type": "change",
+    "title": "The welcome's last page rolls the release's fixes and sums up its themes",
+    "status": "done",
+    "detail": "Page 7 shows the 51 fixes, area by area, rising on a card at a reading pace (welcome_fixes.slint); both passes lie in one layout with a seam between them, as a block measured from outside counts a wrapped line once and the second pass overlapped the first. The words: four themes, Good to know, then Website and Feedback, so the footer holds BACK and GET STARTED alone. The page dots sit on the stage, centred at its foot on a veil, the shown one long and whole, the others faint and lit under the hand; on a card too narrow for a stage they stay in the footer. Check: welcome_card, seven pages, the dots centred at the stage's foot, every page's words beside the stage and unscrolled at 1100×680."
+  },
+  {
+    "id": 2067,
+    "type": "fix",
+    "title": "A key holding the keyboard is ringed only when Tab brought it there",
+    "status": "done",
+    "detail": "A sheet's default key, or a key taking the keyboard back as a sheet closes, held a focus ring though no key was pressed: KeyScope now rings only after focus gained by Tab navigation, a window coming back keeping what it had. Check: sheet_stack, no ring on the welcome as it opens (fails without the fix), twin: Tab rings the key it reaches."
+  },
+  {
+    "id": 2068,
+    "type": "change",
+    "title": "The welcome's films and their player wiring leave the app",
+    "status": "done",
+    "detail": "The live scenes replace the six GIF films (4.6 MB): oni_app::welcome, the welcome's clip on the Help global, its player wiring and the welcome_clip window check are removed; the clip player stays for Prepare the Roll's demos. oni-demos keeps its filming tool with the stage's size of its own."
   }
 ]

@@ -1,6 +1,6 @@
 //! The welcome's card at the smallest window and below: the stage on the left of the words, the
-//! footer inside the card and the window, the words still in every language, each page dot a hand's
-//! least target; in a short window the words scroll alone and NEXT stays in reach. Twins: a page too
+//! footer inside the card and the window, the words still in every language, the page dots centred at
+//! the stage's foot, each a hand's least target; in a short window the words scroll alone and NEXT stays in reach. Twins: a page too
 //! long scrolls, a short window's card is shorter than the stage, a click past a dot's reach misses it.
 
 use i_slint_backend_testing::AccessibleRole as Role;
@@ -19,10 +19,14 @@ const MARGIN: f32 = 24.0;
 const REST: f32 = 0.42;
 /// `DS.control-grab-size`, the hand's least target: a page dot's touch at the least, about its 6 pt dot.
 const REACH: f32 = 24.0;
+const PAGES: usize = 7;
 /// A word each page shows once, at the top of its words.
-const FIRSTS: [&str; 4] = [
+const FIRSTS: [&str; PAGES] = [
     "A quieter interface around your scans, dust found on its own, and about 70 fixes.",
-    "A calmer interface",
+    "A clearer interface",
+    "Your favourites at hand",
+    "Less distraction, your scans first",
+    "Type the exact value",
     "Automatic De-dust",
     "About 70 fixes, and what changes",
 ];
@@ -32,7 +36,7 @@ fn first(window: &MainWindow, page: usize) -> Placed {
 }
 
 fn commit(window: &MainWindow, page: usize) -> Placed {
-    common::the(window, Role::Button, if page == 3 { tr("GET STARTED") } else { tr("Next") })
+    common::the(window, Role::Button, if page == PAGES - 1 { tr("GET STARTED") } else { tr("Next") })
 }
 
 /// How far the page's first words move under a wheel turned down over the words, then back to the top.
@@ -49,9 +53,9 @@ fn scrolled(rig: &common::Rig, window: &MainWindow, page: usize) -> f32 {
     moved
 }
 
-/// The dot that turns to `page`, named by its place among the four.
+/// The dot that turns to `page`, named by its place among the pages.
 fn dot(window: &MainWindow, page: usize) -> Placed {
-    let label = tr("Page {} of {}").replacen("{}", &(page + 1).to_string(), 1).replacen("{}", "4", 1);
+    let label = tr("Page {} of {}").replacen("{}", &(page + 1).to_string(), 1).replacen("{}", &PAGES.to_string(), 1);
     common::the(window, Role::Tab, &label)
 }
 
@@ -92,21 +96,18 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
             println!("{language:?}: the live interface reads English, judged on the app profile");
             continue;
         }
-        for page in 0..4 {
+        for page in 0..PAGES {
             help.set_welcome_page(page as i32);
             rig.settle();
             println!("shot {}", rig.shot(&format!("welcome-{}-1100x680-{page}", language.key())).display());
             let (words, key) = (first(&window, page), commit(&window, page));
-            if page < 3 {
-                assert!(words.x >= left + STAGE, "{language:?} page {page}: the words right of the stage, at {}", words.x);
-            } else {
-                assert!(words.x < left + STAGE / 4.0, "{language:?}: the last page's words take the card, at {}", words.x);
-            }
+            assert!(words.x >= left + STAGE, "{language:?} page {page}: the words right of the stage, at {}", words.x);
             assert!(key.x + key.width <= left + CARD.0 && key.y + key.height <= top + CARD.1 + 0.5, "{language:?} page {page}: the key inside the card, {key:?}");
-            let (first, last) = (dot(&window, 0), dot(&window, 3));
-            let back = common::placed(&window, Role::Button, tr("Back"));
-            let end = back.first().map_or(key.x, |back| back.x);
-            assert!(first.x >= left && last.x + last.width <= end, "{language:?} page {page}: the dots between the card's edge and the keys, {first:?} {last:?}");
+            let (first, last) = (dot(&window, 0), dot(&window, PAGES - 1));
+            let middle = (first.x + last.x + last.width) / 2.0;
+            assert!((middle - (left + STAGE / 2.0)).abs() < 1.0, "{language:?} page {page}: the dots centred on the stage, about {middle}");
+            // The card's foot lies a padding, the sheet's margin, under its key's.
+            assert!(last.y + last.height <= key.y + key.height + MARGIN && last.y > key.y - CARD.1 / 2.0, "{language:?} page {page}: the dots at the stage's foot, {last:?}");
             let moved = scrolled(&rig, &window, page);
             assert!(moved.abs() < 0.5, "{language:?} page {page}: the words fit, a wheel moved them {moved}");
         }
@@ -116,7 +117,7 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
     // Each dot's touch is the hand's least target, and a click inside it turns to its page.
     help.set_welcome_page(0);
     rig.settle();
-    for page in 0..4 {
+    for page in 0..PAGES {
         let touch = dot(&window, page);
         assert!(touch.width >= REACH && touch.height >= REACH, "dot {page}: a touch of {REACH} at the least, {touch:?}");
     }
@@ -137,7 +138,7 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
     for (w, h) in [(1728u32, 1017u32), (900, 560), (900, 440)] {
         help.set_welcome_page(0);
         sized(&rig, (w, h));
-        for page in 0..4 {
+        for page in 0..PAGES {
             help.set_welcome_page(page as i32);
             rig.settle();
             println!("shot {}", rig.shot(&format!("welcome-en-{w}x{h}-{page}")).display());
@@ -145,9 +146,9 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
             assert!(key.y + key.height <= h as f32 - MARGIN + 0.5 && key.x + key.width <= w as f32 - MARGIN, "{w}×{h} page {page}: the key in the window, {key:?}");
         }
     }
-    help.set_welcome_page(3);
+    help.set_welcome_page(PAGES as i32 - 1);
     rig.settle();
-    assert!(scrolled(&rig, &window, 3) > 20.0, "900×440: the last page's words scroll");
+    assert!(scrolled(&rig, &window, PAGES - 1) > 20.0, "900×440: the last page's words scroll");
     help.set_welcome_page(0);
     rig.settle();
     let (x, y) = commit(&window, 0).middle();

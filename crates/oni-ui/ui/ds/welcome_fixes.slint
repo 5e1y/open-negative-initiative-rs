@@ -1,0 +1,167 @@
+// The welcome's last scene: the release's fixes, area by area, rising on a card over the 1.5 photograph
+// at a reading pace, as a film's credits; the list follows itself, so the loop has no seam.
+import { Colour, Space, CardStyle, RowStyle } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Label, TextRole, Tone, Icon } from "base.slint";
+import { WelcomeStyle } from "welcome.slint";
+
+export global FixesBeats {
+    // The list's rise, in the card's points a second.
+    out property <float> speed: 26;
+    out property <float> zoom: 1.15;
+    // The card's band under and over the list, where the lines come and go.
+    out property <length> fade: Space.l * 2;
+}
+
+struct FixArea {
+    title: string,
+    lines: [string],
+}
+
+// Every fix of the release, under its area's word.
+global Fixes {
+    out property <[FixArea]> areas: [
+        { title: @tr("Editor"), lines: [
+            @tr("A slider moved on the whole roll keeps each frame's own balance"),
+            @tr("The Scanner face no longer reads zero while Pro values act"),
+            @tr("Undo keeps its history when you go to another frame"),
+            @tr("Switching face is no longer an undo step"),
+            @tr("A slider held while the photo changes no longer writes on the new one"),
+            @tr("An interrupted crop no longer comes back on Escape"),
+            @tr("100 % zoom is truly one to one"),
+            @tr("The crop's size reads the same everywhere"),
+            @tr("An error card no longer stays over a photo that rendered"),
+            @tr("Leaving the editor frees its memory"),
+            @tr("Undo in a text field undoes the typing, not the photo"),
+            @tr("Frames edited together stay on one face"),
+            @tr("The view sharpens as soon as a zoom stops")
+        ] },
+        { title: @tr("Gallery"), lines: [
+            @tr("A click on empty ground deselects"),
+            @tr("Arrows and Return work right after a click on a photo"),
+            @tr("A right-click acts on the photo it points at"),
+            @tr("An old contact sheet no longer shows as an extra frame"),
+            @tr("Rating a photo no longer makes the column flicker"),
+            @tr("Tabbing through the shot date no longer writes a date"),
+            @tr("Rename and New Folder no longer freeze on a slow disk"),
+            @tr("A move during a folder's read no longer drops photos")
+        ] },
+        { title: @tr("Projects"), lines: [
+            @tr("Add to Project adds every photo, same-named copies included"),
+            @tr("A project reads its roll's film stock"),
+            @tr("The rating filter works in Projects"),
+            @tr("A double-click opens a project")
+        ] },
+        { title: @tr("Export"), lines: [
+            @tr("Size estimates are right for resized JPEGs"),
+            @tr("Exporting into a missing folder no longer fails at the end"),
+            @tr("Dust patches are back in every export after a relaunch"),
+            @tr("Each frame of a contact sheet gets its own paper"),
+            @tr("A cleared date writes no date; typed dates are written as typed"),
+            @tr("Keys and menus no longer reach the editor behind the export"),
+            @tr("Stopping an export never leaves a broken file"),
+            @tr("Fields nobody typed are no longer pinned in the EXIF")
+        ] },
+        { title: @tr("Prepare the Roll"), lines: [
+            @tr("Cancel leaves no half-done draft"),
+            @tr("Frames keep their look from step to step"),
+            @tr("No more orange negatives after preparing"),
+            @tr("Slide rolls no longer take a colour cast"),
+            @tr("A step taken before every frame loaded is kept")
+        ] },
+        { title: @tr("De-dust"), lines: [
+            @tr("Patches stay on their speck after a crop, a turn or a mirror"),
+            @tr("Changing exposure no longer remakes or loses patches"),
+            @tr("A new patch no longer slows as patches add up"),
+            @tr("A second ONI no longer wipes the first one's patches"),
+            @tr("A stroke cut short no longer comes back as a ghost")
+        ] },
+        { title: @tr("Window"), lines: [
+            @tr("Shortcuts work again right after a sheet closes"),
+            @tr("With a disk away, unsaved edits can wait")
+        ] },
+        { title: @tr("Files"), lines: [
+            @tr("Move Out never replaces a file"),
+            @tr("A failed conversion never trashes the original"),
+            @tr("A failed preset import no longer brings back deleted presets"),
+            @tr("Interrupted writes leave no hidden files")
+        ] },
+        { title: @tr("Languages"), lines: [
+            @tr("Film modes are named in your language"),
+            @tr("One spelling and one name for each thing")
+        ] }
+    ];
+}
+
+// An area's word over its fixes, each line with its check.
+component Area inherits VerticalLayout {
+    in property <FixArea> area;
+    spacing: Space.s;
+    Label { text: root.area.title; role: TextRole.caption; tone: Tone.secondary; }
+    for line in root.area.lines: HorizontalLayout {
+        spacing: Space.s;
+        Rectangle {
+            width: RowStyle.mark;
+            Icon { y: Space.xxs; width: RowStyle.mark; height: RowStyle.mark; source: Icons.done; tone: Tone.secondary; }
+        }
+        Label { text: line; role: TextRole.note; tone: Tone.primary; horizontal-stretch: 1; }
+    }
+}
+
+export component FixesScene inherits Rectangle {
+    clip: true;
+    property <duration> began;
+    init => { root.began = animation-tick(); }
+    property <float> t: (animation-tick() - root.began) / 1s;
+    // The card in its own points before the framing's zoom, a margin round it on the photograph and the
+    // page dots' room under it.
+    property <length> card-width: (root.width - 2 * Space.l) / FixesBeats.zoom;
+    property <length> card-height: (root.height - Space.l - WelcomeStyle.dot-reach - 2 * Space.m) / FixesBeats.zoom;
+    property <length> pad: Space.l;
+    // One pass of the list, read where the layout lays the seam: a block's measure from outside counts a
+    // wrapped line once, so the list's two passes lie in one layout, area by area.
+    property <length> span: seam.y + Space.l;
+    property <length> risen: Math.mod(root.t * FixesBeats.speed, root.span / 1px) * 1px;
+    Image {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        source: @image-url("../splash/1.5.0.jpg");
+        image-fit: cover;
+    }
+    Rectangle {
+        x: Space.l;
+        y: Space.l;
+        width: root.card-width;
+        height: root.card-height;
+        transform-scale: FixesBeats.zoom;
+        transform-origin: { x: 0, y: 0 };
+        background: Colour.ground;
+        border-radius: CardStyle.radius;
+        drop-shadow-blur: Space.l;
+        drop-shadow-color: Colour.black.with-alpha(0.45);
+        Rectangle {
+            clip: true;
+            VerticalLayout {
+                x: root.pad;
+                y: FixesBeats.fade - root.risen;
+                width: root.card-width - 2 * root.pad;
+                spacing: Space.l;
+                for area in Fixes.areas: Area { area: area; }
+                seam := Rectangle { height: 0; }
+                for area in Fixes.areas: Area { area: area; }
+            }
+            Rectangle {
+                y: 0;
+                height: FixesBeats.fade;
+                background: @linear-gradient(180deg, Colour.ground 0%, Colour.ground.with-alpha(0) 100%);
+            }
+            Rectangle {
+                y: parent.height - FixesBeats.fade;
+                height: FixesBeats.fade;
+                background: @linear-gradient(0deg, Colour.ground 0%, Colour.ground.with-alpha(0) 100%);
+            }
+        }
+    }
+}

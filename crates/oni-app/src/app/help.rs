@@ -1,5 +1,5 @@
 //! The Help menu in the window: What's New's notes on the headings they changed, the welcome sheet
-//! shown once per release with its films, Report a Bug sending its sealed log off this thread, the console.
+//! shown once per release, Report a Bug sending its sealed log off this thread, the console.
 
 use super::{Ctl, with_shell};
 use crate::{ConsoleWindow, Help, News, report, system};
@@ -14,12 +14,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-/// The Help menu's surfaces that live past a call: the console window with the timer that reads the
-/// log into it, and the welcome's film playing on its stage with where films come from.
+/// The Help menu's surface that lives past a call: the console window with the timer that reads the
+/// log into it.
 pub struct Surfaces {
     pub(super) console: Option<(ConsoleWindow, Timer)>,
-    pub(super) clip: Option<(crate::welcome::Film, player::Player)>,
-    pub(super) films: crate::welcome::Films,
 }
 
 /// Sends one report: the message and, when ticked, the sealed log; a check hands its own.
@@ -124,8 +122,6 @@ impl Ctl {
         let help = window.global::<Help>();
         let p = me.clone();
         help.on_welcome_closed(move || p.welcome_closed());
-        let p = me.clone();
-        help.on_welcome_turned(move |page| p.welcome_turned(page));
         help.on_website(|| system::open_url(SITE));
         let p = me.clone();
         help.on_feedback(move || {
@@ -223,7 +219,6 @@ impl Ctl {
         h.set_welcome_credit(crate::starter::credit(version).into());
         h.set_welcome_page(0);
         h.set_welcome_shown(true);
-        self.welcome_turned(0);
         true
     }
 
@@ -234,7 +229,6 @@ impl Ctl {
             return;
         }
         w.global::<Help>().set_welcome_shown(false);
-        self.welcome_turned(-1);
         let written = self.state.borrow_mut().preferences.set(WELCOME_KEY, EDITION.into());
         if let Err(e) = written {
             self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
@@ -351,6 +345,5 @@ impl Ctl {
 
 mod clip;
 pub(super) mod player;
-mod welcome_clip;
 #[cfg(test)]
 mod tests;

@@ -46,7 +46,7 @@ pub(crate) fn an_earlier_library_is_brought_while_the_person_works() {
     // One sheet at a time: the welcome first, the notice once its last key closes it, then holding the keys.
     let (help, upgraded) = (w.global::<Help>(), w.global::<Upgraded>());
     assert!(help.get_welcome_shown() && !upgraded.get_shown(), "the notice waits while the welcome shows");
-    for _ in 0..4 {
+    for _ in 0..7 {
         assert!(!upgraded.get_shown(), "never over the welcome, on any page");
         hand.rig.key("\n");
     }

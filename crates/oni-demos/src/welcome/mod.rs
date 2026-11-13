@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 
 use crate::photo::Rgba;
 
-/// The welcome's stage in points: the films' size, at two pixels a point.
-pub const SIZE: (f32, f32) = (oni_app::welcome::SIZE.0 as f32 / crate::stage::SCALE, oni_app::welcome::SIZE.1 as f32 / crate::stage::SCALE);
+/// The welcome's stage in points, `WelcomeStyle`'s; a film is filmed at two pixels a point.
+pub const SIZE: (f32, f32) = (560.0, 502.0);
 
 /// The welcome's scenes.
 pub fn scenes() -> PathBuf {

@@ -1,0 +1,187 @@
+// The welcome's favourites scene: a close framing of the window's left column over the 1.5 photograph.
+// 1.5's header, a parent key and a favourites filter beside the folder's path, gives way to two
+// sections, Favourites over Computer; then a hand stars a roll, which takes its place among the favourites.
+import { Colour, Space, ButtonStyle, ShellStyle, CardStyle, RowStyle, TabsStyle } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Button, ButtonSize, Look } from "controls.slint";
+import { Tabs } from "tabs.slint";
+import { Row, RowKind, RowForm } from "row.slint";
+import { RowsHeading } from "folders.slint";
+import { Picker, PickerFace } from "picker.slint";
+import { Arrow, Curves } from "welcome_clarity.slint";
+
+export global FavouritesBeats {
+    out property <float> header-from: 1.3;
+    out property <float> header-for: 0.4;
+    out property <float> sections-from: 1.4;
+    out property <float> sections-for: 0.9;
+    out property <float> stagger: 0.07;
+    out property <float> hand-in: 2.8;
+    out property <float> to-row-for: 0.7;
+    out property <float> to-star-from: 3.75;
+    out property <float> to-star-for: 0.35;
+    out property <float> star-press: 4.35;
+    out property <float> press-for: 0.14;
+    out property <float> grow-from: 4.5;
+    out property <float> grow-for: 0.6;
+    out property <float> away-from: 5.35;
+    out property <float> away-for: 0.9;
+    out property <float> rest: 2.0;
+    out property <float> zoom: 1.35;
+    // Where the window's corner lies on the stage: its left edge on the photograph, its bar above the cut.
+    out property <length> win-x: 44px;
+    out property <length> win-y: -46px;
+    // 1.5 set its rows half as far in from the column's edge as 1.6 does.
+    out property <length> old-inset: Space.s;
+}
+
+// A line of the column at `y`, `shown` of its height: it grows into place and pushes what lies under it.
+component Line inherits Rectangle {
+    in property <float> shown: 1;
+    height: RowStyle.height * root.shown;
+    clip: true;
+    opacity: root.shown;
+}
+
+export component FavouritesScene inherits Rectangle {
+    clip: true;
+    property <duration> start;
+    init => { root.start = animation-tick(); }
+    property <float> t: Math.mod((animation-tick() - root.start) / 1s, FavouritesBeats.away-from + FavouritesBeats.away-for + FavouritesBeats.rest);
+    function progress(from: float, length: float) -> float { max(0, min(1, (root.t - from) / length)) }
+    function settled(from: float, length: float) -> float { Curves.settle(root.progress(from, length)) }
+    function glided(from: float, length: float) -> float { Curves.glide(root.progress(from, length)) }
+    // 1.5's header leaving, the sections coming, the starred roll joining the favourites.
+    property <float> header: 1 - root.settled(FavouritesBeats.header-from, FavouritesBeats.header-for);
+    function section(i: int) -> float { root.glided(FavouritesBeats.sections-from + i * FavouritesBeats.stagger, FavouritesBeats.sections-for) }
+    property <float> joined: root.settled(FavouritesBeats.grow-from, FavouritesBeats.grow-for);
+    property <bool> starred: root.t >= FavouritesBeats.star-press;
+    // The window's geometry, in its own points before the framing's zoom.
+    property <length> win-width: (root.width - FavouritesBeats.win-x) / FavouritesBeats.zoom;
+    property <length> win-height: (root.height - FavouritesBeats.win-y) / FavouritesBeats.zoom;
+    property <length> column: ShellStyle.library-width;
+    property <length> inset: FavouritesBeats.old-inset + (ShellStyle.column-inset - FavouritesBeats.old-inset) * root.section(0);
+    property <length> row-width: root.column - 2 * root.inset;
+    property <length> tabs-y: ShellStyle.bar-height;
+    property <length> top: root.tabs-y + TabsStyle.height + Space.s;
+    // Each line's top: 1.5's header first, then the sections as they open.
+    property <length> header-h: (RowStyle.height + Space.s) * root.header;
+    property <length> fav-head-y: root.top + root.header-h;
+    property <length> fav-scans-y: root.fav-head-y + RowStyle.height * root.section(0);
+    property <length> fav-roll-y: root.fav-scans-y + RowStyle.height * root.section(1);
+    property <length> comp-head-y: root.fav-roll-y + RowStyle.height * root.joined;
+    property <length> home-y: root.comp-head-y + RowStyle.height * root.section(2);
+    // The hand, in the window's points: onto the second roll's row, then onto its star, then away.
+    property <length> roll-y: root.home-y + 3 * RowStyle.height;
+    property <length> rest-x: root.column + Space.l * 2;
+    property <length> rest-y: root.win-height * 0.9;
+    property <length> row-x: root.inset + root.row-width * 0.55;
+    property <length> star-x: root.inset + root.row-width - RowStyle.padding - RowStyle.mark / 2;
+    property <length> away-x: root.column + Space.l * 3;
+    property <float> go1: root.glided(FavouritesBeats.hand-in, FavouritesBeats.to-row-for);
+    property <float> go2: root.glided(FavouritesBeats.to-star-from, FavouritesBeats.to-star-for);
+    property <float> go3: root.glided(FavouritesBeats.away-from, FavouritesBeats.away-for);
+    property <length> hand-x: root.rest-x + (root.row-x - root.rest-x) * root.go1 + (root.star-x - root.row-x) * root.go2 + (root.away-x - root.star-x) * root.go3
+        - Space.l * Math.sin(root.go1 * 180deg) * (1 - root.go2);
+    // The hand follows the roll's row as the favourites push it down.
+    property <length> hand-y: root.rest-y + (root.roll-y + RowStyle.height * 0.5 - root.rest-y) * root.go1 + (root.rest-y - root.roll-y) * root.go3;
+    property <bool> hand-shown: root.t >= FavouritesBeats.hand-in && root.t < FavouritesBeats.away-from + FavouritesBeats.away-for;
+    property <bool> on-roll: root.hand-shown && root.hand-x >= root.inset && root.hand-x <= root.inset + root.row-width
+        && root.hand-y >= root.roll-y && root.hand-y <= root.roll-y + RowStyle.height;
+    property <bool> pressing: root.t >= FavouritesBeats.star-press - FavouritesBeats.press-for && root.t < FavouritesBeats.star-press;
+    Image {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        source: @image-url("../splash/1.5.0.jpg");
+        image-fit: cover;
+    }
+    // The window from its corner, drawn at the framing's zoom; the stage cuts the rest.
+    Rectangle {
+        x: FavouritesBeats.win-x;
+        y: FavouritesBeats.win-y;
+        width: root.win-width;
+        height: root.win-height;
+        transform-scale: FavouritesBeats.zoom;
+        transform-origin: { x: 0, y: 0 };
+        background: Colour.ground;
+        border-top-left-radius: CardStyle.radius;
+        drop-shadow-blur: Space.l;
+        drop-shadow-color: Colour.black.with-alpha(0.45);
+        // The canvas beside the column.
+        Rectangle {
+            x: root.column;
+            y: ShellStyle.bar-height;
+            width: root.win-width;
+            height: root.win-height;
+            background: Colour.canvas;
+            border-radius: CardStyle.radius;
+        }
+        Tabs {
+            x: root.inset;
+            y: root.tabs-y;
+            width: root.row-width;
+            height: TabsStyle.height;
+            tabs: [@tr("Archive"), @tr("Projects")];
+            selected: 0;
+        }
+        // 1.5's header: the parent key and the favourites filter on a plate, the folder's path beside them.
+        HorizontalLayout {
+            x: root.inset;
+            y: root.top;
+            width: root.row-width;
+            height: RowStyle.height;
+            spacing: Space.s;
+            cross-axis-alignment: center;
+            opacity: root.header;
+            transform-scale: 0.92 + 0.08 * root.header;
+            // The socket holds its two keys flush, as tall and as wide as they are, level with the path.
+            Rectangle {
+                    width: keys.preferred-width;
+                    height: keys.preferred-height;
+                    background: Colour.black;
+                    border-radius: ButtonStyle.radius;
+                    keys := HorizontalLayout {
+                        Button { keycap: true; size: ButtonSize.mini; square: true; has-icon: true; icon: Icons.parent; }
+                        Button { keycap: true; size: ButtonSize.mini; square: true; has-icon: true; icon: Icons.favourite; }
+                    }
+            }
+            Picker { face: PickerFace.pill; value: @tr("Scans"); height: keys.preferred-height; }
+        }
+        // Favourites, a folder already starred, then the starred roll joining it.
+        Line {
+            x: root.inset; y: root.fav-head-y; width: root.row-width; shown: root.section(0);
+            RowsHeading { y: 0; width: parent.width; title: @tr("Favourites"); unfolded: true; }
+        }
+        Line {
+            x: root.inset; y: root.fav-scans-y; width: root.row-width; shown: root.section(1);
+            Row { y: 0; width: parent.width; form: RowForm.navigator; kind: RowKind.folder; title: @tr("Scans"); starrable: true; favourite: true; }
+        }
+        Line {
+            x: root.inset; y: root.fav-roll-y; width: root.row-width; shown: root.joined;
+            Row { y: 0; width: parent.width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 2); has-stock: true; stock: @image-url("../stocks/kodak-gold.svg"); starrable: true; favourite: true; }
+        }
+        // Computer: the same tree 1.5 showed under its header.
+        Line {
+            x: root.inset; y: root.comp-head-y; width: root.row-width; shown: root.section(2);
+            RowsHeading { y: 0; width: parent.width; title: @tr("Computer"); unfolded: true; }
+        }
+        Row { x: root.inset; y: root.home-y; width: root.row-width; form: RowForm.navigator; kind: RowKind.folder; title: @tr("Home"); depth: 0; expandable: true; expanded: true; starrable: root.section(3) > 0.5; }
+        Row { x: root.inset; y: root.home-y + RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.folder; title: @tr("Scans"); depth: 1; expandable: true; expanded: true; starrable: root.section(3) > 0.5; favourite: root.section(3) > 0.5; }
+        Row { x: root.inset; y: root.home-y + 2 * RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 1); has-stock: true; stock: @image-url("../stocks/kodak-portra.svg"); depth: 2; starrable: root.section(3) > 0.5; }
+        Row {
+            x: root.inset; y: root.roll-y; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 2); has-stock: true; stock: @image-url("../stocks/kodak-gold.svg"); depth: 2;
+            starrable: root.section(3) > 0.5; favourite: root.starred;
+            look: root.pressing ? Look.pressed : root.on-roll ? Look.hover : Look.live;
+        }
+        Row { x: root.inset; y: root.home-y + 4 * RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 3); has-stock: true; stock: @image-url("../stocks/generic-black-and-white.svg"); depth: 2; starrable: root.section(3) > 0.5; }
+        Arrow {
+            x: root.hand-x;
+            y: root.hand-y;
+            transform-scale: root.pressing ? 0.9 : 1;
+            transform-origin: { x: 0, y: 0 };
+            opacity: root.progress(FavouritesBeats.hand-in - 0.15, 0.3) * (1 - root.progress(FavouritesBeats.away-from + FavouritesBeats.away-for - 0.35, 0.35));
+        }
+    }
+}

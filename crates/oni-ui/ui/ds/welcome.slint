@@ -1,8 +1,7 @@
 // The welcome's card: a stage on the left for the page's photo or film, the words on the right, and
 // the dots that say which page shows and take a click to another.
 import { DS } from "tokens.slint";
-import { Colour, Motion } from "theme.slint";
-import { Dot } from "marks.slint";
+import { Colour, Motion, Space } from "theme.slint";
 
 export global WelcomeStyle {
     // The stage beside a column of words as tall as it, so the card fits the smallest window whole; 502
@@ -15,6 +14,9 @@ export global WelcomeStyle {
     // Narrower than this, the stage would show too little of its picture: the words take the card.
     out property <length> stage-least: 160px;
     out property <length> dot: 6px;
+    out property <length> dot-shown: 16px;
+    out property <color> dot-idle: Colour.ink.with-alpha(0.3);
+    out property <color> dot-hover: Colour.ink.with-alpha(0.7);
     // A dot's touch, the hand's least target around a dot drawn small.
     out property <length> dot-reach: DS.control-grab-size;
 }
@@ -44,10 +46,32 @@ export component PageDots inherits HorizontalLayout {
         accessible-item-count: root.count;
         accessible-action-default => { root.picked(page); }
         clicked => { root.picked(page); }
-        Dot {
-            size: WelcomeStyle.dot;
-            ink: page == root.at ? Colour.ink : Colour.ink-tertiary;
+        // The shown page's dot runs long and whole; the others stay faint until the hand comes on one.
+        Rectangle {
+            width: page == root.at ? WelcomeStyle.dot-shown : WelcomeStyle.dot;
+            height: WelcomeStyle.dot;
+            border-radius: self.height / 2;
+            background: page == root.at ? Colour.ink : parent.has-hover ? WelcomeStyle.dot-hover : WelcomeStyle.dot-idle;
+            animate width { duration: Motion.quick; easing: ease-out; }
             animate background { duration: Motion.quick; }
         }
+    }
+}
+
+// The dots laid on the stage, centred at its foot on a veil that keeps them read over any picture.
+export component StageDots inherits Rectangle {
+    in property <int> count;
+    in property <int> at;
+    callback picked(int);
+    width: dots.preferred-width + 2 * Space.xs;
+    height: WelcomeStyle.dot-reach;
+    border-radius: self.height / 2;
+    background: Colour.overlay;
+    dots := PageDots {
+        x: Space.xs;
+        width: self.preferred-width;
+        count: root.count;
+        at: root.at;
+        picked(page) => { root.picked(page); }
     }
 }

@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use crate::common;
 
-const PAGES: usize = 4;
+const PAGES: usize = 7;
 
 fn right(rig: &common::Rig) {
     rig.key(&SharedString::from(Key::RightArrow));
@@ -45,16 +45,24 @@ pub(crate) fn a_sheet_closing_over_another_hands_it_the_keyboard() {
     window.show().unwrap();
     rig.window.set_size(PhysicalSize::new(1280, 800));
     rig.settle();
+    // Its default key holds the keyboard for Return, unringed: no key was pressed to bring it there.
+    let rings = || ElementHandle::find_by_element_type_name(&window, "FocusRing").count();
+    assert_eq!(rings(), 0, "the default key holds the keyboard without a ring");
     right(&rig);
     assert_eq!(help.get_welcome_page(), 1, "alone, the welcome's arrows turn its pages");
+    // Twin: Tab brings the keyboard to a key, which rings; the first, from the sheet's last key, only
+    // crosses the window's wall back into the sheet.
+    rig.key("\t");
+    rig.key("\t");
+    assert_eq!(rings(), 1, "Tab rings the key it gives the keyboard to");
 
-    // The dots: each named by its place among the four, the shown one alone selected, following a turn.
+    // The dots: each named by its place among the seven, the shown one alone selected, following a turn.
     let shown = |page: usize| (0..PAGES).map(|i| Some(i == page)).collect::<Vec<_>>();
     assert_eq!(dots(&window, PAGES), shown(1), "every dot named, page 2 selected");
     right(&rig);
     assert_eq!(dots(&window, PAGES), shown(2), "the selection follows the page");
     // Twin: a name the dots do not carry is not found, so a dot without its name would fail above.
-    assert!(dots(&window, PAGES - 1).iter().all(Option::is_none), "no dot names a count of three");
+    assert!(dots(&window, PAGES - 1).iter().all(Option::is_none), "no dot names a count of six");
 
     // A sheet over it takes the keyboard: the arrows no longer reach the welcome.
     upgraded.set_shown(true);

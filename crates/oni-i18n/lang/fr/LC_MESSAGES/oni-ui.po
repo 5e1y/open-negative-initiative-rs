@@ -321,7 +321,7 @@ msgstr "Afficher {}"
 msgid "Hide {}"
 msgstr "Masquer {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -461,6 +461,400 @@ msgstr "Photo"
 msgid "Page {} of {}"
 msgstr "Page {} sur {}"
 
+#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/toolbar.slint
+msgid "Sheet"
+msgstr "Planche"
+
+#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Crop"
+msgstr "Recadrage"
+
+#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Dépoussiérage"
+
+#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/toolbar.slint
+msgid "Compare"
+msgstr "Comparer"
+
+#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/toolbar.slint
+msgid "Pro"
+msgstr "Pro"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/toolbar.slint
+msgid "Scanner"
+msgstr "Scanner"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Leave De-dust"
+msgstr "Quitter le dépoussiérage"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
+msgid "Automatic"
+msgstr "Automatique"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint
+msgid "Detect veils the photo but for its dust, which stands ringed; Remove lays one patch on each."
+msgstr "Détecter voile la photo sauf sa poussière, qui reste cerclée ; Retirer pose une retouche sur chacune."
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Sensitivity"
+msgstr "Sensibilité"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "DETECT"
+msgstr "DÉTECTER"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "REMOVE"
+msgstr "RETIRER"
+
+#: crates/oni-app/src/app/dedusting/auto.rs crates/oni-ui/ui/ds/welcome_dust.slint
+msgid "{n} speck of dust ringed"
+msgid_plural "{n} specks of dust ringed"
+msgstr[0] "{n} poussière cerclée"
+msgstr[1] "{n} poussières cerclées"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Dust & Scratches"
+msgstr "Poussières et rayures"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Paint over a defect; the tool duplicates a matching patch of the same photo over it."
+msgstr "Peignez sur un défaut ; l’outil le recouvre d’une zone semblable prise dans la même photo."
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Brush size"
+msgstr "Taille du pinceau"
+
+#: crates/oni-ui/ui/ds/welcome_dust.slint
+msgid "{} px"
+msgstr "{} px"
+
+#: crates/oni-app/src/fields/readout.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint
+msgid "Warm"
+msgstr "Chaud"
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint
+msgid "{} EV"
+msgstr "{} EV"
+
+#: crates/oni-app/src/fields/readout.rs crates/oni-ui/ui/ds/welcome_edit.slint
+msgid "Cool"
+msgstr "Froid"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
+msgid "Colour"
+msgstr "Couleur"
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint
+msgid "The frame's colour: its temperature, its tint and its saturation."
+msgstr "La couleur de la vue : sa température, sa teinte et sa saturation."
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Temperature"
+msgstr "Température"
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Tint"
+msgstr "Teinte"
+
+#: crates/oni-app/src/fields/readout.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green"
+msgstr "Vert"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Saturation"
+msgstr "Saturation"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Lighting"
+msgstr "Lumière"
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint
+msgid "The negative back to light: exposure, contrast, highlights and shadows, the black and white points."
+msgstr "Le négatif rendu à la lumière : exposition, contraste, hautes lumières et ombres, points noir et blanc."
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Exposure"
+msgstr "Exposition"
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast"
+msgstr "Contraste"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Highlights"
+msgstr "Hautes lumières"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shadows"
+msgstr "Ombres"
+
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "White point"
+msgstr "Point blanc"
+
+#: crates/oni-ui/ui/ds/welcome_favourites.slint crates/oni-ui/ui/library_tree.slint
+msgid "Archive"
+msgstr "Archives"
+
+#: crates/oni-ui/ui/ds/welcome_favourites.slint crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/library_tree.slint
+msgid "Projects"
+msgstr "Projets"
+
+#: crates/oni-ui/ui/ds/welcome_favourites.slint
+msgid "Scans"
+msgstr "Scans"
+
+#: crates/oni-app/src/app/navigator/rows.rs crates/oni-ui/ui/ds/welcome_favourites.slint
+msgid "Favourites"
+msgstr "Favoris"
+
+#: crates/oni-ui/ui/ds/welcome_favourites.slint
+msgid "Roll {}"
+msgstr "Pellicule {}"
+
+#: crates/oni-app/src/app/navigator/rows.rs crates/oni-ui/ui/ds/welcome_favourites.slint
+msgid "Computer"
+msgstr "Ordinateur"
+
+#: crates/oni-ui/ui/ds/welcome_favourites.slint
+msgid "Home"
+msgstr "Accueil"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/settings.slint
+msgid "Editor"
+msgstr "Éditeur"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A slider moved on the whole roll keeps each frame's own balance"
+msgstr "Un curseur déplacé sur toute la pellicule garde la balance propre à chaque vue"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "The Scanner face no longer reads zero while Pro values act"
+msgstr "La face Scanner n’affiche plus zéro quand des valeurs Pro agissent"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Undo keeps its history when you go to another frame"
+msgstr "Annuler garde son historique quand vous passez à une autre vue"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Switching face is no longer an undo step"
+msgstr "Changer de face n’est plus une étape à annuler"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A slider held while the photo changes no longer writes on the new one"
+msgstr "Un curseur tenu pendant un changement de photo n’écrit plus sur la nouvelle"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "An interrupted crop no longer comes back on Escape"
+msgstr "Un recadrage interrompu ne revient plus avec Échap"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "100 % zoom is truly one to one"
+msgstr "Le zoom à 100 % est vraiment un pour un"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "The crop's size reads the same everywhere"
+msgstr "La taille du recadrage est la même partout"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "An error card no longer stays over a photo that rendered"
+msgstr "Une carte d’erreur ne reste plus sur une photo affichée"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Leaving the editor frees its memory"
+msgstr "Quitter l’éditeur libère sa mémoire"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Undo in a text field undoes the typing, not the photo"
+msgstr "Annuler dans un champ annule la saisie, pas la photo"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Frames edited together stay on one face"
+msgstr "Les vues retouchées ensemble restent sur une même face"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "The view sharpens as soon as a zoom stops"
+msgstr "La vue redevient nette dès qu’un zoom s’arrête"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/menus.slint
+msgid "Gallery"
+msgstr "Galerie"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A click on empty ground deselects"
+msgstr "Un clic dans le vide désélectionne"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Arrows and Return work right after a click on a photo"
+msgstr "Les flèches et Entrée marchent juste après un clic sur une photo"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A right-click acts on the photo it points at"
+msgstr "Un clic droit agit sur la photo visée"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "An old contact sheet no longer shows as an extra frame"
+msgstr "Une ancienne planche contact n’apparaît plus comme une vue en trop"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Rating a photo no longer makes the column flicker"
+msgstr "Noter une photo ne fait plus clignoter la colonne"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Tabbing through the shot date no longer writes a date"
+msgstr "Passer la date de prise de vue avec Tab n’écrit plus de date"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Rename and New Folder no longer freeze on a slow disk"
+msgstr "Renommer et Nouveau dossier ne bloquent plus sur un disque lent"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A move during a folder's read no longer drops photos"
+msgstr "Un déplacement pendant la lecture d’un dossier ne perd plus de photos"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Add to Project adds every photo, same-named copies included"
+msgstr "Ajouter au projet ajoute toutes les photos, copies homonymes comprises"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A project reads its roll's film stock"
+msgstr "Un projet lit l’émulsion de sa pellicule"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "The rating filter works in Projects"
+msgstr "Le filtre de notes marche dans Projets"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A double-click opens a project"
+msgstr "Un double-clic ouvre un projet"
+
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/export.slint
+msgid "Export"
+msgstr "Exporter"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Size estimates are right for resized JPEGs"
+msgstr "Les tailles estimées sont justes pour les JPEG redimensionnés"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Exporting into a missing folder no longer fails at the end"
+msgstr "Exporter vers un dossier absent n’échoue plus à la fin"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Dust patches are back in every export after a relaunch"
+msgstr "Les retouches de poussière reviennent dans chaque export après un relancement"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Each frame of a contact sheet gets its own paper"
+msgstr "Chaque vue d’une planche contact reçoit son propre papier"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A cleared date writes no date; typed dates are written as typed"
+msgstr "Une date effacée n’écrit pas de date ; une date tapée s’écrit telle quelle"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Keys and menus no longer reach the editor behind the export"
+msgstr "Les touches et les menus n’atteignent plus l’éditeur derrière l’export"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Stopping an export never leaves a broken file"
+msgstr "Arrêter un export ne laisse jamais de fichier cassé"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Fields nobody typed are no longer pinned in the EXIF"
+msgstr "Les champs jamais tapés ne sont plus figés dans les EXIF"
+
+#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/toolbar.slint
+msgid "Prepare the Roll"
+msgstr "Préparer la pellicule"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Cancel leaves no half-done draft"
+msgstr "Annuler ne laisse plus de brouillon à moitié fait"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Frames keep their look from step to step"
+msgstr "Les vues gardent leur aspect d’une étape à l’autre"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "No more orange negatives after preparing"
+msgstr "Plus de négatifs orange après la préparation"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Slide rolls no longer take a colour cast"
+msgstr "Les pellicules diapositives ne prennent plus de dominante"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A step taken before every frame loaded is kept"
+msgstr "Une étape faite avant le chargement de toutes les vues est gardée"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Patches stay on their speck after a crop, a turn or a mirror"
+msgstr "Les retouches restent sur leur poussière après un recadrage, une rotation ou un miroir"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Changing exposure no longer remakes or loses patches"
+msgstr "Changer l’exposition ne refait ni ne perd plus les retouches"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A new patch no longer slows as patches add up"
+msgstr "Une nouvelle retouche ne ralentit plus quand elles s’accumulent"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A second ONI no longer wipes the first one's patches"
+msgstr "Un second ONI n’efface plus les retouches du premier"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A stroke cut short no longer comes back as a ghost"
+msgstr "Un trait interrompu ne revient plus en fantôme"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/toolbar.slint
+msgid "Window"
+msgstr "Fenêtre"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Shortcuts work again right after a sheet closes"
+msgstr "Les raccourcis remarchent dès qu’une fenêtre se ferme"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "With a disk away, unsaved edits can wait"
+msgstr "Avec un disque absent, les retouches non enregistrées peuvent attendre"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Files"
+msgstr "Fichiers"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Move Out never replaces a file"
+msgstr "Retirer ne remplace jamais un fichier"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A failed conversion never trashes the original"
+msgstr "Une conversion ratée ne met jamais l’original à la corbeille"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "A failed preset import no longer brings back deleted presets"
+msgstr "Un import de préréglages raté ne ramène plus ceux supprimés"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Interrupted writes leave no hidden files"
+msgstr "Les écritures interrompues ne laissent plus de fichiers cachés"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Languages"
+msgstr "Langues"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Film modes are named in your language"
+msgstr "Les modes de film sont nommés dans votre langue"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "One spelling and one name for each thing"
+msgstr "Une seule orthographe et un seul nom pour chaque chose"
+
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
 msgstr "Votre année"
@@ -497,10 +891,6 @@ msgstr "Orange"
 msgid "Yellow"
 msgstr "Jaune"
 
-#: crates/oni-app/src/fields/readout.rs crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
-msgid "Green"
-msgstr "Vert"
-
 #: crates/oni-ui/ui/editors.slint
 msgid "Aqua"
 msgstr "Bleu-vert"
@@ -521,10 +911,6 @@ msgstr "Magenta"
 msgid "Hue"
 msgstr "Teinte"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
-msgid "Saturation"
-msgstr "Saturation"
-
 #: crates/oni-ui/ui/editors.slint
 msgid "Luminance"
 msgstr "Luminance"
@@ -532,10 +918,6 @@ msgstr "Luminance"
 #: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
 msgid "Black point"
 msgstr "Point noir"
-
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
-msgid "White point"
-msgstr "Point blanc"
 
 #: crates/oni-ui/ui/editors.slint
 msgid "Saturated"
@@ -592,10 +974,6 @@ msgstr "N’afficher que la variation de couleur (déconseillé)"
 #: crates/oni-ui/ui/export.slint
 msgid "Get Paper Profiles…"
 msgstr "Obtenir des profils papier…"
-
-#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
-msgid "Export"
-msgstr "Exporter"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Export as"
@@ -862,28 +1240,116 @@ msgid "About 70 fixes, and what changes"
 msgstr "Environ 70 corrections, et ce qui change"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Before, then now"
-msgstr "Avant, puis maintenant"
+msgid "A clearer interface"
+msgstr "Une interface plus claire"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The same window, quieter: keys are flat and light up under the hand, coloured rails stay faint until you use them."
-msgstr "La même fenêtre, plus calme : les touches sont plates et s’éclairent sous la main, les rails colorés restent discrets jusqu’à ce que vous les utilisiez."
+msgid "Every key says what it does"
+msgstr "Chaque touche dit ce qu’elle fait"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Type any value"
-msgstr "Tapez n’importe quelle valeur"
+msgid "The bar's keys show their name under their glyph, in the same place in every mode."
+msgstr "Les touches de la barre montrent leur nom sous leur pictogramme, à la même place dans chaque mode."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Click a slider's number to type it, or nudge it with − and +."
-msgstr "Cliquez sur le nombre d’un curseur pour le taper, ou ajustez-le avec − et +."
+msgid "You see which tool is at work"
+msgstr "Vous voyez quel outil travaille"
 
 #: crates/oni-ui/ui/help.slint
-msgid "One key stands out"
-msgstr "Une seule touche en relief"
+msgid "A tool's key wears a coloured tab, and the canvas a frame of the same colour, for as long as the tool is on."
+msgstr "La touche d’un outil porte un onglet coloré, et le canevas un cadre de la même couleur, tant que l’outil est actif."
 
 #: crates/oni-ui/ui/help.slint
-msgid "A keycap now means the screen's main action: here, EXPORT."
-msgstr "Une touche en relief signale désormais l’action principale de l’écran : ici, EXPORTER."
+msgid "Nothing to guess"
+msgstr "Rien à deviner"
+
+#: crates/oni-ui/ui/help.slint
+msgid "A glyph alone no longer stands for a tool: its word is always beside it."
+msgstr "Un pictogramme seul ne désigne plus un outil : son mot est toujours à côté."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Your favourites at hand"
+msgstr "Vos favoris à portée de main"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Favourites first, then your computer"
+msgstr "Les favoris d’abord, puis votre ordinateur"
+
+#: crates/oni-ui/ui/help.slint
+msgid "The column opens on two sections: the folders you starred, then every folder of your computer."
+msgstr "La colonne s’ouvre sur deux sections : les dossiers que vous avez étoilés, puis tous les dossiers de votre ordinateur."
+
+#: crates/oni-ui/ui/help.slint
+msgid "A star on every folder"
+msgstr "Une étoile sur chaque dossier"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Hover a folder or a roll and click its star: it joins the favourites at once. Click again to take it out."
+msgstr "Survolez un dossier ou une pellicule et cliquez sur son étoile : il rejoint aussitôt les favoris. Cliquez à nouveau pour l’en retirer."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Nothing to switch"
+msgstr "Rien à basculer"
+
+#: crates/oni-ui/ui/help.slint
+msgid "No more filter key to show the favourites: they are always there, above the rest."
+msgstr "Plus de touche de filtre pour afficher les favoris : ils sont toujours là, au-dessus du reste."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Less distraction, your scans first"
+msgstr "Moins de distraction, vos scans d’abord"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Quiet until you reach for it"
+msgstr "Discrète jusqu’à ce que vous y alliez"
+
+#: crates/oni-ui/ui/help.slint
+msgid "The rails of hues stay faint while you look at the photo, and show their colours as soon as your hand comes onto their block."
+msgstr "Les rails de teintes restent pâles pendant que vous regardez la photo, et montrent leurs couleurs dès que votre main arrive sur leur bloc."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Lighter controls"
+msgstr "Des commandes plus légères"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Thinner rails and smaller knobs leave the colour to your photograph."
+msgstr "Des rails plus fins et des boutons plus petits laissent la couleur à votre photo."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Clearer blocks"
+msgstr "Des blocs plus clairs"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Each block opens on its name; its reset shows only once something moved."
+msgstr "Chaque bloc s’ouvre sur son nom ; sa réinitialisation n’apparaît qu’une fois quelque chose modifié."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Type the exact value"
+msgstr "Tapez la valeur exacte"
+
+#: crates/oni-ui/ui/help.slint
+msgid "The value opens under your hand"
+msgstr "La valeur s’ouvre sous votre main"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Hover a slider's value: it becomes a small field, its figure between − and +."
+msgstr "Survolez la valeur d’un curseur : elle devient un petit champ, son chiffre entre − et +."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Click, type, Return"
+msgstr "Cliquez, tapez, Entrée"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Click the figure to type the value you want; Return sets it and the knob lands on it. Escape leaves it as it was."
+msgstr "Cliquez sur le chiffre pour taper la valeur voulue ; Entrée la valide et le bouton s’y pose. Échap la laisse comme elle était."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Or step by step"
+msgstr "Ou pas à pas"
+
+#: crates/oni-ui/ui/help.slint
+msgid "− and + move it by one shown unit, as the arrow keys do."
+msgstr "− et + la déplacent d’une unité affichée, comme les flèches."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Found in one press"
@@ -910,32 +1376,20 @@ msgid "A speck across a sharp edge can be missed, and a high Sensitivity can rin
 msgstr "Une poussière à cheval sur un bord net peut être manquée, et une Sensibilité élevée peut entourer un détail fin."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Fixed"
-msgstr "Corrigé"
+msgid "Your edits hold, across a roll and through Undo"
+msgstr "Vos retouches tiennent, sur toute la pellicule et avec Annuler"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Editing a whole roll moves each frame from its own values, never overwriting its balance."
-msgstr "Retoucher toute une pellicule déplace chaque vue depuis ses propres valeurs, sans jamais écraser sa balance."
+msgid "Dust patches stay put, in every export"
+msgstr "Les retouches de poussière restent en place, dans chaque export"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Undo keeps its history from frame to frame, and names what it takes back."
-msgstr "Annuler garde son historique d’une vue à l’autre, et nomme ce qu’il reprend."
+msgid "Exports come out as you set them"
+msgstr "Les exports sortent comme vous les réglez"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Dust patches stay on their speck after a crop or a turn, and are back in every export."
-msgstr "Les retouches de poussière restent à leur place après un recadrage ou une rotation, et reviennent dans chaque export."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."
-msgstr "Exports : estimations de taille justes, dates écrites telles que tapées, le papier d’une planche contact sur chaque vue."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll: Cancel leaves nothing half done, and frames keep their look from step to step."
-msgstr "Préparer la pellicule : Annuler ne laisse rien à moitié fait, et les vues gardent leur aspect d’une étape à l’autre."
-
-#: crates/oni-ui/ui/help.slint
-msgid "No more freezes on slow or network disks; a move never replaces a file."
-msgstr "Plus de blocages sur les disques lents ou réseau ; un déplacement ne remplace jamais un fichier."
+msgid "Steadier with slow and network disks"
+msgstr "Plus stable avec les disques lents et réseau"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Good to know"
@@ -954,20 +1408,8 @@ msgid "The Scanner face shows its keypad"
 msgstr "La face Scanner montre son clavier"
 
 #: crates/oni-ui/ui/help.slint
-msgid "It no longer applies Auto White Balance: it shows exactly what its keypad reads."
-msgstr "Elle n’applique plus la balance des blancs auto : elle montre exactement ce que lit son clavier."
-
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
-msgid "Back"
-msgstr "Retour"
-
-#: crates/oni-ui/ui/help.slint
-msgid "GET STARTED"
-msgstr "COMMENCER"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Next"
-msgstr "Suivant"
+msgid "No more Auto White Balance under it: it shows what its keypad reads."
+msgstr "Plus de balance des blancs automatique dessous : elle montre ce qu’affiche son clavier."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
@@ -980,6 +1422,18 @@ msgstr "Avis"
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Report a Bug / Give Feedback"
 msgstr "Signaler un bug / Donner votre avis"
+
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
+msgid "Back"
+msgstr "Retour"
+
+#: crates/oni-ui/ui/help.slint
+msgid "GET STARTED"
+msgstr "COMMENCER"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Next"
+msgstr "Suivant"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Thank You"
@@ -1130,24 +1584,12 @@ msgid "Open every folder"
 msgstr "Déplier tous les dossiers"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "Archive"
-msgstr "Archives"
-
-#: crates/oni-ui/ui/library_tree.slint
-msgid "Projects"
-msgstr "Projets"
-
-#: crates/oni-ui/ui/library_tree.slint
 msgid "Select photos in the Archive, then choose New Project."
 msgstr "Sélectionnez des photos dans l’onglet Archives, puis choisissez Nouveau projet."
 
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-app/src/app/organising/projects.rs crates/oni-ui/ui/library_tree.slint
 msgid "New Project"
 msgstr "Nouveau projet"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
-msgid "Gallery"
-msgstr "Galerie"
 
 #: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
 msgid "Export…"
@@ -1393,10 +1835,6 @@ msgstr "D − : plus sombre"
 msgid "D +: toward light"
 msgstr "D + : plus clair"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
-msgid "Colour"
-msgstr "Couleur"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points."
 msgstr "C, M et Y, les touches de couleur d’un minilab : + pousse le tirage vers le cyan, le magenta ou le jaune et − vers le rouge, le vert ou le bleu, d’un demi-point par cran, l’écran au-dessus comptant les points."
@@ -1445,10 +1883,6 @@ msgstr "Look"
 msgid "TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it."
 msgstr "TEMP pose le look chaud ou froid de la machine sur le tirage, un peu plus à chaque cran ; à zéro, le tirage reste tel que les touches au-dessus l’ont réglé."
 
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Temperature"
-msgstr "Température"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Temperature −: toward cool"
 msgstr "Température − : plus froid"
@@ -1489,33 +1923,9 @@ msgstr "Intensité de la balance des blancs auto"
 msgid "Shared by the {} photos of this roll."
 msgstr "Partagée par les {} photos de cette pellicule."
 
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Tint"
-msgstr "Teinte"
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Lighting"
-msgstr "Lumière"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
 msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Exposure"
-msgstr "Exposition"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast"
-msgstr "Contraste"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Highlights"
-msgstr "Hautes lumières"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shadows"
-msgstr "Ombres"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper Correction"
@@ -1742,14 +2152,6 @@ msgid "Paste Measuring Window"
 msgstr "Coller la fenêtre de mesure"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Brush size"
-msgstr "Taille du pinceau"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Sensitivity"
-msgstr "Sensibilité"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."
 msgstr "Aucune bonne correspondance trouvée à proximité : cette zone est une simple copie décalée, pas une vraie correspondance de structure."
 
@@ -1757,37 +2159,17 @@ msgstr "Aucune bonne correspondance trouvée à proximité : cette zone est une
 msgid "Remove This Correction"
 msgstr "Supprimer cette correction"
 
-#: crates/oni-ui/ui/panel/dedust_tab.slint crates/oni-ui/ui/settings.slint
-msgid "Automatic"
-msgstr "Automatique"
-
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Detect veils the photo but for its pixels past the roll's whites on a negative, its blacks on a positive; the dust among them stands ringed. Sensitivity reads further inside the window and asks less of a speck. Remove lays one patch on each speck ringed."
 msgstr "Détecter voile la photo sauf ses pixels au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin dans la fenêtre et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "DETECT"
-msgstr "DÉTECTER"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."
 msgstr "Cherche sur cette photo les poussières au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; rien ne change tant que vous ne les retirez pas."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "REMOVE"
-msgstr "RETIRER"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Lays one patch on each speck of dust ringed."
 msgstr "Recouvre chaque poussière cerclée d’une zone semblable."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Dust & Scratches"
-msgstr "Poussières et rayures"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Paint over a defect; the tool duplicates a matching patch of the same photo over it."
-msgstr "Peignez sur un défaut ; l’outil le recouvre d’une zone semblable prise dans la même photo."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
 msgid "Sharpening"
@@ -2094,24 +2476,12 @@ msgid "Details"
 msgstr "Détails"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "Crop"
-msgstr "Recadrage"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
 msgstr "Quitter le recadrage"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Rend à cette photo le recadrage qu’elle avait à l’ouverture du recadrage, puis le quitte."
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Dépoussiérage"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "Leave De-dust"
-msgstr "Quitter le dépoussiérage"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Puts back the corrections this photo had when De-dust opened, and leaves."
@@ -2128,10 +2498,6 @@ msgstr "Type de film"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
 msgstr "Numérisé avec"
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/toolbar.slint
-msgid "Scanner"
-msgstr "Scanner"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "DSLR Scan"
@@ -2393,10 +2759,6 @@ msgstr "Signaler un problème…"
 msgid "General"
 msgstr "Général"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/settings.slint
-msgid "Editor"
-msgstr "Éditeur"
-
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone"
 msgstr "Téléphone"
@@ -2412,14 +2774,6 @@ msgstr "Base"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Flags"
 msgstr "Marques"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Window"
-msgstr "Fenêtre"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Sheet"
-msgstr "Planche"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Back to One Photo"
@@ -2466,14 +2820,6 @@ msgid "Select one photo to de-dust it"
 msgstr "Sélectionnez une seule photo pour la dépoussiérer"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Compare"
-msgstr "Comparer"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Pro"
-msgstr "Pro"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Copy Settings ({})"
 msgstr "Copier les réglages ({})"
 
@@ -2496,10 +2842,6 @@ msgstr "Tout coller"
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
 msgstr "PRÉPARER"
-
-#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
-msgid "Prepare the Roll"
-msgstr "Préparer la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "ADD FOLDER…"
@@ -2680,12 +3022,6 @@ msgstr "Aucune poussière trouvée : montez la Sensibilité pour saisir les plus
 #: crates/oni-app/src/app/dedusting/auto.rs
 msgid "Reading the photo…"
 msgstr "Lecture de la photo…"
-
-#: crates/oni-app/src/app/dedusting/auto.rs
-msgid "{n} speck of dust ringed"
-msgid_plural "{n} specks of dust ringed"
-msgstr[0] "{n} poussière cerclée"
-msgstr[1] "{n} poussières cerclées"
 
 #: crates/oni-app/src/app/dedusting.rs
 msgid "Correction"
@@ -3464,14 +3800,6 @@ msgstr[1] "ONI oublie les {n} photos qu’il connaît dans « {folder} ». Aucun
 #: crates/oni-app/src/app/navigator/memory.rs
 msgid "Favourites and Projects"
 msgstr "Favoris et projets"
-
-#: crates/oni-app/src/app/navigator/rows.rs
-msgid "Favourites"
-msgstr "Favoris"
-
-#: crates/oni-app/src/app/navigator/rows.rs
-msgid "Computer"
-msgstr "Ordinateur"
 
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "{name} — {state}"
@@ -4526,14 +4854,6 @@ msgid "{n} Profile Installed"
 msgid_plural "{n} Profiles Installed"
 msgstr[0] "{n} profil installé"
 msgstr[1] "{n} profils installés"
-
-#: crates/oni-app/src/fields/readout.rs
-msgid "Cool"
-msgstr "Froid"
-
-#: crates/oni-app/src/fields/readout.rs
-msgid "Warm"
-msgstr "Chaud"
 
 #: crates/oni-app/src/flat_fields.rs
 msgid "This file could not be decoded as a picture."

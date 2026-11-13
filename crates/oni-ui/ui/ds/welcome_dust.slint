@@ -1,0 +1,240 @@
+// The welcome's De-dust scene: a close framing of the window that pans between its panel and its photo.
+// On the panel the hand presses DETECT; on the photo the rings land on the dust the app found; back on
+// the panel it presses REMOVE; on the photo the patches land one by one; back on the panel, their tiles.
+import { Colour, Space, ButtonStyle, CardStyle, SectionStyle, ShellStyle, CropStyle, TabsStyle } from "theme.slint";
+import { Button, ButtonGroup, GroupAlign, Look, Slider, SliderFill } from "controls.slint";
+import { Label, TextRole, Tone, Divider } from "base.slint";
+import { Section } from "containers.slint";
+import { ModeHeader } from "modes.slint";
+import { Ring, RingTone } from "marks.slint";
+import { CorrectionMark, DustOriginal } from "frame.slint";
+import { Arrow, Curves } from "welcome_clarity.slint";
+
+export global DustBeats {
+    out property <float> hand-in: 0.7;
+    out property <float> to-detect-for: 0.75;
+    out property <float> detect: 1.75;
+    out property <float> press-for: 0.13;
+    // Pans: to the photo, back to the panel, to the photo, back to the panel.
+    out property <float> pan-1: 2.0;
+    out property <float> pan-2: 4.6;
+    out property <float> pan-3: 6.6;
+    out property <float> pan-4: 9.3;
+    out property <float> pan-for: 0.9;
+    out property <float> rings-from: 2.9;
+    out property <float> ring-every: 0.16;
+    out property <float> ring-for: 0.35;
+    out property <float> to-remove-from: 5.55;
+    out property <float> to-remove-for: 0.45;
+    out property <float> remove: 6.3;
+    out property <float> heal-from: 7.6;
+    out property <float> heal-every: 0.28;
+    out property <float> heal-for: 0.4;
+    out property <float> rest: 2.4;
+    out property <float> zoom: 1.25;
+    // On the photo the camera draws back until the whole detail stands in the stage.
+    out property <float> photo-zoom: 0.95;
+    // The detail of the dusty scan as the canvas shows it, in points, and where it lies in the card.
+    out property <length> photo-width: 420px;
+    out property <length> photo-height: 470px;
+    out property <length> margin: Space.l;
+}
+
+// Where the app found the dust, in the detail's points, its ring's breadth: the reading at rest.
+struct Speck { x: length, y: length, d: length }
+
+export component DustScene inherits Rectangle {
+    clip: true;
+    property <[Speck]> specks: [
+        { x: 280px, y: 55px, d: 2px },
+        { x: 30.75px, y: 84.75px, d: 3.5px },
+        { x: 212.5px, y: 161.5px, d: 4px },
+        { x: 116px, y: 326px, d: 6px },
+        { x: 149px, y: 442.5px, d: 3px },
+    ];
+    property <[image]> tiles: [@image-url("../welcome/dust-tile-1.jpg"), @image-url("../welcome/dust-tile-2.jpg"), @image-url("../welcome/dust-tile-3.jpg"), @image-url("../welcome/dust-tile-4.jpg"), @image-url("../welcome/dust-tile-5.jpg")];
+    property <duration> began;
+    init => { root.began = animation-tick(); }
+    property <float> t: Math.mod((animation-tick() - root.began) / 1s, DustBeats.pan-4 + DustBeats.pan-for + DustBeats.rest);
+    function progress(from: float, length: float) -> float { max(0, min(1, (root.t - from) / length)) }
+    function glided(from: float, length: float) -> float { Curves.glide(root.progress(from, length)) }
+    function settled(from: float, length: float) -> float { Curves.settle(root.progress(from, length)) }
+    function pressing(at: float) -> bool { root.t >= at - DustBeats.press-for && root.t < at }
+    function ringed(i: int) -> float { root.settled(DustBeats.rings-from + i * DustBeats.ring-every, DustBeats.ring-for) }
+    function healed(i: int) -> float { root.settled(DustBeats.heal-from + i * DustBeats.heal-every, DustBeats.heal-for) }
+    property <bool> detected: root.t >= DustBeats.detect;
+    property <bool> removed: root.t >= DustBeats.remove;
+    // The window, in its own points: the canvas card and its detail, then the panel beside it.
+    property <length> card-width: DustBeats.photo-width + 2 * DustBeats.margin;
+    property <length> canvas-left: root.width / DustBeats.photo-zoom;
+    property <length> panel-x: root.card-width + Space.s;
+    property <length> panel: 340px;
+    // The camera: on the panel, close, its right edge a margin in from the stage's; on the photo, drawn
+    // back to the whole detail, centred. It glides between the two, closing in or drawing back as it goes.
+    property <float> to-photo: root.glided(DustBeats.pan-1, DustBeats.pan-for) - root.glided(DustBeats.pan-2, DustBeats.pan-for)
+        + root.glided(DustBeats.pan-3, DustBeats.pan-for) - root.glided(DustBeats.pan-4, DustBeats.pan-for);
+    property <float> zoom: DustBeats.zoom + (DustBeats.photo-zoom - DustBeats.zoom) * root.to-photo;
+    property <length> on-panel-x: root.panel-x + root.panel + Space.l - root.width / DustBeats.zoom;
+    // Drawn back, the photo stands a breath from the stage's left edge and the panel shows past it.
+    property <length> on-photo-x: DustBeats.margin - Space.m;
+    property <length> on-photo-y: DustBeats.margin + DustBeats.photo-height / 2 - root.height / DustBeats.photo-zoom / 2;
+    property <length> cam-x: root.on-panel-x + (root.on-photo-x - root.on-panel-x) * root.to-photo;
+    property <length> cam-y: root.on-photo-y * root.to-photo;
+    // The hand, in the window's points: onto DETECT, away while the camera is on the photo, onto REMOVE.
+    // Where the layout put the keys: window positions carry the camera's zoom, the window's points do not.
+    property <length> keys-y: (keys.absolute-position.y - panel-box.absolute-position.y) / root.zoom + keys.height / 2;
+    property <length> detect-x: root.panel-x + (keys.absolute-position.x - panel-box.absolute-position.x) / root.zoom + keys.width * 0.27;
+    property <length> remove-x: root.panel-x + (keys.absolute-position.x - panel-box.absolute-position.x) / root.zoom + keys.width * 0.77;
+    property <length> rest-x: root.panel-x + root.panel * 0.55;
+    property <length> rest-y: root.keys-y + 170px;
+    property <float> go1: root.glided(DustBeats.hand-in, DustBeats.to-detect-for);
+    property <float> go2: root.glided(DustBeats.to-remove-from, DustBeats.to-remove-for);
+    property <length> hand-x: root.rest-x + (root.detect-x - root.rest-x) * root.go1 + (root.remove-x - root.detect-x) * root.go2;
+    property <length> hand-y: root.rest-y + (root.keys-y - root.rest-y) * root.go1 - Space.l * Math.sin(root.go1 * 180deg) * (1 - root.go2)
+        - Space.s * Math.sin(root.go2 * 180deg);
+    property <bool> on-detect: root.go1 > 0.98 && root.go2 < 0.05;
+    property <bool> on-remove: root.go2 > 0.98;
+    Image {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        source: @image-url("../splash/1.5.0.jpg");
+        image-fit: cover;
+    }
+    Rectangle {
+        x: -root.cam-x * root.zoom;
+        y: -root.cam-y * root.zoom;
+        width: root.panel-x + root.panel;
+        height: root.height / DustBeats.photo-zoom + DustBeats.photo-height;
+        transform-scale: root.zoom;
+        transform-origin: { x: 0, y: 0 };
+        Rectangle {
+            x: -Space.l * 4;
+            width: parent.width + Space.l * 4;
+            height: parent.height + Space.l * 4;
+            background: Colour.ground;
+            drop-shadow-blur: Space.l;
+            drop-shadow-color: Colour.black.with-alpha(0.45);
+        }
+        // The canvas, its detail of the dusty scan, its rings, its patches and their marks.
+        // The canvas runs on to the left, as the window's does past the column, so the camera drawn back
+        // on the photo shows canvas round it, never the window's bare ground.
+        Rectangle {
+            x: -root.canvas-left;
+            y: -CardStyle.radius;
+            width: root.card-width + root.canvas-left;
+            height: parent.height + CardStyle.radius * 2;
+            background: Colour.canvas;
+            border-radius: CardStyle.radius;
+            Rectangle {
+                x: root.canvas-left + DustBeats.margin;
+                y: DustBeats.margin + CardStyle.radius;
+                width: DustBeats.photo-width;
+                height: DustBeats.photo-height;
+                Image { width: parent.width; height: parent.height; source: @image-url("../welcome/dust.jpg"); }
+                for s[i] in root.specks: Rectangle {
+                    property <length> side: max(s.d * 2, DustStyle-ring);
+                    property <float> ringed: root.ringed(i);
+                    property <float> healed: root.healed(i);
+                    property <length> DustStyle-ring: 20px;
+                    // The patch: the healed scan through a disc as wide as the ring, coming in.
+                    Rectangle {
+                        x: s.x - parent.side / 2;
+                        y: s.y - parent.side / 2;
+                        width: parent.side;
+                        height: parent.side;
+                        border-radius: self.width / 2;
+                        clip: true;
+                        opacity: parent.healed;
+                        Image {
+                            x: -(s.x - parent.width / 2);
+                            y: -(s.y - parent.height / 2);
+                            width: DustBeats.photo-width;
+                            height: DustBeats.photo-height;
+                            source: @image-url("../welcome/dust-healed.jpg");
+                        }
+                    }
+                    Ring {
+                        centre-x: s.x;
+                        centre-y: s.y;
+                        diameter: parent.side;
+                        opacity: parent.ringed * (1 - parent.healed);
+                        transform-scale: 1.6 - 0.6 * parent.ringed;
+                    }
+                    CorrectionMark {
+                        x: s.x - parent.side / 2;
+                        y: s.y - parent.side / 2;
+                        width: parent.side;
+                        height: parent.side;
+                        number: i + 1;
+                        opacity: parent.healed;
+                    }
+                }
+            }
+        }
+        // The panel: De-dust's header, the automatic block, the brush, and the corrections' tiles.
+        panel-box := Rectangle {
+            x: root.panel-x;
+            y: 0;
+            width: root.panel;
+            height: parent.height;
+            VerticalLayout {
+                alignment: start;
+                header := VerticalLayout {
+                    padding-left: SectionStyle.inset;
+                    padding-right: SectionStyle.inset;
+                    padding-top: Space.s;
+                    padding-bottom: Space.s;
+                    ModeHeader { title: @tr("De-dust"); help: @tr("Leave De-dust"); }
+                }
+                Divider { }
+                Section {
+                    title: @tr("Automatic");
+                    help: @tr("Detect veils the photo but for its dust, which stands ringed; Remove lays one patch on each.");
+                    separated: false;
+                    Slider { label: @tr("Sensitivity"); readout: "0%"; fraction: 0; header: true; }
+                    keys := ButtonGroup {
+                        align: GroupAlign.fill;
+                        Button {
+                            text: @tr("DETECT"); keycap: true; fills: true; enabled: !root.detected;
+                            look: root.pressing(DustBeats.detect) ? Look.pressed : root.on-detect ? Look.hover : Look.live;
+                        }
+                        Button {
+                            text: @tr("REMOVE"); keycap: true; fills: true; enabled: root.detected && !root.removed;
+                            look: root.pressing(DustBeats.remove) ? Look.pressed : root.on-remove ? Look.hover : Look.live;
+                        }
+                    }
+                    if root.detected && !root.removed: Label { text: @tr("{n} speck of dust ringed" | "{n} specks of dust ringed" % root.specks.length); role: TextRole.note; }
+                }
+                Section {
+                    title: @tr("Dust & Scratches");
+                    help: @tr("Paint over a defect; the tool duplicates a matching patch of the same photo over it.");
+                    separated: false;
+                    Slider { label: @tr("Brush size"); readout: @tr("{} px", 12); fraction: 0.12; header: true; }
+                    // The corrections as tiles of their dust and numbers, each coming as its patch lands.
+                    Rectangle {
+                        height: root.removed ? CropStyle.dust-original + CropStyle.dust-under : 0px;
+                        for tile[i] in root.tiles: VerticalLayout {
+                            x: i * (CropStyle.dust-original + Space.xs);
+                            y: 0;
+                            width: CropStyle.dust-original;
+                            spacing: Space.xxs;
+                            opacity: root.healed(i);
+                            DustOriginal { source: tile; }
+                            Label { text: i + 1; role: TextRole.caption; tone: Tone.secondary; }
+                        }
+                    }
+                }
+            }
+        }
+        Arrow {
+            x: root.hand-x;
+            y: root.hand-y;
+            transform-scale: root.pressing(DustBeats.detect) || root.pressing(DustBeats.remove) ? 0.9 : 1;
+            transform-origin: { x: 0, y: 0 };
+            opacity: root.progress(DustBeats.hand-in - 0.15, 0.3) * (1 - root.progress(DustBeats.pan-1, 0.2))
+                + root.progress(DustBeats.pan-2 + DustBeats.pan-for - 0.3, 0.3) * (1 - root.progress(DustBeats.pan-3, 0.2));
+        }
+    }
+}
