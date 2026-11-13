@@ -1,6 +1,6 @@
 // The welcome's scene of Auto De-dust at work: DETECT rings each speck of a drawn scan as the reading
 // passes, REMOVE heals them one by one into the corrections grid; the clean picture ends the loop.
-import { SceneFrame, Cycle } from "welcome.slint";
+import { SceneFrame, Figures, Cycle, Easing } from "welcome.slint";
 import { Colour, Radius, State, ButtonStyle, DustStyle, Type } from "theme.slint";
 import { Keycap, KeycapVariant } from "depth.slint";
 import { WelcomeDedust as W } from "welcome_dedust_style.slint";
@@ -30,24 +30,6 @@ component SceneKey inherits Keycap {
     }
 }
 
-// A count in fixed digit cells, right-aligned, so a step never shifts it.
-component Digits inherits Rectangle {
-    in property <int> n;
-    in property <float> strength;
-    width: 2 * W.digit;
-    for cell in 2: Text {
-        x: cell * W.digit;
-        width: W.digit;
-        height: parent.height;
-        text: cell == 0 ? (root.n >= 10 ? "" + floor(root.n / 10) : "") : (root.n > 0 ? "" + mod(root.n, 10) : "");
-        font-size: Type.section;
-        font-weight: Type.strong;
-        color: Colour.ink.transparentize(1 - root.strength);
-        horizontal-alignment: right;
-        vertical-alignment: center;
-    }
-}
-
 export component DedustScene inherits SceneFrame {
     accessible-role: image;
     accessible-label: @tr("Automatic De-dust");
@@ -57,18 +39,18 @@ export component DedustScene inherits SceneFrame {
     property <int> found: W.counted(root.t);
 
     // The reading: the picture veiled but for the band, lifted once the band has crossed.
-    property <float> dim: W.arrive(W.progress(root.t, W.sweep-from, W.dim-time)) * (1 - W.arrive(W.progress(root.t, W.sweep-to, W.lift-time)));
+    property <float> dim: Easing.arrive(W.progress(root.t, W.sweep-from, W.dim-time)) * (1 - Easing.arrive(W.progress(root.t, W.sweep-to, W.lift-time)));
     property <length> trail: W.trailing(root.t);
     // DETECT out of reach from its release until REMOVE's; REMOVE within reach once the reading ends,
     // until its own release: both out of reach while the band passes.
-    property <float> back: W.arrive(W.progress(root.t, W.remove + W.down + W.held, W.up));
-    property <float> detect-live: 1 - W.arrive(W.progress(root.t, W.detect + W.down + W.held, W.up)) + root.back;
-    property <float> remove-live: W.arrive(W.progress(root.t, W.sweep-to, W.lift-time)) - root.back;
+    property <float> back: Easing.arrive(W.progress(root.t, W.remove + W.down + W.held, W.up));
+    property <float> detect-live: 1 - Easing.arrive(W.progress(root.t, W.detect + W.down + W.held, W.up)) + root.back;
+    property <float> remove-live: Easing.arrive(W.progress(root.t, W.sweep-to, W.lift-time)) - root.back;
 
     // The pointer: in from the right edge to DETECT, down to REMOVE, then away; its tip in stage points.
-    property <float> enter: W.ease(W.progress(root.t, W.enter, W.travel));
-    property <float> drop: W.ease(W.progress(root.t, W.to-remove, W.hop));
-    property <float> away: W.arrive(W.progress(root.t, W.exit, W.fade-out));
+    property <float> enter: Easing.ease(W.progress(root.t, W.enter, W.travel));
+    property <float> drop: Easing.ease(W.progress(root.t, W.to-remove, W.hop));
+    property <float> away: Easing.arrive(W.progress(root.t, W.exit, W.fade-out));
     property <length> detect-x: W.panel-x + W.panel-inset + 114px;
     property <length> detect-y: W.picture-y + W.key-height / 2 + 5px;
     property <length> remove-y: root.detect-y + W.key-height + W.count-height + 2 * W.gap;
@@ -77,10 +59,10 @@ export component DedustScene inherits SceneFrame {
         : root.detect-x + W.bow * sin(180deg * root.drop) + W.drift * 0.7 * root.away;
     property <length> tip-y: !root.second ? W.enter-y + (root.detect-y - W.enter-y) * root.enter - W.bow * sin(180deg * root.enter)
         : root.detect-y + (root.remove-y - root.detect-y) * root.drop + W.drift * 0.7 * root.away;
-    property <float> shown: W.arrive(W.progress(root.t, W.enter, W.fade-in)) * (1 - W.progress(root.t, W.exit, W.fade-out));
+    property <float> shown: Easing.arrive(W.progress(root.t, W.enter, W.fade-in)) * (1 - W.progress(root.t, W.exit, W.fade-out));
     property <float> click: root.second ? W.remove : W.detect;
-    property <float> dip: 1 - 0.1 * (W.leave(W.progress(root.t, root.click, W.dip)) - W.arrive(W.progress(root.t, root.click + W.dip, W.rise)));
-    property <float> spread: W.arrive(W.progress(root.t, root.click, W.click-time));
+    property <float> dip: 1 - 0.1 * (Easing.leave(W.progress(root.t, root.click, W.dip)) - Easing.arrive(W.progress(root.t, root.click + W.dip, W.rise)));
+    property <float> spread: Easing.arrive(W.progress(root.t, root.click, W.click-time));
 
     picture := Rectangle {
         x: W.picture-x;
@@ -133,7 +115,7 @@ export component DedustScene inherits SceneFrame {
             width: parent.inner;
             word: @tr("DETECT");
             live: root.detect-live;
-            hover: W.arrive(W.progress(root.t, W.enter + W.travel, W.fade-in)) * (1 - W.arrive(W.progress(root.t, W.to-remove, W.fade-in)));
+            hover: Easing.arrive(W.progress(root.t, W.enter + W.travel, W.fade-in)) * (1 - Easing.arrive(W.progress(root.t, W.to-remove, W.fade-in)));
             depth: W.press(root.t, W.detect);
         }
         Rectangle {
@@ -147,18 +129,23 @@ export component DedustScene inherits SceneFrame {
                 diameter: W.ring-least;
                 strength: parent.strength;
             }
-            Digits {
+            Figures {
+                cell: W.digit;
+                size: Type.section;
+                blank-zero: true;
                 x: W.ring-least + W.ring-line + 2 * W.ring-halo + 8px;
                 height: parent.height;
                 n: root.found;
-                strength: 1;
             }
             // The last state's count, faded out over the rewind while the forward count starts empty.
-            Digits {
+            Figures {
+                cell: W.digit;
+                size: Type.section;
+                blank-zero: true;
                 x: W.ring-least + W.ring-line + 2 * W.ring-halo + 8px;
                 height: parent.height;
                 n: W.specks.length;
-                strength: root.rewind;
+                ink: Colour.ink.transparentize(1 - root.rewind);
             }
         }
         SceneKey {
@@ -167,7 +154,7 @@ export component DedustScene inherits SceneFrame {
             width: parent.inner;
             word: @tr("REMOVE");
             live: root.remove-live;
-            hover: W.arrive(W.progress(root.t, W.to-remove + W.hop, W.fade-in)) * (1 - W.progress(root.t, W.exit, W.fade-out));
+            hover: Easing.arrive(W.progress(root.t, W.to-remove + W.hop, W.fade-in)) * (1 - W.progress(root.t, W.exit, W.fade-out));
             depth: W.press(root.t, W.remove);
         }
         grid := Rectangle {

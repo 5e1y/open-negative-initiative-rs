@@ -1,4 +1,5 @@
 // The De-dust scene's sizes, colours, times and specks: stage points, and times in ms of the loop.
+import { Easing } from "welcome.slint";
 import { Colour } from "theme.slint";
 
 // One speck on the picture: its centre, its size, light or dark, the ground it lies on (0 sky, 1 far
@@ -118,14 +119,10 @@ export global WelcomeDedust {
         max(0, min(1, (t - at(from)) / at(span)))
     }
 
-    public pure function ease(p: float) -> float { p * p * (3 - 2 * p) }
-    public pure function arrive(p: float) -> float { 1 - (1 - p) * (1 - p) * (1 - p) }
-    public pure function leave(p: float) -> float { p * p * p }
-    public pure function land(p: float) -> float { 1 + 2 * (p - 1) * (p - 1) * (p - 1) + (p - 1) * (p - 1) }
 
     // A key's travel pressed at `at`: down on `in`, held, up on `out`, to `depth` of its wall.
     public pure function press(t: float, from: float) -> float {
-        depth * (leave(progress(t, from, down)) - arrive(progress(t, from + down + held, up)))
+        depth * (Easing.leave(progress(t, from, down)) - Easing.arrive(progress(t, from + down + held, up)))
     }
 
     // The band's trailing edge in the picture: from its own width left of the picture to its right edge.

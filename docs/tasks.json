@@ -10308,5 +10308,12 @@
     "title": "The welcome's De-dust page, animated",
     "status": "done",
     "detail": "Page 2 of the 1.6 welcome loops Auto De-dust over 9 s after the animation direction, on a drawn daylight landscape, no photo: 18 specks, 11 dots, 5 flakes and 2 hairs, numbered in reading order. The pointer comes in from the right edge to DETECT and presses the keycap; the picture dims but for a 56 px band crossing it, and each speck's ring (white on a dark halo) lands as the band's trailing edge passes, the count stepping in fixed digit cells; REMOVE comes within reach once the reading ends. The pointer hops down to REMOVE and leaves; the specks heal one by one, three slow then every 110 ms, each tile landing in a 6 by 3 corrections grid. The loop ends on the clean picture with its 18 tiles and rewinds to the dust in a still dissolve; Reduce Motion rests on that end. Sizes, colours, times and specks in WelcomeDedust. Check: welcome_scenes_dedust (frames at 0 and 1 identical; speck 7 darker than the sky at 0.07, matching it at 0.90; twins: at 0.07 it is not healed, and the opening differs from the end); with ONI_SCENE_FRAMES=1 it also shoots a frame every 100 ms of the loop for review."
+  },
+  {
+    "id": 2009,
+    "type": "refactor",
+    "title": "One set of scene curves and one count for the welcome",
+    "status": "done",
+    "detail": "The four curves lived in Phase, in the De-dust scene and in the interface scene, and the fixed-cell count twice. Easing (pure functions) and Figures in ds/welcome.slint now serve every scene; Phase reads Easing. Checks: welcome_scenes_dedust and welcome_scenes_pages, unchanged pixels asserted."
   }
 ]

@@ -1,4 +1,5 @@
 // The De-dust scene's pieces: the picture, a speck with its ring, a tile of the corrections grid, the pointer.
+import { Easing } from "welcome.slint";
 import { Colour, Type, Radius } from "theme.slint";
 import { WelcomeDedust as W, DedustSpeck } from "welcome_dedust_style.slint";
 
@@ -89,8 +90,8 @@ export component SceneSpeck inherits Rectangle {
     in property <int> i;
     in property <DedustSpeck> speck;
     in property <bool> ring;
-    property <float> rung: W.land(W.progress(root.t, W.ringed-at(root.i), W.ring-time));
-    property <float> healing: max(W.leave(W.progress(root.t, W.healed-at(root.i), W.heal-time)), root.rewind);
+    property <float> rung: Easing.land(W.progress(root.t, W.ringed-at(root.i), W.ring-time));
+    property <float> healing: max(Easing.leave(W.progress(root.t, W.healed-at(root.i), W.heal-time)), root.rewind);
     property <length> diameter: max(W.ring-least, root.speck.size + W.ring-room);
     x: root.speck.x - self.width / 2;
     y: root.speck.y - self.height / 2;
@@ -114,7 +115,7 @@ export component SceneTile inherits Rectangle {
     in property <int> i;
     in property <DedustSpeck> speck;
     in property <length> side;
-    property <float> landed: W.land(W.progress(root.t, W.healed-at(root.i) + W.tile-after, W.tile-time));
+    property <float> landed: Easing.land(W.progress(root.t, W.healed-at(root.i) + W.tile-after, W.tile-time));
     property <float> shown: max(min(1, root.landed), root.rewind);
     // Over the rewind it only fades: nothing shrinks backwards.
     property <float> scale: root.rewind > 0 ? 1 : 0.8 + 0.2 * root.landed;
