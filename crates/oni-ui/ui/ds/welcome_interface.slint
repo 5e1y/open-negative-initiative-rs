@@ -1,5 +1,17 @@
-// The welcome's scene of the interface before and after.
+// The welcome's scene of the interface: the editor's miniature pressed flat into its calmer look, a value
+// typed close up, a section folded; each turn but the first dissolves from the last moment laid under it.
 import { SceneFrame, Cycle } from "welcome.slint";
+import { InterfaceBeats } from "welcome_interface_parts.slint";
+import { InterfaceMoment } from "welcome_interface_moment.slint";
 
 export component InterfaceScene inherits SceneFrame {
+    clock := Cycle { period: InterfaceBeats.period; }
+    if clock.rewind > 0: InterfaceMoment { width: root.width; height: root.height; t: 1; }
+    InterfaceMoment {
+        width: root.width;
+        height: root.height;
+        t: clock.t;
+        opacity: 1 - clock.rewind;
+        visible: clock.rewind < 1;
+    }
 }

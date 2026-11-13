@@ -97,7 +97,7 @@ msgstr "Préparer la pellicule…"
 msgid "Reset the Roll…"
 msgstr "Réinitialiser la pellicule…"
 
-#: crates/oni-app/src/wrapped.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/wrapped.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Settings"
 msgstr "Réglages"
 
@@ -321,7 +321,7 @@ msgstr "Afficher {}"
 msgid "Hide {}"
 msgstr "Masquer {}"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -452,6 +452,90 @@ msgstr "Double-cliquez pour revenir au repos"
 #: crates/oni-ui/ui/ds/splash.slint
 msgid "Photo"
 msgstr "Photo"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/menus.slint
+msgid "Gallery"
+msgstr "Galerie"
+
+#: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/rating_filter.slint
+msgid "All"
+msgstr "Toutes"
+
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
+msgid "EXPORT"
+msgstr "EXPORTER"
+
+#: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
+msgid "Back"
+msgstr "Retour"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+msgid "Undo"
+msgstr "Annuler"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+msgid "Redo"
+msgstr "Rétablir"
+
+#: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/toolbar.slint
+msgid "Sheet"
+msgstr "Planche"
+
+#: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "Crop"
+msgstr "Recadrage"
+
+#: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/toolbar.slint
+msgid "Compare"
+msgstr "Comparer"
+
+#: crates/oni-ui/ui/ds/welcome_interface_bar.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
+msgid "Feedback"
+msgstr "Avis"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
+msgid "Colour"
+msgstr "Couleur"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Lighting"
+msgstr "Lumière"
+
+#: crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Effects"
+msgstr "Effets"
+
+#: crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Temperature"
+msgstr "Température"
+
+#: crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Tint"
+msgstr "Teinte"
+
+#: crates/oni-ui/ui/ds/welcome_interface_panel.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Exposure"
+msgstr "Exposition"
+
+#: crates/oni-ui/ui/ds/welcome_interface_side.slint crates/oni-ui/ui/library_tree.slint
+msgid "Archive"
+msgstr "Archives"
+
+#: crates/oni-ui/ui/ds/welcome_interface_side.slint crates/oni-ui/ui/library_tree.slint
+msgid "Projects"
+msgstr "Projets"
+
+#: crates/oni-ui/ui/ds/welcome_interface_side.slint crates/oni-ui/ui/rating_filter.slint
+msgid "All Photos"
+msgstr "Toutes les photos"
+
+#: crates/oni-app/src/app/navigator/rows.rs crates/oni-ui/ui/ds/welcome_interface_side.slint
+msgid "Favourites"
+msgstr "Favoris"
+
+#: crates/oni-app/src/app/navigator/rows.rs crates/oni-ui/ui/ds/welcome_interface_side.slint
+msgid "Computer"
+msgstr "Ordinateur"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
@@ -825,10 +909,6 @@ msgstr "Nom du préréglage"
 msgid "e.g. Client TIFF"
 msgstr "p. ex. TIFF client"
 
-#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
-msgid "EXPORT"
-msgstr "EXPORTER"
-
 #: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint
 msgid "Show What This Screen Cannot Show"
 msgstr "Montrer ce que cet écran ne peut pas afficher"
@@ -977,10 +1057,6 @@ msgstr "Préparer la pellicule : Annuler ne laisse rien à moitié fait, et les 
 msgid "No more freezes on slow or network disks; a move never replaces a file."
 msgstr "Plus de blocages sur les disques lents ou réseau ; un déplacement ne remplace jamais un fichier."
 
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
-msgid "Back"
-msgstr "Retour"
-
 #: crates/oni-ui/ui/help.slint
 msgid "GET STARTED"
 msgstr "COMMENCER"
@@ -992,10 +1068,6 @@ msgstr "Suivant"
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
 msgstr "Site web"
-
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
-msgid "Feedback"
-msgstr "Avis"
 
 #: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
 msgid "Report a Bug / Give Feedback"
@@ -1150,24 +1222,12 @@ msgid "Open every folder"
 msgstr "Déplier tous les dossiers"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "Archive"
-msgstr "Archives"
-
-#: crates/oni-ui/ui/library_tree.slint
-msgid "Projects"
-msgstr "Projets"
-
-#: crates/oni-ui/ui/library_tree.slint
 msgid "Select photos in the Archive, then choose New Project."
 msgstr "Sélectionnez des photos dans l’onglet Archives, puis choisissez Nouveau projet."
 
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-app/src/app/organising/projects.rs crates/oni-ui/ui/library_tree.slint
 msgid "New Project"
 msgstr "Nouveau projet"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
-msgid "Gallery"
-msgstr "Galerie"
 
 #: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
 msgid "Export…"
@@ -1188,14 +1248,6 @@ msgstr "Coller les réglages"
 #: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
-msgid "Undo"
-msgstr "Annuler"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
-msgid "Redo"
-msgstr "Rétablir"
 
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
 msgid "Zoom Out"
@@ -1417,10 +1469,6 @@ msgstr "D − : plus sombre"
 msgid "D +: toward light"
 msgstr "D + : plus clair"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
-msgid "Colour"
-msgstr "Couleur"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points."
 msgstr "C, M et Y, les touches de couleur d’un minilab : + pousse le tirage vers le cyan, le magenta ou le jaune et − vers le rouge, le vert ou le bleu, d’un demi-point par cran, l’écran au-dessus comptant les points."
@@ -1469,10 +1517,6 @@ msgstr "Look"
 msgid "TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it."
 msgstr "TEMP pose le look chaud ou froid de la machine sur le tirage, un peu plus à chaque cran ; à zéro, le tirage reste tel que les touches au-dessus l’ont réglé."
 
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Temperature"
-msgstr "Température"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Temperature −: toward cool"
 msgstr "Température − : plus froid"
@@ -1513,21 +1557,9 @@ msgstr "Intensité de la balance des blancs auto"
 msgid "Shared by the {} photos of this roll."
 msgstr "Partagée par les {} photos de cette pellicule."
 
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
-msgid "Tint"
-msgstr "Teinte"
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Lighting"
-msgstr "Lumière"
-
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
 msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Exposure"
-msgstr "Exposition"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast"
@@ -1556,10 +1588,6 @@ msgstr "CORRECTION PAPIER AUTO"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Sets the three gains from the paper profile alone"
 msgstr "Règle les trois gains d’après le seul profil papier"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Effects"
-msgstr "Effets"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
@@ -2118,10 +2146,6 @@ msgid "Details"
 msgstr "Détails"
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "Crop"
-msgstr "Recadrage"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave Crop"
 msgstr "Quitter le recadrage"
 
@@ -2301,14 +2325,6 @@ msgstr "Copier le code du préréglage"
 msgid "Copies the preset as one line of text, to paste in a message."
 msgstr "Copie le préréglage sous forme d’une ligne de texte, à coller dans un message."
 
-#: crates/oni-ui/ui/rating_filter.slint
-msgid "All Photos"
-msgstr "Toutes les photos"
-
-#: crates/oni-ui/ui/rating_filter.slint
-msgid "All"
-msgstr "Toutes"
-
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"
 msgstr "Langue"
@@ -2442,10 +2458,6 @@ msgid "Window"
 msgstr "Fenêtre"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Sheet"
-msgstr "Planche"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Back to One Photo"
 msgstr "Revenir à une seule photo"
 
@@ -2488,10 +2500,6 @@ msgstr "Recadrer et redresser ({})"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Select one photo to de-dust it"
 msgstr "Sélectionnez une seule photo pour la dépoussiérer"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Compare"
-msgstr "Comparer"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Pro"
@@ -3488,14 +3496,6 @@ msgstr[1] "ONI oublie les {n} photos qu’il connaît dans « {folder} ». Aucun
 #: crates/oni-app/src/app/navigator/memory.rs
 msgid "Favourites and Projects"
 msgstr "Favoris et projets"
-
-#: crates/oni-app/src/app/navigator/rows.rs
-msgid "Favourites"
-msgstr "Favoris"
-
-#: crates/oni-app/src/app/navigator/rows.rs
-msgid "Computer"
-msgstr "Ordinateur"
 
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "{name} — {state}"

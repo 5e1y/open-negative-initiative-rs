@@ -1,0 +1,359 @@
+// The welcome's interface scene, its right panel: the block headers swapped, the sliders morphed in
+// place, and the value typed by hand in the field that opens in its readout's place.
+import { Colour, Type } from "theme.slint";
+import { Icons } from "icons.slint";
+import { InterfaceSceneStyle, InterfaceBeats, Pouf, Breath, CapBody } from "welcome_interface_parts.slint";
+
+export global PanelStyle {
+    out property <length> band-y: 6px;
+    out property <length> band-height: 60px;
+    out property <length> readout: 10px;
+    out property <length> rail-gap: 12px;
+    out property <length> header: 16px;
+    // Where the blocks sit from the panel's top.
+    out property <length> colour-y: 76px;
+    out property <length> temperature-y: 96px;
+    out property <length> tint-y: 134px;
+    out property <length> lighting-y: 174px;
+    out property <length> exposure-y: 194px;
+    out property <length> effects-y: 234px;
+    // The look before: a 14 px rail in a deep well with a white rim and a black edge, a 24 by 34 knob.
+    out property <length> old-rail: 8px;
+    out property <length> old-row: 20px;
+    out property <length> old-knob-width: 14px;
+    out property <length> old-knob-height: 20px;
+    out property <color> old-ground: #ffffff27;
+    out property <color> old-lit: #ffffff56;
+    out property <color> old-edge: #00000080;
+    out property <color> old-rim: #ffffff33;
+    // The look now: an 8 px rail, a 20 by 26 knob, a tick at rest, hues faint at the ends.
+    out property <length> new-rail: 5px;
+    out property <length> new-row: 16px;
+    out property <length> new-knob-width: 12px;
+    out property <length> new-knob-height: 16px;
+    out property <color> new-ground: #ffffff5d;
+    out property <color> new-lit: #ffffff73;
+    out property <color> new-lip: #ffffff1a;
+    out property <color> well: #00000040;
+    out property <color> tick: #ffffff8c;
+    out property <length> tick-height: 8px;
+    out property <float> hue-rest: 0.2;
+    out property <length> grip: 7px;
+    out property <length> grip-gap: 2.4px;
+    // The typing field at six tenths of its 100 by 24: two ghost keys about the figure, a rim and the
+    // focus ring once it takes keys.
+    out property <length> field-width: 60px;
+    out property <length> field-height: 14.4px;
+    out property <length> field-glyph: 7.2px;
+    out property <color> field-rim: #ffffff66;
+    out property <length> focus-ring: 1.2px;
+    out property <length> focus-gap: 2.4px;
+    out property <float> selection: 0.45;
+    out property <color> engrave-dark: #00000073;
+    out property <color> engrave-light: #ffffff0f;
+}
+
+// The histogram band at the panel's head, the same in both looks.
+export component Histogram inherits Rectangle {
+    in property <float> zoom: 1;
+    height: PanelStyle.band-height * root.zoom;
+    border-radius: InterfaceSceneStyle.card-radius * root.zoom;
+    background: Colour.canvas;
+    Path {
+        x: 6px * root.zoom;
+        y: 8px * root.zoom;
+        width: parent.width - 12px * root.zoom;
+        height: parent.height - 12px * root.zoom;
+        viewbox-width: 100;
+        viewbox-height: 40;
+        fill: #ffffff2e;
+        commands: "M 0 40 C 8 39 12 30 20 26 C 28 22 32 12 40 14 C 48 16 50 6 58 8 C 66 10 70 24 78 28 C 86 32 92 36 100 40 Z";
+    }
+}
+
+// A block's header, the look before (a plain title, a mini keycap folding it) faded for the look now
+// (a ghost chevron, an engraved title, Reset once something in the block moved).
+component Header inherits Rectangle {
+    in property <float> zoom: 1;
+    in property <float> press;
+    in property <float> gone;
+    in property <float> come;
+    in property <string> word;
+    in property <bool> open: true;
+    in property <float> reset;
+    height: PanelStyle.header * root.zoom;
+    Rectangle {
+        opacity: 1 - root.gone;
+        visible: root.gone < 1;
+        Text { x: 0; height: parent.height; text: root.word; font-family: Type.family; font-size: InterfaceSceneStyle.label * root.zoom; color: Colour.ink; vertical-alignment: center; }
+        CapBody {
+            old: true;
+            k: root.zoom * 0.6;
+            sink: root.press;
+            x: parent.width - self.width;
+            y: (parent.height - self.height) / 2;
+            width: parent.height;
+            height: parent.height;
+            Image { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; source: root.open ? Icons.chevron-down : Icons.chevron-right; colorize: Colour.white; width: InterfaceSceneStyle.glyph-small * root.zoom; height: self.width; }
+        }
+    }
+    Rectangle {
+        opacity: root.come;
+        visible: root.come > 0;
+        Image { x: 0; y: (parent.height - self.height) / 2; source: root.open ? Icons.chevron-down : Icons.chevron-right; colorize: Colour.ink-secondary; width: InterfaceSceneStyle.glyph-small * root.zoom; height: self.width; }
+        for copy in [
+            { dy: -1px, ink: PanelStyle.engrave-dark },
+            { dy: 1px, ink: PanelStyle.engrave-light },
+            { dy: 0px, ink: Colour.ink },
+        ]: Text {
+            x: 10px * root.zoom;
+            y: copy.dy;
+            height: parent.height;
+            text: root.word;
+            font-family: Type.family;
+            font-size: InterfaceSceneStyle.title * root.zoom;
+            font-weight: Type.strong;
+            color: copy.ink;
+            vertical-alignment: center;
+        }
+        Text {
+            x: parent.width - self.width;
+            height: parent.height;
+            opacity: root.reset;
+            text: @tr("Reset");
+            font-family: Type.family;
+            font-size: InterfaceSceneStyle.word * root.zoom;
+            font-weight: Type.strong;
+            color: Colour.ink-secondary;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// A slider morphing from the look before (`shape` and `tone` 0) to now (1): the same rail thinner,
+// the same knob smaller, its hues faded to their ends unless the hand is in the block (`hues`).
+component Slider inherits Rectangle {
+    in property <float> zoom: 1;
+    in property <float> press;
+    in property <float> shape;
+    in property <float> tone;
+    in property <string> name;
+    in property <string> value;
+    in property <bool> value-lit;
+    in property <float> fraction;
+    in property <float> rest: 0.5;
+    in property <bool> hued;
+    in property <color> low;
+    in property <color> high;
+    in property <float> hues;
+    // The field: opened, taking keys, its figure selected, what it holds, the caret after it.
+    in property <float> field;
+    in property <float> keyed;
+    in property <float> chosen;
+    in property <string> typed;
+    in property <bool> caret;
+    property <length> rail: (PanelStyle.old-rail + (PanelStyle.new-rail - PanelStyle.old-rail) * root.shape) * root.zoom;
+    property <length> lane: (PanelStyle.old-row + (PanelStyle.new-row - PanelStyle.old-row) * root.shape) * root.zoom;
+    property <length> mid: PanelStyle.rail-gap * root.zoom + root.lane / 2;
+    property <float> full: (1 - root.tone) + root.tone * root.hues;
+    height: PanelStyle.rail-gap * root.zoom + root.lane;
+    Text { x: 0; y: 0; height: PanelStyle.readout * root.zoom; text: root.name; font-family: Type.family; font-size: InterfaceSceneStyle.label * root.zoom; color: Colour.ink; vertical-alignment: center; }
+    Text {
+        x: parent.width - self.width;
+        y: 0;
+        height: PanelStyle.readout * root.zoom;
+        opacity: 1 - root.field;
+        text: root.value;
+        font-family: Type.family;
+        font-size: InterfaceSceneStyle.word * root.zoom;
+        color: root.value-lit ? Colour.ink : Colour.ink-secondary;
+        vertical-alignment: center;
+    }
+    Rectangle {
+        width: PanelStyle.field-width * root.zoom;
+        height: PanelStyle.field-height * root.zoom;
+        x: parent.width - self.width;
+        y: (PanelStyle.readout - PanelStyle.field-height) / 2 * root.zoom;
+        opacity: root.field;
+        visible: root.field > 0;
+        Rectangle {
+            x: -(PanelStyle.focus-gap + PanelStyle.focus-ring) * root.zoom;
+            y: self.x;
+            width: parent.width - 2 * self.x;
+            height: parent.height - 2 * self.y;
+            border-radius: self.height / 2;
+            border-width: PanelStyle.focus-ring * root.zoom;
+            border-color: Colour.accent.with-alpha(root.keyed);
+        }
+        Rectangle {
+            border-radius: self.height / 2;
+            background: Colour.canvas;
+            border-width: max(1px, 0.6px * root.zoom);
+            border-color: PanelStyle.field-rim.with-alpha(0.4 * root.keyed);
+        }
+        for sign[i] in [Icons.zoom-out, Icons.zoom-in]: Image {
+            x: i == 0 ? (parent.height - self.width) / 2 : parent.width - (parent.height + self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: sign;
+            colorize: Colour.ink-secondary;
+            width: PanelStyle.field-glyph * root.zoom;
+            height: self.width;
+        }
+        Rectangle {
+            x: figure.x - 1px * root.zoom;
+            y: 2px * root.zoom;
+            width: figure.width + 2px * root.zoom;
+            height: parent.height - 4px * root.zoom;
+            background: Colour.accent.with-alpha(PanelStyle.selection * root.chosen);
+        }
+        figure := Text {
+            x: (parent.width - self.width) / 2;
+            height: parent.height;
+            text: root.typed;
+            font-family: Type.family;
+            font-size: InterfaceSceneStyle.word * root.zoom;
+            color: Colour.ink;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            x: figure.x + figure.width + 0.6px * root.zoom;
+            y: 3px * root.zoom;
+            width: max(1px, 0.6px * root.zoom);
+            height: parent.height - 6px * root.zoom;
+            visible: root.caret;
+            background: Colour.ink;
+        }
+    }
+    Rectangle {
+        y: root.mid - root.rail / 2;
+        height: root.rail;
+        border-radius: self.height / 2;
+        background: root.tone < 0.5 ? PanelStyle.old-ground : PanelStyle.new-ground;
+        clip: true;
+        if root.hued: Rectangle {
+            opacity: root.full;
+            background: @linear-gradient(90deg, root.low 0%, #808080 50%, root.high 100%);
+        }
+        if root.hued: Rectangle {
+            opacity: 1 - root.full;
+            background: @linear-gradient(90deg, root.low.with-alpha(PanelStyle.hue-rest) 0%, root.low.with-alpha(0) 30%, root.high.with-alpha(0) 70%, root.high.with-alpha(PanelStyle.hue-rest) 100%);
+        }
+        if !root.hued: Rectangle {
+            x: parent.width * min(root.rest, root.fraction);
+            width: parent.width * abs(root.fraction - root.rest);
+            background: root.tone < 0.5 ? PanelStyle.old-lit : PanelStyle.new-lit;
+        }
+        Rectangle { height: parent.height * 0.6; y: 0; background: @linear-gradient(180deg, PanelStyle.well 0%, transparent 100%); }
+        Rectangle {
+            border-radius: parent.border-radius;
+            border-width: 1px;
+            border-color: PanelStyle.old-edge.with-alpha(1 - root.tone);
+        }
+    }
+    // Under the rail: the look before's white rim, the look now's faint lip.
+    Rectangle {
+        x: 2px * root.zoom;
+        y: root.mid + root.rail / 2 + 1px;
+        width: parent.width - 4px * root.zoom;
+        height: 1px;
+        background: root.tone < 0.5 ? PanelStyle.old-rim : PanelStyle.new-lip;
+    }
+    Rectangle {
+        x: parent.width * root.rest;
+        y: root.mid - self.height / 2;
+        width: 1px;
+        height: PanelStyle.tick-height * root.zoom;
+        opacity: root.tone;
+        background: PanelStyle.tick;
+    }
+    CapBody {
+        old: root.shape < 0.5;
+        level: true;
+        radius: 3px;
+        k: root.zoom;
+        sink: root.press;
+        border-width: 1px;
+        border-color: Colour.black.with-alpha(1 - 0.5 * root.tone);
+        width: (PanelStyle.old-knob-width + (PanelStyle.new-knob-width - PanelStyle.old-knob-width) * root.shape) * root.zoom;
+        height: (PanelStyle.old-knob-height + (PanelStyle.new-knob-height - PanelStyle.old-knob-height) * root.shape) * root.zoom;
+        x: parent.width * root.fraction - self.width / 2;
+        y: root.mid - self.height / 2;
+        for i in 2: Rectangle {
+            x: parent.width / 2 + (i == 0 ? -PanelStyle.grip-gap / 2 - 1px : PanelStyle.grip-gap / 2) * root.zoom;
+            y: (parent.height - self.height) / 2;
+            width: max(1px, 0.6px * root.zoom);
+            height: parent.height * 0.5;
+            background: Colour.white.with-alpha(0.85);
+        }
+    }
+}
+
+// The panel: the histogram, Colour (Temperature, the hero, and Tint), Lighting (Exposure), Effects
+// folded. The typing's moments come from the scene; the pouf is the sliders' group.
+export component Panel inherits Rectangle {
+    in property <float> t;
+    in property <float> zoom: 1;
+    in property <float> hues;
+    in property <float> field;
+    in property <float> keyed;
+    in property <float> chosen;
+    in property <string> typed;
+    in property <bool> caret;
+    in property <bool> committed;
+    in property <float> fraction;
+    in property <float> reset;
+    pouf := Pouf { t: root.t; at: InterfaceBeats.sliders; }
+    property <length> inner: root.width - 2 * InterfaceSceneStyle.pad * root.zoom;
+    Histogram { x: InterfaceSceneStyle.pad * root.zoom; y: PanelStyle.band-y * root.zoom; width: root.inner; zoom: root.zoom; }
+    for block in [
+        { y: PanelStyle.colour-y, word: @tr("Colour"), open: true, reset: true },
+        { y: PanelStyle.lighting-y, word: @tr("Lighting"), open: true, reset: false },
+        { y: PanelStyle.effects-y, word: @tr("Effects"), open: false, reset: false },
+    ]: Header {
+        x: InterfaceSceneStyle.pad * root.zoom;
+        y: block.y * root.zoom;
+        width: root.inner;
+        zoom: root.zoom;
+        press: pouf.press;
+        gone: pouf.gone;
+        come: pouf.come;
+        word: block.word;
+        open: block.open;
+        reset: block.reset ? root.reset : 0;
+    }
+    for slider[i] in [
+        { y: PanelStyle.temperature-y, name: @tr("Temperature"), hued: true, low: Colour.channel-blue, high: Colour.channel-yellow, fraction: 0.5, value: "0.00" },
+        { y: PanelStyle.tint-y, name: @tr("Tint"), hued: true, low: Colour.channel-green, high: Colour.channel-magenta, fraction: 0.48, value: "−0.04" },
+        { y: PanelStyle.exposure-y, name: @tr("Exposure"), hued: false, low: Colour.black, high: Colour.black, fraction: 0.58, value: "+0.30" },
+    ]: Slider {
+        x: InterfaceSceneStyle.pad * root.zoom;
+        y: slider.y * root.zoom;
+        width: root.inner;
+        zoom: root.zoom;
+        press: pouf.press;
+        shape: pouf.settle;
+        tone: pouf.come;
+        name: slider.name;
+        hued: slider.hued;
+        low: slider.low;
+        high: slider.high;
+        hues: i == 0 ? root.hues : 0;
+        fraction: i == 0 ? root.fraction : slider.fraction;
+        value: i == 0 && root.committed ? "+0.30" : slider.value;
+        value-lit: i == 0 && root.committed;
+        field: i == 0 ? root.field : 0;
+        keyed: root.keyed;
+        chosen: root.chosen;
+        typed: root.typed;
+        caret: root.caret;
+    }
+    Breath {
+        t: root.t;
+        at: InterfaceBeats.sliders;
+        zoom: root.zoom;
+        x: InterfaceSceneStyle.pad * root.zoom / 2;
+        y: (PanelStyle.colour-y - 4px) * root.zoom;
+        width: root.width - InterfaceSceneStyle.pad * root.zoom;
+        height: (PanelStyle.effects-y + PanelStyle.header - PanelStyle.colour-y + 8px) * root.zoom;
+    }
+}

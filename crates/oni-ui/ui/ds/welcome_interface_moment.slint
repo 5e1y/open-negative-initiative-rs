@@ -1,0 +1,177 @@
+// The welcome's interface scene at one moment `t`: the camera, the window and its regions, the typing,
+// the fold and the hand, all from `t` alone, so the last moment can be drawn under the rewind.
+import { Colour } from "theme.slint";
+import { InterfaceSceneStyle, InterfaceBeats, Curves } from "welcome_interface_parts.slint";
+import { Bar } from "welcome_interface_bar.slint";
+import { SideStyle, Side } from "welcome_interface_side.slint";
+import { PanelStyle, Panel } from "welcome_interface_panel.slint";
+
+export global PointerStyle {
+    // The macOS arrow at 1.15 of its 12 by 19 box, its tip at the top left, a shadow 1 px below.
+    out property <length> width: 13.8px;
+    out property <length> height: 21.85px;
+    out property <color> shadow: #00000059;
+    out property <float> clicked: 0.9;
+    out property <length> ring-from: 3px;
+    out property <length> ring-to: 14px;
+    out property <float> ring-alpha: 0.4;
+    out property <length> drift: 12px;
+    out property <length> bow: 8px;
+    out property <length> edge: 16px;
+    // Where the tip rests: under the typed figure's end and past the heading's word, both left in sight.
+    out property <length> figure-dx: 10px;
+    out property <length> figure-dy: 9px;
+    out property <length> heading-x: 64px;
+}
+
+// The hand: the arrow and its shadow, pressed to 0.9 about its tip, with the ring a click throws.
+component Pointer inherits Rectangle {
+    in property <float> press;
+    in property <float> ring;
+    width: 0px;
+    height: 0px;
+    Rectangle {
+        property <length> r: PointerStyle.ring-from + (PointerStyle.ring-to - PointerStyle.ring-from) * Curves.arrive(root.ring);
+        visible: root.ring > 0 && root.ring < 1;
+        x: -self.r;
+        y: -self.r;
+        width: 2 * self.r;
+        height: 2 * self.r;
+        border-radius: self.r;
+        border-width: 1px;
+        border-color: Colour.white.with-alpha(PointerStyle.ring-alpha * (1 - Curves.arrive(root.ring)));
+    }
+    for layer[i] in [{ dy: 1px, fill: PointerStyle.shadow, stroke: #00000000 }, { dy: 0px, fill: Colour.black, stroke: Colour.white }]: Path {
+        property <float> k: 1 - (1 - PointerStyle.clicked) * root.press;
+        y: layer.dy;
+        width: PointerStyle.width * self.k;
+        height: PointerStyle.height * self.k;
+        viewbox-width: 12;
+        viewbox-height: 19;
+        fill: layer.fill;
+        stroke: layer.stroke;
+        stroke-width: 1px;
+        commands: "M 0 0 L 0 16 L 4 12.5 L 6.8 18.6 L 9 17.6 L 6.3 11.7 L 11.5 11.7 Z";
+    }
+}
+
+export component InterfaceMoment inherits Rectangle {
+    in property <float> t;
+    background: Colour.canvas;
+
+    // The camera: from the wide view to the real size about its fixed point, and back.
+    property <float> close: Curves.ease(Curves.p(root.t, InterfaceBeats.push, InterfaceBeats.pushed - InterfaceBeats.push))
+        * (1 - Curves.ease(Curves.p(root.t, InterfaceBeats.pull, InterfaceBeats.pulled - InterfaceBeats.pull)));
+    property <float> zoom: 1 + (InterfaceSceneStyle.close - 1) * root.close;
+    property <length> wide-w: root.width - 2 * InterfaceSceneStyle.inset;
+    property <length> wide-h: root.height - 2 * InterfaceSceneStyle.inset;
+
+    // The typing on Temperature: the field opens, takes keys, commits; the knob follows the figure.
+    property <float> field: Curves.arrive(Curves.p(root.t, InterfaceBeats.at-value, InterfaceBeats.opened - InterfaceBeats.at-value))
+        * (1 - Curves.arrive(Curves.p(root.t, InterfaceBeats.commit, InterfaceBeats.committed - InterfaceBeats.commit)));
+    property <float> keyed: Curves.arrive(Curves.p(root.t, InterfaceBeats.ringed, InterfaceBeats.rung - InterfaceBeats.ringed))
+        * (1 - Curves.arrive(Curves.p(root.t, InterfaceBeats.commit, InterfaceBeats.committed - InterfaceBeats.commit)));
+    property <int> typed-keys: root.t < InterfaceBeats.keys ? 0 : min(4, floor((root.t - InterfaceBeats.keys) / InterfaceBeats.key-step) + 1);
+    property <float> slide: Curves.arrive(Curves.p(root.t, InterfaceBeats.slide, InterfaceBeats.slid - InterfaceBeats.slide));
+    property <float> hues: Curves.arrive(Curves.p(root.t, InterfaceBeats.hues-up, InterfaceBeats.hues-span))
+        * (1 - Curves.arrive(Curves.p(root.t, InterfaceBeats.hues-down, InterfaceBeats.hues-down-span)));
+    // The fold of Computer: hovered on arrival, pressed, closed.
+    property <float> hover: Curves.arrive(Curves.p(root.t, InterfaceBeats.at-heading, InterfaceBeats.click-down))
+        * (1 - Curves.p(root.t, InterfaceBeats.hand-away, InterfaceBeats.hand-left - InterfaceBeats.hand-away));
+    property <float> pressed: Curves.p(root.t, InterfaceBeats.fold-click, InterfaceBeats.click-down) * (1 - Curves.p(root.t, InterfaceBeats.fold-click + InterfaceBeats.click-down, InterfaceBeats.click-up));
+
+    win := Rectangle {
+        x: InterfaceSceneStyle.fixed-x + (InterfaceSceneStyle.inset - InterfaceSceneStyle.fixed-x) * root.zoom;
+        y: InterfaceSceneStyle.fixed-y + (InterfaceSceneStyle.inset - InterfaceSceneStyle.fixed-y) * root.zoom;
+        width: root.wide-w * root.zoom;
+        height: root.wide-h * root.zoom;
+        border-radius: InterfaceSceneStyle.window-radius * root.zoom;
+        background: Colour.ground;
+        border-width: 1px;
+        border-color: InterfaceSceneStyle.window-rim;
+        property <length> middle: (root.wide-w - InterfaceSceneStyle.side - InterfaceSceneStyle.panel) * root.zoom;
+        Bar { x: 0; y: 0; width: parent.width; t: root.t; zoom: root.zoom; }
+        Side {
+            x: 0;
+            y: InterfaceSceneStyle.bar * root.zoom;
+            width: InterfaceSceneStyle.side * root.zoom;
+            height: parent.height - self.y;
+            t: root.t;
+            zoom: root.zoom;
+            fold: Curves.arrive(Curves.p(root.t, InterfaceBeats.fold, InterfaceBeats.folded - InterfaceBeats.fold));
+            hover: root.hover;
+            pressed: root.pressed;
+        }
+        // The picture's card: a drawn scene of sky, hill and ground, never a photo.
+        Rectangle {
+            x: InterfaceSceneStyle.side * root.zoom;
+            y: InterfaceSceneStyle.bar * root.zoom;
+            width: win.middle;
+            height: parent.height - self.y - InterfaceSceneStyle.pad * root.zoom;
+            border-radius: InterfaceSceneStyle.card-radius * root.zoom;
+            background: Colour.canvas;
+            Rectangle {
+                width: parent.width - 2 * InterfaceSceneStyle.pad * root.zoom;
+                height: self.width * 2 / 3;
+                clip: true;
+                background: @linear-gradient(180deg, #9a9a9a 0%, #707070 62%);
+                Path {
+                    y: parent.height * 0.42;
+                    width: parent.width;
+                    height: parent.height * 0.3;
+                    viewbox-width: 100;
+                    viewbox-height: 30;
+                    fill: #4c4c4c;
+                    commands: "M 0 30 L 0 18 C 18 6 30 4 46 12 C 60 19 72 2 100 10 L 100 30 Z";
+                }
+                Rectangle { y: parent.height * 0.66; height: parent.height * 0.34; background: #353535; }
+            }
+        }
+        Panel {
+            x: parent.width - self.width;
+            y: InterfaceSceneStyle.bar * root.zoom;
+            width: InterfaceSceneStyle.panel * root.zoom;
+            height: parent.height - self.y;
+            t: root.t;
+            zoom: root.zoom;
+            hues: root.hues;
+            field: root.field;
+            keyed: root.keyed;
+            chosen: root.t >= InterfaceBeats.picked && root.t < InterfaceBeats.keys ? 1 : 0;
+            typed: ["0.00", "0", "0.", "0.3", "0.30"][root.typed-keys];
+            caret: root.t >= InterfaceBeats.keys && root.t < InterfaceBeats.commit;
+            committed: root.t >= InterfaceBeats.commit;
+            fraction: 0.5 + 0.15 * root.slide;
+            reset: Curves.arrive(Curves.p(root.t, InterfaceBeats.committed, InterfaceBeats.ring));
+        }
+    }
+
+    // The hand on the stage, one size whatever the camera: in from the right to the value, then in from
+    // the left to Computer's heading; each leg bows a little off its line, as a hand does.
+    property <bool> second: root.t >= (InterfaceBeats.hand-gone + InterfaceBeats.hand-back) / 2;
+    property <length> value-x: InterfaceSceneStyle.fixed-x + (InterfaceSceneStyle.inset + root.wide-w - InterfaceSceneStyle.pad - PanelStyle.field-width / 2 - InterfaceSceneStyle.fixed-x) * InterfaceSceneStyle.close + PointerStyle.figure-dx;
+    property <length> value-y: InterfaceSceneStyle.fixed-y + (InterfaceSceneStyle.inset + InterfaceSceneStyle.bar + PanelStyle.temperature-y + PanelStyle.readout / 2 - InterfaceSceneStyle.fixed-y) * InterfaceSceneStyle.close + PointerStyle.figure-dy;
+    property <length> heading-x: InterfaceSceneStyle.inset + PointerStyle.heading-x;
+    property <length> heading-y: InterfaceSceneStyle.inset + InterfaceSceneStyle.bar + SideStyle.computer-y + SideStyle.row / 2;
+    property <float> go: root.second
+        ? Curves.p(root.t, InterfaceBeats.hand-back, InterfaceBeats.at-heading - InterfaceBeats.hand-back)
+        : Curves.p(root.t, InterfaceBeats.hand-in, InterfaceBeats.at-value - InterfaceBeats.hand-in);
+    property <float> leave: root.second
+        ? Curves.p(root.t, InterfaceBeats.hand-away, InterfaceBeats.hand-left - InterfaceBeats.hand-away)
+        : Curves.p(root.t, InterfaceBeats.hand-out, InterfaceBeats.hand-gone - InterfaceBeats.hand-out);
+    property <float> appear: Curves.p(root.t, root.second ? InterfaceBeats.hand-back : InterfaceBeats.hand-in, InterfaceBeats.fade-in);
+    property <length> to-x: root.second ? root.heading-x : root.value-x;
+    property <length> to-y: root.second ? root.heading-y : root.value-y;
+    property <length> from-x: root.second ? -PointerStyle.edge : root.width + PointerStyle.edge;
+    property <length> from-y: root.to-y + 2 * PointerStyle.edge;
+    property <float> click-at: root.second ? InterfaceBeats.fold-click : InterfaceBeats.click;
+    Pointer {
+        property <float> e: Curves.ease(root.go);
+        x: root.from-x + (root.to-x - root.from-x) * self.e + (root.second ? -1 : 1) * PointerStyle.drift * Curves.arrive(root.leave);
+        y: root.from-y + (root.to-y - root.from-y) * self.e - PointerStyle.bow * Math.sin(180deg * root.go) + PointerStyle.drift / 2 * Curves.arrive(root.leave);
+        opacity: root.appear * (1 - Curves.arrive(root.leave));
+        visible: root.go > 0 && root.leave < 1;
+        press: Curves.p(root.t, root.click-at, InterfaceBeats.click-down) * (1 - Curves.arrive(Curves.p(root.t, root.click-at + InterfaceBeats.click-down, InterfaceBeats.click-up)));
+        ring: Curves.p(root.t, root.click-at, InterfaceBeats.ring);
+    }
+}
