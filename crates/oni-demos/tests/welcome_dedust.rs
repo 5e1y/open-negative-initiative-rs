@@ -75,6 +75,9 @@ fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
     numbers.sort();
     assert_eq!(numbers, last.rows, "each tile's number has its mark");
     assert_eq!((last.rows.len(), last.pending, last.found), (SPECKS.len(), 0, 0), "every patch landed, the reading gone");
+    // The pane ends under its tiles' last whole row, inside the stage; the idle twin's shows whole.
+    let foot = last.foot.expect("the pane ends under its tiles");
+    assert!(foot > 0.0 && foot <= dedust::STAGE.1, "{foot}");
     // Each speck stood out from the grey around it, and no longer does.
     let end = shot.frames.len() - 1;
     for &speck in &SPECKS {
@@ -86,7 +89,7 @@ fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
 
     // Twin: the same frame and hand, never pressing, shows no ring, no count and no tile.
     let idle = dedust::shoot(&dusty, Ask { still_hand: true, ..Ask::default() }).unwrap();
-    assert!(!idle.detected && idle.seen.iter().all(|s| s.rings.is_empty() && s.found == 0 && s.rows.is_empty()));
+    assert!(!idle.detected && idle.seen.iter().all(|s| s.rings.is_empty() && s.found == 0 && s.rows.is_empty() && s.foot.is_none()));
     assert_eq!(idle.frames[0].pixels, idle.frames.last().unwrap().pixels, "nothing changed");
 
     // Twin: a clean frame read finds nothing, and REMOVE stays out of the hand's reach.

@@ -128,6 +128,7 @@ mod scroll;
 mod session;
 mod sheet_layout;
 mod welcome_card;
+mod mode_header;
 mod sheets;
 mod sheet_escape;
 mod field_undo;

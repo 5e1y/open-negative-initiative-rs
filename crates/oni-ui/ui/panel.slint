@@ -1,10 +1,9 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, ModeHeader } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
 import { Plots, PanelState, PanelTab, RollState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
-import { ModeHeader } from "panel/parts.slint";
 import { RollPane } from "panel/roll_tab.slint";
 import { CropPane } from "panel/crop_tab.slint";
 import { DedustPane } from "panel/dedust_tab.slint";
@@ -80,7 +79,7 @@ export component Panel inherits Surface {
             // The bar lists the panes; the crop and De-dust, opened by their keys, name themselves in its
             // place beside their DONE. The bar stays, hidden, for Tab's way into the panel.
             Rectangle {
-                height: TabsStyle.height;
+                height: max(TabsStyle.height, tools.preferred-height);
                 tabs := Tabs {
                     visible: PanelState.tab != PanelTab.crop && PanelState.tab != PanelTab.dedust;
                     tabs: [@tr("Roll"), @tr("Colour"), @tr("Details")];
@@ -93,21 +92,23 @@ export component Panel inherits Surface {
                         PanelState.tab-picked(tab);
                     }
                 }
-                if PanelState.tab == PanelTab.crop: ModeHeader {
-                    title: @tr("Crop");
-                    demo: "crop";
-                    note: root.crop-note;
-                    help: @tr("Leave Crop");
-                    cancel-help: @tr("Puts back the crop this photo had when Crop opened, and leaves.");
-                    done => { Framing.act(Act.framing); }
-                    cancel => { Framing.act(Act.cancel-tool); }
-                }
-                if PanelState.tab == PanelTab.dedust: ModeHeader {
-                    title: @tr("De-dust");
-                    help: @tr("Leave De-dust");
-                    cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
-                    done => { Dedust.act(Act.correction); }
-                    cancel => { Dedust.act(Act.cancel-tool); }
+                tools := VerticalLayout {
+                    if PanelState.tab == PanelTab.crop: ModeHeader {
+                        title: @tr("Crop");
+                        demo: "crop";
+                        note: root.crop-note;
+                        help: @tr("Leave Crop");
+                        cancel-help: @tr("Puts back the crop this photo had when Crop opened, and leaves.");
+                        done => { Framing.act(Act.framing); }
+                        cancel => { Framing.act(Act.cancel-tool); }
+                    }
+                    if PanelState.tab == PanelTab.dedust: ModeHeader {
+                        title: @tr("De-dust");
+                        help: @tr("Leave De-dust");
+                        cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
+                        done => { Dedust.act(Act.correction); }
+                        cancel => { Dedust.act(Act.cancel-tool); }
+                    }
                 }
             }
         }

@@ -1,8 +1,7 @@
 // The welcome's De-dust shot: a detail of a dusty negative under the canvas's own overlays, beside the
 // panel's De-dust header and pane as the editor stacks them, fed through the pane's own global.
-import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface, Space, Type, Colour, ShellStyle, TabsStyle, WelcomeStyle } from "../../../oni-ui/ui/ds/ds.slint";
+import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface, Space, Type, Colour, ShellStyle, TabsStyle, WelcomeStyle, ModeHeader } from "../../../oni-ui/ui/ds/ds.slint";
 import { Mark } from "../../../oni-ui/ui/canvas_state.slint";
-import { ModeHeader } from "../../../oni-ui/ui/panel/parts.slint";
 import { DedustPane } from "../../../oni-ui/ui/panel/dedust_tab.slint";
 export { Dedust } from "../../../oni-ui/ui/panel/state.slint";
 export { Raster, Depth } from "../../../oni-ui/ui/ds/ds.slint";
@@ -24,6 +23,9 @@ export component DedustShot inherits Window {
     out property <length> photo-y: strip.absolute-position.y;
     out property <length> photo-width: strip.width;
     out property <length> photo-height: strip.height;
+    // Where the pane is shown down to, from its top, so the stage's foot cuts no row; 0 shows it whole.
+    in property <length> foot;
+    out property <length> pane-y: pane.absolute-position.y;
     background: Colour.ground;
     default-font-family: Type.family;
     HorizontalLayout {
@@ -66,18 +68,31 @@ export component DedustShot inherits Window {
                     padding-top: Space.s;
                     padding-bottom: Space.s;
                     Rectangle {
-                        height: TabsStyle.height;
-                        ModeHeader {
-                            title: @tr("De-dust");
-                            help: @tr("Leave De-dust");
-                            cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
+                        height: max(TabsStyle.height, tools.preferred-height);
+                        tools := VerticalLayout {
+                            ModeHeader {
+                                title: @tr("De-dust");
+                                help: @tr("Leave De-dust");
+                                cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
+                            }
                         }
                     }
                 }
                 Divider { }
-                DedustPane {
-                    shown: true;
+                pane := Rectangle {
                     vertical-stretch: 1;
+                    Rectangle {
+                        y: 0;
+                        width: parent.width;
+                        height: root.foot > 0 ? root.foot : parent.height;
+                        clip: true;
+                        DedustPane {
+                            shown: true;
+                            y: 0;
+                            width: parent.width;
+                            height: pane.height;
+                        }
+                    }
                 }
             }
         }

@@ -309,6 +309,8 @@ pub struct Seen {
     pub marks: Vec<(i32, (f32, f32))>,
     pub rows: Vec<i32>,
     pub pending: usize,
+    /// Where the pane's shown height ends on the stage, in points; none while it shows whole.
+    pub foot: Option<f32>,
 }
 
 /// What the pane and the canvas show, as the app would set them, at one moment.
@@ -462,6 +464,10 @@ pub fn shoot(path: &Path, ask: Ask) -> Result<Shot, String> {
         };
         if shown_as != Some(showing) {
             show(&stage, showing, &answers)?;
+            // The tiles laid once REMOVE writes them: the pane ends under their last whole row.
+            if matches!(showing, Showing::Healing(..)) && stage.number("foot") == 0.0 {
+                stage.set("foot", Value::Number(f64::from(foot(&stage))));
+            }
             shown_as = Some(showing);
         }
         let mut shot = stage.shoot(Duration::from_millis(u64::from(i) * 1000 / u64::from(FPS)))?;
@@ -633,6 +639,19 @@ fn veil_of(stage: &Stage) -> Result<[f32; 4], String> {
     }
 }
 
+/// Where the pane's shown height ends, from its top: under the last row of tiles the stage holds whole,
+/// each tile's foot its remove key's; with no tile, the whole pane.
+fn foot(stage: &Stage) -> f32 {
+    let top = stage.number("pane-y");
+    ElementHandle::find_by_accessible_label(stage.instance(), tr("Remove This Correction"))
+        .filter(|e| e.accessible_role() == Some(AccessibleRole::Button))
+        .map(|e| e.absolute_position().y + e.size().height)
+        .filter(|&bottom| bottom <= STAGE.1)
+        .fold(0.0, f32::max)
+        .max(top)
+        - top
+}
+
 /// The middle of the button labelled `label`, in points.
 fn centre_of(stage: &Stage, label: &str) -> Result<(f32, f32), String> {
     let found = ElementHandle::find_by_accessible_label(stage.instance(), label)
@@ -673,6 +692,7 @@ fn seen_now(stage: &Stage) -> Seen {
         marks: list(Some(stage.get("marks"))).iter().map(|m| (field(m, "number") as i32, middle(m))).collect(),
         rows: list(global("rows")).iter().map(|r| field(r, "number") as i32).collect(),
         pending: list(Some(stage.get("pending"))).len(),
+        foot: (stage.number("foot") > 0.0).then(|| stage.number("pane-y") + stage.number("foot")),
     }
 }
 
