@@ -1,6 +1,6 @@
 // The welcome's De-dust shot: a detail of a dusty negative under the canvas's own overlays, beside the
 // panel's De-dust header and pane as the editor stacks them, fed through the pane's own global.
-import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface, Space, Type, Colour, ShellStyle, TabsStyle, WelcomeStyle, ModeHeader } from "../../../oni-ui/ui/ds/ds.slint";
+import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface, Space, Type, ShellStyle, TabsStyle, WelcomeStyle, ModeHeader } from "../../../oni-ui/ui/ds/ds.slint";
 import { Mark } from "../../../oni-ui/ui/canvas_state.slint";
 import { DedustPane } from "../../../oni-ui/ui/panel/dedust_tab.slint";
 export { Dedust } from "../../../oni-ui/ui/panel/state.slint";
@@ -26,7 +26,6 @@ export component DedustShot inherits Window {
     // Where the pane is shown down to, from its top, so the stage's foot cuts no row; 0 shows it whole.
     in property <length> foot;
     out property <length> pane-y: pane.absolute-position.y;
-    background: Colour.ground;
     default-font-family: Type.family;
     HorizontalLayout {
         strip := Picture {

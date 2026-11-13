@@ -65,7 +65,11 @@ pub fn faults(source: &str) -> Vec<String> {
             }
             i += unit.len();
         } else if c == b'<' && (code[i..].starts_with("<color>") || code[i..].starts_with("<brush>")) {
-            fault(i, "a colour carried by the scene");
+            // A token read out for the timeline is no colour of the scene's; one given to it is.
+            let line = code[..i].rfind('\n').map_or(0, |n| n + 1);
+            if !code[line..i].trim_start().starts_with("out property") {
+                fault(i, "a colour carried by the scene");
+            }
             i += 1;
         } else {
             i += 1;
@@ -107,10 +111,14 @@ fn bare(source: &str) -> String {
     out
 }
 
-/// The 1.5.6 before's frames, then the film from the wipe's last frame on: where the wipe's frames join
-/// them, the before's last frame meeting the after's first.
-pub fn joined(before: Vec<Rgba>, after: Vec<Rgba>) -> Vec<Rgba> {
-    before.into_iter().chain(after).collect()
+/// How long the edge takes to cross from the before to the after.
+pub const WIPE: f32 = 0.9;
+
+/// The 1.5.6 before's frames, the wipe from its last frame to the after's first, then the after.
+pub fn joined(before: Vec<Rgba>, after: Vec<Rgba>) -> Result<Vec<Rgba>, String> {
+    let (last, first) = (before.last().ok_or("no frame before")?, after.first().ok_or("no frame after")?);
+    let wipe = crate::wipe::frames(last, first, WIPE)?;
+    Ok(before.into_iter().chain(wipe).chain(after).collect())
 }
 
 /// Every PNG of `folder`, in their names' order: a film's frames shot elsewhere.
@@ -137,4 +145,27 @@ pub fn read_png(file: &Path) -> Result<Rgba, String> {
     }
     pixels.truncate(info.buffer_size());
     Ok(Rgba { width: info.width, height: info.height, pixels })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn flat(v: u8) -> Rgba {
+        Rgba { width: 400, height: 3, pixels: vec![v; 400 * 3 * 4] }
+    }
+
+    #[test]
+    fn the_before_runs_into_the_after_through_the_wipe() {
+        let (before, after) = (vec![flat(10), flat(20)], vec![flat(200), flat(210)]);
+        let all = joined(before, after).unwrap();
+        let wiped = (WIPE * crate::film::FPS as f32).round() as usize;
+        assert_eq!(all.len(), 2 + wiped + 2);
+        assert!(all[0] == flat(10) && all[1] == flat(20), "the before first, as shot");
+        assert!(all[2] != flat(20) && all[2] != flat(200), "the edge has begun on the wipe's first frame");
+        assert!(all[1 + wiped] == flat(200) && all[2 + wiped] == flat(200), "the wipe lands on the after's first");
+        // Twin: a hard cut would have no frame mixing the two.
+        assert!(all.iter().any(|f| f.pixels.contains(&20) && f.pixels.contains(&200)));
+        assert!(joined(Vec::new(), vec![flat(1)]).is_err(), "no before, no join");
+    }
 }

@@ -27,6 +27,8 @@ fn every_welcome_scene_holds_layout_and_wiring_only() {
     // Twins: each thing a scene may not hold is seen, in code and not in a comment or a string.
     let clean = "// a Path, #ff0000, 4px\nRectangle { width: ShellStyle.panel-width; text: \"#fff 2px Path\"; }";
     assert!(welcome::faults(clean).is_empty(), "{:?}", welcome::faults(clean));
+    let read_out = "Rectangle {\n    out property <color> veil: DustStyle.veil;\n}";
+    assert!(welcome::faults(read_out).is_empty(), "a token read out is no colour of the scene's");
     for wrong in [
         "Rectangle { background: Colour.canvas; }",
         "Rectangle { x: 0; }\nText { color: #ff0000; }",
@@ -34,6 +36,7 @@ fn every_welcome_scene_holds_layout_and_wiring_only() {
         "Rectangle { width: 220px; }",
         "Rectangle { opacity: 0.5; animate opacity { duration: Motion.settle; } }",
         "Rectangle { property <brush> b; }",
+        "Rectangle { in property <color> c; }",
     ] {
         assert!(!welcome::faults(wrong).is_empty(), "{wrong} passes");
     }
