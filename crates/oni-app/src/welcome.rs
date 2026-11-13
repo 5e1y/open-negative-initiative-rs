@@ -1,5 +1,5 @@
-//! The welcome's films: the app at work, filmed by `oni-demos` once per language as it shows words,
-//! each held under its ceiling so the six stay a small part of the app.
+//! The welcome's films: the app's own components staged and filmed by `oni-demos`, once per language as
+//! they show words, each held under its ceiling so the six stay a small part of the app.
 
 use oni_i18n::Language;
 use std::io::Cursor;

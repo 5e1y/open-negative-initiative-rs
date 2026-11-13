@@ -4,7 +4,8 @@
 use std::path::Path;
 
 use oni_demos::stage::SCALE;
-use oni_demos::welcome::dedust::{self, Ask, Shot};
+use oni_demos::photo::Rgba;
+use oni_demos::welcome::dedust::{self, Ask, Scan, Shot, View};
 use oni_settings::levels::Levels;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -96,5 +97,37 @@ fn detect_rings_the_readings_specks_and_remove_heals_each_under_its_number() {
     let none = dedust::shoot(&clean, Ask { rehearsal: true, ..Ask::default() }).unwrap();
     assert!(none.detected && !none.removed, "DETECT pressed, REMOVE out of reach");
     assert!(none.seen.iter().all(|s| s.rings.is_empty() && s.found == 0 && s.rows.is_empty()));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn an_export_is_shown_as_it_is_and_healed_on_its_own_values() {
+    if oni_app::render::Device::open().is_err() {
+        return eprintln!("no GPU: the export's path is not exercised");
+    }
+    let dir = std::env::temp_dir().join(format!("oni-welcome-dedust-export-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("Export.png");
+    let (w, h) = (640u32, 480u32);
+    let pixels = (0..w * h)
+        .flat_map(|i| {
+            let (x, y) = (i % w, i / w);
+            let speck = (300..304).contains(&x) && (200..204).contains(&y);
+            if speck { [8, 8, 12, 255] } else { [(120 + x / 8) as u8, (140 + y / 8) as u8, 200, 255] }
+        })
+        .collect();
+    let export = Rgba { width: w, height: h, pixels };
+    export.png(&file).unwrap();
+    let scan = Scan::open(&file).unwrap();
+    assert_eq!(scan.settings.mode, oni_settings::ConversionMode::Positive, "an export with no edit reads as the positive it is");
+    let view = View { x: 200, y: 100, zoom: 1.0, width: 200, height: 200 };
+    let shown = scan.detail(&scan.settings, view).unwrap();
+    let at = |p: &Rgba, x: u32, y: u32| p.pixels[((y * p.width + x) * 4) as usize..][..4].to_vec();
+    assert_eq!(at(&shown, 10, 20), at(&export, 210, 120), "the export's own values on screen");
+    assert_eq!(at(&shown, 101, 101), at(&export, 301, 201), "its speck too");
+    assert!(scan.as_is_drift(view).unwrap() <= 1, "the healed path gives back the export's values");
+    // Twin: a view a column off is another picture, so the comparison sees a stray.
+    let off = View { x: 201, ..view };
+    assert_ne!(scan.detail(&scan.settings, off).unwrap().pixels, shown.pixels);
     let _ = std::fs::remove_dir_all(&dir);
 }

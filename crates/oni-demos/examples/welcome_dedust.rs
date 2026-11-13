@@ -1,5 +1,5 @@
 //! `welcome_dedust OUT [--language L] [--sensitivity S] [--zoom Z] [--rehearsal 1]`: the De-dust film shot from the
-//! negative `ONI_WELCOME_DUST` names, its GIF, a strip of its frames and its three stills into OUT.
+//! photograph `ONI_WELCOME_DUST` names, its GIF, a strip of its frames and its three stills into OUT.
 
 use std::path::PathBuf;
 
@@ -15,10 +15,12 @@ fn main() {
 
 fn run() -> Result<(), String> {
     let mut args = std::env::args().skip(1);
-    let out = PathBuf::from(args.next().ok_or("welcome_dedust OUT | --probe RAW…")?);
+    let out = PathBuf::from(args.next().ok_or("welcome_dedust OUT | --probe DIR FILE…")?);
+    // `--probe DIR FILE…`: each file's specks, and its ring stills at rest and at 50 % into DIR.
     if out.as_os_str() == "--probe" {
-        for raw in args {
-            println!("{raw}\n{}", dedust::probe(&PathBuf::from(&raw))?);
+        let dir = PathBuf::from(args.next().ok_or("--probe DIR FILE…")?);
+        for file in args {
+            println!("{file}\n{}", dedust::probe(&PathBuf::from(&file), Some(&dir))?);
         }
         return Ok(());
     }
