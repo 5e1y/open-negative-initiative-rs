@@ -10392,5 +10392,12 @@
     "title": "The Help menu's surfaces held together; the welcome copy after the lead's R2",
     "status": "done",
     "detail": "State holds the console window, the welcome's film and where films come from as one help::Surfaces, and the clip player sits beside the help clips (help::player), so app.rs keeps its ceiling. Page 1 opens on 'Before, then now'; French names the edits 'réglages' and the dust patches 'retouches'. Checks: architecture (ceiling), welcome_clip, prepare, tutorial, catalogue."
+  },
+  {
+    "id": 2037,
+    "type": "fix",
+    "title": "A canvas tool's header shows its name whole in every language: over its keys when the line cannot hold both",
+    "status": "done",
+    "detail": "At the panel's fixed width (340 pt) the tool header laid its name, its '?' and two keycaps sized to their words on one line, the name the only thing that could give way: French 'Dépoussiérage' beside ANNULER and TERMINÉ elided to 'Dépoussié…'. ModeHeader moves into the design system beside the tool's ring (ds/modes.slint) and measures its one line unseen, as SheetFooter does: when the name and keys do not fit, the name takes a line of its own and the two keys share the line under it. It places its lines itself and offers its parent a height alone, so no layout around it asks a width of lines that follow their width (Slint's binding loop); the panel sizes the bar's room to the header. English keeps its one line. Checks: window mode_header (each tool's title laid at least as wide as its words want, at 1100x680, en/fr/es on the app profile; twin: a title longer than the panel is read cut, on HeaderProbe)."
   }
 ]
