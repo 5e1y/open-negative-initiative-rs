@@ -870,12 +870,12 @@ msgid "Click a slider's number to type it, or nudge it with − and +."
 msgstr "Haz clic en el número de un deslizador para escribirlo, o ajústalo con − y +."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Folders at hand"
-msgstr "Las carpetas a mano"
+msgid "One key stands out"
+msgstr "Una sola tecla en relieve"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Favourites and Computer fold away. A keycap now means the screen's main action."
-msgstr "Favoritos y Ordenador se pliegan. Una tecla en relieve indica ahora la acción principal de la pantalla."
+msgid "A keycap now means the screen's main action: here, EXPORT."
+msgstr "Una tecla en relieve indica ahora la acción principal de la pantalla: aquí, EXPORTAR."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Found in one press"

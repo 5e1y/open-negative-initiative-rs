@@ -14,7 +14,7 @@ use crate::common::{self, Placed};
 
 /// `WelcomeStyle`: the stage, the words beside it, the card they make; `SheetStyle`'s margin and rest.
 const STAGE: f32 = 560.0;
-const CARD: (f32, f32) = (960.0, 460.0);
+const CARD: (f32, f32) = (960.0, 502.0);
 const MARGIN: f32 = 24.0;
 const REST: f32 = 0.42;
 /// A word each page shows once, at the top of its words.
@@ -95,7 +95,7 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
 
     // Twin: a heading far longer than any page's does scroll, so the wheel above could see it.
     help.set_welcome_page(0);
-    help.set_release("1.6 ".repeat(60).into());
+    help.set_release("1.6 ".repeat(80).into());
     rig.settle();
     assert!(scrolled(&rig, &window, 0) > 20.0, "twin: a page too long for the card scrolls");
     help.set_release("1.6".into());
