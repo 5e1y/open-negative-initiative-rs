@@ -6,8 +6,8 @@ use std::io::Cursor;
 
 /// Every film's size in pixels: the 560 × 502 stage at two pixels a point.
 pub const SIZE: (u32, u32) = (1120, 1004);
-/// The films together, two in three languages.
-pub const TOTAL: usize = 12 * 1024 * 1024;
+/// The films together, two in three languages: less than six at their ceilings, so the sum is a bound of its own.
+pub const TOTAL: usize = 8 * 1024 * 1024;
 
 /// The welcome's films: the app's own, in its language; a check hands its own.
 pub type Films = Box<dyn Fn(Film) -> Option<&'static [u8]>>;
@@ -125,9 +125,9 @@ mod tests {
         assert!(weigh(all).is_ok(), "every film in every language, light enough");
         let english = |film: Film, l: Language| (l == Language::English).then(|| file(1120, 1004, film.ceiling() / 2));
         assert!(weigh(english).is_err(), "twin: a film in English alone fails");
-        // The six at their ceilings are the whole budget; one a byte past its own fails the whole.
+        // Twins: six each within its ceiling yet together past the budget fail, as does one past its own.
         let full = |film: Film, _: Language| Some(file(1120, 1004, film.ceiling()));
-        assert_eq!(weigh(full), Ok(TOTAL));
+        assert!(weigh(full).is_err(), "twin: the six at their ceilings weigh more than {TOTAL}");
         let over = |film: Film, l: Language| Some(file(1120, 1004, film.ceiling() + usize::from(l == Language::Spanish)));
         assert!(weigh(over).is_err(), "twin: a film a byte over fails the six");
     }
