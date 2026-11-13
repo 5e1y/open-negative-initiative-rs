@@ -10483,5 +10483,12 @@
     "title": "The De-dust scene's pane ends on a whole row of tiles; its header as the panel lays it",
     "status": "done",
     "detail": "After R9: once REMOVE lays the tiles, the pane is shown down to the foot of the last row the stage holds whole, measured on the layout from each tile's remove key, the panel's ground below; before, it shows whole. The header follows canvas's #2037: ModeHeader from the design system in the panel's own room for it. Check: welcome_dedust (the pane's foot inside the stage after REMOVE; the idle twin's pane whole)."
+  },
+  {
+    "id": 2039,
+    "type": "refactor",
+    "title": "The app stage withdrawn from the films",
+    "status": "done",
+    "detail": "The owner wants the welcome's shots staged from the real components, not the whole running app filmed: the app stage (app_stage.rs, world.rs, its stills example and its check) leaves oni-demos; the stage keeps its platform. Checks: oni-demos tests."
   }
 ]

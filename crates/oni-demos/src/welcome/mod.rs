@@ -1,6 +1,7 @@
 //! The welcome's films, staged: scenes of the app's own blocks and components at their real size, played
 //! by a timeline that moves the hand and answers for the app; the photographs shown as exported.
 
+pub mod dedust;
 pub mod interface;
 
 use std::path::{Path, PathBuf};
@@ -137,6 +138,3 @@ pub fn read_png(file: &Path) -> Result<Rgba, String> {
     pixels.truncate(info.buffer_size());
     Ok(Rgba { width: info.width, height: info.height, pixels })
 }
-//! The welcome sheet's films: staged shots of the interface's own components, filmed on the stage.
-
-pub mod dedust;

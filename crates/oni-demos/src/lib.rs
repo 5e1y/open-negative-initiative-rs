@@ -1,7 +1,6 @@
 //! The help cards' demos: each a coded scene of the design system's real components over a frame
 //! rendered by the app's engine, filmed headless at 20 frames a second and written as a small GIF.
 
-pub mod app_stage;
 pub mod cursor;
 pub mod demos;
 pub mod encode;
@@ -14,8 +13,6 @@ pub mod track;
 pub mod wipe;
 pub mod welcome;
 pub mod words;
-pub mod welcome;
-pub mod world;
 
 use std::path::{Path, PathBuf};
 
