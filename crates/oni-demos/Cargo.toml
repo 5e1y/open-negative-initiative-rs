@@ -23,13 +23,23 @@ gif = "0.14"
 oni-app = { path = "../oni-app" }
 oni-colour.workspace = true
 oni-core = { path = "../oni-core" }
+oni-decode.workspace = true
 oni-graph = { path = "../oni-graph" }
 oni-i18n = { path = "../oni-i18n" }
 oni-lab = { path = "../oni-lab" }
+oni-library = { path = "../oni-library" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 png = "0.18"
+serde_json.workspace = true
+# The app stage aims at an element where the layout put it, found by its accessible label.
+i-slint-backend-testing = { version = "=1.18.1", default-features = false }
+# The stage's window says the menu bar is the system's, as the app's window on macOS does.
+i-slint-core = { version = "=1.18.1", default-features = false }
 weezl = "0.1"
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
 slint-interpreter = { version = "=1.18.1", default-features = false, features = ["compat-1-2", "backend-winit", "renderer-femtovg-wgpu", "renderer-software", "accessibility", "display-diagnostics", "internal"] }
 oni-hack = { version = "0.1", path = "../oni-hack" }
+
+[dev-dependencies]
+oni-fixtures.workspace = true

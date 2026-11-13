@@ -25,10 +25,5 @@ pub fn write(clips: &[Vec<Rgba>], out: &Path) -> Result<(), String> {
             }
         }
     }
-    let file = std::fs::File::create(out).map_err(|e| format!("{}: {e}", out.display()))?;
-    let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), width, height);
-    encoder.set_color(png::ColorType::Rgba);
-    encoder.set_depth(png::BitDepth::Eight);
-    let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
-    writer.write_image_data(&sheet).map_err(|e| e.to_string())
+    Rgba { width, height, pixels: sheet }.png(out)
 }

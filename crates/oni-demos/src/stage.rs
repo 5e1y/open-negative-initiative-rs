@@ -4,11 +4,13 @@
 use std::cell::Cell;
 use std::path::Path;
 use std::rc::{Rc, Weak};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use i_slint_core::window::WindowAdapterInternal;
 use oni_lab::raster::Raster;
 use slint::platform::femtovg_renderer::FemtoVGWGPURenderer;
-use slint::platform::{Platform, PointerEventButton, Renderer, WindowAdapter, WindowEvent};
+use slint::platform::{EventLoopProxy, Platform, PointerEventButton, Renderer, WindowAdapter, WindowEvent};
 use slint::{LogicalPosition, LogicalSize, PhysicalSize, PlatformError, Window, WindowSize};
 use slint_interpreter::{ComponentHandle, ComponentInstance, Value};
 
@@ -18,8 +20,8 @@ use crate::photo::Rgba;
 pub const SCALE: f32 = 2.0;
 
 /// A window drawn offscreen: its size is what the scene asks, its pixels a snapshot of the renderer.
-struct Offscreen {
-    window: Window,
+pub(crate) struct Offscreen {
+    pub(crate) window: Window,
     renderer: FemtoVGWGPURenderer,
     size: Cell<PhysicalSize>,
 }
@@ -42,6 +44,33 @@ impl WindowAdapter for Offscreen {
     fn renderer(&self) -> &dyn Renderer {
         &self.renderer
     }
+
+    fn internal(&self, _: i_slint_core::InternalToken) -> Option<&dyn WindowAdapterInternal> {
+        Some(self)
+    }
+}
+
+/// The menu bar is the system's, above every window, as on macOS: the window draws none of its own.
+impl WindowAdapterInternal for Offscreen {
+    fn supports_native_menu_bar(&self) -> bool {
+        true
+    }
+}
+
+/// What the app's threads post to the interface's, run when the stage pumps.
+pub(crate) type Queue = Arc<Mutex<Vec<Box<dyn FnOnce() + Send>>>>;
+
+struct Proxy(Queue);
+
+impl EventLoopProxy for Proxy {
+    fn quit_event_loop(&self) -> Result<(), slint::EventLoopError> {
+        Ok(())
+    }
+
+    fn invoke_from_event_loop(&self, event: Box<dyn FnOnce() + Send>) -> Result<(), slint::EventLoopError> {
+        self.0.lock().map_err(|_| slint::EventLoopError::EventLoopTerminated)?.push(event);
+        Ok(())
+    }
 }
 
 /// One offscreen window for the process, as Slint takes one platform; time is the clock's alone, so
@@ -49,6 +78,7 @@ impl WindowAdapter for Offscreen {
 struct Headless {
     window: Rc<Offscreen>,
     clock: Rc<Cell<Duration>>,
+    queue: Queue,
 }
 
 impl Platform for Headless {
@@ -59,11 +89,31 @@ impl Platform for Headless {
     fn duration_since_start(&self) -> Duration {
         self.clock.get()
     }
+
+    fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
+        Some(Box::new(Proxy(self.queue.clone())))
+    }
 }
 
-struct Platformed {
-    window: Rc<Offscreen>,
-    clock: Rc<Cell<Duration>>,
+/// The process's offscreen window, its clock and the queue the app's threads post to.
+#[derive(Clone)]
+pub(crate) struct Platformed {
+    pub(crate) window: Rc<Offscreen>,
+    pub(crate) clock: Rc<Cell<Duration>>,
+    pub(crate) queue: Queue,
+}
+
+impl Platformed {
+    /// Runs what the app's threads posted, then the timers the clock reached; whether anything was posted.
+    pub(crate) fn pump(&self) -> bool {
+        let jobs = self.queue.lock().map(|mut q| std::mem::take(&mut *q)).unwrap_or_default();
+        let posted = !jobs.is_empty();
+        for job in jobs {
+            job();
+        }
+        slint::platform::update_timers_and_animations();
+        posted
+    }
 }
 
 thread_local! {
@@ -76,11 +126,17 @@ thread_local! {
             size: Cell::new(PhysicalSize::new(1, 1)),
         });
         let clock = Rc::new(Cell::new(Duration::ZERO));
-        let headless = Headless { window: window.clone(), clock: clock.clone() };
+        let queue = Queue::default();
+        let headless = Headless { window: window.clone(), clock: clock.clone(), queue: queue.clone() };
         slint::platform::set_platform(Box::new(headless)).map_err(|e| e.to_string())?;
         window.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
-        Ok(Platformed { window, clock })
+        Ok(Platformed { window, clock, queue })
     };
+}
+
+/// The process's stage platform, installed at the first call.
+pub(crate) fn platform() -> Result<Platformed, String> {
+    PLATFORM.with(|p| p.clone())
 }
 
 pub struct Stage {
@@ -96,7 +152,7 @@ pub struct Stage {
 impl Stage {
     /// The component `name` of the scene file `file`, laid at `size` points.
     pub fn new(file: &Path, name: &str, size: (f32, f32)) -> Result<Stage, String> {
-        let (window, clock) = PLATFORM.with(|p| p.as_ref().map(|p| (p.window.clone(), p.clock.clone())).map_err(Clone::clone))?;
+        let Platformed { window, clock, .. } = platform()?;
         let result = oni_lab::compile(file);
         if result.has_errors() {
             return Err(format!("{} does not compile", file.display()));
