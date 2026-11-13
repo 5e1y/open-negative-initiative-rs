@@ -169,6 +169,11 @@ impl Stage {
         Ok(Stage { instance, window, clock, pointer: None, origin })
     }
 
+    /// The scene's instance, whose globals the app's own blocks read and call back through.
+    pub fn instance(&self) -> &ComponentInstance {
+        &self.instance
+    }
+
     pub fn set(&self, name: &str, value: Value) {
         if let Err(e) = self.instance.set_property(name, value) {
             panic!("the scene's {name}: {e}");

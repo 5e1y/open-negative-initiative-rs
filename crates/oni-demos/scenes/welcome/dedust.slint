@@ -1,0 +1,85 @@
+// The welcome's De-dust shot: a detail of a dusty negative under the canvas's own overlays, beside the
+// panel's De-dust header and pane as the editor stacks them, fed through the pane's own global.
+import { Picture, Ground, Ring, CorrectionMark, DustVeil, DustStyle, Trace, Divider, Surface, Space, Type, Colour, ShellStyle, TabsStyle, WelcomeStyle } from "../../../oni-ui/ui/ds/ds.slint";
+import { Mark } from "../../../oni-ui/ui/canvas_state.slint";
+import { ModeHeader } from "../../../oni-ui/ui/panel/parts.slint";
+import { DedustPane } from "../../../oni-ui/ui/panel/dedust_tab.slint";
+export { Dedust } from "../../../oni-ui/ui/panel/state.slint";
+export { Raster, Depth } from "../../../oni-ui/ui/ds/ds.slint";
+
+export component DedustShot inherits Window {
+    // The detail rendered at the strip's pixels, and the reading's veil over it at the same pixels.
+    in property <image> photo;
+    in property <image> veil-mask;
+    in property <bool> veiled;
+    // The reading's specks and the corrections' marks, in the strip's points, as the canvas lays them.
+    in property <[Mark]> rings;
+    in property <[Mark]> marks;
+    in property <[{commands: string, width: length}]> pending;
+    out property <color> veil: DustStyle.veil;
+    out property <length> ring-least: DustStyle.ring;
+    out property <length> stage-width: WelcomeStyle.stage-width;
+    out property <length> stage-height: WelcomeStyle.stage-height;
+    out property <length> photo-x: strip.absolute-position.x;
+    out property <length> photo-y: strip.absolute-position.y;
+    out property <length> photo-width: strip.width;
+    out property <length> photo-height: strip.height;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    HorizontalLayout {
+        strip := Picture {
+            source: root.photo;
+            ground: Ground.canvas;
+            horizontal-stretch: 1;
+            clip: true;
+            if root.veiled: DustVeil {
+                width: parent.width;
+                height: parent.height;
+                source: root.veil-mask;
+            }
+            for m in root.rings: Ring {
+                centre-x: m.x + m.width / 2;
+                centre-y: m.y + m.height / 2;
+                diameter: max(m.width, m.height, DustStyle.ring);
+            }
+            for m in root.marks: CorrectionMark {
+                x: m.x;
+                y: m.y;
+                width: m.width;
+                height: m.height;
+                number: m.number;
+            }
+            for t in root.pending: Trace {
+                width: parent.width;
+                height: parent.height;
+                commands: t.commands;
+                thickness: t.width;
+            }
+        }
+        // The panel under its readout: the tool's header down to its rule, then the pane.
+        Surface {
+            width: ShellStyle.panel-width;
+            VerticalLayout {
+                HorizontalLayout {
+                    padding-left: Space.m;
+                    padding-right: Space.m;
+                    padding-top: Space.s;
+                    padding-bottom: Space.s;
+                    Rectangle {
+                        height: TabsStyle.height;
+                        ModeHeader {
+                            title: @tr("De-dust");
+                            help: @tr("Leave De-dust");
+                            cancel-help: @tr("Puts back the corrections this photo had when De-dust opened, and leaves.");
+                        }
+                    }
+                }
+                Divider { }
+                DedustPane {
+                    shown: true;
+                    vertical-stretch: 1;
+                }
+            }
+        }
+    }
+}

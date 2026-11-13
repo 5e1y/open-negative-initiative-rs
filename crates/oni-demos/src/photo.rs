@@ -145,7 +145,8 @@ fn cut(l: &Linear, width: u32, height: u32) -> Rgba {
     encoded(&Linear { width: w.min(l.width), height: h.min(l.height), pixels })
 }
 
-fn encoded(l: &Linear) -> Rgba {
+/// `l` for an sRGB screen, undithered.
+pub(crate) fn encoded(l: &Linear) -> Rgba {
     let mut params = Params::new(Screen::Srgb, l.width as u32, l.height as u32, 0);
     params.dither = 0.0;
     Rgba { width: l.width as u32, height: l.height as u32, pixels: render::encoded(l, &params, 1) }

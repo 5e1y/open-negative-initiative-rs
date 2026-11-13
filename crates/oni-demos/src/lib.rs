@@ -11,6 +11,7 @@ pub mod plot;
 pub mod sheet;
 pub mod stage;
 pub mod track;
+pub mod welcome;
 pub mod world;
 
 use std::path::{Path, PathBuf};
