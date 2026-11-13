@@ -1,5 +1,141 @@
-// The welcome's scene of the fixes.
-import { SceneFrame, Cycle } from "welcome.slint";
+// The welcome's scene of the fixes: six areas ticked one after another while the count of fixes runs
+// to 70 by stops, and settles once. Times are ms of a 7 s loop; done is the primary ink, never a colour.
+import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
+import { Label, Icon, Tone, TextRole } from "base.slint";
+import { Icons } from "icons.slint";
+import { SceneFrame, Cycle, Phase, WelcomeStyle } from "welcome.slint";
+
+export global FixesStyle {
+    out property <duration> period: 7000ms;
+    out property <length> row: 44px;
+    out property <length> box: 22px;
+    out property <length> check: 14px;
+    out property <length> list-left: 312px;
+    out property <length> number: 88px;
+    out property <length> digit: 54px;
+    out property <length> top: (WelcomeStyle.scene-height - 6 * FixesStyle.row) / 2;
+    // What each row adds to the count, 14 then 12 and so on to 70.
+    out property <[int]> stops: [14, 12, 12, 10, 10, 12];
+    // Row i is ticked from 1100 + 600 i: its box fills for 120, its check lands from 80 for 180, its count runs from 80 for 350.
+    out property <float> first: 1100 / 7000;
+    out property <float> step: 600 / 7000;
+    out property <float> fill: 120 / 7000;
+    out property <float> mark-from: 80 / 7000;
+    out property <float> mark-to: 260 / 7000;
+    out property <float> run-to: 430 / 7000;
+    // The 70 rises from the last stop for 80 ms, then settles back over 220.
+    out property <float> rise-from: 4530 / 7000;
+    out property <float> rise-to: 4610 / 7000;
+    out property <float> settle-to: 4830 / 7000;
+    out property <float> pop: 0.05;
+}
+
+// One area: its empty box, filled and checked when ticked, its name turning from secondary to primary ink.
+component Area inherits Rectangle {
+    in property <int> index;
+    in property <float> t;
+    in property <float> rewind;
+    in property <string> name;
+    property <float> start: FixesStyle.first + root.index * FixesStyle.step;
+    filled := Phase { t: root.t; from: root.start; to: root.start + FixesStyle.fill; }
+    marked := Phase { t: root.t; from: root.start + FixesStyle.mark-from; to: root.start + FixesStyle.mark-to; }
+    // Under the rewind the last state dissolves back; nothing scales.
+    property <float> done: max(filled.arrive, root.rewind);
+    height: FixesStyle.row;
+    Rectangle {
+        x: 0px;
+        y: (parent.height - FixesStyle.box) / 2;
+        width: FixesStyle.box;
+        height: FixesStyle.box;
+        border-radius: Radius.badge;
+        border-width: Stroke.line;
+        border-color: Colour.white.with-alpha(0.25);
+        background: Colour.white.with-alpha(0.153 * root.done);
+        Icon {
+            width: FixesStyle.check * (0.6 + 0.4 * max(marked.land, root.rewind));
+            height: self.width;
+            source: Icons.done;
+            tone: Tone.primary;
+            opacity: max(marked.arrive, root.rewind);
+        }
+    }
+    Label {
+        x: FixesStyle.box + Space.m;
+        width: parent.width - FixesStyle.box - Space.m;
+        height: parent.height;
+        text: root.name;
+        ink: Colour.ink.mix(Colour.ink-secondary, max(marked.arrive, root.rewind));
+    }
+}
+
+// Two fixed cells, right-aligned: the tens one blank under ten, so digits never shift.
+component Digits inherits Rectangle {
+    in property <int> n;
+    in property <float> scale: 1;
+    width: 2 * FixesStyle.digit;
+    height: FixesStyle.number * 1.2;
+    for k in 2: Text {
+        x: k * FixesStyle.digit - (root.n < 10 ? FixesStyle.digit / 2 : 0px);
+        width: FixesStyle.digit;
+        height: root.height;
+        transform-scale-x: root.scale;
+        transform-scale-y: root.scale;
+        transform-origin: { x: root.width / 2 - self.x, y: self.height / 2 };
+        horizontal-alignment: right;
+        vertical-alignment: center;
+        font-family: Type.family;
+        font-size: FixesStyle.number;
+        font-weight: Type.bold;
+        color: Colour.ink;
+        text: k == 0 ? (root.n >= 10 ? Math.floor(root.n / 10) : "") : mod(root.n, 10);
+    }
+}
 
 export component FixesScene inherits SceneFrame {
+    cycle := Cycle { period: FixesStyle.period; }
+    property <float> t: cycle.t;
+    property <float> rewind: cycle.rewind;
+    property <[string]> areas: [@tr("Editor"), @tr("Gallery"), @tr("Export"), @tr("Prepare the Roll"), @tr("De-dust"), @tr("Files")];
+    // Row i's run toward its stop, 0 to 1, on a line: digits snap, whole numbers only.
+    pure function run(i: int) -> float {
+        return max(0, min(1, (root.t - FixesStyle.first - i * FixesStyle.step - FixesStyle.mark-from) / (FixesStyle.run-to - FixesStyle.mark-from)));
+    }
+    property <int> n: Math.round(FixesStyle.stops[0] * root.run(0) + FixesStyle.stops[1] * root.run(1) + FixesStyle.stops[2] * root.run(2) + FixesStyle.stops[3] * root.run(3) + FixesStyle.stops[4] * root.run(4) + FixesStyle.stops[5] * root.run(5));
+    rising := Phase { t: root.t; from: FixesStyle.rise-from; to: FixesStyle.rise-to; }
+    settled := Phase { t: root.t; from: FixesStyle.rise-to; to: FixesStyle.settle-to; }
+    property <length> number-left: (FixesStyle.list-left - 2 * FixesStyle.digit) / 2;
+    property <length> number-top: (root.height - FixesStyle.number * 1.2) / 2 - Space.m;
+    // The last state is a second layer, faded out before the live count fades in under the rewind.
+    Digits {
+        x: root.number-left;
+        y: root.number-top;
+        n: 70;
+        opacity: max(0, 2 * root.rewind - 1);
+    }
+    Digits {
+        x: root.number-left;
+        y: root.number-top;
+        n: root.n;
+        scale: 1 + FixesStyle.pop * (rising.arrive - settled.ease);
+        opacity: max(0, 1 - 2 * root.rewind);
+    }
+    Label {
+        x: root.number-left;
+        y: root.number-top + FixesStyle.number * 1.2;
+        width: 2 * FixesStyle.digit;
+        height: 24px;
+        centred: true;
+        role: TextRole.title;
+        tone: Tone.secondary;
+        text: @tr("fixes");
+    }
+    for name[i] in root.areas: Area {
+        x: FixesStyle.list-left;
+        y: FixesStyle.top + i * FixesStyle.row;
+        width: 200px;
+        index: i;
+        t: root.t;
+        rewind: root.rewind;
+        name: name;
+    }
 }

@@ -453,6 +453,34 @@ msgstr "Haz doble clic para volver al reposo"
 msgid "Photo"
 msgstr "Foto"
 
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/settings.slint
+msgid "Editor"
+msgstr "Editor"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/menus.slint
+msgid "Gallery"
+msgstr "Galería"
+
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/export.slint
+msgid "Export"
+msgstr "Exportar"
+
+#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/toolbar.slint
+msgid "Prepare the Roll"
+msgstr "Preparar el rollo"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Polvo"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "Files"
+msgstr "Archivos"
+
+#: crates/oni-ui/ui/ds/welcome_fixes.slint
+msgid "fixes"
+msgstr "correcciones"
+
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
 msgstr "Tu año"
@@ -584,10 +612,6 @@ msgstr "Mostrar solo la variación de color (no recomendado)"
 #: crates/oni-ui/ui/export.slint
 msgid "Get Paper Profiles…"
 msgstr "Obtener perfiles de papel…"
-
-#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
-msgid "Export"
-msgstr "Exportar"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Export as"
@@ -1164,10 +1188,6 @@ msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-app/src/app/organising/projects.rs crates/oni-ui/ui/library_tree.slint
 msgid "New Project"
 msgstr "Nuevo proyecto"
-
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
-msgid "Gallery"
-msgstr "Galería"
 
 #: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
 msgid "Export…"
@@ -2130,10 +2150,6 @@ msgid "Puts back the crop this photo had when Crop opened, and leaves."
 msgstr "Devuelve a esta foto el recorte que tenía al abrirse el recorte, y sale."
 
 #: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
-msgid "De-dust"
-msgstr "Polvo"
-
-#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
 msgstr "Salir de Eliminar polvo"
 
@@ -2417,10 +2433,6 @@ msgstr "Informar de un problema…"
 msgid "General"
 msgstr "General"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/settings.slint
-msgid "Editor"
-msgstr "Editor"
-
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone"
 msgstr "Teléfono"
@@ -2520,10 +2532,6 @@ msgstr "Pegar todo"
 #: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "PREPARE ROLL"
 msgstr "PREPARAR ROLLO"
-
-#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
-msgid "Prepare the Roll"
-msgstr "Preparar el rollo"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "ADD FOLDER…"
