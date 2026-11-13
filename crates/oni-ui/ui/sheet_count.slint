@@ -1,0 +1,24 @@
+// Every sheet the window lays, counted by the flag that lays it: the menus go dark behind any, and one
+// closing over another hands the keyboard down (`Sheet`).
+import { Presets, Choice, Advice } from "presets.slint";
+import { Confirm } from "confirm.slint";
+import { Pairing } from "pairing.slint";
+import { AppSettings } from "settings.slint";
+import { Notice, Upgraded } from "notice.slint";
+import { Navigator } from "navigator.slint";
+import { Exporting } from "export_state.slint";
+import { Stocks } from "stocks.slint";
+import { Help } from "help.slint";
+import { MaskDialog } from "masks.slint";
+import { Wrapped } from "wrapped.slint";
+import { Unsaved } from "missing.slint";
+import { Converting } from "dng.slint";
+
+export global Shown {
+    out property <int> sheets: one(Presets.saving) + one(Presets.editing) + one(Confirm.shown) + one(Pairing.shown)
+        + one(AppSettings.shown) + one(Notice.shown) + one(Upgraded.shown) + one(Navigator.catch-up-shown)
+        + one(Exporting.confirm-shown) + one(Exporting.notice-shown) + one(Exporting.naming-shown) + one(Stocks.shown)
+        + one(Exporting.papers-shown) + one(Help.welcome-shown) + one(Help.report-shown) + one(Choice.shown)
+        + one(MaskDialog.shown) + one(Advice.shown) + one(Wrapped.shown) + one(Unsaved.shown) + one(Converting.shown);
+    pure function one(shown: bool) -> int { return shown ? 1 : 0; }
+}

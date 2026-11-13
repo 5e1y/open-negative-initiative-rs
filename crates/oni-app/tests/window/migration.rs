@@ -3,7 +3,7 @@
 
 use crate::projects_tab::Hand;
 use oni_app::migration::Brought;
-use oni_app::{App, Told, Upgraded};
+use oni_app::{App, Help, Told, Upgraded};
 use oni_settings::migrate::{self, Facts, Standing, reshape};
 use oni_settings::{ConversionMode, Document, Medal, PipelineSettings, sidecar};
 use slint::ComponentHandle;
@@ -41,11 +41,18 @@ pub(crate) fn an_earlier_library_is_brought_while_the_person_works() {
     let w = &hand.shell.window;
     // The app's launch installs the facts an old sidecar asks before any read.
     oni_app::migration::facts::install(&hand.root.join("Support"));
+    hand.shell.launch_sheets();
     hand.shell.migrate(&hand.root.join("Caches"));
-    assert!(w.global::<Upgraded>().get_shown(), "said once, at the launch");
-    w.global::<Upgraded>().invoke_close();
-    hand.rig.pump();
-    assert!(!w.global::<Upgraded>().get_shown());
+    // One sheet at a time: the welcome first, the notice once its last key closes it, then holding the keys.
+    let (help, upgraded) = (w.global::<Help>(), w.global::<Upgraded>());
+    assert!(help.get_welcome_shown() && !upgraded.get_shown(), "the notice waits while the welcome shows");
+    for _ in 0..4 {
+        assert!(!upgraded.get_shown(), "never over the welcome, on any page");
+        hand.rig.key("\n");
+    }
+    assert!(!help.get_welcome_shown() && upgraded.get_shown(), "said once, as the welcome closes");
+    hand.rig.key("\n");
+    assert!(!upgraded.get_shown(), "its GOT IT holds the keyboard");
     let current = |p: &String| migrate::standing(&std::fs::read(sidecar::url_for(Path::new(p))).unwrap()) == Standing::Current;
     hand.rig.until("every sidecar brought", Duration::from_secs(30), || paths.iter().all(current) && w.global::<Upgraded>().get_line().is_empty());
     assert!(!w.global::<Told>().get_shown(), "nothing left as it was, nothing to say");
@@ -77,6 +84,20 @@ pub(crate) fn an_earlier_library_is_brought_while_the_person_works() {
     // Twin: a support folder whose sheet no window showed is told at its next launch.
     oni_app::migration::ledger::update(&support, |l| l.told = 0).unwrap();
     assert!(oni_app::migration::brought(&support, None).tell);
+}
+
+/// Twin: with no welcome due, the launch says the new format at once.
+pub(crate) fn with_no_welcome_due_the_notice_shows_at_once() {
+    let seen = |root: &Path| {
+        earlier(root);
+        let mut preferences = oni_app::preferences::Preferences::load(&root.join("Support"));
+        preferences.set("welcomeSeen", "1.6".into()).unwrap();
+    };
+    let hand = Hand::made_with("migration-seen", &TONES, seen, Brought { tell: true, ..Brought::default() });
+    let w = &hand.shell.window;
+    hand.shell.launch_sheets();
+    assert!(!w.global::<Help>().get_welcome_shown() && w.global::<Upgraded>().get_shown(), "the notice at once");
+    let _ = std::fs::remove_dir_all(&hand.root);
 }
 
 /// Whether the check's cloud keeps its originals away.

@@ -24,7 +24,8 @@ export component SceneFrame inherits Rectangle {
     clip: true;
 }
 
-// One dot a page, the shown one lit; a click on a dot shows its page.
+// One dot a page, the shown one lit; a click on a dot shows its page. Each is named by its place among
+// the sheet's `count`, the shown one selected, so assistive technology reads where the reader stands.
 export component PageDots inherits HorizontalLayout {
     in property <int> count;
     in property <int> at;
@@ -34,6 +35,13 @@ export component PageDots inherits HorizontalLayout {
         width: WelcomeStyle.dot-reach;
         height: WelcomeStyle.dot-reach;
         mouse-cursor: pointer;
+        accessible-role: tab;
+        accessible-label: @tr("Page {} of {}", page + 1, root.count);
+        accessible-item-selectable: true;
+        accessible-item-selected: page == root.at;
+        accessible-item-index: page;
+        accessible-item-count: root.count;
+        accessible-action-default => { root.picked(page); }
         clicked => { root.picked(page); }
         Dot {
             size: WelcomeStyle.dot;

@@ -213,8 +213,9 @@ impl Ctl {
         welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
     }
 
-    pub(super) fn open_welcome(&self) {
-        let Some(w) = self.window() else { return };
+    /// The welcome on its first page; whether a window shows it.
+    pub(super) fn open_welcome(&self) -> bool {
+        let Some(w) = self.window() else { return false };
         let version = env!("CARGO_PKG_VERSION");
         let h = w.global::<Help>();
         h.set_welcome_picture(crate::starter::picture(version) as i32);
@@ -223,6 +224,7 @@ impl Ctl {
         h.set_welcome_page(0);
         h.set_welcome_shown(true);
         self.welcome_turned(0);
+        true
     }
 
     /// However it closes, it is not shown again on the next launch.
@@ -238,6 +240,7 @@ impl Ctl {
             self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
         }
         w.invoke_refocus();
+        self.launch_sheet_after(Some(super::shell::LaunchSheet::Welcome));
     }
 
     pub(super) fn open_report(&self) {

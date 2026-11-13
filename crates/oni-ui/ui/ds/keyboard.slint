@@ -12,6 +12,12 @@ export global Keyboard {
     in-out property <bool> covered;
     in-out property <int> entered;
     in-out property <int> entered-back;
+    // The sheets shown, which the window counts; each sheet takes the next `opened` as it shows, and when
+    // one closes over others (`closed`), the latest still laid takes the keyboard, `top` the one winning.
+    in-out property <int> sheets;
+    in-out property <int> opened;
+    in-out property <int> closed;
+    in-out property <int> top;
 }
 
 // The ring around what holds the keyboard, on the box it fills, `radius` its control's own corner.
