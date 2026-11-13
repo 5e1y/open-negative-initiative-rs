@@ -5,7 +5,7 @@ use super::*;
 
 /// A mark's number badge, in points, as `CorrectionMark` lays it off its box's corner, and the gap
 /// kept between two specks' rings and marks so no number hides another.
-pub(super) const BADGE: (f32, f32) = (24.0, 20.0);
+pub(super) const BADGE: (f32, f32) = (30.0, 28.0);
 pub(super) const GAP: f32 = 4.0;
 /// How far inside the strip a speck's ring and mark stay, in points: none at an edge.
 pub(super) const MARGIN: f32 = 16.0;
