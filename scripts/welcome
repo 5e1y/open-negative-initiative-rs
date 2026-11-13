@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# The welcome's interface film in each language, from the photograph ONI_WELCOME_PHOTO alone names: its path
+# holds an account's name. Usage: scripts/welcome OUT [BEFORE], BEFORE/<en|fr|es> the 1.5.6 frames.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if [ -z "${ONI_WELCOME_PHOTO:-}" ]; then
+    echo "scripts/welcome: set ONI_WELCOME_PHOTO to the film's photograph" >&2
+    exit 1
+fi
+out="$1"
+before="${2:-}"
+# The scenes are read by Slint's interpreter, which finds an element by its label only with debug info.
+export SLINT_EMIT_DEBUG_INFO=1
+cargo build -q -p oni-demos --bin welcome
+target="${CARGO_TARGET_DIR:-target}"
+for language in ${ONI_WELCOME_LANGUAGES:-en fr es}; do
+    joined=()
+    if [ -n "$before" ]; then
+        joined=(--before "$before/$language")
+    fi
+    "$target/debug/welcome" interface "$out" --language "$language" "${joined[@]+"${joined[@]}"}"
+done

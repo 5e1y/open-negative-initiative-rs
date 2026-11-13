@@ -10399,5 +10399,40 @@
     "title": "A canvas tool's header shows its name whole in every language: over its keys when the line cannot hold both",
     "status": "done",
     "detail": "At the panel's fixed width (340 pt) the tool header laid its name, its '?' and two keycaps sized to their words on one line, the name the only thing that could give way: French 'Dépoussiérage' beside ANNULER and TERMINÉ elided to 'Dépoussié…'. ModeHeader moves into the design system beside the tool's ring (ds/modes.slint) and measures its one line unseen, as SheetFooter does: when the name and keys do not fit, the name takes a line of its own and the two keys share the line under it. It places its lines itself and offers its parent a height alone, so no layout around it asks a width of lines that follow their width (Slint's binding loop); the panel sizes the bar's room to the header. English keeps its one line. Checks: window mode_header (each tool's title laid at least as wide as its words want, at 1100x680, en/fr/es on the app profile; twin: a title longer than the panel is read cut, on HeaderProbe)."
+  },
+  {
+    "id": 2040,
+    "type": "feature",
+    "title": "A demo names its stage's size and its photograph",
+    "status": "done",
+    "detail": "film::Demo gains size() and source(): the help cards keep their 244-point square and the demos' RAW by default, a welcome film takes the welcome's 560 by 502 stage and the photograph it is made of. Stage::instance() hands a timeline the scene's globals, keyboard and elements. Checks: oni-demos film, welcome."
+  },
+  {
+    "id": 2041,
+    "type": "feature",
+    "title": "An export shown as it is",
+    "status": "done",
+    "detail": "photo::plain::cover reads a JPEG export as the app reads a plain image (oni_decode::plain::read, the app's own Catmull-Rom reduction), its sRGB code values kept, cut to cover a box about a centre: never the conversion, never Prepare the Roll. The interface film's strip is bit for bit the 1.5.6 before's. Check: plain (a file's own values come back; twin: another centre is another cut)."
+  },
+  {
+    "id": 2042,
+    "type": "feature",
+    "title": "Every staged scene speaks the film's language",
+    "status": "done",
+    "detail": "Slint's interpreter reads @tr's English alone, so the stage compiles each scene through words::compile: every file it loads, the design system's and the panel's included, has each @tr text replaced by the catalogue the compiled interface bundles, a plural's two forms each their own, a text the catalogue lacks left English. One mechanism for the help demos, the welcome's interface and De-dust scenes. oni_i18n::translated is public for it. Checks: words (French texts, comments and plain strings untouched, the plural's forms; twin: English is the source), every scene compiles in every language (twin: a broken scene is seen)."
+  },
+  {
+    "id": 2043,
+    "type": "feature",
+    "title": "The welcome's interface film in 1.6, staged",
+    "status": "done",
+    "detail": "scenes/welcome/interface.slint composes the owner's export as a 220-point strip beside a column at the panel's width: the bar's copy, paste, paste to the roll, Reset and EXPORT (glyphs alone, as the bar lays them short of room), the panel's tabs, the real ColorPane ended on a whole row. welcome::interface plays 6.7 s: the hand over copy and paste, onto Temperature's rail, a click on its number, -1.2 typed and Return, then down the panel's margin onto its ground. The components answer the pointer and the keys; the timeline answers Readouts and Store.step with the app's own slider_track and publishes as the app does. Checks: welcome (every scene holds layout and wiring only: no Path, colour, literal size or animation; twins for each), the typed figure changes Temperature's row and the Resets alone and lands the knob at -1.20's place, not its mirror; twin: without the click nothing changes; the photograph's pixels are the export's on every frame."
+  },
+  {
+    "id": 2044,
+    "type": "feature",
+    "title": "scripts/welcome shoots the interface film in three languages",
+    "status": "done",
+    "detail": "A thin script: ONI_WELCOME_PHOTO alone names the photograph, no path is written in the repository; the dev profile's interpreter speaks English, French and Spanish, so no compiled build is needed. The welcome binary writes each language's GIF, strip and stills; --before lays the 1.5.6 frames ahead (the wipe's join to come), --strip refuses a frame whose photograph is not the before's."
   }
 ]
