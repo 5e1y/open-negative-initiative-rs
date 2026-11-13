@@ -480,6 +480,17 @@ msgstr "Archivos"
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "fixes"
 msgstr "correcciones"
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/help.slint
+msgid "Automatic De-dust"
+msgstr "Polvo automático"
+
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "DETECT"
+msgstr "DETECTAR"
+
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "REMOVE"
+msgstr "QUITAR"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
@@ -868,10 +879,6 @@ msgstr "Una interfaz más discreta alrededor de tus escaneos, el polvo encontrad
 #: crates/oni-ui/ui/help.slint
 msgid "A calmer interface"
 msgstr "Una interfaz más tranquila"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Automatic De-dust"
-msgstr "Polvo automático"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Your edits, brought up to date"
@@ -1810,16 +1817,8 @@ msgid "Detect veils the photo but for its pixels past the roll's whites on a neg
 msgstr "Detectar cubre la foto con un velo salvo sus píxeles más allá de los blancos del rollo en un negativo, de sus negros en un positivo; el polvo entre ellos queda rodeado. La sensibilidad lee más adentro de la ventana y exige menos a una mota. Quitar coloca un parche sobre cada mota rodeada."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "DETECT"
-msgstr "DETECTAR"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."
 msgstr "Busca en esta foto el polvo más allá de los blancos del rollo en un negativo, de sus negros en un positivo; nada cambia hasta que lo quites."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "REMOVE"
-msgstr "QUITAR"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Lays one patch on each speck of dust ringed."

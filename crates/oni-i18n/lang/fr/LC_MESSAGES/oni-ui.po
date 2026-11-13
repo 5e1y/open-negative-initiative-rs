@@ -480,6 +480,17 @@ msgstr "Fichiers"
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "fixes"
 msgstr "corrections"
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/help.slint
+msgid "Automatic De-dust"
+msgstr "Dépoussiérage automatique"
+
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "DETECT"
+msgstr "DÉTECTER"
+
+#: crates/oni-ui/ui/ds/welcome_dedust.slint crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "REMOVE"
+msgstr "RETIRER"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Your Year"
@@ -868,10 +879,6 @@ msgstr "Une interface plus discrète autour de vos scans, la poussière trouvée
 #: crates/oni-ui/ui/help.slint
 msgid "A calmer interface"
 msgstr "Une interface plus calme"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Automatic De-dust"
-msgstr "Dépoussiérage automatique"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Your edits, brought up to date"
@@ -1810,16 +1817,8 @@ msgid "Detect veils the photo but for its pixels past the roll's whites on a neg
 msgstr "Détecter voile la photo sauf ses pixels au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; les poussières parmi eux sont cerclées. La sensibilité lit plus loin dans la fenêtre et demande moins à une poussière. Retirer recouvre chaque poussière cerclée d’une zone semblable."
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "DETECT"
-msgstr "DÉTECTER"
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Reads this photo for dust past the roll's whites on a negative, its blacks on a positive; nothing changes until you remove it."
 msgstr "Cherche sur cette photo les poussières au-delà des blancs du rouleau sur un négatif, de ses noirs sur un positif ; rien ne change tant que vous ne les retirez pas."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "REMOVE"
-msgstr "RETIRER"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Lays one patch on each speck of dust ringed."

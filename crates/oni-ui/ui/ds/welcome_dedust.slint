@@ -1,5 +1,211 @@
-// The welcome's scene of Auto De-dust at work.
+// The welcome's scene of Auto De-dust at work: DETECT rings each speck of a drawn scan as the reading
+// passes, REMOVE heals them one by one into the corrections grid; the clean picture ends the loop.
 import { SceneFrame, Cycle } from "welcome.slint";
+import { Colour, Radius, State, ButtonStyle, DustStyle, Type } from "theme.slint";
+import { Keycap, KeycapVariant } from "depth.slint";
+import { WelcomeDedust as W } from "welcome_dedust_style.slint";
+import { Landscape, SceneSpeck, SceneTile, SceneRing, ScenePointer } from "welcome_dedust_parts.slint";
+
+// A keycap of the panel pressed by the scene's clock: its hover and press lights, its legend faded
+// while out of reach.
+component SceneKey inherits Keycap {
+    in property <string> word;
+    in property <float> live;
+    in property <float> hover;
+    variant: KeycapVariant.mini;
+    albedo: ButtonStyle.cap;
+    height: W.key-height;
+    Rectangle {
+        border-radius: root.face-radius;
+        background: root.depth > 0 ? ButtonStyle.veil-pressed.transparentize(1 - root.depth / W.depth) : ButtonStyle.veil.transparentize(1 - root.hover);
+    }
+    Text {
+        text: root.word;
+        font-size: ButtonStyle.legend;
+        font-weight: ButtonStyle.legend-weight;
+        letter-spacing: ButtonStyle.legend-tracking;
+        color: Colour.ink-on-fill.transparentize((1 - State.disabled) * (1 - root.live));
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// A count in fixed digit cells, right-aligned, so a step never shifts it.
+component Digits inherits Rectangle {
+    in property <int> n;
+    in property <float> strength;
+    width: 2 * W.digit;
+    for cell in 2: Text {
+        x: cell * W.digit;
+        width: W.digit;
+        height: parent.height;
+        text: cell == 0 ? (root.n >= 10 ? "" + floor(root.n / 10) : "") : (root.n > 0 ? "" + mod(root.n, 10) : "");
+        font-size: Type.section;
+        font-weight: Type.strong;
+        color: Colour.ink.transparentize(1 - root.strength);
+        horizontal-alignment: right;
+        vertical-alignment: center;
+    }
+}
 
 export component DedustScene inherits SceneFrame {
+    accessible-role: image;
+    accessible-label: @tr("Automatic De-dust");
+    clock := Cycle { period: W.period-ms * 1ms; }
+    property <float> t: clock.t;
+    property <float> rewind: clock.rewind;
+    property <int> found: W.counted(root.t);
+
+    // The reading: the picture veiled but for the band, lifted once the band has crossed.
+    property <float> dim: W.arrive(W.progress(root.t, W.sweep-from, W.dim-time)) * (1 - W.arrive(W.progress(root.t, W.sweep-to, W.lift-time)));
+    property <length> trail: W.trailing(root.t);
+    // DETECT out of reach from its release until REMOVE's; REMOVE within reach once the reading ends,
+    // until its own release: both out of reach while the band passes.
+    property <float> back: W.arrive(W.progress(root.t, W.remove + W.down + W.held, W.up));
+    property <float> detect-live: 1 - W.arrive(W.progress(root.t, W.detect + W.down + W.held, W.up)) + root.back;
+    property <float> remove-live: W.arrive(W.progress(root.t, W.sweep-to, W.lift-time)) - root.back;
+
+    // The pointer: in from the right edge to DETECT, down to REMOVE, then away; its tip in stage points.
+    property <float> enter: W.ease(W.progress(root.t, W.enter, W.travel));
+    property <float> drop: W.ease(W.progress(root.t, W.to-remove, W.hop));
+    property <float> away: W.arrive(W.progress(root.t, W.exit, W.fade-out));
+    property <length> detect-x: W.panel-x + W.panel-inset + 114px;
+    property <length> detect-y: W.picture-y + W.key-height / 2 + 5px;
+    property <length> remove-y: root.detect-y + W.key-height + W.count-height + 2 * W.gap;
+    property <bool> second: root.t >= W.at(W.to-remove);
+    property <length> tip-x: !root.second ? W.enter-x + (root.detect-x - W.enter-x) * root.enter
+        : root.detect-x + W.bow * sin(180deg * root.drop) + W.drift * 0.7 * root.away;
+    property <length> tip-y: !root.second ? W.enter-y + (root.detect-y - W.enter-y) * root.enter - W.bow * sin(180deg * root.enter)
+        : root.detect-y + (root.remove-y - root.detect-y) * root.drop + W.drift * 0.7 * root.away;
+    property <float> shown: W.arrive(W.progress(root.t, W.enter, W.fade-in)) * (1 - W.progress(root.t, W.exit, W.fade-out));
+    property <float> click: root.second ? W.remove : W.detect;
+    property <float> dip: 1 - 0.1 * (W.leave(W.progress(root.t, root.click, W.dip)) - W.arrive(W.progress(root.t, root.click + W.dip, W.rise)));
+    property <float> spread: W.arrive(W.progress(root.t, root.click, W.click-time));
+
+    picture := Rectangle {
+        x: W.picture-x;
+        y: W.picture-y;
+        width: W.picture-width;
+        height: W.picture-height;
+        Landscape { }
+        for s[i] in W.specks: SceneSpeck { t: root.t; rewind: root.rewind; i: i; speck: s; }
+        if root.dim > 0: Rectangle {
+            border-radius: Radius.picture;
+            clip: true;
+            property <color> veil: DustStyle.veil.transparentize(1 - root.dim);
+            Rectangle {
+                x: 0;
+                width: max(0px, root.trail - W.band-edge);
+                background: parent.veil;
+            }
+            Rectangle {
+                x: root.trail - W.band-edge;
+                width: W.band-edge;
+                background: @linear-gradient(90deg, parent.veil 0%, parent.veil.transparentize(1) 100%);
+            }
+            Rectangle {
+                x: root.trail + W.band;
+                width: W.band-edge;
+                background: @linear-gradient(90deg, parent.veil.transparentize(1) 0%, parent.veil 100%);
+            }
+            Rectangle {
+                x: root.trail + W.band + W.band-edge;
+                width: max(0px, parent.width - self.x);
+                background: parent.veil;
+            }
+        }
+        for s[i] in W.specks: SceneSpeck { t: root.t; rewind: root.rewind; i: i; speck: s; ring: true; }
+    }
+
+    // The De-dust panel's column: DETECT, the specks ringed, REMOVE, and the corrections grid.
+    panel := Rectangle {
+        x: W.panel-x;
+        y: W.panel-y;
+        width: parent.width - self.x + Radius.card;
+        height: parent.height - self.y + Radius.card;
+        border-radius: Radius.card;
+        background: Colour.ground;
+        property <length> inner: root.width - self.x - 2 * W.panel-inset;
+        property <length> top: W.picture-y - self.y;
+        SceneKey {
+            x: W.panel-inset;
+            y: parent.top;
+            width: parent.inner;
+            word: @tr("DETECT");
+            live: root.detect-live;
+            hover: W.arrive(W.progress(root.t, W.enter + W.travel, W.fade-in)) * (1 - W.arrive(W.progress(root.t, W.to-remove, W.fade-in)));
+            depth: W.press(root.t, W.detect);
+        }
+        Rectangle {
+            x: W.panel-inset;
+            y: parent.top + W.key-height + W.gap;
+            width: parent.inner;
+            height: W.count-height;
+            property <float> strength: max(root.found > 0 ? 1 : 0, root.rewind);
+            SceneRing {
+                x: 0;
+                diameter: W.ring-least;
+                strength: parent.strength;
+            }
+            Digits {
+                x: W.ring-least + W.ring-line + 2 * W.ring-halo + 8px;
+                height: parent.height;
+                n: root.found;
+                strength: 1;
+            }
+            // The last state's count, faded out over the rewind while the forward count starts empty.
+            Digits {
+                x: W.ring-least + W.ring-line + 2 * W.ring-halo + 8px;
+                height: parent.height;
+                n: W.specks.length;
+                strength: root.rewind;
+            }
+        }
+        SceneKey {
+            x: W.panel-inset;
+            y: parent.top + W.key-height + W.count-height + 2 * W.gap;
+            width: parent.inner;
+            word: @tr("REMOVE");
+            live: root.remove-live;
+            hover: W.arrive(W.progress(root.t, W.to-remove + W.hop, W.fade-in)) * (1 - W.progress(root.t, W.exit, W.fade-out));
+            depth: W.press(root.t, W.remove);
+        }
+        grid := Rectangle {
+            property <length> side: (self.width - (W.columns - 1) * W.tile-gap) / W.columns;
+            property <length> down: self.side + W.tile-under + W.tile-gap;
+            x: W.panel-inset;
+            y: parent.top + W.picture-height - self.height;
+            width: parent.inner;
+            height: ceil(W.specks.length / W.columns) * self.down - W.tile-gap;
+            for s[i] in W.specks: SceneTile {
+                x: mod(i, W.columns) * (grid.side + W.tile-gap);
+                y: floor(i / W.columns) * grid.down;
+                width: grid.side;
+                height: grid.down;
+                side: grid.side;
+                t: root.t;
+                rewind: root.rewind;
+                i: i;
+                speck: s;
+            }
+        }
+    }
+
+    // The click's one ring from the tip, then the pointer over everything.
+    if root.shown > 0 && root.spread > 0 && root.spread < 1: Rectangle {
+        property <length> r: W.click-from + (W.click-to - W.click-from) * root.spread;
+        x: root.tip-x - self.r;
+        y: root.tip-y - self.r;
+        width: 2 * self.r;
+        height: self.width;
+        border-radius: self.r;
+        border-width: 1px;
+        border-color: Colour.white.transparentize(1 - 0.4 * (1 - root.spread));
+    }
+    if root.shown > 0: ScenePointer {
+        x: root.tip-x;
+        y: root.tip-y;
+        dip: root.dip;
+        strength: root.shown;
+    }
 }
