@@ -269,7 +269,7 @@ msgstr "Annuler"
 msgid "The DNGs Are Written"
 msgstr "Les DNG sont écrits"
 
-#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/dng.slint
 msgid "Nikon High Efficiency RAW"
 msgstr "RAW High Efficiency de Nikon"
 
@@ -834,116 +834,160 @@ msgid "Show What This Screen Cannot Show"
 msgstr "Montrer ce que cet écran ne peut pas afficher"
 
 #: crates/oni-ui/ui/help.slint
-msgid "ONI {}, the slide film and contact sheet update"
-msgstr "ONI {}, la mise à jour diapositives et planches contact"
+msgid "ONI {}, the calm and clean update"
+msgstr "ONI {}, la mise à jour calme et propre"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Contact sheets, slides, and the whole roll at a glance."
-msgstr "Planches contact, diapositives, et toute la pellicule d'un coup d'œil."
+msgid "A quieter interface around your scans, dust found on its own, and many fixes."
+msgstr "Une interface plus discrète autour de vos scans, la poussière trouvée toute seule, et de nombreuses corrections."
 
 #: crates/oni-ui/ui/help.slint
-msgid "The whole roll, once prepared"
-msgstr "Toute la pellicule, une fois préparée"
+msgid "A calmer interface"
+msgstr "Une interface plus calme"
 
 #: crates/oni-ui/ui/help.slint
-msgid "After Prepare the Roll, Select All ({}) shows every frame together, numbered by its place on the film."
-msgstr "Après Préparer la pellicule, Tout sélectionner ({}) affiche toutes les vues ensemble, numérotées selon leur place sur le film."
+msgid "Automatic De-dust"
+msgstr "Dépoussiérage automatique"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Contact sheets"
-msgstr "Planches contact"
+msgid "Your edits, brought up to date"
+msgstr "Vos retouches, mises à jour"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Select a few frames, or press the key for the whole roll: they lie together on one sheet."
-msgstr "Sélectionnez quelques vues, ou appuyez sur la touche pour toute la pellicule : elles se rangent ensemble sur une planche."
+msgid "About 70 fixes"
+msgstr "Environ 70 corrections"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Export a contact sheet"
-msgstr "Exporter une planche contact"
+msgid "Less distraction around your scans"
+msgstr "Moins de distraction autour de vos scans"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The export panel exports the selection as one sheet, with a preview: pick Contact Sheet under Export As."
-msgstr "Le panneau d'export exporte la sélection en une seule planche, avec un aperçu : choisissez Planche contact sous Exporter en."
+msgid "Flat keys that light up under the hand, coloured rails faint until you use them: the photo is what stands out."
+msgstr "Des touches plates qui s’éclairent sous la main, des rails colorés discrets jusqu’à ce que vous les utilisiez : c’est la photo qui ressort."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slide films"
-msgstr "Diapositives"
+msgid "More intuitive"
+msgstr "Plus intuitive"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
-msgstr "Préparer la pellicule équilibre une pellicule de diapositives sur un blanc ou un gris que vous cliquez, sa couleur seulement ; sans clic, les diapositives gardent les 5500 K de l’appareil."
+msgid "Every key is an icon over its word, in the same place in every mode. A keycap means the screen's main action."
+msgstr "Chaque touche est une icône au-dessus de son mot, à la même place dans chaque mode. Une touche en relief signale l’action principale de l’écran."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slides on white"
-msgstr "Diapositives sur blanc"
+msgid "Type any value"
+msgstr "Tapez n’importe quelle valeur"
 
 #: crates/oni-ui/ui/help.slint
-msgid "A contact sheet of slides lies on white, numbered in red under a black logo."
-msgstr "Une planche contact de diapositives est posée sur du blanc, numérotée en rouge sous un logo noir."
+msgid "Click a slider's number to type it, or nudge it with − and +."
+msgstr "Cliquez sur le nombre d’un curseur pour le taper, ou ajustez-le avec − et +."
 
 #: crates/oni-ui/ui/help.slint
-msgid "The whole scan in Prepare"
-msgstr "Le scan entier dans Préparer"
+msgid "Your folders at hand"
+msgstr "Vos dossiers sous la main"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll shows and measures every scan uncropped."
-msgstr "Préparer la pellicule affiche et mesure chaque scan sans recadrage."
+msgid "Favourites and Computer fold like a Finder sidebar, and the rating filter stays beside the open photo."
+msgstr "Favoris et Ordinateur se replient comme dans la barre latérale du Finder, et le filtre de notes reste à côté de la photo ouverte."
 
 #: crates/oni-ui/ui/help.slint
-msgid "RESET SCAN keeps your crop"
-msgstr "RÉINITIALISER LE SCAN garde votre recadrage"
+msgid "The dust found in one press"
+msgstr "La poussière trouvée d’une pression"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Everything goes back to rest but the crop and the conversion."
-msgstr "Tout revient au repos, sauf le recadrage et la conversion."
+msgid "In De-dust, DETECT rings every speck it finds, from a single pixel to a large flake. Sensitivity recounts as you slide it."
+msgstr "Dans Dépoussiérage, DÉTECTER entoure chaque poussière trouvée, du simple pixel au gros flocon. La Sensibilité recompte à mesure que vous la glissez."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Trash from the editor"
-msgstr "Corbeille depuis l'éditeur"
+msgid "Healed when you say so"
+msgstr "Effacée quand vous le décidez"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The next frame of the roll opens in its place."
-msgstr "La vue suivante de la pellicule s'ouvre à sa place."
+msgid "REMOVE lays a patch on each ringed speck. Each patch is a numbered tile you can check and remove one by one."
+msgstr "RETIRER pose une retouche sur chaque poussière entourée. Chaque retouche est une vignette numérotée que vous pouvez vérifier et retirer une à une."
 
 #: crates/oni-ui/ui/help.slint
-msgid "{} beside a photo"
-msgstr "{} à côté d'une photo"
+msgid "Fast with hundreds of patches"
+msgstr "Rapide avec des centaines de retouches"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The folder's photos show together; a click on one shows it alone again."
-msgstr "Les photos du dossier s'affichent ensemble ; un clic sur l'une d'elles la réaffiche seule."
+msgid "A frame with 200 patches edits as smoothly as a clean one."
+msgstr "Une vue avec 200 retouches se règle aussi fluidement qu’une vue propre."
 
 #: crates/oni-ui/ui/help.slint
-msgid "No more flicker on Windows"
-msgstr "Plus de clignotement sous Windows"
+msgid "Look before you remove"
+msgstr "Regardez avant de retirer"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Clicking outside the window and back no longer blanks it for an instant."
-msgstr "Cliquer hors de la fenêtre puis y revenir ne la fait plus disparaître un instant."
+msgid "A speck across a sharp edge can be missed, and a high Sensitivity can ring fine detail."
+msgstr "Une poussière à cheval sur un bord net peut être manquée, et une Sensibilité élevée peut entourer un détail fin."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Large 16-bit TIFFs"
-msgstr "Grands TIFF 16 bits"
+msgid "Converted on their own"
+msgstr "Converties toutes seules"
 
 #: crates/oni-ui/ui/help.slint
-msgid "A 16-bit TIFF of 45 Mpx and more opens, in the editor and in Prepare the Roll."
-msgstr "Un TIFF 16 bits de 45 Mpx ou plus s’ouvre, dans l’éditeur comme dans Préparer la pellicule."
+msgid "At the first launch, the settings beside each photo move to a new format while you work. Your photos are never touched."
+msgstr "Au premier lancement, les réglages à côté de chaque photo passent à un nouveau format pendant que vous travaillez. Vos photos ne sont jamais touchées."
 
 #: crates/oni-ui/ui/help.slint
-msgid "A scan that cannot be read says why"
-msgstr "Un scan illisible dit pourquoi"
+msgid "No way back"
+msgstr "Pas de retour en arrière"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll no longer waits on it."
-msgstr "Préparer la pellicule ne l’attend plus."
+msgid "ONI 1.5 and earlier open converted photos read-only. Keep editing them in this version."
+msgstr "ONI 1.5 et les versions antérieures ouvrent les photos converties en lecture seule. Continuez à les retoucher dans cette version."
 
 #: crates/oni-ui/ui/help.slint
-msgid "A click converts a folder’s HE and HE* NEF files to lossless DNGs through Adobe DNG Converter, which ONI downloads and installs when it is missing."
-msgstr "Un clic convertit les NEF HE et HE* d’un dossier en DNG sans perte grâce à Adobe DNG Converter, qu’ONI télécharge et installe s’il manque."
+msgid "Disks away"
+msgstr "Disques absents"
+
+#: crates/oni-ui/ui/help.slint
+msgid "A disk not connected is converted when it comes back."
+msgstr "Un disque non branché est converti à son retour."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Two habits change"
+msgstr "Deux habitudes changent"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Keys 1, 2 and 3 now give gold, silver and bronze. The Scanner face no longer applies Auto White Balance: it shows exactly what its keypad reads."
+msgstr "Les touches 1, 2 et 3 donnent désormais or, argent et bronze. La face Scanner n’applique plus la balance des blancs auto : elle montre exactement ce que lit son pavé."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Editing a whole roll moves each frame from its own values, never overwriting its balance."
+msgstr "Retoucher toute une pellicule déplace chaque vue depuis ses propres valeurs, sans jamais écraser sa balance."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Undo keeps its history from frame to frame, and names what it takes back."
+msgstr "Annuler garde son historique d’une vue à l’autre, et nomme ce qu’il reprend."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Dust patches stay on their speck after a crop or a turn, and are back in every export."
+msgstr "Les retouches de poussière restent sur leur poussière après un recadrage ou une rotation, et sont de retour dans chaque export."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Exports: right size estimates, dates written as typed, a contact sheet's paper on every frame."
+msgstr "Exports : estimations de taille justes, dates écrites telles que tapées, le papier d’une planche contact sur chaque vue."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Prepare the Roll: Cancel leaves nothing half done, and frames keep their look from step to step."
+msgstr "Préparer la pellicule : Annuler ne laisse rien à moitié fait, et les vues gardent leur aspect d’une étape à l’autre."
+
+#: crates/oni-ui/ui/help.slint
+msgid "No more freezes on slow or network disks; a move never replaces a file."
+msgstr "Plus de blocages sur les disques lents ou réseau ; un déplacement ne remplace jamais un fichier."
+
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint
+msgid "Back"
+msgstr "Retour"
 
 #: crates/oni-ui/ui/help.slint
 msgid "GET STARTED"
 msgstr "COMMENCER"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Next"
+msgstr "Suivant"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
@@ -2164,10 +2208,6 @@ msgstr "Masquer"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Show How"
 msgstr "Montrer comment"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Back"
-msgstr "Retour"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Measuring…"
