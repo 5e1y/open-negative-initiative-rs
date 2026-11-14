@@ -78,7 +78,10 @@ export component TileView inherits Rectangle {
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
     property <bool> frame: root.marks == TileMarks.apart;
-    property <bool> keys-shown: !root.frame && root.hovered && root.rating && !root.missing;
+    // The podium only where it lies inside the picture over less than half its height, so a click
+    // beside it still reaches the photo.
+    property <bool> room: 3 * MedalStyle.tile-key + 2 * root.inset <= root.width && 2 * MedalStyle.tile-key <= root.picture-height;
+    property <bool> keys-shown: !root.frame && root.hovered && root.rating && !root.missing && root.room;
     // The photo shown where it stands: its medal changing there was laid on it (`Medal.holder`).
     property <string> holder: root.name + "@" + root.x / 1px + "," + root.y / 1px;
     property <length> inset: root.frame ? Space.xs : TileStyle.badge-inset;

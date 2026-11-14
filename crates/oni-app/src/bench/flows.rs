@@ -145,19 +145,21 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if frame + 1 < FLOW_TILES.len() {
                     phase.set(Flow::Gallery { frame: frame + 1 });
                 } else {
-                    // Under the last row, where the document ends: the picks stay as they were.
+                    // Under the last row, where the document ends: the ground, whose click lets every pick go.
                     let below = slint::LogicalPosition::new(lib.get_grid_x() + 4.0, lib.get_grid_y() + lib.get_content_height() - lib.get_scroll() + 4.0);
                     click_at(&w, below);
                     phase.set(Flow::Below { name: FLOW_TILES[frame] });
                 }
             }
             Flow::Below { name } => {
-                if let Some(t) = tile(&w, name) {
-                    check(&t.caption, "after a click under the last row");
+                let (tiles, rows) = lit(&w);
+                if !tiles.is_empty() || !rows.is_empty() {
+                    let named = tile(&w, name).map(|t| t.caption.to_string()).unwrap_or_default();
+                    fail(format!("{named} after a click under the last row: the gallery lights {tiles:?}, the sidebar {rows:?}"));
                 }
                 let failed = failures.borrow();
                 finish(if failed.is_empty() {
-                    format!("flows: {} frames picked, double-clicked open and edited through resizes, a click under the rows changed nothing, no failure", FLOW_TILES.len())
+                    format!("flows: {} frames picked, double-clicked open and edited through resizes, a click under the rows let every pick go, no failure", FLOW_TILES.len())
                 } else {
                     format!("flows: {}", failed.join("; "))
                 });

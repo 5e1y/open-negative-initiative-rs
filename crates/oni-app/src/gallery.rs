@@ -1,5 +1,5 @@
-//! `GalleryLayout`: where every cell is drawn, computed and never measured. The count is fixed and
-//! the tile follows the width; a scroll asks only for the range of cells in view.
+//! `GalleryLayout`: where every cell is drawn, computed and never measured. The count asked is a most,
+//! the tile follows the width down to its least; a scroll asks only for the range of cells in view.
 
 use std::ops::Range;
 
@@ -12,12 +12,15 @@ pub struct Metrics {
     pub header: f32,
     pub caption: f32,
     pub caption_gap: f32,
+    /// A tile's least width: a column count asked is a most, so a tile never shrinks under the
+    /// medal podium it carries, three `MedalStyle.tile-key` wide.
+    pub least: f32,
 }
 
 impl Metrics {
     /// `GalleryEngine.metrics`: no caption reserved, as the sidebar names every photo and text
     /// layout costs at hundreds of cells.
-    pub const GALLERY: Metrics = Metrics { margin: 24.0, gutter: 8.0, padding: 24.0, header: 37.0, caption: 0.0, caption_gap: 0.0 };
+    pub const GALLERY: Metrics = Metrics { margin: 24.0, gutter: 8.0, padding: 24.0, header: 37.0, caption: 0.0, caption_gap: 0.0, least: 60.0 };
 }
 
 /// `DS.Control.columnSteps`, dense first, and a rung of four past the film's six: zooming in steps
@@ -69,7 +72,8 @@ pub const OVERSCAN: usize = 1;
 impl Layout {
     /// `groups` are each band's title, caption and count, in document order.
     pub fn new(groups: &[(String, String, usize)], columns: usize, width: f32, metrics: Metrics) -> Layout {
-        let n = columns.max(1);
+        let fit = ((width - 2.0 * metrics.margin + metrics.gutter) / (metrics.least + metrics.gutter)).floor().max(1.0) as usize;
+        let n = columns.max(1).min(fit);
         let usable = (width - 2.0 * metrics.margin - (n - 1) as f32 * metrics.gutter).max(0.0);
         let tile_width = usable / n as f32;
         let tile_height = tile_width * 2.0 / 3.0;
@@ -282,6 +286,20 @@ mod tests {
         let up = l.reveal(0, down, viewport).unwrap();
         assert!(up >= 0.0 && up <= l.frame(0).unwrap().y, "{up}");
         assert_eq!(l.reveal(59, down, viewport), None);
+    }
+
+    #[test]
+    fn a_narrow_grid_lays_fewer_columns_than_asked_and_no_tile_under_its_least() {
+        // 500 pt, the grid of an 1100 pt window: twelve asked, six fit.
+        let narrow = Layout::new(&roll(38), 12, 500.0, Metrics::GALLERY);
+        assert_eq!(narrow.columns, 6);
+        assert!(narrow.tile.0 >= Metrics::GALLERY.least, "{:?}", narrow.tile);
+        // A wide grid takes the twelve asked, and a count under the fit is kept.
+        assert_eq!(Layout::new(&roll(38), 12, 1600.0, Metrics::GALLERY).columns, 12);
+        assert_eq!(Layout::new(&roll(38), 4, 500.0, Metrics::GALLERY).columns, 4);
+        // Twin: with no least, the narrow grid's tiles fall to half the podium's width.
+        let bare = Layout::new(&roll(38), 12, 500.0, Metrics { least: 0.0, ..Metrics::GALLERY });
+        assert!(bare.columns == 12 && bare.tile.0 < Metrics::GALLERY.least / 1.5, "{:?}", bare.tile);
     }
 
     #[test]
