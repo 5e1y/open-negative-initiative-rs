@@ -1377,11 +1377,11 @@ msgstr "Une poussière à cheval sur un bord net peut être manquée, et une Sen
 
 #: crates/oni-ui/ui/help.slint
 msgid "Your edits hold, across a roll and through Undo"
-msgstr "Vos retouches tiennent, sur toute la pellicule et avec Annuler"
+msgstr "Vos retouches tiennent sur toute la pellicule"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Dust patches stay put, in every export"
-msgstr "Les retouches de poussière restent en place, dans chaque export"
+msgstr "Les retouches de poussière tiennent à l’export"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Exports come out as you set them"
@@ -1409,7 +1409,7 @@ msgstr "La face Scanner montre son clavier"
 
 #: crates/oni-ui/ui/help.slint
 msgid "No more Auto White Balance under it: it shows what its keypad reads."
-msgstr "Plus de balance des blancs automatique dessous : elle montre ce qu’affiche son clavier."
+msgstr "Sans balance automatique : elle montre ce qu’affiche son clavier."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"

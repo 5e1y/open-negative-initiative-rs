@@ -1377,11 +1377,11 @@ msgstr "Una mota sobre un borde nítido puede pasar desapercibida, y una Sensibi
 
 #: crates/oni-ui/ui/help.slint
 msgid "Your edits hold, across a roll and through Undo"
-msgstr "Tus ediciones aguantan, en todo el rollo y con Deshacer"
+msgstr "Tus ediciones aguantan en todo el rollo"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Dust patches stay put, in every export"
-msgstr "Los parches de polvo se quedan en su sitio, en cada exportación"
+msgstr "Los parches de polvo siguen al exportar"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Exports come out as you set them"
@@ -1409,7 +1409,7 @@ msgstr "La cara Escáner muestra su teclado"
 
 #: crates/oni-ui/ui/help.slint
 msgid "No more Auto White Balance under it: it shows what its keypad reads."
-msgstr "Ya no aplica balance de blancos automático: muestra lo que marca su teclado."
+msgstr "Sin balance automático: muestra lo que marca su teclado."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
