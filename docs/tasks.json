@@ -10637,5 +10637,12 @@
     "title": "The welcome's last page fits the smallest window in French and Spanish",
     "status": "done",
     "detail": "Windows CI, the compiled interface: French page 7's words ran 9 pt past the card at 1100 × 680 and scrolled. Its two longest themes and the Scanner face's note are shorter in French and Spanish. Check: welcome_card under --profile app with SLINT_EMIT_DEBUG_INFO=1, every page in English, French and Spanish unscrolled at 1100 × 680."
+  },
+  {
+    "id": 2072,
+    "type": "change",
+    "title": "The Windows feed script finds Sparkle's tools through SPARKLE_BIN",
+    "status": "done",
+    "detail": "scripts/windows-appcast read sign_update inside the Swift repository's SwiftPM artifacts, a folder gone with that repository; it now reads the bin folder of Sparkle's release from SPARKLE_BIN and says so when it is unset. 1.6.0 was signed with Sparkle 2.9.5's tools, the release SwiftPM had fetched for the Swift app."
   }
 ]
