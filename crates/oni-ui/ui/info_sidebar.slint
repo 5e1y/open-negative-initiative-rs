@@ -87,9 +87,9 @@ export component Info inherits Surface {
                         placeholder: @tr("e.g. Leica M6");
                         text <=> Library.camera-body;
                         known: Gear.bodies;
-                        known-help: @tr("Pick From Your Collection");
+                        known-help: @tr("Pick From Your Kit");
                         none-known: @tr("No body yet");
-                        none-known-note: @tr("A body typed here joins your collection");
+                        none-known-note: @tr("A body typed here joins your kit");
                         accepted(t) => { Library.camera-body-committed(t); }
                         left(t) => { Library.camera-body-committed(t); }
                         picked(t) => {

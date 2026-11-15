@@ -98,7 +98,7 @@ pub(crate) fn the_collection_shows_where_nothing_is_picked_and_fills_the_exif() 
     rig.until("the line ready", Duration::from_secs(120), || export_card::lines(w).iter().all(|l| l.ready));
     w.global::<Exporting>().set_exif_shown(true);
     rig.settle();
-    let mut keys = common::placed(w, Role::Button, "Pick From Your Collection");
+    let mut keys = common::placed(w, Role::Button, "Pick From Your Kit");
     keys.sort_by(|a, b| a.y.total_cmp(&b.y));
     assert_eq!(keys.len(), 2, "the Camera's key and the Lens's, no lens kept: {keys:?}");
     // No lens kept: the Lens's list says how one comes, in a line that picks nothing.
@@ -106,7 +106,7 @@ pub(crate) fn the_collection_shows_where_nothing_is_picked_and_fills_the_exif() 
     rig.settle();
     common::click(&rig, w, common::in_popup(w, Role::Button, "No lens yet").middle());
     rig.settle();
-    assert!(common::placed(w, Role::Text, "A lens typed here joins your collection").len() == 1, "its note under it");
+    assert!(common::placed(w, Role::Text, "A lens typed here joins your kit").len() == 1, "its note under it");
     println!("shot {}", rig.shot("collection-none-known").display());
     rig.key(&SharedString::from(Key::Escape));
     rig.settle();

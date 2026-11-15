@@ -226,12 +226,12 @@ msgid "Forget"
 msgstr "Oublier"
 
 #: crates/oni-ui/ui/collection.slint
-msgid "Leaves the collection; no photo's EXIF changes"
-msgstr "Quitte la collection ; aucun EXIF de photo ne change"
+msgid "Leaves the kit; no photo's EXIF changes"
+msgstr "Quitte le kit ; aucun EXIF de photo ne change"
 
 #: crates/oni-ui/ui/collection.slint
-msgid "Collection"
-msgstr "Collection"
+msgid "Kit"
+msgstr "Kit"
 
 #: crates/oni-ui/ui/collection.slint
 msgid "The bodies and lenses you type are kept here, offered again when an export's EXIF is filled."
@@ -1100,12 +1100,12 @@ msgid "e.g. Leica M6"
 msgstr "p. ex. Leica M6"
 
 #: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
-msgid "Pick From Your Collection"
-msgstr "Choisir dans votre collection"
+msgid "Pick From Your Kit"
+msgstr "Choisir dans votre kit"
 
 #: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
-msgid "A body typed here joins your collection"
-msgstr "Un boîtier saisi ici rejoint votre collection"
+msgid "A body typed here joins your kit"
+msgstr "Un boîtier saisi ici rejoint votre kit"
 
 #: crates/oni-ui/ui/export_fields.slint
 msgid "Lens"
@@ -1116,8 +1116,8 @@ msgid "e.g. Summicron 50 mm"
 msgstr "p. ex. Summicron 50 mm"
 
 #: crates/oni-ui/ui/export_fields.slint
-msgid "A lens typed here joins your collection"
-msgstr "Un objectif saisi ici rejoint votre collection"
+msgid "A lens typed here joins your kit"
+msgstr "Un objectif saisi ici rejoint votre kit"
 
 #: crates/oni-ui/ui/export_fields.slint
 msgid "Film stock"

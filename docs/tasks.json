@@ -10644,5 +10644,12 @@
     "title": "The Windows feed script finds Sparkle's tools through SPARKLE_BIN",
     "status": "done",
     "detail": "scripts/windows-appcast read sign_update inside the Swift repository's SwiftPM artifacts, a folder gone with that repository; it now reads the bin folder of Sparkle's release from SPARKLE_BIN and says so when it is unset. 1.6.0 was signed with Sparkle 2.9.5's tools, the release SwiftPM had fetched for the Swift app."
+  },
+  {
+    "id": 2073,
+    "type": "change",
+    "title": "The gear collection is called the Kit, the word The Lens DB uses",
+    "status": "done",
+    "detail": "The Lens DB names a person's bodies and lenses their Kit, and the owner chose its word so ONI and TLDB's pages agree: the column's title, its Forget help and the EXIF fields' pick and notes say Kit in English, French and Spanish. Code names stay Collection. Check: the collection window check finds Pick From Your Kit and its note."
   }
 ]
