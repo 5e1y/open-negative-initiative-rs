@@ -1,10 +1,12 @@
 //! A big-endian TIFF directory, the one structure a TIFF file and a JPEG's Exif segment share.
 
-/// One field's value, in the four TIFF types the export writes.
+/// One field's value, in the five TIFF types the export writes.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Short(Vec<u16>),
     Long(Vec<u32>),
+    /// Numerator and denominator each; 0/0 is Exif's "unknown".
+    Rational(Vec<(u32, u32)>),
     /// Written as its UTF-8 bytes and a closing NUL.
     Ascii(String),
     Undefined(Vec<u8>),
@@ -15,6 +17,7 @@ impl Value {
         match self {
             Value::Short(_) => 3,
             Value::Long(_) => 4,
+            Value::Rational(_) => 5,
             Value::Ascii(_) => 2,
             Value::Undefined(_) => 7,
         }
@@ -24,6 +27,7 @@ impl Value {
         match self {
             Value::Short(v) => v.len() as u32,
             Value::Long(v) => v.len() as u32,
+            Value::Rational(v) => v.len() as u32,
             Value::Ascii(s) => s.len() as u32 + 1,
             Value::Undefined(v) => v.len() as u32,
         }
@@ -33,6 +37,7 @@ impl Value {
         match self {
             Value::Short(v) => v.iter().flat_map(|x| x.to_be_bytes()).collect(),
             Value::Long(v) => v.iter().flat_map(|x| x.to_be_bytes()).collect(),
+            Value::Rational(v) => v.iter().flat_map(|(n, d)| n.to_be_bytes().into_iter().chain(d.to_be_bytes())).collect(),
             Value::Ascii(s) => s.bytes().chain([0]).collect(),
             Value::Undefined(v) => v.clone(),
         }

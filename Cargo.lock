@@ -4266,6 +4266,7 @@ dependencies = [
  "oni-pipeline",
  "oni-render",
  "oni-settings",
+ "oni-tldb",
  "oni-ui",
  "png",
  "pollster",
@@ -4276,6 +4277,7 @@ dependencies = [
  "ring",
  "roxmltree",
  "rustls",
+ "security-framework",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -4697,6 +4699,22 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "oni-tldb"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "oni-hack",
+ "oni-library",
+ "reqwest",
+ "ring",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
 ]
 
 [[package]]

@@ -29,6 +29,7 @@ oni-graph = { path = "../oni-graph" }
 oni-i18n = { path = "../oni-i18n" }
 oni-keycap = { path = "../oni-keycap" }
 oni-library = { path = "../oni-library" }
+oni-tldb = { path = "../oni-tldb" }
 oni-link = { path = "../oni-link" }
 oni-measure = { path = "../oni-measure" }
 oni-ui = { path = "../oni-ui" }
@@ -67,6 +68,8 @@ oni-hack = { version = "0.1", path = "../oni-hack" }
 # The double-click interval, the dialogs and the Trash are the system's own; Linux runs the checks only.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
+# The Kit's token in the Keychain.
+security-framework = "3"
 block2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSEvent", "NSWorkspace", "NSPasteboard", "NSWindow", "NSView", "NSResponder", "NSButton", "NSControl", "NSSound", "NSApplication", "NSImage"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSFileManager", "NSURL", "NSString", "NSError", "NSArray", "NSData", "NSUserDefaults", "NSNotification", "NSOperation", "block2"] }
@@ -74,7 +77,7 @@ rfd = { version = "0.17", default-features = false }
 libc = "0.2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Media_Audio", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_System_ProcessStatus", "Win32_System_Threading"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Media_Audio", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security_Credentials", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_System_ProcessStatus", "Win32_System_Threading"] }
 clipboard-win = "5.4"
 rfd = { version = "0.17", default-features = false }
 

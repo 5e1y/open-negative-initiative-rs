@@ -15,7 +15,7 @@ impl Loaded {
         let _ = writeln!(out, "label: {:?}", self.label);
         let _ = writeln!(out, "imported: {:?}", self.imported_at);
         let _ = writeln!(out, "trashed: {:?}", self.trashed_at);
-        let _ = writeln!(out, "exif: {line:#?}");
+        let _ = writeln!(out, "exif: {:#?}", Typed(&line));
         match draft {
             None => out.push_str("draft: none\n"),
             Some((d, mark)) => {
@@ -30,5 +30,23 @@ impl Loaded {
         }
         let _ = writeln!(out, "settings: {:#?}", self.settings);
         out
+    }
+}
+
+/// The line's typed fields alone: the gear's facts are filled at export, never kept by a sidecar.
+struct Typed<'a>(&'a ExifMetadata);
+
+impl std::fmt::Debug for Typed<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let m = self.0;
+        f.debug_struct("ExifMetadata")
+            .field("camera", &m.camera)
+            .field("lens", &m.lens)
+            .field("film", &m.film)
+            .field("iso", &m.iso)
+            .field("date", &m.date)
+            .field("artist", &m.artist)
+            .field("copyright", &m.copyright)
+            .finish()
     }
 }

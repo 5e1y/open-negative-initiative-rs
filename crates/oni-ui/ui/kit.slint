@@ -1,0 +1,138 @@
+// Where nothing is picked in the archive: the person's Kit, their bodies and lenses kept on The Lens DB.
+// Signed out it offers the service; signed in it searches the catalogue and sends every change at Validate.
+import { Section, Label, TextRole, Tone, Row, TextField, Button, ButtonKind, ButtonSize, Surface, Ground, Space } from "ds/ds.slint";
+import { GearKind, Kit, KitLink, KitPiece } from "gear_state.slint";
+
+// The service's mark, always within reach of the Kit, opening its site.
+component Mark inherits HorizontalLayout {
+    alignment: start;
+    Button {
+        kind: ButtonKind.ghost;
+        text: @tr("The Lens DB");
+        help: @tr("Open The Lens DB in your browser");
+        clicked => { Kit.open-site(); }
+    }
+}
+
+// One piece of the Kit: its name, what tells it from its kin, its page, and its removal held for Validate.
+component PieceCard inherits Surface {
+    in property <KitPiece> piece;
+    in property <GearKind> kind;
+    in property <int> at;
+    ground: Ground.well;
+    rounded: true;
+    VerticalLayout {
+        padding: Space.s;
+        spacing: Space.xs;
+        Label { text: root.piece.name; wrap: word-wrap; tone: root.piece.removing ? Tone.tertiary : Tone.primary; }
+        if root.piece.detail != "": Label { text: root.piece.detail; role: TextRole.note; wrap: word-wrap; }
+        if root.piece.removing: Label { text: @tr("Leaves your Kit when you validate"); role: TextRole.note; tone: Tone.caution; wrap: word-wrap; }
+        HorizontalLayout {
+            spacing: Space.xs;
+            alignment: start;
+            Button { size: ButtonSize.mini; text: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
+            Button {
+                size: ButtonSize.mini;
+                text: root.piece.removing ? @tr("Keep") : @tr("Remove");
+                help: root.piece.removing ? "" : @tr("Marks it to leave your Kit at Validate");
+                clicked => { Kit.remove(root.kind, root.at); }
+            }
+        }
+    }
+}
+
+component Pieces inherits Section {
+    in property <[KitPiece]> items;
+    in property <GearKind> kind;
+    in property <string> empty;
+    if root.items.length == 0: Label { text: root.empty; role: TextRole.note; }
+    for piece[i] in root.items: PieceCard { piece: piece; kind: root.kind; at: i; }
+}
+
+component Offer inherits Section {
+    separated: false;
+    Label { role: TextRole.title; text: @tr("Kit"); }
+    Label { role: TextRole.note; wrap: word-wrap; text: @tr("Keep your bodies and lenses on The Lens DB: ONI offers them when an export's EXIF is filled, with their brand, focal lengths and apertures."); }
+    Mark { }
+    Button { kind: ButtonKind.accent; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } }
+    Button { text: @tr("Create an Account"); clicked => { Kit.connect(true); } }
+    Label { role: TextRole.note; wrap: word-wrap; text: @tr("Your browser opens on The Lens DB: ONI never sees your password."); }
+}
+
+component Waiting inherits Section {
+    separated: false;
+    Label { role: TextRole.title; text: @tr("Kit"); }
+    Label { role: TextRole.note; wrap: word-wrap; text: @tr("Finish signing in to The Lens DB in your browser. A new account confirms its e-mail first: ONI waits 15 minutes."); }
+    HorizontalLayout { alignment: start; Button { text: @tr("Cancel"); clicked => { Kit.cancel(); } } }
+}
+
+// The catalogue searched as the hand rests, each answer added to the pieces waiting for Validate.
+component Search inherits Section {
+    separated: false;
+    TextField {
+        name: @tr("Search The Lens DB");
+        placeholder: @tr("Search a brand, a body, a lens…");
+        edited(t) => { Kit.search(t); }
+        accepted(t) => { Kit.search(t); }
+    }
+    if Kit.searching: Label { text: @tr("Searching…"); role: TextRole.note; }
+    for found[i] in Kit.found: Row {
+        title: found.name;
+        detail: found.detail;
+        action: found.held || found.waiting ? "" : @tr("Add");
+        caption: found.held ? @tr("In your Kit") : found.waiting ? @tr("To validate") : "";
+        action-help: @tr("Joins your Kit at Validate");
+        clicked => { if (!found.held && !found.waiting) { Kit.add(i); } }
+    }
+    if !Kit.searching && Kit.searched != "" && Kit.found.length == 0: Label {
+        role: TextRole.note;
+        wrap: word-wrap;
+        text: @tr("Nothing on The Lens DB matches “{}”.", Kit.searched);
+    }
+    if !Kit.searching && Kit.searched != "": HorizontalLayout {
+        alignment: start;
+        Button { size: ButtonSize.mini; text: @tr("Suggest Missing Gear"); help: @tr("Proposes a piece to The Lens DB, reviewed before it shows"); clicked => { Kit.suggest(); } }
+    }
+}
+
+// What Validate sends in one call: the pieces to add, listed, and how many leave.
+component Changes inherits Section {
+    title: @tr("To Validate");
+    for piece[i] in Kit.adding: Row {
+        title: piece.name;
+        detail: piece.detail;
+        action: @tr("Undo");
+        action-help: @tr("Leaves the pieces to add");
+        clicked => { Kit.unadd(i); }
+    }
+    if Kit.removals > 0: Label { role: TextRole.note; text: @tr("{n} piece leaves your Kit" | "{n} pieces leave your Kit" % Kit.removals); }
+    HorizontalLayout {
+        spacing: Space.xs;
+        alignment: end;
+        Button { text: @tr("Discard"); enabled: !Kit.sending; clicked => { Kit.discard(); } }
+        Button { kind: ButtonKind.accent; text: Kit.sending ? @tr("Sending…") : @tr("Validate"); enabled: !Kit.sending; clicked => { Kit.validate(); } }
+    }
+}
+
+export component KitView inherits VerticalLayout {
+    if Kit.link == KitLink.out: Offer { }
+    if Kit.link == KitLink.waiting: Waiting { }
+    if Kit.link == KitLink.in: Section {
+        separated: false;
+        Label { role: TextRole.title; text: @tr("Kit"); }
+        HorizontalLayout {
+            spacing: Space.xs;
+            Label { role: TextRole.note; text: @tr("Connected as {}", Kit.account); horizontal-stretch: 1; vertical-alignment: center; }
+            Button { size: ButtonSize.mini; text: @tr("Disconnect"); help: @tr("Signs ONI out of The Lens DB; your Kit stays there"); clicked => { Kit.disconnect(); } }
+        }
+    }
+    if Kit.note != "": Section { separated: false; Label { role: TextRole.note; tone: Tone.caution; wrap: word-wrap; text: Kit.note; } }
+    if Kit.link == KitLink.in: Search { }
+    if Kit.link == KitLink.in && (Kit.adding.length > 0 || Kit.removals > 0): Changes { }
+    if Kit.link == KitLink.in: Pieces { title: @tr("Bodies"); items: Kit.bodies; kind: GearKind.body; empty: @tr("No body yet"); }
+    if Kit.link == KitLink.in: Pieces { title: @tr("Lenses"); items: Kit.lenses; kind: GearKind.lens; empty: @tr("No lens yet"); }
+    if Kit.link == KitLink.in: Section {
+        Label { role: TextRole.note; wrap: word-wrap; text: @tr("Catalogue provided by The Lens DB"); }
+        Mark { }
+    }
+}

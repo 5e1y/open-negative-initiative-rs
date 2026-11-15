@@ -32,6 +32,8 @@ pub struct Options {
     pub phone: bool,
     /// What the launch's `migration::support` left: imports due, never written this run, and its notice.
     pub brought: crate::migration::Brought,
+    /// Opens a web page: the person's browser in the app, a check's own record of the address.
+    pub browse: Box<dyn Fn(&str)>,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -65,6 +67,7 @@ impl Default for Options {
             identify: oni_library::places::system(),
             phone: phone::offered(),
             brought: Default::default(),
+            browse: Box::new(system::open_url),
         }
     }
 }

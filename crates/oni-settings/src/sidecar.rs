@@ -19,7 +19,7 @@ pub(crate) mod held;
 pub mod identity;
 mod said;
 
-pub use exif_line::{ExifLine, ExifMetadata};
+pub use exif_line::{ExifLine, ExifMetadata, LensSpecification};
 pub use fields::{set_exif, set_label, set_trashed, update};
 
 /// Delay after the last slider movement, coalescing writes instead of one per frame.

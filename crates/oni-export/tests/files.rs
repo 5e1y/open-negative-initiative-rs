@@ -7,6 +7,7 @@ use std::io::Cursor;
 use oni_colour::{Quantised, Space};
 use oni_export::metadata::tag;
 use oni_export::{Format, Image, ExifMetadata, Rendered, Settings, converted, encoded, estimate, gain_map};
+use oni_settings::LensSpecification;
 
 mod common;
 use common::{frame, jpeg_profile, read_tiff, settings};
@@ -20,6 +21,7 @@ fn typed() -> ExifMetadata {
         date: "2001:02:03 04:05:06".into(),
         artist: "A. Photographer".into(),
         copyright: "© A. Photographer".into(),
+        ..ExifMetadata::default()
     }
 }
 
@@ -40,12 +42,16 @@ fn tags(file: &[u8]) -> BTreeSet<u16> {
     found.fields().map(|f| f.tag.number()).collect()
 }
 
-fn text(file: &[u8], wanted: exif::Tag) -> Option<String> {
-    let found = if file.starts_with(b"MM\0*") {
-        exif::Reader::new().read_raw(file.to_vec()).ok()?
+fn read(file: &[u8]) -> Option<exif::Exif> {
+    if file.starts_with(b"MM\0*") {
+        exif::Reader::new().read_raw(file.to_vec()).ok()
     } else {
-        exif::Reader::new().read_from_container(&mut Cursor::new(file)).ok()?
-    };
+        exif::Reader::new().read_from_container(&mut Cursor::new(file)).ok()
+    }
+}
+
+fn text(file: &[u8], wanted: exif::Tag) -> Option<String> {
+    let found = read(file)?;
     let field = found.get_field(wanted, exif::In::PRIMARY)?;
     match &field.value {
         exif::Value::Ascii(v) => Some(String::from_utf8_lossy(&v[0]).into_owned()),
@@ -179,6 +185,51 @@ fn an_empty_field_writes_no_tag() {
     let fast = ExifMetadata { iso: "100000".into(), ..Default::default() };
     let file = encoded(&rendered, &export, &fast).unwrap();
     assert_eq!(text(&file, exif::Tag::PhotographicSensitivity).as_deref(), Some("65535"));
+}
+
+fn rationals(file: &[u8], wanted: exif::Tag) -> Option<Vec<(u32, u32)>> {
+    let found = read(file)?;
+    match &found.get_field(wanted, exif::In::PRIMARY)?.value {
+        exif::Value::Rational(v) => Some(v.iter().map(|r| (r.num, r.denom)).collect()),
+        _ => None,
+    }
+}
+
+/// The Kit's facts over the typed line.
+fn kit(spec: LensSpecification) -> ExifMetadata {
+    ExifMetadata { camera_make: "Nikon".into(), lens_make: "Tamron".into(), lens_specification: Some(spec), ..typed() }
+}
+
+#[test]
+fn the_gear_s_makes_and_specification_are_written_in_both_formats() {
+    let zoom = LensSpecification::new(70.0, 300.0, Some(4.0), Some(5.6));
+    let prime = LensSpecification::new(50.0, 50.0, Some(1.4), Some(1.4));
+    let unknown = LensSpecification::new(50.0, 50.0, Some(1.4), None);
+    let gear = [tag::MAKE, tag::LENS_MAKE, tag::LENS_SPECIFICATION, tag::FOCAL_LENGTH];
+    for format in [Format::Jpeg, Format::Tiff16] {
+        let export = settings(format, Space::Srgb);
+        let rendered = converted(&frame(16, 16), &export).unwrap();
+        let file = encoded(&rendered, &export, &kit(zoom)).unwrap();
+        assert_eq!(text(&file, exif::Tag::Make).as_deref(), Some("Nikon"), "{format:?}");
+        assert_eq!(text(&file, exif::Tag::LensMake).as_deref(), Some("Tamron"), "{format:?}");
+        let spec = rationals(&file, exif::Tag::LensSpecification);
+        assert_eq!(spec, Some(vec![(700, 10), (3000, 10), (40, 10), (56, 10)]), "{format:?}");
+        // Twin: a zoom states no single focal length.
+        assert!(!tags(&file).contains(&tag::FOCAL_LENGTH), "{format:?}");
+        let file = encoded(&rendered, &export, &kit(prime)).unwrap();
+        assert_eq!(rationals(&file, exif::Tag::FocalLength), Some(vec![(500, 10)]), "{format:?}");
+        let spec = rationals(&file, exif::Tag::LensSpecification);
+        assert_eq!(spec, Some(vec![(500, 10), (500, 10), (14, 10), (14, 10)]), "{format:?}");
+        let file = encoded(&rendered, &export, &kit(unknown)).unwrap();
+        let spec = rationals(&file, exif::Tag::LensSpecification);
+        assert_eq!(spec, Some(vec![(500, 10), (500, 10), (14, 10), (0, 0)]), "an unknown aperture reads 0/0");
+        if format == Format::Tiff16 {
+            assert!(read_tiff(&file).read_image().is_ok(), "the image survives the rationals");
+        }
+        // Twin: without the facts, none of their tags is written.
+        let file = encoded(&rendered, &export, &typed()).unwrap();
+        assert!(gear.iter().all(|t| !tags(&file).contains(t)), "{format:?}");
+    }
 }
 
 #[test]

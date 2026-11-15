@@ -89,7 +89,7 @@ impl Shell {
             reveal: Default::default(),
             shelf: Default::default(),
             batch: None,
-            org: Default::default(),
+            org: organising::Organising::new(options.browse),
             // A stored count off the ladder lands on its nearest rung.
             columns: Preferences::load(&options.support)
                 .int(preferences::GALLERY_COLUMNS)

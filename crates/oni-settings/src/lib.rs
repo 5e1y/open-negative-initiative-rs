@@ -33,4 +33,4 @@ pub use id::Id;
 pub use modes::{ConversionMode, Face, Medal, ScannerMachine, SourceEncoding};
 pub use reading::Reading;
 pub use settings::PipelineSettings;
-pub use sidecar::{ExifLine, ExifMetadata, Loaded};
+pub use sidecar::{ExifLine, ExifMetadata, LensSpecification, Loaded};

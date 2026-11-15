@@ -30,6 +30,7 @@ mod members;
 mod status_bar;
 mod info_sidebar;
 mod gear;
+mod kit;
 mod resolving;
 pub(in crate::app) mod roll_card;
 mod band_rename;
@@ -109,6 +110,8 @@ pub struct Organising {
     pub projects_surface: bool,
     /// The person's bodies and lenses, as the support folder keeps them.
     pub collection: oni_library::collection::Collection,
+    /// The Kit on The Lens DB: its copy, the sign-in, the search and the changes waiting for Validate.
+    pub kit: kit::KitState,
     /// The collection in the column: a click on the gallery's empty room shows it, until a photo is
     /// picked or a folder opened, whatever drops that pick after.
     pub gear_shown: bool,
@@ -192,6 +195,12 @@ pub struct Organising {
     /// say, `None` while a first read runs; `frames_due` once a write may have changed them.
     pub(in crate::app) frames: Option<((String, String), Option<roll_card::Frames>)>,
     pub(in crate::app) frames_due: bool,
+}
+
+impl Organising {
+    pub fn new(browse: Box<dyn Fn(&str)>) -> Organising {
+        Organising { kit: kit::KitState::new(browse), ..Organising::default() }
+    }
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
@@ -291,7 +300,8 @@ impl State {
 impl Ctl {
     pub(super) fn wire_organising(me: &Rc<Ctl>, window: &crate::MainWindow) {
         me.load_projects();
-        Ctl::wire_gear(me, window);
+        Ctl::wire_gear(me);
+        Ctl::wire_kit(me, window);
         let lib = window.global::<Library>();
         let index = |i: i32| i.max(0) as usize;
         let p = me.clone();

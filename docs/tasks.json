@@ -10651,5 +10651,12 @@
     "title": "The gear collection is called the Kit, the word The Lens DB uses",
     "status": "done",
     "detail": "The Lens DB names a person's bodies and lenses their Kit, and the owner chose its word so ONI and TLDB's pages agree: the column's title, its Forget help and the EXIF fields' pick and notes say Kit in English, French and Spanish. Code names stay Collection. Check: the collection window check finds Pick From Your Kit and its note."
+  },
+  {
+    "id": 2074,
+    "type": "feature",
+    "title": "The Kit lives on The Lens DB: sign-in in the system browser, catalogue search, changes sent at Validate, EXIF filled from it",
+    "status": "done",
+    "detail": "oni-tldb carries The Lens DB's partner API v1 as its contract states it (2026-11-15): OAuth 2 with PKCE S256 to a loopback port held 15 minutes, search, the Kit read with its ETag and changed in one call, revocation; the Kit's copy in the support folder's kit.json; and a simulated service (ONI_TLDB=fake) with an invented catalogue, as the real one is not open yet. The column where nothing is picked offers the service signed out, and signed in shows the account, a search whose answers wait under To Validate, the Kit as cards with See on The Lens DB and Remove, and the service's mark; a removal asks first, as it erases the person's notes on the service. The token lies in the Keychain or the Credential Manager. An export's Camera and Lens offer the Kit before the names typed in ONI, and a Kit piece named on a line writes Make, LensMake, LensSpecification and a prime's FocalLength (oni-export, ExifMetadata's three facts, never kept in a sidecar). Checks: oni-tldb's against its fake, kit::facts, kit::words, oni-export files::the_gear_s_makes_and_specification_are_written_in_both_formats, and the window check collection::the_kit_signs_in_searches_and_validates. The service's logo awaits its SVG: a word stands for it."
   }
 ]

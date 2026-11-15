@@ -79,6 +79,7 @@ mod tests {
             date: date.into(),
             artist: "A. Tester".into(),
             copyright: "© A. Tester".into(),
+            ..ExifMetadata::default()
         };
         let stated = sheet_metadata(line("2026:09:14 16:46:19"));
         assert_eq!(stated, ExifMetadata { artist: "A. Tester".into(), copyright: "© A. Tester".into(), date: "2026:09:14 16:46:19".into(), ..ExifMetadata::default() });

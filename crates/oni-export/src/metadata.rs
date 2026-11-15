@@ -10,6 +10,7 @@ use crate::ifd::{Directory, Value};
 
 pub mod tag {
     pub const IMAGE_DESCRIPTION: u16 = 270;
+    pub const MAKE: u16 = 271;
     pub const MODEL: u16 = 272;
     pub const DATE_TIME: u16 = 306;
     pub const ARTIST: u16 = 315;
@@ -17,6 +18,9 @@ pub mod tag {
     pub const EXIF_IFD: u16 = 34665;
     pub const ISO_SPEED_RATINGS: u16 = 34855;
     pub const DATE_TIME_ORIGINAL: u16 = 36867;
+    pub const FOCAL_LENGTH: u16 = 37386;
+    pub const LENS_SPECIFICATION: u16 = 42034;
+    pub const LENS_MAKE: u16 = 42035;
     pub const LENS_MODEL: u16 = 42036;
 }
 
@@ -33,6 +37,9 @@ pub(crate) fn stated(metadata: &ExifMetadata) -> (Directory, Directory) {
     let mut primary = Directory::default();
     let mut exif = Directory::default();
     let text = |s: &str| Value::Ascii(s.to_owned());
+    if !metadata.camera_make.is_empty() {
+        primary.set(tag::MAKE, text(&metadata.camera_make));
+    }
     if !metadata.camera.is_empty() {
         primary.set(tag::MODEL, text(&metadata.camera));
     }
@@ -48,6 +55,16 @@ pub(crate) fn stated(metadata: &ExifMetadata) -> (Directory, Directory) {
     if !metadata.lens.is_empty() {
         exif.set(tag::LENS_MODEL, text(&metadata.lens));
     }
+    if !metadata.lens_make.is_empty() {
+        exif.set(tag::LENS_MAKE, text(&metadata.lens_make));
+    }
+    if let Some(spec) = &metadata.lens_specification {
+        let values = [spec.focal_min, spec.focal_max, spec.aperture_at_min, spec.aperture_at_max];
+        exif.set(tag::LENS_SPECIFICATION, Value::Rational(values.map(tenths).into()));
+        if let Some(focal) = spec.prime() {
+            exif.set(tag::FOCAL_LENGTH, Value::Rational(vec![tenths(focal)]));
+        }
+    }
     if let Some(iso) = iso(&metadata.iso) {
         // A SHORT field: Exif states 65535 for any rating at or past it.
         exif.set(tag::ISO_SPEED_RATINGS, Value::Short(vec![iso.min(65535) as u16]));
@@ -57,6 +74,11 @@ pub(crate) fn stated(metadata: &ExifMetadata) -> (Directory, Directory) {
         exif.set(tag::DATE_TIME_ORIGINAL, text(&metadata.date));
     }
     (primary, exif)
+}
+
+/// A value in tenths as a RATIONAL, zero as Exif's 0/0 "unknown".
+fn tenths(v: u32) -> (u32, u32) {
+    if v == 0 { (0, 0) } else { (v, 10) }
 }
 
 /// The digits of a typed ISO read as a number; nothing, or zero, writes no tag.

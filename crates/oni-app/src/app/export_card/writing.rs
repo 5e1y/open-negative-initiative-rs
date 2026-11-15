@@ -99,7 +99,8 @@ impl Ctl {
                 .zip(destinations)
                 .zip(&c.rows)
                 .map(|((t, d), l)| {
-                    let (metadata, typed) = l.as_ref().map(|l| (l.row.metadata.clone(), l.typed(&c.artist, &c.copyright))).unwrap_or_default();
+                    let (mut metadata, typed) = l.as_ref().map(|l| (l.row.metadata.clone(), l.typed(&c.artist, &c.copyright))).unwrap_or_default();
+                    self.kit_facts(&mut metadata);
                     export::batch::Job { target: t.clone(), destination: d, metadata, typed }
                 })
                 .collect();

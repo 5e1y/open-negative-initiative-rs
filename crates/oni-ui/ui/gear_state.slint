@@ -1,9 +1,43 @@
-// The person's collection, as Rust keeps it: the bodies and the lenses typed in ONI, the last used first.
+// The person's gear as Rust keeps it: the names typed in ONI, the last used first, and the Kit their account
+// holds on The Lens DB, with the search and the changes waiting for Validate.
 export enum GearKind { body, lens }
 
 export global Gear {
     in property <[string]> bodies;
     in property <[string]> lenses;
-    callback add(GearKind, string);
-    callback forget(GearKind, string);
+}
+
+// A piece shown: its full name, what tells it from its kin, its page, whether Validate removes it.
+export struct KitPiece { name: string, detail: string, url: string, removing: bool }
+// A search's answer: `held` once in the Kit, `waiting` while it waits under To Validate.
+export struct KitFound { name: string, detail: string, held: bool, waiting: bool }
+// `waiting`: the browser is open on The Lens DB's sign-in, the port listening for its return.
+export enum KitLink { out, waiting, in }
+
+export global Kit {
+    in property <KitLink> link;
+    in property <string> account;
+    in property <[KitPiece]> bodies;
+    in property <[KitPiece]> lenses;
+    in property <[KitFound]> found;
+    // The words searched last, which an empty answer names.
+    in property <string> searched;
+    in property <bool> searching;
+    in property <[KitPiece]> adding;
+    in property <int> removals;
+    in property <bool> sending;
+    // Why the Kit shown may be behind the service: unreachable, waiting out its limit, a piece unknown.
+    in property <string> note;
+    callback connect(bool);
+    callback cancel();
+    callback disconnect();
+    callback search(string);
+    callback add(int);
+    callback unadd(int);
+    callback remove(GearKind, int);
+    callback validate();
+    callback discard();
+    callback open(string);
+    callback open-site();
+    callback suggest();
 }

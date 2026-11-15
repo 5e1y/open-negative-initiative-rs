@@ -221,47 +221,7 @@ msgstr "Tout sélectionner ({}) pour modifier toute la pellicule"
 msgid "Stop"
 msgstr "Arrêter"
 
-#: crates/oni-ui/ui/collection.slint
-msgid "Forget"
-msgstr "Oublier"
-
-#: crates/oni-ui/ui/collection.slint
-msgid "Leaves the kit; no photo's EXIF changes"
-msgstr "Quitte le kit ; aucun EXIF de photo ne change"
-
-#: crates/oni-ui/ui/collection.slint
-msgid "Kit"
-msgstr "Kit"
-
-#: crates/oni-ui/ui/collection.slint
-msgid "The bodies and lenses you type are kept here, offered again when an export's EXIF is filled."
-msgstr "Les boîtiers et objectifs que vous saisissez sont gardés ici, puis proposés à nouveau quand vous remplissez les EXIF d'un export."
-
-#: crates/oni-ui/ui/collection.slint
-msgid "Bodies"
-msgstr "Boîtiers"
-
-#: crates/oni-ui/ui/collection.slint
-msgid "Add a body…"
-msgstr "Ajouter un boîtier…"
-
-#: crates/oni-ui/ui/collection.slint crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
-msgid "No body yet"
-msgstr "Aucun boîtier pour l'instant"
-
-#: crates/oni-ui/ui/collection.slint
-msgid "Lenses"
-msgstr "Objectifs"
-
-#: crates/oni-ui/ui/collection.slint
-msgid "Add a lens…"
-msgstr "Ajouter un objectif…"
-
-#: crates/oni-ui/ui/collection.slint crates/oni-ui/ui/export_fields.slint
-msgid "No lens yet"
-msgstr "Aucun objectif pour l'instant"
-
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/confirm.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/export_presets.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/kit.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -1103,17 +1063,25 @@ msgstr "p. ex. Leica M6"
 msgid "Pick From Your Kit"
 msgstr "Choisir dans votre kit"
 
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/kit.slint
+msgid "No body yet"
+msgstr "Aucun boîtier pour l'instant"
+
 #: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "A body typed here joins your kit"
 msgstr "Un boîtier saisi ici rejoint votre kit"
 
-#: crates/oni-ui/ui/export_fields.slint
+#: crates/oni-app/src/app/organising/kit/words.rs crates/oni-ui/ui/export_fields.slint
 msgid "Lens"
 msgstr "Objectif"
 
 #: crates/oni-ui/ui/export_fields.slint
 msgid "e.g. Summicron 50 mm"
 msgstr "p. ex. Summicron 50 mm"
+
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/kit.slint
+msgid "No lens yet"
+msgstr "Aucun objectif pour l'instant"
 
 #: crates/oni-ui/ui/export_fields.slint
 msgid "A lens typed here joins your kit"
@@ -1455,7 +1423,7 @@ msgstr "Votre message et la version de l’app deviennent un ticket public sur G
 msgid "Encrypted diagnostic log, readable by ONI's maintainers only"
 msgstr "Journal de diagnostic chiffré, lisible uniquement par les mainteneurs d’ONI"
 
-#: crates/oni-ui/ui/help.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/kit.slint
 msgid "Sending…"
 msgstr "Envoi…"
 
@@ -1563,6 +1531,148 @@ msgstr "Aucune émulsion renseignée"
 msgid "Description"
 msgstr "Description"
 
+#: crates/oni-ui/ui/kit.slint
+msgid "The Lens DB"
+msgstr "The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Open The Lens DB in your browser"
+msgstr "Ouvre The Lens DB dans votre navigateur"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Leaves your Kit when you validate"
+msgstr "Quittera votre kit à la validation"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "See on The Lens DB"
+msgstr "Voir sur The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Keep"
+msgstr "Garder"
+
+#: crates/oni-app/src/app/organising/kit/changes.rs crates/oni-ui/ui/kit.slint
+msgid "Remove"
+msgstr "Retirer"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Marks it to leave your Kit at Validate"
+msgstr "Le marque pour quitter votre kit à la validation"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Kit"
+msgstr "Kit"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Keep your bodies and lenses on The Lens DB: ONI offers them when an export's EXIF is filled, with their brand, focal lengths and apertures."
+msgstr "Gardez vos boîtiers et objectifs sur The Lens DB : ONI vous les propose quand vous remplissez les EXIF d’un export, avec leur marque, leurs focales et leurs ouvertures."
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Connect The Lens DB"
+msgstr "Connecter The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Create an Account"
+msgstr "Créer un compte"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Your browser opens on The Lens DB: ONI never sees your password."
+msgstr "Votre navigateur s’ouvre sur The Lens DB : ONI ne voit jamais votre mot de passe."
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Finish signing in to The Lens DB in your browser. A new account confirms its e-mail first: ONI waits 15 minutes."
+msgstr "Terminez la connexion à The Lens DB dans votre navigateur. Un nouveau compte confirme d’abord son e-mail : ONI attend 15 minutes."
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Search The Lens DB"
+msgstr "Chercher sur The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Search a brand, a body, a lens…"
+msgstr "Une marque, un boîtier, un objectif…"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Searching…"
+msgstr "Recherche…"
+
+#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/navigator.slint
+msgid "Add"
+msgstr "Ajouter"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "In your Kit"
+msgstr "Dans votre kit"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "To validate"
+msgstr "À valider"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Joins your Kit at Validate"
+msgstr "Rejoint votre kit à la validation"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Nothing on The Lens DB matches “{}”."
+msgstr "Rien sur The Lens DB ne correspond à « {} »."
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Suggest Missing Gear"
+msgstr "Proposer du matériel manquant"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Proposes a piece to The Lens DB, reviewed before it shows"
+msgstr "Propose une pièce à The Lens DB, relue avant d’apparaître"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "To Validate"
+msgstr "À valider"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/kit.slint crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
+msgid "Undo"
+msgstr "Annuler"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Leaves the pieces to add"
+msgstr "Retire de la liste à ajouter"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "{n} piece leaves your Kit"
+msgid_plural "{n} pieces leave your Kit"
+msgstr[0] "{n} pièce quitte votre kit"
+msgstr[1] "{n} pièces quittent votre kit"
+
+#: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/kit.slint crates/oni-ui/ui/missing.slint
+msgid "Discard"
+msgstr "Abandonner"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Validate"
+msgstr "Valider"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Connected as {}"
+msgstr "Connecté en tant que {}"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Disconnect"
+msgstr "Déconnecter"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Signs ONI out of The Lens DB; your Kit stays there"
+msgstr "Déconnecte ONI de The Lens DB ; votre kit y reste"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies"
+msgstr "Boîtiers"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Lenses"
+msgstr "Objectifs"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Catalogue provided by The Lens DB"
+msgstr "Catalogue fourni par The Lens DB"
+
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Names only"
 msgstr "Noms seulement"
@@ -1610,10 +1720,6 @@ msgstr "Coller les réglages"
 #: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
-
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
-msgid "Undo"
-msgstr "Annuler"
 
 #: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/toolbar.slint
 msgid "Redo"
@@ -1683,10 +1789,6 @@ msgstr "Retour à la galerie"
 msgid "Keep for Now"
 msgstr "Garder pour l’instant"
 
-#: crates/oni-app/src/app/prepare/entering.rs crates/oni-ui/ui/missing.slint
-msgid "Discard"
-msgstr "Abandonner"
-
 #: crates/oni-ui/ui/missing.slint
 msgid "Retry"
 msgstr "Réessayer"
@@ -1734,10 +1836,6 @@ msgstr "Pas votre disque entier"
 #: crates/oni-ui/ui/navigator.slint
 msgid "Too wide and ONI reads everything; too narrow and photos stay out."
 msgstr "Trop large, ONI lit tout ; trop étroit, des photos restent à l’écart."
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Add"
-msgstr "Ajouter"
 
 #: crates/oni-ui/ui/notice.slint
 msgid "RAW Colour, Recalibrated"
@@ -4026,6 +4124,70 @@ msgstr "Définir la date de prise de vue"
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"
 msgstr "Par défaut, d’après le mode {mode} de cette pellicule"
+
+#: crates/oni-app/src/app/organising/kit/changes.rs
+msgid "Remove From Your Kit?"
+msgstr "Retirer de votre kit ?"
+
+#: crates/oni-app/src/app/organising/kit/changes.rs
+msgid "The piece leaves your Kit on The Lens DB, with the condition, price, serial number and notes kept there for it."
+msgid_plural "{n} pieces leave your Kit on The Lens DB, with the condition, price, serial number and notes kept there for them."
+msgstr[0] "La pièce quitte votre kit sur The Lens DB, avec l’état, le prix, le numéro de série et les notes gardés là-bas pour elle."
+msgstr[1] "{n} pièces quittent votre kit sur The Lens DB, avec l’état, le prix, le numéro de série et les notes gardés là-bas pour elles."
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "Connected to The Lens DB"
+msgstr "Connecté à The Lens DB"
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "You can go back to ONI: your Kit is there."
+msgstr "Vous pouvez revenir dans ONI : votre kit vous y attend."
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "ONI was not authorised"
+msgstr "ONI n’a pas été autorisé"
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "You can go back to ONI and connect again whenever you want."
+msgstr "Vous pouvez revenir dans ONI et vous connecter quand vous voulez."
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "ONI cannot listen for The Lens DB's answer on this computer."
+msgstr "ONI ne peut pas attendre la réponse de The Lens DB sur cet ordinateur."
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "ONI was not authorised on The Lens DB."
+msgstr "ONI n’a pas été autorisé sur The Lens DB."
+
+#: crates/oni-app/src/app/organising/kit/sign_in.rs
+msgid "The sign-in waited 15 minutes and stopped: connect again when you are ready."
+msgstr "La connexion a attendu 15 minutes puis s’est arrêtée : reconnectez-vous quand vous êtes prêt."
+
+#: crates/oni-app/src/app/organising/kit/words.rs
+msgid "Body"
+msgstr "Boîtier"
+
+#: crates/oni-app/src/app/organising/kit.rs
+msgid "The Lens DB signed ONI out: the Kit last read is still offered in the EXIF."
+msgstr "The Lens DB a déconnecté ONI : le dernier kit lu reste proposé dans les EXIF."
+
+#: crates/oni-app/src/app/organising/kit.rs
+msgid "The Lens DB cannot be reached: the Kit shown is the one last read."
+msgstr "The Lens DB est injoignable : le kit affiché est le dernier lu."
+
+#: crates/oni-app/src/app/organising/kit.rs
+msgid "The Lens DB refused ONI's request."
+msgstr "The Lens DB a refusé la demande d’ONI."
+
+#: crates/oni-app/src/app/organising/kit.rs
+msgid "The Lens DB asks ONI to wait {s} s before asking again."
+msgstr "The Lens DB demande à ONI d’attendre {s} s avant de redemander."
+
+#: crates/oni-app/src/app/organising/kit.rs
+msgid "A piece is no longer in the catalogue and was left out."
+msgid_plural "{n} pieces are no longer in the catalogue and were left out."
+msgstr[0] "Une pièce n’est plus au catalogue et a été écartée."
+msgstr[1] "{n} pièces ne sont plus au catalogue et ont été écartées."
 
 #: crates/oni-app/src/app/organising/oni_trash.rs
 msgid "Restore every photo in the ONI Trash"
