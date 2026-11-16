@@ -2,3 +2,4 @@
 /CLAUDE.local.md
 /target*/
 .DS_Store
+target.noindex/
