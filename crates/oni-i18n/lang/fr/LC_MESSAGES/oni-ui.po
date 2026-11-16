@@ -1560,10 +1560,6 @@ msgid "In your Kit"
 msgstr "Dans votre kit"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Remove from your Kit"
-msgstr "Retirer de votre kit"
-
-#: crates/oni-ui/ui/kit.slint
 msgid "New, not saved yet"
 msgstr "Nouveau, pas encore enregistré"
 
@@ -1576,10 +1572,6 @@ msgid "Default"
 msgstr "Par défaut"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Set as Default"
-msgstr "Définir par défaut"
-
-#: crates/oni-ui/ui/kit.slint
 msgid "Every export names this camera where its roll names none"
 msgstr "Chaque export indique ce boîtier là où son rouleau n’en indique aucun"
 
@@ -1590,6 +1582,10 @@ msgstr "Chaque export indique cet objectif là où sa photo n’en indique aucun
 #: crates/oni-ui/ui/kit.slint
 msgid "Keep"
 msgstr "Garder"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Remove from your Kit"
+msgstr "Retirer de votre kit"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Your Kit, on The Lens DB"

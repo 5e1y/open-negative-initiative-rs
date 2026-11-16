@@ -12,8 +12,8 @@ export global KitSearch {
 }
 
 // One piece of the catalogue, alike in the Kit and in the search. `found`, a search's answer: its name, what
-// tells it from its kin, its page and Add. In the Kit, short: the same, the default it may be and a quiet
-// removal in its corner.
+// tells it from its kin, its page and Add. In the Kit, one short row: the same, the default it may be, and
+// its removal last, away from the rest.
 export component PieceCard inherits Surface {
     in property <KitPiece> piece;
     in property <GearKind> kind;
@@ -53,30 +53,42 @@ export component PieceCard inherits Surface {
                 }
             }
         }
-        if !root.found: VerticalLayout {
+        if !root.found: HorizontalLayout {
             padding: Space.s;
             padding-left: Space.m;
-            spacing: Space.xxs;
-            HorizontalLayout {
-                spacing: Space.s;
+            spacing: Space.xs;
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
                 Label {
                     text: root.piece.name;
                     role: TextRole.section;
                     wrap: word-wrap;
-                    vertical-alignment: center;
-                    horizontal-stretch: 1;
                     tone: root.leaving ? Tone.tertiary : Tone.primary;
                 }
-                if root.piece.mark == KitMark.kept: Button {
+                Label {
+                    text: root.piece.mark == KitMark.added ? @tr("New, not saved yet") : root.leaving ? @tr("Leaves your Kit when you save") : root.piece.detail;
+                    role: TextRole.caption;
+                    tone: root.piece.mark == KitMark.added || root.leaving ? Tone.caution : Tone.tertiary;
+                    wrap: word-wrap;
+                }
+            }
+            if root.piece.mark == KitMark.kept: VerticalLayout {
+                alignment: center;
+                Button {
                     size: ButtonSize.mini;
                     on: root.piece.by-default;
-                    text: root.piece.by-default ? @tr("Default") : @tr("Set as Default");
-                    widest: @tr("Set as Default");
-                    icon: Icons.done;
-                    has-icon: root.piece.by-default;
+                    text: @tr("Default");
                     help: root.kind == GearKind.body ? @tr("Every export names this camera where its roll names none") : @tr("Every export names this lens where its photo names none");
                     clicked => { root.preferred(); }
                 }
+            }
+            VerticalLayout {
+                alignment: center;
+                Button { size: ButtonSize.mini; square: true; icon: Icons.arrow-right; has-icon: true; help: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
+            }
+            VerticalLayout {
+                alignment: center;
                 if root.leaving: Button { size: ButtonSize.mini; text: @tr("Keep"); clicked => { root.removed(); } }
                 if !root.leaving: Button {
                     kind: ButtonKind.destructive;
@@ -87,17 +99,6 @@ export component PieceCard inherits Surface {
                     help: root.piece.mark == KitMark.added ? @tr("Takes it out before saving") : @tr("Remove from your Kit");
                     clicked => { root.removed(); }
                 }
-            }
-            HorizontalLayout {
-                spacing: Space.s;
-                Label {
-                    text: root.piece.mark == KitMark.added ? @tr("New, not saved yet") : root.leaving ? @tr("Leaves your Kit when you save") : root.piece.detail;
-                    role: TextRole.caption;
-                    tone: root.piece.mark == KitMark.added || root.leaving ? Tone.caution : Tone.tertiary;
-                    vertical-alignment: center;
-                    horizontal-stretch: 1;
-                }
-                Button { size: ButtonSize.mini; square: true; icon: Icons.arrow-right; has-icon: true; help: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
             }
         }
     }

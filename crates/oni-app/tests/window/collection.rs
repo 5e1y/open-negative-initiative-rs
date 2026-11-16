@@ -166,10 +166,10 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(fake.kit_keys().len(), 2);
 
     // The FM2 and the FD 50 made the defaults: an export of the roll, which names no body, shows them.
-    common::click(&rig, w, common::placed(w, Role::Button, "Set as Default")[0].middle());
-    rig.settle();
-    common::click(&rig, w, common::the(w, Role::Button, "Set as Default").middle());
-    rig.settle();
+    for i in 0..2 {
+        common::click(&rig, w, common::placed(w, Role::Button, "Default")[i].middle());
+        rig.settle();
+    }
     assert!(kit.get_bodies().row_data(0).unwrap().by_default && kit.get_lenses().row_data(0).unwrap().by_default);
     println!("shot {}", rig.shot("kit-defaults").display());
     let e = w.global::<Exporting>();
@@ -190,8 +190,8 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     // Twin: the defaults let go, the roll's other frame still names the body and no longer the lens.
     common::click(&rig, w, (500.0, 700.0));
     rig.settle();
-    for _ in 0..2 {
-        common::click(&rig, w, common::placed(w, Role::Button, "Default")[0].middle());
+    for i in 0..2 {
+        common::click(&rig, w, common::placed(w, Role::Button, "Default")[i].middle());
         rig.settle();
     }
     assert!(kit.get_bodies().iter().chain(kit.get_lenses().iter()).all(|p| !p.by_default));
