@@ -56,7 +56,7 @@ pub fn sign_in(oauth: &str, form: &Form) -> Response {
         escape(&form.email),
         escape(&authorize_link(oauth, true))
     );
-    Response::html(200, shell("Sign in", &flow(&open(1, "Sign in", &content), &ahead())))
+    Response::html(200, flow("Sign in", &open(1, "Sign in", &content), &ahead()))
 }
 
 pub fn sign_up(oauth: &str, form: &Form) -> Response {
@@ -76,7 +76,7 @@ pub fn sign_up(oauth: &str, form: &Form) -> Response {
         escape(&form.email),
         escape(&authorize_link(oauth, false))
     );
-    Response::html(200, shell("Create your account", &flow(&open(1, "Create your account", &content), &ahead())))
+    Response::html(200, flow("Create your account", &open(1, "Create your account", &content), &ahead()))
 }
 
 /// After a sign-up, or a sign-in before the confirmation: the e-mail the real site would send, shown here.
@@ -92,7 +92,7 @@ pub fn mailbox(email: &str, link: &str, again: bool) -> Response {
         escape(email),
         escape(link)
     );
-    Response::html(200, shell("Check your e-mail", &flow(&open(1, "Check your e-mail", &content), &ahead())))
+    Response::html(200, flow("Check your e-mail", &open(1, "Check your e-mail", &content), &ahead()))
 }
 
 /// The second step: the sign-in folded above, what ONI may do and never sees, and the person's answer.
@@ -113,5 +113,5 @@ pub fn consent(account: &Account, allow: &str, refuse: &str, other: &str) -> Res
         escape(refuse),
         escape(allow)
     );
-    Response::html(200, shell("Authorize ONI", &flow(&done(account, other), &open(2, "Authorize ONI", &content))))
+    Response::html(200, flow("Authorize ONI", &done(account, other), &open(2, "Authorize ONI", &content)))
 }

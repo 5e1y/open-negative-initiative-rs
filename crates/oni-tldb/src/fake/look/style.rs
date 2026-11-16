@@ -92,11 +92,14 @@ background:var(--well);border-bottom:1px solid var(--line)}
 .mail dt{color:var(--faint)}.mail dd{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mail dd.from{display:flex;align-items:center;gap:8px}.mail .sim{font-size:10.5px;padding:1px 8px 1px 7px}
 .mail .body{padding:16px}.mail .body p{margin:0 0 14px}
+.intro{max-width:400px;margin:0 0 20px}
+.intro .lead{margin:0}
+.card.steps{padding:0;overflow:hidden}.card.steps .flow{margin:0}.card.steps .step:first-child{border-top:0}
 .pair{display:flex;align-items:center;justify-content:center;gap:4px;margin:0 0 12px}
 .pair img{width:44px;height:44px}.pair svg{border-radius:50%}
 .link{display:flex;align-items:center;justify-content:center;width:56px;height:2px;
 background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 8px)}
-.link svg{width:14px;height:14px;padding:5px;box-sizing:content-box;border-radius:50%;background:var(--card);color:var(--soft)}
+.link svg{width:14px;height:14px;padding:5px;box-sizing:content-box;border-radius:50%;background:var(--ground);color:var(--soft)}
 .scope{border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 24px}
 .scope ul{list-style:none;margin:0;padding:0}
 .scope ul+h2{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}

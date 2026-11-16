@@ -10686,5 +10686,12 @@
     "title": "My Kit: a default body and lens for every export, compact Kit cards, the trash a key with its hover, the web sign-in as a two-step fold-out",
     "status": "done",
     "detail": "The owner's review of 2026-11-16. A Kit body or lens is set as default on its card (Set as Default, kept in collection.json while the Kit holds the piece): an export's line shows it where its sidecar keeps no camera or lens and its roll no body, over the scan's own camera and lens, which name the digitiser; nothing already named is ever replaced. Exported, a frame keeps the lens and the camera where a default showed, as written (a hand's change or clear included), so a later default moves nothing; a roll with no body takes the default body as the hand exports (one undo step, Set Camera Body), its frames then following the roll's body. A line's roll is read from the frame itself (its folder's marker, else its sidecar's film) when the archive gives none, so a project member outside the opened folder keeps its roll's body. Two adversarial reviews shaped it: defaults never enter what a line derives, and no rule holds a whole kept block, so an older build's block still yields to what derives. The Kit's cards are two short lines (name, Set as Default, trash; detail or state, a key to the service's page); the search keeps its full cards. The trash was a ghost key whose forced glyph ink cancelled its hover; it is the design system's destructive mini key. THE LENS DB stands as tall as the disc, so its capitals sit on its middle. Add Gear is a keycap. Kit is My Kit. The simulated site drops its breadcrumb for a fold-out: step 2 Authorize ONI shows folded from the first page, step 1 folds into a done row on the consent; its copy is shorter and plainer, its animation one fade. Checks: export::line tests (defaults, kept values, a frame's own roll) and the window check collection, which sets the defaults by click, exports and reads the roll and the sidecars."
+  },
+  {
+    "id": 2079,
+    "type": "design",
+    "title": "The simulated sign-in: ONI joined to The Lens DB stands above the card",
+    "status": "done",
+    "detail": "The owner's call of 2026-11-16: the two icons joined and Connect ONI to your Kit on The Lens DB leave the card for the page above it; the card holds the two steps alone, edge to edge. Check: oni-tldb's page tests."
   }
 ]

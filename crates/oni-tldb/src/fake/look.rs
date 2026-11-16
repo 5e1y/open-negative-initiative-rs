@@ -32,16 +32,17 @@ fn glyph(name: &str) -> String {
     format!("<svg class=\"glyph\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">{path}</svg>")
 }
 
-/// The card's two steps, the second always in view: ONI and The Lens DB joined over them, then each step's markup.
-fn flow(first: &str, second: &str) -> String {
-    format!(
-        "<div class=\"pair\" aria-hidden=\"true\"><img src=\"{}\" width=\"44\" height=\"44\" alt=\"\">\
-         <span class=\"link\">{}</span>{}</div><p class=\"lead\">Connect <b>ONI</b> to your Kit on The Lens DB</p>\
-         <ol class=\"flow\">{first}{second}</ol>",
+/// A page of the two steps, the second always in view: ONI and The Lens DB joined over the card, then each
+/// step's markup in it.
+fn flow(title: &str, first: &str, second: &str) -> String {
+    let above = format!(
+        "<div class=\"intro\"><div class=\"pair\" aria-hidden=\"true\"><img src=\"{}\" width=\"44\" height=\"44\" alt=\"\">\
+         <span class=\"link\">{}</span>{}</div><p class=\"lead\">Connect <b>ONI</b> to your Kit on The Lens DB</p></div>",
         marks::oni(),
         glyph("link"),
         marks::tldb(44)
-    )
+    );
+    page(title, &above, "card steps", &format!("<ol class=\"flow\">{first}{second}</ol>"))
 }
 
 /// The step at hand, unfolded: its number, its title as the page's heading, and its content.
@@ -113,13 +114,18 @@ fn error(form: &Form) -> String {
 /// Every page: The Lens DB's mark with the "Simulated" pill, one card, and the note that no account is real;
 /// light or dark as the system is.
 pub fn shell(title: &str, body: &str) -> String {
+    page(title, "", "card", body)
+}
+
+/// `shell` with what stands `above` the card, and the card's own class.
+fn page(title: &str, above: &str, class: &str, body: &str) -> String {
     format!(
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
          <title>{} · The Lens DB (simulated)</title><style>{}</style></head><body><div class=\"page\">\
          <header class=\"top\"><a class=\"brand\" href=\"/\">{}<span>THE LENS DB</span></a>\
          <span class=\"sim\" title=\"A local stand-in, not thelensdb.com\">Simulated</span></header>\
-         <main class=\"card\">{body}</main>\
+         {above}<main class=\"{class}\">{body}</main>\
          <p class=\"note\"><b>Simulated.</b> A copy of The Lens DB running on this computer to develop ONI. \
          Not the real site, and no real account.</p></div></body></html>",
         escape(title),
