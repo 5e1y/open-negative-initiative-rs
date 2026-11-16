@@ -26,9 +26,13 @@ fn post(fake: &Fake, path: &str, fields: &[(&str, &str)]) -> Answer {
 
 /// Signs in on the page and authorises ONI: the address the browser is sent back to.
 fn sign_in(fake: &Fake, oauth: &str, email: &str, password: &str) -> String {
-    let consent = post(fake, "/oauth/sign-in", &[("oauth", oauth), ("email", email), ("password", password)]);
+    allow(fake, &post(fake, "/oauth/sign-in", &[("oauth", oauth), ("email", email), ("password", password)]))
+}
+
+/// Authorises ONI on a consent page: the address the browser is sent back to.
+fn allow(fake: &Fake, consent: &Answer) -> String {
     assert!(consent.body.contains("Authorize ONI"), "{}", consent.body);
-    let allowed = raw::get(&format!("{}{}", fake.site, after(&consent, "class=\"button\" href=\"")));
+    let allowed = raw::get(&format!("{}{}", fake.site, after(consent, "id=\"allow\" href=\"")));
     assert_eq!(allowed.status, 302, "{}", allowed.body);
     allowed.head.lines().find_map(|l| l.strip_prefix("Location: ")).expect("a redirect").to_string()
 }
@@ -67,14 +71,16 @@ fn the_pages_sign_in_then_ask_before_authorising() {
     let pending = oauth::begin(&fake.service(), false).unwrap();
     let oauth = after(&raw::get(&pending.url), "name=\"oauth\" value=\"");
     let consent = post(&fake, "/oauth/sign-in", &[("oauth", &oauth), ("email", "camille@example.com"), ("password", "film")]);
-    let refuse = format!("{}{}", fake.site, after(&consent, "class=\"quiet\" href=\""));
+    let refuse = format!("{}{}", fake.site, after(&consent, "id=\"refuse\" href=\""));
     assert!(raw::get(&refuse).head.contains("error=access_denied"));
     assert_eq!(raw::get(&refuse).status, 400, "a consent is answered once");
-    // The test account's one click returns a code at once, from the sign-in page as from the sign-up one.
+    // The test account's one click signs in and leads to the consent, from the sign-in page as from the sign-up one.
     for signup in [false, true] {
         let pending = oauth::begin(&fake.service(), signup).unwrap();
-        let quick = raw::get(&format!("{}{}", fake.site, after(&raw::get(&pending.url), "class=\"button\" href=\"")));
-        assert!(quick.head.contains(&format!("Location: {}?code=", pending.redirect)), "{}", quick.head);
+        let quick = raw::get(&format!("{}{}", fake.site, after(&raw::get(&pending.url), "id=\"quick\" href=\"")));
+        assert_eq!(quick.status, 200, "twin: the one click stops at the consent, never straight back to ONI: {}", quick.head);
+        assert!(!quick.head.contains("Location:") && quick.body.contains("Camille"), "{}", quick.head);
+        assert!(allow(&fake, &quick).starts_with(&format!("{}?code=", pending.redirect)));
     }
     // Twin: another client is refused before any form.
     assert_eq!(raw::get(&pending.url.replace("client_id=oni", "client_id=other")).status, 400);
@@ -94,7 +100,7 @@ fn a_new_account_confirms_its_e_mail_and_keeps_its_own_kit_from_run_to_run() {
     assert!(post(&fake, "/oauth/sign-up", &fields).body.contains("already uses"), "one account an e-mail");
     let early = post(&fake, "/oauth/sign-in", &[("oauth", &oauth), ("email", "lou@example.com"), ("password", "x")]);
     assert!(early.body.contains("Confirm your e-mail before") && !early.body.contains("Authorize ONI"), "twin: no consent before the e-mail");
-    let confirmed = raw::get(&format!("{}{}", fake.site, after(&mail, "class=\"button\" href=\"")));
+    let confirmed = raw::get(&format!("{}{}", fake.site, after(&mail, "id=\"confirm\" href=\"")));
     assert!(confirmed.body.contains("Your e-mail is confirmed"), "{}", confirmed.body);
     let back = sign_in(&fake, &after(&confirmed, "name=\"oauth\" value=\""), "lou@example.com", "x");
     let lou = Client { service: fake.service(), token: token(&fake, pending, back) };

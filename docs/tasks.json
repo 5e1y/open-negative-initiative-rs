@@ -10672,5 +10672,12 @@
     "title": "The simulated The Lens DB lets a check by hand in with one click",
     "status": "done",
     "detail": "The fake's sign-in and sign-up pages open on Continue with the test account: the first account (camille@example.com) signed in and ONI authorised at once, the browser sent straight back to ONI with a code, no form and no e-mail. The forms stay below it for the real flow. Check: oni-tldb pages::the_pages_sign_in_then_ask_before_authorising."
+  },
+  {
+    "id": 2077,
+    "type": "feature",
+    "title": "The Kit reworked: one piece card everywhere, the search in a sheet over the window, Save instead of To Validate, a two-step sign-in with ONI's icon",
+    "status": "done",
+    "detail": "The owner's review of 2026-11-16: the search pushed the column's content and its list was dense, its Add did nothing (the Row's key fires acted, which the view never heard; the window check called the callback and so never saw it), three components showed one piece, the To Validate list was odd, the service's mark was a word, Remove sat beside the positive keys, and the web pages were plain. Now: one PieceCard shows a piece in the Kit and in the search (KitMark kept, added, leaving, free); Add Gear opens KitSearchSheet over the window, its answers as cards two to a row with Add and Added; an added piece shows in the Kit at once, marked New, not saved yet, and a removal marks its card Leaves your Kit when you save, its trash a quiet glyph in the card's corner, Keep undoing it; KitSaveBar under the column counts the changes beside Discard and Save, Save asking first when a piece leaves; leaving the Kit with changes not saved asks Save Your Kit? (Later, Discard, Save), and quitting asks too. The Lens DB's mark is its own aperture icon (its disc and blades in the theme's inks) beside THE LENS DB. The window's sheets moved to sheets.slint, app.slint being past its ceiling. The simulated site signs in then asks for the consent on a page showing ONI's icon beside the service's, and the page ONI answers on its port says the outcome under ONI's icon. Check: the window check collection::the_kit_signs_in_searches_and_validates, now driven by clicks and keys."
   }
 ]

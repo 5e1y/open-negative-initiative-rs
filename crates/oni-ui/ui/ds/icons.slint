@@ -5,6 +5,9 @@ export enum MenuGlyph { none, edit, copy, paste, reset, roll, folder, ungroup, p
 // `DSIcon.Name` does; Mirror Vertically turns Trinil's mirror a quarter, the set drawing no vertical one.
 export global Icons {
     out property <image> framing: @image-url("../icons/crop.svg");
+    // The Lens DB's mark, its disc and its blades apart, so each takes an ink of the theme.
+    out property <image> tldb-disc: @image-url("../icons/tldb-disc.svg");
+    out property <image> tldb-blades: @image-url("../icons/tldb-blades.svg");
     out property <image> compare: @image-url("../icons/arrow-expand-vertical.svg");
     out property <image> contact-sheet: @image-url("../icons/orthographic-view.svg");
     out property <image> undo: @image-url("../icons/undo.svg");

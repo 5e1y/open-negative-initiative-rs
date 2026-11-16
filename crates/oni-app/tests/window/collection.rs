@@ -1,12 +1,12 @@
-//! The Kit against a simulated The Lens DB: a click on the gallery's empty room offers the service; Connect
-//! opens its sign-in in the browser and the Kit shows once it returns; a search adds pieces that leave for the
-//! service only at Validate; a removal asks first; the export's Camera offers the Kit before the names typed in
-//! ONI; Disconnect revokes the token and drops the copy.
+//! The Kit against a simulated The Lens DB, driven by clicks and keys as a hand would: a click on the
+//! gallery's empty room offers the service; Connect opens its sign-in in the browser and the Kit shows once it
+//! returns; Add Gear searches in a sheet whose Add puts a piece in the Kit until Save; a removal asks at Save;
+//! leaving the Kit with changes not saved asks about them; Disconnect revokes the token and drops the copy.
 
 use oni_app::InfoKind;
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
-use oni_app::{Confirm, Gear, GearKind, Kit, KitLink, Library};
+use oni_app::{Confirm, Gear, Kit, KitLink, KitMark, Library};
 use oni_core::{Archive, EditorStore};
 use oni_library::index::{Entry, LibraryIndex};
 use oni_settings::{Date, Film};
@@ -107,36 +107,58 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(names(gear.get_bodies()), ["Canon AE-1 Program", "Pentax MX"], "the Kit first in the export's list, then the typed names");
     println!("shot {}", rig.shot("kit-signed-in").display());
 
-    // A search's answer joins the pieces to validate; nothing leaves for the service before Validate.
-    kit.invoke_search("nikon fm2".into());
+    // Add Gear opens the search over the window; its Add puts the FM2 in the Kit, nothing sent before Save.
+    common::click(&rig, w, common::the(w, Role::Button, "Add Gear").middle());
+    rig.settle();
+    assert!(kit.get_picking(), "the search's sheet is shown");
+    rig.key("nikon fm2");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
-    let fm2 = kit.get_found().iter().position(|f| f.name == "Nikon FM2").expect("the FM2 found");
-    kit.invoke_add(fm2 as i32);
     rig.settle();
-    assert_eq!(piece_names(kit.get_adding()), ["Nikon FM2"]);
-    assert!(kit.get_found().row_data(fm2).is_some_and(|f| f.waiting && !f.held), "an answer added waits for Validate");
-    assert_eq!(fake.kit_keys().len(), 2, "twin: nothing reaches the service before Validate");
-    println!("shot {}", rig.shot("kit-to-validate").display());
-    kit.invoke_validate();
-    rig.until("the change sent", WAIT, || kit.get_adding().row_count() == 0 && !kit.get_sending());
-    assert_eq!(piece_names(kit.get_bodies()), ["Canon AE-1 Program", "Nikon FM2"]);
+    println!("shot {}", rig.shot("kit-search").display());
+    common::click(&rig, w, common::the(w, Role::Button, "Add").middle());
+    rig.settle();
+    assert!(kit.get_found().iter().any(|f| f.name == "Nikon FM2" && f.mark == KitMark::Added), "the FM2 added");
+    assert!(!common::placed(w, Role::Button, "Added").is_empty(), "its key says so");
+    assert_eq!(fake.kit_keys().len(), 2, "twin: nothing reaches the service before Save");
+    common::click(&rig, w, common::the(w, Role::Button, "Done").middle());
+    rig.settle();
+    assert!(!kit.get_picking());
+    assert_eq!(piece_names(kit.get_bodies()), ["Canon AE-1 Program", "Nikon FM2"], "the Kit shows it, not saved yet");
+    assert_eq!(kit.get_unsaved(), 1);
+    println!("shot {}", rig.shot("kit-unsaved").display());
+    common::click(&rig, w, common::the(w, Role::Button, "Save").middle());
+    rig.until("the change saved", WAIT, || kit.get_unsaved() == 0 && !kit.get_sending());
     assert_eq!(fake.kit_keys().iter().filter(|k| k.kind == Kind::Camera).count(), 2, "the service holds it now: {:?}", fake.kit_keys());
+    assert!(kit.get_bodies().iter().all(|p| p.mark == KitMark::Kept));
 
-    // A removal asks first, as it erases what the person noted of the piece on the service.
-    kit.invoke_remove(GearKind::Body, 0);
+    // A removal waits for Save, which asks first, as it erases what the person noted of the piece on the service.
+    common::click(&rig, w, common::placed(w, Role::Button, "Remove from your Kit")[0].middle());
     rig.settle();
-    assert!(kit.get_bodies().row_data(0).unwrap().removing && kit.get_removals() == 1);
-    kit.invoke_validate();
+    assert!(kit.get_bodies().row_data(0).unwrap().mark == KitMark::Leaving && kit.get_unsaved() == 1);
+    common::click(&rig, w, common::the(w, Role::Button, "Save").middle());
     rig.settle();
     let confirm = w.global::<Confirm>();
-    assert!(confirm.get_shown() && confirm.get_destructive(), "Validate asks before removing");
+    assert!(confirm.get_shown() && confirm.get_destructive(), "Save asks before removing");
     confirm.invoke_answered(false);
     rig.settle();
     assert_eq!(fake.kit_keys().len(), 3, "twin: Cancel removes nothing");
-    kit.invoke_validate();
+
+    // Leaving the Kit with the removal not saved asks; Later keeps it, Save sends it.
+    lib.invoke_tile_clicked(0, false, false);
+    rig.settle();
+    assert!(kit.get_asking(), "leaving the Kit asks about its changes");
+    println!("shot {}", rig.shot("kit-ask").display());
+    common::click(&rig, w, common::the(w, Role::Button, "Later").middle());
+    rig.settle();
+    assert!(!kit.get_asking() && kit.get_unsaved() == 1, "Later keeps the change");
+    common::click(&rig, w, (500.0, 700.0));
+    rig.settle();
+    assert_eq!(lib.get_info_kind(), InfoKind::Collection);
+    assert!(!kit.get_asking(), "twin: coming back to the Kit asks nothing");
+    common::click(&rig, w, common::the(w, Role::Button, "Save").middle());
     rig.settle();
     confirm.invoke_answered(true);
-    rig.until("the removal sent", WAIT, || kit.get_removals() == 0 && !kit.get_sending());
+    rig.until("the removal saved", WAIT, || kit.get_unsaved() == 0 && !kit.get_sending());
     assert_eq!(piece_names(kit.get_bodies()), ["Nikon FM2"]);
     assert_eq!(fake.kit_keys().len(), 2);
 

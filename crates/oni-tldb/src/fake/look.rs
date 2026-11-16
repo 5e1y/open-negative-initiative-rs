@@ -1,8 +1,13 @@
-//! The simulated pages' HTML: one plain shell under a banner that says what they are, and the sign-in,
-//! sign-up, mailbox and consent cards.
+//! The simulated pages' HTML: one shell under The Lens DB's mark and a "Simulated" pill, a note under every
+//! card that says what they are, the two-step sign-in's cards (`cards`) and the catalogue's plain pages.
 
-use super::accounts::{Account, FIRST_EMAIL, FIRST_PASSWORD};
+mod cards;
+mod style;
+
+pub use cards::{authorize_link, consent, mailbox, sign_in, sign_up};
+
 use super::http::{Response, escape};
+use crate::marks;
 use crate::piece::Piece;
 
 /// What a sign-in or sign-up form shows again: the typed values and a line above them.
@@ -14,86 +19,50 @@ pub struct Form {
     pub notice: String,
 }
 
-/// The one-click way in for a check by hand: the first account, signed in and ONI authorised at once.
-fn quick(oauth: &str) -> String {
-    format!(
-        "<a class=\"button\" href=\"{}\">Continue with the test account</a>\
-         <p class=\"hint center\">{FIRST_EMAIL}, in one click: no form, no e-mail.</p><p class=\"or\">or</p>",
-        escape(&format!("/oauth/quick?{oauth}"))
-    )
+/// A line icon, drawn by the text's colour.
+fn glyph(name: &str) -> String {
+    let path = match name {
+        "check" => "<path d=\"M20 6 9 17l-5-5\"/>",
+        "cross" => "<path d=\"M18 6 6 18M6 6l12 12\"/>",
+        "next" => "<path d=\"m9 6 6 6-6 6\"/>",
+        "link" => "<path d=\"M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 1 1 0 10h-2M8 12h8\"/>",
+        "mail" => "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m3 7 9 6 9-6\"/>",
+        _ => "<path d=\"M12 8v5M12 16.5v.01\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/>",
+    };
+    format!("<svg class=\"glyph\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">{path}</svg>")
 }
 
-pub fn sign_in(oauth: &str, form: &Form) -> Response {
-    let signup = format!("/oauth/authorize?{}&screen_hint=signup", oauth.replace("&screen_hint=signup", ""));
-    let body = format!(
-        "<h1>Sign in</h1><p class=\"lead\">ONI would like to use your Kit.</p>{}{}\
-         <form method=\"post\" action=\"/oauth/sign-in\">{}\
-         <label>E-mail<input name=\"email\" type=\"email\" autocomplete=\"off\" value=\"{}\" required autofocus></label>\
-         <label>Password<input name=\"password\" type=\"password\" required></label>\
-         <button>Sign in</button></form>\
-         <p class=\"aside\">No account yet? <a href=\"{}\">Create one</a></p>\
-         <p class=\"hint\">Simulated account: <b>{FIRST_EMAIL}</b>, password <b>{FIRST_PASSWORD}</b>.</p>",
-        quick(oauth),
-        lines(form),
-        hidden(oauth),
-        escape(&form.email),
-        escape(&signup)
-    );
-    Response::html(200, shell("Sign in", &body))
+/// The two steps over a card: the first named `first`, the second ONI's authorisation, `at` the current one.
+fn steps(first: &str, at: u8) -> String {
+    let step = |n: u8, label: &str| {
+        let (class, mark) = match n.cmp(&at) {
+            std::cmp::Ordering::Less => ("done", glyph("check")),
+            std::cmp::Ordering::Equal => ("now", n.to_string()),
+            std::cmp::Ordering::Greater => ("", n.to_string()),
+        };
+        format!("<li class=\"{class}\"><i>{mark}</i>{label}</li>")
+    };
+    format!("<ol class=\"steps\" aria-label=\"Step {at} of 2\">{}{}</ol>", step(1, first), step(2, "Authorize"))
 }
 
-pub fn sign_up(oauth: &str, form: &Form) -> Response {
-    let signin = format!("/oauth/authorize?{}", oauth.replace("&screen_hint=signup", ""));
-    let body = format!(
-        "<h1>Create your account</h1><p class=\"lead\">Then ONI can keep your Kit here.</p>{}{}\
-         <form method=\"post\" action=\"/oauth/sign-up\">{}\
-         <label>Name<input name=\"name\" autocomplete=\"off\" value=\"{}\" required autofocus></label>\
-         <label>E-mail<input name=\"email\" type=\"email\" autocomplete=\"off\" value=\"{}\" required></label>\
-         <label>Password<input name=\"password\" type=\"password\" required></label>\
-         <button>Create the account</button></form>\
-         <p class=\"hint\">Invent a password: this simulation keeps it in plain text on this computer.</p>\
-         <p class=\"aside\">Already registered? <a href=\"{}\">Sign in</a></p>",
-        quick(oauth),
-        lines(form),
-        hidden(oauth),
-        escape(&form.name),
-        escape(&form.email),
-        escape(&signin)
-    );
-    Response::html(200, shell("Create your account", &body))
+/// A person's initial, in a round mark.
+fn avatar(name: &str) -> String {
+    let initial = name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default();
+    format!("<span class=\"avatar\" aria-hidden=\"true\">{}</span>", escape(&initial))
 }
 
-/// After a sign-up, or a sign-in before the confirmation: the e-mail the real site would send, shown here.
-pub fn mailbox(email: &str, link: &str, again: bool) -> Response {
-    let lead = if again { "Confirm your e-mail before signing in." } else { "Your account is created. Confirm your e-mail to sign in." };
-    let body = format!(
-        "<h1>Check your e-mail</h1><p class=\"lead\">{lead}</p>\
-         <div class=\"mail\"><p class=\"from\">Simulated e-mail to <b>{}</b></p><p>Welcome to The Lens DB. Confirm this address \
-         to use your account.</p><p><a class=\"button\" href=\"{}\">Confirm my e-mail</a></p></div>\
-         <p class=\"hint\">ONI waits up to 15 minutes for this sign-in to end.</p>",
-        escape(email),
-        escape(link)
-    );
-    Response::html(200, shell("Check your e-mail", &body))
-}
-
-pub fn consent(account: &Account, allow: &str, refuse: &str) -> Response {
-    let body = format!(
-        "<h1>Authorize ONI</h1><p class=\"lead\">Signed in as <b>{}</b> · {}</p>\
-         <div class=\"mail\"><p><b>ONI</b>, the film negative converter, asks to:</p>\
-         <ul><li>read your Kit of bodies and lenses</li><li>add pieces to it and remove them</li></ul>\
-         <p>Nothing else: not your notes, prices or serial numbers.</p></div>\
-         <p class=\"choice\"><a class=\"button\" href=\"{}\">Authorize ONI</a><a class=\"quiet\" href=\"{}\">Refuse</a></p>",
-        escape(&account.name),
-        escape(&account.email),
-        escape(allow),
-        escape(refuse)
-    );
-    Response::html(200, shell("Authorize ONI", &body))
+/// ONI's icon over a card's title, as the application the sign-in leads to.
+fn client() -> String {
+    format!("<img class=\"client\" src=\"{}\" width=\"56\" height=\"56\" alt=\"ONI\">", marks::oni())
 }
 
 pub fn refused(reason: &str) -> Response {
-    Response::html(400, shell("Refused", &format!("<h1>This request is refused</h1><p>{}</p>", escape(reason))))
+    let body = format!(
+        "<div class=\"head\"><div class=\"badge\">{}</div><h1>This request is refused</h1><p class=\"lead\">{}</p></div>",
+        glyph("alert"),
+        escape(reason)
+    );
+    Response::html(400, shell("Refused", &body))
 }
 
 pub fn home(cameras: usize, pieces: usize) -> Response {
@@ -124,7 +93,7 @@ pub fn piece(piece: &Piece) -> Response {
     }
     let list: String = facts.iter().map(|f| format!("<li>{f}</li>")).collect();
     let kind = crate::api::kind_name(piece.kind);
-    let body = format!("<h1>{}</h1><p class=\"lead\">{kind} {}</p><ul>{list}</ul>", escape(&piece.name), piece.id);
+    let body = format!("<h1>{}</h1><p class=\"lead\">{kind} {}</p><ul class=\"facts\">{list}</ul>", escape(&piece.name), piece.id);
     Response::html(200, shell(&piece.name, &body))
 }
 
@@ -132,48 +101,30 @@ fn hidden(oauth: &str) -> String {
     format!("<input type=\"hidden\" name=\"oauth\" value=\"{}\">", escape(oauth))
 }
 
-fn lines(form: &Form) -> String {
-    let mut out = String::new();
-    if !form.notice.is_empty() {
-        out.push_str(&format!("<p class=\"notice\">{}</p>", escape(&form.notice)));
-    }
-    if !form.error.is_empty() {
-        out.push_str(&format!("<p class=\"error\">{}</p>", escape(&form.error)));
-    }
-    out
+/// The line over the test account's button: the confirmation's notice.
+fn notice(form: &Form) -> String {
+    if form.notice.is_empty() { String::new() } else { format!("<p class=\"notice\" role=\"status\">{}</p>", escape(&form.notice)) }
 }
 
-/// Every page: the banner first, one card readable at 360 points wide, light or dark as the system is.
+/// The line over the form's fields: what was wrong with them.
+fn error(form: &Form) -> String {
+    if form.error.is_empty() { String::new() } else { format!("<p class=\"error\" role=\"alert\">{}</p>", escape(&form.error)) }
+}
+
+/// Every page: The Lens DB's mark with the "Simulated" pill, one card, and the note that no account is real;
+/// light or dark as the system is.
 pub fn shell(title: &str, body: &str) -> String {
     format!(
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">\
          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\
-         <title>The Lens DB — simulated: {}</title><style>{STYLE}</style></head><body>\
-         <div class=\"sim\"><b>Simulated.</b> A local stand-in for The Lens DB, for ONI's development on this computer: \
-         not the real site, no real account.</div><header><a href=\"/\">THE LENS DB</a><span>simulated</span></header>\
-         <main>{body}</main></body></html>",
-        escape(title)
+         <title>{} · The Lens DB (simulated)</title><style>{}</style></head><body><div class=\"page\">\
+         <header class=\"top\"><a class=\"brand\" href=\"/\">{}<span>THE LENS DB</span></a>\
+         <span class=\"sim\" title=\"A local stand-in, not thelensdb.com\">Simulated</span></header>\
+         <main class=\"card\">{body}</main>\
+         <p class=\"note\"><b>Simulated.</b> A local stand-in for The Lens DB, for ONI's development on this computer: \
+         not the real site, no real account.</p></div></body></html>",
+        escape(title),
+        style::STYLE,
+        marks::tldb(26)
     )
 }
-
-const STYLE: &str = "\
-:root{--ink:#111;--soft:#666;--line:#e3e3e3;--card:#fff;--ground:#f6f6f4;--go:#111;--on-go:#fff;--warn:#fff3cd}\
-@media (prefers-color-scheme:dark){:root{--ink:#eee;--soft:#999;--line:#333;--card:#1b1b1b;--ground:#0e0e0e;--go:#eee;--on-go:#111;--warn:#3a3000}}\
-*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.5 system-ui,-apple-system,sans-serif}\
-.sim{background:var(--warn);padding:.6rem 1rem;font-size:.85rem;text-align:center}\
-header{display:flex;gap:.6rem;align-items:baseline;justify-content:center;padding:1.5rem 1rem .5rem}\
-header a{color:var(--ink);font-weight:800;letter-spacing:.04em;text-decoration:none}header span{color:var(--soft);font-size:.8rem}\
-main{max-width:26rem;margin:1rem auto 3rem;padding:2rem;background:var(--card);border:1px solid var(--line);border-radius:12px}\
-h1{font-size:1.5rem;margin:0 0 .25rem}.lead{color:var(--soft);margin:0 0 1.5rem}\
-label{display:block;font-size:.85rem;font-weight:600;margin-bottom:1rem}\
-input{display:block;width:100%;margin-top:.35rem;padding:.65rem .75rem;font:inherit;color:var(--ink);background:var(--ground);\
-border:1px solid var(--line);border-radius:8px}\
-button,.button{display:inline-block;width:100%;padding:.7rem 1rem;font:inherit;font-weight:600;text-align:center;\
-color:var(--on-go);background:var(--go);border:0;border-radius:8px;text-decoration:none;cursor:pointer}\
-.choice{display:flex;gap:1rem;align-items:center}.choice .button{flex:1}.quiet{color:var(--soft)}\
-.aside{margin:1.25rem 0 0;font-size:.9rem;text-align:center}.hint{color:var(--soft);font-size:.8rem;margin-top:1rem}\
-.error{color:#c0392b;font-size:.9rem}.notice{color:#1e8449;font-size:.9rem}a{color:inherit}\
-.mail{border:1px dashed var(--line);border-radius:8px;padding:1rem;margin-bottom:1rem}.from{color:var(--soft);font-size:.85rem;margin-top:0}\
-ul{padding-left:1.2rem}.center{text-align:center}\
-.or{display:flex;gap:.75rem;align-items:center;color:var(--soft);font-size:.8rem;margin:1.25rem 0}\
-.or::before,.or::after{content:\"\";flex:1;border-top:1px solid var(--line)}";

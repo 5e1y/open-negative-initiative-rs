@@ -1,6 +1,6 @@
 //! The person's Kit on The Lens DB, in the archive's column where nothing is picked: the sign-in through
-//! the system browser, the catalogue searched, the changes sent in one call at Validate, and the copy kept
-//! in the support folder, which ONI works from offline and which fills an export's EXIF.
+//! the system browser, the catalogue searched in a sheet, the changes sent in one call at Save, and the copy
+//! kept in the support folder, which ONI works from offline and which fills an export's EXIF.
 
 mod changes;
 mod facts;
@@ -11,7 +11,7 @@ mod words;
 pub use facts::complete;
 
 use super::*;
-use crate::{GearKind, Kit as KitGlobal, KitFound, KitLink, KitPiece};
+use crate::{GearKind, Kit as KitGlobal, KitLink, KitMark, KitPair, KitPiece, KitSearch};
 use oni_i18n::{tr, trn};
 use oni_tldb::{Client, Failure, Key, Kept, Kind, Piece, Read, Service, oauth};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -43,6 +43,10 @@ pub struct KitState {
     adding: Vec<Piece>,
     removing: Vec<Key>,
     sending: bool,
+    /// The search's sheet over the window.
+    picking: bool,
+    /// The question asked when the Kit is left with changes not saved.
+    asking: bool,
     note: String,
     settle: slint::Timer,
 }
@@ -86,8 +90,33 @@ fn service() -> Service {
     Service::new(&site, crate::updates::version())
 }
 
-fn shown(piece: &Piece, removing: bool) -> KitPiece {
-    KitPiece { name: piece.name.as_str().into(), detail: words::detail(piece).into(), url: piece.url.as_str().into(), removing }
+fn piece(p: &Piece, mark: KitMark, detail: String) -> KitPiece {
+    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark }
+}
+
+impl KitState {
+    /// Where a piece of the catalogue stands against the Kit and the changes held for Save.
+    fn mark(&self, p: &Piece) -> KitMark {
+        let key = p.key();
+        if self.removing.contains(&key) {
+            KitMark::Leaving
+        } else if self.kept.items.iter().any(|h| h.key() == key) {
+            KitMark::Kept
+        } else if self.adding.iter().any(|h| h.key() == key) {
+            KitMark::Added
+        } else {
+            KitMark::Free
+        }
+    }
+
+    /// The Kit of one kind as Save will leave it: its pieces, then the ones added, oldest first.
+    fn listed(&self, kind: Kind) -> Vec<&Piece> {
+        self.kept.of(kind).chain(self.adding.iter().filter(|p| p.kind == kind)).collect()
+    }
+
+    fn shown(&self, kind: Kind) -> Vec<KitPiece> {
+        self.listed(kind).into_iter().map(|p| piece(p, self.mark(p), words::detail(p))).collect()
+    }
 }
 
 fn model<T: Clone + 'static>(items: Vec<T>) -> ModelRc<T> {
@@ -113,15 +142,19 @@ impl Ctl {
         let p = me.clone();
         k.on_search(move |t| p.kit_search(&t));
         let p = me.clone();
-        k.on_add(move |i| p.kit_add(i.max(0) as usize));
+        k.on_pick(move |open| p.kit_pick(open));
         let p = me.clone();
-        k.on_unadd(move |i| p.kit_unadd(i.max(0) as usize));
+        k.on_take(move |i| p.kit_take(i.max(0) as usize));
         let p = me.clone();
         k.on_remove(move |kind, i| p.kit_remove(kind, i.max(0) as usize));
         let p = me.clone();
-        k.on_validate(move || p.kit_validate());
+        k.on_save(move || p.kit_save());
         let p = me.clone();
         k.on_discard(move || p.kit_discard());
+        let p = me.clone();
+        k.on_answered(move |i| p.kit_answered(i));
+        let p = me.clone();
+        k.on_left(move || p.kit_left());
         let p = me.clone();
         k.on_open(move |url| p.kit_browse(&service().page(&url)));
         let p = me.clone();
@@ -156,17 +189,22 @@ impl Ctl {
             KitLink::Out
         });
         k.set_account(kit.kept.account.clone().unwrap_or_default().into());
-        let of = |kind| model(kit.kept.of(kind).map(|p| shown(p, kit.removing.contains(&p.key()))).collect());
-        k.set_bodies(of(Kind::Camera));
-        k.set_lenses(of(Kind::Lens));
-        let among = |list: &[Piece], p: &Piece| list.iter().any(|h| h.key() == p.key());
-        k.set_found(model(
-            kit.found.iter().map(|p| KitFound { name: p.name.as_str().into(), detail: words::found(p).into(), held: among(&kit.kept.items, p), waiting: among(&kit.adding, p) }).collect(),
-        ));
+        k.set_bodies(model(kit.shown(Kind::Camera)));
+        k.set_lenses(model(kit.shown(Kind::Lens)));
+        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p))).collect();
+        let pairs = found.chunks(2).enumerate().map(|(i, two)| KitPair {
+            left: two[0].clone(),
+            right: two.get(1).cloned().unwrap_or_default(),
+            has_right: two.len() == 2,
+            at: 2 * i as i32,
+        });
+        w.global::<KitSearch>().set_pairs(model(pairs.collect()));
+        k.set_found(model(found));
         k.set_searched(kit.searched.as_str().into());
         k.set_searching(kit.searching);
-        k.set_adding(model(kit.adding.iter().map(|p| KitPiece { detail: words::found(p).into(), ..shown(p, false) }).collect()));
-        k.set_removals(kit.removing.len() as i32);
+        k.set_picking(kit.picking);
+        k.set_unsaved((kit.adding.len() + kit.removing.len()) as i32);
+        k.set_asking(kit.asking && kit.token.is_some());
         k.set_sending(kit.sending);
         k.set_note(kit.note.as_str().into());
     }
@@ -295,6 +333,7 @@ impl Ctl {
             let token = kit.token.take();
             kit.kept = Kept::default();
             (kit.found, kit.adding, kit.removing) = (Vec::new(), Vec::new(), Vec::new());
+            (kit.picking, kit.asking) = (false, false);
             kit.searched.clear();
             kit.note.clear();
             let _ = std::fs::remove_file(Kept::file_path(&support));

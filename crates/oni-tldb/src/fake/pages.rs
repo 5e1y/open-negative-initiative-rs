@@ -1,5 +1,5 @@
 //! The simulated service's pages: sign-in, sign-up with its simulated confirmation e-mail, the consent that
-//! authorises ONI, a piece's page and the submission form. Bannered, so none can pass for the real site.
+//! authorises ONI, a piece's page and the submission form. Marked simulated, so none can pass for the real site.
 
 use super::accounts::{self, Account};
 use super::http::{Request, Response};
@@ -87,9 +87,15 @@ pub fn sign_in(state: &mut State, request: &Request) -> Response {
     if let Some(link) = &account.unconfirmed {
         return look::mailbox(&account.email, &confirm_link(link, &asked.query), true);
     }
+    consent(state, &asked.query, index)
+}
+
+/// The second step for `account`, signed in: the consent page, its answer kept under a fresh grant.
+fn consent(state: &mut State, query: &str, account: usize) -> Response {
     let grant = crate::oauth::random(16).unwrap_or_default();
-    state.grants.insert(grant.clone(), index);
-    look::consent(&state.accounts[index], &approve_link(&asked.query, &grant, "allow"), &approve_link(&asked.query, &grant, "refuse"))
+    state.grants.insert(grant.clone(), account);
+    let (allow, refuse) = (approve_link(query, &grant, "allow"), approve_link(query, &grant, "refuse"));
+    look::consent(&state.accounts[account], &allow, &refuse, &look::authorize_link(query, false))
 }
 
 pub fn sign_up(state: &mut State, request: &Request) -> Response {
@@ -143,10 +149,10 @@ fn approve_link(query: &str, grant: &str, decision: &str) -> String {
     format!("/oauth/approve?{}", pairs.finish())
 }
 
-/// The test account's one click: the first account authorises ONI without a form.
+/// The test account's one click: the first account signed in without a form, on to the consent.
 pub fn quick(state: &mut State, request: &Request) -> Response {
-    match decide(state, &request.query, 0, false) {
-        Ok(location) => Response::redirect(location),
+    match asked(&request.query) {
+        Ok(asked) => consent(state, &asked.query, 0),
         Err(reason) => look::refused(&reason),
     }
 }

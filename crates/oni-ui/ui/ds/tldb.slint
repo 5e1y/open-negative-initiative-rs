@@ -1,0 +1,33 @@
+// The Lens DB's mark: its aperture, its disc and blades each in an ink of the theme, beside its name set as
+// its site sets it, bold and tight; a click opens its site.
+import { Colour, Type } from "theme.slint";
+import { Icon } from "base.slint";
+import { Icons } from "icons.slint";
+import { KitStyle } from "theme_views.slint";
+
+export component TldbMark inherits HorizontalLayout {
+    in property <length> size: KitStyle.mark;
+    in property <bool> large;
+    callback clicked();
+    spacing: root.size / 3;
+    alignment: start;
+    Rectangle {
+        width: root.size;
+        height: root.size;
+        Icon { width: parent.width; height: parent.height; source: Icons.tldb-disc; ink: Colour.ink; }
+        Icon { width: parent.width; height: parent.height; source: Icons.tldb-blades; ink: Colour.ground; }
+    }
+    Text {
+        text: @tr("THE LENS DB");
+        vertical-alignment: center;
+        font-family: Type.family;
+        font-weight: Type.bold;
+        font-size: root.large ? Type.title : Type.label;
+        letter-spacing: KitStyle.tracking;
+        color: Colour.ink;
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}

@@ -1,17 +1,9 @@
 //! The sign-in through the system browser: the port opened, the page shown, the token kept once it returns.
 
-use super::*;
+mod landing;
 
-/// What the browser shows once it returns to ONI's port: the page stays, it never closes itself.
-fn landing(signed_in: bool) -> String {
-    let (title, words) = if signed_in {
-        (tr("Connected to The Lens DB"), tr("You can go back to ONI: your Kit is there."))
-    } else {
-        (tr("ONI was not authorised"), tr("You can go back to ONI and connect again whenever you want."))
-    };
-    const STYLE: &str = "font:16px -apple-system,Segoe UI,sans-serif;max-width:32em;margin:15vh auto;padding:0 1em";
-    format!("<!doctype html><meta charset=utf-8><title>ONI</title><body style=\"{STYLE}\"><h1 style=\"font-size:1.4em\">{title}</h1><p>{words}</p>")
-}
+use super::*;
+use landing::landing;
 
 impl Ctl {
     pub(super) fn kit_connect(self: &Rc<Self>, signup: bool) {

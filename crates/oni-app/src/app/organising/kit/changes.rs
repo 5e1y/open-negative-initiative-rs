@@ -1,45 +1,83 @@
-//! The changes held for Validate: pieces found added, pieces of the Kit marked to leave, all sent in one call.
+//! The changes held for Save: pieces found added, pieces of the Kit marked to leave, all sent in one call.
 
 use super::*;
 
 impl Ctl {
-    pub(super) fn kit_add(&self, at: usize) {
+    /// The search's sheet opened or closed; a closed one forgets its words.
+    pub(super) fn kit_pick(&self, open: bool) {
+        {
+            let mut s = self.state.borrow_mut();
+            let kit = &mut s.org.kit;
+            kit.picking = open;
+            if !open {
+                kit.asked += 1;
+                (kit.found, kit.searching) = (Vec::new(), false);
+                kit.searched.clear();
+            }
+        }
+        self.publish_kit();
+    }
+
+    /// A search's answer taken into the Kit until Save, or let go when taken again.
+    pub(super) fn kit_take(&self, at: usize) {
         {
             let mut s = self.state.borrow_mut();
             let kit = &mut s.org.kit;
             let Some(piece) = kit.found.get(at).cloned() else { return };
-            if kit.kept.items.iter().chain(&kit.adding).any(|h| h.key() == piece.key()) {
-                return;
-            }
-            kit.adding.push(piece);
-        }
-        self.publish_kit();
-    }
-
-    pub(super) fn kit_unadd(&self, at: usize) {
-        {
-            let mut s = self.state.borrow_mut();
-            if at < s.org.kit.adding.len() {
-                s.org.kit.adding.remove(at);
+            match kit.mark(&piece) {
+                KitMark::Free => kit.adding.push(piece),
+                KitMark::Added => kit.adding.retain(|p| p.key() != piece.key()),
+                KitMark::Kept | KitMark::Leaving => return,
             }
         }
         self.publish_kit();
     }
 
-    /// A piece's removal held for Validate, or let go when pressed again.
+    /// A piece of the Kit marked to leave at Save, kept again when pressed again; an added one let go.
     pub(super) fn kit_remove(&self, kind: GearKind, at: usize) {
         {
             let mut s = self.state.borrow_mut();
             let kit = &mut s.org.kit;
             let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
-            let Some(key) = kit.kept.of(kind).nth(at).map(Piece::key) else { return };
-            if let Some(i) = kit.removing.iter().position(|k| *k == key) {
+            let Some(key) = kit.listed(kind).get(at).map(|p| p.key()) else { return };
+            if kit.adding.iter().any(|p| p.key() == key) {
+                kit.adding.retain(|p| p.key() != key);
+            } else if let Some(i) = kit.removing.iter().position(|k| *k == key) {
                 kit.removing.remove(i);
             } else {
                 kit.removing.push(key);
             }
         }
         self.publish_kit();
+    }
+
+    /// The Kit's column left with changes not saved: asked once, so none is forgotten.
+    pub(super) fn kit_left(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            let kit = &mut s.org.kit;
+            if kit.adding.is_empty() && kit.removing.is_empty() || kit.sending {
+                return;
+            }
+            kit.asking = true;
+        }
+        self.publish_kit();
+    }
+
+    /// 0 discards, 1 saves, any other keeps the changes for when the Kit is shown again.
+    pub(super) fn kit_answered(self: &Rc<Self>, answer: i32) {
+        self.state.borrow_mut().org.kit.asking = false;
+        match answer {
+            0 => self.kit_discard(),
+            1 => self.kit_save(),
+            _ => self.publish_kit(),
+        }
+    }
+
+    /// Changes not saved, which quitting would lose.
+    pub(in crate::app) fn kit_unsaved(&self) -> usize {
+        let s = self.state.borrow();
+        if s.org.kit.token.is_none() { 0 } else { s.org.kit.adding.len() + s.org.kit.removing.len() }
     }
 
     pub(super) fn kit_discard(&self) {
@@ -52,7 +90,7 @@ impl Ctl {
     }
 
     /// A removal erases what the person noted of the piece on The Lens DB: asked first.
-    pub(super) fn kit_validate(self: &Rc<Self>) {
+    pub(super) fn kit_save(self: &Rc<Self>) {
         let removals = self.state.borrow().org.kit.removing.len();
         if removals == 0 {
             return self.kit_send();
@@ -105,7 +143,7 @@ impl Ctl {
                 }
                 self.kit_keep(kit, etag);
             }
-            // The changes wait, so the same Validate sends them again: the service takes a repeat as one.
+            // The changes wait, so the same Save sends them again: the service takes a repeat as one.
             Err(f) => self.kit_failed(f),
         }
         self.publish_kit();

@@ -1,5 +1,5 @@
 // The person's gear as Rust keeps it: the names typed in ONI, the last used first, and the Kit their account
-// holds on The Lens DB, with the search and the changes waiting for Validate.
+// holds on The Lens DB, with the catalogue's search and the changes held until Save.
 export enum GearKind { body, lens }
 
 export global Gear {
@@ -7,36 +7,47 @@ export global Gear {
     in property <[string]> lenses;
 }
 
-// A piece shown: its full name, what tells it from its kin, its page, whether Validate removes it.
-export struct KitPiece { name: string, detail: string, url: string, removing: bool }
-// A search's answer: `held` once in the Kit, `waiting` while it waits under To Validate.
-export struct KitFound { name: string, detail: string, held: bool, waiting: bool }
+// Where a piece stands: `kept` in the Kit on the service, `added` joins it at Save, `leaving` leaves it at
+// Save, `free` a search's answer not in the Kit.
+export enum KitMark { kept, added, leaving, free }
+// A piece of the catalogue, the one shape the Kit and the search both show.
+export struct KitPiece { name: string, detail: string, url: string, mark: KitMark }
 // `waiting`: the browser is open on The Lens DB's sign-in, the port listening for its return.
 export enum KitLink { out, waiting, in }
 
 export global Kit {
     in property <KitLink> link;
     in property <string> account;
+    // The Kit as it will stand once saved: its pieces, the added ones among them, the leaving ones marked.
     in property <[KitPiece]> bodies;
     in property <[KitPiece]> lenses;
-    in property <[KitFound]> found;
-    // The words searched last, which an empty answer names.
+    // The search sheet: open, its answers, the words they answer.
+    in property <bool> picking;
+    in property <[KitPiece]> found;
     in property <string> searched;
     in property <bool> searching;
-    in property <[KitPiece]> adding;
-    in property <int> removals;
+    // The changes not yet on the service, which Save sends in one call.
+    in property <int> unsaved;
     in property <bool> sending;
+    // The Kit left with changes not saved: Save, Discard or keep them for later.
+    in property <bool> asking;
     // Why the Kit shown may be behind the service: unreachable, waiting out its limit, a piece unknown.
     in property <string> note;
     callback connect(bool);
     callback cancel();
     callback disconnect();
+    callback pick(bool);
     callback search(string);
-    callback add(int);
-    callback unadd(int);
+    // A search's answer taken into the Kit, or let go again.
+    callback take(int);
+    // A piece of the Kit marked to leave, kept again, or an added one let go.
     callback remove(GearKind, int);
-    callback validate();
+    callback save();
     callback discard();
+    // 0 discards, 1 saves, -1 keeps the changes for later.
+    callback answered(int);
+    // The column turned from the Kit to something picked.
+    callback left();
     callback open(string);
     callback open-site();
     callback suggest();
