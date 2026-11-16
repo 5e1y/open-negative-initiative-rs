@@ -3,7 +3,7 @@
 
 use super::super::accounts::{Account, FIRST_EMAIL, FIRST_NAME, FIRST_PASSWORD};
 use super::super::http::{Response, escape};
-use super::{Form, avatar, error, flow, glyph, hidden, notice, open, shell};
+use super::{Form, avatar, error, flow, glyph, hidden, notice, open};
 
 /// The one-click way in for a check by hand: the first account signed in, straight to the consent.
 fn quick(oauth: &str) -> String {
