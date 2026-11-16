@@ -123,3 +123,29 @@ fn a_reread_cut_where_the_writes_ran_lays_the_marked_photo_out() {
     assert!(none.folder.is_none() && none.rows.is_empty());
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// A folder made a roll outside the app, or its body changed there, reaches its rows at the next read of the
+/// folder, so the Kit's counts follow the marker without reading it.
+#[test]
+fn a_marker_written_outside_the_app_reaches_its_rows_at_the_next_read() {
+    let root = std::env::temp_dir().join(format!("oni-app-marker-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("Scans/Roll")).unwrap();
+    std::fs::write(root.join("Scans/Roll/a.tif"), b"pixels").unwrap();
+    let (folder, roll) = (paths::canonical(&root.join("Scans")), paths::canonical(&root.join("Scans/Roll")));
+    let photo = format!("{roll}/a.tif");
+    let index = LibraryIndex::open(&root.join("Caches/index.sqlite")).unwrap();
+    let place = Place { computer: &Computer::none(), kept: None };
+    let read = || read_rows(&folder, &index, &place, &|| true, &mut |_, _, _| {});
+    read();
+    assert_eq!(index.row(&photo).unwrap().marker_body, None);
+    let mut film = oni_settings::Film::new("Roll");
+    film.camera_body = Some("Nikon FM2".into());
+    oni_settings::roll_folder::set_roll(Some(&film), Path::new(&roll)).unwrap();
+    // Twin: until the folder is read again, the row holds what it held.
+    assert_eq!(index.gear_counts().unwrap().body("Nikon FM2"), 0);
+    read();
+    assert_eq!(index.row(&photo).unwrap().marker_body.as_deref(), Some("Nikon FM2"));
+    assert_eq!(index.gear_counts().unwrap().body("Nikon FM2"), 1);
+    let _ = std::fs::remove_dir_all(&root);
+}

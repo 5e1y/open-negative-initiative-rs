@@ -56,6 +56,10 @@ impl Ctl {
     /// A roll marker this app just wrote, laid as the survey would have read it, with no read back.
     pub(super) fn roll_written(&self, folder: &str, film: Option<oni_settings::Film>) {
         let mut s = self.state.borrow_mut();
+        // The folder's rows keep the roll it names, so a count of the gear reads no marker.
+        if let Some(index) = &s.index {
+            let _ = index.set_marker(folder, film.as_ref());
+        }
         let Some(shown) = s.folder.as_mut() else { return };
         let holding = shown.survey.images.iter().any(|i| oni_library::paths::same(&oni_library::paths::parent(i), folder));
         let rolls = &mut Arc::make_mut(&mut shown.survey).rolls;

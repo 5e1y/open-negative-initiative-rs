@@ -33,42 +33,20 @@ impl Ctl {
         self.publish_kit();
     }
 
-    /// A piece of the Kit ticked, or no longer.
-    pub(super) fn kit_select(&self, kind: GearKind, at: usize) {
+    /// A piece of the Kit marked to leave at Save, kept again when asked again; an added one let go.
+    pub(super) fn kit_remove(&self, kind: GearKind, at: usize) {
         {
             let mut s = self.state.borrow_mut();
             let kit = &mut s.org.kit;
             let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
             let Some(key) = kit.listed(kind).get(at).map(|p| p.key()) else { return };
-            match kit.picked.iter().position(|k| *k == key) {
-                Some(i) => _ = kit.picked.remove(i),
-                None => kit.picked.push(key),
+            if kit.adding.iter().any(|p| p.key() == key) {
+                kit.adding.retain(|p| p.key() != key);
+            } else if let Some(i) = kit.removing.iter().position(|k| *k == key) {
+                kit.removing.remove(i);
+            } else {
+                kit.removing.push(key);
             }
-        }
-        self.publish_kit();
-    }
-
-    pub(super) fn kit_unpick(&self) {
-        self.state.borrow_mut().org.kit.picked.clear();
-        self.publish_kit();
-    }
-
-    /// The ticked pieces marked to leave at Save, the added ones let go; kept again when all were leaving.
-    pub(super) fn kit_remove_picked(&self) {
-        {
-            let mut s = self.state.borrow_mut();
-            let kit = &mut s.org.kit;
-            let ticked: Vec<(Key, KitMark)> = kit.ticked().into_iter().map(|p| (p.key(), kit.mark(p))).collect();
-            let keep = ticked.iter().all(|(_, mark)| *mark == KitMark::Leaving);
-            for (key, mark) in ticked {
-                match mark {
-                    KitMark::Added => kit.adding.retain(|p| p.key() != key),
-                    KitMark::Leaving if keep => kit.removing.retain(|k| *k != key),
-                    KitMark::Kept => kit.removing.push(key),
-                    _ => {}
-                }
-            }
-            kit.picked.clear();
         }
         self.publish_kit();
     }

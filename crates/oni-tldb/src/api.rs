@@ -122,7 +122,7 @@ impl Service {
 
 impl Client {
     /// `GET /search`: 2 to 200 characters, 10 words at most; `limit` 50 at most.
-    pub fn search(&self, query: &str, kind: Option<Kind>, limit: u32) -> Result<Vec<Piece>, Failure> {
+    pub fn search(&self, query: &str, kind: Option<Kind>, brand: Option<&str>, limit: u32) -> Result<Vec<Piece>, Failure> {
         #[derive(Deserialize)]
         struct Answer {
             #[serde(default)]
@@ -134,6 +134,9 @@ impl Client {
             pairs.append_pair("q", query);
             if let Some(kind) = kind {
                 pairs.append_pair("type", kind_name(kind));
+            }
+            if let Some(brand) = brand {
+                pairs.append_pair("brand", brand);
             }
             pairs.append_pair("limit", &limit.to_string());
         }

@@ -1,5 +1,5 @@
 //! The bodies and lenses typed in ONI: read from the support folder once the window is wired, learned from the
-//! names a hand gives a roll's body or an export's camera and lens, and offered in an export's EXIF after the Kit.
+//! names a hand gives a roll's body or an export's camera and lens, and offered in the gear fields after the Kit's cards.
 
 use super::*;
 use crate::Gear as GearGlobal;
@@ -66,6 +66,8 @@ impl Ctl {
             (s.org.collection.list(Gear::Body).to_vec(), s.org.collection.list(Gear::Lens).to_vec())
         };
         let model = |names: Vec<String>| ModelRc::new(VecModel::from(names.into_iter().map(SharedString::from).collect::<Vec<_>>()));
+        g.set_body_cards(ModelRc::new(VecModel::from(self.kit_cards(Kind::Camera))));
+        g.set_lens_cards(ModelRc::new(VecModel::from(self.kit_cards(Kind::Lens))));
         g.set_bodies(model(self.kit_names(Kind::Camera, &bodies)));
         g.set_lenses(model(self.kit_names(Kind::Lens, &lenses)));
     }

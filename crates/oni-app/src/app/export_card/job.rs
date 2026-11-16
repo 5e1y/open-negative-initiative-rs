@@ -48,6 +48,8 @@ impl Ctl {
             job.end = Some(end.clone());
             (done.min(job.names.len()), job.first.clone())
         };
+        // The frames written name their gear now: the Kit's counts follow.
+        self.kit_recount();
         self.publish_export();
         let (title, message) = match &end {
             End::Written => (tr("Export"), trn("{n} photo exported", "{n} photos exported", done as u64)),

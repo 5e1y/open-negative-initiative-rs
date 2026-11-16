@@ -96,6 +96,9 @@ pub fn indexed(path: &str) -> Option<Entry> {
         leads_passes: loaded.as_ref().is_some_and(|l| l.leads_passes),
         trashed_at: loaded.as_ref().and_then(|l| l.trashed_at),
         sheet: loaded.as_ref().is_some_and(|l| l.sheet),
+        kept_camera: loaded.as_ref().and_then(|l| l.exif.camera.clone()),
+        kept_lens: loaded.as_ref().and_then(|l| l.exif.lens.clone()),
+        marker_body: crate::folders::roll(&crate::paths::parent(path)).map(|f| f.camera_body.unwrap_or_default()),
     })
 }
 

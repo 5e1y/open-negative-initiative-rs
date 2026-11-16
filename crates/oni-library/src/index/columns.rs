@@ -1,0 +1,72 @@
+//! One column of a row written in place, its other columns left alone: a gesture's sidecar write, or
+//! the roll its folder's marker names, cached so no count reads the disk.
+
+use super::{LibraryIndex, medal_raw, reference};
+use crate::paths::{self, normal};
+use oni_settings::{Date, Film, Medal};
+use rusqlite::params;
+
+impl LibraryIndex {
+    pub fn set_trashed(&self, date: Option<Date>, path: &str) -> rusqlite::Result<()> {
+        self.connection
+            .execute("UPDATE photos SET trashed_at = ? WHERE path IN (?, ?)", params![date.map(reference), path, normal(path)])?;
+        Ok(())
+    }
+
+    pub fn set_passes(&self, pass_of: Option<&str>, leads: bool, path: &str) -> rusqlite::Result<()> {
+        self.connection.execute(
+            "UPDATE photos SET pass_of = ?, leads_passes = ? WHERE path IN (?, ?)",
+            params![pass_of, i64::from(leads), path, normal(path)],
+        )?;
+        Ok(())
+    }
+
+    /// A `None` roll is the whole of ungrouping.
+    pub fn set_film(&self, film: Option<&Film>, path: &str) -> rusqlite::Result<()> {
+        self.connection.execute(
+            "UPDATE photos SET film_id = ?, film_name = ?, film_order = ?, film_stock = ?, \
+             film_shot_date = ?, film_camera_body = ? WHERE path IN (?, ?)",
+            params![
+                film.map(|f| f.id.to_string()),
+                film.map(|f| f.name.clone()),
+                film.and_then(|f| f.manual_order),
+                film.and_then(|f| f.stock.clone()),
+                film.and_then(|f| f.shot_date).map(reference),
+                film.and_then(|f| f.camera_body.clone()),
+                path,
+                normal(path)
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn set_label(&self, label: Medal, path: &str) -> rusqlite::Result<()> {
+        self.connection.execute("UPDATE photos SET label = ? WHERE path IN (?, ?)", params![medal_raw(label), path, normal(path)])?;
+        Ok(())
+    }
+
+    pub fn set_manual_order(&self, order: Option<f64>, path: &str) -> rusqlite::Result<()> {
+        self.connection.execute("UPDATE photos SET manual_order = ? WHERE path IN (?, ?)", params![order, path, normal(path)])?;
+        Ok(())
+    }
+
+    /// The rows right inside `folder` take the roll its marker now names, `None` when it names none.
+    pub fn set_marker(&self, folder: &str, film: Option<&Film>) -> rusqlite::Result<()> {
+        let body = film.map(|f| f.camera_body.clone().unwrap_or_default());
+        let inside: Vec<(String, Option<String>)> =
+            self.paths_under(folder).into_iter().filter(|p| paths::same(&paths::parent(p), folder)).map(|p| (p, body.clone())).collect();
+        self.set_marker_bodies(&inside)
+    }
+
+    /// Each row's marker body, in one transaction.
+    pub fn set_marker_bodies(&self, rows: &[(String, Option<String>)]) -> rusqlite::Result<()> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+        self.in_one(|| {
+            rows.iter().try_for_each(|(path, body)| {
+                self.connection.execute("UPDATE photos SET marker_body = ? WHERE path IN (?, ?)", params![body, path, normal(path)]).map(|_| ())
+            })
+        })
+    }
+}

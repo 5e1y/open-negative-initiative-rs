@@ -120,6 +120,9 @@ fn full_row() -> Entry {
         leads_passes: true,
         trashed_at: Some(Date::since_reference_date(813_000_004.0)),
         sheet: true,
+        kept_camera: Some("Leica M6".into()),
+        kept_lens: Some("Summicron 35".into()),
+        marker_body: Some("Pentax MX".into()),
     }
 }
 
@@ -209,6 +212,29 @@ fn an_index_row_keyed_in_another_spelling_is_respelt_and_never_lost() {
     assert_eq!(by("c.NEF").label, Medal::Silver);
     index.set_label(Medal::Bronze, &stale("c.NEF")).unwrap();
     assert_eq!(index.all().iter().find(|e| e.path == spelt("c.NEF")).unwrap().label, Medal::Bronze);
+}
+
+/// The kept row's EXIF line and folder roll are its own, read off its files: a twin spelling's never fills them,
+/// a line left to derive or cleared being a value, not a gap.
+#[cfg(any(target_os = "macos", windows))]
+#[test]
+fn a_respelt_row_keeps_its_own_line_and_folder_roll() {
+    let scratch = Scratch::new("index-spelling-line");
+    let file = scratch.path().join("index.sqlite");
+    let (stale, spelt) = if cfg!(windows) { ("C:\\Scans\\\u{c9}t\u{e9}\\a.NEF", "C:/Scans/\u{c9}t\u{e9}/a.NEF") } else { ("/Scans/E\u{301}te\u{301}/a.NEF", "/Scans/\u{c9}t\u{e9}/a.NEF") };
+    let index = LibraryIndex::open(&file).unwrap();
+    index.upsert(&Entry { kept_lens: Some(String::new()), ..Entry::new(spelt, day1(), "a-1-x") }).unwrap();
+    drop(index);
+    let raw = Connection::open(&file).unwrap();
+    let insert = "INSERT INTO photos (path, imported_at, fingerprint, kept_camera, kept_lens, marker_body) VALUES (?, 0, 'a-1-x', 'Leica M6', 'Summicron 35', 'Nikon FM2')";
+    raw.execute(insert, [stale]).unwrap();
+    // Twin: the stale row does hold a line and a roll the merge could take.
+    let held: Option<String> = raw.query_row("SELECT kept_camera FROM photos WHERE path = ?", [stale], |r| r.get(0)).unwrap();
+    assert_eq!(held.as_deref(), Some("Leica M6"));
+    drop(raw);
+    let rows = LibraryIndex::open(&file).unwrap().all();
+    assert_eq!(rows.len(), 1);
+    assert_eq!((rows[0].kept_camera.as_deref(), rows[0].kept_lens.as_deref(), rows[0].marker_body.as_deref()), (None, Some(""), None));
 }
 
 /// Another process of this schema may write the file: a write of ours meeting its lock waits.

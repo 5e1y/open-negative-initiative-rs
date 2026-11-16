@@ -180,10 +180,12 @@ pub struct Envelope {
     pub leads_passes: bool,
     /// The file is a contact sheet laid from a roll's frames, never one of them.
     pub sheet: bool,
+    /// The EXIF fields a hand or an export kept, the Kit's counts reading its camera and lens.
+    pub exif: ExifLine,
 }
 
 /// The envelope alone, its settings left undecoded; `None` on a document that is not JSON. It reads
-/// only keys every version keeps where they were, so it answers alike on an earlier document.
+/// keys every version keeps where they were, the EXIF line under either name, so it answers alike on an earlier document.
 pub fn envelope(data: &[u8]) -> Option<Envelope> {
     let value: Value = serde_json::from_slice(data).ok()?;
     let map = value.as_object()?;
@@ -202,5 +204,7 @@ pub fn envelope(data: &[u8]) -> Option<Envelope> {
         pass_of: fact("passOf").and_then(|v| v.as_str().map(str::to_owned)),
         leads_passes: fact("rgbPasses").and_then(|v| serde_json::from_value::<RgbPasses>(v).ok()).is_some(),
         sheet: fact("sheet").is_some(),
+        // Format 21 and under keep the line under `exif`.
+        exif: read(map, "exifLine").or_else(|| read(map, "exif")).unwrap_or_default(),
     })
 }

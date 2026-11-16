@@ -5,6 +5,8 @@
 mod changes;
 mod defaults;
 mod facts;
+mod search;
+mod cards;
 mod sign_in;
 mod vault;
 mod words;
@@ -48,8 +50,12 @@ pub struct KitState {
     picking: bool,
     /// The question asked when the Kit is left with changes not saved.
     asking: bool,
-    /// The pieces of the Kit ticked for an action.
-    picked: Vec<Key>,
+    /// The search's quick filters: a kind, a brand, a focal length in millimetres.
+    kind_filter: Option<Kind>,
+    /// How many photos name each piece, counted when they may have changed, never on each redraw.
+    counts: Option<oni_library::index::GearCounts>,
+    brand_filter: String,
+    focal_filter: u32,
     note: String,
     settle: slint::Timer,
 }
@@ -93,8 +99,8 @@ fn service() -> Service {
     Service::new(&site, crate::updates::version())
 }
 
-fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool, picked: bool) -> KitPiece {
-    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default, picked }
+fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool, photos: i32) -> KitPiece {
+    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default, photos }
 }
 
 impl KitState {
@@ -117,17 +123,10 @@ impl KitState {
         self.kept.of(kind).chain(self.adding.iter().filter(|p| p.kind == kind)).collect()
     }
 
-    /// The Kit of one kind as the column shows it, `default` the name its default card holds.
-    fn shown(&self, kind: Kind, default: Option<&str>) -> Vec<KitPiece> {
-        self.listed(kind)
-            .into_iter()
-            .map(|p| piece(p, self.mark(p), words::detail(p), default == Some(p.name.as_str()), self.picked.contains(&p.key())))
-            .collect()
-    }
-
-    /// The pieces of the Kit ticked, bodies first.
-    fn ticked(&self) -> Vec<&Piece> {
-        [Kind::Camera, Kind::Lens].into_iter().flat_map(|kind| self.listed(kind)).filter(|p| self.picked.contains(&p.key())).collect()
+    /// The Kit of one kind as the column shows it, `default` the name its default card holds, `photos` how
+    /// many photos name a piece.
+    fn shown(&self, kind: Kind, default: Option<&str>, photos: &dyn Fn(&Piece) -> i32) -> Vec<KitPiece> {
+        self.listed(kind).into_iter().map(|p| piece(p, self.mark(p), words::detail(p), default == Some(p.name.as_str()), photos(p))).collect()
     }
 }
 
@@ -158,13 +157,22 @@ impl Ctl {
         let p = me.clone();
         k.on_take(move |i| p.kit_take(i.max(0) as usize));
         let p = me.clone();
-        k.on_select(move |kind, i| p.kit_select(kind, i.max(0) as usize));
+        k.on_remove(move |kind, i| p.kit_remove(kind, i.max(0) as usize));
         let p = me.clone();
-        k.on_unpick(move || p.kit_unpick());
+        k.on_prefer(move |kind, i| p.kit_prefer(kind, i.max(0) as usize));
         let p = me.clone();
-        k.on_prefer_picked(move || p.kit_prefer_picked());
+        k.on_filter_kind(move |i| p.kit_filter(|kit| kit.kind_filter = [None, Some(Kind::Camera), Some(Kind::Lens)][i.clamp(0, 2) as usize]));
         let p = me.clone();
-        k.on_remove_picked(move || p.kit_remove_picked());
+        k.on_filter_brand(move |b| p.kit_filter(|kit| kit.brand_filter = b.to_string()));
+        let p = me.clone();
+        k.on_filter_focal(move |f| {
+            p.kit_filter(|kit| {
+                kit.focal_filter = f.max(0) as u32;
+                if f > 0 {
+                    kit.kind_filter = Some(Kind::Lens);
+                }
+            })
+        });
         let p = me.clone();
         k.on_save(move || p.kit_save());
         let p = me.clone();
@@ -174,13 +182,14 @@ impl Ctl {
         let p = me.clone();
         k.on_left(move || p.kit_left());
         let p = me.clone();
+        k.on_entered(move || p.kit_recount());
+        let p = me.clone();
         k.on_open(move |url| p.kit_browse(&service().page(&url)));
         let p = me.clone();
         k.on_open_site(move || p.kit_browse(&service().page(&service().site)));
         let p = me.clone();
         k.on_suggest(move || p.kit_browse(&service().submit_page()));
-        me.publish_gear();
-        me.publish_kit();
+        me.kit_recount();
         me.kit_refresh();
     }
 
@@ -199,6 +208,7 @@ impl Ctl {
         let k = w.global::<KitGlobal>();
         let (body, lens) = (self.kit_default(Kind::Camera), self.kit_default(Kind::Lens));
         let s = self.state.borrow();
+        let counts = &s.org.kit.counts;
         let kit = &s.org.kit;
         k.set_link(if kit.signing.is_some() {
             KitLink::Waiting
@@ -208,9 +218,10 @@ impl Ctl {
             KitLink::Out
         });
         k.set_account(kit.kept.account.clone().unwrap_or_default().into());
-        k.set_bodies(model(kit.shown(Kind::Camera, body.as_deref())));
-        k.set_lenses(model(kit.shown(Kind::Lens, lens.as_deref())));
-        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p), false, false)).collect();
+        let photos = |p: &Piece| cards::photos(counts.as_ref(), p);
+        k.set_bodies(model(kit.shown(Kind::Camera, body.as_deref(), &photos)));
+        k.set_lenses(model(kit.shown(Kind::Lens, lens.as_deref(), &photos)));
+        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p), false, -1)).collect();
         let pairs = found.chunks(2).enumerate().map(|(i, two)| KitPair {
             left: two[0].clone(),
             right: two.get(1).cloned().unwrap_or_default(),
@@ -224,13 +235,16 @@ impl Ctl {
         k.set_picking(kit.picking);
         k.set_unsaved((kit.adding.len() + kit.removing.len()) as i32);
         k.set_asking(kit.asking && kit.token.is_some());
-        let ticked = kit.ticked();
-        let default_of = |p: &Piece| if p.kind == Kind::Camera { body.as_deref() } else { lens.as_deref() } == Some(p.name.as_str());
-        let of = |kind: Kind| ticked.iter().filter(|p| p.kind == kind).count();
-        k.set_picked(ticked.len() as i32);
-        k.set_picked_default(!ticked.is_empty() && ticked.iter().all(|p| default_of(p)));
-        k.set_can_prefer(!ticked.is_empty() && of(Kind::Camera) <= 1 && of(Kind::Lens) <= 1 && ticked.iter().all(|p| kit.mark(p) == KitMark::Kept));
-        k.set_picked_leaving(!ticked.is_empty() && ticked.iter().all(|p| kit.mark(p) == KitMark::Leaving));
+        k.set_kind_filter(match kit.kind_filter {
+            None => 0,
+            Some(Kind::Camera) => 1,
+            Some(_) => 2,
+        });
+        k.set_brand_filter(kit.brand_filter.as_str().into());
+        k.set_focal_filter(kit.focal_filter as i32);
+        k.set_brands(model(words::BRANDS.iter().map(|b| SharedString::from(*b)).collect()));
+        k.set_focals(model(words::FOCALS.iter().map(|f| *f as i32).collect()));
+        k.set_focal_labels(model(words::FOCALS.iter().map(|f| SharedString::from(tr!("{mm} mm", mm = f))).collect()));
         k.set_sending(kit.sending);
         k.set_note(kit.note.as_str().into());
     }
@@ -297,58 +311,6 @@ impl Ctl {
         s.org.kit.note = note;
     }
 
-    fn kit_search(self: &Rc<Self>, typed: &str) {
-        let me = Rc::downgrade(self);
-        let mut s = self.state.borrow_mut();
-        s.org.kit.typed = typed.to_string();
-        s.org.kit.settle.start(slint::TimerMode::SingleShot, SETTLE, move || {
-            if let Some(me) = me.upgrade() {
-                me.kit_ask();
-            }
-        });
-    }
-
-    fn kit_ask(&self) {
-        let query = words::query(&self.state.borrow().org.kit.typed);
-        let Some(client) = self.client() else { return };
-        let asked = {
-            let mut s = self.state.borrow_mut();
-            let kit = &mut s.org.kit;
-            kit.asked += 1;
-            if query.chars().count() < 2 {
-                kit.found.clear();
-                kit.searched.clear();
-                kit.searching = false;
-                None
-            } else {
-                kit.searching = true;
-                Some(kit.asked)
-            }
-        };
-        self.publish_kit();
-        let Some(asked) = asked else { return };
-        std::thread::spawn(move || {
-            let answer = client.search(&query, None, FOUND);
-            with_shell(move |c| c.kit_found(asked, query, answer));
-        });
-    }
-
-    fn kit_found(&self, asked: u64, query: String, answer: Result<Vec<Piece>, Failure>) {
-        if self.state.borrow().org.kit.asked != asked {
-            return;
-        }
-        self.state.borrow_mut().org.kit.searching = false;
-        match answer {
-            Ok(found) => {
-                let mut s = self.state.borrow_mut();
-                s.org.kit.found = found;
-                s.org.kit.searched = query;
-            }
-            Err(f) => self.kit_failed(f),
-        }
-        self.publish_kit();
-    }
-
     /// Signed out at the person's word: the token revoked, the copy and the waiting changes dropped.
     fn kit_disconnect(&self) {
         let token = {
@@ -358,7 +320,7 @@ impl Ctl {
             let kit = &mut s.org.kit;
             let token = kit.token.take();
             kit.kept = Kept::default();
-            (kit.found, kit.adding, kit.removing, kit.picked) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+            (kit.found, kit.adding, kit.removing) = (Vec::new(), Vec::new(), Vec::new());
             (kit.picking, kit.asking) = (false, false);
             kit.searched.clear();
             kit.note.clear();
@@ -379,17 +341,5 @@ impl Ctl {
 
     pub(in crate::app) fn kit_facts(&self, m: &mut oni_settings::ExifMetadata) {
         complete(&self.state.borrow().org.kit.kept, m);
-    }
-
-    /// The names an export's EXIF offers: the Kit's pieces first, then the names typed in ONI.
-    pub(in crate::app) fn kit_names(&self, kind: Kind, typed: &[String]) -> Vec<String> {
-        let s = self.state.borrow();
-        let mut names: Vec<String> = s.org.kit.kept.of(kind).map(|p| p.name.clone()).collect();
-        for name in typed {
-            if !names.iter().any(|n| n.to_lowercase() == name.to_lowercase()) {
-                names.push(name.clone());
-            }
-        }
-        names
     }
 }

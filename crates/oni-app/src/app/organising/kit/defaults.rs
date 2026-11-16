@@ -1,4 +1,4 @@
-//! The body and the lens the Kit names by default: ticked in the Kit, laid under every export's line where the
+//! The body and the lens the Kit names by default: picked in a card's menu, laid under every export's line where the
 //! roll and the frame name none, and kept by a roll whose frames are written with its body.
 
 use super::*;
@@ -10,24 +10,13 @@ fn gear(kind: Kind) -> Gear {
 }
 
 impl Ctl {
-    /// The ticked pieces, one of a kind at most and all saved, made the defaults; none when they all were.
-    pub(super) fn kit_prefer_picked(&self) {
-        let (body, lens) = (self.kit_default(Kind::Camera), self.kit_default(Kind::Lens));
+    /// A saved piece of the Kit made the default of its kind, or none when it was.
+    pub(super) fn kit_prefer(&self, kind: GearKind, at: usize) {
+        let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
         {
             let mut s = self.state.borrow_mut();
-            let ticked: Vec<(Kind, String)> = s.org.kit.ticked().into_iter().filter(|p| s.org.kit.mark(p) == KitMark::Kept).map(|p| (p.kind, p.name.clone())).collect();
-            let of = |kind: Kind| ticked.iter().filter(|(k, _)| *k == kind).count();
-            if ticked.is_empty() || of(Kind::Camera) > 1 || of(Kind::Lens) > 1 {
-                return;
-            }
-            let shown = |kind: Kind| if kind == Kind::Camera { body.as_deref() } else { lens.as_deref() };
-            let all = ticked.iter().all(|(kind, name)| shown(*kind) == Some(name.as_str()));
-            for (kind, name) in &ticked {
-                if all || shown(*kind) != Some(name.as_str()) {
-                    s.org.collection.toggle_default(gear(*kind), name);
-                }
-            }
-            s.org.kit.picked.clear();
+            let Some(name) = s.org.kit.listed(kind).get(at).filter(|p| s.org.kit.mark(p) == KitMark::Kept).map(|p| p.name.clone()) else { return };
+            s.org.collection.toggle_default(gear(kind), &name);
         }
         self.keep_gear();
         self.publish_kit();

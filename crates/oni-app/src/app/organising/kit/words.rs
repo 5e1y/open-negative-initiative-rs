@@ -54,6 +54,21 @@ pub fn found(piece: &Piece) -> String {
 }
 
 /// The search as the service takes it: 200 characters and 10 words at most.
+/// The brands the search offers as quick filters, film's most common makers.
+pub const BRANDS: [&str; 8] = ["Canon", "Nikon", "Leica", "Olympus", "Pentax", "Minolta", "Mamiya", "Contax"];
+/// The focal lengths offered, in millimetres: the primes most lenses of a Kit are.
+pub const FOCALS: [u32; 6] = [28, 35, 50, 85, 105, 135];
+
+/// What the search asks for: the words typed and a focal length as the catalogue writes it ("50mm"); a
+/// brand alone when nothing else is asked, as the service wants two letters at least.
+pub fn filtered(typed: &str, brand: &str, focal: u32) -> String {
+    let mut words = query(typed);
+    if focal > 0 {
+        words = format!("{words} {focal}mm").trim().to_string();
+    }
+    if words.is_empty() { query(brand) } else { query(&words) }
+}
+
 pub fn query(typed: &str) -> String {
     let words: Vec<&str> = typed.split_whitespace().take(10).collect();
     words.join(" ").chars().take(200).collect()
@@ -62,6 +77,15 @@ pub fn query(typed: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_filter_joins_the_words_typed_and_a_brand_stands_alone_only() {
+        assert_eq!(filtered("summicron", "", 50), "summicron 50mm");
+        assert_eq!(filtered("", "Leica", 0), "Leica", "a brand alone asks by its name");
+        assert_eq!(filtered(" ", "Leica", 35), "35mm", "the brand goes as a filter beside words");
+        // Twin: nothing typed nor picked asks nothing.
+        assert_eq!(filtered("", "", 0), "");
+    }
     use oni_tldb::{Aperture, Span};
 
     fn lens(focal: (f64, f64), aperture: Option<(f64, f64)>) -> Piece {

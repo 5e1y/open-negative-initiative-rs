@@ -2,7 +2,8 @@
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
 import { Pairing } from "pairing.slint";
-import { Sheet, SheetHeader, SheetStyle, SectionStyle, ButtonRows, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, Tone, Field, FieldLayout } from "ds/ds.slint";
+import { Sheet, SheetHeader, SheetStyle, SectionStyle, ButtonRows, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, Tone, Field, FieldLayout, Button, TldbMark, Space } from "ds/ds.slint";
+import { Kit, KitLink } from "gear_state.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -165,6 +166,41 @@ component PhonePage inherits Page {
     }
 }
 
+// The services ONI is connected to: The Lens DB, whose Kit fills the gear of exports.
+component AppsPage inherits Page {
+    section: 5;
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.flush;
+        separated: false;
+        title: @tr("The Lens DB");
+        HorizontalLayout { alignment: start; TldbMark { clicked => { Kit.open-site(); } } }
+        Label {
+            role: TextRole.note;
+            text: Kit.link == KitLink.in ? @tr("Connected as {}: your Kit fills the camera and the lens of your exports.", Kit.account)
+                : Kit.link == KitLink.waiting ? @tr("Waiting for your browser to finish signing in.")
+                : @tr("Not connected: your Kit shows where nothing is picked in the archive.");
+        }
+        HorizontalLayout {
+            alignment: start;
+            spacing: Space.s;
+            if Kit.link == KitLink.in: Button {
+                text: @tr("Disconnect");
+                help: @tr("Signs ONI out of The Lens DB; your Kit stays there");
+                clicked => { Kit.disconnect(); }
+            }
+            if Kit.link == KitLink.out: Button {
+                text: @tr("Connect The Lens DB");
+                clicked => {
+                    AppSettings.close();
+                    Kit.connect(false);
+                }
+            }
+        }
+    }
+}
+
 component AboutPage inherits Page {
     section: 4;
     Section {
@@ -204,10 +240,10 @@ export component SettingsSheet inherits Sheet {
     dismissed => { AppSettings.close(); }
     property <[{ name: string, section: int }]> pages: [
         { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier Look"), section: 2 },
-        { name: @tr("Phone"), section: 3 }, { name: @tr("About"), section: 4 }];
+        { name: @tr("Phone"), section: 3 }, { name: @tr("Connected Apps"), section: 5 }, { name: @tr("About"), section: 4 }];
     property <[{ name: string, section: int }]> pages-without-phone: [
         { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier Look"), section: 2 },
-        { name: @tr("About"), section: 4 }];
+        { name: @tr("Connected Apps"), section: 5 }, { name: @tr("About"), section: 4 }];
     HorizontalLayout {
         VerticalLayout {
             width: SheetStyle.settings-rail + SheetStyle.padding + SheetStyle.gap;
@@ -231,6 +267,7 @@ export component SettingsSheet inherits Sheet {
             EditorPage { row: 0; col: 0; }
             FrontierPage { row: 0; col: 0; }
             if Pairing.available: PhonePage { row: 0; col: 0; }
+            AppsPage { row: 0; col: 0; }
             AboutPage { row: 0; col: 0; }
         }
     }

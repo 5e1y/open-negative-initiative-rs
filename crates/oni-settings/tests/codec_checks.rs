@@ -107,6 +107,7 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     assert_eq!(light.mode, whole.settings.mode);
     assert_eq!(light.pass_of, whole.settings.pass_of);
     assert_eq!(light.leads_passes, whole.settings.rgb_passes.is_some());
+    assert_eq!(light.exif, whole.exif_line);
     // The same envelope from the document as format 21 wrote it: the keys it reads never moved.
     let stored = serde_json::to_vec(&migrate::reshape::as_stored(&whole, 19)).unwrap();
     assert_eq!(document::envelope(&stored), Some(light.clone()));
@@ -115,7 +116,7 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     other.film = Some(Film::new("HP5"));
     let twin = document::envelope(&document::encode(&Document::of(other)).unwrap()).unwrap();
     assert_ne!(twin.film, light.film);
-    assert_eq!((twin.label, twin.trashed_at), (Medal::None, None));
+    assert_eq!((twin.label, twin.trashed_at, twin.exif.camera), (Medal::None, None, None));
 }
 
 #[test]

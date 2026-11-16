@@ -32,6 +32,7 @@ export component FrameFields inherits VerticalLayout {
                 value: root.line.camera;
                 placeholder: @tr("e.g. Leica M6");
                 enabled: root.line.ready;
+                cards: Gear.body-cards;
                 known: Gear.bodies;
                 known-help: @tr("Pick From Your Kit");
                 none-known: @tr("No body yet");
@@ -46,6 +47,7 @@ export component FrameFields inherits VerticalLayout {
                     value: root.line.lens;
                     placeholder: @tr("e.g. Summicron 50 mm");
                     enabled: root.line.ready;
+                    cards: Gear.lens-cards;
                     known: Gear.lenses;
                     known-help: @tr("Pick From Your Kit");
                     none-known: @tr("No lens yet");

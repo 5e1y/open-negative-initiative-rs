@@ -1,8 +1,14 @@
 // The person's gear as Rust keeps it: the names typed in ONI, the last used first, and the Kit their account
 // holds on The Lens DB, with the catalogue's search and the changes held until Save.
+import { GearCard } from "ds/ds.slint";
+export { GearCard }
+
 export enum GearKind { body, lens }
 
+// The gear the fields offer: the Kit's pieces as their cards, then the names typed in ONI and not in the Kit.
 export global Gear {
+    in property <[GearCard]> body-cards;
+    in property <[GearCard]> lens-cards;
     in property <[string]> bodies;
     in property <[string]> lenses;
 }
@@ -10,9 +16,9 @@ export global Gear {
 // Where a piece stands: `kept` in the Kit on the service, `added` joins it at Save, `leaving` leaves it at
 // Save, `free` a search's answer not in the Kit.
 export enum KitMark { kept, added, leaving, free }
-// A piece of the catalogue, the one shape the Kit and the search both show; `by-default` the one every
-// export names where nothing else does, `picked` ticked in the Kit for an action.
-export struct KitPiece { name: string, detail: string, url: string, mark: KitMark, by-default: bool, picked: bool }
+// A piece of the catalogue, the one shape the Kit, the search and the gear fields all show; `by-default` the
+// one every export names where nothing else does, `photos` how many photos name it, -1 untold.
+export struct KitPiece { name: string, detail: string, url: string, mark: KitMark, by-default: bool, photos: int }
 // `waiting`: the browser is open on The Lens DB's sign-in, the port listening for its return.
 export enum KitLink { out, waiting, in }
 
@@ -41,24 +47,27 @@ export global Kit {
     callback search(string);
     // A search's answer taken into the Kit, or let go again.
     callback take(int);
-    // The pieces ticked in the Kit: how many, whether all are the defaults, whether they may be (one of a
-    // kind at most, all saved), and whether all are leaving.
-    in property <int> picked;
-    in property <bool> picked-default;
-    in property <bool> can-prefer;
-    in property <bool> picked-leaving;
-    // A piece of the Kit ticked or not.
-    callback select(GearKind, int);
-    callback unpick();
-    // The ticked pieces made the defaults, or none when they were.
-    callback prefer-picked();
-    // The ticked pieces marked to leave at Save, kept again when all were, the added ones let go.
-    callback remove-picked();
+    // A piece of the Kit marked to leave at Save, kept again, or an added one let go.
+    callback remove(GearKind, int);
+    // A piece of the Kit made the default of its kind, or none when it was.
+    callback prefer(GearKind, int);
+    // The search's quick filters: the kind (0 any, 1 bodies, 2 lenses), a brand, a focal length in mm
+    // (0 none), and the brands and focal lengths offered.
+    in property <int> kind-filter;
+    in property <string> brand-filter;
+    in property <int> focal-filter;
+    in property <[string]> brands;
+    in property <[int]> focals;
+    in property <[string]> focal-labels;
+    callback filter-kind(int);
+    callback filter-brand(string);
+    callback filter-focal(int);
     callback save();
     callback discard();
     // 0 discards, 1 saves, -1 keeps the changes for later.
     callback answered(int);
-    // The column turned from the Kit to something picked.
+    // The column turned to the Kit, which counts its photos again, or from it to something picked.
+    callback entered();
     callback left();
     callback open(string);
     callback open-site();

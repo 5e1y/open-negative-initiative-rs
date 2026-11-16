@@ -59,7 +59,9 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
     let _ = library::drop_invented(index);
     let listed: HashSet<&str> = survey.images.iter().map(String::as_str).collect();
     let stamps = index.stamps_under(&folder);
-    let (mut again, mut adopted) = (VecDeque::new(), Vec::new());
+    let (mut again, mut adopted, mut remarked) = (VecDeque::new(), Vec::new(), Vec::new());
+    // The roll each row's folder marker names now, so a marker written outside the app reaches the row.
+    let marker = |path: &str| survey.rolls.get(&paths::parent(path)).map(|f| f.camera_body.clone().unwrap_or_default());
     // A row under a folder the disk refused is kept, offline or missing alike: a disk away loses no row.
     for row in index.under(&folder) {
         // Superseded, the survey may predate a move whose rows were just written under new names.
@@ -72,6 +74,9 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
             let _ = index.remove(&row.path);
             continue;
         }
+        if !unread && row.marker_body != marker(&row.path) {
+            remarked.push((row.path.clone(), marker(&row.path)));
+        }
         // A file still being written keeps its row as it was until it rests.
         let Some(now) = stamped(&survey, &row.path).filter(|_| !survey.settling.contains(&row.path)) else { continue };
         match stamps.get(&row.path) {
@@ -83,6 +88,7 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
         }
     }
     let _ = index.note_stamps(&adopted);
+    let _ = index.set_marker_bodies(&remarked);
     let mut unreadable: Vec<String> = Vec::new();
     let shown = |index: &LibraryIndex, waiting: &VecDeque<String>, unreadable: &[String]| -> Vec<Entry> {
         let mut entries = shown_under(index, &folder);
@@ -177,7 +183,7 @@ fn refreshed_with(row: &Entry, gate: bool) -> Entry {
         }
         // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
         Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
-            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, sheet: false, ..row.clone() };
+            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, sheet: false, kept_camera: None, kept_lens: None, ..row.clone() };
         }
         Err(_) => None,
     };
@@ -191,6 +197,8 @@ fn refreshed_with(row: &Entry, gate: bool) -> Entry {
         leads_passes: envelope.leads_passes,
         trashed_at: envelope.trashed_at,
         sheet: envelope.sheet,
+        kept_camera: envelope.exif.camera,
+        kept_lens: envelope.exif.lens,
         ..row.clone()
     }
 }

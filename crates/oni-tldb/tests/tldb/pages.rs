@@ -132,8 +132,8 @@ fn a_catalogue_file_replaces_the_simulated_one() {
     let catalogue = fake::read_catalogue(&file).unwrap();
     let fake = fake::start_with(Setup { catalogue: Some(catalogue), ..Setup::default() }).unwrap();
     let client = fake.client();
-    assert_eq!(client.search("summicron", None, 20).unwrap()[0].id, 2691);
+    assert_eq!(client.search("summicron", None, None, 20).unwrap()[0].id, 2691);
     assert_eq!(fake.kit_keys(), [Key { kind: Kind::Camera, id: 996 }, Key { kind: Kind::Lens, id: 2691 }], "its first body and lens");
     // Twin: the simulated catalogue's own pieces are gone.
-    assert!(client.search("pentax mx", None, 20).unwrap().is_empty());
+    assert!(client.search("pentax mx", None, None, 20).unwrap().is_empty());
 }

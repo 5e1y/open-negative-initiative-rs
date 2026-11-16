@@ -11,7 +11,9 @@ export component Info inherits Surface {
     // Leaving the Kit with changes not saved asks about them.
     property <bool> on-kit: Library.info-kind == InfoKind.collection;
     changed on-kit => {
-        if !self.on-kit {
+        if self.on-kit {
+            Kit.entered();
+        } else {
             Kit.left();
         }
     }
@@ -96,6 +98,7 @@ export component Info inherits Surface {
                             name: @tr("Camera Body");
                             placeholder: @tr("e.g. Leica M6");
                             text <=> Library.camera-body;
+                            cards: Gear.body-cards;
                             known: Gear.bodies;
                             known-help: @tr("Pick From Your Kit");
                             none-known: @tr("No body yet");

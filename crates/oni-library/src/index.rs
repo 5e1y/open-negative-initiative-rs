@@ -6,7 +6,7 @@ use oni_settings::{ConversionMode, Date, Film, Id, Medal};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 use std::path::{Path, PathBuf};
 
-pub const SCHEMA_VERSION: i32 = 10;
+pub const SCHEMA_VERSION: i32 = 12;
 /// How long a write waits for another process's on the same file to end; theirs last milliseconds.
 pub const BUSY: std::time::Duration = std::time::Duration::from_secs(5);
 
@@ -29,6 +29,11 @@ pub struct Entry {
     pub trashed_at: Option<Date>,
     /// A contact sheet laid from a roll's frames: ONI's own file, never one of them.
     pub sheet: bool,
+    /// The camera and the lens its sidecar's EXIF line keeps, cached for the Kit's counts.
+    pub kept_camera: Option<String>,
+    pub kept_lens: Option<String>,
+    /// While its folder's marker makes the folder a roll, that roll's body, empty when it names none.
+    pub marker_body: Option<String>,
 }
 
 impl Entry {
@@ -46,6 +51,9 @@ impl Entry {
             leads_passes: false,
             trashed_at: None,
             sheet: false,
+            kept_camera: None,
+            kept_lens: None,
+            marker_body: None,
         }
     }
 }
@@ -74,7 +82,7 @@ pub struct LibraryIndex {
 
 const COLUMNS: &str = "path, imported_at, captured_at, fingerprint, label, film_id, film_name, \
     film_order, film_stock, film_shot_date, film_camera_body, manual_order, mode, pass_of, \
-    leads_passes, trashed_at, sheet";
+    leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body";
 
 impl LibraryIndex {
     /// Lives in the caches folder, which the system may purge, named by its schema: 1.5.6 and the Swift
@@ -131,7 +139,10 @@ impl LibraryIndex {
                 pass_of TEXT,
                 leads_passes INTEGER NOT NULL DEFAULT 0,
                 trashed_at REAL,
-                sheet INTEGER NOT NULL DEFAULT 0
+                sheet INTEGER NOT NULL DEFAULT 0,
+                kept_camera TEXT,
+                kept_lens TEXT,
+                marker_body TEXT
             );
             CREATE INDEX IF NOT EXISTS photos_imported_at ON photos(imported_at);
             CREATE INDEX IF NOT EXISTS photos_captured_at ON photos(captured_at);
@@ -166,7 +177,7 @@ impl LibraryIndex {
         self.connection
             .prepare_cached(&format!(
                 "INSERT INTO photos ({COLUMNS})
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     imported_at = excluded.imported_at,
                     captured_at = excluded.captured_at,
@@ -183,7 +194,10 @@ impl LibraryIndex {
                     pass_of = excluded.pass_of,
                     leads_passes = excluded.leads_passes,
                     trashed_at = excluded.trashed_at,
-                    sheet = excluded.sheet"
+                    sheet = excluded.sheet,
+                    kept_camera = excluded.kept_camera,
+                    kept_lens = excluded.kept_lens,
+                    marker_body = excluded.marker_body"
             ))?
             .execute(params![
                 normal(&entry.path),
@@ -203,50 +217,10 @@ impl LibraryIndex {
                 i64::from(entry.leads_passes),
                 entry.trashed_at.map(reference),
                 i64::from(entry.sheet),
+                entry.kept_camera,
+                entry.kept_lens,
+                entry.marker_body,
             ])?;
-        Ok(())
-    }
-
-    pub fn set_trashed(&self, date: Option<Date>, path: &str) -> rusqlite::Result<()> {
-        self.connection
-            .execute("UPDATE photos SET trashed_at = ? WHERE path IN (?, ?)", params![date.map(reference), path, normal(path)])?;
-        Ok(())
-    }
-
-    pub fn set_passes(&self, pass_of: Option<&str>, leads: bool, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute(
-            "UPDATE photos SET pass_of = ?, leads_passes = ? WHERE path IN (?, ?)",
-            params![pass_of, i64::from(leads), path, normal(path)],
-        )?;
-        Ok(())
-    }
-
-    /// A `None` roll is the whole of ungrouping.
-    pub fn set_film(&self, film: Option<&Film>, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute(
-            "UPDATE photos SET film_id = ?, film_name = ?, film_order = ?, film_stock = ?, \
-             film_shot_date = ?, film_camera_body = ? WHERE path IN (?, ?)",
-            params![
-                film.map(|f| f.id.to_string()),
-                film.map(|f| f.name.clone()),
-                film.and_then(|f| f.manual_order),
-                film.and_then(|f| f.stock.clone()),
-                film.and_then(|f| f.shot_date).map(reference),
-                film.and_then(|f| f.camera_body.clone()),
-                path,
-                normal(path)
-            ],
-        )?;
-        Ok(())
-    }
-
-    pub fn set_label(&self, label: Medal, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("UPDATE photos SET label = ? WHERE path IN (?, ?)", params![medal_raw(label), path, normal(path)])?;
-        Ok(())
-    }
-
-    pub fn set_manual_order(&self, order: Option<f64>, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("UPDATE photos SET manual_order = ? WHERE path IN (?, ?)", params![order, path, normal(path)])?;
         Ok(())
     }
 
@@ -364,12 +338,17 @@ fn entry(row: &Row<'_>) -> rusqlite::Result<Entry> {
         leads_passes: row.get::<_, i64>(14)? != 0,
         trashed_at: date(15)?,
         sheet: row.get::<_, i64>(16)? != 0,
+        kept_camera: row.get(17)?,
+        kept_lens: row.get(18)?,
+        marker_body: row.get(19)?,
     })
 }
 
+mod columns;
 mod forget;
 mod frames;
 mod gear;
+pub use gear::GearCounts;
 pub mod listed;
 pub use frames::{shown, trashed};
 pub mod prune;

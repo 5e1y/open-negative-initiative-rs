@@ -1,7 +1,7 @@
 // Where nothing is picked in the archive: the person's Kit, their bodies and lenses kept on The Lens DB.
 // Signed out it offers the service; signed in it lists the Kit, searches the catalogue in a sheet over the
 // window, and holds every change until Save sends them in one call.
-import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Ground, Space, Icons, TldbMark, Check, PickedGround, Badge, Sheet, SheetHeader, Scroller, AskSheet, AskRole, KitStyle, Divider } from "ds/ds.slint";
+import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Ground, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, AskSheet, AskRole, KitStyle, Divider } from "ds/ds.slint";
 import { GearKind, Kit, KitLink, KitPiece, KitMark } from "gear_state.slint";
 
 // Two answers of the search side by side, `at` the left one's place among them.
@@ -11,31 +11,41 @@ export global KitSearch {
     in property <[KitPair]> pairs;
 }
 
-// One piece of the catalogue, alike in the Kit and in the search. `found`, a search's answer: its name, what
-// tells it from its kin, its page and Add. In the Kit, one short row ticked for an action, opening its page.
+// One piece of the catalogue, alike in the Kit and in the search: its name, a Default badge when it is one,
+// what tells it from its kin or where it stands, then in the Kit how many photos name it, in the search its
+// Add; the rest in its menu, its page on The Lens DB first.
 export component PieceCard inherits Surface {
     in property <KitPiece> piece;
     in property <GearKind> kind;
     in property <bool> found;
     callback taken();
-    callback picked-toggled();
+    callback removed();
+    callback preferred();
     property <bool> leaving: root.piece.mark == KitMark.leaving;
-    ground: Ground.well;
     rounded: true;
+    outlined: true;
     VerticalLayout {
-        if root.found: VerticalLayout {
-            padding: Space.m;
-            spacing: Space.xs;
-            Label { text: root.piece.name; role: TextRole.section; wrap: word-wrap; }
-            if root.piece.detail != "": Label { text: root.piece.detail; role: TextRole.note; wrap: word-wrap; }
-            Rectangle { vertical-stretch: 1; min-height: Space.xs; }
-            HorizontalLayout {
-                spacing: Space.s;
-                Button { size: ButtonSize.mini; text: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
-                Rectangle { horizontal-stretch: 1; }
-                if root.piece.mark == KitMark.free: Button { size: ButtonSize.mini; text: @tr("Add"); icon: Icons.zoom-in; has-icon: true; clicked => { root.taken(); } }
+        HorizontalLayout {
+            padding-top: Space.s;
+            padding-bottom: Space.s;
+            padding-left: Space.m;
+            padding-right: Space.xs;
+            spacing: Space.s;
+            GearCardBody {
+                horizontal-stretch: 1;
+                faded: root.leaving;
+                cautioned: (root.piece.mark == KitMark.added && !root.found) || root.leaving;
+                card: {
+                    name: root.piece.name,
+                    detail: root.piece.mark == KitMark.added && !root.found ? @tr("New, not saved yet") : root.leaving ? @tr("Leaves your Kit when you save") : root.piece.detail,
+                    preferred: root.piece.by-default,
+                    photos: root.found ? -1 : root.piece.photos,
+                };
+            }
+            if root.found: VerticalLayout {
+                alignment: center;
+                if root.piece.mark == KitMark.free: Button { text: @tr("Add"); icon: Icons.zoom-in; has-icon: true; clicked => { root.taken(); } }
                 if root.piece.mark == KitMark.added: Button {
-                    size: ButtonSize.mini;
                     on: true;
                     text: @tr("Added");
                     icon: Icons.done;
@@ -47,41 +57,35 @@ export component PieceCard inherits Surface {
                     text: root.leaving ? @tr("Leaving your Kit") : @tr("In your Kit");
                     role: TextRole.caption;
                     tone: Tone.tertiary;
-                    vertical-alignment: center;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                more := Button {
+                    kind: ButtonKind.ghost;
+                    size: ButtonSize.mini;
+                    square: true;
+                    icon: Icons.more;
+                    has-icon: true;
+                    help: @tr("More for {}", root.piece.name);
+                    clicked => { menu.show(); }
                 }
             }
         }
-        if !root.found: Rectangle {
-            height: row.preferred-height;
-            touch := TouchArea { mouse-cursor: pointer; clicked => { Kit.open(root.piece.url); } }
-            PickedGround { picked: root.piece.picked; hovered: touch.has-hover; }
-            row := HorizontalLayout {
-                padding-top: Space.s;
-                padding-bottom: Space.s;
-                padding-left: Space.xs;
-                padding-right: Space.m;
-                spacing: Space.xs;
-                VerticalLayout {
-                    alignment: center;
-                    Check { on: root.piece.picked; label: root.piece.name; toggled => { root.picked-toggled(); } }
-                }
-                VerticalLayout {
-                    alignment: center;
-                    horizontal-stretch: 1;
-                    spacing: Space.xxs;
-                    Label { text: root.piece.name; overflow: elide; tone: root.leaving ? Tone.tertiary : Tone.primary; }
-                    Label {
-                        text: root.piece.mark == KitMark.added ? @tr("New, not saved yet") : root.leaving ? @tr("Leaves your Kit when you save") : root.piece.detail;
-                        role: TextRole.caption;
-                        tone: root.piece.mark == KitMark.added || root.leaving ? Tone.caution : Tone.tertiary;
-                        overflow: elide;
-                    }
-                }
-                if root.piece.by-default: VerticalLayout {
-                    alignment: center;
-                    Badge { text: @tr("Default"); }
-                }
-            }
+    }
+    menu := Menu {
+        x: more.absolute-position.x - root.absolute-position.x;
+        y: more.absolute-position.y - root.absolute-position.y + more.height;
+        lines: root.found ? [{ text: @tr("See on The Lens DB"), enabled: true }] : [
+            { text: @tr("See on The Lens DB"), enabled: true },
+            { text: root.piece.by-default ? @tr("Remove Default") : @tr("Set as Default"), enabled: root.piece.mark == KitMark.kept },
+            { text: root.leaving ? @tr("Keep in My Kit") : @tr("Remove from My Kit"), enabled: true, rule: true },
+        ];
+        chosen(i) => {
+            menu.close();
+            if (i == 0) { Kit.open(root.piece.url); }
+            if (i == 1) { root.preferred(); }
+            if (i == 2) { root.removed(); }
         }
     }
 }
@@ -94,7 +98,8 @@ component Pieces inherits Section {
     for piece[i] in root.items: PieceCard {
         piece: piece;
         kind: root.kind;
-        picked-toggled => { Kit.select(root.kind, i); }
+        removed => { Kit.remove(root.kind, i); }
+        preferred => { Kit.prefer(root.kind, i); }
     }
 }
 
@@ -114,30 +119,6 @@ component Waiting inherits Section {
     Label { role: TextRole.title; text: @tr("Finish in Your Browser"); }
     Label { role: TextRole.note; wrap: word-wrap; text: @tr("Sign in to The Lens DB, then authorize ONI. A new account confirms its e-mail first: ONI waits 15 minutes."); }
     HorizontalLayout { alignment: start; Button { text: @tr("Cancel"); clicked => { Kit.cancel(); } } }
-}
-
-// Under the list while pieces are ticked: how many, and what they may become.
-component KitActionBar inherits Surface {
-    VerticalLayout {
-        Divider { }
-        HorizontalLayout {
-            padding: Space.m;
-            spacing: Space.s;
-            VerticalLayout {
-                alignment: center;
-                Button { size: ButtonSize.mini; square: true; icon: Icons.close; has-icon: true; help: @tr("Clear the Selection"); clicked => { Kit.unpick(); } }
-            }
-            Label { text: @tr("{n} selected" | "{n} selected" % Kit.picked); horizontal-stretch: 1; }
-            Button {
-                text: @tr("Set as Default");
-                on: Kit.picked-default;
-                enabled: Kit.can-prefer;
-                help: @tr("Every export names it where its roll or its photo names none; one body and one lens at most");
-                clicked => { Kit.prefer-picked(); }
-            }
-            Button { kind: ButtonKind.destructive; text: Kit.picked-leaving ? @tr("Keep") : @tr("Remove"); clicked => { Kit.remove-picked(); } }
-        }
-    }
 }
 
 // Under the column while changes wait: how many, and Save beside Discard, so none is forgotten.
@@ -160,7 +141,7 @@ component KitSaveBar inherits Surface {
 }
 
 // The whole column: signed in, its head stays while the Kit scrolls under it, each kind's title held at the
-// top while its pieces pass, and the bars of the ticked pieces and of the changes below.
+// top while its pieces pass, and the bar of the changes below.
 export component KitView inherits VerticalLayout {
     if Kit.link == KitLink.out: Offer { }
     if Kit.link == KitLink.waiting: Waiting { }
@@ -174,18 +155,9 @@ export component KitView inherits VerticalLayout {
             HorizontalLayout {
                 spacing: Space.s;
                 Label { role: TextRole.title; text: @tr("My Kit"); horizontal-stretch: 1; }
-                VerticalLayout {
-                    alignment: center;
-                    Button { size: ButtonSize.mini; text: @tr("Disconnect"); help: @tr("Signs ONI out of The Lens DB; your Kit stays there"); clicked => { Kit.disconnect(); } }
-                }
+                VerticalLayout { alignment: center; horizontal-stretch: 0; TldbMark { horizontal-stretch: 0; clicked => { Kit.open-site(); } } }
             }
-            Button { kind: ButtonKind.accent; keycap: true; text: @tr("Add Gear"); icon: Icons.zoom-in; has-icon: true; clicked => { Kit.pick(true); } }
-            HorizontalLayout {
-                alignment: start;
-                spacing: Space.xs;
-                Label { role: TextRole.caption; tone: Tone.tertiary; text: @tr("Catalogue provided by"); }
-                TldbMark { clicked => { Kit.open-site(); } }
-            }
+            Button { keycap: true; text: @tr("Search Gear"); icon: Icons.search; has-icon: true; clicked => { Kit.pick(true); } }
         }
         if Kit.note != "": Section { separated: false; Label { role: TextRole.note; tone: Tone.caution; wrap: word-wrap; text: Kit.note; } }
         Rectangle {
@@ -212,8 +184,43 @@ export component KitView inherits VerticalLayout {
                 Section { title: @tr("Lenses"); folded <=> lenses.folded; }
             }
         }
-        if Kit.picked > 0: KitActionBar { }
         if Kit.unsaved > 0: KitSaveBar { }
+    }
+}
+
+// The search's quick filters, each a row of keys lit while it holds: the kind, a brand, a focal length.
+component KitFilters inherits VerticalLayout {
+    padding-top: Space.s;
+    spacing: Space.xs;
+    HorizontalLayout {
+        spacing: Space.xs;
+        alignment: start;
+        for word[i] in [@tr("All"), @tr("Bodies"), @tr("Lenses")]: Button {
+            size: ButtonSize.mini;
+            text: word;
+            on: Kit.kind-filter == i;
+            clicked => { Kit.filter-kind(i); }
+        }
+    }
+    HorizontalLayout {
+        spacing: Space.xs;
+        alignment: start;
+        for brand in Kit.brands: Button {
+            size: ButtonSize.mini;
+            text: brand;
+            on: Kit.brand-filter == brand;
+            clicked => { Kit.filter-brand(Kit.brand-filter == brand ? "" : brand); }
+        }
+    }
+    HorizontalLayout {
+        spacing: Space.xs;
+        alignment: start;
+        for focal[i] in Kit.focals: Button {
+            size: ButtonSize.mini;
+            text: Kit.focal-labels[i];
+            on: Kit.focal-filter == focal;
+            clicked => { Kit.filter-focal(Kit.focal-filter == focal ? 0 : focal); }
+        }
     }
 }
 
@@ -235,6 +242,7 @@ export component KitSearchSheet inherits Sheet {
             accepted(t) => { Kit.search(t); }
             init => { self.take-focus(); }
         }
+        KitFilters { }
     }
     Scroller {
         vertical-stretch: 1;
@@ -246,7 +254,7 @@ export component KitSearchSheet inherits Sheet {
             if Kit.searched == "" && !Kit.searching: Label {
                 role: TextRole.note;
                 wrap: word-wrap;
-                text: @tr("Type two letters or more: each word is looked for in the brand and the name.");
+                text: @tr("Type two letters or more, or pick a brand or a focal length: each word is looked for in the brand and the name.");
             }
             if Kit.searching && Kit.found.length == 0: Label { role: TextRole.note; text: @tr("Searching…"); }
             if !Kit.searching && Kit.searched != "" && Kit.found.length == 0: VerticalLayout {

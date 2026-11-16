@@ -117,11 +117,18 @@ impl Ctl {
         let engine: Shared = self.export_engine();
         let support = self.export.borrow().support.clone();
         let journal = crate::app::year::journal_in(&support);
+        let index_path = self.state.borrow().index_path.clone();
         self.export.borrow_mut().writer.spawn("export", move || {
             let mut ledger = oni_export::file::Ledger::in_support(&support);
+            // A connection of this thread's own: each frame's row is read again here, never on the interface's.
+            let index = oni_library::index::LibraryIndex::open(&index_path);
             let (end, _) = export::batch::write_batch(&engine, &jobs, &export, &mut ledger, replacing, &stop, |i| {
                 let subject = oni_library::paths::canonical(&jobs[i].target.path);
                 journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
+                // The line just kept in its sidecar reaches the index, so the Kit counts the frame's gear.
+                if let Some(index) = &index {
+                    crate::library::refresh(index, &[subject]);
+                }
                 with_shell(|c| {
                     c.export.borrow_mut().progress += 1;
                     c.publish_export();

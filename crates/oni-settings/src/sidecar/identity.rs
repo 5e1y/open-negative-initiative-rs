@@ -164,6 +164,7 @@ pub fn blank() -> Envelope {
         pass_of: None,
         leads_passes: false,
         sheet: false,
+        exif: super::ExifLine::default(),
     }
 }
 

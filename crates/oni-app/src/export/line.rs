@@ -172,6 +172,22 @@ mod tests {
         }
     }
 
+    /// The line an export keeps reaches the Kit's counts once the landed frame's row is read again.
+    #[test]
+    fn a_kept_line_reaches_the_kit_s_counts() {
+        let path = frame("counted");
+        let index = oni_library::index::LibraryIndex::open(Path::new(":memory:")).unwrap();
+        let member = [oni_library::paths::canonical(&path)];
+        crate::library::refresh(&index, &member);
+        keep_line(&path, &opening_line(&path, None, "", "", &defaults("Nikon FM2", "Nikkor 50")).typed("", "", false));
+        // Twin: until its row is read again, the index counts the lens nowhere.
+        assert_eq!(index.gear_counts().unwrap().lens("Nikkor 50"), 0);
+        crate::library::refresh(&index, &member);
+        let counts = index.gear_counts().unwrap();
+        assert_eq!((counts.body("nikon fm2"), counts.lens("Nikkor 50")), (1, 1));
+        cleared(&path);
+    }
+
     #[test]
     fn a_value_kept_is_never_taken_by_a_default() {
         let (fm2, m6) = (defaults("Nikon FM2", "Nikkor 50"), defaults("Leica M6", "Summicron 35"));
