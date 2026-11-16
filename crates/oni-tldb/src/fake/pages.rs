@@ -143,6 +143,14 @@ fn approve_link(query: &str, grant: &str, decision: &str) -> String {
     format!("/oauth/approve?{}", pairs.finish())
 }
 
+/// The test account's one click: the first account authorises ONI without a form.
+pub fn quick(state: &mut State, request: &Request) -> Response {
+    match decide(state, &request.query, 0, false) {
+        Ok(location) => Response::redirect(location),
+        Err(reason) => look::refused(&reason),
+    }
+}
+
 pub fn approve(state: &mut State, request: &Request) -> Response {
     let Some(account) = request.param("grant").and_then(|g| state.grants.remove(g)) else {
         return look::refused("This consent was already answered, or nobody signed in.");

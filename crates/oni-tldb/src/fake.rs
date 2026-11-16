@@ -207,6 +207,7 @@ fn route(state: &Mutex<State>, request: &Request) -> Response {
         ("POST", "/oauth/sign-in") => pages::sign_in(&mut state, request),
         ("POST", "/oauth/sign-up") => pages::sign_up(&mut state, request),
         ("GET", "/oauth/confirm") => pages::confirm(&mut state, request),
+        ("GET", "/oauth/quick") => pages::quick(&mut state, request),
         ("GET", "/oauth/approve") => pages::approve(&mut state, request),
         ("POST", "/api/oauth/token") => partner::token(&mut state, request),
         ("POST", "/api/oauth/revoke") => partner::revoke(&mut state, request),

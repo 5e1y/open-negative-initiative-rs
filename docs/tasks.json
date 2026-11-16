@@ -10665,5 +10665,12 @@
     "title": "The simulated The Lens DB signs in and signs up through real pages, keeps its accounts from run to run and reads a catalogue file",
     "status": "done",
     "detail": "The fake's pages now ask what the real site will: an e-mail and a password (a first account, camille@example.com / film, shown on the page), a sign-up whose simulated confirmation e-mail must be followed before signing in, then a consent that authorises ONI or refuses it. Each account has its own Kit. Under ONI_TLDB=fake the app keeps the fake's accounts, tokens and Kits in the support folder's tldb-fake.json, so a sign-in outlives a relaunch, and takes the support folder's tldb-catalogue.json (a JSON list of pieces in the contract's shape) as its catalogue when present; its first account starts with the catalogue's first body and lens. Checks: oni-tldb pages::the_pages_sign_in_then_ask_before_authorising, a_new_account_confirms_its_e_mail_and_keeps_its_own_kit_from_run_to_run, a_catalogue_file_replaces_the_simulated_one. The oni-tldb-fake binary runs the simulated site on its own (--port, --catalogue, --kept), to look at its pages in a browser."
+  },
+  {
+    "id": 2076,
+    "type": "feature",
+    "title": "The simulated The Lens DB lets a check by hand in with one click",
+    "status": "done",
+    "detail": "The fake's sign-in and sign-up pages open on Continue with the test account: the first account (camille@example.com) signed in and ONI authorised at once, the browser sent straight back to ONI with a code, no form and no e-mail. The forms stay below it for the real flow. Check: oni-tldb pages::the_pages_sign_in_then_ask_before_authorising."
   }
 ]

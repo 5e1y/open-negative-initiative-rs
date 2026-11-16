@@ -70,6 +70,12 @@ fn the_pages_sign_in_then_ask_before_authorising() {
     let refuse = format!("{}{}", fake.site, after(&consent, "class=\"quiet\" href=\""));
     assert!(raw::get(&refuse).head.contains("error=access_denied"));
     assert_eq!(raw::get(&refuse).status, 400, "a consent is answered once");
+    // The test account's one click returns a code at once, from the sign-in page as from the sign-up one.
+    for signup in [false, true] {
+        let pending = oauth::begin(&fake.service(), signup).unwrap();
+        let quick = raw::get(&format!("{}{}", fake.site, after(&raw::get(&pending.url), "class=\"button\" href=\"")));
+        assert!(quick.head.contains(&format!("Location: {}?code=", pending.redirect)), "{}", quick.head);
+    }
     // Twin: another client is refused before any form.
     assert_eq!(raw::get(&pending.url.replace("client_id=oni", "client_id=other")).status, 400);
 }

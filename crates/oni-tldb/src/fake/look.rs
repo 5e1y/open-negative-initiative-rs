@@ -14,16 +14,26 @@ pub struct Form {
     pub notice: String,
 }
 
+/// The one-click way in for a check by hand: the first account, signed in and ONI authorised at once.
+fn quick(oauth: &str) -> String {
+    format!(
+        "<a class=\"button\" href=\"{}\">Continue with the test account</a>\
+         <p class=\"hint center\">{FIRST_EMAIL}, in one click: no form, no e-mail.</p><p class=\"or\">or</p>",
+        escape(&format!("/oauth/quick?{oauth}"))
+    )
+}
+
 pub fn sign_in(oauth: &str, form: &Form) -> Response {
     let signup = format!("/oauth/authorize?{}&screen_hint=signup", oauth.replace("&screen_hint=signup", ""));
     let body = format!(
-        "<h1>Sign in</h1><p class=\"lead\">ONI would like to use your Kit.</p>{}\
+        "<h1>Sign in</h1><p class=\"lead\">ONI would like to use your Kit.</p>{}{}\
          <form method=\"post\" action=\"/oauth/sign-in\">{}\
          <label>E-mail<input name=\"email\" type=\"email\" autocomplete=\"off\" value=\"{}\" required autofocus></label>\
          <label>Password<input name=\"password\" type=\"password\" required></label>\
          <button>Sign in</button></form>\
          <p class=\"aside\">No account yet? <a href=\"{}\">Create one</a></p>\
          <p class=\"hint\">Simulated account: <b>{FIRST_EMAIL}</b>, password <b>{FIRST_PASSWORD}</b>.</p>",
+        quick(oauth),
         lines(form),
         hidden(oauth),
         escape(&form.email),
@@ -35,7 +45,7 @@ pub fn sign_in(oauth: &str, form: &Form) -> Response {
 pub fn sign_up(oauth: &str, form: &Form) -> Response {
     let signin = format!("/oauth/authorize?{}", oauth.replace("&screen_hint=signup", ""));
     let body = format!(
-        "<h1>Create your account</h1><p class=\"lead\">Then ONI can keep your Kit here.</p>{}\
+        "<h1>Create your account</h1><p class=\"lead\">Then ONI can keep your Kit here.</p>{}{}\
          <form method=\"post\" action=\"/oauth/sign-up\">{}\
          <label>Name<input name=\"name\" autocomplete=\"off\" value=\"{}\" required autofocus></label>\
          <label>E-mail<input name=\"email\" type=\"email\" autocomplete=\"off\" value=\"{}\" required></label>\
@@ -43,6 +53,7 @@ pub fn sign_up(oauth: &str, form: &Form) -> Response {
          <button>Create the account</button></form>\
          <p class=\"hint\">Invent a password: this simulation keeps it in plain text on this computer.</p>\
          <p class=\"aside\">Already registered? <a href=\"{}\">Sign in</a></p>",
+        quick(oauth),
         lines(form),
         hidden(oauth),
         escape(&form.name),
@@ -163,4 +174,6 @@ color:var(--on-go);background:var(--go);border:0;border-radius:8px;text-decorati
 .aside{margin:1.25rem 0 0;font-size:.9rem;text-align:center}.hint{color:var(--soft);font-size:.8rem;margin-top:1rem}\
 .error{color:#c0392b;font-size:.9rem}.notice{color:#1e8449;font-size:.9rem}a{color:inherit}\
 .mail{border:1px dashed var(--line);border-radius:8px;padding:1rem;margin-bottom:1rem}.from{color:var(--soft);font-size:.85rem;margin-top:0}\
-ul{padding-left:1.2rem}";
+ul{padding-left:1.2rem}.center{text-align:center}\
+.or{display:flex;gap:.75rem;align-items:center;color:var(--soft);font-size:.8rem;margin:1.25rem 0}\
+.or::before,.or::after{content:\"\";flex:1;border-top:1px solid var(--line)}";
