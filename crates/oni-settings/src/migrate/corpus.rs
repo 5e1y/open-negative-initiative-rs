@@ -16,13 +16,17 @@ pub(super) struct Kept {
     pub mosaic: bool,
     pub matrix: Option<M3>,
     pub scan: Option<(f64, f64)>,
+    /// The scan's own EXIF facts; a corpus file says none, so its line stays as it was kept.
+    #[serde(default)]
+    pub exif: Option<crate::ExifMetadata>,
 }
 
 impl Kept {
     pub fn facts<R>(&self, then: impl FnOnce(&Facts) -> R) -> R {
         let matrix = || Ok(self.matrix);
         let scan = |_: &crate::PipelineSettings| -> Result<Size, Refusal> { self.scan.ok_or(Refusal::ScanUnknown) };
-        then(&Facts { mosaic: super::Mosaic::Known(self.mosaic), matrix: &matrix, scan: &scan })
+        let exif = || self.exif.clone();
+        then(&Facts { mosaic: super::Mosaic::Known(self.mosaic), matrix: &matrix, scan: &scan, exif: &exif })
     }
 }
 
@@ -147,7 +151,7 @@ fn every_broken_or_newer_corpus_file_is_refused_with_its_reason() {
         let (_, outcome, _) = migrated(&dir, &path, &source, &facts(&path));
         match outcome {
             Err(Refusal::Unreadable(_)) => seen.push("unreadable"),
-            Err(Refusal::Newer(23)) => seen.push("newer"),
+            Err(Refusal::Newer(24)) => seen.push("newer"),
             Ok(Outcome::Migrated { .. }) => seen.push("migrated"),
             other => panic!("{}: {other:?}", path.display()),
         }

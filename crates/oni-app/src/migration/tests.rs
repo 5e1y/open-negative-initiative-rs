@@ -302,4 +302,12 @@ fn an_original_kept_in_the_cloud_is_asked_nothing() {
     let mut read = Vec::new();
     lookup(&photo, None, &mut |f: &Facts| read.extend([f.mosaic.get().map(|_| ()), (f.scan)(&rest).map(|_| ())]));
     assert_eq!(read, [Ok(()), Err(Refusal::ScanUnknown)]);
+    // The scan's EXIF facts of a file away are none, which leaves its line as it stands and holds nothing.
+    std::fs::write(&photo, b"").unwrap();
+    let mut said = Vec::new();
+    for away in [|_: &Path| true, |_: &Path| false] {
+        facts::lookup(facts::Known::default(), away)(&photo, Some(false), &mut |f: &Facts| said.push((f.exif)().is_some()));
+    }
+    // Twin: on the disk, the file answers.
+    assert_eq!(said, [false, true]);
 }

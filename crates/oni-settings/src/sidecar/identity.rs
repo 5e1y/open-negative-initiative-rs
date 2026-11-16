@@ -2,6 +2,7 @@
 //! in later, another body's or a reset counter's, never adopts its settings.
 
 use crate::document::{self, Envelope, Original};
+use crate::migrate;
 use crate::modes::{ConversionMode, Medal};
 use serde::Deserialize;
 use serde_json::Value;
@@ -165,15 +166,24 @@ pub fn blank() -> Envelope {
         leads_passes: false,
         sheet: false,
         exif: super::ExifLine::default(),
+        format: None,
     }
 }
 
 /// `document::envelope` for `original`'s sidecar `data`: a foreign one reads blank, as no sidecar does.
+/// An earlier format's EXIF line reads as a read gives it, released in memory, so what caches it and an
+/// export agree whether the file is brought or not.
 pub fn envelope(data: &[u8], original: &Path) -> Option<Envelope> {
     if foreign_bytes(data, original) {
         return Some(blank());
     }
-    document::envelope(data)
+    let mut envelope = document::envelope(data)?;
+    if matches!(migrate::standing(data), migrate::Standing::Older(_))
+        && let Ok((read, _)) = migrate::asked(original, None, |facts| migrate::reading(data, facts, false))
+    {
+        envelope.exif = read.document.exif_line;
+    }
+    Some(envelope)
 }
 
 /// A foreign sidecar moved aside, never lost: `X.NEF (orphan).json`, which no survey reads as a

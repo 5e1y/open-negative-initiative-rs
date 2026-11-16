@@ -14,7 +14,7 @@ pub mod tiles;
 pub mod walk;
 
 pub use ledger::Ledger;
-pub use sweep::{Place, Sweep, gated, start};
+pub use sweep::{Place, Sweep, bring, start};
 
 /// The support folder's layout: 2 keeps the places and the projects under `State/` and each tile
 /// under `thumbnails::file_name`.

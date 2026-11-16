@@ -26,6 +26,10 @@ pub const LOOK_FOLDED_VERSION: i64 = 19;
 pub const MATRICES_RETIRED_VERSION: i64 = 20;
 /// The version a dust stroke came to be kept on the scan rather than on the cropped, oriented frame.
 pub const STROKES_ON_SCAN_VERSION: i64 = 21;
+/// The version the document came to name itself `oni-frame`, in the shape this format types.
+pub const NAMED_VERSION: i64 = 22;
+/// The version an EXIF line came to keep no field equal to the scan's own fact.
+pub const SCAN_LINE_RELEASED_VERSION: i64 = 23;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

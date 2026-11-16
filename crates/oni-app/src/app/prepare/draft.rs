@@ -11,7 +11,7 @@ pub(super) fn found(paths: &[String]) -> Vec<Option<Draft>> {
     let mut names: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for path in paths {
         // Entering a roll brings its frames first, so the drafts its steps rewrite are their folders' alone.
-        crate::migration::gated(path);
+        crate::migration::bring(path);
         names.entry(paths::parent(path)).or_default().push(paths::name(path));
     }
     let folders: BTreeMap<String, Vec<Draft>> = names.into_iter().map(|(folder, names)| (folder.clone(), oni_settings::migrate::draft::found(Path::new(&folder), &names))).collect();

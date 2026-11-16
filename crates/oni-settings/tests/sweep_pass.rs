@@ -49,10 +49,10 @@ fn a_pass_touches_only_a_sidecar_beside_a_photo_with_a_sidecars_marks() {
     assert_eq!(std::fs::read(dir.join("tool.json")).unwrap(), foreign_tool, "another program's file untouched");
     assert_eq!(std::fs::read(dir.join("DSC_0002.NEF.json")).unwrap(), unmarked, "no sidecar's marks, untouched");
     // Twin: the photo's own sidecar is brought by the same pass.
-    assert_eq!((pass.migrated, pass.refused.len()), (1, 0), "{pass:?}");
+    assert_eq!((pass.migrated.len(), pass.refused.len()), (1, 0), "{pass:?}");
     assert_eq!(migrate::standing(&std::fs::read(url_for(&photo)).unwrap()), Standing::Current);
     // Twin: the converter alone takes the program's file for a sidecar, which the pass's rule prevents.
-    let answering = Facts { mosaic: Mosaic::Known(false), matrix: &|| Ok(None), scan: &|_| Err(Refusal::ScanUnknown) };
+    let answering = Facts { mosaic: Mosaic::Known(false), matrix: &|| Ok(None), scan: &|_| Err(Refusal::ScanUnknown), exif: &|| None };
     assert!(migrate::converted(foreign_tool, &answering).is_ok());
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -68,7 +68,7 @@ fn a_format_that_asks_no_fact_never_asks_the_original_and_the_oldest_ask_how_it_
         asked.set(asked.get() + 1);
         Err(Refusal::Away)
     };
-    let facts = Facts { mosaic: Mosaic::Asked(&ask), matrix: &|| Err(Refusal::Away), scan: &|_| Err(Refusal::Away) };
+    let facts = Facts { mosaic: Mosaic::Asked(&ask), matrix: &|| Err(Refusal::Away), scan: &|_| Err(Refusal::Away), exif: &|| None };
     assert_eq!(migrate::file_with(&photo, &facts), Ok(Outcome::Migrated { from: chain::MATRICES_RETIRED_VERSION }));
     assert_eq!(asked.get(), 0, "a format 20 sidecar asks its original nothing, so a cloud original stays in the cloud");
     // Twin: a format under 15 asks how the file decodes, and an original away leaves it as it was.
@@ -94,7 +94,7 @@ fn a_read_writes_nothing_and_facts_never_asked_never_say_a_camera_had_no_matrix(
     assert_eq!(migrate::file(&photo, Some(true)), Err(Refusal::MatrixUnknown), "never converted as a camera with no matrix");
     assert_eq!(std::fs::read(url_for(&photo)).unwrap(), old);
     // Twin: a table that answers converts it, the matrix kept in the gains.
-    let facts = Facts { mosaic: Mosaic::Known(true), matrix: &|| Ok(Some(MATRIX)), scan: &|_| Err(Refusal::ScanUnknown) };
+    let facts = Facts { mosaic: Mosaic::Known(true), matrix: &|| Ok(Some(MATRIX)), scan: &|_| Err(Refusal::ScanUnknown), exif: &|| None };
     assert_eq!(migrate::file_with(&photo, &facts), Ok(Outcome::Migrated { from: chain::MATRICES_RETIRED_VERSION - 1 }));
     assert_ne!(sidecar::read(&photo, true).unwrap().settings.gains, read.settings.gains);
     let _ = std::fs::remove_dir_all(&dir);
@@ -134,7 +134,7 @@ fn another_files_sidecar_is_never_converted_with_this_files_facts() {
     std::fs::write(&photo, shot("2026:10:25 09:00:00", 5)).unwrap();
     let old = serde_json::to_vec_pretty(&stored).unwrap();
     std::fs::write(url_for(&photo), &old).unwrap();
-    let facts = Facts { mosaic: Mosaic::Known(true), matrix: &|| Ok(Some(MATRIX)), scan: &|_| Err(Refusal::ScanUnknown) };
+    let facts = Facts { mosaic: Mosaic::Known(true), matrix: &|| Ok(Some(MATRIX)), scan: &|_| Err(Refusal::ScanUnknown), exif: &|| None };
     assert_eq!(migrate::file_with(&photo, &facts), Err(Refusal::Foreign));
     assert_eq!(std::fs::read(url_for(&photo)).unwrap(), old, "left whole, to be set aside at the photo's first write");
     // Twin: the same sidecar beside its own photo takes this camera's matrix.

@@ -110,7 +110,8 @@ fn the_envelope_reads_what_the_full_decode_reads() {
     assert_eq!(light.exif, whole.exif_line);
     // The same envelope from the document as format 21 wrote it: the keys it reads never moved.
     let stored = serde_json::to_vec(&migrate::reshape::as_stored(&whole, 19)).unwrap();
-    assert_eq!(document::envelope(&stored), Some(light.clone()));
+    assert_eq!(document::envelope(&stored), Some(document::Envelope { format: Some(19), ..light.clone() }));
+    assert_eq!(light.format, Some(VERSION));
     // Twin: another film reads another film, and absent fields read absent.
     let mut other = filed.clone();
     other.film = Some(Film::new("HP5"));

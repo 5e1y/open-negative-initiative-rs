@@ -99,6 +99,7 @@ pub fn indexed(path: &str) -> Option<Entry> {
         kept_camera: loaded.as_ref().and_then(|l| l.exif.camera.clone()),
         kept_lens: loaded.as_ref().and_then(|l| l.exif.lens.clone()),
         marker_body: crate::folders::roll(&crate::paths::parent(path)).map(|f| f.camera_body.unwrap_or_default()),
+        sidecar_format: loaded.as_ref().and_then(|l| l.format),
     })
 }
 

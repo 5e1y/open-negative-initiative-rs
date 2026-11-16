@@ -270,7 +270,14 @@ fn an_original_in_the_cloud_is_said_once_owes_no_sweep_and_is_brought_once_opene
     let photo = folder.join("P1072740.tif");
     std::fs::write(&photo, b"").unwrap();
     std::fs::write(sidecar::url_for(&photo), std::fs::read(early).unwrap()).unwrap();
-    migrate::install(Some(std::sync::Arc::new(super::facts::lookup(super::facts::Known::default(), in_check_cloud))));
+    // Only this check's files are answered: another check reading meanwhile sees no facts installed.
+    let _installed = super::facts::INSTALLED.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let checked = super::facts::lookup(super::facts::Known::default(), in_check_cloud);
+    migrate::install(Some(std::sync::Arc::new(move |p: &Path, mosaic: Option<bool>, then: &mut dyn FnMut(&migrate::Facts)| {
+        if p.to_string_lossy().contains("check-cloud") {
+            checked(p, mosaic, then);
+        }
+    })));
     let place = scratch.place();
     rooted(&place.support, &[&folder]);
     swept(&place);
@@ -279,10 +286,53 @@ fn an_original_in_the_cloud_is_said_once_owes_no_sweep_and_is_brought_once_opene
     let left: Vec<_> = ledger.left.values().map(|l| l.why).collect();
     // Downloaded, then opened: the gate brings it.
     CLOUD.store(false, std::sync::atomic::Ordering::Relaxed);
-    sweep::gated(&photo.to_string_lossy());
+    sweep::bring(&photo.to_string_lossy());
     migrate::install(None);
     assert!(ledger.pending.is_empty(), "no folder pending for an original in the cloud: {:?}", ledger.pending);
     assert_eq!(left, [ledger::Why::Away], "said once, with its reason");
     assert!(!owed, "no sweep owed at each launch");
     assert_eq!(migrate::standing(&std::fs::read(sidecar::url_for(&photo)).unwrap()), Standing::Current, "twin: once downloaded, the gate brings it");
+}
+
+/// A sweep reads again the rows of the files it brings: a step moves what a row caches of its sidecar,
+/// its EXIF line, under a sidecar date the migration keeps, so no later read would take it.
+#[test]
+fn a_sweep_reads_again_the_rows_of_the_files_it_brings() {
+    use oni_library::index::LibraryIndex;
+    use oni_library::Entry;
+    let scratch = Scratch::new("rows");
+    let folder = scratch.0.join("Library/Roll");
+    std::fs::create_dir_all(&folder).unwrap();
+    let photo = folder.join("DSC_6439.NEF");
+    std::fs::write(&photo, b"pixels").unwrap();
+    let camera = "NIKON CORPORATION NIKON Z f";
+    let mut stored = oni_settings::Document::default();
+    (stored.version, stored.exif_line.camera) = (migrate::chain::NAMED_VERSION, Some(camera.into()));
+    let side = sidecar::url_for(&photo);
+    std::fs::write(&side, oni_settings::document::encode(&stored).unwrap()).unwrap();
+    let dated = std::fs::metadata(&side).unwrap().modified().unwrap();
+    let place = scratch.place();
+    rooted(&place.support, &[&scratch.0.join("Library")]);
+    let path = oni_library::paths::canonical(&photo);
+    let row = Entry { kept_camera: Some(camera.into()), ..Entry::new(&path, oni_settings::Date::now(), "x") };
+    let (reached, elsewhere) = (LibraryIndex::default_path(&place.caches), scratch.0.join("elsewhere.sqlite"));
+    for at in [&reached, &elsewhere] {
+        LibraryIndex::open(at).unwrap().upsert(&row).unwrap();
+    }
+    let installed = super::facts::INSTALLED.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    migrate::install(Some(std::sync::Arc::new(|p: &Path, _: Option<bool>, then: &mut dyn FnMut(&migrate::Facts)| {
+        if p.to_string_lossy().contains("oni-app-sweep-rows-") {
+            let said = oni_settings::ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), ..Default::default() };
+            then(&migrate::Facts { exif: &|| Some(said.clone()), ..migrate::Facts::bare(true) });
+        }
+    })));
+    let brought = swept(&place);
+    migrate::install(None);
+    drop(installed);
+    assert_eq!(brought, 1);
+    let kept = |at: &Path| LibraryIndex::open(at).unwrap().row(&path).unwrap().kept_camera;
+    assert_eq!(kept(&reached), None, "the library's row reads the line as brought");
+    // Twin: an index the sweep does not reach keeps the scan's camera, under a sidecar date that never moved.
+    assert_eq!(kept(&elsewhere).as_deref(), Some(camera));
+    assert_eq!(std::fs::metadata(&side).unwrap().modified().unwrap(), dated);
 }

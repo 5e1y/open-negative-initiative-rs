@@ -149,3 +149,125 @@ fn a_marker_written_outside_the_app_reaches_its_rows_at_the_next_read() {
     assert_eq!(index.gear_counts().unwrap().body("Nikon FM2"), 1);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// A row read again off a sidecar the gate brings takes what the brought file says, its format included,
+/// so it settles at once rather than at the next folder read.
+#[test]
+fn a_row_read_again_takes_the_line_its_sidecar_was_brought_to() {
+    use oni_settings::migrate::{self, Facts};
+    let root = std::env::temp_dir().join(format!("oni-app-gated-line-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    let scan = root.join("DSC_6439.NEF");
+    std::fs::write(&scan, b"pixels").unwrap();
+    let camera = "NIKON CORPORATION NIKON Z f";
+    let mut stored = oni_settings::Document::default();
+    (stored.version, stored.exif_line.camera) = (migrate::chain::NAMED_VERSION, Some(camera.into()));
+    let old = oni_settings::document::encode(&stored).unwrap();
+    let side = oni_settings::sidecar::url_for(&scan);
+    std::fs::write(&side, &old).unwrap();
+    let photo = paths::canonical(&scan);
+    let row = Entry { kept_camera: Some(camera.into()), ..Entry::new(&photo, Date::now(), "x") };
+    // Twin: the row read off the sidecar as it stands, never brought, says its earlier format.
+    let unbrought = refreshed_with(&row, false);
+    assert_eq!((unbrought.kept_camera.as_deref(), unbrought.sidecar_format), (Some(camera), Some(migrate::chain::NAMED_VERSION)));
+    let installed = crate::migration::facts::INSTALLED.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let ours = PathBuf::from(&photo);
+    migrate::install(Some(Arc::new(move |p: &Path, _: Option<bool>, then: &mut dyn FnMut(&Facts)| {
+        if p == ours {
+            let said = oni_settings::ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), ..Default::default() };
+            then(&Facts { exif: &|| Some(said.clone()), ..Facts::bare(true) });
+        }
+    })));
+    let read = refreshed_with(&row, true);
+    migrate::install(None);
+    drop(installed);
+    assert_eq!((read.kept_camera, read.sidecar_format), (None, Some(oni_settings::document::VERSION)), "settled at once");
+    assert_ne!(std::fs::read(&side).unwrap(), old, "the gate brought the file");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A photo whose row was read off an earlier format on a disk that refused the new file, its line read
+/// with no facts to release it; its index and a twin index that records the row as of this format.
+#[cfg(unix)]
+fn stale_row(label: &str) -> (PathBuf, String, LibraryIndex, LibraryIndex) {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oni-app-stale-{label}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Roll");
+    std::fs::create_dir_all(&folder).unwrap();
+    let scan = folder.join("DSC_6439.NEF");
+    std::fs::write(&scan, b"pixels").unwrap();
+    let mut stored = oni_settings::Document::default();
+    (stored.version, stored.exif_line.camera) = (oni_settings::migrate::chain::NAMED_VERSION, Some(STALE_CAMERA.into()));
+    std::fs::write(oni_settings::sidecar::url_for(&scan), oni_settings::document::encode(&stored).unwrap()).unwrap();
+    let (index, twin) = (LibraryIndex::open(&root.join("index.sqlite")).unwrap(), LibraryIndex::open(&root.join("twin.sqlite")).unwrap());
+    let place = Place { computer: &Computer::none(), kept: None };
+    let at = paths::canonical(&folder);
+    std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o555)).unwrap();
+    for i in [&index, &twin] {
+        read_rows(&at, i, &place, &|| true, &mut |_, _, _| {});
+    }
+    std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let photo = paths::canonical(&scan);
+    let row = index.row(&photo).unwrap();
+    assert_eq!((row.kept_camera.as_deref(), row.sidecar_format), (Some(STALE_CAMERA), Some(oni_settings::migrate::chain::NAMED_VERSION)));
+    twin.upsert(&Entry { sidecar_format: Some(oni_settings::document::VERSION), ..row }).unwrap();
+    (root, photo, index, twin)
+}
+
+const STALE_CAMERA: &str = "NIKON CORPORATION NIKON Z f";
+
+/// `bring` run with the scan answering its own camera, as the app's facts do once the original reads.
+#[cfg(unix)]
+fn with_the_scan_s_facts(photo: &str, bring: impl FnOnce()) {
+    use oni_settings::migrate::{self, Facts};
+    let installed = crate::migration::facts::INSTALLED.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let ours = PathBuf::from(photo);
+    migrate::install(Some(Arc::new(move |p: &Path, _: Option<bool>, then: &mut dyn FnMut(&Facts)| {
+        if p == ours {
+            let said = oni_settings::ExifMetadata { camera: STALE_CAMERA.into(), ..Default::default() };
+            then(&Facts { exif: &|| Some(said.clone()), ..Facts::bare(true) });
+        }
+    })));
+    bring();
+    migrate::install(None);
+    drop(installed);
+}
+
+/// The camera each index's row names after a folder read.
+#[cfg(unix)]
+fn read_again(root: &Path, photo: &str, index: &LibraryIndex, twin: &LibraryIndex) -> (Option<String>, Option<String>) {
+    let place = Place { computer: &Computer::none(), kept: None };
+    let at = paths::canonical(&root.join("Roll"));
+    for i in [index, twin] {
+        read_rows(&at, i, &place, &|| true, &mut |_, _, _| {});
+    }
+    (index.row(photo).unwrap().kept_camera, twin.row(photo).unwrap().kept_camera)
+}
+
+/// A balance measured brings the sidecar keeping its date: the folder's next read takes the brought line
+/// because the row says it was read off an earlier format.
+#[cfg(unix)]
+#[test]
+fn a_row_read_off_an_earlier_format_is_read_again_once_a_measure_brings_it() {
+    let (root, photo, index, twin) = stale_row("measure");
+    let balance = oni_settings::document::AutoBalance { fingerprint: "f".into(), filters: [0.1, 0.0, -0.1], reference: None };
+    with_the_scan_s_facts(&photo, || assert!(oni_settings::sidecar::set_auto_balance(Path::new(&photo), true, &balance).unwrap()));
+    // Twin: a row recorded as of this format keeps the line it was read with, the sidecar's date unmoved.
+    assert_eq!(read_again(&root, &photo, &index, &twin), (None, Some(STALE_CAMERA.into())));
+    assert_eq!(index.row(&photo).unwrap().sidecar_format, Some(oni_settings::document::VERSION), "settled");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A read that took the earlier bytes while another path brought the file records the earlier format,
+/// so the next folder read takes the brought line.
+#[cfg(unix)]
+#[test]
+fn a_row_raced_by_another_bring_is_read_again() {
+    let (root, photo, index, twin) = stale_row("race");
+    with_the_scan_s_facts(&photo, || assert!(crate::migration::bring(&photo)));
+    // Twin: the row recorded as of this format is never looked at again.
+    assert_eq!(read_again(&root, &photo, &index, &twin), (None, Some(STALE_CAMERA.into())));
+    let _ = std::fs::remove_dir_all(&root);
+}

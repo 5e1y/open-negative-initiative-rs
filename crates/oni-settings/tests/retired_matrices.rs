@@ -24,7 +24,7 @@ fn a_sidecar_from_under_a_camera_matrix_keeps_its_look_through_its_gains_once() 
     let (matched, other): (PathBuf, PathBuf) = (dir.join("P1070001.RW2"), dir.join("DSC_0001.ARW"));
     let held = matched.clone();
     migrate::install(Some(Arc::new(move |p: &Path, mosaic: Option<bool>, then: &mut dyn FnMut(&Facts)| {
-        then(&Facts { mosaic: migrate::Mosaic::Known(mosaic.unwrap_or(true)), matrix: &|| Ok((p == held).then_some(MATRIX)), scan: &|_| Err(migrate::Refusal::ScanUnknown) })
+        then(&Facts { mosaic: migrate::Mosaic::Known(mosaic.unwrap_or(true)), matrix: &|| Ok((p == held).then_some(MATRIX)), scan: &|_| Err(migrate::Refusal::ScanUnknown), exif: &|| None })
     })));
     let mut edited = PipelineSettings::rest(ConversionMode::Negative, true);
     edited.print.exposure = 0.4;

@@ -55,7 +55,8 @@ pub(crate) fn file_through(original: &Path, facts: &Facts, rename: &dyn Fn(&Path
     let mosaic = || ours().and_then(|()| facts.mosaic.get());
     let matrix = || ours().and_then(|()| (facts.matrix)());
     let scan = |s: &crate::PipelineSettings| ours().and_then(|()| (facts.scan)(s));
-    let guarded = Facts { mosaic: Mosaic::Asked(&mosaic), matrix: &matrix, scan: &scan };
+    let exif = || ours().ok().and_then(|()| (facts.exif)());
+    let guarded = Facts { mosaic: Mosaic::Asked(&mosaic), matrix: &matrix, scan: &scan, exif: &exif };
     let converted = converted(&old, &guarded)?;
     if let (Some(stored), Some(folder), Some(name)) = (&converted.draft, path.parent(), original.file_name().and_then(|n| n.to_str())) {
         ours()?;
@@ -81,7 +82,8 @@ pub(crate) fn file_through(original: &Path, facts: &Facts, rename: &dyn Fn(&Path
 #[derive(Debug, Default)]
 pub struct Folder {
     pub current: usize,
-    pub migrated: usize,
+    /// Each original whose sidecar was brought, so what caches its sidecar reads it again.
+    pub migrated: Vec<PathBuf>,
     pub missing: usize,
     /// Written by a newer version: never rewritten, nothing to say.
     pub newer: usize,
@@ -142,7 +144,7 @@ pub fn folder(folder: &Path, wanted: &dyn Fn(&Path) -> bool, alive: &dyn Fn() ->
             Some(s) if s.version > document::VERSION => out.newer += 1,
             Some(_) if marked(&bytes) => match file(&original, None) {
                 Ok(Outcome::Current) => out.current += 1,
-                Ok(Outcome::Migrated { .. }) => out.migrated += 1,
+                Ok(Outcome::Migrated { .. }) => out.migrated.push(original),
                 Ok(Outcome::Missing) => out.missing += 1,
                 Err(Refusal::Newer(_)) => out.newer += 1,
                 Err(Refusal::Foreign) => out.foreign += 1,

@@ -1,5 +1,5 @@
 //! What a sidecar read asks of an original, installed once: the camera matrices a former Mac version
-//! kept in `<support>/Transition/cameras.json`, and the scan's size from the file's metadata.
+//! kept in `<support>/Transition/cameras.json`, and the scan's size and EXIF facts from the file's metadata.
 
 use oni_settings::PipelineSettings;
 use oni_settings::geometry::Size;
@@ -93,6 +93,10 @@ fn away(path: &Path) -> bool {
     std::fs::metadata(path).is_ok_and(|m| oni_settings::sidecar::identity::in_cloud(&m))
 }
 
+/// Held by a check while the facts it installed answer, as every check of the process shares them.
+#[cfg(test)]
+pub(crate) static INSTALLED: Mutex<()> = Mutex::new(());
+
 /// Every later sidecar read asks its original here; each file's camera is named once it reads, and a
 /// file that cannot say now is refused, never taken for a camera without a matrix.
 pub fn install(support: &Path) {
@@ -130,8 +134,10 @@ pub fn lookup(known: Known, away: fn(&Path) -> bool) -> impl Fn(&Path, Option<bo
             }
             scan_of(path, s).ok_or(Refusal::ScanUnknown)
         };
+        // The facts an export reads of the scan; a file away or that will not open says none.
+        let exif = || (!away(path) && std::fs::File::open(path).is_ok()).then(|| oni_export::scan_metadata(path));
         let mosaic = mosaic.map_or(Mosaic::Asked(&asked), Mosaic::Known);
-        then(&Facts { mosaic, matrix: &|| matrix(path), scan: &scan })
+        then(&Facts { mosaic, matrix: &|| matrix(path), scan: &scan, exif: &exif })
     }
 }
 

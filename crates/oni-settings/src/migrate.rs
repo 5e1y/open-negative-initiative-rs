@@ -5,6 +5,7 @@ use crate::curves::CurveSet;
 use crate::document::{self, Document, Failure, VERSION};
 use crate::geometry::Size;
 use crate::settings::PipelineSettings;
+use crate::sidecar::ExifMetadata;
 use crate::tolerant::Object;
 use serde_json::Value;
 use std::fmt;
@@ -20,6 +21,7 @@ pub mod look;
 pub mod matrices;
 mod on_disk;
 pub mod reshape;
+pub mod scan_line;
 pub mod strokes;
 
 #[cfg(test)]
@@ -40,6 +42,8 @@ pub struct Facts<'a> {
     pub matrix: &'a dyn Fn() -> Result<Option<M3>, Refusal>,
     /// The whole decode's size for these settings.
     pub scan: &'a dyn Fn(&PipelineSettings) -> Result<Size, Refusal>,
+    /// The scan's own EXIF facts as an export reads them, `None` when the original cannot say now.
+    pub exif: &'a dyn Fn() -> Option<ExifMetadata>,
 }
 
 /// How a file decodes: known by the caller, or asked of the original when a step needs it.
@@ -61,7 +65,7 @@ impl Mosaic<'_> {
 impl Facts<'static> {
     /// A file that answers nothing beyond how it decodes: a camera's former matrix stays unknown.
     pub fn bare(mosaic: bool) -> Facts<'static> {
-        Facts { mosaic: Mosaic::Known(mosaic), matrix: &|| Err(Refusal::MatrixUnknown), scan: &|_| Err(Refusal::ScanUnknown) }
+        Facts { mosaic: Mosaic::Known(mosaic), matrix: &|| Err(Refusal::MatrixUnknown), scan: &|_| Err(Refusal::ScanUnknown), exif: &|| None }
     }
 }
 
@@ -206,13 +210,17 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     if version > VERSION && !newer {
         return Err(Refusal::Newer(version));
     }
-    if document::sniffed(bytes).is_some_and(|s| s.named) && version >= VERSION {
+    let mut converted = if document::sniffed(bytes).is_some_and(|s| s.named) && version >= chain::NAMED_VERSION {
         let document = document::typed(bytes).map_err(Refusal::Unreadable)?;
-        return Ok((Converted { document, from: version, draft: None }, None));
-    }
-    // Only the oldest formats ask how the file decodes, as asking reads the original.
-    let mosaic = if version < chain::PRIMARIES_HELD_VERSION { Some(facts.mosaic.get()?) } else { None };
-    let mut converted = earlier(stored, version, mosaic).map_err(Refusal::Unreadable)?;
+        if version >= VERSION {
+            return Ok((Converted { document, from: version, draft: None }, None));
+        }
+        Converted { document: Document { version: VERSION, ..document }, from: version, draft: None }
+    } else {
+        // Only the oldest formats ask how the file decodes, as asking reads the original.
+        let mosaic = if version < chain::PRIMARIES_HELD_VERSION { Some(facts.mosaic.get()?) } else { None };
+        earlier(stored, version, mosaic).map_err(Refusal::Unreadable)?
+    };
     let mut held = None;
     let settings = std::mem::take(&mut converted.document.settings);
     let settings = match matrices::caught_up(version, settings.clone(), facts.matrix) {
@@ -229,6 +237,8 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
             settings
         }
     };
+    let line = std::mem::take(&mut converted.document.exif_line);
+    converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
         converted.document.version = version;
     }
@@ -236,7 +246,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
 }
 
 /// A settings document outside a sidecar (a preset file, a share code, a paste): no file, no facts.
-/// Any `oni-` document of this version reads its settings as they stand.
+/// Any `oni-` document of format 22 on reads its settings as they stand, their shape unmoved since.
 pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     let stored = stored(bytes)?;
     let version = crate::tolerant::ns_integer(stored.get("version")).unwrap_or(0);
@@ -244,7 +254,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         return Err(Refusal::Newer(version));
     }
     let named = stored.get("format").and_then(Value::as_str).is_some_and(|f| f.starts_with("oni-"));
-    if named && version == VERSION {
+    if named && version >= chain::NAMED_VERSION {
         let settings = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
         let settings: PipelineSettings = serde_json::from_value(settings).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });

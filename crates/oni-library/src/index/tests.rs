@@ -123,6 +123,7 @@ fn full_row() -> Entry {
         kept_camera: Some("Leica M6".into()),
         kept_lens: Some("Summicron 35".into()),
         marker_body: Some("Pentax MX".into()),
+        sidecar_format: Some(22),
     }
 }
 

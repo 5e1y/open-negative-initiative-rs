@@ -79,11 +79,18 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
         }
         // A file still being written keeps its row as it was until it rests.
         let Some(now) = stamped(&survey, &row.path).filter(|_| !survey.settling.contains(&row.path)) else { continue };
+        // A row read off an earlier format is read again until its file is brought, which keeps its date.
+        let older = row.sidecar_format.is_some_and(|f| f < oni_settings::document::VERSION);
         match stamps.get(&row.path) {
             // A row written before its stamp was kept takes the disk's word once.
-            None => adopted.push((row.path.clone(), now)),
+            None => {
+                adopted.push((row.path.clone(), now));
+                if older {
+                    again.push_back(Again::Sidecar(row));
+                }
+            }
             Some(was) if was.original_moved(now.size, now.modified) => again.push_back(Again::Original(row)),
-            Some(was) if was.sidecar_moved(now.sidecar) => again.push_back(Again::Sidecar(row)),
+            Some(was) if was.sidecar_moved(now.sidecar) || older => again.push_back(Again::Sidecar(row)),
             Some(_) => {}
         }
     }
@@ -110,7 +117,7 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
             let read = if survey.settling.contains(&path) {
                 None
             } else {
-                crate::migration::gated(&path);
+                crate::migration::bring(&path);
                 library::indexed(&path)
             };
             if read.is_none() {
@@ -127,7 +134,9 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
             if !alive() {
                 break;
             }
-            let _ = index.upsert(&entry);
+            if let Err(e) = index.upsert(&entry) {
+                crate::timing::line(&format!("library: a row not written: {:?}", e.sqlite_error_code()));
+            }
             noted.extend(stamped(&survey, &path).map(|s| (path, s)));
         }
         if landed.elapsed() >= LANDING && !(waiting.is_empty() && again.is_empty()) {
@@ -150,7 +159,7 @@ fn look_again(again: Again) -> Option<(String, Entry)> {
             let entry = if print.fingerprint == row.fingerprint {
                 refreshed_with(&row, true)
             } else {
-                crate::migration::gated(&row.path);
+                crate::migration::bring(&row.path);
                 library::indexed(&row.path)?
             };
             Some((row.path, entry))
@@ -174,16 +183,28 @@ pub fn refreshed(row: &Entry) -> Entry {
 /// `refreshed`; with `gate`, a sidecar of an earlier format brought first, off the bytes this read took.
 fn refreshed_with(row: &Entry, gate: bool) -> Entry {
     let original = Path::new(&row.path);
-    let envelope = match std::fs::read(oni_settings::sidecar::url_for(original)) {
+    let side = oni_settings::sidecar::url_for(original);
+    let envelope = match std::fs::read(&side) {
         Ok(data) => {
-            if gate {
-                crate::migration::sweep::gated_bytes(&row.path, &data);
-            }
+            // A file brought is read again: a step may have moved what its envelope says, its EXIF line.
+            let data = if gate && crate::migration::sweep::bring_bytes(&row.path, &data) { std::fs::read(&side).unwrap_or(data) } else { data };
             oni_settings::sidecar::identity::envelope(&data, original)
         }
         // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
         Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
-            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, sheet: false, kept_camera: None, kept_lens: None, ..row.clone() };
+            return Entry {
+                label: Medal::None,
+                film: None,
+                manual_order: None,
+                pass_of: None,
+                leads_passes: false,
+                trashed_at: None,
+                sheet: false,
+                kept_camera: None,
+                kept_lens: None,
+                sidecar_format: None,
+                ..row.clone()
+            };
         }
         Err(_) => None,
     };
@@ -199,6 +220,7 @@ fn refreshed_with(row: &Entry, gate: bool) -> Entry {
         sheet: envelope.sheet,
         kept_camera: envelope.exif.camera,
         kept_lens: envelope.exif.lens,
+        sidecar_format: envelope.format,
         ..row.clone()
     }
 }
@@ -213,7 +235,10 @@ pub fn refresh(index: &LibraryIndex, paths: &[String]) {
             None => library::indexed(path),
         })
         .collect();
-    let _ = index.upsert_all(&entries);
+    // The error's code alone, so no path reaches the log.
+    if let Err(e) = index.upsert_all(&entries) {
+        crate::timing::line(&format!("library: {} rows not written: {:?}", entries.len(), e.sqlite_error_code()));
+    }
 }
 
 /// What a gesture's sidecar writes leave in the index: their rows read again, then the opened

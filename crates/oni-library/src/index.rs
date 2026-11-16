@@ -6,7 +6,7 @@ use oni_settings::{ConversionMode, Date, Film, Id, Medal};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 use std::path::{Path, PathBuf};
 
-pub const SCHEMA_VERSION: i32 = 12;
+pub const SCHEMA_VERSION: i32 = 13;
 /// How long a write waits for another process's on the same file to end; theirs last milliseconds.
 pub const BUSY: std::time::Duration = std::time::Duration::from_secs(5);
 
@@ -34,6 +34,9 @@ pub struct Entry {
     pub kept_lens: Option<String>,
     /// While its folder's marker makes the folder a roll, that roll's body, empty when it names none.
     pub marker_body: Option<String>,
+    /// The format its sidecar was read at, none without one: a row read off an earlier one is read
+    /// again at each folder read until the file is brought, as bringing keeps the sidecar's date.
+    pub sidecar_format: Option<i64>,
 }
 
 impl Entry {
@@ -54,6 +57,7 @@ impl Entry {
             kept_camera: None,
             kept_lens: None,
             marker_body: None,
+            sidecar_format: None,
         }
     }
 }
@@ -82,7 +86,7 @@ pub struct LibraryIndex {
 
 const COLUMNS: &str = "path, imported_at, captured_at, fingerprint, label, film_id, film_name, \
     film_order, film_stock, film_shot_date, film_camera_body, manual_order, mode, pass_of, \
-    leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body";
+    leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body, sidecar_format";
 
 impl LibraryIndex {
     /// Lives in the caches folder, which the system may purge, named by its schema: 1.5.6 and the Swift
@@ -142,7 +146,8 @@ impl LibraryIndex {
                 sheet INTEGER NOT NULL DEFAULT 0,
                 kept_camera TEXT,
                 kept_lens TEXT,
-                marker_body TEXT
+                marker_body TEXT,
+                sidecar_format INTEGER
             );
             CREATE INDEX IF NOT EXISTS photos_imported_at ON photos(imported_at);
             CREATE INDEX IF NOT EXISTS photos_captured_at ON photos(captured_at);
@@ -177,7 +182,7 @@ impl LibraryIndex {
         self.connection
             .prepare_cached(&format!(
                 "INSERT INTO photos ({COLUMNS})
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     imported_at = excluded.imported_at,
                     captured_at = excluded.captured_at,
@@ -197,7 +202,8 @@ impl LibraryIndex {
                     sheet = excluded.sheet,
                     kept_camera = excluded.kept_camera,
                     kept_lens = excluded.kept_lens,
-                    marker_body = excluded.marker_body"
+                    marker_body = excluded.marker_body,
+                    sidecar_format = excluded.sidecar_format"
             ))?
             .execute(params![
                 normal(&entry.path),
@@ -220,6 +226,7 @@ impl LibraryIndex {
                 entry.kept_camera,
                 entry.kept_lens,
                 entry.marker_body,
+                entry.sidecar_format,
             ])?;
         Ok(())
     }
@@ -341,6 +348,7 @@ fn entry(row: &Row<'_>) -> rusqlite::Result<Entry> {
         kept_camera: row.get(17)?,
         kept_lens: row.get(18)?,
         marker_body: row.get(19)?,
+        sidecar_format: row.get(20)?,
     })
 }
 

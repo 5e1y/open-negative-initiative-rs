@@ -66,7 +66,7 @@ fn a_sidecar_read_through_the_installed_size_is_written_on_the_scan_at_its_first
     let (known, unknown) = (dir.join("DSC_0001.NEF"), dir.join("DSC_0002.NEF"));
     let held = known.clone();
     migrate::install(Some(Arc::new(move |p: &Path, mosaic: Option<bool>, then: &mut dyn FnMut(&Facts)| {
-        then(&Facts { mosaic: migrate::Mosaic::Known(mosaic.unwrap_or(true)), matrix: &|| Ok(None), scan: &|_| (p == held).then_some(SCAN).ok_or(Refusal::ScanUnknown) })
+        then(&Facts { mosaic: migrate::Mosaic::Known(mosaic.unwrap_or(true)), matrix: &|| Ok(None), scan: &|_| (p == held).then_some(SCAN).ok_or(Refusal::ScanUnknown), exif: &|| None })
     })));
     let old = painted(framed());
     for original in [&known, &unknown] {

@@ -15,8 +15,8 @@ use std::fmt;
 
 /// What a sidecar names itself, so a walk tells one from another program's JSON.
 pub const FORMAT: &str = "oni-frame";
-/// Moved at every change of the document's shape, an added field included.
-pub const VERSION: i64 = 22;
+/// Moved at every change of the document's shape, an added field included, or of what a field keeps.
+pub const VERSION: i64 = 23;
 
 /// Long side the fraction scale was calibrated on, hence what a stored fraction meant.
 pub const RADIUS_REFERENCE_SIDE: f64 = 8368.0;
@@ -182,6 +182,8 @@ pub struct Envelope {
     pub sheet: bool,
     /// The EXIF fields a hand or an export kept, the Kit's counts reading its camera and lens.
     pub exif: ExifLine,
+    /// The format the sidecar is stored at, so what caches it reads an earlier one again once brought.
+    pub format: Option<i64>,
 }
 
 /// The envelope alone, its settings left undecoded; `None` on a document that is not JSON. It reads
@@ -206,5 +208,6 @@ pub fn envelope(data: &[u8]) -> Option<Envelope> {
         sheet: fact("sheet").is_some(),
         // Format 21 and under keep the line under `exif`.
         exif: read(map, "exifLine").or_else(|| read(map, "exif")).unwrap_or_default(),
+        format: Some(tolerant::ns_integer(map.get("version")).unwrap_or(0)),
     })
 }

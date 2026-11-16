@@ -4,7 +4,7 @@
 use oni_settings::cg::Point;
 use oni_settings::curves::CurveSet;
 use oni_settings::sidecar::{self, Error, url_for};
-use oni_settings::migrate::reshape;
+use oni_settings::migrate::{chain, reshape};
 use oni_settings::{Date, Document, Medal, PipelineSettings, document};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
@@ -131,7 +131,7 @@ fn a_retired_key_is_never_carried_to_be_read_twice() {
     sidecar::write(&edited(), &photo, Default::default()).unwrap();
     let mut colour = CurveSet::default();
     colour.linked.add(Point { x: 0.5, y: 0.7 });
-    let mut stored = reshape::as_stored(&Document::of(edited()), document::VERSION - 1);
+    let mut stored = reshape::as_stored(&Document::of(edited()), chain::NAMED_VERSION - 1);
     stored["settings"]["curves"] = serde_json::to_value(&colour).unwrap();
     std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
     let folded = sidecar::read(&photo, true).unwrap();
@@ -143,7 +143,7 @@ fn a_retired_key_is_never_carried_to_be_read_twice() {
     // Twin: the retired key, carried as is, would fold a second time on the next read.
     let mut twice = written.clone();
     twice["settings"]["curves"] = stored["settings"]["curves"].clone();
-    twice["version"] = json!(document::VERSION - 1);
+    twice["version"] = json!(chain::NAMED_VERSION - 1);
     let again = oni_settings::migrate::document(&serde_json::to_vec(&twice).unwrap()).unwrap();
     assert_ne!(again.document.settings, folded.settings);
     let _ = std::fs::remove_dir_all(&dir);

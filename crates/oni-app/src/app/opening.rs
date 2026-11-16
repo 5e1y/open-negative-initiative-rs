@@ -138,7 +138,7 @@ impl Ctl {
         if !away {
             return false;
         }
-        crate::migration::gated(path);
+        crate::migration::bring(path);
         let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
         let still = oni_settings::sidecar::read(Path::new(path), mosaic).is_ok_and(|l| l.held_back == Some(oni_settings::migrate::Refusal::Away));
         if !still {

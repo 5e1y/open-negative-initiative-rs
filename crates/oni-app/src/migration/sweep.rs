@@ -5,6 +5,7 @@ use super::ledger::{self, Ledger, Left, Why};
 use super::walk;
 use crate::anonymity::token;
 use crate::timing;
+use oni_library::index::LibraryIndex;
 use oni_library::navigator::Computer;
 use oni_library::presence::{self, Away, Presence};
 use oni_library::{library, paths, roots};
@@ -117,7 +118,8 @@ fn swept(place: &Place, ledger: &Ledger, progress: &Arc<Progress>, alive: &Arc<A
         .into_values()
         .filter_map(|units| {
             let (progress, alive, computer, known) = (progress.clone(), alive.clone(), place.computer.clone(), known.clone());
-            std::thread::Builder::new().name("migration volume".into()).spawn(move || volume(&units, &computer, &known, &progress, &alive)).ok()
+            let index = LibraryIndex::default_path(&place.caches);
+            std::thread::Builder::new().name("migration volume".into()).spawn(move || volume(&units, &computer, &index, &known, &progress, &alive)).ok()
         })
         .collect();
     let mut part = Part::default();
@@ -170,9 +172,10 @@ fn unanswered(place: &str, presence: Presence, part: &mut Part) {
 }
 
 /// One volume's trees and folders, one file after another; each file left unchanged since it was
-/// left (`known`) is not taken again.
-fn volume(units: &[(String, bool)], computer: &Computer, known: &BTreeMap<String, Left>, progress: &Progress, alive: &AtomicBool) -> Part {
+/// left (`known`) is not taken again. The library at `index`, when there is one, reads each brought row again.
+fn volume(units: &[(String, bool)], computer: &Computer, index: &Path, known: &BTreeMap<String, Left>, progress: &Progress, alive: &AtomicBool) -> Part {
     let mut part = Part::default();
+    let index = index.exists().then(|| LibraryIndex::open(index)).flatten();
     let live = || alive.load(Ordering::Relaxed);
     for (path, tree) in units {
         if !live() {
@@ -201,7 +204,7 @@ fn volume(units: &[(String, bool)], computer: &Computer, known: &BTreeMap<String
             if !live() {
                 break;
             }
-            if let Err(e) = brought(&folder, known, progress, &live, &mut part) {
+            if let Err(e) = brought(&folder, index.as_ref(), known, progress, &live, &mut part) {
                 unanswered(&folder, presence::refused(&folder, &e, computer), &mut part);
             }
             progress.done.fetch_add(1, Ordering::Relaxed);
@@ -217,8 +220,9 @@ fn unchanged(original: &Path, known: &BTreeMap<String, Left>) -> bool {
     known.get(key.as_ref()).is_some_and(|l| l.stamp.is_some() && l.stamp == ledger::stamp(&sidecar::url_for(original)))
 }
 
-/// One folder brought, each refusal logged by its token.
-fn brought(folder: &str, known: &BTreeMap<String, Left>, progress: &Progress, alive: &dyn Fn() -> bool, part: &mut Part) -> std::io::Result<()> {
+/// One folder brought, each refusal logged by its token, and the rows `index` holds of the files
+/// brought read again, as a step may move what a row caches of its sidecar.
+fn brought(folder: &str, index: Option<&LibraryIndex>, known: &BTreeMap<String, Left>, progress: &Progress, alive: &dyn Fn() -> bool, part: &mut Part) -> std::io::Result<()> {
     let kept = std::cell::RefCell::new(Vec::new());
     let wanted = |original: &Path| {
         if !library::is_importable(original) {
@@ -239,26 +243,39 @@ fn brought(folder: &str, known: &BTreeMap<String, Left>, progress: &Progress, al
         part.left.push((original.to_string_lossy().into_owned(), Left { why: Why::of(&why), stamp, said: false }));
         progress.refused.fetch_add(1, Ordering::Relaxed);
     }
-    progress.migrated.fetch_add(pass.migrated, Ordering::Relaxed);
+    progress.migrated.fetch_add(pass.migrated.len(), Ordering::Relaxed);
+    if let Some(index) = index {
+        reread(index, &pass.migrated.iter().map(|o| o.to_string_lossy().into_owned()).collect::<Vec<_>>());
+    }
     Ok(())
 }
 
-/// A photo's sidecar of an earlier format brought before its row is read off it, sweep or not: a
-/// folder no sweep knew, on a disk seen for the first time, is brought as its rows are read.
-pub fn gated(photo: &str) {
-    if let Ok(bytes) = std::fs::read(sidecar::url_for(Path::new(photo))) {
-        gated_bytes(photo, &bytes);
-    }
+/// The rows `index` holds of `photos` read again off their sidecars, so a folder never read since
+/// counts their line as brought and its next read finds them settled.
+pub(crate) fn reread(index: &LibraryIndex, photos: &[String]) {
+    let held: Vec<String> = photos.iter().filter(|p| index.row(p).is_some()).cloned().collect();
+    crate::library::refresh(index, &held);
 }
 
-/// `gated` off the sidecar's `bytes` a read already took.
-pub fn gated_bytes(photo: &str, bytes: &[u8]) {
+/// A photo's sidecar of an earlier format brought, sweep or not; whether it was. Its row in the library,
+/// read off the earlier format, is read again at its folder's next read.
+pub fn bring(photo: &str) -> bool {
+    std::fs::read(sidecar::url_for(Path::new(photo))).is_ok_and(|bytes| bring_bytes(photo, &bytes))
+}
+
+/// `bring` off the sidecar's `bytes` a read already took; once brought, the file says what those
+/// bytes no longer do.
+pub fn bring_bytes(photo: &str, bytes: &[u8]) -> bool {
     if !matches!(migrate::standing(bytes), Standing::Older(_)) || !migrate::marked(bytes) {
-        return;
+        return false;
     }
     match migrate::file(Path::new(photo), None) {
-        Ok(_) | Err(Refusal::Moved | Refusal::Newer(_) | Refusal::Foreign) => {}
-        Err(why) => timing::line(&format!("migration: {} left as it is: {}", token(photo), why.kind())),
+        Ok(outcome) => matches!(outcome, migrate::Outcome::Migrated { .. }),
+        Err(Refusal::Moved | Refusal::Newer(_) | Refusal::Foreign) => false,
+        Err(why) => {
+            timing::line(&format!("migration: {} left as it is: {}", token(photo), why.kind()));
+            false
+        }
     }
 }
 

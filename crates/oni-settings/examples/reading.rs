@@ -26,7 +26,7 @@ fn main() {
     let kept: Kept = serde_json::from_slice(&std::fs::read(&facts_path).unwrap_or_else(|e| panic!("{}: {e}", facts_path.display())))
         .unwrap_or_else(|e| panic!("{}: {e}", facts_path.display()));
     let bytes = std::fs::read(path).unwrap_or_else(|e| panic!("{name}: {e}"));
-    let facts = Facts { mosaic: oni_settings::migrate::Mosaic::Known(kept.mosaic), matrix: &|| Ok(kept.matrix), scan: &|_| kept.scan.ok_or(Refusal::ScanUnknown) };
+    let facts = Facts { mosaic: oni_settings::migrate::Mosaic::Known(kept.mosaic), matrix: &|| Ok(kept.matrix), scan: &|_| kept.scan.ok_or(Refusal::ScanUnknown), exif: &|| None };
     match migrate::reading(&bytes, &facts, true) {
         Ok((converted, held)) => {
             let name = Path::new(&stem).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();

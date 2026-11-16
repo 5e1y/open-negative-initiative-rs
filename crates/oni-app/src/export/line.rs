@@ -215,6 +215,35 @@ mod tests {
         }
     }
 
+    /// A line 1.4.0 to 1.5.6 kept whole names the digitising camera; once its sidecar comes to format 23
+    /// against the scan's facts, the folder's roll names the body and the Kit the lens, in the line and the counts.
+    #[test]
+    fn a_line_kept_whole_by_an_older_build_yields_to_the_roll_once_migrated() {
+        use oni_settings::migrate::{self, Facts};
+        let path = frame("scan-camera");
+        let whole = concat!(
+            r#"{"version":20,"settings":{},"exif":{"artist":"","camera":"NIKON CORPORATION NIKON Z f","copyright":"","#,
+            r#""date":"2026:09:14 10:21:03","film":"","iso":"100","lens":"COLOR SKOPAR 28MM"}}"#
+        );
+        std::fs::write(oni_settings::sidecar::url_for(&path), whole).unwrap();
+        roll_folder::set_roll(Some(&roll(2, "Leica M6")), path.parent().unwrap()).unwrap();
+        let kit = defaults("Nikon FM2", "Nikkor 50");
+        let index = oni_library::index::LibraryIndex::open(Path::new(":memory:")).unwrap();
+        let member = [oni_library::paths::canonical(&path)];
+        // Twin: before the step the scan's camera wins over the roll's body, in the line and in the counts.
+        assert_eq!(gear(&path, None, &kit), ("NIKON CORPORATION NIKON Z f".into(), "COLOR SKOPAR 28MM".into()));
+        crate::library::refresh(&index, &member);
+        assert_eq!(index.gear_counts().unwrap().body("leica m6"), 0);
+        let scan = ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), lens: "COLOR SKOPAR 28MM".into(), iso: "100".into(), date: "2026:09:14 10:21:03".into(), ..ExifMetadata::default() };
+        let facts = Facts { exif: &|| Some(scan.clone()), ..Facts::bare(true) };
+        assert!(matches!(migrate::file_with(&path, &facts), Ok(migrate::Outcome::Migrated { from: 20 })));
+        assert_eq!(gear(&path, None, &kit), ("Leica M6".into(), "Nikkor 50".into()));
+        assert_eq!(opening_line(&path, None, "", "", &kit).row.metadata.film, "", "the film kept empty stays a clear");
+        crate::library::refresh(&index, &member);
+        assert_eq!(index.gear_counts().unwrap().body("leica m6"), 1);
+        cleared(&path);
+    }
+
     #[test]
     fn a_roll_the_archive_misses_is_read_from_the_frame() {
         let path = frame("own-roll");
