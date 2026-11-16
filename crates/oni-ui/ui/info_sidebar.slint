@@ -3,7 +3,7 @@
 import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack, WarningBand, KnownField } from "ds/ds.slint";
 import { Library, InfoKind } from "library.slint";
 import { Gear } from "gear_state.slint";
-import { KitView, KitSaveBar } from "kit.slint";
+import { KitView } from "kit.slint";
 import { Kit } from "gear_state.slint";
 
 export component Info inherits Surface {
@@ -15,7 +15,9 @@ export component Info inherits Surface {
             Kit.left();
         }
     }
-    VerticalLayout {
+    // The Kit holds its own head, list and bars.
+    if root.on-kit: KitView { width: parent.width; height: parent.height; }
+    if !root.on-kit: VerticalLayout {
         // `InfoSidebar`'s ScrollView: a tall roll scrolls under the column instead of clipping.
         Scroller {
             vertical-stretch: 1;
@@ -27,8 +29,6 @@ export component Info inherits Surface {
                     padding: Space.m;
                     Label { text: Library.info-empty; tone: Tone.secondary; }
                 }
-                // Nothing picked in the archive: the person's collection of bodies and lenses.
-                if Library.info-kind == InfoKind.collection: KitView { }
                 // What is selected names the column: a roll's or a project's name typed over where it
                 // stands, the ONI Trash's never.
                 if Library.info-kind != InfoKind.none && Library.info-kind != InfoKind.collection: Section {
@@ -134,7 +134,5 @@ export component Info inherits Surface {
                 }
             }
         }
-        // The Kit's changes waiting for Save stay in sight however far the column scrolls.
-        if Library.info-kind == InfoKind.collection && Kit.unsaved > 0: KitSaveBar { }
     }
 }

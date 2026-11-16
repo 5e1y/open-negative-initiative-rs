@@ -40,6 +40,13 @@ export global ToggleStyle {
     out property <color> lit: DS.palette-lcd-ink;
 }
 
+// A box ticked to pick: its side, its corner, and the room around it the hand may press.
+export global CheckStyle {
+    out property <length> size: DS.control-check;
+    out property <length> radius: DS.control-check-radius;
+    out property <length> reach: DS.control-check + 2 * DS.space-xs;
+}
+
 // `DSMedal`: a foil disc, its podium place struck at `figure` of its side; `press` is the scale a pressed one shrinks to.
 export global MedalStyle {
     // An icon's size on a tile and in the filter.

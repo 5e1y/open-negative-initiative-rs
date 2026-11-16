@@ -48,6 +48,8 @@ pub struct KitState {
     picking: bool,
     /// The question asked when the Kit is left with changes not saved.
     asking: bool,
+    /// The pieces of the Kit ticked for an action.
+    picked: Vec<Key>,
     note: String,
     settle: slint::Timer,
 }
@@ -91,8 +93,8 @@ fn service() -> Service {
     Service::new(&site, crate::updates::version())
 }
 
-fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool) -> KitPiece {
-    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default }
+fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool, picked: bool) -> KitPiece {
+    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default, picked }
 }
 
 impl KitState {
@@ -117,7 +119,15 @@ impl KitState {
 
     /// The Kit of one kind as the column shows it, `default` the name its default card holds.
     fn shown(&self, kind: Kind, default: Option<&str>) -> Vec<KitPiece> {
-        self.listed(kind).into_iter().map(|p| piece(p, self.mark(p), words::detail(p), default == Some(p.name.as_str()))).collect()
+        self.listed(kind)
+            .into_iter()
+            .map(|p| piece(p, self.mark(p), words::detail(p), default == Some(p.name.as_str()), self.picked.contains(&p.key())))
+            .collect()
+    }
+
+    /// The pieces of the Kit ticked, bodies first.
+    fn ticked(&self) -> Vec<&Piece> {
+        [Kind::Camera, Kind::Lens].into_iter().flat_map(|kind| self.listed(kind)).filter(|p| self.picked.contains(&p.key())).collect()
     }
 }
 
@@ -148,9 +158,13 @@ impl Ctl {
         let p = me.clone();
         k.on_take(move |i| p.kit_take(i.max(0) as usize));
         let p = me.clone();
-        k.on_remove(move |kind, i| p.kit_remove(kind, i.max(0) as usize));
+        k.on_select(move |kind, i| p.kit_select(kind, i.max(0) as usize));
         let p = me.clone();
-        k.on_prefer(move |kind, i| p.kit_prefer(kind, i.max(0) as usize));
+        k.on_unpick(move || p.kit_unpick());
+        let p = me.clone();
+        k.on_prefer_picked(move || p.kit_prefer_picked());
+        let p = me.clone();
+        k.on_remove_picked(move || p.kit_remove_picked());
         let p = me.clone();
         k.on_save(move || p.kit_save());
         let p = me.clone();
@@ -196,7 +210,7 @@ impl Ctl {
         k.set_account(kit.kept.account.clone().unwrap_or_default().into());
         k.set_bodies(model(kit.shown(Kind::Camera, body.as_deref())));
         k.set_lenses(model(kit.shown(Kind::Lens, lens.as_deref())));
-        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p), false)).collect();
+        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p), false, false)).collect();
         let pairs = found.chunks(2).enumerate().map(|(i, two)| KitPair {
             left: two[0].clone(),
             right: two.get(1).cloned().unwrap_or_default(),
@@ -210,6 +224,13 @@ impl Ctl {
         k.set_picking(kit.picking);
         k.set_unsaved((kit.adding.len() + kit.removing.len()) as i32);
         k.set_asking(kit.asking && kit.token.is_some());
+        let ticked = kit.ticked();
+        let default_of = |p: &Piece| if p.kind == Kind::Camera { body.as_deref() } else { lens.as_deref() } == Some(p.name.as_str());
+        let of = |kind: Kind| ticked.iter().filter(|p| p.kind == kind).count();
+        k.set_picked(ticked.len() as i32);
+        k.set_picked_default(!ticked.is_empty() && ticked.iter().all(|p| default_of(p)));
+        k.set_can_prefer(!ticked.is_empty() && of(Kind::Camera) <= 1 && of(Kind::Lens) <= 1 && ticked.iter().all(|p| kit.mark(p) == KitMark::Kept));
+        k.set_picked_leaving(!ticked.is_empty() && ticked.iter().all(|p| kit.mark(p) == KitMark::Leaving));
         k.set_sending(kit.sending);
         k.set_note(kit.note.as_str().into());
     }
@@ -337,7 +358,7 @@ impl Ctl {
             let kit = &mut s.org.kit;
             let token = kit.token.take();
             kit.kept = Kept::default();
-            (kit.found, kit.adding, kit.removing) = (Vec::new(), Vec::new(), Vec::new());
+            (kit.found, kit.adding, kit.removing, kit.picked) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
             (kit.picking, kit.asking) = (false, false);
             kit.searched.clear();
             kit.note.clear();

@@ -1,0 +1,38 @@
+// A box the hand ticks to pick an item among others: an outline at rest, the accent with a check once on.
+import { Colour, Stroke, CheckStyle, Radius } from "theme.slint";
+import { Icon } from "base.slint";
+import { Icons } from "icons.slint";
+
+export component Check inherits Rectangle {
+    in property <bool> on;
+    // What is picked, which a reader names the box by.
+    in property <string> label;
+    callback toggled();
+    width: CheckStyle.reach;
+    height: CheckStyle.reach;
+    accessible-role: checkbox;
+    accessible-checked: root.on;
+    accessible-label: root.label;
+    accessible-action-default => { root.toggled(); }
+    Rectangle {
+        width: CheckStyle.size;
+        height: CheckStyle.size;
+        border-radius: CheckStyle.radius;
+        border-width: root.on ? 0px : Stroke.line;
+        border-color: touch.has-hover ? Colour.ink-secondary : Colour.ink-tertiary;
+        background: root.on ? Colour.accent : transparent;
+        if root.on: Icon { width: parent.width; height: parent.height; source: Icons.done; ink: Colour.white; }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.toggled(); }
+    }
+}
+
+// Under a card ticked or under the hand: the selection's band, else the hover's, in the card's round.
+export component PickedGround inherits Rectangle {
+    in property <bool> picked;
+    in property <bool> hovered;
+    border-radius: Radius.card;
+    background: root.picked ? Colour.row-selected : root.hovered ? Colour.hover : transparent;
+}

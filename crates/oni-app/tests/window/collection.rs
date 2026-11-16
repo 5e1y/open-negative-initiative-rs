@@ -1,6 +1,7 @@
 //! The Kit against a simulated The Lens DB, driven by clicks and keys as a hand would: a click on the
 //! gallery's empty room offers the service; Connect opens its sign-in in the browser and the Kit shows once it
-//! returns; Add Gear searches in a sheet whose Add puts a piece in the Kit until Save; a removal asks at Save;
+//! returns; Add Gear searches in a sheet whose Add puts a piece in the Kit until Save; pieces ticked are removed
+//! or made the defaults from the bar below, a card's click opens its page; a removal asks at Save;
 //! leaving the Kit with changes not saved asks about them; a default body and lens fill an export where nothing
 //! names one, its roll keeping the body; Disconnect revokes the token and drops the copy.
 
@@ -134,10 +135,18 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(fake.kit_keys().iter().filter(|k| k.kind == Kind::Camera).count(), 2, "the service holds it now: {:?}", fake.kit_keys());
     assert!(kit.get_bodies().iter().all(|p| p.mark == KitMark::Kept));
 
-    // A removal waits for Save, which asks first, as it erases what the person noted of the piece on the service.
-    common::click(&rig, w, common::placed(w, Role::Button, "Remove from your Kit")[0].middle());
+    // A piece ticked, then removed from the bar: the removal waits for Save, which asks first, as it erases what
+    // the person noted of the piece on the service.
+    let tick = |name: &str| {
+        common::click(&rig, w, common::the(w, Role::Checkbox, name).middle());
+        rig.settle();
+    };
+    tick("Canon AE-1 Program");
+    assert_eq!(kit.get_picked(), 1);
+    common::click(&rig, w, common::the(w, Role::Button, "Remove").middle());
     rig.settle();
-    assert!(kit.get_bodies().row_data(0).unwrap().mark == KitMark::Leaving && kit.get_unsaved() == 1);
+    assert!(kit.get_bodies().row_data(0).unwrap().mark == KitMark::Leaving && kit.get_unsaved() == 1 && kit.get_picked() == 0);
+    assert!(opened.borrow().len() == 1, "twin: a tick opens no page");
     common::click(&rig, w, common::the(w, Role::Button, "Save").middle());
     rig.settle();
     let confirm = w.global::<Confirm>();
@@ -165,11 +174,12 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(piece_names(kit.get_bodies()), ["Nikon FM2"]);
     assert_eq!(fake.kit_keys().len(), 2);
 
-    // The FM2 and the FD 50 made the defaults: an export of the roll, which names no body, shows them.
-    for i in 0..2 {
-        common::click(&rig, w, common::placed(w, Role::Button, "Default")[i].middle());
-        rig.settle();
-    }
+    // The FM2 and the FD 50 ticked and made the defaults: an export of the roll, which names no body, shows them.
+    tick("Nikon FM2");
+    tick("Canon FD 50mm f/1.4");
+    println!("shot {}", rig.shot("kit-picked").display());
+    common::click(&rig, w, common::the(w, Role::Button, "Set as Default").middle());
+    rig.settle();
     assert!(kit.get_bodies().row_data(0).unwrap().by_default && kit.get_lenses().row_data(0).unwrap().by_default);
     println!("shot {}", rig.shot("kit-defaults").display());
     let e = w.global::<Exporting>();
@@ -190,10 +200,11 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     // Twin: the defaults let go, the roll's other frame still names the body and no longer the lens.
     common::click(&rig, w, (500.0, 700.0));
     rig.settle();
-    for i in 0..2 {
-        common::click(&rig, w, common::placed(w, Role::Button, "Default")[i].middle());
-        rig.settle();
-    }
+    tick("Nikon FM2");
+    tick("Canon FD 50mm f/1.4");
+    assert!(kit.get_picked_default());
+    common::click(&rig, w, common::the(w, Role::Button, "Set as Default").middle());
+    rig.settle();
     assert!(kit.get_bodies().iter().chain(kit.get_lenses().iter()).all(|p| !p.by_default));
     assert_eq!(kept("B.tif").lens, None);
     lib.invoke_tile_clicked(1, false, false);
@@ -204,12 +215,20 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     e.invoke_cancel();
     rig.settle();
 
+    // A click on a card, off its box, opens its page on the service.
+    common::click(&rig, w, (800.0, 400.0));
+    rig.settle();
+    common::click(&rig, w, common::the(w, Role::Text, "Nikon FM2").middle());
+    rig.settle();
+    assert_eq!(opened.borrow().len(), 2, "the card's page opened");
+    assert_eq!(kit.get_picked(), 0, "twin: the click ticks nothing");
+
     // Disconnect revokes the token and drops the copy; the typed names stay offered.
     kit.invoke_disconnect();
     rig.settle();
     assert_eq!(kit.get_link(), KitLink::Out);
     assert!(!Kept::file_path(&support).exists(), "the copy dropped");
     assert_eq!(names(gear.get_bodies()), ["Pentax MX"]);
-    assert!(opened.borrow().len() == 1, "twin: no page opened but the sign-in");
+    assert!(opened.borrow().len() == 2, "twin: no page opened but the sign-in and the card's");
     let _ = std::fs::remove_dir_all(&root);
 }

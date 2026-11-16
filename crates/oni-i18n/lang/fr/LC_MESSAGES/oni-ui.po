@@ -1572,22 +1572,6 @@ msgid "Default"
 msgstr "Par défaut"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Every export names this camera where its roll names none"
-msgstr "Chaque export indique ce boîtier là où son rouleau n’en indique aucun"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Every export names this lens where its photo names none"
-msgstr "Chaque export indique cet objectif là où sa photo n’en indique aucun"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Keep"
-msgstr "Garder"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Remove from your Kit"
-msgstr "Retirer de votre kit"
-
-#: crates/oni-ui/ui/kit.slint
 msgid "Your Kit, on The Lens DB"
 msgstr "Votre kit, sur The Lens DB"
 
@@ -1616,36 +1600,30 @@ msgid "Sign in to The Lens DB, then authorize ONI. A new account confirms its e-
 msgstr "Connectez-vous à The Lens DB, puis autorisez ONI. Un nouveau compte confirme d'abord son e-mail : ONI attend 15 minutes."
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Disconnect"
-msgstr "Déconnecter"
+msgid "Clear the Selection"
+msgstr "Tout désélectionner"
+
+#: crates/oni-app/src/picking.rs crates/oni-ui/ui/kit.slint
+msgid "{n} selected"
+msgid_plural "{n} selected"
+msgstr[0] "{n} sélectionnée"
+msgstr[1] "{n} sélectionnées"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Signs ONI out of The Lens DB; your Kit stays there"
-msgstr "Déconnecte ONI de The Lens DB ; votre kit y reste"
+msgid "Set as Default"
+msgstr "Définir par défaut"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "My Kit"
-msgstr "Mon Kit"
+msgid "Every export names it where its roll or its photo names none; one body and one lens at most"
+msgstr "Chaque export l’indique là où son rouleau ou sa photo n’en indique aucun ; un boîtier et un objectif au plus"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "{}'s gear on The Lens DB"
-msgstr "Le matériel de {} sur The Lens DB"
+msgid "Keep"
+msgstr "Garder"
 
-#: crates/oni-ui/ui/kit.slint
-msgid "Add Gear"
-msgstr "Ajouter du matériel"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Bodies"
-msgstr "Boîtiers"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Lenses"
-msgstr "Objectifs"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Catalogue provided by The Lens DB"
-msgstr "Catalogue fourni par The Lens DB"
+#: crates/oni-app/src/app/organising/kit/changes.rs crates/oni-ui/ui/kit.slint
+msgid "Remove"
+msgstr "Retirer"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "{n} change not saved"
@@ -1664,6 +1642,34 @@ msgstr "Enregistrement…"
 #: crates/oni-app/src/app/export_card/kept.rs crates/oni-ui/ui/kit.slint crates/oni-ui/ui/presets.slint
 msgid "Save"
 msgstr "Enregistrer"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "My Kit"
+msgstr "Mon Kit"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Disconnect"
+msgstr "Déconnecter"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Signs ONI out of The Lens DB; your Kit stays there"
+msgstr "Déconnecte ONI de The Lens DB ; votre kit y reste"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Add Gear"
+msgstr "Ajouter du matériel"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Catalogue provided by"
+msgstr "Catalogue fourni par"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies"
+msgstr "Boîtiers"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Lenses"
+msgstr "Objectifs"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Add to Your Kit"
@@ -4188,10 +4194,6 @@ msgid "Remove From Your Kit?"
 msgstr "Retirer de votre kit ?"
 
 #: crates/oni-app/src/app/organising/kit/changes.rs
-msgid "Remove"
-msgstr "Retirer"
-
-#: crates/oni-app/src/app/organising/kit/changes.rs
 msgid "The piece leaves your Kit on The Lens DB, with the condition, price, serial number and notes kept there for it."
 msgid_plural "{n} pieces leave your Kit on The Lens DB, with the condition, price, serial number and notes kept there for them."
 msgstr[0] "La pièce quitte votre kit sur The Lens DB, avec l’état, le prix, le numéro de série et les notes gardés là-bas pour elle."
@@ -5172,12 +5174,6 @@ msgstr "{verb} ({count} photos)"
 #: crates/oni-app/src/picking.rs
 msgid "{photos} in the ONI Trash"
 msgstr "{photos} dans la Corbeille ONI"
-
-#: crates/oni-app/src/picking.rs
-msgid "{n} selected"
-msgid_plural "{n} selected"
-msgstr[0] "{n} sélectionnée"
-msgstr[1] "{n} sélectionnées"
 
 #: crates/oni-app/src/platform.rs
 msgid "Show in Finder"

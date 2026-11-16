@@ -10700,5 +10700,12 @@
     "title": "My Kit's cards in one short row",
     "status": "done",
     "detail": "The owner's call of 2026-11-16: a Kit card is one row, its name over its detail (or its state, not saved yet or leaving) at the left, then Default as a toggle, the key to the service's page and the trash last. Check: the window check collection, which toggles both defaults by click."
+  },
+  {
+    "id": 2081,
+    "type": "design",
+    "title": "My Kit as a list ticked then acted on: clickable cards, a selection bar, sticky kind titles, a quieter head",
+    "status": "done",
+    "detail": "The owner's review of 2026-11-16. A Kit card is one row: a box to tick, its name in the label face on one line and its detail or state under it, a Default badge when it is one; a click off the box opens its page on The Lens DB, so the arrow went. Ticked pieces raise a bar under the list: how many, Set as Default (one body and one lens at most, all saved; again on the defaults lets them go) and Remove (Keep when all are leaving), and a key that clears the ticks. The head stays still while the list scrolls under it: My Kit with Disconnect beside it, Add Gear, then Catalogue provided by and The Lens DB's mark; the account's line and the note at the foot went. Bodies and Lenses hold their title at the top while their pieces pass. The cards' rows hold one line each, so no wrapped name ever outgrows the height its layout gave it (a long name spilled over the next block). The design system gains Check, a box to tick, and PickedGround, a card's selection and hover. Check: the window check collection ticks, removes, makes and lets go the defaults through the bar, and opens a card's page."
   }
 ]
