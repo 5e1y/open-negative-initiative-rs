@@ -1,10 +1,14 @@
 //! The simulated catalogue: real gear under invented ids, with the real one's gaps (a brand, a year or
-//! an aperture missing) kept on purpose so ONI meets them before the service opens.
+//! an aperture missing) kept on purpose so ONI meets them before the service opens. A file may replace it.
 
-use crate::piece::{Aperture, Key, Kind, Piece, Span};
+use crate::piece::{Aperture, Kind, Piece, Span};
+use std::path::Path;
 
-/// The account's Kit on every start: one body and its lens.
-pub const STARTING_KIT: [Key; 2] = [Key { kind: Kind::Camera, id: 1101 }, Key { kind: Kind::Lens, id: 2101 }];
+/// A catalogue file: a JSON list of pieces in the contract's shape.
+pub fn read(path: &Path) -> Result<Vec<Piece>, String> {
+    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    serde_json::from_slice(&bytes).map_err(|e| e.to_string())
+}
 
 /// A body: id, name, brand, model, mount, year.
 type Body = (u64, &'static str, Option<&'static str>, &'static str, Option<&'static str>, Option<i32>);

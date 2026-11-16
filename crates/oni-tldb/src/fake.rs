@@ -1,18 +1,24 @@
-//! A simulated The Lens DB on a loopback port, as its contract states it: its sign-in page, token,
-//! revocation, search, Kit and changes, over a small invented catalogue. The checks and `ONI_TLDB=fake` use it.
+//! A simulated The Lens DB on a loopback port, as its contract states it: its sign-in and sign-up pages,
+//! token, revocation, search, Kit and changes. The checks and `ONI_TLDB=fake` use it.
 
+mod accounts;
 mod catalogue;
 mod http;
+mod look;
 mod pages;
 mod partner;
 
 use crate::api::{Client, Service};
-use crate::piece::{Key, Piece};
+use crate::piece::{Key, Kind, Piece};
+use accounts::Account;
 use http::{Request, Response};
 use std::collections::{HashMap, VecDeque};
 use std::net::{TcpListener, TcpStream};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
+
+pub use catalogue::read as read_catalogue;
 
 /// A running simulated service; it stops with the process.
 pub struct Fake {
@@ -21,52 +27,72 @@ pub struct Fake {
     state: Arc<Mutex<State>>,
 }
 
-/// The one account, its Kit shared by every token it was given.
+/// How a simulated service starts.
+#[derive(Default)]
+pub struct Setup {
+    /// 0 takes a free port.
+    pub port: u16,
+    /// The pieces it knows, else a small catalogue of its own.
+    pub catalogue: Option<Vec<Piece>>,
+    /// The file its accounts, Kits and tokens live in from one run to the next; none keeps them in memory.
+    pub kept: Option<PathBuf>,
+}
+
 struct State {
     site: String,
     catalogue: Vec<Piece>,
-    kit: Vec<Key>,
+    accounts: Vec<Account>,
     codes: HashMap<String, Code>,
-    /// Each live token and the instants of its calls inside the rate's window.
-    tokens: HashMap<String, VecDeque<Instant>>,
+    /// Each live token: its account and the instants of its calls inside the rate's window.
+    tokens: HashMap<String, Live>,
+    /// A browser signed in on the pages, waiting on the consent page: its account.
+    grants: HashMap<String, usize>,
     issued: u64,
     down: bool,
     calls: usize,
     /// So many calls a token may make in so long: the contract's 60 a minute.
     rate: (usize, Duration),
+    kept: Option<PathBuf>,
+}
+
+struct Live {
+    account: usize,
+    recent: VecDeque<Instant>,
 }
 
 /// An authorisation code waiting for its exchange.
 struct Code {
+    account: usize,
     challenge: String,
     redirect: String,
     issued: Instant,
     used: bool,
 }
 
-/// The account's name, the same on every start.
-const ACCOUNT: &str = "Camille";
-
-/// Starts on a free port.
+/// Starts on a free port, over its own catalogue, keeping nothing.
 pub fn start() -> Fake {
-    start_on(0).expect("a loopback port for the simulated The Lens DB")
+    start_with(Setup::default()).expect("a loopback port for the simulated The Lens DB")
 }
 
-/// Starts on `port`, so a person's browser finds it at the same address each time.
-pub fn start_on(port: u16) -> std::io::Result<Fake> {
-    let listener = TcpListener::bind(("127.0.0.1", port))?;
+pub fn start_with(setup: Setup) -> std::io::Result<Fake> {
+    let listener = TcpListener::bind(("127.0.0.1", setup.port))?;
     let site = format!("http://127.0.0.1:{}", listener.local_addr()?.port());
-    let state = Arc::new(Mutex::new(State {
-        catalogue: catalogue::pieces(&site),
+    let catalogue = setup.catalogue.unwrap_or_else(|| catalogue::pieces(&site));
+    let mut state = State {
+        accounts: vec![accounts::first(&catalogue)],
+        catalogue,
         site: site.clone(),
-        kit: catalogue::STARTING_KIT.to_vec(),
         codes: HashMap::new(),
         tokens: HashMap::new(),
+        grants: HashMap::new(),
         issued: 0,
         down: false,
         calls: 0,
         rate: (60, Duration::from_secs(60)),
-    }));
+        kept: setup.kept,
+    };
+    accounts::load(&mut state);
+    let state = Arc::new(Mutex::new(state));
     let shared = state.clone();
     std::thread::spawn(move || {
         for stream in listener.incoming().flatten() {
@@ -83,9 +109,9 @@ impl Fake {
         Service::new(&self.site, env!("CARGO_PKG_VERSION"))
     }
 
-    /// A fresh token of the account, as a finished sign-in would give.
+    /// A fresh token of the first account, as a finished sign-in would give.
     pub fn token(&self) -> String {
-        lock(&self.state).issue_token()
+        lock(&self.state).issue_token(0)
     }
 
     /// A signed-in client, without the browser's round trip.
@@ -93,17 +119,19 @@ impl Fake {
         Client { service: self.service(), token: self.token() }
     }
 
-    /// The authorisation page's choice made without a browser: the address the browser would be sent to,
-    /// carrying a fresh code, or `error=access_denied` when `refuse`. Panics on an address the page refuses.
+    /// The consent page's choice made for the first account without a browser: the address the browser would
+    /// be sent to, carrying a fresh code, or `error=access_denied` when `refuse`. Panics on a refused address.
     pub fn approve(&self, authorize_url: &str, refuse: bool) -> String {
         let url = url::Url::parse(authorize_url).expect("an authorisation address");
         let query: Vec<(String, String)> = url.query_pairs().into_owned().collect();
-        pages::decide(&mut lock(&self.state), &query, refuse).unwrap_or_else(|reason| panic!("the authorisation page refuses: {reason}"))
+        pages::decide(&mut lock(&self.state), &query, 0, refuse).unwrap_or_else(|reason| panic!("the authorisation page refuses: {reason}"))
     }
 
     /// Every token ends, as when the person changes their password.
     pub fn sign_out_everyone(&self) {
-        lock(&self.state).tokens.clear();
+        let mut state = lock(&self.state);
+        state.tokens.clear();
+        state.keep();
     }
 
     /// While down, every address answers 503.
@@ -116,9 +144,9 @@ impl Fake {
         lock(&self.state).calls
     }
 
-    /// The account's Kit, oldest first.
+    /// The first account's Kit, oldest first.
     pub fn kit_keys(&self) -> Vec<Key> {
-        lock(&self.state).kit.clone()
+        lock(&self.state).accounts[0].kit.clone()
     }
 
     /// So many calls a token may make in `window` before a 429; the contract's is 60 in a minute.
@@ -128,12 +156,27 @@ impl Fake {
 }
 
 impl State {
-    fn issue_token(&mut self) -> String {
+    fn issue_token(&mut self, account: usize) -> String {
         self.issued += 1;
         let token = format!("tldb_fake_{}", self.issued);
-        self.tokens.insert(token.clone(), VecDeque::new());
+        self.tokens.insert(token.clone(), Live { account, recent: VecDeque::new() });
+        self.keep();
         token
     }
+
+    /// Writes the accounts and tokens to the kept file, when there is one.
+    fn keep(&self) {
+        accounts::save(self);
+    }
+
+    fn knows(&self, key: &Key) -> bool {
+        self.catalogue.iter().any(|p| p.key() == *key)
+    }
+}
+
+/// The first body and the first lens of a catalogue: the first account's Kit when it is created.
+fn starting_kit(catalogue: &[Piece]) -> Vec<Key> {
+    [Kind::Camera, Kind::Lens].iter().filter_map(|&kind| catalogue.iter().find(|p| p.kind == kind).map(Piece::key)).collect()
 }
 
 /// A thread that panicked under the lock left a state still worth serving.
@@ -161,10 +204,14 @@ fn route(state: &Mutex<State>, request: &Request) -> Response {
     }
     match (request.method.as_str(), request.path.as_str()) {
         ("GET", "/oauth/authorize") => pages::authorize(request),
+        ("POST", "/oauth/sign-in") => pages::sign_in(&mut state, request),
+        ("POST", "/oauth/sign-up") => pages::sign_up(&mut state, request),
+        ("GET", "/oauth/confirm") => pages::confirm(&mut state, request),
         ("GET", "/oauth/approve") => pages::approve(&mut state, request),
         ("POST", "/api/oauth/token") => partner::token(&mut state, request),
         ("POST", "/api/oauth/revoke") => partner::revoke(&mut state, request),
         ("GET", "/submit") => pages::submit(),
+        ("GET", "/") => pages::home(&state),
         ("GET", path) => pages::piece(&state, path),
         _ => Response::error(404, "no such address"),
     }

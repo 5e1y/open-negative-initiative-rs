@@ -59,8 +59,25 @@ fn faked() -> bool {
     std::env::var_os("ONI_TLDB").is_some()
 }
 
+static FAKE: OnceLock<oni_tldb::fake::Fake> = OnceLock::new();
+
+/// The simulated service keeps its accounts in the support folder, and takes `tldb-catalogue.json` there
+/// as its catalogue when present.
+fn start_fake(support: &std::path::Path) {
+    if std::env::var("ONI_TLDB").as_deref() != Ok("fake") {
+        return;
+    }
+    FAKE.get_or_init(|| {
+        let file = support.join("tldb-catalogue.json");
+        let catalogue = file.exists().then(|| oni_tldb::fake::read_catalogue(&file)).and_then(|read| {
+            read.map_err(|e| crate::timing::line(&format!("tldb: the simulated catalogue is unreadable: {e}"))).ok()
+        });
+        let setup = oni_tldb::fake::Setup { catalogue, kept: Some(support.join("tldb-fake.json")), ..Default::default() };
+        oni_tldb::fake::start_with(setup).expect("a loopback port for the simulated The Lens DB")
+    });
+}
+
 fn service() -> Service {
-    static FAKE: OnceLock<oni_tldb::fake::Fake> = OnceLock::new();
     let site = match std::env::var("ONI_TLDB") {
         Ok(v) if v == "fake" => FAKE.get_or_init(oni_tldb::fake::start).site.clone(),
         Ok(v) if v.starts_with("http://127.0.0.1:") => v,
@@ -82,6 +99,7 @@ impl Ctl {
         {
             let mut s = me.state.borrow_mut();
             let support = s.support.clone();
+            start_fake(&support);
             s.org.kit.kept = Kept::load(&support);
             s.org.kit.token = vault::read(&support, faked());
         }

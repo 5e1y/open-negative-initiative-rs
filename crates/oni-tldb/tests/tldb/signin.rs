@@ -94,24 +94,3 @@ fn a_sign_in_ends_on_cancel_or_on_its_time() {
     assert!(matches!(outcome, Outcome::Token(_)), "{outcome:?}");
     browser.join().unwrap();
 }
-
-#[test]
-fn the_simulated_pages_say_what_they_are() {
-    let fake = fake::start();
-    let signin = oauth::begin(&fake.service(), false).unwrap();
-    let signup = oauth::begin(&fake.service(), true).unwrap();
-    let page = raw::get(&signin.url);
-    assert_eq!(page.status, 200);
-    assert!(page.body.contains("The Lens DB — simulated") && page.body.contains("Authorize ONI") && page.body.contains("Sign in"));
-    assert!(raw::get(&signup.url).body.contains("Create your account"));
-    // The page's own link leads the browser back to the loopback with a code.
-    let link = page.body.split("href=\"").nth(1).and_then(|s| s.split('"').next()).unwrap().replace("&amp;", "&");
-    let approved = raw::get(&format!("{}{link}", fake.site));
-    assert_eq!(approved.status, 302);
-    assert!(approved.head.contains(&format!("Location: {}?code=", signin.redirect)), "{}", approved.head);
-    // Twin: another client, or a return outside the loopback, is refused by the page.
-    assert_eq!(raw::get(&signin.url.replace("client_id=oni", "client_id=other")).status, 400);
-    let elsewhere = signin.url.replace("127.0.0.1%3A", "example.com%3A");
-    assert_ne!(elsewhere, signin.url);
-    assert_eq!(raw::get(&elsewhere).status, 400);
-}

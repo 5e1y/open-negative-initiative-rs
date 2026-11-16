@@ -71,7 +71,7 @@ pub(crate) fn challenge(verifier: &str) -> String {
     URL_SAFE_NO_PAD.encode(ring::digest::digest(&ring::digest::SHA256, verifier.as_bytes()))
 }
 
-fn random(bytes: usize) -> std::io::Result<String> {
+pub(crate) fn random(bytes: usize) -> std::io::Result<String> {
     use ring::rand::SecureRandom;
     let mut buffer = vec![0u8; bytes];
     ring::rand::SystemRandom::new().fill(&mut buffer).map_err(|_| std::io::Error::other("no system randomness"))?;

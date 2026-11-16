@@ -3,7 +3,7 @@
 
 use super::catalogue::fold;
 use super::http::{Request, Response};
-use super::{ACCOUNT, State};
+use super::State;
 use crate::piece::{Key, Kind};
 use serde::Deserialize;
 use std::time::{Duration, Instant};
@@ -29,13 +29,15 @@ pub fn token(state: &mut State, request: &Request) -> Response {
         return Response::error(400, "invalid_grant");
     }
     code.used = true;
-    let token = state.issue_token();
+    let account = code.account;
+    let token = state.issue_token(account);
     Response::json(200, &serde_json::json!({ "access_token": token, "token_type": "Bearer", "scope": "kit" }))
 }
 
 pub fn revoke(state: &mut State, request: &Request) -> Response {
     if let Some((_, token)) = request.form().into_iter().find(|(n, _)| n == "token") {
         state.tokens.remove(&token);
+        state.keep();
     }
     Response::empty(200)
 }
@@ -46,7 +48,8 @@ pub fn api(state: &mut State, request: &Request, path: &str) -> Response {
     }
     let token = request.header("authorization").and_then(|v| v.strip_prefix("Bearer ")).unwrap_or_default();
     let (most, window) = state.rate;
-    let Some(recent) = state.tokens.get_mut(token) else { return Response::error(401, "invalid_token") };
+    let Some(live) = state.tokens.get_mut(token) else { return Response::error(401, "invalid_token") };
+    let (account, recent) = (live.account, &mut live.recent);
     let now = Instant::now();
     while recent.front().is_some_and(|&at| now.duration_since(at) >= window) {
         recent.pop_front();
@@ -63,13 +66,13 @@ pub fn api(state: &mut State, request: &Request, path: &str) -> Response {
     match (request.method.as_str(), path) {
         ("GET", "/search") => search(state, request),
         ("GET", "/kit") => {
-            let etag = etag(&state.kit);
+            let etag = etag(&state.accounts[account].kit);
             if request.header("if-none-match") == Some(etag.as_str()) {
                 return Response::empty(304).with("ETag", etag);
             }
-            Response::json(200, &kit(state, None)).with("ETag", etag)
+            Response::json(200, &kit(state, account, None)).with("ETag", etag)
         }
-        ("POST", "/kit/changes") => change(state, request),
+        ("POST", "/kit/changes") => change(state, account, request),
         _ => Response::error(404, "no such call"),
     }
 }
@@ -114,34 +117,35 @@ struct Changes {
     remove: Vec<Key>,
 }
 
-fn change(state: &mut State, request: &Request) -> Response {
+fn change(state: &mut State, account: usize, request: &Request) -> Response {
     let Ok(changes) = serde_json::from_slice::<Changes>(&request.body) else { return Response::error(400, "malformed change") };
     if changes.add.len() + changes.remove.len() > CHANGES {
         return Response::error(400, "200 entries at most");
     }
-    let known = |key: &Key| state.catalogue.iter().any(|p| p.key() == *key);
     let mut not_found = Vec::new();
     for key in &changes.remove {
-        if known(key) {
-            state.kit.retain(|k| k != key);
+        if state.knows(key) {
+            state.accounts[account].kit.retain(|k| k != key);
         } else {
             not_found.push(*key);
         }
     }
     for key in &changes.add {
-        if !known(key) {
+        if !state.knows(key) {
             not_found.push(*key);
-        } else if !state.kit.contains(key) {
-            state.kit.push(*key);
+        } else if !state.accounts[account].kit.contains(key) {
+            state.accounts[account].kit.push(*key);
         }
     }
-    Response::json(200, &kit(state, Some(not_found))).with("ETag", etag(&state.kit))
+    state.keep();
+    Response::json(200, &kit(state, account, Some(not_found))).with("ETag", etag(&state.accounts[account].kit))
 }
 
 /// The Kit as the service answers it, oldest first.
-fn kit(state: &State, not_found: Option<Vec<Key>>) -> serde_json::Value {
-    let items: Vec<_> = state.kit.iter().filter_map(|key| state.catalogue.iter().find(|p| p.key() == *key)).collect();
-    let mut answer = serde_json::json!({ "account": { "displayName": ACCOUNT }, "items": items });
+fn kit(state: &State, account: usize, not_found: Option<Vec<Key>>) -> serde_json::Value {
+    let account = &state.accounts[account];
+    let items: Vec<_> = account.kit.iter().filter_map(|key| state.catalogue.iter().find(|p| p.key() == *key)).collect();
+    let mut answer = serde_json::json!({ "account": { "displayName": account.name }, "items": items });
     if let Some(not_found) = not_found {
         answer["notFound"] = serde_json::json!(not_found);
     }
