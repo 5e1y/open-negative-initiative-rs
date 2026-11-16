@@ -50,13 +50,13 @@ const STYLE: &str = r#"
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;display:grid;place-items:center;padding:32px 16px;background:var(--ground);color:var(--ink);
 font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-main{max-width:420px;text-align:center;margin-top:-6vh}
-.mark{position:relative;width:128px;height:128px;margin:0 auto 26px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+main{max-width:420px;text-align:center;margin-top:-6vh;animation:fade .2s ease-out both}
+.mark{position:relative;width:128px;height:128px;margin:0 auto 26px}
 .oni{display:block;width:22px;height:22px;background:var(--oni) center/contain no-repeat}
 .mark .oni{width:128px;height:128px;filter:drop-shadow(0 14px 22px rgba(242,106,12,.28))}
 .no .mark .oni{filter:drop-shadow(0 10px 18px rgba(0,0,0,.14))}
 .badge{position:absolute;right:2px;bottom:4px;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;
-color:#fff;background:var(--ok);border:4px solid var(--ring);animation:pop .45s .35s cubic-bezier(.3,1.6,.5,1) both}
+color:#fff;background:var(--ok);border:4px solid var(--ring)}
 .no .badge{background:var(--no)}
 svg{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .badge svg{width:20px;height:20px}
@@ -69,8 +69,7 @@ border-radius:999px;background:var(--pill);font-size:12.5px;font-weight:600;colo
 .pair span:first-child{color:var(--ink);letter-spacing:.02em}
 .pair i{display:grid;place-items:center;color:var(--soft)}.pair i svg{width:14px;height:14px;stroke-width:2.4}
 .ok .pair i{color:var(--ok)}
-@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.96)}}
-@keyframes pop{from{opacity:0;transform:scale(.4)}}
+@keyframes fade{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 "#;
 

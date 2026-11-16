@@ -49,7 +49,15 @@ impl State {
     /// The roll the gallery stands on. A folder is one: its marker, else the roll every member's
     /// sidecar names, else a roll its first field written makes, named after the folder.
     pub(super) fn roll(&self) -> Option<Roll> {
-        let group = self.shown_band()?;
+        Self::roll_of(self.shown_band()?)
+    }
+
+    /// The roll of `path`'s folder in the archive, as `roll` reads the gallery's.
+    pub(super) fn roll_at(&self, path: &str) -> Option<Roll> {
+        Self::roll_of(self.archive.as_ref()?.band(&oni_library::paths::parent(path))?)
+    }
+
+    fn roll_of(group: library::Group) -> Option<Roll> {
         let paths: Vec<String> = group.entries.iter().map(|e| e.path.clone()).collect();
         let first = group.entries.first().cloned();
         let folder = group.folder.clone();

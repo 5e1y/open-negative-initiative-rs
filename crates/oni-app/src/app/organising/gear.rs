@@ -47,7 +47,7 @@ impl Ctl {
         }
     }
 
-    fn keep_gear(&self) {
+    pub(super) fn keep_gear(&self) {
         let written = {
             let s = self.state.borrow();
             s.org.collection.save(&s.support)

@@ -31,7 +31,7 @@ fn sign_in(fake: &Fake, oauth: &str, email: &str, password: &str) -> String {
 
 /// Authorises ONI on a consent page: the address the browser is sent back to.
 fn allow(fake: &Fake, consent: &Answer) -> String {
-    assert!(consent.body.contains("Authorize ONI"), "{}", consent.body);
+    assert!(consent.body.contains("id=\"allow\""), "{}", consent.body);
     let allowed = raw::get(&format!("{}{}", fake.site, after(consent, "id=\"allow\" href=\"")));
     assert_eq!(allowed.status, 302, "{}", allowed.body);
     allowed.head.lines().find_map(|l| l.strip_prefix("Location: ")).expect("a redirect").to_string()
@@ -61,7 +61,7 @@ fn the_pages_sign_in_then_ask_before_authorising() {
     assert!(page.body.contains("Simulated.") && page.body.contains("<h1>Sign in</h1>"), "{}", page.body);
     let oauth = after(&page, "name=\"oauth\" value=\"");
     let wrong = post(&fake, "/oauth/sign-in", &[("oauth", &oauth), ("email", "camille@example.com"), ("password", "wrong")]);
-    assert!(wrong.body.contains("does not match") && !wrong.body.contains("Authorize ONI"), "twin: a wrong password reaches no consent");
+    assert!(wrong.body.contains("does not match") && !wrong.body.contains("id=\"allow\""), "twin: a wrong password reaches no consent");
     let back = sign_in(&fake, &oauth, " Camille@Example.com ", "film");
     assert!(back.starts_with(&format!("{}?code=", pending.redirect)), "{back}");
     let client = Client { service: fake.service(), token: token(&fake, pending, back) };
@@ -99,7 +99,7 @@ fn a_new_account_confirms_its_e_mail_and_keeps_its_own_kit_from_run_to_run() {
     assert!(mail.body.contains("Check your e-mail"), "{}", mail.body);
     assert!(post(&fake, "/oauth/sign-up", &fields).body.contains("already uses"), "one account an e-mail");
     let early = post(&fake, "/oauth/sign-in", &[("oauth", &oauth), ("email", "lou@example.com"), ("password", "x")]);
-    assert!(early.body.contains("Confirm your e-mail before") && !early.body.contains("Authorize ONI"), "twin: no consent before the e-mail");
+    assert!(early.body.contains("Confirm your e-mail before") && !early.body.contains("id=\"allow\""), "twin: no consent before the e-mail");
     let confirmed = raw::get(&format!("{}{}", fake.site, after(&mail, "id=\"confirm\" href=\"")));
     assert!(confirmed.body.contains("Your e-mail is confirmed"), "{}", confirmed.body);
     let back = sign_in(&fake, &after(&confirmed, "name=\"oauth\" value=\""), "lou@example.com", "x");

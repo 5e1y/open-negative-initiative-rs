@@ -53,7 +53,7 @@ pub(crate) fn entering_the_export_reads_no_scan_on_the_interface_thread() {
     assert!(export_card::lines(&shell.window).iter().all(|l| l.camera == "NIKON CORPORATION NIKON Z f"), "the lines show what landed");
     // Twin: read on this thread, as entering did, the same lines are there before any landing.
     let started = std::time::Instant::now();
-    let read: Vec<String> = targets.iter().map(|t| oni_app::export::opening_line(&t.path, None, "", "").row.metadata.camera).collect();
+    let read: Vec<String> = targets.iter().map(|t| oni_app::export::opening_line(&t.path, None, "", "", &Default::default()).row.metadata.camera).collect();
     println!("the same lines read on this thread: {:.1} ms", started.elapsed().as_secs_f64() * 1e3);
     assert_eq!(read, landed);
 

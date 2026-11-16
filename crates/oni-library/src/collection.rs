@@ -21,6 +21,11 @@ pub struct Collection {
     /// Whether the bodies a hand gave the rolls were taken in, once, so one forgotten never comes back.
     #[serde(default)]
     pub seeded: bool,
+    /// The body and the lens every export names where nothing else does, by their Kit name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_body: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_lens: Option<String>,
 }
 
 impl Collection {
@@ -82,6 +87,24 @@ impl Collection {
         list.len() != before
     }
 
+    pub fn default_of(&self, gear: Gear) -> Option<&str> {
+        match gear {
+            Gear::Body => self.default_body.as_deref(),
+            Gear::Lens => self.default_lens.as_deref(),
+        }
+    }
+
+    /// `name` made the default of its kind, or none made it on the default named again. Whether it is now.
+    pub fn toggle_default(&mut self, gear: Gear, name: &str) -> bool {
+        let slot = match gear {
+            Gear::Body => &mut self.default_body,
+            Gear::Lens => &mut self.default_lens,
+        };
+        let again = slot.as_deref().is_some_and(|d| d.to_lowercase() == name.trim().to_lowercase());
+        *slot = (!again).then(|| name.trim().to_string());
+        !again
+    }
+
     /// The piece so named gone from its list, its case aside. Whether it was there.
     pub fn forget(&mut self, gear: Gear, name: &str) -> bool {
         let list = self.list_mut(gear);
@@ -135,6 +158,20 @@ mod tests {
     }
 
     #[test]
+    fn a_default_is_one_piece_of_its_kind_and_named_again_is_none() {
+        let mut c = Collection::default();
+        assert!(c.toggle_default(Gear::Body, "Nikon FM2"));
+        assert!(c.toggle_default(Gear::Body, "Leica M6"));
+        assert_eq!((c.default_of(Gear::Body), c.default_of(Gear::Lens)), (Some("Leica M6"), None), "one body, the lens apart");
+        assert!(!c.toggle_default(Gear::Body, "leica m6"));
+        assert_eq!(c.default_of(Gear::Body), None, "the default named again is no default");
+        // Twin: a lens named like the body becomes the lens's default, the body's untouched.
+        c.toggle_default(Gear::Body, "Leica M6");
+        assert!(c.toggle_default(Gear::Lens, "Leica M6"));
+        assert_eq!(c.default_of(Gear::Body), Some("Leica M6"));
+    }
+
+    #[test]
     fn the_collection_reads_back_as_written_and_an_absent_file_is_empty() {
         let support = std::env::temp_dir().join(format!("oni-collection-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&support);
@@ -142,6 +179,7 @@ mod tests {
         let mut c = Collection::default();
         c.note(Gear::Body, "Leica M6");
         c.note(Gear::Lens, "Summicron 50");
+        c.toggle_default(Gear::Lens, "Summicron 50");
         c.save(&support).unwrap();
         assert_eq!(Collection::load(&support), c);
         // Twin: a file another build wrote without lenses still reads, its bodies kept.

@@ -1,7 +1,7 @@
 // Where nothing is picked in the archive: the person's Kit, their bodies and lenses kept on The Lens DB.
 // Signed out it offers the service; signed in it lists the Kit, searches the catalogue in a sheet over the
 // window, and holds every change until Save sends them in one call.
-import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Ground, Space, Icons, Colour, TldbMark, Sheet, SheetHeader, Scroller, AskSheet, AskRole, KitStyle, Divider } from "ds/ds.slint";
+import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Ground, Space, Icons, TldbMark, Sheet, SheetHeader, Scroller, AskSheet, AskRole, KitStyle, Divider } from "ds/ds.slint";
 import { GearKind, Kit, KitLink, KitPiece, KitMark } from "gear_state.slint";
 
 // Two answers of the search side by side, `at` the left one's place among them.
@@ -11,73 +11,94 @@ export global KitSearch {
     in property <[KitPair]> pairs;
 }
 
-// One piece of the catalogue, alike in the Kit and in the search: its name, what tells it from its kin, its
-// page on the service; in the Kit a quiet removal in its corner, in the search its Add.
+// One piece of the catalogue, alike in the Kit and in the search. `found`, a search's answer: its name, what
+// tells it from its kin, its page and Add. In the Kit, short: the same, the default it may be and a quiet
+// removal in its corner.
 export component PieceCard inherits Surface {
     in property <KitPiece> piece;
+    in property <GearKind> kind;
     in property <bool> found;
     callback taken();
     callback removed();
+    callback preferred();
     property <bool> leaving: root.piece.mark == KitMark.leaving;
     ground: Ground.well;
     rounded: true;
     VerticalLayout {
-        padding: Space.m;
-        spacing: Space.xs;
-        HorizontalLayout {
-            spacing: Space.s;
-            Label {
-                text: root.piece.name;
-                role: TextRole.section;
-                wrap: word-wrap;
-                horizontal-stretch: 1;
-                tone: root.leaving ? Tone.tertiary : Tone.primary;
+        if root.found: VerticalLayout {
+            padding: Space.m;
+            spacing: Space.xs;
+            Label { text: root.piece.name; role: TextRole.section; wrap: word-wrap; }
+            if root.piece.detail != "": Label { text: root.piece.detail; role: TextRole.note; wrap: word-wrap; }
+            Rectangle { vertical-stretch: 1; min-height: Space.xs; }
+            HorizontalLayout {
+                spacing: Space.s;
+                Button { size: ButtonSize.mini; text: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
+                Rectangle { horizontal-stretch: 1; }
+                if root.piece.mark == KitMark.free: Button { size: ButtonSize.mini; text: @tr("Add"); icon: Icons.zoom-in; has-icon: true; clicked => { root.taken(); } }
+                if root.piece.mark == KitMark.added: Button {
+                    size: ButtonSize.mini;
+                    on: true;
+                    text: @tr("Added");
+                    icon: Icons.done;
+                    has-icon: true;
+                    help: @tr("Takes it out before saving");
+                    clicked => { root.taken(); }
+                }
+                if root.piece.mark == KitMark.kept || root.leaving: Label {
+                    text: root.leaving ? @tr("Leaving your Kit") : @tr("In your Kit");
+                    role: TextRole.caption;
+                    tone: Tone.tertiary;
+                    vertical-alignment: center;
+                }
             }
-            if !root.found && !root.leaving: VerticalLayout {
-                alignment: start;
-                Button {
-                    kind: ButtonKind.ghost;
+        }
+        if !root.found: VerticalLayout {
+            padding: Space.s;
+            padding-left: Space.m;
+            spacing: Space.xxs;
+            HorizontalLayout {
+                spacing: Space.s;
+                Label {
+                    text: root.piece.name;
+                    role: TextRole.section;
+                    wrap: word-wrap;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                    tone: root.leaving ? Tone.tertiary : Tone.primary;
+                }
+                if root.piece.mark == KitMark.kept: Button {
+                    size: ButtonSize.mini;
+                    on: root.piece.by-default;
+                    text: root.piece.by-default ? @tr("Default") : @tr("Set as Default");
+                    widest: @tr("Set as Default");
+                    icon: Icons.done;
+                    has-icon: root.piece.by-default;
+                    help: root.kind == GearKind.body ? @tr("Every export names this camera where its roll names none") : @tr("Every export names this lens where its photo names none");
+                    clicked => { root.preferred(); }
+                }
+                if root.leaving: Button { size: ButtonSize.mini; text: @tr("Keep"); clicked => { root.removed(); } }
+                if !root.leaving: Button {
+                    kind: ButtonKind.destructive;
                     size: ButtonSize.mini;
                     square: true;
                     icon: Icons.remove;
                     has-icon: true;
-                    glyph-ink: Colour.ink-secondary;
                     help: root.piece.mark == KitMark.added ? @tr("Takes it out before saving") : @tr("Remove from your Kit");
                     clicked => { root.removed(); }
                 }
             }
-        }
-        if root.piece.detail != "": Label { text: root.piece.detail; role: TextRole.note; wrap: word-wrap; }
-        if !root.found && root.piece.mark == KitMark.added: Label { text: @tr("New, not saved yet"); role: TextRole.note; tone: Tone.caution; }
-        if !root.found && root.leaving: Label { text: @tr("Leaves your Kit when you save"); role: TextRole.note; tone: Tone.caution; wrap: word-wrap; }
-        Rectangle { vertical-stretch: 1; min-height: Space.xs; }
-        HorizontalLayout {
-            spacing: Space.s;
-            Button { size: ButtonSize.mini; text: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
-            Rectangle { horizontal-stretch: 1; }
-            if root.found && root.piece.mark == KitMark.free: Button {
-                size: ButtonSize.mini;
-                text: @tr("Add");
-                icon: Icons.zoom-in;
-                has-icon: true;
-                clicked => { root.taken(); }
+            HorizontalLayout {
+                spacing: Space.s;
+                Label {
+                    text: root.piece.mark == KitMark.added ? @tr("New, not saved yet") : root.leaving ? @tr("Leaves your Kit when you save") : root.piece.detail;
+                    role: TextRole.caption;
+                    tone: root.piece.mark == KitMark.added || root.leaving ? Tone.caution : Tone.tertiary;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Button { size: ButtonSize.mini; square: true; icon: Icons.arrow-right; has-icon: true; help: @tr("See on The Lens DB"); clicked => { Kit.open(root.piece.url); } }
             }
-            if root.found && root.piece.mark == KitMark.added: Button {
-                size: ButtonSize.mini;
-                on: true;
-                text: @tr("Added");
-                icon: Icons.done;
-                has-icon: true;
-                help: @tr("Takes it out before saving");
-                clicked => { root.taken(); }
-            }
-            if root.found && (root.piece.mark == KitMark.kept || root.leaving): Label {
-                text: root.leaving ? @tr("Leaving your Kit") : @tr("In your Kit");
-                role: TextRole.caption;
-                tone: Tone.tertiary;
-                vertical-alignment: center;
-            }
-            if !root.found && root.leaving: Button { size: ButtonSize.mini; text: @tr("Keep"); clicked => { root.removed(); } }
         }
     }
 }
@@ -87,7 +108,12 @@ component Pieces inherits Section {
     in property <GearKind> kind;
     in property <string> empty;
     if root.items.length == 0: Label { text: root.empty; role: TextRole.note; }
-    for piece[i] in root.items: PieceCard { piece: piece; removed => { Kit.remove(root.kind, i); } }
+    for piece[i] in root.items: PieceCard {
+        piece: piece;
+        kind: root.kind;
+        removed => { Kit.remove(root.kind, i); }
+        preferred => { Kit.prefer(root.kind, i); }
+    }
 }
 
 component Offer inherits Section {
@@ -119,9 +145,9 @@ export component KitView inherits VerticalLayout {
             Rectangle { horizontal-stretch: 1; }
             Button { size: ButtonSize.mini; text: @tr("Disconnect"); help: @tr("Signs ONI out of The Lens DB; your Kit stays there"); clicked => { Kit.disconnect(); } }
         }
-        Label { role: TextRole.title; text: @tr("Kit"); }
+        Label { role: TextRole.title; text: @tr("My Kit"); }
         Label { role: TextRole.note; text: @tr("{}'s gear on The Lens DB", Kit.account); wrap: word-wrap; }
-        Button { kind: ButtonKind.accent; text: @tr("Add Gear"); icon: Icons.zoom-in; has-icon: true; clicked => { Kit.pick(true); } }
+        Button { kind: ButtonKind.accent; keycap: true; text: @tr("Add Gear"); icon: Icons.zoom-in; has-icon: true; clicked => { Kit.pick(true); } }
     }
     if Kit.note != "": Section { separated: false; Label { role: TextRole.note; tone: Tone.caution; wrap: word-wrap; text: Kit.note; } }
     if Kit.link == KitLink.in: Pieces { title: @tr("Bodies"); items: Kit.bodies; kind: GearKind.body; empty: @tr("No body yet"); }
@@ -192,14 +218,14 @@ export component KitSearchSheet inherits Sheet {
                 spacing: Space.s;
                 PieceCard {
                     width: (KitStyle.sheet-width - 2 * Space.m - Space.s) / KitStyle.columns;
-                    piece: pair.left;
                     found: true;
+                    piece: pair.left;
                     taken => { Kit.take(pair.at); }
                 }
                 if pair.has-right: PieceCard {
                     width: (KitStyle.sheet-width - 2 * Space.m - Space.s) / KitStyle.columns;
-                    piece: pair.right;
                     found: true;
+                    piece: pair.right;
                     taken => { Kit.take(pair.at + 1); }
                 }
                 if !pair.has-right: Rectangle { horizontal-stretch: 1; }

@@ -17,7 +17,9 @@ export component TldbMark inherits HorizontalLayout {
         Icon { width: parent.width; height: parent.height; source: Icons.tldb-disc; ink: Colour.ink; }
         Icon { width: parent.width; height: parent.height; source: Icons.tldb-blades; ink: Colour.ground; }
     }
+    // As tall as the disc, so the capitals sit on its middle whatever the size.
     Text {
+        height: root.size;
         text: @tr("THE LENS DB");
         vertical-alignment: center;
         font-family: Type.family;

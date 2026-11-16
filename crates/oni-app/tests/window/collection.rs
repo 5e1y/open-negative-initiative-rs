@@ -1,12 +1,14 @@
 //! The Kit against a simulated The Lens DB, driven by clicks and keys as a hand would: a click on the
 //! gallery's empty room offers the service; Connect opens its sign-in in the browser and the Kit shows once it
 //! returns; Add Gear searches in a sheet whose Add puts a piece in the Kit until Save; a removal asks at Save;
-//! leaving the Kit with changes not saved asks about them; Disconnect revokes the token and drops the copy.
+//! leaving the Kit with changes not saved asks about them; a default body and lens fill an export where nothing
+//! names one, its roll keeping the body; Disconnect revokes the token and drops the copy.
 
 use oni_app::InfoKind;
 use i_slint_backend_testing::AccessibleRole as Role;
+use oni_app::app::export_card;
 use oni_app::app::{Options, Shell};
-use oni_app::{Confirm, Gear, Kit, KitLink, KitMark, Library};
+use oni_app::{Confirm, Exporting, Gear, Kit, KitLink, KitMark, Library};
 use oni_core::{Archive, EditorStore};
 use oni_library::index::{Entry, LibraryIndex};
 use oni_settings::{Date, Film};
@@ -55,6 +57,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     for name in ["A.tif", "B.tif"] {
         common::linear_tiff(&scans.join(name), 48, 32, 0.5);
     }
+    oni_settings::film::roll_folder::set_roll(Some(&Film::new("Scans")), &scans).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);
     // A roll read before, its body typed by hand: the names typed in ONI take it in as the app starts.
@@ -161,6 +164,45 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.until("the removal saved", WAIT, || kit.get_unsaved() == 0 && !kit.get_sending());
     assert_eq!(piece_names(kit.get_bodies()), ["Nikon FM2"]);
     assert_eq!(fake.kit_keys().len(), 2);
+
+    // The FM2 and the FD 50 made the defaults: an export of the roll, which names no body, shows them.
+    common::click(&rig, w, common::placed(w, Role::Button, "Set as Default")[0].middle());
+    rig.settle();
+    common::click(&rig, w, common::the(w, Role::Button, "Set as Default").middle());
+    rig.settle();
+    assert!(kit.get_bodies().row_data(0).unwrap().by_default && kit.get_lenses().row_data(0).unwrap().by_default);
+    println!("shot {}", rig.shot("kit-defaults").display());
+    let e = w.global::<Exporting>();
+    lib.invoke_tile_clicked(0, false, false);
+    ctl.act(oni_app::Act::Export);
+    rig.until("the line read", Duration::from_secs(60), || export_card::lines(w).iter().all(|l| l.ready));
+    let line = export_card::lines(w)[0].clone();
+    assert_eq!((line.camera.as_str(), line.lens.as_str()), ("Nikon FM2", "Canon FD 50mm f/1.4"), "the defaults fill the line");
+    let out = root.join("Out").join("A.tiff");
+    export_card::answer_with(&ctl, Rc::new(move |_| vec![out.clone()]));
+    e.invoke_export();
+    rig.until("the frame written", Duration::from_secs(60), || !export_card::card(&ctl).exporting && !e.get_shown());
+    let roll = oni_settings::film::roll_folder::roll(&scans).expect("the roll");
+    assert_eq!(roll.camera_body.as_deref(), Some("Nikon FM2"), "the roll keeps the body its frame was written with");
+    let kept = |name: &str| oni_settings::sidecar::read(&scans.join(name), false).map(|l| l.exif).unwrap_or_default();
+    assert_eq!(kept("A.tif").lens.as_deref(), Some("Canon FD 50mm f/1.4"), "the frame written keeps its lens");
+    assert_eq!(kept("A.tif").camera, None, "the body is the roll's, which a later one replaces");
+    // Twin: the defaults let go, the roll's other frame still names the body and no longer the lens.
+    common::click(&rig, w, (500.0, 700.0));
+    rig.settle();
+    for _ in 0..2 {
+        common::click(&rig, w, common::placed(w, Role::Button, "Default")[0].middle());
+        rig.settle();
+    }
+    assert!(kit.get_bodies().iter().chain(kit.get_lenses().iter()).all(|p| !p.by_default));
+    assert_eq!(kept("B.tif").lens, None);
+    lib.invoke_tile_clicked(1, false, false);
+    ctl.act(oni_app::Act::Export);
+    rig.until("the other line read", Duration::from_secs(60), || export_card::lines(w).iter().all(|l| l.ready));
+    let other = export_card::lines(w)[0].clone();
+    assert_eq!((other.camera.as_str(), other.lens.as_str()), ("Nikon FM2", ""));
+    e.invoke_cancel();
+    rig.settle();
 
     // Disconnect revokes the token and drops the copy; the typed names stay offered.
     kit.invoke_disconnect();

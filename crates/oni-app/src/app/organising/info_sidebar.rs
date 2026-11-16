@@ -112,6 +112,10 @@ impl Ctl {
     /// written, with the dyes a stock picked names on its frames; else the film on every member.
     pub(in crate::app) fn update_roll(self: &Rc<Self>, label: &str, mutate: impl FnOnce(&mut Film)) {
         let Some(roll) = self.state.borrow().roll() else { return };
+        self.update_roll_of(roll, label, mutate);
+    }
+
+    pub(super) fn update_roll_of(self: &Rc<Self>, roll: Roll, label: &str, mutate: impl FnOnce(&mut Film)) {
         let mut film = roll.film.clone();
         mutate(&mut film);
         if film != roll.film {

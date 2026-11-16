@@ -32,28 +32,27 @@ fn glyph(name: &str) -> String {
     format!("<svg class=\"glyph\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">{path}</svg>")
 }
 
-/// The two steps over a card: the first named `first`, the second ONI's authorisation, `at` the current one.
-fn steps(first: &str, at: u8) -> String {
-    let step = |n: u8, label: &str| {
-        let (class, mark) = match n.cmp(&at) {
-            std::cmp::Ordering::Less => ("done", glyph("check")),
-            std::cmp::Ordering::Equal => ("now", n.to_string()),
-            std::cmp::Ordering::Greater => ("", n.to_string()),
-        };
-        format!("<li class=\"{class}\"><i>{mark}</i>{label}</li>")
-    };
-    format!("<ol class=\"steps\" aria-label=\"Step {at} of 2\">{}{}</ol>", step(1, first), step(2, "Authorize"))
+/// The card's two steps, the second always in view: ONI and The Lens DB joined over them, then each step's markup.
+fn flow(first: &str, second: &str) -> String {
+    format!(
+        "<div class=\"pair\" aria-hidden=\"true\"><img src=\"{}\" width=\"44\" height=\"44\" alt=\"\">\
+         <span class=\"link\">{}</span>{}</div><p class=\"lead\">Connect <b>ONI</b> to your Kit on The Lens DB</p>\
+         <ol class=\"flow\">{first}{second}</ol>",
+        marks::oni(),
+        glyph("link"),
+        marks::tldb(44)
+    )
+}
+
+/// The step at hand, unfolded: its number, its title as the page's heading, and its content.
+fn open(n: u8, title: &str, content: &str) -> String {
+    format!("<li class=\"step open\" aria-current=\"step\"><header><i>{n}</i><h1>{title}</h1></header><div class=\"fold\">{content}</div></li>")
 }
 
 /// A person's initial, in a round mark.
 fn avatar(name: &str) -> String {
     let initial = name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default();
     format!("<span class=\"avatar\" aria-hidden=\"true\">{}</span>", escape(&initial))
-}
-
-/// ONI's icon over a card's title, as the application the sign-in leads to.
-fn client() -> String {
-    format!("<img class=\"client\" src=\"{}\" width=\"56\" height=\"56\" alt=\"ONI\">", marks::oni())
 }
 
 pub fn refused(reason: &str) -> Response {
@@ -121,8 +120,8 @@ pub fn shell(title: &str, body: &str) -> String {
          <header class=\"top\"><a class=\"brand\" href=\"/\">{}<span>THE LENS DB</span></a>\
          <span class=\"sim\" title=\"A local stand-in, not thelensdb.com\">Simulated</span></header>\
          <main class=\"card\">{body}</main>\
-         <p class=\"note\"><b>Simulated.</b> A local stand-in for The Lens DB, for ONI's development on this computer: \
-         not the real site, no real account.</p></div></body></html>",
+         <p class=\"note\"><b>Simulated.</b> A copy of The Lens DB running on this computer to develop ONI. \
+         Not the real site, and no real account.</p></div></body></html>",
         escape(title),
         style::STYLE,
         marks::tldb(26)

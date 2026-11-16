@@ -10,8 +10,9 @@ export global Gear {
 // Where a piece stands: `kept` in the Kit on the service, `added` joins it at Save, `leaving` leaves it at
 // Save, `free` a search's answer not in the Kit.
 export enum KitMark { kept, added, leaving, free }
-// A piece of the catalogue, the one shape the Kit and the search both show.
-export struct KitPiece { name: string, detail: string, url: string, mark: KitMark }
+// A piece of the catalogue, the one shape the Kit and the search both show; `by-default` the one every
+// export names where nothing else does.
+export struct KitPiece { name: string, detail: string, url: string, mark: KitMark, by-default: bool }
 // `waiting`: the browser is open on The Lens DB's sign-in, the port listening for its return.
 export enum KitLink { out, waiting, in }
 
@@ -42,6 +43,8 @@ export global Kit {
     callback take(int);
     // A piece of the Kit marked to leave, kept again, or an added one let go.
     callback remove(GearKind, int);
+    // A piece of the Kit made the default of its kind, or none when it was.
+    callback prefer(GearKind, int);
     callback save();
     callback discard();
     // 0 discards, 1 saves, -1 keeps the changes for later.

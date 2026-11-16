@@ -1536,8 +1536,28 @@ msgid "Description"
 msgstr "Description"
 
 #: crates/oni-ui/ui/kit.slint
+msgid "See on The Lens DB"
+msgstr "Voir sur The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/navigator.slint
+msgid "Add"
+msgstr "Ajouter"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Added"
+msgstr "Ajouté"
+
+#: crates/oni-ui/ui/kit.slint
 msgid "Takes it out before saving"
 msgstr "Le retire avant l'enregistrement"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Leaving your Kit"
+msgstr "Quitte votre kit"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "In your Kit"
+msgstr "Dans votre kit"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Remove from your Kit"
@@ -1552,24 +1572,20 @@ msgid "Leaves your Kit when you save"
 msgstr "Quitte votre kit à l'enregistrement"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "See on The Lens DB"
-msgstr "Voir sur The Lens DB"
-
-#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/navigator.slint
-msgid "Add"
-msgstr "Ajouter"
+msgid "Default"
+msgstr "Par défaut"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Added"
-msgstr "Ajouté"
+msgid "Set as Default"
+msgstr "Définir par défaut"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Leaving your Kit"
-msgstr "Quitte votre kit"
+msgid "Every export names this camera where its roll names none"
+msgstr "Chaque export indique ce boîtier là où son rouleau n’en indique aucun"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "In your Kit"
-msgstr "Dans votre kit"
+msgid "Every export names this lens where its photo names none"
+msgstr "Chaque export indique cet objectif là où sa photo n’en indique aucun"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Keep"
@@ -1612,8 +1628,8 @@ msgid "Signs ONI out of The Lens DB; your Kit stays there"
 msgstr "Déconnecte ONI de The Lens DB ; votre kit y reste"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Kit"
-msgstr "Kit"
+msgid "My Kit"
+msgstr "Mon Kit"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "{}'s gear on The Lens DB"
@@ -4159,7 +4175,7 @@ msgstr "Aucune émulsion renseignée"
 msgid "Rename Roll"
 msgstr "Renommer la pellicule"
 
-#: crates/oni-app/src/app/organising/info_sidebar.rs
+#: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/kit/defaults.rs
 msgid "Set Camera Body"
 msgstr "Définir le boîtier"
 

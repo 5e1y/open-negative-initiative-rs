@@ -3,6 +3,7 @@
 //! kept in the support folder, which ONI works from offline and which fills an export's EXIF.
 
 mod changes;
+mod defaults;
 mod facts;
 mod sign_in;
 mod vault;
@@ -90,8 +91,8 @@ fn service() -> Service {
     Service::new(&site, crate::updates::version())
 }
 
-fn piece(p: &Piece, mark: KitMark, detail: String) -> KitPiece {
-    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark }
+fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool) -> KitPiece {
+    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default }
 }
 
 impl KitState {
@@ -114,8 +115,9 @@ impl KitState {
         self.kept.of(kind).chain(self.adding.iter().filter(|p| p.kind == kind)).collect()
     }
 
-    fn shown(&self, kind: Kind) -> Vec<KitPiece> {
-        self.listed(kind).into_iter().map(|p| piece(p, self.mark(p), words::detail(p))).collect()
+    /// The Kit of one kind as the column shows it, `default` the name its default card holds.
+    fn shown(&self, kind: Kind, default: Option<&str>) -> Vec<KitPiece> {
+        self.listed(kind).into_iter().map(|p| piece(p, self.mark(p), words::detail(p), default == Some(p.name.as_str()))).collect()
     }
 }
 
@@ -148,6 +150,8 @@ impl Ctl {
         let p = me.clone();
         k.on_remove(move |kind, i| p.kit_remove(kind, i.max(0) as usize));
         let p = me.clone();
+        k.on_prefer(move |kind, i| p.kit_prefer(kind, i.max(0) as usize));
+        let p = me.clone();
         k.on_save(move || p.kit_save());
         let p = me.clone();
         k.on_discard(move || p.kit_discard());
@@ -179,6 +183,7 @@ impl Ctl {
     pub(in crate::app) fn publish_kit(&self) {
         let Some(w) = self.window() else { return };
         let k = w.global::<KitGlobal>();
+        let (body, lens) = (self.kit_default(Kind::Camera), self.kit_default(Kind::Lens));
         let s = self.state.borrow();
         let kit = &s.org.kit;
         k.set_link(if kit.signing.is_some() {
@@ -189,9 +194,9 @@ impl Ctl {
             KitLink::Out
         });
         k.set_account(kit.kept.account.clone().unwrap_or_default().into());
-        k.set_bodies(model(kit.shown(Kind::Camera)));
-        k.set_lenses(model(kit.shown(Kind::Lens)));
-        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p))).collect();
+        k.set_bodies(model(kit.shown(Kind::Camera, body.as_deref())));
+        k.set_lenses(model(kit.shown(Kind::Lens, lens.as_deref())));
+        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p), false)).collect();
         let pairs = found.chunks(2).enumerate().map(|(i, two)| KitPair {
             left: two[0].clone(),
             right: two.get(1).cloned().unwrap_or_default(),

@@ -88,6 +88,11 @@ impl Ctl {
             return self.write_sheet(destinations, replacing);
         }
         let started = destinations.clone();
+        // The rolls with no body take the default body their lines show as the hand exports them, so the
+        // frames left alone name it too; a frame whose roll did not keeps it itself.
+        let (_, rolls, _, _) = self.row_sources();
+        let defaulted = defaulted_rolls(&self.export.borrow(), &rolls);
+        let taken = self.roll_default_bodies(defaulted);
         let (jobs, export, stop) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();
@@ -98,8 +103,10 @@ impl Ctl {
                 .iter()
                 .zip(destinations)
                 .zip(&c.rows)
-                .map(|((t, d), l)| {
-                    let (mut metadata, typed) = l.as_ref().map(|l| (l.row.metadata.clone(), l.typed(&c.artist, &c.copyright))).unwrap_or_default();
+                .zip(&rolls)
+                .map(|(((t, d), l), roll)| {
+                    let rolled = roll.as_ref().is_some_and(|f| taken.contains(&f.id));
+                    let (mut metadata, typed) = l.as_ref().map(|l| (l.row.metadata.clone(), l.typed(&c.artist, &c.copyright, rolled))).unwrap_or_default();
                     self.kit_facts(&mut metadata);
                     export::batch::Job { target: t.clone(), destination: d, metadata, typed }
                 })
@@ -132,6 +139,21 @@ impl Ctl {
             with_shell(|c| c.export_ended(job::End::Written));
         });
     }
+}
+
+/// The rolls with no body of their own whose lines are written with the default body: a path of each, its
+/// roll and the body.
+fn defaulted_rolls(c: &Card, rolls: &[Option<oni_settings::Film>]) -> Vec<(String, oni_settings::Film, String)> {
+    c.targets
+        .iter()
+        .zip(&c.rows)
+        .zip(rolls)
+        .filter_map(|((t, l), roll)| {
+            let l = l.as_ref()?;
+            let body = l.default_body.clone().filter(|b| *b == l.row.metadata.camera)?;
+            Some((t.path.to_string_lossy().into_owned(), roll.clone()?, body))
+        })
+        .collect()
 }
 
 impl Card {

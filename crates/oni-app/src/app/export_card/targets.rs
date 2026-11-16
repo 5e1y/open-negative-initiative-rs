@@ -14,8 +14,9 @@ impl Ctl {
         self.render_previews(targets, asked);
     }
 
-    /// What every line opens on: the targets, their roll, and the artist and copyright last written.
-    fn row_sources(&self) -> (Vec<Target>, Vec<Option<oni_settings::Film>>, String, String) {
+    /// What every line opens on: the targets, their roll, the artist and copyright last written, and the
+    /// Kit's defaults.
+    pub(super) fn row_sources(&self) -> (Vec<Target>, Vec<Option<oni_settings::Film>>, (String, String), export::Defaults) {
         let c = self.export.borrow();
         let s = self.state.borrow();
         // A photo's roll as its band shows it: its folder's, else the one its sidecar names; one map
@@ -26,12 +27,12 @@ impl Ctl {
             .map(|a| a.groups.iter().rev().flat_map(|g| g.entries.iter().rev().map(move |e| (e.path.clone(), g.film.clone().or_else(|| e.film.clone())))).collect())
             .unwrap_or_default();
         let rolls = c.targets.iter().map(|t| films.get(oni_library::paths::normal(&t.path.to_string_lossy()).as_ref()).cloned().flatten()).collect();
-        (c.targets.clone(), rolls, c.artist.clone(), c.copyright.clone())
+        (c.targets.clone(), rolls, (c.artist.clone(), c.copyright.clone()), self.kit_defaults())
     }
 
     /// The lines land one by one from their own thread, so the surface shows before any scan is read.
     fn read_rows(self: &Rc<Self>) {
-        let (targets, rolls, artist, copyright) = self.row_sources();
+        let (targets, rolls, (artist, copyright), defaults) = self.row_sources();
         let asked = self.export.borrow().reading.next();
         std::thread::Builder::new()
             .name("export rows".into())
@@ -41,7 +42,7 @@ impl Ctl {
                     if !asked.current() {
                         return;
                     }
-                    let row = export::opening_line(&target.path, roll.as_ref(), &artist, &copyright);
+                    let row = export::opening_line(&target.path, roll.as_ref(), &artist, &copyright, &defaults);
                     low += usize::from(oni_decode::is_low_precision(&target.path));
                     let asked = asked.clone();
                     with_shell(move |c| c.row_landed(asked, i, row));
@@ -77,10 +78,10 @@ impl Ctl {
         if self.export.borrow().rows.iter().all(Option::is_some) {
             return;
         }
-        let (targets, rolls, artist, copyright) = self.row_sources();
+        let (targets, rolls, (artist, copyright), defaults) = self.row_sources();
         for (i, (target, roll)) in targets.iter().zip(&rolls).enumerate() {
             if self.export.borrow().rows.get(i).is_some_and(Option::is_none) {
-                let row = export::opening_line(&target.path, roll.as_ref(), &artist, &copyright);
+                let row = export::opening_line(&target.path, roll.as_ref(), &artist, &copyright, &defaults);
                 self.export.borrow_mut().rows[i] = Some(row);
                 self.publish_line(i);
             }

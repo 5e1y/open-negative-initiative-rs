@@ -90,7 +90,7 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
         export.set_format(Format::Tiff16);
     }
     let engine = Engine::shared(&gpu);
-    let lines: Vec<_> = all.iter().map(|t| export::opening_line(&t.path, None, "", "")).collect();
+    let lines: Vec<_> = all.iter().map(|t| export::opening_line(&t.path, None, "", "", &Default::default())).collect();
     println!("{} frames, {:?}, {}", all.len(), export.format(), engine.lock().unwrap().adapter());
 
     // Each stage on its own, frame by frame, the decodes kept in a folder of their own.
@@ -144,10 +144,10 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
     if std::env::var_os("ONI_BENCH_SEQUENTIAL").is_some() {
         for ((t, d), l) in all.iter().zip(&destinations).zip(&lines) {
             let to = oni_export::Landing { path: d, ledger: &mut ledger, replacing: false };
-            export::write_one(&engine, t, to, &export, &l.row.metadata, &l.typed("", "")).unwrap();
+            export::write_one(&engine, t, to, &export, &l.row.metadata, &l.typed("", "", false)).unwrap();
         }
     } else {
-        let jobs: Vec<export::batch::Job> = all.iter().zip(&destinations).zip(&lines).map(|((t, d), l)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: l.row.metadata.clone(), typed: l.typed("", "") }).collect();
+        let jobs: Vec<export::batch::Job> = all.iter().zip(&destinations).zip(&lines).map(|((t, d), l)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: l.row.metadata.clone(), typed: l.typed("", "", false) }).collect();
         let stop = std::sync::atomic::AtomicBool::new(false);
         // The engine apart the surface writes on, as the app runs it.
         let apart = engine.apart().unwrap();
