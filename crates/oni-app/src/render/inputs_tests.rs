@@ -261,3 +261,30 @@ fn a_patch_follows_the_exposure_and_flat_field_it_sits_under() {
     assert!((centre(&mut engine, &reread) - centre(&mut engine, &bare(&reread))).abs() < 1e-5, "a patch of another decode was laid");
     let _ = std::fs::remove_dir_all(&caches);
 }
+
+/// A film effect's notch keeps both readings, a measure rendering neither, so it reads nothing again.
+#[test]
+fn a_film_effect_notch_reads_no_distribution_again() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the film effects' readings are not exercised");
+        return;
+    };
+    let mut engine = Engine::on(&device);
+    let (w, h) = (120usize, 80usize);
+    let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let first = engine.inputs(&negative, &s, false).expect("readings");
+    let mut passes = |e: &mut Engine, s: &PipelineSettings| {
+        let before = e.stats().dispatches;
+        let read = e.inputs(&negative, s, false).expect("readings");
+        (e.stats().dispatches - before, read)
+    };
+    (s.grain.amount, s.halation.amount) = (0.7, 0.5);
+    let (ran, read) = passes(&mut engine, &s);
+    assert_eq!(ran, 0, "a film effect's notch read the distributions again");
+    assert_eq!((read.levels, read.curves), (first.levels, first.curves));
+    // Twin: an exposure notch moves what enters the curves, so it is read again.
+    s.print.exposure += 0.3;
+    assert!(passes(&mut engine, &s).0 > 0, "an exposure notch kept a stale reading");
+}
