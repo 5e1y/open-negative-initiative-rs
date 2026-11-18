@@ -11043,5 +11043,47 @@
     "title": "A rail lit in a hue rests faint like a bipolar rail's ends, whole under the hand",
     "status": "done",
     "detail": "crates/oni-ui/ui/ds/rail.slint: a ramp fill whose tint is saturated past SliderStyle.hued scales its ramp alphas by the bipolar rail's ends factor (SliderStyle.hue-rest at rest, 1 when vivid: the block under the pointer, held, keyed, stepped or scrolled; the channel points take near: points-block.hovered as their Mid does), so More Color Settings' channel white and black points no longer burn red, green or blue beside the dimmed Mid rails; grey and white ramps stay whole. Checks: window channel_points, design_system, slider (19 passed)."
+  },
+  {
+    "id": 2210,
+    "type": "feature",
+    "title": "A digital photo prints on the Scanner face's machine",
+    "status": "done",
+    "detail": "crates/oni-pipeline: on_oni_machine no longer refuses a digital photo; its copy sets the gains to the keys' stops (gain_stops, the film's units and FRONTIER_REST on the Frontier) instead of adding them, so a film mode's stored gains wait unrendered, and prints on the RAW's As Shot white (shot; none for a plain file, its decode's own white), Pro's Temperature and Tint staying Pro's. conversion::rendered_gains renders a film's gains, or the keys on a digital Scanner face, none on Pro (exp2(0) = 1, bit for bit). The chain moves to src/chain.rs (Pipeline::image, ::picture, ::chain): on the machine a digital photo's levels come alone as a table before the entry print (look_entry_exposure, -1.5 as a slide), the print rides with the encode in one pass (oni_finish takes what renders it), then the look (ONI, Frontier or the hand's cube), the warmth, and finishing with the Scanner's curves and no levels; finishing takes the levels it lays. Film and Pro digital keep their exact construction (a laid run of one kernel is the same `then`). Measured on the synthetic scene: ONI +0.326 stop from Pro, Frontier +0.245, none clipped; entering at rest +0.904 / +0.860 (twin). Checks: oni-pipeline tests/scanner_digital.rs (7: near Pro on both machines, keys as the only gains, keys as stops of light through the GPU chain at 1.0e-6 with a doubled-stops twin at 1.24e-1, As Shot white, the order composed on the CPU at 4.6e-6 against Pro's order at 2.5e-1, Pro renders none of the face's values bit for bit, 4 passes at rest and 6 with levels)."
+  },
+  {
+    "id": 2211,
+    "type": "feature",
+    "title": "A digital photo's levels read where its face lays them",
+    "status": "done",
+    "detail": "crates/oni-measure: Stage::PictureLevels, read through Pipeline::picture: on Pro the same reading as ManualCurves (levels and curves share the tables before Lighting), on the Scanner face the keyed picture at its As Shot white in front of the machine's print; Stage::ManualCurves keeps a digital Scanner face's levels, as the machine's curves read them. The engine's inputs read the levels at PictureLevels on a digital Scanner face and keep the curves' reading on Pro; the levels' plot is wanted on either face's Colour tab (plots.rs). Checks: truncate unit tests (a_digital_photos_levels_are_read_where_its_face_lays_them, with twin), tests/picture_levels.rs on_the_scanner_face_... (TEMP, Contrast and a Scanner curve leave the levels' reading, a D moves it, twin: the print reaches the curves' reading)."
+  },
+  {
+    "id": 2212,
+    "type": "change",
+    "title": "The store turns a digital photo to the Scanner face",
+    "status": "done",
+    "detail": "crates/oni-core: EditorStore::turn no longer refuses the Scanner on a digital photo and face() follows the session's face alone, so the editors, Reset and the phone's Face reply agree with the render. store::remeasure (a film's reference with no median) answers for the Lab screen and the phone's state: a digital photo is printed on no roll's measure. Checks: store/tests/digital.rs a_digital_frame_turns_to_the_scanner_keeps_its_two_faces_curves_apart_and_shares_its_levels (twin: back on Pro its curves are as they were) and the_scanner_asks_a_film_roll_to_be_measured_again_and_never_a_digital_photo (twin: a negative)."
+  },
+  {
+    "id": 2213,
+    "type": "change",
+    "title": "Sidecar format 30: a digital photo stored on the Scanner face opens on Pro",
+    "status": "done",
+    "detail": "crates/oni-settings: VERSION 30, chain::DIGITAL_SCANNER_VERSION; migrate/digital_face.rs runs in reading() and document(): a digital photo written under 30 on the Scanner face (an opening adopts the face in use, so such files exist) rendered as Pro, and opens on Pro, its render unmoved. The newer corpus file moves to version-31, Newer(31). No new field. Checks: tests/digital_face.rs (a digital document under 30 opens on Pro; twins: a negative under 30 and a digital document of format 30 keep the Scanner), the corpus (40 goldens unchanged)."
+  },
+  {
+    "id": 2214,
+    "type": "interface",
+    "title": "The Scanner face on a digital photo: the keypad where Colour and Lighting stand, every other block kept",
+    "status": "done",
+    "detail": "crates/oni-ui: the bar's Pro / Scanner tabs show on a digital photo (Bar.digital gone, lab.rs no longer writes it). On the Scanner face the Colour tab lays Machine, Density, Colour, Look and Effects in place of Pro's Colour (More Color Settings with it) and Lighting, and keeps Film Effects, Levels, Curves, the Colour Mixer and the Saturation Curve; Source and Details are the same on both faces. Machine, Film Effects and Levels help read the machine's words on that face (fr, es). Checks: window digital_scanner (new; Machine line ONI · DIGITAL, no kelvin Temperature nor AUTO WHITE BALANCE, D+ writes scanner.d and renders, Pro's Lighting untouched; twin: Pro shows Lighting and More Color Settings), window digital (the faces stay), phone_link panel a_digital_photos_scanner_face_shows_the_phone_no_colour_lighting_or_effects (twin: Pro shows them), catalogue."
+  },
+  {
+    "id": 2215,
+    "type": "perf",
+    "title": "The digital machine's kernels prewarmed",
+    "status": "done",
+    "detail": "crates/oni-app/src/render/engine/prewarm.rs: digital_scanner_busy and four variants (ONI and Frontier, at rest and busy with levels, keys and a Scanner curve). Check: prewarm_tests a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch_on_the_scanner (twin: warmed on film and Pro alone, the machine's passes compile on the notch)."
   }
 ]

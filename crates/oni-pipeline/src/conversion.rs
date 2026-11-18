@@ -5,6 +5,7 @@ use oni_render::{ColorMatrix, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::levels::{Levels, LevelsSet};
+use oni_settings::modes::Face;
 use oni_settings::tone::{Print, Tone, color_density};
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::ops::RangeInclusive;
@@ -56,8 +57,8 @@ pub fn white(s: &PipelineSettings) -> Option<ColorMatrix> {
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order: a digital photo has no gain, window, dyes or
-/// filter and rests Lighting for its levels and curves; a black and white print, no channel's own tone.
+/// The fused kernel's arguments, in `Pipeline.apply`'s order: a digital photo has no window, dyes or filter,
+/// rests Lighting for its levels and curves; a black and white print, no channel's own tone.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     if s.mode.is_film() { fused(s, &s.print, s.density) } else { fused(s, &s.unlit_print(), color_density::BASE) }
 }
@@ -77,6 +78,18 @@ pub fn lighting(s: &PipelineSettings) -> Option<Stage47> {
     Some(Stage47 { red: vector(&reach.red), green: vector(&reach.green), blue: vector(&reach.blue), ..lit })
 }
 
+/// The gains the kernel renders, in stops: a film's own, or the machine's keys on a digital photo's Scanner
+/// face; a digital photo's stored gains wait, unrendered, for the film mode they were placed in.
+pub fn rendered_gains(s: &PipelineSettings) -> [f32; 3] {
+    if s.mode.is_film() {
+        s.gains.stops
+    } else if s.face == Face::Scanner {
+        crate::scanner::gain_stops(s)
+    } else {
+        [0.0; 3]
+    }
+}
+
 /// The kernel's arguments with `print` and the colour density's `density` in the frame's own place.
 fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
     let mono = s.mode.is_monochrome();
@@ -91,7 +104,7 @@ fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     Stage47 {
-        gain: if film { s.gains.stops.map(f32::exp2) } else { [1.0; 3] },
+        gain: rendered_gains(s).map(f32::exp2),
         red: vector(&lv.red),
         green: vector(&lv.green),
         blue: vector(&lv.blue),

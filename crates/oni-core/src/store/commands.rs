@@ -120,9 +120,9 @@ impl EditorStore {
         Applied { changed, walk: None }
     }
 
-    /// The face the open frame is edited on: a digital photo has no film for the Scanner to print.
+    /// The face the open frame is edited on, a film's or a digital photo's alike.
     pub fn face(&self) -> Face {
-        if self.scanner_face && self.settings.mode.is_film() { Face::Scanner } else { Face::Pro }
+        if self.scanner_face { Face::Scanner } else { Face::Pro }
     }
 
     /// `colourBinding`: the settings as the open face's Color tab reads them, the Scanner's own

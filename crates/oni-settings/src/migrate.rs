@@ -15,6 +15,7 @@ use std::sync::{Arc, RwLock};
 pub mod before_1_0;
 pub mod chain;
 pub mod density;
+pub mod digital_face;
 pub mod draft;
 pub mod lighting;
 pub mod look;
@@ -237,6 +238,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
             settings
         }
     };
+    converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
@@ -257,9 +259,11 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     if named && version >= chain::NAMED_VERSION {
         let settings = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
         let settings: PipelineSettings = serde_json::from_value(settings).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
-        return Ok(Converted { document: Document::of(settings), from: version, draft: None });
+        return Ok(Converted { document: Document::of(digital_face::caught_up(version, settings)), from: version, draft: None });
     }
-    earlier(stored, version, None).map_err(Refusal::Unreadable)
+    let mut converted = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
+    converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
+    Ok(converted)
 }
 
 fn stored(bytes: &[u8]) -> Result<Object, Refusal> {

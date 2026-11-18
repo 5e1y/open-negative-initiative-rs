@@ -169,13 +169,13 @@ impl Ctl {
     }
 
     /// The levels' and the curves' plots on screen, as the panel lays them: film's levels open on Roll, a
-    /// digital photo's on Pro's Colour tab, the curves open on Colour.
+    /// digital photo's on either face's Colour tab, the curves open on Colour.
     pub(super) fn input_plots(&self) -> [bool; 2] {
         let Some(w) = self.window() else { return [false; 2] };
         let (panel, editors) = (w.global::<PanelState>(), w.global::<crate::Editors>());
         let (tab, colour) = (panel.get_tab(), panel.get_tab() == crate::PanelTab::Color);
         let levels = if panel.get_digital() {
-            colour && !w.global::<crate::Lab>().get_shown() && !editors.get_picture_levels_folded()
+            colour && !editors.get_picture_levels_folded()
         } else {
             tab == crate::PanelTab::Roll && !editors.get_levels_folded()
         };

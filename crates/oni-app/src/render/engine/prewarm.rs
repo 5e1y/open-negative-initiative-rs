@@ -20,6 +20,15 @@ pub(crate) fn digital_busy() -> PipelineSettings {
     busy
 }
 
+/// A digital photo's busy edit on the Scanner face: its levels before the machine's print, a Scanner
+/// curve after the look.
+pub(crate) fn digital_scanner_busy() -> PipelineSettings {
+    let mut busy = PipelineSettings { face: Face::Scanner, ..digital_busy() };
+    busy.scanner.d = 2;
+    busy.scanner_finish.manual_curves.contrast = 0.2;
+    busy
+}
+
 fn busied(mut busy: PipelineSettings) -> PipelineSettings {
     busy.capture_stops = 0.5;
     busy.geometry.angle = 1.0;
@@ -63,6 +72,13 @@ fn variants() -> Vec<PipelineSettings> {
     variants.push(PipelineSettings { mode: ConversionMode::Digital, print: Print { exposure: 0.5, ..busy.print }, ..busy });
     variants.push(digital_busy());
     variants.push(PipelineSettings::rest(ConversionMode::Digital, true));
+    // On the Scanner face a digital photo's print rides in its picture's pass, or after its levels' table.
+    let scanned = PipelineSettings { face: Face::Scanner, ..PipelineSettings::rest(ConversionMode::Digital, true) };
+    let busy = digital_scanner_busy();
+    for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {
+        variants.push(PipelineSettings { scanner_machine: machine, ..scanned.clone() });
+        variants.push(PipelineSettings { scanner_machine: machine, ..busy.clone() });
+    }
     variants
 }
 
