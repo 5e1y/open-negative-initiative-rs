@@ -2,7 +2,7 @@
 import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
-import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
+import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
@@ -248,6 +248,15 @@ export component ColorPane inherits Pane {
         LabSlider { index: 5; label: @tr("Contrast"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Contrast −: toward softer, 5% a step"); plus-help: @tr("Contrast +: toward harder, 5% a step"); }
         LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
         if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
+    }
+    // A digital photo's own levels, laid in front of its curves.
+    if !Lab.shown && PanelState.digital: EditorBlock {
+        title: @tr("Levels");
+        help: @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, and its shadows, midpoint and highlights between them; past the white, the highlights keep their detail. Double-click a handle to bring it back alone.");
+        block: 1;
+        modified: Editors.levels-modified;
+        folded <=> Editors.picture-levels-folded;
+        LevelsEditor { picture: true; histogram: Plots.levels; revision: Plots.levels-revision; }
     }
     EditorBlock {
         title: @tr("Curves");

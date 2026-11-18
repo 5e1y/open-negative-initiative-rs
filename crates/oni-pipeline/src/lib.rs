@@ -23,6 +23,7 @@ use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
+use oni_settings::levels::PictureLevels;
 use oni_settings::tone::Print;
 use oni_settings::{PipelineSettings, ScannerMachine};
 use stages::{Before, DetailColumns, DetailRows, OnGround};
@@ -70,13 +71,16 @@ pub struct Pipeline {
     cubes: HashMap<&'static str, (Source, usize)>,
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
-    luts: Vec<(CurveSet, Source, Source)>,
+    luts: Vec<(Tables, Source, Source)>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
 }
 
 /// Tables kept per pipeline, as two curve sets alternate.
 const KEPT_LUTS: usize = 4;
+
+/// What the curves' tables are baked from: the curves and the levels laid in front of them.
+type Tables = (CurveSet, Option<PictureLevels>);
 
 type Result<T> = std::result::Result<T, oni_graph::Error>;
 
@@ -250,9 +254,10 @@ impl Pipeline {
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
     }
 
-    fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet) -> Result<Image> {
-        let Some(k) = finishing::curves(set) else { return Ok(image) };
-        let (rgb, luma) = match self.luts.iter().find(|(s, _, _)| s == set) {
+    fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet, levels: Option<&PictureLevels>) -> Result<Image> {
+        let Some(k) = finishing::curves(set, levels) else { return Ok(image) };
+        let key: Tables = (set.clone(), levels.copied());
+        let (rgb, luma) = match self.luts.iter().find(|(s, _, _)| *s == key) {
             Some((_, rgb, luma)) => (rgb.clone(), luma.clone()),
             None => {
                 let n = k.rgb_lut.len() as u32;
@@ -261,7 +266,7 @@ impl Pipeline {
                 if self.luts.len() >= KEPT_LUTS {
                     self.luts.remove(0);
                 }
-                self.luts.push((set.clone(), rgb.clone(), luma.clone()));
+                self.luts.push((key, rgb.clone(), luma.clone()));
                 (rgb, luma)
             }
         };
@@ -282,7 +287,9 @@ impl Pipeline {
     ) -> Result<Image> {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();
-        let graded = self.curves(graph, toned, &s.manual_curves)?;
+        // A digital photo's own levels, in the curves' tables; a film frame keeps them unrendered.
+        let levels = Some(&s.picture_levels).filter(|l| !s.mode.is_film() && !l.is_neutral());
+        let graded = self.curves(graph, toned, &s.manual_curves, levels)?;
         // The spectrogram, the points' saturation, the saturation and the vignette in one pass.
         let extent = graded.extent();
         let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();

@@ -160,8 +160,8 @@ fn tables_are_read_whole_whatever_region_is_asked() {
     };
 
     let set = CurveSet { contrast: 0.4, red: Curve { points: vec![Point::new(0.0, 0.1), Point::new(1.0, 1.0)] }, ..CurveSet::default() };
-    let k = finishing::curves(&set).unwrap();
-    let less = finishing::curves(&CurveSet { contrast: 0.38, ..set.clone() }).unwrap();
+    let k = finishing::curves(&set, None).unwrap();
+    let less = finishing::curves(&CurveSet { contrast: 0.38, ..set.clone() }, None).unwrap();
     let n = k.rgb_lut.len() as u32;
     let (rgb, luma) = (g.upload(n, 1, &k.rgb_lut).unwrap(), g.upload(n, 1, &k.luma_lut).unwrap());
     let image = Image::new(&input).then_reading(stages::curves(&k), &[Image::new(&rgb), Image::new(&luma)]);

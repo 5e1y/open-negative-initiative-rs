@@ -2196,6 +2196,14 @@ msgid "Chrome +: toward more, 5% a step"
 msgstr "Chrome + : plus, 5 % par pas"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Levels"
+msgstr "Niveaux"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, and its shadows, midpoint and highlights between them; past the white, the highlights keep their detail. Double-click a handle to bring it back alone."
+msgstr "La plage de la photo, choisie par RGB, Luma, R, G ou B : RGB déplace les trois canaux ensemble, Luma la lumière seule, en gardant les couleurs, et R, G et B chaque canal à part. Chacune a ses extrémités noire et blanche, et ses ombres, son point médian et ses hautes lumières entre elles ; au-delà du blanc, les hautes lumières gardent leur détail. Un double-clic sur une poignée la ramène seule."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
 msgstr "Courbes"
 

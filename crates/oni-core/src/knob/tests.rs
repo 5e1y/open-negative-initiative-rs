@@ -84,3 +84,21 @@ fn a_dose_by_hand_and_a_strength_redose_as_the_panes_do() {
     let unbalanced = Knob::BalanceStrength.set(&PipelineSettings::default(), 0.5);
     assert_eq!(unbalanced.print.red.exposure, 0.0);
 }
+
+#[test]
+fn a_picture_window_keeps_its_ends_on_the_picture_and_in_order() {
+    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let black = Knob::Picture(LevelsChannel::Red, Handle::Black);
+    let floored = black.set(&s, -0.3);
+    assert_eq!(black.get(&floored), 0.0, "a black under the picture lands on 0");
+    assert_eq!(FieldSet::between(&s, &floored).iter().collect::<Vec<_>>(), Vec::<Field>::new(), "0 is its rest");
+    let lifted = black.set(&s, 0.2);
+    assert_eq!((lifted.picture_levels.red.black, lifted.levels), (0.2, s.levels), "the picture's window alone");
+    assert_eq!(FieldSet::between(&s, &lifted).iter().collect::<Vec<_>>(), vec![Field::PictureLevels]);
+    let white = Knob::Picture(LevelsChannel::Red, Handle::White);
+    assert_eq!(white.get(&white.set(&lifted, 0.1)), 0.2 + Levels::EPSILON, "the white never crosses the black");
+    assert_eq!(white.get(&white.set(&s, 1.7)), 1.0);
+    // Twin: a film window's black reaches under zero, where its track begins.
+    let film = Knob::Level(Channel::Red, Handle::Black);
+    assert!(film.get(&film.set(&s, -0.3)) < 0.0);
+}

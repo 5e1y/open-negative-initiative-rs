@@ -1,0 +1,210 @@
+use super::*;
+use oni_settings::axis::{graduation, pipeline};
+use oni_settings::migrate::density::apply_levels;
+
+const MODES: [ConversionMode; 3] = [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Monochrome];
+
+/// `LevelsView.selfCheck`, every line with its twin.
+#[test]
+fn the_levels_track_holds_and_its_black_reaches_under_zero() {
+    let mut strayed: f32 = 0.0;
+    let mut round_trip: f32 = 0.0;
+    for mode in MODES {
+        let (low, _) = LevelsChannel::Red.domain(mode);
+        for step in 0..=400 {
+            let d = low - 0.2 + step as f32 / 400.0 * (graduation::span() + 0.4);
+            let placed = LevelsChannel::Red.position_of_value(d, mode);
+            strayed = strayed.max((placed - graduation::fraction(d, mode)).abs());
+            round_trip = round_trip.max((LevelsChannel::Red.value_at_position(placed, mode) - d).abs());
+        }
+    }
+    assert!(strayed < 1e-6 && round_trip / graduation::span() < 1e-6, "{strayed} {round_trip}");
+    assert!((0.5 - graduation::fraction(0.5, ConversionMode::Negative)).abs() > 0.1, "twin: a raw 0.5 is not its place");
+
+    let transmitting = -0.243;
+    let bottom = LevelsChannel::Red.value_at_position(0.0, ConversionMode::Negative);
+    let rescued = apply_levels(transmitting, &Levels::with_ends(bottom, pipeline::DMAX));
+    assert!(bottom < transmitting && rescued > 0.0, "{bottom} {rescued}");
+    let sunk = apply_levels(transmitting, &Levels::with_ends(0.0, pipeline::DMAX));
+    assert_eq!(sunk, 0.0, "twin: a track floored at zero renders that channel black");
+
+    let hand = Levels { black: 0.4137, white: 2.7311, mid: 0.3117, ..Levels::default() };
+    let mut inside = true;
+    for mode in MODES {
+        for channel in CHANNELS {
+            let rest = LevelsSet::resting(channel, mode, oni_settings::axis::density_axis::base());
+            inside &= (0.0..=1.0).contains(&channel.position_of_value(rest.white, mode));
+            inside &= (0.0..=1.0).contains(&channel.position_of_value(rest.black, mode));
+            for g in Grip::ALL {
+                inside &= (0.0..=1.0).contains(&place(g, &hand, channel, mode));
+            }
+        }
+    }
+    assert!(inside, "every handle and every rest falls on the track");
+    let rest = LevelsSet::resting(LevelsChannel::Red, ConversionMode::Negative, oni_settings::axis::density_axis::base());
+    assert!(!(0.0..=1.0).contains(&rest.white), "twin: the raw resting white sits past any track");
+}
+
+#[test]
+fn the_five_handles_rest_a_quarter_apart_and_stay_reachable() {
+    let base = oni_settings::axis::density_axis::base();
+    let at_rest = LevelsSet::resting(LevelsChannel::Red, ConversionMode::Negative, base);
+    let mut laid: Vec<f32> = Grip::ALL.iter().map(|g| place(*g, &at_rest, LevelsChannel::Red, ConversionMode::Negative)).collect();
+    laid.sort_by(f32::total_cmp);
+    let span = LevelsChannel::Red.position_of_value(at_rest.white, ConversionMode::Negative)
+        - LevelsChannel::Red.position_of_value(at_rest.black, ConversionMode::Negative);
+    assert!(laid.windows(2).all(|w| (w[1] - w[0] - span / 4.0).abs() < 1e-5), "{laid:?}");
+    // On a panel-wide track the five stand further apart than a grab area.
+    let width = 340.0 - 2.0 * ds::SPACE_MD;
+    let xs: Vec<f64> = laid.iter().map(|p| f64::from(*p) * width).collect();
+    assert!(xs.windows(2).all(|w| w[1] - w[0] > ds::GRAB_SIZE), "{xs:?}");
+    // Twin: pinched to the narrowest window a hand can set, they crowd under one grab area.
+    let mut pinched = at_rest;
+    pinched.set_white(pinched.black + Levels::EPSILON);
+    let mut crowded: Vec<f64> =
+        Grip::ALL.iter().map(|g| knob_x(*g, &pinched, LevelsChannel::Red, ConversionMode::Negative, width)).collect();
+    crowded.sort_by(f64::total_cmp);
+    assert!(crowded.windows(2).map(|w| w[1] - w[0]).fold(f64::INFINITY, f64::min) < ds::GRAB_SIZE);
+}
+
+#[test]
+fn a_handle_moves_through_one_path_and_resets_alone() {
+    let mode = ConversionMode::Negative;
+    let red = LevelsChannel::Red;
+    let base = oni_settings::axis::density_axis::base();
+    let mut l = Levels { black: 0.4137, white: 2.7311, ..Levels::default() };
+    // Dragged off both ends, the quarter points stop at their travels.
+    l = moved(Grip::Shadows, &l, -9.0, red, mode);
+    l = moved(Grip::Highlights, &l, 9.0, red, mode);
+    assert_eq!((l.shadows, l.highlights), (Levels::SHADOW_RANGE.0, Levels::HIGHLIGHT_RANGE.1));
+    // The black never crosses the white's epsilon.
+    let crossed = moved(Grip::Black, &l, 1.0, red, mode);
+    assert_eq!(crossed.black, l.white - Levels::EPSILON);
+    // The median lands on its own travel across the window, off its fixed point at 0.5.
+    l.mid = 0.3;
+    let p = place(Grip::Mid, &l, red, mode);
+    let back = moved(Grip::Mid, &l, p, red, mode);
+    assert!((back.mid - l.mid).abs() < 1e-5, "{} {}", back.mid, l.mid);
+    // A reset moves its own handle alone.
+    let r = reset(Grip::White, &l, red, mode, base);
+    assert_eq!((r.white, r.black, r.shadows), (pipeline::DMAX, l.black, l.shadows));
+    let r = reset(Grip::Shadows, &l, red, mode, base);
+    assert_eq!((r.shadows, r.highlights, r.black), (0.25, l.highlights, l.black));
+    // Twin: the median's handle is not its stored value, so a write of the raw place drifts.
+    let mut naive = l;
+    naive.mid = (red.value_at_position(p, mode) - l.black) / (l.white - l.black);
+    assert!((naive.mid - l.mid).abs() > 0.01);
+}
+
+#[test]
+fn a_press_catches_the_front_handle_and_a_scroll_the_nearest() {
+    let mode = ConversionMode::Negative;
+    let red = LevelsChannel::Red;
+    let width = 284.0;
+    // The ends together: the white is drawn last, so it is caught first.
+    let mut l = Levels::with_ends(1.0, 1.0 + Levels::EPSILON);
+    l.mid = 0.5;
+    let x = knob_x(Grip::White, &l, red, mode, width);
+    assert_eq!(caught(x, 17.0, width, &l, red, mode), Some(Grip::White));
+    assert_eq!(scrolled(x, width, &l, red, mode), Grip::White);
+    // Off the handle's height nothing is caught.
+    assert_eq!(caught(x, 40.0, width, &l, red, mode), None);
+    // Twin: far from every handle a press catches none, a scroll still the nearest.
+    let far = width - 1.0;
+    assert_eq!(caught(far, 17.0, width, &l, red, mode), None);
+    assert_eq!(scrolled(far, width, &l, red, mode), Grip::White);
+    assert_eq!(scrolled(0.0, width, &l, red, mode), Grip::Black);
+}
+
+#[test]
+fn the_readouts_are_densities_to_three_decimals() {
+    let l = Levels::with_ends(-0.243, 2.5);
+    let r = readouts(&l, LevelsChannel::Red, ConversionMode::Negative);
+    assert_eq!(r[0], ("Black", "\u{2212}0.243".to_string()));
+    assert_eq!(r.iter().map(|(n, _)| *n).collect::<Vec<_>>(), vec!["Black", "Shadows", "Mid", "Highs", "White"]);
+    // Twin: a global set would read a share of its output, and a digital photo's red alike.
+    assert_eq!(readout(LevelsChannel::Linked, ConversionMode::Negative, 0.5), "50.0%");
+    assert_eq!(readout(LevelsChannel::Red, ConversionMode::Digital, 0.5), "50.0%");
+}
+
+#[test]
+fn a_digital_photo_shows_five_windows_on_the_picture_and_writes_its_own() {
+    let digital = PipelineSettings::rest(ConversionMode::Digital, true);
+    let windows = Windows::of(&digital);
+    assert_eq!(windows.channels(), &LevelsChannel::PICTURE);
+    assert_eq!((windows.channel(0), windows.channel(9)), (LevelsChannel::Linked, LevelsChannel::Blue), "a tab past the last is held");
+    // Every handle lies on the picture: the red's white at the track's end, its black at its start.
+    let red = windows.get(LevelsChannel::Red);
+    assert_eq!((place(Grip::Black, &red, LevelsChannel::Red, digital.mode), place(Grip::White, &red, LevelsChannel::Red, digital.mode)), (0.0, 1.0));
+    let mut moved = windows;
+    moved.set(LevelsChannel::Red, moved_white(&red));
+    assert_eq!(steps(&digital, &moved), vec![Command::Step { knob: Knob::Picture(LevelsChannel::Red, Handle::White), by: -0.25 }]);
+    assert_eq!(marked(&PipelineSettings { picture_levels: match moved { Windows::Picture(p) => p, _ => unreachable!() }, ..digital.clone() }), vec![false, false, true, false, false]);
+    // Twin: a film frame's editor writes its density windows, three tabs.
+    let negative = PipelineSettings::rest(ConversionMode::Negative, true);
+    let film = Windows::of(&negative);
+    assert_eq!(film.channels().len(), 3);
+    let mut film_moved = film;
+    film_moved.set(LevelsChannel::Red, moved_white(&film.get(LevelsChannel::Red)));
+    assert!(matches!(steps(&negative, &film_moved).as_slice(), [Command::Step { knob: Knob::Level(Channel::Red, Handle::White), .. }]));
+}
+
+fn moved_white(l: &Levels) -> Levels {
+    Levels { white: l.white - 0.25, ..*l }
+}
+
+/// A digital photo's Levels editor on a real store: a drag writes its own window on the picture and
+/// leaves the film's, a double click rests the handle, the block's reset rests all five.
+#[test]
+fn a_digital_photos_handle_writes_its_picture_window_and_the_reset_rests_all_five() {
+    use super::super::{Gestures, Plot, Reset};
+    use super::super::geometry::Size;
+    use crate::track;
+    use std::time::{Duration, Instant};
+    let (mut store, dir) = crate::store::tests::fresh("editors-picture-levels");
+    store.apply(Command::Write(Box::new(store.settings().carried(ConversionMode::Digital))));
+    let film = store.settings().levels;
+    let track_size = Size::new(308.0, 34.0);
+    let mut g = Gestures::default();
+    g.sizes[Plot::Levels as usize] = track_size;
+    let mode = store.settings().mode;
+    // The fourth tab is G on the picture: a film's three tabs end at B.
+    g.pick(1, 3);
+    let channel = channel(mode, g.levels_channel);
+    assert_eq!(channel, LevelsChannel::Green);
+    let window = store.settings().picture_levels.get(channel);
+    let white = knob_x(Grip::White, &window, channel, mode, track_size.w);
+    assert_eq!(white, track_size.w, "the white rests at the track's end");
+    let t0 = Instant::now();
+    g.press(&mut store, Plot::Levels, (white - 2.0, 17.0), t0);
+    g.drag(&mut store, Plot::Levels, (white - 62.0, 17.0), false, t0 + Duration::from_millis(40));
+    g.release(&mut store);
+    let asked = track::clamped(1.0 - 60.0 / track_size.w as f32);
+    let got = store.settings().picture_levels;
+    assert_eq!(got.green, moved(Grip::White, &window, asked, channel, mode));
+    assert!(got.green.white < 0.85 && got.red == Levels::default() && got.luma == Levels::default());
+    assert_eq!(store.settings().levels, film, "the film's windows stay");
+    // A double click on the white puts it back on the picture's end.
+    let x = knob_x(Grip::White, &got.green, channel, mode, track_size.w);
+    let later = t0 + Duration::from_secs(2);
+    g.press(&mut store, Plot::Levels, (x, 17.0), later);
+    g.release(&mut store);
+    g.press(&mut store, Plot::Levels, (x, 17.0), later + Duration::from_millis(100));
+    g.release(&mut store);
+    assert_eq!(store.settings().picture_levels.green.white, 1.0);
+    // The block's reset rests every window of the picture.
+    let mut five = store.settings().clone();
+    for c in LevelsChannel::PICTURE {
+        five.picture_levels.get_mut(c).set_black(0.1);
+    }
+    store.apply(Command::Write(Box::new(five)));
+    g.reset(&mut store, Reset::Levels);
+    assert!(store.settings().picture_levels.is_neutral());
+    // Twin: on the film's windows the same reset leaves a stored picture window alone.
+    let mut negative = store.settings().carried(ConversionMode::Negative);
+    negative.picture_levels.red.set_black(0.1);
+    store.apply(Command::Write(Box::new(negative)));
+    g.reset(&mut store, Reset::Levels);
+    assert_eq!(store.settings().picture_levels.red.black, 0.1);
+    let _ = std::fs::remove_dir_all(&dir);
+}

@@ -4,7 +4,7 @@
 use oni_settings::axis::graduation;
 use oni_settings::blocks::{ChromaDenoise, Texture, Vignette};
 use oni_settings::curves::{CurveSet, SaturationCurve};
-use oni_settings::levels::LevelsSet;
+use oni_settings::levels::{LevelsSet, PictureLevels};
 use oni_settings::modes::Face;
 use oni_settings::scanner::ScannerFinish;
 use oni_settings::spectrogram::Spectrogram;
@@ -40,10 +40,13 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
             out.print.bypassed = true;
             out.density = 0.0;
             out.manual_curves = CurveSet::default();
+            out.picture_levels = PictureLevels::default();
         }
+        // A digital photo's levels lie in the curves' tables, so a reading in front of them rests them too.
         Stage::ManualCurves => {
             out.manual_curves = CurveSet::default();
             out.scanner_finish.manual_curves = CurveSet::default();
+            out.picture_levels = PictureLevels::default();
         }
         Stage::Curves => {}
     }
@@ -79,6 +82,18 @@ mod tests {
         let late = truncated(&s, Stage::Curves);
         assert_eq!((late.levels, late.separation, late.print.bypassed), (s.levels, 0.6, false));
         assert_eq!(late.face, Face::Scanner);
+    }
+
+    #[test]
+    fn in_front_of_the_curves_a_digital_photos_levels_rest_and_past_them_they_stay() {
+        let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+        s.picture_levels.red.set_white(0.7);
+        s.picture_levels.luma.mid = 0.3;
+        for stage in [Stage::Levels, Stage::GlobalLevels, Stage::ManualCurves] {
+            assert!(truncated(&s, stage).picture_levels.is_neutral(), "{stage:?}");
+        }
+        // Twin: a reading past the curves reads the frame's own levels.
+        assert_eq!(truncated(&s, Stage::Curves).picture_levels, s.picture_levels);
     }
 
     #[test]

@@ -199,8 +199,9 @@ impl Ctl {
     pub(crate) fn publish_inputs(&self) {
         let Some(w) = self.window() else { return };
         let focus = {
+            let mode = self.state.borrow().store().settings().mode;
             let g = self.editors.gestures.borrow();
-            (g.levels_channel().histogram_channel(), g.curve_channel().histogram_channel())
+            (crate::editors::levels::channel(mode, g.levels_channel).histogram_channel(), g.curve_channel().histogram_channel())
         };
         let inputs = {
             let mut s = self.state.borrow_mut();

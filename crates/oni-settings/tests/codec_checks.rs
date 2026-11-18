@@ -602,7 +602,7 @@ fn every_field_lives_in_exactly_one_family() {
             margin: 0.0,
             windows: None,
         });
-        (s.manual_order, s.pass_of) = (Some(1.0), Some("p".into()));
+        (s.manual_order, s.pass_of, s.picture_levels.luma.mid) = (Some(1.0), Some("p".into()), 0.4);
         s.source_encoding = Some(oni_settings::SourceEncoding::Linear);
         s.rgb_passes = Some(RgbPasses { red: "r".into(), green: "g".into(), blue: "b".into(), registration: None });
         s.roll_reference = Some(oni_settings::frame::RollReference {
@@ -629,7 +629,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 48);
+    assert_eq!(keys.len(), 49);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

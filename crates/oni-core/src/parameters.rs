@@ -80,6 +80,11 @@ pub fn all() -> &'static [Row] {
         let mut levels = handles("levelsPerChannel", "red", |s| &mut s.levels.red);
         levels.extend(handles("levelsPerChannel", "green", |s| &mut s.levels.green));
         levels.extend(handles("levelsPerChannel", "blue", |s| &mut s.levels.blue));
+        let mut picture = handles("pictureLevels", "linked", |s| &mut s.picture_levels.linked);
+        picture.extend(handles("pictureLevels", "luma", |s| &mut s.picture_levels.luma));
+        picture.extend(handles("pictureLevels", "red", |s| &mut s.picture_levels.red));
+        picture.extend(handles("pictureLevels", "green", |s| &mut s.picture_levels.green));
+        picture.extend(handles("pictureLevels", "blue", |s| &mut s.picture_levels.blue));
         vec![
             Row {
                 id: "gains",
@@ -168,6 +173,8 @@ pub fn all() -> &'static [Row] {
                     to.manual_curves.contrast = contrast;
                 },
             },
+            // A digital photo's own windows, a film frame keeping them unrendered.
+            Row { id: "pictureLevels", covers: &["pictureLevels"], sliders: picture, carry: carry!(picture_levels) },
             Row { id: "density", covers: &["density"], sliders: vec![], carry: carry!(density) },
             // Eight bands on two axes are one gesture, so the mixer travels whole or not at all.
             Row { id: "spectrogram", covers: &["spectrogram"], sliders: vec![], carry: carry!(spectrogram) },

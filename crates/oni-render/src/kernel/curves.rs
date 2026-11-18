@@ -6,12 +6,15 @@ use super::*;
 pub const LUT_SIZE: usize = 1024;
 
 /// `curves(src, rgbLUT, lumaLUT, bent)`. `rgbLUT` packs linked, red, green, blue in R, G, B, A;
-/// `lumaLUT` carries luma in R. `bent` flags the channels', the linked and the luma tables.
+/// `lumaLUT` carries luma in R. `bent` flags the channels', the linked and the luma tables. Past 1 each
+/// table goes on as a line at its slope there: `ends` for the four RGB tables, `luma_end` for luma.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Curves {
     pub rgb_lut: Vec<V4>,
     pub luma_lut: Vec<V4>,
     pub bent: V3,
+    pub ends: V4,
+    pub luma_end: f32,
 }
 
 const LUMA_SCALE_MAX: f32 = 8.0;
@@ -24,21 +27,21 @@ fn table(lut: &[V4], v: f32, c: usize) -> f32 {
     mix(lut[k][c], lut[(k + 1).min(n - 1)][c], f - k as f32)
 }
 
-fn apply_curve(lut: &[V4], v: f32, c: usize) -> f32 {
-    if v <= 1.0 { table(lut, v, c) } else { table(lut, 1.0, c) + (v - 1.0) }
+fn apply_curve(lut: &[V4], v: f32, c: usize, end: f32) -> f32 {
+    if v <= 1.0 { table(lut, v, c) } else { table(lut, 1.0, c) + (v - 1.0) * end }
 }
 
 pub fn curves(s: V4, k: &Curves) -> V4 {
     let mut e = rgb(s);
     if k.bent[0] > 0.5 {
-        e = map(e, |c, x| apply_curve(&k.rgb_lut, x, c + 1));
+        e = map(e, |c, x| apply_curve(&k.rgb_lut, x, c + 1, k.ends[c + 1]));
     }
     if k.bent[1] > 0.5 {
-        e = map(e, |_, x| apply_curve(&k.rgb_lut, x, 0));
+        e = map(e, |_, x| apply_curve(&k.rgb_lut, x, 0, k.ends[0]));
     }
     let y = dot(e, LUMA);
     if k.bent[2] > 0.5 && y > 1e-4 {
-        let f = clamp(apply_curve(&k.luma_lut, y, 0) / y, 0.0, LUMA_SCALE_MAX);
+        let f = clamp(apply_curve(&k.luma_lut, y, 0, k.luma_end) / y, 0.0, LUMA_SCALE_MAX);
         e = map(e, |_, x| x * f);
     }
     with_alpha(e, s[3])
