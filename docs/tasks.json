@@ -10903,5 +10903,40 @@
     "title": "Dust stays on the scan under a lens correction: every marker and stroke maps through PipelineSettings::placing",
     "status": "done",
     "detail": "oni_settings Placing carries the lens's Radial (Placing::through): on_frame maps a scan point through from_source then the turns, on_scan the turns then to_source. PipelineSettings::placing(size) composes it; the app's State::placing (markers, strokes painted, reminders), auto De-dust's mapping back, dust_probe, dust_census and the demos read it; migrate/strokes keeps Geometry::placing, format-21 strokes predating the lens. Strokes stay on the scan and patches are laid before the warp, so a lens change moves no stroke. Checks: tests/lens_placing.rs: at distortion -60 a speck's rendered centroid lies 0.02-0.04 px from settings.placing's on_frame on five framings (whole, cropped, a quarter turn, mirrored, 3 degrees), on_scan undoes it to 1e-9, a point pushed off the frame maps outside it (twin: Geometry::placing alone misses by more than 3 px); a half-scale preview puts the speck 0.007 px from the full frame's with distortion and fringes (twin: the radius read in full-resolution pixels moves it more than 2 px). Window checks lens::each_lens_slider_lays_its_correction_and_moves_the_canvas (a drag on Distortion, presses on the three others, the sidecar written, the canvas moved, shots at strong pincushion and barrel corrections; twin: a negative lays no Lens Corrections, values kept) and lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand (a click near a corner at distortion -60 stores placing.on_scan of the click and its marker lands under it within 1 pt; twin: the geometry's map alone keeps a point more than 3 px away). Adversarial review of the placement and sidecar paths: markers re-map at every edit's publish and render landing, so a lens move redraws them; a point the map cannot reach (past a barrel correction's fold) lands off the frame, never on it; a stored value past -100..100 (a hand-edited sidecar) would fold the map inside the frame, so LensCorrection clamps its shares where the map is built (check lens::a_value_past_the_range_maps_as_its_end, twin: 99 against 100); format-21 strokes keep Geometry::placing, as they predate the lens. Merged onto Source and Levels (#2140-#2151): sidecar format 28 follows Levels' 27 (PICTURE_LEVELS_VERSION, then LENS_CORRECTION_VERSION), the newer-format corpus file is version-29 and every golden holds both pictureLevels and lensCorrection; the document's field counts (oni-core declared names, codec_checks keys) are 50 and the look's fields 20, each lot having counted its own alone."
+  },
+  {
+    "id": 2190,
+    "type": "perf",
+    "title": "The grain is a pass of its own before the print, so a print notch reruns no grain",
+    "status": "done",
+    "detail": "oni_pipeline::Pipeline::chain laid the grain and stage47 as one fused pass, whose input (the haloed scene) was what Cache::frontier kept: every Exposure, Lighting, per-channel point or Hunt notch on a grained Digital frame reran the grain, 4 to 7 times a plain per-pixel pass (+2.7 ms at 2 MP, +4.4 at 6 MP, +12.9 at 13.5 MP on an M2 Max). The grain is now its own stage, the print the next, so the frontier keeps the grained scene and a print notch costs what an ungrained one does; a grain notch or an uncached render (export, counted, loupe) pays one more rgba32float pass, 0.5 to 1.6 ms. Look: grained Digital pixels only move, by at most 1.1e-6 relative (the compiler's float contraction differs fused and apart); renders at rest and every film mode do not move. Checks: tests/grain.rs a_print_notch_through_the_frontier_reruns_no_grain (the grained chain is one stage longer than the ungrained one, which the fused layout fails at 3 against 4; an Exposure notch through Cache::frontier dispatches and writes as many pixels grained as at rest; twins: with no cache the notch writes more, a grain-amount notch dispatches one more pass); the_grain_matches_its_reference_on_every_branch now checks the chain's layout, grain then print, against cpu::stage47(cpu::grain(..)) (twin: the grain after the print)."
+  },
+  {
+    "id": 2191,
+    "type": "perf",
+    "title": "The grain's PCG rounds written out: the grain kernel 30 to 45 % faster on Metal",
+    "status": "done",
+    "detail": "oni-render wgsl/grain.wgsl grain_normal ran its two PCG-2D rounds in a loop; naga bounds every loop on Metal (force_loop_bounding), which blocks the compiler's unrolling inside the 8x8 lattice loop. Written out, the grain alone falls from 2.76 to 1.63 ms at 2.2 MP and from 6.4 to 3.6-3.9 ms at 6 MP (size 0). The CPU reference kernel/grain.rs mirrors it, its values unchanged. Look: grained Digital pixels move by at most 2.8e-7 relative (about 2 ulp, float contraction), nothing at rest. Checks: the_grain_matches_its_reference_on_every_branch (twin: the lattice one node over) and the_nodes_are_standard_normals_and_uncorrelated."
+  },
+  {
+    "id": 2192,
+    "type": "perf",
+    "title": "A measure carries no film effects, so a grain or halation notch reads no distribution again",
+    "status": "done",
+    "detail": "oni_measure::truncate::truncated rests grain and halation: a measure renders neither (effects = !measuring), yet Engine::inputs compared the entering settings with them, so every grain or halation notch re-read both input histograms, about 8 ms of blocking readback each (59 re-reads, 507 ms in a 60-notch grain drag; 56 and 537 ms on halation). Readings are unchanged. Checks: truncate every_reading_is_taken_without_the_film_effects (grained and haloed equals rest for all four stages; twin: an Exposure move changes the ManualCurves entry); render::inputs_tests::a_film_effect_notch_reads_no_distribution_again (0 dispatches after a grain and halation change, readings equal; twin: an Exposure notch dispatches)."
+  },
+  {
+    "id": 2193,
+    "type": "perf",
+    "title": "The prewarm compiles a digital photo's chain: its white, halation, grain and levels",
+    "status": "done",
+    "detail": "render/engine/prewarm.rs variants were film modes alone, so the first Digital, grained or haloed notch compiled 3 to 4 pipelines (21.7 ms against a 3.3 ms steady state with Metal's cache warm, about 150 ms each cold). variants() gains digital_busy() (the busy finishing set on Digital, a 4000 K white, grain 0.5, halation 0.5, a picture-levels mid) and Digital at rest; Kernels::total follows (27 to 33 steps). Engine::prewarm_where(keep) prewarms a subset, for the twin. Check: prewarm_tests a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch (twin: prewarmed on the film variants alone, the Digital notch compiles)."
+  },
+  {
+    "id": 2194,
+    "type": "bench",
+    "title": "A digital photo's film effects in the cost bench",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/cost.rs a_digital_photo_s_film_effects_at_rest_and_on_a_notch (ONI_BENCH_COST=1): whole renders of a Digital frame at rest, grain at sizes 0, 0.5 and 1, halation, both, at 2000x1333 and 3024x2016, then an Exposure notch through Cache::frontier with no grain, grain, grain and halation, cases interleaved, GPU completion read by a one-pixel readback. A bench, not a check."
   }
 ]

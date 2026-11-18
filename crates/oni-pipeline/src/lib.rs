@@ -139,8 +139,12 @@ impl Pipeline {
         // A digital photo's alone for now (owner's call), so a film mode never renders an effect it hides.
         let effects = !measuring && !s.mode.is_film();
         let haloed = if effects { halation::halated(balanced, s, scan) } else { balanced };
-        let grained = grain::grain(s, scan, scale).filter(|_| effects).map(|k| stages::grain(&k));
-        let out = stages::laid(haloed, grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).collect());
+        // The grain is a pass of its own: a print notch starts from the grained scene the canvas's cache keeps.
+        let grained = match grain::grain(s, scan, scale).filter(|_| effects) {
+            Some(k) => haloed.then(stages::grain(&k)),
+            None => haloed,
+        };
+        let out = grained.then(stages::stage47(&conversion::stage47(s)));
         let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
         self.finishing(graph, looked, s, true, scale, reference, measuring)
     }
