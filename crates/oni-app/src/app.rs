@@ -62,6 +62,9 @@ mod tree_column;
 mod tree_rows;
 mod project_drop;
 mod tree_reveal;
+mod store_fields;
+use store_fields::{set_fraction, set_modified, set_readout, set_value};
+pub use store_fields::fraction;
 mod tree_clicks;
 mod state_read;
 use state_read::LoadBar;
@@ -360,75 +363,6 @@ fn with_shell(f: impl FnOnce(&Rc<Ctl>) + Send + 'static) {
             f(&c);
         }
     });
-}
-
-macro_rules! fields {
-    ($($variant:ident => $fraction:ident, $get:ident, $readout:ident, $value:ident;)*) => {
-        fn set_fraction(g: &Store, f: Field, v: f32) {
-            match f { $(Field::$variant => g.$fraction(v),)* }
-        }
-        /// The fraction the panel draws, read back by the checks.
-        pub fn fraction(g: &Store, f: Field) -> f32 {
-            match f { $(Field::$variant => g.$get(),)* }
-        }
-        fn set_readout(g: &Store, f: Field, v: SharedString) {
-            match f { $(Field::$variant => g.$readout(v),)* }
-        }
-        fn set_value(g: &Store, f: Field, v: SharedString) {
-            match f { $(Field::$variant => g.$value(v),)* }
-        }
-    };
-}
-
-fields! {
-    Temperature => set_temperature_fraction, get_temperature_fraction, set_temperature_readout, set_temperature_value;
-    Tint => set_tint_fraction, get_tint_fraction, set_tint_readout, set_tint_value;
-    ColorDensity => set_color_density_fraction, get_color_density_fraction, set_color_density_readout, set_color_density_value;
-    Exposure => set_exposure_fraction, get_exposure_fraction, set_exposure_readout, set_exposure_value;
-    Highlights => set_highlights_fraction, get_highlights_fraction, set_highlights_readout, set_highlights_value;
-    Shadows => set_shadows_fraction, get_shadows_fraction, set_shadows_readout, set_shadows_value;
-    WhitePoint => set_white_point_fraction, get_white_point_fraction, set_white_point_readout, set_white_point_value;
-    BlackPoint => set_black_point_fraction, get_black_point_fraction, set_black_point_readout, set_black_point_value;
-    Contrast => set_contrast_fraction, get_contrast_fraction, set_contrast_readout, set_contrast_value;
-    Vignette => set_vignette_fraction, get_vignette_fraction, set_vignette_readout, set_vignette_value;
-    Chrome => set_chrome_fraction, get_chrome_fraction, set_chrome_readout, set_chrome_value;
-    BalanceStrength => set_balance_strength_fraction, get_balance_strength_fraction, set_balance_strength_readout, set_balance_strength_value;
-    DensityCeiling => set_density_ceiling_fraction, get_density_ceiling_fraction, set_density_ceiling_readout, set_density_ceiling_value;
-    DyeSeparation => set_dye_separation_fraction, get_dye_separation_fraction, set_dye_separation_readout, set_dye_separation_value;
-    Angle => set_angle_fraction, get_angle_fraction, set_angle_readout, set_angle_value;
-    SharpenAmount => set_sharpen_amount_fraction, get_sharpen_amount_fraction, set_sharpen_amount_readout, set_sharpen_amount_value;
-    SharpenRadius => set_sharpen_radius_fraction, get_sharpen_radius_fraction, set_sharpen_radius_readout, set_sharpen_radius_value;
-    SharpenHalo => set_sharpen_halo_fraction, get_sharpen_halo_fraction, set_sharpen_halo_readout, set_sharpen_halo_value;
-    ChromaAmount => set_chroma_amount_fraction, get_chroma_amount_fraction, set_chroma_amount_readout, set_chroma_amount_value;
-    ChromaRadius => set_chroma_radius_fraction, get_chroma_radius_fraction, set_chroma_radius_readout, set_chroma_radius_value;
-    Texture => set_texture_fraction, get_texture_fraction, set_texture_readout, set_texture_value;
-    PaperRed => set_paper_red_fraction, get_paper_red_fraction, set_paper_red_readout, set_paper_red_value;
-    PaperGreen => set_paper_green_fraction, get_paper_green_fraction, set_paper_green_readout, set_paper_green_value;
-    PaperBlue => set_paper_blue_fraction, get_paper_blue_fraction, set_paper_blue_readout, set_paper_blue_value;
-    GainRed => set_gain_red_fraction, get_gain_red_fraction, set_gain_red_readout, set_gain_red_value;
-    GainGreen => set_gain_green_fraction, get_gain_green_fraction, set_gain_green_readout, set_gain_green_value;
-    GainBlue => set_gain_blue_fraction, get_gain_blue_fraction, set_gain_blue_readout, set_gain_blue_value;
-    FlatAmount => set_flat_amount_fraction, get_flat_amount_fraction, set_flat_amount_readout, set_flat_amount_value;
-    FlatTemperature => set_flat_temperature_fraction, get_flat_temperature_fraction, set_flat_temperature_readout, set_flat_temperature_value;
-    FlatTint => set_flat_tint_fraction, get_flat_tint_fraction, set_flat_tint_readout, set_flat_tint_value;
-    GainTemperature => set_gain_temperature_fraction, get_gain_temperature_fraction, set_gain_temperature_readout, set_gain_temperature_value;
-    GainTint => set_gain_tint_fraction, get_gain_tint_fraction, set_gain_tint_readout, set_gain_tint_value;
-}
-
-fn set_modified(g: &Store, b: Block, on: bool) {
-    match b {
-        Block::Color => g.set_color_modified(on),
-        Block::Lighting => g.set_lighting_modified(on),
-        Block::Effects => g.set_effects_modified(on),
-        Block::DensityCeiling => g.set_density_ceiling_modified(on),
-        Block::DyeSeparation => g.set_dye_separation_modified(on),
-        Block::Sharpening => g.set_sharpening_modified(on),
-        Block::ChromaDenoise => g.set_chroma_denoise_modified(on),
-        Block::Texture => g.set_texture_modified(on),
-        Block::PaperCorrection => g.set_paper_correction_modified(on),
-        Block::SourceBalance => g.set_source_balance_modified(on),
-        Block::FlatField => g.set_flat_field_modified(on),
-    }
 }
 
 fn image(bytes: &[u8], w: usize, h: usize) -> Image { Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w as u32, h as u32)) }

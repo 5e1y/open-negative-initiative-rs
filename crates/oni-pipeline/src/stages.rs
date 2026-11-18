@@ -3,7 +3,7 @@
 
 use oni_graph::{Rect, Stage};
 use oni_render::{
-    Affine, ColorMatrix, Curves, Detail, FlatField, Gaussian, LUT_SIZE, Orient, SaturationCurve, ScannerDensity,
+    Affine, ColorMatrix, Curves, Detail, FlatField, Gaussian, Grain, LUT_SIZE, Orient, SaturationCurve, ScannerDensity,
     Spectrogram, Stage47, StrokeMask, TextureCoeff, Vignette, uniform, wgsl,
 };
 use std::sync::LazyLock;

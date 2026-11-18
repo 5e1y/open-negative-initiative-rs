@@ -2108,6 +2108,22 @@ msgid "Chrome"
 msgstr "Chrome"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Film Effects"
+msgstr "Efectos de película"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain lays a film-like texture over the scene before Lighting and Colour, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed."
+msgstr "Grano pone una textura de película sobre la escena antes de Luz y Color, más fuerte con Grano, más gruesa con Tamaño del grano; se queda en la foto al recortarla, girarla o ampliarla."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain"
+msgstr "Grano"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain size"
+msgstr "Tamaño del grano"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 

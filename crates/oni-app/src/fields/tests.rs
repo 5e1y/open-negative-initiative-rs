@@ -303,6 +303,7 @@ fn each_blocks_reset_key_clears_the_block_it_shows() {
         (Block::PaperCorrection, "paper-correction"),
         (Block::SourceBalance, "source-balance"),
         (Block::FlatField, "flat-field"),
+        (Block::FilmEffects, "film-effects"),
     ];
     let of = |name: &str| named.iter().find(|(_, n)| *n == name).map(|(b, _)| *b);
     let laid = reset_indices(&panel_source());

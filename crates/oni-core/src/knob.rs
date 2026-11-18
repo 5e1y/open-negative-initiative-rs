@@ -3,7 +3,7 @@
 
 use crate::fields::Field;
 use oni_settings::axis::density_axis;
-use oni_settings::blocks::{ChromaDenoise, Gains, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::levels::Levels;
 use oni_settings::settings::roll_settings;
@@ -78,6 +78,8 @@ pub enum Knob {
     FlatFieldTemperature,
     FlatFieldTint,
     Angle,
+    GrainAmount,
+    GrainSize,
 }
 
 impl Knob {
@@ -106,6 +108,7 @@ impl Knob {
             Knob::Paper(_) => Field::PaperCorrection,
             Knob::FlatFieldAmount | Knob::FlatFieldTemperature | Knob::FlatFieldTint => Field::FlatField,
             Knob::Angle => Field::Geometry,
+            Knob::GrainAmount | Knob::GrainSize => Field::Grain,
         }
     }
 
@@ -146,6 +149,8 @@ impl Knob {
             Knob::FlatFieldAmount => FlatField::AMOUNT_RANGE,
             Knob::FlatFieldTemperature | Knob::FlatFieldTint => FlatField::COLOUR_RANGE,
             Knob::Angle => Geometry::ANGLE_RANGE,
+            Knob::GrainAmount => Grain::AMOUNT_RANGE,
+            Knob::GrainSize => Grain::SIZE_RANGE,
         })
     }
 
@@ -190,6 +195,8 @@ impl Knob {
             Knob::FlatFieldTemperature => s.flat_field.temperature,
             Knob::FlatFieldTint => s.flat_field.tint,
             Knob::Angle => s.geometry.angle,
+            Knob::GrainAmount => s.grain.amount,
+            Knob::GrainSize => s.grain.size,
         }
     }
 
@@ -252,6 +259,8 @@ impl Knob {
             Knob::FlatFieldTemperature => out.flat_field.temperature = v,
             Knob::FlatFieldTint => out.flat_field.tint = v,
             Knob::Angle => out.geometry.angle = v,
+            Knob::GrainAmount => out.grain.amount = v,
+            Knob::GrainSize => out.grain.size = v,
         }
         out
     }

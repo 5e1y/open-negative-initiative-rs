@@ -183,6 +183,12 @@ pub fn all() -> &'static [Row] {
                 carry: carry!(vignette),
             },
             Row {
+                id: "grain",
+                covers: &["grain"],
+                sliders: vec![slider("grain.amount", carry!(grain.amount)), slider("grain.size", carry!(grain.size))],
+                carry: carry!(grain),
+            },
+            Row {
                 id: "scanner",
                 covers: &["scanner", "scannerFinish", "scannerMachine"],
                 sliders: vec![
