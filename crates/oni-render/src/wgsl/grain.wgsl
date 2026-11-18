@@ -1,5 +1,5 @@
 // `grain`: a monochrome texture in stops on a cubic B-spline lattice anchored on the scan's
-// full-resolution grid, each pixel the field's mean over its own footprint.
+// full-resolution grid, each pixel the field's mean over its own footprint, its share read off its light.
 
 struct Params {
     head: vec4<u32>,
@@ -7,7 +7,18 @@ struct Params {
     // then half the footprint in cells.
     row_x: vec4<f32>,
     row_y: vec4<f32>,
+    // x: the stops a unit of the mean moves the light by; y, z: the share table's first stop and its
+    // nodes a stop.
     dose: vec4<f32>,
+    // A node's share, then the next node's, `GRAIN_NODES` of them: one row read a pixel, no lane indexed.
+    share: array<vec4<f32>, 64>,
+}
+
+fn grain_share(s: vec3<f32>) -> f32 {
+    let t = clamp((log2(max(dot(s, LUMA), 1e-30)) - P.dose.y) * P.dose.z, 0.0, 63.0);
+    let i = min(floor(t), 62.0);
+    let n = P.share[i32(i)];
+    return n.x + (n.y - n.x) * (t - i);
 }
 
 // ∫ B from −2 to `u`, B the cubic B-spline.
@@ -34,8 +45,10 @@ fn grain_normal(i: vec2<i32>) -> f32 {
     return (u.x + u.y + u.z + u.w - 2.0) * 1.7320508;
 }
 
-// `at` is the pixel's centre in the graph's pixels.
+// `at` is the pixel's centre in the graph's pixels; a light given no share is kept.
 fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
+    let share = grain_share(s.rgb);
+    if (share <= 0.0) { return s; }
     let q = vec2<f32>(P.row_x.x * at.x + P.row_x.y * at.y + P.row_x.z, P.row_y.x * at.x + P.row_y.y * at.y + P.row_y.z) * P.row_x.w;
     let lo = q - P.row_y.w;
     let hi = q + P.row_y.w;
@@ -60,5 +73,5 @@ fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         }
         field += wy[r] * row;
     }
-    return vec4<f32>(s.rgb * exp2(P.dose.x * field), s.a);
+    return vec4<f32>(s.rgb * exp2(P.dose.x * share * field), s.a);
 }

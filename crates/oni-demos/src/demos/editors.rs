@@ -2,7 +2,7 @@
 //! press and drag, the wheel's grab, the saturation curve's presses.
 
 use oni_app::editors::geometry::{Drawing, Size};
-use oni_app::editors::{curve, saturation, spectrogram};
+use oni_app::editors::{curve, points, saturation, spectrogram};
 use oni_settings::PipelineSettings;
 use oni_settings::cg::Point;
 use oni_settings::levels::LevelsChannel;
@@ -110,7 +110,7 @@ impl Editor for Saturation {
 
     fn edit(&self, s: &PipelineSettings, strokes: &[Stroke], held: bool, size: Size) -> (PipelineSettings, Drawing) {
         let mut out = s.clone();
-        let mut presses = saturation::Presses::default();
+        let mut presses = points::Presses::default();
         for (a, b) in strokes {
             presses.release();
             presses.press(&mut out.saturation, *a, size);

@@ -2,7 +2,7 @@
 import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
-import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
+import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, GrainEditor } from "../editors.slint";
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
@@ -266,6 +266,17 @@ export component ColorPane inherits Pane {
         help: @tr("Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film.");
         StoreSlider { field: 40; label: @tr("Grain"); fraction: Store.grain-amount-fraction; readout: Store.grain-amount-readout; value-text: Store.grain-amount-value; }
         StoreSlider { field: 41; label: @tr("Grain size"); fraction: Store.grain-size-fraction; readout: Store.grain-size-readout; value-text: Store.grain-size-value; }
+        // The grain's share by tone, folded under its sliders until the hand opens it.
+        EditorBlock {
+            title: @tr("Grain Curve");
+            separated: false;
+            inset: 0;
+            block: 4;
+            modified: Editors.grain-modified;
+            folded <=> Editors.grain-folded;
+            help: @tr("The grain's strength by the photo's tone as it opens, from its black point to its white: a point at the top lays the whole Grain, at the bottom none. At rest it is lighter in the blacks, whole in the mids and gone before the whites.\n\nDrag a point along the tones; double-click to return it to its rest.");
+            GrainEditor { }
+        }
         StoreSlider { field: 42; label: @tr("Halation"); fraction: Store.halation-amount-fraction; readout: Store.halation-amount-readout; value-text: Store.halation-amount-value; }
         StoreSlider { field: 43; label: @tr("Halation size"); fraction: Store.halation-size-fraction; readout: Store.halation-size-readout; value-text: Store.halation-size-value; }
         StoreSlider { field: 48; label: @tr("Halation sensitivity"); fraction: Store.halation-sensitivity-fraction; readout: Store.halation-sensitivity-readout; value-text: Store.halation-sensitivity-value; }

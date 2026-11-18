@@ -1,10 +1,13 @@
 //! The panel's editors: the manual curves, the levels (a film's per channel, a digital photo's on the
-//! picture), the spectrogram wheel and its band sliders, the saturation curve and the print curve over
-//! the main histogram.
+//! picture), the spectrogram wheel and its band sliders, the saturation curve, the grain curve and the
+//! print curve over the main histogram.
 
+mod bands;
 pub mod curve;
 pub mod geometry;
+pub mod grain;
 pub mod levels;
+pub mod points;
 pub mod print;
 pub mod saturation;
 pub mod shell;
@@ -16,11 +19,13 @@ use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
 use geometry::Size;
 use oni_core::Command;
 use oni_settings::PipelineSettings;
+use oni_settings::blocks::GrainCurve;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::LevelsChannel;
 use oni_settings::spectrogram::{Band, Spectrogram};
 use std::time::Instant;
 
+pub use bands::{BAND_FIELDS, band_range, band_readout, band_value};
 pub use shell::{Shell, let_go, origin, pressed_anywhere, publish, size, wire, writes};
 pub use stored::{RESETS, face, lay, levels_modified, rest_of, rested_levels, rested_windows, resting_levels};
 
@@ -33,10 +38,11 @@ pub enum Plot {
     Saturation = 3,
     LevelsHistogram = 4,
     Print = 5,
+    Grain = 6,
 }
 
 impl Plot {
-    pub const ALL: [Plot; 6] = [Plot::Curves, Plot::Levels, Plot::Wheel, Plot::Saturation, Plot::LevelsHistogram, Plot::Print];
+    pub const ALL: [Plot; 7] = [Plot::Curves, Plot::Levels, Plot::Wheel, Plot::Saturation, Plot::LevelsHistogram, Plot::Print, Plot::Grain];
 
     pub fn from_index(i: i32) -> Option<Plot> {
         Self::ALL.get(usize::try_from(i).ok()?).copied()
@@ -50,6 +56,7 @@ pub enum Reset {
     Levels = 1,
     Spectrogram = 2,
     Saturation = 3,
+    Grain = 4,
 }
 
 /// What a gesture is changing, kept whole so the store takes it in one write.
@@ -59,39 +66,7 @@ pub enum Edit {
     Levels(levels::Windows),
     Spectrogram(Spectrogram),
     Saturation(SaturationCurve),
-}
-
-/// The band slider's three axes, in their order on screen.
-pub const BAND_FIELDS: usize = 3;
-
-pub fn band_range(field: usize, band: Band) -> (f32, f32) {
-    match field {
-        0 => band.hue_range(),
-        1 => Spectrogram::SATURATION_RANGE,
-        _ => Spectrogram::LUMA_RANGE,
-    }
-}
-
-pub fn band_value(s: &Spectrogram, band: Band, field: usize) -> f32 {
-    let (h, sat, l) = s.band(band);
-    [h, sat, l][field.min(2)]
-}
-
-fn with_band_value(s: &Spectrogram, band: Band, field: usize, v: f32) -> Spectrogram {
-    let (mut h, mut sat, mut l) = s.band(band);
-    match field {
-        0 => h = v,
-        1 => sat = v,
-        _ => l = v,
-    }
-    let mut out = *s;
-    out.set(band, h, sat, l);
-    out
-}
-
-/// `SpectrogramBands`' readouts: the hue in degrees, the others in percent, signed.
-pub fn band_readout(field: usize, v: f32) -> String {
-    if field == 0 { crate::fields::number(f64::from(v), 0, true, crate::fields::Unit::Degrees) } else { crate::fields::Readout::SignedPercent.format(v) }
+    Grain(GrainCurve),
 }
 
 /// The press under way, decided once at the touch.
@@ -100,7 +75,8 @@ enum Held {
     Curve { index: Option<usize>, double: bool, at: (f64, f64) },
     Level { grip: levels::Grip, start: f32, from: f64 },
     Wheel { grab: spectrogram::Grab, from: (f64, f64) },
-    Saturation { double: bool, at: (f64, f64) },
+    /// On the saturation's or the grain's five points.
+    Points { double: bool, at: (f64, f64) },
     Band { field: usize, start: f32 },
 }
 
@@ -108,8 +84,8 @@ enum Held {
 /// writes at the hand's cadence and makes one history step per press.
 #[derive(Default)]
 pub struct Gestures {
-    pub sizes: [Size; 6],
-    pub origins: [(f64, f64); 6],
+    pub sizes: [Size; Plot::ALL.len()],
+    pub origins: [(f64, f64); Plot::ALL.len()],
     pub curve_channel: usize,
     pub levels_channel: usize,
     /// The spectrogram's selected point; it is lit only while the wheel holds the focus.
@@ -119,11 +95,13 @@ pub struct Gestures {
     held: Option<Held>,
     live: Option<Edit>,
     hand: Hand,
-    presses: [Option<Instant>; 4],
+    /// The last press on each plot, for a double click.
+    presses: [Option<Instant>; Plot::ALL.len()],
     band_presses: [Option<Instant>; BAND_FIELDS],
     /// A band slider's knob under the hand, which stays where the pointer put it.
     pub band_shown: Option<(usize, f32)>,
-    saturation: saturation::Presses,
+    saturation: points::Presses,
+    grain: points::Presses,
     /// A scroll moved a knob: the hand drives it, so the next drawing places it unsprung.
     pub scrolled: bool,
     /// Store writes this session, the cadence's check.
@@ -155,6 +133,7 @@ impl Gestures {
             Some(Edit::Levels(l)) => l.lay(&mut f),
             Some(Edit::Spectrogram(s)) => f.spectrogram = *s,
             Some(Edit::Saturation(s)) => f.saturation = s.clone(),
+            Some(Edit::Grain(c)) => f.grain.curve = *c,
             None => {}
         }
         f
@@ -170,11 +149,6 @@ impl Gestures {
             Some(Held::Level { grip, .. }) => Some(grip),
             _ => None,
         }
-    }
-
-    /// The saturation point under the hand, drawn lit.
-    pub fn saturation_dragged(&self) -> Option<usize> {
-        if matches!(self.held, Some(Held::Saturation { .. })) { self.saturation.dragged } else { None }
     }
 
     pub fn curve_channel(&self) -> LevelsChannel {
@@ -291,13 +265,7 @@ impl Gestures {
                 self.begin(store, Held::Wheel { grab, from: at }, Edit::Spectrogram(s));
                 if double { self.offer(store, now) } else { Then::Draw }
             }
-            Plot::Saturation => {
-                let double = self.double(3, now);
-                let mut curve = view.saturation.clone();
-                self.saturation.press(&mut curve, at, size);
-                self.begin(store, Held::Saturation { double, at }, Edit::Saturation(curve));
-                self.offer(store, now)
-            }
+            Plot::Saturation | Plot::Grain => self.points_press(store, plot, &view, at, now),
             Plot::LevelsHistogram | Plot::Print => Then::Nothing,
         }
     }
@@ -320,10 +288,10 @@ impl Gestures {
             (Held::Wheel { grab, from }, Edit::Spectrogram(s)) if plot == Plot::Wheel => {
                 Edit::Spectrogram(spectrogram::dragged(self.wheel(), grab, (at.0 - from.0, at.1 - from.1), &s))
             }
-            (Held::Saturation { .. }, Edit::Saturation(mut curve)) if plot == Plot::Saturation => {
-                self.saturation.drag(&mut curve, at, size);
-                Edit::Saturation(curve)
-            }
+            (Held::Points { .. }, edit) => match self.points_drag(plot, edit, at) {
+                Some(edit) => edit,
+                None => return Then::Nothing,
+            },
             _ => return Then::Nothing,
         };
         if Some(&next) == self.live.as_ref() {
@@ -334,7 +302,7 @@ impl Gestures {
     }
 
     /// The press's end, on whichever plot holds it: a double click's second release removes the disc
-    /// under it, or puts the saturation point back on neutral; then the last value lands and the step closes.
+    /// under it, or puts a five-point curve's point back at its rest; then the last value lands and the step closes.
     pub fn release(&mut self, store: &mut EditorStore) -> Then {
         let Some(held) = self.held.take() else { return Then::Nothing };
         let channel = self.curve_channel();
@@ -346,14 +314,10 @@ impl Gestures {
                     curve.remove(i);
                 }
             }
-            (Held::Saturation { double: true, at }, Some(Edit::Saturation(curve))) => {
-                if let Some(next) = self.saturation.double(curve, at, self.sizes[Plot::Saturation as usize]) {
-                    *curve = next;
-                }
-            }
+            (Held::Points { double: true, at }, _) => self.points_double(at),
             _ => {}
         }
-        self.saturation.release();
+        self.points_released();
         self.hand.released();
         if let Some(edit) = self.live.take() {
             self.write(store, &edit);
@@ -394,44 +358,6 @@ impl Gestures {
         Some(self.once(store, Edit::Levels(windows)))
     }
 
-    /// The wheel's keys while it holds the focus: the arrows step the selected point, Tab walks the
-    /// wheel; every other key goes on to the window.
-    pub fn key(&mut self, store: &mut EditorStore, text: &str, option: bool) -> Option<Then> {
-        use slint::platform::Key;
-        if !self.focused {
-            return None;
-        }
-        let is = |k: Key| text == slint::SharedString::from(k).as_str();
-        let nudge = if is(Key::LeftArrow) {
-            spectrogram::Nudge::Left
-        } else if is(Key::RightArrow) {
-            spectrogram::Nudge::Right
-        } else if is(Key::UpArrow) {
-            spectrogram::Nudge::Up
-        } else if is(Key::DownArrow) {
-            spectrogram::Nudge::Down
-        } else if is(Key::Tab) {
-            self.selected = spectrogram::walked(self.selected, option);
-            return Some(Then::Draw);
-        } else {
-            return None;
-        };
-        let s = spectrogram::nudge(self.selected, nudge, &self.view(store).spectrogram);
-        Some(self.once(store, Edit::Spectrogram(s)))
-    }
-
-    /// `dsReleasesFocus`: a press anywhere in the window off the wheel releases its focus, so its
-    /// point unlights and the arrows go back to the window.
-    pub fn pressed_anywhere(&mut self, at: (f64, f64)) -> bool {
-        let (o, s) = (self.origins[Plot::Wheel as usize], self.sizes[Plot::Wheel as usize]);
-        let inside = (o.0..=o.0 + s.w).contains(&at.0) && (o.1..=o.1 + s.h).contains(&at.1);
-        if !self.focused || inside {
-            return false;
-        }
-        self.focused = false;
-        true
-    }
-
     /// A tab of the curves, the levels or the bands.
     pub fn pick(&mut self, which: i32, tab: usize) -> Then {
         match which {
@@ -449,73 +375,6 @@ impl Gestures {
         store.apply(Command::Each(rest_of(block, scanner)));
         self.writes += 1;
         Then::Publish
-    }
-
-    // MARK: - The band sliders
-
-    /// A press on a band slider; the second of a double click puts the axis back on zero.
-    pub fn band_press(&mut self, store: &mut EditorStore, field: usize, now: Instant) -> (bool, Then) {
-        let field = field.min(BAND_FIELDS - 1);
-        let double = self.band_presses[field].is_some_and(|t| now.duration_since(t) <= DOUBLE_CLICK);
-        self.band_presses[field] = Some(now);
-        let s = self.view(store).spectrogram;
-        let band = self.selected.band;
-        if double {
-            return (true, self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, 0.0))));
-        }
-        let range = band_range(field, band);
-        let start = track::position(band_value(&s, band, field), &(range.0..=range.1), track::Bend::Even);
-        self.band_shown = Some((field, start));
-        self.begin(store, Held::Band { field, start }, Edit::Spectrogram(s));
-        (false, Then::Draw)
-    }
-
-    pub fn band_drag(&mut self, store: &mut EditorStore, field: usize, translation: f32, span: f32, fine: bool, now: Instant) -> Then {
-        let (Some(Held::Band { field: held, start }), Some(Edit::Spectrogram(s))) = (self.held, self.live.clone()) else { return Then::Nothing };
-        if held != field {
-            return Then::Nothing;
-        }
-        let band = self.selected.band;
-        let range = band_range(field, band);
-        let asked = track::clamped(track::asked(start, translation, span, fine));
-        self.band_shown = Some((field, asked));
-        let next = with_band_value(&s, band, field, track::value(asked, &(range.0..=range.1), track::Bend::Even));
-        if next == s {
-            return Then::Draw;
-        }
-        self.live = Some(Edit::Spectrogram(next));
-        self.offer(store, now)
-    }
-
-    pub fn band_release(&mut self, store: &mut EditorStore) -> Then {
-        if !matches!(self.held, Some(Held::Band { .. })) {
-            return Then::Nothing;
-        }
-        self.release(store)
-    }
-
-    pub fn band_scroll(&mut self, store: &mut EditorStore, field: usize, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
-        if dx == 0.0 || dx.abs() <= dy.abs() || self.held.is_some() {
-            return false;
-        }
-        let s = self.view(store).spectrogram;
-        let band = self.selected.band;
-        let range = band_range(field, band);
-        let from = track::position(band_value(&s, band, field), &(range.0..=range.1), track::Bend::Even);
-        let asked = track::clamped(track::asked(from, dx * TRACKPAD_TRAVEL, span, fine));
-        let v = track::value(asked, &(range.0..=range.1), track::Bend::Even);
-        self.scrolled = true;
-        self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, v)));
-        true
-    }
-
-    /// An arrow's or accessibility's step: a unit of the readout, a degree or a percent, on its grid.
-    pub fn band_step(&mut self, store: &mut EditorStore, field: usize, direction: i32) -> Then {
-        let s = self.view(store).spectrogram;
-        let (band, unit) = (self.selected.band, if field == 0 { 1.0 } else { 0.01 });
-        let (low, high) = band_range(field, band);
-        let v = (((band_value(&s, band, field) / unit).round() + direction as f32) * unit).clamp(low, high);
-        self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, v)))
     }
 }
 

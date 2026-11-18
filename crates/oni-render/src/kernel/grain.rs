@@ -1,10 +1,25 @@
 //! Film grain: a monochrome texture in stops on a lattice anchored on the scan's full-resolution grid,
-//! each output pixel the field's mean over its own footprint.
+//! each output pixel the field's mean over its own footprint, its share read off the pixel's light.
 
 use super::*;
 
 /// The widest footprint averaged node by node, in cells: seven nodes an axis at most.
 pub const GRAIN_FOOTPRINT_CAP: f32 = 3.0;
+
+/// The share table's nodes, evenly spaced in stops of the scene's light from `GRAIN_LOW_STOPS` to
+/// `GRAIN_HIGH_STOPS`: 4.2 a stop, so the curve's fall to none spans about nine.
+pub const GRAIN_NODES: usize = 64;
+pub const GRAIN_LOW_STOPS: f32 = -14.0;
+pub const GRAIN_HIGH_STOPS: f32 = 1.0;
+
+/// The scene's light at node `i` of the share table.
+pub fn grain_node_light(i: usize) -> f32 {
+    (GRAIN_LOW_STOPS + i as f32 / nodes_per_stop()).exp2()
+}
+
+fn nodes_per_stop() -> f32 {
+    (GRAIN_NODES - 1) as f32 / (GRAIN_HIGH_STOPS - GRAIN_LOW_STOPS)
+}
 
 /// Where `stops` comes from: the field's spread on the full-resolution grid and on this render's.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -17,23 +32,37 @@ pub struct Grain {
     pub reach: f32,
     /// Stops a unit of the mean moves the light by.
     pub stops: f32,
+    /// The share of `stops` laid at each node's light, from 0 to 1.
+    pub share: [f32; GRAIN_NODES],
 }
 
 impl Grain {
-    /// `spread` stops at full resolution on cells of `cell` full-resolution pixels, rendered at `scale`;
-    /// past the cap the cap's mean stands in, scaled to the whole footprint's spread.
-    pub fn on(scan: [[f32; 3]; 2], cell: f32, scale: f32, spread: f32) -> Self {
+    /// `spread` stops at full resolution on cells of `cell` full-resolution pixels, rendered at `scale`,
+    /// each light taking its `share`; past the cap the cap's mean stands in, scaled to the whole footprint's spread.
+    pub fn on(scan: [[f32; 3]; 2], cell: f32, scale: f32, spread: f32, share: [f32; GRAIN_NODES]) -> Self {
         let full = 1.0 / cell;
         let here = full / scale;
         let kept = here.min(GRAIN_FOOTPRINT_CAP);
         let stops = spread * mean_spread(here) / (mean_spread(full) * mean_spread(kept));
-        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops }
+        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, share }
     }
 
+    /// The lattice's rows, the dose, then a row a node holding its share and the next one's, so the
+    /// shader reads one row a pixel and indexes no vector's lane.
     pub fn rows(&self) -> Vec<V4> {
         let [x, y] = self.scan;
-        vec![[x[0], x[1], x[2], self.per_cell], [y[0], y[1], y[2], self.reach], [self.stops, 0.0, 0.0, 0.0]]
+        let mut rows = vec![[x[0], x[1], x[2], self.per_cell], [y[0], y[1], y[2], self.reach], [self.stops, GRAIN_LOW_STOPS, nodes_per_stop(), 0.0]];
+        rows.extend((0..GRAIN_NODES).map(|i| [self.share[i], self.share[(i + 1).min(GRAIN_NODES - 1)], 0.0, 0.0]));
+        rows
     }
+}
+
+/// The share of the grain at light `y`: the table read on its stops, a line between two nodes.
+pub(crate) fn share(y: f32, k: &Grain) -> f32 {
+    let t = ((y.max(1e-30).log2() - GRAIN_LOW_STOPS) * nodes_per_stop()).clamp(0.0, (GRAIN_NODES - 1) as f32);
+    let i = (t.floor() as usize).min(GRAIN_NODES - 2);
+    let f = t - i as f32;
+    k.share[i] + (k.share[i + 1] - k.share[i]) * f
 }
 
 /// `∫ B` from −2 to `u`, `B` the cubic B-spline the lattice is interpolated with.
@@ -87,8 +116,12 @@ pub fn mean_spread(footprint: f32) -> f32 {
     per_axis as f32
 }
 
-/// The grain at the pixel whose centre is `at`, in the graph's pixels.
+/// The grain at the pixel whose centre is `at`, in the graph's pixels; a light given no share is kept.
 pub fn grain(s: V4, at: V2, k: &Grain) -> V4 {
+    let share = share(dot(rgb(s), LUMA), k);
+    if share <= 0.0 {
+        return s;
+    }
     let [x, y] = k.scan;
     let q = [(x[0] * at[0] + x[1] * at[1] + x[2]) * k.per_cell, (y[0] * at[0] + y[1] * at[1] + y[2]) * k.per_cell];
     let (fx, wx) = weights(q[0] - k.reach, q[0] + k.reach);
@@ -101,7 +134,7 @@ pub fn grain(s: V4, at: V2, k: &Grain) -> V4 {
         }
         field += wr * row;
     }
-    let f = (k.stops * field).exp2();
+    let f = (k.stops * share * field).exp2();
     with_alpha(map(rgb(s), |_, v| v * f), s[3])
 }
 
@@ -169,7 +202,7 @@ mod tests {
 
     #[test]
     fn the_mean_over_a_footprint_is_the_mean_of_its_quarters() {
-        let k = |reach: f32| Grain { scan: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], per_cell: 0.7, reach, stops: 1.0 };
+        let k = |reach: f32| Grain { scan: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], per_cell: 0.7, reach, stops: 1.0, share: [1.0; GRAIN_NODES] };
         let field = |at: V2, reach: f32| grain([1.0; 4], at, &k(reach))[0].log2();
         for at in [[3.25f32, 10.5], [40.0, 7.75], [-12.5, 3.0]] {
             // Two pixels a side, 1.4 cells, against its four pixels of 0.7.
@@ -180,5 +213,22 @@ mod tests {
             // Twin: the field at the centre alone is not the mean.
             assert!((field(at, 1e-3) - whole).abs() > 1e-3, "at {at:?}");
         }
+    }
+
+    #[test]
+    fn the_share_passes_through_each_node_and_holds_past_the_ends() {
+        let mut k = Grain { scan: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], per_cell: 1.0, reach: 0.5, stops: 1.0, share: [0.0; GRAIN_NODES] };
+        k.share.iter_mut().enumerate().for_each(|(i, v)| *v = (i as f32 * 0.37).sin().abs());
+        for i in 0..GRAIN_NODES {
+            assert!((share(grain_node_light(i), &k) - k.share[i]).abs() < 1e-5, "node {i}");
+        }
+        let half = (grain_node_light(10) * grain_node_light(11)).sqrt();
+        assert!((share(half, &k) - (k.share[10] + k.share[11]) / 2.0).abs() < 1e-5, "halfway in stops");
+        assert_eq!((share(0.0, &k), share(-1.0, &k), share(8.0, &k)), (k.share[0], k.share[0], k.share[GRAIN_NODES - 1]));
+        // Twin: the table read a node over misses every node.
+        let mut over = k;
+        over.share.rotate_left(1);
+        let gap = (0..GRAIN_NODES).map(|i| (share(grain_node_light(i), &over) - k.share[i]).abs()).fold(0.0, f32::max);
+        assert!(gap > 0.1, "the twin passes at {gap}");
     }
 }

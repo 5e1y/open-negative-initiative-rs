@@ -45,6 +45,7 @@ impl Ctl {
             }
             Reset::Spectrogram => e.together_where(Field::Spectrogram, |s| view(s).spectrogram != Default::default()),
             Reset::Saturation => e.together_where(Field::Saturation, |s| !view(s).saturation.is_neutral()),
+            Reset::Grain => e.together_where(Field::Grain, |s| !s.grain.curve.rests()),
         };
         let group = |g: Group| e.together_where(if g == Group::Effects { Field::ScannerFinish } else { Field::Scanner }, |s| g.modified(s));
         let beside = Beside { blocks: Block::ALL.map(block), editors: crate::editors::RESETS.map(editor), groups: Group::ALL.map(group) };

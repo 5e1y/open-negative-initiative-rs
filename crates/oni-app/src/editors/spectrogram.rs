@@ -237,6 +237,47 @@ pub fn marked(s: &Spectrogram) -> Vec<bool> {
     Band::ALL.iter().map(|b| s.band(*b) != (0.0, 0.0, 0.0)).collect()
 }
 
+/// The wheel's keyboard and its focus.
+impl super::Gestures {
+    /// The wheel's keys while it holds the focus: the arrows step the selected point, Tab walks the
+    /// wheel; every other key goes on to the window.
+    pub fn key(&mut self, store: &mut oni_core::EditorStore, text: &str, option: bool) -> Option<super::Then> {
+        use slint::platform::Key;
+        if !self.focused {
+            return None;
+        }
+        let is = |k: Key| text == slint::SharedString::from(k).as_str();
+        let step = if is(Key::LeftArrow) {
+            Nudge::Left
+        } else if is(Key::RightArrow) {
+            Nudge::Right
+        } else if is(Key::UpArrow) {
+            Nudge::Up
+        } else if is(Key::DownArrow) {
+            Nudge::Down
+        } else if is(Key::Tab) {
+            self.selected = walked(self.selected, option);
+            return Some(super::Then::Draw);
+        } else {
+            return None;
+        };
+        let s = nudge(self.selected, step, &self.view(store).spectrogram);
+        Some(self.once(store, super::Edit::Spectrogram(s)))
+    }
+
+    /// `dsReleasesFocus`: a press anywhere in the window off the wheel releases its focus, so its
+    /// point unlights and the arrows go back to the window.
+    pub fn pressed_anywhere(&mut self, at: (f64, f64)) -> bool {
+        let (o, s) = (self.origins[super::Plot::Wheel as usize], self.sizes[super::Plot::Wheel as usize]);
+        let inside = (o.0..=o.0 + s.w).contains(&at.0) && (o.1..=o.1 + s.h).contains(&at.1);
+        if !self.focused || inside {
+            return false;
+        }
+        self.focused = false;
+        true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

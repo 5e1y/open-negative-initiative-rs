@@ -39,6 +39,8 @@ pub const LENS_CORRECTION_VERSION: i64 = 28;
 /// The version each channel came to keep its own mids and contrast, and the halation its sensitivity,
 /// absent read as rest.
 pub const CHANNEL_TONE_VERSION: i64 = 29;
+/// The version the grain came to keep its strength by tone, absent read as rest.
+pub const GRAIN_CURVE_VERSION: i64 = 30;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

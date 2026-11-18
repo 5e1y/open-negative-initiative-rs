@@ -5515,6 +5515,30 @@ settings: PipelineSettings {
     grain: Grain {
         amount: 0.0,
         size: 0.5,
+        curve: GrainCurve {
+            points: [
+                Point {
+                    x: 0.0,
+                    y: 0.35,
+                },
+                Point {
+                    x: 0.3,
+                    y: 1.0,
+                },
+                Point {
+                    x: 0.55,
+                    y: 1.0,
+                },
+                Point {
+                    x: 0.85,
+                    y: 0.0,
+                },
+                Point {
+                    x: 1.0,
+                    y: 0.0,
+                },
+            ],
+        },
     },
     halation: Halation {
         amount: 0.0,

@@ -5,6 +5,7 @@ use super::levels::Windows;
 use super::{Edit, Reset};
 use oni_core::Each;
 use oni_settings::PipelineSettings;
+use oni_settings::blocks::GrainCurve;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::{LevelsChannel, LevelsSet};
 use oni_settings::spectrogram::Spectrogram;
@@ -22,6 +23,7 @@ pub fn lay(settings: &PipelineSettings, scanner: bool, edit: &Edit) -> PipelineS
         Edit::Levels(l) => l.lay(&mut f),
         Edit::Spectrogram(s) => f.spectrogram = *s,
         Edit::Saturation(s) => f.saturation = s.clone(),
+        Edit::Grain(c) => f.grain.curve = *c,
     }
     if scanner { settings.storing_scanner_edit(&f) } else { f }
 }
@@ -59,7 +61,7 @@ pub fn levels_modified(settings: &PipelineSettings) -> bool {
 }
 
 /// The editors' reset keys, in the interface's order.
-pub const RESETS: [Reset; 4] = [Reset::Curves, Reset::Levels, Reset::Spectrogram, Reset::Saturation];
+pub const RESETS: [Reset; 5] = [Reset::Curves, Reset::Levels, Reset::Spectrogram, Reset::Saturation, Reset::Grain];
 
 /// The block's reset on the face edited, read off each frame it lands on.
 pub fn rest_of(block: Reset, scanner: bool) -> Each {
@@ -69,6 +71,7 @@ pub fn rest_of(block: Reset, scanner: bool) -> Each {
             Reset::Levels => Edit::Levels(rested_windows(&face(s, scanner))),
             Reset::Spectrogram => Edit::Spectrogram(Spectrogram::default()),
             Reset::Saturation => Edit::Saturation(SaturationCurve::default()),
+            Reset::Grain => Edit::Grain(GrainCurve::REST),
         };
         lay(s, scanner, &edit)
     })
@@ -127,6 +130,15 @@ mod tests {
         g.reset(&mut store, Reset::Curves);
         store.release();
         assert!(read(&b).manual_curves.is_neutral(), "the reset reaches it all the same");
+        // The grain curve's reset reaches a frame beside whose own curve moved, the open one at rest.
+        let mut bent = read(&b);
+        bent.grain.curve.move_point(1, Point::new(0.3, 0.6));
+        sidecar::write(&bent, Path::new(&b), Default::default()).unwrap();
+        store.set_together(vec![b.clone()]);
+        assert!(!read(&b).grain.curve.rests() && store.settings().grain.curve.rests(), "twin: its own curve, the open one at rest");
+        g.reset(&mut store, Reset::Grain);
+        store.release();
+        assert!(read(&b).grain.curve.rests(), "the grain curve's reset reaches it");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

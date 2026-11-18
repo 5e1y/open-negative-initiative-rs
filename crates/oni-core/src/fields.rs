@@ -101,7 +101,7 @@ impl Field {
         let own = ordered::bends(self).then(|| on.clone());
         self.patched_leaves(before, after, on);
         if let Some(own) = own {
-            ordered::ordered(self, &own, on);
+            ordered::ordered(self, (before, after), &own, on);
         }
     }
 }

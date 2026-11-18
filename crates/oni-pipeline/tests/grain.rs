@@ -1,12 +1,14 @@
-//! The grain against its reference, held by its scan pixel, averaged at reduced scales, in stops,
-//! absent at rest and laid under the print; each verdict with a twin the check refuses.
+//! The grain against its reference, held by its scan pixel, averaged at reduced scales, in stops, its
+//! share following its curve, absent at rest and laid under the print; each verdict with a twin the check refuses.
 
 mod common;
 
 use common::{V4, graph, judge, noise, whole};
-use oni_graph::{Graph, Image, Rect};
+use oni_graph::{Graph, Image, Rect, Stage};
 use oni_pipeline::{Pipeline, Request, conversion, geometry, grain, stages};
-use oni_render::{Grain, cpu};
+use oni_render::{GRAIN_NODES, Grain, LUMA, cpu};
+use oni_settings::blocks::GrainCurve;
+use oni_settings::cg::Point;
 use oni_settings::frame::Geometry;
 use oni_settings::{ConversionMode, PipelineSettings};
 
@@ -16,11 +18,20 @@ fn scaled(scale: f32) -> [[f32; 3]; 2] {
     [[1.0 / scale, 0.0, 0.0], [0.0, 1.0 / scale, 0.0]]
 }
 
+/// The whole grain at every tone, so a check of the texture reads no curve.
+const FLAT: GrainCurve = GrainCurve { points: [Point::new(0.0, 1.0), Point::new(0.25, 1.0), Point::new(0.5, 1.0), Point::new(0.75, 1.0), Point::new(1.0, 1.0)] };
+
 fn grainy(amount: f32, size: f32) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, false).per_pixel_only();
     s.grain.amount = amount;
     s.grain.size = size;
+    s.grain.curve = FLAT;
     s
+}
+
+/// The rest curve's share on a digital photo's picture at rest.
+fn resting_shares() -> [f32; GRAIN_NODES] {
+    grain::shares(&GrainCurve::REST, &conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, false)))
 }
 
 fn flat(g: &mut Graph, w: u32, h: u32, value: V4) -> Image {
@@ -59,7 +70,11 @@ fn largest_gap(a: &[f32], b: &[f32]) -> f32 {
 fn the_grain_matches_its_reference_on_every_branch() {
     let Some(mut g) = graph("the_grain_matches_its_reference_on_every_branch") else { return };
     let extent = Rect::new(23, 11, 61, 37);
-    let pixels = noise(extent.w, extent.h, 21, 0.02, 1.2);
+    let mut pixels = noise(extent.w, extent.h, 21, 0.02, 1.2);
+    // Past both ends of the table, on none and under it: every branch of the share.
+    for (i, v) in [0.0, -0.3, 1e-6, 2.0, 0.6, 0.08].into_iter().enumerate() {
+        pixels[i * 97] = [v, v, v, 1.0];
+    }
     let input = g.upload_at(extent, &pixels).unwrap();
     let centre = |i: usize| [extent.x as f32 + (i % extent.w as usize) as f32 + 0.5, extent.y as f32 + (i / extent.w as usize) as f32 + 0.5];
     let scan = Rect::new(0, 0, 200, 120);
@@ -74,8 +89,9 @@ fn the_grain_matches_its_reference_on_every_branch() {
         ("turned and mirrored", turned, 1.5, 1.0),
         ("angled, at half", angled, 1.2, 0.5),
     ];
+    let share = resting_shares();
     for (name, m, cell, scale) in cases {
-        let k = Grain::on(m, cell, scale, 0.4);
+        let k = Grain::on(m, cell, scale, 0.4, share);
         // Twin: the lattice one node over, a seed off by one.
         let mut over = k;
         over.scan[0][2] += cell;
@@ -83,9 +99,13 @@ fn the_grain_matches_its_reference_on_every_branch() {
         let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &k)).collect();
         let twin: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &over)).collect();
         judge(&format!("grain, {name}"), &out, &reference, &twin);
+        // Twin: the whole grain at every tone.
+        let whole_share = Grain { share: [1.0; GRAIN_NODES], ..k };
+        let flat: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &whole_share)).collect();
+        judge(&format!("grain by tone, {name}"), &out, &reference, &flat);
     }
     // As the chain lays them: the grain on the scene, then the print.
-    let k = Grain::on(scaled(0.5), 1.0, 0.5, 0.4);
+    let k = Grain::on(scaled(0.5), 1.0, 0.5, 0.4, [1.0; GRAIN_NODES]);
     let print = conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, false));
     let out = whole(&mut g, &Image::new(&input).then(stages::grain(&k)).then(stages::stage47(&print)));
     let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::stage47(cpu::grain(*p, centre(i), &k), &print)).collect();
@@ -191,25 +211,42 @@ fn a_reduced_render_reads_the_full_grain_averaged() {
 }
 
 #[test]
-fn the_grain_is_a_texture_in_stops_the_same_on_every_tone_and_channel() {
-    let Some(mut g) = graph("the_grain_is_a_texture_in_stops_the_same_on_every_tone_and_channel") else { return };
-    let k = grain::grain(&grainy(1.0, 0.5), Rect::new(0, 0, 1500, 1000), 1.0).unwrap();
+fn the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s() {
+    let Some(mut g) = graph("the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s") else { return };
+    let scan = Rect::new(0, 0, 1500, 1000);
+    let k = grain::grain(&grainy(1.0, 0.5), scan, 1.0).unwrap();
+    let rest = PipelineSettings { grain: oni_settings::blocks::Grain { curve: GrainCurve::REST, ..grainy(1.0, 0.5).grain }, ..grainy(1.0, 0.5) };
+    let by_tone = grain::grain(&rest, scan, 1.0).unwrap();
+    let picture = conversion::stage47(&rest);
+    let strength = GrainCurve::REST.strength();
     let (w, h) = (200, 150);
-    let mut grains = Vec::new();
+    let mut whole_spreads = Vec::new();
+    let mut misses = Vec::new();
     for grey in [0.02f32, 0.18, 0.8] {
         let image = flat(&mut g, w, h, [grey, grey, grey, 1.0]);
-        let out = whole(&mut g, &image.then(stages::grain(&k)));
-        grains.push((grey, out));
+        let whole_grain = spread(&stops(&whole(&mut g, &image.clone().then(stages::grain(&k))), grey));
+        let curved = spread(&stops(&whole(&mut g, &image.then(stages::grain(&by_tone))), grey));
+        let shown = cpu::stage47([grey, grey, grey, 1.0], &picture);
+        let tone = (shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2]).powf(1.0 / 2.2);
+        let want = strength.at(f64::from(tone)) as f32;
+        println!("{grey}: tone {tone:.3}, share {want:.3}, spread {curved:.4} against {whole_grain:.4}");
+        let miss = |ratio: f32| (ratio - want).abs() > 0.1 * want.max(0.1);
+        assert!(!miss(curved / whole_grain), "{grey}: the curve's share {want} against a spread {}", curved / whole_grain);
+        // Twin: the whole grain at every tone misses the curve somewhere.
+        misses.push(miss(1.0));
+        whole_spreads.push(whole_grain);
     }
-    let middle = spread(&stops(&grains[1].1, 0.18));
-    for (grey, out) in &grains {
-        let here = spread(&stops(out, *grey));
-        assert!((here / middle - 1.0).abs() < 0.1, "{grey}: {here} stops against {middle} on a middle grey");
+    assert!(misses.iter().any(|&m| m), "the twin passes, so the check sees nothing");
+    // The whole grain is a texture in stops, the same on every tone.
+    for s in &whole_spreads {
+        assert!((s / whole_spreads[1] - 1.0).abs() < 0.1, "{s} stops against {} on a middle grey", whole_spreads[1]);
     }
     // Twin: the middle grey's grain added in light, the same on every tone, is no texture in stops.
-    let added: Vec<V4> = grains[1].1.iter().map(|p| [0.8 + p[0] - 0.18; 4]).collect();
+    let image = flat(&mut g, w, h, [0.18, 0.18, 0.18, 1.0]);
+    let middle = whole(&mut g, &image.then(stages::grain(&k)));
+    let added: Vec<V4> = middle.iter().map(|p| [0.8 + p[0] - 0.18; 4]).collect();
     let light = spread(&stops(&added, 0.8));
-    assert!((light / middle - 1.0).abs() > 0.5, "the twin passes: {light} against {middle}");
+    assert!((light / whole_spreads[1] - 1.0).abs() > 0.5, "the twin passes: {light} against {}", whole_spreads[1]);
     // Monochrome: every channel moves by one factor, alpha kept.
     let colour = [0.3, 0.12, 0.05, 1.0];
     let image = flat(&mut g, w, h, colour);
@@ -238,6 +275,12 @@ fn at_rest_or_measured_the_chain_holds_no_grain() {
     let mut grained = rest.clone();
     grained.grain.amount = 0.01;
     assert_ne!(image(&grained, false).key(), a.key(), "twin: the faintest grain is a stage");
+    let mut bent = coarse.clone();
+    bent.grain.curve.move_point(2, Point::new(0.5, 0.2));
+    assert_eq!(image(&bent, false).key(), a.key(), "a curve at amount 0 lays no stage");
+    let mut none = grained.clone();
+    none.grain.curve = GrainCurve { points: FLAT.points.map(|p| Point::new(p.x, 0.0)) };
+    assert_eq!(image(&none, false).key(), a.key(), "a curve of no share anywhere lays no stage");
     assert_eq!(image(&grained, true).key(), image(&rest, true).key(), "a measure reads no grain");
     // A film mode renders no grain its panel hides, its value kept; the Digital grain above is its twin.
     let negative = PipelineSettings::rest(ConversionMode::Negative, false);
@@ -247,6 +290,7 @@ fn at_rest_or_measured_the_chain_holds_no_grain() {
     assert_eq!(rendered, again);
 }
 
+/// On the whole grain at every tone: the rest curve gives the printed twin's light no share at all.
 #[test]
 fn the_grain_lies_under_the_print_so_contrast_steepens_it() {
     let Some(mut g) = graph("the_grain_lies_under_the_print_so_contrast_steepens_it") else { return };
@@ -291,7 +335,7 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     let mut pipeline = Pipeline::new();
     let mut image = |g: &mut Graph, s: &PipelineSettings| pipeline.image(g, &source, s, &Request::default(), &Default::default()).unwrap();
     let rest = PipelineSettings::rest(ConversionMode::Digital, false);
-    let grained = PipelineSettings { grain: grainy(0.5, 0.5).grain, ..rest.clone() };
+    let grained = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.5, ..rest.grain }, ..rest.clone() };
     assert_eq!(image(&mut g, &grained).stages(), image(&mut g, &rest).stages() + 1, "the grain is a pass of its own");
     // Each setting's notches through one frontier cache, or none: the passes and pixels the last one ran.
     let mut notches = |g: &mut Graph, s: &PipelineSettings, cached: bool, notch: &dyn Fn(&mut PipelineSettings, f32)| -> (u64, u64) {
@@ -315,4 +359,22 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     assert!(notches(&mut g, &grained, false, &exposure).1 > with_grain.1, "the cache keeps nothing");
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount += d;
     assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 1, "a grain notch skips its own pass");
+}
+
+#[test]
+fn a_print_notch_keeps_the_grain_s_shares_and_a_curve_notch_moves_them() {
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+    s.grain.amount = 0.5;
+    let scan = Rect::new(0, 0, 600, 400);
+    let k = grain::grain(&s, scan, 1.0).unwrap();
+    let notches: [fn(&mut PipelineSettings); 3] = [|t| t.print.exposure += 0.3, |t| t.print.contrast -= 0.2, |t| t.print.shadows += 0.1];
+    for notch in notches {
+        let mut t = s.clone();
+        notch(&mut t);
+        assert_eq!(stages::grain(&grain::grain(&t, scan, 1.0).unwrap()).params(), stages::grain(&k).params(), "a print notch moves the grain's pass");
+    }
+    // Twin: a notch of the curve moves them.
+    let mut t = s.clone();
+    t.grain.curve.move_point(1, Point::new(0.3, 0.9));
+    assert_ne!(grain::grain(&t, scan, 1.0).unwrap().share, k.share);
 }

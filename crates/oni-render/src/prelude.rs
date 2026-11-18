@@ -17,7 +17,7 @@ pub fn uniform(head: [u32; 4], rows: &[V4]) -> Vec<u8> {
     out
 }
 
-pub(crate) const LUMA: [f32; 3] = [0.2627, 0.6780, 0.0593];
+pub const LUMA: [f32; 3] = [0.2627, 0.6780, 0.0593];
 
 pub(crate) const DISPLAY_GAMMA: f32 = 2.2;
 

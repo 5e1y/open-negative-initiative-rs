@@ -102,6 +102,7 @@ pub fn wire(ctl: &Rc<Ctl>, window: &MainWindow) {
             1 => Reset::Levels,
             2 => Reset::Spectrogram,
             3 => Reset::Saturation,
+            4 => Reset::Grain,
             _ => return,
         };
         let then = run(&p, |g, store| g.reset(store, block));

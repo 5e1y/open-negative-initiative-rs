@@ -901,6 +901,14 @@ msgstr "Saturé"
 msgid "Desaturated"
 msgstr "Désaturé"
 
+#: crates/oni-ui/ui/editors.slint
+msgid "Full grain"
+msgstr "Grain entier"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "No grain"
+msgstr "Sans grain"
+
 #: crates/oni-ui/ui/export.slint
 msgid "Show the EXIF"
 msgstr "Afficher les EXIF"
@@ -2182,6 +2190,14 @@ msgstr "Grain"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain size"
 msgstr "Taille du grain"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain Curve"
+msgstr "Courbe du grain"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The grain's strength by the photo's tone as it opens, from its black point to its white: a point at the top lays the whole Grain, at the bottom none. At rest it is lighter in the blacks, whole in the mids and gone before the whites.\n\nDrag a point along the tones; double-click to return it to its rest."
+msgstr "La force du grain selon le ton de la photo à l'ouverture, de son point noir à son point blanc : un point en haut pose tout le Grain, en bas aucun. Au repos, il est plus léger dans les noirs, entier dans les tons moyens et disparaît avant les blancs.\n\nFaites glisser un point le long des tons ; double-cliquez pour le ramener à son repos."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Halation"
