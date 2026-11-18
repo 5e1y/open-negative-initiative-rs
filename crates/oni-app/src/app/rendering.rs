@@ -33,6 +33,8 @@ pub(in crate::app) struct Requests {
     /// ask: a render with neither counts nothing.
     pub histogram: Option<oni_measure::histogram::Histogram>,
     pub plots: [bool; 2],
+    /// The levels' and the curves' plots on screen at the last ask, whose distributions alone are read.
+    pub input_plots: [bool; 2],
     /// The picture the histogram counts next and the count in flight.
     pub count: super::canvas_gpu::Counting,
 }

@@ -98,7 +98,7 @@ fn the_canvas_s_renders_timed_on_a_frame_holding_dust_patches() {
         for k in 0..3 {
             engine.resident(&negative, &notch(100 + k), Some(&view(None, false))).expect("a render");
             engine.counted(&negative, &notch(100 + k)).expect("the counted picture");
-            engine.inputs(&negative, &notch(100 + k), true);
+            engine.inputs(&negative, &notch(100 + k), true, [true; 2]);
         }
         let fit = view(None, false);
         let mut at_fit = Vec::new();
@@ -107,10 +107,10 @@ fn the_canvas_s_renders_timed_on_a_frame_holding_dust_patches() {
             let s = notch(k);
             at_fit.push(timed(&mut engine, |e| e.resident(&negative, &s, Some(&fit)).map(|_| ())).1);
             counted.push(timed(&mut engine, |e| e.counted(&negative, &s).map(|_| ())).1);
-            inputs.push(timed(&mut engine, |e| e.inputs(&negative, &s, true).map(|_| ())).1);
+            inputs.push(timed(&mut engine, |e| e.inputs(&negative, &s, true, [true; 2]).map(|_| ())).1);
         }
         for k in 0..6 {
-            inputs_rest.push(timed(&mut engine, |e| e.inputs(&negative, &notch(50 + k), false).map(|_| ())).1);
+            inputs_rest.push(timed(&mut engine, |e| e.inputs(&negative, &notch(50 + k), false, [true; 2]).map(|_| ())).1);
         }
         said("notch at fit", &at_fit);
         said("its histogram picture", &counted);

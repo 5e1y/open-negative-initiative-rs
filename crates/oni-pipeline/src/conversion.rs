@@ -56,15 +56,35 @@ pub fn white(s: &PipelineSettings) -> Option<ColorMatrix> {
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order. A digital photo renders no gain, window,
-/// dyes or print filter: its colour is its white's; a black and white print, no channel's own tone.
+/// The fused kernel's arguments, in `Pipeline.apply`'s order: a digital photo has no gain, window, dyes or
+/// filter and rests Lighting for its levels and curves; a black and white print, no channel's own tone.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
+    if s.mode.is_film() { fused(s, &s.print, s.density) } else { fused(s, &s.unlit_print(), color_density::BASE) }
+}
+
+/// Lighting on a digital photo's levels and curves: the print, each window lane its points' reach on the
+/// picture's 0 to 1. None on a film, a bypassed print, or with Lighting, channel tone and Saturation at rest.
+pub fn lighting(s: &PipelineSettings) -> Option<Stage47> {
+    if s.mode.is_film() || s.print.bypassed {
+        return None;
+    }
+    let lit = fused(s, &s.print, s.density);
+    if lit == stage47(s) {
+        return None;
+    }
+    let unit = LevelsSet { red: Levels::default(), green: Levels::default(), blue: Levels::default() };
+    let reach = reaching(&s.print, &unit, None, false);
+    Some(Stage47 { red: vector(&reach.red), green: vector(&reach.green), blue: vector(&reach.blue), ..lit })
+}
+
+/// The kernel's arguments with `print` and the colour density's `density` in the frame's own place.
+fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
     let mono = s.mode.is_monochrome();
     let film = s.mode.is_film();
     let levels = placed_levels(s);
-    let lv = reaching(&s.print, &levels, mono.then(|| graduation::window(s.mode)), mono);
+    let lv = reaching(print, &levels, mono.then(|| graduation::window(s.mode)), mono);
     let sep = separation_rows(s.separation_family, separation_dose(s), s.mode);
-    let base = s.print.hunt_base.unwrap_or(Tone::NEUTRAL);
+    let base = print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
     let windows = lv.windows();
     let unreached = levels.windows();
@@ -76,7 +96,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         green: vector(&lv.green),
         blue: vector(&lv.blue),
         invert: s.mode.invert_flag(),
-        density: if mono { 1.0 } else { color_density::factor(s.density) },
+        density: if mono { 1.0 } else { color_density::factor(density) },
         pedestal,
         log_guard: density_axis::log_guard(ceiling),
         window: pipeline::DMAX,
@@ -85,13 +105,13 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         sep_r: sep[0],
         sep_g: sep[1],
         sep_b: sep[2],
-        print_on: if s.print.bypassed { 0.0 } else { 1.0 },
-        print_stops: s.print.exposure,
-        print_contrast: s.print.contrast,
-        print_zones: [s.print.shadows, s.print.highlights],
-        own_stops: if film { s.print.filters() } else { [0.0; 3] },
-        own_contrast: if mono { [0.0; 3] } else { s.print.channel_contrast },
-        own_mid: if mono { [0.0; 3] } else { s.print.channel_mid },
+        print_on: if print.bypassed { 0.0 } else { 1.0 },
+        print_stops: print.exposure,
+        print_contrast: print.contrast,
+        print_zones: [print.shadows, print.highlights],
+        own_stops: if film { print.filters() } else { [0.0; 3] },
+        own_contrast: if mono { [0.0; 3] } else { print.channel_contrast },
+        own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono { 0.0 } else { 1.0 },
         base_stops: base.exposure,
         base_contrast: base.contrast,

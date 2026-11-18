@@ -18,7 +18,7 @@ pub use crate::kernel::output_clip::output_clip;
 pub use crate::kernel::saturation_curve::saturation_curve;
 pub use crate::kernel::scanner::{scanner_density, scanner_output, scanner_encode};
 pub use crate::kernel::spectrogram::spectrogram;
-pub use crate::kernel::stage47::stage47;
+pub use crate::kernel::stage47::{print, stage47};
 pub use crate::kernel::stroke_mask::stroke_mask;
 pub use crate::kernel::texture::{texture_moments, texture_coeff, texture};
 pub use crate::kernel::vignette::vignette;

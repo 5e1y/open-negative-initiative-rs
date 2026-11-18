@@ -84,14 +84,14 @@ fn the_grain_matches_its_reference_on_every_branch() {
         let twin: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &over)).collect();
         judge(&format!("grain, {name}"), &out, &reference, &twin);
     }
-    // In the print's pass, as the chain lays it: the grain on the scene, then the print.
+    // As the chain lays them: the grain on the scene, then the print.
     let k = Grain::on(scaled(0.5), 1.0, 0.5, 0.4);
     let print = conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, false));
-    let out = whole(&mut g, &stages::laid(Image::new(&input), vec![stages::grain(&k), stages::stage47(&print)]));
+    let out = whole(&mut g, &Image::new(&input).then(stages::grain(&k)).then(stages::stage47(&print)));
     let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::stage47(cpu::grain(*p, centre(i), &k), &print)).collect();
     // Twin: the grain on the print.
     let after: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(cpu::stage47(*p, &print), centre(i), &k)).collect();
-    judge("grain, then the print, in one pass", &out, &reference, &after);
+    judge("grain, then the print", &out, &reference, &after);
 }
 
 #[test]
@@ -281,4 +281,38 @@ fn the_grain_lies_under_the_print_so_contrast_steepens_it() {
     // Twin: a grain laid on the print, which the contrast never reaches.
     let over = steepening(true);
     assert!(over < 1.15, "the twin is steepened {over:.3} times, so the check sees nothing");
+}
+
+#[test]
+fn a_print_notch_through_the_frontier_reruns_no_grain() {
+    let Some(mut g) = graph("a_print_notch_through_the_frontier_reruns_no_grain") else { return };
+    let (w, h) = (300u32, 200u32);
+    let source = g.upload(w, h, &noise(w, h, 9, 0.05, 0.9)).unwrap();
+    let mut pipeline = Pipeline::new();
+    let mut image = |g: &mut Graph, s: &PipelineSettings| pipeline.image(g, &source, s, &Request::default(), &Default::default()).unwrap();
+    let rest = PipelineSettings::rest(ConversionMode::Digital, false);
+    let grained = PipelineSettings { grain: grainy(0.5, 0.5).grain, ..rest.clone() };
+    assert_eq!(image(&mut g, &grained).stages(), image(&mut g, &rest).stages() + 1, "the grain is a pass of its own");
+    // Each setting's notches through one frontier cache, or none: the passes and pixels the last one ran.
+    let mut notches = |g: &mut Graph, s: &PipelineSettings, cached: bool, notch: &dyn Fn(&mut PipelineSettings, f32)| -> (u64, u64) {
+        let mut cache = oni_graph::Cache::frontier();
+        let mut ran = (0, 0);
+        for step in 0..3 {
+            let mut t = s.clone();
+            notch(&mut t, step as f32 * 0.01);
+            let image = image(g, &t);
+            let before = g.stats();
+            g.materialise_cached(&image, image.extent(), cached.then_some(&mut cache)).unwrap();
+            let after = g.stats();
+            ran = (after.dispatches - before.dispatches, after.pixels - before.pixels);
+        }
+        ran
+    };
+    let exposure = |t: &mut PipelineSettings, d: f32| t.print.exposure += d;
+    let (plain, with_grain) = (notches(&mut g, &rest, true, &exposure), notches(&mut g, &grained, true, &exposure));
+    assert_eq!(with_grain, plain, "an exposure notch reruns the grain");
+    // Twins: with no cache the notch writes more; a grain notch reruns the grain's pass as well as the print's.
+    assert!(notches(&mut g, &grained, false, &exposure).1 > with_grain.1, "the cache keeps nothing");
+    let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount += d;
+    assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 1, "a grain notch skips its own pass");
 }

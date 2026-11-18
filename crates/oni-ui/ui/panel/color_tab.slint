@@ -276,10 +276,10 @@ export component ColorPane inherits Pane {
         LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
         if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
     }
-    // A digital photo's own levels, laid in front of its curves.
+    // A digital photo's own levels, laid in front of its curves and both in front of Lighting.
     if !Lab.shown && PanelState.digital: EditorBlock {
         title: @tr("Levels");
-        help: @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, and its shadows, midpoint and highlights between them; past the white, the highlights keep their detail. Double-click a handle to bring it back alone.");
+        help: @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone.");
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.picture-levels-folded;
@@ -294,7 +294,7 @@ export component ColorPane inherits Pane {
         news-read => { News.read("curves.scanner.1.3.1"); }
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
-        help: @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
+        help: PanelState.digital ? @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone. They act before Lighting, which acts on what they draw.") : @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
         CurvesEditor { histogram: Plots.curves; revision: Plots.curves-revision; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.

@@ -373,7 +373,8 @@ impl Ctl {
             self.encode_before(before, placed);
         }
         let frame = format!("{count} frames together");
-        self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
+        let now = Instant::now();
+        self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, drawn: now, delivered: now, frame }, counted);
         c.set_busy(false);
         c.set_status(tr!("{count} frames together", count = count).into());
     }

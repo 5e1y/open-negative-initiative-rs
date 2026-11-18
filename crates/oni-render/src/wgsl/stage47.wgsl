@@ -1,5 +1,5 @@
 // Stages 4 to 7 in one pass, operation for operation as `cpu::stage47` and the Metal kernel,
-// so a difference between them is one of precision, never of formula.
+// so a difference between them is one of precision, never of formula; `print_px` is `cpu::print`.
 
 struct Params {
     gain_invert: vec4<f32>,
@@ -80,11 +80,11 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32, own_co
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
-fn stage47_px(s: vec4<f32>) -> vec4<f32> {
+// Stages 4 and 5: the film's density, its windows, the chroma decompression and the dye separation.
+fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;
     let red = P.red_density.xyz;
-    var density = P.red_density.w;
     let green = P.green_pedestal.xyz;
     let pedestal = P.green_pedestal.w;
     let blue = P.blue_guard.xyz;
@@ -92,25 +92,13 @@ fn stage47_px(s: vec4<f32>) -> vec4<f32> {
     let low_points = P.low_window.xyz;
     let window = P.low_window.w;
     let high_points = P.high_print.xyz;
-    let print_on = P.high_print.w;
     let sep_r = P.sep_r_stops.xyz;
-    let print_stops = P.sep_r_stops.w;
     let sep_g = P.sep_g_contrast.xyz;
-    let print_contrast = P.sep_g_contrast.w;
     let sep_b = P.sep_b_hunt.xyz;
-    let hunt = P.sep_b_hunt.w;
-    let own = P.own_base_stops.xyz;
-    let own_contrast = P.own_contrast.xyz;
-    let own_mid = P.own_mid.xyz;
-    let base_stops = P.own_base_stops.w;
     let balance_low = P.balance_low_base_contrast.xyz;
-    let base_contrast = P.balance_low_base_contrast.w;
     let balance_span = P.balance_span_decompression.xyz;
     let decompression = P.balance_span_decompression.w;
-    let print_zones = P.print_zones_base_zones.xy;
-    let base_zones = P.print_zones_base_zones.zw;
     let film_share = P.film_follow.x;
-    let follow = P.film_follow.y;
 
     let t = (s.rgb + pedestal) * gain;
     let d = -log(max(t, vec3<f32>(log_guard))) * LOG10_E;
@@ -129,7 +117,25 @@ fn stage47_px(s: vec4<f32>) -> vec4<f32> {
         let held = toned + decompression * (e - toned) + film_share * (film - neutral);
         e = held + (dot(e, LUMA) - dot(held, LUMA));
     }
-    e = vec3<f32>(dot(sep_r, e), dot(sep_g, e), dot(sep_b, e));
+    return vec3<f32>(dot(sep_r, e), dot(sep_g, e), dot(sep_b, e));
+}
+
+// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density.
+fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
+    var density = P.red_density.w;
+    let print_on = P.high_print.w;
+    let print_stops = P.sep_r_stops.w;
+    let print_contrast = P.sep_g_contrast.w;
+    let hunt = P.sep_b_hunt.w;
+    let own = P.own_base_stops.xyz;
+    let own_contrast = P.own_contrast.xyz;
+    let own_mid = P.own_mid.xyz;
+    let base_stops = P.own_base_stops.w;
+    let base_contrast = P.balance_low_base_contrast.w;
+    let print_zones = P.print_zones_base_zones.xy;
+    let base_zones = P.print_zones_base_zones.zw;
+    let follow = P.film_follow.y;
+    var e = windowed_in;
     if (print_on > 0.5) {
         let windowed = e;
         e = vec3<f32>(printed(e.r, print_stops, print_contrast, print_zones, own.r, own_contrast.r, own_mid.r),
@@ -171,5 +177,19 @@ fn stage47_px(s: vec4<f32>) -> vec4<f32> {
         let p = dot(pw, LUMA);
         if (p > 1e-12) { e = pw * pow(p, (1.0 / density) - 1.0); }
     }
-    return vec4<f32>(e, s.a);
+    return e;
+}
+
+fn stage47_px(s: vec4<f32>) -> vec4<f32> {
+    return vec4<f32>(stage47_printed(stage47_windowed(s)), s.a);
+}
+
+// Lighting on a picture already windowed and printed at rest: its display value back on the print's
+// scale, each channel's points as a window on it, then the print. The window lanes hold their reach.
+fn print_px(s: vec4<f32>) -> vec4<f32> {
+    let n = pow(max(s.rgb, vec3<f32>(0.0)), vec3<f32>(1.0 / DISPLAY_GAMMA));
+    let e = vec3<f32>(apply_window(n.r, P.red_density.xyz, P.low_window.x, P.high_print.x),
+                      apply_window(n.g, P.green_pedestal.xyz, P.low_window.y, P.high_print.y),
+                      apply_window(n.b, P.blue_guard.xyz, P.low_window.z, P.high_print.z));
+    return vec4<f32>(stage47_printed(e), s.a);
 }

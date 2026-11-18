@@ -3,7 +3,6 @@
 //! three windows on the density axis, a digital photo its five on the picture.
 
 use super::geometry::{Drawing, Ink, Line, Size, dashed, ds};
-use crate::track;
 use oni_i18n::tr;
 use oni_core::{Channel, Command, Handle, Knob};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet, PictureLevels};
@@ -116,25 +115,21 @@ impl Windows {
     }
 }
 
-fn on_track(mid: f32) -> f32 {
-    track::position(mid, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), track::Bend::Even)
-}
-
-fn from_track(position: f32) -> f32 {
-    track::value(position, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), track::Bend::Even)
-}
-
-/// Where a grip is drawn, 0 to 1 of the track: the median travels its own range across the window,
-/// the quarter points read straight.
+/// Where a grip is drawn, 0 to 1 of the track: on the input it acts on, each inner point between its
+/// neighbours, so the ends carry all three and the midpoint its two quarters.
 pub fn place(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: ConversionMode) -> f32 {
-    let value = match grip {
-        Grip::Mid => levels.black + on_track(levels.mid) * (levels.white - levels.black),
+    channel.position_of_value(value(grip, levels), mode)
+}
+
+/// The value a grip sits on.
+fn value(grip: Grip, levels: &Levels) -> f32 {
+    match grip {
+        Grip::Mid => levels.display_mid(),
         Grip::Shadows => levels.display_shadows(),
         Grip::Highlights => levels.display_highlights(),
         Grip::Black => levels.black,
         Grip::White => levels.white,
-    };
-    channel.position_of_value(value, mode)
+    }
 }
 
 pub fn resting(channel: LevelsChannel, mode: ConversionMode, ceiling: f32) -> Levels {
@@ -150,17 +145,13 @@ pub fn moved(grip: Grip, levels: &Levels, position: f32, channel: LevelsChannel,
         Grip::White => out.set_white(asked),
         Grip::Shadows => out.set_display_shadows(asked),
         Grip::Highlights => out.set_display_highlights(asked),
-        Grip::Mid => {
-            let span = out.white - out.black;
-            if span > 0.0 {
-                out.mid = from_track(((asked - out.black) / span).clamp(0.0, 1.0));
-            }
-        }
+        Grip::Mid => out.set_display_mid(asked),
     }
     out
 }
 
-/// Each handle resets itself alone; inner points return to their quarter, wherever the ends are.
+/// Each handle resets itself alone; inner points return to their quarter between their neighbours, a
+/// midpoint's reset carrying the two quarters.
 pub fn reset(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: ConversionMode, ceiling: f32) -> Levels {
     let rest = resting(channel, mode, ceiling);
     let mut out = *levels;
@@ -243,21 +234,9 @@ pub fn knob_x(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Convers
     f64::from(place(grip, levels, channel, mode).clamp(0.0, 1.0)) * width
 }
 
-/// The value each handle sets, never where it is drawn, in reading order.
+/// The value each handle sits on, where it is drawn, in reading order.
 pub fn readouts(levels: &Levels, channel: LevelsChannel, mode: ConversionMode) -> Vec<(&'static str, String)> {
-    Grip::READING
-        .iter()
-        .map(|g| {
-            let v = match g {
-                Grip::Black => levels.black,
-                Grip::Shadows => levels.display_shadows(),
-                Grip::Mid => levels.display_mid(),
-                Grip::Highlights => levels.display_highlights(),
-                Grip::White => levels.white,
-            };
-            (g.readout_name(), readout(channel, mode, v))
-        })
-        .collect()
+    Grip::READING.iter().map(|g| (g.readout_name(), readout(channel, mode, value(*g, levels)))).collect()
 }
 
 /// Three decimals of density where values are densities, a share of the output otherwise.

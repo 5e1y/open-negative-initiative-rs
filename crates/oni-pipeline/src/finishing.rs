@@ -13,11 +13,12 @@ use oni_settings::tone::{Print, contrast};
 /// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags, a digital photo's `levels` laid in front of
 /// the curves: each channel's table reads its own window after RGB's, and the luma table Luma's, the
 /// kernel's last step, so it acts after the RGB curves. `None` when the five curves and the levels rest.
+/// On a digital photo both read the picture before Lighting, which `conversion::lighting` lays after.
 pub fn curves(set: &CurveSet, levels: Option<&PictureLevels>) -> Option<Curves> {
-    let levels = levels.filter(|l| !l.is_neutral());
-    if set.is_neutral() && levels.is_none() {
+    if !tabled(set, levels) {
         return None;
     }
+    let levels = levels.filter(|l| !l.is_neutral());
     let rest = PictureLevels::default();
     let l = levels.unwrap_or(&rest);
     // A table read past its own 1 goes on at slope 1, as the kernel reads it.
@@ -50,6 +51,11 @@ pub fn curves(set: &CurveSet, levels: Option<&PictureLevels>) -> Option<Curves> 
         ends: [1.0, end(&l.red), end(&l.green), end(&l.blue)],
         luma_end: l.luma.end_slope() as f32,
     })
+}
+
+/// True unless the five curves and the levels laid in front of them rest: where `curves` bakes tables.
+pub fn tabled(set: &CurveSet, levels: Option<&PictureLevels>) -> bool {
+    !set.is_neutral() || levels.is_some_and(|l| !l.is_neutral())
 }
 
 /// `SaturationCurve.arguments`; `None` when the curve rests.

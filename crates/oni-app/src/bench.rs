@@ -40,6 +40,7 @@ mod loupe;
 mod folded;
 mod grid;
 mod midzoom;
+pub mod chain;
 use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*};
 
 pub const NOTCHES: usize = 60;
@@ -267,6 +268,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     } else {
                         *drawn.borrow_mut() = frame_clock(&ctl);
                         dragged_at.set(Some(Instant::now()));
+                        chain::record();
                         g.invoke_press(field, false);
                     }
                     phase.set(Phase::Dragging { notch: 0, from });
@@ -318,7 +320,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 let mut report = format!("{notches}\n{}\n{}", ctl.state.borrow().notches().cadence(from), ctl.state.borrow().notches().histograms());
                 report = format!("{report}\n{}", ctl.state.borrow().notches().publishes());
                 if let Some(since) = dragged_at.get() {
-                    report = format!("{report}\n{}", frames_since(&drawn.borrow().borrow(), since));
+                    report = format!("{report}\n{}\n{}", frames_since(&drawn.borrow().borrow(), since), chain::report());
                 }
                 if mode == Mode::Compare {
                     let s = ctl.state.borrow();

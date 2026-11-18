@@ -90,7 +90,7 @@ fn a_burst_of_notches_renders_the_first_and_the_last_only() {
         settings.print.exposure = revision as f32;
         let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
         // At once: a timer's sleep lasts 15 ms on Windows, which would spread the burst over four renders.
-        worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false, counted: true });
+        worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false, counted: true, inputs: [true; 2] });
     }
     let mut revisions = Vec::new();
     // The first render compiles the pipeline's kernels; the slot is judged on what follows.
@@ -308,12 +308,12 @@ fn the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_foll
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.6 * (i % w) as f32 / w as f32; [v, v * 0.7, v * 0.5, 1.0] }).collect();
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    let before = engine.inputs(&negative, &rest, false).expect("readings");
-    assert!(before.levels.rgb.len() > 2 && before.curves.rgb.len() > 2);
+    let before = engine.inputs(&negative, &rest, false, [true; 2]).expect("readings");
+    assert!(before.levels.as_ref().unwrap().rgb.len() > 2 && before.curves.as_ref().unwrap().rgb.len() > 2);
     // An adversarial manual curve: the output moves, the curves' own input does not.
     let mut curved = rest.clone();
     curved.manual_curves.linked.points = vec![oni_settings::cg::Point::new(0.0, 0.0), oni_settings::cg::Point::new(0.3, 0.8), oni_settings::cg::Point::new(1.0, 1.0)];
-    let after = engine.inputs(&negative, &curved, false).expect("readings");
+    let after = engine.inputs(&negative, &curved, false, [true; 2]).expect("readings");
     assert_eq!(after.curves, before.curves, "the curves' input is read in front of them");
     let shown = |s: &PipelineSettings, e: &mut Engine| e.render(&negative, s, None).unwrap().pixels;
     let moved = shown(&rest, &mut engine).iter().zip(shown(&curved, &mut engine)).map(|(a, b)| (a[1] - b[1]).abs()).fold(0.0, f32::max);
@@ -321,11 +321,11 @@ fn the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_foll
     // Twin: gains, in front of the levels, move the levels' own input.
     let mut gained = rest.clone();
     gained.gains.stops = [0.8, 0.0, -0.8];
-    let gained = engine.inputs(&negative, &gained, false).expect("readings");
+    let gained = engine.inputs(&negative, &gained, false, [true; 2]).expect("readings");
     assert_ne!(gained.levels, before.levels, "the levels' input reads the gains");
     // The small copy under the hand reads a third of the pixels.
-    let small = engine.inputs(&negative, &rest, true).expect("readings");
-    let count = |h: &oni_measure::histogram::Histogram| h.rgb.iter().map(|b| b[0]).sum::<f32>();
+    let small = engine.inputs(&negative, &rest, true, [true; 2]).expect("readings");
+    let count = |h: &Option<oni_measure::histogram::Histogram>| h.as_ref().unwrap().rgb.iter().map(|b| b[0]).sum::<f32>();
     assert!(count(&small.levels) < 0.2 * count(&before.levels), "{} of {}", count(&small.levels), count(&before.levels));
 }
 
@@ -392,7 +392,7 @@ fn a_failed_render_names_its_frame() {
         }
     });
     let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-    worker.submit(Job { revision: 1, path: PathBuf::from("A.tif"), negative, settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false, counted: true });
+    worker.submit(Job { revision: 1, path: "A.tif".into(), negative, settings: Default::default(), kind, asked, view: None, reference: None, held: false, counted: true, inputs: [true; 2] });
     let failed = rx.recv_timeout(Duration::from_secs(10)).expect("a failure delivered");
     assert_eq!(failed, PathBuf::from("A.tif"));
     // Twin: the frame opened since is not the one that failed, so the landing drops it.

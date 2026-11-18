@@ -2,11 +2,25 @@
 //! half a second for Texture's, which a first notch would otherwise wait on.
 
 use super::*;
+use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Face, ScannerMachine};
 
 /// An edit with every finishing kernel on, the set a busy notch takes.
 pub(crate) fn busy() -> PipelineSettings {
-    let mut busy = PipelineSettings::rest(ConversionMode::Negative, true);
+    busied(PipelineSettings::rest(ConversionMode::Negative, true))
+}
+
+/// A digital photo's busy edit: its white, film effects and levels on top of every finishing kernel.
+pub(crate) fn digital_busy() -> PipelineSettings {
+    let mut busy = busied(PipelineSettings::rest(ConversionMode::Digital, true));
+    busy.white = Some(oni_settings::white::White { kelvin: 4000.0, tint: 0.0 });
+    busy.grain.amount = 0.5;
+    busy.halation.amount = 0.5;
+    busy.picture_levels.luma.mid = 0.3;
+    busy
+}
+
+fn busied(mut busy: PipelineSettings) -> PipelineSettings {
     busy.capture_stops = 0.5;
     busy.geometry.angle = 1.0;
     busy.chroma.force = 0.5;
@@ -40,6 +54,15 @@ fn variants() -> Vec<PipelineSettings> {
     plain.secret_sauce = 0.0;
     variants.push(plain);
     variants.push(PipelineSettings::rest(ConversionMode::Negative, true));
+    // A digital photo's Lighting rides in its picture's pass, or after its curves' tables when they bend.
+    let mut lit = PipelineSettings::rest(ConversionMode::Digital, true);
+    lit.print.exposure = 0.5;
+    variants.push(lit.clone());
+    lit.manual_curves.contrast = 0.2;
+    variants.push(lit);
+    variants.push(PipelineSettings { mode: ConversionMode::Digital, print: Print { exposure: 0.5, ..busy.print }, ..busy });
+    variants.push(digital_busy());
+    variants.push(PipelineSettings::rest(ConversionMode::Digital, true));
     variants
 }
 
@@ -109,8 +132,13 @@ impl Engine {
     /// Renders a small frame through each face, film and finishing branch the editor can reach, then
     /// strips long enough for Texture at both its blurs' reaches.
     pub fn prewarm(&mut self) {
+        self.prewarm_where(&|_| true);
+    }
+
+    /// `prewarm` on the variants `keep` takes.
+    pub(crate) fn prewarm_where(&mut self, keep: &dyn Fn(&PipelineSettings) -> bool) {
         for (width, height) in SIZES {
-            self.prewarm_at(width, height);
+            self.prewarm_at(width, height, keep);
         }
         // What it left is keyed by its own small previews, so the open frame's copies stand.
         self.graph.purge();
@@ -121,9 +149,9 @@ impl Engine {
         self.graph.stats().pipelines
     }
 
-    pub(crate) fn prewarm_at(&mut self, width: usize, height: usize) {
+    pub(crate) fn prewarm_at(&mut self, width: usize, height: usize, keep: &dyn Fn(&PipelineSettings) -> bool) {
         let Some(negative) = self.prewarm_frame(width, height) else { return };
-        for s in &variants() {
+        for s in variants().iter().filter(|s| keep(s)) {
             self.prewarm_variant(&negative, s);
         }
     }
@@ -136,7 +164,7 @@ impl Engine {
 
     fn prewarm_variant(&mut self, negative: &Negative, s: &PipelineSettings) {
         let _ = self.resident(negative, s, None);
-        let _ = self.inputs(negative, s, false);
+        let _ = self.inputs(negative, s, false, [true; 2]);
     }
 }
 

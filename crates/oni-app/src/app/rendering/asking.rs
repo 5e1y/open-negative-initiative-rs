@@ -71,7 +71,7 @@ impl Ctl {
             f.requests.requested = revision;
             f.requests.requested_view = view_key;
             f.requests.requested_live = Some(live.clone());
-            let (first, comparing, counted) = (f.requests.rendered == 0, f.compare.split.is_some(), f.requests.plots.contains(&true));
+            let (first, comparing, counted, inputs) = (f.requests.rendered == 0, f.compare.split.is_some(), f.requests.plots.contains(&true), f.requests.input_plots);
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
             let (kind, asked) = if first {
                 (Kind::Open, s.opened_at)
@@ -99,7 +99,7 @@ impl Ctl {
             let reference = comparing.then(|| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
             let held = kind == Kind::Notch;
-            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held, counted }, wants_full, heal)
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held, counted, inputs }, wants_full, heal)
         };
         self.worker.submit(job);
         self.request_loupe();

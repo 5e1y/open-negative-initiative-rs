@@ -168,16 +168,32 @@ impl Ctl {
         [readout, tab == crate::PanelTab::Color && !editors.get_monochrome() && !editors.get_saturation_folded()]
     }
 
-    /// The picture's plots as the panel shows them, which the next render counts for: one shown again is
-    /// traced at once, and asks the picture anew where none was counted meanwhile, as it may have moved.
+    /// The levels' and the curves' plots on screen, as the panel lays them: film's levels open on Roll, a
+    /// digital photo's on Pro's Colour tab, the curves open on Colour.
+    pub(super) fn input_plots(&self) -> [bool; 2] {
+        let Some(w) = self.window() else { return [false; 2] };
+        let (panel, editors) = (w.global::<PanelState>(), w.global::<crate::Editors>());
+        let (tab, colour) = (panel.get_tab(), panel.get_tab() == crate::PanelTab::Color);
+        let levels = if panel.get_digital() {
+            colour && !w.global::<crate::Lab>().get_shown() && !editors.get_picture_levels_folded()
+        } else {
+            tab == crate::PanelTab::Roll && !editors.get_levels_folded()
+        };
+        [levels, colour && !editors.get_curves_folded()]
+    }
+
+    /// The plots as the panel shows them, which the next render reads for: a picture plot shown again is traced
+    /// at once; it asks the picture anew where none was counted meanwhile, an input plot shown again always.
     pub(super) fn look_at_plots(&self) {
-        let shown = self.picture_plots();
+        let (shown, inputs) = (self.picture_plots(), self.input_plots());
         let again = {
             let mut s = self.state.borrow_mut();
             let Some(f) = s.frame.as_mut() else { return };
             let was = std::mem::replace(&mut f.requests.plots, shown);
             let again = shown.iter().zip(was).any(|(now, before)| *now && !before);
-            if again && !was.contains(&true) {
+            let read = std::mem::replace(&mut f.requests.input_plots, inputs);
+            let unread = inputs.iter().zip(read).any(|(now, before)| *now && !before);
+            if (again && !was.contains(&true)) || unread {
                 s.render_anew();
             }
             s.histogram_dirty |= again;
@@ -218,19 +234,23 @@ impl Ctl {
             clear(&w, Slot::Curves);
             return;
         };
-        // Traced off this thread, 1.5 ms a plot, as the picture's histogram is.
+        // Traced off this thread, 1.5 ms a plot, as the picture's histogram is; a slot never read keeps its plot.
         let (scale, asked, writer) = (w.window().scale_factor(), self.state.borrow().asks.input_traces.next(), self.plot_writer());
         let since = (clears(Slot::Levels), clears(Slot::Curves));
         plot(move |p| {
             if !asked.current() {
                 return;
             }
-            let levels = p.trace(&writer, Slot::Levels, &i.levels, focus.0, (levels.w, levels.h), scale);
-            let curves = p.trace(&writer, Slot::Curves, &i.curves, focus.1, (curves.w, curves.h), scale);
+            let levels = i.levels.map(|h| p.trace(&writer, Slot::Levels, &h, focus.0, (levels.w, levels.h), scale));
+            let curves = i.curves.map(|h| p.trace(&writer, Slot::Curves, &h, focus.1, (curves.w, curves.h), scale));
             with_shell(move |c| {
                 let Some(w) = c.window() else { return };
-                land_since(&w, Slot::Levels, since.0, levels);
-                land_since(&w, Slot::Curves, since.1, curves);
+                if let Some(levels) = levels {
+                    land_since(&w, Slot::Levels, since.0, levels);
+                }
+                if let Some(curves) = curves {
+                    land_since(&w, Slot::Curves, since.1, curves);
+                }
             });
         });
     }
