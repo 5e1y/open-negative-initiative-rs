@@ -24,6 +24,12 @@ pub const SATURATION_CURVE: &str = include_str!("wgsl/saturation_curve.wgsl");
 pub const SPECTROGRAM: &str = include_str!("wgsl/spectrogram.wgsl");
 /// `vignette_px(s, at)`.
 pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
+/// `grain_px(s, at)`.
+pub const GRAIN: &str = include_str!("wgsl/grain.wgsl");
+/// `halation_source(s)`, pure, for a blur's taps or a pass.
+pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
+/// `halation_px(s, blurred)`; needs `HALATION_SOURCE`.
+pub const HALATION: &str = include_str!("wgsl/halation.wgsl");
 /// `color_matrix_px(s)`.
 pub const COLOR_MATRIX: &str = include_str!("wgsl/color_matrix.wgsl");
 /// `color_cube_px(s)`, reading `cube_node(r, g, b, n)`.

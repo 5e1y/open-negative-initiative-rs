@@ -63,6 +63,10 @@ fields! {
     BlueBlackPoint => set_blue_black_point_fraction, get_blue_black_point_fraction, set_blue_black_point_readout, set_blue_black_point_value;
     WhiteKelvin => set_white_kelvin_fraction, get_white_kelvin_fraction, set_white_kelvin_readout, set_white_kelvin_value;
     WhiteTint => set_white_tint_fraction, get_white_tint_fraction, set_white_tint_readout, set_white_tint_value;
+    GrainAmount => set_grain_amount_fraction, get_grain_amount_fraction, set_grain_amount_readout, set_grain_amount_value;
+    GrainSize => set_grain_size_fraction, get_grain_size_fraction, set_grain_size_readout, set_grain_size_value;
+    HalationAmount => set_halation_amount_fraction, get_halation_amount_fraction, set_halation_amount_readout, set_halation_amount_value;
+    HalationSize => set_halation_size_fraction, get_halation_size_fraction, set_halation_size_readout, set_halation_size_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
@@ -79,5 +83,6 @@ pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
         Block::SourceBalance => g.set_source_balance_modified(on),
         Block::FlatField => g.set_flat_field_modified(on),
         Block::ChannelPoints => g.set_channel_points_modified(on),
+        Block::FilmEffects => g.set_film_effects_modified(on),
     }
 }

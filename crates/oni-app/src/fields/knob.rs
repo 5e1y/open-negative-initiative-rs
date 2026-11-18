@@ -1,0 +1,56 @@
+//! Each panel field's store knob: the one value of the settings its slider reads and moves.
+
+use super::Field;
+use oni_core::knob::{Channel, Knob};
+
+impl Field {
+    /// The store's knob this slider moves.
+    pub fn knob(self) -> Knob {
+        match self {
+            Field::Temperature => Knob::Temperature,
+            Field::Tint => Knob::Tint,
+            Field::ColorDensity => Knob::Density,
+            Field::Exposure => Knob::Exposure,
+            Field::Highlights => Knob::Highlights,
+            Field::Shadows => Knob::Shadows,
+            Field::WhitePoint => Knob::WhitePoint,
+            Field::BlackPoint => Knob::BlackPoint,
+            Field::Contrast => Knob::Contrast,
+            Field::Vignette => Knob::Vignette,
+            Field::Chrome => Knob::Chrome,
+            Field::BalanceStrength => Knob::BalanceStrength,
+            Field::DensityCeiling => Knob::DensityCeiling,
+            Field::DyeSeparation => Knob::Separation,
+            Field::Angle => Knob::Angle,
+            Field::SharpenAmount => Knob::SharpenAmount,
+            Field::SharpenRadius => Knob::SharpenRadius,
+            Field::SharpenHalo => Knob::SharpenHalo,
+            Field::ChromaAmount => Knob::ChromaForce,
+            Field::ChromaRadius => Knob::ChromaRadius,
+            Field::Texture => Knob::Texture,
+            Field::PaperRed => Knob::Paper(Channel::Red),
+            Field::PaperGreen => Knob::Paper(Channel::Green),
+            Field::PaperBlue => Knob::Paper(Channel::Blue),
+            Field::GainRed => Knob::Gain(Channel::Red),
+            Field::GainGreen => Knob::Gain(Channel::Green),
+            Field::GainBlue => Knob::Gain(Channel::Blue),
+            Field::FlatAmount => Knob::FlatFieldAmount,
+            Field::FlatTemperature => Knob::FlatFieldTemperature,
+            Field::FlatTint => Knob::FlatFieldTint,
+            Field::GainTemperature => Knob::GainTemperature,
+            Field::GainTint => Knob::GainTint,
+            Field::RedWhitePoint => Knob::ChannelWhite(Channel::Red),
+            Field::GreenWhitePoint => Knob::ChannelWhite(Channel::Green),
+            Field::BlueWhitePoint => Knob::ChannelWhite(Channel::Blue),
+            Field::RedBlackPoint => Knob::ChannelBlack(Channel::Red),
+            Field::GreenBlackPoint => Knob::ChannelBlack(Channel::Green),
+            Field::BlueBlackPoint => Knob::ChannelBlack(Channel::Blue),
+            Field::WhiteKelvin => Knob::WhiteKelvin,
+            Field::WhiteTint => Knob::WhiteTint,
+            Field::GrainAmount => Knob::GrainAmount,
+            Field::GrainSize => Knob::GrainSize,
+            Field::HalationAmount => Knob::HalationAmount,
+            Field::HalationSize => Knob::HalationSize,
+        }
+    }
+}

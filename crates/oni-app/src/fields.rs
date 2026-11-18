@@ -1,12 +1,13 @@
 //! Every value the panel draws: its label, travel, rest, readout and the store knob it moves, copied
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
-use oni_core::knob::{CHROMA_FORCE_RANGE, Channel, Knob, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, Gains, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_core::knob::{CHROMA_FORCE_RANGE, SAUCE_RANGE};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::FlatField;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white;
 
+mod knob;
 mod readout;
 
 pub use readout::{Axis, Readout, Unit, number};
@@ -54,6 +55,10 @@ pub enum Field {
     BlueBlackPoint,
     WhiteKelvin,
     WhiteTint,
+    GrainAmount,
+    GrainSize,
+    HalationAmount,
+    HalationSize,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -71,10 +76,11 @@ pub enum Block {
     SourceBalance,
     FlatField,
     ChannelPoints,
+    FilmEffects,
 }
 
 impl Block {
-    pub const ALL: [Block; 12] = [
+    pub const ALL: [Block; 13] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
@@ -87,6 +93,7 @@ impl Block {
         Block::SourceBalance,
         Block::FlatField,
         Block::ChannelPoints,
+        Block::FilmEffects,
     ];
 
     pub fn from_index(i: i32) -> Option<Block> {
@@ -108,6 +115,7 @@ impl Block {
             Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
             Block::ChannelPoints => &[RedWhitePoint, GreenWhitePoint, BlueWhitePoint, RedBlackPoint, GreenBlackPoint, BlueBlackPoint],
+            Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize],
         }
     }
 }
@@ -126,7 +134,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 40] = [
+    pub const ALL: [Field; 44] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -167,6 +175,10 @@ impl Field {
         Field::BlueBlackPoint,
         Field::WhiteKelvin,
         Field::WhiteTint,
+        Field::GrainAmount,
+        Field::GrainSize,
+        Field::HalationAmount,
+        Field::HalationSize,
     ];
 
     pub fn index(self) -> i32 {
@@ -220,6 +232,10 @@ impl Field {
             Field::BlueBlackPoint => "blue-black-point",
             Field::WhiteKelvin => "white-kelvin",
             Field::WhiteTint => "white-tint",
+            Field::GrainAmount => "grain-amount",
+            Field::GrainSize => "grain-size",
+            Field::HalationAmount => "halation-amount",
+            Field::HalationSize => "halation-size",
         }
     }
 
@@ -232,6 +248,7 @@ impl Field {
     pub fn shown_in(self, mode: oni_settings::ConversionMode) -> bool {
         match self {
             Field::WhiteKelvin | Field::WhiteTint => !mode.is_film(),
+            Field::GrainAmount | Field::GrainSize | Field::HalationAmount | Field::HalationSize => !mode.is_film(),
             Field::Temperature | Field::Tint => mode.is_film(),
             _ => true,
         }
@@ -295,6 +312,10 @@ impl Field {
             // A digital photo's white, in kelvin about the mosaic's own and in DNG's tint.
             Field::WhiteKelvin => Spec { centre: Some(white::KELVIN_CENTRE), ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
             Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::Tint)),
+            Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
+            Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
+            Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
+            Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Percent),
         }
     }
 
@@ -310,52 +331,6 @@ impl Field {
             rest.gains.stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
         }
         self.knob().get(&rest)
-    }
-
-    /// The store's knob this slider moves.
-    pub fn knob(self) -> Knob {
-        match self {
-            Field::Temperature => Knob::Temperature,
-            Field::Tint => Knob::Tint,
-            Field::ColorDensity => Knob::Density,
-            Field::Exposure => Knob::Exposure,
-            Field::Highlights => Knob::Highlights,
-            Field::Shadows => Knob::Shadows,
-            Field::WhitePoint => Knob::WhitePoint,
-            Field::BlackPoint => Knob::BlackPoint,
-            Field::Contrast => Knob::Contrast,
-            Field::Vignette => Knob::Vignette,
-            Field::Chrome => Knob::Chrome,
-            Field::BalanceStrength => Knob::BalanceStrength,
-            Field::DensityCeiling => Knob::DensityCeiling,
-            Field::DyeSeparation => Knob::Separation,
-            Field::Angle => Knob::Angle,
-            Field::SharpenAmount => Knob::SharpenAmount,
-            Field::SharpenRadius => Knob::SharpenRadius,
-            Field::SharpenHalo => Knob::SharpenHalo,
-            Field::ChromaAmount => Knob::ChromaForce,
-            Field::ChromaRadius => Knob::ChromaRadius,
-            Field::Texture => Knob::Texture,
-            Field::PaperRed => Knob::Paper(Channel::Red),
-            Field::PaperGreen => Knob::Paper(Channel::Green),
-            Field::PaperBlue => Knob::Paper(Channel::Blue),
-            Field::GainRed => Knob::Gain(Channel::Red),
-            Field::GainGreen => Knob::Gain(Channel::Green),
-            Field::GainBlue => Knob::Gain(Channel::Blue),
-            Field::FlatAmount => Knob::FlatFieldAmount,
-            Field::FlatTemperature => Knob::FlatFieldTemperature,
-            Field::FlatTint => Knob::FlatFieldTint,
-            Field::GainTemperature => Knob::GainTemperature,
-            Field::GainTint => Knob::GainTint,
-            Field::RedWhitePoint => Knob::ChannelWhite(Channel::Red),
-            Field::GreenWhitePoint => Knob::ChannelWhite(Channel::Green),
-            Field::BlueWhitePoint => Knob::ChannelWhite(Channel::Blue),
-            Field::RedBlackPoint => Knob::ChannelBlack(Channel::Red),
-            Field::GreenBlackPoint => Knob::ChannelBlack(Channel::Green),
-            Field::BlueBlackPoint => Knob::ChannelBlack(Channel::Blue),
-            Field::WhiteKelvin => Knob::WhiteKelvin,
-            Field::WhiteTint => Knob::WhiteTint,
-        }
     }
 
     /// What the track shows for a stored value: flipped where the track runs the other way.

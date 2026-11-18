@@ -7,6 +7,8 @@ pub mod finishing;
 pub mod flat_field;
 pub mod frontier_table;
 pub mod geometry;
+pub mod grain;
+pub mod halation;
 mod healing;
 pub mod look_lab;
 pub mod oni_look;
@@ -123,12 +125,18 @@ impl Pipeline {
         inputs: &Inputs,
     ) -> Result<Image> {
         let ((scale, reference), s) = (at, machine.unwrap_or(frame));
+        let scan = input.extent();
         let framed = self.framed(graph, input, s, scale, inputs)?;
         let balanced = match conversion::white(s) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
         };
-        let out = balanced.then(stages::stage47(&conversion::stage47(s)));
+        // The film's own light, then its grain, lie on the scene before the print; a measure reads neither.
+        // A digital photo's alone for now (owner's call), so a film mode never renders an effect it hides.
+        let effects = !measuring && !s.mode.is_film();
+        let haloed = if effects { halation::halated(balanced, s, scan) } else { balanced };
+        let grained = grain::grain(s, scan, scale).filter(|_| effects).map(|k| stages::grain(&k));
+        let out = stages::laid(haloed, grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).collect());
         let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
         self.finishing(graph, looked, s, true, scale, reference, measuring)
     }

@@ -696,4 +696,12 @@ settings: PipelineSettings {
         amount: 1.0,
         halo: 0.5,
     },
+    grain: Grain {
+        amount: 0.0,
+        size: 0.5,
+    },
+    halation: Halation {
+        amount: 0.0,
+        size: 0.5,
+    },
 }

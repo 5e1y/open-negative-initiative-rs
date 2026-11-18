@@ -73,6 +73,30 @@ pub fn extent(g: &Geometry, input: Rect, scale: f64) -> Rect {
     cuts(g, input, scale).extent
 }
 
+/// The point of the scan's full-resolution grid under a point of what stage 0 leaves of an input of
+/// extent `input` at `scale`, as rows: the angle and the turns mapped back, as a crop moves nothing.
+pub fn scan_from(g: &Geometry, input: Rect, scale: f64) -> [[f64; 3]; 2] {
+    let c = cuts(g, input, scale);
+    let then = |outer: [[f64; 3]; 2], inner: [[f64; 3]; 2]| -> [[f64; 3]; 2] {
+        std::array::from_fn(|r| {
+            let o = outer[r];
+            [o[0] * inner[0][0] + o[1] * inner[1][0], o[0] * inner[0][1] + o[1] * inner[1][1], o[0] * inner[0][2] + o[1] * inner[1][2] + o[2]]
+        })
+    };
+    let mut m = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+    if let Some((k, _)) = c.rotated {
+        m = k.m.map(|r| r.map(f64::from));
+    }
+    if let Some((k, _)) = c.oriented {
+        // The permutation's pixel indices as points, pixel centres on the half.
+        let a = k.a.map(f64::from);
+        let b = k.b.map(f64::from);
+        let o = [[a[0], a[1], b[0] + 0.5 - (a[0] + a[1]) * 0.5], [a[2], a[3], b[1] + 0.5 - (a[2] + a[3]) * 0.5]];
+        m = then(o, m);
+    }
+    then([[1.0 / scale, 0.0, 0.0], [0.0, 1.0 / scale, 0.0]], m)
+}
+
 /// Stage 0 on `image`; `scale` is its width over the full-resolution width, so every scale crops one frame.
 pub fn apply(image: Image, g: &Geometry, scale: f64) -> Image {
     let c = cuts(g, image.extent(), scale);

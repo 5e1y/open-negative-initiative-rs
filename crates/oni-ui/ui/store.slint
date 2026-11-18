@@ -121,6 +121,18 @@ export global Store {
     in property <float> white-tint-fraction;
     in property <string> white-tint-readout;
     in property <string> white-tint-value;
+    in property <float> grain-amount-fraction;
+    in property <string> grain-amount-readout;
+    in property <string> grain-amount-value;
+    in property <float> grain-size-fraction;
+    in property <string> grain-size-readout;
+    in property <string> grain-size-value;
+    in property <float> halation-amount-fraction;
+    in property <string> halation-amount-readout;
+    in property <string> halation-amount-value;
+    in property <float> halation-size-fraction;
+    in property <string> halation-size-readout;
+    in property <string> halation-size-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;
@@ -133,6 +145,7 @@ export global Store {
     in property <bool> flat-field-modified;
     in property <bool> paper-correction-modified;
     in property <bool> channel-points-modified;
+    in property <bool> film-effects-modified;
     // Each field's rest as a fraction of its track, by its index: the double click's value, which a
     // slider ticks and holds a drag on; it moves only with the frame.
     in property <[float]> rests;

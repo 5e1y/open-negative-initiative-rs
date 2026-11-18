@@ -2144,6 +2144,30 @@ msgid "Chrome"
 msgstr "Chrome"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Film Effects"
+msgstr "Efectos de película"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it.\n\nBoth act on the scene before Lighting and Colour, as on the film."
+msgstr "Grano pone una textura de película sobre la escena, más fuerte con Grano, más gruesa con Tamaño del grano; se queda en la foto al recortarla, girarla o ampliarla.\n\nHalación pone el brillo rojo de la película alrededor de las luces más altas, la luz que cruzó el soporte y volvió a la capa roja; Tamaño de la halación lo ensancha.\n\nAmbos actúan sobre la escena antes de Luz y Color, como en la película."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain"
+msgstr "Grano"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain size"
+msgstr "Tamaño del grano"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Halation"
+msgstr "Halación"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Halation size"
+msgstr "Tamaño de la halación"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
 msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
 
