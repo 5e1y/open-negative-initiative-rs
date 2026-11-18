@@ -26,6 +26,8 @@ fn kernel_print(print: &Print, n: V3, travel: f32) -> V3 {
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
         own_stops: print.filters(),
+        own_contrast: print.channel_contrast,
+        own_mid: print.channel_mid,
         hunt: 1.0,
         base_stops: print.hunt_base.map_or(0.0, |b| b.exposure),
         base_contrast: print.hunt_base.map_or(0.0, |b| b.contrast),
@@ -57,7 +59,9 @@ fn prints() -> Vec<(Print, f32)> {
         ..bent
     };
     let caught_up = Print { hunt_base: Some(Tone { exposure: 0.4, contrast: 0.1, ..Tone::NEUTRAL }), ..filtered };
-    vec![(Print::default(), 0.0), (bent, 0.0), (filtered, 0.35), (caught_up, -0.6)]
+    let toned = Print { channel_contrast: [0.35, -0.2, 0.1], channel_mid: [-0.15, 0.2, 0.05], ..filtered };
+    let toned_alone = Print { channel_contrast: [-0.4, 0.0, 0.3], channel_mid: [0.25, -0.1, 0.0], ..bent };
+    vec![(Print::default(), 0.0), (bent, 0.0), (filtered, 0.35), (caught_up, -0.6), (toned, 0.2), (toned_alone, 0.0)]
 }
 
 fn worst_gap(replica: impl Fn(&Print, V3, f32) -> V3) -> f32 {
@@ -78,7 +82,7 @@ fn worst_gap(replica: impl Fn(&Print, V3, f32) -> V3) -> f32 {
 fn the_print_replica_is_the_kernel_s_print() {
     let worst = worst_gap(|p, n, t| p.rendered(n, t));
     assert!(worst < 1e-6, "the replica parts from the kernel by {worst}");
-    // Twins: a replica dropping the filters, or the Hunt factor, is seen.
+    // Twins: a replica dropping the filters, the Hunt factor or each channel's own tone is seen.
     let unfiltered = worst_gap(|p, n, t| {
         let mut bare = *p;
         bare.set_filters([0.0; 3]);
@@ -92,7 +96,9 @@ fn the_print_replica_is_the_kernel_s_print() {
         color_density::rendered(after, t)
     });
     assert!(unhunted > 1e-3, "{unhunted}");
-    eprintln!("print against the kernel: {worst:e}; unfiltered {unfiltered:e}; unhunted {unhunted:e}");
+    let untoned = worst_gap(|p, n, t| Print { channel_contrast: [0.0; 3], channel_mid: [0.0; 3], ..*p }.rendered(n, t));
+    assert!(untoned > 1e-2, "{untoned}");
+    eprintln!("print against the kernel: {worst:e}; unfiltered {unfiltered:e}; unhunted {unhunted:e}; untoned {untoned:e}");
 }
 
 /// A former document's settings object, the Swift check's own: exposure and a toned balance.
@@ -124,6 +130,8 @@ fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
         own_stops: print.filters(),
+        own_contrast: print.channel_contrast,
+        own_mid: print.channel_mid,
         hunt: 1.0,
         base_stops: print.hunt_base.map_or(0.0, |b| b.exposure),
         base_contrast: print.hunt_base.map_or(0.0, |b| b.contrast),

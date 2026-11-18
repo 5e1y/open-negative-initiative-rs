@@ -841,15 +841,15 @@ msgstr "En película"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -2080,32 +2080,56 @@ msgid "More Color Settings"
 msgstr "Más ajustes de color"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Each channel's own white and black point, laid on top of Lighting's: a channel's white point brightens it in the highlights, its black point darkens it in the shadows, so the ends take a colour of their own."
-msgstr "El punto blanco y el punto negro propios de cada canal, sobre los de Luz: el punto blanco de un canal lo aclara en las luces, su punto negro lo oscurece en las sombras, de modo que los extremos toman un color propio."
+msgid "Each channel's own white point, black point, mids and contrast, laid on top of Lighting's, one channel a tab: a channel's white point brightens it in the highlights, its black point darkens it in the shadows, its mids lift or lower its middle tones and its contrast steepens or softens it about a middle grey, so the channel takes a colour of its own. A dot marks a tab whose channel moved; Reset returns the three channels."
+msgstr "El punto blanco, el punto negro, los medios y el contraste propios de cada canal, sobre los de Luz, un canal por pestaña: el punto blanco de un canal lo aclara en las luces, su punto negro lo oscurece en las sombras, sus medios suben o bajan sus tonos medios y su contraste lo endurece o lo suaviza en torno a un gris medio, de modo que el canal toma un color propio. Un punto marca la pestaña cuyo canal se movió; Restablecer devuelve los tres canales."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Red white point"
 msgstr "Punto blanco rojo"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Green white point"
-msgstr "Punto blanco verde"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Blue white point"
-msgstr "Punto blanco azul"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Red black point"
 msgstr "Punto negro rojo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red mid"
+msgstr "Medios rojos"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red contrast"
+msgstr "Contraste rojo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green white point"
+msgstr "Punto blanco verde"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Green black point"
 msgstr "Punto negro verde"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green mid"
+msgstr "Medios verdes"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green contrast"
+msgstr "Contraste verde"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue white point"
+msgstr "Punto blanco azul"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Blue black point"
 msgstr "Punto negro azul"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue mid"
+msgstr "Medios azules"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue contrast"
+msgstr "Contraste azul"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
@@ -2148,8 +2172,8 @@ msgid "Film Effects"
 msgstr "Efectos de película"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it.\n\nBoth act on the scene before Lighting and Colour, as on the film."
-msgstr "Grano pone una textura de película sobre la escena, más fuerte con Grano, más gruesa con Tamaño del grano; se queda en la foto al recortarla, girarla o ampliarla.\n\nHalación pone el brillo rojo de la película alrededor de las luces más altas, la luz que cruzó el soporte y volvió a la capa roja; Tamaño de la halación lo ensancha.\n\nAmbos actúan sobre la escena antes de Luz y Color, como en la película."
+msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film."
+msgstr "Grano pone una textura de película sobre la escena, más fuerte con Grano, más gruesa con Tamaño del grano; se queda en la foto al recortarla, girarla o ampliarla.\n\nHalación pone el brillo rojo de la película alrededor de las luces más altas, la luz que cruzó el soporte y volvió a la capa roja; Tamaño de la halación lo ensancha, Sensibilidad de la halación hace brillar también una luz más débil, o solo la más viva.\n\nAmbos actúan sobre la escena antes de Luz y Color, como en la película."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain"
@@ -2166,6 +2190,10 @@ msgstr "Halación"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Halation size"
 msgstr "Tamaño de la halación"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Halation sensitivity"
+msgstr "Sensibilidad de la halación"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."

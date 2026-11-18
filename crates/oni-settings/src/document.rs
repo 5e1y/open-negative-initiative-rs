@@ -16,7 +16,7 @@ use std::fmt;
 /// What a sidecar names itself, so a walk tells one from another program's JSON.
 pub const FORMAT: &str = "oni-frame";
 /// Moved at every change of the document's shape, an added field included, or of what a field keeps.
-pub const VERSION: i64 = 28;
+pub const VERSION: i64 = 29;
 
 /// Long side the fraction scale was calibrated on, hence what a stored fraction meant.
 pub const RADIUS_REFERENCE_SIDE: f64 = 8368.0;

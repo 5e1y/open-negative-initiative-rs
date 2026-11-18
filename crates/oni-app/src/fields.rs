@@ -10,6 +10,7 @@ use oni_settings::white;
 use crate::track::Bend;
 
 mod knob;
+mod names;
 mod readout;
 
 pub use readout::{Axis, Readout, Unit, number};
@@ -65,6 +66,13 @@ pub enum Field {
     FringeRed,
     FringeBlue,
     LensVignetting,
+    HalationSensitivity,
+    RedMid,
+    GreenMid,
+    BlueMid,
+    RedContrast,
+    GreenContrast,
+    BlueContrast,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -122,8 +130,21 @@ impl Block {
             Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
             Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
-            Block::ChannelPoints => &[RedWhitePoint, GreenWhitePoint, BlueWhitePoint, RedBlackPoint, GreenBlackPoint, BlueBlackPoint],
-            Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize],
+            Block::ChannelPoints => &[
+                RedWhitePoint,
+                GreenWhitePoint,
+                BlueWhitePoint,
+                RedBlackPoint,
+                GreenBlackPoint,
+                BlueBlackPoint,
+                RedMid,
+                GreenMid,
+                BlueMid,
+                RedContrast,
+                GreenContrast,
+                BlueContrast,
+            ],
+            Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize, HalationSensitivity],
             Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
         }
     }
@@ -143,7 +164,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 48] = [
+    pub const ALL: [Field; 55] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -192,6 +213,13 @@ impl Field {
         Field::FringeRed,
         Field::FringeBlue,
         Field::LensVignetting,
+        Field::HalationSensitivity,
+        Field::RedMid,
+        Field::GreenMid,
+        Field::BlueMid,
+        Field::RedContrast,
+        Field::GreenContrast,
+        Field::BlueContrast,
     ];
 
     pub fn index(self) -> i32 {
@@ -200,60 +228,6 @@ impl Field {
 
     pub fn from_index(i: i32) -> Option<Field> {
         Self::ALL.get(usize::try_from(i).ok()?).copied()
-    }
-
-    /// The Slint `Store` property stem, `exposure` for `Store.exposure-fraction`.
-    pub fn slint_name(self) -> &'static str {
-        match self {
-            Field::Temperature => "temperature",
-            Field::Tint => "tint",
-            Field::ColorDensity => "color-density",
-            Field::Exposure => "exposure",
-            Field::Highlights => "highlights",
-            Field::Shadows => "shadows",
-            Field::WhitePoint => "white-point",
-            Field::BlackPoint => "black-point",
-            Field::Contrast => "contrast",
-            Field::Vignette => "vignette",
-            Field::Chrome => "chrome",
-            Field::BalanceStrength => "balance-strength",
-            Field::DensityCeiling => "density-ceiling",
-            Field::DyeSeparation => "dye-separation",
-            Field::Angle => "angle",
-            Field::SharpenAmount => "sharpen-amount",
-            Field::SharpenRadius => "sharpen-radius",
-            Field::SharpenHalo => "sharpen-halo",
-            Field::ChromaAmount => "chroma-amount",
-            Field::ChromaRadius => "chroma-radius",
-            Field::Texture => "texture",
-            Field::PaperRed => "paper-red",
-            Field::PaperGreen => "paper-green",
-            Field::PaperBlue => "paper-blue",
-            Field::GainRed => "gain-red",
-            Field::GainGreen => "gain-green",
-            Field::GainBlue => "gain-blue",
-            Field::FlatAmount => "flat-amount",
-            Field::FlatTemperature => "flat-temperature",
-            Field::FlatTint => "flat-tint",
-            Field::GainTemperature => "gain-temperature",
-            Field::GainTint => "gain-tint",
-            Field::RedWhitePoint => "red-white-point",
-            Field::GreenWhitePoint => "green-white-point",
-            Field::BlueWhitePoint => "blue-white-point",
-            Field::RedBlackPoint => "red-black-point",
-            Field::GreenBlackPoint => "green-black-point",
-            Field::BlueBlackPoint => "blue-black-point",
-            Field::WhiteKelvin => "white-kelvin",
-            Field::WhiteTint => "white-tint",
-            Field::GrainAmount => "grain-amount",
-            Field::GrainSize => "grain-size",
-            Field::HalationAmount => "halation-amount",
-            Field::HalationSize => "halation-size",
-            Field::Distortion => "distortion",
-            Field::FringeRed => "fringe-red",
-            Field::FringeBlue => "fringe-blue",
-            Field::LensVignetting => "lens-vignetting",
-        }
     }
 
     pub fn block(self) -> Option<Block> {
@@ -265,7 +239,7 @@ impl Field {
     pub fn shown_in(self, mode: oni_settings::ConversionMode) -> bool {
         match self {
             Field::WhiteKelvin | Field::WhiteTint => !mode.is_film(),
-            Field::GrainAmount | Field::GrainSize | Field::HalationAmount | Field::HalationSize => !mode.is_film(),
+            Field::GrainAmount | Field::GrainSize | Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => !mode.is_film(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => !mode.is_film(),
             Field::Temperature | Field::Tint => mode.is_film(),
             _ => true,
@@ -327,6 +301,13 @@ impl Field {
             Field::RedBlackPoint => black("Red black point"),
             Field::GreenBlackPoint => black("Green black point"),
             Field::BlueBlackPoint => black("Blue black point"),
+            // Each channel's own mids and contrast, read as Lighting's.
+            Field::RedMid => s("Red mid", Print::ZONE_RANGE, Readout::SignedPercent),
+            Field::GreenMid => s("Green mid", Print::ZONE_RANGE, Readout::SignedPercent),
+            Field::BlueMid => s("Blue mid", Print::ZONE_RANGE, Readout::SignedPercent),
+            Field::RedContrast => s("Red contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
+            Field::GreenContrast => s("Green contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
+            Field::BlueContrast => s("Blue contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             // A digital photo's white, in kelvin even in mired and in DNG's tint.
             Field::WhiteKelvin => Spec { bend: Bend::Mired, ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
             Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::SignedWhole)),
@@ -334,6 +315,8 @@ impl Field {
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
             Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
             Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Percent),
+            // Stops the threshold is lowered by: right, the dimmer light glows too.
+            Field::HalationSensitivity => s("Halation sensitivity", Halation::SENSITIVITY_RANGE, Readout::Stops),
             // A lens's corrections, each a share of its slider's reach.
             Field::Distortion => s("Distortion", LensCorrection::RANGE, Readout::SignedWhole),
             Field::FringeRed => s("Red fringe", LensCorrection::RANGE, Readout::SignedWhole),

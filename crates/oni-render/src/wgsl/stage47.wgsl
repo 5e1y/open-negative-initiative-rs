@@ -16,6 +16,8 @@ struct Params {
     balance_span_decompression: vec4<f32>,
     print_zones_base_zones: vec4<f32>,
     film_follow: vec4<f32>,
+    own_contrast: vec4<f32>,
+    own_mid: vec4<f32>,
     count: vec4<u32>,
 }
 
@@ -67,9 +69,14 @@ fn printed_rgb(n: f32, stops: f32, contrast: f32, zones: vec2<f32>) -> f32 {
     return pow(max(shaped(n, stops, contrast, zones), 0.0), DISPLAY_GAMMA);
 }
 
-fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32) -> f32 {
+fn midded(p: f32, mids: f32) -> f32 {
+    if (mids == 0.0 || p < 0.0 || p > 1.0) { return p; }
+    return p + mids * 16.0 * p * p * (1.0 - p) * (1.0 - p);
+}
+
+fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32, own_contrast: f32, own_mid: f32) -> f32 {
     var p = shaped(n, stops, contrast, zones);
-    p = shaped(p, own, 0.0, vec2<f32>(0.0));
+    p = midded(shaped(p, own, own_contrast, vec2<f32>(0.0)), own_mid);
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
@@ -93,6 +100,8 @@ fn stage47_px(s: vec4<f32>) -> vec4<f32> {
     let sep_b = P.sep_b_hunt.xyz;
     let hunt = P.sep_b_hunt.w;
     let own = P.own_base_stops.xyz;
+    let own_contrast = P.own_contrast.xyz;
+    let own_mid = P.own_mid.xyz;
     let base_stops = P.own_base_stops.w;
     let balance_low = P.balance_low_base_contrast.xyz;
     let base_contrast = P.balance_low_base_contrast.w;
@@ -123,13 +132,13 @@ fn stage47_px(s: vec4<f32>) -> vec4<f32> {
     e = vec3<f32>(dot(sep_r, e), dot(sep_g, e), dot(sep_b, e));
     if (print_on > 0.5) {
         let windowed = e;
-        e = vec3<f32>(printed(e.r, print_stops, print_contrast, print_zones, own.r),
-                      printed(e.g, print_stops, print_contrast, print_zones, own.g),
-                      printed(e.b, print_stops, print_contrast, print_zones, own.b));
+        e = vec3<f32>(printed(e.r, print_stops, print_contrast, print_zones, own.r, own_contrast.r, own_mid.r),
+                      printed(e.g, print_stops, print_contrast, print_zones, own.g, own_contrast.g, own_mid.g),
+                      printed(e.b, print_stops, print_contrast, print_zones, own.b, own_contrast.b, own_mid.b));
         if (any(own != vec3<f32>(0.0))) {
-            let plain = vec3<f32>(printed_rgb(windowed.r, print_stops, print_contrast, print_zones),
-                                  printed_rgb(windowed.g, print_stops, print_contrast, print_zones),
-                                  printed_rgb(windowed.b, print_stops, print_contrast, print_zones));
+            let plain = vec3<f32>(printed(windowed.r, print_stops, print_contrast, print_zones, 0.0, own_contrast.r, own_mid.r),
+                                  printed(windowed.g, print_stops, print_contrast, print_zones, 0.0, own_contrast.g, own_mid.g),
+                                  printed(windowed.b, print_stops, print_contrast, print_zones, 0.0, own_contrast.b, own_mid.b));
             let filtered = dot(e, LUMA);
             if (filtered > 1e-6) { e = e * (dot(plain, LUMA) / filtered); }
         }

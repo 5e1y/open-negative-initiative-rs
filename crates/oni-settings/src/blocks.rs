@@ -111,23 +111,26 @@ impl Grain {
 }
 
 /// The highlights' glow through the film's base, before the print: its strength and its width, each a
-/// share of its track.
+/// share of its track, and its sensitivity, the stops its threshold is lowered by.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Halation {
     pub amount: f32,
     pub size: f32,
+    pub sensitivity: f32,
 }
 
 impl Default for Halation {
     fn default() -> Self {
-        Halation { amount: 0.0, size: 0.5 }
+        Halation { amount: 0.0, size: 0.5, sensitivity: 0.0 }
     }
 }
 
 impl Halation {
     pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
     pub const SIZE_RANGE: (f32, f32) = (0.0, 1.0);
+    /// From light past a JPEG's white alone, 1.2, to the upper midtones, 0.15, about the rest's 0.6.
+    pub const SENSITIVITY_RANGE: (f32, f32) = (-1.0, 2.0);
 }
 
 /// Mid-frequency local contrast on the luma.

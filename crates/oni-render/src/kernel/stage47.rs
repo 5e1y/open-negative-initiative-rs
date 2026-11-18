@@ -24,6 +24,9 @@ pub struct Stage47 {
     pub print_contrast: f32,
     pub print_zones: [f32; 2],
     pub own_stops: [f32; 3],
+    /// Each channel's own contrast and mids, after the RGB curve and before its filter's stops.
+    pub own_contrast: [f32; 3],
+    pub own_mid: [f32; 3],
     pub hunt: f32,
     pub base_stops: f32,
     pub base_contrast: f32,
@@ -58,6 +61,8 @@ impl Stage47 {
             print_contrast: 0.0,
             print_zones: [0.0; 2],
             own_stops: [0.0; 3],
+            own_contrast: [0.0; 3],
+            own_mid: [0.0; 3],
             hunt: 0.0,
             base_stops: 0.0,
             base_contrast: 0.0,
@@ -88,6 +93,8 @@ impl Stage47 {
                 v3(self.balance_span, self.decompression),
                 v22(self.print_zones, self.base_zones),
                 [self.film_share, self.follow, 0.0, 0.0],
+                v3(self.own_contrast, 0.0),
+                v3(self.own_mid, 0.0),
             ],
             count: [count, 0, 0, 0],
         }
@@ -97,7 +104,7 @@ impl Stage47 {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Packed {
-    rows: [[f32; 4]; 14],
+    rows: [[f32; 4]; 16],
     count: [u32; 4],
 }
 
@@ -154,9 +161,18 @@ fn printed_rgb(n: f32, stops: f32, contrast: f32, zones: [f32; 2]) -> f32 {
     shaped(n, stops, contrast, zones).max(0.0).powf(DISPLAY_GAMMA)
 }
 
-fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32) -> f32 {
+/// Lighting's mids bend on the display value, held inside 0 to 1.
+fn midded(p: f32, mids: f32) -> f32 {
+    if mids == 0.0 || !(0.0..=1.0).contains(&p) {
+        return p;
+    }
+    p + mids * 16.0 * p * p * (1.0 - p) * (1.0 - p)
+}
+
+/// One channel printed: the RGB curve, then its own contrast, filter and mids.
+fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32, own_contrast: f32, own_mid: f32) -> f32 {
     let p = shaped(n, stops, contrast, zones);
-    shaped(p, own, 0.0, [0.0, 0.0]).max(0.0).powf(DISPLAY_GAMMA)
+    midded(shaped(p, own, own_contrast, [0.0, 0.0]), own_mid).max(0.0).powf(DISPLAY_GAMMA)
 }
 
 /// Stages 4 to 7 on one pixel.
@@ -182,9 +198,10 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     if k.print_on > 0.5 {
         let (ps, pc, pz) = (k.print_stops, k.print_contrast, k.print_zones);
         let windowed = e;
-        e = map(e, |c, x| printed(x, ps, pc, pz, k.own_stops[c]));
+        e = map(e, |c, x| printed(x, ps, pc, pz, k.own_stops[c], k.own_contrast[c], k.own_mid[c]));
         if k.own_stops != [0.0; 3] {
-            let plain = map(windowed, |_, x| printed_rgb(x, ps, pc, pz));
+            // The luma held is the channels' own tone's, so a filter alone is levelled out.
+            let plain = map(windowed, |c, x| printed(x, ps, pc, pz, 0.0, k.own_contrast[c], k.own_mid[c]));
             let filtered = dot(e, LUMA);
             if filtered > 1e-6 {
                 let f = dot(plain, LUMA) / filtered;

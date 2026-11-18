@@ -57,7 +57,7 @@ pub fn white(s: &PipelineSettings) -> Option<ColorMatrix> {
 }
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order. A digital photo renders no gain, window,
-/// dyes or print filter: its colour is its white's.
+/// dyes or print filter: its colour is its white's; a black and white print, no channel's own tone.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let mono = s.mode.is_monochrome();
     let film = s.mode.is_film();
@@ -90,6 +90,8 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         print_contrast: s.print.contrast,
         print_zones: [s.print.shadows, s.print.highlights],
         own_stops: if film { s.print.filters() } else { [0.0; 3] },
+        own_contrast: if mono { [0.0; 3] } else { s.print.channel_contrast },
+        own_mid: if mono { [0.0; 3] } else { s.print.channel_mid },
         hunt: if mono { 0.0 } else { 1.0 },
         base_stops: base.exposure,
         base_contrast: base.contrast,

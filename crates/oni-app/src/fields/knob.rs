@@ -55,6 +55,13 @@ impl Field {
             Field::FringeRed => Knob::LensRed,
             Field::FringeBlue => Knob::LensBlue,
             Field::LensVignetting => Knob::LensVignetting,
+            Field::HalationSensitivity => Knob::HalationSensitivity,
+            Field::RedMid => Knob::ChannelMid(Channel::Red),
+            Field::GreenMid => Knob::ChannelMid(Channel::Green),
+            Field::BlueMid => Knob::ChannelMid(Channel::Blue),
+            Field::RedContrast => Knob::ChannelContrast(Channel::Red),
+            Field::GreenContrast => Knob::ChannelContrast(Channel::Green),
+            Field::BlueContrast => Knob::ChannelContrast(Channel::Blue),
         }
     }
 }

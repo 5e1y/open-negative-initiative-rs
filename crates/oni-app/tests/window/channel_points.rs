@@ -1,12 +1,12 @@
 //! More Color Settings through the window's pointer: folded under the Colour block until its title is
-//! clicked, each of its six sliders moves its own channel's point and the render with it, its Reset
-//! clears them, and black and white shows none of it.
+//! clicked, one channel a tab, each of a tab's four sliders moves its own channel's value and the render
+//! with it, the tab's mark follows, its Reset clears them, and black and white shows none of it.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::fields::Field;
 use oni_app::{PanelState, PanelTab, Store};
 use oni_core::Knob;
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::LogicalPosition;
 use std::time::Duration;
@@ -15,13 +15,11 @@ use crate::common;
 use crate::panel_bindings::opened;
 
 const TITLE: &str = "More Color Settings";
-const SLIDERS: [(Field, &str); 6] = [
-    (Field::RedWhitePoint, "Red white point"),
-    (Field::GreenWhitePoint, "Green white point"),
-    (Field::BlueWhitePoint, "Blue white point"),
-    (Field::RedBlackPoint, "Red black point"),
-    (Field::GreenBlackPoint, "Green black point"),
-    (Field::BlueBlackPoint, "Blue black point"),
+/// Each tab's name and its sliders, in the order the owner named them.
+const TABS: [(&str, [(Field, &str); 4]); 3] = [
+    ("R", [(Field::RedWhitePoint, "Red white point"), (Field::RedBlackPoint, "Red black point"), (Field::RedMid, "Red mid"), (Field::RedContrast, "Red contrast")]),
+    ("G", [(Field::GreenWhitePoint, "Green white point"), (Field::GreenBlackPoint, "Green black point"), (Field::GreenMid, "Green mid"), (Field::GreenContrast, "Green contrast")]),
+    ("B", [(Field::BlueWhitePoint, "Blue white point"), (Field::BlueBlackPoint, "Blue black point"), (Field::BlueMid, "Blue mid"), (Field::BlueContrast, "Blue contrast")]),
 ];
 
 fn click(rig: &common::Rig, (x, y): (f32, f32)) {
@@ -58,34 +56,61 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     // Folded at first, right under Saturation: Lighting follows its title a row below.
     assert_eq!(title().len(), 1, "one title on the Colour block of a negative");
     let folded = lighting() - title()[0].y;
-    assert!(folded < 100.0, "the six sliders lie folded: Lighting {folded} pt below the title");
+    assert!(folded < 100.0, "the sliders lie folded: Lighting {folded} pt below the title");
     rig.shot("channel-points-folded");
     click(&rig, title()[0].middle());
     rig.settle();
     let open = lighting() - title()[0].y;
-    assert!(open > folded + 6.0 * 30.0, "the title's click lays the six sliders: {folded} then {open} pt");
+    assert!(open > folded + 4.0 * 30.0, "the title's click lays the tabs and a tab's four sliders: {folded} then {open} pt");
     println!("shot {}", rig.shot("channel-points-open").display());
+    // The block's own tabs, between its title and Lighting: the Curves' further down share their names.
+    let tab = |name: &str| {
+        let (top, bottom) = (title()[0].y, lighting());
+        let found: Vec<_> = common::placed(w, Role::Tab, name).into_iter().filter(|t| t.y > top && t.y < bottom).collect();
+        assert_eq!(found.len(), 1, "one {name} tab in {TITLE}: {found:?}");
+        found[0]
+    };
+    let marks = || -> Vec<bool> { (0..3).map(|c| g.get_channel_marked().row_data(c).unwrap_or(false)).collect() };
+    let every: Vec<Field> = TABS.iter().flat_map(|(_, sliders)| sliders.map(|(f, _)| f)).collect();
 
-    // Each slider by its rail: its own channel's point alone moves, through the field the markup wires.
-    for (field, label) in SLIDERS {
-        let rail = common::the(w, Role::Slider, label);
-        let knob = field.knob();
-        std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-        click(&rig, (rail.x + rail.width * 0.92, rail.y + rail.height - 13.0));
+    // Each tab shows its own channel's four sliders alone; each slider by its rail moves its own value
+    // alone, through the field the markup wires, marks its tab alone, and the block's Reset clears it.
+    for (c, (name, sliders)) in TABS.iter().enumerate() {
+        click(&rig, tab(name).middle());
         rig.settle();
-        let s = settings();
-        assert!(knob.get(&s).abs() > 0.05, "{label} moved its point: {}", knob.get(&s));
-        let others: Vec<f32> = SLIDERS.iter().filter(|(f, _)| *f != field).map(|(f, _)| f.knob().get(&s)).collect();
-        assert!(others.iter().all(|v| *v == 0.0), "{label} moved another point: {others:?}");
-        assert!(g.get_channel_points_modified(), "{label}: the block's Reset shows");
-        // Back to rest by the block's own key, beside its title.
-        let reset: Vec<_> = common::placed(w, Role::Button, "Reset").into_iter().filter(|k| title()[0].level_with(k)).collect();
-        assert_eq!(reset.len(), 1, "one Reset on the row of {TITLE}");
-        click(&rig, reset[0].middle());
-        rig.settle();
-        assert_eq!(knob.get(&settings()), 0.0, "{label}: the Reset took it back");
-        assert!(!g.get_channel_points_modified());
+        for (other, (_, theirs)) in TABS.iter().enumerate() {
+            for (_, label) in theirs {
+                assert_eq!(common::placed(w, Role::Slider, label).len(), usize::from(other == c), "{label} under the {name} tab");
+            }
+        }
+        for (field, label) in sliders {
+            let rail = common::the(w, Role::Slider, label);
+            let knob = field.knob();
+            std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+            click(&rig, (rail.x + rail.width * 0.92, rail.y + rail.height - 13.0));
+            rig.settle();
+            let s = settings();
+            assert!(knob.get(&s).abs() > 0.05, "{label} moved its value: {}", knob.get(&s));
+            let others: Vec<f32> = every.iter().filter(|f| *f != field).map(|f| f.knob().get(&s)).collect();
+            assert!(others.iter().all(|v| *v == 0.0), "{label} moved another value: {others:?}");
+            assert!(g.get_channel_points_modified(), "{label}: the block's Reset shows");
+            assert_eq!(marks(), (0..3).map(|k| k == c).collect::<Vec<_>>(), "{label} marks its tab alone");
+            if *field == Field::RedMid {
+                println!("shot {}", rig.shot("channel-points-red-mid").display());
+            }
+            // Back to rest by the block's own key, beside its title.
+            let reset: Vec<_> = common::placed(w, Role::Button, "Reset").into_iter().filter(|k| title()[0].level_with(k)).collect();
+            assert_eq!(reset.len(), 1, "one Reset on the row of {TITLE}");
+            click(&rig, reset[0].middle());
+            rig.settle();
+            assert_eq!(knob.get(&settings()), 0.0, "{label}: the Reset took it back");
+            assert!(!g.get_channel_points_modified() && marks() == [false; 3], "{label}: no mark once reset");
+        }
     }
+    // Twin: green's white point is not laid while the red tab is picked, so a walk of one tab sees one channel.
+    click(&rig, tab("R").middle());
+    rig.settle();
+    assert!(common::placed(w, Role::Slider, "Green white point").is_empty());
 
     // The render follows: red's white point lifts red's histogram, green's stays near where it was.
     rig.until("a histogram", Duration::from_secs(60), || ctl.state.borrow().histogram().is_some());

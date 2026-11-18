@@ -36,6 +36,9 @@ pub const CHANNEL_POINTS_VERSION: i64 = 24;
 pub const PICTURE_LEVELS_VERSION: i64 = 27;
 /// The version a digital photo came to keep its lens corrections, absent read as none.
 pub const LENS_CORRECTION_VERSION: i64 = 28;
+/// The version each channel came to keep its own mids and contrast, and the halation its sensitivity,
+/// absent read as rest.
+pub const CHANNEL_TONE_VERSION: i64 = 29;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

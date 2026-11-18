@@ -1,9 +1,10 @@
 //! The Film Effects block of a digital photo through the window's pointer: a press on Grain's or
-//! Halation's rail lays it, the block's Reset shows and the frame renders again; a film mode shows none.
+//! Halation's rail lays it, the block's Reset shows and the frame renders again; Halation sensitivity
+//! decides which light glows; a film mode shows none.
 
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::app::{Options, Shell};
-use oni_app::{Library, PanelState, Store};
+use oni_app::{Canvas, Library, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
@@ -138,17 +139,46 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
     let halation = || ctl.state.borrow().store().settings().halation;
     let g = w.global::<Store>();
     assert!(halation().amount == 0.0 && !g.get_film_effects_modified(), "the photo opens with no halation");
-    let renders = ctl.state.borrow().renders();
-    press_rail(&rig, w, "Halation", 0.95);
-    press_rail(&rig, w, "Halation size", 0.95);
-    rig.until("the halation rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    rig.settle();
+    // The red of a band beside the lit window's right edge, 6 to 30 pixels of the scan out, on the canvas.
+    let canvas = w.global::<Canvas>();
+    let ring = || -> f32 {
+        let frame = canvas.get_frame().to_rgba8().expect("the canvas shows the photo");
+        let k = frame.width() as f32 / 2400.0;
+        let band = |a: f32, b: f32| (a * k).ceil() as usize..(b * k).floor() as usize;
+        let reds: Vec<f32> = band(600.0, 800.0).flat_map(|y| band(1306.0, 1330.0).map(move |x| (x, y))).map(|(x, y)| f32::from(frame.as_slice()[y * frame.width() as usize + x].r)).collect();
+        reds.iter().sum::<f32>() / reds.len() as f32
+    };
+    let unlit = ring();
+    let rendered = |rig: &common::Rig, what: &str, press: &dyn Fn()| {
+        let renders = ctl.state.borrow().renders();
+        press();
+        rig.until(what, Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+        rig.settle();
+    };
+    rendered(&rig, "the halation rendered", &|| {
+        press_rail(&rig, w, "Halation", 0.95);
+        press_rail(&rig, w, "Halation size", 0.95);
+    });
     let laid = halation();
     assert!((laid.amount - 0.95).abs() < 0.03 && (laid.size - 0.95).abs() < 0.03, "the presses lay Halation and its size: {laid:?}");
+    assert_eq!(laid.sensitivity, 0.0, "Halation sensitivity rests");
     assert!(g.get_film_effects_modified(), "the block's Reset shows");
     // Twin: the presses reached Halation alone, the grain at rest.
     assert_eq!(ctl.state.borrow().store().settings().grain.amount, 0.0);
     println!("shot {}", rig.shot("film-effects-halation-fit").display());
+    let glow = ring();
+    // Near Sensitivity's left end the threshold stands over the window's light: nothing glows.
+    rendered(&rig, "the dull halation rendered", &|| press_rail(&rig, w, "Halation sensitivity", 0.02));
+    let dull = ring();
+    println!("the ring's red: {unlit:.1} unlit, {glow:.1} at rest, {dull:.1} at sensitivity {:.2}", halation().sensitivity);
+    let threshold = oni_pipeline::halation::threshold(ctl.state.borrow().store().settings());
+    assert!(threshold > 1.0 && glow > unlit + 4.0, "the window glows at rest, {unlit} then {glow}, and not past {threshold}");
+    assert!((dull - unlit).abs() <= 1.0, "a threshold over the window's light lays no glow: {unlit} then {dull}");
+    // Twin: near its right end the dimmer light glows too, more than at rest.
+    rendered(&rig, "the keen halation rendered", &|| press_rail(&rig, w, "Halation sensitivity", 0.95));
+    let keen = ring();
+    println!("the ring's red at sensitivity {:.2}: {keen:.1}", halation().sensitivity);
+    assert!(keen > glow + 2.0, "a keener halation glows more: {glow} then {keen}");
     at_full_size(&rig, &ctl);
     println!("shot {}", rig.shot("film-effects-halation-100").display());
     drop(shell);

@@ -29,6 +29,23 @@ fn a_channels_point_writes_its_own_channel_on_the_global_tracks() {
 }
 
 #[test]
+fn a_channels_mid_and_contrast_write_their_own_channel_and_hold_their_tracks() {
+    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let green = Knob::ChannelMid(Channel::Green).set(&s, 0.1);
+    assert_eq!((green.print.channel_mid, green.print.channel_contrast), ([0.0, 0.1, 0.0], [0.0; 3]));
+    assert_eq!(FieldSet::between(&s, &green).iter().collect::<Vec<_>>(), vec![Field::Print]);
+    assert_eq!(Knob::ChannelMid(Channel::Red).set(&s, 9.0).print.channel_mid[0], Print::ZONE_RANGE.1);
+    assert_eq!(Knob::ChannelContrast(Channel::Blue).set(&s, -9.0).print.channel_contrast[2], Print::CONTRAST_RANGE.0);
+    let keen = Knob::HalationSensitivity.set(&s, 9.0);
+    assert_eq!(keen.halation.sensitivity, oni_settings::blocks::Halation::SENSITIVITY_RANGE.1);
+    assert_eq!(FieldSet::between(&s, &keen).iter().collect::<Vec<_>>(), vec![Field::Halation]);
+    // Twin: Lighting's own contrast is not the channel's, and stays where it was.
+    let red = Knob::ChannelContrast(Channel::Red).set(&s, 0.3);
+    assert_eq!((red.print.contrast, Knob::Contrast.get(&red)), (s.print.contrast, s.print.contrast));
+    assert_ne!(Knob::ChannelContrast(Channel::Green).get(&red), 0.3);
+}
+
+#[test]
 fn temperature_and_tint_move_on_axes_that_leave_each_other_alone() {
     let s = PipelineSettings::default();
     let warm = Knob::Temperature.set(&s, 0.8);

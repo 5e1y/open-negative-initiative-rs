@@ -14,12 +14,12 @@ fn at(n: f32, y: f32, size: Size) -> (f64, f64) {
     (x * size.w, (1.0 - f64::from(y)) * size.h)
 }
 
-/// The channels drawn are those whose filter moved; a monochrome print draws none.
+/// The channels drawn are those whose own pass moved; a monochrome print draws none.
 pub fn drawing(print: &Print, monochrome: bool, size: Size) -> Drawing {
     let mut lines = Vec::new();
     let channels: &[LevelsChannel] = if monochrome { &[] } else { &LevelsChannel::PER_CHANNEL };
     for &channel in channels {
-        if print.channel(channel).is_neutral() {
+        if !print.channel_moved(channel) {
             continue;
         }
         let trace: Vec<(f64, f64)> = (0..=CHANNEL_STEPS)
@@ -67,6 +67,21 @@ mod tests {
         assert_eq!(d.lines[0].ink, Ink::Red);
         // Twin: a monochrome print draws no channel, whatever its filters.
         assert_eq!(drawing(&warm, true, BAND).lines.len(), 2);
+    }
+
+    #[test]
+    fn a_channel_with_its_own_contrast_alone_draws_its_curve() {
+        let mut p = Print::default();
+        p.channel_contrast[2] = 0.3;
+        let d = drawing(&p, false, BAND);
+        assert_eq!(d.lines.len(), 3);
+        assert_eq!(d.lines[0].ink, Ink::Blue);
+        // Twin: the RGB curve drawn in its place, as a plot deaf to the channel's contrast would.
+        let n = |i: usize| i as f32 / CHANNEL_STEPS as f32;
+        let plain: Vec<(f64, f64)> = (0..=CHANNEL_STEPS).map(|i| at(n(i), p.output(n(i), LevelsChannel::Linked, true).clamp(0.0, 1.0), BAND)).collect();
+        assert_ne!(d.lines[0].commands, Line::new(polyline(&plain), Ink::Blue, ds::STROKE_LINE).commands);
+        // Twin: a monochrome print draws none.
+        assert_eq!(drawing(&p, true, BAND).lines.len(), 2);
     }
 
     #[test]

@@ -42,6 +42,16 @@ pub fn is_modified(settings: &PipelineSettings, block: Block, dyes: Option<Separ
     off || (block == Block::DyeSeparation && (settings.separation_family != dyes || settings.separation_by_hand))
 }
 
+/// Which of red, green and blue More Color Settings shows moved: any of its tab's values off its rest.
+pub fn channel_marked(settings: &PipelineSettings) -> [bool; 3] {
+    let tabs = [
+        [Field::RedWhitePoint, Field::RedBlackPoint, Field::RedMid, Field::RedContrast],
+        [Field::GreenWhitePoint, Field::GreenBlackPoint, Field::GreenMid, Field::GreenContrast],
+        [Field::BlueWhitePoint, Field::BlueBlackPoint, Field::BlueMid, Field::BlueContrast],
+    ];
+    tabs.map(|tab| tab.iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6))
+}
+
 /// The block's sliders at their rest, one step: each frame shown with the open one at its own, and the
 /// open frame's roll with it where the block is the roll's.
 pub fn reset(block: Block, dyes: Option<SeparationFamily>) -> Command {
@@ -112,6 +122,21 @@ pub(crate) mod tests {
         // Twin: a second undo finds nothing, the ten notches having been one step.
         assert!(!s.can_undo());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_channel_tab_is_marked_while_one_of_its_values_moved() {
+        let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+        assert_eq!(channel_marked(&rest), [false; 3]);
+        let mut s = Field::GreenContrast.knob().set(&rest, 0.2);
+        assert_eq!(channel_marked(&s), [false, true, false]);
+        s = Field::BlueMid.knob().set(&s, -0.1);
+        assert_eq!(channel_marked(&s), [false, true, true]);
+        // Twin: a white point moved on red marks red alone, never the tab beside it.
+        let red = Field::RedWhitePoint.knob().set(&rest, 0.1);
+        assert_eq!(channel_marked(&red), [true, false, false]);
+        // The block's reset clears every tab's mark at once.
+        assert_eq!(channel_marked(&rested(&s, Block::ChannelPoints, None)), [false; 3]);
     }
 
     #[test]

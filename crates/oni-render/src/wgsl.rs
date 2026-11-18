@@ -26,7 +26,7 @@ pub const SPECTROGRAM: &str = include_str!("wgsl/spectrogram.wgsl");
 pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
 /// `grain_px(s, at)`.
 pub const GRAIN: &str = include_str!("wgsl/grain.wgsl");
-/// `halation_source(s)`, pure, for a blur's taps or a pass.
+/// `halation_source(s, threshold)`, pure, for a blur's taps or a pass.
 pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
 /// `halation_px(s, blurred)`; needs `HALATION_SOURCE`.
 pub const HALATION: &str = include_str!("wgsl/halation.wgsl");

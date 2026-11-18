@@ -71,6 +71,13 @@ fields! {
     FringeRed => set_fringe_red_fraction, get_fringe_red_fraction, set_fringe_red_readout, set_fringe_red_value;
     FringeBlue => set_fringe_blue_fraction, get_fringe_blue_fraction, set_fringe_blue_readout, set_fringe_blue_value;
     LensVignetting => set_lens_vignetting_fraction, get_lens_vignetting_fraction, set_lens_vignetting_readout, set_lens_vignetting_value;
+    HalationSensitivity => set_halation_sensitivity_fraction, get_halation_sensitivity_fraction, set_halation_sensitivity_readout, set_halation_sensitivity_value;
+    RedMid => set_red_mid_fraction, get_red_mid_fraction, set_red_mid_readout, set_red_mid_value;
+    GreenMid => set_green_mid_fraction, get_green_mid_fraction, set_green_mid_readout, set_green_mid_value;
+    BlueMid => set_blue_mid_fraction, get_blue_mid_fraction, set_blue_mid_readout, set_blue_mid_value;
+    RedContrast => set_red_contrast_fraction, get_red_contrast_fraction, set_red_contrast_readout, set_red_contrast_value;
+    GreenContrast => set_green_contrast_fraction, get_green_contrast_fraction, set_green_contrast_readout, set_green_contrast_value;
+    BlueContrast => set_blue_contrast_fraction, get_blue_contrast_fraction, set_blue_contrast_readout, set_blue_contrast_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {

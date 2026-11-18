@@ -148,5 +148,5 @@ pub fn grain(k: &Grain) -> PerPixel {
 
 /// The halation, the blurred source as the auxiliary image.
 pub fn halation(k: &Halation) -> PerPixel {
-    PerPixel { name: "halation", kernel: &HALATION, params: uniform(HEAD, &[[k.amount, 0.0, 0.0, 0.0]]) }
+    PerPixel { name: "halation", kernel: &HALATION, params: uniform(HEAD, &[[k.amount, k.threshold, 0.0, 0.0]]) }
 }

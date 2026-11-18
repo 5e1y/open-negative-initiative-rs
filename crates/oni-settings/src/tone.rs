@@ -3,14 +3,13 @@
 
 use crate::axis::pipeline;
 use crate::levels::LevelsChannel;
-use crate::tolerant;
-use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::Value;
+use serde::Serialize;
 
 type V3 = [f32; 3];
 
 pub mod color_density;
 pub mod contrast;
+mod read;
 
 /// One curve's sliders, each brightening or steepening to the right.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize)]
@@ -22,22 +21,6 @@ pub struct Tone {
     pub highlights: f32,
     pub whites: f32,
     pub mids: f32,
-}
-
-impl<'de> Deserialize<'de> for Tone {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let map = tolerant::object(Value::deserialize(d)?, "Tone")?;
-        let f = |key: &str| -> Result<f32, D::Error> { Ok(tolerant::opt::<f32, D::Error>(&map, key)?.unwrap_or(0.0)) };
-        Ok(Tone {
-            exposure: f("exposure")?,
-            contrast: f("contrast")?,
-            blacks: f("blacks")?,
-            shadows: f("shadows")?,
-            highlights: f("highlights")?,
-            whites: f("whites")?,
-            mids: f("mids")?,
-        })
-    }
 }
 
 impl Tone {
@@ -154,6 +137,12 @@ pub struct Print {
     /// Each channel's own black point, laid on `black_point` in its units.
     #[serde(rename = "channelBlack", skip_serializing_if = "at_rest")]
     pub channel_black: V3,
+    /// Each channel's own mids, bent after Lighting's curve as its Mids slider bends.
+    #[serde(rename = "channelMid", skip_serializing_if = "at_rest")]
+    pub channel_mid: V3,
+    /// Each channel's own contrast, turned about Lighting's pivot after its curve.
+    #[serde(rename = "channelContrast", skip_serializing_if = "at_rest")]
+    pub channel_contrast: V3,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -174,6 +163,8 @@ impl Default for Print {
             white_point: 0.0,
             channel_white: [0.0; 3],
             channel_black: [0.0; 3],
+            channel_mid: [0.0; 3],
+            channel_contrast: [0.0; 3],
             bypassed: false,
         }
     }
@@ -181,46 +172,6 @@ impl Default for Print {
 
 fn at_rest(points: &V3) -> bool {
     *points == [0.0; 3]
-}
-
-/// Tolerant of absent keys; a contrast or black past the widest track lands on its stop, a channel
-/// keeps its exposure alone and the hunt base its two bends.
-impl<'de> Deserialize<'de> for Print {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let map = tolerant::object(Value::deserialize(d)?, "Print")?;
-        let f = |key: &str, default: f32| -> Result<f32, D::Error> {
-            Ok(tolerant::opt::<f32, D::Error>(&map, key)?.unwrap_or(default))
-        };
-        let t = |key: &str| -> Result<Option<Tone>, D::Error> { tolerant::opt::<Tone, D::Error>(&map, key) };
-        let channels = |key: &str, (low, high): (f32, f32)| -> Result<V3, D::Error> {
-            Ok(tolerant::opt::<V3, D::Error>(&map, key)?.unwrap_or_default().map(|p| p.clamp(low, high)))
-        };
-        let filter = |tone: Tone| Tone::exposure(tone.exposure.clamp(Print::FILTER_RANGE.0, Print::FILTER_RANGE.1));
-        let hunt_base = t("huntBase")?.map(|base| Tone {
-            exposure: base.exposure,
-            contrast: base.contrast,
-            shadows: base.shadows,
-            highlights: base.highlights,
-            ..Tone::NEUTRAL
-        });
-        Ok(Print {
-            exposure: f("exposure", 0.0)?,
-            contrast: f("contrast", 0.0)?
-                .clamp(Print::MONOCHROME_CONTRAST_RANGE.0, Print::MONOCHROME_CONTRAST_RANGE.1),
-            shadows: f("shadows", 0.0)?,
-            highlights: f("highlights", 0.0)?,
-            red: filter(t("red")?.unwrap_or_default()),
-            green: filter(t("green")?.unwrap_or_default()),
-            blue: filter(t("blue")?.unwrap_or_default()),
-            hunt_base,
-            black_point: f("blackPoint", Print::RESTING_BLACK_POINT)?
-                .clamp(Print::MONOCHROME_POINT_RANGE.0, Print::MONOCHROME_POINT_RANGE.1),
-            white_point: f("whitePoint", 0.0)?,
-            channel_white: channels("channelWhite", Print::POINT_RANGE)?,
-            channel_black: channels("channelBlack", Print::BLACK_POINT_RANGE)?,
-            bypassed: false,
-        })
-    }
 }
 
 impl Print {
@@ -290,6 +241,17 @@ impl Print {
         }
     }
 
+    /// What a channel's own pass bends after the RGB curve: its filter, its contrast and its mids.
+    pub fn channel_tone(&self, channel: LevelsChannel) -> Tone {
+        let Some(c) = LevelsChannel::PER_CHANNEL.iter().position(|p| *p == channel) else { return Tone::NEUTRAL };
+        Tone { contrast: self.channel_contrast[c], mids: self.channel_mid[c], ..Tone::exposure(self.channel(channel).exposure) }
+    }
+
+    /// Whether a channel's own pass moves anything, so its curve differs from the RGB one.
+    pub fn channel_moved(&self, channel: LevelsChannel) -> bool {
+        !self.channel_tone(channel).is_neutral()
+    }
+
     /// Lighting's pair as a window takes it.
     pub fn held_points(&self) -> (f32, f32) {
         Self::held_points_of(self.black_point, self.white_point)
@@ -343,13 +305,19 @@ impl Print {
 
     /// What the kernel prints for output `n`, as linear light; `bent` off leaves the RGB curve out.
     pub fn output(&self, n: f32, channel: LevelsChannel, bent: bool) -> f32 {
+        self.printed(n, channel, bent, true)
+    }
+
+    /// `output` with or without the channel's filter, which the luma is held against.
+    fn printed(&self, n: f32, channel: LevelsChannel, bent: bool, filtered: bool) -> f32 {
         let mut p = if bent {
             self.master().shaped(n, self.exposure)
         } else {
             self.hunt_base.map_or(n, |b| b.shaped(n, b.exposure))
         };
         if channel != LevelsChannel::Linked && channel != LevelsChannel::Luma {
-            p = Tone::NEUTRAL.shaped(p, self.channel(channel).exposure);
+            let own = self.channel_tone(channel);
+            p = own.shaped(p, if filtered { own.exposure } else { 0.0 });
         }
         libm::powf(p.max(0.0), Self::DISPLAY_GAMMA)
     }
@@ -366,7 +334,7 @@ impl Print {
         };
         let mut after = lit(true);
         if self.filters() != [0.0; 3] {
-            let plain = n.map(|v| self.output(v, LevelsChannel::Linked, true));
+            let plain: V3 = std::array::from_fn(|c| self.printed(n[c], LevelsChannel::PER_CHANNEL[c], true, false));
             let filtered = pipeline::luma(after);
             if filtered > 1e-6 {
                 let k = pipeline::luma(plain) / filtered;

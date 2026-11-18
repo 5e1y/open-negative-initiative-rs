@@ -69,6 +69,9 @@ pub enum Knob {
     /// A channel's own white and black points, laid on Lighting's.
     ChannelWhite(Channel),
     ChannelBlack(Channel),
+    /// A channel's own mids and contrast, after Lighting's curve.
+    ChannelMid(Channel),
+    ChannelContrast(Channel),
     Temperature,
     Tint,
     /// A digital photo's white: the light it was taken under, in kelvin and DNG's tint.
@@ -92,6 +95,7 @@ pub enum Knob {
     GrainSize,
     HalationAmount,
     HalationSize,
+    HalationSensitivity,
     /// A digital photo's lens corrections, each a share of its slider.
     LensDistortion,
     LensRed,
@@ -117,6 +121,8 @@ impl Knob {
             | Knob::WhitePoint
             | Knob::ChannelWhite(_)
             | Knob::ChannelBlack(_)
+            | Knob::ChannelMid(_)
+            | Knob::ChannelContrast(_)
             | Knob::Temperature
             | Knob::Tint => Field::Print,
             Knob::WhiteKelvin | Knob::WhiteTint => Field::White,
@@ -130,7 +136,7 @@ impl Knob {
             Knob::FlatFieldAmount | Knob::FlatFieldTemperature | Knob::FlatFieldTint => Field::FlatField,
             Knob::Angle => Field::Geometry,
             Knob::GrainAmount | Knob::GrainSize => Field::Grain,
-            Knob::HalationAmount | Knob::HalationSize => Field::Halation,
+            Knob::HalationAmount | Knob::HalationSize | Knob::HalationSensitivity => Field::Halation,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
         }
     }
@@ -162,6 +168,8 @@ impl Knob {
             Knob::BlackPoint => Print::BLACK_POINT_RANGE,
             Knob::WhitePoint | Knob::ChannelWhite(_) => Print::POINT_RANGE,
             Knob::ChannelBlack(_) => Print::BLACK_POINT_RANGE,
+            Knob::ChannelMid(_) => Print::ZONE_RANGE,
+            Knob::ChannelContrast(_) => Print::CONTRAST_RANGE,
             Knob::Temperature => Print::TEMPERATURE_RANGE,
             Knob::Tint => Print::TINT_RANGE,
             Knob::WhiteKelvin => white::KELVIN_RANGE,
@@ -183,6 +191,7 @@ impl Knob {
             Knob::GrainSize => Grain::SIZE_RANGE,
             Knob::HalationAmount => Halation::AMOUNT_RANGE,
             Knob::HalationSize => Halation::SIZE_RANGE,
+            Knob::HalationSensitivity => Halation::SENSITIVITY_RANGE,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => LensCorrection::RANGE,
         })
     }
@@ -206,6 +215,8 @@ impl Knob {
             Knob::WhitePoint => p.white_point,
             Knob::ChannelWhite(c) => p.channel_white[c.index()],
             Knob::ChannelBlack(c) => p.channel_black[c.index()],
+            Knob::ChannelMid(c) => p.channel_mid[c.index()],
+            Knob::ChannelContrast(c) => p.channel_contrast[c.index()],
             Knob::Temperature => p.red.exposure - p.blue.exposure,
             Knob::Tint => (p.red.exposure + p.blue.exposure) / 2.0 - p.green.exposure,
             Knob::WhiteKelvin => white_of(s).kelvin,
@@ -228,6 +239,7 @@ impl Knob {
             Knob::GrainSize => s.grain.size,
             Knob::HalationAmount => s.halation.amount,
             Knob::HalationSize => s.halation.size,
+            Knob::HalationSensitivity => s.halation.sensitivity,
             Knob::LensDistortion => s.lens_correction.distortion,
             Knob::LensRed => s.lens_correction.red,
             Knob::LensBlue => s.lens_correction.blue,
@@ -265,6 +277,8 @@ impl Knob {
             Knob::WhitePoint => out.print.white_point = v,
             Knob::ChannelWhite(c) => out.print.channel_white[c.index()] = v,
             Knob::ChannelBlack(c) => out.print.channel_black[c.index()] = v,
+            Knob::ChannelMid(c) => out.print.channel_mid[c.index()] = v,
+            Knob::ChannelContrast(c) => out.print.channel_contrast[c.index()] = v,
             // Each moves the filters along its own axis, so the other reads what it read.
             Knob::Temperature => {
                 let by = v - Knob::Temperature.get(s);
@@ -294,6 +308,7 @@ impl Knob {
             Knob::GrainSize => out.grain.size = v,
             Knob::HalationAmount => out.halation.amount = v,
             Knob::HalationSize => out.halation.size = v,
+            Knob::HalationSensitivity => out.halation.sensitivity = v,
             Knob::LensDistortion => out.lens_correction.distortion = v,
             Knob::LensRed => out.lens_correction.red = v,
             Knob::LensBlue => out.lens_correction.blue = v,

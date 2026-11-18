@@ -3,7 +3,7 @@
 
 use crate::stages::{self, Before};
 use oni_graph::{Image, Rect};
-use oni_render::Halation;
+use oni_render::{HALATION_THRESHOLD, Halation};
 use oni_settings::PipelineSettings;
 
 /// The narrowest glow's deviation, a share of the scan's width: six pixels on a scan 6000 wide.
@@ -17,11 +17,17 @@ pub fn deviation(s: &PipelineSettings, scan: Rect) -> f64 {
     f64::from(scan.w) * HALATION_NARROWEST * HALATION_WIDEST.powf(f64::from(s.halation.size))
 }
 
+/// The light past which a highlight halates: the rest's threshold lowered by the sensitivity's stops.
+pub fn threshold(s: &PipelineSettings) -> f32 {
+    HALATION_THRESHOLD * (-s.halation.sensitivity).exp2()
+}
+
 /// `image` with the halation of `s`, on a scan of extent `scan`; itself at rest, with no stage.
 pub fn halated(image: Image, s: &PipelineSettings, scan: Rect) -> Image {
     if s.halation.amount == 0.0 {
         return image;
     }
-    let glow = stages::blurred_of(image.clone(), deviation(s, scan), Before::Halation);
-    image.then_reading(stages::halation(&Halation { amount: s.halation.amount }), &[glow])
+    let threshold = threshold(s);
+    let glow = stages::blurred_of(image.clone(), deviation(s, scan), Before::Halation(threshold));
+    image.then_reading(stages::halation(&Halation { amount: s.halation.amount, threshold }), &[glow])
 }

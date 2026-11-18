@@ -8,7 +8,7 @@ use oni_graph::{Graph, Image, Rect, Source, Stage};
 use oni_pipeline::stages::{self, Before, Blur, BlurOf};
 use oni_pipeline::{Pipeline, Request, halation};
 use oni_render::cpu::{self, Grid};
-use oni_render::{Gaussian, Halation};
+use oni_render::{Gaussian, HALATION_THRESHOLD, Halation};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 fn haloed(amount: f32, size: f32) -> PipelineSettings {
@@ -64,19 +64,26 @@ fn the_halation_matches_its_reference_and_moves_light_without_adding_any() {
     // Shadows to light sources: both sides of the threshold on every channel.
     let pixels = noise(extent.w, extent.h, 31, 0.0, 3.0);
     let input = g.upload_at(extent, &pixels).unwrap();
-    let k = Halation { amount: 0.7 };
     let sigma = 3.2;
-    let glow = stages::blurred_of(Image::new(&input), f64::from(sigma), Before::Halation);
-    let out = whole(&mut g, &Image::new(&input).then_reading(stages::halation(&k), &[glow]));
     let gaussian = |vertical| Gaussian { sigma, vertical, transparent: false };
-    let blurred = |pre: fn(V4) -> V4| {
+    let blurred = |pre: &dyn Fn(V4) -> V4| {
         let source = Grid::new(extent.x, extent.y, extent.w as usize, extent.h as usize, pixels.iter().map(|p| pre(*p)).collect());
         cpu::gaussian(&cpu::gaussian(&source, &gaussian(false)), &gaussian(true)).pixels
     };
-    let reference: Vec<V4> = blurred(cpu::halation_source).iter().zip(&pixels).map(|(b, p)| cpu::halation(*p, *b, &k)).collect();
-    // Twin: the glow of the whole picture, not of its light past the threshold.
-    let twin: Vec<V4> = blurred(|p| p).iter().zip(&pixels).map(|(b, p)| cpu::halation(*p, *b, &k)).collect();
-    judge("halation", &out, &reference, &twin);
+    let glowing = |k: &Halation, glow: &[V4]| -> Vec<V4> { glow.iter().zip(&pixels).map(|(b, p)| cpu::halation(*p, *b, k)).collect() };
+    for threshold in [HALATION_THRESHOLD, 0.3] {
+        let k = Halation { amount: 0.7, threshold };
+        let glow = stages::blurred_of(Image::new(&input), f64::from(sigma), Before::Halation(threshold));
+        let out = whole(&mut g, &Image::new(&input).then_reading(stages::halation(&k), &[glow]));
+        let reference = glowing(&k, &blurred(&|p| cpu::halation_source(p, threshold)));
+        // Twin: the glow of the whole picture, not of its light past the threshold.
+        judge(&format!("halation past {threshold}"), &out, &reference, &glowing(&k, &blurred(&|p| p)));
+        if threshold != HALATION_THRESHOLD {
+            // Twin: the rest's threshold, as a blur or a pass deaf to the sensitivity would read it.
+            let deaf = Halation { threshold: HALATION_THRESHOLD, ..k };
+            judge(&format!("halation past {threshold}, its rest"), &out, &reference, &glowing(&deaf, &blurred(&|p| cpu::halation_source(p, HALATION_THRESHOLD))));
+        }
+    }
 
     // A lamp well inside its frame: the red and green it glows with leave the lamp, blue never moves.
     let source = lamp(&mut g, 1200, 100.0);
@@ -94,7 +101,7 @@ fn the_halation_matches_its_reference_and_moves_light_without_adding_any() {
     let (red, green) = (halo.iter().map(|i| after[*i][0] - before[*i][0]).sum::<f32>(), halo.iter().map(|i| after[*i][1] - before[*i][1]).sum::<f32>());
     assert!(red > 0.0 && green > 0.0 && green < 0.5 * red, "a red glow, a little green: {red} {green}");
     // Twin: the glow added on top of the lamp's own light brightens the frame.
-    let added: Vec<V4> = before.iter().zip(&after).map(|(a, b)| [b[0] + cpu::halation_source(*a)[0], b[1], b[2], b[3]]).collect();
+    let added: Vec<V4> = before.iter().zip(&after).map(|(a, b)| [b[0] + cpu::halation_source(*a, HALATION_THRESHOLD)[0], b[1], b[2], b[3]]).collect();
     assert!(sum(&added, 0) / sum(&before, 0) - 1.0 > 1e-2, "the twin's light is not counted");
 }
 
@@ -126,8 +133,8 @@ fn a_reduced_render_glows_as_the_full_one_reduced() {
         println!("at 1/{n}: the glow {off:.2e} of its peak {peak:.3} from the full one's means");
         assert!(off < 0.08, "at 1/{n}: {off:.3} of the glow's peak");
         // Twin: the full resolution's deviation laid on the reduced pixels, a glow n times as wide.
-        let wide = stages::blurred_of(reduced.clone(), halation::deviation(&s, full_scan), Before::Halation);
-        let twin = whole(&mut g, &reduced.then_reading(stages::halation(&Halation { amount: 1.0 }), &[wide]));
+        let wide = stages::blurred_of(reduced.clone(), halation::deviation(&s, full_scan), Before::Halation(HALATION_THRESHOLD));
+        let twin = whole(&mut g, &reduced.then_reading(stages::halation(&Halation { amount: 1.0, threshold: HALATION_THRESHOLD }), &[wide]));
         assert!(gap(&twin) > 0.2, "at 1/{n}: the twin passes at {:.3}", gap(&twin));
     }
 }
@@ -152,8 +159,8 @@ fn a_region_glows_as_the_whole_frame_does_there() {
     let Some(mut g) = graph("a_region_glows_as_the_whole_frame_does_there, its twin") else { return };
     let source = lamp(&mut g, side, 40.0);
     let k = |vertical| Gaussian { sigma: sigma as f32, vertical, transparent: false };
-    let glow = Image::new(&source).then(Marginless(BlurOf(k(false), Before::Halation))).then(Marginless(Blur(k(true))));
-    let twin = Image::new(&source).then_reading(stages::halation(&Halation { amount: 1.0 }), &[glow]);
+    let glow = Image::new(&source).then(Marginless(BlurOf(k(false), Before::Halation(HALATION_THRESHOLD)))).then(Marginless(Blur(k(true))));
+    let twin = Image::new(&source).then_reading(stages::halation(&Halation { amount: 1.0, threshold: HALATION_THRESHOLD }), &[glow]);
     let part = g.render(&twin, region, None).unwrap();
     let all = whole(&mut g, &twin);
     let gap = part.iter().zip(cut(&all)).map(|(a, b)| (a[0] - b[0]).abs()).fold(0.0, f32::max);
@@ -171,9 +178,15 @@ fn at_rest_or_measured_the_chain_holds_no_halation() {
     wide.halation.size = 0.9;
     let (a, b) = (image(&rest, false), image(&wide, false));
     assert_eq!((a.key(), a.stages()), (b.key(), b.stages()), "a size at amount 0 lays no stage");
+    let mut sensitive = rest.clone();
+    sensitive.halation.sensitivity = 1.5;
+    let c = image(&sensitive, false);
+    assert_eq!((c.key(), c.stages()), (a.key(), a.stages()), "a sensitivity at amount 0 lays no stage");
     let mut faint = rest.clone();
     faint.halation.amount = 0.01;
     assert_ne!(image(&faint, false).key(), a.key(), "twin: the faintest halation is a stage");
+    let keener = PipelineSettings { halation: oni_settings::blocks::Halation { sensitivity: 0.01, ..faint.halation }, ..faint.clone() };
+    assert_ne!(image(&keener, false).key(), image(&faint, false).key(), "a sensitivity moves the halation's stages");
     assert_eq!(image(&faint, true).key(), image(&rest, true).key(), "a measure reads no halation");
     // A film mode renders no halation its panel hides, its value kept; the Digital one above is its twin.
     let negative = PipelineSettings::rest(ConversionMode::Negative, false);
@@ -209,4 +222,16 @@ fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
     let over = glow(true, 2.0) / glow(true, 0.0);
     println!("the twin's glow rises {over:.3} times");
     assert!(over < 1.1, "the twin's glow rises {over:.3} times, so the check sees nothing");
+}
+
+#[test]
+fn the_sensitivity_at_rest_is_the_threshold_the_halation_always_had() {
+    let rest = PipelineSettings::rest(ConversionMode::Digital, false);
+    assert_eq!(halation::threshold(&rest).to_bits(), HALATION_THRESHOLD.to_bits(), "a frame at rest glows as before");
+    let mut keen = rest.clone();
+    keen.halation.sensitivity = 1.0;
+    assert_eq!(halation::threshold(&keen), HALATION_THRESHOLD / 2.0, "a stop more sensitive halves the threshold");
+    // Twin: the faintest sensitivity is another threshold.
+    keen.halation.sensitivity = 0.01;
+    assert_ne!(halation::threshold(&keen).to_bits(), HALATION_THRESHOLD.to_bits());
 }

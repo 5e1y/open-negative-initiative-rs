@@ -420,6 +420,16 @@ settings: PipelineSettings {
             0.0,
             0.0,
         ],
+        channel_mid: [
+            0.0,
+            0.0,
+            0.0,
+        ],
+        channel_contrast: [
+            0.0,
+            0.0,
+            0.0,
+        ],
         bypassed: false,
     },
     density: 0.0,
@@ -703,6 +713,7 @@ settings: PipelineSettings {
     halation: Halation {
         amount: 0.0,
         size: 0.5,
+        sensitivity: 0.0,
     },
     picture_levels: PictureLevels {
         linked: Levels {

@@ -145,6 +145,27 @@ export global Store {
     in property <float> lens-vignetting-fraction;
     in property <string> lens-vignetting-readout;
     in property <string> lens-vignetting-value;
+    in property <float> halation-sensitivity-fraction;
+    in property <string> halation-sensitivity-readout;
+    in property <string> halation-sensitivity-value;
+    in property <float> red-mid-fraction;
+    in property <string> red-mid-readout;
+    in property <string> red-mid-value;
+    in property <float> green-mid-fraction;
+    in property <string> green-mid-readout;
+    in property <string> green-mid-value;
+    in property <float> blue-mid-fraction;
+    in property <string> blue-mid-readout;
+    in property <string> blue-mid-value;
+    in property <float> red-contrast-fraction;
+    in property <string> red-contrast-readout;
+    in property <string> red-contrast-value;
+    in property <float> green-contrast-fraction;
+    in property <string> green-contrast-readout;
+    in property <string> green-contrast-value;
+    in property <float> blue-contrast-fraction;
+    in property <string> blue-contrast-readout;
+    in property <string> blue-contrast-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;
@@ -159,6 +180,8 @@ export global Store {
     in property <bool> channel-points-modified;
     in property <bool> film-effects-modified;
     in property <bool> lens-corrections-modified;
+    // More Color Settings' channels moved off their rest, red, green then blue, for their tabs' marks.
+    in property <[bool]> channel-marked: [false, false, false];
     // Each field's rest as a fraction of its track, by its index: the double click's value, which a
     // slider ticks and holds a drag on; it moves only with the frame.
     in property <[float]> rests;

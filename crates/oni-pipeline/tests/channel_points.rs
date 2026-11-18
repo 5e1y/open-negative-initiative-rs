@@ -1,4 +1,4 @@
-//! Each channel's own white and black points through the whole render: equal on the three channels they
+//! Each channel's own points, mids and contrast through the whole render: equal on the three channels the points
 //! reach the windows as the global points would, one channel's moves that channel, black and white reads none.
 
 mod common;
@@ -83,5 +83,42 @@ fn the_channels_points_render_as_their_folds_say() {
     // Twin: the same points on a negative move its render.
     let negative = |s: &PipelineSettings| PipelineSettings { mode: ConversionMode::Negative, ..s.clone() };
     let (a, b) = (render(&mut g, &mut pipeline, &source, &negative(&mono)), render(&mut g, &mut pipeline, &source, &negative(&tinted)));
+    assert!(shifts(&a, &b)[0] > 5e-3);
+}
+
+#[test]
+fn a_channels_own_mid_and_contrast_move_that_channel() {
+    let Some(mut g) = graph("a_channels_own_mid_and_contrast_move_that_channel") else { return };
+    let source = ramp(&mut g);
+    let mut pipeline = Pipeline::new();
+    for mode in [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Digital] {
+        let rest = PipelineSettings::rest(mode, true);
+        let k = conversion::stage47(&rest);
+        assert_eq!((k.own_contrast, k.own_mid), ([0.0; 3], [0.0; 3]), "{mode:?}: a frame at rest carries no channel tone");
+        let at_rest = render(&mut g, &mut pipeline, &source, &rest);
+        for (c, name) in ["red", "green", "blue"].into_iter().enumerate() {
+            for (what, contrast, mid) in [("contrast", 0.4, 0.0), ("mid", 0.0, 0.25)] {
+                let mut own = rest.clone();
+                own.print.channel_contrast[c] = contrast;
+                own.print.channel_mid[c] = mid;
+                let moved = shifts(&render(&mut g, &mut pipeline, &source, &own), &at_rest);
+                println!("{mode:?} {name}'s own {what} moves the channels by {moved:?}");
+                assert!(led_by(moved, c), "{mode:?}: {name}'s {what} moves {moved:?}");
+            }
+        }
+        // Twin: the same mids laid on the three channels leads with none of them.
+        let mut all = rest.clone();
+        all.print.channel_mid = [0.25; 3];
+        let moved = shifts(&render(&mut g, &mut pipeline, &source, &all), &at_rest);
+        assert!((0..3).all(|c| !led_by(moved, c)), "{mode:?}: the mids on all three led with one channel {moved:?}");
+    }
+    // Black and white shows no channel: its own tone renders nothing.
+    let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);
+    let mut toned = mono.clone();
+    (toned.print.channel_contrast, toned.print.channel_mid) = ([0.4, -0.2, 0.1], [0.2, 0.0, -0.25]);
+    assert!(render(&mut g, &mut pipeline, &source, &toned) == render(&mut g, &mut pipeline, &source, &mono), "black and white read a channel's own tone");
+    // Twin: the same tone on a positive moves its render.
+    let positive = |s: &PipelineSettings| PipelineSettings { mode: ConversionMode::Positive, ..s.clone() };
+    let (a, b) = (render(&mut g, &mut pipeline, &source, &positive(&mono)), render(&mut g, &mut pipeline, &source, &positive(&toned)));
     assert!(shifts(&a, &b)[0] > 5e-3);
 }

@@ -129,6 +129,8 @@ pub fn all() -> &'static [Row] {
                     slider("print.whitePoint", carry!(print.white_point)),
                     slider("print.channelWhite", carry!(print.channel_white)),
                     slider("print.channelBlack", carry!(print.channel_black)),
+                    slider("print.channelMid", carry!(print.channel_mid)),
+                    slider("print.channelContrast", carry!(print.channel_contrast)),
                 ],
                 carry: |from, to| {
                     let filters = (to.print.red, to.print.green, to.print.blue);
@@ -197,7 +199,16 @@ pub fn all() -> &'static [Row] {
                 carry: carry!(vignette),
             },
             Row { id: "grain", covers: &["grain"], sliders: vec![slider("grain.amount", carry!(grain.amount)), slider("grain.size", carry!(grain.size))], carry: carry!(grain) },
-            Row { id: "halation", covers: &["halation"], sliders: vec![slider("halation.amount", carry!(halation.amount)), slider("halation.size", carry!(halation.size))], carry: carry!(halation) },
+            Row {
+                id: "halation",
+                covers: &["halation"],
+                sliders: vec![
+                    slider("halation.amount", carry!(halation.amount)),
+                    slider("halation.size", carry!(halation.size)),
+                    slider("halation.sensitivity", carry!(halation.sensitivity)),
+                ],
+                carry: carry!(halation),
+            },
             Row {
                 id: "lensCorrection",
                 covers: &["lensCorrection"],

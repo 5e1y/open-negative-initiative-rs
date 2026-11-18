@@ -54,14 +54,19 @@ impl Ctl {
         }
         // A reset key shows while a frame shown stands off the rest it would take, the open one or one beside it.
         let beside = self.beside().blocks;
-        let (modified, rests) = {
+        let (modified, rests, marked) = {
             let s = self.state.borrow();
             let dyes = s.open_dyes();
             let shown = |i: usize| (Block::ALL[i], beside[i] || store::is_modified(s.store.settings(), Block::ALL[i], dyes));
-            (std::array::from_fn::<_, { Block::ALL.len() }, _>(shown), crate::slider_track::rests(s.store.settings()))
+            let marked = store::channel_marked(s.store.settings());
+            (std::array::from_fn::<_, { Block::ALL.len() }, _>(shown), crate::slider_track::rests(s.store.settings()), marked)
         };
         for (b, on) in modified {
             set_modified(&g, b, on);
+        }
+        let tabs = g.get_channel_marked();
+        if (0..3).any(|c| tabs.row_data(c) != Some(marked[c])) {
+            g.set_channel_marked(ModelRc::new(VecModel::from(marked.to_vec())));
         }
         let shown = g.get_rests();
         if shown.row_count() != rests.len() || rests.iter().enumerate().any(|(i, r)| shown.row_data(i) != Some(*r)) {
