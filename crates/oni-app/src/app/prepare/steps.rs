@@ -30,7 +30,7 @@ impl Ctl {
             let r = &self.state.borrow().prepare;
             (r.step, r.capture, r.film)
         };
-        if step == Step::Window {
+        if walk_ends(step, capture, film) {
             return self.measure_roll();
         }
         self.step_to(neighbour(step, 1, capture, film));

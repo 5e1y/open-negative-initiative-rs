@@ -2472,8 +2472,8 @@ msgid "Film Type"
 msgstr "Type de film"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: no roll to prepare, no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
-msgstr "Ce qu’est la photo : un négatif couleur, une diapositive, du noir et blanc ou une photo numérique. Une diapositive est lue comme un RAW ordinaire, ses colorants jamais séparés ; Préparer la pellicule équilibre une pellicule de diapositives sur un blanc ou un gris que vous cliquez, sa couleur seulement ; sans clic, les diapositives gardent les 5500 K de l’appareil. Une photo numérique n’a pas de film : ni pellicule à préparer, ni filtration, colorants ou niveaux, sa couleur réglée par Température et Teinte dans l’onglet Couleur."
+msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: Prepare the Roll only sets its photos as digital, with no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
+msgstr "Ce qu’est la photo : un négatif couleur, une diapositive, du noir et blanc ou une photo numérique. Une diapositive est lue comme un RAW ordinaire, ses colorants jamais séparés ; Préparer la pellicule équilibre une pellicule de diapositives sur un blanc ou un gris que vous cliquez, sa couleur seulement ; sans clic, les diapositives gardent les 5500 K de l’appareil. Une photo numérique n’a pas de film : Préparer la pellicule ne fait que régler ses photos en numérique, sans filtration, colorants ni niveaux, sa couleur réglée par Température et Teinte dans l’onglet Couleur."
 
 #: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -2487,7 +2487,7 @@ msgstr "Positif"
 msgid "B&W"
 msgstr "N&B"
 
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Digital"
 msgstr "Numérique"
 
@@ -2678,6 +2678,10 @@ msgstr "Faites glisser les coins ou les bords du cadre sur la photo pour la reca
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
 msgstr "Cette pellicule a été préparée avant que le scanner ne conserve sa médiane : préparez-la de nouveau, sinon le scanner se centre sur une estimation."
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Source"
+msgstr "Source"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -4628,6 +4632,10 @@ msgstr "Tracez la fenêtre dans l’image, à l’écart du support et des bords
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; with nothing picked, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."
 msgstr "Choisissez un scan, puis cliquez sur quelque chose de blanc ou de gris : un nuage, un mur, une route grise, ou la lumière nue à travers une perforation. Les gains de la pellicule rendent sa couleur neutre et gardent sa luminosité ; sans clic, les diapositives gardent les 5500 K de l’appareil. Évitez les noirs : ceux d’une diapositive sont rarement neutres."
+
+#: crates/oni-app/src/app/prepare/model/step.rs
+msgid "A digital photo has no film to measure: PREPARE ROLL sets every photo of the roll as digital, its colour then set by Temperature and Tint."
+msgstr "Une photo numérique n’a pas de film à mesurer : PRÉPARER règle chaque photo de la pellicule en numérique, sa couleur ensuite réglée par Température et Teinte."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."

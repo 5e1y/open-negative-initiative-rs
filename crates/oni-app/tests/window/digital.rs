@@ -1,6 +1,7 @@
 //! Digital picked on the Roll tab's own Film Type: the film's blocks leave the Roll tab, the faces leave
 //! the bar, and the Colour block shows the white in kelvin and tint where the print's filters stood.
-//! Twin: the same frame as a negative shows them all, and back to one shows them again.
+//! The first tab is named Source. Twin: the same frame as a negative shows them all under Roll, and back
+//! to one shows them again.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::{PanelState, PanelTab};
@@ -43,6 +44,7 @@ pub(crate) fn digital_shows_its_white_and_none_of_the_films_blocks() {
     for title in FILM_BLOCKS {
         assert!(shown(Role::Text, title), "{title} on a negative");
     }
+    assert!(shown(Role::Tab, "Roll") && !shown(Role::Tab, "Source"), "a negative's first tab is its roll");
     assert!(shown(Role::Tab, "Scanner"), "a negative's faces");
     tab(PanelTab::Color);
     assert!(value("Temperature").ends_with("EV"), "the print's filters: {}", value("Temperature"));
@@ -53,6 +55,7 @@ pub(crate) fn digital_shows_its_white_and_none_of_the_films_blocks() {
         assert!(!shown(Role::Text, title), "no {title} on a digital photo");
     }
     assert!(shown(Role::Text, "Film Type") && shown(Role::Text, "Scan Profile"), "its film type and a plain file's profile stay");
+    assert!(shown(Role::Tab, "Source") && !shown(Role::Tab, "Roll"), "a digital photo's first tab is its source");
     assert!(!shown(Role::Tab, "Scanner") && !shown(Role::Tab, "Pro"), "no faces for a digital photo");
     println!("shot {}", rig.shot("digital-roll").display());
 

@@ -10826,5 +10826,47 @@
     "title": "The welcome scene answers a typed number as the app does",
     "status": "done",
     "detail": "Since #2132 a number typed on a slider's readout reaches Store.typed, which lands on the figure itself, instead of Store.step. The welcome scene served Store.step alone, so its typed temperature moved nothing and oni-demos' welcome check failed (the typed figure changed nothing). The scene now answers both callbacks from one closure, stepped for a notch and slider_track::typed for a typed number, as the app's wiring does."
+  },
+  {
+    "id": 2140,
+    "type": "feature",
+    "title": "A digital photo's first tab is named Source",
+    "status": "done",
+    "detail": "Owner's words: in Digital the Roll tab becomes Source, film modes keep Roll. panel.slint's tab bar names its first tab Source while PanelState.digital, Roll otherwise; PanelTab.roll keeps its identity, so every check picking the tab by enum stays valid, and the welcome scene keeps its own Roll, as it shows a film photo. The phone keeps Roll: the wire carries the tab's identity, not its word, and naming it Source there needs a digital fact in the mobile repo's State, left as a follow-up. Window check digital::digital_shows_its_white_and_none_of_the_films_blocks: the first tab reads Source on Digital (twin: Roll on the negative, and no Source)."
+  },
+  {
+    "id": 2141,
+    "type": "feature",
+    "title": "Prepare the Roll keeps its first step alone for a digital roll",
+    "status": "done",
+    "detail": "Owner's words: we keep the wizard but only its first step in Digital. Film type gains Digital in Prepare's film step; on it every step but Film is skipped (Step::skipped), the step tabs dark. One rule names the walk's end for every film type: walk_ends(step) is the step whose next is itself, its keycap PREPARE ROLL (key now takes capture and film), roll_advance commits there and measure_roll dispatches Positive to the slides, Digital to prepare_digital, film to the measure. set_film lands a skipped step on the window, or on the film step where the window is skipped too. Digitised with, the pass order, the grouping row, its caution and the passes note stand under !Preparing.digital (new property). The action is live on Digital while the roll holds a frame: the film step shows no frame grid, so every photo of the roll is prepared, as its detail says. A digital first frame opens the sheet on Digital (entering.rs), and the editor's Prepare the Roll… item and bar key are live on a digital photo (menus.rs). A digital roll writes no draft: deviation from the plan, which dropped an existing one; choosing Digital and closing would then have thrown away a negative draft's base, flags and window, so drafts() returns None on Digital and the draft stays as it was until the commit drops it as a measure does. Film Type's help says Prepare the Roll only sets a digital roll's photos as digital. Checks: model::tests a_digital_roll_walks_its_film_step_alone_and_ends_there (twin: a scanner negative's film step is NEXT and goes to Base) and a_roll_turned_digital_falls_back_on_its_film_step (twin: slides from Flags land on Window); draft::tests a_digital_roll_writes_no_draft_and_leaves_its_folders_as_they_were (twin: back on Negative its film step writes one)."
+  },
+  {
+    "id": 2142,
+    "type": "feature",
+    "title": "PREPARE ROLL on Digital makes every photo of the roll digital, each on its own As Shot, in one step",
+    "status": "done",
+    "detail": "EditorStore::make_digital(paths) lays store::roll::digital (carried to Digital, roll_reference cleared, as a new preparation replaces the old) through lay_on: the open frame through lay_open and replace, the others through modify, each passing rested_white so every RAW reads its own As Shot; one history step labelled measure_label(n), every roll found again on the next ask. No journal entry: nothing was measured. prepare/digital.rs posts its landing on the drafts' serial thread, so the reads and migrations queued on entering never rewrite a sidecar after it (Stop until then writes nothing), then makes every file of the roll as it came digital (passes a grouping only proposed each on their own, as no measure registers them) and lands through land_prepared, the tail factored out of land_measure (drafts dropped, editor on the first frame alone or on the whole roll as Settings asks, message told), which the measure now calls too after prepare_ended. Check store::tests::digital::a_roll_prepared_as_digital_reads_each_as_shot_once_and_leaves_its_reference_in_one_step: three frames (open RAW, RAW beside, plain file) end digital with no reference and each white its own As Shot, one undo brings all three back on their roll, a redo with another frame open keeps the RAWs' As Shot read once (twin: the measure's land_roll writes the frame beside with shot None)."
+  },
+  {
+    "id": 2143,
+    "type": "fix",
+    "title": "A gesture's step on the open frame records the white it rested on",
+    "status": "done",
+    "detail": "lay_open recorded the settings it was handed while replace laid them with their As Shot white rested: the step's after lacked the white, so a redo with another frame open wrote a digital frame with no white and read its As Shot again (apply_mode, the measure's landing and make_digital all lay the open frame this way). lay_open now rests the white before comparing and recording. The make_digital check counts each RAW's As Shot read once through make, undo and redo; with the old lay_open it read a.NEF twice."
+  },
+  {
+    "id": 2144,
+    "type": "fix",
+    "title": "Opening a digital photo asks for no roll",
+    "status": "done",
+    "detail": "require_roll opened Prepare the Roll on any writable frame with no roll reference but a slide; a digital photo has none, so with the menu item now live it would have opened the sheet on every digital photo opened. It now reads measured_or_slide, the rule the roll card and the navigator already use (measured, a slide or a digital photo). Window check prepare_digital: B, made digital by the commit, opens in the editor with no sheet (with the old gate the check fails there)."
+  },
+  {
+    "id": 2145,
+    "type": "check",
+    "title": "Prepare on a digital photo through the real controls, and Film Type's four tabs on Prepare's film step",
+    "status": "done",
+    "detail": "Window check prepare_digital::a_digital_photos_roll_is_prepared_on_its_film_step_alone: a measured roll's two TIFFs, A turned digital by hand and B still a negative; A opened in the editor, Menus.live.measure_roll is on and the menu item opens the sheet on Digital: the Digital tab chosen, no DSLR Scan tab, steps 2 to 5 skipped, the keycap PREPARE ROLL (twin: a click on Negative shows Digitised with's tabs, NEXT, and a scanner's base walked). Back on Digital, a click on PREPARE ROLL closes the sheet on A in the editor, both digital with no roll reference and no draft left; one undo brings both back on their roll, B a negative, and redo lays it again. film_type_fit now also measures Prepare's four film tabs in French, Spanish and English (252.6, 240.1 and 246.4 pt of a 292 pt track; twin: the three film tabs alone measure less). help_demo_roll's Film Type text follows the new help."
   }
 ]

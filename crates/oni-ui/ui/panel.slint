@@ -82,7 +82,8 @@ export component Panel inherits Surface {
                 height: max(TabsStyle.height, tools.preferred-height);
                 tabs := Tabs {
                     visible: PanelState.tab != PanelTab.crop && PanelState.tab != PanelTab.dedust;
-                    tabs: [@tr("Roll"), @tr("Colour"), @tr("Details")];
+                    // A digital photo has no roll of film: its first pane holds where the picture came from.
+                    tabs: [PanelState.digital ? @tr("Source") : @tr("Roll"), @tr("Colour"), @tr("Details")];
                     marked: [false, false, false];
                     // Each pane's place in the bar, none for a tool.
                     selected: PanelState.tab == PanelTab.roll ? 0 : PanelState.tab == PanelTab.color ? 1 : PanelState.tab == PanelTab.details ? 2 : -1;

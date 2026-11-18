@@ -34,6 +34,12 @@ fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> Pipeline
     PipelineSettings { geometry: Geometry::default(), ..split(settings, framing) }
 }
 
+/// A frame of a roll prepared as digital: no film to measure, and no roll reference, as a new
+/// preparation replaces the one before.
+pub fn digital(settings: &PipelineSettings) -> PipelineSettings {
+    PipelineSettings { roll_reference: None, ..settings.carried(oni_settings::ConversionMode::Digital) }
+}
+
 /// The undo label of a measure, counting frames, never the passes riding with them.
 pub fn measure_label(frames: usize) -> String {
     trn("Prepare the roll", "Prepare the roll of {n} photos", frames as u64)
@@ -97,6 +103,14 @@ impl EditorStore {
         gather(&mut step, beside);
         self.shown_together(&step.1);
         self.history.record(&step.0, &step.1, &measure_label(frames), None);
+        frames
+    }
+
+    /// A roll prepared as digital, one step: the open frame in memory, the others through their
+    /// sidecars, each white resting on its own As Shot; every roll found again on the next ask.
+    pub fn make_digital(&mut self, paths: &[String]) -> usize {
+        let frames = self.lay_on(paths, |_, s| digital(s), measure_label);
+        self.measured.clear();
         frames
     }
 

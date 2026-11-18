@@ -200,10 +200,12 @@ impl Roll {
     }
 
     /// The draft the roll's folders share, each listing its own frames' places, the base only in the
-    /// base's folder, so any folder's resumes the grouping. `None` until it may be written.
+    /// base's folder, so any folder's resumes the grouping. `None` until it may be written, and on a
+    /// digital roll, which holds no choice to resume: a draft already there is kept for its film.
     pub(super) fn drafts(&mut self) -> Option<Drafts> {
         use oni_settings::prepare::{Base, Draft, Mark};
-        if !self.shown || self.progress.is_some() || (self.step == Step::Film && self.draft_id.is_none()) || self.sources.is_empty() || self.read.len() < self.sources.len() {
+        let unwritten = self.film == ConversionMode::Digital || (self.step == Step::Film && self.draft_id.is_none());
+        if !self.shown || self.progress.is_some() || unwritten || self.sources.is_empty() || self.read.len() < self.sources.len() {
             return None;
         }
         let id = *self.draft_id.get_or_insert_with(Id::new);

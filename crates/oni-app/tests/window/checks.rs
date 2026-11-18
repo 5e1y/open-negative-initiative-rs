@@ -182,6 +182,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
     ("digital::digital_shows_its_white_and_none_of_the_films_blocks", digital::digital_shows_its_white_and_none_of_the_films_blocks),
     ("digital::a_digital_folders_sidebar_names_no_film_stock", digital::a_digital_folders_sidebar_names_no_film_stock),
+    ("prepare_digital::a_digital_photos_roll_is_prepared_on_its_film_step_alone", prepare_digital::a_digital_photos_roll_is_prepared_on_its_film_step_alone),
     ("film_type_fit::film_types_tabs_fit_the_narrowest_window_in_every_language", film_type_fit::film_types_tabs_fit_the_narrowest_window_in_every_language),
     ("rolls::a_rolls_row_draws_its_stock", rolls::a_rolls_row_draws_its_stock),
     ("rolls::the_navigators_rolls_draw_their_stock", rolls::the_navigators_rolls_draw_their_stock),

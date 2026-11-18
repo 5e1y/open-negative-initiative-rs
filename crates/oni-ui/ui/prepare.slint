@@ -116,13 +116,13 @@ export component RollPanel inherits Surface {
                     Field {
                         label: @tr("Film type");
                         Tabs {
-                            tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
-                            marked: [false, false, false];
+                            tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W"), @tr("Digital")];
+                            marked: [false, false, false, false];
                             selected: Preparing.film;
                             picked(i) => { Preparing.film = i; Preparing.film-picked(i); }
                         }
                     }
-                    Field {
+                    if !Preparing.digital: Field {
                         label: @tr("Digitised with");
                         Tabs {
                             tabs: [@tr("Scanner"), @tr("DSLR Scan"), @tr("RGB Passes")];
@@ -131,7 +131,7 @@ export component RollPanel inherits Surface {
                             picked(i) => { Preparing.capture = i; Preparing.capture-picked(i); }
                         }
                     }
-                    if Preparing.grouped: Field {
+                    if !Preparing.digital && Preparing.grouped: Field {
                         label: @tr("Pass order");
                         help: @tr("The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll.");
                         PassReorder {
@@ -142,13 +142,13 @@ export component RollPanel inherits Surface {
                             moved(from, to) => { Preparing.pass-moved(from, to); }
                         }
                     }
-                    if Preparing.grouped: HorizontalLayout {
+                    if !Preparing.digital && Preparing.grouped: HorizontalLayout {
                         spacing: Space.s;
                         Label { role: TextRole.note; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
                         Button { text: @tr("Shift by One File"); enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
                     }
-                    if Preparing.grouped && Preparing.grouping-remark != "": Caution { title: @tr("Check the grouping"); text: Preparing.grouping-remark; }
-                    if Preparing.passes-note != "": Label { role: TextRole.note; text: Preparing.passes-note; }
+                    if !Preparing.digital && Preparing.grouped && Preparing.grouping-remark != "": Caution { title: @tr("Check the grouping"); text: Preparing.grouping-remark; }
+                    if !Preparing.digital && Preparing.passes-note != "": Label { role: TextRole.note; text: Preparing.passes-note; }
                 }
                 if Preparing.step == 1: VerticalLayout {
                     spacing: Space.m;

@@ -2472,8 +2472,8 @@ msgid "Film Type"
 msgstr "Tipo de película"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: no roll to prepare, no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
-msgstr "Qué es la foto: un negativo en color, una diapositiva, blanco y negro o una foto digital. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara. Una foto digital no tiene película: ni rollo que preparar, ni filtración, colorantes o niveles; su color lo fijan Temperatura y Matiz en la pestaña Color."
+msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: Prepare the Roll only sets its photos as digital, with no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
+msgstr "Qué es la foto: un negativo en color, una diapositiva, blanco y negro o una foto digital. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara. Una foto digital no tiene película: Preparar el rollo solo marca sus fotos como digitales, sin filtración, colorantes ni niveles; su color lo fijan Temperatura y Matiz en la pestaña Color."
 
 #: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -2487,7 +2487,7 @@ msgstr "Positivo"
 msgid "B&W"
 msgstr "B/N"
 
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Digital"
 msgstr "Digital"
 
@@ -2678,6 +2678,10 @@ msgstr "Arrastra las esquinas o los bordes del marco sobre la foto para recortar
 #: crates/oni-ui/ui/panel.slint
 msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
 msgstr "Este rollo se preparó antes de que el escáner guardara su mediana: vuelve a prepararlo, o el escáner se centrará en una estimación."
+
+#: crates/oni-ui/ui/panel.slint
+msgid "Source"
+msgstr "Origen"
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -4628,6 +4632,10 @@ msgstr "Dibuja la ventana dentro de la imagen, lejos del soporte y de los bordes
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; with nothing picked, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."
 msgstr "Elija un escaneo y haga clic en algo blanco o gris: una nube, una pared, una carretera gris o la luz desnuda a través de una perforación. Las ganancias del rollo neutralizan su color y conservan su brillo; sin clic, las diapositivas conservan los 5500 K de la cámara. Evite los negros: los de una diapositiva rara vez son neutros."
+
+#: crates/oni-app/src/app/prepare/model/step.rs
+msgid "A digital photo has no film to measure: PREPARE ROLL sets every photo of the roll as digital, its colour then set by Temperature and Tint."
+msgstr "Una foto digital no tiene película que medir: PREPARAR ROLLO marca cada foto del rollo como digital; su color lo fijan después Temperatura y Matiz."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."

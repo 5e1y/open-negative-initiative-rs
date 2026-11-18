@@ -183,6 +183,8 @@ impl EditorStore {
         let now = self.now();
         let Some(path) = self.path().map(str::to_string) else { return Written::default() };
         let before = self.settings.clone();
+        // Its white rested before it is recorded, so a redo with another frame open writes it whole.
+        let next = self.rested_white(&path, &before, next);
         if next == before {
             return Written::default();
         }

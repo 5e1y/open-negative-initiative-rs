@@ -46,7 +46,7 @@ export component RollPane inherits Pane {
         title: @tr("Film Type");
         separated: !PanelState.digital;
         demo: "film-type";
-        help: @tr("What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: no roll to prepare, no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab.");
+        help: @tr("What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: Prepare the Roll only sets its photos as digital, with no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W"), @tr("Digital")];
             marked: [false, false, false, false];

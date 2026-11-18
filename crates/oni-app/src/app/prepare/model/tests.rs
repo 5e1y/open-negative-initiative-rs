@@ -70,10 +70,41 @@ fn the_steps_walk_past_the_flat_field_on_a_scanner_and_hold_at_either_end() {
     assert!(!done(Step::FlatField, Step::Base, Capture::Scanner, n, &flat, false), "a step the roll does not walk is not done");
     assert!(!done(Step::Base, Step::Base, Capture::Camera, n, &flat, true), "twin: the current step is not behind");
     // The keycap names the walk's end as the bar's key does, and NEXT on every other step, picked or not.
-    assert_eq!((key(Step::Window), key(Step::Flags), key(Step::Base)), ("PREPARE ROLL", "NEXT", "NEXT"));
-    assert_ne!(key(Step::FlatField), "Skip", "twin: no step turns its keycap into Skip");
+    let c = Capture::Camera;
+    assert_eq!((key(Step::Window, c, n), key(Step::Flags, c, n), key(Step::Base, c, n)), ("PREPARE ROLL", "NEXT", "NEXT"));
+    assert_ne!(key(Step::FlatField, c, n), "Skip", "twin: no step turns its keycap into Skip");
     assert_eq!(left_out_text(1), "1 frame of this folder, prepared with another roll, is left out.");
     assert_eq!(left_out_text(2), "2 frames of this folder, prepared with another roll, are left out.");
+}
+
+#[test]
+fn a_digital_roll_walks_its_film_step_alone_and_ends_there() {
+    let d = ConversionMode::Digital;
+    for capture in Capture::ALL {
+        let walked: Vec<Step> = Step::ALL.into_iter().filter(|s| !s.skipped(capture, d)).collect();
+        assert_eq!(walked, [Step::Film], "{capture:?}");
+        assert_eq!(neighbour(Step::Film, 1, capture, d), Step::Film, "nothing after the film step");
+        assert_eq!(key(Step::Film, capture, d), "PREPARE ROLL", "the film step ends a digital roll's walk");
+    }
+    assert_ne!(Step::Film.detail(d), Step::Film.detail(ConversionMode::Negative));
+    // Twin: a negative roll's film step goes on to its base, NEXT on its keycap.
+    let n = ConversionMode::Negative;
+    assert_eq!(key(Step::Film, Capture::Scanner, n), "NEXT");
+    assert!(!Step::Base.skipped(Capture::Scanner, n));
+    assert_eq!(neighbour(Step::Film, 1, Capture::Scanner, n), Step::Base);
+}
+
+#[test]
+fn a_roll_turned_digital_falls_back_on_its_film_step() {
+    for from in [Step::Flags, Step::Window, Step::Base, Step::FlatField] {
+        let mut r = Roll { step: from, capture: Capture::Camera, ..Roll::default() };
+        r.set_film(ConversionMode::Digital);
+        assert_eq!(r.step, Step::Film, "from {from:?}");
+    }
+    // Twin: a slide roll from its flags lands on its window, which it walks.
+    let mut slides = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
+    slides.set_film(ConversionMode::Positive);
+    assert_eq!(slides.step, Step::Window);
 }
 
 /// `RollFrameView.selfCheck`: a quarter-turned, cropped frame shows in its render's shape.

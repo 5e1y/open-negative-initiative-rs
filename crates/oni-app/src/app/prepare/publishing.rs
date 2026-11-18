@@ -83,8 +83,12 @@ impl Ctl {
         let look = r.look();
         let unpicked = if r.film == ConversionMode::Positive { tr("Nothing picked: the slides keep 5500 K.") } else { tr("No base picked yet.") };
         let base_note = r.base.as_ref().map_or(unpicked.to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
-        // A slide roll walks no flags step: every slide ticked is measured.
-        let measured = if r.film == ConversionMode::Positive { ticked } else { ticked - flagged };
+        // A roll walking no flags step measures every frame ticked; a digital one prepares every frame.
+        let measured = match r.film {
+            ConversionMode::Digital => frames.len(),
+            _ if Step::Flags.skipped(r.capture, r.film) => ticked,
+            _ => ticked - flagged,
+        };
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title(r.film).to_string(),
@@ -98,6 +102,7 @@ impl Ctl {
         let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, walked)).collect();
         let done: Vec<bool> = Step::ALL.iter().map(|s| done(*s, step, r.capture, walked, &r.flat, r.base.is_some())).collect();
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
+        let ends = walk_ends(step, capture, film);
         let show_card = shown_path != r.shown_path;
         let base_path = (step == Step::Base).then(|| r.base_shown().map(|f| f.path.clone())).flatten();
         let ask_scan = base_path.is_some() && base_path != r.asked_scan;
@@ -131,6 +136,7 @@ impl Ctl {
         p.set_differ(if measuring.is_some() { SharedString::new() } else { differ_text(&frames).into() });
         p.set_left_out(left_out_text(left_out).into());
         p.set_film(ConversionMode::ALL.iter().position(|f| *f == film).unwrap_or(0) as i32);
+        p.set_digital(film == ConversionMode::Digital);
         p.set_capture(Capture::ALL.iter().position(|c| *c == capture).unwrap_or(1) as i32);
         p.set_passes_note(passes_note.into());
         p.set_flat_on(flat.mask != oni_settings::frame::FlatFieldMask::None);
@@ -153,8 +159,8 @@ impl Ctl {
         p.set_can_next(at < last);
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
-        p.set_action_title(key(step).into());
-        p.set_action_enabled(step != Step::Window || measured > 0);
+        p.set_action_title(key(step, capture, film).into());
+        p.set_action_enabled(!ends || measured > 0);
         self.lay_card(shown_path, card);
         self.publish_passes(&p);
         self.publish_card();

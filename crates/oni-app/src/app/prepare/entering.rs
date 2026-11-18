@@ -168,9 +168,8 @@ impl Ctl {
                 r.window = read.geometry.measure_window.unwrap_or_else(|| oni_settings::geometry::proposal(read.geometry.crop, false));
                 r.laid_window = r.window;
                 r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
-                // A slide once read as its own negative comes back as the positive it is; a digital
-                // photo has no film to prepare, so the film step opens on a negative's.
-                r.film = if read.inverted_source { ConversionMode::Positive } else if read.mode.is_film() { read.mode } else { ConversionMode::Negative };
+                // A slide once read as its own negative comes back as the positive it is.
+                r.film = if read.inverted_source { ConversionMode::Positive } else { read.mode };
                 let capture = if read.rgb_passes.is_some() {
                     Capture::RgbPasses
                 } else if read.decoded_from_mosaic {
@@ -261,8 +260,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let writable = s.store.writable();
             let settings = s.store.settings();
-            let slide = settings.mode == ConversionMode::Positive;
-            if !s.prepare.require || !writable || settings.roll_reference.is_some() || settings.sheet.is_some() || slide {
+            if !s.prepare.require || !writable || crate::app::organising::roll_card::measured_or_slide(settings) || settings.sheet.is_some() {
                 return;
             }
             let among = std::mem::take(&mut s.prepare.opened_among);

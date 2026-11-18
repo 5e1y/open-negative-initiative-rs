@@ -8,8 +8,11 @@ impl Ctl {
     /// `measureRoll`: every ticked frame read off this thread after the drafts' writes, the flagged
     /// ones riding without a vote; the base read, the roll combined, every frame written onto it.
     pub(in crate::app) fn measure_roll(self: &Rc<Self>) {
-        if self.state.borrow().prepare.film == ConversionMode::Positive {
-            return self.prepare_slides();
+        let film = self.state.borrow().prepare.film;
+        match film {
+            ConversionMode::Positive => return self.prepare_slides(),
+            ConversionMode::Digital => return self.prepare_digital(),
+            ConversionMode::Negative | ConversionMode::Monochrome => {}
         }
         let (job, session) = {
             let mut s = self.state.borrow_mut();
@@ -128,22 +131,7 @@ impl Ctl {
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
     /// gallery step, the editor on the roll's first frame alone, what was left out named.
     pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: &[String], blank: &[String]) {
-        let prepared: Vec<String> = {
-            let mut s = self.state.borrow_mut();
-            let r = &mut s.prepare;
-            if r.session != session {
-                return;
-            }
-            r.progress = None;
-            r.session += 1;
-            r.tiles.clear();
-            r.card = None;
-            if let Some(p) = &r.previews {
-                p.reset(r.session);
-            }
-            r.frames.iter().map(|f| f.path.clone()).collect()
-        };
-        self.trace_cleared();
+        let Some(prepared) = self.prepare_ended(session) else { return };
         let Some(written) = written.filter(|w| !w.is_empty()) else {
             self.state.borrow_mut().store.forget_measured();
             if !stopped {
@@ -155,42 +143,73 @@ impl Ctl {
         };
         let (failure, landed) = {
             let mut s = self.state.borrow_mut();
-            let store = &mut s.store;
-            let landed = store.land_roll(&written);
-            let failure = store.failure.take();
-            s.last_change = Some(Instant::now());
-            s.prepare.draft_id = None;
-            s.prepare.shown = false;
-            (failure, landed)
+            let landed = s.store.land_roll(&written);
+            (s.store.failure.take(), landed)
         };
-        self.drop_drafts();
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| left_out(asked, &written, blank));
-        let open = self.state.borrow().open_path().map(str::to_string);
-        if let Some(w) = self.window() {
-            w.global::<App>().set_gallery(false);
-        }
-        if written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
-            self.disarm_window();
-        }
-        let mut touched: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
+        let frames: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
         let passes: Vec<String> = written
             .iter()
             .filter_map(|(lead, _, now)| now.rgb_passes.as_ref().map(|p| (lead, p)))
             .flat_map(|(lead, p)| rgb_passes::paths_beside(p, lead).into_iter().filter(move |f| f != lead))
             .collect();
-        touched.extend(passes.iter().cloned());
-        self.landed(&touched);
-        self.index_passes(&written, &passes);
+        let touched: Vec<String> = frames.iter().chain(&passes).cloned().collect();
+        self.land_prepared(&frames, &touched, prepared, message, move |c| c.index_passes(&written, &passes));
+    }
+
+    /// The measure's progress and previews ended for `session`, the roll's frames by path; `None` for a
+    /// session gone, whose landing changes nothing.
+    pub(super) fn prepare_ended(&self, session: u64) -> Option<Vec<String>> {
+        let prepared = {
+            let mut s = self.state.borrow_mut();
+            let r = &mut s.prepare;
+            if r.session != session {
+                return None;
+            }
+            r.progress = None;
+            r.session += 1;
+            r.tiles.clear();
+            r.card = None;
+            if let Some(p) = &r.previews {
+                p.reset(r.session);
+            }
+            r.frames.iter().map(|f| f.path.clone()).collect()
+        };
+        self.trace_cleared();
+        Some(prepared)
+    }
+
+    /// The roll prepared on `written`, its first frame leading: the surface left with its drafts, the
+    /// `touched` files read again, then `indexed` run; the editor on the first frame alone, or on the
+    /// `prepared` roll as Settings asks, and `message` told.
+    pub(super) fn land_prepared(self: &Rc<Self>, written: &[String], touched: &[String], prepared: Vec<String>, message: Option<String>, indexed: impl FnOnce(&Rc<Self>)) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.last_change = Some(Instant::now());
+            s.prepare.draft_id = None;
+            s.prepare.shown = false;
+        }
+        self.drop_drafts();
+        let open = self.state.borrow().open_path().map(str::to_string);
+        if let Some(w) = self.window() {
+            w.global::<App>().set_gallery(false);
+        }
+        if written.iter().any(|p| Some(p) == open.as_ref()) {
+            self.disarm_window();
+        }
+        self.landed(touched);
+        indexed(self);
         // The roll's first frame alone, so a first edit never reaches the roll unseen; Settings may ask
-        // for every frame together instead, led by the open frame when it was measured (owner's call).
+        // for every frame together instead, led by the open frame when it was prepared (owner's call).
         let whole = self.state.borrow().preferences.whole_roll_after_prepare();
-        if !whole || !written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
-            let first = written[0].0.clone();
-            self.state.borrow_mut().designate(&first);
-            if open.as_ref() != Some(&first) {
-                self.open_photo(&first);
+        if (!whole || !written.iter().any(|p| Some(p) == open.as_ref()))
+            && let Some(first) = written.first()
+        {
+            self.state.borrow_mut().designate(first);
+            if open.as_ref() != Some(first) {
+                self.open_photo(first);
             }
         }
         if whole {

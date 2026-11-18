@@ -39,6 +39,7 @@ mod draft;
 mod trace;
 mod negative;
 mod slides;
+mod digital;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.

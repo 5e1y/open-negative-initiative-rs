@@ -32,11 +32,12 @@ impl SlideRoll {
 }
 
 impl Roll {
-    /// The roll's film, its step brought back inside the steps that film walks.
+    /// The roll's film, its step brought back inside the steps that film walks: the window, else the
+    /// film step, which every roll walks.
     pub(super) fn set_film(&mut self, film: ConversionMode) {
         self.film = film;
         if self.step.skipped(self.capture, self.film) {
-            self.step = Step::Window;
+            self.step = if Step::Window.skipped(self.capture, self.film) { Step::Film } else { Step::Window };
         }
     }
 }

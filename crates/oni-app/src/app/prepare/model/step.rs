@@ -35,6 +35,9 @@ impl Step {
         match self {
             Step::Window if film == ConversionMode::Positive => tr("Draw the window inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Every slide keeps it as its measuring window."),
             Step::Base if film == ConversionMode::Positive => tr("Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; with nothing picked, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."),
+            Step::Film if film == ConversionMode::Digital => {
+                tr("A digital photo has no film to measure: PREPARE ROLL sets every photo of the roll as digital, its colour then set by Temperature and Tint.")
+            }
             Step::Film => tr("Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."),
             Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. If your light is even, go on with NEXT; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
@@ -59,12 +62,15 @@ impl Step {
     }
 
     /// A scanner lights its film evenly: it needs no flat-field. A slide's gains come from the white
-    /// picked on its base step, so it has no vote to flag frames out of (owner's call).
+    /// picked on its base step, so it has no vote to flag frames out of (owner's call). A digital
+    /// photo has no film to measure: its roll walks the film step alone.
     pub fn skipped(self, capture: Capture, film: ConversionMode) -> bool {
         match self {
+            Step::Film => false,
+            _ if film == ConversionMode::Digital => true,
             Step::FlatField => capture == Capture::Scanner,
             Step::Flags => film == ConversionMode::Positive,
-            Step::Film | Step::Base | Step::Window => false,
+            Step::Base | Step::Window => false,
         }
     }
 }
@@ -95,8 +101,13 @@ pub fn done(step: Step, current: Step, capture: Capture, film: ConversionMode, f
     step.index() < current.index() && !step.skipped(capture, film) && filled(step, flat, base)
 }
 
+/// The last step the roll walks, where its keycap prepares the roll.
+pub fn walk_ends(step: Step, capture: Capture, film: ConversionMode) -> bool {
+    neighbour(step, 1, capture, film) == step
+}
+
 /// The step's keycap, in one place on every step: PREPARE ROLL ends the walk, NEXT goes on, past a step
 /// left empty too, which then holds no mark.
-pub fn key(step: Step) -> &'static str {
-    if step == Step::Window { tr("PREPARE ROLL") } else { tr("NEXT") }
+pub fn key(step: Step, capture: Capture, film: ConversionMode) -> &'static str {
+    if walk_ends(step, capture, film) { tr("PREPARE ROLL") } else { tr("NEXT") }
 }

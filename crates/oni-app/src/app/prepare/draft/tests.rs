@@ -209,3 +209,23 @@ fn a_base_stored_in_one_folder_stays_off_its_namesake_in_another() {
     assert_eq!(base_after(in_folder(Path::new("/Volumes/Old/Roll 12"))), None);
     let _ = (std::fs::remove_dir_all(&x), std::fs::remove_dir_all(&y));
 }
+
+#[test]
+fn a_digital_roll_writes_no_draft_and_leaves_its_folders_as_they_were() {
+    let (dir, paths) = stood("digital", 2);
+    let mut negative = walked(&paths, Step::Base);
+    assert!(written(negative.drafts().unwrap()).is_empty());
+    let kept = listed(&dir);
+    let mut r = walked(&paths, Step::Film);
+    r.draft_id = negative.draft_id;
+    r.set_film(ConversionMode::Digital);
+    assert!(r.drafts().is_none() && r.step_drafts().is_none(), "nothing written for a digital roll");
+    assert_eq!(listed(&dir), kept, "the negative's draft kept as it was");
+    let id = negative.draft_id.unwrap();
+    assert_eq!(resuming(&paths), vec![Some((id, "base".to_string())); 2]);
+    // Twin: a negative roll on its film step, a draft already begun, writes one.
+    r.set_film(ConversionMode::Negative);
+    assert!(written(r.drafts().unwrap()).is_empty());
+    assert_eq!(resuming(&paths), vec![Some((id, "film".to_string())); 2]);
+    let _ = std::fs::remove_dir_all(&dir);
+}

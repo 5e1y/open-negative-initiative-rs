@@ -24,6 +24,8 @@ export global Preparing {
     in property <string> differ;
     in property <string> left-out;
     in-out property <int> film;
+    // A digital roll walks the film step alone and is digitised with nothing to choose.
+    in property <bool> digital;
     in-out property <int> capture: 1;
     in property <string> passes-note;
     // RGB Passes grouped: the first frame's files under their bands, the count, and what to check.
