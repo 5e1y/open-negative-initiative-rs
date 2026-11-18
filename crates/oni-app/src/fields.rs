@@ -45,6 +45,12 @@ pub enum Field {
     FlatTint,
     GainTemperature,
     GainTint,
+    RedWhitePoint,
+    GreenWhitePoint,
+    BlueWhitePoint,
+    RedBlackPoint,
+    GreenBlackPoint,
+    BlueBlackPoint,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -61,10 +67,11 @@ pub enum Block {
     PaperCorrection,
     SourceBalance,
     FlatField,
+    ChannelPoints,
 }
 
 impl Block {
-    pub const ALL: [Block; 11] = [
+    pub const ALL: [Block; 12] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
@@ -76,6 +83,7 @@ impl Block {
         Block::PaperCorrection,
         Block::SourceBalance,
         Block::FlatField,
+        Block::ChannelPoints,
     ];
 
     pub fn from_index(i: i32) -> Option<Block> {
@@ -96,6 +104,7 @@ impl Block {
             Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
             Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
+            Block::ChannelPoints => &[RedWhitePoint, GreenWhitePoint, BlueWhitePoint, RedBlackPoint, GreenBlackPoint, BlueBlackPoint],
         }
     }
 }
@@ -114,7 +123,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 32] = [
+    pub const ALL: [Field; 38] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -147,6 +156,12 @@ impl Field {
         Field::FlatTint,
         Field::GainTemperature,
         Field::GainTint,
+        Field::RedWhitePoint,
+        Field::GreenWhitePoint,
+        Field::BlueWhitePoint,
+        Field::RedBlackPoint,
+        Field::GreenBlackPoint,
+        Field::BlueBlackPoint,
     ];
 
     pub fn index(self) -> i32 {
@@ -192,6 +207,12 @@ impl Field {
             Field::FlatTint => "flat-tint",
             Field::GainTemperature => "gain-temperature",
             Field::GainTint => "gain-tint",
+            Field::RedWhitePoint => "red-white-point",
+            Field::GreenWhitePoint => "green-white-point",
+            Field::BlueWhitePoint => "blue-white-point",
+            Field::RedBlackPoint => "red-black-point",
+            Field::GreenBlackPoint => "green-black-point",
+            Field::BlueBlackPoint => "blue-black-point",
         }
     }
 
@@ -204,6 +225,7 @@ impl Field {
         let s = |label, range, readout| Spec { label, range, centre: None, readout, axis: None, inverted: false };
         let warmth = |spec: Spec| Spec { axis: Some(Axis::Warmth), ..spec };
         let tint = |spec: Spec| Spec { axis: Some(Axis::Tint), ..spec };
+        let black = |label| Spec { inverted: true, ..s(label, Print::BLACK_POINT_RANGE, Readout::SignedPercent) };
         match self {
             // The print filters' gap in stops: red against blue, then magenta against green.
             Field::Temperature => warmth(s("Temperature", Print::TEMPERATURE_RANGE, Readout::Stops)),
@@ -213,10 +235,7 @@ impl Field {
             Field::Highlights => s("Highlights", Print::QUARTER_RANGE, Readout::SignedPercent),
             Field::Shadows => s("Shadows", Print::QUARTER_RANGE, Readout::SignedPercent),
             Field::WhitePoint => s("White point", Print::POINT_RANGE, Readout::SignedPercent),
-            Field::BlackPoint => Spec {
-                inverted: true,
-                ..s("Black point", Print::BLACK_POINT_RANGE, Readout::SignedPercent)
-            },
+            Field::BlackPoint => black("Black point"),
             Field::Contrast => s("Contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             Field::Vignette => s("Vignette", Vignette::RANGE, Readout::Stops),
             Field::Chrome => s("Chrome", SAUCE_RANGE, Readout::Percent),
@@ -249,6 +268,13 @@ impl Field {
             Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, Readout::Percent),
             Field::FlatTemperature => warmth(s("Temperature", FlatField::COLOUR_RANGE, Readout::SignedPercent)),
             Field::FlatTint => tint(s("Tint", FlatField::COLOUR_RANGE, Readout::SignedPercent)),
+            // Each channel's own points, read as Lighting's.
+            Field::RedWhitePoint => s("Red white point", Print::POINT_RANGE, Readout::SignedPercent),
+            Field::GreenWhitePoint => s("Green white point", Print::POINT_RANGE, Readout::SignedPercent),
+            Field::BlueWhitePoint => s("Blue white point", Print::POINT_RANGE, Readout::SignedPercent),
+            Field::RedBlackPoint => black("Red black point"),
+            Field::GreenBlackPoint => black("Green black point"),
+            Field::BlueBlackPoint => black("Blue black point"),
         }
     }
 
@@ -299,6 +325,12 @@ impl Field {
             Field::FlatTint => Knob::FlatFieldTint,
             Field::GainTemperature => Knob::GainTemperature,
             Field::GainTint => Knob::GainTint,
+            Field::RedWhitePoint => Knob::ChannelWhite(Channel::Red),
+            Field::GreenWhitePoint => Knob::ChannelWhite(Channel::Green),
+            Field::BlueWhitePoint => Knob::ChannelWhite(Channel::Blue),
+            Field::RedBlackPoint => Knob::ChannelBlack(Channel::Red),
+            Field::GreenBlackPoint => Knob::ChannelBlack(Channel::Green),
+            Field::BlueBlackPoint => Knob::ChannelBlack(Channel::Blue),
         }
     }
 

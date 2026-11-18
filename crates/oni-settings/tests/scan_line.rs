@@ -126,8 +126,9 @@ fn a_line_written_at_this_format_keeps_what_equals_the_scan() {
     sidecar::set_exif(typed.clone(), &photo, true).unwrap();
     let written = std::fs::read(url_for(&photo)).unwrap();
     answering(&|| Some(z_f()), |f| assert_eq!(migrate::converted(&written, f).unwrap().document.exif_line, typed, "a camera typed now equal to the scan's is kept"));
-    // Twin: the same document stamped one format earlier is released.
-    answering(&|| Some(z_f()), |f| assert_eq!(migrate::converted(&stored_at(&edited(), VERSION - 1), f).unwrap().document.exif_line, released()));
+    // Twin: the same document stamped before the line's release is released.
+    let before = stored_at(&edited(), chain::SCAN_LINE_RELEASED_VERSION - 1);
+    answering(&|| Some(z_f()), |f| assert_eq!(migrate::converted(&before, f).unwrap().document.exif_line, released()));
     let _ = std::fs::remove_dir_all(&dir);
 }
 

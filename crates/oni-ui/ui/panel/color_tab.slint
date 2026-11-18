@@ -114,6 +114,41 @@ export component ColorPane inherits Pane {
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
+        // Each channel's own ends, folded under the colour until the hand opens them; whites then
+        // blacks, as Lighting lays its points.
+        Block {
+            title: @tr("More Color Settings");
+            separated: false;
+            inset: 0;
+            folded-by-default: true;
+            block: 11;
+            modified: Store.channel-points-modified;
+            help: @tr("Each channel's own white and black point, laid on top of Lighting's: a channel's white point brightens it in the highlights, its black point darkens it in the shadows, so the ends take a colour of their own.");
+            StoreSlider {
+                field: 32; label: @tr("Red white point"); fraction: Store.red-white-point-fraction; readout: Store.red-white-point-readout; value-text: Store.red-white-point-value;
+                fill: SliderFill.ramp; tint: Colour.channel-red;
+            }
+            StoreSlider {
+                field: 33; label: @tr("Green white point"); fraction: Store.green-white-point-fraction; readout: Store.green-white-point-readout; value-text: Store.green-white-point-value;
+                fill: SliderFill.ramp; tint: Colour.channel-green;
+            }
+            StoreSlider {
+                field: 34; label: @tr("Blue white point"); fraction: Store.blue-white-point-fraction; readout: Store.blue-white-point-readout; value-text: Store.blue-white-point-value;
+                fill: SliderFill.ramp; tint: Colour.channel-blue;
+            }
+            StoreSlider {
+                field: 35; label: @tr("Red black point"); fraction: Store.red-black-point-fraction; readout: Store.red-black-point-readout; value-text: Store.red-black-point-value;
+                fill: SliderFill.ramp; tint: Colour.channel-red;
+            }
+            StoreSlider {
+                field: 36; label: @tr("Green black point"); fraction: Store.green-black-point-fraction; readout: Store.green-black-point-readout; value-text: Store.green-black-point-value;
+                fill: SliderFill.ramp; tint: Colour.channel-green;
+            }
+            StoreSlider {
+                field: 37; label: @tr("Blue black point"); fraction: Store.blue-black-point-fraction; readout: Store.blue-black-point-readout; value-text: Store.blue-black-point-value;
+                fill: SliderFill.ramp; tint: Colour.channel-blue;
+            }
+        }
     }
     if !Lab.shown: Block {
         title: @tr("Lighting");

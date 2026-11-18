@@ -120,6 +120,8 @@ pub fn all() -> &'static [Row] {
                     slider("print.highlights", carry!(print.highlights)),
                     slider("print.blackPoint", carry!(print.black_point)),
                     slider("print.whitePoint", carry!(print.white_point)),
+                    slider("print.channelWhite", carry!(print.channel_white)),
+                    slider("print.channelBlack", carry!(print.channel_black)),
                 ],
                 carry: |from, to| {
                     let filters = (to.print.red, to.print.green, to.print.blue);

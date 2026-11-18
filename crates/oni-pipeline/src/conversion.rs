@@ -39,7 +39,7 @@ pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
 /// The fused kernel's arguments, in `Pipeline.apply`'s order.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let mono = s.mode.is_monochrome();
-    let lv = reaching(&s.print, &s.levels, mono.then(|| graduation::window(s.mode)));
+    let lv = reaching(&s.print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
     let sep = separation_rows(s.separation_family, separation_dose(s), s.mode);
     let base = s.print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);

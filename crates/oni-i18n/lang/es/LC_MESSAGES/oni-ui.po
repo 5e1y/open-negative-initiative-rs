@@ -2072,6 +2072,38 @@ msgid "Shared by the {} photos of this roll."
 msgstr "Común a las {} fotos de este rollo."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "More Color Settings"
+msgstr "Más ajustes de color"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Each channel's own white and black point, laid on top of Lighting's: a channel's white point brightens it in the highlights, its black point darkens it in the shadows, so the ends take a colour of their own."
+msgstr "El punto blanco y el punto negro propios de cada canal, sobre los de Luz: el punto blanco de un canal lo aclara en las luces, su punto negro lo oscurece en las sombras, de modo que los extremos toman un color propio."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red white point"
+msgstr "Punto blanco rojo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green white point"
+msgstr "Punto blanco verde"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue white point"
+msgstr "Punto blanco azul"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red black point"
+msgstr "Punto negro rojo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green black point"
+msgstr "Punto negro verde"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue black point"
+msgstr "Punto negro azul"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
 msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo."
 

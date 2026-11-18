@@ -97,6 +97,24 @@ export global Store {
     in property <float> paper-blue-fraction;
     in property <string> paper-blue-readout;
     in property <string> paper-blue-value;
+    in property <float> red-white-point-fraction;
+    in property <string> red-white-point-readout;
+    in property <string> red-white-point-value;
+    in property <float> green-white-point-fraction;
+    in property <string> green-white-point-readout;
+    in property <string> green-white-point-value;
+    in property <float> blue-white-point-fraction;
+    in property <string> blue-white-point-readout;
+    in property <string> blue-white-point-value;
+    in property <float> red-black-point-fraction;
+    in property <string> red-black-point-readout;
+    in property <string> red-black-point-value;
+    in property <float> green-black-point-fraction;
+    in property <string> green-black-point-readout;
+    in property <string> green-black-point-value;
+    in property <float> blue-black-point-fraction;
+    in property <string> blue-black-point-readout;
+    in property <string> blue-black-point-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;
@@ -108,6 +126,7 @@ export global Store {
     in property <bool> source-balance-modified;
     in property <bool> flat-field-modified;
     in property <bool> paper-correction-modified;
+    in property <bool> channel-points-modified;
     // Each field's rest as a fraction of its track, by its index: the double click's value, which a
     // slider ticks and holds a drag on; it moves only with the frame.
     in property <[float]> rests;

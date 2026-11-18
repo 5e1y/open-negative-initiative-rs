@@ -9,65 +9,8 @@ use serde_json::Value;
 
 type V3 = [f32; 3];
 
-/// The contrast slider's transfer function: a normalised logistic and its exact inverse.
-pub mod contrast {
-    pub const FULL_STEEPNESS: f32 = 15.2;
-    const DEAD: f32 = 1e-4;
-
-    pub fn apply(x: f32, travel: f32, pivot: f32) -> f32 {
-        if pivot == 0.5 || (travel.abs() * FULL_STEEPNESS) <= DEAD {
-            return symmetric(x, travel);
-        }
-        let warp = libm::logf(0.5) / libm::logf(pivot);
-        libm::powf(symmetric(libm::powf(x.clamp(0.0, 1.0), warp), travel), 1.0 / warp)
-    }
-
-    fn symmetric(x: f32, travel: f32) -> f32 {
-        let b = travel.abs() * FULL_STEEPNESS;
-        if b <= DEAD {
-            return x;
-        }
-        let low = logistic(0.0, b);
-        let high = logistic(1.0, b);
-        if travel > 0.0 {
-            return (logistic(x, b) - low) / (high - low);
-        }
-        let g = low + x.clamp(0.0, 1.0) * (high - low);
-        (0.5 - libm::logf(1.0 / g - 1.0) / b).clamp(0.0, 1.0)
-    }
-
-    fn logistic(x: f32, b: f32) -> f32 {
-        1.0 / (1.0 + libm::expf(-b * (x - 0.5)))
-    }
-}
-
-/// One travel raising every channel to a power and undoing it on the luminance alone.
-pub mod color_density {
-    use super::V3;
-    use crate::axis::pipeline;
-
-    pub const RANGE: (f32, f32) = (-1.0, 1.0);
-    pub const BASE: f32 = 0.0;
-    pub const FULL_POWER: f32 = 2.0;
-
-    pub fn factor(travel: f32) -> f32 {
-        libm::powf(FULL_POWER, travel)
-    }
-
-    pub fn rendered(rgb: V3, travel: f32) -> V3 {
-        let m = factor(travel);
-        if m == 1.0 {
-            return rgb;
-        }
-        let p = rgb.map(|c| libm::powf(c.max(0.0), m));
-        let y = pipeline::luma(p);
-        if y <= 1e-12 {
-            return rgb;
-        }
-        let k = libm::powf(y, (1.0 / m) - 1.0);
-        p.map(|c| c * k)
-    }
-}
+pub mod color_density;
+pub mod contrast;
 
 /// One curve's sliders, each brightening or steepening to the right.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize)]
@@ -205,6 +148,12 @@ pub struct Print {
     pub black_point: f32,
     #[serde(rename = "whitePoint")]
     pub white_point: f32,
+    /// Red's, green's and blue's own white points, laid on `white_point` in its units.
+    #[serde(rename = "channelWhite", skip_serializing_if = "at_rest")]
+    pub channel_white: V3,
+    /// Each channel's own black point, laid on `black_point` in its units.
+    #[serde(rename = "channelBlack", skip_serializing_if = "at_rest")]
+    pub channel_black: V3,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -223,9 +172,15 @@ impl Default for Print {
             hunt_base: None,
             black_point: Print::RESTING_BLACK_POINT,
             white_point: 0.0,
+            channel_white: [0.0; 3],
+            channel_black: [0.0; 3],
             bypassed: false,
         }
     }
+}
+
+fn at_rest(points: &V3) -> bool {
+    *points == [0.0; 3]
 }
 
 /// Tolerant of absent keys; a contrast or black past the widest track lands on its stop, a channel
@@ -237,6 +192,9 @@ impl<'de> Deserialize<'de> for Print {
             Ok(tolerant::opt::<f32, D::Error>(&map, key)?.unwrap_or(default))
         };
         let t = |key: &str| -> Result<Option<Tone>, D::Error> { tolerant::opt::<Tone, D::Error>(&map, key) };
+        let channels = |key: &str, (low, high): (f32, f32)| -> Result<V3, D::Error> {
+            Ok(tolerant::opt::<V3, D::Error>(&map, key)?.unwrap_or_default().map(|p| p.clamp(low, high)))
+        };
         let filter = |tone: Tone| Tone::exposure(tone.exposure.clamp(Print::FILTER_RANGE.0, Print::FILTER_RANGE.1));
         let hunt_base = t("huntBase")?.map(|base| Tone {
             exposure: base.exposure,
@@ -258,6 +216,8 @@ impl<'de> Deserialize<'de> for Print {
             black_point: f("blackPoint", Print::RESTING_BLACK_POINT)?
                 .clamp(Print::MONOCHROME_POINT_RANGE.0, Print::MONOCHROME_POINT_RANGE.1),
             white_point: f("whitePoint", 0.0)?,
+            channel_white: channels("channelWhite", Print::POINT_RANGE)?,
+            channel_black: channels("channelBlack", Print::BLACK_POINT_RANGE)?,
             bypassed: false,
         })
     }
@@ -330,10 +290,28 @@ impl Print {
         }
     }
 
-    /// The points as the windows take them: a sum past `1 − MINIMUM_SPAN` is held back.
+    /// Lighting's pair as a window takes it.
     pub fn held_points(&self) -> (f32, f32) {
+        Self::held_points_of(self.black_point, self.white_point)
+    }
+
+    /// Each channel's points as its window takes them, its own laid on the global pair and held; a
+    /// black and white print shows no channel, so it reads the global pair alone.
+    pub fn channel_points(&self, mono: bool) -> [(f32, f32); 3] {
+        if mono {
+            return [self.held_points(); 3];
+        }
+        std::array::from_fn(|c| Self::held_points_of(self.black_point + self.channel_black[c], self.white_point + self.channel_white[c]))
+    }
+
+    /// No point moves any window: the global pair at zero and, on colour, every channel's own.
+    pub fn points_at_rest(&self, mono: bool) -> bool {
+        self.black_point == 0.0 && self.white_point == 0.0 && (mono || (at_rest(&self.channel_white) && at_rest(&self.channel_black)))
+    }
+
+    /// `black` and `white` as a window takes them: a sum past `1 − MINIMUM_SPAN` is held back.
+    pub fn held_points_of(black: f32, white: f32) -> (f32, f32) {
         let limit = 1.0 - Self::MINIMUM_SPAN;
-        let (black, white) = (self.black_point, self.white_point);
         if black + white <= limit {
             return (black, white);
         }
@@ -419,60 +397,4 @@ impl Print {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_stored_contrast_past_the_widest_track_lands_on_its_stop() {
-        let reopened = |c: f32| {
-            let stored = Print { contrast: c, ..Print::default() };
-            serde_json::from_value::<Print>(serde_json::to_value(stored).unwrap()).unwrap().contrast
-        };
-        assert_eq!(reopened(1.2), Print::MONOCHROME_CONTRAST_RANGE.1);
-        assert_eq!(reopened(-0.9), Print::MONOCHROME_CONTRAST_RANGE.0);
-        // Twin: values inside the track survive to the bit.
-        assert_eq!(reopened(0.8), 0.8);
-        assert_eq!(reopened(-0.3), -0.3);
-    }
-
-    #[test]
-    fn a_stored_channel_reads_its_exposure_alone_held_to_a_stop() {
-        let stored = r#"{"contrast":0.2,"red":{"exposure":2,"contrast":0.3,"mids":0.1},"blue":{"exposure":-0.4,"shadows":0.1}}"#;
-        let decoded: Print = serde_json::from_str(stored).unwrap();
-        assert_eq!(decoded.red, Tone::exposure(Print::FILTER_RANGE.1));
-        assert_eq!(decoded.blue, Tone::exposure(-0.4));
-        assert_eq!(decoded.green, Tone::NEUTRAL);
-        assert_eq!(decoded.contrast, 0.2);
-        assert_eq!(decoded.black_point, Print::RESTING_BLACK_POINT);
-        // Twin: a Tone read on its own keeps every slider, so the narrowing above is Print's.
-        let tone: Tone = serde_json::from_str(r#"{"exposure":2,"contrast":0.3,"mids":0.1}"#).unwrap();
-        assert_eq!(tone.contrast, 0.3);
-        assert_eq!(tone.mids, 0.1);
-    }
-
-    #[test]
-    fn at_rest_the_print_is_the_diagonal() {
-        let rest = Print::default();
-        for v in [0.0f32, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0] {
-            let out = rest.output(v, LevelsChannel::Linked, true).powf(1.0 / Print::DISPLAY_GAMMA);
-            assert!((out - v).abs() < 1e-5, "{v} printed {out}");
-        }
-        // Twin: a stop of exposure leaves the diagonal.
-        let lit = Print { exposure: 1.0, ..Print::default() };
-        assert!((lit.output(0.5, LevelsChannel::Linked, true).powf(1.0 / 2.2) - 0.5).abs() > 0.05);
-    }
-
-    #[test]
-    fn contrast_is_monotone_pinned_and_inverted_by_its_opposite() {
-        for travel in [0.3f32, -0.3] {
-            assert!(contrast::apply(0.0, travel, 0.5).abs() < 1e-6);
-            assert!((contrast::apply(1.0, travel, 0.5) - 1.0).abs() < 1e-6);
-        }
-        let x = 0.37;
-        let there = contrast::apply(x, 0.4, 0.5);
-        let back = contrast::apply(there, -0.4, 0.5);
-        assert!((back - x).abs() < 1e-5, "{back}");
-        // Twin: a travel of the same sign does not undo it.
-        assert!((contrast::apply(there, 0.4, 0.5) - x).abs() > 0.01);
-    }
-}
+mod tests;

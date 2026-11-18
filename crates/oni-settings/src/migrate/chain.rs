@@ -30,6 +30,8 @@ pub const STROKES_ON_SCAN_VERSION: i64 = 21;
 pub const NAMED_VERSION: i64 = 22;
 /// The version an EXIF line came to keep no field equal to the scan's own fact.
 pub const SCAN_LINE_RELEASED_VERSION: i64 = 23;
+/// The version each channel came to keep its own white and black points, absent read as zero.
+pub const CHANNEL_POINTS_VERSION: i64 = 24;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

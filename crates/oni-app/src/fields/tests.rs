@@ -223,9 +223,10 @@ fn behind_the_settings_key(panel: &str, title: &str) -> Vec<i32> {
     out
 }
 
-/// Whether the Pro face lays the colour, then the light, the paper's and the effects.
+/// Whether the Pro face lays the colour with each channel's own points inside it, then the light, the
+/// paper's and the effects.
 fn colour_first(titles: &[String]) -> bool {
-    titles.windows(4).any(|w| w == ["Colour", "Lighting", "Paper Correction", "Effects"])
+    titles.windows(5).any(|w| w == ["Colour", "More Color Settings", "Lighting", "Paper Correction", "Effects"])
 }
 
 /// Whether the Scanner face lays its density key, then its colour keys and its look, as a minilab's operator sets them.
@@ -303,6 +304,7 @@ fn each_blocks_reset_key_clears_the_block_it_shows() {
         (Block::PaperCorrection, "paper-correction"),
         (Block::SourceBalance, "source-balance"),
         (Block::FlatField, "flat-field"),
+        (Block::ChannelPoints, "channel-points"),
     ];
     let of = |name: &str| named.iter().find(|(_, n)| *n == name).map(|(b, _)| *b);
     let laid = reset_indices(&panel_source());

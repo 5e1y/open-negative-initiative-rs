@@ -200,6 +200,15 @@ pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column()
     // The window at its smallest: the card lifted to keep to it, its top rising past the tab bar's foot.
     rig.window.set_size(slint::PhysicalSize::new(1100, 680));
     rig.settle();
+    // Lighting's title lies under the fold of so short a column: the wheel brings it up, low in the window.
+    let over = slint::LogicalPosition::new(w.get_panel_x() + 120.0, 500.0);
+    for _ in 0..8 {
+        if !common::placed(w, Role::Button, "Help on Lighting").is_empty() {
+            break;
+        }
+        rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -40.0 });
+        rig.settle();
+    }
     let card = lighting_card(&rig, w);
     assert!(card.y + card.height <= 680.0 - MARGIN + 0.5, "inside the window: {card:?}");
     assert!(MENU + w.get_tabs_foot() + card.height > 680.0 - MARGIN, "twin: under the tab bar it would leave the window: {card:?}");

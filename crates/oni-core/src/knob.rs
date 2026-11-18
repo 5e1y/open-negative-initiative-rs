@@ -62,6 +62,9 @@ pub enum Knob {
     Highlights,
     BlackPoint,
     WhitePoint,
+    /// A channel's own white and black points, laid on Lighting's.
+    ChannelWhite(Channel),
+    ChannelBlack(Channel),
     Temperature,
     Tint,
     Density,
@@ -95,6 +98,8 @@ impl Knob {
             | Knob::Highlights
             | Knob::BlackPoint
             | Knob::WhitePoint
+            | Knob::ChannelWhite(_)
+            | Knob::ChannelBlack(_)
             | Knob::Temperature
             | Knob::Tint => Field::Print,
             Knob::Density => Field::Density,
@@ -130,7 +135,8 @@ impl Knob {
             Knob::Shadows | Knob::Highlights => Print::QUARTER_RANGE,
             Knob::BlackPoint | Knob::WhitePoint if mono => Print::MONOCHROME_POINT_RANGE,
             Knob::BlackPoint => Print::BLACK_POINT_RANGE,
-            Knob::WhitePoint => Print::POINT_RANGE,
+            Knob::WhitePoint | Knob::ChannelWhite(_) => Print::POINT_RANGE,
+            Knob::ChannelBlack(_) => Print::BLACK_POINT_RANGE,
             Knob::Temperature => Print::TEMPERATURE_RANGE,
             Knob::Tint => Print::TINT_RANGE,
             Knob::Density => color_density::RANGE,
@@ -174,6 +180,8 @@ impl Knob {
             Knob::Highlights => p.highlights,
             Knob::BlackPoint => p.black_point,
             Knob::WhitePoint => p.white_point,
+            Knob::ChannelWhite(c) => p.channel_white[c.index()],
+            Knob::ChannelBlack(c) => p.channel_black[c.index()],
             Knob::Temperature => p.red.exposure - p.blue.exposure,
             Knob::Tint => (p.red.exposure + p.blue.exposure) / 2.0 - p.green.exposure,
             Knob::Density => s.density,
@@ -229,6 +237,8 @@ impl Knob {
             Knob::Highlights => out.print.highlights = v,
             Knob::BlackPoint => out.print.black_point = v,
             Knob::WhitePoint => out.print.white_point = v,
+            Knob::ChannelWhite(c) => out.print.channel_white[c.index()] = v,
+            Knob::ChannelBlack(c) => out.print.channel_black[c.index()] = v,
             // Each moves the filters along its own axis, so the other reads what it read.
             Knob::Temperature => {
                 let by = v - Knob::Temperature.get(s);
@@ -312,6 +322,20 @@ mod tests {
         assert_eq!(Knob::Exposure.get(&Knob::Exposure.set(&s, 99.0)), Print::EXPOSURE_RANGE.1);
         // Twin: a value inside the range is written as given.
         assert_eq!(Knob::Exposure.get(&Knob::Exposure.set(&s, 0.75)), 0.75);
+    }
+
+    #[test]
+    fn a_channels_point_writes_its_own_channel_on_the_global_tracks() {
+        let s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+        let red = Knob::ChannelWhite(Channel::Red).set(&s, 0.2);
+        assert_eq!(red.print.channel_white, [0.2, 0.0, 0.0]);
+        assert_eq!(FieldSet::between(&s, &red).iter().collect::<Vec<_>>(), vec![Field::Print]);
+        let blue = Knob::ChannelBlack(Channel::Blue).set(&s, -9.0);
+        assert_eq!(blue.print.channel_black, [0.0, 0.0, Print::BLACK_POINT_RANGE.0]);
+        assert_eq!(Knob::ChannelWhite(Channel::Green).set(&s, 9.0).print.channel_white[1], Print::POINT_RANGE.1);
+        // Twin: the global white point is not the channel's, and stays where it was.
+        assert_eq!(red.print.white_point, s.print.white_point);
+        assert_ne!(Knob::ChannelWhite(Channel::Green).get(&red), 0.2);
     }
 
     #[test]

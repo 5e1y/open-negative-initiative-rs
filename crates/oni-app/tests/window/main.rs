@@ -87,6 +87,7 @@ mod new_roll;
 mod opening_reading;
 mod outside;
 mod panel_bindings;
+mod channel_points;
 mod panel_frame;
 mod paper_sheet_window;
 mod phone;
