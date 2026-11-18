@@ -1,5 +1,5 @@
 // `grain`: a texture in stops on a cubic B-spline lattice anchored on the scan's full-resolution grid,
-// each pixel the field's mean over its own footprint, its share and its colour read off its light.
+// each pixel the field's mean over its own footprint, its share read off its light, its own colour deepened where it darkens.
 
 struct Params {
     head: vec4<u32>,
@@ -50,14 +50,18 @@ fn grain_normal(u: vec4<f32>) -> f32 {
     return (u.x + u.y + u.z + u.w - 2.0) * 1.7320508;
 }
 
-// Three more normals of the same uniforms, the light's orthogonal Hadamard combinations: one hash for both.
-fn grain_chroma(u: vec4<f32>) -> vec3<f32> {
-    return vec3<f32>(u.x + u.y - u.z - u.w, u.x - u.y + u.z - u.w, u.x - u.y - u.z + u.w) * 1.7320508;
-}
-
-// Each channel's colour offset of the field's chroma: zero sum, so the log mean Hunt reads stays the light's.
-fn grain_offsets(c: vec3<f32>) -> vec3<f32> {
-    return (c - (c.x + c.y + c.z) / 3.0) * 1.2247449;
+// `s` darkened or lightened `a` stops, each channel's ratio to the luma raised to 2^(colour × the stops it
+// darkens): its own hue deepened, a grey kept grey, its luma the grain's; a channel at or under zero is kept.
+fn grain_laid(s: vec3<f32>, a: f32, colour: f32) -> vec3<f32> {
+    let k = exp2(a);
+    let darker = colour * max(-a, 0.0);
+    let y = dot(s, LUMA);
+    if (darker <= 0.0 || y <= 0.0) { return s * k; }
+    let r = s / y;
+    let p = select(r, exp2(exp2(darker) * log2(r)), r > vec3<f32>(0.0));
+    let q = dot(p, LUMA);
+    if (q <= 0.0) { return s * k; }
+    return p * (k * y / q);
 }
 
 // `at` is the pixel's centre in the graph's pixels; a light given no share is kept.
@@ -80,14 +84,13 @@ fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         let i = f32(first.y + j);
         wy[j] = (grain_ramp(hi.y - i) - grain_ramp(lo.y - i)) / span.y;
     }
-    var field = vec4<f32>(0.0);
+    var field = 0.0;
     for (var r = 0; r < count.y; r++) {
-        var row = vec4<f32>(0.0);
+        var row = 0.0;
         for (var c = 0; c < count.x; c++) {
-            let u = grain_hash(first + vec2<i32>(c, r));
-            row += wx[c] * vec4<f32>(grain_normal(u), grain_chroma(u));
+            row += wx[c] * grain_normal(grain_hash(first + vec2<i32>(c, r)));
         }
         field += wy[r] * row;
     }
-    return vec4<f32>(s.rgb * exp2(P.dose.x * node.x * (field.x + node.y * grain_offsets(field.yzw))), s.a);
+    return vec4<f32>(grain_laid(s.rgb, P.dose.x * node.x * field, node.y), s.a);
 }

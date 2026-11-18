@@ -1,10 +1,11 @@
-//! The grain's colour: a saturation on a straight line along the picture's tone, from its black to its white.
+//! The grain's colour: how far it deepens the photo's own hue where it darkens, on a straight line along the
+//! picture's tone, from its black to its white.
 
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-/// Each end's saturation: 0 a monochrome grain, 1 each channel moved as far as the light, about 1.41
-/// three independent channels.
+/// Each end's colour: a grain `d` stops darker raises each channel's ratio to the luma to the power
+/// 2^(colour·d), 0 a monochrome grain; a grey stays grey.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub struct GrainColour {
     pub black: f32,
@@ -13,7 +14,7 @@ pub struct GrainColour {
 
 impl GrainColour {
     pub const RANGE: (f32, f32) = (0.0, 3.0);
-    /// Clearly coloured in the shadows, about 1.2 times the light's spread there, and neutral at the white.
+    /// Skin's chroma in the shadows about 1.25 times its own at Amount's top, and monochrome at the white.
     pub const REST: GrainColour = GrainColour { black: 2.0, white: 0.0 };
 
     pub fn rests(&self) -> bool {

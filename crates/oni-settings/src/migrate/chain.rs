@@ -45,6 +45,9 @@ pub const DIGITAL_SCANNER_VERSION: i64 = 30;
 pub const GRAIN_CURVE_VERSION: i64 = 31;
 /// The version the grain came to keep its colour along the tone, absent read as its rest.
 pub const GRAIN_COLOUR_VERSION: i64 = 32;
+/// The version the grain's colour came to deepen the photo's own hue where the grain darkens it, in place of
+/// a hue drawn at random: its numbers carried, as no step keeps a random hue's look.
+pub const GRAIN_HUE_VERSION: i64 = 33;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {
