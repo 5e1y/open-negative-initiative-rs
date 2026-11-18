@@ -11042,6 +11042,6 @@
     "type": "ui",
     "title": "A rail lit in a hue rests faint like a bipolar rail's ends, whole under the hand",
     "status": "done",
-    "detail": "crates/oni-ui/ui/ds/rail.slint: a ramp fill whose tint is saturated past SliderStyle.hued scales its ramp alphas by the bipolar rail's ends factor (SliderStyle.hue-rest at rest, 1 when vivid: held, near, keyed, stepped or scrolled), so More Color Settings' channel white and black points no longer burn red, green or blue beside the dimmed Mid rails; grey and white ramps stay whole. Checks: window channel_points, design_system, slider (19 passed)."
+    "detail": "crates/oni-ui/ui/ds/rail.slint: a ramp fill whose tint is saturated past SliderStyle.hued scales its ramp alphas by the bipolar rail's ends factor (SliderStyle.hue-rest at rest, 1 when vivid: the block under the pointer, held, keyed, stepped or scrolled; the channel points take near: points-block.hovered as their Mid does), so More Color Settings' channel white and black points no longer burn red, green or blue beside the dimmed Mid rails; grey and white ramps stay whole. Checks: window channel_points, design_system, slider (19 passed)."
   }
 ]

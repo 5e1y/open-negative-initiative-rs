@@ -145,10 +145,12 @@ export component ColorPane inherits Pane {
                 picked(i) => { root.channel-tab = i; }
             }
             if root.channel-tab == 0: StoreSlider {
+                near: points-block.hovered;
                 field: 32; label: @tr("Red white point"); fraction: Store.red-white-point-fraction; readout: Store.red-white-point-readout; value-text: Store.red-white-point-value;
                 fill: SliderFill.ramp; tint: Colour.channel-red;
             }
             if root.channel-tab == 0: StoreSlider {
+                near: points-block.hovered;
                 field: 35; label: @tr("Red black point"); fraction: Store.red-black-point-fraction; readout: Store.red-black-point-readout; value-text: Store.red-black-point-value;
                 fill: SliderFill.ramp; tint: Colour.channel-red;
             }
@@ -159,10 +161,12 @@ export component ColorPane inherits Pane {
             }
             if root.channel-tab == 0: StoreSlider { field: 52; label: @tr("Red contrast"); fraction: Store.red-contrast-fraction; readout: Store.red-contrast-readout; value-text: Store.red-contrast-value; }
             if root.channel-tab == 1: StoreSlider {
+                near: points-block.hovered;
                 field: 33; label: @tr("Green white point"); fraction: Store.green-white-point-fraction; readout: Store.green-white-point-readout; value-text: Store.green-white-point-value;
                 fill: SliderFill.ramp; tint: Colour.channel-green;
             }
             if root.channel-tab == 1: StoreSlider {
+                near: points-block.hovered;
                 field: 36; label: @tr("Green black point"); fraction: Store.green-black-point-fraction; readout: Store.green-black-point-readout; value-text: Store.green-black-point-value;
                 fill: SliderFill.ramp; tint: Colour.channel-green;
             }
@@ -173,10 +177,12 @@ export component ColorPane inherits Pane {
             }
             if root.channel-tab == 1: StoreSlider { field: 53; label: @tr("Green contrast"); fraction: Store.green-contrast-fraction; readout: Store.green-contrast-readout; value-text: Store.green-contrast-value; }
             if root.channel-tab == 2: StoreSlider {
+                near: points-block.hovered;
                 field: 34; label: @tr("Blue white point"); fraction: Store.blue-white-point-fraction; readout: Store.blue-white-point-readout; value-text: Store.blue-white-point-value;
                 fill: SliderFill.ramp; tint: Colour.channel-blue;
             }
             if root.channel-tab == 2: StoreSlider {
+                near: points-block.hovered;
                 field: 37; label: @tr("Blue black point"); fraction: Store.blue-black-point-fraction; readout: Store.blue-black-point-readout; value-text: Store.blue-black-point-value;
                 fill: SliderFill.ramp; tint: Colour.channel-blue;
             }
