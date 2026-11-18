@@ -2,6 +2,7 @@
 //! half a second for Texture's, which a first notch would otherwise wait on.
 
 use super::*;
+use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Face, ScannerMachine};
 
 /// An edit with every finishing kernel on, the set a busy notch takes.
@@ -40,6 +41,13 @@ fn variants() -> Vec<PipelineSettings> {
     plain.secret_sauce = 0.0;
     variants.push(plain);
     variants.push(PipelineSettings::rest(ConversionMode::Negative, true));
+    // A digital photo's Lighting rides in its picture's pass, or after its curves' tables when they bend.
+    let mut lit = PipelineSettings::rest(ConversionMode::Digital, true);
+    lit.print.exposure = 0.5;
+    variants.push(lit.clone());
+    lit.manual_curves.contrast = 0.2;
+    variants.push(lit);
+    variants.push(PipelineSettings { mode: ConversionMode::Digital, print: Print { exposure: 0.5, ..busy.print }, ..busy });
     variants
 }
 

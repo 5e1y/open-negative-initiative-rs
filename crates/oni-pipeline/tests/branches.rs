@@ -93,6 +93,31 @@ fn stage47_reaches_every_branch() {
     }
 }
 
+/// A digital photo's Lighting on its picture: the print's cases, each window lane a reach of the points
+/// on 0 to 1, on light under zero, at zero, inside, at one and past it.
+#[test]
+fn print_reaches_every_branch() {
+    let Some(mut g) = graph("print_reaches_every_branch") else { return };
+    let (w, h, mut pixels) = edges();
+    pixels.extend(noise(w, h, 31, -0.1, 1.3));
+    let picture = g.upload(w, h * 2, &pixels).unwrap();
+    let reaches = [("points", [0.05, 0.9, 1.0]), ("a lifted black", [-0.1, 1.0, 1.0]), ("at rest", [0.0, 1.0, 1.0])];
+    let printed: Vec<_> = stage47_cases().into_iter().filter(|(_, k)| k.print_on > 0.5).collect();
+    assert!(printed.len() >= 3, "the print's cases");
+    for (name, k) in printed {
+        for (reach_name, reach) in reaches {
+            for quarters in [([0.25; 3], [0.75; 3]), (k.low_points, k.high_points)] {
+                let k = Stage47 { red: reach, green: [reach[0] + 0.01, reach[1] - 0.02, 1.0], blue: reach, low_points: quarters.0, high_points: quarters.1, ..k };
+                let out = whole(&mut g, &Image::new(&picture).then(stages::print(&k)));
+                // A 1 % shift of the green reach's white the reference does not see must break the tolerance.
+                let shifted = Stage47 { green: [k.green[0], k.green[1] * 1.01, 1.0], ..k };
+                let label = format!("print, {name}, {reach_name}, quarters {:?}", quarters.0[0]);
+                judge(&label, &out, &mapped(&pixels, |p| cpu::print(p, &k)), &mapped(&pixels, |p| cpu::print(p, &shifted)));
+            }
+        }
+    }
+}
+
 #[test]
 fn the_output_clip_holds_nan_and_infinities_as_metal_does() {
     let Some(mut g) = graph("the_output_clip_holds_nan_and_infinities_as_metal_does") else { return };

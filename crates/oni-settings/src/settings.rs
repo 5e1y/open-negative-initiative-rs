@@ -221,6 +221,17 @@ impl PipelineSettings {
         self.geometry.placing(size).through(self.lens(size))
     }
 
+    /// Lighting and Saturation at rest, the print on unless bypassed: a digital photo's picture as its
+    /// levels and curves receive it.
+    pub fn unlit(&self) -> PipelineSettings {
+        PipelineSettings { print: self.unlit_print(), density: crate::tone::color_density::BASE, ..self.clone() }
+    }
+
+    /// The print with Lighting at rest, bypassed where this one is.
+    pub fn unlit_print(&self) -> Print {
+        Print { exposure: Print::resting_exposure(self.mode), bypassed: self.print.bypassed, ..Print::default() }
+    }
+
     /// Every neighbourhood stage off, for thumbnails and per-pixel checks.
     pub fn per_pixel_only(&self) -> PipelineSettings {
         let mut out = self.clone();

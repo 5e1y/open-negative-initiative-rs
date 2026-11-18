@@ -138,4 +138,15 @@ fn each_feature_s_share_of_a_busy_render() {
         rest_it(&mut s);
         println!("  without {name}: {:.2} ms ({:+.2})", time(&s), time(&s) - all);
     }
+    // A digital photo's Lighting after its curves: a pass of its own only when finishing's first is empty.
+    let digital = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    let mut lit = digital.clone();
+    lit.print.exposure = 0.6;
+    let curved = |mut s: PipelineSettings| {
+        s.manual_curves.contrast = 0.2;
+        s
+    };
+    let (plain, bright) = (time(&digital), time(&lit));
+    let (bent, both) = (time(&curved(digital.clone())), time(&curved(lit.clone())));
+    println!("digital {plain:.2} ms, lit {bright:.2} ({:+.2}); curved {bent:.2} ms, lit {both:.2} ({:+.2})", bright - plain, both - bent);
 }

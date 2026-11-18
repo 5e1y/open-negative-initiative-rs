@@ -42,11 +42,15 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
             out.manual_curves = CurveSet::default();
             out.picture_levels = PictureLevels::default();
         }
-        // A digital photo's levels lie in the curves' tables, so a reading in front of them rests them too.
+        // A digital photo's levels lie in the curves' tables and its Lighting acts after them, so a reading
+        // in front of them rests all three.
         Stage::ManualCurves => {
             out.manual_curves = CurveSet::default();
             out.scanner_finish.manual_curves = CurveSet::default();
             out.picture_levels = PictureLevels::default();
+            if !s.mode.is_film() {
+                out = out.unlit();
+            }
         }
         Stage::Curves => {}
     }
@@ -94,6 +98,19 @@ mod tests {
         }
         // Twin: a reading past the curves reads the frame's own levels.
         assert_eq!(truncated(&s, Stage::Curves).picture_levels, s.picture_levels);
+    }
+
+    #[test]
+    fn in_front_of_the_curves_a_digital_photos_lighting_rests_and_a_films_stays() {
+        let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+        s.print.exposure = 0.6;
+        s.print.black_point = 0.04;
+        s.density = 0.3;
+        assert_eq!(truncated(&s, Stage::ManualCurves), truncated(&s.unlit(), Stage::ManualCurves));
+        // Twin: past the curves Lighting stays, and a film's Lighting comes before its curves.
+        assert_eq!((truncated(&s, Stage::Curves).print, truncated(&s, Stage::Curves).density), (s.print, 0.3));
+        let negative = PipelineSettings { print: s.print, density: 0.3, ..PipelineSettings::rest(ConversionMode::Negative, true) };
+        assert_eq!(truncated(&negative, Stage::ManualCurves).print, negative.print);
     }
 
     #[test]

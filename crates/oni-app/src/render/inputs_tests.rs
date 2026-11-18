@@ -63,6 +63,29 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A digital photo's Lighting acts after its levels and curves: an exposure step keeps the reading in
+/// front of them, a white step reads again.
+#[test]
+fn a_digital_photos_curves_reading_holds_while_lighting_moves() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: a digital photo's curves reading is not exercised");
+        return;
+    };
+    let mut engine = Engine::on(&device);
+    let (w, h) = (96usize, 64usize);
+    let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let read = |s: &PipelineSettings, e: &mut Engine| e.inputs(&negative, s, false).expect("readings");
+    let before = read(&rest, &mut engine);
+    let exposed = PipelineSettings { print: oni_settings::tone::Print { exposure: 0.8, ..rest.print }, ..rest.clone() };
+    let after = read(&exposed, &mut engine);
+    assert_eq!((&after.levels, &after.curves), (&before.levels, &before.curves), "an exposure step moves no reading");
+    // Twin: a tungsten white enters the curves, so their reading moves.
+    let warm = PipelineSettings { white: Some(oni_settings::white::White { kelvin: 3200.0, tint: 0.0 }), ..rest.clone() };
+    assert_ne!(read(&warm, &mut engine).curves, before.curves);
+}
+
 /// On the Scanner face the curves' plot reads what enters its curves, the look and the keypad laid;
 /// the levels' stays Pro's windows, as the balance reads them, and no reading moves a render.
 #[test]

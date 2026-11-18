@@ -31,6 +31,7 @@ impl Stage for PerPixel {
 }
 
 kernel!(STAGE47, wgsl::STAGE47, call "stage47_px(v)");
+kernel!(PRINT, wgsl::STAGE47, call "print_px(v)");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
 kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
@@ -51,6 +52,11 @@ kernel!(HALATION, [wgsl::HALATION_SOURCE, wgsl::HALATION], "fn pixel(p: vec2<i32
 /// The fused stages 4 to 7.
 pub fn stage47(k: &Stage47) -> PerPixel {
     PerPixel { name: "stage47", kernel: &STAGE47, params: bytemuck::bytes_of(&k.packed(0)).to_vec() }
+}
+
+/// A digital photo's Lighting, on its picture after its levels and curves.
+pub fn print(k: &Stage47) -> PerPixel {
+    PerPixel { name: "print", kernel: &PRINT, params: bytemuck::bytes_of(&k.packed(0)).to_vec() }
 }
 
 /// `CIExposureAdjust` by `ev` stops.

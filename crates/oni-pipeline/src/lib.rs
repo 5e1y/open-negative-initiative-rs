@@ -140,9 +140,14 @@ impl Pipeline {
         let effects = !measuring && !s.mode.is_film();
         let haloed = if effects { halation::halated(balanced, s, scan) } else { balanced };
         let grained = grain::grain(s, scan, scale).filter(|_| effects).map(|k| stages::grain(&k));
-        let out = stages::laid(haloed, grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).collect());
+        // A digital photo's Lighting follows its levels and curves, in the first pass after their tables;
+        // with neither, in the picture's own pass. Halation and grain stay on the scene before the picture.
+        let lit = conversion::lighting(s).map(|k| stages::print(&k));
+        let (with_picture, after_tables) = if finishing::tabled(&s.manual_curves, picture_levels(s)) { (None, lit) } else { (lit, None) };
+        let picture = grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).chain(with_picture);
+        let out = stages::laid(haloed, picture.collect());
         let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
-        self.finishing(graph, looked, s, true, scale, reference, measuring)
+        self.finishing(graph, looked, s, after_tables, true, scale, reference, measuring)
     }
 
     /// The recipe evaluated on the request's region and read back, with that region.
@@ -283,13 +288,15 @@ impl Pipeline {
         Ok(image.then_reading(stages::curves(&k), &[Image::new(&rgb), Image::new(&luma)]))
     }
 
-    /// Curves to the output clip, both faces; `points` lays the black and white points' saturation, Pro's alone.
+    /// Curves to the output clip, both faces; `lit` is a digital photo's Lighting after the curves, `points`
+    /// lays the black and white points' saturation, Pro's alone.
     #[allow(clippy::too_many_arguments)]
     fn finishing(
         &mut self,
         graph: &mut Graph,
         toned: Image,
         s: &PipelineSettings,
+        lit: Option<stages::PerPixel>,
         points: bool,
         scale: f64,
         reference: f64,
@@ -297,12 +304,10 @@ impl Pipeline {
     ) -> Result<Image> {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();
-        // A digital photo's own levels, in the curves' tables; a film frame keeps them unrendered.
-        let levels = Some(&s.picture_levels).filter(|l| !s.mode.is_film() && !l.is_neutral());
-        let graded = self.curves(graph, toned, &s.manual_curves, levels)?;
-        // The spectrogram, the points' saturation, the saturation and the vignette in one pass.
+        let graded = self.curves(graph, toned, &s.manual_curves, picture_levels(s))?;
+        // Lighting, the spectrogram, the points' saturation, the saturation and the vignette in one pass.
         let extent = graded.extent();
-        let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
+        let mut run: Vec<_> = lit.into_iter().chain(finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k))).collect();
         if !mono && points {
             run.extend(saturation(&finishing::points_curve(&s.print, s.mode)));
         }
@@ -328,6 +333,11 @@ impl Pipeline {
         let clipped = stages::laid(sharpened, run);
         Ok(if sheet { clipped.then(OnGround) } else { clipped })
     }
+}
+
+/// A digital photo's own levels, in the curves' tables; a film frame keeps them unrendered.
+fn picture_levels(s: &PipelineSettings) -> Option<&PictureLevels> {
+    Some(&s.picture_levels).filter(|l| !s.mode.is_film() && !l.is_neutral())
 }
 
 fn saturation(curve: &SaturationCurve) -> Option<stages::PerPixel> {

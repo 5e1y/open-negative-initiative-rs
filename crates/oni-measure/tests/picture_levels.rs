@@ -1,5 +1,6 @@
 //! A digital photo's levels lie in the curves' tables, so every reading in front of the curves renders
-//! the frame as if they rested: the levels editor's histogram never follows its own handles.
+//! the frame as if they rested: the levels editor's histogram never follows its own handles. Its
+//! Lighting acts after them, so no Lighting slider moves that reading either.
 
 use oni_graph::{Graph, Rect};
 use oni_measure::truncate::{Stage, truncated};
@@ -32,4 +33,23 @@ fn a_reading_in_front_of_the_curves_renders_no_picture_level() {
     }
     // Twin: past the curves the reading is of the levels laid.
     assert_ne!(read(&mut g, &moved, Stage::Curves), read(&mut g, &rest, Stage::Curves));
+}
+
+#[test]
+fn a_reading_in_front_of_a_digital_photos_curves_holds_while_lighting_moves() {
+    let Ok(mut g) = Graph::new() else {
+        println!("SKIPPED: no GPU");
+        return;
+    };
+    let exposed = |mode: ConversionMode| {
+        let mut s = PipelineSettings::rest(mode, true);
+        s.print.exposure += 0.7;
+        s.print.white_point = 0.05;
+        (PipelineSettings::rest(mode, true), s)
+    };
+    let (rest, moved) = exposed(ConversionMode::Digital);
+    assert_eq!(read(&mut g, &moved, Stage::ManualCurves), read(&mut g, &rest, Stage::ManualCurves));
+    // Twin: a negative's Lighting comes before its curves, so their reading follows it.
+    let (rest, moved) = exposed(ConversionMode::Negative);
+    assert_ne!(read(&mut g, &moved, Stage::ManualCurves), read(&mut g, &rest, Stage::ManualCurves));
 }

@@ -1,4 +1,5 @@
-//! The fused conversion kernel (`pipeline.metal`): inversion, levels, the dye separation, the print curve.
+//! The fused conversion kernel (`pipeline.metal`): inversion, levels, the dye separation, the print curve;
+//! and the print alone, a digital photo's Lighting after its levels and curves.
 
 use super::*;
 
@@ -161,7 +162,21 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32) -> f32 
 
 /// Stages 4 to 7 on one pixel.
 pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
-    let mut density = k.density;
+    let e = printed3(windowed(s, k), k);
+    [e[0], e[1], e[2], s[3]]
+}
+
+/// Lighting on a picture already windowed and printed at rest: its display value back on the print's
+/// scale, each channel's points as a window on it, then the print. The window lanes hold their reach.
+pub fn print(s: [f32; 4], k: &Stage47) -> [f32; 4] {
+    let lv = [k.red, k.green, k.blue];
+    let n = map([s[0], s[1], s[2]], |_, x| x.max(0.0).powf(1.0 / DISPLAY_GAMMA));
+    let e = printed3(map(n, |c, x| apply_window(x, lv[c], k.low_points[c], k.high_points[c])), k);
+    [e[0], e[1], e[2], s[3]]
+}
+
+/// Stages 4 and 5: the film's density, its windows, the chroma decompression and the dye separation.
+fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);
     let d = map(t, |_, x| -x.max(k.log_guard).log10());
     let mut e = if k.invert > 0.5 { d } else { map(d, |_, x| k.window - x) };
@@ -178,7 +193,13 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
         let shift = dot(e, LUMA) - dot(held, LUMA);
         e = map(held, |_, x| x + shift);
     }
-    e = [dot(k.sep_r, e), dot(k.sep_g, e), dot(k.sep_b, e)];
+    [dot(k.sep_r, e), dot(k.sep_g, e), dot(k.sep_b, e)]
+}
+
+/// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density.
+fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
+    let mut density = k.density;
+    let mut e = windowed_in;
     if k.print_on > 0.5 {
         let (ps, pc, pz) = (k.print_stops, k.print_contrast, k.print_zones);
         let windowed = e;
@@ -225,5 +246,5 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
             e = map(pw, |_, x| x * f);
         }
     }
-    [e[0], e[1], e[2], s[3]]
+    e
 }
