@@ -4,16 +4,18 @@
 
 use super::Field;
 use oni_settings::PipelineSettings;
+use oni_settings::blocks::GrainCurve;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::{Levels, LevelsChannel, PictureLevels};
 
 /// The fields holding curves whose points keep their x order, and windows whose ends keep theirs.
 pub(super) fn bends(field: Field) -> bool {
-    matches!(field, Field::ManualCurves | Field::Saturation | Field::ScannerFinish | Field::PictureLevels)
+    matches!(field, Field::ManualCurves | Field::Saturation | Field::ScannerFinish | Field::PictureLevels | Field::Grain)
 }
 
-/// `on`'s curves after a patch, each point it moved laid on `own`, the frame before it, by the curve's move.
-pub(super) fn ordered(field: Field, own: &PipelineSettings, on: &mut PipelineSettings) {
+/// `on`'s curves after a patch from `moved`'s first to its second, each point it moved laid on `own`, the
+/// frame before it, by the curve's move.
+pub(super) fn ordered(field: Field, moved: (&PipelineSettings, &PipelineSettings), own: &PipelineSettings, on: &mut PipelineSettings) {
     match field {
         Field::ManualCurves => set(&own.manual_curves, &mut on.manual_curves),
         Field::Saturation => saturation(&own.saturation, &mut on.saturation),
@@ -22,6 +24,7 @@ pub(super) fn ordered(field: Field, own: &PipelineSettings, on: &mut PipelineSet
             saturation(&own.scanner_finish.saturation, &mut on.scanner_finish.saturation);
         }
         Field::PictureLevels => windows(&own.picture_levels, &mut on.picture_levels),
+        Field::Grain => on.grain.curve = grain(&moved.0.grain.curve, &moved.1.grain.curve, own.grain.curve),
         _ => {}
     }
 }
@@ -41,6 +44,15 @@ fn saturation(own: &SaturationCurve, on: &mut SaturationCurve) {
     if moved(&own.points, &on.points, |i, p| out.move_point(i, p)) {
         *on = out;
     }
+}
+
+/// The points moved from `before` to `after` laid on the frame's `own` curve: a curve at rest is not
+/// written, so the patch's leaves alone would lay the open frame's whole curve on it.
+fn grain(before: &GrainCurve, after: &GrainCurve, mut own: GrainCurve) -> GrainCurve {
+    for (i, p) in after.points.iter().enumerate().filter(|(i, p)| before.points[*i] != **p) {
+        own.move_point(i, *p);
+    }
+    own
 }
 
 /// Each window's ends as patched: a pair moved together keeps the order it came in; one end moved
@@ -118,6 +130,24 @@ mod tests {
         let mut leaves = own;
         Field::Saturation.patched_leaves(&was, &now, &mut leaves);
         assert!(leaves.saturation.points[1].x > leaves.saturation.points[2].x, "twin: {:?}", leaves.saturation.points);
+    }
+
+    #[test]
+    fn a_patched_grain_point_keeps_its_spacing_on_the_frame_s_own_curve() {
+        let was = PipelineSettings::default();
+        let mut now = was.clone();
+        now.grain.curve.move_point(1, Point::new(0.62, 0.8));
+        let mut frame = PipelineSettings::default();
+        frame.grain.curve.points[2] = Point::new(0.4, 0.9);
+        let mut on = frame.clone();
+        Field::Grain.patch(&was, &now, &mut on);
+        let points = on.grain.curve.points;
+        assert!((points[1].x - (0.4 - oni_settings::curves::SPACING)).abs() < 1e-12, "{points:?}");
+        assert_eq!((points[1].y, points[2]), (0.8, Point::new(0.4, 0.9)), "the y moved, its neighbour its own");
+        // Twin: the leaves laid alone take the open frame's whole curve, the frame's own point lost.
+        let mut leaves = frame.clone();
+        Field::Grain.patched_leaves(&was, &now, &mut leaves);
+        assert_eq!(leaves.grain.curve, now.grain.curve);
     }
 
     #[test]

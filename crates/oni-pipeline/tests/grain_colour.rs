@@ -1,13 +1,14 @@
-//! The grain's colour against its reference, read along the unlit picture's tone, following its line from
-//! the black to the white, and lifting no tone past a step the eye sees; each verdict with a twin.
+//! The grain's colour and share against their reference, both read on the strength curve's tone, a
+//! print notch or a key keeping them, the colour following its line and lifting no tone the eye sees.
 
 mod common;
 
 use common::{V4, graph, judge, noise, whole};
-use oni_graph::{Graph, Image, Rect};
-use oni_pipeline::{Inputs, Pipeline, Request, conversion, grain, stages};
-use oni_render::{Grain, cpu};
-use oni_settings::blocks::GrainColour;
+use oni_graph::{Graph, Image, Rect, Stage};
+use oni_pipeline::{Inputs, Pipeline, Request, conversion, grain, scanner, stages};
+use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
+use oni_settings::blocks::{GrainColour, GrainCurve};
+use oni_settings::cg::Point;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 fn digital() -> PipelineSettings {
@@ -21,24 +22,33 @@ fn coloured(colour: [f32; 2]) -> PipelineSettings {
     s
 }
 
-/// The picture's display value of a light, its green channel encoded as the screen shows it.
+/// A curve of `y` at every tone, or of the tone itself with `None`.
+fn even(y: Option<f64>) -> GrainCurve {
+    GrainCurve { points: [0.0, 0.25, 0.5, 0.75, 1.0].map(|x| Point::new(x, y.unwrap_or(x))) }
+}
+
+/// The tone the strength curve's axis names for a light: its display luminance through the unlit picture.
 fn shown(light: f32, s: &PipelineSettings) -> f32 {
-    cpu::stage47([light, light, light, 1.0], &conversion::stage47(s))[1].max(0.0).powf(1.0 / 2.2)
+    let p = cpu::stage47([light, light, light, 1.0], &Stage47 { gain: [1.0; 3], ..conversion::stage47(s) });
+    (p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]).max(0.0).powf(1.0 / 2.2)
 }
 
 const GREYS: [f32; 12] = [0.0005, 0.001, 0.002, 0.004, 0.008, 0.016, 0.03, 0.06, 0.12, 0.25, 0.5, 0.9];
+const SCAN: Rect = Rect::new(0, 0, 1500, 1000);
 
 #[test]
 fn the_coloured_grain_matches_its_reference_on_every_branch() {
     let Some(mut g) = graph("the_coloured_grain_matches_its_reference_on_every_branch") else { return };
     let extent = Rect::new(23, 11, 61, 37);
-    // Under the pedestal and past the white too, so the tone's guard, floor and ceiling are all reached.
-    let pixels = noise(extent.w, extent.h, 33, -0.02, 1.2);
+    // Under the pedestal and past the table's last node, so both its ends and a light of no share are reached.
+    let pixels = noise(extent.w, extent.h, 33, -0.02, 2.5);
     let input = g.upload_at(extent, &pixels).unwrap();
     let centre = |i: usize| [extent.x as f32 + (i % extent.w as usize) as f32 + 0.5, extent.y as f32 + (i / extent.w as usize) as f32 + 0.5];
-    let tone = grain::tone(&digital());
-    for colour in [[2.0, 0.0], [1.5, 0.7], [0.0, 2.0], [0.0, 0.0]] {
-        let k = Grain::on([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0]], 1.0, 0.5, 0.4).coloured(colour, tone);
+    let tones = grain::tones(&Stage47 { gain: [1.0; 3], ..conversion::stage47(&digital()) });
+    for (colour, curve) in [([2.0, 0.0], GrainCurve::REST), ([1.5, 0.7], even(Some(1.0))), ([0.0, 2.0], GrainCurve::REST), ([0.0, 0.0], GrainCurve::REST)] {
+        let s = PipelineSettings { grain: oni_settings::blocks::Grain { curve, ..coloured(colour).grain }, ..digital() };
+        let laid = grain::grain(&s, SCAN, 1.0).unwrap();
+        let k = Grain::on([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0]], 1.0, 0.5, 0.4, laid.share).coloured(laid.colour);
         let out = whole(&mut g, &Image::new(&input).then(stages::grain(&k)));
         let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &k)).collect();
         // Twins: the lattice one node over; the line read backwards, where its ends differ.
@@ -47,7 +57,7 @@ fn the_coloured_grain_matches_its_reference_on_every_branch() {
         let shifted: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &over)).collect();
         judge(&format!("grain coloured {colour:?}, a node over"), &out, &reference, &shifted);
         if colour[0] != colour[1] {
-            let backwards = k.coloured([colour[1], colour[0]], tone);
+            let backwards = k.coloured(grain::colours(&GrainColour { black: colour[1], white: colour[0] }, &tones));
             let read: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &backwards)).collect();
             judge(&format!("grain coloured {colour:?}, backwards"), &out, &reference, &read);
         }
@@ -55,17 +65,19 @@ fn the_coloured_grain_matches_its_reference_on_every_branch() {
 }
 
 #[test]
-fn the_tone_is_the_unlit_pictures_display_value() {
+fn the_colour_and_the_share_read_one_tone_the_strength_curve_s() {
     for s in [digital(), PipelineSettings::rest(ConversionMode::Digital, false)] {
-        let tone = grain::tone(&s);
-        let (mut gap, mut twin) = (0.0f32, 0.0f32);
-        for grey in GREYS {
-            let read = cpu::grain_tone([grey; 3], &tone);
-            gap = gap.max((read - shown(grey, &s)).abs());
-            twin = twin.max((grey.powf(1.0 / 2.2) - shown(grey, &s)).abs());
+        let t = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.5, curve: even(None), colour: GrainColour { black: 0.0, white: 1.0 }, ..s.grain }, ..s.clone() };
+        let k = grain::grain(&t, SCAN, 1.0).unwrap();
+        let (mut gap, mut apart, mut twin) = (0.0f32, 0.0f32, 0.0f32);
+        for i in 0..GRAIN_NODES {
+            let light = grain_node_light(i);
+            gap = gap.max((k.colour[i] - shown(light, &s).min(1.0)).abs());
+            apart = apart.max((k.colour[i] - k.share[i]).abs());
+            twin = twin.max((light.powf(1.0 / 2.2).min(1.0) - shown(light, &s).min(1.0)).abs());
         }
-        println!("the tone is {gap:.2e} off the picture, a plain gamma {twin:.3}");
-        assert!(gap < 1e-4, "the tone is {gap:.2e} off the picture");
+        println!("the colour's tone is {gap:.2e} off the picture, {apart:.2e} off the share's, a plain gamma {twin:.3}");
+        assert!(gap < 1e-4 && apart < 1e-4, "the colour's tone is {gap:.2e} off the picture, {apart:.2e} off the share's");
         // Twin: the light under a plain display gamma, a tenth off in the shadows.
         assert!(twin > 0.1, "the twin is {twin} off");
     }
@@ -73,8 +85,10 @@ fn the_tone_is_the_unlit_pictures_display_value() {
 
 /// On a flat grey of each light, the colour's spread over the light's, both in stops, at the grey's tone.
 fn colour_over_light(g: &mut Graph, colour: [f32; 2]) -> Vec<(f32, f32)> {
-    let s = coloured(colour);
-    let k = grain::grain(&s, Rect::new(0, 0, 1500, 1000), 1.0).unwrap();
+    let mut s = coloured(colour);
+    // The whole grain on every grey, so each has a light to measure the colour against.
+    s.grain.curve = even(Some(1.0));
+    let k = grain::grain(&s, SCAN, 1.0).unwrap();
     let (w, h) = (300u32, 200u32);
     GREYS
         .iter()
@@ -92,7 +106,7 @@ fn colour_over_light(g: &mut Graph, colour: [f32; 2]) -> Vec<(f32, f32)> {
                 (v.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / v.len() as f64).sqrt()
             };
             let ratio = spread(&colour) / spread(&light);
-            (cpu::grain_tone([grey; 3], &grain::tone(&s)), ratio as f32)
+            (shown(grey, &s).min(1.0), ratio as f32)
         })
         .collect()
 }
@@ -161,4 +175,38 @@ fn the_default_colour_lifts_no_tone_past_a_step_the_eye_sees() {
     let over = lifts(&mut g, [GrainColour::RANGE.1, 0.0]).iter().fold(0.0f64, |m, v| m.max(v.abs()));
     println!("the twin rises {over:.2}");
     assert!(over > SEEN, "the twin rises {over:.2}");
+}
+
+#[test]
+fn a_print_notch_keeps_the_grain_s_shares_and_a_curve_notch_moves_them() {
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+    s.grain.amount = 0.5;
+    let scan = Rect::new(0, 0, 600, 400);
+    let k = grain::grain(&s, scan, 1.0).unwrap();
+    let notches: [fn(&mut PipelineSettings); 3] = [|t| t.print.exposure += 0.3, |t| t.print.contrast -= 0.2, |t| t.print.shadows += 0.1];
+    for notch in notches {
+        let mut t = s.clone();
+        notch(&mut t);
+        assert_eq!(stages::grain(&grain::grain(&t, scan, 1.0).unwrap()).params(), stages::grain(&k).params(), "a print notch moves the grain's pass");
+    }
+    // Twin: a notch of the curve moves them.
+    let mut t = s.clone();
+    t.grain.curve.move_point(1, Point::new(0.3, 0.9));
+    assert_ne!(grain::grain(&t, scan, 1.0).unwrap().share, k.share);
+}
+
+#[test]
+fn a_key_notch_on_the_scanner_face_keeps_the_grain_s_shares() {
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+    s.grain.amount = 0.5;
+    s.face = oni_settings::Face::Scanner;
+    let scan = Rect::new(0, 0, 600, 400);
+    let machine = scanner::on_oni_machine(&s).unwrap();
+    let k = grain::grain(&machine, scan, 1.0).unwrap();
+    let mut t = s.clone();
+    t.scanner = oni_settings::scanner::ScannerClicks::new(4, 2, -2, 6, 0);
+    let keyed = scanner::on_oni_machine(&t).unwrap();
+    assert_eq!(stages::grain(&grain::grain(&keyed, scan, 1.0).unwrap()).params(), stages::grain(&k).params(), "a key notch moves the grain's pass");
+    // Twin: the tones read through the keyed picture move the shares.
+    assert_ne!(grain::shares(&machine.grain.curve, &grain::tones(&conversion::stage47(&keyed))), k.share);
 }

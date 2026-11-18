@@ -3,8 +3,10 @@
 
 use crate::{conversion, geometry};
 use oni_graph::Rect;
-use oni_render::{Grain, GrainTone};
+use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
 use oni_settings::PipelineSettings;
+use oni_settings::blocks::{GrainColour, GrainCurve};
+use oni_settings::tone::Print;
 
 /// The spread at full resolution of Amount's top, in stops.
 pub const GRAIN_STOPS: f32 = 0.5;
@@ -14,22 +16,43 @@ pub const GRAIN_FINEST: f64 = 1.0 / 6000.0;
 /// How many times Size's top coarsens the finest cell.
 pub const GRAIN_COARSEST: f64 = 4.0;
 
-/// The grain of `s` on a scan of extent `scan` at `scale`; `None` at rest, so the chain holds no
-/// grain stage.
+/// The grain of `s` on a scan of extent `scan` at `scale`; `None` at rest or with no share anywhere, so
+/// the chain holds no grain stage.
 pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     if s.grain.amount == 0.0 {
         return None;
     }
+    // A Scanner face's keys are its print, in the picture's gains: they leave the tones, so the grain's pass.
+    let tones = tones(&Stage47 { gain: [1.0; 3], ..conversion::stage47(s) });
+    let share = shares(&s.grain.curve, &tones);
+    if share.iter().all(|&v| v == 0.0) {
+        return None;
+    }
     let cell = f64::from(scan.w) / scale * GRAIN_FINEST * GRAIN_COARSEST.powf(f64::from(s.grain.size));
     let m = geometry::scan_from(&s.geometry, scan, scale).map(|r| r.map(|v| v as f32));
-    let colour = s.grain.colour;
-    Some(Grain::on(m, cell as f32, scale as f32, GRAIN_STOPS * s.grain.amount).coloured([colour.black, colour.white], tone(s)))
+    Some(Grain::on(m, cell as f32, scale as f32, GRAIN_STOPS * s.grain.amount, share).coloured(colours(&s.grain.colour, &tones)))
 }
 
-/// The tone the grain's colour is read along: the unlit picture's green window, never the gains, which
-/// on the Scanner face are the machine's keys, so a key leaves the grain's pass as it was.
-pub fn tone(s: &PipelineSettings) -> GrainTone {
-    let k = conversion::stage47(s);
-    let [black, white, gamma] = k.green;
-    GrainTone { offset: k.window - black, per_span: 1.0 / (white - black).max(1e-4), gamma, pedestal: k.pedestal, guard: k.log_guard }
+/// The tone each node's light shows as the picture opens, before Lighting: its luminance through the
+/// picture's own pass, encoded as the curves read it. No print slider reaches it, so a print notch keeps
+/// the grain's pass.
+pub fn tones(picture: &Stage47) -> [f32; GRAIN_NODES] {
+    std::array::from_fn(|i| {
+        let y = grain_node_light(i);
+        let shown = cpu::stage47([y, y, y, 1.0], picture);
+        let luma = shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2];
+        luma.max(0.0).powf(1.0 / Print::DISPLAY_GAMMA)
+    })
+}
+
+/// The curve's share at each node's tone, held to 0…1.
+pub fn shares(curve: &GrainCurve, tones: &[f32; GRAIN_NODES]) -> [f32; GRAIN_NODES] {
+    let strength = curve.strength();
+    tones.map(|t| strength.at(f64::from(t)) as f32)
+}
+
+/// The colour line at each node's tone, held to 0…1: the strength curve's tone, the axis its editor shows,
+/// so one tone reads both and a place in the editor names the colour laid there too.
+pub fn colours(colour: &GrainColour, tones: &[f32; GRAIN_NODES]) -> [f32; GRAIN_NODES] {
+    tones.map(|t| colour.black + t.clamp(0.0, 1.0) * (colour.white - colour.black))
 }

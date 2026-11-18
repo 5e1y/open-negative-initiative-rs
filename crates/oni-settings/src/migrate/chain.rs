@@ -41,6 +41,8 @@ pub const LENS_CORRECTION_VERSION: i64 = 28;
 pub const CHANNEL_TONE_VERSION: i64 = 29;
 /// The version a digital photo came to print on the Scanner face's machine, one stored there before on Pro.
 pub const DIGITAL_SCANNER_VERSION: i64 = 30;
+/// The version the grain came to keep its strength by tone, absent read as rest.
+pub const GRAIN_CURVE_VERSION: i64 = 31;
 /// The version the grain came to keep its colour along the tone, absent read as its rest.
 pub const GRAIN_COLOUR_VERSION: i64 = 32;
 

@@ -1,27 +1,24 @@
 //! Film grain: a texture in stops on a lattice anchored on the scan's full-resolution grid, each output
-//! pixel the field's mean over its own footprint; its colour, a saturation on a line along the tone.
+//! pixel the field's mean over its own footprint; its share and its colour read off the pixel's light.
 
 use super::*;
 
 /// The widest footprint averaged node by node, in cells: seven nodes an axis at most.
 pub const GRAIN_FOOTPRINT_CAP: f32 = 3.0;
 
-/// The display tone the unlit picture gives a scene light: its green window, the pedestal and the log's guard.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct GrainTone {
-    /// The window less the window's black, in density.
-    pub offset: f32,
-    /// One over the window's span.
-    pub per_span: f32,
-    pub gamma: f32,
-    pub pedestal: f32,
-    pub guard: f32,
+/// The table's nodes, evenly spaced in stops of the scene's light from `GRAIN_LOW_STOPS` to
+/// `GRAIN_HIGH_STOPS`: 4.2 a stop, so the curve's fall to none spans about nine.
+pub const GRAIN_NODES: usize = 64;
+pub const GRAIN_LOW_STOPS: f32 = -14.0;
+pub const GRAIN_HIGH_STOPS: f32 = 1.0;
+
+/// The scene's light at node `i` of the table.
+pub fn grain_node_light(i: usize) -> f32 {
+    (GRAIN_LOW_STOPS + i as f32 / nodes_per_stop()).exp2()
 }
 
-impl Default for GrainTone {
-    fn default() -> Self {
-        GrainTone { offset: 3.0, per_span: 1.0 / 3.0, gamma: 1.0, pedestal: 0.0, guard: 1e-6 }
-    }
+fn nodes_per_stop() -> f32 {
+    (GRAIN_NODES - 1) as f32 / (GRAIN_HIGH_STOPS - GRAIN_LOW_STOPS)
 }
 
 /// Where `stops` comes from: the field's spread on the full-resolution grid and on this render's.
@@ -35,37 +32,54 @@ pub struct Grain {
     pub reach: f32,
     /// Stops a unit of the mean moves the light by.
     pub stops: f32,
-    /// The colour at the picture's black and at its white: 1 moves each channel as far as the light.
-    pub colour: [f32; 2],
-    pub tone: GrainTone,
+    /// The share of `stops` laid at each node's light, from 0 to 1.
+    pub share: [f32; GRAIN_NODES],
+    /// The colour at each node's light: 1 moves each channel as far as the light.
+    pub colour: [f32; GRAIN_NODES],
 }
 
 impl Grain {
-    /// `spread` stops at full resolution on cells of `cell` full-resolution pixels, rendered at `scale`;
-    /// past the cap the cap's mean stands in, scaled to the whole footprint's spread. No colour.
-    pub fn on(scan: [[f32; 3]; 2], cell: f32, scale: f32, spread: f32) -> Self {
+    /// `spread` stops at full resolution on cells of `cell` full-resolution pixels, rendered at `scale`,
+    /// each light taking its `share`; past the cap the cap's mean stands in, scaled to the whole footprint's spread. No colour.
+    pub fn on(scan: [[f32; 3]; 2], cell: f32, scale: f32, spread: f32, share: [f32; GRAIN_NODES]) -> Self {
         let full = 1.0 / cell;
         let here = full / scale;
         let kept = here.min(GRAIN_FOOTPRINT_CAP);
         let stops = spread * mean_spread(here) / (mean_spread(full) * mean_spread(kept));
-        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, colour: [0.0; 2], tone: GrainTone::default() }
+        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, share, colour: [0.0; GRAIN_NODES] }
     }
 
-    /// This grain coloured by `colour` at the black and the white of the picture `tone` reads.
-    pub fn coloured(self, colour: [f32; 2], tone: GrainTone) -> Self {
-        Grain { colour, tone, ..self }
+    /// This grain coloured by `colour` at each node's light.
+    pub fn coloured(self, colour: [f32; GRAIN_NODES]) -> Self {
+        Grain { colour, ..self }
     }
 
+    /// The lattice's rows, the dose, then a row a node holding its share, the next one's, its colour and
+    /// the next one's, so the shader reads one row a pixel and indexes no vector's lane.
     pub fn rows(&self) -> Vec<V4> {
         let [x, y] = self.scan;
-        let t = &self.tone;
-        vec![
-            [x[0], x[1], x[2], self.per_cell],
-            [y[0], y[1], y[2], self.reach],
-            [self.stops, self.colour[0], self.colour[1], t.guard],
-            [t.offset, t.per_span, t.gamma, t.pedestal],
-        ]
+        let mut rows = vec![[x[0], x[1], x[2], self.per_cell], [y[0], y[1], y[2], self.reach], [self.stops, GRAIN_LOW_STOPS, nodes_per_stop(), 0.0]];
+        let next = |i: usize| (i + 1).min(GRAIN_NODES - 1);
+        rows.extend((0..GRAIN_NODES).map(|i| [self.share[i], self.share[next(i)], self.colour[i], self.colour[next(i)]]));
+        rows
     }
+}
+
+/// Where light `y` falls on the table's stops: its node and the way to the next one.
+fn place(y: f32) -> (usize, f32) {
+    let t = ((y.max(1e-30).log2() - GRAIN_LOW_STOPS) * nodes_per_stop()).clamp(0.0, (GRAIN_NODES - 1) as f32);
+    let i = (t.floor() as usize).min(GRAIN_NODES - 2);
+    (i, t - i as f32)
+}
+
+/// `table` read at a place, a line between two nodes.
+fn between(table: &[f32; GRAIN_NODES], (i, f): (usize, f32)) -> f32 {
+    table[i] + (table[i + 1] - table[i]) * f
+}
+
+/// The share of the grain at light `y`.
+pub(crate) fn share(y: f32, k: &Grain) -> f32 {
+    between(&k.share, place(y))
 }
 
 /// `∫ B` from −2 to `u`, `B` the cubic B-spline the lattice is interpolated with.
@@ -96,12 +110,6 @@ pub(crate) fn normal(u: V4) -> f32 {
 /// Three more normals of the same uniforms, the light's orthogonal Hadamard combinations.
 pub(crate) fn chroma(u: V4) -> V3 {
     [u[0] + u[1] - u[2] - u[3], u[0] - u[1] + u[2] - u[3], u[0] - u[1] - u[2] + u[3]].map(|v| v * 1.732_050_8)
-}
-
-/// The display tone the unlit picture gives `rgb`, 0 at its black and 1 at its white.
-pub fn tone(rgb: V3, t: &GrainTone) -> f32 {
-    let light = (dot(rgb, LUMA) + t.pedestal).max(t.guard);
-    clamp(((t.offset + light.log10()) * t.per_span).max(0.0).powf(t.gamma), 0.0, 1.0)
 }
 
 /// Each channel's colour offset of the field's chroma, unit spread and zero sum, so the log mean stays the light's.
@@ -162,15 +170,18 @@ pub(crate) fn field(at: V2, k: &Grain) -> V4 {
     field
 }
 
-/// `s` under `field`, its colour offsets `d` scaled by the line at its tone.
+/// `s` under `field` at its light's share, its colour offsets `d` scaled by the colour at its light.
 pub(crate) fn laid(s: V4, field: V4, d: V3, k: &Grain) -> V4 {
-    let [black, white] = k.colour;
-    let sat = black + tone(rgb(s), &k.tone) * (white - black);
-    with_alpha(map(rgb(s), |c, v| v * (k.stops * (field[0] + sat * d[c])).exp2()), s[3])
+    let at = place(dot(rgb(s), LUMA));
+    let (share, colour) = (between(&k.share, at), between(&k.colour, at));
+    with_alpha(map(rgb(s), |c, v| v * (k.stops * share * (field[0] + colour * d[c])).exp2()), s[3])
 }
 
-/// The grain at the pixel whose centre is `at`, in the graph's pixels.
+/// The grain at the pixel whose centre is `at`, in the graph's pixels; a light given no share is kept.
 pub fn grain(s: V4, at: V2, k: &Grain) -> V4 {
+    if share(dot(rgb(s), LUMA), k) <= 0.0 {
+        return s;
+    }
     let f = field(at, k);
     laid(s, f, offsets([f[1], f[2], f[3]]), k)
 }
@@ -178,6 +189,13 @@ pub fn grain(s: V4, at: V2, k: &Grain) -> V4 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const WHOLE: [f32; GRAIN_NODES] = [1.0; GRAIN_NODES];
+
+    /// A colour on a straight line over the table's nodes, from `first` to `last`.
+    fn line(first: f32, last: f32) -> [f32; GRAIN_NODES] {
+        std::array::from_fn(|i| first + (last - first) * i as f32 / (GRAIN_NODES - 1) as f32)
+    }
 
     #[test]
     fn the_ramp_is_the_splines_integral() {
@@ -239,7 +257,7 @@ mod tests {
 
     #[test]
     fn the_mean_over_a_footprint_is_the_mean_of_its_quarters() {
-        let k = |reach: f32| Grain { per_cell: 0.7, reach, stops: 1.0, ..Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 1.0) };
+        let k = |reach: f32| Grain { per_cell: 0.7, reach, stops: 1.0, ..Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 1.0, WHOLE) };
         let field = |at: V2, reach: f32| grain([1.0; 4], at, &k(reach))[0].log2();
         for at in [[3.25f32, 10.5], [40.0, 7.75], [-12.5, 3.0]] {
             // Two pixels a side, 1.4 cells, against its four pixels of 0.7.
@@ -279,8 +297,8 @@ mod tests {
 
     #[test]
     fn the_colour_moves_no_log_mean_and_rests_monochrome_at_zero() {
-        let k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 0.7, 1.0, 0.4).coloured([2.0, 0.5], GrainTone::default());
-        let mono = Grain { colour: [0.0; 2], ..k };
+        let k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 0.7, 1.0, 0.4, WHOLE).coloured(line(2.0, 0.5));
+        let mono = Grain { colour: [0.0; GRAIN_NODES], ..k };
         let s = [0.05, 0.02, 0.2, 1.0];
         let sum = |p: V4| (0..3).map(|c| (p[c] / s[c]).log2()).sum::<f32>();
         let mut skewed = 0.0f32;
@@ -300,7 +318,7 @@ mod tests {
 
     #[test]
     fn three_channels_of_equal_spread_cast_no_colour_on_a_flat_grey() {
-        let k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 0.3).coloured([2.0, 2.0], GrainTone::default());
+        let k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 0.3, WHOLE).coloured([2.0; GRAIN_NODES]);
         let side = 1024;
         let grey = [0.1, 0.1, 0.1, 1.0];
         let (mut kept, mut luma) = ([0.0f64; 3], [0.0f64; 3]);
@@ -323,5 +341,44 @@ mod tests {
         assert!(cast(kept) < 0.005, "the channels' means part by {:.4}", cast(kept));
         // Twin: the luma-keeping offset, blue's variance eight times green's.
         assert!(cast(luma) > 0.05, "the twin casts {:.4}", cast(luma));
+    }
+
+    #[test]
+    fn the_share_and_the_colour_pass_through_each_node_and_hold_past_the_ends() {
+        let mut k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 1.0, [0.0; GRAIN_NODES]);
+        k.share.iter_mut().enumerate().for_each(|(i, v)| *v = (i as f32 * 0.37).sin().abs());
+        k.colour.iter_mut().enumerate().for_each(|(i, v)| *v = 2.0 * (i as f32 * 0.21).cos().abs());
+        let colour = |y: f32, k: &Grain| between(&k.colour, place(y));
+        for i in 0..GRAIN_NODES {
+            let y = grain_node_light(i);
+            assert!((share(y, &k) - k.share[i]).abs() < 1e-5 && (colour(y, &k) - k.colour[i]).abs() < 1e-5, "node {i}");
+        }
+        let half = (grain_node_light(10) * grain_node_light(11)).sqrt();
+        assert!((share(half, &k) - (k.share[10] + k.share[11]) / 2.0).abs() < 1e-5, "halfway in stops");
+        assert!((colour(half, &k) - (k.colour[10] + k.colour[11]) / 2.0).abs() < 1e-5, "halfway in stops");
+        assert_eq!((share(0.0, &k), share(-1.0, &k), share(8.0, &k)), (k.share[0], k.share[0], k.share[GRAIN_NODES - 1]));
+        // Twin: the table read a node over misses every node.
+        let mut over = k;
+        over.share.rotate_left(1);
+        let gap = (0..GRAIN_NODES).map(|i| (share(grain_node_light(i), &over) - k.share[i]).abs()).fold(0.0, f32::max);
+        assert!(gap > 0.1, "the twin passes at {gap}");
+    }
+
+    #[test]
+    fn the_share_scales_the_colour_with_the_light() {
+        let whole = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 0.7, 1.0, 0.4, WHOLE).coloured([2.0; GRAIN_NODES]);
+        let half = Grain { share: [0.5; GRAIN_NODES], ..whole };
+        let s = [0.05, 0.02, 0.2, 1.0];
+        for at in [[3.25f32, 10.5], [40.0, 7.75]] {
+            let (a, b) = (grain(s, at, &whole), grain(s, at, &half));
+            assert!((0..3).all(|c| ((b[c] / s[c]).log2() * 2.0 - (a[c] / s[c]).log2()).abs() < 1e-5), "at {at:?}: {a:?} against {b:?}");
+            // Twin: the colour laid whole on the half share.
+            let v = field(at, &whole);
+            let d = offsets([v[1], v[2], v[3]]);
+            let unshared = map(rgb(s), |c, x| x * (half.stops * (0.5 * v[0] + 2.0 * d[c])).exp2());
+            assert!((0..3).any(|c| ((unshared[c] / s[c]).log2() - (b[c] / s[c]).log2()).abs() > 1e-3), "at {at:?}");
+        }
+        // A light given no share is kept to the bit.
+        assert_eq!(grain(s, [3.25, 10.5], &Grain { share: [0.0; GRAIN_NODES], ..whole }), s);
     }
 }

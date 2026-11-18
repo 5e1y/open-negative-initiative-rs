@@ -177,6 +177,25 @@ impl CurveSet {
     }
 }
 
+/// How close an inner point of a five-point curve comes to its neighbours along x.
+pub const SPACING: f64 = 0.04;
+
+/// `points[index]` moved to `point`: the ends keep their x, an inner point stays `SPACING` inside its
+/// neighbours, every y on 0…1.
+pub fn spaced(points: &mut [Point], index: usize, point: Point) {
+    if index >= points.len() {
+        return;
+    }
+    let mut p = point;
+    p.y = p.y.max(0.0).min(1.0);
+    if index == 0 || index == points.len() - 1 {
+        p.x = points[index].x;
+    } else {
+        p.x = p.x.max(points[index - 1].x + SPACING).min(points[index + 1].x - SPACING);
+    }
+    points[index] = p;
+}
+
 /// Saturation by rendered luminance: five points, 0.5 neutral, 0 grey, 1 doubled.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct SaturationCurve {
@@ -206,7 +225,7 @@ impl<'de> Deserialize<'de> for SaturationCurve {
 }
 
 impl SaturationCurve {
-    pub const SPACING: f64 = 0.04;
+    pub const SPACING: f64 = SPACING;
 
     pub fn resting() -> Vec<Point> {
         [0.0, 0.25, 0.5, 0.75, 1.0].iter().map(|&x| Point::new(x, 0.5)).collect()
@@ -216,19 +235,8 @@ impl SaturationCurve {
         self.points.iter().all(|p| p.y == 0.5)
     }
 
-    /// The ends keep their x, an inner point stays `SPACING` inside its neighbours, every y on 0…1.
     pub fn move_point(&mut self, index: usize, point: Point) {
-        if index >= self.points.len() {
-            return;
-        }
-        let mut p = point;
-        p.y = p.y.max(0.0).min(1.0);
-        if index == 0 || index == self.points.len() - 1 {
-            p.x = self.points[index].x;
-        } else {
-            p.x = p.x.max(self.points[index - 1].x + Self::SPACING).min(self.points[index + 1].x - Self::SPACING);
-        }
-        self.points[index] = p;
+        spaced(&mut self.points, index, point);
     }
 
     /// The two zones' factor `1 + s·(1 − t) + h·t` on a smoothstep, laid on the resting points.

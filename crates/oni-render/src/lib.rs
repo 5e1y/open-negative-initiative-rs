@@ -15,7 +15,7 @@ pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;
 pub use kernel::gaussian::Gaussian;
-pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, Grain, GrainTone};
+pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, GRAIN_HIGH_STOPS, GRAIN_LOW_STOPS, GRAIN_NODES, Grain, grain_node_light};
 pub use kernel::halation::{HALATION_COLOUR, HALATION_THRESHOLD, Halation};
 pub use kernel::orient::Orient;
 pub use kernel::saturation_curve::SaturationCurve;
@@ -25,7 +25,7 @@ pub use kernel::stage47::{Stage47, Packed};
 pub use kernel::stroke_mask::StrokeMask;
 pub use kernel::texture::{TextureCoeff, Texture};
 pub use kernel::vignette::{VIGNETTE_MIDPOINT, Vignette};
-pub use prelude::uniform;
+pub use prelude::{LUMA, uniform};
 
 /// An image as Core Image holds one: rows top first, `origin` its extent's lower-left corner in
 /// Core Image's frame, whose y runs up. Kernels that read coordinates read them in that frame.

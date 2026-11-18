@@ -1,5 +1,5 @@
 // `grain`: a texture in stops on a cubic B-spline lattice anchored on the scan's full-resolution grid,
-// each pixel the field's mean over its own footprint; its colour, a saturation on a line along the tone.
+// each pixel the field's mean over its own footprint, its share and its colour read off its light.
 
 struct Params {
     head: vec4<u32>,
@@ -7,10 +7,19 @@ struct Params {
     // then half the footprint in cells.
     row_x: vec4<f32>,
     row_y: vec4<f32>,
-    // Stops a unit of the mean moves the light by, the colour at the black and at the white, the log's guard.
+    // x: the stops a unit of the mean moves the light by; y, z: the table's first stop and its nodes a stop.
     dose: vec4<f32>,
-    // The unlit picture's green window: the window less its black, one over its span, its gamma; the pedestal.
-    tone: vec4<f32>,
+    // A node's share, the next node's, its colour and the next one's, `GRAIN_NODES` of them: one row
+    // read a pixel, no lane indexed.
+    nodes: array<vec4<f32>, 64>,
+}
+
+// The table at the light of `s`: its share, then its colour, each a line between two nodes.
+fn grain_node(s: vec3<f32>) -> vec2<f32> {
+    let t = clamp((log2(max(dot(s, LUMA), 1e-30)) - P.dose.y) * P.dose.z, 0.0, 63.0);
+    let i = min(floor(t), 62.0);
+    let n = P.nodes[i32(i)];
+    return n.xz + (n.yw - n.xz) * (t - i);
 }
 
 // ∫ B from −2 to `u`, B the cubic B-spline.
@@ -46,19 +55,15 @@ fn grain_chroma(u: vec4<f32>) -> vec3<f32> {
     return vec3<f32>(u.x + u.y - u.z - u.w, u.x - u.y + u.z - u.w, u.x - u.y - u.z + u.w) * 1.7320508;
 }
 
-// The display tone the unlit picture gives `rgb`, 0 at its black and 1 at its white.
-fn grain_tone(rgb: vec3<f32>) -> f32 {
-    let t = max(dot(rgb, LUMA) + P.tone.w, P.dose.w);
-    return clamp(pow(max((P.tone.x + log(t) * LOG10_E) * P.tone.y, 0.0), P.tone.z), 0.0, 1.0);
-}
-
 // Each channel's colour offset of the field's chroma: zero sum, so the log mean Hunt reads stays the light's.
 fn grain_offsets(c: vec3<f32>) -> vec3<f32> {
     return (c - (c.x + c.y + c.z) / 3.0) * 1.2247449;
 }
 
-// `at` is the pixel's centre in the graph's pixels.
+// `at` is the pixel's centre in the graph's pixels; a light given no share is kept.
 fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
+    let node = grain_node(s.rgb);
+    if (node.x <= 0.0) { return s; }
     let q = vec2<f32>(P.row_x.x * at.x + P.row_x.y * at.y + P.row_x.z, P.row_y.x * at.x + P.row_y.y * at.y + P.row_y.z) * P.row_x.w;
     let lo = q - P.row_y.w;
     let hi = q + P.row_y.w;
@@ -84,6 +89,5 @@ fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         }
         field += wy[r] * row;
     }
-    let sat = P.dose.y + grain_tone(s.rgb) * (P.dose.z - P.dose.y);
-    return vec4<f32>(s.rgb * exp2(P.dose.x * (field.x + sat * grain_offsets(field.yzw))), s.a);
+    return vec4<f32>(s.rgb * exp2(P.dose.x * node.x * (field.x + node.y * grain_offsets(field.yzw))), s.a);
 }

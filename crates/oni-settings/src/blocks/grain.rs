@@ -1,0 +1,144 @@
+//! Film grain: its spread, its coarseness, its strength by the tone the picture shows and its colour.
+
+use super::GrainColour;
+use crate::cg::Point;
+use crate::curves::{Curve, Evaluated, spaced};
+use crate::tolerant;
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
+
+/// Film grain on the scene before the print: its spread and its coarseness, each a share of its track,
+/// its strength by tone and its colour along it; either at rest is not written, so a new rest reaches every frame left on it.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Grain {
+    pub amount: f32,
+    pub size: f32,
+    #[serde(skip_serializing_if = "GrainCurve::rests")]
+    pub curve: GrainCurve,
+    #[serde(skip_serializing_if = "GrainColour::rests")]
+    pub colour: GrainColour,
+}
+
+impl Default for Grain {
+    fn default() -> Self {
+        Grain { amount: 0.0, size: 0.5, curve: GrainCurve::REST, colour: GrainColour::REST }
+    }
+}
+
+impl Grain {
+    pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
+    pub const SIZE_RANGE: (f32, f32) = (0.0, 1.0);
+}
+
+/// The share of Grain laid at each tone of the picture, from its black point to its white: five points
+/// on a natural spline, each y from none to the whole.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct GrainCurve {
+    pub points: [Point; 5],
+}
+
+impl Default for GrainCurve {
+    fn default() -> Self {
+        Self::REST
+    }
+}
+
+/// Five finite points from the black point to the white in x order, each y held to 0…1; anything else
+/// reads as rest.
+impl<'de> Deserialize<'de> for GrainCurve {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let map = tolerant::object(Value::deserialize(d)?, "GrainCurve")?;
+        let Ok(Some(points)) = tolerant::opt::<Vec<Point>, D::Error>(&map, "points") else { return Ok(Self::REST) };
+        let Ok(mut points) = <[Point; 5]>::try_from(points) else { return Ok(Self::REST) };
+        let finite = points.iter().all(|p| p.x.is_finite() && p.y.is_finite());
+        let ordered = points.windows(2).all(|w| w[0].x < w[1].x);
+        if !finite || !ordered || points[0].x != 0.0 || points[4].x != 1.0 {
+            return Ok(Self::REST);
+        }
+        for p in &mut points {
+            p.y = p.y.clamp(0.0, 1.0);
+        }
+        Ok(GrainCurve { points })
+    }
+}
+
+/// The curve's spline, read held to 0…1 as the render and the plot both lay it.
+pub struct Strength(Evaluated);
+
+impl Strength {
+    pub fn at(&self, tone: f64) -> f64 {
+        self.0.value(tone).clamp(0.0, 1.0)
+    }
+}
+
+impl GrainCurve {
+    /// Lighter in the blacks, whole in the mids, gone before the whites (owner's call).
+    pub const REST: GrainCurve = GrainCurve {
+        points: [Point::new(0.0, 0.35), Point::new(0.30, 1.0), Point::new(0.55, 1.0), Point::new(0.85, 0.0), Point::new(1.0, 0.0)],
+    };
+
+    pub fn rests(&self) -> bool {
+        *self == Self::REST
+    }
+
+    pub fn move_point(&mut self, index: usize, point: Point) {
+        spaced(&mut self.points, index, point);
+    }
+
+    pub fn strength(&self) -> Strength {
+        Strength(Curve { points: self.points.to_vec() }.evaluated())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn read(json: &str) -> GrainCurve {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[test]
+    fn a_curve_of_another_count_or_order_reads_as_rest() {
+        assert!(read(r#"{"points":[[0,0.2],[1,0.5]]}"#).rests());
+        assert!(read(r#"{"points":[[0,0.2],[0.6,1],[0.5,1],[0.85,0],[1,0]]}"#).rests(), "crossed points");
+        assert!(read(r#"{"points":"none"}"#).rests());
+        // Twin: five points in order are kept as written.
+        let kept = read(r#"{"points":[[0,0.2],[0.3,1],[0.5,0.9],[0.8,0],[1,0]]}"#);
+        assert_eq!(kept.points[0], Point::new(0.0, 0.2));
+        assert!(!kept.rests());
+    }
+
+    #[test]
+    fn a_strength_past_its_track_lands_on_its_end() {
+        let c = read(r#"{"points":[[0,-0.5],[0.3,1.7],[0.5,0.6],[0.8,0],[1,0]]}"#);
+        assert_eq!((c.points[0].y, c.points[1].y), (0.0, 1.0));
+        // Twin: an inner value is kept as written.
+        assert_eq!(c.points[2].y, 0.6);
+    }
+
+    #[test]
+    fn a_point_keeps_its_spacing_and_the_ends_their_tone() {
+        let mut c = GrainCurve::REST;
+        c.move_point(4, Point::new(0.2, 0.5));
+        assert_eq!(c.points[4], Point::new(1.0, 0.5));
+        c.move_point(2, Point::new(0.95, 1.4));
+        assert_eq!(c.points[2], Point::new(0.85 - crate::curves::SPACING, 1.0));
+        // Twin: a point set without the move crosses its neighbour.
+        let mut raw = GrainCurve::REST;
+        raw.points[2] = Point::new(0.95, 1.0);
+        assert!(raw.points[2].x > raw.points[3].x);
+    }
+
+    #[test]
+    fn the_rest_is_light_in_the_blacks_whole_in_the_mids_and_gone_before_the_whites() {
+        let s = GrainCurve::REST.strength();
+        assert_eq!(s.at(0.0), 0.35);
+        assert!((0..=20).map(|i| 0.3 + 0.25 * f64::from(i) / 20.0).all(|x| s.at(x) == 1.0), "the plateau is held whole");
+        assert_eq!((s.at(0.85), s.at(0.92), s.at(1.0)), (0.0, 0.0, 0.0));
+        // Twin: the spline unheld rises over 1 on the plateau and dips under 0 past it.
+        let raw = Curve { points: GrainCurve::REST.points.to_vec() }.evaluated();
+        assert!(raw.value(0.42) > 1.0 && raw.value(0.92) < 0.0);
+    }
+}

@@ -28,6 +28,7 @@ mod folder_owner;
 mod face_turn;
 mod film_effects;
 mod grain_colour;
+mod grain_curve;
 mod lens;
 mod density;
 mod picture_plots;

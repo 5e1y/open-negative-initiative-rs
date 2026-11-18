@@ -27,7 +27,7 @@ fn faces(bytes: &[u8]) -> (Face, Face) {
 #[test]
 fn a_digital_photo_stored_on_the_scanner_before_the_machine_opens_on_pro() {
     let before = chain::DIGITAL_SCANNER_VERSION - 1;
-    assert!(VERSION >= chain::DIGITAL_SCANNER_VERSION);
+    assert!(chain::DIGITAL_SCANNER_VERSION <= VERSION);
     assert_eq!(faces(&stored(&on_scanner(ConversionMode::Digital), before)), (Face::Pro, Face::Pro));
     // Its other values are as stored.
     let (read, _) = migrate::reading(&stored(&on_scanner(ConversionMode::Digital), before), &Facts::bare(true), false).unwrap();

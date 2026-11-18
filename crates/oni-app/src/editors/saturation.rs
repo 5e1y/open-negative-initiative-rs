@@ -1,7 +1,8 @@
-//! `SaturationCurveView`: the five points over the output's histogram, laid on linear light; a press
-//! takes the point under it, else the closest along the light, and a double click sets it neutral.
+//! `SaturationCurveView`: the five points over the output's histogram, laid on linear light; a double
+//! click sets a point neutral.
 
-use super::geometry::{Dot, Drawing, Ink, Line, Size, distance, ds, polyline, segments};
+use super::geometry::{Dot, Drawing, Ink, Line, Size, ds, polyline, segments};
+use super::points::{self, Points};
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, SaturationCurve};
 use oni_settings::tone::Print;
@@ -10,79 +11,29 @@ use oni_settings::tone::Print;
 pub const STEPS: usize = 256;
 
 /// The curve reads perceived light; the plot lays it on linear light, as the histogram is.
+impl Points for SaturationCurve {
+    const GAMMA: f64 = Print::DISPLAY_GAMMA as f64;
+
+    fn points(&self) -> &[Point] {
+        &self.points
+    }
+
+    fn points_mut(&mut self) -> &mut [Point] {
+        &mut self.points
+    }
+
+    fn move_point(&mut self, index: usize, point: Point) {
+        SaturationCurve::move_point(self, index, point);
+    }
+
+    /// Neutral, on its tone.
+    fn rested(&self, index: usize) -> Point {
+        Point::new(self.points[index].x, 0.5)
+    }
+}
+
 pub fn screen(p: Point, size: Size) -> (f64, f64) {
-    (p.x.powf(f64::from(Print::DISPLAY_GAMMA)) * size.w, (1.0 - p.y) * size.h)
-}
-
-/// The point under the pointer, within a grab area: the closest, the first of a tie.
-pub fn nearest(curve: &SaturationCurve, at: (f64, f64), size: Size) -> Option<usize> {
-    let mut best: Option<(usize, f64)> = None;
-    for (i, p) in curve.points.iter().enumerate() {
-        let d = distance(screen(*p, size), at);
-        if d < ds::GRAB_SIZE && best.is_none_or(|(_, b)| d < b) {
-            best = Some((i, d));
-        }
-    }
-    best.map(|(i, _)| i)
-}
-
-/// The point closest along the light, whatever its height.
-pub fn closest_along(curve: &SaturationCurve, at: (f64, f64), size: Size) -> Option<usize> {
-    let mut best: Option<(usize, f64)> = None;
-    for (i, p) in curve.points.iter().enumerate() {
-        let d = (screen(*p, size).0 - at.0).abs();
-        if best.is_none_or(|(_, b)| d < b) {
-            best = Some((i, d));
-        }
-    }
-    best.map(|(i, _)| i)
-}
-
-/// Where the pointer asks a point to be: across on linear light read back as perceived, up the factor.
-pub fn asked(at: (f64, f64), size: Size) -> Point {
-    let across = (at.0 / size.w.max(1.0)).clamp(0.0, 1.0);
-    Point::new(across.powf(1.0 / f64::from(Print::DISPLAY_GAMMA)), 1.0 - at.1 / size.h.max(1.0))
-}
-
-/// The view's memory of the last two presses: a double click's first press has already moved a
-/// point to the pointer, so the neutralising starts from before it.
-#[derive(Clone, Debug, Default)]
-pub struct Presses {
-    pub dragged: Option<usize>,
-    before_press: Vec<Point>,
-    before_last_press: Vec<Point>,
-}
-
-impl Presses {
-    /// A press takes its point and lays it at the pointer at once.
-    pub fn press(&mut self, curve: &mut SaturationCurve, at: (f64, f64), size: Size) {
-        self.before_last_press = std::mem::take(&mut self.before_press);
-        self.before_press = curve.points.clone();
-        self.dragged = nearest(curve, at, size).or_else(|| closest_along(curve, at, size));
-        self.drag(curve, at, size);
-    }
-
-    pub fn drag(&self, curve: &mut SaturationCurve, at: (f64, f64), size: Size) {
-        if let Some(index) = self.dragged {
-            curve.move_point(index, asked(at, size));
-        }
-    }
-
-    pub fn release(&mut self) {
-        self.dragged = None;
-    }
-
-    /// The double click's end: the points before its first press, the one under the pointer on 0.5.
-    pub fn double(&self, curve: &SaturationCurve, at: (f64, f64), size: Size) -> Option<SaturationCurve> {
-        let index = nearest(curve, at, size)?;
-        let mut next = curve.clone();
-        if !self.before_last_press.is_empty() && self.before_last_press.len() == next.points.len() {
-            next.points = self.before_last_press.clone();
-        }
-        let x = next.points[index].x;
-        next.move_point(index, Point::new(x, 0.5));
-        Some(next)
-    }
+    points::screen::<SaturationCurve>(p, size)
 }
 
 /// The neutral line, the spline held to the plot, and the five points, the dragged one lit.
@@ -115,6 +66,7 @@ pub fn drawing(curve: &SaturationCurve, dragged: Option<usize>, size: Size) -> D
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::points::Presses;
 
     const PLOT: Size = Size::new(308.0, 96.0);
 
