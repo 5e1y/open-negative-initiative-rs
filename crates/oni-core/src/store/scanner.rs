@@ -7,9 +7,6 @@ impl EditorStore {
     /// The face turned, a view and never a step: the step under way is recorded on its own face, then
     /// the open frame and those together show the new one, written as an opening writes it.
     pub(super) fn turn(&mut self, face: Face) -> FieldSet {
-        if face == Face::Scanner && !self.settings.mode.is_film() {
-            return FieldSet::EMPTY;
-        }
         self.settle_under_way();
         self.scanner_face = face == Face::Scanner;
         if self.open.is_none() || self.inert() {
@@ -24,6 +21,12 @@ impl EditorStore {
         self.modify(&together, |_, s| Some(PipelineSettings { face, ..s.clone() }));
         changed
     }
+}
+
+/// Whether the Scanner's screen asks the roll to be measured again: a film's reference kept no median,
+/// which the machine's window is laid on; a digital photo is printed on no roll's measure.
+pub fn remeasure(s: &PipelineSettings) -> bool {
+    s.mode.is_film() && s.roll_reference.as_ref().is_some_and(|r| r.median.is_none())
 }
 
 pub fn channel(mode: ConversionMode) -> Channel {

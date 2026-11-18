@@ -281,4 +281,15 @@ mod tests {
         assert_eq!((field(Param::Temperature, &digital), field(Param::Tint, &digital)), (Field::WhiteKelvin, Field::WhiteTint));
         assert!(rows(&digital, Face::Pro, false).iter().all(|r| r.tab != Tab::Roll && r.param != Param::BalanceStrength));
     }
+
+    #[test]
+    fn a_digital_photos_scanner_face_shows_the_phone_no_colour_lighting_or_effects() {
+        let digital = PipelineSettings::rest(ConversionMode::Digital, true);
+        let blocks = |face| rows(&digital, face, false).into_iter().map(|r| r.block).collect::<Vec<_>>();
+        let scanner = blocks(Face::Scanner);
+        assert!(!scanner.is_empty() && scanner.iter().all(|b| !["Color", "Lighting", "Effects"].contains(&b.as_str())), "{scanner:?}");
+        // Twin: Pro's face shows all three.
+        let pro = blocks(Face::Pro);
+        assert!(["Color", "Lighting", "Effects"].iter().all(|b| pro.iter().any(|p| p == b)), "{pro:?}");
+    }
 }

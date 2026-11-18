@@ -1,6 +1,7 @@
 //! `Pipeline.apply`: a frame's settings to its working-space image, every stage in the Swift app's
 //! order, as one render-graph recipe that stays on the GPU until a region of it is read.
 
+mod chain;
 pub mod conversion;
 pub mod corrections;
 pub mod finishing;
@@ -100,60 +101,6 @@ impl Pipeline {
         self.healing = Default::default();
     }
 
-    /// `apply` as a recipe on `source`: evaluate any region of it, materialise it, or read it whole.
-    pub fn image(&mut self, graph: &mut Graph, source: &Source, settings: &PipelineSettings, request: &Request, inputs: &Inputs) -> Result<Image> {
-        let mut input = Image::new(source);
-        if request.scale != 1.0 {
-            input = input.lanczos(request.scale);
-        }
-        let e = input.extent();
-        let full_width = request.full_width.unwrap_or(f64::from(source.extent().w));
-        let scale = if full_width > 0.0 { f64::from(e.w) / full_width } else { 1.0 };
-        // Taken before stage 0: the band is a fraction of the picture, the dosed radii export pixels.
-        let reference = f64::from(e.w.max(e.h));
-        let oni = scanner::on_oni_machine(settings);
-        self.chain(graph, input, settings, oni.as_ref(), (scale, reference), request.measuring, inputs)
-    }
-
-    /// `image` with the Scanner face's conversion given: `machine` is `on_oni_machine`'s settings for
-    /// `frame`, `None` on the Pro face; `at` is the scale and the reference length.
-    #[allow(clippy::too_many_arguments)]
-    pub fn chain(
-        &mut self,
-        graph: &mut Graph,
-        input: Image,
-        frame: &PipelineSettings,
-        machine: Option<&PipelineSettings>,
-        at: (f64, f64),
-        measuring: bool,
-        inputs: &Inputs,
-    ) -> Result<Image> {
-        let ((scale, reference), s) = (at, machine.unwrap_or(frame));
-        let scan = input.extent();
-        let framed = self.framed(graph, input, s, scale, inputs)?;
-        let balanced = match conversion::white(s) {
-            Some(m) => framed.then(stages::color_matrix(&m)),
-            None => framed,
-        };
-        // The film's own light, then its grain, lie on the scene before the print; a measure reads neither.
-        // A digital photo's alone for now (owner's call), so a film mode never renders an effect it hides.
-        let effects = !measuring && !s.mode.is_film();
-        let haloed = if effects { halation::halated(balanced, s, scan) } else { balanced };
-        // The grain is a pass of its own: a print notch starts from the grained scene the canvas's cache keeps.
-        let grained = match grain::grain(s, scan, scale).filter(|_| effects) {
-            Some(k) => haloed.then(stages::grain(&k)),
-            None => haloed,
-        };
-        // A digital photo's Lighting follows its levels and curves, in the first pass after their tables;
-        // with neither, in the picture's own pass.
-        let lit = conversion::lighting(s).map(|k| stages::print(&k));
-        let (with_picture, after_tables) = if finishing::tabled(&s.manual_curves, picture_levels(s)) { (None, lit) } else { (lit, None) };
-        let picture = [stages::stage47(&conversion::stage47(s))].into_iter().chain(with_picture);
-        let out = stages::laid(grained, picture.collect());
-        let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
-        self.finishing(graph, looked, s, after_tables, true, scale, reference, measuring)
-    }
-
     /// The recipe evaluated on the request's region and read back, with that region.
     pub fn render(
         &mut self,
@@ -251,12 +198,14 @@ impl Pipeline {
         Ok((code.clone().then_reading(stages::color_cube(n), &[table]), share))
     }
 
-    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look.
-    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
+    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look; `printing`
+    /// is what renders it, laid in the encode's pass.
+    fn oni_finish(&mut self, graph: &mut Graph, image: Image, printing: Vec<stages::PerPixel>, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
         let frontier = frame.scanner_machine == ScannerMachine::Frontier;
         let hand = frontier.then(frontier_table::current).flatten();
         // The Frontier's look stands where ONI's does, on the same render in plain display code.
-        let code = image.then(stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT }));
+        let encode = stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT });
+        let code = stages::laid(image, printing.into_iter().chain([encode]).collect());
         let (table, n) = match hand {
             Some((generation, cube)) => {
                 if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {
@@ -292,14 +241,15 @@ impl Pipeline {
         Ok(image.then_reading(stages::curves(&k), &[Image::new(&rgb), Image::new(&luma)]))
     }
 
-    /// Curves to the output clip, both faces; `lit` is a digital photo's Lighting after the curves, `points`
-    /// lays the black and white points' saturation, Pro's alone.
+    /// Curves to the output clip, both faces; `levels` are a digital photo's laid in the curves' tables, `lit`
+    /// its Lighting after them, `points` lays the black and white points' saturation, Pro's alone.
     #[allow(clippy::too_many_arguments)]
     fn finishing(
         &mut self,
         graph: &mut Graph,
         toned: Image,
         s: &PipelineSettings,
+        levels: Option<&PictureLevels>,
         lit: Option<stages::PerPixel>,
         points: bool,
         scale: f64,
@@ -308,7 +258,7 @@ impl Pipeline {
     ) -> Result<Image> {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();
-        let graded = self.curves(graph, toned, &s.manual_curves, picture_levels(s))?;
+        let graded = self.curves(graph, toned, &s.manual_curves, levels)?;
         // Lighting, the spectrogram, the points' saturation, the saturation and the vignette in one pass.
         let extent = graded.extent();
         let mut run: Vec<_> = lit.into_iter().chain(finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k))).collect();

@@ -15,6 +15,8 @@ use oni_settings::PipelineSettings;
 pub enum Stage {
     Levels,
     GlobalLevels,
+    /// A digital photo's own levels: on Pro's face where its curves are, on the Scanner's before the print.
+    PictureLevels,
     ManualCurves,
     Curves,
 }
@@ -46,11 +48,13 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
             out.picture_levels = PictureLevels::default();
         }
         // A digital photo's levels lie in the curves' tables and its Lighting acts after them, so a reading
-        // in front of them rests all three.
-        Stage::ManualCurves => {
+        // in front of them rests all three; on the Scanner face its levels lie before the machine's curves.
+        Stage::PictureLevels | Stage::ManualCurves => {
             out.manual_curves = CurveSet::default();
             out.scanner_finish.manual_curves = CurveSet::default();
-            out.picture_levels = PictureLevels::default();
+            if before == Stage::PictureLevels || s.face == Face::Pro {
+                out.picture_levels = PictureLevels::default();
+            }
             if !s.mode.is_film() {
                 out = out.unlit();
             }
@@ -96,11 +100,28 @@ mod tests {
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
         s.picture_levels.red.set_white(0.7);
         s.picture_levels.luma.mid = 0.3;
-        for stage in [Stage::Levels, Stage::GlobalLevels, Stage::ManualCurves] {
+        for stage in [Stage::Levels, Stage::GlobalLevels, Stage::PictureLevels, Stage::ManualCurves] {
             assert!(truncated(&s, stage).picture_levels.is_neutral(), "{stage:?}");
         }
         // Twin: a reading past the curves reads the frame's own levels.
         assert_eq!(truncated(&s, Stage::Curves).picture_levels, s.picture_levels);
+    }
+
+    #[test]
+    fn a_digital_photos_levels_are_read_where_its_face_lays_them() {
+        let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+        s.picture_levels.red.set_white(0.7);
+        s.scanner_finish.manual_curves.linked.points = vec![Point::new(0.0, 0.0), Point::new(0.3, 0.8), Point::new(1.0, 1.0)];
+        // On Pro the levels share the curves' tables: one reading in front of both.
+        assert_eq!(truncated(&s, Stage::PictureLevels), truncated(&s, Stage::ManualCurves));
+        // On the Scanner face the machine's curves read the levels, which are read in front of themselves.
+        s.face = Face::Scanner;
+        let curves = truncated(&s, Stage::ManualCurves);
+        assert_eq!(curves.picture_levels, s.picture_levels);
+        assert!(curves.scanner_finish.manual_curves.is_neutral());
+        // Twin: in front of the levels they rest, so the two readings differ.
+        assert!(truncated(&s, Stage::PictureLevels).picture_levels.is_neutral());
+        assert_ne!(truncated(&s, Stage::PictureLevels), curves);
     }
 
     #[test]

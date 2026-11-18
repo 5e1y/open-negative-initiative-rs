@@ -24,7 +24,7 @@ export component ColorPane inherits Pane {
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");
-        help: @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own.");
+        help: PanelState.digital ? @tr("The machine the Scanner face prints with: ONI, the photo at its As Shot white under ONI's own look, or the Frontier, the same photo under the minilab's look. The keypad and the effects act on either.\n\nThe photo's levels, film effects and lens act on both faces; Pro's Temperature, Tint, Lighting, Colour and Effects stay Pro's own.") : @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own.");
         separated: false;
         news: News.machine;
         news-note: News.machine-note;
@@ -252,12 +252,12 @@ export component ColorPane inherits Pane {
         StoreSlider { field: 9; label: @tr("Vignette"); fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
         if !PanelState.monochrome: StoreSlider { field: 10; label: @tr("Chrome"); fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
     }
-    // A digital photo's alone (owner's call), as the render lays them on no film mode.
-    if !Lab.shown && PanelState.digital: Block {
+    // A digital photo's alone (owner's call), as the render lays them on no film mode; on both faces.
+    if PanelState.digital: Block {
         title: @tr("Film Effects");
         block: 12;
         modified: Store.film-effects-modified;
-        help: @tr("Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film.");
+        help: Lab.shown ? @tr("Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before the machine prints it, as on the film.") : @tr("Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film.");
         StoreSlider { field: 40; label: @tr("Grain"); fraction: Store.grain-amount-fraction; readout: Store.grain-amount-readout; value-text: Store.grain-amount-value; }
         StoreSlider { field: 41; label: @tr("Grain size"); fraction: Store.grain-size-fraction; readout: Store.grain-size-readout; value-text: Store.grain-size-value; }
         StoreSlider { field: 42; label: @tr("Halation"); fraction: Store.halation-amount-fraction; readout: Store.halation-amount-readout; value-text: Store.halation-amount-value; }
@@ -276,10 +276,10 @@ export component ColorPane inherits Pane {
         LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
         if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
     }
-    // A digital photo's own levels, laid in front of its curves and both in front of Lighting.
-    if !Lab.shown && PanelState.digital: EditorBlock {
+    // A digital photo's own levels on either face: with Pro's curves in front of Lighting, or in front of the machine's print.
+    if PanelState.digital: EditorBlock {
         title: @tr("Levels");
-        help: @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone.");
+        help: Lab.shown ? @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. The machine then prints what they set. Double-click a handle to bring it back alone.") : @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone.");
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.picture-levels-folded;
@@ -294,7 +294,7 @@ export component ColorPane inherits Pane {
         news-read => { News.read("curves.scanner.1.3.1"); }
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
-        help: PanelState.digital ? @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone. They act before Lighting, which acts on what they draw.") : @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
+        help: PanelState.digital && !Lab.shown ? @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone. They act before Lighting, which acts on what they draw.") : @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
         CurvesEditor { histogram: Plots.curves; revision: Plots.curves-revision; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.

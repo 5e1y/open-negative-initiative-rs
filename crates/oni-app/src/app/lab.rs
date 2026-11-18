@@ -83,7 +83,7 @@ pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
     Screen {
         frame: tr!("FRAME {at}/{count}", at = at, count = count),
         machine: format!("{} · {}", s.scanner_machine.title().to_uppercase(), channel.to_uppercase()),
-        remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
+        remeasure: oni_core::store::remeasure(s),
         cells: Letter::ALL.iter().zip(counts).map(|(l, n)| (l.title().to_string(), spelled(n))).collect(),
     }
 }
@@ -255,7 +255,6 @@ impl Ctl {
         let modified: Vec<bool> = Group::ALL.iter().zip(beside).map(|(g, beside)| beside || g.modified(&settings)).collect();
         let lab = w.global::<Lab>();
         w.global::<Bar>().set_face(i32::from(face == Face::Scanner));
-        w.global::<Bar>().set_digital(!settings.mode.is_film());
         lab.set_shown(shown);
         lab.set_machine(i32::from(settings.scanner_machine == ScannerMachine::Frontier));
         lab.set_monochrome(settings.mode.is_monochrome());

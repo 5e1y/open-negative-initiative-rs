@@ -36,7 +36,7 @@ use writes::{Written, gather};
 pub use opening::Unsaved;
 pub use oni_library::roll_folder::{Walk, Walked};
 pub use oni_trash::mark_run;
-pub use scanner::{channel, machine_for, machine_of};
+pub use scanner::{channel, machine_for, machine_of, remeasure};
 
 pub mod roll;
 

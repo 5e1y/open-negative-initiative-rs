@@ -1952,6 +1952,10 @@ msgid "Machine"
 msgstr "Machine"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The machine the Scanner face prints with: ONI, the photo at its As Shot white under ONI's own look, or the Frontier, the same photo under the minilab's look. The keypad and the effects act on either.\n\nThe photo's levels, film effects and lens act on both faces; Pro's Temperature, Tint, Lighting, Colour and Effects stay Pro's own."
+msgstr "La machine avec laquelle la face Scanner tire : ONI, la photo au blanc de sa prise de vue sous le look propre à ONI, ou le Frontier, la même photo sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre.\n\nLes niveaux, les effets film et l’objectif de la photo agissent sur les deux faces ; la Température, la Teinte, la Lumière, la Couleur et les Effets de Pro restent propres à Pro."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
 msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion de la pellicule sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre.\n\nL’onglet Pellicule agit sur les deux faces ; la Balance des blancs auto, la Lumière, la Couleur et les Effets de Pro restent propres à Pro."
 
@@ -2172,6 +2176,10 @@ msgid "Film Effects"
 msgstr "Effets film"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before the machine prints it, as on the film."
+msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit, Sensibilité du halo fait luire aussi une lumière plus faible, ou seulement la plus vive.\n\nTous deux agissent sur la scène avant que la machine ne la tire, comme sur le film."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film."
 msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit, Sensibilité du halo fait luire aussi une lumière plus faible, ou seulement la plus vive.\n\nTous deux agissent sur la scène avant Lumière et Couleur, comme sur le film."
 
@@ -2226,6 +2234,10 @@ msgstr "Chrome + : plus, 5 % par pas"
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Levels"
 msgstr "Niveaux"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. The machine then prints what they set. Double-click a handle to bring it back alone."
+msgstr "La plage de la photo, choisie par RGB, Luma, R, G ou B : RGB déplace les trois canaux ensemble, Luma la lumière seule, en gardant les couleurs, et R, G et B chaque canal à part. Chacune a ses extrémités noire et blanche, son point médian entre elles, ses ombres entre le noir et le point médian et ses hautes lumières entre le point médian et le blanc, chaque poignée suivant ses voisines ; au-delà du blanc, les hautes lumières gardent leur détail. La machine tire ensuite ce qu’elles règlent. Un double-clic sur une poignée la ramène seule."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone."
