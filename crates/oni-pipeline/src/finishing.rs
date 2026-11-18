@@ -5,34 +5,50 @@ use oni_render::{Curves, Detail, LUT_SIZE, SaturationCurve as SaturationArgs, Sp
 use oni_settings::blocks::{ChromaDenoise, Sharpen, Texture};
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, CurveSet, SaturationCurve};
+use oni_settings::levels::{Levels, PictureLevels};
 use oni_settings::spectrogram::{Band, Spectrogram};
 use oni_settings::ConversionMode;
 use oni_settings::tone::{Print, contrast};
 
-/// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags; `None` when all five curves rest.
-pub fn curves(set: &CurveSet) -> Option<Curves> {
-    if set.is_neutral() {
+/// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags, a digital photo's `levels` laid in front of
+/// the curves: each channel's table reads its own window after RGB's, and the luma table Luma's, the
+/// kernel's last step, so it acts after the RGB curves. `None` when the five curves and the levels rest.
+pub fn curves(set: &CurveSet, levels: Option<&PictureLevels>) -> Option<Curves> {
+    let levels = levels.filter(|l| !l.is_neutral());
+    if set.is_neutral() && levels.is_none() {
         return None;
     }
-    let table = |c: &Curve| {
+    let rest = PictureLevels::default();
+    let l = levels.unwrap_or(&rest);
+    // A table read past its own 1 goes on at slope 1, as the kernel reads it.
+    let table = |c: &Curve, level: &dyn Fn(f64) -> f64| {
         let e = c.evaluated();
-        (0..LUT_SIZE).map(|i| e.value(i as f64 / (LUT_SIZE - 1) as f64) as f32).collect::<Vec<f32>>()
+        let at_one = e.value(1.0);
+        let read = |x: f64| if x > 1.0 { at_one + x - 1.0 } else { e.value(x) };
+        (0..LUT_SIZE).map(|i| read(level(i as f64 / (LUT_SIZE - 1) as f64)) as f32).collect::<Vec<f32>>()
     };
-    let mut linked = table(&set.linked);
+    let bare = |x: f64| x;
+    let mut linked = table(&set.linked, &bare);
     // Contrast rides on the linked table, so one transfer function per channel reaches the GPU.
     if set.contrast != 0.0 {
         linked = linked.into_iter().map(|v| contrast::apply(v, set.contrast, 0.5)).collect();
     }
-    let (red, green, blue, luma) = (table(&set.red), table(&set.green), table(&set.blue), table(&set.luma));
-    let channels = !set.red.is_neutral() || !set.green.is_neutral() || !set.blue.is_neutral();
+    let channel = |c: &Curve, own: &Levels| table(c, &|x| l.linked.transfer(own.transfer(x)));
+    let (red, green, blue) = (channel(&set.red, &l.red), channel(&set.green, &l.green), channel(&set.blue, &l.blue));
+    let luma = table(&set.luma, &|x| l.luma.transfer(x));
+    let windowed = [l.linked, l.red, l.green, l.blue].iter().any(|w| *w != Levels::default());
+    let channels = windowed || !set.red.is_neutral() || !set.green.is_neutral() || !set.blue.is_neutral();
+    let end = |own: &Levels| (l.linked.end_slope() * own.end_slope()) as f32;
     Some(Curves {
         rgb_lut: (0..LUT_SIZE).map(|i| [linked[i], red[i], green[i], blue[i]]).collect(),
         luma_lut: luma.iter().map(|&v| [v, 0.0, 0.0, 1.0]).collect(),
         bent: [
             f32::from(u8::from(channels)),
             f32::from(u8::from(!set.linked.is_neutral() || set.contrast != 0.0)),
-            f32::from(u8::from(!set.luma.is_neutral())),
+            f32::from(u8::from(!set.luma.is_neutral() || l.luma != Levels::default())),
         ],
+        ends: [1.0, end(&l.red), end(&l.green), end(&l.blue)],
+        luma_end: l.luma.end_slope() as f32,
     })
 }
 
@@ -165,15 +181,80 @@ mod tests {
 
     #[test]
     fn contrast_rides_on_the_linked_table_and_a_resting_set_bakes_nothing() {
-        assert!(curves(&CurveSet::default()).is_none());
+        assert!(curves(&CurveSet::default(), None).is_none());
         let set = CurveSet { contrast: 0.4, ..CurveSet::default() };
-        let k = curves(&set).unwrap();
+        let k = curves(&set, None).unwrap();
         assert_eq!(k.bent, [0.0, 1.0, 0.0]);
         let quarter = k.rgb_lut[LUT_SIZE / 4];
         assert!(quarter[0] < 0.24 && (quarter[1] - 0.25).abs() < 1e-3, "{quarter:?}");
         // Twin: the same set without contrast keeps the diagonal on the linked table.
-        let flat = curves(&CurveSet { red: Curve { points: vec![Point::new(0.0, 0.1), Point::new(1.0, 1.0)] }, ..CurveSet::default() }).unwrap();
+        let flat = curves(&CurveSet { red: Curve { points: vec![Point::new(0.0, 0.1), Point::new(1.0, 1.0)] }, ..CurveSet::default() }, None).unwrap();
         assert!((flat.rgb_lut[LUT_SIZE / 4][0] - 0.25).abs() < 1e-3 && flat.bent == [1.0, 0.0, 0.0]);
+    }
+
+    fn bent() -> CurveSet {
+        let red = Curve { points: vec![Point::new(0.0, 0.1), Point::new(1.0, 1.0)] };
+        let luma = Curve { points: vec![Point::new(0.0, 0.0), Point::new(0.4, 0.55), Point::new(1.0, 1.0)] };
+        CurveSet { contrast: 0.3, red, luma, ..CurveSet::default() }
+    }
+
+    fn bits(k: &Option<Curves>) -> Option<(Vec<[u32; 4]>, Vec<[u32; 4]>, [u32; 3], [u32; 4], u32)> {
+        let b = |v: &[f32; 4]| v.map(f32::to_bits);
+        k.as_ref().map(|k| (k.rgb_lut.iter().map(b).collect(), k.luma_lut.iter().map(b).collect(), k.bent.map(f32::to_bits), k.ends.map(f32::to_bits), k.luma_end.to_bits()))
+    }
+
+    #[test]
+    fn resting_levels_bake_the_very_tables_the_curves_alone_do() {
+        let rest = PictureLevels::default();
+        assert!(curves(&CurveSet::default(), Some(&rest)).is_none(), "nothing to bake");
+        for set in [CurveSet { contrast: 0.4, ..CurveSet::default() }, bent()] {
+            assert_eq!(bits(&curves(&set, Some(&rest))), bits(&curves(&set, None)), "bit for bit");
+        }
+        // Twin: one handle moved bakes another RGB table.
+        let mut moved = rest;
+        moved.red.set_white(0.8);
+        assert_ne!(curves(&bent(), Some(&moved)).unwrap().rgb_lut, curves(&bent(), None).unwrap().rgb_lut);
+        assert_eq!(curves(&CurveSet::default(), Some(&moved)).unwrap().bent, [1.0, 0.0, 0.0], "the levels alone bend the channels");
+    }
+
+    /// One pixel through the CPU kernel on these levels and no curve.
+    fn through(levels: &PictureLevels, p: [f32; 3]) -> [f32; 3] {
+        let k = curves(&CurveSet::default(), Some(levels)).unwrap();
+        let out = oni_render::cpu::curves([p[0], p[1], p[2], 1.0], &k);
+        [out[0], out[1], out[2]]
+    }
+
+    #[test]
+    fn each_mode_moves_what_it_names() {
+        let p = [0.5, 0.4, 0.2];
+        let window = Levels { white: 0.8, mid: 0.3, ..Levels::default() };
+        // R moves red alone.
+        let red = through(&PictureLevels { red: window, ..PictureLevels::default() }, p);
+        assert!(red[0] > 0.6 && (red[1] - p[1]).abs() < 1e-6 && (red[2] - p[2]).abs() < 1e-6, "{red:?}");
+        // RGB moves the three by one window, as R does red.
+        let linked = through(&PictureLevels { linked: window, ..PictureLevels::default() }, p);
+        assert!((linked[0] - red[0]).abs() < 1e-6 && linked[1] > p[1] + 0.1 && linked[2] > p[2] + 0.05, "{linked:?}");
+        // Luma lifts the light and keeps the hue: one gain on all three.
+        let luma = through(&PictureLevels { luma: window, ..PictureLevels::default() }, p);
+        let gain = luma[0] / p[0];
+        assert!(gain > 1.1 && (luma[1] / p[1] - gain).abs() < 1e-5 && (luma[2] / p[2] - gain).abs() < 1e-5, "{luma:?}");
+        // Twin: the same window on RGB turns the hue, a bent window on each channel apart.
+        assert!((linked[1] / p[1] - linked[0] / p[0]).abs() > 0.05, "{linked:?}");
+    }
+
+    #[test]
+    fn past_one_a_table_goes_on_at_the_slope_its_levels_reached() {
+        let levels = PictureLevels { linked: Levels::with_ends(0.1, 0.9), red: Levels { white: 0.8, highlights: 0.6, ..Levels::default() }, ..PictureLevels::default() };
+        let k = curves(&CurveSet::default(), Some(&levels)).unwrap();
+        let composite = |x: f64| levels.linked.transfer(levels.red.transfer(x));
+        let slope = (composite(1.5) - composite(1.25)) / 0.25;
+        assert!((f64::from(k.ends[1]) - slope).abs() < 1e-5, "{} {slope}", k.ends[1]);
+        assert_eq!((k.ends[0], k.luma_end), (1.0, 1.0));
+        let at = |x: f32| oni_render::cpu::curves([x, 0.0, 0.0, 1.0], &k)[0];
+        assert!((f64::from(at(1.5)) - composite(1.5)).abs() < 1e-4, "{} {}", at(1.5), composite(1.5));
+        // Twin: a slope of 1 past the table, the curves' own, falls short of the window's.
+        let one = Curves { ends: [1.0; 4], ..k.clone() };
+        assert!((f64::from(oni_render::cpu::curves([1.5, 0.0, 0.0, 1.0], &one)[0]) - composite(1.5)).abs() > 0.1);
     }
 
     #[test]

@@ -23,13 +23,12 @@ fn exposure_of(path: &Path) -> f32 {
 /// `Space.m`: a footer's keys stand this far under its rule, and the form ends further over it.
 const STEP: f32 = 16.0;
 
-/// A sheet sized to its content: the last box of each column ends a step over the footer's rule, the
-/// footer inside the window.
+/// A sheet sized to its content: every box ends a step over the footer's rule, the footer inside the window.
 fn fits(w: &oni_app::MainWindow, commit: &str) {
     let key = common::the(w, AccessibleRole::Button, commit);
     let size = w.window().size().to_logical(w.window().scale_factor());
     assert!(key.y + key.height <= size.height, "{commit} in the window: {key:?}");
-    let lowest = ["Saturation Curve", "Scanner Keypad"].map(|name| common::the(w, AccessibleRole::Checkbox, name)).into_iter().fold(0.0, |y: f32, b| y.max(b.y + b.height));
+    let lowest = common::placed_all(w, AccessibleRole::Checkbox).into_iter().fold(0.0, |y: f32, b| y.max(b.y + b.height));
     assert!(lowest + 2.0 * STEP < key.y, "every box a step over the rule above {commit}: {lowest} against {key:?}");
     // Twin: a card taller than its content would leave the boxes far above its footer.
     assert!(key.y - lowest < 100.0, "the card ends with its content: {lowest} against {key:?}");

@@ -1,5 +1,6 @@
-//! The panel's editors: the manual curves, the per-channel levels, the spectrogram wheel and its
-//! band sliders, the saturation curve and the print curve over the main histogram.
+//! The panel's editors: the manual curves, the levels (a film's per channel, a digital photo's on the
+//! picture), the spectrogram wheel and its band sliders, the saturation curve and the print curve over
+//! the main histogram.
 
 pub mod curve;
 pub mod geometry;
@@ -16,12 +17,12 @@ use geometry::Size;
 use oni_core::Command;
 use oni_settings::PipelineSettings;
 use oni_settings::curves::{CurveSet, SaturationCurve};
-use oni_settings::levels::{LevelsChannel, LevelsSet};
+use oni_settings::levels::LevelsChannel;
 use oni_settings::spectrogram::{Band, Spectrogram};
 use std::time::Instant;
 
 pub use shell::{Shell, let_go, origin, pressed_anywhere, publish, size, wire, writes};
-pub use stored::{RESETS, face, lay, rest_of, rested_levels, resting_levels};
+pub use stored::{RESETS, face, lay, levels_modified, rest_of, rested_levels, rested_windows, resting_levels};
 
 /// The plots, as the interface numbers them in every callback.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -55,7 +56,7 @@ pub enum Reset {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Edit {
     Curves(CurveSet),
-    Levels(LevelsSet),
+    Levels(levels::Windows),
     Spectrogram(Spectrogram),
     Saturation(SaturationCurve),
 }
@@ -151,7 +152,7 @@ impl Gestures {
         let mut f = face(store.settings(), scanner);
         match &self.live {
             Some(Edit::Curves(c)) => f.manual_curves = c.clone(),
-            Some(Edit::Levels(l)) => f.levels = *l,
+            Some(Edit::Levels(l)) => l.lay(&mut f),
             Some(Edit::Spectrogram(s)) => f.spectrogram = *s,
             Some(Edit::Saturation(s)) => f.saturation = s.clone(),
             None => {}
@@ -178,10 +179,6 @@ impl Gestures {
 
     pub fn curve_channel(&self) -> LevelsChannel {
         curve::CHANNELS[self.curve_channel.min(curve::CHANNELS.len() - 1)]
-    }
-
-    pub fn levels_channel(&self) -> LevelsChannel {
-        levels::CHANNELS[self.levels_channel.min(levels::CHANNELS.len() - 1)]
     }
 
     pub fn wheel(&self) -> spectrogram::Wheel {
@@ -269,8 +266,9 @@ impl Gestures {
                 self.offer(store, now)
             }
             Plot::Levels => {
-                let channel = self.levels_channel();
-                let window = view.levels.get(channel);
+                let windows = levels::Windows::of(&view);
+                let channel = windows.channel(self.levels_channel);
+                let window = windows.get(channel);
                 let Some(grip) = levels::caught(at.0, at.1, size.w, &window, channel, view.mode) else { return Then::Nothing };
                 if self.double(1, now) {
                     store.defer();
@@ -279,7 +277,7 @@ impl Gestures {
                     return Then::Publish;
                 }
                 let start = levels::place(grip, &window, channel, view.mode);
-                self.begin(store, Held::Level { grip, start, from: at.0 }, Edit::Levels(view.levels));
+                self.begin(store, Held::Level { grip, start, from: at.0 }, Edit::Levels(windows));
                 Then::Draw
             }
             Plot::Wheel => {
@@ -312,12 +310,12 @@ impl Gestures {
                 curve::drag(curves.get_mut(self.curve_channel()), index, at, size);
                 Edit::Curves(curves)
             }
-            (Held::Level { grip, start, from }, Edit::Levels(mut set)) if plot == Plot::Levels => {
-                let channel = self.levels_channel();
+            (Held::Level { grip, start, from }, Edit::Levels(mut windows)) if plot == Plot::Levels => {
+                let channel = windows.channel(self.levels_channel);
                 let mode = store.settings().mode;
                 let asked = track::clamped(track::asked(start, (at.0 - from) as f32, size.w as f32, fine));
-                set.set(channel, levels::moved(grip, &set.get(channel), asked, channel, mode));
-                Edit::Levels(set)
+                windows.set(channel, levels::moved(grip, &windows.get(channel), asked, channel, mode));
+                Edit::Levels(windows)
             }
             (Held::Wheel { grab, from }, Edit::Spectrogram(s)) if plot == Plot::Wheel => {
                 Edit::Spectrogram(spectrogram::dragged(self.wheel(), grab, (at.0 - from.0, at.1 - from.1), &s))
@@ -384,16 +382,16 @@ impl Gestures {
             return None;
         }
         let view = self.view(store);
-        let channel = self.levels_channel();
+        let mut windows = levels::Windows::of(&view);
+        let channel = windows.channel(self.levels_channel);
         let width = self.sizes[plot as usize].w;
-        let window = view.levels.get(channel);
+        let window = windows.get(channel);
         let grip = levels::scrolled(x, width, &window, channel, view.mode);
         let from = levels::place(grip, &window, channel, view.mode);
         let asked = track::clamped(track::asked(from, dx as f32 * TRACKPAD_TRAVEL, width as f32, fine));
-        let mut set = view.levels;
-        set.set(channel, levels::moved(grip, &window, asked, channel, view.mode));
+        windows.set(channel, levels::moved(grip, &window, asked, channel, view.mode));
         self.scrolled = true;
-        Some(self.once(store, Edit::Levels(set)))
+        Some(self.once(store, Edit::Levels(windows)))
     }
 
     /// The wheel's keys while it holds the focus: the arrows step the selected point, Tab walks the
@@ -438,7 +436,7 @@ impl Gestures {
     pub fn pick(&mut self, which: i32, tab: usize) -> Then {
         match which {
             0 => self.curve_channel = tab.min(curve::CHANNELS.len() - 1),
-            1 => self.levels_channel = tab.min(levels::CHANNELS.len() - 1),
+            1 => self.levels_channel = tab.min(LevelsChannel::PICTURE.len() - 1),
             _ => self.selected.band = Band::ALL[tab.min(Band::ALL.len() - 1)],
         }
         Then::Draw

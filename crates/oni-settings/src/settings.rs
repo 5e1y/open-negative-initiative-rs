@@ -9,7 +9,7 @@ use crate::blocks::{
 use crate::curves::{CurveSet, SaturationCurve};
 use crate::film::Film;
 use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses, RollReference};
-use crate::levels::{Levels, LevelsSet};
+use crate::levels::{Levels, LevelsSet, PictureLevels};
 use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
 use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
@@ -106,6 +106,9 @@ pub struct PipelineSettings {
     pub sharpen: Sharpen,
     pub grain: Grain,
     pub halation: Halation,
+    /// A digital photo's own levels, laid in the curves' tables; a film frame keeps them unrendered.
+    #[serde(rename = "pictureLevels", skip_serializing_if = "PictureLevels::is_neutral", default)]
+    pub picture_levels: PictureLevels,
 }
 
 impl Default for PipelineSettings {
@@ -159,6 +162,7 @@ impl Default for PipelineSettings {
             sharpen: Sharpen::default(),
             grain: Grain::default(),
             halation: Halation::default(),
+            picture_levels: PictureLevels::default(),
         }
     }
 }
@@ -241,7 +245,7 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 18] = [
+    pub const FIELDS: [&str; 19] = [
         "balanceFilters",
         "white",
         "print",
@@ -260,6 +264,7 @@ pub mod look_settings {
         "scannerMachine",
         "grain",
         "halation",
+        "pictureLevels",
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
@@ -303,6 +308,7 @@ pub mod look_settings {
         out.scanner_machine = donor.scanner_machine;
         out.grain = donor.grain;
         out.halation = donor.halation;
+        out.picture_levels = donor.picture_levels;
         out
     }
 }

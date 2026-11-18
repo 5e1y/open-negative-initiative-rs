@@ -103,3 +103,61 @@ fn a_digital_photo_rests_as_a_positive_does() {
     // Twin: a negative rests elsewhere.
     assert_ne!(conversion::stage47(&digital(true)), conversion::stage47(&PipelineSettings::rest(ConversionMode::Negative, true)));
 }
+
+/// Every window a hand can move on a digital photo, off its rest.
+fn levelled(mut s: PipelineSettings) -> PipelineSettings {
+    use oni_settings::levels::Levels;
+    s.picture_levels.linked = Levels { black: 0.05, white: 0.85, mid: 0.4, ..Levels::default() };
+    s.picture_levels.luma = Levels { highlights: 0.65, ..Levels::default() };
+    s.picture_levels.red.set_white(0.7);
+    s
+}
+
+#[test]
+fn picture_levels_render_on_a_digital_photo_alone_and_rest_bit_for_bit() {
+    let check = "picture_levels_render_on_a_digital_photo_alone_and_rest_bit_for_bit";
+    let Some(mut g) = graph(check) else { return };
+    let scan = source(&mut g);
+    let mut pipeline = Pipeline::new();
+    let mut seen = |s: &PipelineSettings| {
+        let image = pipeline.image(&mut g, &scan, s, &Request::default(), &Inputs::default()).expect("the recipe builds");
+        (image.key(), image.stages(), whole(&mut g, &image))
+    };
+    for mode in [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Monochrome] {
+        let rest = PipelineSettings::rest(mode, true);
+        assert!(seen(&levelled(rest.clone())) == seen(&rest), "{mode:?}: stored levels wait, unrendered");
+        // With a curve of its own, the film frame's tables are its curves' alone.
+        let mut curved = rest.clone();
+        curved.manual_curves.linked.add(oni_settings::cg::Point::new(0.5, 0.6));
+        assert!(seen(&levelled(curved.clone())) == seen(&curved), "{mode:?}: a curve's tables bake no stored level");
+    }
+    let rest = digital(true);
+    let resting = PipelineSettings { picture_levels: Default::default(), ..levelled(rest.clone()) };
+    assert!(seen(&resting) == seen(&rest), "levels back at rest leave no stage");
+    // Twin: the same values on a digital photo lay the curves' stage and move its pixels.
+    let (key, stages, pixels) = seen(&levelled(rest.clone()));
+    let (rest_key, rest_stages, rest_pixels) = seen(&rest);
+    assert!(key != rest_key && stages > rest_stages && pixels != rest_pixels);
+}
+
+#[test]
+fn a_pipeline_bakes_new_tables_for_new_levels_on_the_same_curves() {
+    let check = "a_pipeline_bakes_new_tables_for_new_levels_on_the_same_curves";
+    let Some(mut g) = graph(check) else { return };
+    let scan = source(&mut g);
+    let mut a = levelled(digital(true));
+    a.manual_curves.red.add(oni_settings::cg::Point::new(0.5, 0.45));
+    let mut b = a.clone();
+    b.picture_levels.red.set_white(0.9);
+    let mut kept = Pipeline::new();
+    render_on(&mut kept, &mut g, &scan, &a);
+    let after_a = render_on(&mut kept, &mut g, &scan, &b);
+    assert_eq!(after_a, render(&mut g, &scan, &b), "B after A is B");
+    // Twin: A and B share their curves, so tables kept by the curves alone would render A's pixels for B.
+    assert_ne!(render(&mut g, &scan, &a), after_a);
+}
+
+fn render_on(pipeline: &mut Pipeline, g: &mut Graph, scan: &Source, s: &PipelineSettings) -> Vec<[f32; 4]> {
+    let image = pipeline.image(g, scan, s, &Request::default(), &Inputs::default()).expect("the recipe builds");
+    whole(g, &image)
+}

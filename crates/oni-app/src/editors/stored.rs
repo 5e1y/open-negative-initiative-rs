@@ -1,6 +1,7 @@
 //! The editors' edits on the stored settings: on the face edited, and a block's reset at each frame's
 //! own rest.
 
+use super::levels::Windows;
 use super::{Edit, Reset};
 use oni_core::Each;
 use oni_settings::PipelineSettings;
@@ -18,7 +19,7 @@ pub fn lay(settings: &PipelineSettings, scanner: bool, edit: &Edit) -> PipelineS
     let mut f = face(settings, scanner);
     match edit {
         Edit::Curves(c) => f.manual_curves = c.clone(),
-        Edit::Levels(l) => f.levels = *l,
+        Edit::Levels(l) => l.lay(&mut f),
         Edit::Spectrogram(s) => f.spectrogram = *s,
         Edit::Saturation(s) => f.saturation = s.clone(),
     }
@@ -43,6 +44,20 @@ pub fn rested_levels(settings: &PipelineSettings) -> LevelsSet {
     out
 }
 
+/// The frame's own windows at their rest: a film's three, the linked and luma ones kept; a digital
+/// photo's five on the picture.
+pub fn rested_windows(settings: &PipelineSettings) -> Windows {
+    match Windows::of(settings) {
+        Windows::Film(_) => Windows::Film(rested_levels(settings)),
+        Windows::Picture(_) => Windows::Picture(Default::default()),
+    }
+}
+
+/// True where the frame's own windows stand off their rest.
+pub fn levels_modified(settings: &PipelineSettings) -> bool {
+    rested_windows(settings) != Windows::of(settings)
+}
+
 /// The editors' reset keys, in the interface's order.
 pub const RESETS: [Reset; 4] = [Reset::Curves, Reset::Levels, Reset::Spectrogram, Reset::Saturation];
 
@@ -51,7 +66,7 @@ pub fn rest_of(block: Reset, scanner: bool) -> Each {
     Each::new(move |s| {
         let edit = match block {
             Reset::Curves => Edit::Curves(CurveSet::default()),
-            Reset::Levels => Edit::Levels(rested_levels(&face(s, scanner))),
+            Reset::Levels => Edit::Levels(rested_windows(&face(s, scanner))),
             Reset::Spectrogram => Edit::Spectrogram(Spectrogram::default()),
             Reset::Saturation => Edit::Saturation(SaturationCurve::default()),
         };

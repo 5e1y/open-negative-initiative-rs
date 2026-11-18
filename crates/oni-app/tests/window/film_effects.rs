@@ -40,7 +40,7 @@ fn press_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, share: f3
 }
 
 /// A shell on `folder`'s one photo, open in the editor and rendered as a digital photo.
-fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig, Shell) {
+pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig, Shell) {
     let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);

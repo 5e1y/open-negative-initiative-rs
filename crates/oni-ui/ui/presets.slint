@@ -127,7 +127,7 @@ component BalancePicker inherits Picker {
 }
 
 // One column of the Carries picker: every line passes, its own laid; a block's title stands a step
-// further from the rows before it than they stand apart.
+// further from the rows before it than they stand apart, the boxes close, so an 800 pt window holds them.
 component CarriesColumn inherits VerticalLayout {
     in property <int> column;
     alignment: start;
@@ -136,7 +136,7 @@ component CarriesColumn inherits VerticalLayout {
     preferred-width: 0px;
     for line[i] in Presets.form-carries: VerticalLayout {
         if line.column == root.column: VerticalLayout {
-            padding-top: line.lead ? 0px : line.title ? Space.m : Space.xs;
+            padding-top: line.lead ? 0px : line.title ? Space.m : Space.xxs;
             // A step under Carries, as the form's other labels: the boxes under it carry the ink.
             if line.title: Label { text: line.text; tone: Tone.secondary; }
             if !line.title: Toggle {

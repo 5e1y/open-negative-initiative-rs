@@ -5,7 +5,7 @@ use crate::fields::Field;
 use oni_settings::axis::density_axis;
 use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::{FlatField, Geometry};
-use oni_settings::levels::Levels;
+use oni_settings::levels::{Levels, LevelsChannel};
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white::{self, White};
@@ -57,6 +57,8 @@ pub enum Knob {
     /// Balance strength re-doses the filters a key wrote, in one write.
     BalanceStrength,
     Level(Channel, Handle),
+    /// A digital photo's own window on the picture, its ends inside 0 to 1.
+    Picture(LevelsChannel, Handle),
     Exposure,
     Contrast,
     Shadows,
@@ -100,6 +102,7 @@ impl Knob {
             Knob::Separation => Field::Separation,
             Knob::BalanceStrength => Field::BalanceStrength,
             Knob::Level(..) => Field::Levels,
+            Knob::Picture(..) => Field::PictureLevels,
             Knob::Exposure
             | Knob::Contrast
             | Knob::Shadows
@@ -140,6 +143,10 @@ impl Knob {
             Knob::Level(_, Handle::Shadows) => Levels::SHADOW_RANGE,
             Knob::Level(_, Handle::Highlights) => Levels::HIGHLIGHT_RANGE,
             Knob::Level(..) => return None,
+            Knob::Picture(_, Handle::Mid) => Levels::MID_RANGE,
+            Knob::Picture(_, Handle::Shadows) => Levels::SHADOW_RANGE,
+            Knob::Picture(_, Handle::Highlights) => Levels::HIGHLIGHT_RANGE,
+            Knob::Picture(..) => (0.0, 1.0),
             Knob::Exposure => Print::EXPOSURE_RANGE,
             Knob::Contrast if mono => Print::MONOCHROME_CONTRAST_RANGE,
             Knob::Contrast => Print::CONTRAST_RANGE,
@@ -181,16 +188,8 @@ impl Knob {
             Knob::DensityCeiling => s.density_ceiling,
             Knob::Separation => s.separation,
             Knob::BalanceStrength => s.balance_strength,
-            Knob::Level(c, h) => {
-                let l = levels(s, c);
-                match h {
-                    Handle::Black => l.black,
-                    Handle::Shadows => l.shadows,
-                    Handle::Mid => l.mid,
-                    Handle::Highlights => l.highlights,
-                    Handle::White => l.white,
-                }
-            }
+            Knob::Level(c, h) => handle(levels(s, c), h),
+            Knob::Picture(c, h) => handle(&s.picture_levels.get(c), h),
             Knob::Exposure => p.exposure,
             Knob::Contrast => p.contrast,
             Knob::Shadows => p.shadows,
@@ -244,16 +243,8 @@ impl Knob {
                 out.separation_by_hand = true;
             }
             Knob::BalanceStrength => {}
-            Knob::Level(c, h) => {
-                let l = levels_mut(&mut out, c);
-                match h {
-                    Handle::Black => l.set_black(v),
-                    Handle::Shadows => l.shadows = v,
-                    Handle::Mid => l.mid = v,
-                    Handle::Highlights => l.highlights = v,
-                    Handle::White => l.set_white(v),
-                }
-            }
+            Knob::Level(c, h) => set_handle(levels_mut(&mut out, c), h, v),
+            Knob::Picture(c, h) => set_handle(out.picture_levels.get_mut(c), h, v),
             Knob::Exposure => out.print.exposure = v,
             Knob::Contrast => out.print.contrast = v,
             Knob::Shadows => out.print.shadows = v,
@@ -322,6 +313,27 @@ fn shift_gains(g: &mut Gains, axis: [f32; 3], by: f32) {
 fn shift_filters(p: &mut Print, axis: [f32; 3], by: f32) {
     let f = p.filters();
     p.set_filters([f[0] + by * axis[0], f[1] + by * axis[1], f[2] + by * axis[2]]);
+}
+
+fn handle(l: &Levels, h: Handle) -> f32 {
+    match h {
+        Handle::Black => l.black,
+        Handle::Shadows => l.shadows,
+        Handle::Mid => l.mid,
+        Handle::Highlights => l.highlights,
+        Handle::White => l.white,
+    }
+}
+
+/// The ends through their setters, which keep the black under the white.
+fn set_handle(l: &mut Levels, h: Handle, v: f32) {
+    match h {
+        Handle::Black => l.set_black(v),
+        Handle::Shadows => l.shadows = v,
+        Handle::Mid => l.mid = v,
+        Handle::Highlights => l.highlights = v,
+        Handle::White => l.set_white(v),
+    }
 }
 
 fn levels(s: &PipelineSettings, c: Channel) -> &Levels {

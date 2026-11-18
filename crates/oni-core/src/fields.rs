@@ -90,6 +90,7 @@ fields! {
     Sharpen => "sharpen", sharpen;
     Grain => "grain", grain;
     Halation => "halation", halation;
+    PictureLevels => "pictureLevels", picture_levels;
 }
 
 impl Field {
@@ -304,7 +305,7 @@ mod tests {
     #[test]
     fn every_field_is_the_rolls_the_looks_or_the_frames_and_one_only() {
         let names = declared_names();
-        assert_eq!(names.len(), 48, "{names:?}");
+        assert_eq!(names.len(), 49, "{names:?}");
         assert_eq!(placement_faults(names, FAMILIES), Vec::<String>::new());
         // Twin: a field the families leave out, and one in two of them, are both refused.
         let mut grown = names.to_vec();

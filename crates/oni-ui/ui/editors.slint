@@ -39,6 +39,7 @@ export global Editors {
     // Each block opens folded, as the panel lays it out the first time.
     in-out property <bool> curves-folded: true;
     in-out property <bool> levels-folded: true;
+    in-out property <bool> picture-levels-folded: true;
     in-out property <bool> spectrogram-folded: true;
     in-out property <bool> saturation-folded: true;
 
@@ -93,15 +94,17 @@ export component CurvesEditor inherits VerticalLayout {
     }
 }
 
-// `LevelsView` on the three per-channel windows: tabs, the histogram and the track inset alike.
+// `LevelsView`: tabs, the histogram and the track inset alike; a film's three per-channel windows, or
+// with `picture` a digital photo's five, in the Curves' order.
 export component LevelsEditor inherits VerticalLayout {
     in property <image> histogram;
     in property <int> revision;
+    in property <bool> picture;
     spacing: Space.s;
     padding-left: SliderStyle.knob-width / 2;
     padding-right: SliderStyle.knob-width / 2;
     Tabs {
-        tabs: [@tr("R"), @tr("G"), @tr("B")];
+        tabs: root.picture ? [@tr("RGB"), @tr("Luma"), @tr("R"), @tr("G"), @tr("B")] : [@tr("R"), @tr("G"), @tr("B")];
         marked: Editors.levels-marked;
         selected: Editors.levels-channel;
         picked(i) => { Editors.levels-channel = i; Editors.pick(1, i); }

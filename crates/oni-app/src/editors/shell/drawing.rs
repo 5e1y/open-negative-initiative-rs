@@ -62,19 +62,22 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         drawn.curves = Some(key);
     }
 
-    // The per-channel levels: handles, their markers on the histogram, readouts and tabs.
-    let lc = levels::CHANNELS[gestures.levels_channel];
-    let window = view.levels.get(lc);
-    let modified = crate::editors::rested_levels(&view) != view.levels;
+    // The levels, a film's per channel or a digital photo's: handles, their markers on the histogram,
+    // readouts and tabs, the tab held to those shown.
+    let windows = levels::Windows::of(&view);
+    let tab = gestures.levels_channel.min(windows.channels().len() - 1);
+    let lc = windows.channel(tab);
+    let window = windows.get(lc);
+    let modified = crate::editors::levels_modified(&view);
     let key = (
         window,
-        gestures.levels_channel,
+        tab,
         view.mode,
         view.density_ceiling,
         sizes[Plot::Levels as usize],
         sizes[Plot::LevelsHistogram as usize],
         gestures.held_grip,
-        levels::marked(&view.levels, view.mode, view.density_ceiling),
+        levels::marked(&view),
         modified,
     );
     let on = Some(key.4);
@@ -104,13 +107,13 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
     }
     if changed {
         g.set_levels_markers(lines(&levels::markers(&window, lc, view.mode, key.5)));
-        let readouts = levels::readouts(&window, lc)
+        let readouts = levels::readouts(&window, lc, view.mode)
             .into_iter()
             .map(|(name, value)| PlotReadout { name: name.into(), value: value.into() })
             .collect();
         g.set_levels_readouts(model(readouts));
         g.set_levels_marked(model(key.7.clone()));
-        g.set_levels_channel(gestures.levels_channel as i32);
+        g.set_levels_channel(tab as i32);
         drawn.levels = Some(key);
     }
 
@@ -200,7 +203,7 @@ impl Snapshot {
         Snapshot {
             sizes: g.sizes,
             curve_channel: g.curve_channel.min(curve::CHANNELS.len() - 1),
-            levels_channel: g.levels_channel.min(levels::CHANNELS.len() - 1),
+            levels_channel: g.levels_channel,
             selected: g.selected,
             active: g.active(),
             hovered: g.hovered,

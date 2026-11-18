@@ -251,7 +251,7 @@ fn the_levels_reset_puts_back_the_three_windows_and_nothing_else() {
     set.set(LevelsChannel::Red, red);
     let mut curves = store.settings().manual_curves.clone();
     curves.linked.add(Point::new(0.5, 0.6));
-    let mut next = lay(store.settings(), false, &Edit::Levels(set));
+    let mut next = lay(store.settings(), false, &Edit::Levels(levels::Windows::Film(set)));
     next.manual_curves = curves;
     store.apply(Command::Write(Box::new(next)));
     g.reset(&mut store, Reset::Levels);

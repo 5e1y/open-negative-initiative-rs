@@ -1,6 +1,7 @@
 //! `refreshLevelsInput` and `refreshManualCurvesInput`: the distributions in front of the levels and
 //! of the manual curves, read again only when what enters that stage moves. Each lays the custom
-//! mask and dust patches the canvas lays, as `Pipeline.reading` does.
+//! mask and dust patches the canvas lays, as `Pipeline.reading` does; a digital photo's levels read
+//! the curves' own, as they share one stage.
 
 use super::*;
 use oni_measure::histogram::Histogram;
@@ -46,8 +47,9 @@ impl Engine {
             self.read[slot] = recipe.map(|recipe| Read { entering, recipe, histogram: histogram.clone() });
             histogram
         };
-        let levels = read(0, Stage::Levels);
+        // A digital photo's levels lie in the curves' tables: what enters them is what enters the curves.
         let curves = read(1, Stage::ManualCurves);
+        let levels = if settings.mode.is_film() { read(0, Stage::Levels) } else { curves.clone() };
         Some(InputHistograms { levels, curves })
     }
 }

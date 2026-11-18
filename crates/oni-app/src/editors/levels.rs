@@ -1,11 +1,12 @@
 //! `LevelsView`: five handles on one track under the histogram, the two sharing `dsHandleInset`;
-//! one write path for drag and scroll, a double click resetting the handle alone.
+//! one write path for drag and scroll, a double click resetting the handle alone. A film shows its
+//! three windows on the density axis, a digital photo its five on the picture.
 
 use super::geometry::{Drawing, Ink, Line, Size, dashed, ds};
 use crate::track;
 use oni_i18n::tr;
 use oni_core::{Channel, Command, Handle, Knob};
-use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
+use oni_settings::levels::{Levels, LevelsChannel, LevelsSet, PictureLevels};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 /// The handles in drawing order: the ends are drawn last, so they sit in front.
@@ -59,6 +60,62 @@ impl Grip {
 /// The per-channel block's tabs.
 pub const CHANNELS: [LevelsChannel; 3] = LevelsChannel::PER_CHANNEL;
 
+/// The channel of tab `tab` among those a frame of `mode` shows.
+pub fn channel(mode: ConversionMode, tab: usize) -> LevelsChannel {
+    let shown: &[LevelsChannel] = if mode.is_film() { &CHANNELS } else { &LevelsChannel::PICTURE };
+    shown[tab.min(shown.len() - 1)]
+}
+
+/// The windows the editor moves: a film's on the density axis, a digital photo's on the picture.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Windows {
+    Film(LevelsSet),
+    Picture(PictureLevels),
+}
+
+impl Windows {
+    /// The frame's own windows, as its mode renders them.
+    pub fn of(s: &PipelineSettings) -> Windows {
+        if s.mode.is_film() { Windows::Film(s.levels) } else { Windows::Picture(s.picture_levels) }
+    }
+
+    /// The tabs, in the order the editor shows them.
+    pub fn channels(&self) -> &'static [LevelsChannel] {
+        match self {
+            Windows::Film(_) => &CHANNELS,
+            Windows::Picture(_) => &LevelsChannel::PICTURE,
+        }
+    }
+
+    /// The channel of tab `tab`, held to the tabs shown.
+    pub fn channel(&self, tab: usize) -> LevelsChannel {
+        let shown = self.channels();
+        shown[tab.min(shown.len() - 1)]
+    }
+
+    pub fn get(&self, channel: LevelsChannel) -> Levels {
+        match self {
+            Windows::Film(set) => set.get(channel),
+            Windows::Picture(p) => p.get(channel),
+        }
+    }
+
+    pub fn set(&mut self, channel: LevelsChannel, levels: Levels) {
+        match self {
+            Windows::Film(set) => set.set(channel, levels),
+            Windows::Picture(p) => p.set(channel, levels),
+        }
+    }
+
+    /// `s` with these windows in their own field.
+    pub fn lay(&self, s: &mut PipelineSettings) {
+        match self {
+            Windows::Film(set) => s.levels = *set,
+            Windows::Picture(p) => s.picture_levels = *p,
+        }
+    }
+}
+
 fn on_track(mid: f32) -> f32 {
     track::position(mid, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), track::Bend::Even)
 }
@@ -81,7 +138,7 @@ pub fn place(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Conversi
 }
 
 pub fn resting(channel: LevelsChannel, mode: ConversionMode, ceiling: f32) -> Levels {
-    LevelsSet::resting(channel, mode, ceiling)
+    if mode.is_film() { LevelsSet::resting(channel, mode, ceiling) } else { Levels::default() }
 }
 
 /// The single write path: a drag and a scroll both land here, on the channel's own domain.
@@ -117,13 +174,8 @@ pub fn reset(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Conversi
     out
 }
 
-/// The store's knob for `grip` on `channel`, one of the three windows.
-fn knob(grip: Grip, channel: LevelsChannel) -> Knob {
-    let c = match channel {
-        LevelsChannel::Green => Channel::Green,
-        LevelsChannel::Blue => Channel::Blue,
-        _ => Channel::Red,
-    };
+/// The store's knob for `grip` on `windows`' `channel`.
+fn knob(grip: Grip, channel: LevelsChannel, windows: &Windows) -> Knob {
     let h = match grip {
         Grip::Black => Handle::Black,
         Grip::Shadows => Handle::Shadows,
@@ -131,21 +183,32 @@ fn knob(grip: Grip, channel: LevelsChannel) -> Knob {
         Grip::Highlights => Handle::Highlights,
         Grip::White => Handle::White,
     };
-    Knob::Level(c, h)
+    let c = match channel {
+        LevelsChannel::Green => Channel::Green,
+        LevelsChannel::Blue => Channel::Blue,
+        _ => Channel::Red,
+    };
+    match windows {
+        Windows::Film(_) => Knob::Level(c, h),
+        Windows::Picture(_) => Knob::Picture(channel, h),
+    }
 }
 
-/// Each handle `set` moved off `settings`' windows as one step of its knob.
-pub fn steps(settings: &PipelineSettings, set: &LevelsSet) -> Vec<Command> {
-    let next = PipelineSettings { levels: *set, ..settings.clone() };
-    let knobs = CHANNELS.iter().flat_map(|c| Grip::ALL.map(|g| knob(g, *c)));
+/// Each handle `windows` moved off `settings`' own as one step of its knob.
+pub fn steps(settings: &PipelineSettings, windows: &Windows) -> Vec<Command> {
+    let mut next = settings.clone();
+    windows.lay(&mut next);
+    let knobs = windows.channels().iter().flat_map(|c| Grip::ALL.map(|g| knob(g, *c, windows)));
     knobs.filter_map(|knob| Some(knob.get(&next) - knob.get(settings)).filter(|by| *by != 0.0).map(|by| Command::Step { knob, by })).collect()
 }
 
 /// A double click's rest of one handle, the value set on every frame shown.
 pub fn rested(grip: Grip, channel: LevelsChannel, view: &PipelineSettings) -> Command {
+    let mut windows = Windows::of(view);
+    windows.set(channel, reset(grip, &windows.get(channel), channel, view.mode, view.density_ceiling));
     let mut at = view.clone();
-    at.levels.set(channel, reset(grip, &view.levels.get(channel), channel, view.mode, view.density_ceiling));
-    let knob = knob(grip, channel);
+    windows.lay(&mut at);
+    let knob = knob(grip, channel, &windows);
     Command::Set { knob, value: knob.get(&at) }
 }
 
@@ -181,7 +244,7 @@ pub fn knob_x(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Convers
 }
 
 /// The value each handle sets, never where it is drawn, in reading order.
-pub fn readouts(levels: &Levels, channel: LevelsChannel) -> Vec<(&'static str, String)> {
+pub fn readouts(levels: &Levels, channel: LevelsChannel, mode: ConversionMode) -> Vec<(&'static str, String)> {
     Grip::READING
         .iter()
         .map(|g| {
@@ -192,15 +255,15 @@ pub fn readouts(levels: &Levels, channel: LevelsChannel) -> Vec<(&'static str, S
                 Grip::Highlights => levels.display_highlights(),
                 Grip::White => levels.white,
             };
-            (g.readout_name(), readout(channel, v))
+            (g.readout_name(), readout(channel, mode, v))
         })
         .collect()
 }
 
 /// Three decimals of density where values are densities, a share of the output otherwise.
-pub fn readout(channel: LevelsChannel, value: f32) -> String {
+pub fn readout(channel: LevelsChannel, mode: ConversionMode, value: f32) -> String {
     use crate::fields::{Unit, number};
-    if channel.is_density() { number(f64::from(value), 3, false, Unit::Bare) } else { number(f64::from(value) * 100.0, 1, false, Unit::Percent) }
+    if channel.is_density(mode) { number(f64::from(value), 3, false, Unit::Bare) } else { number(f64::from(value) * 100.0, 1, false, Unit::Percent) }
 }
 
 /// The handles' own places marked on the histogram, dashed.
@@ -216,138 +279,14 @@ pub fn markers(levels: &Levels, channel: LevelsChannel, mode: ConversionMode, si
 }
 
 /// Tabs lit for a window off its rest.
-pub fn marked(set: &LevelsSet, mode: ConversionMode, ceiling: f32) -> Vec<bool> {
-    let touched = set.touched(mode, ceiling);
-    CHANNELS.iter().map(|c| touched.contains(c)).collect()
+pub fn marked(view: &PipelineSettings) -> Vec<bool> {
+    let windows = Windows::of(view);
+    let touched = match windows {
+        Windows::Film(set) => set.touched(view.mode, view.density_ceiling),
+        Windows::Picture(p) => p.touched(),
+    };
+    windows.channels().iter().map(|c| touched.contains(c)).collect()
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use oni_settings::axis::{graduation, pipeline};
-    use oni_settings::migrate::density::apply_levels;
-
-    const MODES: [ConversionMode; 3] = [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Monochrome];
-
-    /// `LevelsView.selfCheck`, every line with its twin.
-    #[test]
-    fn the_levels_track_holds_and_its_black_reaches_under_zero() {
-        let mut strayed: f32 = 0.0;
-        let mut round_trip: f32 = 0.0;
-        for mode in MODES {
-            let (low, _) = LevelsChannel::Red.domain(mode);
-            for step in 0..=400 {
-                let d = low - 0.2 + step as f32 / 400.0 * (graduation::span() + 0.4);
-                let placed = LevelsChannel::Red.position_of_value(d, mode);
-                strayed = strayed.max((placed - graduation::fraction(d, mode)).abs());
-                round_trip = round_trip.max((LevelsChannel::Red.value_at_position(placed, mode) - d).abs());
-            }
-        }
-        assert!(strayed < 1e-6 && round_trip / graduation::span() < 1e-6, "{strayed} {round_trip}");
-        assert!((0.5 - graduation::fraction(0.5, ConversionMode::Negative)).abs() > 0.1, "twin: a raw 0.5 is not its place");
-
-        let transmitting = -0.243;
-        let bottom = LevelsChannel::Red.value_at_position(0.0, ConversionMode::Negative);
-        let rescued = apply_levels(transmitting, &Levels::with_ends(bottom, pipeline::DMAX));
-        assert!(bottom < transmitting && rescued > 0.0, "{bottom} {rescued}");
-        let sunk = apply_levels(transmitting, &Levels::with_ends(0.0, pipeline::DMAX));
-        assert_eq!(sunk, 0.0, "twin: a track floored at zero renders that channel black");
-
-        let hand = Levels { black: 0.4137, white: 2.7311, mid: 0.3117, ..Levels::default() };
-        let mut inside = true;
-        for mode in MODES {
-            for channel in CHANNELS {
-                let rest = LevelsSet::resting(channel, mode, oni_settings::axis::density_axis::base());
-                inside &= (0.0..=1.0).contains(&channel.position_of_value(rest.white, mode));
-                inside &= (0.0..=1.0).contains(&channel.position_of_value(rest.black, mode));
-                for g in Grip::ALL {
-                    inside &= (0.0..=1.0).contains(&place(g, &hand, channel, mode));
-                }
-            }
-        }
-        assert!(inside, "every handle and every rest falls on the track");
-        let rest = LevelsSet::resting(LevelsChannel::Red, ConversionMode::Negative, oni_settings::axis::density_axis::base());
-        assert!(!(0.0..=1.0).contains(&rest.white), "twin: the raw resting white sits past any track");
-    }
-
-    #[test]
-    fn the_five_handles_rest_a_quarter_apart_and_stay_reachable() {
-        let base = oni_settings::axis::density_axis::base();
-        let at_rest = LevelsSet::resting(LevelsChannel::Red, ConversionMode::Negative, base);
-        let mut laid: Vec<f32> = Grip::ALL.iter().map(|g| place(*g, &at_rest, LevelsChannel::Red, ConversionMode::Negative)).collect();
-        laid.sort_by(f32::total_cmp);
-        let span = LevelsChannel::Red.position_of_value(at_rest.white, ConversionMode::Negative)
-            - LevelsChannel::Red.position_of_value(at_rest.black, ConversionMode::Negative);
-        assert!(laid.windows(2).all(|w| (w[1] - w[0] - span / 4.0).abs() < 1e-5), "{laid:?}");
-        // On a panel-wide track the five stand further apart than a grab area.
-        let width = 340.0 - 2.0 * ds::SPACE_MD;
-        let xs: Vec<f64> = laid.iter().map(|p| f64::from(*p) * width).collect();
-        assert!(xs.windows(2).all(|w| w[1] - w[0] > ds::GRAB_SIZE), "{xs:?}");
-        // Twin: pinched to the narrowest window a hand can set, they crowd under one grab area.
-        let mut pinched = at_rest;
-        pinched.set_white(pinched.black + Levels::EPSILON);
-        let mut crowded: Vec<f64> =
-            Grip::ALL.iter().map(|g| knob_x(*g, &pinched, LevelsChannel::Red, ConversionMode::Negative, width)).collect();
-        crowded.sort_by(f64::total_cmp);
-        assert!(crowded.windows(2).map(|w| w[1] - w[0]).fold(f64::INFINITY, f64::min) < ds::GRAB_SIZE);
-    }
-
-    #[test]
-    fn a_handle_moves_through_one_path_and_resets_alone() {
-        let mode = ConversionMode::Negative;
-        let red = LevelsChannel::Red;
-        let base = oni_settings::axis::density_axis::base();
-        let mut l = Levels { black: 0.4137, white: 2.7311, ..Levels::default() };
-        // Dragged off both ends, the quarter points stop at their travels.
-        l = moved(Grip::Shadows, &l, -9.0, red, mode);
-        l = moved(Grip::Highlights, &l, 9.0, red, mode);
-        assert_eq!((l.shadows, l.highlights), (Levels::SHADOW_RANGE.0, Levels::HIGHLIGHT_RANGE.1));
-        // The black never crosses the white's epsilon.
-        let crossed = moved(Grip::Black, &l, 1.0, red, mode);
-        assert_eq!(crossed.black, l.white - Levels::EPSILON);
-        // The median lands on its own travel across the window, off its fixed point at 0.5.
-        l.mid = 0.3;
-        let p = place(Grip::Mid, &l, red, mode);
-        let back = moved(Grip::Mid, &l, p, red, mode);
-        assert!((back.mid - l.mid).abs() < 1e-5, "{} {}", back.mid, l.mid);
-        // A reset moves its own handle alone.
-        let r = reset(Grip::White, &l, red, mode, base);
-        assert_eq!((r.white, r.black, r.shadows), (pipeline::DMAX, l.black, l.shadows));
-        let r = reset(Grip::Shadows, &l, red, mode, base);
-        assert_eq!((r.shadows, r.highlights, r.black), (0.25, l.highlights, l.black));
-        // Twin: the median's handle is not its stored value, so a write of the raw place drifts.
-        let mut naive = l;
-        naive.mid = (red.value_at_position(p, mode) - l.black) / (l.white - l.black);
-        assert!((naive.mid - l.mid).abs() > 0.01);
-    }
-
-    #[test]
-    fn a_press_catches_the_front_handle_and_a_scroll_the_nearest() {
-        let mode = ConversionMode::Negative;
-        let red = LevelsChannel::Red;
-        let width = 284.0;
-        // The ends together: the white is drawn last, so it is caught first.
-        let mut l = Levels::with_ends(1.0, 1.0 + Levels::EPSILON);
-        l.mid = 0.5;
-        let x = knob_x(Grip::White, &l, red, mode, width);
-        assert_eq!(caught(x, 17.0, width, &l, red, mode), Some(Grip::White));
-        assert_eq!(scrolled(x, width, &l, red, mode), Grip::White);
-        // Off the handle's height nothing is caught.
-        assert_eq!(caught(x, 40.0, width, &l, red, mode), None);
-        // Twin: far from every handle a press catches none, a scroll still the nearest.
-        let far = width - 1.0;
-        assert_eq!(caught(far, 17.0, width, &l, red, mode), None);
-        assert_eq!(scrolled(far, width, &l, red, mode), Grip::White);
-        assert_eq!(scrolled(0.0, width, &l, red, mode), Grip::Black);
-    }
-
-    #[test]
-    fn the_readouts_are_densities_to_three_decimals() {
-        let l = Levels::with_ends(-0.243, 2.5);
-        let r = readouts(&l, LevelsChannel::Red);
-        assert_eq!(r[0], ("Black", "\u{2212}0.243".to_string()));
-        assert_eq!(r.iter().map(|(n, _)| *n).collect::<Vec<_>>(), vec!["Black", "Shadows", "Mid", "Highs", "White"]);
-        // Twin: a global set would read a share of its output.
-        assert_eq!(readout(LevelsChannel::Linked, 0.5), "50.0%");
-    }
-}
+mod tests;
