@@ -31,6 +31,8 @@ pub const BLOCKS: [Block; 4] = [
             entry("sourceEncoding", marked("Scan Profile"), &["sourceEncoding"]),
             entry("flatField", marked("Flat-Field"), &["flatField"]),
             entry("separation", marked("Dye Separation"), &["separation"]),
+            // One gesture: the keypad's clicks mean the scanner's render, so the face travels with them.
+            entry("scanner", marked("Scanner Keypad"), &["scanner", "face"]),
         ],
     },
     Block {
@@ -42,8 +44,6 @@ pub const BLOCKS: [Block; 4] = [
             entry("chromaDecompression", marked("Chroma Decompression"), &["chromaDecompression"]),
             entry("lighting", marked("Lighting"), &["levelsGlobal"]),
             entry("vignette", marked("Vignette"), &["vignette"]),
-            entry("grain", marked("Grain"), &["grain"]),
-            entry("halation", marked("Halation"), &["halation"]),
             entry("secretSauce", marked("Chrome"), &["secretSauce"]),
             entry("paperCorrection", marked("Paper Correction"), &["paperCorrection"]),
             entry("manualCurves", marked("Curves"), &["manualCurves", "manualContrast"]),
@@ -61,8 +61,11 @@ pub const BLOCKS: [Block; 4] = [
             entry("texture", marked("Texture"), &["texture"]),
         ],
     },
-    // One gesture: the keypad's clicks mean the scanner's render, so the face travels with them.
-    Block { id: "Scanner", title: marked("Scanner"), entries: &[entry("scanner", marked("Scanner Keypad"), &["scanner", "face"])] },
+    Block {
+        id: "FilmEffects",
+        title: marked("Film Effects"),
+        entries: &[entry("grain", marked("Grain"), &["grain"]), entry("halation", marked("Halation"), &["halation"])],
+    },
 ];
 
 /// The Colour block's note on the white balance choice.

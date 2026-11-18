@@ -455,7 +455,7 @@ msgstr "Comparar"
 msgid "Pro"
 msgstr "Pro"
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/toolbar.slint
 msgid "Scanner"
 msgstr "Escáner"
 
@@ -2143,7 +2143,7 @@ msgstr "Viñeta"
 msgid "Chrome"
 msgstr "Chrome"
 
-#: crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Film Effects"
 msgstr "Efectos de película"
 
@@ -5520,16 +5520,16 @@ msgid "{list} and {last}"
 msgstr "{list} y {last}"
 
 #: crates/oni-core/src/preset_parameters.rs
+msgid "Scanner Keypad"
+msgstr "Teclado del escáner"
+
+#: crates/oni-core/src/preset_parameters.rs
 msgid "Colour (Temperature, Tint)"
 msgstr "Color (Temperatura, Matiz)"
 
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Chroma Decompression"
 msgstr "Descompresión de croma"
-
-#: crates/oni-core/src/preset_parameters.rs
-msgid "Scanner Keypad"
-msgstr "Teclado del escáner"
 
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Not carried leaves every photo its own balance. Copied WB pastes this photo's gains and per-channel levels as numbers. Automatic WB re-measures each photo it lands on."

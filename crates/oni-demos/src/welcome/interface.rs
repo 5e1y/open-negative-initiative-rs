@@ -161,8 +161,9 @@ pub fn row(stage: &Stage) -> Result<Rect, String> {
 /// its block's margin, else under the line that opens Lighting.
 fn foot(stage: &Stage) -> Result<f32, String> {
     let after = stage.number("section-after");
-    let first = the(stage, AccessibleRole::Slider, oni_i18n::tr("Exposure"))?;
-    if first.1 + first.3 + after <= super::SIZE.1 {
+    if let Ok(first) = the(stage, AccessibleRole::Slider, oni_i18n::tr("Exposure"))
+        && first.1 + first.3 + after <= super::SIZE.1
+    {
         return Ok(first.1 + first.3 + after);
     }
     let last = the(stage, AccessibleRole::Slider, oni_i18n::tr("Saturation"))?;
