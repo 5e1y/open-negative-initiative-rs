@@ -10791,5 +10791,12 @@
     "title": "A help card standing as its note changes, as the Colour block's does when the film type turns digital, shows the new note and its own demo",
     "status": "done",
     "detail": "The owner's polish list for Digital, item 4. The Colour block already names no demo on a digital photo and tells its white in kelvin and tint (#2100), yet its card kept playing the Auto White Balance demo in Digital: a card is a copy of its mark's note and demo taken when it opens (Tip.open, Tip.demo), so a card standing while the block's words changed under it, the film type turned with the hand on the mark, went on showing the negative's note and clip; the mark, its note no longer the card's, read itself closed, and leaving it no longer closed the card. The source is the mark: HelpMark now keeps the note its card was opened on and, when its note changes while that card stands, lays the card again with the new note and demo (none here, so the clip stops). Window check help_demo_color::the_colour_card_of_a_digital_photo_plays_no_white_balance: a negative's Colour card plays white-balance (twin); Digital picked through Film Type with the card standing, the card reads the digital note and has no clip; pressed again on the digital photo, the same. On the former mark the check fails with the Auto White Balance note and demo still on the card."
+  },
+  {
+    "id": 2135,
+    "type": "fix",
+    "title": "help_demo_roll reads Film Type's note as the Digital mode wrote it",
+    "status": "done",
+    "detail": "Found while running the help window checks for the Digital polish: the Digital mode (#2100) rewrote Film Type's help to name the digital photo, and help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo still compared the card with the three-mode note, so it failed on canvas. The check's constant is now the note the panel shows, laid over four lines under the width ceiling (WIDE_LINES 84 to 83)."
   }
 ]
