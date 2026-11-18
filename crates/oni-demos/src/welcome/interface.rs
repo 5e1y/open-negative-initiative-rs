@@ -2,12 +2,13 @@
 //! number and leaves; the components answer the hand themselves, the timeline answers the store as the app.
 
 use std::cell::RefCell;
+use std::ops::RangeInclusive;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use i_slint_backend_testing::{AccessibleRole, ElementHandle};
 use oni_app::fields::{Block, Field};
-use oni_app::slider_track::{number, position_on, rests, stepped, track_on, typed_steps};
+use oni_app::slider_track::{number, position_on, rests, stepped, track_on, typed, typed_steps};
 use oni_settings::{ConversionMode, PipelineSettings};
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -122,19 +123,22 @@ fn serve(instance: &ComponentInstance) {
     };
     instance.set_global_callback("Readouts", "number", figure).unwrap_or_else(|e| fail("Readouts.number", e));
     let settings = Rc::new(RefCell::new(opened()));
-    let weak = instance.as_weak();
-    let step = move |args: &[Value]| {
-        let (Some(Value::Number(field)), Some(Value::Number(by))) = (args.first(), args.get(1)) else { return Value::Void };
-        let (Some(f), Some(instance)) = (Field::from_index(*field as i32), weak.upgrade()) else { return Value::Void };
-        let next = {
-            let s = settings.borrow();
-            f.knob().set(&s, stepped(f, f.knob().get(&s), *by as i32, &track_on(f, &s)))
+    // A notch moves on the track as an arrow does; a typed number lands on itself, as the app's Store answers.
+    for (name, moved) in [("step", stepped as fn(Field, f32, i32, &RangeInclusive<f32>) -> f32), ("typed", typed)] {
+        let (settings, weak) = (settings.clone(), instance.as_weak());
+        let answer = move |args: &[Value]| {
+            let (Some(Value::Number(field)), Some(Value::Number(by))) = (args.first(), args.get(1)) else { return Value::Void };
+            let (Some(f), Some(instance)) = (Field::from_index(*field as i32), weak.upgrade()) else { return Value::Void };
+            let next = {
+                let s = settings.borrow();
+                f.knob().set(&s, moved(f, f.knob().get(&s), *by as i32, &track_on(f, &s)))
+            };
+            publish(&instance, &next);
+            *settings.borrow_mut() = next;
+            Value::Void
         };
-        publish(&instance, &next);
-        *settings.borrow_mut() = next;
-        Value::Void
-    };
-    instance.set_global_callback("Store", "step", step).unwrap_or_else(|e| fail("Store.step", e));
+        instance.set_global_callback("Store", name, answer).unwrap_or_else(|e| fail(name, e));
+    }
 }
 
 /// Every element shown with this role and label, where the layout put it, in points.

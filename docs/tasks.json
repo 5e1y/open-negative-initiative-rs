@@ -10819,5 +10819,12 @@
     "title": "Film Type's four tabs fit the narrowest window in English, French and Spanish",
     "status": "done",
     "detail": "The owner's polish list for Digital, item 5. Measured, nothing to shorten: on the narrowest window (1100 pt, the panel 340 pt, the tabs' track 308 pt) the four tabs' words with a margin either side need 246.4 pt in English (Negative, Positive, B&W, Digital), 252.6 pt in French (Négatif, Positif, N&B, Numérique) and 240.1 pt in Spanish (Negativo, Positivo, B/N, Digital). Window check film_type_fit::film_types_tabs_fit_the_narrowest_window_in_every_language: in each language the tabs stand in order inside the panel, and the words as the catalogue spells them, set in Inter at the label's 13 pt through swash (the face the interface bundles), with TabsStyle's margins, inset and gaps, fit the track the window lays (twin: the French and Spanish needs differ from English's, so the catalogue's words are the ones measured, never the English the live interface shows). A build reading the interface live keeps @tr English, so the check measures the words rather than the pixels; the app profile was built once and shot in French and Spanish at 1100 x 760 by the same check: Négatif, Positif, N&B, Numérique and Negativo, Positivo, B/N, Digital stand whole with room to spare. On the app profile the testing backend finds no accessible element of the panel (digital and toolbar_fit fail there alike), so the check runs on the live build, as every window check here."
+  },
+  {
+    "id": 2138,
+    "type": "fix",
+    "title": "The welcome scene answers a typed number as the app does",
+    "status": "done",
+    "detail": "Since #2132 a number typed on a slider's readout reaches Store.typed, which lands on the figure itself, instead of Store.step. The welcome scene served Store.step alone, so its typed temperature moved nothing and oni-demos' welcome check failed (the typed figure changed nothing). The scene now answers both callbacks from one closure, stepped for a notch and slider_track::typed for a typed number, as the app's wiring does."
   }
 ]
