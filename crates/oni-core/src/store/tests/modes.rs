@@ -1,5 +1,5 @@
 //! A film type changed by any gesture moves each value still on the old mode's rest onto the new one's,
-//! the hand's own kept, one step.
+//! the hand's own kept, one step; a frame the change does not reach keeps every value, its white included.
 
 use super::*;
 use oni_settings::frame::RollReference;
@@ -7,6 +7,7 @@ use oni_settings::tone::Print;
 use oni_settings::white::White;
 
 const A: White = White { kelvin: 5200.0, tint: 4.0 };
+const B: White = White { kelvin: 3300.0, tint: -2.0 };
 
 /// RAWs named `names` in a fresh folder, each As Shot its own, `edit` laid on each sidecar by its name.
 fn frames(label: &str, names: &[&str], edit: impl Fn(&str, &mut PipelineSettings)) -> (EditorStore, std::path::PathBuf, Vec<String>) {
@@ -21,7 +22,10 @@ fn frames(label: &str, names: &[&str], edit: impl Fn(&str, &mut PipelineSettings
         sidecar::write(&s, Path::new(p), WriteOptions::default()).unwrap();
     }
     let mut store = EditorStore::new(Archive::new(paths.clone(), |_: &Path| true));
-    store.read_shots(|_: &Path| Some(A));
+    store.read_shots(|p: &Path| match p.file_name()?.to_str()? {
+        "b.NEF" => Some(B),
+        _ => Some(A),
+    });
     store.open(&paths[0]).unwrap();
     (store, dir, paths)
 }
@@ -79,5 +83,31 @@ fn a_roll_turned_digital_from_its_open_frame_rests_every_frame_on_digital_in_one
         assert_eq!((read(p).mode, read(p).print.exposure), (ConversionMode::Negative, Print::RESTING_EXPOSURE), "one undo");
     }
     assert_eq!(read(c).print.exposure, 0.7);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_digital_frame_beside_keeps_its_own_white_as_the_open_frame_turns_digital() {
+    let (mut store, dir, paths) = frames("together", &["a.NEF", "b.NEF", "c.NEF"], |name, s| {
+        if name == "b.NEF" {
+            *s = s.carried(ConversionMode::Digital);
+            (s.shot, s.white) = (Some(B), Some(B));
+        }
+    });
+    let [a, b, c] = [&paths[0], &paths[1], &paths[2]];
+    store.set_together(vec![b.clone(), c.clone()]);
+    let before = store.settings().clone();
+    store.apply(Command::Mode(ConversionMode::Digital));
+    store.flush();
+    assert_eq!((store.settings().mode, store.settings().white), (ConversionMode::Digital, Some(A)), "the open frame on its own As Shot");
+    assert_eq!((read(b).mode, read(b).shot, read(b).white), (ConversionMode::Digital, Some(B), Some(B)), "the frame beside keeps its light");
+    assert_eq!(read(c), PipelineSettings::rest(ConversionMode::Negative, true), "a negative beside, on no roll, takes nothing of it");
+    // Twin: the open frame's write laid leaf by leaf, as the frames beside took a film type, gives b a's light.
+    let mut patched = read(b);
+    Field::White.patch(&before, store.settings(), &mut patched);
+    assert_eq!(patched.white, Some(A));
+    store.undo();
+    store.flush();
+    assert_eq!((read(a).mode, read(b).white), (ConversionMode::Negative, Some(B)));
     let _ = std::fs::remove_dir_all(&dir);
 }

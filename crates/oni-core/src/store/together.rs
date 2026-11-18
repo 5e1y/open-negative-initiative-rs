@@ -44,6 +44,8 @@ pub(super) enum Took {
     Wrote(Box<PipelineSettings>, Box<PipelineSettings>),
     /// An edit read off each frame's own settings.
     Each(Each),
+    /// The film type, each frame carrying its own values on rest, or none where the mode does not reach.
+    Mode(ConversionMode),
 }
 
 /// The frames edited with the open one, in their order, each one's settings as last written, and
@@ -159,7 +161,8 @@ impl Step<'_> {
                     let next = each.on(&out);
                     FieldSet::between(&out, &next).iter().filter(|f| reaches(*f)).for_each(|f| f.carry(&next, &mut out));
                 }
-                Took::Moved(..) | Took::Set(..) => {}
+                Took::Mode(mode) if reaches(Field::Mode) => out = out.carried(*mode),
+                Took::Moved(..) | Took::Set(..) | Took::Mode(_) => {}
             }
         }
         if mine && !self.fields.is_empty() {
@@ -226,6 +229,7 @@ impl EditorStore {
             Command::Set { knob, value } => Took::Set(*knob, *value, scanner),
             Command::Scan(scan) => Took::Scanned(*scan),
             Command::Each(each) => Took::Each(each.clone()),
+            Command::Mode(mode) => Took::Mode(*mode),
             _ => Took::Wrote(Box::new(was.clone()), Box::new(self.settings.clone())),
         };
         self.together.took(took);
