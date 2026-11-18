@@ -51,7 +51,7 @@ export component Info inherits Surface {
                     if Library.info-kind == InfoKind.trash && Library.trash-key != "": Button { text: Library.trash-key; clicked => { Library.trash-restore(); } }
                 }
                 if Library.info-kind == InfoKind.roll: VerticalLayout {
-                    Section {
+                    if Library.roll-film: Section {
                         title: @tr("Film Stock");
                         help: @tr("What this roll was shot on — never guessed, only ever what a hand picks.");
                         // `heroStock`: the artwork, the name, and where a default came from.

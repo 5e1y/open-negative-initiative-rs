@@ -78,3 +78,53 @@ pub(crate) fn digital_shows_its_white_and_none_of_the_films_blocks() {
     assert!(value("Temperature").ends_with("EV"));
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// The gallery's info sidebar on a folder of digital photos: its name, date and camera body, no film
+/// stock nor preparation. Twin: the same folder as negatives shows its stock and asks to be prepared.
+pub(crate) fn a_digital_folders_sidebar_names_no_film_stock() {
+    use oni_app::{InfoKind, Library};
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the info sidebar is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-digital-info-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    for (name, mode) in [("Phone/A.tif", ConversionMode::Digital), ("Phone/B.tif", ConversionMode::Digital), ("Negs/C.tif", ConversionMode::Negative)] {
+        common::linear_tiff(&root.join(name), 48, 32, 0.5);
+        let s = oni_settings::PipelineSettings::rest(mode, false);
+        oni_settings::sidecar::write(&s, &root.join(name), oni_settings::sidecar::WriteOptions::default()).unwrap();
+    }
+    let root = std::path::PathBuf::from(oni_library::paths::canonical(&root));
+    let shots = std::env::var_os("ONI_SHOTS").map(std::path::PathBuf::from).unwrap_or_else(|| std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = common::rig(shots);
+    let store = oni_core::EditorStore::new(oni_core::Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = oni_app::app::Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Default::default() };
+    let shell = oni_app::app::Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
+    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    shell.window.show().unwrap();
+    let (w, ctl) = (&shell.window, shell.ctl.clone());
+    let lib = w.global::<Library>();
+    let shown = |name: &str| !common::placed(w, Role::Text, name).is_empty();
+    let roll = |folder: &std::path::Path, photos: usize| {
+        shell.open_folder(folder);
+        rig.until("the photos read", std::time::Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().order().len() == photos);
+        rig.settle();
+        assert_eq!(lib.get_info_kind(), InfoKind::Roll, "{}", lib.get_info_empty());
+    };
+
+    roll(&root.join("Phone"), 2);
+    assert!(!lib.get_roll_film() && !shown("Film Stock") && !shown("No film stock set"), "no film stock on a digital folder");
+    assert!(!lib.get_roll_unmeasured() && !shown("Not prepared yet"), "nothing to prepare");
+    assert!(shown("Shot Date") && shown("Camera Body"), "its date and camera body stay");
+    println!("shot {}", rig.shot("digital-info").display());
+
+    // Twin: a folder of negatives names its stock, its mode's default, and asks to be prepared.
+    roll(&root.join("Negs"), 1);
+    assert!(lib.get_roll_film() && shown("Film Stock") && shown("Camera Body"), "a negative's roll shows its stock");
+    rig.until("the negatives told unmeasured", std::time::Duration::from_secs(10), || {
+        rig.pump();
+        lib.get_roll_unmeasured()
+    });
+    let _ = std::fs::remove_dir_all(&root);
+}

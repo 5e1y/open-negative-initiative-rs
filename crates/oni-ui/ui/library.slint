@@ -160,6 +160,8 @@ export global Library {
     in property <string> stock-dyes;
     in property <string> stock-dyes-fix;
     in property <bool> roll-unmeasured;
+    // The roll is film, whose stock the column names; a digital folder's photos had none.
+    in property <bool> roll-film: true;
     callback surface-picked(int);
     // A row's click with ⌘ and ⇧, its right click answering whether a menu opens, a click on no row.
     callback row-clicked(int, bool, bool);
