@@ -111,11 +111,10 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let canvas = w.global::<oni_app::Canvas>();
     assert!(canvas.get_status().contains(" × "), "{}", canvas.get_status());
     println!("shot {}", rig.shot("editor-color").display());
-    // The levels' and curves' plots are drawn over their own input distributions once a render lands.
-    rig.until("the input plots", Duration::from_secs(60), || {
-        let p = w.global::<oni_app::Plots>();
-        p.get_levels().size().width > 0 && p.get_curves().size().width > 0
-    });
+    // The curves' plot, opened, is drawn over its input distribution once a render lands.
+    w.global::<oni_app::Editors>().set_curves_folded(false);
+    w.global::<PanelState>().invoke_fold_changed("Curves".into(), false);
+    rig.until("the input plot", Duration::from_secs(60), || w.global::<oni_app::Plots>().get_curves().size().width > 0);
     // The canvas resized under an open frame, as entering the editor does. The panic of a borrow held
     // across the resize's read and write needs the full size the GPU path lays, which this software
     // window never lays: it reproduces in the real window only, where the fix is checked.

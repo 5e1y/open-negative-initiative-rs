@@ -5,6 +5,7 @@ use super::*;
 impl Ctl {
     /// A render arrived: stale ones are dropped, the rest encoded into the canvas.
     pub(in crate::app) fn deliver(self: &Rc<Self>, delivery: Delivery) {
+        let delivered = Instant::now();
         let done = match delivery {
             // Frames edited together own the canvas; the open one's render waits for the group to end.
             Delivery::Render(_) if self.together_shown() => return,
@@ -33,7 +34,8 @@ impl Ctl {
         // A render of the open frame that landed is the truth about it: no failure stands over it.
         w.global::<Canvas>().set_failure("".into());
         w.global::<Canvas>().set_convertible(false);
-        let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: crate::anonymity::token(&done.path.to_string_lossy()) };
+        let frame = crate::anonymity::token(&done.path.to_string_lossy());
+        let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, drawn: done.drawn, delivered, frame };
         let e = done.picture.extent();
         let (width, height) = (e.w as usize, e.h as usize);
         self.lay(done.placed, (width, height));
@@ -112,11 +114,14 @@ impl Ctl {
         self.watch_histogram();
     }
 
-    /// The input distributions of a render already shown; another photo's are dropped.
+    /// The input distributions of a render already shown, a plot off screen keeping its last; another
+    /// photo's are dropped.
     fn inputs_landed(&self, path: &Path, inputs: InputHistograms) {
         {
             let mut s = self.state.borrow_mut();
             let Some(f) = s.frame_for(&path.to_string_lossy()) else { return };
+            let last = f.requests.inputs.clone().unwrap_or_default();
+            let inputs = InputHistograms { levels: inputs.levels.or(last.levels), curves: inputs.curves.or(last.curves) };
             if f.requests.inputs.as_ref() == Some(&inputs) {
                 return;
             }
@@ -256,9 +261,12 @@ impl Ctl {
             self.state.borrow_mut().views.record(end_to_end, Instant::now());
         }
         if shown.kind == Kind::Notch {
+            let encoded = Instant::now();
+            let started = shown.drawn.checked_sub(shown.pipeline).unwrap_or(shown.drawn);
+            crate::bench::chain::notch(crate::bench::chain::Stages { asked: shown.asked, started, drawn: shown.drawn, delivered: shown.delivered, encoded });
             let report = {
                 let mut s = self.state.borrow_mut();
-                s.notches.record(end_to_end, Instant::now());
+                s.notches.record(end_to_end, encoded);
                 s.notches.due()
             };
             if let Some(report) = report {

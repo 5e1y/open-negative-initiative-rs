@@ -155,11 +155,14 @@ enum Pending {
     Run(Box<dyn FnOnce(&Rc<Ctl>)>),
 }
 
-/// A render on its way to the screen, timed from its ask.
+/// A render on its way to the screen, timed from its ask: drawn `pipeline` after its start, then
+/// delivered to the interface thread.
 struct Shown {
     kind: Kind,
     asked: Instant,
     pipeline: Duration,
+    drawn: Instant,
+    delivered: Instant,
     frame: String,
 }
 

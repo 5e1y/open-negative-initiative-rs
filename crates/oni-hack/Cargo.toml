@@ -32,6 +32,7 @@ curve25519-dalek = { version = "4", default-features = false, features = ["alloc
 derive_more = { version = "2", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "display", "error", "from", "into", "mul", "not", "std"] }
 digest = { version = "0.10", features = ["mac", "std"] }
 either = { version = "1", default-features = false, features = ["use_std"] }
+femtovg = { path = "../../vendor/femtovg", default-features = false, features = ["swash", "wgpu"] }
 flate2 = { version = "1" }
 form_urlencoded = { version = "1" }
 futures-core = { version = "0.3" }
@@ -40,6 +41,7 @@ futures-util = { version = "0.3" }
 hashbrown = { version = "0.17", default-features = false, features = ["default-hasher", "inline-more", "raw-entry"] }
 i-slint-common = { version = "1", features = ["locale-decimal-separator", "markdown", "shared-fontique", "svg-text"] }
 i-slint-compiler = { version = "1", features = ["bundle-translations", "display-diagnostics", "proc_macro_span", "renderer-software", "rust"] }
+i-slint-core = { version = "1", features = ["box-shadow-cache", "rtti", "shared-swash", "unstable-wgpu-30"] }
 icu_locale_core = { version = "2", default-features = false, features = ["alloc", "zerovec"] }
 icu_properties = { version = "2" }
 icu_provider = { version = "2", default-features = false, features = ["alloc", "baked"] }

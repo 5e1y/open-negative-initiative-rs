@@ -139,6 +139,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one", picture_plots::the_scanner_face_traces_no_readout_and_pro_back_traces_a_fresh_one),
     ("picture_plots::the_readout_is_its_plot_alone", picture_plots::the_readout_is_its_plot_alone),
+    ("picture_plots::the_curves_inputs_are_read_while_their_plot_is_open_alone", picture_plots::the_curves_inputs_are_read_while_their_plot_is_open_alone),
     ("dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it", dial::the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),

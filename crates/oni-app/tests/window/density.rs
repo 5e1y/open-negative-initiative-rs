@@ -18,6 +18,7 @@ pub(crate) fn a_screen_of_another_density_renders_the_canvas_and_the_plots_again
     w.global::<PanelState>().set_tab(PanelTab::Roll);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Roll);
     w.global::<Editors>().set_levels_folded(false);
+    w.global::<PanelState>().invoke_fold_changed("Per-Channel Levels".into(), false);
     // Drawn once, so the block unfolded is laid and its plot sized.
     rig.drawn();
     let plots = w.global::<Plots>();
