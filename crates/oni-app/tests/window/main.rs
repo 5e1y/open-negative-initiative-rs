@@ -31,6 +31,7 @@ mod density;
 mod picture_plots;
 mod dial;
 mod digital;
+mod film_type_fit;
 mod depth_lip;
 mod design_system;
 mod editor_leftovers;
