@@ -703,6 +703,10 @@ settings: PipelineSettings {
     grain: Grain {
         amount: 0.0,
         size: 0.5,
+        colour: GrainColour {
+            black: 2.0,
+            white: 0.0,
+        },
     },
     halation: Halation {
         amount: 0.0,

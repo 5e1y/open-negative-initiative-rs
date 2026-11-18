@@ -4,6 +4,10 @@
 use crate::axis::pipeline;
 use serde::{Deserialize, Serialize};
 
+mod grain_colour;
+
+pub use grain_colour::GrainColour;
+
 /// Stage 4: per-channel gains, in stops, `gain = 2^s`.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -91,17 +95,20 @@ impl Vignette {
     pub const RANGE: (f32, f32) = (-2.0, 2.0);
 }
 
-/// Film grain on the scene before the print: its spread and its coarseness, each a share of its track.
+/// Film grain on the scene before the print: its spread and its coarseness, each a share of its track,
+/// and its colour along the tone.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Grain {
     pub amount: f32,
     pub size: f32,
+    #[serde(skip_serializing_if = "GrainColour::rests")]
+    pub colour: GrainColour,
 }
 
 impl Default for Grain {
     fn default() -> Self {
-        Grain { amount: 0.0, size: 0.5 }
+        Grain { amount: 0.0, size: 0.5, colour: GrainColour::REST }
     }
 }
 

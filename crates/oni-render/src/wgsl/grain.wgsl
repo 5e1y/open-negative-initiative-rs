@@ -1,5 +1,5 @@
-// `grain`: a monochrome texture in stops on a cubic B-spline lattice anchored on the scan's
-// full-resolution grid, each pixel the field's mean over its own footprint.
+// `grain`: a texture in stops on a cubic B-spline lattice anchored on the scan's full-resolution grid,
+// each pixel the field's mean over its own footprint; its colour, a saturation on a line along the tone.
 
 struct Params {
     head: vec4<u32>,
@@ -7,7 +7,10 @@ struct Params {
     // then half the footprint in cells.
     row_x: vec4<f32>,
     row_y: vec4<f32>,
+    // Stops a unit of the mean moves the light by, the colour at the black and at the white, the log's guard.
     dose: vec4<f32>,
+    // The unlit picture's green window: the window less its black, one over its span, its gamma; the pedestal.
+    tone: vec4<f32>,
 }
 
 // ∫ B from −2 to `u`, B the cubic B-spline.
@@ -19,8 +22,8 @@ fn grain_ramp(u: f32) -> f32 {
     return select(tail, 1.0 - tail, u >= 0.0);
 }
 
-// A standard normal at a lattice node: PCG-2D, four 16-bit uniforms summed, exact on every device.
-fn grain_normal(i: vec2<i32>) -> f32 {
+// Four 16-bit uniforms at a lattice node: PCG-2D, exact on every device.
+fn grain_hash(i: vec2<i32>) -> vec4<f32> {
     var v = bitcast<vec2<u32>>(i) * 1664525u + 1013904223u;
     // Two rounds written out: naga bounds every loop on Metal (force_loop_bounding), which blocks its
     // unrolling and kept the kernel 30 to 45 % slower.
@@ -30,8 +33,28 @@ fn grain_normal(i: vec2<i32>) -> f32 {
     v.x += v.y * 1664525u;
     v.y += v.x * 1664525u;
     v = v ^ (v >> vec2<u32>(16u));
-    let u = (vec4<f32>(vec4<u32>(v.x & 0xffffu, v.x >> 16u, v.y & 0xffffu, v.y >> 16u)) + 0.5) * (1.0 / 65536.0);
+    return (vec4<f32>(vec4<u32>(v.x & 0xffffu, v.x >> 16u, v.y & 0xffffu, v.y >> 16u)) + 0.5) * (1.0 / 65536.0);
+}
+
+// The light's standard normal: the four uniforms summed, so no transcendental is needed.
+fn grain_normal(u: vec4<f32>) -> f32 {
     return (u.x + u.y + u.z + u.w - 2.0) * 1.7320508;
+}
+
+// Three more normals of the same uniforms, the light's orthogonal Hadamard combinations: one hash for both.
+fn grain_chroma(u: vec4<f32>) -> vec3<f32> {
+    return vec3<f32>(u.x + u.y - u.z - u.w, u.x - u.y + u.z - u.w, u.x - u.y - u.z + u.w) * 1.7320508;
+}
+
+// The display tone the unlit picture gives `rgb`, 0 at its black and 1 at its white.
+fn grain_tone(rgb: vec3<f32>) -> f32 {
+    let t = max(dot(rgb, LUMA) + P.tone.w, P.dose.w);
+    return clamp(pow(max((P.tone.x + log(t) * LOG10_E) * P.tone.y, 0.0), P.tone.z), 0.0, 1.0);
+}
+
+// Each channel's colour offset of the field's chroma: zero sum, so the log mean Hunt reads stays the light's.
+fn grain_offsets(c: vec3<f32>) -> vec3<f32> {
+    return (c - (c.x + c.y + c.z) / 3.0) * 1.2247449;
 }
 
 // `at` is the pixel's centre in the graph's pixels.
@@ -52,13 +75,15 @@ fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         let i = f32(first.y + j);
         wy[j] = (grain_ramp(hi.y - i) - grain_ramp(lo.y - i)) / span.y;
     }
-    var field = 0.0;
+    var field = vec4<f32>(0.0);
     for (var r = 0; r < count.y; r++) {
-        var row = 0.0;
+        var row = vec4<f32>(0.0);
         for (var c = 0; c < count.x; c++) {
-            row += wx[c] * grain_normal(first + vec2<i32>(c, r));
+            let u = grain_hash(first + vec2<i32>(c, r));
+            row += wx[c] * vec4<f32>(grain_normal(u), grain_chroma(u));
         }
         field += wy[r] * row;
     }
-    return vec4<f32>(s.rgb * exp2(P.dose.x * field), s.a);
+    let sat = P.dose.y + grain_tone(s.rgb) * (P.dose.z - P.dose.y);
+    return vec4<f32>(s.rgb * exp2(P.dose.x * (field.x + sat * grain_offsets(field.yzw))), s.a);
 }

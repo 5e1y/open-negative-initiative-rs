@@ -15,7 +15,7 @@ pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;
 pub use kernel::gaussian::Gaussian;
-pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, Grain};
+pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, Grain, GrainTone};
 pub use kernel::halation::{HALATION_COLOUR, HALATION_THRESHOLD, Halation};
 pub use kernel::orient::Orient;
 pub use kernel::saturation_curve::SaturationCurve;

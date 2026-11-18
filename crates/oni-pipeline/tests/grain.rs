@@ -7,7 +7,10 @@ use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{Pipeline, Request, conversion, geometry, grain, stages};
 use oni_render::{Grain, cpu};
+use oni_settings::blocks::GrainColour;
 use oni_settings::frame::Geometry;
+use oni_settings::modes::Face;
+use oni_settings::scanner::ScannerClicks;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const IDENTITY: [[f32; 3]; 2] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -159,8 +162,9 @@ fn a_reduced_render_reads_the_full_grain_averaged() {
     let s = grainy(1.0, 1.0);
     let at = |g: &mut Graph, scale: f64, w: u32, h: u32, k: Option<Grain>| -> Vec<f32> {
         let k = k.unwrap_or_else(|| grain::grain(&s, Rect::new(0, 0, (3000.0 * scale) as u32, (2000.0 * scale) as u32), scale).unwrap());
-        let image = flat(g, w, h, [1.0; 4]);
-        stops(&whole(g, &image.then(stages::grain(&k))), 1.0)
+        // A dark grey, so the grain's colour is on.
+        let image = flat(g, w, h, [0.05, 0.05, 0.05, 1.0]);
+        stops(&whole(g, &image.then(stages::grain(&k))), 0.05)
     };
     let full = at(&mut g, 1.0, 800, 800, None);
     let full_spread = spread(&full);
@@ -193,7 +197,9 @@ fn a_reduced_render_reads_the_full_grain_averaged() {
 #[test]
 fn the_grain_is_a_texture_in_stops_the_same_on_every_tone_and_channel() {
     let Some(mut g) = graph("the_grain_is_a_texture_in_stops_the_same_on_every_tone_and_channel") else { return };
-    let k = grain::grain(&grainy(1.0, 0.5), Rect::new(0, 0, 1500, 1000), 1.0).unwrap();
+    let mut mono = grainy(1.0, 0.5);
+    mono.grain.colour = GrainColour { black: 0.0, white: 0.0 };
+    let k = grain::grain(&mono, Rect::new(0, 0, 1500, 1000), 1.0).unwrap();
     let (w, h) = (200, 150);
     let mut grains = Vec::new();
     for grey in [0.02f32, 0.18, 0.8] {
@@ -210,14 +216,18 @@ fn the_grain_is_a_texture_in_stops_the_same_on_every_tone_and_channel() {
     let added: Vec<V4> = grains[1].1.iter().map(|p| [0.8 + p[0] - 0.18; 4]).collect();
     let light = spread(&stops(&added, 0.8));
     assert!((light / middle - 1.0).abs() > 0.5, "the twin passes: {light} against {middle}");
-    // Monochrome: every channel moves by one factor, alpha kept.
+    // Monochrome at no colour: every channel moves by one factor, alpha kept.
     let colour = [0.3, 0.12, 0.05, 1.0];
-    let image = flat(&mut g, w, h, colour);
-    let out = whole(&mut g, &image.then(stages::grain(&k)));
-    for p in &out {
-        let f = [p[0] / colour[0], p[1] / colour[1], p[2] / colour[2]];
-        assert!((f[0] - f[1]).abs() < 1e-5 && (f[1] - f[2]).abs() < 1e-5 && p[3] == 1.0, "{p:?}");
-    }
+    let parted = |g: &mut Graph, k: &Grain| -> f32 {
+        let image = flat(g, w, h, colour).then(stages::grain(k));
+        let out = whole(g, &image);
+        assert!(out.iter().all(|p| p[3] == 1.0));
+        out.iter().map(|p| [p[0] / colour[0], p[1] / colour[1], p[2] / colour[2]]).map(|f| (f[0] - f[1]).abs().max((f[1] - f[2]).abs())).fold(0.0, f32::max)
+    };
+    assert!(parted(&mut g, &k) < 1e-5);
+    // Twin: the default colour parts the channels.
+    let coloured = grain::grain(&grainy(1.0, 0.5), Rect::new(0, 0, 1500, 1000), 1.0).unwrap();
+    assert!(parted(&mut g, &coloured) > 1e-2);
 }
 
 #[test]
@@ -233,8 +243,9 @@ fn at_rest_or_measured_the_chain_holds_no_grain() {
     let rest = PipelineSettings::rest(ConversionMode::Digital, false);
     let mut coarse = rest.clone();
     coarse.grain.size = 0.9;
+    coarse.grain.colour = GrainColour { black: 0.5, white: 1.5 };
     let (a, b) = (image(&rest, false), image(&coarse, false));
-    assert_eq!((a.key(), a.stages()), (b.key(), b.stages()), "a size at amount 0 lays no stage");
+    assert_eq!((a.key(), a.stages()), (b.key(), b.stages()), "a size or a colour at amount 0 lays no stage");
     let mut grained = rest.clone();
     grained.grain.amount = 0.01;
     assert_ne!(image(&grained, false).key(), a.key(), "twin: the faintest grain is a stage");
@@ -293,6 +304,8 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     let rest = PipelineSettings::rest(ConversionMode::Digital, false);
     let grained = PipelineSettings { grain: grainy(0.5, 0.5).grain, ..rest.clone() };
     assert_eq!(image(&mut g, &grained).stages(), image(&mut g, &rest).stages() + 1, "the grain is a pass of its own");
+    let (scanner, keyed) = (PipelineSettings { face: Face::Scanner, ..rest.clone() }, PipelineSettings { face: Face::Scanner, ..grained.clone() });
+    assert_eq!(image(&mut g, &keyed).stages(), image(&mut g, &scanner).stages() + 1, "the Scanner face lays the grain");
     // Each setting's notches through one frontier cache, or none: the passes and pixels the last one ran.
     let mut notches = |g: &mut Graph, s: &PipelineSettings, cached: bool, notch: &dyn Fn(&mut PipelineSettings, f32)| -> (u64, u64) {
         let mut cache = oni_graph::Cache::frontier();
@@ -315,4 +328,9 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     assert!(notches(&mut g, &grained, false, &exposure).1 > with_grain.1, "the cache keeps nothing");
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount += d;
     assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 1, "a grain notch skips its own pass");
+    let colour = |t: &mut PipelineSettings, d: f32| t.grain.colour.black += d;
+    assert_eq!(notches(&mut g, &grained, true, &colour).0, with_grain.0 + 1, "a colour notch skips the grain's pass");
+    // A Scanner face's key is a gain the grain's tone never reads.
+    let key = |t: &mut PipelineSettings, d: f32| t.scanner = ScannerClicks::new((d * 200.0) as i64, 0, 0, 0, 0);
+    assert_eq!(notches(&mut g, &keyed, true, &key), notches(&mut g, &scanner, true, &key), "a key notch reruns the grain");
 }

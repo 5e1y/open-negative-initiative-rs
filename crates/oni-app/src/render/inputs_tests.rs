@@ -307,6 +307,8 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     let (ran, read) = passes(&mut engine, &s);
     assert_eq!(ran, 0, "a film effect's notch read the distributions again");
     assert_eq!((read.levels, read.curves), (first.levels, first.curves));
+    s.grain.colour.black = 1.2;
+    assert_eq!(passes(&mut engine, &s).0, 0, "a grain colour notch read the distributions again");
     // Twin: a white notch moves what enters the curves, so it is read again.
     s.white = Some(oni_settings::white::White { kelvin: 3500.0, tint: 20.0 });
     assert!(passes(&mut engine, &s).0 > 0, "a white notch kept a stale reading");
