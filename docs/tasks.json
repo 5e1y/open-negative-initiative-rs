@@ -11127,5 +11127,12 @@
     "title": "The grain's colour line under Grain size: two points, one straight line, shown and dragged",
     "status": "done",
     "detail": "crates/oni-ui/ui/panel/grain_colour.slint (new): the design system's Plot (not interactive, grid on) under Grain size in Film Effects, one straight line from the black point's saturation to the white's on a 0 to 3 scale, its ends a point in from the plot's edges so both show whole, each a PlotDot under a grab (GrainColourEnd) that drives Store.press, drag and release with vertical travel; a double click rests the end (the Store's press), Saturated / Desaturated down its side, Black point and White point readouts under it. Fields 55 and 56 (GrainColourBlack, GrainColourWhite: Percent readout, not shown in a film mode, in Block::FilmEffects, so its Reset, typed values, one history step per gesture and presets' grain.colour.black / white sliders hold) and oni-core knobs GrainColourBlack / White. Film Effects help says what the line does (fr, es). Checks: window grain_colour (new: a drag on the black end lowers it and renders, its dot follows; one undo springs the whole drag back, twin a second takes the grain itself; a double click rests the white end; the block's Reset rests both; a film mode lays no line; shots at fit and 100 %), film_effects (window 1800 tall so Halation sensitivity stays unscrolled), fields every_field_has_its_place_in_the_slint_store, phone_link panel (the two ends are no phone slider), catalogue."
+  },
+  {
+    "id": 2208,
+    "type": "bug",
+    "title": "The readings' cadence twin counts the loose notches, not the time they took",
+    "status": "done",
+    "detail": "crates/oni-app/src/render/cadence_tests.rs: the twin asserted more loose readings than image intervals elapsed, so on a loaded machine, where the twelve notches spanned 29 intervals, it failed though every loose notch read. It now asserts one reading per loose notch (12), which the held rule's count stays under."
   }
 ]

@@ -59,9 +59,9 @@ fn a_held_notch_reads_its_inputs_at_the_image_cadence_and_the_rest_reads_once() 
     let (small, full) = (held.iter().filter(|(h, _)| *h).count(), held.iter().filter(|(h, _)| !h).count());
     assert!(small >= 1 && small as f64 <= intervals, "{small} readings under the hand for {intervals:.1} intervals");
     assert_eq!((full, held.last().map(|(h, _)| *h)), (1, Some(false)), "one reading on the full copy, at rest");
-    // Twin: the same notches not held each read, as each is its burst's last.
-    let Some((loose, intervals)) = readings(false, [true; 2]) else { return };
-    assert!(loose.len() as f64 > intervals, "{} readings for {intervals:.1} intervals", loose.len());
+    // Twin: the same notches not held each read, as each is its burst's last, however long they took.
+    let Some((loose, _)) = readings(false, [true; 2]) else { return };
+    assert!(loose.len() >= 12, "{} readings for 12 loose notches", loose.len());
 }
 
 /// No reading is asked while neither plot is on screen; one on screen is read alone.
