@@ -60,7 +60,7 @@ fn main() {
         graph.purge();
         let (width, height) = (e.w as usize, e.h as usize);
         // A stroke is kept on the scan; the census reads it on the frame.
-        let placing = settings.geometry.placing((scan.0 as f64, scan.1 as f64));
+        let placing = settings.placing((scan.0 as f64, scan.1 as f64));
         let painted: Vec<Correction> = painted.into_iter().map(|c| Correction { stroke: c.stroke.iter().map(|p| placing.on_frame(*p)).collect(), ..c }).collect();
         let limits = Limits::of(&settings);
         let started = std::time::Instant::now();

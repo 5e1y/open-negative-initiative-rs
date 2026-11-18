@@ -1,12 +1,14 @@
 //! Stage 0, `Pipeline.applyGeometry`: quarter turns, then mirrors, then the fine rotation about the
-//! centre, then the crop quantised on the full-resolution grid, in the graph's y-down pixels.
+//! centre, then the crop quantised on the full-resolution grid, in the graph's y-down pixels; a lens's
+//! corrections read in the same pass as the turns and the angle.
 
-use crate::stages::{OpaqueEdge, Oriented, Resample};
+use crate::stages::{OpaqueEdge, Oriented, Resample, Warped};
 use oni_graph::stages::Crop;
 use oni_graph::{Image, Rect};
-use oni_render::{Affine, Orient};
+use oni_render::{Affine, Orient, Warp};
 use oni_settings::frame::Geometry;
 use oni_settings::geometry::placing;
+use oni_settings::lens::Radial;
 
 /// The turns and mirrors as one permutation from `input` onto an extent at the origin.
 pub fn orientation(g: &Geometry, input: Rect) -> (Orient, Rect) {
@@ -73,16 +75,17 @@ pub fn extent(g: &Geometry, input: Rect, scale: f64) -> Rect {
     cuts(g, input, scale).extent
 }
 
-/// The point of the scan's full-resolution grid under a point of what stage 0 leaves of an input of
-/// extent `input` at `scale`, as rows: the angle and the turns mapped back, as a crop moves nothing.
-pub fn scan_from(g: &Geometry, input: Rect, scale: f64) -> [[f64; 3]; 2] {
-    let c = cuts(g, input, scale);
-    let then = |outer: [[f64; 3]; 2], inner: [[f64; 3]; 2]| -> [[f64; 3]; 2] {
-        std::array::from_fn(|r| {
-            let o = outer[r];
-            [o[0] * inner[0][0] + o[1] * inner[1][0], o[0] * inner[0][1] + o[1] * inner[1][1], o[0] * inner[0][2] + o[1] * inner[1][2] + o[2]]
-        })
-    };
+/// `outer` after `inner`, both affine maps as rows.
+fn then(outer: [[f64; 3]; 2], inner: [[f64; 3]; 2]) -> [[f64; 3]; 2] {
+    std::array::from_fn(|r| {
+        let o = outer[r];
+        [o[0] * inner[0][0] + o[1] * inner[1][0], o[0] * inner[0][1] + o[1] * inner[1][1], o[0] * inner[0][2] + o[1] * inner[1][2] + o[2]]
+    })
+}
+
+/// The point of the input under a point of what the turns and the angle leave, as rows; the identity
+/// with neither.
+fn turned(c: &Cuts) -> [[f64; 3]; 2] {
     let mut m = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
     if let Some((k, _)) = c.rotated {
         m = k.m.map(|r| r.map(f64::from));
@@ -94,18 +97,52 @@ pub fn scan_from(g: &Geometry, input: Rect, scale: f64) -> [[f64; 3]; 2] {
         let o = [[a[0], a[1], b[0] + 0.5 - (a[0] + a[1]) * 0.5], [a[2], a[3], b[1] + 0.5 - (a[2] + a[3]) * 0.5]];
         m = then(o, m);
     }
-    then([[1.0 / scale, 0.0, 0.0], [0.0, 1.0 / scale, 0.0]], m)
+    m
 }
 
-/// Stage 0 on `image`; `scale` is its width over the full-resolution width, so every scale crops one frame.
-pub fn apply(image: Image, g: &Geometry, scale: f64) -> Image {
-    let c = cuts(g, image.extent(), scale);
+/// The point of the scan's full-resolution grid under a point of what stage 0 leaves of an input of
+/// extent `input` at `scale`, as rows: the angle and the turns mapped back, as a crop moves nothing.
+/// A lens's corrections are left out, so what lies on the corrected picture stays on it.
+pub fn scan_from(g: &Geometry, input: Rect, scale: f64) -> [[f64; 3]; 2] {
+    then([[1.0 / scale, 0.0, 0.0], [0.0, 1.0 / scale, 0.0]], turned(&cuts(g, input, scale)))
+}
+
+/// The turns and the angle of `g` and `lens` on an input of extent `input` at `scale`, as one warp
+/// onto the extent the turns and the angle leave.
+pub fn warped(g: &Geometry, lens: &Radial, input: Rect, scale: f64) -> Warped {
+    turned_and_warped(&cuts(g, input, scale), lens, input)
+}
+
+fn turned_and_warped(c: &Cuts, lens: &Radial, input: Rect) -> Warped {
+    let (w, h) = (f64::from(input.w), f64::from(input.h));
+    let k = Warp {
+        t: turned(c).map(|r| r.map(|v| v as f32)),
+        centre: [(f64::from(input.x) + w / 2.0) as f32, (f64::from(input.y) + h / 2.0) as f32],
+        inv_unit2: (4.0 / (w * w + h * h)) as f32,
+        coefficients: lens.coefficients.map(|k| k.map(|v| v as f32)),
+        // With no angle the fill reads up to the frame's last half pixel: the edge repeats.
+        transparent: c.rotated.is_some(),
+    };
+    let extent = c.rotated.map(|r| r.1).or(c.oriented.map(|o| o.1)).unwrap_or(input);
+    Warped { k, extent }
+}
+
+/// Stage 0 on `image`; `scale` is its width over the full-resolution width, so every scale crops one
+/// frame. `lens` replaces the turns' and the angle's reads by one warp; without it the path is theirs.
+pub fn apply(image: Image, g: &Geometry, lens: Option<&Radial>, scale: f64) -> Image {
+    let input = image.extent();
+    let c = cuts(g, input, scale);
     let mut out = image;
-    if let Some((k, extent)) = c.oriented {
-        out = out.then(Oriented { k, extent });
-    }
-    if let Some((k, extent)) = c.rotated {
-        out = out.then(Resample { k, extent });
+    match lens {
+        Some(lens) => out = out.then(turned_and_warped(&c, lens, input)),
+        None => {
+            if let Some((k, extent)) = c.oriented {
+                out = out.then(Oriented { k, extent });
+            }
+            if let Some((k, extent)) = c.rotated {
+                out = out.then(Resample { k, extent });
+            }
+        }
     }
     if let Some((outer, between)) = c.cropped {
         out = out.then(Crop(outer));
@@ -211,10 +248,10 @@ mod tests {
         ];
         for g in &geometries {
             for scale in [1.0, 0.25] {
-                assert_eq!(extent(g, input, scale), apply(Image::new(&source), g, scale).extent(), "{g:?} at {scale}");
+                assert_eq!(extent(g, input, scale), apply(Image::new(&source), g, None, scale).extent(), "{g:?} at {scale}");
             }
         }
         // Twin: the input's own extent, which a neutral frame keeps, is not what a cropped one leaves.
-        assert_ne!(input, apply(Image::new(&source), &geometries[1], 1.0).extent());
+        assert_ne!(input, apply(Image::new(&source), &geometries[1], None, 1.0).extent());
     }
 }

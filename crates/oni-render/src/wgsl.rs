@@ -59,6 +59,8 @@ pub const SCANNER_ENCODE: &str = include_str!("wgsl/scanner_encode.wgsl");
 pub const GAUSSIAN: &str = include_str!("wgsl/gaussian.wgsl");
 /// `affine_px(p)`, a bilinear affine resampling.
 pub const AFFINE: &str = include_str!("wgsl/affine.wgsl");
+/// `warp_px(p)`, stage 0 and the lens corrections in one bilinear read per channel.
+pub const WARP: &str = include_str!("wgsl/warp.wgsl");
 /// `orient_px(p)`, quarter turns and mirrors.
 pub const ORIENT: &str = include_str!("wgsl/orient.wgsl");
 /// `stroke_mask_px(p)`, a stroke's hard mask.

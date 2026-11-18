@@ -741,4 +741,10 @@ settings: PipelineSettings {
             highlights: 0.75,
         },
     },
+    lens_correction: LensCorrection {
+        distortion: 0.0,
+        red: 0.0,
+        blue: 0.0,
+        vignetting: 0.0,
+    },
 }

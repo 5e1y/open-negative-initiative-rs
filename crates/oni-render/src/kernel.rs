@@ -29,3 +29,4 @@ pub(crate) mod stage47;
 pub(crate) mod stroke_mask;
 pub(crate) mod texture;
 pub(crate) mod vignette;
+pub(crate) mod warp;

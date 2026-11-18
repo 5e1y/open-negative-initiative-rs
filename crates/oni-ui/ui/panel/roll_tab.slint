@@ -126,6 +126,25 @@ export component RollPane inherits Pane {
             }
         }
     }
+    // A digital photo's lens, corrected on the scan before the crop, the turns and the angle.
+    if PanelState.digital: lens-block := Block {
+        title: @tr("Lens Corrections");
+        help: @tr("Corrects what the lens did to the photo. Distortion straightens the lines a barrel lens bows outward, to the right, or a pincushion lens bows inward, to the left. Red fringe and Blue fringe scale those colours against green, taking off the coloured edges lateral chromatic aberration lays toward the corners. Vignetting lightens the corners the lens darkened.\n\nThe photo always fills its frame: a correction that would leave its edges empty enlarges it just enough; a barrel lens's never needs to.");
+        block: 13;
+        modified: Store.lens-corrections-modified;
+        StoreSlider { field: 44; label: @tr("Distortion"); fraction: Store.distortion-fraction; readout: Store.distortion-readout; value-text: Store.distortion-value; }
+        StoreSlider {
+            near: lens-block.hovered;
+            field: 45; label: @tr("Red fringe"); fraction: Store.fringe-red-fraction; readout: Store.fringe-red-readout; value-text: Store.fringe-red-value;
+            fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
+        }
+        StoreSlider {
+            near: lens-block.hovered;
+            field: 46; label: @tr("Blue fringe"); fraction: Store.fringe-blue-fraction; readout: Store.fringe-blue-readout; value-text: Store.fringe-blue-value;
+            fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
+        }
+        StoreSlider { field: 47; label: @tr("Vignetting"); fraction: Store.lens-vignetting-fraction; readout: Store.lens-vignetting-readout; value-text: Store.lens-vignetting-value; }
+    }
     if !PanelState.digital: filtration-block := Block {
         title: @tr("Filtration");
         help: @tr("The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own.");

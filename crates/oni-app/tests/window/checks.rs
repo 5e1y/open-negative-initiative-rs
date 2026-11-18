@@ -196,6 +196,8 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("channel_points::more_color_settings_move_each_its_own_channel", channel_points::more_color_settings_move_each_its_own_channel),
     ("film_effects::a_press_on_grains_rail_lays_the_grain_and_renders_it", film_effects::a_press_on_grains_rail_lays_the_grain_and_renders_it),
     ("film_effects::a_press_on_halations_rail_makes_a_highlight_glow_red", film_effects::a_press_on_halations_rail_makes_a_highlight_glow_red),
+    ("lens::each_lens_slider_lays_its_correction_and_moves_the_canvas", lens::each_lens_slider_lays_its_correction_and_moves_the_canvas),
+    ("lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand", lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand),
     ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
     ("help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing", help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing),

@@ -38,7 +38,7 @@ impl Scan {
         let preview = engine.prepare(render::decode_for(path, Reading::of(&settings), render::PREVIEW_SIDE)?)?;
         let e = engine.lock()?.unproofed(&full, &settings, &Request::default())?.extent();
         let scan = full.extent();
-        let placing = settings.geometry.placing((f64::from(scan.w), f64::from(scan.h)));
+        let placing = settings.placing((f64::from(scan.w), f64::from(scan.h)));
         let as_is = if plain { Some(code_values(path)?) } else { None };
         if as_is.as_ref().is_some_and(|p| (p.width, p.height) != (e.w, e.h)) {
             return Err("the export's pixels and its render differ in size".into());

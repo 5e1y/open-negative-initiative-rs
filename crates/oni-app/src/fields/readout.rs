@@ -92,8 +92,8 @@ pub enum Readout {
     Pixels,
     /// Kelvin, whole.
     Kelvin,
-    /// DNG's tint, signed and whole.
-    Tint,
+    /// Signed and whole: DNG's tint, a lens correction's share.
+    SignedWhole,
 }
 
 impl Readout {
@@ -132,7 +132,7 @@ impl Readout {
             Readout::SignedTimes => (2, true, Unit::Times),
             Readout::Pixels => (1, false, Unit::Pixels),
             Readout::Kelvin => (0, false, Unit::Kelvin),
-            Readout::Tint => (0, true, Unit::Bare),
+            Readout::SignedWhole => (0, true, Unit::Bare),
         }
     }
 

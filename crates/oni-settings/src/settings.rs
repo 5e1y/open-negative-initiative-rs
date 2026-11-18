@@ -9,6 +9,8 @@ use crate::blocks::{
 use crate::curves::{CurveSet, SaturationCurve};
 use crate::film::Film;
 use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses, RollReference};
+use crate::geometry::placing::Placing;
+use crate::lens::{LensCorrection, Radial};
 use crate::levels::{Levels, LevelsSet, PictureLevels};
 use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
 use crate::scanner::{ScannerClicks, ScannerFinish};
@@ -109,6 +111,9 @@ pub struct PipelineSettings {
     /// A digital photo's own levels, laid in the curves' tables; a film frame keeps them unrendered.
     #[serde(rename = "pictureLevels", skip_serializing_if = "PictureLevels::is_neutral", default)]
     pub picture_levels: PictureLevels,
+    /// A digital photo's lens, corrected by hand; a film mode keeps it unrendered.
+    #[serde(rename = "lensCorrection")]
+    pub lens_correction: LensCorrection,
 }
 
 impl Default for PipelineSettings {
@@ -163,6 +168,7 @@ impl Default for PipelineSettings {
             grain: Grain::default(),
             halation: Halation::default(),
             picture_levels: PictureLevels::default(),
+            lens_correction: LensCorrection::default(),
         }
     }
 }
@@ -197,6 +203,22 @@ impl PipelineSettings {
             moved.print.exposure = Print::resting_exposure(next);
         }
         moved
+    }
+
+    /// The lens corrections' radial map on a scan of `size` pixels: a digital photo's alone, so a film
+    /// mode renders none it hides; `None` at rest.
+    pub fn lens(&self, size: (f64, f64)) -> Option<Radial> {
+        self.lens_correction.radial(size).filter(|_| !self.mode.is_film())
+    }
+
+    /// The optical vignetting's stops at the corner, a digital photo's alone; `None` at rest.
+    pub fn optical_vignetting(&self) -> Option<f32> {
+        self.lens_correction.vignetting_stops().filter(|_| !self.mode.is_film())
+    }
+
+    /// The map between the scan of `size` pixels and the frame stage 0 hands on, the lens included.
+    pub fn placing(&self, size: (f64, f64)) -> Placing {
+        self.geometry.placing(size).through(self.lens(size))
     }
 
     /// Every neighbourhood stage off, for thumbnails and per-pixel checks.
@@ -245,7 +267,7 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 19] = [
+    pub const FIELDS: [&str; 20] = [
         "balanceFilters",
         "white",
         "print",
@@ -265,6 +287,7 @@ pub mod look_settings {
         "grain",
         "halation",
         "pictureLevels",
+        "lensCorrection",
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
@@ -309,6 +332,7 @@ pub mod look_settings {
         out.grain = donor.grain;
         out.halation = donor.halation;
         out.picture_levels = donor.picture_levels;
+        out.lens_correction = donor.lens_correction;
         out
     }
 }

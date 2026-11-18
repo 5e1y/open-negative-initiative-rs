@@ -160,20 +160,30 @@ impl Pipeline {
         Ok((region, graph.render(&image, region, cache)?))
     }
 
-    /// `Pipeline.framed`: the scan healed, stage 0, a positive read as a negative last.
+    /// `Pipeline.framed`: the scan healed, stage 0 with the lens's map, a positive read as a negative last.
     pub fn framed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let healed = self.healed(graph, image, s, scale, inputs)?;
-        let out = geometry::apply(healed, &s.geometry, scale);
+        let e = healed.extent();
+        // The map is laid on the full-resolution scan's shape, so every scale zooms alike.
+        let lens = s.lens((f64::from(e.w) / scale, f64::from(e.h) / scale));
+        let out = geometry::apply(healed, &s.geometry, lens.as_ref(), scale);
         Ok(if s.inverted_source && s.mode.is_film() { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
     }
 
     /// The scan in its own frame, before stage 0: its corrections, then the capture's exposure evened and
     /// the flat-field, so a patch takes the gains of the place it lies on and none slides as the crop moves.
-    /// A digital photo was shot on no copy stand: its corrections alone.
+    /// A digital photo was shot on no copy stand: its corrections, then its lens's vignetting where the
+    /// optics darkened the scene.
     pub fn healed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let mut out = self.patched(graph, image, s, scale, inputs)?;
         if !s.mode.is_film() {
-            return Ok(out);
+            return Ok(match s.optical_vignetting() {
+                Some(stops) => {
+                    let extent = out.extent();
+                    out.then(stages::optical_vignette(extent, stops))
+                }
+                None => out,
+            });
         }
         if s.capture_stops != 0.0 {
             out = out.then(stages::exposure(-s.capture_stops));

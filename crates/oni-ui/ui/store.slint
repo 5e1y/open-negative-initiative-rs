@@ -133,6 +133,18 @@ export global Store {
     in property <float> halation-size-fraction;
     in property <string> halation-size-readout;
     in property <string> halation-size-value;
+    in property <float> distortion-fraction;
+    in property <string> distortion-readout;
+    in property <string> distortion-value;
+    in property <float> fringe-red-fraction;
+    in property <string> fringe-red-readout;
+    in property <string> fringe-red-value;
+    in property <float> fringe-blue-fraction;
+    in property <string> fringe-blue-readout;
+    in property <string> fringe-blue-value;
+    in property <float> lens-vignetting-fraction;
+    in property <string> lens-vignetting-readout;
+    in property <string> lens-vignetting-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;
@@ -146,6 +158,7 @@ export global Store {
     in property <bool> paper-correction-modified;
     in property <bool> channel-points-modified;
     in property <bool> film-effects-modified;
+    in property <bool> lens-corrections-modified;
     // Each field's rest as a fraction of its track, by its index: the double click's value, which a
     // slider ticks and holds a drag on; it moves only with the frame.
     in property <[float]> rests;

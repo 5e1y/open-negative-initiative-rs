@@ -83,7 +83,7 @@ fn a_scan_point_lands_where_stage_0_puts_its_pixel_and_comes_back() {
     let Some(mut g) = graph("a_scan_point_lands_where_stage_0_puts_its_pixel_and_comes_back") else { return };
     let source = scan(&mut g);
     for (name, framing) in framings() {
-        let (e, pixels) = whole(&mut g, &geometry::apply(Image::new(&source), &framing, 1.0));
+        let (e, pixels) = whole(&mut g, &geometry::apply(Image::new(&source), &framing, None, 1.0));
         let placing = framing.placing(size());
         let at = placing.on_frame(speck());
         let wanted = (at.x * f64::from(e.w), at.y * f64::from(e.h));
@@ -137,7 +137,7 @@ fn a_patch_painted_on_one_framing_heals_its_speck_on_every_other() {
     // another framing, leaves the speck bright.
     let painted = cropped().placing(size()).on_frame(speck());
     let (_, moved) = &framings()[1];
-    let after = geometry::apply(Image::new(&source), moved, 1.0);
+    let after = geometry::apply(Image::new(&source), moved, None, 1.0);
     let e = after.extent();
     let old = stroke_on(painted);
     let stale = patch(&mut g, &old, (f64::from(e.w), f64::from(e.h)));

@@ -9,7 +9,7 @@ fn unit(readout: Readout) -> f32 {
     match readout {
         Readout::Ceiling => 0.001,
         Readout::Pixels => 0.1,
-        Readout::Kelvin | Readout::Tint => 1.0,
+        Readout::Kelvin | Readout::SignedWhole => 1.0,
         Readout::Stops | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
         Readout::SignedPercent | Readout::Percent => 0.01,
     }
