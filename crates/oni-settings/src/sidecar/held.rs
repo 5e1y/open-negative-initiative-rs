@@ -85,9 +85,9 @@ mod tests {
         let again = (hold(&other), hold(&other));
         drop(again);
         set_label(Medal::Gold, &other, false).unwrap();
-        // Another spelling of the same folder holds the same sidecar.
-        let long = Path::new("/private").join(photo.strip_prefix("/").unwrap());
-        if long.exists() {
+        // Another spelling of the same folder holds the same sidecar: macOS's temporary folder under /private.
+        let long = photo.strip_prefix("/").map(|rest| Path::new("/private").join(rest));
+        if let Some(long) = long.ok().filter(|l| l.exists()) {
             let held = hold(&long);
             let (tx, rx) = mpsc::channel();
             let path = photo.clone();

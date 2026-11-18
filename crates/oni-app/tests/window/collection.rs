@@ -24,6 +24,8 @@ use std::time::Duration;
 use crate::common;
 
 const WAIT: Duration = Duration::from_secs(20);
+/// The gallery's empty room, clear of the export's toast at its foot.
+const EMPTY: (f32, f32) = (800.0, 400.0);
 
 fn names(model: slint::ModelRc<SharedString>) -> Vec<String> {
     model.iter().map(|s| s.to_string()).collect()
@@ -88,7 +90,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
 
     // Nothing picked: the column offers The Lens DB; twin: on a roll, it does not.
     assert!(common::placed(w, Role::Button, "Connect The Lens DB").is_empty(), "twin: no offer on a roll");
-    common::click(&rig, w, (500.0, 700.0));
+    common::click(&rig, w, EMPTY);
     rig.settle();
     assert_eq!(lib.get_info_kind(), InfoKind::Collection);
     assert_eq!(kit.get_link(), KitLink::Out);
@@ -172,7 +174,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     common::click(&rig, w, common::the(w, Role::Button, "Later").middle());
     rig.settle();
     assert!(!kit.get_asking() && kit.get_unsaved() == 1, "Later keeps the change");
-    common::click(&rig, w, (500.0, 700.0));
+    common::click(&rig, w, EMPTY);
     rig.settle();
     assert_eq!(lib.get_info_kind(), InfoKind::Collection);
     assert!(!kit.get_asking(), "twin: coming back to the Kit asks nothing");
@@ -206,8 +208,9 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     let photos = |m: slint::ModelRc<oni_app::KitPiece>| m.row_data(0).unwrap().photos;
     assert_eq!((photos(kit.get_bodies()), photos(kit.get_lenses())), (2, 1), "the roll's two photos name the body, the frame written the lens");
     // Twin: the defaults let go, the roll's other frame still names the body and no longer the lens.
-    common::click(&rig, w, (500.0, 700.0));
+    common::click(&rig, w, EMPTY);
     rig.settle();
+    assert_eq!(lib.get_info_kind(), InfoKind::Collection, "a click on the gallery's empty room shows the Kit");
     menu("Nikon FM2", "Remove Default");
     menu("Canon FD 50mm f/1.4", "Remove Default");
     assert!(kit.get_bodies().iter().chain(kit.get_lenses().iter()).all(|p| !p.by_default));
@@ -229,7 +232,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(lib.get_camera_body(), "Nikon FM2");
 
     // A card's menu opens its page on the service.
-    common::click(&rig, w, (800.0, 400.0));
+    common::click(&rig, w, EMPTY);
     rig.settle();
     menu("Nikon FM2", "See on The Lens DB");
     assert_eq!(opened.borrow().len(), 2, "the card's page opened");

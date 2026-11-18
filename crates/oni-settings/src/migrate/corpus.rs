@@ -78,7 +78,7 @@ pub(super) fn scratch(name: &str) -> PathBuf {
 pub(super) fn laid(dir: &Path, sidecar: &Path, bytes: &[u8]) -> PathBuf {
     let folder = dir.join(sidecar.file_name().unwrap()).join("Roll");
     std::fs::create_dir_all(&folder).unwrap();
-    let original = folder.join(stem(sidecar).rsplit('/').next().unwrap());
+    let original = folder.join(Path::new(&stem(sidecar)).file_name().unwrap());
     std::fs::write(&original, b"").unwrap();
     std::fs::write(sidecar::url_for(&original), bytes).unwrap();
     original

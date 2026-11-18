@@ -137,8 +137,14 @@ pub(crate) fn a_preview_landing_for_a_frame_left_changes_nothing() {
     ctl.act(oni_app::Act::ToggleMode);
     w.global::<Library>().invoke_tile_opened(1);
     rig.until("B rendered", Duration::from_secs(120), || ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("B.tif")) && ctl.state.borrow().renders() >= 2);
-    // Every decode place held, so B's own full resolution, built once it stayed a second, waits.
+    // B's own full resolution, built once B has stayed a second, then let go with the editor: no build of B is under way.
+    rig.until("B's full resolution", Duration::from_secs(60), || ctl.state.borrow().full_built());
+    ctl.act(oni_app::Act::ToggleMode);
+    assert!(w.global::<App>().get_gallery() && !ctl.state.borrow().full_resident(), "the gallery lets B's full resolution go");
+    // Every decode place held before B comes back with its preview kept, so its next build waits on any machine.
     let held = [oni_app::decode_gate::slot(), oni_app::decode_gate::slot()];
+    w.global::<Library>().invoke_tile_opened(1);
+    assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("B.tif")), "B in the editor again");
     let (a_size, b_size) = (Some((400.0, 300.0)), Some(((oni_app::render::PREVIEW_SIDE + 48) as f64, 300.0)));
     assert_eq!(ctl.state.borrow().full_size(), b_size, "B's render lays B's size");
     assert!(!ctl.state.borrow().full_resident(), "B's preview is no full resolution");
