@@ -146,7 +146,7 @@ fn a_scan_pixel_keeps_its_grain_under_a_region_a_crop_and_a_turn() {
         let on_output = Grain { scan: IDENTITY, ..grain::grain(&s, scan, 1.0).unwrap() };
         let image = flat(&mut g, w, h, [1.0; 4]);
         let plain = whole(&mut g, &image.clone().then(stages::grain(&on_output)));
-        let turned = whole(&mut g, &geometry::apply(image, &turn, 1.0).then(stages::grain(&on_output)));
+        let turned = whole(&mut g, &geometry::apply(image, &turn, None, 1.0).then(stages::grain(&on_output)));
         let twin = followed(&turned, &|x, y| plain[(y as u32 * w + x as u32) as usize][0]);
         assert!(twin > 1e-2, "{turn:?}: the twin follows at {twin:.2e}, so the check sees nothing");
     }

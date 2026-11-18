@@ -51,6 +51,10 @@ impl Field {
             Field::GrainSize => Knob::GrainSize,
             Field::HalationAmount => Knob::HalationAmount,
             Field::HalationSize => Knob::HalationSize,
+            Field::Distortion => Knob::LensDistortion,
+            Field::FringeRed => Knob::LensRed,
+            Field::FringeBlue => Knob::LensBlue,
+            Field::LensVignetting => Knob::LensVignetting,
         }
     }
 }

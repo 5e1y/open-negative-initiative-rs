@@ -128,6 +128,19 @@ pub fn vignette(extent: Rect, stops: f32, hunt: f32) -> PerPixel {
     PerPixel { name: "vignette", kernel: &VIGNETTE, params: uniform(HEAD, &[vec![[0.0; 4]], k.rows()].concat()) }
 }
 
+/// A lens's optical vignetting on the scan of `extent`: the vignette circular in pixels, its radius 1 at
+/// the corner, from its centre on, so a gain of `2^(−stops·r²)`.
+pub fn optical_vignette(extent: Rect, stops: f32) -> PerPixel {
+    let half = (f64::from(extent.w).hypot(f64::from(extent.h)) / 2.0 / std::f64::consts::SQRT_2) as f32;
+    let k = Vignette {
+        centre: [extent.x as f32 + extent.w as f32 / 2.0, extent.y as f32 + extent.h as f32 / 2.0],
+        half_side: [half, half],
+        dose: [stops, 0.0],
+        hunt: 0.0,
+    };
+    PerPixel { name: "optical-vignette", kernel: &VIGNETTE, params: uniform(HEAD, &[vec![[0.0; 4]], k.rows()].concat()) }
+}
+
 /// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there.
 pub fn grain(k: &Grain) -> PerPixel {
     PerPixel { name: "grain", kernel: &GRAIN, params: uniform(HEAD, &k.rows()) }

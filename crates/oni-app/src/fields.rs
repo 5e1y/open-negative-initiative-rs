@@ -4,6 +4,7 @@
 use oni_core::knob::{CHROMA_FORCE_RANGE, SAUCE_RANGE};
 use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::FlatField;
+use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white;
 use crate::track::Bend;
@@ -60,6 +61,10 @@ pub enum Field {
     GrainSize,
     HalationAmount,
     HalationSize,
+    Distortion,
+    FringeRed,
+    FringeBlue,
+    LensVignetting,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -78,10 +83,11 @@ pub enum Block {
     FlatField,
     ChannelPoints,
     FilmEffects,
+    LensCorrections,
 }
 
 impl Block {
-    pub const ALL: [Block; 13] = [
+    pub const ALL: [Block; 14] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
@@ -95,6 +101,7 @@ impl Block {
         Block::FlatField,
         Block::ChannelPoints,
         Block::FilmEffects,
+        Block::LensCorrections,
     ];
 
     pub fn from_index(i: i32) -> Option<Block> {
@@ -117,6 +124,7 @@ impl Block {
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
             Block::ChannelPoints => &[RedWhitePoint, GreenWhitePoint, BlueWhitePoint, RedBlackPoint, GreenBlackPoint, BlueBlackPoint],
             Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize],
+            Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
         }
     }
 }
@@ -135,7 +143,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 44] = [
+    pub const ALL: [Field; 48] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -180,6 +188,10 @@ impl Field {
         Field::GrainSize,
         Field::HalationAmount,
         Field::HalationSize,
+        Field::Distortion,
+        Field::FringeRed,
+        Field::FringeBlue,
+        Field::LensVignetting,
     ];
 
     pub fn index(self) -> i32 {
@@ -237,6 +249,10 @@ impl Field {
             Field::GrainSize => "grain-size",
             Field::HalationAmount => "halation-amount",
             Field::HalationSize => "halation-size",
+            Field::Distortion => "distortion",
+            Field::FringeRed => "fringe-red",
+            Field::FringeBlue => "fringe-blue",
+            Field::LensVignetting => "lens-vignetting",
         }
     }
 
@@ -250,6 +266,7 @@ impl Field {
         match self {
             Field::WhiteKelvin | Field::WhiteTint => !mode.is_film(),
             Field::GrainAmount | Field::GrainSize | Field::HalationAmount | Field::HalationSize => !mode.is_film(),
+            Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => !mode.is_film(),
             Field::Temperature | Field::Tint => mode.is_film(),
             _ => true,
         }
@@ -312,11 +329,16 @@ impl Field {
             Field::BlueBlackPoint => black("Blue black point"),
             // A digital photo's white, in kelvin even in mired and in DNG's tint.
             Field::WhiteKelvin => Spec { bend: Bend::Mired, ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
-            Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::Tint)),
+            Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::SignedWhole)),
             Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
             Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
             Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Percent),
+            // A lens's corrections, each a share of its slider's reach.
+            Field::Distortion => s("Distortion", LensCorrection::RANGE, Readout::SignedWhole),
+            Field::FringeRed => s("Red fringe", LensCorrection::RANGE, Readout::SignedWhole),
+            Field::FringeBlue => s("Blue fringe", LensCorrection::RANGE, Readout::SignedWhole),
+            Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
         }
     }
 

@@ -1,4 +1,5 @@
-//! The stages that read around the pixel they write: the blur, the affine resampling, the orientation.
+//! The stages that read around the pixel they write: the blur, the affine resampling, the orientation,
+//! the lens warp.
 
 use super::*;
 
@@ -10,6 +11,7 @@ shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN],
 shader!(GAUSSIAN_HALATION, [wgsl::DETAIL_TAPS, wgsl::HALATION_SOURCE, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return halation_source(v); }}\n{BLUR_PIXEL}"));
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
+shader!(WARP, [wgsl::WARP], "fn pixel(p: vec2<i32>) -> vec4<f32> { return warp_px(p); }");
 
 /// One axis of `CIGaussianBlur` on the input's own extent.
 pub struct Blur(pub Gaussian);
@@ -166,5 +168,68 @@ impl Stage for Oriented {
         let last = Rect::new(output.x, output.y, output.w - 1, output.h - 1);
         let r = mapped(&m, last, 0);
         Rect::new(r.x, r.y, r.w + 1, r.h + 1)
+    }
+}
+
+/// Stage 0's turns and angle and the lens corrections in one read onto `extent`.
+#[derive(Clone, Copy, Debug)]
+pub struct Warped {
+    pub k: Warp,
+    pub extent: Rect,
+}
+
+/// The least and most of `P(u) = k0 + k1 u + k2 u² + k3 u³` on `[low, high]`: its ends and the
+/// real roots of `P′` between them.
+fn factor_span(k: [f32; 4], low: f64, high: f64) -> (f64, f64) {
+    let k = k.map(f64::from);
+    let p = |u: f64| k[0] + u * (k[1] + u * (k[2] + u * k[3]));
+    let (a, b, c) = (3.0 * k[3], 2.0 * k[2], k[1]);
+    let mut at = vec![low, high];
+    if a == 0.0 {
+        if b != 0.0 {
+            at.push(-c / b);
+        }
+    } else if b * b - 4.0 * a * c >= 0.0 {
+        let root = (b * b - 4.0 * a * c).sqrt();
+        at.extend([(-b - root) / (2.0 * a), (-b + root) / (2.0 * a)]);
+    }
+    at.into_iter().filter(|u| (low..=high).contains(u)).map(p).fold((f64::MAX, f64::MIN), |(lo, hi), v| (lo.min(v), hi.max(v)))
+}
+
+impl Stage for Warped {
+    fn name(&self) -> &'static str {
+        "warp"
+    }
+
+    fn shader(&self) -> &'static str {
+        WARP.as_str()
+    }
+
+    fn params(&self) -> Vec<u8> {
+        self.k.bytes()
+    }
+
+    fn extent(&self, _: Rect) -> Rect {
+        self.extent
+    }
+
+    /// The output's box on the corrected scan, then every radius in it scaled by the channels' least
+    /// and most factor there: the bilinear taps of every pixel lie inside.
+    fn input_region(&self, output: Rect) -> Rect {
+        let k = &self.k;
+        let t = k.t.map(|r| r.map(f64::from));
+        let at = |(x, y): (f64, f64)| (t[0][0] * x + t[0][1] * y + t[0][2], t[1][0] * x + t[1][1] * y + t[1][2]);
+        let (x, y, r, b) = (f64::from(output.x), f64::from(output.y), f64::from(output.right()), f64::from(output.bottom()));
+        let corners = [(x, y), (r, y), (x, b), (r, b)].map(at);
+        let (x0, x1) = corners.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.0), b.max(p.0)));
+        let (y0, y1) = corners.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.1), b.max(p.1)));
+        let (cx, cy) = (f64::from(k.centre[0]), f64::from(k.centre[1]));
+        let unit = f64::from(k.inv_unit2);
+        let near = (cx.clamp(x0, x1) - cx).powi(2) + (cy.clamp(y0, y1) - cy).powi(2);
+        let far = (cx - x0).abs().max((cx - x1).abs()).powi(2) + (cy - y0).abs().max((cy - y1).abs()).powi(2);
+        let (least, most) = k.coefficients.iter().map(|c| factor_span(*c, near * unit, far * unit)).fold((f64::MAX, f64::MIN), |(lo, hi), (a, b)| (lo.min(a), hi.max(b)));
+        let reached = [(x0, y0), (x1, y0), (x0, y1), (x1, y1)].into_iter().flat_map(|(px, py)| [least, most].map(|f| (cx + f * (px - cx), cy + f * (py - cy))));
+        let (rx0, rx1, ry0, ry1) = reached.fold((f64::MAX, f64::MIN, f64::MAX, f64::MIN), |(a, b, c, d), p| (a.min(p.0), b.max(p.0), c.min(p.1), d.max(p.1)));
+        Rect::from_corners(rx0.floor() as i32 - 1, ry0.floor() as i32 - 1, rx1.ceil() as i32 + 1, ry1.ceil() as i32 + 1)
     }
 }

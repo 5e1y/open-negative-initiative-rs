@@ -27,6 +27,7 @@ mod frame_owner;
 mod folder_owner;
 mod face_turn;
 mod film_effects;
+mod lens;
 mod density;
 mod picture_plots;
 mod dial;

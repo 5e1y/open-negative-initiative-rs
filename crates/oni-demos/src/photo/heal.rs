@@ -25,7 +25,7 @@ impl Photo {
         let source = self.full_source(s)?;
         let e = self.engine.unproofed(&source, s, &Request::default())?.extent();
         let scan = source.extent();
-        Ok(((e.w, e.h), s.geometry.placing((f64::from(scan.w), f64::from(scan.h)))))
+        Ok(((e.w, e.h), s.placing((f64::from(scan.w), f64::from(scan.h)))))
     }
 
     /// `c`'s patch, as the app's heal makes it, kept in `caches` for this frame's renders; where it

@@ -2563,6 +2563,30 @@ msgstr "Lineal"
 msgid "Display P3"
 msgstr "Display P3"
 
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Lens Corrections"
+msgstr "Correcciones de lente"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Corrects what the lens did to the photo. Distortion straightens the lines a barrel lens bows outward, to the right, or a pincushion lens bows inward, to the left. Red fringe and Blue fringe scale those colours against green, taking off the coloured edges lateral chromatic aberration lays toward the corners. Vignetting lightens the corners the lens darkened.\n\nThe photo always fills its frame: a correction that would leave its edges empty enlarges it just enough; a barrel lens's never needs to."
+msgstr "Corrige lo que el objetivo hizo a la foto. Distorsión endereza las líneas que un objetivo de barril curva hacia fuera, hacia la derecha, o que un objetivo de cojín curva hacia dentro, hacia la izquierda. Franja roja y Franja azul escalan esos colores respecto al verde y quitan los bordes de color que la aberración cromática lateral deja hacia las esquinas. Viñeteado aclara las esquinas que el objetivo oscureció.\n\nLa foto siempre llena su marco: una corrección que dejaría sus bordes vacíos la amplía lo justo; la de un objetivo de barril nunca lo necesita."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Distortion"
+msgstr "Distorsión"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red fringe"
+msgstr "Franja roja"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Blue fringe"
+msgstr "Franja azul"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Vignetting"
+msgstr "Viñeteado"
+
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Filtration"
 msgstr "Filtrado"

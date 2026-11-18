@@ -5,6 +5,7 @@ use crate::fields::Field;
 use oni_settings::axis::density_axis;
 use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::{FlatField, Geometry};
+use oni_settings::lens::LensCorrection;
 use oni_settings::levels::Levels;
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
@@ -89,6 +90,11 @@ pub enum Knob {
     GrainSize,
     HalationAmount,
     HalationSize,
+    /// A digital photo's lens corrections, each a share of its slider.
+    LensDistortion,
+    LensRed,
+    LensBlue,
+    LensVignetting,
 }
 
 impl Knob {
@@ -122,6 +128,7 @@ impl Knob {
             Knob::Angle => Field::Geometry,
             Knob::GrainAmount | Knob::GrainSize => Field::Grain,
             Knob::HalationAmount | Knob::HalationSize => Field::Halation,
+            Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
         }
     }
 
@@ -169,6 +176,7 @@ impl Knob {
             Knob::GrainSize => Grain::SIZE_RANGE,
             Knob::HalationAmount => Halation::AMOUNT_RANGE,
             Knob::HalationSize => Halation::SIZE_RANGE,
+            Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => LensCorrection::RANGE,
         })
     }
 
@@ -221,6 +229,10 @@ impl Knob {
             Knob::GrainSize => s.grain.size,
             Knob::HalationAmount => s.halation.amount,
             Knob::HalationSize => s.halation.size,
+            Knob::LensDistortion => s.lens_correction.distortion,
+            Knob::LensRed => s.lens_correction.red,
+            Knob::LensBlue => s.lens_correction.blue,
+            Knob::LensVignetting => s.lens_correction.vignetting,
         }
     }
 
@@ -291,6 +303,10 @@ impl Knob {
             Knob::GrainSize => out.grain.size = v,
             Knob::HalationAmount => out.halation.amount = v,
             Knob::HalationSize => out.halation.size = v,
+            Knob::LensDistortion => out.lens_correction.distortion = v,
+            Knob::LensRed => out.lens_correction.red = v,
+            Knob::LensBlue => out.lens_correction.blue = v,
+            Knob::LensVignetting => out.lens_correction.vignetting = v,
         }
         out
     }

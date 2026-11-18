@@ -192,6 +192,17 @@ pub fn all() -> &'static [Row] {
             Row { id: "grain", covers: &["grain"], sliders: vec![slider("grain.amount", carry!(grain.amount)), slider("grain.size", carry!(grain.size))], carry: carry!(grain) },
             Row { id: "halation", covers: &["halation"], sliders: vec![slider("halation.amount", carry!(halation.amount)), slider("halation.size", carry!(halation.size))], carry: carry!(halation) },
             Row {
+                id: "lensCorrection",
+                covers: &["lensCorrection"],
+                sliders: vec![
+                    slider("lensCorrection.distortion", carry!(lens_correction.distortion)),
+                    slider("lensCorrection.red", carry!(lens_correction.red)),
+                    slider("lensCorrection.blue", carry!(lens_correction.blue)),
+                    slider("lensCorrection.vignetting", carry!(lens_correction.vignetting)),
+                ],
+                carry: carry!(lens_correction),
+            },
+            Row {
                 id: "scanner",
                 covers: &["scanner", "scannerFinish", "scannerMachine"],
                 sliders: vec![

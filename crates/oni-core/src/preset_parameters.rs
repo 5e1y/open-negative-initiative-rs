@@ -33,6 +33,7 @@ pub const BLOCKS: [Block; 4] = [
             entry("separation", marked("Dye Separation"), &["separation"]),
             // One gesture: the keypad's clicks mean the scanner's render, so the face travels with them.
             entry("scanner", marked("Scanner Keypad"), &["scanner", "face"]),
+            entry("lensCorrection", marked("Lens Corrections"), &["lensCorrection"]),
         ],
     },
     Block {
@@ -147,9 +148,13 @@ pub fn with_white_balance(choice: WhiteBalance, parameters: &BTreeSet<String>) -
     out
 }
 
+/// Rows a new preset leaves unticked though the photo moved them: a lens's correction is meant for
+/// its own lens's photos, a preset for others'.
+const UNPROPOSED: [&str; 1] = ["lensCorrection"];
+
 /// What a new preset opens on: the rows the photo moved, the white balance not carried.
 pub fn proposed(settings: &PipelineSettings) -> BTreeSet<String> {
-    let moved: BTreeSet<String> = parameters::changed(settings).into_iter().map(str::to_string).collect();
+    let moved: BTreeSet<String> = parameters::changed(settings).into_iter().filter(|r| !UNPROPOSED.contains(r)).map(str::to_string).collect();
     with_white_balance(WhiteBalance::None, &moved)
 }
 
@@ -253,6 +258,19 @@ mod tests {
         // Twin: what the frame moved alone would carry the balance.
         let moved: BTreeSet<String> = parameters::changed(&balanced).into_iter().map(str::to_string).collect();
         assert_eq!(white_balance(&moved), WhiteBalance::Manual);
+    }
+
+    #[test]
+    fn a_new_preset_leaves_a_moved_lens_unticked_and_a_copy_offers_it() {
+        let mut digital = PipelineSettings::rest(ConversionMode::Digital, true);
+        digital.lens_correction.distortion = 40.0;
+        digital.sharpen.amount = 0.3;
+        let opening = proposed(&digital);
+        let lens = entries().find(|e| e.id == "lensCorrection").unwrap();
+        assert!(!is_on(lens, &opening) && opening.contains("sharpen"), "{opening:?}");
+        assert!(pasted(lens), "a copy offers the box");
+        // Twin: what the photo moved names the lens.
+        assert!(parameters::changed(&digital).contains("lensCorrection"));
     }
 
     #[test]

@@ -14,6 +14,7 @@ pub mod film;
 pub mod frame;
 pub mod geometry;
 pub mod id;
+pub mod lens;
 pub mod levels;
 pub mod migrate;
 pub mod modes;

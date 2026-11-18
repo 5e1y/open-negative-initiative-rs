@@ -268,12 +268,13 @@ mod tests {
         let fields: std::collections::HashSet<Field> = Param::ALL.iter().map(|p| field(*p, &negative)).collect();
         assert_eq!(fields.len(), Param::ALL.len());
         // Twin: on a negative the phone has no slider for the crop's angle, a slide's gains temperature and tint,
-        // a channel's own points, a digital photo's white nor the film effects.
+        // a channel's own points, a digital photo's white, the film effects nor the lens corrections.
         let missing: Vec<Field> = Field::ALL.into_iter().filter(|f| !fields.contains(f)).collect();
         let points = [Field::RedWhitePoint, Field::GreenWhitePoint, Field::BlueWhitePoint, Field::RedBlackPoint, Field::GreenBlackPoint, Field::BlueBlackPoint];
         let white = [Field::WhiteKelvin, Field::WhiteTint];
         let effects = [Field::GrainAmount, Field::GrainSize, Field::HalationAmount, Field::HalationSize];
-        assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &white, &effects].concat());
+        let lens = [Field::Distortion, Field::FringeRed, Field::FringeBlue, Field::LensVignetting];
+        assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &white, &effects, &lens].concat());
         // A digital photo's Temperature and Tint are its white's, and its Roll tab no film's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
         assert_eq!((field(Param::Temperature, &digital), field(Param::Tint, &digital)), (Field::WhiteKelvin, Field::WhiteTint));

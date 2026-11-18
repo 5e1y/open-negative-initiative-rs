@@ -67,6 +67,10 @@ fields! {
     GrainSize => set_grain_size_fraction, get_grain_size_fraction, set_grain_size_readout, set_grain_size_value;
     HalationAmount => set_halation_amount_fraction, get_halation_amount_fraction, set_halation_amount_readout, set_halation_amount_value;
     HalationSize => set_halation_size_fraction, get_halation_size_fraction, set_halation_size_readout, set_halation_size_value;
+    Distortion => set_distortion_fraction, get_distortion_fraction, set_distortion_readout, set_distortion_value;
+    FringeRed => set_fringe_red_fraction, get_fringe_red_fraction, set_fringe_red_readout, set_fringe_red_value;
+    FringeBlue => set_fringe_blue_fraction, get_fringe_blue_fraction, set_fringe_blue_readout, set_fringe_blue_value;
+    LensVignetting => set_lens_vignetting_fraction, get_lens_vignetting_fraction, set_lens_vignetting_readout, set_lens_vignetting_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
@@ -84,5 +88,6 @@ pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
         Block::FlatField => g.set_flat_field_modified(on),
         Block::ChannelPoints => g.set_channel_points_modified(on),
         Block::FilmEffects => g.set_film_effects_modified(on),
+        Block::LensCorrections => g.set_lens_corrections_modified(on),
     }
 }

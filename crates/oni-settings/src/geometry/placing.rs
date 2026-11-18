@@ -4,6 +4,7 @@
 use super::Size;
 use crate::cg::Point;
 use crate::frame::Geometry;
+use crate::lens::Radial;
 
 /// The turns and mirrors on a `w` × `h` box at the origin: output pixel `p` reads input pixel
 /// `a·p + b`, on a box of the returned size.
@@ -68,7 +69,7 @@ impl Geometry {
         let at = |i: usize| f64::from(a[i]);
         let shift = [b[0] + 0.5 - 0.5 * (at(0) + at(1)), b[1] + 0.5 - 0.5 * (at(2) + at(3))];
         let turn = (self.angle != 0.0).then(|| rotation(self.angle, [0.0, 0.0, upright.0, upright.1]).0);
-        Placing { a, shift, turn, image, frame: self.frame_extent(image) }
+        Placing { a, shift, turn, image, frame: self.frame_extent(image), lens: None }
     }
 }
 
@@ -81,10 +82,18 @@ pub struct Placing {
     turn: Option<[[f64; 3]; 2]>,
     image: Size,
     frame: [f64; 4],
+    /// The lens corrections' map between the scan and its corrected picture, which stage 0 turns.
+    lens: Option<Radial>,
 }
 
 impl Placing {
+    /// This map with `lens` between the scan and what the turns and the angle read.
+    pub fn through(self, lens: Option<Radial>) -> Placing {
+        Placing { lens, ..self }
+    }
+
     pub fn on_frame(&self, scan: Point) -> Point {
+        let scan = self.lens.map_or(scan, |l| l.from_source(scan));
         let p = [scan.x * self.image.0 - self.shift[0], scan.y * self.image.1 - self.shift[1]];
         let at = |i: usize| f64::from(self.a[i]);
         // The turn table is a signed permutation: its inverse is its transpose.
@@ -105,6 +114,7 @@ impl Placing {
         }
         let at = |i: usize| f64::from(self.a[i]);
         let p = [at(0) * q[0] + at(1) * q[1] + self.shift[0], at(2) * q[0] + at(3) * q[1] + self.shift[1]];
-        Point::new(p[0] / self.image.0, p[1] / self.image.1)
+        let corrected = Point::new(p[0] / self.image.0, p[1] / self.image.1);
+        self.lens.map_or(corrected, |l| l.to_source(corrected))
     }
 }

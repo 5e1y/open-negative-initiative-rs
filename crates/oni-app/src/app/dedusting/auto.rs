@@ -155,7 +155,7 @@ impl Ctl {
             let read = Read::of(&path, &settings);
             let result = engine.lock().and_then(|mut e| e.framed_whole(&full, &settings)).map(|(width, pixels)| dust::read(&pixels, width, &read.limits, MASK_SIDE));
             let scan = full.extent();
-            let placing = settings.geometry.placing((f64::from(scan.w), f64::from(scan.h)));
+            let placing = settings.placing((f64::from(scan.w), f64::from(scan.h)));
             let took = started.elapsed();
             with_shell(move |c| c.detection_landed(read, result.map(|r| (r, placing)), took));
         });

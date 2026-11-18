@@ -13,7 +13,7 @@ use std::time::Duration;
 use crate::common;
 
 /// The photo shown: the first photo of `ONI_RAW_DIR`, else a graded TIFF.
-fn photo(folder: &Path) -> String {
+pub(crate) fn photo(folder: &Path) -> String {
     std::fs::create_dir_all(folder).unwrap();
     if let Some(dir) = std::env::var_os("ONI_RAW_DIR") {
         let kind = |p: &Path| p.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
@@ -30,7 +30,7 @@ fn photo(folder: &Path) -> String {
 }
 
 /// A press on the rail of the slider named `label`, at `share` of its travel.
-fn press_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, share: f32) {
+pub(crate) fn press_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, share: f32) {
     let slider = common::the(w, AccessibleRole::Slider, label);
     let at = LogicalPosition::new(slider.x + 10.0 + share * (slider.width - 20.0), slider.y + slider.height - 13.0);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: at });
@@ -40,7 +40,7 @@ fn press_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, share: f3
 }
 
 /// A shell on `folder`'s one photo, open in the editor and rendered as a digital photo.
-fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig, Shell) {
+pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig, Shell) {
     let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);

@@ -14,12 +14,15 @@ fn every_readout_writes_its_number_one_way() {
     assert_eq!(Field::Angle.spec().readout.format(-1.0), "\u{2212}1.00°");
     assert_eq!(Field::DyeSeparation.readout(0.6), "60%");
     assert_eq!((Field::WhiteKelvin.readout(5110.4), Field::WhiteTint.readout(10.4)), ("5110 K".into(), "Magenta +10".into()));
-    // Every slider names what its number counts, the ceiling's bare density and DNG's tint, named by its end, aside.
+    // Every slider names what its number counts, the ceiling's bare density, DNG's tint, named by its end,
+    // and a lens correction's share of its slider aside.
     let bare = |text: &str| text.ends_with(|c: char| c.is_ascii_digit());
+    let lens = [Field::Distortion, Field::FringeRed, Field::FringeBlue, Field::LensVignetting];
     for f in Field::ALL {
         let shown = f.readout(f.spec().range.1);
-        assert_eq!(bare(&shown), matches!(f, Field::DensityCeiling | Field::WhiteTint), "{f:?} reads {shown}");
+        assert_eq!(bare(&shown), matches!(f, Field::DensityCeiling | Field::WhiteTint) || lens.contains(&f), "{f:?} reads {shown}");
     }
+    assert_eq!((Field::Distortion.readout(-37.4), Field::LensVignetting.readout(0.3)), ("\u{2212}37".into(), "0".into()));
     // Twin: a number written without its unit is caught.
     assert!(bare(&number(0.25, 2, true, Unit::Bare)));
     // The black point reads in the sense its slider moves: stored negative, shown positive.
@@ -159,7 +162,8 @@ fn follows(shown: &[String], order: &[String]) -> bool {
 
 #[test]
 fn the_roll_tab_lays_its_blocks_in_its_order() {
-    let order: Vec<String> = ["Prepared Roll", "Film Type", "Flat-Field", "Scan Profile", "Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
+    let order: Vec<String> =
+        ["Prepared Roll", "Film Type", "Flat-Field", "Scan Profile", "Lens Corrections", "Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
         .map(String::from)
         .to_vec();
     let shown = pane_titles(&panel_source(), "RollPane");
@@ -307,6 +311,7 @@ fn each_blocks_reset_key_clears_the_block_it_shows() {
         (Block::FlatField, "flat-field"),
         (Block::ChannelPoints, "channel-points"),
         (Block::FilmEffects, "film-effects"),
+        (Block::LensCorrections, "lens-corrections"),
     ];
     let of = |name: &str| named.iter().find(|(_, n)| *n == name).map(|(b, _)| *b);
     let laid = reset_indices(&panel_source());

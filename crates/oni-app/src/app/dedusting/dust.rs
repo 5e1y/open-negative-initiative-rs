@@ -52,6 +52,6 @@ impl crate::app::State {
     /// The open frame's map between its scan and the picture the canvas shows.
     pub(in crate::app) fn placing(&self) -> Option<Placing> {
         let negative = self.negative()?;
-        Some(self.store.settings().geometry.placing(negative.full()))
+        Some(self.store.settings().placing(negative.full()))
     }
 }
