@@ -119,9 +119,9 @@ pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
     let knob = f.knob();
     match by {
         Move::Step(by) => {
-            let (low, high) = f.spec().range;
-            let sense = if f.spec().inverted { -1.0 } else { 1.0 };
-            Command::Step { knob, by: sense * f32::from(by) * (high - low) / 100.0 }
+            let track = track_on(f, s);
+            let at = position_on(f, knob.get(s), &track) + f32::from(by) / 100.0;
+            Command::Step { knob, by: stored_on(f, track::clamped(at), &track) - knob.get(s) }
         }
         Move::Reset => Command::Set { knob, value: f.base(s) },
         Move::To(at) => Command::Step { knob, by: stored_on(f, track::clamped(at), &track_on(f, s)) - knob.get(s) },
@@ -207,6 +207,14 @@ mod tests {
         // Twin: a step on another slider leaves Exposure's knob, so the check reads the right one.
         let Command::Step { knob, .. } = command(&s, Param::Texture, Move::Step(1)) else { panic!() };
         assert_ne!(knob, Field::Exposure.knob());
+        // A digital photo's white steps a hundredth of its track even in mired: 4.6 mired a click,
+        // about 115 K near daylight; twin: a hundredth of the kelvin range, 230 K, twice that.
+        let mut digital = PipelineSettings::rest(ConversionMode::Digital, true);
+        digital.white = Some(oni_settings::white::White { kelvin: 5000.0, tint: 0.0 });
+        let Command::Step { by, .. } = command(&digital, Param::Temperature, Move::Step(1)) else { panic!() };
+        let mired = 1e6 / 5000.0 - 1e6 / (5000.0 + by);
+        assert!((mired - 4.6).abs() < 0.01, "{by} K, {mired} mired");
+        assert!(by < 0.6 * (oni_settings::white::KELVIN_RANGE.1 - oni_settings::white::KELVIN_RANGE.0) / 100.0);
     }
 
     #[test]

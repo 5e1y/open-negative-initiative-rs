@@ -10798,5 +10798,12 @@
     "title": "help_demo_roll reads Film Type's note as the Digital mode wrote it",
     "status": "done",
     "detail": "Found while running the help window checks for the Digital polish: the Digital mode (#2100) rewrote Film Type's help to name the digital photo, and help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo still compared the card with the three-mode note, so it failed on canvas. The check's constant is now the note the panel shows, laid over four lines under the width ceiling (WIDE_LINES 84 to 83)."
+  },
+  {
+    "id": 2136,
+    "type": "fix",
+    "title": "The phone's step moves a hundredth of the slider's own track, even in mired on a digital photo's white",
+    "status": "done",
+    "detail": "Follows #2132 (the owner's polish list for Digital, item 1). A phone's plus or minus on a slider said it moved a hundredth of the track but moved a hundredth of the fixed range in value: on the kelvin track, now even in mired, that was 230 K a click wherever the white stood, the coarse uneven step the track had just shed, and on the sharpening radius's bent track or a monochrome frame's own contrast it was not a hundredth of what the panel shows either. phone_link::panel::command now steps the knob's place on its own track (track_on, position_on, stored_on) by a hundredth, in the shown sense, so the black point's plus still lowers its stored value. Check phone_link::panel::a_step_is_a_hundredth_of_the_track_rightward_and_a_reset_the_double_click: a white at 5000 K steps 4.6 mired, about 115 K (twin: a hundredth of the kelvin range, 230 K, is more than 0.6 of that span)."
   }
 ]
