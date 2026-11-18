@@ -275,7 +275,7 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let first = engine.inputs(&negative, &s, false).expect("readings");
-    let mut passes = |e: &mut Engine, s: &PipelineSettings| {
+    let passes = |e: &mut Engine, s: &PipelineSettings| {
         let before = e.stats().dispatches;
         let read = e.inputs(&negative, s, false).expect("readings");
         (e.stats().dispatches - before, read)
