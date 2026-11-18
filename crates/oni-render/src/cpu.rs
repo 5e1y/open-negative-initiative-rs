@@ -11,6 +11,7 @@ pub use crate::kernel::reciprocal::reciprocal;
 pub use crate::kernel::flat_field::flat_field;
 pub use crate::kernel::gaussian::gaussian;
 pub use crate::kernel::grain::grain;
+pub use crate::kernel::halation::{halation, halation_source};
 pub use crate::kernel::grid::Grid;
 pub use crate::kernel::orient::orient;
 pub use crate::kernel::output_clip::output_clip;

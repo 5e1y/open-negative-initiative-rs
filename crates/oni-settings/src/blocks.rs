@@ -1,5 +1,5 @@
 //! The small blocks of the chain: gains, the dye separation's family and doses, chroma
-//! decompression's doses, the vignette, the grain, texture, sharpening, chroma denoise, the paper's gains.
+//! decompression's doses, the vignette, the grain, the halation, texture, sharpening, chroma denoise, the paper's gains.
 
 use crate::axis::pipeline;
 use serde::{Deserialize, Serialize};
@@ -106,6 +106,26 @@ impl Default for Grain {
 }
 
 impl Grain {
+    pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
+    pub const SIZE_RANGE: (f32, f32) = (0.0, 1.0);
+}
+
+/// The highlights' glow through the film's base, before the print: its strength and its width, each a
+/// share of its track.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Halation {
+    pub amount: f32,
+    pub size: f32,
+}
+
+impl Default for Halation {
+    fn default() -> Self {
+        Halation { amount: 0.0, size: 0.5 }
+    }
+}
+
+impl Halation {
     pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
     pub const SIZE_RANGE: (f32, f32) = (0.0, 1.0);
 }

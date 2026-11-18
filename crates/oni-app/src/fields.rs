@@ -2,7 +2,7 @@
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
 use oni_core::knob::{CHROMA_FORCE_RANGE, Channel, Knob, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::FlatField;
 use oni_settings::tone::{Print, color_density};
 
@@ -47,6 +47,8 @@ pub enum Field {
     GainTint,
     GrainAmount,
     GrainSize,
+    HalationAmount,
+    HalationSize,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -100,7 +102,7 @@ impl Block {
             Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
             Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
-            Block::FilmEffects => &[GrainAmount, GrainSize],
+            Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize],
         }
     }
 }
@@ -119,7 +121,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 34] = [
+    pub const ALL: [Field; 36] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -154,6 +156,8 @@ impl Field {
         Field::GainTint,
         Field::GrainAmount,
         Field::GrainSize,
+        Field::HalationAmount,
+        Field::HalationSize,
     ];
 
     pub fn index(self) -> i32 {
@@ -201,6 +205,8 @@ impl Field {
             Field::GainTint => "gain-tint",
             Field::GrainAmount => "grain-amount",
             Field::GrainSize => "grain-size",
+            Field::HalationAmount => "halation-amount",
+            Field::HalationSize => "halation-size",
         }
     }
 
@@ -260,6 +266,8 @@ impl Field {
             Field::FlatTint => tint(s("Tint", FlatField::COLOUR_RANGE, Readout::SignedPercent)),
             Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
+            Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
+            Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Percent),
         }
     }
 
@@ -312,6 +320,8 @@ impl Field {
             Field::GainTint => Knob::GainTint,
             Field::GrainAmount => Knob::GrainAmount,
             Field::GrainSize => Knob::GrainSize,
+            Field::HalationAmount => Knob::HalationAmount,
+            Field::HalationSize => Knob::HalationSize,
         }
     }
 

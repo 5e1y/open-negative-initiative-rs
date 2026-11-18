@@ -46,6 +46,7 @@ kernel!(SCANNER_ENCODE, wgsl::SCANNER_ENCODE, call "scanner_encode_px(v)");
 kernel!(SCANNER_OUTPUT, [wgsl::SCANNER_OUTPUT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_output_px(load(p), load1(p)); }");
 kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
 kernel!(GRAIN, wgsl::GRAIN, call "grain_px(v, vec2<f32>(p) + 0.5)");
+kernel!(HALATION, [wgsl::HALATION_SOURCE, wgsl::HALATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_px(load(p), load1(p)); }");
 
 /// The fused stages 4 to 7.
 pub fn stage47(k: &Stage47) -> PerPixel {
@@ -130,4 +131,9 @@ pub fn vignette(extent: Rect, stops: f32, hunt: f32) -> PerPixel {
 /// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there.
 pub fn grain(k: &Grain) -> PerPixel {
     PerPixel { name: "grain", kernel: &GRAIN, params: uniform(HEAD, &k.rows()) }
+}
+
+/// The halation, the blurred source as the auxiliary image.
+pub fn halation(k: &Halation) -> PerPixel {
+    PerPixel { name: "halation", kernel: &HALATION, params: uniform(HEAD, &[[k.amount, 0.0, 0.0, 0.0]]) }
 }

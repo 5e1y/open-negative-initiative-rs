@@ -18,6 +18,7 @@ pub(crate) mod reciprocal;
 pub(crate) mod flat_field;
 pub(crate) mod gaussian;
 pub(crate) mod grain;
+pub(crate) mod halation;
 pub(crate) mod grid;
 pub(crate) mod orient;
 pub(crate) mod output_clip;

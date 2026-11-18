@@ -3,7 +3,7 @@
 
 use crate::axis::density_axis;
 use crate::blocks::{
-    ChromaDenoise, Gains, Grain, PaperCorrection, SeparationFamily, Sharpen, Texture, Vignette, chroma_decompression,
+    ChromaDenoise, Gains, Grain, Halation, PaperCorrection, SeparationFamily, Sharpen, Texture, Vignette, chroma_decompression,
     filter_balance, separation,
 };
 use crate::curves::{CurveSet, SaturationCurve};
@@ -98,6 +98,7 @@ pub struct PipelineSettings {
     pub texture: Texture,
     pub sharpen: Sharpen,
     pub grain: Grain,
+    pub halation: Halation,
 }
 
 impl Default for PipelineSettings {
@@ -148,6 +149,7 @@ impl Default for PipelineSettings {
             texture: Texture::default(),
             sharpen: Sharpen::default(),
             grain: Grain::default(),
+            halation: Halation::default(),
         }
     }
 }
@@ -208,7 +210,7 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 16] = [
+    pub const FIELDS: [&str; 17] = [
         "balanceFilters",
         "print",
         "density",
@@ -225,6 +227,7 @@ pub mod look_settings {
         "scannerFinish",
         "scannerMachine",
         "grain",
+        "halation",
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
@@ -265,6 +268,7 @@ pub mod look_settings {
         out.scanner_finish = donor.scanner_finish.clone();
         out.scanner_machine = donor.scanner_machine;
         out.grain = donor.grain;
+        out.halation = donor.halation;
         out
     }
 }

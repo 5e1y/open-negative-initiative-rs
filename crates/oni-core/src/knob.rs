@@ -3,7 +3,7 @@
 
 use crate::fields::Field;
 use oni_settings::axis::density_axis;
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::levels::Levels;
 use oni_settings::settings::roll_settings;
@@ -80,6 +80,8 @@ pub enum Knob {
     Angle,
     GrainAmount,
     GrainSize,
+    HalationAmount,
+    HalationSize,
 }
 
 impl Knob {
@@ -109,6 +111,7 @@ impl Knob {
             Knob::FlatFieldAmount | Knob::FlatFieldTemperature | Knob::FlatFieldTint => Field::FlatField,
             Knob::Angle => Field::Geometry,
             Knob::GrainAmount | Knob::GrainSize => Field::Grain,
+            Knob::HalationAmount | Knob::HalationSize => Field::Halation,
         }
     }
 
@@ -151,6 +154,8 @@ impl Knob {
             Knob::Angle => Geometry::ANGLE_RANGE,
             Knob::GrainAmount => Grain::AMOUNT_RANGE,
             Knob::GrainSize => Grain::SIZE_RANGE,
+            Knob::HalationAmount => Halation::AMOUNT_RANGE,
+            Knob::HalationSize => Halation::SIZE_RANGE,
         })
     }
 
@@ -197,6 +202,8 @@ impl Knob {
             Knob::Angle => s.geometry.angle,
             Knob::GrainAmount => s.grain.amount,
             Knob::GrainSize => s.grain.size,
+            Knob::HalationAmount => s.halation.amount,
+            Knob::HalationSize => s.halation.size,
         }
     }
 
@@ -261,6 +268,8 @@ impl Knob {
             Knob::Angle => out.geometry.angle = v,
             Knob::GrainAmount => out.grain.amount = v,
             Knob::GrainSize => out.grain.size = v,
+            Knob::HalationAmount => out.halation.amount = v,
+            Knob::HalationSize => out.halation.size = v,
         }
         out
     }

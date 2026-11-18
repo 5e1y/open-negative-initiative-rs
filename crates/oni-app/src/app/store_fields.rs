@@ -58,6 +58,8 @@ fields! {
     GainTint => set_gain_tint_fraction, get_gain_tint_fraction, set_gain_tint_readout, set_gain_tint_value;
     GrainAmount => set_grain_amount_fraction, get_grain_amount_fraction, set_grain_amount_readout, set_grain_amount_value;
     GrainSize => set_grain_size_fraction, get_grain_size_fraction, set_grain_size_readout, set_grain_size_value;
+    HalationAmount => set_halation_amount_fraction, get_halation_amount_fraction, set_halation_amount_readout, set_halation_amount_value;
+    HalationSize => set_halation_size_fraction, get_halation_size_fraction, set_halation_size_readout, set_halation_size_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {

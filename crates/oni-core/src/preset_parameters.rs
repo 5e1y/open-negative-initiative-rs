@@ -43,6 +43,7 @@ pub const BLOCKS: [Block; 4] = [
             entry("lighting", marked("Lighting"), &["levelsGlobal"]),
             entry("vignette", marked("Vignette"), &["vignette"]),
             entry("grain", marked("Grain"), &["grain"]),
+            entry("halation", marked("Halation"), &["halation"]),
             entry("secretSauce", marked("Chrome"), &["secretSauce"]),
             entry("paperCorrection", marked("Paper Correction"), &["paperCorrection"]),
             entry("manualCurves", marked("Curves"), &["manualCurves", "manualContrast"]),

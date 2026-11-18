@@ -599,4 +599,8 @@ settings: PipelineSettings {
         amount: 0.0,
         size: 0.5,
     },
+    halation: Halation {
+        amount: 0.0,
+        size: 0.5,
+    },
 }

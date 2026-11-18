@@ -2112,8 +2112,8 @@ msgid "Film Effects"
 msgstr "Effets film"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain lays a film-like texture over the scene before Lighting and Colour, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed."
-msgstr "Grain pose une texture de film sur la scène avant Lumière et Couleur, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome."
+msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it.\n\nBoth act on the scene before Lighting and Colour, as on the film."
+msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit.\n\nTous deux agissent sur la scène avant Lumière et Couleur, comme sur le film."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain"
@@ -2122,6 +2122,14 @@ msgstr "Grain"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain size"
 msgstr "Taille du grain"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Halation"
+msgstr "Halo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Halation size"
+msgstr "Taille du halo"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."

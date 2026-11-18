@@ -253,8 +253,8 @@ mod tests {
     fn every_slider_of_the_link_is_a_panel_field_of_its_own() {
         let fields: std::collections::HashSet<Field> = Param::ALL.iter().map(|p| field(*p)).collect();
         assert_eq!(fields.len(), Param::ALL.len());
-        // Twin: the phone has no slider for the crop's angle, a slide's gains temperature and tint, nor the grain.
+        // Twin: the phone has no slider for the crop's angle, a slide's gains temperature and tint, nor the film effects.
         let missing: Vec<Field> = Field::ALL.into_iter().filter(|f| !fields.contains(f)).collect();
-        assert_eq!(missing, [Field::Angle, Field::GainTemperature, Field::GainTint, Field::GrainAmount, Field::GrainSize]);
+        assert_eq!(missing, [Field::Angle, Field::GainTemperature, Field::GainTint, Field::GrainAmount, Field::GrainSize, Field::HalationAmount, Field::HalationSize]);
     }
 }

@@ -8,6 +8,7 @@ pub mod flat_field;
 pub mod frontier_table;
 pub mod geometry;
 pub mod grain;
+pub mod halation;
 mod healing;
 pub mod look_lab;
 pub mod oni_look;
@@ -126,9 +127,10 @@ impl Pipeline {
         let ((scale, reference), s) = (at, machine.unwrap_or(frame));
         let scan = input.extent();
         let framed = self.framed(graph, input, s, scale, inputs)?;
-        // The grain lies on the scene's light before the print, as on the film; a measure reads none.
+        // The film's own light, then its grain, lie on the scene before the print; a measure reads neither.
+        let haloed = if measuring { framed } else { halation::halated(framed, s, scan) };
         let grained = grain::grain(s, scan, scale).filter(|_| !measuring).map(|k| stages::grain(&k));
-        let out = stages::laid(framed, grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).collect());
+        let out = stages::laid(haloed, grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).collect());
         let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
         self.finishing(graph, looked, s, true, scale, reference, measuring)
     }
