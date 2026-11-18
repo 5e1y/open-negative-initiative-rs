@@ -14,9 +14,8 @@ pub struct White {
 pub type Uv = (f64, f64);
 pub type M3 = [[f64; 3]; 3];
 
-/// The kelvin slider's travel, its middle the mosaic's own white.
+/// The kelvin slider's travel.
 pub const KELVIN_RANGE: (f32, f32) = (2000.0, 25000.0);
-pub const KELVIN_CENTRE: f32 = 5000.0;
 pub const TINT_RANGE: (f32, f32) = (-150.0, 150.0);
 
 /// The white every mosaic is decoded on: Robertson's node at 200 mired, 5000 K and tint 0.

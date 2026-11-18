@@ -50,6 +50,7 @@ export component StoreSlider inherits Slider {
     release(f) => { Store.release(f); }
     scroll(f, dx, dy, s, fine) => { return Store.scroll(f, dx, dy, s, fine); }
     step(f, d) => { Store.step(f, d); }
+    typed(f, d) => { Store.typed(f, d); }
 }
 
 // A Store block: its fold read from `sectionFold.<title>` when it is laid, written at each toggle.

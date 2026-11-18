@@ -60,11 +60,11 @@ impl Grip {
 pub const CHANNELS: [LevelsChannel; 3] = LevelsChannel::PER_CHANNEL;
 
 fn on_track(mid: f32) -> f32 {
-    track::position(mid, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), None)
+    track::position(mid, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), track::Bend::Even)
 }
 
 fn from_track(position: f32) -> f32 {
-    track::value(position, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), None)
+    track::value(position, &(Levels::MID_RANGE.0..=Levels::MID_RANGE.1), track::Bend::Even)
 }
 
 /// Where a grip is drawn, 0 to 1 of the track: the median travels its own range across the window,

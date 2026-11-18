@@ -136,6 +136,7 @@ component BandSlider inherits Slider {
     release(f) => { Editors.slider-release(f); }
     scroll(f, dx, dy, s, fine) => { return Editors.slider-scroll(f, dx, dy, s, fine); }
     step(f, d) => { Editors.slider-step(f, d); }
+    typed(f, d) => { Editors.slider-step(f, d); }
 }
 
 // `SpectrogramPanel` and `SpectrogramBands`: the wheel, the bands' tabs and the chosen band's sliders.

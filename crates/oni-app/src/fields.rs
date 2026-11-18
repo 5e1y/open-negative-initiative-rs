@@ -6,6 +6,7 @@ use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrectio
 use oni_settings::frame::FlatField;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white;
+use crate::track::Bend;
 
 mod knob;
 mod readout;
@@ -124,8 +125,8 @@ impl Block {
 pub struct Spec {
     pub label: &'static str,
     pub range: (f32, f32),
-    /// `DSSlider.centre`: the value at the middle of a bent track.
-    pub centre: Option<f32>,
+    /// How the track lays the range under the hand.
+    pub bend: Bend,
     pub readout: Readout,
     /// The colour axis its track runs along, whose end the readout names before its number.
     pub axis: Option<Axis>,
@@ -256,7 +257,7 @@ impl Field {
 
     /// The panel's spec for this value on a mosaic colour negative, the only mode the shell opens.
     pub fn spec(self) -> Spec {
-        let s = |label, range, readout| Spec { label, range, centre: None, readout, axis: None, inverted: false };
+        let s = |label, range, readout| Spec { label, range, bend: Bend::Even, readout, axis: None, inverted: false };
         let warmth = |spec: Spec| Spec { axis: Some(Axis::Warmth), ..spec };
         let tint = |spec: Spec| Spec { axis: Some(Axis::Tint), ..spec };
         let black = |label| Spec { inverted: true, ..s(label, Print::BLACK_POINT_RANGE, Readout::SignedPercent) };
@@ -282,7 +283,7 @@ impl Field {
             Field::Angle => s("Angle", oni_settings::frame::Geometry::ANGLE_RANGE, Readout::Degrees),
             Field::SharpenAmount => s("Amount", Sharpen::AMOUNT_RANGE, Readout::Times),
             Field::SharpenRadius => Spec {
-                centre: Some(Sharpen::RADIUS_ANCHOR),
+                bend: Bend::Centre(Sharpen::RADIUS_ANCHOR),
                 ..s("Radius", Sharpen::radius_range(), Readout::Pixels)
             },
             Field::SharpenHalo => s("Halo suppression", Sharpen::HALO_RANGE, Readout::Percent),
@@ -309,8 +310,8 @@ impl Field {
             Field::RedBlackPoint => black("Red black point"),
             Field::GreenBlackPoint => black("Green black point"),
             Field::BlueBlackPoint => black("Blue black point"),
-            // A digital photo's white, in kelvin about the mosaic's own and in DNG's tint.
-            Field::WhiteKelvin => Spec { centre: Some(white::KELVIN_CENTRE), ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
+            // A digital photo's white, in kelvin even in mired and in DNG's tint.
+            Field::WhiteKelvin => Spec { bend: Bend::Mired, ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
             Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::Tint)),
             Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),

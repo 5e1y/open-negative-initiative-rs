@@ -154,6 +154,8 @@ export global Store {
     callback release(int);
     callback scroll(int, length, length, length, bool) -> bool;
     callback step(int, int);
+    // A number typed over a field's readout, in units of its last shown digit.
+    callback typed(int, int);
     // A block back to rest, then one field, by their indices.
     callback reset(int);
     callback rest(int);

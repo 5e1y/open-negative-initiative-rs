@@ -466,7 +466,7 @@ impl Gestures {
             return (true, self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, 0.0))));
         }
         let range = band_range(field, band);
-        let start = track::position(band_value(&s, band, field), &(range.0..=range.1), None);
+        let start = track::position(band_value(&s, band, field), &(range.0..=range.1), track::Bend::Even);
         self.band_shown = Some((field, start));
         self.begin(store, Held::Band { field, start }, Edit::Spectrogram(s));
         (false, Then::Draw)
@@ -481,7 +481,7 @@ impl Gestures {
         let range = band_range(field, band);
         let asked = track::clamped(track::asked(start, translation, span, fine));
         self.band_shown = Some((field, asked));
-        let next = with_band_value(&s, band, field, track::value(asked, &(range.0..=range.1), None));
+        let next = with_band_value(&s, band, field, track::value(asked, &(range.0..=range.1), track::Bend::Even));
         if next == s {
             return Then::Draw;
         }
@@ -503,9 +503,9 @@ impl Gestures {
         let s = self.view(store).spectrogram;
         let band = self.selected.band;
         let range = band_range(field, band);
-        let from = track::position(band_value(&s, band, field), &(range.0..=range.1), None);
+        let from = track::position(band_value(&s, band, field), &(range.0..=range.1), track::Bend::Even);
         let asked = track::clamped(track::asked(from, dx * TRACKPAD_TRAVEL, span, fine));
-        let v = track::value(asked, &(range.0..=range.1), None);
+        let v = track::value(asked, &(range.0..=range.1), track::Bend::Even);
         self.scrolled = true;
         self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, v)));
         true

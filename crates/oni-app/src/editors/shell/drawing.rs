@@ -130,7 +130,7 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
             let range = crate::editors::band_range(field, band);
             let (at, held) = match gestures.band_shown {
                 Some((f, at)) if f == field => (at, true),
-                _ => (crate::track::position(v, &(range.0..=range.1), None), false),
+                _ => (crate::track::position(v, &(range.0..=range.1), crate::track::Bend::Even), false),
             };
             knobs.bands[field].aim(at, jump || scrolled || held, now);
             readouts.push(crate::editors::band_readout(field, v).into());

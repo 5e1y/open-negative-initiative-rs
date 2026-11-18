@@ -62,9 +62,10 @@ pub(crate) fn digital_shows_its_white_and_none_of_the_films_blocks() {
     assert_eq!((value("Temperature"), value("Tint")), ("6504 K".to_string(), "Magenta +10".to_string()));
     slider("Temperature").invoke_accessible_increment_action();
     rig.settle();
+    // An arrow's notch is even in mired: from D65 to the next round figure, 6600 K.
     let white = settings().white.expect("the slider wrote a white");
-    assert!((white.kelvin - 6505.0).abs() < 0.5 && white.tint == settings().white.unwrap().tint, "{white:?}");
-    assert_eq!(value("Temperature"), "6505 K", "the slider shown is the white's own");
+    assert!((white.kelvin - 6600.0).abs() < 0.5 && white.tint == settings().white.unwrap().tint, "{white:?}");
+    assert_eq!(value("Temperature"), "6600 K", "the slider shown is the white's own");
     println!("shot {}", rig.shot("digital-colour").display());
 
     // Back to a negative: its blocks, faces and filters return, the white kept for a later Digital.

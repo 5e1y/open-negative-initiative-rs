@@ -379,7 +379,7 @@ fn a_band_slider_writes_its_axis_and_a_double_click_zeroes_it() {
     g.band_release(&mut store);
     let (low, high) = Spectrogram::SATURATION_RANGE;
     let asked = 0.5 + 77.0 / 308.0;
-    let expected = track::value(asked, &(low..=high), None);
+    let expected = track::value(asked, &(low..=high), track::Bend::Even);
     assert_eq!(store.settings().spectrogram.band(Band::Green), (0.0, expected, 0.0));
     assert_eq!(band_readout(1, expected), "+50%");
     assert_eq!(band_readout(0, -12.4), "−12°");
