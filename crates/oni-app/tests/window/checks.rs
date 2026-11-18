@@ -202,6 +202,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys", panel_frame::the_right_column_keeps_its_width_and_its_rows_keep_their_keys),
     ("help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo", help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo),
     ("help_demo_color::the_color_tabs_marks_play_their_own_demos", help_demo_color::the_color_tabs_marks_play_their_own_demos),
+    ("help_demo_color::the_colour_card_of_a_digital_photo_plays_no_white_balance", help_demo_color::the_colour_card_of_a_digital_photo_plays_no_white_balance),
     ("help_demo::a_help_mark_with_a_demo_plays_it_and_leaving_stops_it", help_demo::a_help_mark_with_a_demo_plays_it_and_leaving_stops_it),
     ("help_demo_details::the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip", help_demo_details::the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip),
     ("help_demo_language::a_worded_demo_plays_in_the_app_s_language", help_demo_language::a_worded_demo_plays_in_the_app_s_language),

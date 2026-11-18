@@ -17,6 +17,18 @@ export component HelpMark inherits Rectangle {
     // What the note explains, as its title says it.
     in property <string> subject;
     property <bool> open: Tip.open == root.note;
+    // The note this mark's card was opened on: a note that changes under it, as a film type's does, takes its place.
+    property <string> laid;
+    function lay() {
+        root.laid = root.note;
+        Tips.help(root.note, root.demo, root.subject);
+    }
+    changed note => {
+        if (Tip.open != "" && Tip.open == root.laid) {
+            Tips.close();
+            root.lay();
+        }
+    }
     width: SectionStyle.help-mark;
     height: self.width;
     // As large as the key's catch, a small key's square round the glyph.
@@ -26,7 +38,7 @@ export component HelpMark inherits Rectangle {
       width: ButtonStyle.small-height;
       height: self.width;
       changed has-hover => {
-          if (self.has-hover) { Tips.help(root.note, root.demo, root.subject); } else { Tips.unhelp(root.note); }
+          if (self.has-hover) { root.lay(); } else { Tips.unhelp(root.note); }
       }
       mark := Button {
         width: parent.width;
@@ -41,7 +53,7 @@ export component HelpMark inherits Rectangle {
         accessible-label: @tr("Help on {}", root.subject);
         expandable: true;
         expanded: root.open;
-        clicked => { Tips.help(root.note, root.demo, root.subject); }
+        clicked => { root.lay(); }
       }
     }
 }
