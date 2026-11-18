@@ -7,6 +7,9 @@ impl EditorStore {
     /// The face turned, a view and never a step: the step under way is recorded on its own face, then
     /// the open frame and those together show the new one, written as an opening writes it.
     pub(super) fn turn(&mut self, face: Face) -> FieldSet {
+        if face == Face::Scanner && !self.settings.mode.is_film() {
+            return FieldSet::EMPTY;
+        }
         self.settle_under_way();
         self.scanner_face = face == Face::Scanner;
         if self.open.is_none() || self.inert() {
@@ -26,7 +29,8 @@ impl EditorStore {
 pub fn channel(mode: ConversionMode) -> Channel {
     match mode {
         ConversionMode::Negative => Channel::Negative,
-        ConversionMode::Positive => Channel::Positive,
+        // The phone's three channels: a digital photo moves as a slide does.
+        ConversionMode::Positive | ConversionMode::Digital => Channel::Positive,
         ConversionMode::Monochrome => Channel::Monochrome,
     }
 }

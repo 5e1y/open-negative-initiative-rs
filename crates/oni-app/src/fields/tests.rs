@@ -13,11 +13,12 @@ fn every_readout_writes_its_number_one_way() {
     assert_eq!(Field::SharpenRadius.spec().readout.format(2.092), "2.1 px");
     assert_eq!(Field::Angle.spec().readout.format(-1.0), "\u{2212}1.00°");
     assert_eq!(Field::DyeSeparation.readout(0.6), "60%");
-    // Every slider names what its number counts, the ceiling's bare density aside.
+    assert_eq!((Field::WhiteKelvin.readout(5110.4), Field::WhiteTint.readout(10.4)), ("5110 K".into(), "Magenta +10".into()));
+    // Every slider names what its number counts, the ceiling's bare density and DNG's tint, named by its end, aside.
     let bare = |text: &str| text.ends_with(|c: char| c.is_ascii_digit());
     for f in Field::ALL {
         let shown = f.readout(f.spec().range.1);
-        assert_eq!(bare(&shown), f == Field::DensityCeiling, "{f:?} reads {shown}");
+        assert_eq!(bare(&shown), matches!(f, Field::DensityCeiling | Field::WhiteTint), "{f:?} reads {shown}");
     }
     // Twin: a number written without its unit is caught.
     assert!(bare(&number(0.25, 2, true, Unit::Bare)));
@@ -269,7 +270,7 @@ fn balance_strength_stands_behind_its_keys_settings_alone_in_the_panel() {
     assert_eq!(Field::BalanceStrength.block(), None);
     assert_eq!(Field::Temperature.block(), Some(Block::Color));
     // Twin: the dose at the surface, right under the key, is caught, and so is a second one.
-    let surface = panel.replace("if root.balance-settings: StoreSlider { field: 11;", "StoreSlider { field: 11;");
+    let surface = panel.replace("if root.balance-settings && !PanelState.digital: StoreSlider { field: 11;", "StoreSlider { field: 11;");
     assert_eq!(behind_the_settings_key(&surface, "Colour"), [] as [i32; 0]);
     assert_eq!(wired(&format!("{panel}StoreSlider {{ field: 11; label: @tr(\"Strength\"); }}")), 2);
 }

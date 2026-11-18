@@ -152,7 +152,7 @@ impl Nav {
             .get(folder)
             .or_else(|| self.listed_stocks.get(folder))
             .copied()
-            .unwrap_or_else(|| oni_settings::film::default_stock_id(oni_settings::ConversionMode::Negative))
+            .unwrap_or(crate::library::GENERIC_NEGATIVE)
     }
 
     /// The opened folder's roll stocks; true when one changed, so the rows are laid again.

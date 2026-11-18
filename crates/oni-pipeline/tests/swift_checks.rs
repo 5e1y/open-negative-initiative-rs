@@ -87,8 +87,8 @@ fn density_axis_sense_is_measured_in_every_mode() {
         let step = slope(DECADE_PAIR, mode);
         let up = density_axis::brightens(mode);
         println!("[{}] worst signed step {step:+.6}", mode.raw_value());
-        // A slide renders on the axis' base whatever its ceiling (owner's call).
-        assert!(if mode == ConversionMode::Positive { step == 0.0 } else if up { step > 0.0 } else { step < 0.0 }, "[{}] against its sense: {step:+.6}", mode.raw_value());
+        // A slide and a digital photo render on the axis' base whatever the ceiling (owner's call).
+        assert!(if mode.reads_positive() { step == 0.0 } else if up { step > 0.0 } else { step < 0.0 }, "[{}] against its sense: {step:+.6}", mode.raw_value());
         measured.push((mode, step));
     }
     let of = |m| measured.iter().find(|(x, _)| *x == m).map(|(_, s)| *s).unwrap(); // Twin: a negative and a B&W frame move.

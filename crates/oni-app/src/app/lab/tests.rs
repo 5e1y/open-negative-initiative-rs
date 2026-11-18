@@ -1,4 +1,5 @@
 use super::*;
+use oni_settings::ConversionMode;
 use oni_settings::scanner::ScannerClicks;
 
 #[test]

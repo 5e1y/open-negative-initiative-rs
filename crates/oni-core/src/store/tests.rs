@@ -3,6 +3,7 @@ use crate::fields::Field;
 use crate::knob::Knob;
 
 /// What a gesture leaves with the open frame: its undo steps, its kept edits, its moves.
+mod digital;
 mod kept;
 mod narrowed;
 mod one_history;

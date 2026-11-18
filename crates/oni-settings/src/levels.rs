@@ -98,12 +98,12 @@ impl Levels {
     }
 
     pub fn resting_mid(mode: ConversionMode) -> f32 {
-        if mode == ConversionMode::Positive { Self::POSITIVE_MID } else { 0.67 }
+        if mode.reads_positive() { Self::POSITIVE_MID } else { 0.67 }
     }
 
     /// Where the pedestal's veil lands once the positive branch re-inverts; a negative reads 0.
     pub fn resting_black(mode: ConversionMode, ceiling: f32) -> f32 {
-        if mode != ConversionMode::Positive {
+        if !mode.reads_positive() {
             return 0.0;
         }
         graduation::window(ConversionMode::Positive)

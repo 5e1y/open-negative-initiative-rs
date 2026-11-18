@@ -180,6 +180,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
+    ("digital::digital_shows_its_white_and_none_of_the_films_blocks", digital::digital_shows_its_white_and_none_of_the_films_blocks),
     ("rolls::a_rolls_row_draws_its_stock", rolls::a_rolls_row_draws_its_stock),
     ("rolls::the_navigators_rolls_draw_their_stock", rolls::the_navigators_rolls_draw_their_stock),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),

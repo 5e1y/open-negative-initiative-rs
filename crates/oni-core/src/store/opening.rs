@@ -185,6 +185,10 @@ impl EditorStore {
     }
 
     pub(super) fn replace(&mut self, next: PipelineSettings) -> FieldSet {
+        let next = match self.path() {
+            Some(path) => self.rested_white(path, &self.settings, next),
+            None => next,
+        };
         let changed = FieldSet::between(&self.settings, &next);
         if !changed.is_empty() {
             self.settings = next;

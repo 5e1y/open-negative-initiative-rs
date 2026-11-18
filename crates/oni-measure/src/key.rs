@@ -16,7 +16,7 @@ use oni_pipeline::resident::{Files, Resident};
 use oni_settings::blocks::Gains;
 use oni_settings::cg::{self, Point};
 use oni_settings::frame::Geometry;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::PipelineSettings;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -84,7 +84,7 @@ pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f3
 pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
     let (reference, referenced) = match &s.roll_reference {
         Some(own) => (Some(own.clone()), s.clone()),
-        None if s.mode == ConversionMode::Positive => (None, s.clone()),
+        None if s.mode.reads_positive() => (None, s.clone()),
         None => {
             let frame = roll_measured(r, copy, path, s)?;
             let roll = roll::combined(&[frame], s.mode, None)?;
@@ -103,6 +103,9 @@ pub fn balance_inputs(s: &PipelineSettings) -> PipelineSettings {
     PipelineSettings {
         // `unlit` and `filtered` write the whole print the filters read; before the levels it is bypassed.
         print: rest.print,
+        // A digital photo's white is its own balance, read by no key.
+        white: rest.white,
+        shot: rest.shot,
         // `truncated` lays these at rest in front of every stage a reading takes; a balance reads Pro's face.
         manual_curves: rest.manual_curves,
         spectrogram: rest.spectrogram,

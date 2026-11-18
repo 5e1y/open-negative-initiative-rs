@@ -24,7 +24,8 @@ impl Shell {
 
     /// The shell's state and controller on a window already built, each part's time in the log;
     /// `rising` then wires and lays out the window, a step each the starter names.
-    pub fn standing(window: MainWindow, store: EditorStore, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+    pub fn standing(window: MainWindow, mut store: EditorStore, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
+        store.read_shots(oni_decode::as_shot);
         let mut laps = crate::starter::Laps::new("Building the app");
         crate::keycaps::serve(&window);
         crate::slider_track::serve(&window);

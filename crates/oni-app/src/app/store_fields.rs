@@ -61,6 +61,8 @@ fields! {
     RedBlackPoint => set_red_black_point_fraction, get_red_black_point_fraction, set_red_black_point_readout, set_red_black_point_value;
     GreenBlackPoint => set_green_black_point_fraction, get_green_black_point_fraction, set_green_black_point_readout, set_green_black_point_value;
     BlueBlackPoint => set_blue_black_point_fraction, get_blue_black_point_fraction, set_blue_black_point_readout, set_blue_black_point_value;
+    WhiteKelvin => set_white_kelvin_fraction, get_white_kelvin_fraction, set_white_kelvin_readout, set_white_kelvin_value;
+    WhiteTint => set_white_tint_fraction, get_white_tint_fraction, set_white_tint_readout, set_white_tint_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {

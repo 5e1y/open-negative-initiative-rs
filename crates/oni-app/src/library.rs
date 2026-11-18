@@ -47,8 +47,11 @@ pub fn default_stock(group: &FilmGroup) -> &'static str {
 pub fn roll_stock(film: Option<&oni_settings::Film>, first: Option<&Entry>) -> &'static str {
     let picked = film.and_then(|f| film_stock(f.stock.as_deref())).map(|k| k.id);
     let mode = first.and_then(|e| e.mode).unwrap_or(oni_settings::ConversionMode::Negative);
-    picked.unwrap_or_else(|| oni_settings::film::default_stock_id(mode))
+    picked.or_else(|| oni_settings::film::default_stock_id(mode)).unwrap_or(GENERIC_NEGATIVE)
 }
+
+/// The canister a folder shows while nothing names its film: the generic negative's.
+pub const GENERIC_NEGATIVE: &str = "generic-color-negative";
 
 /// One band of the gallery: its title, its caption and its photos in order.
 #[derive(Clone, Debug, PartialEq)]

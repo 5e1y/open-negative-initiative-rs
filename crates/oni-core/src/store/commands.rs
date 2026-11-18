@@ -120,20 +120,20 @@ impl EditorStore {
         Applied { changed, walk: None }
     }
 
-    /// The face the open frame is edited on.
+    /// The face the open frame is edited on: a digital photo has no film for the Scanner to print.
     pub fn face(&self) -> Face {
-        if self.scanner_face { Face::Scanner } else { Face::Pro }
+        if self.scanner_face && self.settings.mode.is_film() { Face::Scanner } else { Face::Pro }
     }
 
     /// `colourBinding`: the settings as the open face's Color tab reads them, the Scanner's own
     /// finishing in Pro's fields on the Scanner face.
     pub fn face_view(&self) -> PipelineSettings {
-        if self.scanner_face { self.settings.as_scanner() } else { self.settings.clone() }
+        if self.face() == Face::Scanner { self.settings.as_scanner() } else { self.settings.clone() }
     }
 
     /// An edit made on `face_view`, stored so the other face's finishing stays where it was.
     pub(super) fn stored_by_face(&self, edited: PipelineSettings) -> PipelineSettings {
-        if self.scanner_face { self.settings.storing_scanner_edit(&edited) } else { edited }
+        if self.face() == Face::Scanner { self.settings.storing_scanner_edit(&edited) } else { edited }
     }
 
     pub(super) fn commanded(&self, command: Command) -> PipelineSettings {
@@ -148,7 +148,7 @@ impl EditorStore {
             Command::Finish(next) => self.stored_by_face(*next),
             Command::Each(each) => each.on(s),
             Command::Mode(mode) => adapted(s, mode),
-            Command::Reset => parameters::reset_blank(s, self.scanner_face),
+            Command::Reset => parameters::reset_blank(s, self.face() == Face::Scanner),
             Command::Scan(scan) => scanned(s, scan),
             // Taken before: a face is turned, an undo or a redo laid, never commanded.
             Command::Face(_) | Command::Undo | Command::Redo => s.clone(),

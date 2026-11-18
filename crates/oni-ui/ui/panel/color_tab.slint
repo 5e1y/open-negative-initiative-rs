@@ -65,9 +65,10 @@ export component ColorPane inherits Pane {
         separated: false;
         block: 0;
         modified: Store.color-modified;
-        demo: "white-balance";
-        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
-        SettingsRow {
+        demo: PanelState.digital ? "" : "white-balance";
+        help: PanelState.digital ? @tr("Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once.") : @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
+        // A digital photo's balance is its white alone, set by hand.
+        if !PanelState.digital: SettingsRow {
             open <=> root.balance-settings;
             show-help: @tr("Show Auto White Balance Strength");
             hide-help: @tr("Hide Auto White Balance Strength");
@@ -95,22 +96,33 @@ export component ColorPane inherits Pane {
                 }
             }
         }
-        if PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
+        if !PanelState.digital && PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
         // The key's dose, behind its settings key; the roll's, so it says which photos it reaches. Its
         // reset is its own double click: the block's would rewrite every photo of the roll.
-        if root.balance-settings: StoreSlider { field: 11; label: @tr("Auto White Balance Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
-        if root.balance-settings && PanelState.roll-state == RollState.prepared && PanelState.roll-measured > 1: Label {
+        if root.balance-settings && !PanelState.digital: StoreSlider { field: 11; label: @tr("Auto White Balance Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
+        if root.balance-settings && !PanelState.digital && PanelState.roll-state == RollState.prepared && PanelState.roll-measured > 1: Label {
             role: TextRole.note;
             text: @tr("Shared by the {} photos of this roll.", PanelState.roll-measured);
         }
-        StoreSlider {
+        if !PanelState.digital: StoreSlider {
             near: colour-block.hovered;
             field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
-        StoreSlider {
+        if !PanelState.digital: StoreSlider {
             near: colour-block.hovered;
             field: 1; label: @tr("Tint"); fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
+            fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
+        }
+        // The light the photo was taken under: a higher kelvin warms it, a magenta tint answers a green light.
+        if PanelState.digital: StoreSlider {
+            near: colour-block.hovered;
+            field: 38; label: @tr("Temperature"); fraction: Store.white-kelvin-fraction; readout: Store.white-kelvin-readout; value-text: Store.white-kelvin-value;
+            fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
+        }
+        if PanelState.digital: StoreSlider {
+            near: colour-block.hovered;
+            field: 39; label: @tr("Tint"); fraction: Store.white-tint-fraction; readout: Store.white-tint-readout; value-text: Store.white-tint-value;
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }

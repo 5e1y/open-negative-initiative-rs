@@ -9,7 +9,7 @@ use oni_i18n::tr;
 use oni_link::Command as Link;
 use oni_link::scanner::{Effect, Letter, Machine};
 use oni_settings::blocks::Vignette;
-use oni_settings::{ConversionMode, Face, PipelineSettings, ScannerMachine};
+use oni_settings::{Face, PipelineSettings, ScannerMachine};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -76,11 +76,7 @@ pub struct Screen {
 
 /// The screen's words are the panel's own, in the machine's capitals.
 pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
-    let channel = match s.mode {
-        ConversionMode::Negative => tr("Negative"),
-        ConversionMode::Positive => tr("Positive"),
-        ConversionMode::Monochrome => tr("B&W"),
-    };
+    let channel = super::roll_tab::mode_name(s.mode);
     let clicks = &s.scanner;
     let counts = [clicks.d, clicks.c, clicks.m, clicks.y, clicks.w];
     let (at, count) = place.map_or(("--".to_string(), "--".to_string()), |(at, count)| (format!("{at:02}"), format!("{count:02}")));
@@ -259,6 +255,7 @@ impl Ctl {
         let modified: Vec<bool> = Group::ALL.iter().zip(beside).map(|(g, beside)| beside || g.modified(&settings)).collect();
         let lab = w.global::<Lab>();
         w.global::<Bar>().set_face(i32::from(face == Face::Scanner));
+        w.global::<Bar>().set_digital(!settings.mode.is_film());
         lab.set_shown(shown);
         lab.set_machine(i32::from(settings.scanner_machine == ScannerMachine::Frontier));
         lab.set_monochrome(settings.mode.is_monochrome());
@@ -277,7 +274,8 @@ impl Ctl {
         let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source;
         let panel = w.global::<PanelState>();
         panel.set_separation_shown(separation);
-        panel.set_slide(settings.mode == oni_settings::ConversionMode::Positive);
+        panel.set_slide(settings.mode.is_slide());
+        panel.set_digital(!settings.mode.is_film());
     }
 
     pub(super) fn wire_lab(me: &Rc<Ctl>, window: &MainWindow) {

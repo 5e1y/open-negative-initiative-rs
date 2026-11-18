@@ -83,7 +83,7 @@ pub mod density_axis {
 
     /// A positive rests on `base` whatever read it: past a ceiling of 3 its shadows leave the window.
     pub fn rest(mosaic: bool, mode: ConversionMode) -> f32 {
-        if mosaic && mode != ConversionMode::Positive { MOSAIC_REST } else { base() }
+        if mosaic && !mode.reads_positive() { MOSAIC_REST } else { base() }
     }
 
     pub fn carried(ceiling: f32, mosaic: bool, from: ConversionMode, to: ConversionMode) -> f32 {

@@ -11,16 +11,19 @@ pub enum ConversionMode {
     Negative,
     Positive,
     Monochrome,
+    /// A digital photo: a positive with no film between the light and the sensor.
+    Digital,
 }
 
 impl ConversionMode {
-    pub const ALL: [ConversionMode; 3] = [Self::Negative, Self::Positive, Self::Monochrome];
+    pub const ALL: [ConversionMode; 4] = [Self::Negative, Self::Positive, Self::Monochrome, Self::Digital];
 
     pub fn raw_value(self) -> &'static str {
         match self {
             Self::Negative => "negative",
             Self::Positive => "positive",
             Self::Monochrome => "monochrome",
+            Self::Digital => "digital",
         }
     }
 
@@ -29,12 +32,27 @@ impl ConversionMode {
     }
 
     pub fn invert_flag(self) -> f32 {
-        if self == Self::Positive { 0.0 } else { 1.0 }
+        if self.reads_positive() { 0.0 } else { 1.0 }
     }
 
     /// In negative a gain lowers the output, in positive it raises it, as a filter does.
     pub fn inverts_gain_sense(self) -> bool {
-        self != Self::Positive
+        !self.reads_positive()
+    }
+
+    /// Read on the positive axis, never inverted: a slide and a digital photo.
+    pub fn reads_positive(self) -> bool {
+        matches!(self, Self::Positive | Self::Digital)
+    }
+
+    /// A film stands between the light and the sensor: its roll, base, dyes and filtration are rendered.
+    pub fn is_film(self) -> bool {
+        self != Self::Digital
+    }
+
+    /// A slide: its RAW decoded at 5500 K and its roll prepared on a white it clicks.
+    pub fn is_slide(self) -> bool {
+        self == Self::Positive
     }
 
     pub fn is_monochrome(self) -> bool {
@@ -137,6 +155,17 @@ mod tests {
         assert_eq!(unknown, ConversionMode::Negative);
         let known: ConversionMode = serde_json::from_str("\"positive\"").unwrap();
         assert_eq!(known, ConversionMode::Positive);
+        let digital: ConversionMode = serde_json::from_str("\"digital\"").unwrap();
+        assert_eq!((digital, serde_json::to_string(&digital).unwrap().as_str()), (ConversionMode::Digital, "\"digital\""));
+    }
+
+    #[test]
+    fn a_digital_photo_reads_as_a_positive_with_no_film() {
+        let d = ConversionMode::Digital;
+        assert!(d.reads_positive() && !d.is_film() && !d.is_slide() && d.invert_flag() == 0.0);
+        // Twin: a slide is a film read on the positive axis, a negative neither.
+        assert!(ConversionMode::Positive.is_film() && ConversionMode::Positive.is_slide());
+        assert!(!ConversionMode::Negative.reads_positive() && ConversionMode::Negative.inverts_gain_sense());
     }
 
     #[test]

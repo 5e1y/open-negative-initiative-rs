@@ -15,8 +15,12 @@ pub struct PhoneSliders {
     pub on_paper: bool,
 }
 
-pub fn field(param: Param) -> Field {
+/// The panel's field a phone slider moves on `s`: a digital photo's colour is its white.
+pub fn field(param: Param, s: &PipelineSettings) -> Field {
+    let digital = !s.mode.is_film();
     match param {
+        Param::Temperature if digital => Field::WhiteKelvin,
+        Param::Tint if digital => Field::WhiteTint,
         Param::Temperature => Field::Temperature,
         Param::Tint => Field::Tint,
         Param::ColorDensity => Field::ColorDensity,
@@ -58,14 +62,15 @@ pub fn rows(s: &PipelineSettings, face: Face, on_paper: bool) -> Vec<Row> {
     let flat = &s.flat_field;
     // `FlatFieldBlock`: the sliders act once a mask is chosen.
     let masked = flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none());
-    let separation = !mono && s.rgb_passes.is_none() && pro;
+    let film = s.mode.is_film();
+    let separation = !mono && s.rgb_passes.is_none() && pro && film;
     let sheet = s.sheet.is_some();
     let blocks: [(Tab, &str, bool, &[Param]); 11] = [
-        (Tab::Roll, "Flat-Field", masked, if mono { &[FlatAmount] } else { &[FlatAmount, FlatTemperature, FlatTint] }),
-        (Tab::Roll, "Filtration", true, &[GainRed, GainGreen, GainBlue]),
-        (Tab::Roll, "Highlight Detail", true, &[DensityCeiling]),
+        (Tab::Roll, "Flat-Field", masked && film, if mono { &[FlatAmount] } else { &[FlatAmount, FlatTemperature, FlatTint] }),
+        (Tab::Roll, "Filtration", film, &[GainRed, GainGreen, GainBlue]),
+        (Tab::Roll, "Highlight Detail", film, &[DensityCeiling]),
         (Tab::Roll, "Dye Separation", separation, &[DyeSeparation]),
-        (Tab::Color, "Color", pro && !mono, &[BalanceStrength, Temperature, Tint, ColorDensity]),
+        (Tab::Color, "Color", pro && !mono, if film { &[BalanceStrength, Temperature, Tint, ColorDensity] } else { &[Temperature, Tint, ColorDensity] }),
         (Tab::Color, "Lighting", pro, &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint]),
         (Tab::Color, "Paper Correction", on_paper, &[PaperRed, PaperGreen, PaperBlue]),
         (Tab::Color, "Effects", pro, if mono { &[Vignette] } else { &[Vignette, Chrome] }),
@@ -80,7 +85,7 @@ pub fn rows(s: &PipelineSettings, face: Face, on_paper: bool) -> Vec<Row> {
             continue;
         }
         for &param in params {
-            let f = field(param);
+            let f = field(param, s);
             let v = f.knob().get(s);
             out.push(Row {
                 param,
@@ -110,7 +115,7 @@ fn label(f: Field, inverted: bool) -> String {
 /// On the open face's view `s`: a step moves a hundredth of the track rightward per click, the shown
 /// sense, a place on the track is the panel's drag, both moves; a reset is the double click's.
 pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
-    let f = field(param);
+    let f = field(param, s);
     let knob = f.knob();
     match by {
         Move::Step(by) => {
@@ -208,7 +213,7 @@ mod tests {
     fn a_place_on_the_track_is_where_the_panel_s_drag_puts_the_knob() {
         let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);
         for (s, param) in [(&mono, Param::Contrast), (&mono, Param::BlackPoint), (&mono, Param::Exposure)] {
-            let f = field(param);
+            let f = field(param, s);
             let placed = command(s, param, Move::To(0.8));
             assert!(matches!(placed, Command::Step { knob, .. } if knob == f.knob()));
             assert!((position_on(f, landed(s, placed), &track_on(f, s)) - 0.8).abs() < 1e-4, "{param:?}");
@@ -251,11 +256,18 @@ mod tests {
 
     #[test]
     fn every_slider_of_the_link_is_a_panel_field_of_its_own() {
-        let fields: std::collections::HashSet<Field> = Param::ALL.iter().map(|p| field(*p)).collect();
+        let negative = PipelineSettings::rest(ConversionMode::Negative, true);
+        let fields: std::collections::HashSet<Field> = Param::ALL.iter().map(|p| field(*p, &negative)).collect();
         assert_eq!(fields.len(), Param::ALL.len());
-        // Twin: the phone has no slider for the crop's angle, a slide's gains temperature and tint, nor a channel's own points.
+        // Twin: on a negative the phone has no slider for the crop's angle, a slide's gains temperature and tint,
+        // a channel's own points nor a digital photo's white.
         let missing: Vec<Field> = Field::ALL.into_iter().filter(|f| !fields.contains(f)).collect();
         let points = [Field::RedWhitePoint, Field::GreenWhitePoint, Field::BlueWhitePoint, Field::RedBlackPoint, Field::GreenBlackPoint, Field::BlueBlackPoint];
-        assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points].concat());
+        let white = [Field::WhiteKelvin, Field::WhiteTint];
+        assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &white].concat());
+        // A digital photo's Temperature and Tint are its white's, and its Roll tab no film's.
+        let digital = PipelineSettings::rest(ConversionMode::Digital, true);
+        assert_eq!((field(Param::Temperature, &digital), field(Param::Tint, &digital)), (Field::WhiteKelvin, Field::WhiteTint));
+        assert!(rows(&digital, Face::Pro, false).iter().all(|r| r.tab != Tab::Roll && r.param != Param::BalanceStrength));
     }
 }

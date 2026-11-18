@@ -8,6 +8,7 @@ use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::levels::Levels;
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
+use oni_settings::white::{self, White};
 use oni_settings::PipelineSettings;
 
 /// Chroma denoise's Amount slider.
@@ -67,6 +68,9 @@ pub enum Knob {
     ChannelBlack(Channel),
     Temperature,
     Tint,
+    /// A digital photo's white: the light it was taken under, in kelvin and DNG's tint.
+    WhiteKelvin,
+    WhiteTint,
     Density,
     Vignette,
     Texture,
@@ -102,6 +106,7 @@ impl Knob {
             | Knob::ChannelBlack(_)
             | Knob::Temperature
             | Knob::Tint => Field::Print,
+            Knob::WhiteKelvin | Knob::WhiteTint => Field::White,
             Knob::Density => Field::Density,
             Knob::Vignette => Field::Vignette,
             Knob::Texture => Field::Texture,
@@ -139,6 +144,8 @@ impl Knob {
             Knob::ChannelBlack(_) => Print::BLACK_POINT_RANGE,
             Knob::Temperature => Print::TEMPERATURE_RANGE,
             Knob::Tint => Print::TINT_RANGE,
+            Knob::WhiteKelvin => white::KELVIN_RANGE,
+            Knob::WhiteTint => white::TINT_RANGE,
             Knob::Density => color_density::RANGE,
             Knob::Vignette => Vignette::RANGE,
             Knob::Texture => Texture::RANGE,
@@ -184,6 +191,8 @@ impl Knob {
             Knob::ChannelBlack(c) => p.channel_black[c.index()],
             Knob::Temperature => p.red.exposure - p.blue.exposure,
             Knob::Tint => (p.red.exposure + p.blue.exposure) / 2.0 - p.green.exposure,
+            Knob::WhiteKelvin => white_of(s).kelvin,
+            Knob::WhiteTint => white_of(s).tint,
             Knob::Density => s.density,
             Knob::Vignette => s.vignette.stops,
             Knob::Texture => s.texture.amount,
@@ -248,6 +257,8 @@ impl Knob {
                 let by = v - Knob::Tint.get(s);
                 shift_filters(&mut out.print, Print::TINT_AXIS, by);
             }
+            Knob::WhiteKelvin => out.white = Some(White { kelvin: v, ..white_of(s) }),
+            Knob::WhiteTint => out.white = Some(White { tint: v, ..white_of(s) }),
             Knob::Density => out.density = v,
             Knob::Vignette => out.vignette.stops = v,
             Knob::Texture => out.texture.amount = v,
@@ -265,6 +276,11 @@ impl Knob {
         }
         out
     }
+}
+
+/// The white a digital photo renders for: its own, else the one its decode stands on.
+pub fn white_of(s: &PipelineSettings) -> White {
+    s.white.unwrap_or_else(|| white::of_uv(white::anchor(s.decoded_from_mosaic)))
 }
 
 /// Unit moves of the gains' temperature and tint, each leaving the other and the mean where they are.
@@ -307,78 +323,4 @@ fn levels_mut(s: &mut PipelineSettings, c: Channel) -> &mut Levels {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::fields::FieldSet;
-
-    #[test]
-    fn a_knob_writes_its_own_field_and_holds_its_range() {
-        let s = PipelineSettings::default();
-        for knob in [Knob::Exposure, Knob::Gain(Channel::Blue), Knob::SharpenAmount, Knob::Angle, Knob::Chrome] {
-            let moved = knob.set(&s, knob.get(&s) + 0.25);
-            let fields: Vec<Field> = FieldSet::between(&s, &moved).iter().collect();
-            assert_eq!(fields, vec![knob.field()], "{knob:?}");
-        }
-        assert_eq!(Knob::Exposure.get(&Knob::Exposure.set(&s, 99.0)), Print::EXPOSURE_RANGE.1);
-        // Twin: a value inside the range is written as given.
-        assert_eq!(Knob::Exposure.get(&Knob::Exposure.set(&s, 0.75)), 0.75);
-    }
-
-    #[test]
-    fn a_channels_point_writes_its_own_channel_on_the_global_tracks() {
-        let s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-        let red = Knob::ChannelWhite(Channel::Red).set(&s, 0.2);
-        assert_eq!(red.print.channel_white, [0.2, 0.0, 0.0]);
-        assert_eq!(FieldSet::between(&s, &red).iter().collect::<Vec<_>>(), vec![Field::Print]);
-        let blue = Knob::ChannelBlack(Channel::Blue).set(&s, -9.0);
-        assert_eq!(blue.print.channel_black, [0.0, 0.0, Print::BLACK_POINT_RANGE.0]);
-        assert_eq!(Knob::ChannelWhite(Channel::Green).set(&s, 9.0).print.channel_white[1], Print::POINT_RANGE.1);
-        // Twin: the global white point is not the channel's, and stays where it was.
-        assert_eq!(red.print.white_point, s.print.white_point);
-        assert_ne!(Knob::ChannelWhite(Channel::Green).get(&red), 0.2);
-    }
-
-    #[test]
-    fn temperature_and_tint_move_on_axes_that_leave_each_other_alone() {
-        let s = PipelineSettings::default();
-        let warm = Knob::Temperature.set(&s, 0.8);
-        assert!((Knob::Temperature.get(&warm) - 0.8).abs() < 1e-6);
-        assert!(Knob::Tint.get(&warm).abs() < 1e-6);
-        let both = Knob::Tint.set(&warm, -0.3);
-        assert!((Knob::Temperature.get(&both) - 0.8).abs() < 1e-6 && (Knob::Tint.get(&both) + 0.3).abs() < 1e-6);
-        // Twin: writing red alone moves both readings, which the axes exist to avoid.
-        let mut raw = s.clone();
-        raw.print.red.exposure = 0.8;
-        assert!(Knob::Tint.get(&raw).abs() > 0.1);
-    }
-
-    #[test]
-    fn the_gains_temperature_and_tint_move_apart_and_hold_the_gains_mean() {
-        let mut s = PipelineSettings::default();
-        s.gains.stops = [0.3, -0.1, -0.5];
-        let mean = |s: &PipelineSettings| s.gains.stops.iter().sum::<f32>() / 3.0;
-        let warm = Knob::GainTemperature.set(&s, 0.6);
-        assert!((Knob::GainTemperature.get(&warm) - 0.6).abs() < 1e-6);
-        assert!((Knob::GainTint.get(&warm) - Knob::GainTint.get(&s)).abs() < 1e-6 && (mean(&warm) - mean(&s)).abs() < 1e-6);
-        let green = Knob::GainTint.set(&warm, 0.4);
-        assert!((Knob::GainTint.get(&green) - 0.4).abs() < 1e-6 && (Knob::GainTemperature.get(&green) - 0.6).abs() < 1e-6);
-        assert!((mean(&green) - mean(&s)).abs() < 1e-6);
-        assert_eq!(FieldSet::between(&s, &green).iter().collect::<Vec<_>>(), vec![Field::Gains]);
-        // Twin: moving red alone shifts the tint and the mean, which the axes exist to avoid.
-        let red = Knob::Gain(Channel::Red).set(&s, 0.9);
-        assert!((Knob::GainTint.get(&red) - Knob::GainTint.get(&s)).abs() > 0.1 && (mean(&red) - mean(&s)).abs() > 0.1);
-    }
-
-    #[test]
-    fn a_dose_by_hand_and_a_strength_redose_as_the_panes_do() {
-        let mut s = PipelineSettings::default();
-        let dosed = Knob::Separation.set(&s, 1.2);
-        assert!(dosed.separation_by_hand);
-        s.balance_filters = Some([0.4, 0.0, -0.4]);
-        let half = Knob::BalanceStrength.set(&s, 0.5);
-        assert_eq!(half.print.red.exposure, 0.2);
-        // Twin: a frame no key balanced keeps its filters under the same strength.
-        let unbalanced = Knob::BalanceStrength.set(&PipelineSettings::default(), 0.5);
-        assert_eq!(unbalanced.print.red.exposure, 0.0);
-    }
-}
+mod tests;

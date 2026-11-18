@@ -124,7 +124,8 @@ impl Ctl {
                 new_roll: gallery && count > 0,
                 new_project: count > 0 && !trash,
                 ungroup: members > 0,
-                measure_roll: !preparing && roll > 0,
+                // A digital photo open has no film to prepare.
+                measure_roll: !preparing && roll > 0 && (gallery || settings.mode.is_film()),
                 reset_to_default: gallery && roll > 0,
                 // In the gallery, the one photo picked, as its menu's Copy Settings.
                 copy_settings: if gallery { count == 1 } else { open },

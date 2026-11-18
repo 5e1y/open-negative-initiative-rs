@@ -3,9 +3,9 @@
 use super::*;
 
 /// `RollReference.colourFactor`: the spans each channel's points reach over the roll's, on their
-/// geometric mean.
+/// geometric mean; a digital photo stands on no roll's windows.
 pub fn colour_factor(s: &PipelineSettings) -> f32 {
-    let Some(reference) = &s.roll_reference else { return 1.0 };
+    let Some(reference) = s.roll_reference.as_ref().filter(|_| s.mode.is_film()) else { return 1.0 };
     let own = s.levels.windows().map(|w| (w.white - w.black).abs());
     let roll: [f32; 3] = std::array::from_fn(|c| {
         (graduation::value(reference.white[c], s.mode) - graduation::value(reference.black[c], s.mode)).abs()
@@ -19,7 +19,7 @@ pub fn colour_factor(s: &PipelineSettings) -> f32 {
 /// `ChromaDecompression.weights`: the windows' colour and the film's own the kernel carries.
 pub fn decompression_weights(s: &PipelineSettings) -> (f32, f32) {
     let factor = colour_factor(s);
-    if s.roll_reference.is_some() {
+    if s.roll_reference.is_some() || !s.mode.is_film() {
         return (factor, 0.0);
     }
     let dose = if s.mode == ConversionMode::Negative { s.chroma_decompression.clamp(0.0, 1.0) } else { 1.0 };

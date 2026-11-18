@@ -3,6 +3,7 @@
 
 use crate::balance;
 use oni_settings::levels::Levels;
+use oni_settings::white;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
@@ -25,7 +26,7 @@ pub struct Row {
 }
 
 /// Fields outside every row, with the reason: absent rather than unticked, so none is ticked by mistake.
-pub const EXCLUDED: [(&str, &str); 16] = [
+pub const EXCLUDED: [(&str, &str); 17] = [
     ("geometry", "depends on this frame's content: pasting one destroys hand-made cropping"),
     ("mode", "negative or positive is what the frame is, not a look one applies"),
     ("invertedSource", "a positive read as its own negative is what the frame is, as its mode"),
@@ -42,6 +43,7 @@ pub const EXCLUDED: [(&str, &str); 16] = [
     ("captureStops", "how this scan's capture was exposed against its roll's"),
     ("rgbPasses", "the three files this frame is composed of"),
     ("passOf", "the frame a pass belongs to"),
+    ("shotWhite", "the light this RAW was shot under, read from its own file"),
 ];
 
 fn slider(id: &str, carry: impl Fn(&PipelineSettings, &mut PipelineSettings) + Send + Sync + 'static) -> Slider {
@@ -129,20 +131,23 @@ pub fn all() -> &'static [Row] {
                     (to.print.red, to.print.green, to.print.blue) = filters;
                 },
             },
-            // Temperature, Tint, the balance correction and its share, under the id stored presets name.
+            // Temperature, Tint, the balance correction and its share, under the id stored presets name; a
+            // digital photo's white with them, which a film frame keeps as its own.
             Row {
                 id: "curves",
-                covers: &["balanceFilters", "balanceStrength"],
+                covers: &["balanceFilters", "balanceStrength", "white"],
                 sliders: vec![
                     slider("print.red", carry!(print.red)),
                     slider("print.green", carry!(print.green)),
                     slider("print.blue", carry!(print.blue)),
                     slider("balanceFilters", carry!(balance_filters)),
                     slider("balanceStrength", carry!(balance_strength)),
+                    slider("white", |from, to| to.white = white::carried(from.white, to)),
                 ],
                 carry: |from, to| {
                     (to.print.red, to.print.green, to.print.blue) = (from.print.red, from.print.green, from.print.blue);
                     (to.balance_filters, to.balance_strength) = (from.balance_filters, from.balance_strength);
+                    to.white = white::carried(from.white, to);
                 },
             },
             // The other curve set, a row of its own: sharing one would paste the wrong stage's tables.

@@ -74,13 +74,13 @@ pub fn sauce(amount: f32) -> SaturationCurve {
 }
 
 /// `Print.pointsCurve`: the black and white points' saturation, a line from the black's to the white's.
-/// A slide's white point moves its print the other way, so its saturation is mirrored (owner's call).
+/// A positive's white point moves its print the other way, so its saturation is mirrored (owner's call).
 pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
     if print.bypassed || (print.black_point == 0.0 && print.white_point == 0.0) {
         return SaturationCurve::default();
     }
     let (black, white) = print.held_points();
-    let sense = if mode == ConversionMode::Positive { -1.0 } else { 1.0 };
+    let sense = if mode.reads_positive() { -1.0 } else { 1.0 };
     let white = sense * white;
     let low = f64::from(((1.0 - Print::POINT_SATURATION_GAIN * black) / 2.0).clamp(0.0, 1.0));
     let high = f64::from(((1.0 + Print::POINT_SATURATION_GAIN * white) / 2.0).clamp(0.0, 1.0));

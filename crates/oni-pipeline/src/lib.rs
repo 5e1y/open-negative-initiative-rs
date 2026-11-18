@@ -124,7 +124,11 @@ impl Pipeline {
     ) -> Result<Image> {
         let ((scale, reference), s) = (at, machine.unwrap_or(frame));
         let framed = self.framed(graph, input, s, scale, inputs)?;
-        let out = framed.then(stages::stage47(&conversion::stage47(s)));
+        let balanced = match conversion::white(s) {
+            Some(m) => framed.then(stages::color_matrix(&m)),
+            None => framed,
+        };
+        let out = balanced.then(stages::stage47(&conversion::stage47(s)));
         let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
         self.finishing(graph, looked, s, true, scale, reference, measuring)
     }
@@ -148,13 +152,17 @@ impl Pipeline {
     pub fn framed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let healed = self.healed(graph, image, s, scale, inputs)?;
         let out = geometry::apply(healed, &s.geometry, scale);
-        Ok(if s.inverted_source { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
+        Ok(if s.inverted_source && s.mode.is_film() { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
     }
 
     /// The scan in its own frame, before stage 0: its corrections, then the capture's exposure evened and
     /// the flat-field, so a patch takes the gains of the place it lies on and none slides as the crop moves.
+    /// A digital photo was shot on no copy stand: its corrections alone.
     pub fn healed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let mut out = self.patched(graph, image, s, scale, inputs)?;
+        if !s.mode.is_film() {
+            return Ok(out);
+        }
         if s.capture_stops != 0.0 {
             out = out.then(stages::exposure(-s.capture_stops));
         }

@@ -5,6 +5,7 @@ use oni_core::knob::{CHROMA_FORCE_RANGE, Channel, Knob, SAUCE_RANGE};
 use oni_settings::blocks::{ChromaDenoise, Gains, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::FlatField;
 use oni_settings::tone::{Print, color_density};
+use oni_settings::white;
 
 mod readout;
 
@@ -51,6 +52,8 @@ pub enum Field {
     RedBlackPoint,
     GreenBlackPoint,
     BlueBlackPoint,
+    WhiteKelvin,
+    WhiteTint,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -93,7 +96,7 @@ impl Block {
     pub fn fields(self) -> &'static [Field] {
         use Field::*;
         match self {
-            Block::Color => &[Temperature, Tint, ColorDensity],
+            Block::Color => &[Temperature, Tint, ColorDensity, WhiteKelvin, WhiteTint],
             Block::Lighting => &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
             Block::Effects => &[Vignette, Chrome],
             Block::DensityCeiling => &[DensityCeiling],
@@ -123,7 +126,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 38] = [
+    pub const ALL: [Field; 40] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -162,6 +165,8 @@ impl Field {
         Field::RedBlackPoint,
         Field::GreenBlackPoint,
         Field::BlueBlackPoint,
+        Field::WhiteKelvin,
+        Field::WhiteTint,
     ];
 
     pub fn index(self) -> i32 {
@@ -213,11 +218,23 @@ impl Field {
             Field::RedBlackPoint => "red-black-point",
             Field::GreenBlackPoint => "green-black-point",
             Field::BlueBlackPoint => "blue-black-point",
+            Field::WhiteKelvin => "white-kelvin",
+            Field::WhiteTint => "white-tint",
         }
     }
 
     pub fn block(self) -> Option<Block> {
         Block::ALL.into_iter().find(|b| b.fields().contains(&self))
+    }
+
+    /// Whether the panel shows this value in `mode`: a digital photo's white in place of the print's
+    /// filters, so a block's reset and its key read only what it shows.
+    pub fn shown_in(self, mode: oni_settings::ConversionMode) -> bool {
+        match self {
+            Field::WhiteKelvin | Field::WhiteTint => !mode.is_film(),
+            Field::Temperature | Field::Tint => mode.is_film(),
+            _ => true,
+        }
     }
 
     /// The panel's spec for this value on a mosaic colour negative, the only mode the shell opens.
@@ -275,13 +292,18 @@ impl Field {
             Field::RedBlackPoint => black("Red black point"),
             Field::GreenBlackPoint => black("Green black point"),
             Field::BlueBlackPoint => black("Blue black point"),
+            // A digital photo's white, in kelvin about the mosaic's own and in DNG's tint.
+            Field::WhiteKelvin => Spec { centre: Some(white::KELVIN_CENTRE), ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
+            Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::Tint)),
         }
     }
 
     /// The value's one rest on this frame: where its track's tick stands, where a double click lands
-    /// and what its block's reset writes, the frame's import state in its own mode and decode.
+    /// and what its block's reset writes, the frame's import state in its own mode and decode; a white
+    /// rests on the frame's As Shot.
     pub fn base(self, settings: &oni_settings::PipelineSettings) -> f32 {
         let mut rest = oni_settings::PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic);
+        rest.white = settings.shot;
         if self.block() == Some(Block::SourceBalance) {
             // `restingGains`: a measured roll rests on its window's stops; a slide, on its own measure's.
             rest = settings.clone();
@@ -331,6 +353,8 @@ impl Field {
             Field::RedBlackPoint => Knob::ChannelBlack(Channel::Red),
             Field::GreenBlackPoint => Knob::ChannelBlack(Channel::Green),
             Field::BlueBlackPoint => Knob::ChannelBlack(Channel::Blue),
+            Field::WhiteKelvin => Knob::WhiteKelvin,
+            Field::WhiteTint => Knob::WhiteTint,
         }
     }
 

@@ -10,7 +10,7 @@ use oni_settings::settings::roll_settings::Field as Shared;
 
 /// A frame's own fields, which a step on the open frame never lays on the others: its file, its
 /// framing, its dust, its roll.
-const OWN: [Field; 16] = [
+const OWN: [Field; 17] = [
     Field::Film,
     Field::ManualOrder,
     Field::Sheet,
@@ -23,6 +23,7 @@ const OWN: [Field; 16] = [
     Field::PassOf,
     Field::Geometry,
     Field::Corrections,
+    Field::ShotWhite,
     Field::RollReference,
     Field::RollReferenceDeclined,
     Field::MeasuredGains,
@@ -218,7 +219,7 @@ impl EditorStore {
 
     /// What `command` did to the open frame, which stood at `was`, kept for the frames together.
     pub(super) fn take_together(&mut self, command: &Command, was: &PipelineSettings) {
-        let scanner = self.scanner_face;
+        let scanner = self.face() == Face::Scanner;
         let view = |s: &PipelineSettings| if scanner { s.as_scanner() } else { s.clone() };
         let took = match command {
             Command::Step { knob, .. } => Took::Moved(*knob, knob.get(&view(&self.settings)) - knob.get(&view(was)), scanner),

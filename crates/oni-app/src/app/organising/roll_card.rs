@@ -167,9 +167,9 @@ impl Ctl {
     }
 }
 
-/// A frame the roll card counts as needing no measure: measured with its roll, or a slide.
+/// A frame the roll card counts as needing no measure: measured with its roll, a slide or a digital photo.
 pub(crate) fn measured_or_slide(s: &oni_settings::PipelineSettings) -> bool {
-    s.roll_reference.is_some() || s.mode == oni_settings::ConversionMode::Positive
+    s.roll_reference.is_some() || s.mode.reads_positive()
 }
 
 /// Whether a folder's roll asks for Prepare Roll as its card would say: a photo lies in it, out of

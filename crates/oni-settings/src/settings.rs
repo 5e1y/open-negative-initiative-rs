@@ -14,6 +14,7 @@ use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
 use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
 use crate::tone::{Print, Tone};
+use crate::white::White;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -78,6 +79,12 @@ pub struct PipelineSettings {
     pub balance_filters: Option<[f32; 3]>,
     #[serde(rename = "balanceStrength")]
     pub balance_strength: f32,
+    /// The light a digital photo is balanced for; `None` is the white its decode stands on.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub white: Option<White>,
+    /// A RAW's As Shot white, read from its metadata as it became digital: where its white rests.
+    #[serde(rename = "shotWhite", skip_serializing_if = "Option::is_none", default)]
+    pub shot: Option<White>,
     pub print: Print,
     pub density: f32,
     #[serde(rename = "manualCurves")]
@@ -132,6 +139,8 @@ impl Default for PipelineSettings {
             balance_method: None,
             balance_filters: None,
             balance_strength: filter_balance::RESTING_STRENGTH,
+            white: None,
+            shot: None,
             print: Print::default(),
             density: 0.0,
             manual_curves: CurveSet::default(),
@@ -206,8 +215,9 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 15] = [
+    pub const FIELDS: [&str; 16] = [
         "balanceFilters",
+        "white",
         "print",
         "density",
         "manualCurves",
@@ -225,7 +235,7 @@ pub mod look_settings {
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
-    pub const FRAME_FIELDS: [&str; 16] = [
+    pub const FRAME_FIELDS: [&str; 17] = [
         "film",
         "manualOrder",
         "sheet",
@@ -242,10 +252,12 @@ pub mod look_settings {
         "rgbPasses",
         "passOf",
         "face",
+        "shotWhite",
     ];
 
     pub fn copied(donor: &PipelineSettings, target: &PipelineSettings) -> PipelineSettings {
         let mut out = target.clone();
+        out.white = crate::white::carried(donor.white, target);
         out.balance_filters = donor.balance_filters;
         out.print = donor.print;
         out.density = donor.density;

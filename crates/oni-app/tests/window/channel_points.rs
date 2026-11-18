@@ -111,8 +111,12 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     assert!(common::placed(w, Role::Slider, "Red white point").is_empty());
     panel.invoke_film_type_picked(1);
     rig.settle();
-    // Twin: the same panel on a positive lays it.
+    // Twin: the same panel on a positive lays it, and so does a digital photo's.
     assert_eq!(title().len(), 1, "a positive lays More Color Settings");
+    panel.invoke_film_type_picked(3);
+    rig.settle();
+    assert_eq!(ctl.state.borrow().store().settings().mode, oni_settings::ConversionMode::Digital);
+    assert_eq!(title().len(), 1, "a digital photo lays More Color Settings");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

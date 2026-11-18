@@ -85,6 +85,8 @@ export global PanelState {
     in property <bool> separation-shown: true;
     // A positive is a plain RAW: no roll measure, dyes or ceiling, its cast in a temperature and a tint.
     in property <bool> slide;
+    // A digital photo: no film blocks, its colour a white in kelvin and tint.
+    in property <bool> digital;
     callback auto-balance();
     callback tab-picked(PanelTab);
     in property <RollState> roll-state: RollState.prepared;

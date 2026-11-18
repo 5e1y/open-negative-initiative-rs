@@ -29,3 +29,19 @@ impl Neutral {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_settings::white::{self, White};
+
+    #[test]
+    fn the_settings_white_reads_the_decodes_two_neutrals() {
+        assert_eq!(white::uv(White { kelvin: 5000.0, tint: 0.0 }), Neutral::Swift.uv());
+        assert_eq!(white::MOSAIC_WHITE, Neutral::Swift.uv());
+        let (slide, own) = (white::uv(White { kelvin: SLIDE_KELVIN as f32, tint: 0.0 }), Neutral::Slide.uv());
+        assert!((slide.0 - own.0).abs() < 1e-15 && (slide.1 - own.1).abs() < 1e-15, "{slide:?} {own:?}");
+        // Twin: 10 K away is another white.
+        assert_ne!(white::uv(White { kelvin: 5010.0, tint: 0.0 }), Neutral::Swift.uv());
+    }
+}
