@@ -10938,5 +10938,40 @@
     "title": "Prewarm compiles a digital photo's Lighting passes",
     "status": "done",
     "detail": "prewarm::variants gains a digital photo lit (stage47+print in one pass), lit with a curve (print alone after the tables) and lit on the busy finishing (print fused with the spectrogram, saturation and vignette), so a first exposure notch on a digital photo compiles nothing; Kernels::total grows by nine, read only by the starter."
+  },
+  {
+    "id": 2190,
+    "type": "perf",
+    "title": "The grain is a pass of its own before the print, so a print notch reruns no grain",
+    "status": "done",
+    "detail": "oni_pipeline::Pipeline::chain laid the grain and stage47 as one fused pass, whose input (the haloed scene) was what Cache::frontier kept: every Exposure, Lighting, per-channel point or Hunt notch on a grained Digital frame reran the grain, 4 to 7 times a plain per-pixel pass (+2.7 ms at 2 MP, +4.4 at 6 MP, +12.9 at 13.5 MP on an M2 Max). The grain is now its own stage, the print the next, so the frontier keeps the grained scene and a print notch costs what an ungrained one does; a grain notch or an uncached render (export, counted, loupe) pays one more rgba32float pass, 0.5 to 1.6 ms. In the app at 5K fit (window 2560x1410 pt, drawable 5120x2820, canvas renders 2000x1333), GPU completion of an Exposure notch on a grained Digital NEF fell from p50 19.8 and 11.1 ms, p90 21.0 and 21.9 (two runs) to p50 5.8 and 6.8, p90 16.6 and 17.1, within the ungrained frame's spread (p50 6.5 and 13.2, p90 17.2 and 18.0) on a machine whose load average ran 4 to 19. Look: grained Digital pixels only move, by at most 1.1e-6 relative (the compiler's float contraction differs fused and apart); renders at rest and every film mode do not move. Checks: tests/grain.rs a_print_notch_through_the_frontier_reruns_no_grain (the grained chain is one stage longer than the ungrained one, which the fused layout fails at 3 against 4; an Exposure notch through Cache::frontier dispatches and writes as many pixels grained as at rest; twins: with no cache the notch writes more, a grain-amount notch dispatches one more pass); the_grain_matches_its_reference_on_every_branch now checks the chain's layout, grain then print, against cpu::stage47(cpu::grain(..)) (twin: the grain after the print)."
+  },
+  {
+    "id": 2191,
+    "type": "perf",
+    "title": "The grain's PCG rounds written out: the grain kernel 30 to 45 % faster on Metal",
+    "status": "done",
+    "detail": "oni-render wgsl/grain.wgsl grain_normal ran its two PCG-2D rounds in a loop; naga bounds every loop on Metal (force_loop_bounding), which blocks the compiler's unrolling inside the 8x8 lattice loop. Written out, the grain alone falls from 2.76 to 1.63 ms at 2.2 MP and from 6.4 to 3.6-3.9 ms at 6 MP (size 0). The CPU reference kernel/grain.rs mirrors it, its values unchanged. Look: grained Digital pixels move by at most 2.8e-7 relative (about 2 ulp, float contraction), nothing at rest. Checks: the_grain_matches_its_reference_on_every_branch (twin: the lattice one node over) and the_nodes_are_standard_normals_and_uncorrelated."
+  },
+  {
+    "id": 2192,
+    "type": "perf",
+    "title": "A measure carries no film effects, so a grain or halation notch reads no distribution again",
+    "status": "done",
+    "detail": "oni_measure::truncate::truncated rests grain and halation: a measure renders neither (effects = !measuring), yet Engine::inputs compared the entering settings with them, so every grain or halation notch re-read both input histograms, about 8 ms of blocking readback each (59 re-reads, 507 ms in a 60-notch grain drag; 56 and 537 ms on halation). Readings are unchanged. In the app at 5K fit: 41 re-reads (292 ms) in a 60-notch grain-amount drag and 25 (320 ms) on halation-amount before, none after. Checks: truncate every_reading_is_taken_without_the_film_effects (grained and haloed equals rest for all four stages; twin: an Exposure move changes the ManualCurves entry); render::inputs_tests::a_film_effect_notch_reads_no_distribution_again (0 dispatches after a grain and halation change, readings equal; twin: an Exposure notch dispatches)."
+  },
+  {
+    "id": 2193,
+    "type": "perf",
+    "title": "The prewarm compiles a digital photo's chain: its white, halation, grain and levels",
+    "status": "done",
+    "detail": "render/engine/prewarm.rs variants were film modes alone, so the first Digital, grained or haloed notch compiled 3 to 4 pipelines (21.7 ms against a 3.3 ms steady state with Metal's cache warm, about 150 ms each cold). variants() gains digital_busy() (the busy finishing set on Digital, a 4000 K white, grain 0.5, halation 0.5, a picture-levels mid) and Digital at rest; Kernels::total follows (27 to 33 steps). Engine::prewarm_where(keep) prewarms a subset, for the twin. Check: prewarm_tests a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch (twin: prewarmed on the film variants alone, the Digital notch compiles)."
+  },
+  {
+    "id": 2194,
+    "type": "bench",
+    "title": "A digital photo's film effects in the cost bench",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/cost.rs a_digital_photo_s_film_effects_at_rest_and_on_a_notch (ONI_BENCH_COST=1): whole renders of a Digital frame at rest, grain at sizes 0, 0.5 and 1, halation, both, at 2000x1333 and 3024x2016, then an Exposure notch through Cache::frontier with no grain, grain, grain and halation, cases interleaved, GPU completion read by a one-pixel readback. A bench, not a check. Its cases list is one case a line, so the workspace keeps its count of lines past 200 characters."
   }
 ]

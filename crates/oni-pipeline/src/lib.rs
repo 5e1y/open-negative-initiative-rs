@@ -139,13 +139,17 @@ impl Pipeline {
         // A digital photo's alone for now (owner's call), so a film mode never renders an effect it hides.
         let effects = !measuring && !s.mode.is_film();
         let haloed = if effects { halation::halated(balanced, s, scan) } else { balanced };
-        let grained = grain::grain(s, scan, scale).filter(|_| effects).map(|k| stages::grain(&k));
+        // The grain is a pass of its own: a print notch starts from the grained scene the canvas's cache keeps.
+        let grained = match grain::grain(s, scan, scale).filter(|_| effects) {
+            Some(k) => haloed.then(stages::grain(&k)),
+            None => haloed,
+        };
         // A digital photo's Lighting follows its levels and curves, in the first pass after their tables;
-        // with neither, in the picture's own pass. Halation and grain stay on the scene before the picture.
+        // with neither, in the picture's own pass.
         let lit = conversion::lighting(s).map(|k| stages::print(&k));
         let (with_picture, after_tables) = if finishing::tabled(&s.manual_curves, picture_levels(s)) { (None, lit) } else { (lit, None) };
-        let picture = grained.into_iter().chain([stages::stage47(&conversion::stage47(s))]).chain(with_picture);
-        let out = stages::laid(haloed, picture.collect());
+        let picture = [stages::stage47(&conversion::stage47(s))].into_iter().chain(with_picture);
+        let out = stages::laid(grained, picture.collect());
         let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
         self.finishing(graph, looked, s, after_tables, true, scale, reference, measuring)
     }

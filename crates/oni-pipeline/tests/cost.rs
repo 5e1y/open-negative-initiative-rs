@@ -1,8 +1,8 @@
 //! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs
-//! against the same chain in ten passes, runs interleaved so both see the same load; without the
-//! variable it returns at once.
+//! against the same chain in ten passes, runs interleaved so both see the same load, and a digital
+//! photo's film effects at rest and on a notch; without the variable it returns at once.
 
-use oni_graph::{Graph, Image, Rect};
+use oni_graph::{Cache, Graph, Image, Rect, Source};
 use oni_pipeline::{finishing, stages};
 use oni_render::TextureCoeff;
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -149,4 +149,71 @@ fn each_feature_s_share_of_a_busy_render() {
     let (plain, bright) = (time(&digital), time(&lit));
     let (bent, both) = (time(&curved(digital.clone())), time(&curved(lit.clone())));
     println!("digital {plain:.2} ms, lit {bright:.2} ({:+.2}); curved {bent:.2} ms, lit {both:.2} ({:+.2})", bright - plain, both - bent);
+}
+
+fn ramp(g: &mut Graph, w: u32, h: u32) -> Source {
+    let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| {
+        let speck = ((i.wrapping_mul(2_654_435_761) >> 8) % 1000) as f32 / 10_000.0;
+        [0.02 + (i % w) as f32 / w as f32 * 0.9 + speck, 0.3 + speck, 0.05 + (i / w) as f32 / h as f32 * 0.6, 1.0]
+    }).collect();
+    g.upload(w, h, &pixels).unwrap()
+}
+
+/// A digital photo's grain and halation on a whole render at three sizes, then an exposure notch through
+/// the canvas's cache with and without grain: a print notch never pays the grain.
+#[test]
+fn a_digital_photo_s_film_effects_at_rest_and_on_a_notch() {
+    if std::env::var_os("ONI_BENCH_COST").is_none() {
+        return;
+    }
+    let Ok(mut g) = Graph::new() else { return };
+    let rest = PipelineSettings::rest(ConversionMode::Digital, true);
+    let with = |grain: f32, size: f32, halation: f32| {
+        let mut s = rest.clone();
+        (s.grain.amount, s.grain.size, s.halation.amount) = (grain, size, halation);
+        s
+    };
+    let cases = [
+        ("rest", with(0.0, 0.5, 0.0)),
+        ("grain size 0", with(0.5, 0.0, 0.0)),
+        ("grain size 0.5", with(0.5, 0.5, 0.0)),
+        ("grain size 1", with(0.5, 1.0, 0.0)),
+        ("halation", with(0.0, 0.5, 0.5)),
+        ("both", with(0.5, 0.5, 0.5)),
+    ];
+    let mut pipeline = oni_pipeline::Pipeline::new();
+    for (w, h) in [(2000u32, 1333u32), (3024, 2016)] {
+        let source = ramp(&mut g, w, h);
+        let request = oni_pipeline::Request { full_width: Some(f64::from(w)), ..Default::default() };
+        let images: Vec<Image> = cases.iter().map(|(_, s)| pipeline.image(&mut g, &source, s, &request, &Default::default()).unwrap()).collect();
+        let mut times = vec![Vec::new(); images.len()];
+        for _ in 0..RUNS {
+            for (t, image) in times.iter_mut().zip(&images) {
+                t.push(ms(&mut g, image));
+            }
+        }
+        let line: Vec<String> = cases.iter().zip(times).map(|((name, _), t)| format!("{name} {:.2}", median(t))).collect();
+        println!("digital {w}x{h}, whole render in ms: {}", line.join(", "));
+        // Exposure notches back and forth, each case through its own cache, interleaved.
+        let notched = [("no grain", with(0.0, 0.5, 0.0)), ("grain", with(0.5, 0.5, 0.0)), ("grain and halation", with(0.5, 0.5, 0.5))];
+        let mut caches: Vec<Cache> = notched.iter().map(|_| Cache::frontier()).collect();
+        let mut times = vec![Vec::new(); notched.len()];
+        for run in 0..RUNS + 2 {
+            for (i, (_, s)) in notched.iter().enumerate() {
+                let mut t = s.clone();
+                t.print.exposure += if run % 2 == 0 { 0.01 } else { 0.02 };
+                let image = pipeline.image(&mut g, &source, &t, &request, &Default::default()).unwrap();
+                let started = Instant::now();
+                let made = g.materialise_cached(&image, image.extent(), Some(&mut caches[i])).expect("renders");
+                let e = made.extent();
+                g.render(&Image::new(&made), Rect::new(e.x, e.y, 1, 1), None).expect("reads");
+                // The first two notches fill the cache.
+                if run >= 2 {
+                    times[i].push(started.elapsed().as_secs_f64() * 1000.0);
+                }
+            }
+        }
+        let line: Vec<String> = notched.iter().zip(times).map(|((name, _), t)| format!("{name} {:.2}", median(t))).collect();
+        println!("digital {w}x{h}, exposure notch in ms: {}", line.join(", "));
+    }
 }

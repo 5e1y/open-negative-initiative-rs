@@ -2,7 +2,7 @@
 //! everything downstream at rest, the one recipe every reading is taken through.
 
 use oni_settings::axis::graduation;
-use oni_settings::blocks::{ChromaDenoise, Texture, Vignette};
+use oni_settings::blocks::{ChromaDenoise, Grain, Halation, Texture, Vignette};
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::{LevelsSet, PictureLevels};
 use oni_settings::modes::Face;
@@ -26,6 +26,9 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
     // Chroma denoise runs downstream of the levels, so a measurement of what enters them carries none.
     out.chroma = ChromaDenoise::OFF;
     out.spectrogram = Spectrogram::default();
+    // A measure renders neither film effect, so a notch on one reads nothing again.
+    out.grain = Grain::default();
+    out.halation = Halation::default();
     out.saturation = SaturationCurve::default();
     out.secret_sauce = 0.0;
     out.texture = Texture::default();
@@ -111,6 +114,20 @@ mod tests {
         assert_eq!((truncated(&s, Stage::Curves).print, truncated(&s, Stage::Curves).density), (s.print, 0.3));
         let negative = PipelineSettings { print: s.print, density: 0.3, ..PipelineSettings::rest(ConversionMode::Negative, true) };
         assert_eq!(truncated(&negative, Stage::ManualCurves).print, negative.print);
+    }
+
+    #[test]
+    fn every_reading_is_taken_without_the_film_effects() {
+        let rest = PipelineSettings::rest(ConversionMode::Digital, true);
+        let mut s = rest.clone();
+        (s.grain.amount, s.grain.size, s.halation.amount, s.halation.size) = (0.6, 0.2, 0.4, 0.9);
+        for stage in [Stage::Levels, Stage::GlobalLevels, Stage::ManualCurves, Stage::Curves] {
+            assert_eq!(truncated(&s, stage), truncated(&rest, stage), "{stage:?}");
+        }
+        // Twin: a print notch reaches the reading past the curves.
+        let mut lit = rest.clone();
+        lit.print.exposure += 0.1;
+        assert_ne!(truncated(&lit, Stage::Curves), truncated(&rest, Stage::Curves));
     }
 
     #[test]

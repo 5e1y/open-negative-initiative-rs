@@ -22,11 +22,14 @@ fn grain_ramp(u: f32) -> f32 {
 // A standard normal at a lattice node: PCG-2D, four 16-bit uniforms summed, exact on every device.
 fn grain_normal(i: vec2<i32>) -> f32 {
     var v = bitcast<vec2<u32>>(i) * 1664525u + 1013904223u;
-    for (var n = 0; n < 2; n++) {
-        v.x += v.y * 1664525u;
-        v.y += v.x * 1664525u;
-        v = v ^ (v >> vec2<u32>(16u));
-    }
+    // Two rounds written out: naga bounds every loop on Metal (force_loop_bounding), which blocks its
+    // unrolling and kept the kernel 30 to 45 % slower.
+    v.x += v.y * 1664525u;
+    v.y += v.x * 1664525u;
+    v = v ^ (v >> vec2<u32>(16u));
+    v.x += v.y * 1664525u;
+    v.y += v.x * 1664525u;
+    v = v ^ (v >> vec2<u32>(16u));
     let u = (vec4<f32>(vec4<u32>(v.x & 0xffffu, v.x >> 16u, v.y & 0xffffu, v.y >> 16u)) + 0.5) * (1.0 / 65536.0);
     return (u.x + u.y + u.z + u.w - 2.0) * 1.7320508;
 }

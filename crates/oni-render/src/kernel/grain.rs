@@ -48,11 +48,12 @@ pub(crate) fn ramp(u: f32) -> f32 {
 /// reaches the same value with no transcendental.
 pub(crate) fn normal(i: [i32; 2]) -> f32 {
     let mut v = [i[0] as u32, i[1] as u32].map(|x| x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
-    for _ in 0..2 {
-        v[0] = v[0].wrapping_add(v[1].wrapping_mul(1_664_525));
-        v[1] = v[1].wrapping_add(v[0].wrapping_mul(1_664_525));
-        v = v.map(|x| x ^ (x >> 16));
-    }
+    v[0] = v[0].wrapping_add(v[1].wrapping_mul(1_664_525));
+    v[1] = v[1].wrapping_add(v[0].wrapping_mul(1_664_525));
+    v = v.map(|x| x ^ (x >> 16));
+    v[0] = v[0].wrapping_add(v[1].wrapping_mul(1_664_525));
+    v[1] = v[1].wrapping_add(v[0].wrapping_mul(1_664_525));
+    v = v.map(|x| x ^ (x >> 16));
     let u = [v[0] & 0xffff, v[0] >> 16, v[1] & 0xffff, v[1] >> 16].map(|n| (n as f32 + 0.5) * (1.0 / 65536.0));
     (u[0] + u[1] + u[2] + u[3] - 2.0) * 1.732_050_8
 }
