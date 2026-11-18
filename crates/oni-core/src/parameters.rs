@@ -4,7 +4,7 @@
 use crate::balance;
 use oni_settings::levels::Levels;
 use oni_settings::white;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::PipelineSettings;
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
 
