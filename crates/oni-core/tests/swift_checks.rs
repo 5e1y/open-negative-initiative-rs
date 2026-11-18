@@ -33,12 +33,12 @@ fn a_mode_change_carries_the_handles_at_rest_and_leaves_a_placed_black() {
     let base = density_axis::base();
     let mut placed = PipelineSettings::rest(ConversionMode::Negative, false);
     placed.levels.red.set_black(0.42);
-    let moved = parameters::carried(&placed, ConversionMode::Positive);
+    let moved = placed.carried(ConversionMode::Positive);
     assert_eq!(moved.levels.red.black, 0.42, "a placed black stays where the hand put it");
     assert_eq!(moved.levels.green.black, oni_settings::levels::Levels::resting_black(ConversionMode::Positive, base));
     // Twin: the round trip from a positive's rest lands on the negative's rest.
     let positive = PipelineSettings::rest(ConversionMode::Positive, false);
-    let back = parameters::carried(&positive, ConversionMode::Negative);
+    let back = positive.carried(ConversionMode::Negative);
     assert_eq!(back.levels, LevelsSet::neutral(ConversionMode::Negative, base));
     assert_ne!(positive.levels, back.levels);
 }

@@ -88,8 +88,9 @@ pub fn copied(fields: &BTreeSet<Field>, donor: &PipelineSettings, target: &Pipel
             continue;
         }
         match field {
+            // The frame's own values still on its mode's rest take the donor's mode's.
             Field::Mode => {
-                out.mode = donor.mode;
+                out = out.carried(donor.mode);
                 out.inverted_source = donor.inverted_source;
             }
             Field::SourceEncoding => out.source_encoding = donor.source_encoding,

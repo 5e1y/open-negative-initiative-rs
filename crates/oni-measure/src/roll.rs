@@ -153,7 +153,7 @@ pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]
 /// The settings a frame of the roll is measured from: the look at rest, framing, flat-field and dust
 /// carried over, on the roll's film, window and mask.
 pub fn start(before: &PipelineSettings, film: ConversionMode, window: Rect, mask: Option<&FlatField>, capture_stops: f32) -> PipelineSettings {
-    let mut s = parameters::carried(&parameters::imported(before), film);
+    let mut s = parameters::imported(before).carried(film);
     s.measured_gains = None;
     s.corrections = before.corrections.clone();
     s.capture_stops = capture_stops;
@@ -170,7 +170,7 @@ pub fn start(before: &PipelineSettings, film: ConversionMode, window: Rect, mask
 pub fn slide(before: &PipelineSettings, window: Rect, mask: Option<&FlatField>, capture_stops: f32) -> PipelineSettings {
     let mut bare = before.clone();
     bare.roll_reference = None;
-    let mut s = parameters::carried(&parameters::imported(&bare), ConversionMode::Positive);
+    let mut s = parameters::imported(&bare).carried(ConversionMode::Positive);
     s.corrections = before.corrections.clone();
     s.capture_stops = capture_stops;
     s.primaries_converted = false;
