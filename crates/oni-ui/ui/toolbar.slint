@@ -58,6 +58,8 @@ export global Bar {
     in property <string> redo-title: @tr("Redo");
     // The face the open photo is edited on: 0 Pro, 1 Scanner.
     in-out property <int> face;
+    // A digital photo open: no film for the Scanner face to print, so the faces stand aside.
+    in property <bool> digital;
     // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
     in property <length> traffic-lights;
     // The bar's height, which the traffic lights are centred in.
@@ -220,7 +222,7 @@ component EditorKeys inherits Centre {
         Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; tool: CanvasTool.compare; publishes: !root.measuring; enabled: Bar.has-photo; }
     }
     // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
-    Tabs {
+    if !Bar.digital: Tabs {
         preferred-width: ScannerStyle.face-bar;
         max-width: ScannerStyle.face-bar;
         tabs: [@tr("Pro"), @tr("Scanner")];

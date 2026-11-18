@@ -413,6 +413,8 @@ fields! {
     FlatTint => set_flat_tint_fraction, get_flat_tint_fraction, set_flat_tint_readout, set_flat_tint_value;
     GainTemperature => set_gain_temperature_fraction, get_gain_temperature_fraction, set_gain_temperature_readout, set_gain_temperature_value;
     GainTint => set_gain_tint_fraction, get_gain_tint_fraction, set_gain_tint_readout, set_gain_tint_value;
+    WhiteKelvin => set_white_kelvin_fraction, get_white_kelvin_fraction, set_white_kelvin_readout, set_white_kelvin_value;
+    WhiteTint => set_white_tint_fraction, get_white_tint_fraction, set_white_tint_readout, set_white_tint_value;
 }
 
 fn set_modified(g: &Store, b: Block, on: bool) {
@@ -447,15 +449,4 @@ impl Ctl {
 }
 
 #[cfg(test)]
-mod paint_tests {
-    use super::Paint;
-
-    #[test]
-    fn a_thumbnail_waiting_or_being_drawn_again_is_stale_and_no_other() {
-        let mut paint = Paint::default();
-        paint.redraws.push_back(("a".into(), None));
-        paint.drawing = Some("b".into());
-        assert!(paint.stale("a") && paint.stale("b"));
-        assert!(!paint.stale("c"), "twin: a photo no redraw waits for stands in as drawn");
-    }
-}
+mod paint_tests;

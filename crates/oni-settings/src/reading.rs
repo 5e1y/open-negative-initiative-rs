@@ -2,7 +2,7 @@
 //! patches cut on it both read from this one value, so the two cannot drift apart.
 
 use crate::frame::RgbPasses;
-use crate::{ConversionMode, PipelineSettings, SourceEncoding};
+use crate::{PipelineSettings, SourceEncoding};
 use serde::Serialize;
 
 /// How a frame's sidecar asks a file outside the RAW engine to be read.
@@ -20,7 +20,7 @@ pub struct Reading {
 
 impl Reading {
     pub fn of(s: &PipelineSettings) -> Reading {
-        let slide = s.mode == ConversionMode::Positive;
+        let slide = s.mode.is_slide();
         Reading { primaries_converted: s.primaries_converted, source_encoding: s.source_encoding, passes: s.rgb_passes.clone(), slide }
     }
 

@@ -141,7 +141,9 @@ mod tests {
                 named(&path, out);
             } else if path.extension().is_some_and(|e| e == "slint") {
                 let text = std::fs::read_to_string(&path).expect("a .slint file");
-                out.extend(text.lines().filter_map(|l| l.trim().strip_prefix("demo: \"")?.strip_suffix("\";")).map(str::to_string));
+                // Every topic a mark may name, a conditional one's both sides.
+                let quoted = |rest: &str| rest.split('"').skip(1).step_by(2).filter(|t| !t.is_empty()).map(str::to_string).collect::<Vec<_>>();
+                out.extend(text.lines().filter_map(|l| l.trim().strip_prefix("demo:")).flat_map(quoted));
             }
         }
     }

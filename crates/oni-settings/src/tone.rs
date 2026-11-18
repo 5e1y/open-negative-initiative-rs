@@ -291,7 +291,7 @@ impl Print {
     pub const CONTRAST_STEP: f32 = 0.05;
 
     pub fn resting_exposure(mode: crate::modes::ConversionMode) -> f32 {
-        if mode == crate::modes::ConversionMode::Positive { 0.0 } else { Self::RESTING_EXPOSURE }
+        if mode.reads_positive() { 0.0 } else { Self::RESTING_EXPOSURE }
     }
 
     pub fn filters(&self) -> V3 {

@@ -8,6 +8,7 @@ use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::levels::Levels;
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
+use oni_settings::white::{self, White};
 use oni_settings::PipelineSettings;
 
 /// Chroma denoise's Amount slider.
@@ -64,6 +65,9 @@ pub enum Knob {
     WhitePoint,
     Temperature,
     Tint,
+    /// A digital photo's white: the light it was taken under, in kelvin and DNG's tint.
+    WhiteKelvin,
+    WhiteTint,
     Density,
     Vignette,
     Texture,
@@ -97,6 +101,7 @@ impl Knob {
             | Knob::WhitePoint
             | Knob::Temperature
             | Knob::Tint => Field::Print,
+            Knob::WhiteKelvin | Knob::WhiteTint => Field::White,
             Knob::Density => Field::Density,
             Knob::Vignette => Field::Vignette,
             Knob::Texture => Field::Texture,
@@ -133,6 +138,8 @@ impl Knob {
             Knob::WhitePoint => Print::POINT_RANGE,
             Knob::Temperature => Print::TEMPERATURE_RANGE,
             Knob::Tint => Print::TINT_RANGE,
+            Knob::WhiteKelvin => white::KELVIN_RANGE,
+            Knob::WhiteTint => white::TINT_RANGE,
             Knob::Density => color_density::RANGE,
             Knob::Vignette => Vignette::RANGE,
             Knob::Texture => Texture::RANGE,
@@ -176,6 +183,8 @@ impl Knob {
             Knob::WhitePoint => p.white_point,
             Knob::Temperature => p.red.exposure - p.blue.exposure,
             Knob::Tint => (p.red.exposure + p.blue.exposure) / 2.0 - p.green.exposure,
+            Knob::WhiteKelvin => white_of(s).kelvin,
+            Knob::WhiteTint => white_of(s).tint,
             Knob::Density => s.density,
             Knob::Vignette => s.vignette.stops,
             Knob::Texture => s.texture.amount,
@@ -238,6 +247,8 @@ impl Knob {
                 let by = v - Knob::Tint.get(s);
                 shift_filters(&mut out.print, Print::TINT_AXIS, by);
             }
+            Knob::WhiteKelvin => out.white = Some(White { kelvin: v, ..white_of(s) }),
+            Knob::WhiteTint => out.white = Some(White { tint: v, ..white_of(s) }),
             Knob::Density => out.density = v,
             Knob::Vignette => out.vignette.stops = v,
             Knob::Texture => out.texture.amount = v,
@@ -255,6 +266,11 @@ impl Knob {
         }
         out
     }
+}
+
+/// The white a digital photo renders for: its own, else the one its decode stands on.
+pub fn white_of(s: &PipelineSettings) -> White {
+    s.white.unwrap_or_else(|| white::of_uv(white::anchor(s.decoded_from_mosaic)))
 }
 
 /// Unit moves of the gains' temperature and tint, each leaving the other and the mean where they are.
@@ -326,6 +342,19 @@ mod tests {
         let mut raw = s.clone();
         raw.print.red.exposure = 0.8;
         assert!(Knob::Tint.get(&raw).abs() > 0.1);
+    }
+
+    #[test]
+    fn a_digital_white_rests_on_its_decode_and_moves_its_kelvin_and_tint_apart() {
+        let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+        assert_eq!((Knob::WhiteKelvin.get(&s), Knob::WhiteTint.get(&s)), (5000.0, 0.0));
+        let warm = Knob::WhiteKelvin.set(&Knob::WhiteTint.set(&s, 12.0), 3200.0);
+        assert_eq!(warm.white, Some(White { kelvin: 3200.0, tint: 12.0 }));
+        assert_eq!(FieldSet::between(&s, &warm).iter().collect::<Vec<_>>(), vec![Field::White]);
+        assert_eq!(Knob::WhiteKelvin.get(&Knob::WhiteKelvin.set(&s, 90000.0)), white::KELVIN_RANGE.1);
+        // Twin: a plain file rests on D65, not on the mosaic's 5000 K.
+        let plain = PipelineSettings::rest(oni_settings::ConversionMode::Digital, false);
+        assert!((Knob::WhiteKelvin.get(&plain) - 6504.0).abs() < 2.0);
     }
 
     #[test]

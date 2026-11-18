@@ -29,6 +29,7 @@ mod face_turn;
 mod density;
 mod picture_plots;
 mod dial;
+mod digital;
 mod depth_lip;
 mod design_system;
 mod editor_leftovers;

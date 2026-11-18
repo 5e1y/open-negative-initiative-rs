@@ -34,6 +34,7 @@ pub(super) fn mode_name(mode: ConversionMode) -> &'static str {
         ConversionMode::Negative => tr("Negative"),
         ConversionMode::Positive => tr("Positive"),
         ConversionMode::Monochrome => tr("B&W"),
+        ConversionMode::Digital => tr("Digital"),
     }
 }
 

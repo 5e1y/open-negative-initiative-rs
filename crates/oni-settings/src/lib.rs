@@ -25,6 +25,7 @@ pub mod sidecar;
 pub mod spectrogram;
 pub mod tolerant;
 pub mod tone;
+pub mod white;
 
 pub use document::{AutoBalance, Document, Failure};
 pub use date::Date;

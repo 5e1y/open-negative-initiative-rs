@@ -121,6 +121,8 @@ settings: PipelineSettings {
         ],
     ),
     balance_strength: 0.67,
+    white: None,
+    shot: None,
     print: Print {
         exposure: 0.981184,
         contrast: 0.0,

@@ -220,8 +220,9 @@ pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
 /// `onOniMachine`: Pro's conversion with Lighting, Color Density and Auto White Balance at rest, but for
 /// the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
-    // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's.
-    if s.face != Face::Scanner {
+    // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's;
+    // a digital photo has no film for the machine to print.
+    if s.face != Face::Scanner || !s.mode.is_film() {
         return None;
     }
     let mut out = s.as_scanner();

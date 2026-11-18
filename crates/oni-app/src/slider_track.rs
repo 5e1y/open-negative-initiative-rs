@@ -9,6 +9,7 @@ fn unit(readout: Readout) -> f32 {
     match readout {
         Readout::Ceiling => 0.001,
         Readout::Pixels => 0.1,
+        Readout::Kelvin | Readout::Tint => 1.0,
         Readout::Stops | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
         Readout::SignedPercent | Readout::Percent => 0.01,
     }
@@ -219,7 +220,7 @@ mod tests {
             for block in Block::ALL.into_iter().filter(|b| *b != Block::FlatField) {
                 let reset = rested(&moved, block, None);
                 assert!(!is_modified(&reset, block, None), "{block:?} lit after its reset on {:?}", frame.mode);
-                for f in block.fields() {
+                for f in block.fields().iter().filter(|f| f.shown_in(moved.mode)) {
                     let (at, landed) = (ticks[f.index() as usize], position_on(*f, f.knob().get(&reset), &track_on(*f, &moved)));
                     assert!((at - landed).abs() < 1e-5, "{f:?} ticked at {at}, reset to {landed} on {:?}", frame.mode);
                     assert!((f.base(&moved) - f.knob().get(&reset)).abs() < 1e-5, "{f:?}'s double click beside its reset");

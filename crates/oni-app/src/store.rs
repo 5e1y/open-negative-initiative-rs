@@ -36,7 +36,8 @@ pub fn is_modified(settings: &PipelineSettings, block: Block, dyes: Option<Separ
     if block == Block::FlatField {
         return settings.flat_field != Default::default();
     }
-    let off = block.fields().iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6);
+    let shown = block.fields().iter().filter(|f| f.shown_in(settings.mode));
+    let off = shown.into_iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6);
     // `SettingsPane.dyes`: the block's value is the dose, the family and the hand's mark together.
     off || (block == Block::DyeSeparation && (settings.separation_family != dyes || settings.separation_by_hand))
 }
@@ -60,7 +61,7 @@ pub fn rested(settings: &PipelineSettings, block: Block, dyes: Option<Separation
         next.flat_field = Default::default();
         return next;
     }
-    for f in block.fields() {
+    for f in block.fields().iter().filter(|f| f.shown_in(settings.mode)) {
         next = f.knob().set(&next, f.base(settings));
     }
     if block == Block::DyeSeparation {

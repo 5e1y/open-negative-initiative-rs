@@ -1,7 +1,7 @@
 //! Stages 4 to 7: the fused kernel's arguments as `Pipeline.apply` passes them, with the models they
 //! read (the points reaching the windows, the dye separation, chroma decompression, the roll's factor).
 
-use oni_render::Stage47;
+use oni_render::{ColorMatrix, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::levels::{Levels, LevelsSet};
@@ -33,22 +33,45 @@ fn vector(w: &Levels) -> [f32; 3] {
 
 /// The ceiling the render reads: a positive's rests on the axis' base, a plain RAW's (owner's call).
 pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
-    if s.mode == ConversionMode::Positive { density_axis::base() } else { s.density_ceiling }
+    if s.mode.reads_positive() { density_axis::base() } else { s.density_ceiling }
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order.
+/// The windows the kernel reads before the points reach them: a digital photo has no film to place
+/// them on, so its stored ones wait, unrendered, for the film mode they were placed in.
+pub fn placed_levels(s: &PipelineSettings) -> LevelsSet {
+    if s.mode.is_film() { s.levels } else { LevelsSet::neutral(s.mode, density_axis::base()) }
+}
+
+/// A digital photo's balance on its chosen white, relative to the white its decode stands on; none
+/// at that white, on a film or with no white chosen, so those renders hold no stage for it.
+pub fn white(s: &PipelineSettings) -> Option<ColorMatrix> {
+    let chosen = s.white.filter(|_| !s.mode.is_film())?;
+    let anchor = oni_settings::white::anchor(s.decoded_from_mosaic);
+    // Compared as the sliders read it, so a white reset to the anchor's own lays no stage.
+    if chosen == oni_settings::white::of_uv(anchor) {
+        return None;
+    }
+    let m = oni_settings::white::relative(oni_settings::white::uv(chosen), anchor);
+    let row = |r: [f32; 3]| [r[0], r[1], r[2], 0.0];
+    Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
+}
+
+/// The fused kernel's arguments, in `Pipeline.apply`'s order. A digital photo renders no gain, window,
+/// dyes or print filter: its colour is its white's.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let mono = s.mode.is_monochrome();
-    let lv = reaching(&s.print, &s.levels, mono.then(|| graduation::window(s.mode)));
+    let film = s.mode.is_film();
+    let levels = placed_levels(s);
+    let lv = reaching(&s.print, &levels, mono.then(|| graduation::window(s.mode)));
     let sep = separation_rows(s.separation_family, separation_dose(s), s.mode);
     let base = s.print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
     let windows = lv.windows();
-    let unreached = s.levels.windows();
+    let unreached = levels.windows();
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     Stage47 {
-        gain: s.gains.stops.map(f32::exp2),
+        gain: if film { s.gains.stops.map(f32::exp2) } else { [1.0; 3] },
         red: vector(&lv.red),
         green: vector(&lv.green),
         blue: vector(&lv.blue),
@@ -66,7 +89,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         print_stops: s.print.exposure,
         print_contrast: s.print.contrast,
         print_zones: [s.print.shadows, s.print.highlights],
-        own_stops: s.print.filters(),
+        own_stops: if film { s.print.filters() } else { [0.0; 3] },
         hunt: if mono { 0.0 } else { 1.0 },
         base_stops: base.exposure,
         base_contrast: base.contrast,

@@ -53,9 +53,9 @@ pub fn separation_rows(family: Option<SeparationFamily>, strength: f32, mode: Co
 }
 
 /// `Separation.dose`: narrowband passes separated the dyes in the capture, and a positive renders as
-/// a plain RAW, its dyes never unmixed (owner's call).
+/// a plain RAW, its dyes never unmixed (owner's call); a digital photo has none.
 pub fn separation_dose(s: &PipelineSettings) -> f32 {
-    if s.rgb_passes.is_none() && s.mode != ConversionMode::Positive && !s.inverted_source { s.separation } else { 0.0 }
+    if s.rgb_passes.is_none() && !s.mode.reads_positive() && !s.inverted_source { s.separation } else { 0.0 }
 }
 
 #[cfg(test)]

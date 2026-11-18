@@ -15,6 +15,7 @@ use oni_settings::document;
 use oni_settings::frame::Geometry;
 use oni_settings::settings::{look_settings, roll_settings};
 use oni_settings::sidecar::{self, WriteOptions};
+use oni_settings::white::White;
 use oni_settings::{ConversionMode, Date, Face, Id, PipelineSettings, ScannerMachine};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
@@ -50,11 +51,14 @@ pub struct Archive {
     pub paths: Vec<String>,
     /// Shared, so a mark run off the host's thread reads the same rule.
     pub mosaic: std::sync::Arc<dyn Fn(&Path) -> bool + Send + Sync>,
+    /// A RAW's As Shot white from its metadata, which a frame made digital rests its white on; none
+    /// until the host that decodes says how (`read_shots`).
+    pub shot: Box<dyn Fn(&Path) -> Option<White> + Send + Sync>,
 }
 
 impl Archive {
     pub fn new(paths: Vec<String>, mosaic: impl Fn(&Path) -> bool + Send + Sync + 'static) -> Archive {
-        Archive { paths, mosaic: std::sync::Arc::new(mosaic) }
+        Archive { paths, mosaic: std::sync::Arc::new(mosaic), shot: Box::new(|_| None) }
     }
 }
 
@@ -231,6 +235,21 @@ impl EditorStore {
 
     fn mosaic(&self, path: &str) -> bool {
         (self.archive.mosaic)(Path::new(path))
+    }
+
+    /// `next` with a frame first made digital resting on its As Shot white, read once and kept: every
+    /// gesture that makes a frame digital, its roll's included, writes it here.
+    fn rested_white(&self, path: &str, before: &PipelineSettings, mut next: PipelineSettings) -> PipelineSettings {
+        if !next.mode.is_film() && before.mode.is_film() && next.shot.is_none() {
+            next.shot = (self.archive.shot)(Path::new(path));
+            next.white = next.shot.or(next.white);
+        }
+        next
+    }
+
+    /// Each RAW's As Shot white read with `shot`, the host's decoder.
+    pub fn read_shots(&mut self, shot: impl Fn(&Path) -> Option<White> + Send + Sync + 'static) {
+        self.archive.shot = Box::new(shot);
     }
 
     /// The archive's rule for a mosaic, for a mark run off this thread.

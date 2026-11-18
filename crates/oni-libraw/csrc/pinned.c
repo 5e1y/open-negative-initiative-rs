@@ -30,6 +30,8 @@ typedef struct {
     void *stream;
     // 1 once LibRaw read past the file's end: a copy cut short, never a picture to show.
     int cut;
+    // The camera's As Shot multipliers as its metadata names them, read and never applied.
+    float cam_mul[4];
 } oni_decoded;
 
 // LibRaw tells a data error at the file's end by an offset of -1; others are left to its decoders.
@@ -98,6 +100,7 @@ int oni_open(const char *path, void *stream, float exposure_gain, int min_side, 
     out->colors = lr->idata.colors;
     out->dng = lr->idata.dng_version != 0;
     memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
+    memcpy(out->cam_mul, lr->color.cam_mul, sizeof out->cam_mul);
     out->baseline_exposure = lr->color.dng_levels.baseline_exposure;
     return 0;
 }

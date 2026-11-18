@@ -2040,6 +2040,10 @@ msgid "Temperature +: toward warm"
 msgstr "Température + : plus chaud"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once."
+msgstr "Température et Teinte règlent la lumière sous laquelle la photo a été prise, en kelvins comme l’appareil la lit : un RAW s’ouvre sur le blanc de sa prise de vue, tout autre fichier sur le sien ; un double-clic y revient.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
 msgstr "La balance des blancs auto lit la lumière de la vue telle qu’elle s’imprime, ses zones claires pesant le plus, et la ramène vers le gris avec Température et Teinte. L’intensité de la balance des blancs auto est la part de cette correction qu’elles prennent : chaque photo garde sa propre correction, la part est celle de la pellicule.\n\nTempérature déplace la couleur entre le bleu et le jaune, Teinte entre le vert et le magenta ; aucune ne change la luminosité de la photo.\n\nSaturation rend toutes les couleurs plus fortes ou plus grises à la fois."
 
@@ -2412,20 +2416,24 @@ msgid "Film Type"
 msgstr "Type de film"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
-msgstr "Ce qu’est le film : un négatif couleur, une diapositive ou du noir et blanc. Une diapositive est lue comme un RAW ordinaire, ses colorants jamais séparés ; Préparer la pellicule équilibre une pellicule de diapositives sur un blanc ou un gris que vous cliquez, sa couleur seulement ; sans clic, les diapositives gardent les 5500 K de l’appareil."
+msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: no roll to prepare, no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
+msgstr "Ce qu’est la photo : un négatif couleur, une diapositive, du noir et blanc ou une photo numérique. Une diapositive est lue comme un RAW ordinaire, ses colorants jamais séparés ; Préparer la pellicule équilibre une pellicule de diapositives sur un blanc ou un gris que vous cliquez, sa couleur seulement ; sans clic, les diapositives gardent les 5500 K de l’appareil. Une photo numérique n’a pas de film : ni pellicule à préparer, ni filtration, colorants ou niveaux, sa couleur réglée par Température et Teinte dans l’onglet Couleur."
 
-#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
 msgstr "Négatif"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Positive"
 msgstr "Positif"
 
-#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "B&W"
 msgstr "N&B"
+
+#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Digital"
+msgstr "Numérique"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Flat-Field"

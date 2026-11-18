@@ -602,10 +602,9 @@ fn every_field_lives_in_exactly_one_family() {
             margin: 0.0,
             windows: None,
         });
-        s.manual_order = Some(1.0);
+        (s.manual_order, s.pass_of) = (Some(1.0), Some("p".into()));
         s.source_encoding = Some(oni_settings::SourceEncoding::Linear);
         s.rgb_passes = Some(RgbPasses { red: "r".into(), green: "g".into(), blue: "b".into(), registration: None });
-        s.pass_of = Some("p".into());
         s.roll_reference = Some(oni_settings::frame::RollReference {
             id: Id::new(),
             stops: [0.0; 3],
@@ -616,6 +615,7 @@ fn every_field_lives_in_exactly_one_family() {
         });
         s.balance_method = Some("classic".into());
         (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
+        (s.white, s.shot) = (Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }), Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }));
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {
@@ -629,7 +629,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 44);
+    assert_eq!(keys.len(), 46);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

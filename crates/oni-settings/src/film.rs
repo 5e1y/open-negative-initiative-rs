@@ -159,12 +159,14 @@ pub fn dye_family(stock_id: &str) -> Option<SeparationFamily> {
     STOCK_DYES.iter().find(|(id, _)| *id == stock_id).and_then(|(_, family)| *family)
 }
 
-/// A roll's generic stock while nobody picked one, read off the mode a hand already set.
-pub fn default_stock_id(mode: ConversionMode) -> &'static str {
+/// A roll's generic stock while nobody picked one, read off the mode a hand already set; a digital
+/// photo was shot on no film.
+pub fn default_stock_id(mode: ConversionMode) -> Option<&'static str> {
     match mode {
-        ConversionMode::Negative => "generic-color-negative",
-        ConversionMode::Positive => "generic-color-positive",
-        ConversionMode::Monochrome => "generic-black-and-white",
+        ConversionMode::Negative => Some("generic-color-negative"),
+        ConversionMode::Positive => Some("generic-color-positive"),
+        ConversionMode::Monochrome => Some("generic-black-and-white"),
+        ConversionMode::Digital => None,
     }
 }
 

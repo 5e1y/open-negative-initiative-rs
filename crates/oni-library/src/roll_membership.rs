@@ -22,7 +22,7 @@ impl From<Id> for RollKey {
 }
 
 impl RollKey {
-    /// The roll `settings` stand on at `path`: its reference, else a slide's folder; a pass stands on none.
+    /// The roll `settings` stand on at `path`: its reference, else a positive's folder; a pass stands on none.
     pub fn of(path: &str, settings: &PipelineSettings) -> Option<RollKey> {
         match &settings.roll_reference {
             Some(r) => Some(RollKey::Measured(r.id)),
@@ -32,7 +32,7 @@ impl RollKey {
 }
 
 fn slide(mode: ConversionMode, pass: bool, path: &str) -> Option<RollKey> {
-    (mode == ConversionMode::Positive && !pass).then(|| RollKey::Slides(paths::parent(path)))
+    (mode.reads_positive() && !pass).then(|| RollKey::Slides(paths::parent(path)))
 }
 
 /// `RollKey::of` read off the sidecar's own keys, the rest of it never decoded.
