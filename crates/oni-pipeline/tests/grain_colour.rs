@@ -5,7 +5,7 @@ mod common;
 
 use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect, Stage};
-use oni_pipeline::{Inputs, Pipeline, Request, conversion, grain, scanner, stages};
+use oni_pipeline::{conversion, grain, scanner, stages};
 use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
 use oni_settings::blocks::{GrainColour, GrainCurve};
 use oni_settings::cg::Point;
@@ -41,7 +41,11 @@ fn the_coloured_grain_matches_its_reference_on_every_branch() {
     let Some(mut g) = graph("the_coloured_grain_matches_its_reference_on_every_branch") else { return };
     let extent = Rect::new(23, 11, 61, 37);
     // Under the pedestal and past the table's last node, so both its ends and a light of no share are reached.
-    let pixels = noise(extent.w, extent.h, 33, -0.02, 2.5);
+    let mut pixels = noise(extent.w, extent.h, 33, -0.02, 2.5);
+    // A row of a zero channel, one under zero, a neutral grey and a black.
+    for (row, p) in [[0.04, 0.0, 0.02, 1.0], [0.04, -0.003, 0.02, 1.0], [0.03, 0.03, 0.03, 1.0], [0.0, 0.0, 0.0, 1.0]].into_iter().enumerate() {
+        pixels[row * extent.w as usize..(row + 1) * extent.w as usize].fill(p);
+    }
     let input = g.upload_at(extent, &pixels).unwrap();
     let centre = |i: usize| [extent.x as f32 + (i % extent.w as usize) as f32 + 0.5, extent.y as f32 + (i / extent.w as usize) as f32 + 0.5];
     let tones = grain::tones(&Stage47 { gain: [1.0; 3], ..conversion::stage47(&digital()) });
@@ -83,30 +87,45 @@ fn the_colour_and_the_share_read_one_tone_the_strength_curve_s() {
     }
 }
 
-/// On a flat grey of each light, the colour's spread over the light's, both in stops, at the grey's tone.
-fn colour_over_light(g: &mut Graph, colour: [f32; 2]) -> Vec<(f32, f32)> {
+fn luma(p: V4) -> f32 {
+    p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]
+}
+
+/// A skin tone of luminance `light`.
+fn skin(light: f32) -> V4 {
+    let c = [1.0, 0.64, 0.43];
+    let y = luma([c[0], c[1], c[2], 1.0]);
+    [c[0] / y * light, c[1] / y * light, c[2] / y * light, 1.0]
+}
+
+/// A flat `patch` under `k`, 300 by 200.
+fn laid(g: &mut Graph, k: &Grain, patch: V4) -> Vec<V4> {
+    let (w, h) = (300u32, 200u32);
+    let image = Image::new(&g.upload(w, h, &vec![patch; (w * h) as usize]).unwrap()).then(stages::grain(k));
+    whole(g, &image)
+}
+
+/// On a flat skin of each light, the colour read off the law, log2 of the power its red over its blue
+/// took, over the stops the grain darkened it, at the skin's tone.
+fn colour_by_tone(g: &mut Graph, colour: [f32; 2]) -> Vec<(f32, f32)> {
     let mut s = coloured(colour);
-    // The whole grain on every grey, so each has a light to measure the colour against.
+    // The whole grain on every light, so each has stops to read the colour against.
     s.grain.curve = even(Some(1.0));
     let k = grain::grain(&s, SCAN, 1.0).unwrap();
-    let (w, h) = (300u32, 200u32);
+    let red_over_blue = |p: V4| f64::from((p[0] / p[2]).log2());
     GREYS
         .iter()
-        .map(|&grey| {
-            let image = Image::new(&g.upload(w, h, &vec![[grey, grey, grey, 1.0]; (w * h) as usize]).unwrap()).then(stages::grain(&k));
-            let (mut light, mut colour) = (Vec::new(), Vec::new());
-            for p in whole(g, &image) {
-                let x = [0, 1, 2].map(|c| f64::from((p[c] / grey).log2()));
-                let mean = x.iter().sum::<f64>() / 3.0;
-                light.push(mean);
-                colour.extend(x.map(|v| v - mean));
+        .map(|&light| {
+            let patch = skin(light);
+            let (mut sum, mut n) = (0.0f64, 0usize);
+            for p in laid(g, &k, patch) {
+                let darker = -f64::from((luma(p) / light).log2());
+                if darker > 0.05 {
+                    sum += (red_over_blue(p) / red_over_blue(patch)).log2() / darker;
+                    n += 1;
+                }
             }
-            let spread = |v: &[f64]| {
-                let m = v.iter().sum::<f64>() / v.len() as f64;
-                (v.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / v.len() as f64).sqrt()
-            };
-            let ratio = spread(&colour) / spread(&light);
-            (shown(grey, &s).min(1.0), ratio as f32)
+            (shown(light, &s).min(1.0), (sum / n.max(1) as f64) as f32)
         })
         .collect()
 }
@@ -120,16 +139,16 @@ fn off_line(measured: &[(f32, f32)], colour: [f32; 2]) -> f32 {
 fn the_colour_follows_its_line_from_the_black_to_a_neutral_white() {
     let Some(mut g) = graph("the_colour_follows_its_line_from_the_black_to_a_neutral_white") else { return };
     let line = [GrainColour::REST.black, GrainColour::REST.white];
-    let measured = colour_over_light(&mut g, line);
+    let measured = colour_by_tone(&mut g, line);
     for (t, r) in &measured {
-        println!("tone {t:.3}: colour {r:.3} times the light");
+        println!("tone {t:.3}: colour {r:.3}");
     }
     let gap = off_line(&measured, line);
     assert!(gap < 0.08, "the colour is {gap:.3} off its line");
     let white = measured.last().unwrap();
     assert!(white.0 > 0.95 && white.1 < 0.1, "near the white the colour reads {white:?}");
     // Twin: one colour on every tone.
-    let flat = colour_over_light(&mut g, [1.0, 1.0]);
+    let flat = colour_by_tone(&mut g, [1.0, 1.0]);
     let twin = off_line(&flat, line);
     assert!(twin > 0.5, "the twin is {twin:.3} off the line");
 }
@@ -139,40 +158,49 @@ fn lightness(y: f64) -> f64 {
     if y > 216.0 / 24389.0 { 116.0 * y.cbrt() - 16.0 } else { y * 24389.0 / 27.0 }
 }
 
-/// Each grey band's lightness rise from the monochrome grain to the grain of `colour`, the whole chain at rest.
-fn lifts(g: &mut Graph, colour: [f32; 2]) -> Vec<f64> {
-    let (band, h) = (250u32, 120u32);
-    let w = band * GREYS.len() as u32;
-    let pixels: Vec<V4> = (0..w * h).map(|i| [GREYS[((i % w) / band) as usize]; 3]).map(|v| [v[0], v[1], v[2], 1.0]).collect();
-    let source = g.upload(w, h, &pixels).unwrap();
-    let mut pipeline = Pipeline::new();
-    let request = Request { full_width: Some(f64::from(w)), ..Request::default() };
-    let mut render = |g: &mut Graph, s: &PipelineSettings| {
-        let image = pipeline.image(g, &source, s, &request, &Inputs::default()).unwrap();
-        g.render(&image, image.extent(), None).unwrap()
+/// The lightness rise, through the unlit picture, from the monochrome grain to the grain of `colour` on
+/// a flat `patch`; `random`, a hue drawn at random each pixel at the line's black, as a coloured noise lays.
+fn lift(g: &mut Graph, patch: V4, colour: [f32; 2], random: bool) -> f64 {
+    let at = |colour: [f32; 2]| PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.6, ..coloured(colour).grain }, ..digital() };
+    let s = at(colour);
+    let plain = laid(g, &grain::grain(&at([0.0, 0.0]), SCAN, 1.0).unwrap(), patch);
+    let grained = if random {
+        let stops: Vec<f64> = plain.iter().map(|m| f64::from((luma(*m) / luma(patch)).log2())).collect();
+        let mean = stops.iter().sum::<f64>() / stops.len() as f64;
+        let spread = (stops.iter().map(|a| (a - mean) * (a - mean)).sum::<f64>() / stops.len() as f64).sqrt() as f32;
+        let draws = noise(300, 200, 7, 0.0, 1.0);
+        plain.iter().zip(draws).map(|(m, u)| {
+            let n = [0, 1, 2].map(|c| (u[c] - 0.5) * 12f32.sqrt());
+            let d = n.map(|v| (v - (n[0] + n[1] + n[2]) / 3.0) * 1.224_744_9);
+            [m[0] * (colour[0] * spread * d[0]).exp2(), m[1] * (colour[0] * spread * d[1]).exp2(), m[2] * (colour[0] * spread * d[2]).exp2(), 1.0]
+        }).collect()
+    } else {
+        laid(g, &grain::grain(&s, SCAN, 1.0).unwrap(), patch)
     };
-    let at = |colour| PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.6, ..coloured(colour).grain }, ..digital() };
-    let (plain, grained) = (render(g, &at([0.0, 0.0])), render(g, &at(colour)));
-    let mean_y = |out: &[V4], b: u32| {
-        let px = (8..h - 8).flat_map(|y| (b * band + 8..(b + 1) * band - 8).map(move |x| (y * w + x) as usize));
-        let (sum, n) = px.fold((0.0f64, 0usize), |(sum, n), i| (sum + f64::from(0.2627 * out[i][0] + 0.6780 * out[i][1] + 0.0593 * out[i][2]), n + 1));
-        sum / n as f64
-    };
-    (0..GREYS.len() as u32).map(|b| lightness(mean_y(&grained, b)) - lightness(mean_y(&plain, b))).collect()
+    let picture = conversion::stage47(&s);
+    let shown_y = |out: &[V4]| lightness(out.iter().map(|p| f64::from(luma(cpu::stage47(*p, &picture)))).sum::<f64>() / out.len() as f64);
+    shown_y(&grained) - shown_y(&plain)
 }
 
 /// A lightness step about at the edge of what the eye sees on a flat area.
 const SEEN: f64 = 1.5;
 
 #[test]
-fn the_default_colour_lifts_no_tone_past_a_step_the_eye_sees() {
-    let Some(mut g) = graph("the_default_colour_lifts_no_tone_past_a_step_the_eye_sees") else { return };
-    let rise = lifts(&mut g, [GrainColour::REST.black, GrainColour::REST.white]);
-    println!("lightness rise by band: {:?}", rise.iter().map(|v| format!("{v:+.2}")).collect::<Vec<_>>());
-    let most = rise.iter().fold(0.0f64, |m, v| m.max(v.abs()));
-    assert!(most < SEEN, "a band rises {most:.2} in lightness");
-    // Twin: the slider's top at the black.
-    let over = lifts(&mut g, [GrainColour::RANGE.1, 0.0]).iter().fold(0.0f64, |m, v| m.max(v.abs()));
+fn the_default_colour_lifts_no_grey_and_no_colour_past_a_step_the_eye_sees() {
+    let Some(mut g) = graph("the_default_colour_lifts_no_grey_and_no_colour_past_a_step_the_eye_sees") else { return };
+    let rest = [GrainColour::REST.black, GrainColour::REST.white];
+    let greys: Vec<f64> = GREYS.iter().map(|&v| lift(&mut g, [v, v, v, 1.0], rest, false)).collect();
+    println!("lightness rise by grey: {:?}", greys.iter().map(|v| format!("{v:+.1e}")).collect::<Vec<_>>());
+    assert!(greys.iter().all(|v| v.abs() < 1e-3), "a grey rises {greys:?}");
+    // Twin: a hue drawn at random lifts a grey.
+    let random = GREYS.iter().map(|&v| lift(&mut g, [v, v, v, 1.0], rest, true)).fold(0.0f64, f64::max);
+    assert!(random > 1e-3, "the twin lifts a grey {random:.2e}");
+    let colours = [[0.004, 0.0005, 0.0003, 1.0], [0.0004, 0.0006, 0.004, 1.0], [0.003, 0.0055, 0.0015, 1.0], skin(0.004)];
+    let most = colours.iter().map(|&p| lift(&mut g, p, [GrainColour::RANGE.1, 0.0], false).abs()).fold(0.0f64, f64::max);
+    println!("a dark colour rises {most:.2} at the top");
+    assert!(most < SEEN, "a colour rises {most:.2} in lightness");
+    // Twin: a hue drawn at random at the slider's top.
+    let over = GREYS.iter().map(|&v| lift(&mut g, [v, v, v, 1.0], [GrainColour::RANGE.1, 0.0], true)).fold(0.0f64, f64::max);
     println!("the twin rises {over:.2}");
     assert!(over > SEEN, "the twin rises {over:.2}");
 }

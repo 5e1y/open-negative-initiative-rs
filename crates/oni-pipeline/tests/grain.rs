@@ -181,7 +181,7 @@ fn a_reduced_render_reads_the_full_grain_averaged() {
     let s = grainy(1.0, 1.0);
     let at = |g: &mut Graph, scale: f64, w: u32, h: u32, k: Option<Grain>| -> Vec<f32> {
         let k = k.unwrap_or_else(|| grain::grain(&s, Rect::new(0, 0, (3000.0 * scale) as u32, (2000.0 * scale) as u32), scale).unwrap());
-        // A dark grey, so the grain's colour is on.
+        // A dark grey, where the colour is strongest and leaves the grey grey, so the red reads the field.
         let image = flat(g, w, h, [0.05, 0.05, 0.05, 1.0]);
         stops(&whole(g, &image.then(stages::grain(&k))), 0.05)
     };
