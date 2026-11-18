@@ -49,6 +49,8 @@ impl Field {
             Field::WhiteTint => Knob::WhiteTint,
             Field::GrainAmount => Knob::GrainAmount,
             Field::GrainSize => Knob::GrainSize,
+            Field::GrainColourBlack => Knob::GrainColourBlack,
+            Field::GrainColourWhite => Knob::GrainColourWhite,
             Field::HalationAmount => Knob::HalationAmount,
             Field::HalationSize => Knob::HalationSize,
             Field::Distortion => Knob::LensDistortion,

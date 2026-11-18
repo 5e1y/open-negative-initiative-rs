@@ -274,8 +274,9 @@ mod tests {
         let white = [Field::WhiteKelvin, Field::WhiteTint];
         let effects = [Field::GrainAmount, Field::GrainSize, Field::HalationAmount, Field::HalationSize];
         let lens = [Field::Distortion, Field::FringeRed, Field::FringeBlue, Field::LensVignetting];
-        let later = [Field::HalationSensitivity, Field::RedMid, Field::GreenMid, Field::BlueMid, Field::RedContrast, Field::GreenContrast, Field::BlueContrast];
-        assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &white, &effects, &lens, &later].concat());
+        let tone = [Field::RedMid, Field::GreenMid, Field::BlueMid, Field::RedContrast, Field::GreenContrast, Field::BlueContrast];
+        let later = [[Field::HalationSensitivity].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite]].concat();
+        assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &white, &effects, &lens, &later[..]].concat());
         // A digital photo's Temperature and Tint are its white's, and its Roll tab no film's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
         assert_eq!((field(Param::Temperature, &digital), field(Param::Tint, &digital)), (Field::WhiteKelvin, Field::WhiteTint));

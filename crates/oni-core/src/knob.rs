@@ -3,7 +3,7 @@
 
 use crate::fields::Field;
 use oni_settings::axis::density_axis;
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::lens::LensCorrection;
 use oni_settings::levels::{Levels, LevelsChannel};
@@ -93,6 +93,9 @@ pub enum Knob {
     Angle,
     GrainAmount,
     GrainSize,
+    /// The grain's colour at the picture's black, then at its white.
+    GrainColourBlack,
+    GrainColourWhite,
     HalationAmount,
     HalationSize,
     HalationSensitivity,
@@ -135,7 +138,7 @@ impl Knob {
             Knob::Paper(_) => Field::PaperCorrection,
             Knob::FlatFieldAmount | Knob::FlatFieldTemperature | Knob::FlatFieldTint => Field::FlatField,
             Knob::Angle => Field::Geometry,
-            Knob::GrainAmount | Knob::GrainSize => Field::Grain,
+            Knob::GrainAmount | Knob::GrainSize | Knob::GrainColourBlack | Knob::GrainColourWhite => Field::Grain,
             Knob::HalationAmount | Knob::HalationSize | Knob::HalationSensitivity => Field::Halation,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
         }
@@ -189,6 +192,7 @@ impl Knob {
             Knob::Angle => Geometry::ANGLE_RANGE,
             Knob::GrainAmount => Grain::AMOUNT_RANGE,
             Knob::GrainSize => Grain::SIZE_RANGE,
+            Knob::GrainColourBlack | Knob::GrainColourWhite => GrainColour::RANGE,
             Knob::HalationAmount => Halation::AMOUNT_RANGE,
             Knob::HalationSize => Halation::SIZE_RANGE,
             Knob::HalationSensitivity => Halation::SENSITIVITY_RANGE,
@@ -237,6 +241,8 @@ impl Knob {
             Knob::Angle => s.geometry.angle,
             Knob::GrainAmount => s.grain.amount,
             Knob::GrainSize => s.grain.size,
+            Knob::GrainColourBlack => s.grain.colour.black,
+            Knob::GrainColourWhite => s.grain.colour.white,
             Knob::HalationAmount => s.halation.amount,
             Knob::HalationSize => s.halation.size,
             Knob::HalationSensitivity => s.halation.sensitivity,
@@ -306,6 +312,8 @@ impl Knob {
             Knob::Angle => out.geometry.angle = v,
             Knob::GrainAmount => out.grain.amount = v,
             Knob::GrainSize => out.grain.size = v,
+            Knob::GrainColourBlack => out.grain.colour.black = v,
+            Knob::GrainColourWhite => out.grain.colour.white = v,
             Knob::HalationAmount => out.halation.amount = v,
             Knob::HalationSize => out.halation.size = v,
             Knob::HalationSensitivity => out.halation.sensitivity = v,

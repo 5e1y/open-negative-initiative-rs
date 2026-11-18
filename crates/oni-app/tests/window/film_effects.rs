@@ -46,7 +46,8 @@ pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 1600));
+    // Tall enough for every Film Effects row, the colour line included, unscrolled.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1800));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap();
@@ -67,7 +68,7 @@ pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig
 }
 
 /// The view stepped up to 100 %.
-fn at_full_size(rig: &common::Rig, ctl: &std::rc::Rc<oni_app::app::Ctl>) {
+pub(crate) fn at_full_size(rig: &common::Rig, ctl: &std::rc::Rc<oni_app::app::Ctl>) {
     for _ in 0..oni_app::viewport::ZOOM_STEPS.len() {
         if ctl.state.borrow().viewport().scale == Some(1.0) {
             break;

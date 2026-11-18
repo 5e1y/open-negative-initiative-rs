@@ -1,0 +1,77 @@
+// The grain's colour along the tone: one straight line from its saturation at the picture's black to its
+// white, each end a point the hand raises or lowers; a double click returns it to rest.
+import { Space, Stroke, PlotStyle, SliderStyle, Plot, Ink, PlotReadouts, AxisCaptions, Tone } from "../ds/ds.slint";
+import { Store } from "../store.slint";
+
+// An end's grab: a box the grab's size around its point, dragged up or down the plot's height.
+component GrainColourEnd inherits TouchArea {
+    in property <int> field;
+    in property <string> label;
+    // Its value as a share of its travel, and the travel in points.
+    in property <float> fraction;
+    in property <string> readout;
+    in property <length> span;
+    out property <bool> held;
+    property <length> origin;
+    property <bool> fine;
+    width: SliderStyle.grab;
+    height: SliderStyle.grab;
+    mouse-cursor: self.held ? MouseCursor.grabbing : MouseCursor.grab;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.readout;
+    pointer-event(event) => {
+        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+            self.fine = event.modifiers.alt;
+            self.origin = self.absolute-position.y + self.mouse-y;
+            self.held = !Store.press(root.field, self.fine);
+        } else if (self.held && (event.kind == PointerEventKind.cancel || (event.kind == PointerEventKind.up && event.button == PointerEventButton.left))) {
+            self.held = false;
+            Store.release(root.field);
+        }
+    }
+    moved => {
+        if (self.held) {
+            Store.drag(root.field, root.origin - (self.absolute-position.y + self.mouse-y), root.span, self.fine);
+        }
+    }
+}
+
+export component GrainColourEditor inherits VerticalLayout {
+    spacing: Space.xs;
+    Rectangle {
+        height: PlotStyle.block;
+        // The line's ends stand a point in from the plot's edges, so both points show whole.
+        property <length> inset: PlotStyle.point / 2 + Stroke.trace;
+        property <length> travel: self.height - 2 * self.inset;
+        property <length> black-y: self.inset + self.travel * (1 - clamp(black.fraction, 0, 1));
+        property <length> white-y: self.inset + self.travel * (1 - clamp(white.fraction, 0, 1));
+        property <bool> black-active: black.held || black.has-hover;
+        property <bool> white-active: white.held || white.has-hover;
+        Plot {
+            interactive: false;
+            lines: [{ commands: "M \{parent.inset / 1px} \{parent.black-y / 1px} L \{(self.width - parent.inset) / 1px} \{parent.white-y / 1px}", ink: Ink.active, width: Stroke.trace, opacity: 1 }];
+            dots: [
+                { x: parent.inset, y: parent.black-y, size: PlotStyle.point, fill: Ink.canvas, edge: parent.black-active ? Ink.active : Ink.idle, edge-width: Stroke.trace, halo: 0 },
+                { x: self.width - parent.inset, y: parent.white-y, size: PlotStyle.point, fill: Ink.canvas, edge: parent.white-active ? Ink.active : Ink.idle, edge-width: Stroke.trace, halo: 0 },
+            ];
+            AxisCaptions { axis: Orientation.vertical; start: @tr("Saturated"); end: @tr("Desaturated"); tone: Tone.tertiary; }
+        }
+        // Each grab lies inside the plot, where the panel's edge takes no hand.
+        black := GrainColourEnd {
+            field: 55; label: @tr("Grain colour at the black point"); fraction: Store.grain-colour-black-fraction; readout: Store.grain-colour-black-readout;
+            x: 0;
+            y: parent.black-y - self.height / 2;
+            span: parent.travel;
+        }
+        white := GrainColourEnd {
+            field: 56; label: @tr("Grain colour at the white point"); fraction: Store.grain-colour-white-fraction; readout: Store.grain-colour-white-readout;
+            x: parent.width - self.width;
+            y: parent.white-y - self.height / 2;
+            span: parent.travel;
+        }
+    }
+    PlotReadouts {
+        readouts: [{ name: @tr("Black point"), value: Store.grain-colour-black-readout }, { name: @tr("White point"), value: Store.grain-colour-white-readout }];
+    }
+}

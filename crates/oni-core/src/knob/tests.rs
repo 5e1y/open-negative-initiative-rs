@@ -119,3 +119,15 @@ fn a_picture_window_keeps_its_ends_on_the_picture_and_in_order() {
     let film = Knob::Level(Channel::Red, Handle::Black);
     assert!(film.get(&film.set(&s, -0.3)) < 0.0);
 }
+
+#[test]
+fn the_grains_colour_ends_write_the_grain_alone_and_hold_their_range() {
+    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let black = Knob::GrainColourBlack.set(&s, 9.0);
+    assert_eq!(black.grain.colour, GrainColour { black: GrainColour::RANGE.1, white: GrainColour::REST.white });
+    assert_eq!(FieldSet::between(&s, &black).iter().collect::<Vec<_>>(), vec![Field::Grain]);
+    let white = Knob::GrainColourWhite.set(&s, 0.6);
+    assert_eq!((Knob::GrainColourWhite.get(&white), Knob::GrainColourBlack.get(&white)), (0.6, GrainColour::REST.black));
+    // Twin: the black end is not the white's, and stays where it was.
+    assert_ne!(Knob::GrainColourWhite.get(&black), GrainColour::RANGE.1);
+}

@@ -565,7 +565,7 @@ msgstr "Hautes lumières"
 msgid "Shadows"
 msgstr "Ombres"
 
-#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/grain_colour.slint
 msgid "White point"
 msgstr "Point blanc"
 
@@ -889,15 +889,15 @@ msgstr "Teinte"
 msgid "Luminance"
 msgstr "Luminance"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/grain_colour.slint
 msgid "Black point"
 msgstr "Point noir"
 
-#: crates/oni-ui/ui/editors.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/grain_colour.slint
 msgid "Saturated"
 msgstr "Saturé"
 
-#: crates/oni-ui/ui/editors.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/grain_colour.slint
 msgid "Desaturated"
 msgstr "Désaturé"
 
@@ -2176,12 +2176,12 @@ msgid "Film Effects"
 msgstr "Effets film"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before the machine prints it, as on the film."
-msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit, Sensibilité du halo fait luire aussi une lumière plus faible, ou seulement la plus vive.\n\nTous deux agissent sur la scène avant que la machine ne la tire, comme sur le film."
+msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nThe line under Grain size colours the grain by the light it falls on: raise its left point for colour in the shadows, its right for colour in the highlights, a straight line between them; double-click a point to bring it back.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before the machine prints it, as on the film."
+msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nLa ligne sous Taille du grain colore le grain selon la lumière où il tombe : montez son point de gauche pour de la couleur dans les ombres, celui de droite pour de la couleur dans les hautes lumières, une ligne droite entre les deux ; double-cliquez un point pour le ramener.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit, Sensibilité du halo fait luire aussi une lumière plus faible, ou seulement la plus vive.\n\nTous deux agissent sur la scène avant que la machine ne la tire, comme sur le film."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film."
-msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit, Sensibilité du halo fait luire aussi une lumière plus faible, ou seulement la plus vive.\n\nTous deux agissent sur la scène avant Lumière et Couleur, comme sur le film."
+msgid "Grain lays a film-like texture over the scene, stronger with Grain, coarser with Grain size; it stays on the photo as it is cropped, turned or zoomed.\n\nThe line under Grain size colours the grain by the light it falls on: raise its left point for colour in the shadows, its right for colour in the highlights, a straight line between them; double-click a point to bring it back.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film."
+msgstr "Grain pose une texture de film sur la scène, plus forte avec Grain, plus grosse avec Taille du grain ; elle reste sur la photo quand on la recadre, la tourne ou zoome.\n\nLa ligne sous Taille du grain colore le grain selon la lumière où il tombe : montez son point de gauche pour de la couleur dans les ombres, celui de droite pour de la couleur dans les hautes lumières, une ligne droite entre les deux ; double-cliquez un point pour le ramener.\n\nHalo pose la lueur rouge du film autour des plus hautes lumières, la lumière qui a traversé le support et est revenue à la couche rouge ; Taille du halo l’élargit, Sensibilité du halo fait luire aussi une lumière plus faible, ou seulement la plus vive.\n\nTous deux agissent sur la scène avant Lumière et Couleur, comme sur le film."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain"
@@ -2466,6 +2466,14 @@ msgstr "Texture"
 #: crates/oni-ui/ui/panel/details_tab.slint
 msgid "Contrast at the scale of hair and fabric — leaves grain and overall tone alone."
 msgstr "Du contraste à l’échelle des cheveux et des tissus ; laisse intacts le grain et la tonalité générale."
+
+#: crates/oni-ui/ui/panel/grain_colour.slint
+msgid "Grain colour at the black point"
+msgstr "Couleur du grain au point noir"
+
+#: crates/oni-ui/ui/panel/grain_colour.slint
+msgid "Grain colour at the white point"
+msgstr "Couleur du grain au point blanc"
 
 #: crates/oni-ui/ui/panel/parts.slint
 msgid "Double-click to bring it back to rest; {} with − or + moves three steps."

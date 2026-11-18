@@ -135,6 +135,7 @@ pub(crate) fn panel_source() -> String {
         include_str!("../../../oni-ui/ui/panel/crop_tab.slint"),
         include_str!("../../../oni-ui/ui/panel/dedust_tab.slint"),
         include_str!("../../../oni-ui/ui/panel/color_tab.slint"),
+        include_str!("../../../oni-ui/ui/panel/grain_colour.slint"),
         include_str!("../../../oni-ui/ui/panel/details_tab.slint"),
     ]
     .concat()

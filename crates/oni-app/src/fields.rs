@@ -2,7 +2,7 @@
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
 use oni_core::knob::{CHROMA_FORCE_RANGE, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
@@ -73,6 +73,8 @@ pub enum Field {
     RedContrast,
     GreenContrast,
     BlueContrast,
+    GrainColourBlack,
+    GrainColourWhite,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -144,7 +146,7 @@ impl Block {
                 GreenContrast,
                 BlueContrast,
             ],
-            Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize, HalationSensitivity],
+            Block::FilmEffects => &[GrainAmount, GrainSize, GrainColourBlack, GrainColourWhite, HalationAmount, HalationSize, HalationSensitivity],
             Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
         }
     }
@@ -164,7 +166,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 55] = [
+    pub const ALL: [Field; 57] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -220,6 +222,8 @@ impl Field {
         Field::RedContrast,
         Field::GreenContrast,
         Field::BlueContrast,
+        Field::GrainColourBlack,
+        Field::GrainColourWhite,
     ];
 
     pub fn index(self) -> i32 {
@@ -239,7 +243,8 @@ impl Field {
     pub fn shown_in(self, mode: oni_settings::ConversionMode) -> bool {
         match self {
             Field::WhiteKelvin | Field::WhiteTint => !mode.is_film(),
-            Field::GrainAmount | Field::GrainSize | Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => !mode.is_film(),
+            Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => !mode.is_film(),
+            Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => !mode.is_film(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => !mode.is_film(),
             Field::Temperature | Field::Tint => mode.is_film(),
             _ => true,
@@ -313,6 +318,9 @@ impl Field {
             Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::SignedWhole)),
             Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
+            // The grain's colour line, its saturation at the picture's black and at its white.
+            Field::GrainColourBlack => s("Grain colour at the black point", GrainColour::RANGE, Readout::Percent),
+            Field::GrainColourWhite => s("Grain colour at the white point", GrainColour::RANGE, Readout::Percent),
             Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
             Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Percent),
             // Stops the threshold is lowered by: right, the dimmer light glows too.
