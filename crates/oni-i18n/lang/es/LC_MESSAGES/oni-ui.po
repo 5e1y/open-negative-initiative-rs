@@ -2200,12 +2200,16 @@ msgid "Levels"
 msgstr "Niveles"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, and its shadows, midpoint and highlights between them; past the white, the highlights keep their detail. Double-click a handle to bring it back alone."
-msgstr "El rango de la foto, elegido con RGB, Luma, R, G o B: RGB mueve los tres canales juntos, Luma solo la luz, conservando los colores, y R, G y B cada canal por separado. Cada uno tiene sus extremos negro y blanco, y sus sombras, punto medio y luces entre ellos; más allá del blanco, las luces conservan su detalle. Doble clic en un tirador para devolverlo solo."
+msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone."
+msgstr "El rango de la foto, elegido con RGB, Luma, R, G o B: RGB mueve los tres canales juntos, Luma solo la luz, conservando los colores, y R, G y B cada canal por separado. Cada uno tiene sus extremos negro y blanco, su punto medio entre ellos, sus sombras entre el negro y el punto medio y sus luces entre el punto medio y el blanco, y cada tirador sigue a sus vecinos; más allá del blanco, las luces conservan su detalle. Luego la Luz actúa sobre lo que fijan. Doble clic en un tirador para devolverlo solo."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
 msgstr "Curvas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone. They act before Lighting, which acts on what they draw."
+msgstr "Curvas dibujadas a mano, punto a punto: la de un canal tiñe solo sus luces o solo sus sombras. Actúan antes de la Luz, que actúa sobre lo que dibujan."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone."
@@ -2652,8 +2656,8 @@ msgid "Per-Channel Levels"
 msgstr "Niveles por canal"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Each channel's own range on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, and its shadows, midpoint and highlights between them. Double-click a handle to bring it back alone."
-msgstr "El rango propio de cada canal del escaneo, elegido con R, G o B: sus extremos negro y blanco, que coloca Preparar el rollo, y sus sombras, punto medio y luces entre ellos. Doble clic en un tirador para devolverlo solo."
+msgid "Each channel's own range on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, its midpoint between them, and its shadows and highlights on either side of the midpoint, each handle following those beside it. Double-click a handle to bring it back alone."
+msgstr "El rango propio de cada canal del escaneo, elegido con R, G o B: sus extremos negro y blanco, que coloca Preparar el rollo, su punto medio entre ellos, y sus sombras y luces a cada lado del punto medio, y cada tirador sigue a sus vecinos. Doble clic en un tirador para devolverlo solo."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"

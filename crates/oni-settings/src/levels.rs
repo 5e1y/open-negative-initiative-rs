@@ -68,7 +68,8 @@ impl LevelsChannel {
     }
 }
 
-/// One set of levels. The two added points are stored normalised between black and white.
+/// One set of levels. The three inner points are stored normalised between black and white, the quarter
+/// points on the window's gradation, so each handle follows its neighbours.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Levels {
@@ -133,32 +134,47 @@ impl Levels {
         self.shadow_ordinate() == 0.25 && self.highlight_ordinate() == 0.75
     }
 
-    /// The value that renders as mid-grey, not where the median's handle is drawn.
+    /// The value that renders mid-grey, where the median's handle is drawn.
     pub fn display_mid(&self) -> f32 {
         self.black + self.mid * (self.white - self.black)
     }
 
+    /// The value that bends the shadows: their stored share of the gradation, between the black and the
+    /// midpoint, so the handle follows both.
     pub fn display_shadows(&self) -> f32 {
-        self.black + self.shadows * (self.white - self.black)
+        self.black + libm::powf(self.shadows.clamp(Self::SHADOW_RANGE.0, Self::SHADOW_RANGE.1), self.reach()) * (self.white - self.black)
     }
 
     pub fn display_highlights(&self) -> f32 {
-        self.black + self.highlights * (self.white - self.black)
+        self.black + libm::powf(self.highlights.clamp(Self::HIGHLIGHT_RANGE.0, Self::HIGHLIGHT_RANGE.1), self.reach()) * (self.white - self.black)
+    }
+
+    /// The midpoint at a value, held to its travel; a closed window leaves it.
+    pub fn set_display_mid(&mut self, v: f32) {
+        let span = self.white - self.black;
+        if span > 0.0 {
+            self.mid = ((v - self.black) / span).clamp(Self::MID_RANGE.0, Self::MID_RANGE.1);
+        }
     }
 
     /// The quarter point at a value, held to its travel; a closed window leaves it.
     pub fn set_display_shadows(&mut self, v: f32) {
         let span = self.white - self.black;
         if span > 0.0 {
-            self.shadows = ((v - self.black) / span).max(Self::SHADOW_RANGE.0).min(Self::SHADOW_RANGE.1);
+            self.shadows = libm::powf(((v - self.black) / span).max(0.0), self.gamma()).clamp(Self::SHADOW_RANGE.0, Self::SHADOW_RANGE.1);
         }
     }
 
     pub fn set_display_highlights(&mut self, v: f32) {
         let span = self.white - self.black;
         if span > 0.0 {
-            self.highlights = ((v - self.black) / span).max(Self::HIGHLIGHT_RANGE.0).min(Self::HIGHLIGHT_RANGE.1);
+            self.highlights = libm::powf(((v - self.black) / span).max(0.0), self.gamma()).clamp(Self::HIGHLIGHT_RANGE.0, Self::HIGHLIGHT_RANGE.1);
         }
+    }
+
+    /// `1 / γ`, exactly 1 at the resting midpoint: the gradation's share back on the input.
+    fn reach(&self) -> f32 {
+        libm::logf(self.mid.clamp(Self::MID_RANGE.0, Self::MID_RANGE.1)) / libm::logf(0.5)
     }
 
     pub fn set_black(&mut self, v: f32) {

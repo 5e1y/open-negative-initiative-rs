@@ -80,20 +80,73 @@ fn a_handle_moves_through_one_path_and_resets_alone() {
     // The black never crosses the white's epsilon.
     let crossed = moved(Grip::Black, &l, 1.0, red, mode);
     assert_eq!(crossed.black, l.white - Levels::EPSILON);
-    // The median lands on its own travel across the window, off its fixed point at 0.5.
+    // The median is drawn on the value that renders mid-grey, and written back from there.
     l.mid = 0.3;
     let p = place(Grip::Mid, &l, red, mode);
+    assert!((red.value_at_position(p, mode) - l.display_mid()).abs() < 1e-5);
     let back = moved(Grip::Mid, &l, p, red, mode);
-    assert!((back.mid - l.mid).abs() < 1e-5, "{} {}", back.mid, l.mid);
+    assert!((back.mid - l.mid).abs() < 1e-6, "{} {}", back.mid, l.mid);
     // A reset moves its own handle alone.
     let r = reset(Grip::White, &l, red, mode, base);
     assert_eq!((r.white, r.black, r.shadows), (pipeline::DMAX, l.black, l.shadows));
     let r = reset(Grip::Shadows, &l, red, mode, base);
     assert_eq!((r.shadows, r.highlights, r.black), (0.25, l.highlights, l.black));
-    // Twin: the median's handle is not its stored value, so a write of the raw place drifts.
-    let mut naive = l;
-    naive.mid = (red.value_at_position(p, mode) - l.black) / (l.white - l.black);
-    assert!((naive.mid - l.mid).abs() > 0.01);
+    // Twin: the median's former place, its travel stretched across the window, drifts once written back.
+    let stretched = l.black + (l.mid - Levels::MID_RANGE.0) / (Levels::MID_RANGE.1 - Levels::MID_RANGE.0) * (l.white - l.black);
+    let drifted = moved(Grip::Mid, &l, red.position_of_value(stretched, mode), red, mode);
+    assert!((drifted.mid - l.mid).abs() > 0.01, "{}", drifted.mid);
+}
+
+/// Each inner point sits between its neighbours on the gradation: the ends carry all three, the midpoint
+/// its two quarters, and none ever crosses another.
+#[test]
+fn the_inner_points_follow_their_neighbours_and_never_cross() {
+    let cases = [(LevelsChannel::Red, ConversionMode::Negative, 0.4137, 2.7311), (LevelsChannel::Linked, ConversionMode::Digital, 0.08, 0.93)];
+    let steps = |(low, high): (f32, f32), n: usize| (0..=n).map(move |i| low + (high - low) * i as f32 / n as f32);
+    let mut worst: f32 = 0.0;
+    for (channel, mode, black, white) in cases {
+        for mid in steps(Levels::MID_RANGE, 14) {
+            for shadows in steps(Levels::SHADOW_RANGE, 8) {
+                for highlights in steps(Levels::HIGHLIGHT_RANGE, 8) {
+                    let l = Levels { black, white, mid, shadows, highlights };
+                    let drawn: Vec<f32> = Grip::READING.iter().map(|g| place(*g, &l, channel, mode)).collect();
+                    assert!(drawn.windows(2).all(|w| w[0] < w[1]), "{l:?} {drawn:?}");
+                    for g in Grip::ALL {
+                        let back = moved(g, &l, place(g, &l, channel, mode), channel, mode);
+                        worst = [back.black - black, back.white - white, back.mid - mid, back.shadows - shadows, back.highlights - highlights]
+                            .into_iter()
+                            .fold(worst, |m, d| m.max(d.abs()));
+                    }
+                    // A higher midpoint carries both quarters up, their stored shares untouched.
+                    let raised = Levels { mid: (mid + 0.05).min(Levels::MID_RANGE.1), ..l };
+                    if raised.mid > mid {
+                        assert!(place(Grip::Shadows, &raised, channel, mode) > drawn[1] && place(Grip::Highlights, &raised, channel, mode) > drawn[3]);
+                    }
+                }
+            }
+        }
+    }
+    assert!(worst < 1e-5, "a handle written back from its place moves by {worst}");
+}
+
+/// At rest, off the resting midpoint, each inner handle sits on the input its window renders as its quarter.
+#[test]
+fn the_inner_handles_sit_where_their_quarter_renders() {
+    for mid in [0.15, 0.3, 0.5, 0.62, 0.85] {
+        let l = Levels { black: 0.1, white: 0.9, mid, ..Levels::default() };
+        let rendered = |v: f32| l.transfer(f64::from(v));
+        for (v, quarter) in [(l.display_shadows(), 0.25), (l.display_mid(), 0.5), (l.display_highlights(), 0.75)] {
+            assert!((rendered(v) - quarter).abs() < 1e-6, "mid {mid}: {v} renders {}", rendered(v));
+        }
+        // Twin: the former linear place of the shadows renders off its quarter once the midpoint moves.
+        if (mid - 0.5).abs() > 0.1 {
+            assert!((rendered(l.black + l.shadows * (l.white - l.black)) - 0.25).abs() > 0.02, "mid {mid}");
+        }
+    }
+    // At the resting midpoint the quarter points are drawn where a straight share puts them, bit for bit.
+    let rest = Levels { black: 0.1, white: 0.9, shadows: 0.3, highlights: 0.7, ..Levels::default() };
+    let span = rest.white - rest.black;
+    assert_eq!((rest.display_shadows(), rest.display_highlights()), (rest.black + rest.shadows * span, rest.black + rest.highlights * span));
 }
 
 #[test]
@@ -122,6 +175,11 @@ fn the_readouts_are_densities_to_three_decimals() {
     let r = readouts(&l, LevelsChannel::Red, ConversionMode::Negative);
     assert_eq!(r[0], ("Black", "\u{2212}0.243".to_string()));
     assert_eq!(r.iter().map(|(n, _)| *n).collect::<Vec<_>>(), vec!["Black", "Shadows", "Mid", "Highs", "White"]);
+    // Each readout reads where its handle is drawn, the midpoint off its rest included.
+    let bent = Levels { mid: 0.31, shadows: 0.2, highlights: 0.8, ..l };
+    let (red, negative) = (LevelsChannel::Red, ConversionMode::Negative);
+    let drawn: Vec<String> = Grip::READING.iter().map(|g| readout(red, negative, red.value_at_position(place(*g, &bent, red, negative), negative))).collect();
+    assert_eq!(readouts(&bent, red, negative).into_iter().map(|(_, v)| v).collect::<Vec<_>>(), drawn);
     // Twin: a global set would read a share of its output, and a digital photo's red alike.
     assert_eq!(readout(LevelsChannel::Linked, ConversionMode::Negative, 0.5), "50.0%");
     assert_eq!(readout(LevelsChannel::Red, ConversionMode::Digital, 0.5), "50.0%");
