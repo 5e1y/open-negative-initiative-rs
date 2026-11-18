@@ -22,7 +22,8 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     if s.grain.amount == 0.0 {
         return None;
     }
-    let share = shares(&s.grain.curve, &conversion::stage47(s));
+    // A Scanner face's keys are its print, in the picture's gains: they leave the tones, so the grain's pass.
+    let share = shares(&s.grain.curve, &Stage47 { gain: [1.0; 3], ..conversion::stage47(s) });
     if share.iter().all(|&v| v == 0.0) {
         return None;
     }

@@ -212,24 +212,29 @@ pub fn frontier_rest() -> [f32; 3] {
 }
 
 /// The Lighting exposure a render enters the look at: the looks lend about a stop for a negative's 1.5 of
-/// rest left out, so a slide, resting at 0, enters as far under its own rest.
+/// rest left out, so a slide or a digital photo, resting at 0, enters as far under its own rest.
 pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
     Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
 }
 
 /// `onOniMachine`: Pro's conversion with Lighting, Color Density and Auto White Balance at rest, but for
-/// the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
+/// the face's Contrast, the gains moved by the clicks; `None` on the Pro face.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
-    // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's;
-    // a digital photo has no film for the machine to print.
-    if s.face != Face::Scanner || !s.mode.is_film() {
+    // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's.
+    if s.face != Face::Scanner {
         return None;
     }
     let mut out = s.as_scanner();
     out.print = Print { contrast: s.scanner_finish.contrast, exposure: look_entry_exposure(s.mode), ..Print::default() };
     out.density = 0.0;
     let stops = gain_stops(s);
-    out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
+    if s.mode.is_film() {
+        out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
+    } else {
+        // A digital photo's only gains are the keys', on its As Shot white as a roll prints on its measure.
+        out.gains.stops = stops;
+        out.white = s.shot;
+    }
     Some(out)
 }
 

@@ -5,7 +5,7 @@ mod common;
 
 use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect, Stage};
-use oni_pipeline::{Pipeline, Request, conversion, geometry, grain, stages};
+use oni_pipeline::{Pipeline, Request, conversion, geometry, grain, scanner, stages};
 use oni_render::{GRAIN_NODES, Grain, LUMA, cpu};
 use oni_settings::blocks::GrainCurve;
 use oni_settings::cg::Point;
@@ -377,4 +377,20 @@ fn a_print_notch_keeps_the_grain_s_shares_and_a_curve_notch_moves_them() {
     let mut t = s.clone();
     t.grain.curve.move_point(1, Point::new(0.3, 0.9));
     assert_ne!(grain::grain(&t, scan, 1.0).unwrap().share, k.share);
+}
+
+#[test]
+fn a_key_notch_on_the_scanner_face_keeps_the_grain_s_shares() {
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+    s.grain.amount = 0.5;
+    s.face = oni_settings::Face::Scanner;
+    let scan = Rect::new(0, 0, 600, 400);
+    let machine = scanner::on_oni_machine(&s).unwrap();
+    let k = grain::grain(&machine, scan, 1.0).unwrap();
+    let mut t = s.clone();
+    t.scanner = oni_settings::scanner::ScannerClicks::new(4, 2, -2, 6, 0);
+    let keyed = scanner::on_oni_machine(&t).unwrap();
+    assert_eq!(stages::grain(&grain::grain(&keyed, scan, 1.0).unwrap()).params(), stages::grain(&k).params(), "a key notch moves the grain's pass");
+    // Twin: the tones read through the keyed picture move the shares.
+    assert_ne!(grain::shares(&machine.grain.curve, &conversion::stage47(&keyed)), k.share);
 }

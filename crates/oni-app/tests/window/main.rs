@@ -33,6 +33,7 @@ mod density;
 mod picture_plots;
 mod dial;
 mod digital;
+mod digital_scanner;
 mod prepare_digital;
 mod digital_levels;
 mod film_type_fit;

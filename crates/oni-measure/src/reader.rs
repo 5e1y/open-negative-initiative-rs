@@ -65,7 +65,10 @@ impl Reader<'_> {
         let request = Request { full_width: copy.full_width, measuring: true, ..Request::default() };
         let t = truncated(s, before);
         let inputs = laid(&mut self.laying, self.graph, &t);
-        self.pipeline.image(self.graph, copy.source, &t, &request, &inputs).ok()
+        match before {
+            Stage::PictureLevels => self.pipeline.picture(self.graph, copy.source, &t, &request, &inputs).ok(),
+            _ => self.pipeline.image(self.graph, copy.source, &t, &request, &inputs).ok(),
+        }
     }
 
     /// `Pipeline.framed`: the head of the chain, with the mask and patches the frame names.

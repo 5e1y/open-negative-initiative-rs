@@ -1,5 +1,5 @@
 //! A frame made digital rests its white on its own As Shot, read once from its file, whatever gesture
-//! made it digital; its face is Pro's, as it has no film for the Scanner to print.
+//! made it digital; it turns to the Scanner face as a film does.
 
 use super::*;
 use oni_settings::white::White;
@@ -70,19 +70,38 @@ fn a_roll_made_digital_from_its_open_frame_reads_each_frames_own_as_shot_once() 
 }
 
 #[test]
-fn a_digital_frame_is_seen_on_pro_and_never_turned_to_the_scanner() {
+fn a_digital_frame_turns_to_the_scanner_keeps_its_two_faces_curves_apart_and_shares_its_levels() {
+    use crate::knob::Handle;
+    use oni_settings::cg::Point;
+    use oni_settings::levels::LevelsChannel;
     let (mut store, dir, [a, _, _]) = frames("face", |_| {});
-    store.apply(Command::Face(Face::Scanner));
-    assert_eq!(store.face(), Face::Scanner);
     store.apply_mode(ConversionMode::Digital, std::slice::from_ref(&a));
-    assert_eq!(store.face(), Face::Pro, "a digital photo has no film for the Scanner");
-    assert!(store.apply(Command::Face(Face::Scanner)).changed.is_empty());
+    assert!(!store.apply(Command::Face(Face::Scanner)).changed.is_empty());
+    assert_eq!((store.face(), store.settings().face), (Face::Scanner, Face::Scanner));
+    let mut view = store.face_view();
+    view.manual_curves.linked.add(Point::new(0.3, 0.6));
+    store.apply(Command::Finish(Box::new(view)));
+    store.apply(Command::Set { knob: Knob::Picture(LevelsChannel::Red, Handle::White), value: 0.8 });
+    let s = store.settings().clone();
+    assert!(s.manual_curves.is_neutral() && !s.scanner_finish.manual_curves.is_neutral(), "the curve is the Scanner's own");
+    assert!((s.picture_levels.red.white - 0.8).abs() < 1e-6, "the levels are the photo's, on either face");
+    // Twin: back on Pro, Pro's curves are as they were and the levels the same.
+    store.apply(Command::Face(Face::Pro));
     assert_eq!(store.face(), Face::Pro);
-    // Twin: back to a negative, the Scanner face it was seen on returns.
-    store.apply_mode(ConversionMode::Negative, std::slice::from_ref(&a));
-    assert_eq!(store.face(), Face::Scanner);
+    assert!(store.face_view().manual_curves.is_neutral());
+    assert_eq!(store.face_view().picture_levels, s.picture_levels);
     assert_eq!(channel(ConversionMode::Digital), Channel::Positive);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_scanner_asks_a_film_roll_to_be_measured_again_and_never_a_digital_photo() {
+    let reference = oni_settings::frame::RollReference { id: Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [3.0; 3], base: None, median: None };
+    let digital = PipelineSettings { roll_reference: Some(reference.clone()), ..PipelineSettings::rest(ConversionMode::Digital, true) };
+    assert!(!crate::store::remeasure(&digital));
+    // Twin: the same reference on a negative asks for its median.
+    let negative = PipelineSettings { roll_reference: Some(reference), ..PipelineSettings::rest(ConversionMode::Negative, true) };
+    assert!(crate::store::remeasure(&negative));
 }
 
 #[test]
