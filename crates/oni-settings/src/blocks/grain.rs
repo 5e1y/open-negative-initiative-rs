@@ -73,9 +73,9 @@ impl Strength {
 }
 
 impl GrainCurve {
-    /// Lighter in the blacks, whole in the mids, gone before the whites (owner's call).
+    /// Light in the blacks, fullest in the low mids, falling to none at the white (owner's call, drawn on a photo).
     pub const REST: GrainCurve = GrainCurve {
-        points: [Point::new(0.0, 0.35), Point::new(0.30, 1.0), Point::new(0.55, 1.0), Point::new(0.85, 0.0), Point::new(1.0, 0.0)],
+        points: [Point::new(0.0, 0.35), Point::new(0.275, 0.916), Point::new(0.596, 0.719), Point::new(0.741, 0.311), Point::new(1.0, 0.0)],
     };
 
     pub fn rests(&self) -> bool {
@@ -124,7 +124,7 @@ mod tests {
         c.move_point(4, Point::new(0.2, 0.5));
         assert_eq!(c.points[4], Point::new(1.0, 0.5));
         c.move_point(2, Point::new(0.95, 1.4));
-        assert_eq!(c.points[2], Point::new(0.85 - crate::curves::SPACING, 1.0));
+        assert_eq!(c.points[2], Point::new(0.741 - crate::curves::SPACING, 1.0));
         // Twin: a point set without the move crosses its neighbour.
         let mut raw = GrainCurve::REST;
         raw.points[2] = Point::new(0.95, 1.0);
@@ -132,13 +132,15 @@ mod tests {
     }
 
     #[test]
-    fn the_rest_is_light_in_the_blacks_whole_in_the_mids_and_gone_before_the_whites() {
+    fn the_rest_is_light_in_the_blacks_fullest_in_the_low_mids_and_gone_at_the_white() {
         let s = GrainCurve::REST.strength();
-        assert_eq!(s.at(0.0), 0.35);
-        assert!((0..=20).map(|i| 0.3 + 0.25 * f64::from(i) / 20.0).all(|x| s.at(x) == 1.0), "the plateau is held whole");
-        assert_eq!((s.at(0.85), s.at(0.92), s.at(1.0)), (0.0, 0.0, 0.0));
-        // Twin: the spline unheld rises over 1 on the plateau and dips under 0 past it.
-        let raw = Curve { points: GrainCurve::REST.points.to_vec() }.evaluated();
-        assert!(raw.value(0.42) > 1.0 && raw.value(0.92) < 0.0);
+        assert_eq!((s.at(0.0), s.at(1.0)), (0.35, 0.0));
+        let peak = (0..=100).map(|i| f64::from(i) / 100.0).max_by(|a, b| s.at(*a).total_cmp(&s.at(*b))).unwrap();
+        assert!((0.275..=0.6).contains(&peak) && s.at(peak) <= 1.0, "the peak at {peak}");
+        assert!((60..100).all(|i| s.at(f64::from(i) / 100.0) >= s.at(f64::from(i + 1) / 100.0)), "it falls past the mids");
+        // Twin: a curve left whole at its white end keeps grain there.
+        let mut kept = GrainCurve::REST;
+        kept.points[4].y = 0.4;
+        assert!(kept.strength().at(1.0) > 0.0);
     }
 }

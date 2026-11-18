@@ -11134,5 +11134,12 @@
     "title": "The readings' cadence twin counts the loose notches, not the time they took",
     "status": "done",
     "detail": "crates/oni-app/src/render/cadence_tests.rs: the twin asserted more loose readings than image intervals elapsed, so on a loaded machine, where the twelve notches spanned 29 intervals, it failed though every loose notch read. It now asserts one reading per loose notch (12), which the held rule's count stays under."
+  },
+  {
+    "id": 2209,
+    "type": "feature",
+    "title": "The Grain Curve rests on the owner's shape, drawn on P1073325, and leaves the panel",
+    "status": "done",
+    "detail": "oni_settings::blocks::GrainCurve::REST is now (0, 0.35), (0.275, 0.916), (0.596, 0.719), (0.741, 0.311), (1, 0), the owner's curve read from his edit of a digital photo (rounded to three places): light in the blacks, fullest in the low mids, falling to none at the white. A curve at rest is not written, so every grained frame left at rest takes it; the 36 corpus goldens carry it. The Grain Curve block leaves Film Effects (owner's call); its editor component and gestures stay in the code and the window check that drove it through the pointer is removed; the colour line's help names Grain size above it (fr, es). Checks: blocks::grain the_rest_is_light_in_the_blacks_fullest_in_the_low_mids_and_gone_at_the_white (twin: a curve left whole at its white end keeps grain there), editors::grain, oni-settings corpus, window film_effects, grain_colour, digital."
   }
 ]

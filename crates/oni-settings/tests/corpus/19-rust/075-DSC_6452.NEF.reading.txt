@@ -474,16 +474,16 @@ settings: PipelineSettings {
                     y: 0.35,
                 },
                 Point {
-                    x: 0.3,
-                    y: 1.0,
+                    x: 0.275,
+                    y: 0.916,
                 },
                 Point {
-                    x: 0.55,
-                    y: 1.0,
+                    x: 0.596,
+                    y: 0.719,
                 },
                 Point {
-                    x: 0.85,
-                    y: 0.0,
+                    x: 0.741,
+                    y: 0.311,
                 },
                 Point {
                     x: 1.0,

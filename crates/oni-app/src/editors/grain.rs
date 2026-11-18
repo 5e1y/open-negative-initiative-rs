@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn the_curve_is_laid_straight_on_the_tones() {
         let c = GrainCurve::REST;
-        assert!((screen(c.points[2], PLOT).0 - 0.55 * PLOT.w).abs() < 1e-9);
+        assert!((screen(c.points[2], PLOT).0 - 0.596 * PLOT.w).abs() < 1e-9);
         let d = drawing(&c, Some(3), PLOT);
         assert_eq!((d.dots[3].edge, d.dots[0].edge), (Ink::Active, Ink::Idle));
         // Twin: laid on linear light the middle point would sit more than 50 points left.
