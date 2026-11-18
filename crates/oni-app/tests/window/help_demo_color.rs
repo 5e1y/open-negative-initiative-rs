@@ -53,7 +53,11 @@ pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-const DIGITAL_COLOUR: &str = "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once.";
+const DIGITAL_COLOUR: &str = concat!(
+    "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: ",
+    "a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\n",
+    "Saturation makes every colour stronger or greyer at once."
+);
 
 /// The Colour block's card says what a digital photo shows, its white in kelvin and tint, and plays no
 /// Auto White Balance, which it hides; a card standing as the film type turns follows it. Twin: a negative's plays it.

@@ -137,7 +137,6 @@ export global Library {
     // The rating filter: 0 every photo, else the one medal the grid and the trees keep; a line of it picked.
     in property <int> filter-medal;
     callback filter-picked(int);
-    // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project, 3 the ONI Trash.
     in property <InfoKind> info-kind;
     in property <string> info-empty;
     in property <string> info-title;
@@ -155,12 +154,11 @@ export global Library {
     in-out property <string> description;
     in property <[StockCount]> stocks;
     in property <[image]> stack;
-    // The dyes the roll's frames unmix, the key's words laying the stock's when they differ, and
-    // whether no frame of the roll is measured.
+    // The dyes the roll's frames unmix, the key's words laying the stock's when they differ, whether no
+    // frame of the roll is measured, and whether they are film, as a digital folder's photos are not.
     in property <string> stock-dyes;
     in property <string> stock-dyes-fix;
     in property <bool> roll-unmeasured;
-    // The roll is film, whose stock the column names; a digital folder's photos had none.
     in property <bool> roll-film: true;
     callback surface-picked(int);
     // A row's click with ⌘ and ⇧, its right click answering whether a menu opens, a click on no row.
