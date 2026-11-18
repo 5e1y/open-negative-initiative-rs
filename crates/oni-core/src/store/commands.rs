@@ -147,7 +147,7 @@ impl EditorStore {
             Command::Write(next) => *next,
             Command::Finish(next) => self.stored_by_face(*next),
             Command::Each(each) => each.on(s),
-            Command::Mode(mode) => adapted(s, mode),
+            Command::Mode(mode) => s.carried(mode),
             Command::Reset => parameters::reset_blank(s, self.face() == Face::Scanner),
             Command::Scan(scan) => scanned(s, scan),
             // Taken before: a face is turned, an undo or a redo laid, never commanded.
@@ -243,13 +243,6 @@ impl EditorStore {
         let open = self.path().map(str::to_string);
         self.measured_with(key.clone()).into_iter().filter(|p| Some(p) != open.as_ref()).collect()
     }
-}
-
-/// A mode flip carries the axis and the windows still at one mode's rest onto the other's.
-fn adapted(s: &PipelineSettings, mode: ConversionMode) -> PipelineSettings {
-    let mut next = parameters::carried(s, mode);
-    next.print.exposure = s.print.exposure;
-    next
 }
 
 /// The Scanner face's keys on its own fields; the ranges are the phone's, the desktop's the same.

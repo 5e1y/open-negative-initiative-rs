@@ -73,6 +73,8 @@ impl Ctl {
         lib.set_info_title(film.name.clone().into());
         // `heroStock`: the stock a hand picked, else the first photo's mode's default, said so.
         let mode = roll.first.as_ref().and_then(|e| e.mode);
+        // A digital folder's photos had no film to name.
+        lib.set_roll_film(mode.is_none_or(|m| m.is_film()));
         let explicit = film_stock(film.stock.as_deref());
         let fallback = mode.and_then(|m| film_stock(default_stock_id(m)));
         let (stock, note) = match (explicit, fallback, mode) {

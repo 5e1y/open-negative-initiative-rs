@@ -1,5 +1,6 @@
 use super::*;
 use crate::fields::declared_names;
+use oni_settings::ConversionMode;
 
 #[test]
 fn every_field_is_a_rows_or_excluded_and_never_both() {

@@ -4,7 +4,7 @@
 use crate::balance;
 use oni_settings::levels::Levels;
 use oni_settings::white;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::PipelineSettings;
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
 
@@ -363,36 +363,6 @@ pub fn reset_blank(settings: &PipelineSettings, scanner_face: bool) -> PipelineS
         blank.scanner = settings.scanner;
     }
     blank
-}
-
-/// A mode change carrying the axis and the windows still at one mode's rest onto the other's.
-pub fn carried(block: &PipelineSettings, next: ConversionMode) -> PipelineSettings {
-    use oni_settings::axis::density_axis;
-    let mut moved = block.clone();
-    moved.mode = next;
-    // A positive read as a negative is one as long as it stays a negative.
-    moved.inverted_source &= next == ConversionMode::Negative;
-    moved.density_ceiling = density_axis::carried(block.density_ceiling, block.decoded_from_mosaic, block.mode, next);
-    moved.levels = carried_levels(block, next, moved.density_ceiling);
-    if block.print.exposure == oni_settings::tone::Print::resting_exposure(block.mode) {
-        moved.print.exposure = oni_settings::tone::Print::resting_exposure(next);
-    }
-    moved
-}
-
-/// Moves the blacks still on one mode's rest onto the other's, leaving a placed one where it is.
-fn carried_levels(block: &PipelineSettings, next: ConversionMode, to_ceiling: f32) -> oni_settings::levels::LevelsSet {
-    let mut out = block.levels;
-    if block.mode == next {
-        return out;
-    }
-    let rest = Levels::resting_black(block.mode, block.density_ceiling);
-    for window in [&mut out.red, &mut out.green, &mut out.blue] {
-        if window.black == rest {
-            window.set_black(Levels::resting_black(next, to_ceiling));
-        }
-    }
-    out
 }
 
 #[cfg(test)]

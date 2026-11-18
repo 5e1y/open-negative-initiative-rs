@@ -15,6 +15,7 @@ component BrushSlider inherits Slider {
     release(f) => { Dedust.release(); }
     scroll(f, dx, dy, s, fine) => { return Dedust.scroll(dx, dy, s, fine); }
     step(f, by) => { Dedust.step(by); }
+    typed(f, by) => { Dedust.step(by); }
 }
 
 // How far inside the roll's window a reading goes, its hand held by Rust as the brush's.
@@ -29,6 +30,7 @@ component SensitivitySlider inherits Slider {
     release(f) => { Dedust.sensitivity-release(); }
     scroll(f, dx, dy, s, fine) => { return Dedust.sensitivity-scroll(dx, dy, s, fine); }
     step(f, by) => { Dedust.sensitivity-step(by); }
+    typed(f, by) => { Dedust.sensitivity-step(by); }
 }
 
 

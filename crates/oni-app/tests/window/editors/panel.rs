@@ -66,7 +66,7 @@ pub(crate) fn the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_thei
     // The band slider follows the wheel by its spring, a value from elsewhere.
     let knob = || g.get_band_fractions().row_data(1).unwrap();
     let range = oni_settings::spectrogram::Spectrogram::SATURATION_RANGE;
-    let target = oni_app::track::position(0.04, &(range.0..=range.1), None);
+    let target = oni_app::track::position(0.04, &(range.0..=range.1), oni_app::track::Bend::Even);
     rig.settle();
     assert!((knob() - target).abs() < 1e-5, "the saturation knob rests on the value: {}", knob());
 

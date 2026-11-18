@@ -22,7 +22,7 @@ impl EditorStore {
         if targets.len() == 1 && self.path() == Some(targets[0].as_str()) {
             return usize::from(!self.apply(Command::Mode(mode)).changed.is_empty());
         }
-        self.lay_on(targets, |_, s| parameters::carried(s, mode), |n| {
+        self.lay_on(targets, |_, s| s.carried(mode), |n| {
             trn("Mode on {n} photo", "Mode on {n} photos", n as u64)
         })
     }

@@ -50,7 +50,7 @@ impl Demo for FilmType {
         let (w, h) = Picture::of(stage).pixels();
         // Each type as the panel's tab lays it, the windows carried as a mode change carries them.
         for mode in ConversionMode::ALL {
-            let s = oni_core::parameters::carried(&self.settings, mode);
+            let s = self.settings.carried(mode);
             self.states.pictures.push(photo.cover(&s, w, h)?);
         }
         let n = ConversionMode::ALL.len();

@@ -52,3 +52,41 @@ pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
     assert_ne!(Some(first), clip_pixels(&tip), "the Effects card shows its own clip, its knobs elsewhere");
     let _ = std::fs::remove_dir_all(&root);
 }
+
+const DIGITAL_COLOUR: &str = concat!(
+    "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: ",
+    "a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\n",
+    "Saturation makes every colour stronger or greyer at once."
+);
+
+/// The Colour block's card says what a digital photo shows, its white in kelvin and tint, and plays no
+/// Auto White Balance, which it hides; a card standing as the film type turns follows it. Twin: a negative's plays it.
+pub(crate) fn the_colour_card_of_a_digital_photo_plays_no_white_balance() {
+    let Some((rig, shell, root)) = opened("help-demo-digital") else { return };
+    let w = &shell.window;
+    let (tip, panel) = (w.global::<Tip>(), w.global::<PanelState>());
+    let settings = || shell.ctl.state.borrow().store().settings().clone();
+    panel.set_tab(PanelTab::Color);
+    panel.invoke_tab_picked(PanelTab::Color);
+    rig.settle();
+
+    // Twin: on a negative the card plays the white balance's demo.
+    press_help(&rig, w, "Colour");
+    assert_eq!(tip.get_demo(), "white-balance", "a negative's Colour card");
+    rig.until("the white balance's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
+
+    // The film type turned under the hand, the card standing: it says the digital photo's own words, no clip.
+    panel.invoke_film_type_picked(3);
+    rig.settle();
+    assert_eq!(settings().mode, oni_settings::ConversionMode::Digital);
+    assert_eq!((tip.get_open().as_str(), tip.get_demo().as_str()), (DIGITAL_COLOUR, ""), "the card followed the film type");
+    assert!(!tip.get_has_clip(), "no demo plays");
+    rig.shot("help-colour-digital");
+
+    // Pressed again on the digital photo, the same card and no clip.
+    crate::help_demo::leave_help(&rig, w);
+    assert_eq!(tip.get_open().as_str(), "", "the hand gone, the card goes");
+    press_help(&rig, w, "Colour");
+    assert_eq!((tip.get_open().as_str(), tip.get_demo().as_str(), tip.get_has_clip()), (DIGITAL_COLOUR, "", false));
+    let _ = std::fs::remove_dir_all(&root);
+}

@@ -48,7 +48,7 @@ pub enum Out {
 /// `RollPreviews.rendered`: the frame carried onto the roll's film at rest, its flat-field the roll's
 /// when one is set, per-pixel stages only.
 pub fn rendered(base: &PipelineSettings, look: &Look) -> PipelineSettings {
-    let mut s = oni_core::parameters::carried(base, look.film);
+    let mut s = base.carried(look.film);
     if let Some(flat) = &look.flat {
         s.flat_field = flat.clone();
     }

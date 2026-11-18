@@ -10763,5 +10763,61 @@
     "title": "The full suite after the Digital merges: the preset sheet holds its boxes again, the Film Type card's text, the welcome scene's foot",
     "status": "done",
     "detail": "Grain and Halation had joined the preset sheet's Colour column, which then ran past the sheet at 1280 × 800 (presets check). They now stand in a Film Effects block of their own in the second column, as the panel shows them, and the Scanner Keypad joins the Settings block, which keeps its comment: the two columns end level and the sheet holds every box. help_demo_roll expects the Film Type card's text that names the digital photo. The welcome scene's foot read Lighting's first slider unconditionally; with More Color Settings folded under the Colour block, Exposure can lie below the stage, and the foot now falls back to the line under Saturation, as its doc says."
+  },
+  {
+    "id": 2130,
+    "type": "fix",
+    "title": "A film type changed by any gesture lands each value still on the old mode's rest on the new mode's rest",
+    "status": "done",
+    "detail": "The owner's polish list for Digital, item 2. A negative at rest (+1.50 EV) switched to Digital kept +1.50 EV while Digital rests at 0, and Positive the same: the open frame's Command::Mode laid parameters::carried, then put its print exposure back (a rule kept from the port), and a roll's frames took the mode alone through roll_settings::copied, their exposure never carried. The rule now lives once on the settings, PipelineSettings::carried (moved from oni-core's parameters): the density ceiling, each window's black and the print exposure still on the old mode's rest take the new mode's, a value the hand placed stays; Command::Mode is that rule whole, and roll_settings::copied carries the frame's own rests whenever it hands a frame the donor's mode, so the roll's frames, a frame joining a roll and the open frame all land alike. The white keeps its own rest, the file's As Shot, laid by the store's write path when a frame first becomes digital. Checks (oni-core store::tests::modes): every mode's rest carried to every mode, mosaic or not, stands on the new mode's rest whole, and an exposure, a ceiling and a black placed by hand stay (twin: the former open-frame rule, exposure kept, leaves +1.50 EV on a digital photo); a measured roll turned digital from its open frame lands the open frame and the roll's frame at rest on Digital's rest, a frame whose exposure was placed keeps it, and one undo takes every frame back to +1.50 EV."
+  },
+  {
+    "id": 2131,
+    "type": "fix",
+    "title": "A frame beside the open one keeps its own white when the open frame turns digital",
+    "status": "done",
+    "detail": "The owner's polish list for Digital, item 6, reported by the Digital lot. The frames edited together took a film type changed on the open frame as a structured write, its every moved leaf laid on them: the open frame's As Shot white, which the store's write path reads off that frame's own file when it first becomes digital, landed on a frame beside already digital, outside the open frame's roll, as if the hand had moved it (and, with #2130, the open frame's exposure would have landed on a negative beside that keeps its mode). The source: a mode change is no leaf to copy but a rule each frame applies to itself. Command::Mode is now taken together as Took::Mode: a frame the mode reaches (a slide of the open frame's folder roll) carries its own values by PipelineSettings::carried and, if it becomes digital, reads its own As Shot through the same write path; a frame the mode does not reach, as a roll field it never reaches a frame off the roll, takes nothing of it. Check (oni-core store::tests::modes::a_digital_frame_beside_keeps_its_own_white_as_the_open_frame_turns_digital): the open RAW turned digital rests on its As Shot, a digital RAW beside keeps its own white and As Shot, a negative beside on no roll stays at its rest whole, and one undo restores the open frame (twin: the open frame's write laid leaf by leaf gives the frame beside the open frame's white; the check fails on the former code with that very white)."
+  },
+  {
+    "id": 2132,
+    "type": "feature",
+    "title": "Temperature's track is even in mired, its arrows a notch of 2 mired, a number typed landing on itself",
+    "status": "done",
+    "detail": "The owner's polish list for Digital, item 1. The kelvin slider was bent about 5000 K: its right half ran 5000 to 25000 K, as many mired as a sliver of its left, so the warm end crawled and the cool end leapt. The track now lays the existing range (2000 to 25000 K) even in mired, a million over the kelvin, as raw editors do: track::Bend (Even, Centre, Mired) replaces Spec.centre, the kelvin field takes Bend::Mired, the sharpening radius keeps its centre, and white::KELVIN_CENTRE goes. Daylight stands at 65 % of the travel. The stored value stays kelvin. An arrow's, accessibility's or the readout's minus and plus step was one unit of the readout's last digit, 1 K, a fiftieth of a mired near daylight: on a kelvin readout it is now a notch of 2 mired, landed on the round figure as fine as one notch there (1, 2 or 5 times a power of ten), 50 K a press near daylight, 10 K near 2000 K, 500 K near 20000 K; a wheel already moved a share of the track, now even in mired too. A number typed over a readout was counted in the same steps as an arrow's; it now goes its own way, Slider.typed and Store.typed (the store, the band, quality, roll, brush and sensitivity sliders and the keyboard probe wire it as their step was), so 5617 typed lands on 5617 K. Checks: oni-app track::a_mired_track_is_even_to_the_eye_and_its_own_inverse (every hundredth of the travel moves the same mired within 0.1 %, the inverse exact, 5000 K at 300/460; twin: the former track bent about 5000 K varies its mired a step more than 20 times); slider_track::a_kelvin_notch_is_even_in_mired_and_reads_a_round_figure (5000 to 5050 K and back, D65 to 6600 K, 2000 to 2010 K, 20000 to 21000 K, every press from end to end between 1 and 4 mired, held at both ends, a typed 5617 landing on itself; twin: the readout's digit, 1 K, moves under 0.05 mired); window check digital: an increment from a TIFF's D65 reads 6600 K; keyboard::a_number_typed_over_a_slider_readout_steps_it_there through the new typed path."
+  },
+  {
+    "id": 2133,
+    "type": "fix",
+    "title": "The gallery's info sidebar names no film stock on a folder of digital photos",
+    "status": "done",
+    "detail": "The owner's polish list for Digital, item 3. On a folder of digital photos the info sidebar still showed Film Stock with the generic canister and No film stock set, as Film::default_stock_id gives a digital photo none. The sidebar now reads whether the roll is film off the mode of its first photo, the same reading its stock's default takes (Library.roll-film, set by publish_info), and lays the Film Stock block only on film. What else the sidebar shows was sorted: the roll's name, its Shot Date and its Camera Body stay, as they apply to any photo; the Not prepared yet warning and its note already stand aside on a digital folder (roll_card::measured_or_slide counts a digital photo as needing no preparation), and the stock's dyes live inside the block hidden. The project view's Film Stocks block counts stocks over a project's photos and is left as it is. Window check digital::a_digital_folders_sidebar_names_no_film_stock: a folder of two digital TIFFs shows its date and camera body, no Film Stock, no No film stock set and nothing to prepare; twin: a folder of a negative shows Film Stock and is told unmeasured. With the block laid unconditionally, the check fails on its first assertion."
+  },
+  {
+    "id": 2134,
+    "type": "fix",
+    "title": "A help card standing as its note changes, as the Colour block's does when the film type turns digital, shows the new note and its own demo",
+    "status": "done",
+    "detail": "The owner's polish list for Digital, item 4. The Colour block already names no demo on a digital photo and tells its white in kelvin and tint (#2100), yet its card kept playing the Auto White Balance demo in Digital: a card is a copy of its mark's note and demo taken when it opens (Tip.open, Tip.demo), so a card standing while the block's words changed under it, the film type turned with the hand on the mark, went on showing the negative's note and clip; the mark, its note no longer the card's, read itself closed, and leaving it no longer closed the card. The source is the mark: HelpMark now keeps the note its card was opened on and, when its note changes while that card stands, lays the card again with the new note and demo (none here, so the clip stops). Window check help_demo_color::the_colour_card_of_a_digital_photo_plays_no_white_balance: a negative's Colour card plays white-balance (twin); Digital picked through Film Type with the card standing, the card reads the digital note and has no clip; pressed again on the digital photo, the same. On the former mark the check fails with the Auto White Balance note and demo still on the card."
+  },
+  {
+    "id": 2135,
+    "type": "fix",
+    "title": "help_demo_roll reads Film Type's note as the Digital mode wrote it",
+    "status": "done",
+    "detail": "Found while running the help window checks for the Digital polish: the Digital mode (#2100) rewrote Film Type's help to name the digital photo, and help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo still compared the card with the three-mode note, so it failed on canvas. The check's constant is now the note the panel shows, laid over four lines under the width ceiling (WIDE_LINES 84 to 83)."
+  },
+  {
+    "id": 2136,
+    "type": "fix",
+    "title": "The phone's step moves a hundredth of the slider's own track, even in mired on a digital photo's white",
+    "status": "done",
+    "detail": "Follows #2132 (the owner's polish list for Digital, item 1). A phone's plus or minus on a slider said it moved a hundredth of the track but moved a hundredth of the fixed range in value: on the kelvin track, now even in mired, that was 230 K a click wherever the white stood, the coarse uneven step the track had just shed, and on the sharpening radius's bent track or a monochrome frame's own contrast it was not a hundredth of what the panel shows either. phone_link::panel::command now steps the knob's place on its own track (track_on, position_on, stored_on) by a hundredth, in the shown sense, so the black point's plus still lowers its stored value. Check phone_link::panel::a_step_is_a_hundredth_of_the_track_rightward_and_a_reset_the_double_click: a white at 5000 K steps 4.6 mired, about 115 K (twin: a hundredth of the kelvin range, 230 K, is more than 0.6 of that span)."
+  },
+  {
+    "id": 2137,
+    "type": "check",
+    "title": "Film Type's four tabs fit the narrowest window in English, French and Spanish",
+    "status": "done",
+    "detail": "The owner's polish list for Digital, item 5. Measured, nothing to shorten: on the narrowest window (1100 pt, the panel 340 pt, the tabs' track 308 pt) the four tabs' words with a margin either side need 246.4 pt in English (Negative, Positive, B&W, Digital), 252.6 pt in French (Négatif, Positif, N&B, Numérique) and 240.1 pt in Spanish (Negativo, Positivo, B/N, Digital). Window check film_type_fit::film_types_tabs_fit_the_narrowest_window_in_every_language: in each language the tabs stand in order inside the panel, and the words as the catalogue spells them, set in Inter at the label's 13 pt through swash (the face the interface bundles), with TabsStyle's margins, inset and gaps, fit the track the window lays (twin: the French and Spanish needs differ from English's, so the catalogue's words are the ones measured, never the English the live interface shows). A build reading the interface live keeps @tr English, so the check measures the words rather than the pixels; the app profile was built once and shot in French and Spanish at 1100 x 760 by the same check: Négatif, Positif, N&B, Numérique and Negativo, Positivo, B/N, Digital stand whole with room to spare. On the app profile the testing backend finds no accessible element of the panel (digital and toolbar_fit fail there alike), so the check runs on the live build, as every window check here."
   }
 ]

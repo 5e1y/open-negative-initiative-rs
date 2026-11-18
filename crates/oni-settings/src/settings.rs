@@ -9,7 +9,7 @@ use crate::blocks::{
 use crate::curves::{CurveSet, SaturationCurve};
 use crate::film::Film;
 use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses, RollReference};
-use crate::levels::LevelsSet;
+use crate::levels::{Levels, LevelsSet};
 use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
 use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
@@ -171,6 +171,28 @@ impl PipelineSettings {
         block.levels = LevelsSet::neutral(mode, block.density_ceiling);
         block.print.exposure = Print::resting_exposure(mode);
         block
+    }
+
+    /// These settings on mode `next`: each value still on its mode's rest takes the next one's, so a
+    /// mode change moves no value the hand placed and leaves none on another mode's rest.
+    pub fn carried(&self, next: ConversionMode) -> PipelineSettings {
+        let mut moved = self.clone();
+        moved.mode = next;
+        // A positive read as a negative is one as long as it stays a negative.
+        moved.inverted_source &= next == ConversionMode::Negative;
+        moved.density_ceiling = density_axis::carried(self.density_ceiling, self.decoded_from_mosaic, self.mode, next);
+        if self.mode != next {
+            let (rest, to) = (Levels::resting_black(self.mode, self.density_ceiling), Levels::resting_black(next, moved.density_ceiling));
+            for window in [&mut moved.levels.red, &mut moved.levels.green, &mut moved.levels.blue] {
+                if window.black == rest {
+                    window.set_black(to);
+                }
+            }
+        }
+        if self.print.exposure == Print::resting_exposure(self.mode) {
+            moved.print.exposure = Print::resting_exposure(next);
+        }
+        moved
     }
 
     /// Every neighbourhood stage off, for thumbnails and per-pixel checks.

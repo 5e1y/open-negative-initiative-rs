@@ -376,7 +376,7 @@ export component KeyboardProbe inherits AppWindow {
                 if root.keyed: Button { text: "Key"; clicked => { root.clicks += 1; } }
             }
             tabs := Tabs { tabs: ["One", "Two", "Three"]; selected: root.tab; picked(i) => { root.tab = i; } }
-            slider := Slider { label: "Value"; readout: root.steps; fraction: 0.5; rest: 0.5; step(f, by) => { root.steps += by; } }
+            slider := Slider { label: "Value"; readout: root.steps; fraction: 0.5; rest: 0.5; step(f, by) => { root.steps += by; } typed(f, by) => { root.steps += by; } }
             Toggle { label: "Switch"; on: root.on; toggled(on) => { root.on = on; } }
             field := TextField { name: "Field"; }
         }

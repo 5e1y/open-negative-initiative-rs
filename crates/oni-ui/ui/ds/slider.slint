@@ -71,8 +71,10 @@ export component Slider inherits VerticalLayout {
     // Rust answers whether the scroll runs along the track; one across it is left to the panel.
     callback scroll(int, length, length, length, bool) -> bool;
     // An arrow's or accessibility's steps, a stepped slider's every move: whole steps, or the readout's
-    // last shown digit on a continuous one.
+    // last shown digit on a continuous one, or a notch where its track is not even in that digit.
     callback step(int, int);
+    // A number typed over a continuous slider's readout: units of its last shown digit.
+    callback typed(int, int);
     callback reset();
     // A press on a stepped rail holds the edit, so a whole slide is one step to undo.
     callback held(bool);
@@ -143,9 +145,15 @@ export component Slider inherits VerticalLayout {
     // gives the photos the keyboard back, a press elsewhere has given it on already.
     function type-in(text: string) {
         let by = Readouts.steps(root.readout, text, root.stepped ? root.step-reads : 0);
-        let reach = root.stepped ? clamp(root.value + by, root.lowest, root.highest) - root.value : by;
-        if (reach != 0) {
-            root.nudge(reach);
+        if (root.stepped) {
+            let reach = clamp(root.value + by, root.lowest, root.highest) - root.value;
+            if (reach != 0) {
+                root.nudge(reach);
+            }
+        } else if (by != 0) {
+            root.stepping = true;
+            lull.restart();
+            root.typed(root.field, by);
         }
         if (!Keyboard.held) {
             Outside.released += 1;
