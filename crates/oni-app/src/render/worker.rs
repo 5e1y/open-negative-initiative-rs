@@ -19,6 +19,8 @@ pub struct Job {
     pub held: bool,
     /// A plot over the picture's histogram is on screen, which the whole picture is counted for.
     pub counted: bool,
+    /// The levels' and the curves' plots on screen, whose input distributions alone are read.
+    pub inputs: [bool; 2],
 }
 
 /// A finished render: the texture the display kernel encodes into the canvas.
@@ -29,6 +31,8 @@ pub struct Done {
     pub kind: crate::timing::Kind,
     pub asked: Instant,
     pub pipeline: Duration,
+    /// When it was drawn, `pipeline` after its start.
+    pub drawn: Instant,
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
     pub before: Option<(Source, Option<Placed>)>,
@@ -44,11 +48,12 @@ pub enum Delivery {
     Counted { path: PathBuf, picture: Source },
 }
 
-/// What the levels and the manual curves are drawn over: the distributions in front of each.
+/// What the levels and the manual curves are drawn over: the distributions in front of each, none
+/// for a plot off screen, which keeps what it last showed.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct InputHistograms {
-    pub levels: oni_measure::histogram::Histogram,
-    pub curves: oni_measure::histogram::Histogram,
+    pub levels: Option<oni_measure::histogram::Histogram>,
+    pub curves: Option<oni_measure::histogram::Histogram>,
 }
 
 /// How long the hand rests before the input histograms are read on the full measuring copy.
@@ -71,16 +76,16 @@ impl Worker {
             .spawn(move || {
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
                 let mut last_counted = last_inputs;
-                // The last job read on the small copy, read again on the full one once the hand rests.
-                let mut resting: Option<(PathBuf, Arc<Negative>, PipelineSettings)> = None;
+                // The hand's last job, read on the full copy once the hand rests.
+                let mut resting: Option<(PathBuf, Arc<Negative>, PipelineSettings, [bool; 2])> = None;
                 loop {
                     let job = loop {
                         match shared.take(resting.is_some().then_some(REST)) {
                             Taken::Value(job) => break job,
                             Taken::Closed => return,
                             Taken::TimedOut => {
-                                if let Some((path, negative, settings)) = resting.take()
-                                    && let Some(inputs) = renderer.inputs(&negative, &settings, false)
+                                if let Some((path, negative, settings, wanted)) = resting.take()
+                                    && let Some(inputs) = renderer.inputs(&negative, &settings, false, wanted)
                                 {
                                     deliver(Delivery::Inputs { path, inputs });
                                 }
@@ -95,6 +100,7 @@ impl Worker {
                         kind: job.kind,
                         asked: job.asked,
                         pipeline: started.elapsed(),
+                        drawn: Instant::now(),
                         placed,
                         before: None,
                     });
@@ -111,12 +117,18 @@ impl Worker {
                             deliver(Delivery::Counted { path: job.path.clone(), picture });
                         }
                     }
-                    if drawn && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                    // A held job is never a burst's last, though the next notch may not be waiting yet: it
+                    // reads at the image's cadence alone, as each reading holds the next notch 6 ms or more.
+                    let due = last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL || (quiet && !job.held);
+                    let wanted = job.inputs.contains(&true);
+                    if drawn && wanted && due {
                         last_inputs = Instant::now();
-                        if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held) {
+                        if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held, job.inputs) {
                             deliver(Delivery::Inputs { path: job.path.clone(), inputs });
                         }
-                        resting = job.held.then(|| (job.path.clone(), job.negative.clone(), job.settings.clone()));
+                    }
+                    if drawn {
+                        resting = (job.held && wanted).then(|| (job.path.clone(), job.negative.clone(), job.settings.clone(), job.inputs));
                     }
                 }
             })

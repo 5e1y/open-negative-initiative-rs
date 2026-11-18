@@ -328,7 +328,12 @@ export component MainWindow inherits AppWindow {
                         Panel { }
                     }
                 }
-                if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { cache-rendering-hint: true; }
+                // The panel's slot is the shell's: its size never reads the panel's content,
+                // so a notch's readout re-lays no column beside it.
+                if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Rectangle {
+                    width: ShellStyle.panel-width;
+                    Panel { x: 0; y: 0; width: parent.width; height: parent.height; cache-rendering-hint: true; }
+                }
                 if App.gallery && !Exporting.shown && !Preparing.shown: Info { }
                 if Preparing.shown: RollPanel { }
                 if Exporting.shown: ExportPanel { }

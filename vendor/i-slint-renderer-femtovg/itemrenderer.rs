@@ -415,6 +415,7 @@ impl<'a, R: femtovg::Renderer + TextureImporter> ItemRenderer for GLItemRenderer
 
                 let shadow_image_width = shadow_rect.width().ceil() as u32;
                 let shadow_image_height = shadow_rect.height().ceil() as u32;
+                crate::oni_frames::with(|f| f.shadows.push((shadow_image_width, shadow_image_height, crate::oni_frames::named(item_rc))));
 
                 let shadow_image = Texture::new_empty_on_gpu(
                     &self.canvas,
@@ -993,6 +994,7 @@ impl<'a, R: femtovg::Renderer + TextureImporter> LayerRenderer<'a> for GLItemRen
     ) -> Self::Image {
         let render_target = layer_image.as_render_target();
         let size = layer_image.size().unwrap_or_default();
+        let started = std::time::Instant::now();
         let previous_render_target = self.current_render_target();
         let physical_origin = bounding_rect.origin.cast() * self.scale_factor;
 
@@ -1021,6 +1023,7 @@ impl<'a, R: femtovg::Renderer + TextureImporter> LayerRenderer<'a> for GLItemRen
 
         self.canvas.borrow_mut().set_render_target(previous_render_target);
         self.restore_state();
+        crate::oni_frames::with(|f| f.layers.push((size.width, size.height, started.elapsed())));
 
         layer_image
     }

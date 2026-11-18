@@ -33,31 +33,31 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
     let (w, h) = (64usize, 48usize);
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
-    let bare = engine.inputs(&negative, &rest, false).expect("readings");
+    let bare = engine.inputs(&negative, &rest, false, [true; 2]).expect("readings");
 
     let mut masked = rest.clone();
     masked.flat_field = oni_settings::frame::FlatField { mask: FlatFieldMask::Custom, custom: Some("panel".into()), ..Default::default() };
-    let divided = engine.inputs(&negative, &masked, false).expect("readings");
+    let divided = engine.inputs(&negative, &masked, false, [true; 2]).expect("readings");
     assert_ne!(divided.levels, bare.levels, "the mask reaches the levels' input");
     assert_ne!(divided.curves, bare.curves, "the mask reaches the curves' input");
     // Twin: a mask whose file is missing lays nothing, so both read the bare frame.
     masked.flat_field.custom = Some("gone".into());
-    let gone = engine.inputs(&negative, &masked, false).expect("readings");
+    let gone = engine.inputs(&negative, &masked, false, [true; 2]).expect("readings");
     assert_eq!((&gone.levels, &gone.curves), (&bare.levels, &bare.curves));
     // The same id loaded afterwards moves the reading the same settings kept.
     std::fs::copy(masks.join("panel.tiff"), masks.join("gone.tiff")).unwrap();
-    let found = engine.inputs(&negative, &masked, false).expect("readings");
+    let found = engine.inputs(&negative, &masked, false, [true; 2]).expect("readings");
     assert_eq!(found.levels, divided.levels, "the mask read later is laid");
 
     let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
     let mut dusted = rest.clone();
     dusted.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
     // Twin: a patch not generated yet lays nothing.
-    let missing = engine.inputs(&negative, &dusted, false).expect("readings");
+    let missing = engine.inputs(&negative, &dusted, false, [true; 2]).expect("readings");
     assert_eq!((&missing.levels, &missing.curves), (&bare.levels, &bare.curves));
     let bright: Vec<f32> = (0..w * h).flat_map(|_| [0.9f32, 0.9, 0.9, 1.0]).collect();
     tiff(&crate::patches::file(&caches, oni_pipeline::corrections::PatchKey::of(&dusted, &dusted.corrections[0])), w as u32, h as u32, &bright);
-    let healed = engine.inputs(&negative, &dusted, false).expect("readings");
+    let healed = engine.inputs(&negative, &dusted, false, [true; 2]).expect("readings");
     assert_ne!(healed.levels, bare.levels, "the patch reaches the levels' input");
     assert_ne!(healed.curves, bare.curves, "the patch reaches the curves' input");
     let _ = std::fs::remove_dir_all(&root);
@@ -76,7 +76,7 @@ fn a_digital_photos_curves_reading_holds_while_lighting_moves() {
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
-    let read = |s: &PipelineSettings, e: &mut Engine| e.inputs(&negative, s, false).expect("readings");
+    let read = |s: &PipelineSettings, e: &mut Engine| e.inputs(&negative, s, false, [true; 2]).expect("readings");
     let before = read(&rest, &mut engine);
     let exposed = PipelineSettings { print: oni_settings::tone::Print { exposure: 0.8, ..rest.print }, ..rest.clone() };
     let after = read(&exposed, &mut engine);
@@ -102,17 +102,17 @@ fn the_scanner_curves_read_its_look_while_the_levels_stay_pro_s_and_no_render_mo
     let scanner = PipelineSettings { face: oni_settings::Face::Scanner, ..pro.clone() };
     let shown = |s: &PipelineSettings, e: &mut Engine| e.render(&negative, s, None).unwrap().pixels;
     let (pro_shown, scanner_shown) = (shown(&pro, &mut engine), shown(&scanner, &mut engine));
-    let (on_pro, on_scanner) = (engine.inputs(&negative, &pro, false).expect("readings"), engine.inputs(&negative, &scanner, false).expect("readings"));
+    let (on_pro, on_scanner) = (engine.inputs(&negative, &pro, false, [true; 2]).expect("readings"), engine.inputs(&negative, &scanner, false, [true; 2]).expect("readings"));
     assert_ne!(on_scanner.curves, on_pro.curves, "the Scanner's look moves what enters its curves");
     // Twin: the levels read Pro's windows on both faces.
     assert_eq!(on_scanner.levels, on_pro.levels);
     // The keypad lies in front of the curves; the face's own curves follow what they read.
     let mut keyed = scanner.clone();
     keyed.scanner = oni_settings::scanner::ScannerClicks::new(4, 0, 0, 0, 0);
-    assert_ne!(engine.inputs(&negative, &keyed, false).expect("readings").curves, on_scanner.curves, "a density step reaches the curves' input");
+    assert_ne!(engine.inputs(&negative, &keyed, false, [true; 2]).expect("readings").curves, on_scanner.curves, "a density step reaches the curves' input");
     let mut curved = scanner.clone();
     curved.scanner_finish.manual_curves.linked.points = vec![oni_settings::cg::Point::new(0.0, 0.0), oni_settings::cg::Point::new(0.3, 0.8), oni_settings::cg::Point::new(1.0, 1.0)];
-    assert_eq!(engine.inputs(&negative, &curved, false).expect("readings").curves, on_scanner.curves, "the curves' input is read in front of them");
+    assert_eq!(engine.inputs(&negative, &curved, false, [true; 2]).expect("readings").curves, on_scanner.curves, "the curves' input is read in front of them");
     // The readings, through either face, leave both renders as they were.
     assert_eq!((shown(&pro, &mut engine), shown(&scanner, &mut engine)), (pro_shown, scanner_shown.clone()));
     // Twin: the same comparison sees a render that moved.
@@ -138,7 +138,7 @@ fn a_render_counts_its_picture_only_for_a_plot_on_screen() {
     });
     let job = |revision: u64, counted: bool| {
         let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-        Job { revision, path: PathBuf::new(), negative: negative.clone(), settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false, counted }
+        Job { revision, path: PathBuf::new(), negative: negative.clone(), settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false, counted, inputs: [true; 2] }
     };
     let landed = || std::iter::from_fn(|| rx.recv_timeout(Duration::from_secs(10)).ok()).take_while(|d| *d != "render").count();
     let drained = || std::iter::from_fn(|| rx.recv_timeout(Duration::from_millis(500)).ok()).collect::<Vec<_>>();
@@ -166,7 +166,7 @@ fn asking(engine: &Shared, negative: Negative, settings: PipelineSettings) -> im
         revision += 1;
         let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
         let (reference, negative) = (Some(settings.clone()), negative.clone());
-        worker.submit(Job { revision, path: PathBuf::new(), negative, settings: settings.clone(), kind, asked, view: None, reference, held: false, counted: true });
+        worker.submit(Job { revision, path: PathBuf::new(), negative, settings: settings.clone(), kind, asked, view: None, reference, held: false, counted: true, inputs: [true; 2] });
         let (mut before, mut counted, mut drawn) = (None, None, Instant::now());
         // A job alone in the slot ends on its distributions, however long a CPU adapter takes to read them.
         loop {
@@ -297,10 +297,10 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
-    let first = engine.inputs(&negative, &s, false).expect("readings");
+    let first = engine.inputs(&negative, &s, false, [true; 2]).expect("readings");
     let passes = |e: &mut Engine, s: &PipelineSettings| {
         let before = e.stats().dispatches;
-        let read = e.inputs(&negative, s, false).expect("readings");
+        let read = e.inputs(&negative, s, false, [true; 2]).expect("readings");
         (e.stats().dispatches - before, read)
     };
     (s.grain.amount, s.halation.amount) = (0.7, 0.5);
@@ -310,4 +310,98 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     // Twin: a white notch moves what enters the curves, so it is read again.
     s.white = Some(oni_settings::white::White { kelvin: 3500.0, tint: 20.0 });
     assert!(passes(&mut engine, &s).0 > 0, "a white notch kept a stale reading");
+}
+
+/// Renders on the engine and logs each reading asked: held or not, and the plots it is asked for.
+struct Logged(Shared, Arc<Mutex<Vec<(bool, [bool; 2])>>>);
+
+impl Renderer for Logged {
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
+        self.0.resident(negative, settings, view)
+    }
+
+    fn inputs(&mut self, _: &Negative, _: &PipelineSettings, held: bool, wanted: [bool; 2]) -> Option<InputHistograms> {
+        self.1.lock().unwrap().push((held, wanted));
+        Some(InputHistograms::default())
+    }
+}
+
+/// Twelve notches, each asked 8 ms after the last landed, then the hand's rest: the readings asked,
+/// and the image intervals the notches spanned, plus one; none where no adapter is.
+fn readings(held: bool, wanted: [bool; 2]) -> Option<(Vec<(bool, [bool; 2])>, f64)> {
+    let engine = Engine::shared(&Device::open().ok()?);
+    let decoded = Decoded { linear: Linear { width: 8, height: 8, pixels: vec![[0.3, 0.2, 0.1, 1.0]; 64] }, full_width: 8.0, undeclared: None };
+    let negative = Arc::new(engine.prepare(decoded).ok()?);
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let (tx, rx) = std::sync::mpsc::channel();
+    let worker = Worker::new(Box::new(Logged(engine, log.clone())), move |d| {
+        if let Delivery::Render(_) = d {
+            let _ = tx.send(());
+        }
+    });
+    let job = |revision: u64, held: bool| {
+        let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
+        let settings = PipelineSettings { capture_stops: revision as f32 * 0.01, ..PipelineSettings::default() };
+        Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held, counted: false, inputs: wanted }
+    };
+    // The first render compiles the kernels; its own readings are let go before the notches.
+    worker.submit(job(0, false));
+    rx.recv_timeout(Duration::from_secs(60)).ok()?;
+    std::thread::sleep(Duration::from_millis(300));
+    log.lock().unwrap().clear();
+    let started = Instant::now();
+    for revision in 1..=12 {
+        worker.submit(job(revision, held));
+        rx.recv_timeout(Duration::from_secs(10)).ok()?;
+        std::thread::sleep(Duration::from_millis(8));
+    }
+    let intervals = started.elapsed().as_secs_f64() / crate::timing::IMAGE_INTERVAL.as_secs_f64() + 1.0;
+    std::thread::sleep(Duration::from_millis(400));
+    let log = log.lock().unwrap().clone();
+    Some((log, intervals))
+}
+
+/// Under the hand the distributions are read at the image's cadence, each notch landing before the next
+/// is asked, then once on the full copy as the hand rests.
+#[test]
+fn a_held_notch_reads_its_inputs_at_the_image_cadence_and_the_rest_reads_once() {
+    let Some((held, intervals)) = readings(true, [true; 2]) else { return eprintln!("no adapter: the readings' cadence is not exercised") };
+    let (small, full) = (held.iter().filter(|(h, _)| *h).count(), held.iter().filter(|(h, _)| !h).count());
+    assert!(small >= 1 && small as f64 <= intervals, "{small} readings under the hand for {intervals:.1} intervals");
+    assert_eq!((full, held.last().map(|(h, _)| *h)), (1, Some(false)), "one reading on the full copy, at rest");
+    // Twin: the same notches not held each read, as each is its burst's last.
+    let Some((loose, intervals)) = readings(false, [true; 2]) else { return };
+    assert!(loose.len() as f64 > intervals, "{} readings for {intervals:.1} intervals", loose.len());
+}
+
+/// No reading is asked while neither plot is on screen; one on screen is read alone.
+#[test]
+fn the_inputs_are_read_for_a_plot_on_screen_alone() {
+    let Some((none, _)) = readings(true, [false; 2]) else { return eprintln!("no adapter: the plots' readings are not exercised") };
+    assert_eq!(none, vec![], "no plot on screen, no reading");
+    // Twin: the curves open, each reading is asked for them alone.
+    let Some((curves, _)) = readings(true, [false, true]) else { return };
+    assert!(!curves.is_empty() && curves.iter().all(|(_, w)| *w == [false, true]), "{curves:?}");
+}
+
+/// The engine reads the stages wanted alone: the curves' without the levels', both when both are wanted;
+/// a digital photo's levels read the curves' stage, which they share.
+#[test]
+fn the_engine_reads_the_wanted_distributions_alone() {
+    let Ok(device) = Device::open() else { return eprintln!("no adapter: the wanted readings are not exercised") };
+    let mut engine = Engine::on(&device);
+    let (w, h) = (96usize, 64usize);
+    let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let film = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+    let curves = engine.inputs(&negative, &film, false, [false, true]).expect("readings");
+    assert!(curves.levels.is_none() && curves.curves.is_some(), "the curves read alone");
+    // Twin: both wanted, both read.
+    let both = engine.inputs(&negative, &film, false, [true; 2]).expect("readings");
+    assert!(both.levels.is_some() && both.curves == curves.curves);
+    let digital = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let levels = engine.inputs(&negative, &digital, false, [true, false]).expect("readings");
+    let all = engine.inputs(&negative, &digital, false, [true; 2]).expect("readings");
+    assert!(levels.curves.is_none() && levels.levels.is_some() && levels.levels == all.curves, "a digital photo's levels read the curves' stage");
+    assert_eq!(engine.inputs(&negative, &digital, false, [false; 2]).expect("readings"), InputHistograms::default(), "nothing wanted, nothing read");
 }

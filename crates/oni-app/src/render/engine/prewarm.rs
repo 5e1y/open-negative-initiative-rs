@@ -164,7 +164,7 @@ impl Engine {
 
     fn prewarm_variant(&mut self, negative: &Negative, s: &PipelineSettings) {
         let _ = self.resident(negative, s, None);
-        let _ = self.inputs(negative, s, false);
+        let _ = self.inputs(negative, s, false, [true; 2]);
     }
 }
 

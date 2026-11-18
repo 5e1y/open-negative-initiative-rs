@@ -10973,5 +10973,47 @@
     "title": "A digital photo's film effects in the cost bench",
     "status": "done",
     "detail": "crates/oni-pipeline/tests/cost.rs a_digital_photo_s_film_effects_at_rest_and_on_a_notch (ONI_BENCH_COST=1): whole renders of a Digital frame at rest, grain at sizes 0, 0.5 and 1, halation, both, at 2000x1333 and 3024x2016, then an Exposure notch through Cache::frontier with no grain, grain, grain and halation, cases interleaved, GPU completion read by a one-pixel readback. A bench, not a check. Its cases list is one case a line, so the workspace keeps its count of lines past 200 characters."
+  },
+  {
+    "id": 2200,
+    "type": "bench",
+    "title": "The bench measures the chain from a notch to the screen and every interface frame's stages",
+    "status": "done",
+    "detail": "vendor/i-slint-renderer-femtovg/oni_frames.rs (ONI:) records, while a bench asks (oni_record), each interface frame on the interface thread: the drawable's wait, the preparation, the items, the flush and its submit, when present returned, the submits, each layer drawn again (size, time) and each shadow blurred again (size, the element's size and place in points). oni-app depends on the renderer directly (cargo hakari regenerated). bench/chain.rs keeps each notch's ask, render start, render end (Done.drawn), delivery to the interface thread and encode, closes it at the first present after its encode, and prints the centiles of every stage, the present gaps, the frame's parts, the layers and the shadows after the Drag, Settled and Long benches. frame_clock keeps its notifier: with #2205 a notifier costs no flush. Check: bench::chain a_notch_closes_at_the_first_present_after_its_encode (twin: closing at the present before the encode reads other frames). docs/research/performance.md section 16 says how to read it and the slow-CPU proxy (taskpolicy -c utility, no code switch). Not done: ONI_BENCH=pointer (the drag through WindowEvent pointer events needs the slider's place exported to the app, which no global carries today); on-glass time (addPresentedHandler in the vendored wgpu-hal) is the next measure."
+  },
+  {
+    "id": 2201,
+    "type": "perf",
+    "title": "The levels' and curves' input distributions are read only for a plot on screen",
+    "status": "done",
+    "detail": "Ctl::input_plots: film's Levels open on Roll, a digital photo's Levels open on Pro's Colour tab, the Curves open on Colour. Job.inputs carries them, Renderer::inputs and Engine::inputs take them and read only the stages wanted (a digital photo's Levels read the curves' stage); InputHistograms holds an Option per plot, and a plot off screen keeps what it last showed. look_at_plots asks the picture anew when an input plot shows again. With both folded by default, a notch no longer waits 5.7 ms p50 (13.4 max) for a synchronous readback and a CPU histogram nobody sees. Checks: inputs_tests the_inputs_are_read_for_a_plot_on_screen_alone (twin: the curves open, each reading asks them alone), the_engine_reads_the_wanted_distributions_alone (twin: both wanted, both read); window picture_plots::the_curves_inputs_are_read_while_their_plot_is_open_alone (seen failing with input_plots forced open: a folded plot's inputs are read). density and headless open their block first. Bench (app profile, Roll #8, load 3-5): asked to presented 7.4-8.3 ms p50, 11-15 ms p99 (16-22 ms p50 before under load); 47 of 47 notches rendered."
+  },
+  {
+    "id": 2202,
+    "type": "perf",
+    "title": "A held notch reads its input distributions at the image's cadence",
+    "status": "done",
+    "detail": "render/worker.rs: a held job is never a burst's last, though the next notch may not be waiting yet when the render ends, so `quiet` always held and every notch read its inputs. A held job now reads once an image interval; the hand's last job is still read on the full copy once it rests (REST). Check: inputs_tests a_held_notch_reads_its_inputs_at_the_image_cadence_and_the_rest_reads_once (twelve notches 8 ms apart read at most once an interval plus one at rest; twin: the same notches not held read each; seen failing on the old rule: 12 readings for 4.6 intervals). Slow-CPU proxy (taskpolicy -c utility): 47 of 47 notches rendered, asked to presented 12.5 ms p50 (467 ms p50 and 18 of 60 before)."
+  },
+  {
+    "id": 2204,
+    "type": "perf",
+    "title": "The panel's slot is the shell's: a notch re-lays no column beside it",
+    "status": "done",
+    "detail": "app.slint: the Panel lies in a Rectangle of ShellStyle.panel-width, so its implicit layout info, which reads its content (the readout), no longer reaches the shell's HorizontalLayout; Slint marks dependants dirty without comparing values, so every notch re-laid the Tree's geometry and redrew its 520x1232 layer (48-52 of 63 frames). Proof by the bench (#2200): no Tree layer drawn again during the drag (only the panel's 682x1232 at 0.95 ms p50); items 1.3 ms p50 (2.05 before). A software-renderer window check was tried and dropped: its dirty region merges into three boxes and the toolbar's row spans the window, so it cannot see the column. Window checks kept green: panel_frame, column_edges, canvas_layout, toolbar_fit, corners, panel_bindings."
+  },
+  {
+    "id": 2205,
+    "type": "perf",
+    "title": "No flush before ONI's rendering notifiers",
+    "status": "done",
+    "detail": "vendor/i-slint-renderer-femtovg/lib.rs (ONI:): the clear's flush, its submit and the canvas re-sized before BeforeRendering are gone; ONI's notifiers (the hz meter, the benches' clock) draw nothing beneath the interface. The bench (#2200) reads one submit a frame (the 16-pass slices of femtovg aside) and the preparation 0.33-0.42 ms p50 including the clear, against 0.24-0.35 ms of flush alone before. No unit check: the window checks run the software renderer."
+  },
+  {
+    "id": 2206,
+    "type": "perf",
+    "title": "The shadow re-blurred on most frames is the held rail's glow",
+    "status": "done",
+    "detail": "No change. The bench (#2200) names it: a 58x20 pt element at the dragged slider, 132x56 px with its blur, re-blurred 46-47 times over 60 notches. It is the lit part of the rail (rail.slint), which glows under the hand and whose width follows the knob at each notch: its shape changes, so its blur is drawn again by right. The other shadows blur once per drag."
   }
 ]

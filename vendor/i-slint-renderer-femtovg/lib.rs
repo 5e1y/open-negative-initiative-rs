@@ -36,6 +36,8 @@ use self::itemrenderer::CanvasRc;
 mod font_cache;
 mod images;
 mod itemrenderer;
+mod oni_frames;
+pub use oni_frames::{FrameRecord, oni_frames, oni_record};
 #[cfg(feature = "opengl")]
 pub mod opengl;
 #[cfg(feature = "wgpu-30")]
@@ -171,10 +173,12 @@ impl<B: GraphicsBackend> FemtoVGRenderer<B> {
         surface_size: i_slint_core::api::PhysicalSize,
         post_render_cb: Option<&dyn Fn(&mut dyn ItemRenderer)>,
     ) -> Result<DrawOutcome, i_slint_core::platform::PlatformError> {
+        let asked = std::time::Instant::now();
         let surface = match self.graphics_backend.begin_surface_rendering()? {
             BeginRendering::Acquired(s) => s,
             BeginRendering::Skipped(outcome) => return Ok(outcome),
         };
+        oni_frames::began(asked);
         let render_target = surface.initial_render_target();
 
         if self.rendering_first_time.take() {
@@ -244,23 +248,15 @@ impl<B: GraphicsBackend> FemtoVGRenderer<B> {
                 }
 
                 if let Some(notifier_fn) = self.rendering_notifier.borrow_mut().as_mut() {
-                    let mut femtovg_canvas = canvas.borrow_mut();
-                    // For the BeforeRendering rendering notifier callback it's important that this happens *after* clearing
-                    // the back buffer, in order to allow the callback to provide its own rendering of the background.
-                    // femtovg's clear_rect() will merely schedule a clear call, so flush right away to make it immediate.
-
-                    let commands = femtovg_canvas.flush_to_output(surface.render_output());
-                    self.graphics_backend.submit_commands(commands);
-
-                    femtovg_canvas.set_size(width.get(), height.get(), scale);
-                    select_render_target(&mut femtovg_canvas, render_target);
-                    drop(femtovg_canvas);
-
+                    // ONI: ONI's notifiers draw nothing beneath the interface, so none waits on the clear's
+                    // flush and its extra submit: 0.25 to 0.35 ms a frame.
                     self.with_graphics_api(|api| {
                         notifier_fn.notify(RenderingState::BeforeRendering, &api)
                     })?;
                 }
 
+                let items = std::time::Instant::now();
+                oni_frames::with(|f| f.prepared = (items - asked).saturating_sub(f.acquired));
                 self.graphics_cache.clear_cache_if_scale_factor_changed(window);
                 self.layer_cache.clear_cache_if_scale_factor_changed(window);
                 self.box_shadow_cache.clear_cache_if_scale_factor_changed(window);
@@ -318,8 +314,10 @@ impl<B: GraphicsBackend> FemtoVGRenderer<B> {
                     collector.measure_frame_rendered(&mut item_renderer, metrics);
                 }
 
+                let flushed = std::time::Instant::now();
                 let commands = canvas.borrow_mut().flush_to_output(surface.render_output());
                 self.graphics_backend.submit_commands(commands);
+                oni_frames::with(|f| (f.items, f.submitted, f.submits) = (flushed - items, flushed.elapsed(), f.submits + 1));
 
                 // Delete any images and layer images (and their FBOs) before making the context not current anymore, to
                 // avoid GPU memory leaks.
@@ -337,6 +335,7 @@ impl<B: GraphicsBackend> FemtoVGRenderer<B> {
         }
 
         self.graphics_backend.present_surface(surface)?;
+        oni_frames::presented();
         Ok(DrawOutcome::Success)
     }
 

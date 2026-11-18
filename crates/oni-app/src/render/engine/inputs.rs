@@ -17,9 +17,9 @@ pub(super) struct Read {
 }
 
 impl Engine {
-    /// Both distributions through the measuring windows, the curves' on the face that renders, on the small
-    /// copy while `held`; a stage whose entering settings and recipe hold keeps its reading.
-    pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
+    /// The `wanted` distributions, levels' then curves', through the measuring windows, the curves' on the face
+    /// that renders, on the small copy while `held`; a stage whose entering settings and recipe hold keeps its reading.
+    pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool, wanted: [bool; 2]) -> Option<InputHistograms> {
         let id = negative.preview.id();
         self.read_custom(settings);
         if self.measures.as_ref().is_none_or(|(kept, _, _)| *kept != id) {
@@ -48,8 +48,9 @@ impl Engine {
             histogram
         };
         // A digital photo's levels lie in the curves' tables, before Lighting: what enters them enters the curves.
-        let curves = read(1, Stage::ManualCurves);
-        let levels = if settings.mode.is_film() { read(0, Stage::Levels) } else { curves.clone() };
-        Some(InputHistograms { levels, curves })
+        let film = settings.mode.is_film();
+        let curves = (wanted[1] || (wanted[0] && !film)).then(|| read(1, Stage::ManualCurves));
+        let levels = if film { wanted[0].then(|| read(0, Stage::Levels)) } else { curves.clone().filter(|_| wanted[0]) };
+        Some(InputHistograms { levels, curves: curves.filter(|_| wanted[1]) })
     }
 }

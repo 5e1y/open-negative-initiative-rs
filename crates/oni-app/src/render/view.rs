@@ -33,8 +33,8 @@ pub trait Renderer: Send {
     /// The render kept on the GPU for the display kernel, the view's region when given.
     fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String>;
 
-    /// The levels' and manual curves' input distributions; `None` where nothing measures.
-    fn inputs(&mut self, _negative: &Negative, _settings: &PipelineSettings, _held: bool) -> Option<InputHistograms> {
+    /// The levels' and manual curves' input distributions, those `wanted` alone; `None` where nothing measures.
+    fn inputs(&mut self, _negative: &Negative, _settings: &PipelineSettings, _held: bool, _wanted: [bool; 2]) -> Option<InputHistograms> {
         None
     }
 
@@ -55,8 +55,8 @@ impl Renderer for Shared {
         self.lock().and_then(|mut e| e.resident(negative, settings, view))
     }
 
-    fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
-        self.lock().ok()?.inputs(negative, settings, held)
+    fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool, wanted: [bool; 2]) -> Option<InputHistograms> {
+        self.lock().ok()?.inputs(negative, settings, held, wanted)
     }
 
     fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Option<(Source, Option<Placed>)> {
