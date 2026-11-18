@@ -31,6 +31,8 @@ export component Rail inherits Rectangle {
     property <float> hue: root.vivid ? 1 : 0;
     animate hue { duration: SliderStyle.rise; easing: ease-out; }
     property <float> ends: SliderStyle.hue-rest + (1 - SliderStyle.hue-rest) * root.hue;
+    // A ramp lit in a hue rests as faint as a bipolar rail's ends, whole under the hand; a grey one stays whole.
+    property <float> lift: root.fill == SliderFill.ramp && root.tint.to-hsv().saturation > SliderStyle.hued ? root.ends : 1;
     property <float> shade: Depth.well-shade * (root.deep ? 1 : SliderStyle.idle-relief);
     animate shade { duration: SliderStyle.rise; easing: ease-out; }
     // The gradient from `low` to `high` at its stops, its middle as clear as `hue` leaves it.
@@ -68,8 +70,8 @@ export component Rail inherits Rectangle {
         background: root.fill == SliderFill.metal
             ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 33.33%, Colour.metal-light 66.67%, Colour.metal-dark 100%)
             : root.fill == SliderFill.ramp
-            ? (root.vertical ? @linear-gradient(0deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
-                : @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%))
+            ? (root.vertical ? @linear-gradient(0deg, root.tint.with-alpha(SliderStyle.ramp-start * root.lift) 0%, root.tint.with-alpha(SliderStyle.ramp-end * root.lift) 100%)
+                : @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start * root.lift) 0%, root.tint.with-alpha(SliderStyle.ramp-end * root.lift) 100%))
             : root.tint;
         drop-shadow-color: root.glow > 0 ? root.tint : transparent;
         drop-shadow-blur: root.glow;

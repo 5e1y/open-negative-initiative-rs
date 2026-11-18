@@ -11036,5 +11036,12 @@
     "title": "The shadow re-blurred on most frames is the held rail's glow",
     "status": "done",
     "detail": "No change. The bench (#2200) names it: a 58x20 pt element at the dragged slider, 132x56 px with its blur, re-blurred 46-47 times over 60 notches. It is the lit part of the rail (rail.slint), which glows under the hand and whose width follows the knob at each notch: its shape changes, so its blur is drawn again by right. The other shadows blur once per drag."
+  },
+  {
+    "id": 2207,
+    "type": "ui",
+    "title": "A rail lit in a hue rests faint like a bipolar rail's ends, whole under the hand",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/ds/rail.slint: a ramp fill whose tint is saturated past SliderStyle.hued scales its ramp alphas by the bipolar rail's ends factor (SliderStyle.hue-rest at rest, 1 when vivid: held, near, keyed, stepped or scrolled), so More Color Settings' channel white and black points no longer burn red, green or blue beside the dimmed Mid rails; grey and white ramps stay whole. Checks: window channel_points, design_system, slider (19 passed)."
   }
 ]
