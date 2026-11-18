@@ -10937,6 +10937,6 @@
     "type": "bench",
     "title": "A digital photo's film effects in the cost bench",
     "status": "done",
-    "detail": "crates/oni-pipeline/tests/cost.rs a_digital_photo_s_film_effects_at_rest_and_on_a_notch (ONI_BENCH_COST=1): whole renders of a Digital frame at rest, grain at sizes 0, 0.5 and 1, halation, both, at 2000x1333 and 3024x2016, then an Exposure notch through Cache::frontier with no grain, grain, grain and halation, cases interleaved, GPU completion read by a one-pixel readback. A bench, not a check."
+    "detail": "crates/oni-pipeline/tests/cost.rs a_digital_photo_s_film_effects_at_rest_and_on_a_notch (ONI_BENCH_COST=1): whole renders of a Digital frame at rest, grain at sizes 0, 0.5 and 1, halation, both, at 2000x1333 and 3024x2016, then an Exposure notch through Cache::frontier with no grain, grain, grain and halation, cases interleaved, GPU completion read by a one-pixel readback. A bench, not a check. Its cases list is one case a line, so the workspace keeps its count of lines past 200 characters."
   }
 ]

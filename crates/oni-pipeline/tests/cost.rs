@@ -162,7 +162,14 @@ fn a_digital_photo_s_film_effects_at_rest_and_on_a_notch() {
         (s.grain.amount, s.grain.size, s.halation.amount) = (grain, size, halation);
         s
     };
-    let cases = [("rest", with(0.0, 0.5, 0.0)), ("grain size 0", with(0.5, 0.0, 0.0)), ("grain size 0.5", with(0.5, 0.5, 0.0)), ("grain size 1", with(0.5, 1.0, 0.0)), ("halation", with(0.0, 0.5, 0.5)), ("both", with(0.5, 0.5, 0.5))];
+    let cases = [
+        ("rest", with(0.0, 0.5, 0.0)),
+        ("grain size 0", with(0.5, 0.0, 0.0)),
+        ("grain size 0.5", with(0.5, 0.5, 0.0)),
+        ("grain size 1", with(0.5, 1.0, 0.0)),
+        ("halation", with(0.0, 0.5, 0.5)),
+        ("both", with(0.5, 0.5, 0.5)),
+    ];
     let mut pipeline = oni_pipeline::Pipeline::new();
     for (w, h) in [(2000u32, 1333u32), (3024, 2016)] {
         let source = ramp(&mut g, w, h);
