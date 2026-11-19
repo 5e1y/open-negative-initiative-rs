@@ -56,8 +56,7 @@ impl Engine {
         let long = e.w.max(e.h) as usize;
         // While a hand moves the view the region is rendered at most GESTURE_PIXELS and shown stretched,
         // so a 5K canvas costs a gesture what a small window does; the sharp render follows the stop.
-        let margins = (1.0 + 2.0 * PAN_MARGIN) * (1.0 + 2.0 * PAN_MARGIN);
-        let lighter = if view.coarse { (GESTURE_PIXELS / (view.size.0 * view.size.1 * margins)).sqrt().min(1.0) } else { 1.0 };
+        let lighter = lighter(view.coarse, view.size);
         let side = ((long as f64 * (scale * lighter / base_ratio).min(1.0)).round() as usize).max(1);
         // Reduced on the way in, so the chain pulls only the region's share of the level it reads; a
         // reduction the canvas nearly holds whole is kept, so a notch at fit reads it ready.
@@ -66,7 +65,7 @@ impl Engine {
                 let (level, reduce) = self.level(&base, side, long)?;
                 let e = level.extent();
                 let whole = f64::from(e.w) * f64::from(e.h) * reduce * reduce;
-                if whole <= KEPT_WHOLE * view.size.0 * view.size.1 { (self.reduced(&level, reduce)?, 1.0) } else { (level, reduce) }
+                if kept_whole(whole, view.size, lighter) { (self.reduced(&level, reduce)?, 1.0) } else { (level, reduce) }
             }
             false => (base, 1.0),
         };
@@ -176,6 +175,18 @@ impl Engine {
     }
 }
 
+/// The scale a view renders at, relative to the screen's: under a hand, at most `GESTURE_PIXELS`.
+fn lighter(coarse: bool, size: (f64, f64)) -> f64 {
+    let margins = (1.0 + 2.0 * PAN_MARGIN) * (1.0 + 2.0 * PAN_MARGIN);
+    if coarse { (GESTURE_PIXELS / (size.0 * size.1 * margins)).sqrt().min(1.0) } else { 1.0 }
+}
+
+/// A reduction holding `whole` pixels is made whole and kept when it holds at most `KEPT_WHOLE` canvases
+/// rendered `lighter`: one exact scale is kept, so a gesture reducing more each step would never reuse it.
+fn kept_whole(whole: f64, size: (f64, f64), lighter: f64) -> bool {
+    whole <= KEPT_WHOLE * size.0 * size.1 * lighter * lighter
+}
+
 /// The share of the view rendered past each of its sides, which a pan reveals before its render lands.
 const PAN_MARGIN: f64 = 0.125;
 /// The pixels a view rendered during a gesture holds at most, about what a 1440p window's view does.
@@ -204,6 +215,22 @@ pub(crate) struct Fitting {
 mod tests {
     use super::*;
     use oni_graph::Rect;
+
+    #[test]
+    fn a_gesture_keeps_a_whole_reduction_only_as_large_as_the_canvas_it_renders() {
+        let (frame, canvas) = ((8000.0, 5000.0), (3920.0, 2640.0));
+        // The whole frame reduced to the side a view renders at `scale`, lighter under a hand.
+        let kept = |scale: f64, coarse: bool, budget: &dyn Fn(f64, f64) -> bool| {
+            let l = lighter(coarse, canvas);
+            budget(frame.0 * frame.1 * (scale * l).min(1.0).powi(2), l)
+        };
+        let ours = |whole: f64, l: f64| kept_whole(whole, canvas, l);
+        let fit = (canvas.0 / frame.0).min(canvas.1 / frame.1);
+        assert!(!kept(1.0, true, &ours), "a gesture at 100 % reduces the whole frame each step");
+        assert!(kept(fit, true, &ours) && kept(0.6, false, &ours), "a pan at fit and a sharp render at 60 % keep it");
+        // Twin: the canvas's own budget keeps the gesture's whole 10 MP at 100 %, never reused at the next step.
+        assert!(kept(1.0, true, &|whole, _| whole <= KEPT_WHOLE * canvas.0 * canvas.1));
+    }
 
     #[test]
     fn a_reduction_through_the_halvings_is_the_direct_one() {

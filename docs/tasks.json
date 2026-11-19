@@ -11190,5 +11190,12 @@
     "title": "A render landing after the hand moved is laid where the view now puts it",
     "status": "done",
     "detail": "With the worker waiting for the GPU (#2251), a render lands up to one render later than its ask: laid where the job's view had put it, the picture snapped back to an older zoom (9 to 20 renders of about 140 in a pinch, up to 1.8 %). render/worker.rs: Done carries the job's viewport and canvas size, and whether it rendered lighter. app/rendering/resizing.rs: moved(p, from, to) lays a placement made by one view of the image where another view puts the same part of it, the arithmetic navigate and a resize already used, now theirs too. app/rendering/landing.rs: deliver lays the render and Compare's before from the job's view to the current one. Check in resizing.rs: after a 1.1 zoom about a point, a render covering full-resolution pixels 1000 to 3000 lands exactly where the new view puts them (twin: the job's placement is a zoom step off, a tenth of its width). Renders do not move; only where a render is laid on the canvas."
+  },
+  {
+    "id": 2253,
+    "type": "performance",
+    "title": "A gesture keeps a whole reduction only as large as the canvas it renders",
+    "status": "done",
+    "detail": "render/engine/view.rs: a reduction holding at most KEPT_WHOLE canvases is made whole and kept, so a notch at fit reads it ready; under a hand the view renders lighter (at most GESTURE_PIXELS), but the budget was the full canvas's, so on a 5K canvas every gesture step between fit and 120 % reduced the whole frame again, up to 12 to 21 MP, and the one exact scale kept was never reused (engine probe at 5K: event to render done p99 94 to 50 ms, a render's GPU p99 52 to 30 ms with this step off). kept_whole(whole, size, lighter) compares the reduction with KEPT_WHOLE canvases rendered lighter; lighter(coarse, size) is the gesture scale composed() already used. A sharp render (lighter 1) keeps what it kept, so no render moves; a pan near fit keeps the reduction (#282): at fit on the 5K, 2.4 MP against 5.1. Check in view.rs: an 8000 by 5000 frame on a 3920 by 2640 canvas keeps nothing for a gesture at 100 %, keeps it for a gesture at fit and a sharp render at 60 % (twin: the canvas's own budget keeps the gesture's 10 MP at 100 %)."
   }
 ]
