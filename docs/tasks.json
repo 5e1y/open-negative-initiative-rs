@@ -11386,5 +11386,12 @@
     "title": "The Kit's window checks drive Done, Escape, the brand filter, the arrow key, the removal's question and the protocol",
     "status": "done",
     "detail": "collection.rs rewritten over a shared stage (tests/window/kit): the offer, the sign-in, Search Gear with the arrow key, Add and Done, the sheet opened again bare, 50 filtered by brand and Escape sending its pick, a removal cancelled then confirmed, defaults and the export, the Camera Body field, the card's page, Disconnect revoking the token, and every journal entry naming ONI with no Origin. kit_failures.rs (five checks): no service named, the 429 hold, Done unreached, Done signed out, a firewall at launch. Shots: kit-offer, kit-signed-in, kit-search, kit-search-failed, kit-hover, kit-defaults, kit-field."
+  },
+  {
+    "id": 2306,
+    "type": "check",
+    "title": "The Kit driven in the real app against the simulated The Lens DB",
+    "status": "done",
+    "detail": "scripts/check (151 binaries, none failed, ONI_CHECK_LIMIT=900) and scripts/lint in the worktree. The app built with --profile app (with Slint's MCP server to drive it) and run with ONI_BACKGROUND=1, ONI_TLDB=fake and a private support and caches folder, over the simulated service holding 101 real catalogue pieces: the sign-in made through the simulated pages and token address as a browser would (Connect itself is not pressed, as the system browser would take the focus; the window check drives it), the column's Kit read, a search of 50mm filtered by kind (Bodies: nothing matches) and by the brand picker (Nikon), Add, Done saving the pick in one change and closing, a removal asked then sent, a relaunch reading the Kit unchanged (its copy not rewritten), Disconnect revoking the token and dropping the copy, and a service unreached at launch keeping the copy with its note (the log names no address). ONI_BENCH=flows on the test copy of roll #8: no failure. Nothing was sent to thelensdb.com."
   }
 ]
