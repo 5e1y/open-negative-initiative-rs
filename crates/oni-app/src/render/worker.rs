@@ -36,6 +36,10 @@ pub struct Done {
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
     pub before: Option<(Source, Option<Placed>)>,
+    /// The viewport and canvas `placed` was laid by: a landing lays it again where the view now puts it.
+    pub view: Option<(crate::viewport::Viewport, (f64, f64))>,
+    /// Rendered lighter, under a moving hand.
+    pub coarse: bool,
 }
 
 /// What the render thread hands back: a render as soon as it is drawn, then, at most once an image
@@ -103,6 +107,8 @@ impl Worker {
                         drawn: Instant::now(),
                         placed,
                         before: None,
+                        view: job.view.as_ref().map(|v| (v.viewport, v.size)),
+                        coarse: job.view.as_ref().is_some_and(|v| v.coarse),
                     });
                     // The engine keeps the before while what it reads holds; Compare off lets it go.
                     let before = renderer.before(&job.negative, job.reference.as_ref(), job.view.as_ref());

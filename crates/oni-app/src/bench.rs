@@ -20,6 +20,7 @@
 //! `ONI_BENCH=grid` opens up to 36 frames together and drags Exposure over them.
 //! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure (`ONI_FOLDED=scanner`: the Scanner
 //! keypad on Frontier) with the panel shown, then folded, counting each step rendered and drawn.
+//! `ONI_BENCH=sweep` zooms between 40 % and 120 % by `ONI_SWEEP` (pinch, wheel, keys), each move timed to its photon.
 
 use crate::Store;
 use crate::app::Ctl;
@@ -40,8 +41,9 @@ mod loupe;
 mod folded;
 mod grid;
 mod midzoom;
+mod sweep;
 pub mod chain;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*};
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -134,6 +136,7 @@ pub enum Mode {
     Folded,
     Grid,
     Midzoom,
+    Sweep,
 }
 
 impl Mode {
@@ -166,6 +169,7 @@ pub fn requested() -> Option<Mode> {
         "folded" => Some(Mode::Folded),
         "grid" => Some(Mode::Grid),
         "midzoom" => Some(Mode::Midzoom),
+        "sweep" => Some(Mode::Sweep),
         _ => None,
     }
 }
@@ -185,6 +189,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Midzoom {
         return midzoom(ctl, done);
+    }
+    if mode == Mode::Sweep {
+        return sweep(ctl, done);
     }
     if mode == Mode::Crop {
         return crop(ctl, done);
@@ -313,7 +320,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on {on}"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on {on}, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on {on}, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::AutoDust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::AutoDust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom | Mode::Sweep => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);

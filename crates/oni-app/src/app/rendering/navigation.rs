@@ -17,6 +17,7 @@ impl Ctl {
     /// Applies a navigation at once: the picture shown moves with the hand by arithmetic alone, on this
     /// thread, and the render asked refines it.
     pub(in crate::app) fn navigate(self: &Rc<Self>, change: impl FnOnce(&mut Viewport, (f64, f64), (f64, f64))) {
+        let at = Instant::now();
         let Some(size) = self.canvas_size() else { return };
         let moved = {
             let mut s = self.state.borrow_mut();
@@ -35,6 +36,11 @@ impl Ctl {
             self.lay(Some(p), (0, 0));
         }
         self.request_render();
+        if crate::bench::chain::recording() {
+            let s = self.state.borrow();
+            let scale = s.full_size().map_or(0.0, |full| s.viewport.effective_scale(full, size));
+            crate::bench::chain::moved(crate::bench::chain::Move { at, took: at.elapsed(), scale });
+        }
     }
 
     /// A move of the hand's (a drag, a wheel, a pinch): the view renders lighter while it lasts, and

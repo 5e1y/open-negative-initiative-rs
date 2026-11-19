@@ -1,5 +1,6 @@
 //! The chain from a notch to the screen: each notch's ask, render, delivery and encode, closed at the first
-//! present after its encode; each interface frame's stages, the layers drawn again and the shadows blurred.
+//! present after its encode and at the GPU's end of that frame; each interface frame's stages, the layers
+//! drawn again and the shadows blurred; and the view's moves and renders, which `ONI_BENCH=sweep` reads.
 
 use i_slint_renderer_femtovg::{FrameRecord, oni_frames, oni_record};
 use std::cell::{Cell, RefCell};
@@ -17,17 +18,84 @@ pub struct Stages {
     pub encoded: Instant,
 }
 
+/// A navigation applied on the interface thread: when it began, how long it took and the scale it left.
+#[derive(Clone, Copy, Debug)]
+pub struct Move {
+    pub at: Instant,
+    pub took: Duration,
+    pub scale: f64,
+}
+
+/// A view's render encoded into the canvas: its stages, whether lighter, and the scale it was rendered at
+/// against the one the view had when it landed.
+#[derive(Clone, Copy, Debug)]
+pub struct Viewed {
+    pub stages: Stages,
+    pub coarse: bool,
+    pub asked_scale: f64,
+    pub landed_scale: f64,
+}
+
+/// What a bench recorded: the notches, the view's moves and renders, and the interface's frames.
+pub struct Recorded {
+    pub notches: Vec<Stages>,
+    pub moves: Vec<Move>,
+    pub views: Vec<Viewed>,
+    pub frames: Vec<FrameRecord>,
+}
+
 thread_local! {
     static RECORDING: Cell<bool> = const { Cell::new(false) };
     static NOTCHES: RefCell<Vec<Stages>> = const { RefCell::new(Vec::new()) };
+    static MOVES: RefCell<Vec<Move>> = const { RefCell::new(Vec::new()) };
+    static VIEWS: RefCell<Vec<Viewed>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Every notch and interface frame recorded from now on, those before let go.
+/// Every notch, move, view render and interface frame recorded from now on, those before let go.
 pub fn record() {
     RECORDING.with(|r| r.set(true));
     NOTCHES.with(|n| n.borrow_mut().clear());
+    MOVES.with(|m| m.borrow_mut().clear());
+    VIEWS.with(|v| v.borrow_mut().clear());
     oni_record(true);
     let _ = oni_frames();
+}
+
+pub fn recording() -> bool {
+    RECORDING.with(Cell::get)
+}
+
+/// A navigation applied, kept while a bench records.
+pub fn moved(m: Move) {
+    if recording() {
+        MOVES.with(|v| v.borrow_mut().push(m));
+    }
+}
+
+/// A view's render encoded, kept while a bench records.
+pub fn viewed(v: Viewed) {
+    if recording() {
+        VIEWS.with(|k| k.borrow_mut().push(v));
+    }
+}
+
+/// Everything recorded since `record`, which stops recording.
+pub fn taken() -> Recorded {
+    RECORDING.with(|r| r.set(false));
+    let frames = oni_frames();
+    oni_record(false);
+    Recorded {
+        notches: NOTCHES.with(|n| std::mem::take(&mut *n.borrow_mut())),
+        moves: MOVES.with(|m| std::mem::take(&mut *m.borrow_mut())),
+        views: VIEWS.with(|v| std::mem::take(&mut *v.borrow_mut())),
+        frames,
+    }
+}
+
+/// The photon of what the interface thread had done by `t`: the GPU's end of the first frame begun after,
+/// as the frame drawn on the same thread holds it; none while that frame's end is unknown.
+pub fn photon(t: Instant, frames: &[FrameRecord]) -> Option<Instant> {
+    frames.iter().find(|f| f.began >= t).and_then(|f| f.gpu.get().copied())
 }
 
 /// A notch encoded into the canvas, kept while a bench records.
@@ -44,11 +112,8 @@ pub(crate) fn presented(encoded: &[Instant], presents: &[Instant]) -> Vec<Option
 
 /// The report of everything recorded since `record`, which stops recording.
 pub fn report() -> String {
-    RECORDING.with(|r| r.set(false));
-    let notches = NOTCHES.with(|n| std::mem::take(&mut *n.borrow_mut()));
-    let frames = oni_frames();
-    oni_record(false);
-    said(&notches, &frames)
+    let r = taken();
+    said(&r.notches, &r.frames)
 }
 
 fn ms(d: Duration) -> f64 {
@@ -56,7 +121,7 @@ fn ms(d: Duration) -> f64 {
 }
 
 /// p50, p90, p99 and worst of `samples`, each the sample at its rank.
-fn centiles(mut samples: Vec<Duration>) -> String {
+pub(super) fn centiles(mut samples: Vec<Duration>) -> String {
     if samples.is_empty() {
         return "none".into();
     }
@@ -77,6 +142,8 @@ fn said(notches: &[Stages], frames: &[FrameRecord]) -> String {
     let _ = write!(out, "\n  delivered to encoded {}", stage(&|n, _| n.encoded - n.delivered));
     let _ = write!(out, "\n  encoded to presented {}", stage(&|n, p| p - n.encoded));
     let _ = write!(out, "\n  asked to presented {}", stage(&|n, p| p - n.asked));
+    let photons: Vec<Duration> = notches.iter().filter_map(|n| Some(photon(n.encoded, frames)? - n.asked)).collect();
+    let _ = write!(out, "\n  asked to the GPU's end of its frame {}", centiles(photons));
     let gaps: Vec<Duration> = presents.windows(2).map(|w| w[1] - w[0]).collect();
     let _ = write!(out, "\nframes: {} presented; gap {}", frames.len(), centiles(gaps));
     let part = |f: &dyn Fn(&FrameRecord) -> Duration| centiles(frames.iter().map(f).collect());
@@ -119,5 +186,30 @@ mod tests {
         // Twin: closing at the present before the encode reads a frame that never showed it.
         let before: Vec<Option<Instant>> = [at(4), at(13), at(14)].iter().map(|e| presents.iter().copied().filter(|p| p < e).max()).collect();
         assert_ne!(before, closed[..3].to_vec());
+    }
+
+    #[test]
+    fn a_move_closes_at_the_gpu_end_of_the_first_frame_drawn_after_it() {
+        let t = Instant::now();
+        let at = |ms: u64| t + Duration::from_millis(ms);
+        // Frames begun every 8 ms, presented 2 ms later, their GPU work done 48 ms after the present.
+        let frames: Vec<FrameRecord> = (0..6u64).map(|k| frame(at(8 * k), at(8 * k + 2), Some(at(8 * k + 50)))).collect();
+        let m = Move { at: at(3), took: Duration::from_millis(1), scale: 1.0 };
+        let closed = photon(m.at + m.took, &frames).map(|p| p - m.at);
+        assert_eq!(closed, Some(Duration::from_millis(55)), "the frame begun at 8 ms ends on the GPU at 58 ms");
+        // Twin: closing at the same frame's present call reads the move 48 ms early.
+        let presented = frames.iter().find(|f| f.began >= m.at + m.took).map(|f| f.presented - m.at);
+        assert_eq!(closed.zip(presented).map(|(c, p)| c - p), Some(Duration::from_millis(48)));
+        // A frame whose end is not known yet closes nothing.
+        assert_eq!(photon(at(9), &[frame(at(16), at(18), None)]), None);
+    }
+
+    fn frame(began: Instant, presented: Instant, gpu: Option<Instant>) -> FrameRecord {
+        let end = std::sync::Arc::new(std::sync::OnceLock::new());
+        if let Some(g) = gpu {
+            let _ = end.set(g);
+        }
+        let zero = Duration::ZERO;
+        FrameRecord { began, acquired: zero, prepared: zero, items: zero, submitted: zero, presented, gpu: end, submits: 1, layers: Vec::new(), shadows: Vec::new() }
     }
 }

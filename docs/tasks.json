@@ -11169,5 +11169,12 @@
     "title": "Film Effects' help says the colour line deepens the photo's own colours where the grain darkens them",
     "status": "done",
     "detail": "crates/oni-ui/ui/panel/color_tab.slint: both Film Effects help texts (Digital and film) say the line under the Grain Curve deepens the photo's own colours where the grain darkens them, adding none of its own, its left point for richer shadows, its right for richer highlights; fr and es in oni-ui.po, scripts/i18n run. The colour line's labels (Grain colour at the black / white point, Saturated / Desaturated), the Grain Curve and its editor are unchanged and stay shown."
+  },
+  {
+    "id": 2250,
+    "type": "performance",
+    "title": "ONI_BENCH=sweep times each zoom move to the GPU's end of the frame that shows it",
+    "status": "done",
+    "detail": "vendor/i-slint-renderer-femtovg: each recorded interface frame keeps when the GPU finished it (queue.on_submitted_work_done after its submit, a thread polling the device only while a bench records; ONI: comment). bench/chain.rs: the moves navigate applies and the view renders that land are recorded with the notches; a notch's line adds asked to the GPU's end of its frame; photon() closes a move at the GPU end of the first frame begun after it, as that frame is drawn on the same thread. bench/sweep.rs, Mode::Sweep: the full resolution built and the view held at 40 %, ONI_SWEEP pinch (120 Hz), wheel (8 notches a second) or keys (4 a second) zooms to 120 % and back three times; the report gives move to picture moved and to its render shown (p50/p90/p99/worst), each lighter and sharp render's stages, the renders landed at a scale the view had left, the frames' GPU-end gaps and those over twice the median, present to GPU end, drawable acquire. Check in chain.rs: a move closes at the GPU end of the first frame drawn after it (twin: the present call reads it 48 ms early); a frame whose end is unknown closes nothing. docs/research/performance.md section 17 gives the method. Renders do not move."
   }
 ]

@@ -38,6 +38,7 @@ impl Ctl {
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, drawn: done.drawn, delivered, frame };
         let e = done.picture.extent();
         let (width, height) = (e.w as usize, e.h as usize);
+        let now = self.canvas_size().map(|size| (self.state.borrow().viewport, size));
         self.lay(done.placed, (width, height));
         if let Some((before, placed)) = done.before {
             self.encode_before(before, placed);
@@ -49,7 +50,12 @@ impl Ctl {
             }
             s.renders += 1;
         }
+        let scales = done.view.zip(now).zip(done.placed).map(|((job, now), p)| (job.0.effective_scale(p.full, job.1), now.0.effective_scale(p.full, now.1)));
         self.encode(done.picture, shown, None);
+        if let Some((asked_scale, landed_scale)) = scales {
+            let stages = crate::bench::chain::Stages { asked: done.asked, started: done.drawn - done.pipeline, drawn: done.drawn, delivered, encoded: Instant::now() };
+            crate::bench::chain::viewed(crate::bench::chain::Viewed { stages, coarse: done.coarse, asked_scale, landed_scale });
+        }
         w.window().request_redraw();
         // The photo's kept size, the crop's own figure, never the render's reduced extent scaled back up.
         let status = {

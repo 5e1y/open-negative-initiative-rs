@@ -2,6 +2,8 @@
 // from a notch to the screen is measured whole, its end included.
 
 use std::cell::{Cell, RefCell};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
 /// One interface frame: when its drawable was asked, each stage's time and what it drew again.
@@ -17,6 +19,8 @@ pub struct FrameRecord {
     pub submitted: Duration,
     /// When the present call returned.
     pub presented: Instant,
+    /// When the GPU finished the frame's work, the photon at most one refresh later.
+    pub gpu: Arc<OnceLock<Instant>>,
     pub submits: u32,
     /// Each layer drawn again: its size in pixels and its time.
     pub layers: Vec<(u32, u32, Duration)>,
@@ -30,9 +34,13 @@ thread_local! {
     static FRAMES: RefCell<Vec<FrameRecord>> = const { RefCell::new(Vec::new()) };
 }
 
+/// A thread polls the device while frames are recorded, as wgpu runs a frame's end callback only at a poll.
+static POLLED: AtomicBool = AtomicBool::new(false);
+
 /// The frames are kept from now on while `on`; off drops those kept.
 pub fn oni_record(on: bool) {
     RECORDING.with(|r| r.set(on));
+    POLLED.store(on && POLLED.load(Ordering::SeqCst), Ordering::SeqCst);
     if !on {
         FRAMES.with(|f| f.borrow_mut().clear());
     }
@@ -54,6 +62,7 @@ pub(crate) fn began(began: Instant) {
             items: Duration::ZERO,
             submitted: Duration::ZERO,
             presented: now,
+            gpu: Arc::default(),
             submits: 0,
             layers: Vec::new(),
             shadows: Vec::new(),
@@ -67,6 +76,23 @@ pub(crate) fn with(with: impl FnOnce(&mut FrameRecord)) {
     CURRENT.with(|c| {
         if let Some(frame) = c.borrow_mut().as_mut() {
             with(frame);
+        }
+    });
+}
+
+/// Where the frame being recorded keeps its GPU end, and whether a thread polls `device` for it.
+pub(crate) fn gpu_end() -> Option<(Arc<OnceLock<Instant>>, bool)> {
+    let end = CURRENT.with(|c| c.borrow().as_ref().map(|f| f.gpu.clone()))?;
+    Some((end, POLLED.swap(true, Ordering::SeqCst)))
+}
+
+/// Polls `device` every quarter millisecond until the recording stops, so each end is stamped on time.
+#[cfg(feature = "wgpu-30")]
+pub(crate) fn poll(device: wgpu_30::Device) {
+    let _ = std::thread::Builder::new().name("frame ends".into()).spawn(move || {
+        while POLLED.load(Ordering::SeqCst) {
+            let _ = device.poll(wgpu_30::PollType::Poll);
+            std::thread::sleep(Duration::from_micros(250));
         }
     });
 }

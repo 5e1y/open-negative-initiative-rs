@@ -267,7 +267,18 @@ impl GraphicsBackend for WGPUBackend {
     }
 
     fn submit_commands(&self, commands: <Self::Renderer as femtovg::Renderer>::CommandBuffer) {
-        self.queue.borrow().as_ref().unwrap().submit(commands);
+        let queue = self.queue.borrow();
+        let queue = queue.as_ref().unwrap();
+        queue.submit(commands);
+        // ONI: a frame recorded for a bench is stamped when the GPU ends it, as its photon follows that.
+        if let Some((end, polled)) = crate::oni_frames::gpu_end() {
+            queue.on_submitted_work_done(move || {
+                let _ = end.set(std::time::Instant::now());
+            });
+            if let (false, Some(device)) = (polled, self.device.borrow().clone()) {
+                crate::oni_frames::poll(device);
+            }
+        }
     }
 
     fn present_surface(
