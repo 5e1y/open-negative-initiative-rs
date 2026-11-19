@@ -1646,20 +1646,12 @@ msgid "Lenses"
 msgstr "Objetivos"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "All Gear"
-msgstr "Todo el equipo"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Type"
-msgstr "Tipo"
+msgid "Bodies & Lenses"
+msgstr "Cuerpos y objetivos"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Bodies, lenses or both"
 msgstr "Cuerpos, objetivos o ambos"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Mount"
-msgstr "Montura"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Only the pieces that take this mount"

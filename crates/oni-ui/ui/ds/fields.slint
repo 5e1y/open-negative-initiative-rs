@@ -3,7 +3,7 @@
 import { Colour, Space, Stroke, Type, FieldStyle } from "theme.slint";
 import { Label, TextRole, Tone, Roles } from "base.slint";
 import { Outside } from "outside.slint";
-import { FocusRing } from "keyboard.slint";
+import { FocusRing, Keyboard } from "keyboard.slint";
 
 // `dsTextField`'s chrome laid flat, as every input and select: no well, no relief. Holding the keyboard,
 // its edge lights and the keyboard's ring rounds it. A picker's field wears it too.
@@ -48,10 +48,17 @@ export component Entry inherits Rectangle {
     public function enter() { input.focus(); input.select-all(); }
     // The `FieldFocus` serial this entry took when last entered; -1 before it ever was.
     property <int> held: -1;
-    // A press beside the field while it holds the keyboard ends the editing, as a click elsewhere in AppKit.
+    // A press beside the field while it holds the keyboard ends the editing, as a click elsewhere in AppKit:
+    // the photos take the keyboard back, or the latest sheet laid over them.
     property <int> presses: Outside.presses;
     changed presses => {
-        if (input.has-focus && !hover.has-hover && !root.rim) { Outside.released += 1; }
+        if (!input.has-focus || hover.has-hover || root.rim) { return; }
+        if (Keyboard.covered) {
+            Keyboard.top = 0;
+            Keyboard.closed += 1;
+        } else {
+            Outside.released += 1;
+        }
     }
     horizontal-stretch: 1;
     // Its owner's width whatever it holds: longer words slide under its edge while edited, as in AppKit's

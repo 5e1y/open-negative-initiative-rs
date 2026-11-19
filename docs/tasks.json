@@ -11421,5 +11421,12 @@
     "title": "The gear fields are a true combobox: typed in the field, the list dropped under it",
     "status": "done",
     "detail": "#2309's select with a search field in its list is withdrawn (owner: a combobox is an input that drops its possibilities). KnownField is again a text field, its chevron inside the face: clicked into, typed in or its chevron pressed, it drops the Kit's cards and the names typed before, and takes back the keyboard the popup took (WindowInner::show_popup moves it away from the window), so the words are typed in the field with the list open. The press that dropped the list is not read as a press beside the field. A pick or Return gives the name and ends the typing. Window checks: collection (pick, typed with the list open, Return), escape, export_columns."
+  },
+  {
+    "id": 2311,
+    "type": "change",
+    "title": "The Kit search's selects side by side, Mount always offered, the search field let go by a press beside it",
+    "status": "done",
+    "detail": "The Type and Mount labels are gone and All Gear reads Bodies & Lenses. The Mount select is never dimmed: its choices are the answers' mounts, then the Kit's, so the Kit's are offered before any search; the v1 search takes no mount (q, type, brand, limit), so ONI keeps sifting the answers itself. Under a sheet, a press beside a field gave the keyboard nowhere, so the field kept it: a field let go under a sheet now hands it to the latest sheet laid, as a sheet closing over another does; a control let go keeps the default key's hold, so Return still answers. The collection check presses the sheet's title and asserts the field let go, the sheet still open."
   }
 ]

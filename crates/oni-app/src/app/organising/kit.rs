@@ -56,7 +56,7 @@ pub struct KitState {
     /// service takes none; empty for any.
     kind_filter: Option<Kind>,
     mount_filter: String,
-    /// The mounts the answers hold, the most frequent first: the mount filter's choices.
+    /// The mount filter's choices: the answers' mounts, the most frequent first, then the Kit's.
     mounts: Vec<String>,
     /// How many photos name each piece, counted when they may have changed, never on each redraw.
     counts: Option<oni_library::index::GearCounts>,

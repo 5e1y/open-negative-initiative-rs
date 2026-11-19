@@ -97,10 +97,17 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.settle();
     assert_eq!((kit.get_kind_filter(), kit.get_picked(), kit.get_found().row_count()), (0, 0, 0));
     assert!(common::placed(w, Role::Tab, "Bodies").is_empty(), "the kind is a select, no tabs");
+    assert!(kit.get_mounts().iter().any(|m| m == "Nikon F"), "before a search, the Kit's mounts are offered: {:?}", kit.get_mounts().iter().collect::<Vec<_>>());
     common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
     rig.key("50");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
     rig.settle();
+    // A press beside the field in the sheet lets it go: the sheet takes the keyboard back.
+    assert_eq!(common::focused_label(w), "Search The Lens DB");
+    common::click(rig, w, common::the(w, Role::Text, "Add to Your Kit").middle());
+    rig.settle();
+    assert_ne!(common::focused_label(w), "Search The Lens DB", "the field let go");
+    assert!(kit.get_picking(), "twin: the sheet still open");
     let all = kit.get_found().row_count();
     assert!(kit.get_mounts().row_count() > 2, "twin: before a mount, several: {:?}", kit.get_mounts().iter().collect::<Vec<_>>());
     println!("shot {}", rig.shot("kit-search").display());
@@ -120,7 +127,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.settle();
     assert_eq!(kit.get_found().row_count(), all, "every mount again");
     // The kind is the service's: Lenses asks again with it.
-    common::click(rig, w, common::the(w, Role::Button, "All Gear").middle());
+    common::click(rig, w, common::the(w, Role::Button, "Bodies & Lenses").middle());
     rig.settle();
     common::click(rig, w, common::in_popup(w, Role::Button, "Lenses").middle());
     rig.until("the lenses answered", WAIT, || !kit.get_searching() && kit.get_kind_filter() == 2);

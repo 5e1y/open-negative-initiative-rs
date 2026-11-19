@@ -175,14 +175,13 @@ export component KitView inherits VerticalLayout {
     }
 }
 
-// The search's filters on one row, two selects: the kind, and the mount among those the answers hold.
+// The search's filters side by side, two selects: the kind, and the mount among the answers' and the Kit's.
 component KitFilters inherits HorizontalLayout {
-    property <[string]> kinds: [@tr("All Gear"), @tr("Bodies"), @tr("Lenses")];
+    property <[string]> kinds: [@tr("Bodies & Lenses"), @tr("Bodies"), @tr("Lenses")];
     padding-top: Space.s;
     spacing: Space.m;
     Picker {
         width: (root.width - Space.m) / 2;
-        label: @tr("Type");
         value: root.kinds[Kit.kind-filter];
         entries: root.kinds;
         current: Kit.kind-filter;
@@ -191,11 +190,9 @@ component KitFilters inherits HorizontalLayout {
     }
     Picker {
         width: (root.width - Space.m) / 2;
-        label: @tr("Mount");
         value: Kit.mounts[Kit.mount-at];
         entries: Kit.mounts;
         current: Kit.mount-at;
-        enabled: Kit.mounts.length > 1;
         help: @tr("Only the pieces that take this mount");
         chosen(i) => { Kit.filter-mount(i); }
     }

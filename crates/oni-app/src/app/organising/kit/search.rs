@@ -1,9 +1,24 @@
 //! The catalogue searched as the hand rests or the kind changes, the latest answer alone kept; the mounts
-//! the answers hold become the mount filter's choices, which ONI applies itself as the service takes none.
+//! the answers and the Kit hold are the mount filter's choices, which ONI applies as the search takes none.
 
 use super::*;
 
 impl KitState {
+    /// The mount filter's choices: the answers' mounts, then the Kit's, so one is offered before any search;
+    /// a mount chosen stays offered when neither holds it, so it can be let go.
+    pub(super) fn offer_mounts(&mut self) {
+        let mut mounts = words::mounts(&self.answers);
+        for mount in words::mounts(&self.kept.items) {
+            if !mounts.contains(&mount) {
+                mounts.push(mount);
+            }
+        }
+        if !self.mount_filter.is_empty() && !mounts.contains(&self.mount_filter) {
+            mounts.push(self.mount_filter.clone());
+        }
+        self.mounts = mounts;
+    }
+
     /// The answers the mount filter keeps.
     fn sift(&mut self) {
         let mount = self.mount_filter.as_str();
@@ -53,8 +68,9 @@ impl Ctl {
             let query = words::query(&kit.typed);
             kit.searching = query.chars().count() >= 2;
             if !kit.searching {
-                (kit.answers, kit.found, kit.mounts) = (Vec::new(), Vec::new(), Vec::new());
+                (kit.answers, kit.found) = (Vec::new(), Vec::new());
                 kit.searched.clear();
+                kit.offer_mounts();
             }
             (query, kit.kind_filter, kit.asked)
         };
@@ -77,12 +93,8 @@ impl Ctl {
             Ok(found) => {
                 let mut s = self.state.borrow_mut();
                 let kit = &mut s.org.kit;
-                kit.mounts = words::mounts(&found);
-                // A mount chosen stays offered when these answers hold none, so it can be let go.
-                if !kit.mount_filter.is_empty() && !kit.mounts.contains(&kit.mount_filter) {
-                    kit.mounts.push(kit.mount_filter.clone());
-                }
                 (kit.answers, kit.searched) = (found, query);
+                kit.offer_mounts();
                 kit.sift();
                 kit.note.clear();
             }

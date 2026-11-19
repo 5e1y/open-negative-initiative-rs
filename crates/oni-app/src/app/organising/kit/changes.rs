@@ -13,6 +13,7 @@ impl KitState {
         self.typed.clear();
         self.kind_filter = None;
         self.mount_filter.clear();
+        self.offer_mounts();
     }
 }
 
