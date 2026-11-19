@@ -160,7 +160,7 @@ impl Ctl {
         let failure = self.state.borrow_mut().store.flush();
         // Edits kept from a refused write are lost on quitting too, so they ask the same.
         let kept = self.state.borrow().store.unsaved().first().map(|u| u.message.clone());
-        let Some(message) = failure.or(kept) else { return self.quit_kit() };
+        let Some(message) = failure.or(kept) else { return self.quit_exporting() };
         self.ask(
             tr("Your latest settings could not be saved"),
             &tr!("{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem \u{2014} for instance by freeing space or reconnecting the volume the originals live on.", message = message),
@@ -168,21 +168,6 @@ impl Ctl {
             false,
             Pending::QuitAnyway,
         );
-        slint::CloseRequestResponse::KeepWindowShown
-    }
-
-    /// Kit changes not yet on The Lens DB are lost on quitting: asked first.
-    fn quit_kit(self: &Rc<Self>) -> slint::CloseRequestResponse {
-        let unsaved = self.kit_unsaved();
-        if unsaved == 0 {
-            return self.quit_exporting();
-        }
-        let message = oni_i18n::trn(
-            "A change to your Kit is not on The Lens DB yet: quitting now discards it.",
-            "{n} changes to your Kit are not on The Lens DB yet: quitting now discards them.",
-            unsaved as u64,
-        );
-        self.ask(tr("Your Kit Is Not Saved"), &message, tr("Quit Anyway"), false, Pending::QuitAnyway);
         slint::CloseRequestResponse::KeepWindowShown
     }
 

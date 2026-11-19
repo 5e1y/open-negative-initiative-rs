@@ -1,5 +1,5 @@
-//! The simulated service's token, revocation and partner calls, with the contract's checks: the agent,
-//! the bearer token, the rate, no `Origin` on a write, and the bounds of a search and of a change.
+//! The simulated service's token, revocation and partner calls, with the contract's checks: the bearer
+//! token, the account's rate, no `Origin` on a write, and the bounds of a search and of a change.
 
 use super::catalogue::fold;
 use super::http::{Request, Response};
@@ -11,22 +11,29 @@ use std::time::{Duration, Instant};
 /// A code is exchanged within this long, once.
 const CODE_LIFE: Duration = Duration::from_secs(120);
 
-/// The most entries one change carries.
-const CHANGES: usize = 200;
+use crate::api::CHANGES;
+
+/// The words of a search the service reads; the rest are ignored.
+const WORDS: usize = 10;
 
 pub fn token(state: &mut State, request: &Request) -> Response {
     let form = request.form();
     let value = |name: &str| form.iter().find(|(n, _)| n == name).map(|(_, v)| v.as_str()).unwrap_or_default();
+    let fields = ["grant_type", "code", "redirect_uri", "client_id", "code_verifier"];
+    if let Some(missing) = fields.iter().find(|f| value(f).is_empty()) {
+        return Response::oauth_error(400, "invalid_request", &format!("{missing} is missing"));
+    }
     if value("grant_type") != "authorization_code" {
-        return Response::error(400, "unsupported_grant_type");
+        return Response::oauth_error(400, "unsupported_grant_type", "only authorization_code");
     }
     if value("client_id") != crate::CLIENT_ID {
-        return Response::error(400, "invalid_client");
+        return Response::oauth_error(401, "invalid_client", "unknown client");
     }
-    let Some(code) = state.codes.get_mut(value("code")) else { return Response::error(400, "invalid_grant") };
+    let invalid = || Response::oauth_error(400, "invalid_grant", "the code is unknown, used, expired or not this verifier's");
+    let Some(code) = state.codes.get_mut(value("code")) else { return invalid() };
     let proven = crate::oauth::challenge(value("code_verifier")) == code.challenge;
     if code.used || code.issued.elapsed() > CODE_LIFE || code.redirect != value("redirect_uri") || !proven {
-        return Response::error(400, "invalid_grant");
+        return invalid();
     }
     code.used = true;
     let account = code.account;
@@ -43,13 +50,10 @@ pub fn revoke(state: &mut State, request: &Request) -> Response {
 }
 
 pub fn api(state: &mut State, request: &Request, path: &str) -> Response {
-    if !request.header("user-agent").is_some_and(|agent| agent.starts_with("ONI/")) {
-        return Response::error(403, "unknown client");
-    }
     let token = request.header("authorization").and_then(|v| v.strip_prefix("Bearer ")).unwrap_or_default();
     let (most, window) = state.rate;
-    let Some(live) = state.tokens.get_mut(token) else { return Response::error(401, "invalid_token") };
-    let (account, recent) = (live.account, &mut live.recent);
+    let Some(account) = state.tokens.get(token).map(|live| live.account) else { return Response::error(401, "invalid_token") };
+    let recent = state.recent.entry(account).or_default();
     let now = Instant::now();
     while recent.front().is_some_and(|&at| now.duration_since(at) >= window) {
         recent.pop_front();
@@ -79,9 +83,9 @@ pub fn api(state: &mut State, request: &Request, path: &str) -> Response {
 
 fn search(state: &State, request: &Request) -> Response {
     let q = request.param("q").unwrap_or_default().trim();
-    let words: Vec<String> = q.split_whitespace().map(fold).collect();
-    if !(2..=200).contains(&q.chars().count()) || words.len() > 10 {
-        return Response::error(400, "q must be 2 to 200 characters and 10 words at most");
+    let words: Vec<String> = q.split_whitespace().take(WORDS).map(fold).collect();
+    if !(2..=200).contains(&q.chars().count()) {
+        return Response::error(400, "q must be 2 to 200 characters");
     }
     let kind = match request.param("type") {
         None => None,
@@ -152,10 +156,11 @@ fn kit(state: &State, account: usize, not_found: Option<Vec<Key>>) -> serde_json
     answer
 }
 
-/// Named by the Kit's content, so a copy from an earlier run of the simulation is never taken as current.
+/// Named by the Kit's content, so a copy from an earlier run of the simulation is never taken as current;
+/// weak, as the service's are, and compared whole.
 fn etag(kit: &[Key]) -> String {
     let bytes = serde_json::to_vec(kit).unwrap_or_default();
     let digest = ring::digest::digest(&ring::digest::SHA256, &bytes);
     let hex: String = digest.as_ref()[..8].iter().map(|b| format!("{b:02x}")).collect();
-    format!("\"{hex}\"")
+    format!("W/\"{hex}\"")
 }

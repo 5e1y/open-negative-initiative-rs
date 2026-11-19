@@ -175,7 +175,7 @@ component AppsPage inherits Page {
         before: SectionStyle.flush;
         separated: false;
         title: @tr("The Lens DB");
-        HorizontalLayout { alignment: start; TldbMark { clicked => { Kit.open-site(); } } }
+        TldbMark { credited: true; clicked => { Kit.open-site(); } }
         Label {
             role: TextRole.note;
             text: Kit.link == KitLink.in ? @tr("Connected as {}: your Kit fills the camera and the lens of your exports.", Kit.account)

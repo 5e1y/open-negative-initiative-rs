@@ -2,8 +2,8 @@
 
 use oni_tldb::{Kept, Kind};
 
-/// An export's EXIF completed from the Kit: the brand, a lens's focal lengths and apertures, and a
-/// fixed-lens body's own lens where none is named.
+/// An export's EXIF from the Kit: Make and LensMake the brand (none without), LensSpecification, a fixed-lens
+/// body's own lens; Model and LensModel keep the full name, as rolls, defaults and photo counts name a piece.
 pub fn complete(kept: &Kept, m: &mut oni_settings::ExifMetadata) {
     let body = kept.named(Kind::Camera, &m.camera);
     if let Some(body) = body {
@@ -56,6 +56,22 @@ mod tests {
         let mut other = ExifMetadata { camera: "Leica M6".into(), lens: "Summicron 50".into(), ..ExifMetadata::default() };
         complete(&kept(), &mut other);
         assert_eq!(other, ExifMetadata { camera: "Leica M6".into(), lens: "Summicron 50".into(), ..ExifMetadata::default() });
+    }
+
+    #[test]
+    fn the_model_is_the_full_name_and_a_missing_brand_writes_no_make() {
+        let mut m = ExifMetadata { camera: "AE-1 Program".into(), lens: "Hasselblad Planar C 80mm f/2.8".into(), ..ExifMetadata::default() };
+        let mut kept = kept();
+        kept.items.push(piece(Kind::Lens, 4, None, "Hasselblad Planar C 80mm f/2.8"));
+        complete(&kept, &mut m);
+        assert_eq!(m.camera_make, "Canon");
+        assert_eq!(m.lens_make, "", "no brand in the catalogue, no LensMake");
+        let line = ExifMetadata { camera: "Canon AE-1 Program".into(), ..ExifMetadata::default() };
+        let mut named = line.clone();
+        complete(&kept, &mut named);
+        assert_eq!((named.camera.as_str(), named.camera_make.as_str()), ("Canon AE-1 Program", "Canon"));
+        // Twin: the model alone, without its brand, is not what Model keeps.
+        assert_ne!(named.camera, "AE-1 Program");
     }
 
     #[test]

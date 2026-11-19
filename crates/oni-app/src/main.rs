@@ -147,7 +147,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
                 // The folded bench pairs a phone, so it offers the link whatever the switch says.
                 let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
-                let options = Options { support, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, brought, ..Options::default() };
+                // A bench never asks The Lens DB, so its timings never wait on the network.
+                let tldb = if bench::requested().is_some() { oni_app::app::TldbSite::None } else { oni_app::app::TldbSite::launch(&support) };
+                let options = Options { support, tldb, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, brought, ..Options::default() };
                 match Shell::standing(built, store, engine, options) {
                     Ok(standing) => {
                         let quitting = standing.ctl.clone();

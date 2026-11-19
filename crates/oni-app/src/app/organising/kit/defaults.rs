@@ -10,12 +10,12 @@ fn gear(kind: Kind) -> Gear {
 }
 
 impl Ctl {
-    /// A saved piece of the Kit made the default of its kind, or none when it was.
+    /// A piece of the Kit made the default of its kind, or none when it was.
     pub(super) fn kit_prefer(&self, kind: GearKind, at: usize) {
         let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
         {
             let mut s = self.state.borrow_mut();
-            let Some(name) = s.org.kit.listed(kind).get(at).filter(|p| s.org.kit.mark(p) == KitMark::Kept).map(|p| p.name.clone()) else { return };
+            let Some(name) = s.org.kit.kept.of(kind).nth(at).map(|p| p.name.clone()) else { return };
             s.org.collection.toggle_default(gear(kind), &name);
         }
         self.keep_gear();

@@ -1,5 +1,5 @@
 // The person's gear as Rust keeps it: the names typed in ONI, the last used first, and the Kit their account
-// holds on The Lens DB, with the catalogue's search and the changes held until Save.
+// holds on The Lens DB, with the catalogue's search and the picks its Done sends.
 import { GearCard } from "ds/ds.slint";
 export { GearCard }
 
@@ -13,9 +13,9 @@ export global Gear {
     in property <[string]> lenses;
 }
 
-// Where a piece stands: `kept` in the Kit on the service, `added` joins it at Save, `leaving` leaves it at
-// Save, `free` a search's answer not in the Kit.
-export enum KitMark { kept, added, leaving, free }
+// Where a piece stands: `kept` in the Kit on the service, `added` picked in the search for Done to send,
+// `free` a search's answer not in the Kit.
+export enum KitMark { kept, added, free }
 // A piece of the catalogue, the one shape the Kit, the search and the gear fields all show; `by-default` the
 // one every export names where nothing else does, `photos` how many photos name it, -1 untold.
 export struct KitPiece { name: string, detail: string, url: string, mark: KitMark, by-default: bool, photos: int }
@@ -25,7 +25,7 @@ export enum KitLink { out, waiting, in }
 export global Kit {
     in property <KitLink> link;
     in property <string> account;
-    // The Kit as it will stand once saved: its pieces, the added ones among them, the leaving ones marked.
+    // The Kit as the service holds it.
     in property <[KitPiece]> bodies;
     in property <[KitPiece]> lenses;
     // The search sheet: open, its answers, the words they answer.
@@ -33,42 +33,34 @@ export global Kit {
     in property <[KitPiece]> found;
     in property <string> searched;
     in property <bool> searching;
-    // The changes not yet on the service, which Save sends in one call.
-    in property <int> unsaved;
+    // The pieces picked in the sheet, which its Done sends in one call, and that call under way.
+    in property <int> picked;
     in property <bool> sending;
-    // The Kit left with changes not saved: Save, Discard or keep them for later.
-    in property <bool> asking;
     // Why the Kit shown may be behind the service: unreachable, waiting out its limit, a piece unknown.
     in property <string> note;
     callback connect(bool);
     callback cancel();
     callback disconnect();
-    callback pick(bool);
+    callback search-gear();
     callback search(string);
-    // A search's answer taken into the Kit, or let go again.
+    // A search's answer picked for the Kit, or let go again.
     callback take(int);
-    // A piece of the Kit marked to leave at Save, kept again, or an added one let go.
+    // A piece of the Kit removed from it, once the person confirms.
     callback remove(GearKind, int);
     // A piece of the Kit made the default of its kind, or none when it was.
     callback prefer(GearKind, int);
-    // The search's quick filters: the kind (0 any, 1 bodies, 2 lenses), a brand, a focal length in mm
-    // (0 none), and the brands and focal lengths offered.
+    // The search's filters: the kind (0 any, 1 bodies, 2 lenses), and the brand at its place in `brands`,
+    // whose first is any brand and the rest those the answers hold; offered once they hold two.
     in property <int> kind-filter;
-    in property <string> brand-filter;
-    in property <int> focal-filter;
     in property <[string]> brands;
-    in property <[int]> focals;
-    in property <[string]> focal-labels;
+    in property <int> brand-at;
+    in property <bool> brand-offered;
     callback filter-kind(int);
-    callback filter-brand(string);
-    callback filter-focal(int);
-    callback save();
-    callback discard();
-    // 0 discards, 1 saves, -1 keeps the changes for later.
-    callback answered(int);
-    // The column turned to the Kit, which counts its photos again, or from it to something picked.
+    callback filter-brand(int);
+    // The sheet's Done or Escape: the picks sent, the sheet closed once the service holds them.
+    callback done();
+    // The column turned to the Kit, which counts its photos again.
     callback entered();
-    callback left();
     callback open(string);
     callback open-site();
     callback suggest();

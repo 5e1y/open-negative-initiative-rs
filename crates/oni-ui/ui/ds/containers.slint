@@ -174,8 +174,9 @@ export component Sheet inherits Rectangle {
     in property <SheetHeader> header: SheetHeader.leading;
     // `DSDialogPanel`'s question: its title in the section face, a full sheet's in the title face.
     in property <bool> question;
-    // The bar's key, which dismisses the sheet.
+    // The bar's key, which dismisses the sheet; held while `exit-enabled` is false, Escape then doing nothing.
     in property <string> exit: @tr("Done");
+    in property <bool> exit-enabled: true;
     in property <bool> wide;
     // A gauge of its own, as the notices' and the catch-up's; zero takes the plain or wide one.
     in property <length> card-width;
@@ -227,7 +228,7 @@ export component Sheet inherits Rectangle {
         }
         key-pressed(event) => {
             if (event.text == Key.Escape) {
-                root.dismissed();
+                if (root.exit-enabled) { root.dismissed(); }
                 return accept;
             }
             if (event.text == Key.Return) {
@@ -263,7 +264,7 @@ export component Sheet inherits Rectangle {
                         padding-left: SheetStyle.padding;
                         padding-right: SheetStyle.padding;
                         Engraved { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
-                        Button { text: root.exit; keycap: true; kind: ButtonKind.accent; default: true; clicked => { root.dismissed(); } }
+                        Button { text: root.exit; keycap: true; kind: ButtonKind.accent; default: true; enabled: root.exit-enabled; clicked => { root.dismissed(); } }
                     }
                     if root.header == SheetHeader.bar: Divider { }
                     @children

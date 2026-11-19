@@ -9,7 +9,7 @@ import { BarFace } from "bar_face.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
 
 // `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
-// glyph alone on no face.
+// glyph alone on no face, which shows the hover's veil under the hand as every key does.
 export enum ButtonKind { plain, accent, destructive, ghost }
 // `regular` the standard key, `mini` the small key of a section's header, a row or the canvas's header.
 export enum ButtonSize { regular, mini }
@@ -241,10 +241,10 @@ export component Button inherits Rectangle {
         depth: root.depth;
         edge-width: root.swatch && root.on ? Stroke.emphasis : 0px;
         edge-color: Colour.accent;
-        // The hand's light on the face, the same on a flat key as on a cap, stronger while it presses.
-        if !root.ghost: Rectangle {
+        // The hand's light on the face, the same on a flat key, a cap or a ghost, stronger while a key presses.
+        Rectangle {
             border-radius: root.keycap ? Depth.face-corner * parent.factor : root.radius;
-            background: root.pressed ? ButtonStyle.veil-pressed : root.hovered ? ButtonStyle.veil : transparent;
+            background: root.pressed && !root.ghost ? ButtonStyle.veil-pressed : root.hovered ? ButtonStyle.veil : transparent;
         }
         if !root.stacked: Face {
             opacity: root.fade;

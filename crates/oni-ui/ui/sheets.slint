@@ -15,7 +15,7 @@ import { Confirm, ConfirmSheet } from "confirm.slint";
 import { Unsaved, UnsavedSheet } from "missing.slint";
 import { Converting, DngSheet } from "dng.slint";
 import { Kit } from "gear_state.slint";
-import { KitSearchSheet, KitAskSheet } from "kit.slint";
+import { KitSearchSheet } from "kit.slint";
 
 export component Sheets inherits Rectangle {
     if Presets.saving: PresetSaveSheet { shown: Presets.saving; x: 0; y: 0; width: root.width; height: root.height; }
@@ -39,6 +39,5 @@ export component Sheets inherits Rectangle {
     if Unsaved.shown: UnsavedSheet { shown: Unsaved.shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Converting.shown: DngSheet { shown: Converting.shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Kit.picking: KitSearchSheet { shown: Kit.picking; x: 0; y: 0; width: root.width; height: root.height; }
-    if Kit.asking: KitAskSheet { shown: Kit.asking; x: 0; y: 0; width: root.width; height: root.height; }
     if Confirm.shown: ConfirmSheet { shown: Confirm.shown; x: 0; y: 0; width: root.width; height: root.height; }
 }

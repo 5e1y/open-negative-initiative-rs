@@ -198,8 +198,8 @@ pub struct Organising {
 }
 
 impl Organising {
-    pub fn new(browse: Box<dyn Fn(&str)>) -> Organising {
-        Organising { kit: kit::KitState::new(browse), ..Organising::default() }
+    pub fn new(browse: Box<dyn Fn(&str)>, tldb: super::TldbSite) -> Organising {
+        Organising { kit: kit::KitState::new(browse, tldb), ..Organising::default() }
     }
 }
 

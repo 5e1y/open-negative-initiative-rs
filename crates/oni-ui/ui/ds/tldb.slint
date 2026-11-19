@@ -1,32 +1,60 @@
 // The Lens DB's mark: its aperture, its disc and blades each in an ink of the theme, beside its name set as
-// its site sets it, bold and tight; a click opens its site.
-import { Colour, Type } from "theme.slint";
-import { Icon } from "base.slint";
+// its site sets it, bold and tight; credited, the contract's mention follows. A click opens its site.
+import { Colour, Type, Space } from "theme.slint";
+import { Icon, Label, TextRole, Tone } from "base.slint";
 import { Icons } from "icons.slint";
 import { KitStyle } from "theme_views.slint";
 
-export component TldbMark inherits HorizontalLayout {
+export component TldbMark inherits Rectangle {
     in property <length> size: KitStyle.mark;
     in property <bool> large;
+    // "Catalogue provided by The Lens DB" beside the mark, its words wrapping in the room left, or under the
+    // mark where a narrow column leaves none beside it.
+    in property <bool> credited;
+    in property <bool> under;
     callback clicked();
-    spacing: root.size / 3;
-    alignment: start;
-    Rectangle {
-        width: root.size;
-        height: root.size;
-        Icon { width: parent.width; height: parent.height; source: Icons.tldb-disc; ink: Colour.ink; }
-        Icon { width: parent.width; height: parent.height; source: Icons.tldb-blades; ink: Colour.ground; }
-    }
-    // As tall as the disc, so the capitals sit on its middle whatever the size.
-    Text {
-        height: root.size;
-        text: @tr("THE LENS DB");
-        vertical-alignment: center;
-        font-family: Type.family;
-        font-weight: Type.bold;
-        font-size: root.large ? Type.title : Type.label;
-        letter-spacing: KitStyle.tracking;
-        color: Colour.ink;
+    property <bool> beside: root.credited && !root.under;
+    accessible-role: button;
+    accessible-label: root.credited ? @tr("Catalogue provided by The Lens DB") : @tr("The Lens DB");
+    accessible-action-default => { root.clicked(); }
+    VerticalLayout {
+        spacing: Space.xxs;
+        HorizontalLayout {
+            spacing: root.size / 3;
+            alignment: root.beside ? LayoutAlignment.stretch : LayoutAlignment.start;
+            Rectangle {
+                width: root.size;
+                height: root.size;
+                Icon { width: parent.width; height: parent.height; source: Icons.tldb-disc; ink: Colour.ink; }
+                Icon { width: parent.width; height: parent.height; source: Icons.tldb-blades; ink: Colour.ground; }
+            }
+            // As tall as the disc, so the capitals sit on its middle whatever the size.
+            Text {
+                height: root.size;
+                horizontal-stretch: 0;
+                text: @tr("THE LENS DB");
+                vertical-alignment: center;
+                font-family: Type.family;
+                font-weight: Type.bold;
+                font-size: root.large ? Type.title : Type.label;
+                letter-spacing: KitStyle.tracking;
+                color: Colour.ink;
+            }
+            if root.beside: Label {
+                horizontal-stretch: 1;
+                role: TextRole.caption;
+                tone: Tone.secondary;
+                wrap: word-wrap;
+                vertical-alignment: center;
+                text: @tr("Catalogue provided by The Lens DB");
+            }
+        }
+        if root.credited && root.under: Label {
+            role: TextRole.caption;
+            tone: Tone.secondary;
+            wrap: word-wrap;
+            text: @tr("Catalogue provided by The Lens DB");
+        }
     }
     TouchArea {
         mouse-cursor: pointer;

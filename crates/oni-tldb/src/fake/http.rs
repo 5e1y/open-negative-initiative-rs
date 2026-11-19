@@ -77,6 +77,11 @@ impl Response {
         Response::json(status, &serde_json::json!({ "error": reason }))
     }
 
+    /// RFC 6749's error shape, which the token address answers with.
+    pub fn oauth_error(status: u16, error: &str, description: &str) -> Response {
+        Response::json(status, &serde_json::json!({ "error": error, "error_description": description }))
+    }
+
     pub fn html(status: u16, body: String) -> Response {
         Response::new(status, "text/html; charset=utf-8", body)
     }
@@ -87,6 +92,10 @@ impl Response {
 
     pub fn empty(status: u16) -> Response {
         Response { status, headers: Vec::new(), body: Vec::new() }
+    }
+
+    pub fn status(&self) -> u16 {
+        self.status
     }
 
     pub fn with(mut self, name: &'static str, value: String) -> Response {
@@ -109,6 +118,7 @@ impl Response {
 fn reason(status: u16) -> &'static str {
     match status {
         200 => "OK",
+        201 => "Created",
         302 => "Found",
         304 => "Not Modified",
         400 => "Bad Request",

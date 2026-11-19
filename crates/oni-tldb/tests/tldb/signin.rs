@@ -35,7 +35,7 @@ fn a_sign_in_returns_a_token_that_reads_the_kit() {
     assert!(answers[0].body.contains("back to ONI"));
     let client = oni_tldb::Client { service: fake.service(), token };
     let Ok(Read::Fresh { kit, .. }) = client.kit(None) else { panic!("the token reads no Kit") };
-    assert_eq!(kit.account.display_name, "Camille");
+    assert_eq!(kit.account.display_name.as_deref(), Some("Camille"));
     // Twin: a made-up token reads nothing.
     let stranger = oni_tldb::Client { service: fake.service(), token: "tldb_made_up".into() };
     assert_eq!(stranger.kit(None), Err(oni_tldb::Failure::SignedOut));

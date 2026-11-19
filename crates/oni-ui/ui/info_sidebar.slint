@@ -8,13 +8,11 @@ import { Kit } from "gear_state.slint";
 
 export component Info inherits Surface {
     width: ShellStyle.panel-width;
-    // Leaving the Kit with changes not saved asks about them.
+    // Turned to the Kit, the column counts its photos again.
     property <bool> on-kit: Library.info-kind == InfoKind.collection;
     changed on-kit => {
         if self.on-kit {
             Kit.entered();
-        } else {
-            Kit.left();
         }
     }
     // The Kit holds its own head, list and bars.

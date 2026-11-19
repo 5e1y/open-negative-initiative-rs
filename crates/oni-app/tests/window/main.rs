@@ -20,6 +20,8 @@ mod dedust_grid;
 mod flat_drag;
 mod dedust_turn;
 mod collection;
+mod kit;
+mod kit_failures;
 mod column_edges;
 mod column_menu;
 mod crop_session;

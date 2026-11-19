@@ -12,7 +12,7 @@ fn scratch(name: &str) -> PathBuf {
 fn kept() -> Kept {
     let fake = fake::start();
     let Ok(Read::Fresh { kit, etag }) = fake.client().kit(None) else { panic!("no Kit") };
-    Kept { account: Some(kit.account.display_name), items: kit.items, etag }
+    Kept { account: kit.account.display_name, items: kit.items, etag }
 }
 
 #[test]

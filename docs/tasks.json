@@ -11274,5 +11274,117 @@
     "title": "The Compare bench pans, pinches, drags Exposure and the split, timing both sides to the photon",
     "status": "done",
     "detail": "ONI_BENCH=compare moves to bench/compare.rs: the full resolution built, Compare on and the view at 100 % (ONI_AT), a drag pan and a trackpad pan of 240 events out and back, a 60-event pinch, a 60-notch Exposure drag and a split drag at 120 Hz. bench/chain.rs records the canvas's states (whether the before shown holds the after's region, the display textures made); per phase the report gives each move's time to the GPU end of the frame showing the after moved and the before on it, the frames whose before is off the after's region, view renders, textures made and GPU-end gaps."
+  },
+  {
+    "id": 2290,
+    "type": "data-safety",
+    "title": "The Lens DB is asked only where the app names it: no check, no bench and no other launch reaches thelensdb.com",
+    "status": "done",
+    "detail": "Options gains tldb: TldbSite (None, Real, Simulated(url)), None by default, so every window check and bench that hands no service reads no token and makes no call, and Connect opens nothing (one log line). Only main.rs resolves ONI_TLDB once: fake starts the simulated service in the support folder, a loopback address names a running one, unset is the real service, and a bench is None. The Kit's state holds its site: the Keychain or Credential Manager is read only for Real, a simulated token lies in the support folder. The collection check hands its fake's address instead of setting ONI_TLDB in its environment. Check: kit_failures a_run_naming_no_service_asks_none_and_connect_opens_nothing (a token left in the folder, no call, no page opened); twin: the firewall check names the service and its launch reads the Kit once."
+  },
+  {
+    "id": 2291,
+    "type": "fix",
+    "title": "The client reads a firewall's page as the service unreached, names no address in a failure, follows no redirect",
+    "status": "done",
+    "detail": "failure() decides by the body: a 401 signs out whatever it carries; any other status without the API's {error} (a firewall's HTML at 403, 429, 503, a 302) is Down; with it, 429 waits Retry-After (60 s without), 5xx is Down, the rest Refused. reqwest follows no redirect, and a call that got no answer reports reqwest's error without its URL, whose query held the words searched. Account.displayName may be null. On the token address a 401 is Refused(invalid_client), never a sign-out; the revocation bears the token as every call does, besides naming it in its form. Checks: api statuses_stand_for_their_failures (twins: a firewall's 429 is no wait, its 403 no refusal), an_unreached_service_never_names_the_words_searched (twin: the raw error names them), oauth a_401_of_the_token_address_refuses_the_client_and_signs_no_one_out (twin: the same 401 on a partner call signs out)."
+  },
+  {
+    "id": 2292,
+    "type": "feature",
+    "title": "A change of more than 200 entries goes in calls of 200, the removals first",
+    "status": "done",
+    "detail": "Client::change sends every removal, then every addition, 200 entries a POST /kit/changes, merges each call's notFound and returns the Kit and ETag of the last; a failure stops the rest, the service taking a repeat as nothing. The app's own batching goes. Check: contract a_long_change_goes_in_calls_of_two_hundred_removals_first (202 entries in two calls, a key removed and added ends present, 199 unknown ids reported; twins: one raw call of 201 entries is refused 400, and a removal after an addition leaves the key absent)."
+  },
+  {
+    "id": 2293,
+    "type": "test",
+    "title": "The simulated The Lens DB keeps to the v1 contract to the letter",
+    "status": "done",
+    "detail": "Every address under /api asks User-Agent ONI/<version> (<system>), else a firewall's HTML page at 429 with no error object, the token and revocation addresses included. The token address answers RFC 6749 errors with error_description: 400 invalid_request for a missing field, unsupported_grant_type, 401 invalid_client, 400 invalid_grant. A search ignores words past the tenth. ETags are weak (W/\"…\") and compared whole. The rate is the account's, all its tokens together, with a second account for checks (stranger). New controls: set_firewall(status) answers HTML without an error at that status, set_silent closes every connection unanswered, merge(from, into) folds a record into another in the catalogue and every Kit, and journal() lists every API request with its method, path, query, agent, bearer, Origin, status and instant. Its header comments no longer speak of a service yet to open."
+  },
+  {
+    "id": 2294,
+    "type": "check",
+    "title": "The partner API's letter checked point by point against the simulated service",
+    "status": "done",
+    "detail": "tests/tldb/contract.rs: every call after a real sign-in (token, search, Kit, change, revoke) names ONI and a plain system's name, bears its token but the exchange, carries no Origin (twins: curl's agent meets the firewall's 429 HTML, read as Down; a write with an Origin is refused 403 with an error); a weak ETag gives 304 sent whole (twin: stripped of W/ it reads afresh); a 429 waits its Retry-After; a revoked token signs out on every call (twin: another token reads); a firewall's 403, 429, 200 or 503 and a silence are Down and apply nothing; the token address's RFC 6749 errors; a merged record comes back as the one kept; unknown fields ignored and null displayName read (twin: a piece without a name is refused). partner.rs: words past the tenth ignored (twin: a wrong word within the ten narrows to nothing), the rate per account (twin: another account is served), the firewall on every address for a foreign or missing agent."
+  },
+  {
+    "id": 2295,
+    "type": "feature",
+    "title": "A 429's Retry-After holds every call to The Lens DB, and the latest search is asked once it ends",
+    "status": "done",
+    "detail": "The Kit's state keeps not_before from a Wait: a search, the launch's read and Done send nothing until it passes; the search waiting asks the latest words once, on a timer for what is left, and Done says how long to wait. Check: kit_failures a_429_holds_every_search_until_its_end_then_asks_the_latest_once (one call in ten seconds, the launch took it: the first search is answered 429 and said in the sheet, more words typed send nothing, then one search of the latest words lands after the wait; twin: a search sent inside the window is refused, so the hold is what kept the app's)."
+  },
+  {
+    "id": 2296,
+    "type": "feature",
+    "title": "The search sheet's Done saves to The Lens DB: one call for what was added, and a removal sent once confirmed",
+    "status": "done",
+    "detail": "The owner's request: Done is the save, with no second step. Add picks a piece in the sheet; Done, and Escape, send the picks in one POST /kit/changes and close once the service holds them, the copy replaced by its answer; with no pick, or signed out, they just close. Signed out at Done, the copy stays, the picks go with the sheet and the offer says why; unreached, waiting or refused, the sheet stays open with its picks and its note, and Done sends them again. A card's Remove from My Kit asks first (the notes kept on the site go with it), then sends that removal at once. The column lists the Kit as the service holds it. Withdrawn: the save bar, Save and Discard, the question on leaving the Kit, Later, the leaving mark and Keep in My Kit, and the question on quitting with changes. Checks: collection (Add sends nothing, Done one call and closes, Escape one call; Cancel of a removal sends nothing, Remove one call), kit_failures done_unreached_keeps_its_picks_and_sends_them_again and done_signed_out_keeps_the_copy_and_says_why_on_the_offer."
+  },
+  {
+    "id": 2297,
+    "type": "design",
+    "title": "A sheet's exit key can be held, Escape then doing nothing",
+    "status": "done",
+    "detail": "Sheet gains exit-enabled: false greys its bar key and makes Escape do nothing. The Kit's search holds it while its Done is sending, its footer then saying Saving to The Lens DB…, so the key keeps its width. The Kit's sheet is counted among the sheets shown (sheet_count.slint), so it covers the window as every sheet does: its default key and Escape, the bar's menus, and Tab kept inside it."
+  },
+  {
+    "id": 2298,
+    "type": "design",
+    "title": "A ghost key shows the hover's veil under the hand as every key does",
+    "status": "done",
+    "detail": "The owner's request: no key without a ground under the hand. button.slint draws the hover veil for ghost keys too; a ghost still neither presses nor sounds, so its veil never darkens to the pressed one. It reaches the Kit card's ..., the help mark, the fold chevron, a row's star and the readout steppers. Checks: states, keycap, button_group, toolbar_keys and tooltip window checks; shot kit-hover."
+  },
+  {
+    "id": 2299,
+    "type": "interface",
+    "title": "A search card opens its piece on The Lens DB from an arrow key before Add",
+    "status": "done",
+    "detail": "The owner's request: the search card's ... becomes a square key with an arrow pointing up and right (icons/arrow-up-right.svg, Trinil's stroke, Icons.open-out), its help See <piece> on The Lens DB, laid before Add, Added or In your Kit; it opens the piece's url with utm_source=oni. The Kit's cards keep their ... menu. Checks: oni-ui icons; collection (the arrow opens the FM2's page with utm_source=oni; twin: Add opens none)."
+  },
+  {
+    "id": 2300,
+    "type": "interface",
+    "title": "The search's filters: the kind as tabs, the brand from the brands its answers hold",
+    "status": "done",
+    "detail": "The owner's request: simpler filters. One row under the field: the design system's Tabs All · Bodies · Lenses, and a Picker Any Brand whose choices are the brands of the answers asked without one, most frequent first, sent as the service writes them; the API lists no brand, so the picker shows once the answers hold two brands or one is chosen, its room kept meanwhile so the tabs never move. A search asks 50 answers, the service's most. The fixed brand and focal-length keys go. Checks: words the_brands_offered_are_the_answers_most_frequent_first (twin: the answers' order alone); collection (50 spans several brands, Nikon picked keeps Nikon's answers and is sent as brand=Nikon, Any Brand gives several back)."
+  },
+  {
+    "id": 2301,
+    "type": "interface",
+    "title": "Why the Kit may be behind the service is said wherever the Kit shows",
+    "status": "done",
+    "detail": "The note (unreached, waiting, refused, signed out, pieces left out) shows in the caution's ink in the column, the search sheet above its answers, the offer and the sign-in's wait. Checks: kit_failures (Done unreached: the note in the sheet, the picks and the token kept; signed out at Done: the note on the offer, kit.json kept, the token forgotten; a firewall's 403 at launch: the copy shown, signed in still, the note in the column, the Kit read once)."
+  },
+  {
+    "id": 2302,
+    "type": "interface",
+    "title": "Catalogue provided by The Lens DB beside its mark",
+    "status": "done",
+    "detail": "The contract's mention: TldbMark credited lays Catalogue provided by The Lens DB beside the mark, wrapping in the room left, or under it in the narrow column; the whole is one button for assistive tools, opening the site with utm_source=oni. It shows on the offer, the column's head, the search sheet's footer and Settings > Connected Apps. Check: collection finds it in the offer, the column and the sheet."
+  },
+  {
+    "id": 2303,
+    "type": "docs",
+    "title": "The EXIF convention: Model and LensModel keep the full name, Make and LensMake the brand",
+    "status": "done",
+    "detail": "kit/facts.rs states ONI's choice, which the contract leaves to it: Model and LensModel stay the full name, brand included, as typed, as rolls, defaults and photo counts name a piece, and as Canon, Nikon and Leica write Model themselves; a piece without a brand writes no Make or LensMake (oni-export skips an empty one); FocalLength stays a prime's. Check: facts the_model_is_the_full_name_and_a_missing_brand_writes_no_make (twin: the model alone is not what Model keeps)."
+  },
+  {
+    "id": 2304,
+    "type": "interface",
+    "title": "The Kit's new texts in French and Spanish",
+    "status": "done",
+    "detail": "scripts/i18n laid the new texts and dropped the withdrawn ones (save bar, leaving, quitting, the brand and focal keys); French and Spanish filled: Catalogue fourni par The Lens DB / Catálogo proporcionado por The Lens DB, Any Brand, See {} on The Lens DB, Saving to The Lens DB…, the footer's texts and the empty search's. Checks: oni-i18n catalogue, oni-app anonymity templates."
+  },
+  {
+    "id": 2305,
+    "type": "check",
+    "title": "The Kit's window checks drive Done, Escape, the brand filter, the arrow key, the removal's question and the protocol",
+    "status": "done",
+    "detail": "collection.rs rewritten over a shared stage (tests/window/kit): the offer, the sign-in, Search Gear with the arrow key, Add and Done, the sheet opened again bare, 50 filtered by brand and Escape sending its pick, a removal cancelled then confirmed, defaults and the export, the Camera Body field, the card's page, Disconnect revoking the token, and every journal entry naming ONI with no Origin. kit_failures.rs (five checks): no service named, the 429 hold, Done unreached, Done signed out, a firewall at launch. Shots: kit-offer, kit-signed-in, kit-search, kit-search-failed, kit-hover, kit-defaults, kit-field."
   }
 ]

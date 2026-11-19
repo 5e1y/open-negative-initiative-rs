@@ -1,4 +1,5 @@
-//! The catalogue searched as the hand rests or a quick filter changes, the latest answer alone kept.
+//! The catalogue searched as the hand rests or a filter changes, the latest answer alone kept; the brands
+//! the answers hold become the brand filter's choices, as the service lists none.
 
 use super::*;
 
@@ -14,42 +15,41 @@ impl Ctl {
         });
     }
 
-    /// A quick filter changed: the search asked again at once with it.
-    pub(super) fn kit_filter(&self, change: impl FnOnce(&mut KitState)) {
+    /// A filter changed: the search asked again at once with it.
+    pub(super) fn kit_filter(self: &Rc<Self>, change: impl FnOnce(&mut KitState)) {
         change(&mut self.state.borrow_mut().org.kit);
         self.kit_ask();
     }
 
-    fn kit_ask(&self) {
-        let (query, kind, brand) = {
-            let s = self.state.borrow();
-            let kit = &s.org.kit;
-            (words::filtered(&kit.typed, &kit.brand_filter, kit.focal_filter), kit.kind_filter, kit.brand_filter.clone())
-        };
+    pub(super) fn kit_ask(self: &Rc<Self>) {
         let Some(client) = self.client() else { return };
-        let asked = {
+        if self.state.borrow().org.kit.held().is_some() {
+            self.kit_ask_after_wait();
+            return self.publish_kit();
+        }
+        let (query, kind, brand, asked) = {
             let mut s = self.state.borrow_mut();
             let kit = &mut s.org.kit;
             kit.asked += 1;
-            if query.chars().count() < 2 {
+            let query = words::query(&kit.typed);
+            kit.searching = query.chars().count() >= 2;
+            if !kit.searching {
                 kit.found.clear();
                 kit.searched.clear();
-                kit.searching = false;
-                None
-            } else {
-                kit.searching = true;
-                Some(kit.asked)
             }
+            (query, kit.kind_filter, kit.brand_filter.clone(), kit.asked)
         };
         self.publish_kit();
-        let Some(asked) = asked else { return };
+        if query.chars().count() < 2 {
+            return;
+        }
         std::thread::spawn(move || {
             let answer = client.search(&query, kind, Some(brand.as_str()).filter(|b| !b.is_empty()), FOUND);
             with_shell(move |c| c.kit_found(asked, query, answer));
         });
     }
 
-    fn kit_found(&self, asked: u64, query: String, answer: Result<Vec<Piece>, Failure>) {
+    fn kit_found(self: &Rc<Self>, asked: u64, query: String, answer: Result<Vec<Piece>, Failure>) {
         if self.state.borrow().org.kit.asked != asked {
             return;
         }
@@ -57,10 +57,20 @@ impl Ctl {
         match answer {
             Ok(found) => {
                 let mut s = self.state.borrow_mut();
-                s.org.kit.found = found;
-                s.org.kit.searched = query;
+                let kit = &mut s.org.kit;
+                if kit.brand_filter.is_empty() {
+                    kit.brands = words::brands(&found);
+                }
+                (kit.found, kit.searched) = (found, query);
+                kit.note.clear();
             }
-            Err(f) => self.kit_failed(f),
+            Err(f) => {
+                let wait = matches!(f, Failure::Wait(_));
+                self.kit_failed(f);
+                if wait {
+                    self.kit_ask_after_wait();
+                }
+            }
         }
         self.publish_kit();
     }

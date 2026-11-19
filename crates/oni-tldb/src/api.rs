@@ -19,18 +19,20 @@ pub struct Service {
 pub enum Failure {
     /// 401: the token is gone; ONI turns signed out and keeps its copy.
     SignedOut,
-    /// 429: try again after so many seconds.
+    /// 429 with the service's own error: try again after so many seconds.
     Wait(u64),
-    /// 400 or 403: a fault on ONI's side, never retried.
+    /// 400 or 403 with the service's own error: a fault on ONI's side, never retried.
     Refused(String),
-    /// 5xx or no answer: the copy stands until the next launch.
+    /// 5xx, no answer, or a page that is no answer of the API (a firewall's): the copy stands until the
+    /// next launch. Never names the address, whose query holds the words searched.
     Down(String),
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
-    pub display_name: String,
+    #[serde(default)]
+    pub display_name: Option<String>,
 }
 
 /// The whole Kit, the oldest piece first; `not_found` names what a change did not know.
@@ -65,6 +67,9 @@ const TIMEOUT: Duration = Duration::from_secs(30);
 /// The partner API's version, part of every address.
 pub(crate) const BASE: &str = "/api/partner/v1";
 
+/// The entries one change carries at most, by the contract.
+pub const CHANGES: usize = 200;
+
 impl Service {
     /// The real service, named with this build's version and system.
     pub fn new(site: &str, version: &str) -> Service {
@@ -90,11 +95,11 @@ impl Service {
         self.page(&format!("{}/submit", self.site))
     }
 
-    /// The token ended at sign-out; the service answers 200 whatever it was.
+    /// The token ended at sign-out, named in the form and borne as every call's; 200 whatever it was.
     pub fn revoke(&self, token: &str) -> Result<(), Failure> {
         let form = url::form_urlencoded::Serializer::new(String::new()).append_pair("token", token).finish();
         let call = Call::post(&format!("{}/api/oauth/revoke", self.site), FORM, form);
-        call.send(self, None).map(|_| ())
+        call.send(self, Some(token)).map(|_| ())
     }
 
     /// `POST /api/oauth/token`: the sign-in's code and verifier exchanged for the token.
@@ -110,7 +115,11 @@ impl Service {
             .append_pair("client_id", crate::CLIENT_ID)
             .append_pair("code_verifier", verifier)
             .finish();
-        let answer = Call::post(&format!("{}/api/oauth/token", self.site), FORM, form).send(self, None)?;
+        // On this address a 401 is a client the service does not know, never a person signed out.
+        let answer = Call::post(&format!("{}/api/oauth/token", self.site), FORM, form).send(self, None).map_err(|f| match f {
+            Failure::SignedOut => Failure::Refused("invalid_client".into()),
+            other => other,
+        })?;
         Ok(parse::<Answer>(&answer.body)?.access_token)
     }
 
@@ -155,11 +164,27 @@ impl Client {
         Ok(Read::Fresh { kit: parse(&answer.body)?, etag: answer.etag })
     }
 
-    /// `POST /kit/changes`: every addition and removal in one call, 200 entries at most; the Kit after it.
+    /// `POST /kit/changes`: removals then additions, `CHANGES` entries a call, the last Kit with every call's
+    /// `notFound`; a failure stops the rest, and sent again the service takes what it applied as nothing.
     pub fn change(&self, add: &[Key], remove: &[Key]) -> Result<(Kit, Option<String>), Failure> {
-        let body = serde_json::json!({ "add": add, "remove": remove }).to_string();
-        let answer = Call::post(self.service.api("/kit/changes")?.as_str(), "application/json", body).send(&self.service, Some(&self.token))?;
-        Ok((parse(&answer.body)?, answer.etag))
+        let entries: Vec<(bool, Key)> = remove.iter().map(|k| (false, *k)).chain(add.iter().map(|k| (true, *k))).collect();
+        let mut parts: Vec<&[(bool, Key)]> = entries.chunks(CHANGES).collect();
+        if parts.is_empty() {
+            parts.push(&[]);
+        }
+        let (mut not_found, mut last) = (Vec::new(), None);
+        for part in parts {
+            let (adds, removes): (Vec<_>, Vec<_>) = part.iter().partition(|(adding, _)| *adding);
+            let keys = |v: Vec<&(bool, Key)>| v.into_iter().map(|(_, k)| *k).collect::<Vec<_>>();
+            let body = serde_json::json!({ "add": keys(adds), "remove": keys(removes) }).to_string();
+            let answer = Call::post(self.service.api("/kit/changes")?.as_str(), "application/json", body).send(&self.service, Some(&self.token))?;
+            let kit: Kit = parse(&answer.body)?;
+            not_found.extend(kit.not_found.iter().copied());
+            last = Some((kit, answer.etag));
+        }
+        let (mut kit, etag) = last.unwrap_or_default();
+        kit.not_found = not_found;
+        Ok((kit, etag))
     }
 }
 
@@ -208,11 +233,11 @@ impl Call {
             if let Some(etag) = self.etag {
                 request = request.header("If-None-Match", etag);
             }
-            let response = request.send().await.map_err(down)?;
+            let response = request.send().await.map_err(unreached)?;
             let status = response.status().as_u16();
             let header = |name: &str| response.headers().get(name).and_then(|v| v.to_str().ok()).map(str::to_string);
             let (etag, wait) = (header("etag"), header("retry-after"));
-            let body = response.text().await.map_err(down)?;
+            let body = response.text().await.map_err(unreached)?;
             match failure(status, wait.as_deref(), &body) {
                 Some(failure) => Err(failure),
                 None => Ok(Answer { status, etag, body }),
@@ -227,28 +252,39 @@ fn client(agent: &str) -> Result<reqwest::Client, Failure> {
     PROVIDER.call_once(|| {
         let _ = rustls::crypto::ring::default_provider().install_default();
     });
-    reqwest::Client::builder().user_agent(agent).timeout(TIMEOUT).build().map_err(down)
+    // A redirect is no answer of the API: followed, it would carry the token elsewhere.
+    reqwest::Client::builder().user_agent(agent).timeout(TIMEOUT).redirect(reqwest::redirect::Policy::none()).build().map_err(unreached)
 }
 
 fn down(error: impl std::fmt::Display) -> Failure {
     Failure::Down(error.to_string())
 }
 
-/// The failure a status stands for, the service's own `{"error": …}` as its reason.
+/// A call that got no answer, its address left out of the reason.
+fn unreached(error: reqwest::Error) -> Failure {
+    down(error.without_url())
+}
+
+/// The failure a status stands for. Only an answer carrying the API's own `{"error": …}` is the service
+/// speaking: any other page, a firewall's, is the service unreached, whatever its status; a 401 alone always signs out.
 fn failure(status: u16, retry_after: Option<&str>, body: &str) -> Option<Failure> {
     #[derive(Deserialize)]
     struct Said {
         error: String,
     }
-    let reason = || serde_json::from_str::<Said>(body).map(|s| s.error).unwrap_or_else(|_| format!("HTTP {status}"));
-    match status {
-        200..=299 | 304 => None,
-        401 => Some(Failure::SignedOut),
-        // A 429 without its delay waits the rate limit's whole minute.
-        429 => Some(Failure::Wait(retry_after.and_then(|s| s.trim().parse().ok()).unwrap_or(60))),
-        500.. => Some(Failure::Down(reason())),
-        _ => Some(Failure::Refused(reason())),
+    if matches!(status, 200..=299 | 304) {
+        return None;
     }
+    if status == 401 {
+        return Some(Failure::SignedOut);
+    }
+    let Ok(said) = serde_json::from_str::<Said>(body) else { return Some(Failure::Down(format!("HTTP {status} without the API's error"))) };
+    Some(match status {
+        // A 429 without its delay waits the rate limit's whole minute.
+        429 => Failure::Wait(retry_after.and_then(|s| s.trim().parse().ok()).unwrap_or(60)),
+        500.. => Failure::Down(said.error),
+        _ => Failure::Refused(said.error),
+    })
 }
 
 /// A 2xx body that does not parse is the service's fault, so the copy stands.
@@ -262,16 +298,36 @@ mod tests {
 
     #[test]
     fn statuses_stand_for_their_failures() {
+        let said = r#"{"error":"q too short"}"#;
+        let html = "<html><body>Checking your browser</body></html>";
         assert_eq!(failure(200, None, ""), None);
         assert_eq!(failure(304, None, ""), None);
-        assert_eq!(failure(401, None, ""), Some(Failure::SignedOut));
-        assert_eq!(failure(429, Some("12"), ""), Some(Failure::Wait(12)));
-        assert_eq!(failure(400, None, r#"{"error":"q too short"}"#), Some(Failure::Refused("q too short".into())));
-        assert_eq!(failure(403, None, "nope"), Some(Failure::Refused("HTTP 403".into())));
-        assert!(matches!(failure(503, None, ""), Some(Failure::Down(_))));
-        // Twin: a 429 is never read as a refusal, nor a 5xx as signed out.
-        assert_ne!(failure(429, Some("12"), ""), Some(Failure::Refused("HTTP 429".into())));
-        assert_ne!(failure(500, None, ""), Some(Failure::SignedOut));
+        assert_eq!(failure(401, None, said), Some(Failure::SignedOut));
+        assert_eq!(failure(401, None, html), Some(Failure::SignedOut), "a 401 signs out whatever its body");
+        assert_eq!(failure(429, Some("12"), said), Some(Failure::Wait(12)));
+        assert_eq!(failure(429, None, said), Some(Failure::Wait(60)));
+        assert_eq!(failure(400, None, said), Some(Failure::Refused("q too short".into())));
+        assert_eq!(failure(403, None, said), Some(Failure::Refused("q too short".into())));
+        assert_eq!(failure(503, None, said), Some(Failure::Down("q too short".into())));
+        for status in [403, 429, 503, 302, 404] {
+            assert!(matches!(failure(status, Some("5"), html), Some(Failure::Down(_))), "a firewall's {status} is the service unreached");
+        }
+        // Twin: a firewall's 429 is never a wait, nor its 403 a refusal, nor a 5xx a sign-out.
+        assert_ne!(failure(429, Some("5"), html), Some(Failure::Wait(5)));
+        assert!(!matches!(failure(403, None, html), Some(Failure::Refused(_))));
+        assert_ne!(failure(500, None, said), Some(Failure::SignedOut));
+    }
+
+    #[test]
+    fn an_unreached_service_never_names_the_words_searched() {
+        let client = Client { service: Service::new("http://127.0.0.1:1", "0"), token: "tldb_x".into() };
+        let Err(Failure::Down(reason)) = client.search("leica m6", None, None, 20) else { panic!("no answer is down") };
+        assert!(!reason.contains("q=") && !reason.contains("leica"), "{reason}");
+        // Twin: the raw error of the same call names its address and its words.
+        let raw = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+            reqwest::Client::new().get("http://127.0.0.1:1/api/partner/v1/search?q=leica+m6").send().await.unwrap_err().to_string()
+        });
+        assert!(raw.contains("q=leica"), "{raw}");
     }
 
     #[test]

@@ -10,7 +10,10 @@ impl Ctl {
         if self.state.borrow().org.kit.signing.is_some() {
             return;
         }
-        let service = service();
+        let Some(service) = self.state.borrow().org.kit.service() else {
+            crate::timing::line("tldb: this run asks no The Lens DB, so Connect opens nothing");
+            return;
+        };
         let pending = match oauth::begin(&service, signup) {
             Ok(p) => p,
             Err(e) => {
@@ -44,8 +47,8 @@ impl Ctl {
     pub(super) fn kit_signed(self: &Rc<Self>, outcome: oauth::Outcome) {
         let note = match outcome {
             oauth::Outcome::Token(token) => {
-                let support = self.state.borrow().support.clone();
-                if let Err(e) = vault::write(&support, faked(), &token) {
+                let (support, simulated) = (self.state.borrow().support.clone(), self.state.borrow().org.kit.simulated());
+                if let Err(e) = vault::write(&support, simulated, &token) {
                     crate::timing::line(&format!("the Kit's token is not kept: {e}"));
                 }
                 self.state.borrow_mut().org.kit.token = Some(token);

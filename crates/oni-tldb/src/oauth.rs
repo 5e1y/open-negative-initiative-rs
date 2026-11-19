@@ -232,6 +232,31 @@ mod tests {
     }
 
     #[test]
+    fn a_401_of_the_token_address_refuses_the_client_and_signs_no_one_out() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let site = format!("http://127.0.0.1:{}", listener.local_addr().unwrap().port());
+        std::thread::spawn(move || {
+            for mut stream in listener.incoming().flatten().take(2) {
+                let mut head = Vec::new();
+                while !head.windows(4).any(|w| w == b"\r\n\r\n") {
+                    let mut byte = [0u8; 1024];
+                    let n = stream.read(&mut byte).unwrap_or(0);
+                    if n == 0 {
+                        break;
+                    }
+                    head.extend_from_slice(&byte[..n]);
+                }
+                answer(&mut stream, 401, "application/json", r#"{"error":"invalid_client","error_description":"unknown client"}"#);
+            }
+        });
+        let service = crate::Service::new(&site, "1.0");
+        assert_eq!(service.exchange("code", "http://127.0.0.1:1/callback", "verifier"), Err(Failure::Refused("invalid_client".into())));
+        // Twin: the same 401 on a partner call is a person signed out.
+        let client = crate::Client { service, token: "tldb_x".into() };
+        assert_eq!(client.kit(None), Err(Failure::SignedOut));
+    }
+
+    #[test]
     fn the_authorisation_address_carries_every_parameter() {
         let service = crate::Service::new("https://thelensdb.com", "1.0");
         let pending = begin(&service, true).unwrap();

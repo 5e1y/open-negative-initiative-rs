@@ -1,5 +1,5 @@
 //! The simulated catalogue: real gear under invented ids, with the real one's gaps (a brand, a year or
-//! an aperture missing) kept on purpose so ONI meets them before the service opens. A file may replace it.
+//! an aperture missing) kept on purpose so every check meets them. A file may replace it.
 
 use crate::piece::{Aperture, Kind, Piece, Span};
 use std::path::Path;

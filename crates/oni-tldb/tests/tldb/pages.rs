@@ -66,7 +66,7 @@ fn the_pages_sign_in_then_ask_before_authorising() {
     assert!(back.starts_with(&format!("{}?code=", pending.redirect)), "{back}");
     let client = Client { service: fake.service(), token: token(&fake, pending, back) };
     let Ok(Read::Fresh { kit, .. }) = client.kit(None) else { panic!("no Kit") };
-    assert_eq!(kit.account.display_name, "Camille");
+    assert_eq!(kit.account.display_name.as_deref(), Some("Camille"));
     // A refusal on the consent sends the browser back with access_denied.
     let pending = oauth::begin(&fake.service(), false).unwrap();
     let oauth = after(&raw::get(&pending.url), "name=\"oauth\" value=\"");
@@ -105,7 +105,7 @@ fn a_new_account_confirms_its_e_mail_and_keeps_its_own_kit_from_run_to_run() {
     let back = sign_in(&fake, &after(&confirmed, "name=\"oauth\" value=\""), "lou@example.com", "x");
     let lou = Client { service: fake.service(), token: token(&fake, pending, back) };
     let Ok(Read::Fresh { kit, .. }) = lou.kit(None) else { panic!("no Kit") };
-    assert_eq!((kit.account.display_name.as_str(), kit.items.len()), ("Lou", 0));
+    assert_eq!((kit.account.display_name.as_deref(), kit.items.len()), (Some("Lou"), 0));
     let fm2 = Key { kind: Kind::Camera, id: 1103 };
     lou.change(&[fm2], &[]).unwrap();
     assert_eq!(fake.kit_keys().len(), 2, "Camille's Kit untouched");

@@ -63,6 +63,8 @@ export global Icons {
     out property <image> zoom-out: @image-url("../icons/minus.svg");
     out property <image> zoom-in: @image-url("../icons/plus.svg");
     out property <image> more: @image-url("../icons/more-horiz.svg");
+    // A page opened outside ONI, in the browser.
+    out property <image> open-out: @image-url("../icons/arrow-up-right.svg");
     out property <image> search: @image-url("../icons/search.svg");
     public pure function line(glyph: MenuGlyph) -> image {
         if (glyph == MenuGlyph.edit) { return Icons.edit; }

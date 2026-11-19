@@ -1,150 +1,117 @@
-//! The changes held for Save: pieces found added, pieces of the Kit marked to leave, all sent in one call.
+//! The Kit changed on the service: the sheet's picks sent at its Done, a removal sent once confirmed, each
+//! in one call whose answer replaces the copy.
 
 use super::*;
 
+impl KitState {
+    /// The sheet's words, answers, filters and picks forgotten, as a sheet opened again starts bare.
+    pub(super) fn clear_search(&mut self) {
+        self.asked += 1;
+        (self.found, self.picks, self.brands) = (Vec::new(), Vec::new(), Vec::new());
+        self.searching = false;
+        self.searched.clear();
+        self.typed.clear();
+        self.kind_filter = None;
+        self.brand_filter.clear();
+    }
+}
+
 impl Ctl {
-    /// The search's sheet opened or closed; a closed one forgets its words.
-    pub(super) fn kit_pick(&self, open: bool) {
+    pub(super) fn kit_open_search(&self) {
         {
             let mut s = self.state.borrow_mut();
-            let kit = &mut s.org.kit;
-            kit.picking = open;
-            if !open {
-                kit.asked += 1;
-                (kit.found, kit.searching) = (Vec::new(), false);
-                kit.searched.clear();
-            }
+            s.org.kit.clear_search();
+            s.org.kit.picking = true;
         }
         self.publish_kit();
     }
 
-    /// A search's answer taken into the Kit until Save, or let go when taken again.
+    fn kit_close_search(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.org.kit.clear_search();
+            s.org.kit.picking = false;
+        }
+        self.publish_kit();
+    }
+
+    /// A search's answer picked for the Kit, or let go when taken again.
     pub(super) fn kit_take(&self, at: usize) {
         {
             let mut s = self.state.borrow_mut();
             let kit = &mut s.org.kit;
             let Some(piece) = kit.found.get(at).cloned() else { return };
             match kit.mark(&piece) {
-                KitMark::Free => kit.adding.push(piece),
-                KitMark::Added => kit.adding.retain(|p| p.key() != piece.key()),
-                KitMark::Kept | KitMark::Leaving => return,
+                KitMark::Free => kit.picks.push(piece),
+                KitMark::Added => kit.picks.retain(|p| p.key() != piece.key()),
+                KitMark::Kept => return,
             }
         }
         self.publish_kit();
     }
 
-    /// A piece of the Kit marked to leave at Save, kept again when asked again; an added one let go.
-    pub(super) fn kit_remove(&self, kind: GearKind, at: usize) {
-        {
-            let mut s = self.state.borrow_mut();
-            let kit = &mut s.org.kit;
-            let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
-            let Some(key) = kit.listed(kind).get(at).map(|p| p.key()) else { return };
-            if kit.adding.iter().any(|p| p.key() == key) {
-                kit.adding.retain(|p| p.key() != key);
-            } else if let Some(i) = kit.removing.iter().position(|k| *k == key) {
-                kit.removing.remove(i);
-            } else {
-                kit.removing.push(key);
-            }
-        }
-        self.publish_kit();
-    }
-
-    /// The Kit's column left with changes not saved: asked once, so none is forgotten.
-    pub(super) fn kit_left(&self) {
-        {
-            let mut s = self.state.borrow_mut();
-            let kit = &mut s.org.kit;
-            if kit.adding.is_empty() && kit.removing.is_empty() || kit.sending {
+    /// The sheet's Done, and its Escape: the picks sent in one change, the sheet closed once the service
+    /// holds them. With none, or signed out, it just closes; while the service asks to wait, it says so.
+    pub(super) fn kit_done(self: &Rc<Self>) {
+        let (picks, held) = {
+            let s = self.state.borrow();
+            if s.org.kit.sending {
                 return;
             }
-            kit.asking = true;
-        }
-        self.publish_kit();
-    }
-
-    /// 0 discards, 1 saves, any other keeps the changes for when the Kit is shown again.
-    pub(super) fn kit_answered(self: &Rc<Self>, answer: i32) {
-        self.state.borrow_mut().org.kit.asking = false;
-        match answer {
-            0 => self.kit_discard(),
-            1 => self.kit_save(),
-            _ => self.publish_kit(),
-        }
-    }
-
-    /// Changes not saved, which quitting would lose.
-    pub(in crate::app) fn kit_unsaved(&self) -> usize {
-        let s = self.state.borrow();
-        if s.org.kit.token.is_none() { 0 } else { s.org.kit.adding.len() + s.org.kit.removing.len() }
-    }
-
-    pub(super) fn kit_discard(&self) {
-        {
-            let mut s = self.state.borrow_mut();
-            s.org.kit.adding.clear();
-            s.org.kit.removing.clear();
-        }
-        self.publish_kit();
-    }
-
-    /// A removal erases what the person noted of the piece on The Lens DB: asked first.
-    pub(super) fn kit_save(self: &Rc<Self>) {
-        let removals = self.state.borrow().org.kit.removing.len();
-        if removals == 0 {
-            return self.kit_send();
-        }
-        let message = trn(
-            "The piece leaves your Kit on The Lens DB, with the condition, price, serial number and notes kept there for it.",
-            "{n} pieces leave your Kit on The Lens DB, with the condition, price, serial number and notes kept there for them.",
-            removals as u64,
-        );
-        self.ask(tr("Remove From Your Kit?"), &message, tr("Remove"), true, Pending::Run(Box::new(|c: &Rc<Ctl>| c.kit_send())));
-    }
-
-    pub(super) fn kit_send(&self) {
-        let Some(client) = self.client() else { return };
-        let (add, remove) = {
-            let mut s = self.state.borrow_mut();
-            let kit = &mut s.org.kit;
-            if kit.sending || (kit.adding.is_empty() && kit.removing.is_empty()) {
-                return;
-            }
-            kit.sending = true;
-            (kit.adding.iter().map(Piece::key).collect::<Vec<_>>(), kit.removing.clone())
+            (s.org.kit.picks.iter().map(Piece::key).collect::<Vec<_>>(), s.org.kit.held())
         };
+        if picks.is_empty() || self.client().is_none() {
+            return self.kit_close_search();
+        }
+        if let Some(left) = held {
+            self.state.borrow_mut().org.kit.note = self.failure_note(&Failure::Wait(left.as_secs().max(1)));
+            return self.publish_kit();
+        }
+        self.kit_change(picks, Vec::new(), true);
+    }
+
+    /// A removal erases what the person noted of the piece on The Lens DB: asked first, then sent at once.
+    pub(super) fn kit_remove(&self, kind: GearKind, at: usize) {
+        let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
+        let Some(key) = self.state.borrow().org.kit.kept.of(kind).nth(at).map(Piece::key) else { return };
+        let message = tr("The piece leaves your Kit on The Lens DB, with the condition, price, serial number and notes kept there for it.");
+        self.ask(tr("Remove From Your Kit?"), message, tr("Remove"), true, Pending::Run(Box::new(move |c: &Rc<Ctl>| c.kit_change(Vec::new(), vec![key], false))));
+    }
+
+    /// One change sent; `closing` the sheet's Done, which closes it once the service answers.
+    fn kit_change(&self, add: Vec<Key>, remove: Vec<Key>, closing: bool) {
+        let Some(client) = self.client() else { return };
+        {
+            let mut s = self.state.borrow_mut();
+            if s.org.kit.sending {
+                return;
+            }
+            s.org.kit.sending = true;
+        }
         self.publish_kit();
         std::thread::spawn(move || {
-            let mut last = None;
-            let entries: Vec<(Key, bool)> = add.into_iter().map(|k| (k, true)).chain(remove.into_iter().map(|k| (k, false))).collect();
-            for part in entries.chunks(BATCH) {
-                let (adds, removes): (Vec<_>, Vec<_>) = part.iter().partition(|(_, adding)| *adding);
-                let keys = |v: Vec<&(Key, bool)>| v.into_iter().map(|(k, _)| *k).collect::<Vec<_>>();
-                last = Some(client.change(&keys(adds), &keys(removes)));
-                if matches!(last, Some(Err(_))) {
-                    break;
-                }
-            }
-            if let Some(answer) = last {
-                with_shell(move |c| c.kit_sent(answer));
-            }
+            let answer = client.change(&add, &remove);
+            with_shell(move |c| c.kit_changed(answer, closing));
         });
     }
 
-    pub(super) fn kit_sent(&self, answer: Result<(oni_tldb::Kit, Option<String>), Failure>) {
+    /// Kept, the copy is the service's answer. Signed out, the copy stays and the picks go with the sheet;
+    /// unreached, waiting or refused, the sheet stays with its picks, so Done sends them again.
+    fn kit_changed(&self, answer: Result<(oni_tldb::Kit, Option<String>), Failure>, closing: bool) {
         self.state.borrow_mut().org.kit.sending = false;
-        match answer {
+        let close = match answer {
             Ok((kit, etag)) => {
-                {
-                    let mut s = self.state.borrow_mut();
-                    s.org.kit.adding.clear();
-                    s.org.kit.removing.clear();
-                }
                 self.kit_keep(kit, etag);
+                closing
             }
-            // The changes wait, so the same Save sends them again: the service takes a repeat as one.
-            Err(f) => self.kit_failed(f),
+            Err(f) => {
+                let out = f == Failure::SignedOut;
+                self.kit_failed(f);
+                closing && out
+            }
+        };
+        if close {
+            return self.kit_close_search();
         }
         self.publish_kit();
     }

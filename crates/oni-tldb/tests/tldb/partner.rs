@@ -51,11 +51,13 @@ fn search_holds_its_bounds() {
     assert!(refused(client.search("mm", None, None, 0)));
     assert!(refused(client.search("a", None, None, 20)));
     assert!(refused(client.search(&"x".repeat(201), None, None, 20)));
-    assert!(refused(client.search("a b c d e f g h i j k", None, None, 20)));
-    // Twin: each bound itself is accepted.
+    // Words past the tenth are ignored, never refused.
+    let ten = client.search("canon a e 1 p r o g r a", None, None, 20).unwrap();
+    assert_eq!(client.search("canon a e 1 p r o g r a zzz", None, None, 20).unwrap(), ten);
+    // Twin: each bound itself is accepted, and the same word within the ten narrows.
     assert!(client.search("ae", None, None, 50).is_ok());
     assert!(client.search(&"x".repeat(200), None, None, 1).is_ok());
-    assert!(client.search("a b c d e f g h i j", None, None, 20).is_ok());
+    assert!(client.search("canon a e 1 p r o g r zzz", None, None, 20).unwrap().is_empty());
 }
 
 #[test]
@@ -64,7 +66,7 @@ fn the_kit_is_read_once_then_unchanged_by_its_etag() {
     let client = fake.client();
     let Ok(Read::Fresh { kit, etag: Some(etag) }) = client.kit(None) else { panic!("no fresh Kit with its ETag") };
     assert_eq!(kit.items.iter().map(|p| p.key()).collect::<Vec<_>>(), [AE1, FD50]);
-    assert_eq!(kit.account.display_name, "Camille");
+    assert_eq!(kit.account.display_name.as_deref(), Some("Camille"));
     assert_eq!(client.kit(Some(&etag)), Ok(Read::Same));
     // Twin: a stale ETag reads the Kit afresh.
     assert!(matches!(client.kit(Some("\"stale\"")), Ok(Read::Fresh { .. })));
@@ -92,10 +94,6 @@ fn a_change_adds_and_removes_in_one_call_and_repeats_harmlessly() {
     // An id is unique within its kind only: a camera with a lens's id is unknown.
     let (kit, _) = client.change(&[Key { kind: Kind::Camera, id: NIKKOR50.id }], &[]).unwrap();
     assert_eq!(kit.not_found.len(), 1);
-    let too_many: Vec<Key> = (0..201).map(|id| Key { kind: Kind::Lens, id }).collect();
-    assert!(matches!(client.change(&too_many, &[]), Err(Failure::Refused(_))));
-    // Twin: 200 entries are within the bound.
-    assert!(client.change(&too_many[..100], &too_many[100..200]).is_ok());
 }
 
 #[test]
@@ -138,10 +136,13 @@ fn past_sixty_calls_a_minute_the_service_says_how_long_to_wait() {
     let Err(Failure::Wait(seconds)) = client.kit(None) else { panic!("no wait on the 61st call") };
     assert!((1..=60).contains(&seconds), "{seconds}");
     assert_eq!(fake.calls() - before, 61);
-    // Twin: another token is not held back, and a short window frees its calls once past.
-    assert!(fake.client().kit(None).is_ok());
-    fake.set_rate(2, Duration::from_millis(300));
-    let short = fake.client();
+    // The rate is the account's: its second token is held back too; twin: another account's is not.
+    assert!(matches!(fake.client().kit(None), Err(Failure::Wait(_))));
+    assert!(fake.stranger().kit(None).is_ok());
+    // A short window frees its calls once past.
+    let other = fake::start();
+    other.set_rate(2, Duration::from_millis(300));
+    let short = other.client();
     assert!(short.kit(None).is_ok() && short.kit(None).is_ok());
     assert_eq!(short.kit(None), Err(Failure::Wait(1)));
     std::thread::sleep(Duration::from_millis(320));
@@ -156,7 +157,15 @@ fn only_oni_without_an_origin_is_served() {
     let changes = format!("{}/api/partner/v1/kit/changes", fake.site);
     let bearer = format!("Authorization: Bearer {token}");
     let body = r#"{"add":[{"type":"camera","id":1103}]}"#;
-    assert_eq!(raw::request("GET", &kit, &[&bearer, "User-Agent: curl/8"], "").status, 403);
+    // The firewall stops a call not naming ONI with an HTML page at 429, no error of the API, the token
+    // and revocation addresses included.
+    for (method, url) in [("GET", kit.clone()), ("POST", format!("{}/api/oauth/token", fake.site)), ("POST", format!("{}/api/oauth/revoke", fake.site))] {
+        for agent in ["User-Agent: curl/8", "User-Agent: ONI/1", "X-None: 1"] {
+            let answer = raw::request(method, &url, &[&bearer, agent], "");
+            assert_eq!(answer.status, 429, "{method} {url} with {agent}");
+            assert!(answer.head.contains("text/html") && !answer.body.contains("\"error\""), "{}", answer.body);
+        }
+    }
     let origin = raw::request("POST", &changes, &[&bearer, "User-Agent: ONI/1 (macOS)", "Origin: https://example.com"], body);
     assert_eq!(origin.status, 403);
     assert!(origin.body.contains("\"error\""));

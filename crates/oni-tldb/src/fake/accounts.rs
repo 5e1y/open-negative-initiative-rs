@@ -4,12 +4,13 @@
 use super::{Live, State, starting_kit};
 use crate::piece::{Key, Piece};
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
 
 /// The account every start has, its password shown on the sign-in page.
 pub const FIRST_EMAIL: &str = "camille@example.com";
 pub const FIRST_PASSWORD: &str = "film";
 pub const FIRST_NAME: &str = "Camille";
+/// The account a check makes for a second person.
+pub const SECOND_EMAIL: &str = "sasha@example.com";
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Account {
@@ -24,6 +25,10 @@ pub struct Account {
 
 pub fn first(catalogue: &[Piece]) -> Account {
     Account { email: FIRST_EMAIL.into(), password: FIRST_PASSWORD.into(), name: FIRST_NAME.into(), unconfirmed: None, kit: starting_kit(catalogue) }
+}
+
+pub fn second() -> Account {
+    Account { email: SECOND_EMAIL.into(), password: FIRST_PASSWORD.into(), name: "Sasha".into(), unconfirmed: None, kit: Vec::new() }
 }
 
 /// What the kept file holds.
@@ -46,7 +51,7 @@ pub fn load(state: &mut State) {
     state.issued = kept.issued;
     for (token, email) in kept.tokens {
         if let Some(account) = find(state, &email) {
-            state.tokens.insert(token, Live { account, recent: VecDeque::new() });
+            state.tokens.insert(token, Live { account });
         }
     }
 }
@@ -59,7 +64,6 @@ pub fn save(state: &State) {
         let _ = std::fs::write(path, bytes);
     }
 }
-
 
 /// An e-mail matches whatever its case and surrounding spaces.
 pub fn find(state: &State, email: &str) -> Option<usize> {

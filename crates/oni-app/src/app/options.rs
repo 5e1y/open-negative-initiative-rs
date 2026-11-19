@@ -34,6 +34,43 @@ pub struct Options {
     pub brought: crate::migration::Brought,
     /// Opens a web page: the person's browser in the app, a check's own record of the address.
     pub browse: Box<dyn Fn(&str)>,
+    /// The Lens DB the Kit talks to; none, as every check and bench runs unless it hands a simulated one.
+    pub tldb: TldbSite,
+}
+
+/// Which The Lens DB the Kit asks.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub enum TldbSite {
+    /// No token read and nothing asked: Connect opens nothing.
+    #[default]
+    None,
+    /// thelensdb.com, its token in the system's keychain.
+    Real,
+    /// A simulated service at this loopback address, its worthless token in the support folder.
+    Simulated(String),
+}
+
+impl TldbSite {
+    /// The app's own: `ONI_TLDB=fake` starts the simulated service for the run, keeping its accounts in the
+    /// support folder and taking its `tldb-catalogue.json` when present; a loopback address names one running.
+    pub fn launch(support: &std::path::Path) -> TldbSite {
+        static FAKE: std::sync::OnceLock<Option<oni_tldb::fake::Fake>> = std::sync::OnceLock::new();
+        match std::env::var("ONI_TLDB") {
+            Ok(v) if v == "fake" => {
+                let fake = FAKE.get_or_init(|| {
+                    let file = support.join("tldb-catalogue.json");
+                    let catalogue = file.exists().then(|| oni_tldb::fake::read_catalogue(&file)).and_then(|read| {
+                        read.map_err(|e| crate::timing::line(&format!("tldb: the simulated catalogue is unreadable: {e}"))).ok()
+                    });
+                    let setup = oni_tldb::fake::Setup { catalogue, kept: Some(support.join("tldb-fake.json")), ..Default::default() };
+                    oni_tldb::fake::start_with(setup).map_err(|e| crate::timing::line(&format!("tldb: the simulated service does not start: {:?}", e.kind()))).ok()
+                });
+                fake.as_ref().map_or(TldbSite::None, |f| TldbSite::Simulated(f.site.clone()))
+            }
+            Ok(v) if v.starts_with("http://127.0.0.1:") => TldbSite::Simulated(v),
+            _ => TldbSite::Real,
+        }
+    }
 }
 
 /// `EditorScene.open`'s panel message.
@@ -68,6 +105,7 @@ impl Default for Options {
             phone: phone::offered(),
             brought: Default::default(),
             browse: Box::new(system::open_url),
+            tldb: TldbSite::None,
         }
     }
 }

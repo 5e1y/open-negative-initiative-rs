@@ -1,5 +1,5 @@
 // A body or a lens as every list of gear shows it: its name with a Default badge when it is the one exports
-// name, what tells it from its kin or where it stands, and how many photos name it.
+// name, what tells it from its kin, and how many photos name it.
 import { Space, Colour, Radius } from "theme.slint";
 import { Label, Tone, TextRole } from "base.slint";
 import { Badge } from "badge.slint";
@@ -8,9 +8,6 @@ export struct GearCard { name: string, detail: string, preferred: bool, photos: 
 
 export component GearCardBody inherits HorizontalLayout {
     in property <GearCard> card;
-    // A piece on its way out, its name quieter, and a state told in the caution's ink instead of the detail.
-    in property <bool> faded;
-    in property <bool> cautioned;
     spacing: Space.s;
     VerticalLayout {
         alignment: center;
@@ -18,11 +15,11 @@ export component GearCardBody inherits HorizontalLayout {
         spacing: Space.xxs;
         HorizontalLayout {
             spacing: Space.xs;
-            Label { text: root.card.name; overflow: elide; tone: root.faded ? Tone.tertiary : Tone.primary; }
+            Label { text: root.card.name; overflow: elide; }
             if root.card.preferred: VerticalLayout { alignment: center; Badge { text: @tr("Default"); } }
             Rectangle { horizontal-stretch: 1; }
         }
-        Label { text: root.card.detail; role: TextRole.caption; tone: root.cautioned ? Tone.caution : Tone.tertiary; overflow: elide; }
+        Label { text: root.card.detail; role: TextRole.caption; tone: Tone.tertiary; overflow: elide; }
     }
     if root.card.photos >= 0: Label {
         text: @tr("{n} photo" | "{n} photos" % root.card.photos);

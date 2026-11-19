@@ -1,38 +1,40 @@
 //! The person's Kit on The Lens DB, in the archive's column where nothing is picked: the sign-in through
-//! the system browser, the catalogue searched in a sheet, the changes sent in one call at Save, and the copy
-//! kept in the support folder, which ONI works from offline and which fills an export's EXIF.
+//! the system browser, the catalogue searched in a sheet whose Done sends what was added in one call, a
+//! removal sent once confirmed, and the copy kept in the support folder, which ONI works from offline and
+//! which fills an export's EXIF.
 
+mod cards;
 mod changes;
 mod defaults;
 mod facts;
+mod publish;
 mod search;
-mod cards;
 mod sign_in;
 mod vault;
+mod wait;
 mod words;
 
 pub use facts::complete;
 
 use super::*;
-use crate::{GearKind, Kit as KitGlobal, KitLink, KitMark, KitPair, KitPiece, KitSearch};
+use crate::app::{Pending, TldbSite, with_shell};
+use crate::{GearKind, Kit as KitGlobal, KitLink, KitMark, KitPiece, KitSearch};
 use oni_i18n::{tr, trn};
 use oni_tldb::{Client, Failure, Key, Kept, Kind, Piece, Read, Service, oauth};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use crate::app::{Pending, with_shell};
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// The search waits for the hand to rest this long, so a word typed asks the service once.
 const SETTLE: Duration = Duration::from_millis(400);
-/// A search's answers shown; the service gives 50 at most.
-const FOUND: u32 = 20;
-/// The entries one change carries at most, by the service's contract.
-const BATCH: usize = 200;
+/// A search's answers shown: the service's most, so the brands offered come from as many as it gives.
+const FOUND: u32 = 50;
 
 #[derive(Default)]
 pub struct KitState {
     /// Opens a page in the person's browser; a check keeps the address instead.
     browse: Option<Box<dyn Fn(&str)>>,
+    site: TldbSite,
     pub kept: Kept,
     token: Option<String>,
     /// While a sign-in waits for the browser's return: the flag that cancels it.
@@ -43,91 +45,66 @@ pub struct KitState {
     /// The latest search's number, so a slower earlier answer never replaces it.
     asked: u64,
     searching: bool,
-    adding: Vec<Piece>,
-    removing: Vec<Key>,
+    /// What the search's sheet added, sent to the Kit at its Done.
+    picks: Vec<Piece>,
     sending: bool,
     /// The search's sheet over the window.
     picking: bool,
-    /// The question asked when the Kit is left with changes not saved.
-    asking: bool,
-    /// The search's quick filters: a kind, a brand, a focal length in millimetres.
+    /// The search's filters: a kind, and a brand as the service writes it, empty for any.
     kind_filter: Option<Kind>,
+    brand_filter: String,
+    /// The brands the answers asked without one hold, the most frequent first: the brand filter's choices.
+    brands: Vec<String>,
     /// How many photos name each piece, counted when they may have changed, never on each redraw.
     counts: Option<oni_library::index::GearCounts>,
-    brand_filter: String,
-    focal_filter: u32,
     note: String,
     settle: slint::Timer,
+    /// A 429's Retry-After: no call before this instant, the latest search asked again once it passes.
+    not_before: Option<Instant>,
+    after_wait: slint::Timer,
 }
 
 impl KitState {
-    pub fn new(browse: Box<dyn Fn(&str)>) -> KitState {
-        KitState { browse: Some(browse), ..KitState::default() }
+    pub fn new(browse: Box<dyn Fn(&str)>, site: TldbSite) -> KitState {
+        KitState { browse: Some(browse), site, ..KitState::default() }
     }
-}
 
-/// `ONI_TLDB=fake` swaps the service for the simulated one, started once in this process; a check hands the
-/// address of its own. Either keeps its worthless token in the support folder, never in a keychain.
-fn faked() -> bool {
-    std::env::var_os("ONI_TLDB").is_some()
-}
-
-static FAKE: OnceLock<oni_tldb::fake::Fake> = OnceLock::new();
-
-/// The simulated service keeps its accounts in the support folder, and takes `tldb-catalogue.json` there
-/// as its catalogue when present.
-fn start_fake(support: &std::path::Path) {
-    if std::env::var("ONI_TLDB").as_deref() != Ok("fake") {
-        return;
+    /// The service the Kit asks, none when this run asks none.
+    fn service(&self) -> Option<Service> {
+        let site = match &self.site {
+            TldbSite::None => return None,
+            TldbSite::Real => oni_tldb::SITE,
+            TldbSite::Simulated(site) => site.as_str(),
+        };
+        Some(Service::new(site, crate::updates::version()))
     }
-    FAKE.get_or_init(|| {
-        let file = support.join("tldb-catalogue.json");
-        let catalogue = file.exists().then(|| oni_tldb::fake::read_catalogue(&file)).and_then(|read| {
-            read.map_err(|e| crate::timing::line(&format!("tldb: the simulated catalogue is unreadable: {e}"))).ok()
-        });
-        let setup = oni_tldb::fake::Setup { catalogue, kept: Some(support.join("tldb-fake.json")), ..Default::default() };
-        oni_tldb::fake::start_with(setup).expect("a loopback port for the simulated The Lens DB")
-    });
-}
 
-fn service() -> Service {
-    let site = match std::env::var("ONI_TLDB") {
-        Ok(v) if v == "fake" => FAKE.get_or_init(oni_tldb::fake::start).site.clone(),
-        Ok(v) if v.starts_with("http://127.0.0.1:") => v,
-        _ => oni_tldb::SITE.to_string(),
-    };
-    Service::new(&site, crate::updates::version())
-}
+    /// A simulated service's token lies in the support folder, never in a keychain.
+    fn simulated(&self) -> bool {
+        matches!(self.site, TldbSite::Simulated(_))
+    }
 
-fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool, photos: i32) -> KitPiece {
-    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default, photos }
-}
-
-impl KitState {
-    /// Where a piece of the catalogue stands against the Kit and the changes held for Save.
+    /// Where a piece of the catalogue stands against the Kit and the sheet's picks.
     fn mark(&self, p: &Piece) -> KitMark {
         let key = p.key();
-        if self.removing.contains(&key) {
-            KitMark::Leaving
-        } else if self.kept.items.iter().any(|h| h.key() == key) {
+        if self.kept.items.iter().any(|h| h.key() == key) {
             KitMark::Kept
-        } else if self.adding.iter().any(|h| h.key() == key) {
+        } else if self.picks.iter().any(|h| h.key() == key) {
             KitMark::Added
         } else {
             KitMark::Free
         }
     }
 
-    /// The Kit of one kind as Save will leave it: its pieces, then the ones added, oldest first.
-    fn listed(&self, kind: Kind) -> Vec<&Piece> {
-        self.kept.of(kind).chain(self.adding.iter().filter(|p| p.kind == kind)).collect()
-    }
-
     /// The Kit of one kind as the column shows it, `default` the name its default card holds, `photos` how
     /// many photos name a piece.
     fn shown(&self, kind: Kind, default: Option<&str>, photos: &dyn Fn(&Piece) -> i32) -> Vec<KitPiece> {
-        self.listed(kind).into_iter().map(|p| piece(p, self.mark(p), words::detail(p), default == Some(p.name.as_str()), photos(p))).collect()
+        self.kept.of(kind).map(|p| piece(p, KitMark::Kept, words::detail(p), default == Some(p.name.as_str()), photos(p))).collect()
     }
+}
+
+fn piece(p: &Piece, mark: KitMark, detail: String, by_default: bool, photos: i32) -> KitPiece {
+    KitPiece { name: p.name.as_str().into(), detail: detail.into(), url: p.url.as_str().into(), mark, by_default, photos }
 }
 
 fn model<T: Clone + 'static>(items: Vec<T>) -> ModelRc<T> {
@@ -139,9 +116,9 @@ impl Ctl {
         {
             let mut s = me.state.borrow_mut();
             let support = s.support.clone();
-            start_fake(&support);
-            s.org.kit.kept = Kept::load(&support);
-            s.org.kit.token = vault::read(&support, faked());
+            let kit = &mut s.org.kit;
+            kit.kept = Kept::load(&support);
+            kit.token = if kit.site == TldbSite::None { None } else { vault::read(&support, kit.simulated()) };
         }
         let k = window.global::<KitGlobal>();
         let p = me.clone();
@@ -151,9 +128,9 @@ impl Ctl {
         let p = me.clone();
         k.on_disconnect(move || p.kit_disconnect());
         let p = me.clone();
-        k.on_search(move |t| p.kit_search(&t));
+        k.on_search_gear(move || p.kit_open_search());
         let p = me.clone();
-        k.on_pick(move |open| p.kit_pick(open));
+        k.on_search(move |t| p.kit_search(&t));
         let p = me.clone();
         k.on_take(move |i| p.kit_take(i.max(0) as usize));
         let p = me.clone();
@@ -163,32 +140,17 @@ impl Ctl {
         let p = me.clone();
         k.on_filter_kind(move |i| p.kit_filter(|kit| kit.kind_filter = [None, Some(Kind::Camera), Some(Kind::Lens)][i.clamp(0, 2) as usize]));
         let p = me.clone();
-        k.on_filter_brand(move |b| p.kit_filter(|kit| kit.brand_filter = b.to_string()));
+        k.on_filter_brand(move |i| p.kit_filter(|kit| kit.brand_filter = kit.brands.get((i - 1).max(0) as usize).filter(|_| i > 0).cloned().unwrap_or_default()));
         let p = me.clone();
-        k.on_filter_focal(move |f| {
-            p.kit_filter(|kit| {
-                kit.focal_filter = f.max(0) as u32;
-                if f > 0 {
-                    kit.kind_filter = Some(Kind::Lens);
-                }
-            })
-        });
-        let p = me.clone();
-        k.on_save(move || p.kit_save());
-        let p = me.clone();
-        k.on_discard(move || p.kit_discard());
-        let p = me.clone();
-        k.on_answered(move |i| p.kit_answered(i));
-        let p = me.clone();
-        k.on_left(move || p.kit_left());
+        k.on_done(move || p.kit_done());
         let p = me.clone();
         k.on_entered(move || p.kit_recount());
         let p = me.clone();
-        k.on_open(move |url| p.kit_browse(&service().page(&url)));
+        k.on_open(move |url| p.kit_open_page(|service| service.page(&url)));
         let p = me.clone();
-        k.on_open_site(move || p.kit_browse(&service().page(&service().site)));
+        k.on_open_site(move || p.kit_open_page(|service| service.page(&service.site)));
         let p = me.clone();
-        k.on_suggest(move || p.kit_browse(&service().submit_page()));
+        k.on_suggest(move || p.kit_open_page(Service::submit_page));
         me.kit_recount();
         me.kit_refresh();
     }
@@ -199,59 +161,24 @@ impl Ctl {
         }
     }
 
-    fn client(&self) -> Option<Client> {
-        self.state.borrow().org.kit.token.clone().map(|token| Client { service: service(), token })
+    /// A page of the service, carrying `utm_source=oni`; none in a run that asks no service.
+    fn kit_open_page(&self, page: impl FnOnce(&Service) -> String) {
+        let Some(service) = self.state.borrow().org.kit.service() else { return };
+        self.kit_browse(&page(&service));
     }
 
-    pub(in crate::app) fn publish_kit(&self) {
-        let Some(w) = self.window() else { return };
-        let k = w.global::<KitGlobal>();
-        let (body, lens) = (self.kit_default(Kind::Camera), self.kit_default(Kind::Lens));
+    fn client(&self) -> Option<Client> {
         let s = self.state.borrow();
-        let counts = &s.org.kit.counts;
         let kit = &s.org.kit;
-        k.set_link(if kit.signing.is_some() {
-            KitLink::Waiting
-        } else if kit.token.is_some() {
-            KitLink::In
-        } else {
-            KitLink::Out
-        });
-        k.set_account(kit.kept.account.clone().unwrap_or_default().into());
-        let photos = |p: &Piece| cards::photos(counts.as_ref(), p);
-        k.set_bodies(model(kit.shown(Kind::Camera, body.as_deref(), &photos)));
-        k.set_lenses(model(kit.shown(Kind::Lens, lens.as_deref(), &photos)));
-        let found: Vec<KitPiece> = kit.found.iter().map(|p| piece(p, kit.mark(p), words::found(p), false, -1)).collect();
-        let pairs = found.chunks(2).enumerate().map(|(i, two)| KitPair {
-            left: two[0].clone(),
-            right: two.get(1).cloned().unwrap_or_default(),
-            has_right: two.len() == 2,
-            at: 2 * i as i32,
-        });
-        w.global::<KitSearch>().set_pairs(model(pairs.collect()));
-        k.set_found(model(found));
-        k.set_searched(kit.searched.as_str().into());
-        k.set_searching(kit.searching);
-        k.set_picking(kit.picking);
-        k.set_unsaved((kit.adding.len() + kit.removing.len()) as i32);
-        k.set_asking(kit.asking && kit.token.is_some());
-        k.set_kind_filter(match kit.kind_filter {
-            None => 0,
-            Some(Kind::Camera) => 1,
-            Some(_) => 2,
-        });
-        k.set_brand_filter(kit.brand_filter.as_str().into());
-        k.set_focal_filter(kit.focal_filter as i32);
-        k.set_brands(model(words::BRANDS.iter().map(|b| SharedString::from(*b)).collect()));
-        k.set_focals(model(words::FOCALS.iter().map(|f| *f as i32).collect()));
-        k.set_focal_labels(model(words::FOCALS.iter().map(|f| SharedString::from(tr!("{mm} mm", mm = f))).collect()));
-        k.set_sending(kit.sending);
-        k.set_note(kit.note.as_str().into());
+        Some(Client { service: kit.service()?, token: kit.token.clone()? })
     }
 
     /// The Kit read again, at launch and once signed in; an unchanged one costs the service no body.
     fn kit_refresh(&self) {
         let Some(client) = self.client() else { return };
+        if self.state.borrow().org.kit.held().is_some() {
+            return;
+        }
         let etag = self.state.borrow().org.kit.kept.etag.clone();
         std::thread::spawn(move || {
             let read = client.kit(etag.as_deref());
@@ -268,10 +195,11 @@ impl Ctl {
         self.publish_kit();
     }
 
+    /// The Kit as the service answered it replaces the copy whole, merged records included.
     fn kit_keep(&self, kit: oni_tldb::Kit, etag: Option<String>) {
         let written = {
             let mut s = self.state.borrow_mut();
-            s.org.kit.kept = Kept { account: Some(kit.account.display_name), items: kit.items, etag };
+            s.org.kit.kept = Kept { account: kit.account.display_name, items: kit.items, etag };
             s.org.kit.note = if kit.not_found.is_empty() {
                 String::new()
             } else {
@@ -300,35 +228,42 @@ impl Ctl {
         }
     }
 
-    /// A token the service no longer knows signs ONI out; the copy stays, as the contract asks.
+    /// A token the service no longer knows signs ONI out, the copy kept as the contract asks; a wait holds
+    /// every call until it is over.
     fn kit_failed(&self, failure: Failure) {
         let note = self.failure_note(&failure);
         let mut s = self.state.borrow_mut();
-        if failure == Failure::SignedOut {
-            s.org.kit.token = None;
-            vault::erase(&s.support, faked());
+        let support = s.support.clone();
+        let kit = &mut s.org.kit;
+        match failure {
+            Failure::SignedOut => {
+                kit.token = None;
+                vault::erase(&support, kit.simulated());
+            }
+            Failure::Wait(seconds) => kit.not_before = Some(Instant::now() + Duration::from_secs(seconds)),
+            Failure::Down(_) | Failure::Refused(_) => {}
         }
-        s.org.kit.note = note;
+        kit.note = note;
     }
 
-    /// Signed out at the person's word: the token revoked, the copy and the waiting changes dropped.
+    /// Signed out at the person's word: the token revoked, the copy and the sheet's picks dropped.
     fn kit_disconnect(&self) {
-        let token = {
+        let (token, service) = {
             let mut s = self.state.borrow_mut();
             let support = s.support.clone();
-            vault::erase(&support, faked());
             let kit = &mut s.org.kit;
+            if kit.site != TldbSite::None {
+                vault::erase(&support, kit.simulated());
+            }
             let token = kit.token.take();
             kit.kept = Kept::default();
-            (kit.found, kit.adding, kit.removing) = (Vec::new(), Vec::new(), Vec::new());
-            (kit.picking, kit.asking) = (false, false);
-            kit.searched.clear();
+            kit.clear_search();
+            kit.picking = false;
             kit.note.clear();
             let _ = std::fs::remove_file(Kept::file_path(&support));
-            token
+            (token, kit.service())
         };
-        if let Some(token) = token {
-            let service = service();
+        if let (Some(token), Some(service)) = (token, service) {
             std::thread::spawn(move || {
                 if let Err(f) = service.revoke(&token) {
                     crate::timing::line(&format!("the Kit's token is not revoked: {f:?}"));
