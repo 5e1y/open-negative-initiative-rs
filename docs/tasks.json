@@ -11211,5 +11211,12 @@
     "title": "The detail follows the grain: inside clumps, between them, at fine grain, at reduced scales and through a print notch",
     "status": "done",
     "detail": "crates/oni-pipeline/tests/grain_detail.rs (new): on a grid of one-pixel lines every three pixels at Size 1, Amount 0.8, the whole share and no colour, the base recovered as out / the grained flat grey, the Laplacian energy on sqrt light keeps 0.110 inside clumps (|F| past its spread) and 1.001 between them (under half) of the scene's own; bounds 0.25 and 0.95 (twin: the grain with no blur, about 1.0 inside). Measured at other settings: Amount 0.8 Size 0.5 0.338 / 0.993, Amount 0.6 Size 0.8 0.249 / 1.003, Amount 1 Size 1 0.052 / 1.002. Size 0 and 0.15 render to the bit as with no blur; Size 0.25 keeps 0.979 overall, bound 0.97 (twin: a blur of half a cell, 0.682). On a soft scene (value noise at 2 to 16 pixels), a half and a quarter render against the full one's 2x2 and 4x4 means: 0.0029 / 0.0142 and 0.0123 / 0.0540 stops (mean / 99th percentile) against the grain alone's 0.0025 / 0.0117 and 0.0119 / 0.0524, so the blur adds at most 0.002 / 0.01 (twin: the full render's blur in the reduced render's pixels, 0.0097 / 0.0652 and 0.0259 / 0.1540). tests/grain_seed.rs (new): a region and a crop through the chain keep each scan pixel's dissolved, seeded grain on a noise scene with the blur at 0.375 px (twin: a region a pixel over); the grain is one pass of the chain, an exposure notch through the frontier cache runs the passes of a render with no grain, an Amount notch one more (the grain's), a Size notch three (twin: the blur's two and the grain's). The existing grain checks pass unchanged but for their calls: tests/grain.rs, grain_colour.rs, grain_hue.rs read stages through grain::grained(image, k, 0.0) and cpu::grain(p, p, at, k)."
+  },
+  {
+    "id": 2256,
+    "type": "interface",
+    "title": "Film Effects help names the grain arranged anew on each photo and its clumps taking in the detail finer than a grain",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/panel/color_tab.slint: both Film Effects help texts (the machine face and Pro) say the grain is arranged anew on each photo, and that a coarse grain takes in the detail finer than a grain inside its clumps and leaves it sharp between them, so the effect riding on Grain size and Grain is named where its controls are; fr and es in oni-ui.po (msgid and msgstr edited in place), scripts/i18n run, 7 catalogue checks pass. No control, label or token changes."
   }
 ]
