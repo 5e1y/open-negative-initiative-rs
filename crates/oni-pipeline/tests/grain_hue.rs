@@ -5,7 +5,7 @@ mod common;
 
 use common::{V4, graph, noise, whole};
 use oni_graph::{Graph, Image, Rect};
-use oni_pipeline::{conversion, grain, stages};
+use oni_pipeline::{conversion, grain};
 use oni_render::{GRAIN_LOW_STOPS, Grain, LUMA, Stage47, cpu};
 use oni_settings::blocks::GrainColour;
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -45,7 +45,7 @@ fn light_at(tone: f32, s: &PipelineSettings) -> f32 {
 
 /// A flat `p` under `k`, `side` square.
 fn laid(g: &mut Graph, k: &Grain, p: V4, side: u32) -> Vec<V4> {
-    let image = Image::new(&g.upload(side, side, &vec![p; (side * side) as usize]).unwrap()).then(stages::grain(k));
+    let image = grain::grained(Image::new(&g.upload(side, side, &vec![p; (side * side) as usize]).unwrap()), k, 0.0);
     whole(g, &image)
 }
 

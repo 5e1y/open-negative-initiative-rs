@@ -174,7 +174,7 @@ impl Engine {
 
     fn prewarm_frame(&mut self, width: usize, height: usize) -> Option<Negative> {
         let pixels = (0..width * height).map(|i| [0.2 + (i % 13) as f32 * 0.05, 0.4, 0.6, 1.0]).collect();
-        let decoded = Decoded { linear: Linear { width, height, pixels }, full_width: width as f64, undeclared: None };
+        let decoded = Decoded { linear: Linear { width, height, pixels }, full_width: width as f64, undeclared: None, seed: [0, 0] };
         self.prepare(decoded).ok()
     }
 

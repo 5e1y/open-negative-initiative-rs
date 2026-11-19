@@ -44,10 +44,10 @@ fn moments(node: impl Fn([i32; 2]) -> f32) -> (f64, f64, f64) {
 
 #[test]
 fn the_nodes_are_standard_normals_and_uncorrelated() {
-    let (mean, var, next) = moments(|i| normal(hash(i)));
+    let (mean, var, next) = moments(|i| normal(hash(i, [0, 0])));
     assert!(mean.abs() < 0.01 && (var - 1.0).abs() < 0.02 && next < 0.01, "mean {mean}, variance {var}, neighbours {next}");
     // Twin: a hash of one coordinate alone repeats down the other.
-    let (_, _, striped) = moments(|i| normal(hash([i[0], 0])));
+    let (_, _, striped) = moments(|i| normal(hash([i[0], 0], [0, 0])));
     assert!(striped > 0.5, "the twin's neighbours correlate at {striped}");
 }
 
@@ -67,7 +67,7 @@ fn a_point_s_spread_is_the_splines_and_a_mean_s_falls_as_its_footprint_grows() {
 #[test]
 fn the_mean_over_a_footprint_is_the_mean_of_its_quarters() {
     let k = |reach: f32| Grain { per_cell: 0.7, reach, stops: 1.0, ..Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 1.0, WHOLE) };
-    let field = |at: V2, reach: f32| grain([1.0; 4], at, &k(reach))[0].log2();
+    let field = |at: V2, reach: f32| grain([1.0; 4], [1.0; 4], at, &k(reach))[0].log2();
     for at in [[3.25f32, 10.5], [40.0, 7.75], [-12.5, 3.0]] {
         // Two pixels a side, 1.4 cells, against its four pixels of 0.7.
         let whole = field(at, 0.7);
@@ -124,7 +124,7 @@ fn random_offsets(at: V2, k: &Grain) -> V3 {
     let mut c = [0.0f32; 3];
     for (r, wr) in wy.iter().enumerate() {
         for (j, wc) in wx.iter().enumerate() {
-            let u = hash([fx + j as i32, fy + r as i32]);
+            let u = hash([fx + j as i32, fy + r as i32], k.seed);
             let n = [u[0] + u[1] - u[2] - u[3], u[0] - u[1] + u[2] - u[3], u[0] - u[1] - u[2] + u[3]];
             (0..3).for_each(|l| c[l] += wr * wc * n[l] * 1.732_050_8);
         }
@@ -140,7 +140,7 @@ fn a_neutral_pixel_stays_neutral_to_the_bit() {
     for light in [0.001f32, 0.01, 0.05, 0.2, 0.8] {
         let grey = [light, light, light, 1.0];
         for at in centres() {
-            let (p, m) = (grain(grey, at, &k), grain(grey, at, &mono));
+            let (p, m) = (grain(grey, grey, at, &k), grain(grey, grey, at, &mono));
             parted += usize::from(p[0].to_bits() != p[1].to_bits() || p[1].to_bits() != p[2].to_bits());
             off = off.max((p[0] / m[0] - 1.0).abs());
             // Twin: a hue drawn at random each clump, a colour out of nothing.
@@ -165,7 +165,7 @@ fn the_colour_deepens_the_pixel_s_own_hue_only_where_the_grain_darkens_it() {
     let (mut lighter, mut darker, mut worst, mut greyed) = (0usize, 0usize, 0.0f32, 0usize);
     for at in centres() {
         let a = k.stops * field(at, &k);
-        let (p, m) = (grain(skin, at, &k), grain(skin, at, &mono));
+        let (p, m) = (grain(skin, skin, at, &k), grain(skin, skin, at, &mono));
         if a >= 0.0 {
             lighter += 1;
             assert_eq!(p, m, "at {at:?}: a lighter grain moves the colour");
@@ -189,7 +189,7 @@ fn the_luma_is_the_monochrome_grain_s_and_the_channels_keep_their_order() {
     let (mut off, mut twin) = (0.0f32, 0.0f32);
     for (n, s) in patches.into_iter().enumerate() {
         for at in centres() {
-            let (p, m) = (grain(s, at, &k), grain(s, at, &mono));
+            let (p, m) = (grain(s, s, at, &k), grain(s, s, at, &mono));
             off = off.max((dot(rgb(p), LUMA) / dot(rgb(m), LUMA) - 1.0).abs());
             for (i, j) in [(0, 1), (1, 2), (0, 2)] {
                 assert_eq!(s[i] > s[j], p[i] > p[j], "at {at:?}: channels {i} and {j} swap");
@@ -215,13 +215,13 @@ fn a_channel_at_or_under_zero_carries_no_chroma_and_is_kept() {
     for at in centres().take(512) {
         let a = k.stops * field(at, &k);
         for s in [zero, under, black, dark] {
-            assert!(grain(s, at, &k).iter().all(|v| v.is_finite()), "at {at:?}: {s:?}");
+            assert!(grain(s, s, at, &k).iter().all(|v| v.is_finite()), "at {at:?}: {s:?}");
         }
-        assert_eq!(grain(zero, at, &k)[1], 0.0, "at {at:?}: a zero channel stays zero");
-        assert_eq!(grain(black, at, &k), black);
-        assert_eq!(grain(dark, at, &k), with_alpha(map(rgb(dark), |_, v| v * a.exp2()), 1.0), "at {at:?}: a luma under zero takes the grain alone");
+        assert_eq!(grain(zero, zero, at, &k)[1], 0.0, "at {at:?}: a zero channel stays zero");
+        assert_eq!(grain(black, black, at, &k), black);
+        assert_eq!(grain(dark, dark, at, &k), with_alpha(map(rgb(dark), |_, v| v * a.exp2()), 1.0), "at {at:?}: a luma under zero takes the grain alone");
         // Under zero, the channel stays under and only follows the luma, the grain's.
-        let (p, y) = (grain(under, at, &k), dot(rgb(under), LUMA));
+        let (p, y) = (grain(under, under, at, &k), dot(rgb(under), LUMA));
         assert!(p[1] < 0.0 && (dot(rgb(p), LUMA) / (a.exp2() * y) - 1.0).abs() < 1e-6, "at {at:?}: {p:?}");
         // Twin: the channel floored at zero first.
         let floored = laid(with_alpha(map(rgb(under), |_, v| v.max(0.0)), 1.0), a, TOP);
@@ -237,7 +237,7 @@ fn the_share_scales_the_stops_the_colour_reads() {
     let s = [0.05, 0.02, 0.2, 1.0];
     let mut twin = 0.0f32;
     for at in centres().take(512) {
-        let b = grain(s, at, &half);
+        let b = grain(s, s, at, &half);
         assert_eq!(b, laid(s, half.stops * 0.5 * field(at, &half), 2.0), "at {at:?}");
         // Twin: the colour read off the whole stops, the light's alone halved.
         let a = whole.stops * field(at, &whole);
@@ -246,5 +246,58 @@ fn the_share_scales_the_stops_the_colour_reads() {
     }
     assert!(twin > 1e-3, "the twin passes at {twin:.2e}");
     // A light given no share is kept to the bit.
-    assert_eq!(grain(s, [3.25, 10.5], &Grain { share: [0.0; GRAIN_NODES], ..whole }), s);
+    assert_eq!(grain(s, s, [3.25, 10.5], &Grain { share: [0.0; GRAIN_NODES], ..whole }), s);
+}
+
+/// Seeds far apart, near none and at the top of the range.
+const SEEDS: [[u32; 2]; 3] = [[0x9e37_79b9, 0x7f4a_7c15], [12_345, 678], [u32::MAX, 1]];
+
+#[test]
+fn seed_zero_is_the_lattice_as_it_was() {
+    // The hash with no seed, as every grained render laid it before photos had their own.
+    let unseeded = |i: [i32; 2]| {
+        let mut v = [i[0] as u32, i[1] as u32].map(|x| x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
+        for _ in 0..2 {
+            v[0] = v[0].wrapping_add(v[1].wrapping_mul(1_664_525));
+            v[1] = v[1].wrapping_add(v[0].wrapping_mul(1_664_525));
+            v = v.map(|x| x ^ (x >> 16));
+        }
+        [v[0] & 0xffff, v[0] >> 16, v[1] & 0xffff, v[1] >> 16].map(|n| (n as f32 + 0.5) * (1.0 / 65536.0))
+    };
+    let nodes = || (-32..32).flat_map(|y| (-32..32).map(move |x| [x, y]));
+    assert!(nodes().all(|i| hash(i, [0, 0]) == unseeded(i)), "seed 0 moves the lattice");
+    // Twin: a seed of one moves every node.
+    assert!(nodes().all(|i| hash(i, [1, 0]) != unseeded(i)));
+}
+
+#[test]
+fn every_seed_lays_standard_normals_uncorrelated_with_another_seed_s() {
+    for seed in SEEDS {
+        let (mean, var, next) = moments(|i| normal(hash(i, seed)));
+        assert!(mean.abs() < 0.01 && (var - 1.0).abs() < 0.01 && next < 0.01, "{seed:?}: mean {mean}, variance {var}, neighbours {next}");
+    }
+    // Twin: the seeded index read with no round, whose neighbours step by one constant.
+    let linear = |i: [i32; 2]| {
+        let v = [i[0] as u32, i[1] as u32].map(|x| x.wrapping_add(SEEDS[0][0]).wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
+        normal([v[0] & 0xffff, v[0] >> 16, v[1] & 0xffff, v[1] >> 16].map(|n| (n as f32 + 0.5) * (1.0 / 65536.0)))
+    };
+    let (_, _, stepped) = moments(linear);
+    assert!(stepped > 0.1, "the twin's neighbours correlate at {stepped}");
+    let correlation = |a: [u32; 2], b: [u32; 2], read: &dyn Fn([i32; 2], [u32; 2]) -> f32| {
+        let nodes: Vec<[i32; 2]> = (-128..128).flat_map(|y| (-128..128).map(move |x| [x, y])).collect();
+        let (x, y): (Vec<f64>, Vec<f64>) = nodes.iter().map(|&i| (f64::from(read(i, a)), f64::from(read(i, b)))).unzip();
+        let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;
+        let (mx, my) = (mean(&x), mean(&y));
+        let cov = x.iter().zip(&y).map(|(p, q)| (p - mx) * (q - my)).sum::<f64>();
+        let norm = (x.iter().map(|p| (p - mx).powi(2)).sum::<f64>() * y.iter().map(|q| (q - my).powi(2)).sum::<f64>()).sqrt();
+        cov / norm
+    };
+    let seeded = |i: [i32; 2], s: [u32; 2]| normal(hash(i, s));
+    for (a, b) in [([0, 0], SEEDS[0]), (SEEDS[0], SEEDS[1]), (SEEDS[1], SEEDS[2])] {
+        let c = correlation(a, b, &seeded);
+        assert!(c.abs() < 0.01, "{a:?} and {b:?} correlate at {c}");
+    }
+    // Twin: a seed the hash ignores lays one arrangement on every photo.
+    let ignored = correlation(SEEDS[0], SEEDS[1], &|i, _| normal(hash(i, [0, 0])));
+    assert!(ignored > 0.99, "the twin correlates at {ignored}");
 }

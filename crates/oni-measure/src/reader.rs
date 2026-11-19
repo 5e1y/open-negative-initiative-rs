@@ -49,7 +49,7 @@ fn laid<'l>(laying: &'l mut Laying<'_>, graph: &mut Graph, s: &PipelineSettings)
             r.read(graph, s);
             r.inputs(s)
         }
-        Laying::Held(held) => Inputs { patches: held.patches.clone(), custom_flat_field: held.custom_flat_field },
+        Laying::Held(held) => Inputs { patches: held.patches.clone(), custom_flat_field: held.custom_flat_field, seed: held.seed },
     }
 }
 

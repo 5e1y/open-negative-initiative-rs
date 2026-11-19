@@ -2,6 +2,7 @@
 // each pixel the field's mean over its own footprint, its share read off its light, its own colour deepened where it darkens.
 
 struct Params {
+    // x, y: the photo's seed, added to every lattice index, so each photo lays its own arrangement.
     head: vec4<u32>,
     // The output centre to the scan's full grid, its x row then its y row; w: one over the cell side,
     // then half the footprint in cells.
@@ -9,6 +10,9 @@ struct Params {
     row_y: vec4<f32>,
     // x: the stops a unit of the mean moves the light by; y, z: the table's first stop and its nodes a stop.
     dose: vec4<f32>,
+    // x: the share of the blurred scene a clump takes at the whole share; y: one over the field's spread
+    // at full resolution, which a clump's edge is measured in.
+    mix: vec4<f32>,
     // A node's share, the next node's, its colour and the next one's, `GRAIN_NODES` of them: one row
     // read a pixel, no lane indexed.
     nodes: array<vec4<f32>, 64>,
@@ -33,7 +37,7 @@ fn grain_ramp(u: f32) -> f32 {
 
 // Four 16-bit uniforms at a lattice node: PCG-2D, exact on every device.
 fn grain_hash(i: vec2<i32>) -> vec4<f32> {
-    var v = bitcast<vec2<u32>>(i) * 1664525u + 1013904223u;
+    var v = (bitcast<vec2<u32>>(i) + P.head.xy) * 1664525u + 1013904223u;
     // Two rounds written out: naga bounds every loop on Metal (force_loop_bounding), which blocks its
     // unrolling and kept the kernel 30 to 45 % slower.
     v.x += v.y * 1664525u;
@@ -64,8 +68,8 @@ fn grain_laid(s: vec3<f32>, a: f32, colour: f32) -> vec3<f32> {
     return p * (k * y / q);
 }
 
-// `at` is the pixel's centre in the graph's pixels; a light given no share is kept.
-fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
+// `at` is the pixel's centre in the graph's pixels, `b` the scene blurred under a grain; a light given no share is kept.
+fn grain_px(s: vec4<f32>, b: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
     let node = grain_node(s.rgb);
     if (node.x <= 0.0) { return s; }
     let q = vec2<f32>(P.row_x.x * at.x + P.row_x.y * at.y + P.row_x.z, P.row_y.x * at.x + P.row_y.y * at.y + P.row_y.z) * P.row_x.w;
@@ -92,5 +96,8 @@ fn grain_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         }
         field += wy[r] * row;
     }
-    return vec4<f32>(grain_laid(s.rgb, P.dose.x * node.x * field, node.y), s.a);
+    // Inside a clump the scene gives way to its blur, so detail finer than a grain follows the grain.
+    let w = P.mix.x * node.x * smoothstep(0.5, 1.5, abs(field) * P.mix.y);
+    let base = s.rgb + w * (b.rgb - s.rgb);
+    return vec4<f32>(grain_laid(base, P.dose.x * node.x * field, node.y), s.a);
 }

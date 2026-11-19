@@ -14,7 +14,7 @@ fn an_upload_lands_beside_a_held_engine_and_waits_on_the_gate() {
     let shared = Engine::shared(&device);
     let (w, h) = (300usize, 200usize);
     let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| [(i % w) as f32 / w as f32, 0.3, 0.5, 1.0]).collect();
-    let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: pixels.clone() }, full_width: w as f64, undeclared: None };
+    let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: pixels.clone() }, full_width: w as f64, undeclared: None, seed: [0, 0] };
     let started = |f: Box<dyn FnOnce() + Send>| {
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
@@ -27,7 +27,7 @@ fn an_upload_lands_beside_a_held_engine_and_waits_on_the_gate() {
     let held = shared.lock().unwrap();
     let other = shared.clone();
     let laid = started(Box::new(move || {
-        other.full(Decoded { linear: Linear { width: 4, height: 4, pixels: vec![[0.5; 4]; 16] }, full_width: 4.0, undeclared: None }).unwrap();
+        other.full(Decoded { linear: Linear { width: 4, height: 4, pixels: vec![[0.5; 4]; 16] }, full_width: 4.0, undeclared: None, seed: [0, 0] }).unwrap();
     }));
     assert!(laid.recv_timeout(Duration::from_secs(5)).is_ok(), "the upload lands while a render holds the engine");
     // Twin: what needs the engine itself waits for it.
@@ -39,7 +39,7 @@ fn an_upload_lands_beside_a_held_engine_and_waits_on_the_gate() {
 
     shared.hold();
     let other = shared.clone();
-    let gated = started(Box::new(move || drop(other.full(Decoded { linear: Linear { width: 4, height: 4, pixels: vec![[0.5; 4]; 16] }, full_width: 4.0, undeclared: None }).unwrap())));
+    let gated = started(Box::new(move || drop(other.full(Decoded { linear: Linear { width: 4, height: 4, pixels: vec![[0.5; 4]; 16] }, full_width: 4.0, undeclared: None, seed: [0, 0] }).unwrap())));
     assert!(gated.recv_timeout(Duration::from_millis(300)).is_err(), "no upload while the surface is reconfigured");
     shared.release();
     assert!(gated.recv_timeout(Duration::from_secs(5)).is_ok(), "the upload lands once the gate opens");

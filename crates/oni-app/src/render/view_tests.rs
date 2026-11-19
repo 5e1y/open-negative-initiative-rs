@@ -13,8 +13,8 @@ fn at_a_hundred_percent_a_cut_frame_shows_its_full_pixels_one_for_one() {
     let mut engine = Engine::on(&device);
     let (fw, fh) = (1600usize, 1000usize);
     let gradient = |w: usize, h: usize| (0..w * h).map(|i| [0.2 + 0.5 * (i % w) as f32 / w as f32, 0.3, 0.4, 1.0]).collect::<Vec<_>>();
-    let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64, undeclared: None }).unwrap();
-    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
+    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     // Turned, the left edge falls at 101 full pixels, 25.25 on the quarter preview, cut there a column wider.
     settings.geometry = Geometry { quarter_turns: 1, crop: oni_settings::cg::Rect::new(0.1003, 0.0, 0.8997, 1.0), ..Geometry::default() };

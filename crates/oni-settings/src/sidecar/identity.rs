@@ -10,7 +10,6 @@ use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-
 const BLOCK: usize = 16 * 1024;
 const FRACTIONS: [f64; 3] = [0.25, 0.5, 0.75];
 
@@ -81,6 +80,19 @@ fn parts(print: &str) -> Option<(&str, &str)> {
     let (_, rest) = print.split_once('-')?;
     let (date, digest) = rest.rsplit_once('-')?;
     Some((date, digest))
+}
+
+/// The grain's arrangement on `path`'s photo, FNV-1a over its print's date and digest: never its name
+/// or size, so a rename or a move keeps it. `None` for a file unread or kept away by the cloud.
+pub fn seed(path: &Path) -> Option<[u32; 2]> {
+    let (print, _) = print(path)?;
+    let (date, digest) = parts(&print)?;
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in date.bytes().chain(*b"-").chain(digest.bytes()) {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    Some([hash as u32, (hash >> 32) as u32])
 }
 
 /// Whether `stored` was written for another file than one printed `now`: two dates and two digests,

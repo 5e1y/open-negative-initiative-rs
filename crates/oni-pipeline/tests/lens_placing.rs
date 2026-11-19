@@ -174,7 +174,7 @@ fn the_optical_vignetting_lights_the_scan_radially_and_a_patch_takes_its_gain() 
     let r = corrections::patch_rect(&c, [0.0, 0.0, size().0, size().1]);
     let patch = g.upload(r[2] as u32, r[3] as u32, &vec![[GROUND, GROUND, GROUND, 1.0]; (r[2] * r[3]) as usize]).unwrap();
     let healed_s = PipelineSettings { corrections: vec![c.clone()], ..s.clone() };
-    let inputs = Inputs { patches: [(c.id, &patch)].into_iter().collect(), custom_flat_field: None };
+    let inputs = Inputs { patches: [(c.id, &patch)].into_iter().collect(), ..Inputs::default() };
     let healed = pipeline.healed(&mut g, Image::new(&specked), &healed_s, 1.0, &inputs).unwrap();
     let (_, pixels) = whole(&mut g, &healed);
     // The feathered stroke leaves a trace of the speck under its centre, under a hundredth.

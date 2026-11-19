@@ -168,7 +168,7 @@ fn together_against_in_turn(engine: &mut Engine, full: &Source, settings: &Pipel
     let held: Vec<(Correction, Source)> = (settings.corrections.iter())
         .filter_map(|c| crate::patches::read(caches, PatchKey::of(settings, c)).and_then(|(w, h, pixels)| Some((c.clone(), graph.upload(w, h, &pixels).ok()?))))
         .collect();
-    let inputs = Inputs { patches: held.iter().map(|(c, p)| (c.id, p)).collect(), custom_flat_field: None };
+    let inputs = Inputs { patches: held.iter().map(|(c, p)| (c.id, p)).collect(), ..Inputs::default() };
     let bare = PipelineSettings { corrections: Vec::new(), ..settings.clone() };
     let apart = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).flat_map(|(p, q)| (0..4).map(move |c| (p[c] - q[c]).abs() / (1.0 + q[c].abs()))).fold(0.0f32, f32::max);
     for reduce in [1.0, 0.29] {

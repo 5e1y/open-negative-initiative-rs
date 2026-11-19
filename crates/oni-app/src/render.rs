@@ -47,4 +47,6 @@ mod tiles_tests;
 #[cfg(test)]
 mod view_tests;
 #[cfg(test)]
+mod seed_tests;
+#[cfg(test)]
 mod dust_probe;

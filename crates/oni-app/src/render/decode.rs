@@ -24,6 +24,13 @@ pub struct Decoded {
     pub full_width: f64,
     /// `Some(grey)` for a file naming no profile, which the hand may say how to read.
     pub undeclared: Option<bool>,
+    /// The photo's grain arrangement, read off its file: the same at every size it decodes at.
+    pub seed: [u32; 2],
+}
+
+/// The grain seed of the photo at `path`; `[0, 0]`, the lattice as it is, for a file whose print is unread.
+fn seed(path: &Path) -> [u32; 2] {
+    oni_settings::sidecar::identity::seed(path).unwrap_or_default()
 }
 
 pub use oni_settings::Reading;
@@ -95,7 +102,7 @@ fn mosaic(path: &Path, side: usize, slide: bool) -> Result<Decoded, String> {
         e => tr!("LibRaw cannot decode it (code {code})", code = e.0),
     })?;
     let full_width = (d.width * factor) as f64;
-    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
+    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None, seed: seed(path) })
 }
 
 /// `RawDecode.alone(longestSide:)`: one file, never its passes, no longer than `side` (`None`: whole).
@@ -169,7 +176,7 @@ pub(crate) fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, dec
     let r = laid(&red.linear, &fits.red, w, h, 0);
     let b = laid(&blue.linear, &fits.blue, w, h, 2);
     let pixels = green.linear.pixels.iter().enumerate().map(|(i, g)| [r[i], g[1], b[i], 1.0]).collect();
-    Ok(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: green.full_width, undeclared: None })
+    Ok(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: green.full_width, undeclared: None, seed: seed(lead) })
 }
 
 /// One channel of a pass on a `w` × `h` frame through its fit, sampled bilinearly with the pass's
@@ -224,7 +231,7 @@ pub(crate) fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full
         }
     }
     let full_width = if full > 0 { full } else { d.width } as f64;
-    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
+    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None, seed: seed(path) })
 }
 
 /// `plainLinear`: the file's curve undone in its profile, else the chosen encoding, else sRGB.
@@ -233,7 +240,7 @@ pub(crate) fn plain(path: &Path, side: Option<f64>, reading: Reading) -> Result<
     let mut e = oni_decode::plain::read(path, side).ok_or(tr("no image reader takes it"))?;
     oni_colour::source::Source::of(e.icc.as_deref(), reading.source_encoding, e.grey).linearise(&mut e.pixels, !reading.primaries_converted);
     let undeclared = e.icc.is_none().then_some(e.grey);
-    Ok(Decoded { linear: Linear { width: e.width, height: e.height, pixels: e.pixels }, full_width: e.full.0 as f64, undeclared })
+    Ok(Decoded { linear: Linear { width: e.width, height: e.height, pixels: e.pixels }, full_width: e.full.0 as f64, undeclared, seed: seed(path) })
 }
 
 #[cfg(test)]

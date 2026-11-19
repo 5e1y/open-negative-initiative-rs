@@ -1,8 +1,9 @@
 //! The grain's arguments: a texture in stops laid on the scene before the print, anchored on the
 //! scan's full-resolution grid so a pan, a zoom, a crop or a turn leaves it on the photo.
 
-use crate::{conversion, geometry};
-use oni_graph::Rect;
+use crate::{conversion, geometry, stages};
+use oni_graph::{Image, Rect};
+use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
 use oni_settings::PipelineSettings;
 use oni_settings::blocks::{GrainColour, GrainCurve};
@@ -15,6 +16,9 @@ pub const GRAIN_STOPS: f32 = 0.5;
 pub const GRAIN_FINEST: f64 = 1.0 / 6000.0;
 /// How many times Size's top coarsens the finest cell.
 pub const GRAIN_COARSEST: f64 = 4.0;
+/// The blur a clump takes in, as a share of how much its cell outgrows the finest: none at the finest
+/// grain, so a fine grain blurs nothing, and half a cell's side less a pixel at a coarse one.
+pub const GRAIN_DISSOLVE: f64 = 0.5;
 
 /// The grain of `s` on a scan of extent `scan` at `scale`; `None` at rest or with no share anywhere, so
 /// the chain holds no grain stage.
@@ -30,7 +34,21 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     }
     let cell = f64::from(scan.w) / scale * GRAIN_FINEST * GRAIN_COARSEST.powf(f64::from(s.grain.size));
     let m = geometry::scan_from(&s.geometry, scan, scale).map(|r| r.map(|v| v as f32));
-    Some(Grain::on(m, cell as f32, scale as f32, GRAIN_STOPS * s.grain.amount, share).coloured(colours(&s.grain.colour, &tones)))
+    let laid = Grain::on(m, cell as f32, scale as f32, GRAIN_STOPS * s.grain.amount, share).coloured(colours(&s.grain.colour, &tones));
+    Some(laid.dissolving(s.grain.amount))
+}
+
+/// The deviation of the blur a clump of `s` takes in, in this render's pixels on a scan of extent `scan`:
+/// a share of its width whatever its scale, so fit, a zoom and an export dissolve the same detail.
+pub fn dissolve(s: &PipelineSettings, scan: Rect) -> f64 {
+    GRAIN_DISSOLVE * f64::from(scan.w) * GRAIN_FINEST * (GRAIN_COARSEST.powf(f64::from(s.grain.size)) - 1.0)
+}
+
+/// `image` grained by `k`, its clumps taking in its blur of deviation `sigma`; under the blur's floor
+/// the pixel itself, so a fine grain renders as it did with no blur.
+pub fn grained(image: Image, k: &Grain, sigma: f64) -> Image {
+    let blurred = if sigma > BLUR_FLOOR { stages::blurred(image.clone(), sigma, false) } else { image.clone() };
+    image.then_reading(stages::grain(k), &[blurred])
 }
 
 /// The tone each node's light shows as the picture opens, before Lighting: its luminance through the
