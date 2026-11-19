@@ -23,9 +23,6 @@ export component Picker inherits HorizontalLayout {
     // Words in the secondary ink after the value, a middle dot between: the chip's gloss on its space.
     in property <string> note;
     in property <string> value;
-    // Shown in the tertiary ink while there is no value; and the name assistive tools read before the value.
-    in property <string> placeholder;
-    in property <string> name;
     // The medal the value names, struck before its words, or alone in their place when `bare`, the words
     // still what assistive tools read; 0 none.
     in property <int> medal;
@@ -76,8 +73,7 @@ export component Picker inherits HorizontalLayout {
         background: root.as-field ? Colour.hover.transparentize(1) : root.chip ? (root.hovered || root.dropped ? ButtonStyle.face : ButtonStyle.face.transparentize(1)) : root.hovered ? Colour.hover : Colour.canvas;
         opacity: root.enabled ? 1 : State.disabled;
         accessible-role: button;
-        accessible-label: root.name != "" ? root.name : root.note != "" ? root.value + " · " + root.note : root.value;
-        accessible-value: root.name != "" ? root.value : "";
+        accessible-label: root.note != "" ? root.value + " · " + root.note : root.value;
         accessible-enabled: root.enabled;
         // As wide as its words on a chip, eliding them once its room is short.
         preferred-width: row.preferred-width;
@@ -98,12 +94,7 @@ export component Picker inherits HorizontalLayout {
                 Medal { rank: root.medal; x: 0; y: (parent.height - self.height) / 2; }
             }
             // Short of room, the gloss gives way before the value.
-            if root.medal == 0 || !root.bare: Label {
-                text: root.value != "" ? root.value : root.placeholder;
-                tone: root.value != "" ? Tone.primary : Tone.tertiary;
-                horizontal-stretch: root.note != "" ? 0 : 1;
-                overflow: elide;
-            }
+            if root.medal == 0 || !root.bare: Label { text: root.value; horizontal-stretch: root.note != "" ? 0 : 1; overflow: elide; }
             if root.note != "": Label { text: "·"; tone: Tone.secondary; }
             if root.note != "": Label { text: root.note; tone: Tone.secondary; horizontal-stretch: 1; overflow: elide; }
             if root.chip || root.as-field || (root.pill && root.drops): VerticalLayout {

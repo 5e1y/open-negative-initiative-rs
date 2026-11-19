@@ -11414,5 +11414,12 @@
     "title": "The roll's Camera Body and the export's Camera and Lens are one combobox",
     "status": "done",
     "detail": "KnownField is a Picker (now with a placeholder and a name for assistive tools) whose list drops at a click: a field to type any name heads the Kit's cards and the names typed before. Return or a click beside the list gives what was typed, Escape drops it; a pick gives its name. Slint's popups take the keyboard when shown (WindowInner::show_popup), so a field outside the list could not keep typing while it is open. Window checks: collection (pick, Return, click beside), escape, export_columns."
+  },
+  {
+    "id": 2310,
+    "type": "change",
+    "title": "The gear fields are a true combobox: typed in the field, the list dropped under it",
+    "status": "done",
+    "detail": "#2309's select with a search field in its list is withdrawn (owner: a combobox is an input that drops its possibilities). KnownField is again a text field, its chevron inside the face: clicked into, typed in or its chevron pressed, it drops the Kit's cards and the names typed before, and takes back the keyboard the popup took (WindowInner::show_popup moves it away from the window), so the words are typed in the field with the list open. The press that dropped the list is not read as a press beside the field. A pick or Return gives the name and ends the typing. Window checks: collection (pick, typed with the list open, Return), escape, export_columns."
   }
 ]

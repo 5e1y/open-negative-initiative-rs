@@ -1,16 +1,18 @@
-// A combobox: a select whose list drops at a click, a field to type any name over the Kit's cards and the
-// names typed before; with none known, the list says how one comes. Slint's popup takes the keyboard.
-import { Space } from "theme.slint";
-import { Divider } from "base.slint";
-import { TextField } from "fields.slint";
-import { Picker } from "picker.slint";
+// A combobox: a field typed as any, whose list of the gear ONI knows drops under it once it is clicked into,
+// or from the chevron at its end: the Kit's pieces as their cards, then the names typed before.
+import { Space, FieldStyle } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Divider, Icon, Tips } from "base.slint";
+import { FieldFace, Entry } from "fields.slint";
+import { FormStyle } from "forms.slint";
+import { Outside } from "outside.slint";
 import { MenuEntry, PopupPanel, PopupKind } from "menu.slint";
 import { GearCard, GearCardBody, PickedGround } from "gear_card.slint";
 
 export component KnownField inherits HorizontalLayout {
     in property <string> name;
     in property <string> value;
-    in-out property <string> text;
+    in-out property <string> text <=> entry.text;
     in property <string> placeholder;
     in property <bool> enabled: true;
     in property <[GearCard]> cards;
@@ -19,46 +21,73 @@ export component KnownField inherits HorizontalLayout {
     // The list's one line while no name is known, and the words under it.
     in property <string> none-known;
     in property <string> none-known-note;
-    // Each key typed in the list's field; a name typed and given, by Return or the list let go; a name picked.
     callback edited(string);
     callback accepted(string);
+    callback left(string);
     callback picked(string);
-    // What the list's field holds; once the list gave a name, or Escape dropped it, its closing gives none.
-    property <string> typed;
-    property <bool> given;
-    // A click beside the list gives what was typed, as Return does; Escape drops it.
-    property <bool> dropped: list.is-open;
-    changed dropped => { if (!self.dropped) { root.give(root.typed); } }
-    init => { if (root.value != "") { root.text = root.value; } }
-    changed value => { root.text = root.value; }
+    init => { if (root.value != "") { entry.text = root.value; } }
+    changed value => { entry.text = root.value; }
+    // A Slint popup takes the keyboard as it opens (`WindowInner::show_popup`): the field takes it back, so
+    // the words are still typed in the field while the list stands under it.
     function drop() {
-        root.given = false;
-        root.typed = root.text;
+        if (list.is-open) { return; }
         list.show();
+        entry.take-focus();
     }
-    function give(typed: string) {
-        if (root.given) { return; }
-        root.given = true;
-        if (typed != root.text) {
-            root.text = typed;
-            root.accepted(typed);
-        }
-        list.close();
-    }
+    // A name picked, or typed and given by Return, ends the typing: the list closes, the keyboard goes back.
     function pick(name: string) {
-        root.given = true;
-        root.text = name;
+        entry.text = name;
         root.picked(name);
         list.close();
+        Outside.released += 1;
     }
-    Picker {
-        name: root.name;
-        value: root.text;
-        placeholder: root.placeholder;
-        enabled: root.enabled;
-        help: root.known-help;
-        own-popup: root.dropped;
-        open => { root.drop(); }
+    FieldFace {
+        horizontal-stretch: 1;
+        height: FieldStyle.height;
+        lit: entry.editing;
+        // The face's padding enters the field as its words do.
+        rim := TouchArea {
+            enabled: root.enabled;
+            mouse-cursor: MouseCursor.text;
+            pointer-event(event) => {
+                if (!entry.editing && event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { entry.enter(); }
+            }
+        }
+        HorizontalLayout {
+            padding-left: FieldStyle.across;
+            padding-right: FieldStyle.across;
+            spacing: Space.xs;
+            entry := Entry {
+                name: root.name;
+                placeholder: root.placeholder;
+                enabled: root.enabled;
+                // The press that dropped the list is the field's own; one beside it closes the list first.
+                rim: rim.has-hover || chevron.has-hover || list.is-open;
+                changed editing => { if (self.editing) { root.drop(); } }
+                // Typing drops the list again where Escape closed it.
+                edited(t) => { root.drop(); root.edited(t); }
+                accepted(t) => {
+                    list.close();
+                    Outside.released += 1;
+                    root.accepted(t);
+                }
+                left(t) => { if (!list.is-open) { root.left(t); } }
+            }
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: FormStyle.chip-icon;
+                    height: self.width;
+                    Icon { width: parent.width; height: parent.height; source: Icons.chevron-down; }
+                    chevron := TouchArea {
+                        enabled: root.enabled;
+                        mouse-cursor: pointer;
+                        clicked => { root.drop(); }
+                        changed has-hover => { Tips.hover(self.has-hover, root.known-help, self.absolute-position.x, self.absolute-position.y + self.height); }
+                    }
+                }
+            }
+        }
     }
     list := PopupPanel {
         kind: PopupKind.menu;
@@ -67,31 +96,13 @@ export component KnownField inherits HorizontalLayout {
         span: root.width;
         VerticalLayout {
             spacing: Space.xxs;
-            FocusScope {
-                focus-on-click: false;
-                height: field.preferred-height;
-                key-pressed(event) => {
-                    if (event.text == Key.Escape) { root.given = true; }
-                    reject
-                }
-                field := TextField {
-                    width: parent.width;
-                    name: root.name;
-                    value: root.text;
-                    placeholder: root.placeholder;
-                    init => { self.take-focus-selecting(); }
-                    edited(t) => { root.typed = t; root.edited(t); }
-                    accepted(t) => { root.give(t); }
-                }
-            }
-            if root.cards.length > 0 || root.known.length > 0: Divider { }
             for card in root.cards: Rectangle {
                 height: body.preferred-height;
                 accessible-role: button;
                 accessible-label: card.name;
                 accessible-action-default => { root.pick(card.name); }
                 touch := TouchArea { mouse-cursor: pointer; clicked => { root.pick(card.name); } }
-                PickedGround { hovered: touch.has-hover; picked: card.name == root.text; }
+                PickedGround { hovered: touch.has-hover; picked: card.name == entry.text; }
                 body := GearCardBody {
                     padding-top: Space.xs;
                     padding-bottom: Space.xs;
@@ -101,7 +112,7 @@ export component KnownField inherits HorizontalLayout {
                 }
             }
             if root.cards.length > 0 && root.known.length > 0: Divider { }
-            for name in root.known: MenuEntry { text: name; checked: name == root.text; activated => { root.pick(name); } }
+            for name in root.known: MenuEntry { text: name; checked: name == entry.text; activated => { root.pick(name); } }
             if root.cards.length == 0 && root.known.length == 0: MenuEntry { text: root.none-known; note: root.none-known-note; enabled: false; }
         }
     }

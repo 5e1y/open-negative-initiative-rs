@@ -192,29 +192,29 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     e.invoke_cancel();
     rig.settle();
 
-    // The roll's Camera Body is a combobox: clicked into, it drops the Kit as its cards; one picked names
-    // the roll's body.
+    // The roll's Camera Body is a combobox: clicked into, it drops the Kit as its cards under it while its
+    // words are still typed; one picked names the roll's body, a name typed and Return names it too.
     assert!(common::placed(w, Role::Button, "Pick From Your Kit").is_empty(), "no key beside the field");
-    common::click(rig, w, common::the(w, Role::Button, "Camera Body").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Camera Body").middle());
     rig.settle();
     println!("shot {}", rig.shot("kit-field").display());
     common::click(rig, w, common::in_popup(w, Role::Button, "Nikon FM2").middle());
     rig.settle();
     assert_eq!(lib.get_camera_body(), "Nikon FM2");
-    // Any other name is typed in the list's field: Return gives it, a click beside the list too.
-    common::click(rig, w, common::the(w, Role::Button, "Camera Body").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Camera Body").middle());
     rig.settle();
+    assert_eq!(i_slint_core::window::WindowInner::from_pub(w.window()).active_popups().len(), 1, "the list dropped");
     rig.key("Rollei 35");
+    assert_eq!(lib.get_camera_body(), "Rollei 35", "typed in the field itself, the list open under it");
     println!("shot {}", rig.shot("kit-field-typed").display());
     rig.key(&slint::SharedString::from(slint::platform::Key::Return));
     rig.settle();
-    assert_eq!(lib.get_camera_body(), "Rollei 35", "Return gives the name typed");
-    common::click(rig, w, common::the(w, Role::Button, "Camera Body").middle());
+    assert_eq!(names(gear.get_bodies()).iter().filter(|n| *n == "Rollei 35").count(), 1, "Return gives the name typed");
+    common::click(rig, w, common::the(w, Role::TextInput, "Camera Body").middle());
     rig.settle();
-    rig.key("Nikon FM2");
-    common::click(rig, w, EMPTY);
+    common::click(rig, w, common::in_popup(w, Role::Button, "Nikon FM2").middle());
     rig.settle();
-    assert_eq!(lib.get_camera_body(), "Nikon FM2", "a click beside the list gives it too");
+    assert_eq!(lib.get_camera_body(), "Nikon FM2");
 
     // A card's menu opens its page on the service.
     common::click(rig, w, EMPTY);
