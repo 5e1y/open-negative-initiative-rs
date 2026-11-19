@@ -39,8 +39,8 @@ async fn open_gpu() -> Result<Gpu, Error> {
     Ok(Gpu { instance, adapter, device, queue })
 }
 
-/// How long one wait on the GPU holds wgpu's resource lock, which a window's present takes to write:
-/// a render waited on whole would hold the interface's present 20 to 140 ms.
+/// One wait's slice: wgpu holds the device's snatch lock through a poll's wait, which a window's present
+/// takes to write, so a render waited on whole would hold the interface's present 20 to 140 ms.
 const WAIT_SLICE: std::time::Duration = std::time::Duration::from_millis(1);
 
 /// Returns once the GPU has run `index` on `device`; an error names a device lost.

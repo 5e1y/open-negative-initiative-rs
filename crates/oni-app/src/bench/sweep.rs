@@ -13,6 +13,8 @@ const CYCLES: usize = 3;
 const HOLD: Duration = Duration::from_millis(1500);
 /// After the last move: the sharp render lands, whatever the screen.
 const REST: Duration = Duration::from_secs(2);
+/// A gap between two frames' ends past three 120 Hz refreshes, which the eye sees as a hitch.
+const HITCH: Duration = Duration::from_millis(25);
 /// The full resolution waited for before the bench gives up.
 const FULL: Duration = Duration::from_secs(40);
 
@@ -154,12 +156,11 @@ fn report(how: &str, size: (f64, f64), r: &Recorded) -> String {
         let _ = write!(out, "\n    landed at a scale the view had left: {left}");
     }
     let ends: Vec<Instant> = frames.iter().filter_map(|f| f.gpu.get().copied()).collect();
-    let mut gaps: Vec<Duration> = ends.windows(2).map(|w| w[1].saturating_duration_since(w[0])).collect();
-    let _ = write!(out, "\n  frames' GPU-end gaps {}", centiles(gaps.clone()));
-    gaps.sort_unstable();
-    let median = gaps.get(gaps.len() / 2).copied().unwrap_or_default();
-    let spikes = gaps.iter().filter(|g| **g > median * 2).count();
-    let _ = write!(out, "\n  gaps over twice the median ({:.1} ms): {spikes} of {}", ms(median), gaps.len());
+    let gaps: Vec<Duration> = ends.windows(2).map(|w| w[1].saturating_duration_since(w[0])).collect();
+    let hitches = gaps.iter().filter(|g| **g > HITCH).count();
+    let _ = write!(out, "\n  frames' GPU-end gaps {}; {hitches} of {} over {:.0} ms", centiles(gaps.clone()), gaps.len(), ms(HITCH));
+    let presents: Vec<Duration> = frames.windows(2).map(|w| w[1].presented - w[0].presented).collect();
+    let _ = write!(out, "\n  frames' present gaps {}", centiles(presents));
     let _ = write!(out, "\n  frame presented to its GPU end {}", centiles(frames.iter().filter_map(|f| since(f.presented, f.gpu.get().copied())).collect()));
     let _ = write!(out, "\n  drawable acquire {}", centiles(frames.iter().map(|f| f.acquired).collect()));
     let _ = write!(out, "\n  items and submit {}", centiles(frames.iter().map(|f| f.items + f.submitted).collect()));
