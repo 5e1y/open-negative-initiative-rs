@@ -102,7 +102,6 @@ export component Info inherits Surface {
                             none-known: @tr("No body yet");
                             none-known-note: @tr("A body typed here joins your kit");
                             accepted(t) => { Library.camera-body-committed(t); }
-                            left(t) => { Library.camera-body-committed(t); }
                             picked(t) => {
                                 Library.camera-body = t;
                                 Library.camera-body-committed(t);

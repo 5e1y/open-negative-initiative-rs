@@ -1,5 +1,5 @@
 // The Lens DB's mark: its aperture, its disc and blades each in an ink of the theme, beside its name set as
-// its site sets it, bold and tight; credited, the contract's mention follows. A click opens its site.
+// its site sets it, bold and tight; credited, the contract's mention leads to it. A click opens its site.
 import { Colour, Type, Space } from "theme.slint";
 import { Icon, Label, TextRole, Tone } from "base.slint";
 import { Icons } from "icons.slint";
@@ -8,8 +8,8 @@ import { KitStyle } from "theme_views.slint";
 export component TldbMark inherits Rectangle {
     in property <length> size: KitStyle.mark;
     in property <bool> large;
-    // "Catalogue provided by The Lens DB" beside the mark, its words wrapping in the room left, or under the
-    // mark where a narrow column leaves none beside it.
+    // "Catalogue provided by" before the mark, which names the service so the words need not; beside it on
+    // one line, or over it where a narrow column leaves no room.
     in property <bool> credited;
     in property <bool> under;
     callback clicked();
@@ -19,9 +19,21 @@ export component TldbMark inherits Rectangle {
     accessible-action-default => { root.clicked(); }
     VerticalLayout {
         spacing: Space.xxs;
+        if root.credited && root.under: Label {
+            role: TextRole.caption;
+            tone: Tone.secondary;
+            text: @tr("Catalogue provided by");
+        }
         HorizontalLayout {
             spacing: root.size / 3;
-            alignment: root.beside ? LayoutAlignment.stretch : LayoutAlignment.start;
+            alignment: LayoutAlignment.start;
+            if root.beside: Label {
+                horizontal-stretch: 0;
+                role: TextRole.caption;
+                tone: Tone.secondary;
+                vertical-alignment: center;
+                text: @tr("Catalogue provided by");
+            }
             Rectangle {
                 width: root.size;
                 height: root.size;
@@ -40,20 +52,6 @@ export component TldbMark inherits Rectangle {
                 letter-spacing: KitStyle.tracking;
                 color: Colour.ink;
             }
-            if root.beside: Label {
-                horizontal-stretch: 1;
-                role: TextRole.caption;
-                tone: Tone.secondary;
-                wrap: word-wrap;
-                vertical-alignment: center;
-                text: @tr("Catalogue provided by The Lens DB");
-            }
-        }
-        if root.credited && root.under: Label {
-            role: TextRole.caption;
-            tone: Tone.secondary;
-            wrap: word-wrap;
-            text: @tr("Catalogue provided by The Lens DB");
         }
     }
     TouchArea {

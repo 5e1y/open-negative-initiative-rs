@@ -64,11 +64,14 @@ pub(crate) fn escape_steps_out_one_thing_at_a_time_and_each_tool_ends_by_its_don
     // With nothing open the photos' Escape leaves the editor; Return on the grid opens the photo again.
     rig.key(&escape);
     assert!(app.get_gallery(), "Escape leaves the editor for the gallery");
-    // A field's typing is the innermost thing: Escape ends it and goes no further.
-    click(&rig, common::the(w, Role::TextInput, "Camera Body").middle());
-    assert!(!w.get_keys_held(), "the field holds the keyboard");
+    // A field's typing is the innermost thing: Escape ends it and goes no further. The roll's Camera Body
+    // drops its list at a click, its field typing; Escape closes it, what was typed dropped.
+    click(&rig, common::the(w, Role::Button, "Camera Body").middle());
+    assert!(!w.get_keys_held(), "the list's field holds the keyboard");
+    rig.key("Zq");
     rig.key(&escape);
     assert!(w.get_keys_focused() && app.get_gallery(), "Escape gives the photos the keyboard back, and only that");
+    assert_eq!(w.global::<oni_app::Library>().get_camera_body(), "", "the typing dropped");
     rig.key("\r");
     assert!(!app.get_gallery(), "Return opens the photo the grid holds");
 

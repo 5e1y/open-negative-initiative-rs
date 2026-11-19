@@ -7,12 +7,12 @@ impl KitState {
     /// The sheet's words, answers, filters and picks forgotten, as a sheet opened again starts bare.
     pub(super) fn clear_search(&mut self) {
         self.asked += 1;
-        (self.found, self.picks, self.brands) = (Vec::new(), Vec::new(), Vec::new());
+        (self.answers, self.found, self.picks, self.mounts) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
         self.searching = false;
         self.searched.clear();
         self.typed.clear();
         self.kind_filter = None;
-        self.brand_filter.clear();
+        self.mount_filter.clear();
     }
 }
 

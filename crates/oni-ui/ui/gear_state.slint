@@ -49,14 +49,13 @@ export global Kit {
     callback remove(GearKind, int);
     // A piece of the Kit made the default of its kind, or none when it was.
     callback prefer(GearKind, int);
-    // The search's filters: the kind (0 any, 1 bodies, 2 lenses), and the brand at its place in `brands`,
-    // whose first is any brand and the rest those the answers hold; offered once they hold two.
+    // The search's filters: the kind (0 any, 1 bodies, 2 lenses), and the mount at its place in `mounts`,
+    // whose first is any mount and the rest those the answers hold.
     in property <int> kind-filter;
-    in property <[string]> brands;
-    in property <int> brand-at;
-    in property <bool> brand-offered;
+    in property <[string]> mounts;
+    in property <int> mount-at;
     callback filter-kind(int);
-    callback filter-brand(int);
+    callback filter-mount(int);
     // The sheet's Done or Escape: the picks sent, the sheet closed once the service holds them.
     callback done();
     // The column turned to the Kit, which counts its photos again.

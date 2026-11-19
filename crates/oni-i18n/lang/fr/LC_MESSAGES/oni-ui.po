@@ -436,6 +436,10 @@ msgid "The Lens DB"
 msgstr "The Lens DB"
 
 #: crates/oni-ui/ui/ds/tldb.slint
+msgid "Catalogue provided by"
+msgstr "Catalogue fourni par"
+
+#: crates/oni-ui/ui/ds/tldb.slint
 msgid "THE LENS DB"
 msgstr "THE LENS DB"
 
@@ -1618,10 +1622,6 @@ msgid "Create an Account"
 msgstr "Créer un compte"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Your browser opens on The Lens DB: ONI never sees your password."
-msgstr "Votre navigateur s’ouvre sur The Lens DB : ONI ne voit jamais votre mot de passe."
-
-#: crates/oni-ui/ui/kit.slint
 msgid "Finish in Your Browser"
 msgstr "Terminez dans votre navigateur"
 
@@ -1645,13 +1645,25 @@ msgstr "Boîtiers"
 msgid "Lenses"
 msgstr "Objectifs"
 
-#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/rating_filter.slint
-msgid "All"
-msgstr "Toutes"
+#: crates/oni-ui/ui/kit.slint
+msgid "All Gear"
+msgstr "Tout le matériel"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Only this brand's pieces"
-msgstr "Seulement le matériel de cette marque"
+msgid "Type"
+msgstr "Type"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies, lenses or both"
+msgstr "Boîtiers, objectifs ou les deux"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Mount"
+msgstr "Monture"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Only the pieces that take this mount"
+msgstr "Seules les pièces à cette monture"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Add to Your Kit"
@@ -1688,10 +1700,6 @@ msgstr "Propose une pièce à The Lens DB, relue avant d’apparaître"
 #: crates/oni-ui/ui/kit.slint
 msgid "Saving to The Lens DB…"
 msgstr "Enregistrement sur The Lens DB…"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "What you add joins your Kit on The Lens DB when you press Done."
-msgstr "Ce que vous ajoutez rejoint votre kit sur The Lens DB quand vous appuyez sur Terminé."
 
 #: crates/oni-ui/ui/kit.slint
 msgid "{n} piece joins your Kit on The Lens DB at Done."
@@ -2930,6 +2938,10 @@ msgstr "Copie le préréglage sous forme d’une ligne de texte, à coller dans 
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "All Photos"
 msgstr "Toutes les photos"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "All"
+msgstr "Toutes"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"
@@ -4344,8 +4356,8 @@ msgid "Remove"
 msgstr "Retirer"
 
 #: crates/oni-app/src/app/organising/kit/publish.rs
-msgid "Any Brand"
-msgstr "Toutes les marques"
+msgid "Any Mount"
+msgstr "Toutes montures"
 
 #: crates/oni-app/src/app/organising/kit/sign_in/landing.rs
 msgid "You’re connected"

@@ -59,18 +59,28 @@ pub fn query(typed: &str) -> String {
     words.join(" ").chars().take(200).collect()
 }
 
-/// The brands of a search's answers, each once as the service writes it, the most frequent first and
-/// otherwise in the answers' order; a piece without a brand offers none.
-pub fn brands(found: &[Piece]) -> Vec<String> {
+/// The mounts a piece takes: a body's one, a lens's every one; a body with its own lens takes none.
+fn mounts_of(piece: &Piece) -> impl Iterator<Item = &str> {
+    piece.mount.as_deref().into_iter().chain(piece.mounts.iter().flatten().map(String::as_str))
+}
+
+/// Whether a piece takes this mount, as the service writes it.
+pub fn fits(piece: &Piece, mount: &str) -> bool {
+    mounts_of(piece).any(|m| m == mount)
+}
+
+/// The mounts of a search's answers, each once as the service writes it, the most frequent first and
+/// otherwise in the answers' order.
+pub fn mounts(found: &[Piece]) -> Vec<String> {
     let mut counted: Vec<(String, usize)> = Vec::new();
-    for brand in found.iter().filter_map(|p| p.brand.as_deref()) {
-        match counted.iter_mut().find(|(b, _)| b == brand) {
+    for mount in found.iter().flat_map(mounts_of) {
+        match counted.iter_mut().find(|(m, _)| m == mount) {
             Some((_, n)) => *n += 1,
-            None => counted.push((brand.to_string(), 1)),
+            None => counted.push((mount.to_string(), 1)),
         }
     }
     counted.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
-    counted.into_iter().map(|(b, _)| b).collect()
+    counted.into_iter().map(|(m, _)| m).collect()
 }
 
 #[cfg(test)]
@@ -105,16 +115,18 @@ mod tests {
     }
 
     #[test]
-    fn the_brands_offered_are_the_answers_most_frequent_first() {
+    fn the_mounts_offered_are_the_answers_most_frequent_first_bodies_and_lenses_alike() {
         let mut found = vec![lens((50.0, 50.0), None); 4];
-        found[1].brand = Some("Nikon".into());
-        found[2].brand = Some("Nikon".into());
-        found[3].brand = None;
-        assert_eq!(brands(&found), ["Nikon", "Canon"]);
-        assert_eq!(brands(&found[3..]), Vec::<String>::new(), "a piece without a brand offers none");
-        // Twin: the first answer's brand would lead in the answers' order alone.
-        assert_ne!(brands(&found), ["Canon", "Nikon"]);
-        assert_eq!(brands(&found[..2]), ["Canon", "Nikon"], "a tie keeps the answers' order");
+        found[1].mounts = Some(vec!["Nikon F".into(), "Canon FD".into()]);
+        found[2] = Piece { kind: Kind::Camera, mount: Some("Nikon F".into()), mounts: None, ..found[2].clone() };
+        found[3].mounts = None;
+        assert_eq!(mounts(&found), ["Nikon F", "Canon EF", "Canon FD"]);
+        assert_eq!(mounts(&found[3..]), Vec::<String>::new(), "a piece without a mount offers none");
+        assert!(fits(&found[1], "Canon FD") && fits(&found[2], "Nikon F"), "any of a lens's mounts, a body's one");
+        // Twin: a mount the piece does not take keeps it out, and a tie keeps the answers' order.
+        assert!(!fits(&found[0], "Nikon F"));
+        assert_ne!(mounts(&found), ["Canon EF", "Nikon F", "Canon FD"]);
+        assert_eq!(mounts(&found[..1]), ["Canon EF"]);
     }
 
     #[test]

@@ -27,7 +27,7 @@ use std::time::{Duration, Instant};
 
 /// The search waits for the hand to rest this long, so a word typed asks the service once.
 const SETTLE: Duration = Duration::from_millis(400);
-/// A search's answers shown: the service's most, so the brands offered come from as many as it gives.
+/// A search's answers asked: the service's most, so the mounts offered come from as many as it gives.
 const FOUND: u32 = 50;
 
 #[derive(Default)]
@@ -39,6 +39,8 @@ pub struct KitState {
     token: Option<String>,
     /// While a sign-in waits for the browser's return: the flag that cancels it.
     signing: Option<Arc<AtomicBool>>,
+    /// The service's answers, and those the mount filter keeps, which the sheet shows and Add points into.
+    answers: Vec<Piece>,
     found: Vec<Piece>,
     searched: String,
     typed: String,
@@ -50,11 +52,12 @@ pub struct KitState {
     sending: bool,
     /// The search's sheet over the window.
     picking: bool,
-    /// The search's filters: a kind, and a brand as the service writes it, empty for any.
+    /// The search's filters: a kind, which the service sorts by, and a mount, which ONI sorts by as the
+    /// service takes none; empty for any.
     kind_filter: Option<Kind>,
-    brand_filter: String,
-    /// The brands the answers asked without one hold, the most frequent first: the brand filter's choices.
-    brands: Vec<String>,
+    mount_filter: String,
+    /// The mounts the answers hold, the most frequent first: the mount filter's choices.
+    mounts: Vec<String>,
     /// How many photos name each piece, counted when they may have changed, never on each redraw.
     counts: Option<oni_library::index::GearCounts>,
     note: String,
@@ -140,7 +143,7 @@ impl Ctl {
         let p = me.clone();
         k.on_filter_kind(move |i| p.kit_filter(|kit| kit.kind_filter = [None, Some(Kind::Camera), Some(Kind::Lens)][i.clamp(0, 2) as usize]));
         let p = me.clone();
-        k.on_filter_brand(move |i| p.kit_filter(|kit| kit.brand_filter = kit.brands.get((i - 1).max(0) as usize).filter(|_| i > 0).cloned().unwrap_or_default()));
+        k.on_filter_mount(move |i| p.kit_mount(i));
         let p = me.clone();
         k.on_done(move || p.kit_done());
         let p = me.clone();

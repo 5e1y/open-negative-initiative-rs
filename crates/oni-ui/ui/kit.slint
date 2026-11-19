@@ -1,7 +1,7 @@
 // Where nothing is picked in the archive: the person's Kit, their bodies and lenses kept on The Lens DB.
 // Signed out it offers the service; signed in it lists the Kit and searches the catalogue in a sheet over
 // the window, whose Done sends what was added in one call.
-import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, KitStyle, Divider, Tabs, Picker } from "ds/ds.slint";
+import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, KitStyle, Divider, Picker } from "ds/ds.slint";
 import { GearKind, Kit, KitLink, KitPiece, KitMark } from "gear_state.slint";
 
 // Two answers of the search side by side, `at` the left one's place among them.
@@ -120,7 +120,6 @@ component Offer inherits Section {
     Label { role: TextRole.note; wrap: word-wrap; text: @tr("Keep your bodies and lenses on The Lens DB: ONI offers them when an export's EXIF is filled, with their brand, focal lengths and apertures."); }
     Button { kind: ButtonKind.accent; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } }
     Button { text: @tr("Create an Account"); clicked => { Kit.connect(true); } }
-    Label { role: TextRole.note; wrap: word-wrap; text: @tr("Your browser opens on The Lens DB: ONI never sees your password."); }
 }
 
 component Waiting inherits Section {
@@ -176,26 +175,30 @@ export component KitView inherits VerticalLayout {
     }
 }
 
-// The search's filters on one row: the kind as tabs, and the brand once the answers hold two, its choices
-// those brands, as the service lists none; its room kept while it is not offered, so the tabs never move.
+// The search's filters on one row, two selects: the kind, and the mount among those the answers hold.
 component KitFilters inherits HorizontalLayout {
+    property <[string]> kinds: [@tr("All Gear"), @tr("Bodies"), @tr("Lenses")];
     padding-top: Space.s;
-    spacing: Space.s;
-    Tabs {
-        width: (root.width - Space.s) / 2;
-        tabs: [@tr("All"), @tr("Bodies"), @tr("Lenses")];
-        selected: Kit.kind-filter;
-        picked(i) => { Kit.filter-kind(i); }
+    spacing: Space.m;
+    Picker {
+        width: (root.width - Space.m) / 2;
+        label: @tr("Type");
+        value: root.kinds[Kit.kind-filter];
+        entries: root.kinds;
+        current: Kit.kind-filter;
+        help: @tr("Bodies, lenses or both");
+        chosen(i) => { Kit.filter-kind(i); }
     }
-    if Kit.brand-offered: Picker {
-        width: (root.width - Space.s) / 2;
-        value: Kit.brands[Kit.brand-at];
-        entries: Kit.brands;
-        current: Kit.brand-at;
-        help: @tr("Only this brand's pieces");
-        chosen(i) => { Kit.filter-brand(i); }
+    Picker {
+        width: (root.width - Space.m) / 2;
+        label: @tr("Mount");
+        value: Kit.mounts[Kit.mount-at];
+        entries: Kit.mounts;
+        current: Kit.mount-at;
+        enabled: Kit.mounts.length > 1;
+        help: @tr("Only the pieces that take this mount");
+        chosen(i) => { Kit.filter-mount(i); }
     }
-    if !Kit.brand-offered: Rectangle { width: (root.width - Space.s) / 2; }
 }
 
 // The catalogue searched as the hand rests, its answers as cards two to a row, over the window; Done, or
@@ -267,11 +270,10 @@ export component KitSearchSheet inherits Sheet {
         VerticalLayout {
             padding: Space.m;
             spacing: Space.s;
-            Label {
+            if Kit.sending || Kit.picked > 0: Label {
                 role: TextRole.note;
                 wrap: word-wrap;
                 text: Kit.sending ? @tr("Saving to The Lens DB…")
-                    : Kit.picked == 0 ? @tr("What you add joins your Kit on The Lens DB when you press Done.")
                     : @tr("{n} piece joins your Kit on The Lens DB at Done." | "{n} pieces join your Kit on The Lens DB at Done." % Kit.picked);
             }
             HorizontalLayout {

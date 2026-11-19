@@ -11393,5 +11393,26 @@
     "title": "The Kit driven in the real app against the simulated The Lens DB",
     "status": "done",
     "detail": "scripts/check (151 binaries, none failed, ONI_CHECK_LIMIT=900) and scripts/lint in the worktree. The app built with --profile app (with Slint's MCP server to drive it) and run with ONI_BACKGROUND=1, ONI_TLDB=fake and a private support and caches folder, over the simulated service holding 101 real catalogue pieces: the sign-in made through the simulated pages and token address as a browser would (Connect itself is not pressed, as the system browser would take the focus; the window check drives it), the column's Kit read, a search of 50mm filtered by kind (Bodies: nothing matches) and by the brand picker (Nikon), Add, Done saving the pick in one change and closing, a removal asked then sent, a relaunch reading the Kit unchanged (its copy not rewritten), Disconnect revoking the token and dropping the copy, and a service unreached at launch keeping the copy with its note (the log names no address). ONI_BENCH=flows on the test copy of roll #8: no failure. Nothing was sent to thelensdb.com."
+  },
+  {
+    "id": 2307,
+    "type": "change",
+    "title": "The Lens DB's credit reads \"Catalogue provided by\" and then its mark",
+    "status": "done",
+    "detail": "TldbMark credited lays the words before the disc and the name, on one line or over them in a narrow column, so the service is named once; its accessible label is unchanged. The offer's password note and the sheet's empty-picks line are gone; the count of picks and Saving stay."
+  },
+  {
+    "id": 2308,
+    "type": "change",
+    "title": "The Kit search filters by Type and Mount, two selects",
+    "status": "done",
+    "detail": "The kind tabs and the brand picker give way to two Pickers: Type (All Gear, Bodies, Lenses), which the service sorts by, and Mount (Any Mount and the answers' mounts, most frequent first), which ONI sifts itself as the search takes no mount: the answers are kept whole and the mount keeps those that take it, asking nothing. A chosen mount stays offered when new answers hold none. words::mounts and fits, with their twin; the collection window check picks Nikon F and Lenses."
+  },
+  {
+    "id": 2309,
+    "type": "change",
+    "title": "The roll's Camera Body and the export's Camera and Lens are one combobox",
+    "status": "done",
+    "detail": "KnownField is a Picker (now with a placeholder and a name for assistive tools) whose list drops at a click: a field to type any name heads the Kit's cards and the names typed before. Return or a click beside the list gives what was typed, Escape drops it; a pick gives its name. Slint's popups take the keyboard when shown (WindowInner::show_popup), so a field outside the list could not keep typing while it is open. Window checks: collection (pick, Return, click beside), escape, export_columns."
   }
 ]

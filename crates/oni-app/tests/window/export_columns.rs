@@ -29,8 +29,10 @@ const BAND: f32 = 8.0;
 /// `FormStyle.fields-width`: the EXIF's card.
 const CARD: f32 = 260.0;
 
-/// The EXIF typed in, by the names assistive tools read; the film's picker is named by its value.
-const TYPED: [&str; 6] = ["Camera", "Lens", "ISO", "Date", "Artist", "Copyright"];
+/// The EXIF typed in, by the names assistive tools read; the gear's selects by their names, and the film's
+/// picker by its value.
+const TYPED: [&str; 4] = ["ISO", "Date", "Artist", "Copyright"];
+const SELECTS: [&str; 2] = ["Camera", "Lens"];
 
 /// The `k`-th from the top of what is so named.
 fn nth(w: &oni_app::MainWindow, role: Role, name: &str, k: usize) -> common::Placed {
@@ -43,6 +45,7 @@ fn nth(w: &oni_app::MainWindow, role: Role, name: &str, k: usize) -> common::Pla
 /// Each EXIF field of line `k`, from the top: the typed fields and the film's picker.
 fn fields(w: &oni_app::MainWindow, k: usize) -> Vec<(&'static str, common::Placed)> {
     let mut out: Vec<_> = TYPED.iter().map(|&name| (name, nth(w, Role::TextInput, name, k))).collect();
+    out.extend(SELECTS.iter().map(|&name| (name, nth(w, Role::Button, name, k))));
     out.push(("Film stock", nth(w, Role::Button, "Choose…", k)));
     out.sort_by(|a, b| a.1.y.total_cmp(&b.1.y));
     out
@@ -94,7 +97,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     let centred = |k: usize, left: f32| picture(k) >= left - 0.5 && ((picture(k) - left) - (room - end(k))).abs() < 1.0;
 
     // Closed as the screen opens: no EXIF, each picture right after its key, its name under it.
-    assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the EXIF closed until asked for");
+    assert!(common::placed(w, Role::Button, "Camera").is_empty(), "the EXIF closed until asked for");
     let mut keys = common::placed(w, Role::Button, "Show the EXIF");
     keys.sort_by(|a, b| a.y.total_cmp(&b.y));
     assert_eq!(keys.len(), 2, "one EXIF key a line: {keys:?}");
@@ -112,7 +115,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     assert!(w.global::<Exporting>().get_exif_shown(), "the key opens the EXIF");
     for k in 0..2 {
         let laid = fields(w, k);
-        let face = |(n, f): &(&str, common::Placed)| if *n == "Film stock" { f.x } else { f.x - ACROSS };
+        let face = |(n, f): &(&str, common::Placed)| if *n == "Film stock" || SELECTS.contains(n) { f.x } else { f.x - ACROSS };
         assert!(laid.iter().all(|f| (face(f) - face(&laid[0])).abs() < 1.0), "line {k}'s fields one above the other: {laid:?}");
         let open = picture(k);
         assert!(laid.iter().all(|(_, f)| f.x + f.width + NEAR <= open), "line {k}'s fields left of its picture: {laid:?} {open}");
@@ -123,8 +126,8 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
         assert!(common::placed(w, Role::Button, "Show the EXIF").is_empty(), "open, the card's cross stands for the key");
         let mut labels: Vec<_> = common::placed(w, Role::Text, "Camera").into_iter().filter(|t| t.x < presets.x).collect();
         labels.sort_by(|a, b| a.y.total_cmp(&b.y));
-        let (label, field) = (labels[k], nth(w, Role::TextInput, "Camera", k));
-        assert!(label.y + label.height <= field.y && (label.x - (field.x - ACROSS)).abs() < 1.0, "line {k}'s label over its field: {label:?} {field:?}");
+        let (label, field) = (labels[k], nth(w, Role::Button, "Camera", k));
+        assert!(label.y + label.height <= field.y && (label.x - field.x).abs() < 1.0, "line {k}'s label over its select: {label:?} {field:?}");
         // Twin: the panel's Presets, right of the pictures, fails the same test.
         assert!(presets.x + presets.width + NEAR > open, "twin: the panel's Presets is not left of the picture");
     }
@@ -140,7 +143,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     assert!(hide.iter().any(|x| x.y < first[0].1.y && x.x > first[0].1.x), "the cross over the first field, at its right: {hide:?} {:?}", first[0].1);
     common::click(&rig, w, hide[0].middle());
     rig.settle();
-    assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the card closes on every line");
+    assert!(common::placed(w, Role::Button, "Camera").is_empty(), "the card closes on every line");
     assert!((picture(0) - closed[0]).abs() < 1.0, "the picture back to its width: {} {}", picture(0), closed[0]);
     // The narrowest window the app opens at still lays each picture whole beside its key.
     rig.window.set_size(slint::PhysicalSize::new(1100, 680));

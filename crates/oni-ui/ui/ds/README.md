@@ -154,8 +154,10 @@ fade and the chrome stays. The picker's field wears the same face.
 - **`TextField`**: one entry; `suffix` sits at the face's end, `lines-height` is the text's height inside
   the padding. Entered by a click, Tab or its owner, it selects its value; then a click places the caret,
   a double click selects a word, a triple click the line (the `text_fields` window check).
-- **`KnownField`**: a field typed as any, or filled from the names ONI knows by its mini chevron key, which
-  drops their list under it; a name picked shows in the field (the collection's bodies and lenses).
+- **`KnownField`**: a combobox, a `Picker` whose list drops at a click: a field to type any name, then the
+  Kit's pieces as cards and the names typed before; Return or a click beside it gives what was typed, Escape
+  drops it (the roll's body, the export's camera and lens). A Slint popup takes the keyboard, so the typing
+  lives in the list, never in the select.
 - **`RenameField`**: a `TextField` that takes the focus at once; `role: title` for a title, its face on the
   column's inset as every field's, its margins the column's.
 - **`SizeFields`, `DateFields`**: two or three centred entries on one face a field tall, lit while any

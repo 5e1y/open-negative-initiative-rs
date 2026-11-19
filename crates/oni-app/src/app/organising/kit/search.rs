@@ -1,7 +1,15 @@
-//! The catalogue searched as the hand rests or a filter changes, the latest answer alone kept; the brands
-//! the answers hold become the brand filter's choices, as the service lists none.
+//! The catalogue searched as the hand rests or the kind changes, the latest answer alone kept; the mounts
+//! the answers hold become the mount filter's choices, which ONI applies itself as the service takes none.
 
 use super::*;
+
+impl KitState {
+    /// The answers the mount filter keeps.
+    fn sift(&mut self) {
+        let mount = self.mount_filter.as_str();
+        self.found = self.answers.iter().filter(|p| mount.is_empty() || words::fits(p, mount)).cloned().collect();
+    }
+}
 
 impl Ctl {
     pub(super) fn kit_search(self: &Rc<Self>, typed: &str) {
@@ -15,10 +23,21 @@ impl Ctl {
         });
     }
 
-    /// A filter changed: the search asked again at once with it.
+    /// The kind changed: the search asked again at once with it.
     pub(super) fn kit_filter(self: &Rc<Self>, change: impl FnOnce(&mut KitState)) {
         change(&mut self.state.borrow_mut().org.kit);
         self.kit_ask();
+    }
+
+    /// The mount at its place among the choices, 0 any: the answers held are sifted again, nothing asked.
+    pub(super) fn kit_mount(self: &Rc<Self>, at: i32) {
+        {
+            let mut s = self.state.borrow_mut();
+            let kit = &mut s.org.kit;
+            kit.mount_filter = usize::try_from(at - 1).ok().and_then(|i| kit.mounts.get(i)).cloned().unwrap_or_default();
+            kit.sift();
+        }
+        self.publish_kit();
     }
 
     pub(super) fn kit_ask(self: &Rc<Self>) {
@@ -27,24 +46,24 @@ impl Ctl {
             self.kit_ask_after_wait();
             return self.publish_kit();
         }
-        let (query, kind, brand, asked) = {
+        let (query, kind, asked) = {
             let mut s = self.state.borrow_mut();
             let kit = &mut s.org.kit;
             kit.asked += 1;
             let query = words::query(&kit.typed);
             kit.searching = query.chars().count() >= 2;
             if !kit.searching {
-                kit.found.clear();
+                (kit.answers, kit.found, kit.mounts) = (Vec::new(), Vec::new(), Vec::new());
                 kit.searched.clear();
             }
-            (query, kit.kind_filter, kit.brand_filter.clone(), kit.asked)
+            (query, kit.kind_filter, kit.asked)
         };
         self.publish_kit();
         if query.chars().count() < 2 {
             return;
         }
         std::thread::spawn(move || {
-            let answer = client.search(&query, kind, Some(brand.as_str()).filter(|b| !b.is_empty()), FOUND);
+            let answer = client.search(&query, kind, None, FOUND);
             with_shell(move |c| c.kit_found(asked, query, answer));
         });
     }
@@ -58,10 +77,13 @@ impl Ctl {
             Ok(found) => {
                 let mut s = self.state.borrow_mut();
                 let kit = &mut s.org.kit;
-                if kit.brand_filter.is_empty() {
-                    kit.brands = words::brands(&found);
+                kit.mounts = words::mounts(&found);
+                // A mount chosen stays offered when these answers hold none, so it can be let go.
+                if !kit.mount_filter.is_empty() && !kit.mounts.contains(&kit.mount_filter) {
+                    kit.mounts.push(kit.mount_filter.clone());
                 }
-                (kit.found, kit.searched) = (found, query);
+                (kit.answers, kit.searched) = (found, query);
+                kit.sift();
                 kit.note.clear();
             }
             Err(f) => {

@@ -1,6 +1,6 @@
 //! The Kit against a simulated The Lens DB, driven by clicks and keys as a hand would: a click on the
 //! gallery's empty room offers the service; Connect opens its sign-in in the browser and the Kit shows once it
-//! returns; Search Gear searches in a sheet, filtered by kind and by a brand its answers hold, whose ↗ opens a
+//! returns; Search Gear searches in a sheet, filtered by kind and by a mount its answers hold, whose ↗ opens a
 //! piece's page and whose Add picks it, Done or Escape sending the picks in one call; a card's menu opens its
 //! page, makes it the default or removes it once confirmed; a default body and lens fill an export where
 //! nothing names one, its roll keeping the body; Disconnect revokes the token and drops the copy. Every call
@@ -90,30 +90,41 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(fake.kit_keys().iter().filter(|k| k.kind == Kind::Camera).count(), 2, "the service holds it: {:?}", fake.kit_keys());
     assert_eq!(piece_names(kit.get_bodies()), ["Canon AE-1 Program", "Nikon FM2"]);
 
-    // Opened again, the sheet starts bare; "50" spans several brands, which the brand filter offers; one
-    // picked keeps its answers alone, any brand gives them back. Escape sends its pick as Done does.
+    // Opened again, the sheet starts bare; "50" spans several mounts, which the mount select offers; one
+    // picked keeps the answers that take it, asking nothing, any mount gives them back. Escape sends its
+    // pick as Done does.
     common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
     rig.settle();
     assert_eq!((kit.get_kind_filter(), kit.get_picked(), kit.get_found().row_count()), (0, 0, 0));
+    assert!(common::placed(w, Role::Tab, "Bodies").is_empty(), "the kind is a select, no tabs");
     common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
     rig.key("50");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
     rig.settle();
-    let brands = |kit: &Kit| kit.get_found().iter().map(|p| p.name.split(' ').next().unwrap_or_default().to_string()).collect::<std::collections::BTreeSet<_>>();
-    assert!(brands(&kit).len() >= 2 && kit.get_brand_offered(), "twin: before a brand, several: {:?}", brands(&kit));
+    let all = kit.get_found().row_count();
+    assert!(kit.get_mounts().row_count() > 2, "twin: before a mount, several: {:?}", kit.get_mounts().iter().collect::<Vec<_>>());
     println!("shot {}", rig.shot("kit-search").display());
-    common::click(rig, w, common::the(w, Role::Button, "Any Brand").middle());
+    let searches = calls(&fake, "/search").len();
+    common::click(rig, w, common::the(w, Role::Button, "Any Mount").middle());
     rig.settle();
-    common::click(rig, w, common::in_popup(w, Role::Button, "Nikon").middle());
-    rig.until("the brand answered", WAIT, || !kit.get_searching() && kit.get_found().iter().all(|p| p.name.starts_with("Nikon")));
-    let brand = calls(&fake, "/search").last().and_then(|s| s.param("brand").map(str::to_string));
-    assert_eq!(brand.as_deref(), Some("Nikon"), "sent as the service wrote it");
+    common::click(rig, w, common::in_popup(w, Role::Button, "Nikon F").middle());
+    rig.settle();
+    assert!(kit.get_found().row_count() < all, "the mount keeps fewer");
+    assert!(kit.get_found().iter().all(|p| p.detail.contains("Nikon F")), "only what takes Nikon F");
+    assert_eq!(calls(&fake, "/search").len(), searches, "sifted by ONI, nothing asked");
     common::click(rig, w, common::the(w, Role::Button, "Add").middle());
     rig.settle();
-    common::click(rig, w, common::the(w, Role::Button, "Nikon").middle());
+    common::click(rig, w, common::the(w, Role::Button, "Nikon F").middle());
     rig.settle();
-    common::click(rig, w, common::in_popup(w, Role::Button, "Any Brand").middle());
-    rig.until("every brand again", WAIT, || !kit.get_searching() && brands(&kit).len() >= 2);
+    common::click(rig, w, common::in_popup(w, Role::Button, "Any Mount").middle());
+    rig.settle();
+    assert_eq!(kit.get_found().row_count(), all, "every mount again");
+    // The kind is the service's: Lenses asks again with it.
+    common::click(rig, w, common::the(w, Role::Button, "All Gear").middle());
+    rig.settle();
+    common::click(rig, w, common::in_popup(w, Role::Button, "Lenses").middle());
+    rig.until("the lenses answered", WAIT, || !kit.get_searching() && kit.get_kind_filter() == 2);
+    assert_eq!(calls(&fake, "/search").last().and_then(|s| s.param("type").map(str::to_string)).as_deref(), Some("lens"));
     rig.key(&slint::SharedString::from(slint::platform::Key::Escape));
     rig.until("Escape sent and closed", WAIT, || !kit.get_picking());
     assert_eq!(calls(&fake, "/kit/changes").len(), 2);
@@ -181,13 +192,29 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     e.invoke_cancel();
     rig.settle();
 
-    // The roll's Camera Body offers the Kit as its cards: one picked names the roll's body.
-    common::click(rig, w, common::the(w, Role::Button, "Pick From Your Kit").middle());
+    // The roll's Camera Body is a combobox: clicked into, it drops the Kit as its cards; one picked names
+    // the roll's body.
+    assert!(common::placed(w, Role::Button, "Pick From Your Kit").is_empty(), "no key beside the field");
+    common::click(rig, w, common::the(w, Role::Button, "Camera Body").middle());
     rig.settle();
     println!("shot {}", rig.shot("kit-field").display());
     common::click(rig, w, common::in_popup(w, Role::Button, "Nikon FM2").middle());
     rig.settle();
     assert_eq!(lib.get_camera_body(), "Nikon FM2");
+    // Any other name is typed in the list's field: Return gives it, a click beside the list too.
+    common::click(rig, w, common::the(w, Role::Button, "Camera Body").middle());
+    rig.settle();
+    rig.key("Rollei 35");
+    println!("shot {}", rig.shot("kit-field-typed").display());
+    rig.key(&slint::SharedString::from(slint::platform::Key::Return));
+    rig.settle();
+    assert_eq!(lib.get_camera_body(), "Rollei 35", "Return gives the name typed");
+    common::click(rig, w, common::the(w, Role::Button, "Camera Body").middle());
+    rig.settle();
+    rig.key("Nikon FM2");
+    common::click(rig, w, EMPTY);
+    rig.settle();
+    assert_eq!(lib.get_camera_body(), "Nikon FM2", "a click beside the list gives it too");
 
     // A card's menu opens its page on the service.
     common::click(rig, w, EMPTY);
@@ -207,7 +234,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.settle();
     assert_eq!(kit.get_link(), KitLink::Out);
     assert!(!Kept::file_path(support).exists(), "the copy dropped");
-    assert_eq!(names(gear.get_bodies()), ["Nikon FM2", "Pentax MX"], "the body a hand picked for the roll stays among the names typed");
+    assert_eq!(names(gear.get_bodies()), ["Nikon FM2", "Rollei 35", "Pentax MX"], "the bodies a hand gave the roll stay among the names typed");
     rig.until("the token revoked", WAIT, || fake.journal().iter().any(|s| s.path == "/api/oauth/revoke"));
 
     // Every call named ONI and its system, bore its token but the exchange, and carried no Origin.
