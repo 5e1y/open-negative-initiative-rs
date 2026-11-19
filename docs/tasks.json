@@ -11218,5 +11218,12 @@
     "title": "Film Effects help names the grain arranged anew on each photo and its clumps taking in the detail finer than a grain",
     "status": "done",
     "detail": "crates/oni-ui/ui/panel/color_tab.slint: both Film Effects help texts (the machine face and Pro) say the grain is arranged anew on each photo, and that a coarse grain takes in the detail finer than a grain inside its clumps and leaves it sharp between them, so the effect riding on Grain size and Grain is named where its controls are; fr and es in oni-ui.po (msgid and msgstr edited in place), scripts/i18n run, 7 catalogue checks pass. No control, label or token changes."
+  },
+  {
+    "id": 2257,
+    "type": "check",
+    "title": "The seeded, dissolving grain driven through the real app on a test copy of roll #8 made Digital",
+    "status": "done",
+    "detail": "--profile app build, ONI_BACKGROUND=1, ONI_SUPPORT and ONI_CACHES on a scratch folder, on a clone of the reference roll's test copy whose 38 NEF sidecars were set to Digital with Grain 0.8, Size 1 (the first frame 0.5 / 0.7), the contact sheet set aside; no original written. ONI_BENCH=flows: 3 frames picked, double-clicked open, edited through resizes and back in the gallery, no failure (graph textures peak 459 MB). ONI_BENCH=zoom at 1728 x 1080: full resolution 8 ms after the double click, 60 pans and the ladder at end to end p50 1.4 ms, p99 17.5 ms. ONI_BENCH=1 on the 1100 x 680 window (drawable 2200 x 1360): Exposure p50 1.0 ms end to end, Grain p50 4.5 ms (the grain's pass reruns, its blur kept), Grain size p50 0.7 ms (a gesture renders the lighter level). Through the app's own engine on DSC_6432 and DSC_6433: the half-size preview, the preview-side and the whole decodes read one seed each ([1704908782, 3112797896], [682009597, 3105001072]); the editor's fit render against the export's full render reduced to its pixels correlate 0.953 and 0.965 in the grain's stops; the loupe's 100 % region on a 3456 x 2160 drawable equals the export's same pixels to the bit; the two photos' grains at the same pixel correlate 0.0105; a renamed copy in another folder keeps its seed and renders its grain to the bit. Cost of that 100 % region (7.5 MP): 20.8 ms with no grain, 23.9 ms grained at Size 0.15 (no blur), 26.0 ms at Size 1 (blur 1.5 px), so the dissolve's blur adds about 2.1 ms (0.28 ms a megapixel) and runs only when Size moves. The app build and the probe were deleted afterwards."
   }
 ]
