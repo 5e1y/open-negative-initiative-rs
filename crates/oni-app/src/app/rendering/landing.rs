@@ -38,10 +38,15 @@ impl Ctl {
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, drawn: done.drawn, delivered, frame };
         let e = done.picture.extent();
         let (width, height) = (e.w as usize, e.h as usize);
+        // The hand may have moved the view since the job was asked: the render goes where it now lies.
         let now = self.canvas_size().map(|size| (self.state.borrow().viewport, size));
-        self.lay(done.placed, (width, height));
+        let laid = |p: Option<Placed>| match (p, done.view, now) {
+            (Some(p), Some(job), Some(now)) => Some(super::resizing::moved(p, job, now)),
+            (p, _, _) => p,
+        };
+        self.lay(laid(done.placed), (width, height));
         if let Some((before, placed)) = done.before {
-            self.encode_before(before, placed);
+            self.encode_before(before, laid(placed));
         }
         {
             let mut s = self.state.borrow_mut();

@@ -41,6 +41,12 @@ pub(super) fn followed(t: Rect, from: Rect, to: Rect) -> Rect {
     (to.0 + (t.0 - from.0) * k, to.1 + (t.1 - from.1) * k, t.2 * k, t.3 * k)
 }
 
+/// `p`, laid by the view `from` of its image, moved to where the view `to` puts the same part of it.
+pub(super) fn moved(p: Placed, from: (Viewport, (f64, f64)), to: (Viewport, (f64, f64))) -> Placed {
+    let r = followed((p.x, p.y, p.width, p.height), from.0.placement(p.full, from.1).image, to.0.placement(p.full, to.1).image);
+    Placed { x: r.0, y: r.1, width: r.2, height: r.3, ..p }
+}
+
 impl Ctl {
     /// The canvas took a new size: the picture shown is laid again where the view now puts it, the
     /// same texture stretched or moved, and the render at the new size waits for the hand to rest.
@@ -66,10 +72,7 @@ impl Ctl {
                 s.viewport.clamp(full, view);
             }
             match (s.placed(), LAID_IN.with(Cell::get)) {
-                (Some(p), Some(old)) => {
-                    let r = followed((p.x, p.y, p.width, p.height), before.placement(p.full, old).image, s.viewport.placement(p.full, view).image);
-                    Some(Placed { x: r.0, y: r.1, width: r.2, height: r.3, ..p })
-                }
+                (Some(p), Some(old)) => Some(moved(p, (before, old), (s.viewport, view))),
                 _ => None,
             }
         };
@@ -113,6 +116,24 @@ mod tests {
         assert_eq!(followed((0.0, 0.0, 900.0, 700.0), from, to), (100.0, 50.0, 900.0, 700.0));
         // Twin: a region left where it was would sit off its image.
         assert_ne!(followed((0.0, 0.0, 900.0, 700.0), from, to), (0.0, 0.0, 900.0, 700.0));
+    }
+
+    #[test]
+    fn a_render_landing_after_the_hand_moved_is_laid_where_the_view_now_puts_it() {
+        let (full, size) = ((6000.0, 4000.0), (2000.0, 1200.0));
+        let asked = Viewport { scale: Some(0.6), offset: (150.0, -80.0) };
+        let mut now = asked;
+        now.zoom_by(1.1, (700.0, 500.0), full, size);
+        // The render covers full-resolution pixels 1000 to 3000 across and 800 to 2400 down.
+        let (s, img) = (asked.effective_scale(full, size), asked.placement(full, size).image);
+        let p = Placed { x: img.0 + 1000.0 * s, y: img.1 + 800.0 * s, width: 2000.0 * s, height: 1600.0 * s, full, whole: false, at_full_resolution: true };
+        let landed = moved(p, (asked, size), (now, size));
+        let (k, to) = (now.effective_scale(full, size), now.placement(full, size).image);
+        let near = |a: f64, b: f64| (a - b).abs() < 1e-6;
+        assert!(near(landed.x, to.0 + 1000.0 * k) && near(landed.y, to.1 + 800.0 * k), "{landed:?}");
+        assert!(near(landed.width, 2000.0 * k) && near(landed.height, 1600.0 * k), "{landed:?}");
+        // Twin: laid where the job's view put it, the picture snaps back a zoom step, a tenth of its width.
+        assert!((p.width / landed.width - 1.0 / 1.1).abs() < 1e-9 && (p.x - landed.x).abs() > 10.0, "{p:?}");
     }
 
     #[test]

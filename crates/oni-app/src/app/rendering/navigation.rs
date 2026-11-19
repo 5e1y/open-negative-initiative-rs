@@ -27,10 +27,7 @@ impl Ctl {
             if s.viewport == before {
                 return;
             }
-            s.placed().map(|p| {
-                let r = super::resizing::followed((p.x, p.y, p.width, p.height), before.placement(p.full, size).image, s.viewport.placement(p.full, size).image);
-                Placed { x: r.0, y: r.1, width: r.2, height: r.3, ..p }
-            })
+            s.placed().map(|p| super::resizing::moved(p, (before, size), (s.viewport, size)))
         };
         if let Some(p) = moved.filter(|_| !self.together_shown()) {
             self.lay(Some(p), (0, 0));
