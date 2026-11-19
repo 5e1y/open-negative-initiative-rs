@@ -60,7 +60,7 @@ export component CanvasCard inherits Card {
             fit: Fit.fill;
             source: Canvas.logo;
         }
-        Picture {
+        after := Picture {
             x: Canvas.frame-x;
             y: Canvas.frame-y;
             width: Canvas.frame-width;
@@ -79,15 +79,18 @@ export component CanvasCard inherits Card {
             width: parent.width * Canvas.split;
             height: parent.height;
             clip: true;
-            Picture {
-                x: Canvas.before-x;
-                y: Canvas.before-y;
-                width: Canvas.before-width;
-                height: Canvas.before-height;
+            // The after's own place and clip: a pan or a pinch moves both sides in one frame.
+            before := Picture {
+                x: Canvas.frame-x;
+                y: Canvas.frame-y;
+                width: Canvas.frame-width;
+                height: Canvas.frame-height;
                 ground: Canvas.together ? Ground.sheet : Ground.canvas;
                 fit: Fit.fill;
                 source: Canvas.before;
                 revision: Canvas.before-revision;
+                clip-width: Canvas.frame-clip-width;
+                clip-height: Canvas.frame-clip-height;
             }
         }
         // Over Compare's before too: a frame's number is the same on both sides.

@@ -172,7 +172,7 @@ fn asking(engine: &Shared, negative: Negative, settings: PipelineSettings) -> im
         loop {
             match rx.recv().expect("the render thread runs") {
                 Delivery::Render(done) => {
-                    (before, drawn) = (done.expect("the render").before.map(|(s, _)| s), Instant::now());
+                    (before, drawn) = (done.expect("the render").before, Instant::now());
                 }
                 Delivery::Counted { picture, .. } => counted = Some(picture),
                 Delivery::Inputs { inputs, .. } => {

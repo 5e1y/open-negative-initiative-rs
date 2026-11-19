@@ -13,22 +13,23 @@ impl Engine {
     }
 
     /// Compare's before, `resident` on `reference`, kept while its recipe and region hold, so a notch
-    /// renders it again only when what it reads moved; none drops the kept one.
-    pub fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Result<Option<(Source, Option<Placed>)>, String> {
+    /// renders it again only when what it reads moved; none drops the kept one. The reference keeps the
+    /// geometry, so the region and its place are the after's, which the canvas lays once for both.
+    pub fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Result<Option<Source>, String> {
         let Some(reference) = reference else {
             self.fitted.before = None;
             return Ok(None);
         };
-        let (image, region, placed) = self.composed(negative, reference, view)?;
+        let (image, region, _) = self.composed(negative, reference, view)?;
         let key = (image.key(), region);
         if let Some((k, source)) = &self.fitted.before
             && *k == key
         {
-            return Ok(Some((source.clone(), placed)));
+            return Ok(Some(source.clone()));
         }
         let source = self.one_texture(&image, region)?;
         self.fitted.before = Some((key, source.clone()));
-        Ok(Some((source, placed)))
+        Ok(Some(source))
     }
 
     /// The recipe `resident` materialises, the region it keeps and where it lands.

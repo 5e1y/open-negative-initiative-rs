@@ -11253,5 +11253,26 @@
     "title": "A gesture keeps a whole reduction only as large as the canvas it renders",
     "status": "done",
     "detail": "render/engine/view.rs: a reduction holding at most KEPT_WHOLE canvases is made whole and kept, so a notch at fit reads it ready; under a hand the view renders lighter (at most GESTURE_PIXELS), but the budget was the full canvas's, so on a 5K canvas every gesture step between fit and 120 % reduced the whole frame again, up to 12 to 21 MP, and the one exact scale kept was never reused (engine probe at 5K: event to render done p99 94 to 50 ms, a render's GPU p99 52 to 30 ms with this step off). kept_whole(whole, size, lighter) compares the reduction with KEPT_WHOLE canvases rendered lighter; lighter(coarse, size) is the gesture scale composed() already used. A sharp render (lighter 1) keeps what it kept, so no render moves; a pan near fit keeps the reduction (#282): at fit on the 5K, 2.4 MP against 5.1. Check in view.rs: an 8000 by 5000 frame on a 3920 by 2640 canvas keeps nothing for a gesture at 100 %, keeps it for a gesture at fit and a sharp render at 60 % (twin: the canvas's own budget keeps the gesture's 10 MP at 100 %)."
+  },
+  {
+    "id": 2280,
+    "type": "performance",
+    "title": "Compare's before lies where the after lies, moved in the same frame by a pan, a pinch or a resize",
+    "status": "done",
+    "detail": "The owner saw the before side of Compare lag far behind the after while panning (\"1 fps at most\"). Cause: the before had a placement of its own (Frame.compare.before_placed, Canvas.before-x/y/width/height) that only a landed render set, while navigate moves the after by arithmetic and asks no render within the 12.5 % pan margin; at 1728 by 1117 pt and 100 %, 233 of 240 pan moves asked none, so the before stood misplaced on 97 to 99 % of pan frames and caught up 190 to 200 ms after each move at median, up to 590 ms. The before is the same job's region at the same view, as the reference keeps the geometry, so its place is the after's: canvas.slint lays the before Picture on Canvas.frame-x/y/width/height, the before-x/y/width/height properties, lay_before and before_placed are gone, and Engine::before returns the source alone. A landing with no before while Compare is on, and an emptied canvas, let the before go (drop_before) rather than stretch an older region over the new place; Compare off is checked at every landing, the grid's included. gamut.rs stripes the before on the after's place. Checks: view_tests, the before's region and the reference's place equal the after's under a crop, a quarter turn, the Scanner face and a look away from rest (twin: a reference cropped otherwise holds another region at another place); window check compare_pan, at 100 % a pan inside the margin lands no render and the before's rectangle equals the after's within half a point, then after a resize and a pinch step (twins: the after moved by the pan, the before left its place, the pinch grew the picture); together_tools reads both pictures' rectangles. At 1728 by 1117 pt and 100 % (bench compare, on battery, load 5 to 9): on the RW2's drag pan the before stood off the after on 0 of 238 frames (232 of 238 before), each move showing it at p50 8.2, p99 43.4, worst 62.8 ms (198, 564, 582 before); on the NEF 7.9, 28.7, 29.8 ms (188, 573, 589 before); a pinch shows both sides in the same frame (the before caught up at 41 against 23 ms p50 before). Renders do not move."
+  },
+  {
+    "id": 2281,
+    "type": "performance",
+    "title": "Compare's before is held in a display texture sized by the after's steps",
+    "status": "done",
+    "detail": "The before was encoded into a texture of its exact extent, so a pinch made and imported a new one at nearly every render (9 to 10 over a 20-render pinch, against 4 for the after). compare.rs encodes it into landing.rs's stepped size (TARGET_STEP, 256 pixels), and canvas.slint clips the before with the after's frame-clip-width/height, both holding the same region. Check in compare.rs: over a 40-step pinch the before makes no more textures than the after, 4 at most (twin: an exact-size before makes one at every step). Over a 60-event pinch at 100 %: 4 before textures against 4 after ones on the RW2 (9 against 4 before), 4 against 4 on the NEF (18 against 4)."
+  },
+  {
+    "id": 2282,
+    "type": "performance",
+    "title": "The Compare bench pans, pinches, drags Exposure and the split, timing both sides to the photon",
+    "status": "done",
+    "detail": "ONI_BENCH=compare moves to bench/compare.rs: the full resolution built, Compare on and the view at 100 % (ONI_AT), a drag pan and a trackpad pan of 240 events out and back, a 60-event pinch, a 60-notch Exposure drag and a split drag at 120 Hz. bench/chain.rs records the canvas's states (whether the before shown holds the after's region, the display textures made); per phase the report gives each move's time to the GPU end of the frame showing the after moved and the before on it, the frames whose before is off the after's region, view renders, textures made and GPU-end gaps."
   }
 ]

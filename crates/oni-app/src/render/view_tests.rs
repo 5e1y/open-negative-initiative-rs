@@ -32,3 +32,36 @@ fn at_a_hundred_percent_a_cut_frame_shows_its_full_pixels_one_for_one() {
     assert_ne!(f64::from(guessed.w) * 4.0, placed.full.0);
     assert!((f64::from(guessed.w) * 4.0 - placed.full.0).abs() >= 1.0);
 }
+
+/// Compare's before holds the after's region at the after's place, which the canvas lays once for both.
+#[test]
+fn compares_before_holds_the_afters_region_under_a_crop_a_turn_and_a_look() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: Compare's region is not exercised");
+        return;
+    };
+    let mut engine = Engine::on(&device);
+    let (fw, fh) = (1600usize, 1000usize);
+    let gradient = |w: usize, h: usize| (0..w * h).map(|i| [0.2 + 0.5 * (i % w) as f32 / w as f32, 0.3, 0.4, 1.0]).collect::<Vec<_>>();
+    let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
+    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
+    let rest = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+    let geometry = Geometry { quarter_turns: 1, crop: oni_settings::cg::Rect::new(0.1003, 0.05, 0.8, 0.9), ..Geometry::default() };
+    let print = oni_settings::tone::Print { exposure: 0.8, ..rest.print };
+    let white = Some(oni_settings::white::White { kelvin: 3200.0, tint: 0.0 });
+    let live = PipelineSettings { geometry, print, white, face: oni_settings::Face::Scanner, ..rest };
+    let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
+    let view = View { viewport: hundred, size: (600.0, 400.0), full: Some(full), coarse: false };
+    let (after, placed) = engine.resident(&negative, &live, Some(&view)).unwrap();
+    assert!(placed.is_some_and(|p| !p.whole), "a part of the frame, as a pan shows it");
+    let reference = oni_core::compare::reference(&live);
+    assert_ne!(reference.print, live.print, "the before is another picture");
+    let before = engine.before(&negative, Some(&reference), Some(&view)).unwrap().expect("a before");
+    assert_eq!(before.extent(), after.extent(), "the after's region");
+    assert_eq!(engine.resident(&negative, &reference, Some(&view)).unwrap().1, placed, "at the after's place");
+    // Twin: a reference cropped otherwise holds another region at another place.
+    let cropped = PipelineSettings { geometry: Geometry { crop: oni_settings::cg::Rect::new(0.3, 0.3, 0.2, 0.2), ..geometry }, ..reference };
+    let other = engine.before(&negative, Some(&cropped), Some(&view)).unwrap().expect("a before");
+    assert_ne!(other.extent(), after.extent());
+    assert_ne!(engine.resident(&negative, &cropped, Some(&view)).unwrap().1, placed);
+}

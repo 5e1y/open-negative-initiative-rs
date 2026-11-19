@@ -17,7 +17,7 @@ export global Canvas {
     // `Picture.revision` for `frame` and `before`, the textures each render rewrites in place.
     in property <int> frame-revision;
     in property <int> before-revision;
-    // The render's texels within `frame`, which holds a texture grown by steps; 0 shows it whole.
+    // The render's texels within `frame` and `before`, each a texture grown by steps; 0 shows it whole.
     in property <int> frame-clip-width;
     in property <int> frame-clip-height;
     in property <string> status;
@@ -51,11 +51,8 @@ export global Canvas {
     // The sheet's logo band, drawn by Rust at the sheet's full scale, and its place on the canvas.
     in property <image> logo;
     in property <SheetBox> logo-box;
+    // Compare's before: the same region as the frame's, so it lies where the frame lies.
     in property <image> before;
-    in property <length> before-x;
-    in property <length> before-y;
-    in property <length> before-width;
-    in property <length> before-height;
     callback split-dragged(length);
     // The crop frame while the Crop tab is open, and the measuring window, on the canvas.
     in property <bool> cropping;

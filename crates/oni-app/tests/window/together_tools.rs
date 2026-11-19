@@ -66,8 +66,11 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
     ctl.act(oni_app::Act::Compare);
     rig.until("the sheet's before", Duration::from_secs(60), || canvas.get_before().size().width > 0);
     rig.settle();
-    let frame = (canvas.get_frame_x(), canvas.get_frame_y(), canvas.get_frame_width(), canvas.get_frame_height());
-    let before = (canvas.get_before_x(), canvas.get_before_y(), canvas.get_before_width(), canvas.get_before_height());
+    let laid = |id: &str| {
+        let e = i_slint_backend_testing::ElementHandle::find_by_element_id(w, &format!("CanvasCard::{id}")).next().unwrap_or_else(|| panic!("the {id} picture"));
+        (e.absolute_position().x, e.absolute_position().y, e.size().width, e.size().height)
+    };
+    let (frame, before) = (laid("after"), laid("before"));
     println!("shot {}", rig.shot("together-compare").display());
     assert!(canvas.get_split() >= 0.0, "Compare is on");
     let near = |a: (f32, f32, f32, f32), b: (f32, f32, f32, f32)| [a.0 - b.0, a.1 - b.1, a.2 - b.2, a.3 - b.3].iter().all(|d| d.abs() < 1.0);

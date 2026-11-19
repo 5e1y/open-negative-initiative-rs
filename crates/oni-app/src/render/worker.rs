@@ -35,7 +35,8 @@ pub struct Done {
     pub drawn: Instant,
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
-    pub before: Option<(Source, Option<Placed>)>,
+    /// Compare's before, the same region as `picture`, so it lies at `placed` too.
+    pub before: Option<Source>,
     /// The viewport and canvas `placed` was laid by: a landing lays it again where the view now puts it.
     pub view: Option<(crate::viewport::Viewport, (f64, f64))>,
     /// Rendered lighter, under a moving hand.

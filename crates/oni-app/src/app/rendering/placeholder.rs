@@ -15,12 +15,11 @@ impl Ctl {
     /// nor Compare's before of it.
     pub(in crate::app) fn show_thumbnail(&self, path: &str) {
         let Some(w) = self.window() else { return };
+        self.drop_before();
         let thumbnail = {
-            let mut s = self.state.borrow_mut();
-            s.gpu.before = None;
+            let s = self.state.borrow();
             s.fingerprints.get(path).and_then(|f| s.thumbs.get(f))
         };
-        w.global::<Canvas>().set_before(Image::default());
         let Some(thumbnail) = thumbnail else { return self.blank_canvas() };
         // The next render imports its texture again, since the canvas now holds the thumbnail.
         self.state.borrow_mut().gpu.target = None;
@@ -30,9 +29,10 @@ impl Ctl {
         self.lay(None, (size.width as usize, size.height as usize));
     }
 
-    /// The canvas emptied; its texture is let go too, or the next render of the same size would
-    /// only rewrite texels the canvas no longer shows.
+    /// The canvas emptied, Compare's before with it; its texture is let go too, or the next render of
+    /// the same size would only rewrite texels the canvas no longer shows.
     pub(in crate::app) fn blank_canvas(&self) {
+        self.drop_before();
         self.state.borrow_mut().gpu.target = None;
         if let Some(w) = self.window() {
             unclipped(&w);

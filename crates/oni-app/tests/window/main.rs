@@ -15,6 +15,7 @@ mod button_group;
 mod canvas_keys;
 mod canvas_layout;
 mod canvas_switch;
+mod compare_pan;
 mod dedust_grid;
 mod flat_drag;
 mod dedust_turn;

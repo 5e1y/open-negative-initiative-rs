@@ -209,9 +209,9 @@ impl Ctl {
 
     /// The sheet where the view lays it, zoomed and panned as a contact sheet: the view reasons on the
     /// full sheet whatever share of it was drawn. Compare's before, drawn on the same box, lies on it.
-    fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) -> Option<Placed> {
-        let view = self.canvas_size()?;
-        let (drawn, full) = self.state.borrow().together.as_ref().map(|g| (g.sheet.drawn(scale), g.sheet.size))?;
+    fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) {
+        let Some(view) = self.canvas_size() else { return };
+        let Some((drawn, full)) = self.state.borrow().together.as_ref().map(|g| (g.sheet.drawn(scale), g.sheet.size)) else { return };
         let p = self.state.borrow().viewport.placement(full, view).image;
         // Canvas pixels a pixel of the sheet drawn, which shows its box at that box's place.
         let k = p.2 / f64::from(drawn.0);
@@ -219,18 +219,14 @@ impl Ctl {
         let whole = (window.2, window.3) == drawn;
         let placed = Placed { x: p.0 + x * k, y: p.1 + y * k, width: w * k, height: h * k, full, whole, at_full_resolution: true };
         self.lay(Some(placed), size);
-        if self.state.borrow().split().is_some() {
-            self.lay_before(Some(placed));
-        }
         self.publish_numbers(p, full.0);
-        Some(placed)
     }
 
     /// The sheet shown laid again where the view now lays it, its ground, numbers and logo with it;
     /// `false` while no sheet is shown.
     pub(in crate::app) fn lay_together(&self) -> bool {
         let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
-        shown.inspect(|&size| _ = self.lay_sheet(size)).is_some()
+        shown.inspect(|&size| self.lay_sheet(size)).is_some()
     }
 
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
@@ -367,11 +363,8 @@ impl Ctl {
         };
         let (Some(count), Some(w)) = (count, self.window()) else { return };
         let c = w.global::<Canvas>();
-        let placed = self.lay_sheet((size, window, scale));
-        // Compare turned off while the grid was drawn takes no before.
-        if let Some(before) = before.filter(|_| self.state.borrow().split().is_some()) {
-            self.encode_before(before, placed);
-        }
+        self.lay_sheet((size, window, scale));
+        self.land_before(before);
         let frame = format!("{count} frames together");
         let now = Instant::now();
         self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, drawn: now, delivered: now, frame }, counted);

@@ -39,7 +39,7 @@ pub trait Renderer: Send {
     }
 
     /// Compare's before on `reference`, the same source while what it reads holds; `None` drops it.
-    fn before(&mut self, _negative: &Negative, _reference: Option<&PipelineSettings>, _view: Option<&View>) -> Option<(Source, Option<Placed>)> {
+    fn before(&mut self, _negative: &Negative, _reference: Option<&PipelineSettings>, _view: Option<&View>) -> Option<Source> {
         None
     }
 
@@ -62,7 +62,7 @@ impl Renderer for Shared {
         self.lock().ok()?.inputs(negative, settings, held, wanted)
     }
 
-    fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Option<(Source, Option<Placed>)> {
+    fn before(&mut self, negative: &Negative, reference: Option<&PipelineSettings>, view: Option<&View>) -> Option<Source> {
         self.lock().ok()?.before(negative, reference, view).ok().flatten()
     }
 

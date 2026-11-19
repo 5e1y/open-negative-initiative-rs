@@ -11,6 +11,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
     ("column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is", column_edges::the_column_lines_up_and_its_keyboard_shows_where_it_is),
     ("column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset", column_edges::an_empty_list_speaks_at_its_top_on_the_rows_inset),
+    ("compare_pan::a_pan_a_resize_and_a_pinch_move_the_before_with_the_after", compare_pan::a_pan_a_resize_and_a_pinch_move_the_before_with_the_after),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("opening_reading::a_decode_under_a_reading_left_never_lands_on_the_canvas", opening_reading::a_decode_under_a_reading_left_never_lands_on_the_canvas),
     ("frame_owner::a_trashed_frame_leaves_its_size_to_the_canvas_and_no_place", frame_owner::a_trashed_frame_leaves_its_size_to_the_canvas_and_no_place),

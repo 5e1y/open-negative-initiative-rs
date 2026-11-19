@@ -45,7 +45,7 @@ impl Ctl {
                 && let Some(view) = before.view()
             {
                 let e = before.extent();
-                let k = grounded(&s, zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.frame.as_ref().and_then(|f| f.compare.before_placed), e.w, canvas));
+                let k = grounded(&s, zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.placed(), e.w, canvas));
                 read = g.encode(Some(target), (target.width(), target.height()), view, &k, (e.w, e.h)).1.ok().flatten();
             }
             (frame, read)

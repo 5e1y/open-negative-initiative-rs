@@ -36,11 +36,28 @@ pub struct Viewed {
     pub landed_scale: f64,
 }
 
-/// What a bench recorded: the notches, the view's moves and renders, and the interface's frames.
+/// The canvas as the interface thread left it: when, whether Compare's before shown holds the after's
+/// region (none while no before shows), and whether a display texture was made, for the after or the before.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Canvas {
+    pub at: Option<Instant>,
+    pub before: Option<bool>,
+    pub made: Option<Side>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Side {
+    After,
+    Before,
+}
+
+/// What a bench recorded: the notches, the view's moves and renders, the canvas's states and the
+/// interface's frames.
 pub struct Recorded {
     pub notches: Vec<Stages>,
     pub moves: Vec<Move>,
     pub views: Vec<Viewed>,
+    pub canvas: Vec<Canvas>,
     pub frames: Vec<FrameRecord>,
 }
 
@@ -49,6 +66,7 @@ thread_local! {
     static NOTCHES: RefCell<Vec<Stages>> = const { RefCell::new(Vec::new()) };
     static MOVES: RefCell<Vec<Move>> = const { RefCell::new(Vec::new()) };
     static VIEWS: RefCell<Vec<Viewed>> = const { RefCell::new(Vec::new()) };
+    static CANVAS: RefCell<Vec<Canvas>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Every notch, move, view render and interface frame recorded from now on, those before let go.
@@ -57,6 +75,7 @@ pub fn record() {
     NOTCHES.with(|n| n.borrow_mut().clear());
     MOVES.with(|m| m.borrow_mut().clear());
     VIEWS.with(|v| v.borrow_mut().clear());
+    CANVAS.with(|c| c.borrow_mut().clear());
     oni_record(true);
     let _ = oni_frames();
 }
@@ -79,6 +98,13 @@ pub fn viewed(v: Viewed) {
     }
 }
 
+/// The canvas laid or encoded, kept while a bench records.
+pub fn canvas(c: Canvas) {
+    if recording() {
+        CANVAS.with(|k| k.borrow_mut().push(Canvas { at: Some(Instant::now()), ..c }));
+    }
+}
+
 /// Everything recorded since `record`, which stops recording.
 pub fn taken() -> Recorded {
     RECORDING.with(|r| r.set(false));
@@ -88,6 +114,7 @@ pub fn taken() -> Recorded {
         notches: NOTCHES.with(|n| std::mem::take(&mut *n.borrow_mut())),
         moves: MOVES.with(|m| std::mem::take(&mut *m.borrow_mut())),
         views: VIEWS.with(|v| std::mem::take(&mut *v.borrow_mut())),
+        canvas: CANVAS.with(|c| std::mem::take(&mut *c.borrow_mut())),
         frames,
     }
 }

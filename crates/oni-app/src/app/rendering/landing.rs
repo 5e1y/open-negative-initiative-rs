@@ -45,9 +45,7 @@ impl Ctl {
             (p, _, _) => p,
         };
         self.lay(laid(done.placed), (width, height));
-        if let Some((before, placed)) = done.before {
-            self.encode_before(before, laid(placed));
-        }
+        self.land_before(done.before);
         {
             let mut s = self.state.borrow_mut();
             if let Some(f) = s.frame.as_mut() {
@@ -177,6 +175,7 @@ impl Ctl {
         c.set_frame_y(at[1]);
         c.set_frame_width(at[2]);
         c.set_frame_height(at[3]);
+        self.note_canvas(None);
         let bubble = {
             let s = self.state.borrow();
             match (placed, self.canvas_size()) {
@@ -219,11 +218,12 @@ impl Ctl {
             // The texture is imported once per step of size, the render written in its corner and shown
             // clipped, so a pan or a pinch rewrites texels only. One Slint refuses is not kept, so the next
             // render tries again rather than drawing nowhere.
-            let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
+            let (bw, bh) = stepped((wd, ht));
             g.seed = g.seed.wrapping_add(1);
             let seed = g.seed;
             let k = grounded(s, zebra(s, Params::new(screen, wd, ht, seed), s.placed(), wd, canvas));
             let g = &mut s.gpu;
+            let made = g.target.as_ref().is_none_or(|t| (t.width(), t.height()) != (bw, bh));
             let (target, encoded) = g.encode(g.target.as_ref(), (bw, bh), &source, &k, (wd, ht));
             let imported = match encoded {
                 Ok(image) => {
@@ -243,16 +243,17 @@ impl Ctl {
                 }
                 s.gpu.count_due(&mut f.requests.count);
             }
-            (imported, shown, (wd, ht))
+            (imported, shown, (wd, ht), made)
         };
         self.watch_histogram();
         let c = w.global::<Canvas>();
-        if let (Some(image), _, _) = &image {
+        if let (Some(image), ..) = &image {
             c.set_frame(image.clone());
         }
         c.set_frame_clip_width(image.2.0 as i32);
         c.set_frame_clip_height(image.2.1 as i32);
         c.set_frame_revision(c.get_frame_revision().wrapping_add(1));
+        self.note_canvas(image.3.then_some(crate::bench::chain::Side::After));
         crate::hz::changed();
         if let Some(e) = refused {
             timing::line(&format!("the canvas cannot take the render's texture: {e}"));
@@ -285,6 +286,11 @@ impl Ctl {
             }
         }
     }
+}
+
+/// The display texture holding a render of `size`, rounded up to `TARGET_STEP`.
+pub(super) fn stepped((w, h): (u32, u32)) -> (u32, u32) {
+    (w.div_ceil(TARGET_STEP) * TARGET_STEP, h.div_ceil(TARGET_STEP) * TARGET_STEP)
 }
 
 /// The display texture grows and shrinks by this many pixels a side, so a pan or a pinch keeps it.

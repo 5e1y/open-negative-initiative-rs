@@ -5,7 +5,8 @@
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
 //! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence;
 //! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, then walks the ladder to fit;
-//! `ONI_BENCH=compare` turns Compare on, drags Exposure and the split, and counts the befores;
+//! `ONI_BENCH=compare` turns Compare on at 100 % (`ONI_AT`), pans by drag and by trackpad, pinches, drags
+//! Exposure and the split, each move timed to the photon of both sides;
 //! `ONI_BENCH=crop` frames through the Crop tab's keys and the canvas's handles, then undoes it all;
 //! `ONI_BENCH=dedust` paints a stroke in De-dust, waits for its patch, then removes it.
 //! `ONI_BENCH=autodust` reads the frame for dust, removes what it found, waits for the patches, reads again.
@@ -42,8 +43,9 @@ mod folded;
 mod grid;
 mod midzoom;
 mod sweep;
+mod compare;
 pub mod chain;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*};
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -193,6 +195,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     if mode == Mode::Sweep {
         return sweep(ctl, done);
     }
+    if mode == Mode::Compare {
+        return compare(ctl, done);
+    }
     if mode == Mode::Crop {
         return crop(ctl, done);
     }
@@ -253,13 +258,6 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
             Phase::Loading => {
                 let settled = !matches!(mode, Mode::Settled | Mode::Long) || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
                 if ctl.state.borrow().renders() >= 1 && settled && healed(&ctl) {
-                    if mode == Mode::Compare && ctl.state.borrow().split().is_none() {
-                        ctl.act(crate::Act::Compare);
-                        return;
-                    }
-                    if mode == Mode::Compare && ctl.state.borrow().befores() == 0 {
-                        return;
-                    }
                     let from = ctl.state.borrow().notches().count();
                     // Zoomed to 100 % first, the case where the picture must cover the canvas.
                     if mode == Mode::Resize && zoomed_at.get().is_none_or(|n| ctl.state.borrow().renders() <= n) {
@@ -287,10 +285,6 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 let notch = notch + 1;
                 if mode != Mode::Resize {
                     g.invoke_drag(field, mode.travel(notch), SPAN, false);
-                }
-                if mode == Mode::Compare {
-                    let width = w.global::<crate::Canvas>().get_width();
-                    w.global::<crate::Canvas>().invoke_split_dragged(width * (0.2 + 0.6 * notch as f32 / NOTCHES as f32));
                 }
                 if mode == Mode::Resize {
                     // The zoomed picture covers the canvas after the last resize, no edge of it inside.
@@ -320,18 +314,13 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on {on}"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on {on}, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on {on}, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::AutoDust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom | Mode::Sweep => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
-                    Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
+                    _ => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
                 let mut report = format!("{notches}\n{}\n{}", ctl.state.borrow().notches().cadence(from), ctl.state.borrow().notches().histograms());
                 report = format!("{report}\n{}", ctl.state.borrow().notches().publishes());
                 if let Some(since) = dragged_at.get() {
                     report = format!("{report}\n{}\n{}", frames_since(&drawn.borrow().borrow(), since), chain::report());
-                }
-                if mode == Mode::Compare {
-                    let s = ctl.state.borrow();
-                    report.push_str(&format!("\ncompare: {} before rendered over the drag, split at {:.2}", s.befores(), s.split().unwrap_or(-1.0)));
                 }
                 ctl.act(crate::Act::Undo);
                 ctl.flush();

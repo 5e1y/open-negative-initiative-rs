@@ -39,11 +39,9 @@ pub(in crate::app) struct Requests {
     pub count: super::canvas_gpu::Counting,
 }
 
-/// Compare Before/After: the split, a fraction of the canvas's width (none while off), and where the
-/// before lies.
+/// Compare Before/After: the split, a fraction of the canvas's width, none while off.
 #[derive(Default)]
 pub(in crate::app) struct Compare {
     pub split: Option<f32>,
-    pub before_placed: Option<Placed>,
 }
 
