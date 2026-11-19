@@ -1954,8 +1954,8 @@
     "id": 270,
     "type": "performance",
     "title": "Edit Together and the canvas wait for the GPU before the next render",
-    "status": "todo",
-    "detail": "The GPU audit found renders landing 15 to 80 ms behind their request while the CPU queued more; waiting at most 100 ms for the last render before taking the next halves the latency to photon and frees 250 MB, but the benches, which time the CPU side, read worse (pinch p50 1.4 to 19 ms). Diff kept at docs/research/gpu-settle.diff (against 6564fed); needs the owner's eye on a real pan before it lands."
+    "status": "done",
+    "detail": "The GPU audit found renders landing 15 to 80 ms behind their request while the CPU queued more; waiting at most 100 ms for the last render before taking the next halves the latency to photon and frees 250 MB, but the benches, which time the CPU side, read worse (pinch p50 1.4 to 19 ms). Diff kept at docs/research/gpu-settle.diff (against 6564fed); needs the owner's eye on a real pan before it lands. Superseded by #2251: the worker waits for the GPU with no limit, in 1 ms slices, the canvas, the loupe and Edit Together alike."
   },
   {
     "id": 271,
@@ -11176,5 +11176,12 @@
     "title": "ONI_BENCH=sweep times each zoom move to the GPU's end of the frame that shows it",
     "status": "done",
     "detail": "vendor/i-slint-renderer-femtovg: each recorded interface frame keeps when the GPU finished it (queue.on_submitted_work_done after its submit, a thread polling the device only while a bench records; ONI: comment). bench/chain.rs: the moves navigate applies and the view renders that land are recorded with the notches; a notch's line adds asked to the GPU's end of its frame; photon() closes a move at the GPU end of the first frame begun after it, as that frame is drawn on the same thread. bench/sweep.rs, Mode::Sweep: the full resolution built and the view held at 40 %, ONI_SWEEP pinch (120 Hz), wheel (8 notches a second) or keys (4 a second) zooms to 120 % and back three times; the report gives move to picture moved and to its render shown (p50/p90/p99/worst), each lighter and sharp render's stages, the renders landed at a scale the view had left, the frames' GPU-end gaps and those over twice the median, present to GPU end, drawable acquire. Check in chain.rs: a move closes at the GPU end of the first frame drawn after it (twin: the present call reads it 48 ms early); a frame whose end is unknown closes nothing. docs/research/performance.md section 17 gives the method. Renders do not move."
+  },
+  {
+    "id": 2251,
+    "type": "performance",
+    "title": "One render in flight is one the GPU has run: the render threads wait for the GPU before the next job",
+    "status": "done",
+    "detail": "A pinch between 40 % and 120 % sent a render per 120 Hz event: each costs 0.3 to 1 ms of CPU and 22 to 50 ms of GPU, so renders piled up on the one Metal queue and every interface frame waited behind them, the picture moved 50 to 100 ms late while the fps held. oni-graph: Graph::submit keeps its SubmissionIndex, last_submission() hands it out with the device, oni_graph::ran(device, index) returns once the GPU has run it, waiting in 1 ms slices with no limit, as wgpu-core 30.0.1 holds the device's snatch lock for reading through a poll's wait (device/resource.rs:797) and a window's present takes it for writing (present.rs:340): a render waited on whole would hold the interface's present 20 to 140 ms. Error::Lost reads 'the GPU did not finish its work'. oni-app: Renderer::ran (none for a renderer with no GPU), Shared::ran waits with the engine unlocked and says a lost device once; the render worker calls it after each job's delivery and reads, the loupe's and Edit Together's threads after each render, as all share the queue. Replaces #270 and docs/research/gpu-settle.diff, without its 100 ms timeout. Checks: oni-graph tests/ran.rs, ran returns once the GPU has run the graph's last submission (twin: polled at once, twelve passes over 4 MP have not run); render/ran_tests.rs, the worker takes no job before the GPU ran the last, a fake GPU ending 30 ms after each render, twenty notches over 100 ms collapsing to at most six renders, the last always rendered (twin: today's empty wait overlaps five renders or more). cadence_tests' Logged waits like the engine. Renders do not move."
   }
 ]

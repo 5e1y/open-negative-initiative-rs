@@ -1,4 +1,4 @@
-//! The render slot: one job in flight and one waiting, a newer one replacing the waiting one.
+//! The render slot: one job in flight until the GPU has run it and one waiting, a newer one replacing the waiting one.
 
 use super::*;
 use crate::latest::{Latest, Taken};
@@ -136,6 +136,9 @@ impl Worker {
                     if drawn {
                         resting = (job.held && wanted).then(|| (job.path.clone(), job.negative.clone(), job.settings.clone(), job.inputs));
                     }
+                    // The next job waits for the GPU to run this one: taken sooner, it queues behind it there,
+                    // and the window's frames behind both, 50 to 100 ms late under a pinch.
+                    renderer.ran();
                 }
             })
             .expect("render thread");

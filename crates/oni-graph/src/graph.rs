@@ -17,7 +17,7 @@ mod chain;
 mod plan;
 mod cache;
 mod device;
-pub use device::{Gpu, gpu};
+pub use device::{Gpu, gpu, ran};
 mod rendering;
 mod dispatch;
 mod half;
@@ -45,7 +45,7 @@ pub enum Error {
     TooLarge,
     /// The pixel count does not match the size given.
     Size { expected: u64, got: usize },
-    /// A readback the GPU did not deliver: the device lost, or its buffer never made.
+    /// Work the GPU did not finish or a readback it did not deliver: the device lost, or a buffer never made.
     Lost(String),
 }
 
@@ -178,6 +178,8 @@ pub struct Graph {
     packer: Option<half::Packer>,
     door: Option<Arc<dyn Door>>,
     pub adapter: String,
+    /// The last work handed to the queue, which a caller waits on before it records more.
+    last: Option<wgpu::SubmissionIndex>,
 }
 
 /// Every dispatch's uniforms written in turn into one buffer, so no stage creates buffers of its own;

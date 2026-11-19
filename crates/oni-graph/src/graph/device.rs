@@ -39,6 +39,21 @@ async fn open_gpu() -> Result<Gpu, Error> {
     Ok(Gpu { instance, adapter, device, queue })
 }
 
+/// How long one wait on the GPU holds wgpu's resource lock, which a window's present takes to write:
+/// a render waited on whole would hold the interface's present 20 to 140 ms.
+const WAIT_SLICE: std::time::Duration = std::time::Duration::from_millis(1);
+
+/// Returns once the GPU has run `index` on `device`; an error names a device lost.
+pub fn ran(device: &wgpu::Device, index: &wgpu::SubmissionIndex) -> Result<(), Error> {
+    loop {
+        match device.poll(wgpu::PollType::Wait { submission_index: Some(index.clone()), timeout: Some(WAIT_SLICE) }) {
+            Ok(_) => return Ok(()),
+            Err(wgpu::PollError::Timeout) => {}
+            Err(e) => return Err(Error::Lost(e.to_string())),
+        }
+    }
+}
+
 impl Graph {
     /// The default adapter, tiles at `TEXTURE_SIDE` or the device's own limit if lower.
     pub fn new() -> Result<Self, Error> {
@@ -81,6 +96,7 @@ impl Graph {
             packer: None,
             door: None,
             adapter,
+            last: None,
         }
     }
 
@@ -92,6 +108,11 @@ impl Graph {
     /// Every later submission and upload passes `door`.
     pub fn through(&mut self, door: Arc<dyn Door>) {
         self.door = Some(door);
+    }
+
+    /// The device and the graph's last submission, which `ran` waits on with the graph let go.
+    pub fn last_submission(&self) -> Option<(wgpu::Device, wgpu::SubmissionIndex)> {
+        Some((self.device.clone(), self.last.clone()?))
     }
 
     pub fn max_side(&self) -> u32 {

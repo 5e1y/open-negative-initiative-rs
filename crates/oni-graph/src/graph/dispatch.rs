@@ -148,7 +148,7 @@ impl Graph {
         let door = self.door.clone().filter(|d| d.enter());
         self.flush_uniforms();
         (self.uniforms.first, self.uniforms.wrapped) = (self.uniforms.at, false);
-        self.queue.submit([encoder.finish()]);
+        self.last = Some(self.queue.submit([encoder.finish()]));
         if let Some(d) = door {
             d.leave();
         }

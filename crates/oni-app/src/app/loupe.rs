@@ -56,6 +56,8 @@ fn render_loupes(engine: crate::render::Shared) {
                 Err(e) => crate::timing::line(&format!("loupe not rendered: {e}")),
             }
         });
+        // The canvas's renders share the GPU's one queue: a loupe asked sooner would queue ahead of them.
+        engine.ran();
     }
 }
 

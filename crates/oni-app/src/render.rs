@@ -43,6 +43,8 @@ mod inputs_tests;
 #[cfg(test)]
 mod cadence_tests;
 #[cfg(test)]
+mod ran_tests;
+#[cfg(test)]
 mod tiles_tests;
 #[cfg(test)]
 mod view_tests;

@@ -105,5 +105,7 @@ pub(super) fn draw_grids(engine: Shared) {
         drop(guard);
         let (group, revision, at, pipeline, laid) = (ask.group.clone(), ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
         with_shell(move |c| c.grid_landed(group, revision, at, drawn, pipeline, laid, counted, before));
+        // One sheet in flight means one the GPU has run: a sheet asked sooner queues behind the last.
+        engine.ran();
     }
 }

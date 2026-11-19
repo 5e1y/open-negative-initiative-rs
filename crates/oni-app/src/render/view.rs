@@ -48,6 +48,9 @@ pub trait Renderer: Send {
     fn counted(&mut self, _negative: &Negative, _settings: &PipelineSettings) -> Option<Source> {
         None
     }
+
+    /// Returns once the GPU has run all this renderer handed it; one with no GPU of its own waits on none.
+    fn ran(&mut self) {}
 }
 
 impl Renderer for Shared {
@@ -65,5 +68,23 @@ impl Renderer for Shared {
 
     fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Option<Source> {
         self.lock().ok()?.counted(negative, settings).ok()
+    }
+
+    fn ran(&mut self) {
+        Shared::ran(self);
+    }
+}
+
+impl Shared {
+    /// Returns once the GPU has run all the engine handed it, the engine let go meanwhile: a render thread
+    /// that waits so never queues a render behind the last, which the window's frames would wait behind.
+    pub fn ran(&self) {
+        let Some((device, index)) = self.lock().ok().and_then(|e| e.graph.last_submission()) else { return };
+        if let Err(e) = oni_graph::ran(&device, &index) {
+            static SAID: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+            if !SAID.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                crate::timing::line(&format!("the renders wait on the GPU no more: {e}"));
+            }
+        }
     }
 }

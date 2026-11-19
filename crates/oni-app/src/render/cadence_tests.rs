@@ -14,6 +14,10 @@ impl Renderer for Logged {
         self.1.lock().unwrap().push((held, wanted));
         Some(InputHistograms::default())
     }
+
+    fn ran(&mut self) {
+        self.0.ran();
+    }
 }
 
 /// Twelve notches, each asked 8 ms after the last landed, then the hand's rest: the readings asked,
