@@ -127,7 +127,7 @@ fn a_patch_painted_on_one_framing_heals_its_speck_on_every_other() {
     for (name, framing) in framings() {
         let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
         (s.geometry, s.corrections) = (framing, vec![c.clone()]);
-        let inputs = Inputs { patches: [(c.id, &laid)].into_iter().collect(), custom_flat_field: None };
+        let inputs = Inputs { patches: [(c.id, &laid)].into_iter().collect(), ..Inputs::default() };
         let framed = pipeline.framed(&mut g, Image::new(&source), &s, 1.0, &inputs).expect("framed");
         let at = framing.placing(size()).on_frame(speck());
         let healed = read_at(&mut g, &framed, at);
@@ -142,7 +142,7 @@ fn a_patch_painted_on_one_framing_heals_its_speck_on_every_other() {
     let old = stroke_on(painted);
     let stale = patch(&mut g, &old, (f64::from(e.w), f64::from(e.h)));
     let flat = PipelineSettings { corrections: vec![old.clone()], ..PipelineSettings::rest(ConversionMode::Positive, true) };
-    let inputs = Inputs { patches: [(old.id, &stale)].into_iter().collect(), custom_flat_field: None };
+    let inputs = Inputs { patches: [(old.id, &stale)].into_iter().collect(), ..Inputs::default() };
     let framed = pipeline.framed(&mut g, after, &flat, 1.0, &inputs).expect("framed");
     let bright = read_at(&mut g, &framed, moved.placing(size()).on_frame(speck()));
     assert!(bright > 1.0, "the twin healed the speck: {bright}");

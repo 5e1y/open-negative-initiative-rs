@@ -11,7 +11,7 @@ fn tiles_laid_on_a_sheet_equal_each_render_alone_at_its_place() {
     let mut engine = shared.lock().unwrap();
     let mut frame = |w: usize, h: usize, tone: f32| {
         let pixels = (0..w * h).map(|i| [tone + (i % 7) as f32 * 0.02, 0.4, 0.6, 1.0]).collect();
-        engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap()
+        engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap()
     };
     let (a, b) = (frame(600, 400, 0.2), frame(300, 450, 0.5));
     let (sa, mut sb) = (PipelineSettings::default(), PipelineSettings::default());
@@ -40,7 +40,7 @@ fn a_tile_from_a_held_preview_is_reduced_to_its_side_and_a_small_one_kept() {
     let mut engine = shared.lock().unwrap();
     let mut frame = |w: usize, h: usize| {
         let pixels = (0..w * h).map(|i| [0.2 + (i % 7) as f32 * 0.02, 0.4, 0.6, 1.0]).collect();
-        engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: 6000.0, undeclared: None }).unwrap()
+        engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: 6000.0, undeclared: None, seed: [0, 0] }).unwrap()
     };
     let (big, small) = (frame(600, 400), frame(120, 80));
     let tile = engine.tile_of(&big, 300).unwrap();
@@ -80,7 +80,7 @@ fn a_cropped_frame_spans_the_tile_side_as_an_uncropped_one_does() {
     let shared = Engine::shared(&device);
     let mut engine = shared.lock().unwrap();
     let pixels = (0..600 * 400).map(|i| [0.2 + (i % 7) as f32 * 0.02, 0.4, 0.6, 1.0]).collect();
-    let frame = engine.prepare(Decoded { linear: Linear { width: 600, height: 400, pixels }, full_width: 600.0, undeclared: None }).unwrap();
+    let frame = engine.prepare(Decoded { linear: Linear { width: 600, height: 400, pixels }, full_width: 600.0, undeclared: None, seed: [0, 0] }).unwrap();
     let mut cropped = PipelineSettings::default();
     (cropped.geometry.crop.width, cropped.geometry.crop.height) = (0.5, 0.5);
     let sizes = std::cell::RefCell::new(Vec::new());

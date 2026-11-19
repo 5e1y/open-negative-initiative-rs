@@ -23,7 +23,7 @@ fn negative(range: (f32, f32)) -> Decoded {
             [t.min(0.999), (t * 0.88).min(0.999), (t * 0.74).min(0.999), 1.0]
         })
         .collect();
-    Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }
+    Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }
 }
 
 /// One display-encoded sample per 8 × 8 block.

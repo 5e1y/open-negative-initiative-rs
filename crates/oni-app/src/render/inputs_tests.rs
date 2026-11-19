@@ -31,7 +31,7 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
     engine.caches = Some(caches.clone());
     // 64 × 48: a patch the size of the frame is cut to its stroke's tile, laid where it was made.
     let (w, h) = (64usize, 48usize);
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let bare = engine.inputs(&negative, &rest, false, [true; 2]).expect("readings");
 
@@ -74,7 +74,7 @@ fn a_digital_photos_curves_reading_holds_while_lighting_moves() {
     let mut engine = Engine::on(&device);
     let (w, h) = (96usize, 64usize);
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let read = |s: &PipelineSettings, e: &mut Engine| e.inputs(&negative, s, false, [true; 2]).expect("readings");
     let before = read(&rest, &mut engine);
@@ -97,7 +97,7 @@ fn the_scanner_curves_read_its_look_while_the_levels_stay_pro_s_and_no_render_mo
     let mut engine = Engine::on(&device);
     let (w, h) = (300usize, 200usize);
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.6 * (i % w) as f32 / w as f32; [v, v * 0.7, v * 0.5, 1.0] }).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let pro = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     let scanner = PipelineSettings { face: oni_settings::Face::Scanner, ..pro.clone() };
     let shown = |s: &PipelineSettings, e: &mut Engine| e.render(&negative, s, None).unwrap().pixels;
@@ -129,7 +129,7 @@ fn a_render_counts_its_picture_only_for_a_plot_on_screen() {
     };
     let engine = Engine::shared(&device);
     let linear = Linear { width: 8, height: 8, pixels: vec![[0.3, 0.2, 0.1, 1.0]; 64] };
-    let negative = Arc::new(engine.prepare(Decoded { linear, full_width: 8.0, undeclared: None }).unwrap());
+    let negative = Arc::new(engine.prepare(Decoded { linear, full_width: 8.0, undeclared: None, seed: [0, 0] }).unwrap());
     let (tx, rx) = std::sync::mpsc::channel();
     let worker = Worker::new(Box::new(engine), move |d| match d {
         Delivery::Render(_) => tx.send("render").unwrap(),
@@ -195,7 +195,7 @@ fn a_proof_changed_under_the_same_settings_counts_and_compares_again() {
     let engine = Engine::shared(&device);
     let (w, h) = (32usize, 16usize);
     let pixels = (0..w * h).map(|i| { let v = 0.05 + 0.9 * (i % w) as f32 / w as f32; [v, 0.02, v * 0.1, 1.0] }).collect();
-    let negative = engine.lock().unwrap().prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.lock().unwrap().prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut ask = asking(&engine, negative, PipelineSettings::rest(oni_settings::ConversionMode::Positive, true));
     let first = ask();
     engine.lock().unwrap().proof.wanted = Some(crate::proof::wanted(oni_colour::Space::Srgb, false));
@@ -224,7 +224,7 @@ fn a_patch_landing_under_the_same_settings_counts_and_reads_again() {
     let engine = Engine::shared(&device);
     engine.lock().unwrap().caches = Some(root.clone());
     let (w, h) = (64usize, 48usize);
-    let decoded = Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None };
+    let decoded = Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None, seed: [0, 0] };
     let negative = engine.lock().unwrap().prepare(decoded).unwrap();
     let id = Id::parse("1A2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
     let mut dusted = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
@@ -257,7 +257,7 @@ fn a_patch_follows_the_exposure_and_flat_field_it_sits_under() {
     let mut engine = Engine::on(&device);
     engine.caches = Some(caches.clone());
     let (w, h) = (64usize, 48usize);
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut made = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     made.corrections = vec![oni_settings::frame::Correction { id: Id::new(), stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
     let c = made.corrections[0].clone();
@@ -295,7 +295,7 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     let mut engine = Engine::on(&device);
     let (w, h) = (120usize, 80usize);
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let first = engine.inputs(&negative, &s, false, [true; 2]).expect("readings");
     let passes = |e: &mut Engine, s: &PipelineSettings| {
@@ -322,7 +322,7 @@ fn the_engine_reads_the_wanted_distributions_alone() {
     let mut engine = Engine::on(&device);
     let (w, h) = (96usize, 64usize);
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.8 * (i % w) as f32 / w as f32; [v, v * 0.8, v * 0.6, 1.0] }).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let film = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     let curves = engine.inputs(&negative, &film, false, [false, true]).expect("readings");
     assert!(curves.levels.is_none() && curves.curves.is_some(), "the curves read alone");

@@ -8,7 +8,7 @@ use std::sync::mpsc;
 fn decoded() -> Decoded {
     let (w, h) = (4000usize, 3000usize);
     let pixels = (0..w * h).map(|i| [0.1 + (i % w) as f32 / w as f32 * 0.8, 0.4, 0.6, 1.0]).collect();
-    Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }
+    Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }
 }
 
 /// Each hold the interface thread takes at a resize's pace while `busy` runs on another thread: the
@@ -136,7 +136,7 @@ fn the_holding_thread_passes_its_own_door_and_no_other() {
         return;
     };
     let shared = Engine::shared(&device);
-    let small = || Decoded { linear: Linear { width: 64, height: 48, pixels: vec![[0.4; 4]; 64 * 48] }, full_width: 64.0, undeclared: None };
+    let small = || Decoded { linear: Linear { width: 64, height: 48, pixels: vec![[0.4; 4]; 64 * 48] }, full_width: 64.0, undeclared: None, seed: [0, 0] };
     shared.hold();
     let negative = shared.lock().unwrap().prepare(small()).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);

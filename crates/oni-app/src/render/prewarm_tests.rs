@@ -9,7 +9,7 @@ fn busy_notch(engine: &mut Engine) {
 fn notch(engine: &mut Engine, s: &PipelineSettings) {
     let (w, h) = (2000usize, 16usize);
     let pixels = (0..w * h).map(|i| [0.2 + (i % 13) as f32 * 0.05, 0.4, 0.6, 1.0]).collect();
-    let decoded = Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None };
+    let decoded = Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] };
     let negative = engine.prepare(decoded).unwrap();
     engine.resident(&negative, s, None).unwrap();
 }

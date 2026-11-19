@@ -36,7 +36,7 @@ impl Scan {
         engine.lock()?.caches = Some(caches.clone());
         let full = engine.full(render::decode_full(path, Reading::of(&settings))?)?;
         let preview = engine.prepare(render::decode_for(path, Reading::of(&settings), render::PREVIEW_SIDE)?)?;
-        let e = engine.lock()?.unproofed(&full, &settings, &Request::default())?.extent();
+        let e = engine.lock()?.unproofed(&full, preview.seed, &settings, &Request::default())?.extent();
         let scan = full.extent();
         let placing = settings.placing((f64::from(scan.w), f64::from(scan.h)));
         let as_is = if plain { Some(code_values(path)?) } else { None };
@@ -68,7 +68,7 @@ impl Scan {
             return Ok(zoomed(&self.healed_as_is(s, view)?, view));
         }
         let mut e = self.engine.lock()?;
-        let image = e.unproofed(&self.full, s, &Request::default())?;
+        let image = e.unproofed(&self.full, self.preview.seed, s, &Request::default())?;
         let (graph, _) = e.parts();
         let rect = Rect::new(self.origin.0 + view.x as i32, self.origin.1 + view.y as i32, w, h);
         let pixels = graph.render(&image, rect, None).map_err(|e| e.to_string())?;

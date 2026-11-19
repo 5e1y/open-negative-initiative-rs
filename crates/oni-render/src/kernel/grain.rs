@@ -1,5 +1,6 @@
 //! Film grain: a texture in stops on a lattice anchored on the scan's full-resolution grid, each output
 //! pixel the field's mean over its own footprint; its share read off the pixel's light, its colour the pixel's own.
+//! Inside a clump the scene gives way to its blur under a grain, so detail finer than a grain follows it.
 
 use super::*;
 
@@ -37,6 +38,11 @@ pub struct Grain {
     /// The colour at each node's light: a grain `d` stops darker raises each channel's ratio to the luma
     /// to the power 2^(colour·d), deepening the pixel's own hue.
     pub colour: [f32; GRAIN_NODES],
+    /// The photo's own arrangement, added to every lattice index: a translation of one field, so each
+    /// photo keeps the same statistics. `[0, 0]` is the lattice as it is.
+    pub seed: [u32; 2],
+    /// The share of the blurred scene a clump takes at the whole share, from 0 to 1.
+    pub dissolve: f32,
 }
 
 impl Grain {
@@ -47,7 +53,7 @@ impl Grain {
         let here = full / scale;
         let kept = here.min(GRAIN_FOOTPRINT_CAP);
         let stops = spread * mean_spread(here) / (mean_spread(full) * mean_spread(kept));
-        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, share, colour: [0.0; GRAIN_NODES] }
+        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, share, colour: [0.0; GRAIN_NODES], seed: [0, 0], dissolve: 0.0 }
     }
 
     /// This grain coloured by `colour` at each node's light.
@@ -55,11 +61,28 @@ impl Grain {
         Grain { colour, ..self }
     }
 
-    /// The lattice's rows, the dose, then a row a node holding its share, the next one's, its colour and
-    /// the next one's, so the shader reads one row a pixel and indexes no vector's lane.
+    /// This grain on the photo of `seed`.
+    pub fn seeded(self, seed: [u32; 2]) -> Self {
+        Grain { seed, ..self }
+    }
+
+    /// This grain taking `dissolve` of the blurred scene in its clumps.
+    pub fn dissolving(self, dissolve: f32) -> Self {
+        Grain { dissolve, ..self }
+    }
+
+    /// The uniform's head: the seed.
+    pub fn head(&self) -> [u32; 4] {
+        [self.seed[0], self.seed[1], 0, 0]
+    }
+
+    /// The lattice's rows, the dose, the mix, then a row a node holding its share, the next one's, its
+    /// colour and the next one's, so the shader reads one row a pixel and indexes no vector's lane.
     pub fn rows(&self) -> Vec<V4> {
         let [x, y] = self.scan;
-        let mut rows = vec![[x[0], x[1], x[2], self.per_cell], [y[0], y[1], y[2], self.reach], [self.stops, GRAIN_LOW_STOPS, nodes_per_stop(), 0.0]];
+        let dose = [self.stops, GRAIN_LOW_STOPS, nodes_per_stop(), 0.0];
+        let mix = [self.dissolve, 1.0 / mean_spread(self.per_cell), 0.0, 0.0];
+        let mut rows = vec![[x[0], x[1], x[2], self.per_cell], [y[0], y[1], y[2], self.reach], dose, mix];
         let next = |i: usize| (i + 1).min(GRAIN_NODES - 1);
         rows.extend((0..GRAIN_NODES).map(|i| [self.share[i], self.share[next(i)], self.colour[i], self.colour[next(i)]]));
         rows
@@ -91,9 +114,9 @@ pub(crate) fn ramp(u: f32) -> f32 {
     if u >= 0.0 { 1.0 - tail } else { tail }
 }
 
-/// Four uniforms at lattice node `i`: PCG-2D's hash, exact on the GPU too.
-pub(crate) fn hash(i: [i32; 2]) -> V4 {
-    let mut v = [i[0] as u32, i[1] as u32].map(|x| x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
+/// Four uniforms at lattice node `i` of the photo of `seed`: PCG-2D's hash, exact on the GPU too.
+pub(crate) fn hash(i: [i32; 2], seed: [u32; 2]) -> V4 {
+    let mut v = [(i[0] as u32).wrapping_add(seed[0]), (i[1] as u32).wrapping_add(seed[1])].map(|x| x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
     v[0] = v[0].wrapping_add(v[1].wrapping_mul(1_664_525));
     v[1] = v[1].wrapping_add(v[0].wrapping_mul(1_664_525));
     v = v.map(|x| x ^ (x >> 16));
@@ -147,7 +170,7 @@ pub(crate) fn field(at: V2, k: &Grain) -> f32 {
     for (r, wr) in wy.iter().enumerate() {
         let mut row = 0.0;
         for (c, wc) in wx.iter().enumerate() {
-            row += wc * normal(hash([fx + c as i32, fy + r as i32]));
+            row += wc * normal(hash([fx + c as i32, fy + r as i32], k.seed));
         }
         field += wr * row;
     }
@@ -176,15 +199,27 @@ pub(crate) fn laid(s: V4, a: f32, colour: f32) -> V4 {
     with_alpha(map(p, |_, v| v * (k * y / q)), s[3])
 }
 
-/// The grain at the pixel whose centre is `at`, in the graph's pixels; a light given no share is kept.
-pub fn grain(s: V4, at: V2, k: &Grain) -> V4 {
+/// How much of the blurred scene the pixel of `part` takes where the field is `f`: none under half the
+/// field's spread at full resolution, `dissolve × part` past one and a half.
+pub(crate) fn mixed(f: f32, part: f32, k: &Grain) -> f32 {
+    k.dissolve * part * smoothstep(0.5, 1.5, f.abs() * (1.0 / mean_spread(k.per_cell)))
+}
+
+/// The grain at the pixel whose centre is `at`, in the graph's pixels, over `b`, the scene blurred under
+/// a grain; a light given no share is kept.
+pub fn grain(s: V4, b: V4, at: V2, k: &Grain) -> V4 {
     let y = dot(rgb(s), LUMA);
     let part = share(y, k);
     if part <= 0.0 {
         return s;
     }
-    laid(s, k.stops * part * field(at, k), between(&k.colour, place(y)))
+    let f = field(at, k);
+    let w = mixed(f, part, k);
+    let base = with_alpha(map(rgb(s), |c, v| v + w * (b[c] - v)), s[3]);
+    laid(base, k.stops * part * f, between(&k.colour, place(y)))
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod dissolve_tests;

@@ -46,7 +46,7 @@ kernel!(SCANNER_DENSITY, wgsl::SCANNER_DENSITY, call "scanner_density_px(v)");
 kernel!(SCANNER_ENCODE, wgsl::SCANNER_ENCODE, call "scanner_encode_px(v)");
 kernel!(SCANNER_OUTPUT, [wgsl::SCANNER_OUTPUT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_output_px(load(p), load1(p)); }");
 kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
-kernel!(GRAIN, wgsl::GRAIN, call "grain_px(v, vec2<f32>(p) + 0.5)");
+kernel!(GRAIN, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(load(p), load1(p), vec2<f32>(p) + 0.5); }");
 kernel!(HALATION, [wgsl::HALATION_SOURCE, wgsl::HALATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_px(load(p), load1(p)); }");
 
 /// The fused stages 4 to 7.
@@ -147,9 +147,10 @@ pub fn optical_vignette(extent: Rect, stops: f32) -> PerPixel {
     PerPixel { name: "optical-vignette", kernel: &VIGNETTE, params: uniform(HEAD, &[vec![[0.0; 4]], k.rows()].concat()) }
 }
 
-/// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there.
+/// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there;
+/// the scene blurred under a grain as the auxiliary image.
 pub fn grain(k: &Grain) -> PerPixel {
-    PerPixel { name: "grain", kernel: &GRAIN, params: uniform(HEAD, &k.rows()) }
+    PerPixel { name: "grain", kernel: &GRAIN, params: uniform(k.head(), &k.rows()) }
 }
 
 /// The halation, the blurred source as the auxiliary image.

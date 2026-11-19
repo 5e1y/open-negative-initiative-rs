@@ -12,18 +12,20 @@ use oni_app::render::{self, Reading};
 use super::{Photo, Rgba};
 
 impl Photo {
-    fn full_source(&mut self, s: &PipelineSettings) -> Result<oni_graph::Source, String> {
+    /// The full decode, laid once, and its photo's grain seed.
+    pub(super) fn full_source(&mut self, s: &PipelineSettings) -> Result<(oni_graph::Source, [u32; 2]), String> {
         if self.full.is_none() {
             let decoded = render::decode_full(&self.path, Reading::of(s))?;
-            self.full = Some(self.engine.full(decoded)?);
+            let seed = decoded.seed;
+            self.full = Some((self.engine.full(decoded)?, seed));
         }
         Ok(self.full.clone().expect("decoded"))
     }
 
     /// The full-resolution render's size, framed, in pixels, and the map from it to the scan a stroke is kept on.
     pub fn framed_size(&mut self, s: &PipelineSettings) -> Result<((u32, u32), Placing), String> {
-        let source = self.full_source(s)?;
-        let e = self.engine.unproofed(&source, s, &Request::default())?.extent();
+        let (source, seed) = self.full_source(s)?;
+        let e = self.engine.unproofed(&source, seed, s, &Request::default())?.extent();
         let scan = source.extent();
         Ok(((e.w, e.h), s.placing((f64::from(scan.w), f64::from(scan.h)))))
     }
@@ -31,7 +33,7 @@ impl Photo {
     /// `c`'s patch, as the app's heal makes it, kept in `caches` for this frame's renders; where it
     /// was copied from, in fractions of the scan, y down.
     pub fn heal(&mut self, s: &PipelineSettings, c: &Correction, caches: &Path) -> Result<(f64, f64), String> {
-        let source = self.full_source(s)?;
+        let (source, _) = self.full_source(s)?;
         self.engine.caches = Some(caches.to_path_buf());
         let (region, size) = self.engine.search_region(&source, s, c)?;
         let patch = oni_app::heal::generate(&region, c, size.0, size.1);

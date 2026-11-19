@@ -39,7 +39,8 @@ pub struct Photo {
     engine: Engine,
     path: PathBuf,
     preview: Option<Negative>,
-    full: Option<Source>,
+    /// The full decode and its photo's grain seed.
+    full: Option<(Source, [u32; 2])>,
 }
 
 /// The owner's photograph every demo is made of, read-only: a Lumix RW2 scan of a colour negative.
@@ -117,12 +118,8 @@ impl Photo {
     /// `width` × `height` of the full-resolution render, one pixel a pixel, centred on `at`, a
     /// fraction of the rendered frame.
     pub fn detail(&mut self, s: &PipelineSettings, at: (f64, f64), width: u32, height: u32) -> Result<Rgba, String> {
-        if self.full.is_none() {
-            let decoded = render::decode_full(&self.path, Reading::of(s))?;
-            self.full = Some(self.engine.full(decoded)?);
-        }
-        let source = self.full.as_ref().expect("decoded");
-        let image = self.engine.unproofed(source, s, &Request::default())?;
+        let (source, seed) = self.full_source(s)?;
+        let image = self.engine.unproofed(&source, seed, s, &Request::default())?;
         let e = image.extent();
         let x = e.x + ((e.w as f64 * at.0) as i32 - width as i32 / 2).clamp(0, e.w as i32 - width as i32);
         let y = e.y + ((e.h as f64 * at.1) as i32 - height as i32 / 2).clamp(0, e.h as i32 - height as i32);

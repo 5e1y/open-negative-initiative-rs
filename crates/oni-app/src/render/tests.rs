@@ -70,7 +70,7 @@ impl Renderer for Slow {
 /// A small frame laid on the GPU, or none where no adapter is.
 fn tiny() -> Option<(Shared, Arc<Negative>)> {
     let engine = Engine::shared(&Device::open().ok()?);
-    let decoded = Decoded { linear: Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] }, full_width: 2.0, undeclared: None };
+    let decoded = Decoded { linear: Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] }, full_width: 2.0, undeclared: None, seed: [0, 0] };
     let negative = engine.prepare(decoded).ok()?;
     Some((engine, Arc::new(negative)))
 }
@@ -127,7 +127,7 @@ fn previews_keep_the_last_four_used() {
     let mut engine = Engine::on(&device);
     let one = |e: &mut Engine| {
         let linear = Linear { width: 8, height: 8, pixels: vec![[0.5; 4]; 64] };
-        Arc::new(e.prepare(Decoded { linear, full_width: 8.0, undeclared: None }).unwrap())
+        Arc::new(e.prepare(Decoded { linear, full_width: 8.0, undeclared: None, seed: [0, 0] }).unwrap())
     };
     let mut kept = Previews::default();
     let negative = Reading::default();
@@ -162,8 +162,8 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     let (fw, fh) = (1600usize, 1000usize);
     let gradient = |w: usize, h: usize| (0..w * h).map(|i| [0.2 + 0.5 * (i % w) as f32 / w as f32, 0.3, 0.4, 1.0]).collect::<Vec<_>>();
     // A 400 px preview of a 1600 px frame: the preview's ratio is a quarter.
-    let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64, undeclared: None }).unwrap();
-    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
+    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let size = (600.0, 400.0);
     let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
@@ -201,25 +201,25 @@ fn the_loupe_shows_the_exported_pixels_and_a_crop_first_does_not() {
     // Grain to bite on and both neighbourhood stages well above rest, so no arm agrees by luck.
     let grain = |i: usize| ((i as u32).wrapping_mul(2_654_435_761) >> 8) as f32 / 16_777_216.0;
     let pixels: Vec<[f32; 4]> = (0..fw * fh).map(|i| [0.1 + 0.6 * grain(i), 0.1 + 0.6 * grain(i + 7), 0.1 + 0.6 * grain(i + 13), 1.0]).collect();
-    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None }).unwrap();
+    let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     settings.chroma = oni_settings::blocks::ChromaDenoise { radius: 5.0, force: 0.8 };
     settings.sharpen.radius = 5.0;
     settings.sharpen.amount = 2.0;
     let port = crate::viewport::Viewport { scale: Some(1.0), offset: (-137.0, 91.0) };
-    let (seen, zone) = engine.loupe(&full, &settings, &port, (640.0, 360.0), 1.0).unwrap().unwrap();
+    let (seen, zone) = engine.loupe((&full, [0, 0]), &settings, &port, (640.0, 360.0), 1.0).unwrap().unwrap();
     let seen = Linear { width: zone.w as usize, height: zone.h as usize, pixels: engine.graph.read_back(&[&seen]).unwrap().remove(0) };
     assert_eq!((zone.x, zone.y, zone.w, zone.h), (417, 129, 640, 360));
     let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).flat_map(|(p, q)| (0..3).map(move |c| (p[c] - q[c]).abs())).fold(0.0f32, f32::max);
-    let negative = engine.prepare(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let whole = engine.render(&negative, &settings, None).unwrap();
     let sliced: Vec<[f32; 4]> = (0..zone.h as usize).flat_map(|r| whole.pixels[(zone.y as usize + r) * fw + zone.x as usize..][..zone.w as usize].to_vec()).collect();
     let exported = gap(&seen.pixels, &sliced);
     assert!(exported < 1e-4, "the loupe is the exported file: {exported}");
     // Twin: the frame cropped to the region before the pipeline diverges along its border.
     let cut: Vec<[f32; 4]> = (0..zone.h as usize).flat_map(|r| pixels[(zone.y as usize + r) * fw + zone.x as usize..][..zone.w as usize].to_vec()).collect();
-    let cropped = engine.full(Decoded { linear: Linear { width: zone.w as usize, height: zone.h as usize, pixels: cut }, full_width: f64::from(zone.w), undeclared: None }).unwrap();
-    let (first, _) = engine.loupe(&cropped, &settings, &crate::viewport::Viewport::default(), (640.0, 360.0), 1.0).unwrap().unwrap();
+    let cropped = engine.full(Decoded { linear: Linear { width: zone.w as usize, height: zone.h as usize, pixels: cut }, full_width: f64::from(zone.w), undeclared: None, seed: [0, 0] }).unwrap();
+    let (first, _) = engine.loupe((&cropped, [0, 0]), &settings, &crate::viewport::Viewport::default(), (640.0, 360.0), 1.0).unwrap().unwrap();
     let first = Linear { width: zone.w as usize, height: zone.h as usize, pixels: engine.graph.read_back(&[&first]).unwrap().remove(0) };
     assert!(gap(&first.pixels, &seen.pixels) > 1e-3, "twin: a crop first reads invented rows");
 }
@@ -243,7 +243,7 @@ fn a_custom_flat_field_reaches_the_render_by_its_id() {
     let mut engine = Engine::on(&device);
     engine.support = Some(support.clone());
     let (w, h) = (16usize, 8usize);
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let plain = engine.render(&negative, &settings, None).unwrap();
     settings.flat_field = oni_settings::frame::FlatField { mask: FlatFieldMask::Custom, custom: Some("panel".into()), ..Default::default() };
@@ -275,7 +275,7 @@ fn a_dust_patch_from_the_cache_heals_its_stroke() {
     let mut engine = Engine::on(&device);
     engine.caches = Some(caches.clone());
     let (w, h) = (64usize, 48usize);
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let plain = engine.render(&negative, &settings, None).unwrap();
     let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
@@ -306,7 +306,7 @@ fn the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_foll
     let mut engine = Engine::on(&device);
     let (w, h) = (300usize, 200usize);
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.6 * (i % w) as f32 / w as f32; [v, v * 0.7, v * 0.5, 1.0] }).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     let before = engine.inputs(&negative, &rest, false, [true; 2]).expect("readings");
     assert!(before.levels.as_ref().unwrap().rgb.len() > 2 && before.curves.as_ref().unwrap().rgb.len() > 2);
@@ -339,7 +339,7 @@ fn the_engine_inverts_a_negative_and_keeps_a_positive_in_order() {
     // Six columns, so the rebuilt edge leaves the two middle ones as they are.
     let (w, h) = (6usize, 6usize);
     let pixels = (0..w * h).map(|i| if (i % w) < 3 { [0.6, 0.4, 0.3, 1.0] } else { [0.05, 0.03, 0.02, 1.0] }).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let luma = |p: [f32; 4]| p[0] + p[1] + p[2];
     let settings = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     let out = engine.render(&negative, &settings, None).unwrap();
@@ -362,7 +362,7 @@ fn a_reduced_preview_rebuilds_its_two_outer_rows_from_the_third() {
     let mut engine = Engine::on(&device);
     let (w, h) = (8usize, 7usize);
     let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| [(i % w) as f32, (i / w) as f32, 0.0, 1.0]).collect();
-    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: pixels.clone() }, full_width: w as f64, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: pixels.clone() }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut graph_out = engine.graph.render(&Image::new(&negative.preview), negative.preview.extent(), None).unwrap();
     assert_eq!(graph_out.len(), w * h);
     let at = |x: usize, y: usize| graph_out[y * w + x];

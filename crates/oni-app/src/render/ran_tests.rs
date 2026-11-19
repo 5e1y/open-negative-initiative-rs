@@ -35,7 +35,7 @@ impl Renderer for Queued {
 /// Twenty notches asked 5 ms apart: each render's start and GPU end, and the revisions rendered.
 fn burst(waits: bool) -> Option<(Vec<(Instant, Instant)>, Vec<u64>)> {
     let engine = Engine::shared(&Device::open().ok()?);
-    let decoded = Decoded { linear: Linear { width: 8, height: 8, pixels: vec![[0.3, 0.2, 0.1, 1.0]; 64] }, full_width: 8.0, undeclared: None };
+    let decoded = Decoded { linear: Linear { width: 8, height: 8, pixels: vec![[0.3, 0.2, 0.1, 1.0]; 64] }, full_width: 8.0, undeclared: None, seed: [0, 0] };
     let negative = Arc::new(engine.prepare(decoded).ok()?);
     let log = Arc::new(Mutex::new(Vec::new()));
     let (tx, rx) = mpsc::channel();

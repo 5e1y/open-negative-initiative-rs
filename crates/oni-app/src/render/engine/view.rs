@@ -36,7 +36,7 @@ impl Engine {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
         let Some(view) = view else {
-            let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+            let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed);
             let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
             return Ok((self.proof.laid(&mut self.graph, image, settings)?, None, None));
         };
@@ -70,7 +70,7 @@ impl Engine {
             false => (base, 1.0),
         };
         let request = Request { scale: reduce, ..request };
-        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed);
         let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let extent = image.extent();
@@ -147,7 +147,7 @@ impl Engine {
         let scale = (COUNTED_SIDE / w.max(h) as f64).min(1.0);
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
-        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed);
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let key = image.key();

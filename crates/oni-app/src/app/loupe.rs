@@ -33,7 +33,8 @@ impl Default for Held {
 
 /// A loupe render: the full frame, its settings, what the render shows and the frame's path.
 struct Ask {
-    full: oni_graph::Source,
+    /// The full frame and its photo's grain seed.
+    full: (oni_graph::Source, [u32; 2]),
     settings: PipelineSettings,
     key: Key,
     path: String,
@@ -47,7 +48,7 @@ static RENDERING: std::sync::Once = std::sync::Once::new();
 fn render_loupes(engine: crate::render::Shared) {
     while let Taken::Value(Ask { full, settings, key, path }) = SLOT.take(None) {
         let (_, viewport, drawable, m, _, _) = key;
-        let made = engine.lock().and_then(|mut e| e.loupe(&full, &settings, &viewport, drawable, m)).map(|laid| laid.map(|(source, _)| source));
+        let made = engine.lock().and_then(|mut e| e.loupe((&full.0, full.1), &settings, &viewport, drawable, m)).map(|laid| laid.map(|(source, _)| source));
         with_shell(move |c| {
             let open = c.state.borrow_mut().frame_for(&path).is_some();
             match made {
@@ -104,13 +105,15 @@ impl Ctl {
         let ask = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
+            // The grain's seed is the preview's decode's: a frame opened again waits for it.
+            let Some(seed) = s.negative().map(|n| n.seed) else { return };
             let settings = s.live_settings();
             let key: Key = (settings.clone(), s.viewport, drawable, s.loupe.magnification, full.id(), s.screen);
             if s.loupe.shown.as_ref() == Some(&key) || s.loupe.asked.as_ref() == Some(&key) {
                 return;
             }
             s.loupe.asked = Some(key.clone());
-            Ask { full, settings, key, path }
+            Ask { full: (full, seed), settings, key, path }
         };
         let engine = self.engine.clone();
         RENDERING.call_once(move || {

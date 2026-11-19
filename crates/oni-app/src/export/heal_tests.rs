@@ -42,7 +42,7 @@ fn specked() -> Vec<[f32; 4]> {
 }
 
 fn decoded() -> Decoded {
-    Decoded { linear: Linear { width: W, height: H, pixels: specked() }, full_width: W as f64, undeclared: None }
+    Decoded { linear: Linear { width: W, height: H, pixels: specked() }, full_width: W as f64, undeclared: None, seed: [0, 0] }
 }
 
 /// The settings with one stroke on the speck, a click's two points.

@@ -21,18 +21,18 @@ pub(crate) fn render_full(engine: &mut Engine, decoded: Decoded, settings: &Pipe
     let l = decoded.linear;
     let source = engine.parts().0.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
     drop(l.pixels);
-    rendered(engine, source, settings)
+    rendered(engine, (source, decoded.seed), settings)
 }
 
 /// `Pipeline.apply` at full resolution and unproofed, with the canvas's masks and every stroke's patch,
 /// made first when not on disk, read back in bands of rows; the decode laid beside the engine, so
 /// another frame renders meanwhile.
 pub fn render_full_beside(engine: &Shared, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
-    let source = engine.upload(&decoded.linear).map_err(|_| Failure::Render)?;
+    let (source, seed) = (engine.upload(&decoded.linear).map_err(|_| Failure::Render)?, decoded.seed);
     drop(decoded);
     heal(engine, &source, settings)?;
     let mut engine = engine.lock().map_err(|_| Failure::Render)?;
-    rendered(&mut engine, source, settings)
+    rendered(&mut engine, (source, seed), settings)
 }
 
 /// Every stroke of `settings` given its patch on `full`, the frame's whole decode: a render lays only
@@ -69,8 +69,10 @@ pub fn heal_ahead(engine: &Shared, target: &Target) -> Result<(), Failure> {
     heal(engine, &full, &target.settings)
 }
 
-fn rendered(engine: &mut Engine, source: oni_graph::Source, settings: &PipelineSettings) -> Result<Image, Failure> {
-    let image = engine.unproofed(&source, settings, &Request::default()).map_err(|_| Failure::Render)?;
+/// The full render of a decode laid on the GPU, with its photo's grain seed.
+fn rendered(engine: &mut Engine, scan: (oni_graph::Source, [u32; 2]), settings: &PipelineSettings) -> Result<Image, Failure> {
+    let (source, seed) = scan;
+    let image = engine.unproofed(&source, seed, settings, &Request::default()).map_err(|_| Failure::Render)?;
     let (graph, _) = engine.parts();
     let out = read_back(graph, &image);
     drop(source);
@@ -104,7 +106,7 @@ pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings,
     let (w, _) = negative.size();
     let request = Request { scale: (scale * negative.full_width / f64::from(w.max(1))).min(1.0), full_width: Some(negative.full_width), ..Request::default() };
     let mut engine = engine.lock().ok()?;
-    let image = engine.unproofed(&negative.preview, settings, &request).ok()?;
+    let image = engine.unproofed(&negative.preview, negative.seed, settings, &request).ok()?;
     read_back(engine.parts().0, &image).ok()
 }
 

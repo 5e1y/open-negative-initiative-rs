@@ -97,22 +97,22 @@ fn the_grain_matches_its_reference_on_every_branch() {
         // Twin: the lattice one node over, a seed off by one.
         let mut over = k;
         over.scan[0][2] += cell;
-        let out = whole(&mut g, &Image::new(&input).then(stages::grain(&k)));
-        let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &k)).collect();
-        let twin: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &over)).collect();
+        let out = whole(&mut g, &grain::grained(Image::new(&input), &k, 0.0));
+        let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &k)).collect();
+        let twin: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &over)).collect();
         judge(&format!("grain, {name}"), &out, &reference, &twin);
         // Twin: the whole grain at every tone.
         let whole_share = Grain { share: [1.0; GRAIN_NODES], ..k };
-        let flat: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &whole_share)).collect();
+        let flat: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &whole_share)).collect();
         judge(&format!("grain by tone, {name}"), &out, &reference, &flat);
     }
     // As the chain lays them: the grain on the scene, then the print.
     let k = Grain::on(scaled(0.5), 1.0, 0.5, 0.4, [1.0; GRAIN_NODES]);
     let print = conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, false));
-    let out = whole(&mut g, &Image::new(&input).then(stages::grain(&k)).then(stages::stage47(&print)));
-    let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::stage47(cpu::grain(*p, centre(i), &k), &print)).collect();
+    let out = whole(&mut g, &grain::grained(Image::new(&input), &k, 0.0).then(stages::stage47(&print)));
+    let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::stage47(cpu::grain(*p, *p, centre(i), &k), &print)).collect();
     // Twin: the grain on the print.
-    let after: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(cpu::stage47(*p, &print), centre(i), &k)).collect();
+    let after: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| { let q = cpu::stage47(*p, &print); cpu::grain(q, q, centre(i), &k) }).collect();
     judge("grain, then the print", &out, &reference, &after);
 }
 
@@ -167,8 +167,8 @@ fn a_scan_pixel_keeps_its_grain_under_a_region_a_crop_and_a_turn() {
         assert!(gap < 1e-6, "{turn:?}: a scan pixel's grain moved by {gap:.2e}");
         let on_output = Grain { scan: IDENTITY, ..grain::grain(&s, scan, 1.0).unwrap() };
         let image = flat(&mut g, w, h, [1.0; 4]);
-        let plain = whole(&mut g, &image.clone().then(stages::grain(&on_output)));
-        let turned = whole(&mut g, &geometry::apply(image, &turn, None, 1.0).then(stages::grain(&on_output)));
+        let plain = whole(&mut g, &grain::grained(image.clone(), &on_output, 0.0));
+        let turned = whole(&mut g, &grain::grained(geometry::apply(image, &turn, None, 1.0), &on_output, 0.0));
         let twin = followed(&turned, &|x, y| plain[(y as u32 * w + x as u32) as usize][0]);
         assert!(twin > 1e-2, "{turn:?}: the twin follows at {twin:.2e}, so the check sees nothing");
     }
@@ -183,7 +183,7 @@ fn a_reduced_render_reads_the_full_grain_averaged() {
         let k = k.unwrap_or_else(|| grain::grain(&s, Rect::new(0, 0, (3000.0 * scale) as u32, (2000.0 * scale) as u32), scale).unwrap());
         // A dark grey, where the colour is strongest and leaves the grey grey, so the red reads the field.
         let image = flat(g, w, h, [0.05, 0.05, 0.05, 1.0]);
-        stops(&whole(g, &image.then(stages::grain(&k))), 0.05)
+        stops(&whole(g, &grain::grained(image, &k, 0.0)), 0.05)
     };
     let full = at(&mut g, 1.0, 800, 800, None);
     let full_spread = spread(&full);
@@ -229,8 +229,8 @@ fn the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s() {
     let mut misses = Vec::new();
     for grey in [0.02f32, 0.18, 0.8] {
         let image = flat(&mut g, w, h, [grey, grey, grey, 1.0]);
-        let whole_grain = spread(&stops(&whole(&mut g, &image.clone().then(stages::grain(&k))), grey));
-        let curved = spread(&stops(&whole(&mut g, &image.then(stages::grain(&by_tone))), grey));
+        let whole_grain = spread(&stops(&whole(&mut g, &grain::grained(image.clone(), &k, 0.0)), grey));
+        let curved = spread(&stops(&whole(&mut g, &grain::grained(image, &by_tone, 0.0)), grey));
         let shown = cpu::stage47([grey, grey, grey, 1.0], &picture);
         let tone = (shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2]).powf(1.0 / 2.2);
         let want = strength.at(f64::from(tone)) as f32;
@@ -248,14 +248,14 @@ fn the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s() {
     }
     // Twin: the middle grey's grain added in light, the same on every tone, is no texture in stops.
     let image = flat(&mut g, w, h, [0.18, 0.18, 0.18, 1.0]);
-    let middle = whole(&mut g, &image.then(stages::grain(&k)));
+    let middle = whole(&mut g, &grain::grained(image, &k, 0.0));
     let added: Vec<V4> = middle.iter().map(|p| [0.8 + p[0] - 0.18; 4]).collect();
     let light = spread(&stops(&added, 0.8));
     assert!((light / whole_spreads[1] - 1.0).abs() > 0.5, "the twin passes: {light} against {}", whole_spreads[1]);
     // Monochrome at no colour: every channel moves by one factor, alpha kept.
     let colour = [0.3, 0.12, 0.05, 1.0];
     let parted = |g: &mut Graph, k: &Grain| -> f32 {
-        let image = flat(g, w, h, colour).then(stages::grain(k));
+        let image = grain::grained(flat(g, w, h, colour), k, 0.0);
         let out = whole(g, &image);
         assert!(out.iter().all(|p| p[3] == 1.0));
         out.iter().map(|p| [p[0] / colour[0], p[1] / colour[1], p[2] / colour[2]]).map(|f| (f[0] - f[1]).abs().max((f[1] - f[2]).abs())).fold(0.0, f32::max)
@@ -320,7 +320,7 @@ fn the_grain_lies_under_the_print_so_contrast_steepens_it() {
                 t.grain.amount = 0.0;
             }
             let image = pipeline.image(&mut g, &source, &t, &Request::default(), &Default::default()).unwrap();
-            let image = if after { image.then(stages::grain(&k)) } else { image };
+            let image = if after { grain::grained(image, &k, 0.0) } else { image };
             let out = g.render(&image, region, None).unwrap();
             let mid = out.iter().map(|p| p[1]).sum::<f32>() / out.len() as f32;
             println!("contrast {c}: mid {mid}");

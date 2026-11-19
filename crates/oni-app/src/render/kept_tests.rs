@@ -25,7 +25,7 @@ fn the_patches_kept_stay_under_their_budget_and_go_with_the_editor() {
     let mut engine = Engine::on(&device);
     engine.caches = Some(caches.clone());
     let pixels = vec![[0.4; 4]; 64 * 48];
-    let negative = engine.prepare(Decoded { linear: Linear { width: 64, height: 48, pixels }, full_width: 64.0, undeclared: None }).unwrap();
+    let negative = engine.prepare(Decoded { linear: Linear { width: 64, height: 48, pixels }, full_width: 64.0, undeclared: None, seed: [0, 0] }).unwrap();
     let with = |cs: &[Correction]| PipelineSettings { corrections: cs.to_vec(), ..PipelineSettings::rest(oni_settings::ConversionMode::Negative, true) };
     let (a, b) = (corrections(5), corrections(5));
     engine.render(&negative, &with(&a), Some(32)).unwrap();
@@ -59,7 +59,7 @@ fn a_search_costs_what_lies_in_its_window_however_many_patches_the_frame_holds()
     // Wider than a search's window, about 2 900 px about an 800 px tile.
     let (w, h) = (4800usize, 900usize);
     let pixels = (0..w * h).map(|i| (0.2 + 0.5 * (i % w) as f32 / w as f32, i)).map(|(v, i)| [v, v * 0.8, v * (0.5 + 0.1 * (i % 7) as f32), 1.0]).collect();
-    let full = engine.full(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
+    let full = engine.full(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let dot = |x: f64, y: f64| {
         let point = |x: f64| oni_settings::cg::Point { x, y };
         let c = Correction { id: Id::new(), stroke: vec![point(x), point(x + 0.002)], radius: 12.0 };

@@ -63,7 +63,7 @@ impl Pipeline {
         let haloed = if effects { halation::halated(balanced, s, scan) } else { balanced };
         // The grain is a pass of its own: a print notch starts from the grained scene the canvas's cache keeps.
         let grained = match effects.then(|| grain::grain(s, scan, scale)).flatten() {
-            Some(k) => haloed.then(stages::grain(&k)),
+            Some(k) => grain::grained(haloed, &k.seeded(inputs.seed), grain::dissolve(s, scan)),
             None => haloed,
         };
         let picture = stages::stage47(&conversion::stage47(s));

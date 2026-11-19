@@ -76,6 +76,7 @@ impl Resident {
         Inputs {
             patches: s.corrections.iter().filter_map(|c| Some((c.id, self.patches.get(&key(c))?))).collect(),
             custom_flat_field: self.mask.as_ref(),
+            ..Inputs::default()
         }
     }
 }

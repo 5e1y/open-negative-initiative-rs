@@ -1,11 +1,12 @@
 //! The engine: the GPU device, the pipeline on it, its gate, and the frame kept as its preview.
 
 use super::*;
+use crate::viewport::Viewport;
 use oni_i18n::tr;
 
 mod inputs;
 mod kept;
-pub(crate) use kept::{custom_for, patches_for};
+pub(crate) use kept::{inputs_of, patches_for};
 #[cfg(test)]
 pub(crate) use kept::INPUTS_KEPT;
 use kept::Kept;
@@ -24,6 +25,8 @@ pub struct Negative {
     /// Read off the decode, as the reduction rounds the preview's height to its own grid.
     pub full_height: f64,
     pub undeclared: Option<bool>,
+    /// The photo's grain arrangement, its decode's.
+    pub seed: [u32; 2],
 }
 
 impl Negative {
@@ -194,7 +197,7 @@ impl Shared {
         let (w, h) = (decoded.linear.width, decoded.linear.height);
         drop(decoded.linear);
         let full = (w as f64 == decoded.full_width).then(|| source.clone());
-        Ok((self.lock()?.reduce(source, (w, h), decoded.full_width, decoded.undeclared)?, full))
+        Ok((self.lock()?.reduce(source, (w, h), (decoded.full_width, decoded.undeclared, decoded.seed))?, full))
     }
 
     /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
@@ -288,11 +291,11 @@ impl Engine {
         let l = decoded.linear;
         let source = self.graph.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())?;
         drop(l.pixels);
-        self.reduce(source, (l.width, l.height), decoded.full_width, decoded.undeclared)
+        self.reduce(source, (l.width, l.height), (decoded.full_width, decoded.undeclared, decoded.seed))
     }
 
     /// The laid decode of `size` reduced to the preview, its edge rebuilt and rendered once.
-    pub fn reduce(&mut self, source: Source, size: (usize, usize), full_width: f64, undeclared: Option<bool>) -> Result<Negative, String> {
+    pub fn reduce(&mut self, source: Source, size: (usize, usize), (full_width, undeclared, seed): (f64, Option<bool>, [u32; 2])) -> Result<Negative, String> {
         let mut image = Image::new(&source);
         let long = size.0.max(size.1);
         if long > PREVIEW_SIDE {
@@ -302,7 +305,7 @@ impl Engine {
         drop(source);
         self.graph.purge();
         let full_height = full_width * size.1 as f64 / size.0.max(1) as f64;
-        Ok(Negative { preview, full_width, full_height, undeclared })
+        Ok(Negative { preview, full_width, full_height, undeclared, seed })
     }
 
     /// `RawDecode.linear` at the preview's side as pixels: the decode reduced and its edge rebuilt
@@ -328,7 +331,7 @@ impl Engine {
         let scale = side.map_or(1.0, |s| (s as f64 / long).min(1.0));
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
-        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed);
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let region = image.extent();
@@ -342,7 +345,7 @@ impl Engine {
         let mut others = settings.clone();
         others.corrections.retain(|other| other.id != c.id);
         self.read_custom(&others);
-        let inputs = Inputs { patches: patches_for(&self.patches, &others), custom_flat_field: None };
+        let inputs = Inputs { patches: patches_for(&self.patches, &others), ..Inputs::default() };
         let healed = self.pipeline.patched(&mut self.graph, Image::new(full), &others, 1.0, &inputs).map_err(|e| e.to_string())?;
         let e = healed.extent();
         let size = (f64::from(e.w), f64::from(e.h));
@@ -357,7 +360,7 @@ impl Engine {
     /// De-dust reads, so a second reading no longer sees what the first healed. Rows top first.
     pub fn framed_whole(&mut self, full: &Source, settings: &PipelineSettings) -> Result<(usize, Vec<[f32; 4]>), String> {
         self.read_custom(settings);
-        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, [0, 0]);
         let framed = self.pipeline.framed(&mut self.graph, Image::new(full), settings, 1.0, &inputs).map_err(|e| e.to_string())?;
         let e = framed.extent();
         let pixels = self.graph.render(&framed, e, None).map_err(|e| e.to_string())?;
@@ -368,9 +371,9 @@ impl Engine {
     /// `Loupe.recipe`: the pipeline on the full-resolution frame FIRST, the region second, since
     /// the neighbourhood radii index on the incoming extent; kept on the GPU for the display kernel,
     /// `None` on an unlaid band.
-    pub fn loupe(&mut self, full: &Source, settings: &PipelineSettings, viewport: &crate::viewport::Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {
+    pub fn loupe(&mut self, (full, seed): (&Source, [u32; 2]), settings: &PipelineSettings, viewport: &Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {
         self.read_custom(settings);
-        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, seed);
         let image = self.pipeline.image(&mut self.graph, full, settings, &Request::default(), &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let Some(zone) = crate::loupe::region(image.extent(), viewport, drawable, magnification) else { return Ok(None) };
@@ -388,11 +391,10 @@ impl Engine {
         self.patches.remove(&key);
     }
 
-    /// `Pipeline.apply` unproofed, with the masks and patches the canvas reads: an export's render.
-    pub fn unproofed(&mut self, source: &Source, settings: &PipelineSettings, request: &Request) -> Result<Image, String> {
+    /// `Pipeline.apply` unproofed on the scan of `seed`'s photo, with the canvas's masks and patches: an export's render.
+    pub fn unproofed(&mut self, source: &Source, seed: [u32; 2], settings: &PipelineSettings, request: &Request) -> Result<Image, String> {
         self.read_custom(settings);
-        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, seed);
         self.pipeline.image(&mut self.graph, source, settings, request, &inputs).map_err(|e| e.to_string())
     }
-
 }

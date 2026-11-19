@@ -58,11 +58,12 @@ pub struct CustomFlatField {
 }
 
 /// What the settings name but do not hold: the dust patches, generated once at full resolution and
-/// keyed by their correction, and a custom flat-field mask.
+/// keyed by their correction, a custom flat-field mask, and the photo's grain seed.
 #[derive(Default)]
 pub struct Inputs<'a> {
     pub patches: HashMap<Id, &'a Source>,
     pub custom_flat_field: Option<&'a CustomFlatField>,
+    pub seed: [u32; 2],
 }
 
 /// The constant images the chain reads, uploaded once per graph, and the tables last baked.

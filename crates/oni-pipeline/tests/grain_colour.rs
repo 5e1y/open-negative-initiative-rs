@@ -53,16 +53,16 @@ fn the_coloured_grain_matches_its_reference_on_every_branch() {
         let s = PipelineSettings { grain: oni_settings::blocks::Grain { curve, ..coloured(colour).grain }, ..digital() };
         let laid = grain::grain(&s, SCAN, 1.0).unwrap();
         let k = Grain::on([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0]], 1.0, 0.5, 0.4, laid.share).coloured(laid.colour);
-        let out = whole(&mut g, &Image::new(&input).then(stages::grain(&k)));
-        let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &k)).collect();
+        let out = whole(&mut g, &grain::grained(Image::new(&input), &k, 0.0));
+        let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &k)).collect();
         // Twins: the lattice one node over; the line read backwards, where its ends differ.
         let mut over = k;
         over.scan[0][2] += 1.0;
-        let shifted: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &over)).collect();
+        let shifted: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &over)).collect();
         judge(&format!("grain coloured {colour:?}, a node over"), &out, &reference, &shifted);
         if colour[0] != colour[1] {
             let backwards = k.coloured(grain::colours(&GrainColour { black: colour[1], white: colour[0] }, &tones));
-            let read: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, centre(i), &backwards)).collect();
+            let read: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &backwards)).collect();
             judge(&format!("grain coloured {colour:?}, backwards"), &out, &reference, &read);
         }
     }
@@ -101,7 +101,7 @@ fn skin(light: f32) -> V4 {
 /// A flat `patch` under `k`, 300 by 200.
 fn laid(g: &mut Graph, k: &Grain, patch: V4) -> Vec<V4> {
     let (w, h) = (300u32, 200u32);
-    let image = Image::new(&g.upload(w, h, &vec![patch; (w * h) as usize]).unwrap()).then(stages::grain(k));
+    let image = grain::grained(Image::new(&g.upload(w, h, &vec![patch; (w * h) as usize]).unwrap()), k, 0.0);
     whole(g, &image)
 }
 

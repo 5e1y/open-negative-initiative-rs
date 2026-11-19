@@ -109,7 +109,7 @@ mod tests {
             return;
         };
         let linear = Linear { width: 4, height: 4, pixels: vec![[0.5; 4]; 16] };
-        let picture = Engine::on(&device).prepare(Decoded { linear, full_width: 4.0, undeclared: None }).unwrap().preview;
+        let picture = Engine::on(&device).prepare(Decoded { linear, full_width: 4.0, undeclared: None, seed: [0, 0] }).unwrap().preview;
         let asked = || {
             let mut c = Counting::default();
             assert!(c.take(picture.clone(), false));
