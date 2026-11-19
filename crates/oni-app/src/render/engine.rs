@@ -1,6 +1,7 @@
 //! The engine: the GPU device, the pipeline on it, its gate, and the frame kept as its preview.
 
 use super::*;
+use crate::viewport::Viewport;
 use oni_i18n::tr;
 
 mod inputs;
@@ -370,7 +371,7 @@ impl Engine {
     /// `Loupe.recipe`: the pipeline on the full-resolution frame FIRST, the region second, since
     /// the neighbourhood radii index on the incoming extent; kept on the GPU for the display kernel,
     /// `None` on an unlaid band.
-    pub fn loupe(&mut self, (full, seed): (&Source, [u32; 2]), settings: &PipelineSettings, viewport: &crate::viewport::Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {
+    pub fn loupe(&mut self, (full, seed): (&Source, [u32; 2]), settings: &PipelineSettings, viewport: &Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {
         self.read_custom(settings);
         let inputs = inputs_of(&self.patches, &self.custom, settings, seed);
         let image = self.pipeline.image(&mut self.graph, full, settings, &Request::default(), &inputs).map_err(|e| e.to_string())?;

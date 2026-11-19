@@ -41,7 +41,8 @@ fn every_decode_of_a_photo_reads_one_seed_its_rename_keeps_and_another_photo_doe
     // Twin: another photo, its own seed.
     assert_ne!(seeds(&other)[0], seed);
     // A RAW at LibRaw's half size, for the preview's side, and whole, on the reference roll when given.
-    let Some(raw) = std::env::var_os("ONI_RAW_DIR").and_then(|d| std::fs::read_dir(d).ok()?.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("nef"))).min()) else {
+    let nef = |p: &PathBuf| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("nef"));
+    let Some(raw) = std::env::var_os("ONI_RAW_DIR").and_then(|d| std::fs::read_dir(d).ok()?.flatten().map(|e| e.path()).filter(nef).min()) else {
         return eprintln!("no ONI_RAW_DIR: the RAW's decodes are not compared");
     };
     let reading = Reading::default();
