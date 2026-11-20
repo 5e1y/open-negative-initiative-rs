@@ -11442,5 +11442,12 @@
     "title": "The Kit column's head: My Kit, and \"provided by\" with a larger mark at its right",
     "status": "done",
     "detail": "The column's title shares its row with The Lens DB's credit, right-aligned: \"provided by\" then the mark, its disc 22 px and its name 15 px (KitStyle.mark-header, word-header), a step larger than the sheet's 18 px and 13 px. TldbMark takes the words before it (lead) and its name's size (word-size); its accessible label still reads the whole mention."
+  },
+  {
+    "id": 2314,
+    "type": "change",
+    "title": "A launch opens its folder on the Kit with nothing picked; the Kit's head a step above Search Gear",
+    "status": "done",
+    "detail": "The launch reopens the folder remembered, and a roll's folder showed its roll in the column, so the Kit took a click on the empty room each time. open_remembered now leaves nothing picked and turns the column to the Kit (gear_shown), as that click does; a folder a hand opens still shows its roll, and a photo picked shows it. Window check presence::a_launch_opens_its_folder_on_the_kit_with_nothing_picked, seen failing without the change. The Kit column's head (My Kit, provided by and the mark) takes Space.s more below it."
   }
 ]

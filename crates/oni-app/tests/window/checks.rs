@@ -164,6 +164,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("disk_turns::a_favourite_in_another_spelling_opens_in_the_archives", disk_turns::a_favourite_in_another_spelling_opens_in_the_archives),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
+    ("presence::a_launch_opens_its_folder_on_the_kit_with_nothing_picked", presence::a_launch_opens_its_folder_on_the_kit_with_nothing_picked),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),
     ("panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset", panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset),
     ("panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window", panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window),

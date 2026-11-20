@@ -127,8 +127,8 @@ impl Ctl {
         true
     }
 
-    /// The launch's folder, Swift's `openedFolder ?? roots.current`: the one remembered opens
-    /// whatever its state, so a disk away keeps its place and nothing replaces it.
+    /// The launch's folder, `openedFolder` else the current root: the one remembered opens whatever its
+    /// state, so a disk away keeps its place and nothing replaces it; nothing in it is picked.
     pub(in crate::app) fn open_remembered(self: &Rc<Self>) -> bool {
         let (remembered, support) = {
             let s = self.state.borrow();
@@ -141,6 +141,14 @@ impl Ctl {
                 // Opened by the launch, never by a row, it is shown as a folder opened from elsewhere is.
                 self.navigator_reveal(&folder);
                 self.open_spelt(folder);
+                // A launch opens on the person's Kit: nothing is picked until a hand picks it.
+                {
+                    let mut s = self.state.borrow_mut();
+                    s.picks = Default::default();
+                    s.org.gear_shown = true;
+                }
+                self.publish_organising();
+                self.publish_tiles();
                 true
             }
             None => false,

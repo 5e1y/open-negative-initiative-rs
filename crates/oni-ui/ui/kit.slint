@@ -143,8 +143,10 @@ export component KitView inherits VerticalLayout {
         property <int> held: -list.content-y > lenses.y ? 2 : -list.content-y > 0 ? 1 : 0;
         Section {
             separated: false;
+            // The head set a step apart from the search under it.
             HorizontalLayout {
                 spacing: Space.s;
+                padding-bottom: Space.s;
                 Label { role: TextRole.title; text: @tr("My Kit"); horizontal-stretch: 1; vertical-alignment: center; }
                 TldbMark {
                     horizontal-stretch: 0;

@@ -207,3 +207,33 @@ pub(crate) fn a_missing_path_on_the_command_line_opens_nothing_and_says_so() {
     drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);
 }
+
+pub(crate) fn a_launch_opens_its_folder_on_the_kit_with_nothing_picked() {
+    let Some(gpu) = gpu("the launch's Kit") else { return };
+    let d = disk("launch", &["Volumes/T7/Roll 12/A.tif", "Volumes/T7/Roll 12/B.tif"]);
+    let roll = d.path("Volumes/T7/Roll 12");
+    oni_library::folders::set_roll(Some(&oni_settings::Film::new("Portra Trip")), &roll).unwrap();
+    let rig = rig();
+    let kind = |shell: &Shell| shell.window.global::<Library>().get_info_kind();
+    let shell = d.launch(&gpu);
+    let ctl = shell.ctl.clone();
+    shell.open_folder(Path::new(&roll));
+    rig.until("the roll read", Duration::from_secs(60), || ctl.state.borrow().read_done() && ctl.state.borrow().loaded() >= 2);
+    rig.settle();
+    assert_eq!(kind(&shell), oni_app::InfoKind::Roll, "twin: a roll a hand opens shows its roll");
+    drop((ctl, shell));
+
+    // The next launch opens the same roll on the person's Kit, nothing picked; a tile clicked shows the roll.
+    let shell = d.launch(&gpu);
+    let ctl = shell.ctl.clone();
+    assert!(shell.open_remembered());
+    rig.until("the roll read again", Duration::from_secs(60), || ctl.state.borrow().read_done() && ctl.state.borrow().loaded() >= 2);
+    rig.settle();
+    assert_eq!(kind(&shell), oni_app::InfoKind::Collection, "the launch shows the Kit");
+    assert!(app::tiles(&shell.window).iter().all(|t| !t.selected), "no photo picked at launch");
+    shell.window.global::<Library>().invoke_tile_clicked(0, false, false);
+    rig.settle();
+    assert_eq!(kind(&shell), oni_app::InfoKind::Roll, "a photo picked shows its roll");
+    drop((ctl, shell));
+    let _ = std::fs::remove_dir_all(&d.root);
+}
