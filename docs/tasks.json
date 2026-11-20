@@ -11463,5 +11463,12 @@
     "title": "Gear names underlined under the hand; the Kit sheet on its header's margins; a smaller mark in the column; the signed-out offer as ONI × The Lens DB",
     "status": "done",
     "detail": "A gear card's name no longer turns accent under the hand, unreadable on the grey: it takes a plain underline in its own ink (Stroke.line, as wide as the name shown). The Kit column's mark steps down (19 px, its name 13 px). The search sheet's search row, answers and foot take the bar header's side margins (SheetStyle.padding) and Space.m above and below, so the title, the field, the cards, the credit and Done line up; the window check asserts the credit's left edge on the title's and the kind select's right edge on Done's. Signed out, the column drops its credit line and shows the app's logo × The Lens DB's mark at one height (KitStyle.pair-height), the line 'ONI partners with The Lens DB, the largest photography database in the world.' and six checked promises: import the Kit, track the collection, fill EXIF, free from two non-profit projects with no ads, photos never leave the computer, disconnect at any time in Settings; then Connect and Create an Account."
+  },
+  {
+    "id": 2317,
+    "type": "change",
+    "title": "The offer's logos stacked and centred, its tagline on bodies and lenses, wider and centred in the column; the sheet foot's mark on its words' middle; The Lens DB's disc beside its names in the gear lists",
+    "status": "done",
+    "detail": "TldbPair stacks the app's logo (40 px), a light × (22 px, weight 200) and the mark (28 px), each centred. The offer takes wider sides (KitStyle.offer-inset, 32 px), centres its tagline, now 'ONI partners with The Lens DB, the largest camera bodies and lenses database in the world.', and stands in the middle of the column's height. TldbMark centres its content in a row taller than the disc, as beside the sheet foot's key, where the disc and its name sat at the row's top while the words centred. GearCardBody takes served: The Lens DB's disc (TldbDisc, 12 px, accessible 'From The Lens DB') before a name the service gives; the gear fields' lists set it on the Kit's cards, the names typed by hand stay bare."
   }
 ]

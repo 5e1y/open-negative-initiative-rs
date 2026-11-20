@@ -447,6 +447,14 @@ msgstr "The Lens DB"
 msgid "THE LENS DB"
 msgstr "THE LENS DB"
 
+#: crates/oni-ui/ui/ds/tldb.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "ONI"
+msgstr "ONI"
+
+#: crates/oni-ui/ui/ds/tldb.slint
+msgid "From The Lens DB"
+msgstr "De The Lens DB"
+
 #: crates/oni-ui/ui/ds/welcome.slint
 msgid "Page {} of {}"
 msgstr "Página {} de {}"
@@ -1601,13 +1609,9 @@ msgstr "Predeterminar"
 msgid "Remove from My Kit"
 msgstr "Quitar de Mi Kit"
 
-#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/panel/color_tab.slint
-msgid "ONI"
-msgstr "ONI"
-
 #: crates/oni-ui/ui/kit.slint
-msgid "ONI partners with The Lens DB, the largest photography database in the world."
-msgstr "ONI se asocia con The Lens DB, la mayor base de datos fotográfica del mundo."
+msgid "ONI partners with The Lens DB, the largest camera bodies and lenses database in the world."
+msgstr "ONI se asocia con The Lens DB, la mayor base de datos de cuerpos y objetivos del mundo."
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Import your Kit from The Lens DB"

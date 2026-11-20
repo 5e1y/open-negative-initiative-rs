@@ -123,12 +123,12 @@ component Promise inherits HorizontalLayout {
 // plainly so no one looks for a catch.
 component Offer inherits Section {
     separated: false;
-    HorizontalLayout {
-        alignment: start;
+    inset: KitStyle.offer-inset;
+    VerticalLayout {
         padding-bottom: Space.s;
         TldbPair { clicked => { Kit.open-site(); } }
     }
-    Label { role: TextRole.section; wrap: word-wrap; text: @tr("ONI partners with The Lens DB, the largest photography database in the world."); }
+    Label { role: TextRole.section; wrap: word-wrap; centred: true; text: @tr("ONI partners with The Lens DB, the largest camera bodies and lenses database in the world."); }
     VerticalLayout {
         spacing: Space.xs;
         padding-bottom: Space.s;
@@ -156,6 +156,8 @@ component Waiting inherits Section {
 // The whole column: signed in, its head stays while the Kit scrolls under it, each kind's title held at the
 // top while its pieces pass.
 export component KitView inherits VerticalLayout {
+    // Signed out, the offer stands in the middle of the column's height.
+    if Kit.link == KitLink.out: Rectangle { vertical-stretch: 1; }
     if Kit.link == KitLink.out: Offer { }
     if Kit.link == KitLink.waiting: Waiting { }
     if Kit.link != KitLink.in: Rectangle { vertical-stretch: 1; }

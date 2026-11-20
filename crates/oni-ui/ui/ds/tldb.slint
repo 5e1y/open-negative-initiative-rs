@@ -20,8 +20,10 @@ export component TldbMark inherits Rectangle {
     accessible-role: button;
     accessible-label: root.credited ? @tr("Catalogue provided by The Lens DB") : @tr("The Lens DB");
     accessible-action-default => { root.clicked(); }
+    // Centred in a row taller than the disc, as beside a key, so the words and the mark share one middle.
     VerticalLayout {
         spacing: Space.xxs;
+        alignment: center;
         if root.credited && root.under: Label {
             role: TextRole.caption;
             tone: Tone.secondary;
@@ -63,17 +65,43 @@ export component TldbMark inherits Rectangle {
     }
 }
 
-// The app's logo beside the mark at one height, the two projects side by side; a click on the mark opens its site.
-export component TldbPair inherits HorizontalLayout {
+// The app's logo over the mark, a light × between them, each centred: the two projects as equals; a click on
+// the mark opens its site.
+export component TldbPair inherits VerticalLayout {
     callback clicked();
-    spacing: Space.s;
-    Image {
-        height: KitStyle.pair-height;
-        source: Icons.oni-logo;
-        colorize: Colour.ink;
-        accessible-role: image;
-        accessible-label: @tr("ONI");
+    spacing: Space.xs;
+    alignment: center;
+    HorizontalLayout {
+        alignment: center;
+        Image {
+            height: KitStyle.pair-logo;
+            source: Icons.oni-logo;
+            colorize: Colour.ink;
+            accessible-role: image;
+            accessible-label: @tr("ONI");
+        }
     }
-    Label { role: TextRole.section; tone: Tone.tertiary; text: "×"; }
-    TldbMark { size: KitStyle.pair-height; word-size: KitStyle.pair-word; clicked => { root.clicked(); } }
+    Text {
+        text: "×";
+        horizontal-alignment: center;
+        font-family: Type.family;
+        font-size: KitStyle.times-size;
+        font-weight: KitStyle.times-weight;
+        color: Colour.ink-tertiary;
+    }
+    HorizontalLayout {
+        alignment: center;
+        TldbMark { size: KitStyle.pair-height; word-size: KitStyle.pair-word; clicked => { root.clicked(); } }
+    }
+}
+
+// The mark's disc alone, beside a name The Lens DB gives, so it reads apart from a name typed by hand.
+export component TldbDisc inherits Rectangle {
+    in property <length> size: KitStyle.disc;
+    width: root.size;
+    height: root.size;
+    accessible-role: image;
+    accessible-label: @tr("From The Lens DB");
+    Icon { width: parent.width; height: parent.height; source: Icons.tldb-disc; ink: Colour.ink-secondary; }
+    Icon { width: parent.width; height: parent.height; source: Icons.tldb-blades; ink: Colour.ground; }
 }

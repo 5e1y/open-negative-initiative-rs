@@ -5,6 +5,7 @@ import { Label, Icon, Tone, TextRole, Tips } from "base.slint";
 import { Badge } from "badge.slint";
 import { Icons } from "icons.slint";
 import { KitStyle } from "theme_views.slint";
+import { TldbDisc } from "tldb.slint";
 
 export struct GearCard { name: string, detail: string, preferred: bool, photos: int }
 
@@ -49,6 +50,8 @@ export component GearCardBody inherits HorizontalLayout {
     in property <GearCard> card;
     // Linked, the name opens the piece's page, the one way to it.
     in property <bool> linked;
+    // Served, the name came from The Lens DB: its disc before it, where names typed by hand stand bare.
+    in property <bool> served;
     callback opened();
     spacing: Space.s;
     VerticalLayout {
@@ -58,6 +61,7 @@ export component GearCardBody inherits HorizontalLayout {
         HorizontalLayout {
             alignment: start;
             spacing: Space.xs;
+            if root.served: VerticalLayout { alignment: center; TldbDisc { } }
             if root.linked: GearLink { name: root.card.name; opened => { root.opened(); } }
             if !root.linked: Label { text: root.card.name; overflow: elide; }
             if root.card.preferred: VerticalLayout { alignment: center; Badge { text: @tr("Default"); } }
