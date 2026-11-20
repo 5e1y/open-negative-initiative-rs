@@ -10,7 +10,7 @@ import { Medal } from "marks.slint";
 
 // A line of a menu: a rule above it, out of reach, a submenu beside it, the chord the menu bar answers
 // for it as AppKit's menus print it, a medal or a glyph before its words, or a picker's note under them.
-export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int, note: string, glyph: MenuGlyph }
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool, keys: string, medal: int, note: string, glyph: MenuGlyph, checked: bool }
 
 
 // What a menu shows its owner, which cannot read into a popup: the lines lit, the opener whose submenu
@@ -51,7 +51,7 @@ export component MenuEntry inherits Rectangle {
         if root.lead > 0: Rectangle {
             width: root.lead;
             if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
-            if root.medal > 0: Medal { rank: root.medal; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+            if root.medal > 0 && !root.checked: Medal { rank: root.medal; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
             if root.glyph != MenuGlyph.none && !root.checked: Icon { source: Icons.line(root.glyph); tone: Tone.secondary; width: MenuStyle.glyph; height: MenuStyle.glyph; }
         }
         VerticalLayout {
@@ -251,9 +251,10 @@ export component Menu inherits PopupWindow {
     // The room before the lines' words: a check's while one stands checked, or a medal's or a glyph's once
     // any line names one, so words align; their widths, unseen, give it. None, the words start at the edge.
     property <length> lead: max(root.current >= 0 ? ButtonStyle.small-icon : 0px, struck.preferred-width);
+    // A line checked of its own, as one a part of a menu in parts, takes a check's room too.
     struck := VerticalLayout {
         visible: false;
-        for line in root.lines: Rectangle { width: line.medal > 0 ? MedalStyle.size : line.glyph != MenuGlyph.none ? MenuStyle.glyph : 0px; }
+        for line in root.lines: Rectangle { width: max(line.checked ? ButtonStyle.small-icon : 0px, line.medal > 0 ? MedalStyle.size : line.glyph != MenuGlyph.none ? MenuStyle.glyph : 0px); }
     }
     // The lines at their own widths, unseen, which `natural` and `sub-span` read.
     widest := VerticalLayout {
@@ -293,7 +294,7 @@ export component Menu inherits PopupWindow {
                 medal: line.medal;
                 glyph: line.glyph;
                 lead: root.lead;
-                checked: i == root.current;
+                checked: i == root.current || line.checked;
                 enabled: line.enabled;
                 by-hand: false;
                 held: i == root.lit || i == root.open;

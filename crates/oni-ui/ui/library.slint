@@ -100,13 +100,11 @@ export global Library {
     // The rating filter: 0 every photo, else the one medal the grid and the trees keep; a line of it picked.
     in property <int> filter-medal;
     callback filter-picked(int);
-    // The camera and lens filters: All, then the gear of the open folder's photos; the line picked, 0 for All.
-    in property <[string]> filter-bodies;
-    in property <[string]> filter-lenses;
-    in property <int> filter-body-at;
-    in property <int> filter-lens-at;
-    // A body or a lens picked by its name, "" for every photo.
-    callback filter-gear-picked(bool, string);
+    // The gallery's one filter: its menu's lines, the medals, then the bodies, then the lenses, one checked a
+    // part; its face, what it keeps.
+    in property <[MenuLine]> filter-lines;
+    in property <string> filter-face;
+    callback filter-line-picked(int);
     in property <InfoKind> info-kind;
     in property <string> info-empty;
     in property <string> info-title;

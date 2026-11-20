@@ -95,8 +95,12 @@ impl KitState {
 
     /// The Kit of one kind as the column shows it, `default` the name its default card holds, `photos` how
     /// many photos name a piece.
+    /// The Kit as the column shows it: the service's pieces, then the ones picked in the sheet, there at once
+    /// though Done has not sent them yet.
     fn shown(&self, kind: Kind, default: Option<&str>, photos: &dyn Fn(&Piece) -> i32) -> Vec<KitPiece> {
-        self.kept.of(kind).map(|p| piece(p, KitMark::Kept, words::detail(p), default == Some(p.name.as_str()), photos(p))).collect()
+        let kept = self.kept.of(kind).map(|p| piece(p, KitMark::Kept, words::detail(p), default == Some(p.name.as_str()), photos(p)));
+        let picked = self.picks.iter().filter(|p| p.kind == kind).map(|p| piece(p, KitMark::Added, words::detail(p), false, -1));
+        kept.chain(picked).collect()
     }
 }
 

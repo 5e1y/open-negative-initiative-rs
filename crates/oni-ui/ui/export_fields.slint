@@ -32,6 +32,7 @@ export component FrameFields inherits VerticalLayout {
                 search-line: @tr("Search on The Lens DB");
                 searching: Kit.picking;
                 search => { Kit.search-gear(1); }
+                served: Gear.served(1, self.text, Gear.revision);
                 value: root.line.camera;
                 placeholder: @tr("e.g. Leica M6");
                 enabled: root.line.ready;
@@ -50,6 +51,7 @@ export component FrameFields inherits VerticalLayout {
                     search-line: @tr("Search on The Lens DB");
                     searching: Kit.picking;
                     search => { Kit.search-gear(2); }
+                    served: Gear.served(2, self.text, Gear.revision);
                     value: root.line.lens;
                     placeholder: @tr("e.g. Summicron 50 mm");
                     enabled: root.line.ready;

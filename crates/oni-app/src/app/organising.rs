@@ -371,7 +371,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_filter_picked(move |m| p.filter_picked(m));
         let p = me.clone();
-        lib.on_filter_gear_picked(move |lens, name| p.filter_gear(lens, &name));
+        lib.on_filter_line_picked(move |at| p.filter_line_picked(at));
         let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));
         let p = me.clone();

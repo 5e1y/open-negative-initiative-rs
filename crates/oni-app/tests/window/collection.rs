@@ -89,6 +89,18 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(opened.borrow().len(), pages + 1, "twin: Add opens no page");
     assert!(kit.get_found().iter().any(|f| f.name == "Nikon FM2" && f.mark == KitMark::Added), "the FM2 picked");
     assert_eq!(kit.get_picked(), 1);
+    let fm2 = |k: &Kit| k.get_bodies().iter().find(|p| p.name == "Nikon FM2").map(|p| p.mark);
+    assert_eq!(fm2(&kit), Some(KitMark::Added), "the pick joins the Kit's column at once, before Done");
+    let more = common::placed(w, Role::Button, "More for Nikon FM2");
+    assert_eq!(more.len(), 2, "in the sheet's column and the gallery's alike");
+    common::click(rig, w, more.iter().min_by(|a, b| a.x.total_cmp(&b.x)).unwrap().middle());
+    rig.settle();
+    common::click(rig, w, common::in_popup(w, Role::Button, "Remove from My Kit").middle());
+    rig.settle();
+    assert!(!w.global::<Confirm>().get_shown() && fm2(&kit).is_none() && kit.get_picked() == 0, "a pick taken out at once, nothing asked");
+    common::click(rig, w, common::the(w, Role::Button, "Add").middle());
+    rig.settle();
+    assert_eq!(fm2(&kit), Some(KitMark::Added));
     assert!(calls(&fake, "/kit/changes").is_empty(), "twin: nothing reaches the service before Done");
     common::click(rig, w, common::the(w, Role::Button, "Done").middle());
     rig.until("Done sent and closed", WAIT, || !kit.get_picking());
@@ -217,11 +229,17 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.key(&slint::SharedString::from(slint::platform::Key::Return));
     rig.settle();
     assert_eq!(names(gear.get_bodies()).iter().filter(|n| *n == "Rollei 35").count(), 1, "Return gives the name typed");
-    common::click(rig, w, common::the(w, Role::TextInput, "Camera Body").middle());
+    let field = common::the(w, Role::TextInput, "Camera Body");
+    let level = |d: &common::Placed| d.x <= field.x + 1.0 && (d.y + d.height / 2.0 - field.y - field.height / 2.0).abs() < 4.0;
+    let discs = || common::placed(w, Role::Image, "From The Lens DB").into_iter().filter(level).count();
+    assert_eq!(discs(), 0, "twin: a name typed by hand stands bare in its field");
+    common::click(rig, w, field.middle());
     rig.settle();
     common::click(rig, w, common::in_popup(w, Role::Button, "Nikon FM2").middle());
     rig.settle();
     assert_eq!(lib.get_camera_body(), "Nikon FM2");
+    println!("shot {}", rig.shot("kit-field-served").display());
+    assert_eq!(discs(), 1, "The Lens DB's disc before its name in the field itself: {field:?} {:?}", common::placed(w, Role::Image, "From The Lens DB"));
 
     // The Kit's card is the search's without its Add: its name opens its page on the service, the menu no more.
     common::click(rig, w, EMPTY);

@@ -97,6 +97,7 @@ export component Info inherits Surface {
                             search-line: @tr("Search on The Lens DB");
                             searching: Kit.picking;
                             search => { Kit.search-gear(1); }
+                            served: Gear.served(1, self.text, Gear.revision);
                             placeholder: @tr("e.g. Leica M6");
                             text <=> Library.camera-body;
                             cards: Gear.body-cards;
@@ -120,6 +121,7 @@ export component Info inherits Surface {
                             search-line: @tr("Search on The Lens DB");
                             searching: Kit.picking;
                             search => { Kit.search-gear(2); }
+                            served: Gear.served(2, self.text, Gear.revision);
                             placeholder: @tr("e.g. Summicron 35mm f/2");
                             text <=> Library.roll-lens;
                             cards: Gear.lens-cards;

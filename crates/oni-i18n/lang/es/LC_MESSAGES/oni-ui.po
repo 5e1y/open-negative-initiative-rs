@@ -1093,7 +1093,7 @@ msgstr "Reemplazar"
 msgid "Rename"
 msgstr "Renombrar"
 
-#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/library_tree.slint
+#: crates/oni-app/src/app/filter_menu.rs crates/oni-ui/ui/export_fields.slint
 msgid "Camera"
 msgstr "Cámara"
 
@@ -1121,7 +1121,7 @@ msgstr "Aún no hay cuerpos"
 msgid "A body typed here joins your kit"
 msgstr "Un cuerpo escrito aquí se suma a tu kit"
 
-#: crates/oni-app/src/app/organising/kit/words.rs crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/library_tree.slint
+#: crates/oni-app/src/app/filter_menu.rs crates/oni-app/src/app/organising/kit/words.rs crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "Lens"
 msgstr "Objetivo"
 
@@ -1610,16 +1610,16 @@ msgid "More for {}"
 msgstr "Más para {}"
 
 #: crates/oni-ui/ui/kit.slint
+msgid "Remove from My Kit"
+msgstr "Quitar de Mi Kit"
+
+#: crates/oni-ui/ui/kit.slint
 msgid "Remove Default"
 msgstr "Quitar predeterminado"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Set as Default"
 msgstr "Predeterminar"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Remove from My Kit"
-msgstr "Quitar de Mi Kit"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "ONI partners with The Lens DB, the largest camera bodies and lenses database in the world."
@@ -1732,12 +1732,6 @@ msgstr "Propone una pieza a The Lens DB, revisada antes de aparecer"
 #: crates/oni-ui/ui/kit.slint
 msgid "Saving to The Lens DB…"
 msgstr "Guardando en The Lens DB…"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "{n} piece joins your Kit on The Lens DB at Done."
-msgid_plural "{n} pieces join your Kit on The Lens DB at Done."
-msgstr[0] "{n} pieza se une a tu kit en The Lens DB al pulsar OK."
-msgstr[1] "{n} piezas se unen a tu kit en The Lens DB al pulsar OK."
 
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Names only"
@@ -2963,25 +2957,13 @@ msgstr "Copiar código del preajuste"
 msgid "Copies the preset as one line of text, to paste in a message."
 msgstr "Copia el preajuste como una línea de texto para pegarla en un mensaje."
 
-#: crates/oni-app/src/app/gallery_view.rs crates/oni-ui/ui/rating_filter.slint
-msgid "All"
-msgstr "Todas"
-
-#: crates/oni-ui/ui/rating_filter.slint
+#: crates/oni-app/src/app/filter_menu.rs crates/oni-ui/ui/rating_filter.slint
 msgid "All Photos"
 msgstr "Todas las fotos"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "Medals"
-msgstr "Medallas"
-
-#: crates/oni-ui/ui/rating_filter.slint
-msgid "Photos taken with one lens"
-msgstr "Fotos tomadas con un objetivo"
-
-#: crates/oni-ui/ui/rating_filter.slint
-msgid "Photos taken with one camera"
-msgstr "Fotos tomadas con una cámara"
+msgid "All"
+msgstr "Todas"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"

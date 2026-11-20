@@ -74,14 +74,15 @@ export component PieceCard inherits Surface {
     menu := Menu {
         x: root.width - self.span;
         y: root.height;
-        lines: [
+        // A piece picked and not sent yet can only be taken out again.
+        property <bool> picked: root.piece.mark == KitMark.added;
+        lines: self.picked ? [{ text: @tr("Remove from My Kit"), enabled: true }] : [
             { text: root.piece.by-default ? @tr("Remove Default") : @tr("Set as Default"), enabled: true },
             { text: @tr("Remove from My Kit"), enabled: true, rule: true },
         ];
         chosen(i) => {
             menu.close();
-            if (i == 0) { root.preferred(); }
-            if (i == 1) { root.removed(); }
+            if (self.picked || i == 1) { root.removed(); } else { root.preferred(); }
         }
     }
 }
@@ -317,12 +318,7 @@ export component KitSearchSheet inherits Sheet {
                     padding-left: SheetStyle.padding;
                     padding-right: SheetStyle.padding;
                     spacing: Space.s;
-                    if Kit.sending || Kit.picked > 0: Label {
-                        role: TextRole.note;
-                        wrap: word-wrap;
-                        text: Kit.sending ? @tr("Saving to The Lens DB…")
-                            : @tr("{n} piece joins your Kit on The Lens DB at Done." | "{n} pieces join your Kit on The Lens DB at Done." % Kit.picked);
-                    }
+                    if Kit.sending: Label { role: TextRole.note; wrap: word-wrap; text: @tr("Saving to The Lens DB…"); }
                     HorizontalLayout {
                         spacing: Space.s;
                         TldbMark { horizontal-stretch: 1; credited: true; clicked => { Kit.open-site(); } }

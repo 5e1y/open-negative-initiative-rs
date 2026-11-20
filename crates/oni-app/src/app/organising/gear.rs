@@ -13,6 +13,13 @@ impl Ctl {
             s.org.collection = Collection::load(&s.support);
         }
         me.seed_gear();
+        if let Some(w) = me.window() {
+            let p = me.clone();
+            w.global::<GearGlobal>().on_served(move |kind, name, _| {
+                let kind = if kind == 1 { Kind::Camera } else { Kind::Lens };
+                p.state.borrow().org.kit.kept.named(kind, &name).is_some()
+            });
+        }
         me.publish_gear();
     }
 
@@ -70,5 +77,6 @@ impl Ctl {
         g.set_lens_cards(ModelRc::new(VecModel::from(self.kit_cards(Kind::Lens))));
         g.set_bodies(model(self.kit_names(Kind::Camera, &bodies)));
         g.set_lenses(model(self.kit_names(Kind::Lens, &lenses)));
+        g.set_revision(g.get_revision().wrapping_add(1));
     }
 }

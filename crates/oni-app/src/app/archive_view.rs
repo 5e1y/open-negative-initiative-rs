@@ -114,7 +114,7 @@ impl Ctl {
         self.read_library();
         self.lay_grid();
         self.publish_tree();
-        self.publish_gear_filters();
+        self.publish_filter();
         self.publish_bar();
         if restocked {
             self.publish_navigator();

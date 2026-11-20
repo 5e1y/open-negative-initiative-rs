@@ -106,7 +106,7 @@ impl Roll {
             Some(i_slint_core::window::PopupWindowLocation::ChildWindow(at)) => *at,
             _ => panic!("no menu shown, so no {name:?} line"),
         };
-        let lines: Vec<_> = common::placed(self.w(), Role::Button, name).into_iter().filter(|p| p.width > 100.0).collect();
+        let lines: Vec<_> = common::placed(self.w(), Role::Button, name).into_iter().filter(|p| p.width > 60.0).collect();
         assert_eq!(lines.len(), 1, "one {name:?} line: {lines:?}");
         common::Placed { x: corner.x + lines[0].x, y: corner.y + lines[0].y, ..lines[0] }
     }
@@ -168,10 +168,10 @@ pub(crate) fn the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_expor
     let Some(roll) = Roll::new("sidebar-filter-gallery") else { return };
     let lib = roll.lib();
     assert!(roll.w().global::<App>().get_gallery());
-    let (head, folders) = (roll.filter("Medals"), common::the(roll.w(), Role::Button, "Hide Computer"));
+    let (head, folders) = (roll.filter("All Photos"), common::the(roll.w(), Role::Button, "Hide Computer"));
     assert!(head.y + head.height <= folders.y, "the filter heads the column, above the folders: {head:?} {folders:?}");
 
-    roll.pick("Medals", "Gold", "sidebar-filter-gallery-menu");
+    roll.pick("All Photos", "Gold", "sidebar-filter-gallery-menu");
     assert_eq!(roll.shown(), ["A.tif", "C.tif"]);
     println!("shot {}", roll.rig.shot("sidebar-filter-gallery-gold").display());
     assert_eq!(roll.exported(), ["A.tif", "C.tif"], "Select All picks every photo the filter shows, not C's roll alone");
@@ -190,9 +190,8 @@ pub(crate) fn the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_expor
     assert_eq!(roll.exported(), ["C.tif", "D.tif"], "with no filter Select All completes C's roll alone");
 }
 
-/// Each roll given a body and a lens in its column, the camera and lens selects under the medals' list them,
-/// keep one body or one lens in the grid, both at once, and All gives every photo back; each reads its own
-/// name while it keeps All.
+/// Each roll given a body and a lens in its column, the gallery's one filter lists them under the medals, in
+/// parts: a body and a lens kept at once, a pick again letting its part go, All Photos giving every photo back.
 pub(crate) fn the_camera_and_lens_filters_keep_one_body_or_lens() {
     let Some(roll) = Roll::new("sidebar-filter-gear") else { return };
     let (lib, ctl) = (roll.lib(), roll.ctl());
@@ -205,23 +204,23 @@ pub(crate) fn the_camera_and_lens_filters_keep_one_body_or_lens() {
         roll.rig.landed(&ctl);
     }
     roll.rig.settle();
-    let names = |m: slint::ModelRc<SharedString>| m.iter().map(|n| n.to_string()).collect::<Vec<_>>();
-    let rows = (lib.get_info_kind(), lib.get_camera_body(), lib.get_roll_lens(), names(lib.get_filter_lenses()));
-    assert_eq!(names(lib.get_filter_bodies()), ["All", "Leica M6", "Nikon FM2"], "{rows:?}");
-    assert_eq!(names(lib.get_filter_lenses()), ["All", "Nikkor 50mm f/1.8", "Summicron 35"]);
-    let (medals, camera, lens) = (roll.filter("Medals"), roll.filter("Camera"), roll.filter("Lens"));
-    assert!(medals.y < camera.y && camera.y < lens.y, "the medals, the camera, the lens: {medals:?} {camera:?} {lens:?}");
+    let lines = || lib.get_filter_lines().iter().map(|l| (l.text.to_string(), l.checked)).collect::<Vec<_>>();
+    let words = |l: Vec<(String, bool)>| l.into_iter().map(|(w, _)| w).collect::<Vec<_>>();
+    assert_eq!(
+        words(lines()),
+        ["All Photos", "Gold", "Silver", "Bronze", "Camera", "Leica M6", "Nikon FM2", "Lens", "Nikkor 50mm f/1.8", "Summicron 35"]
+    );
 
-    roll.pick("Camera", "Nikon FM2", "sidebar-filter-camera-menu");
+    roll.pick("All Photos", "Nikon FM2", "sidebar-filter-gear-menu");
     assert_eq!(roll.shown(), ["A.tif", "B.tif"], "Roll 1's body alone");
-    roll.filter("Nikon FM2");
-    roll.pick("Lens", "Summicron 35", "sidebar-filter-lens-menu");
+    roll.pick("Nikon FM2", "Summicron 35", "sidebar-filter-gear-both");
     assert!(roll.shown().is_empty(), "twin: no photo of the FM2 took the Summicron");
+    let checked: Vec<String> = lines().into_iter().filter(|(_, c)| *c).map(|(w, _)| w).collect();
+    assert_eq!(checked, ["Nikon FM2", "Summicron 35"], "one line checked a part");
     println!("shot {}", roll.rig.shot("sidebar-filter-gear-none").display());
-    roll.pick("Nikon FM2", "All", "sidebar-filter-camera-all");
-    assert_eq!(roll.shown(), ["C.tif", "D.tif"], "the Summicron alone");
-    roll.pick("Summicron 35", "All", "sidebar-filter-lens-all");
-    assert_eq!(roll.shown().len(), 4, "All gives every photo back");
-    roll.filter("Camera");
-    roll.filter("Lens");
+    roll.pick("Nikon FM2 · Summicron 35", "Nikon FM2", "sidebar-filter-gear-again");
+    assert_eq!(roll.shown(), ["C.tif", "D.tif"], "picked again, the body lets go: the Summicron alone");
+    roll.pick("Summicron 35", "All Photos", "sidebar-filter-gear-all");
+    assert_eq!(roll.shown().len(), 4, "All Photos gives every photo back");
+    roll.filter("All Photos");
 }

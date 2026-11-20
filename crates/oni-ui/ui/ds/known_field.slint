@@ -30,6 +30,8 @@ export component KnownField inherits HorizontalLayout {
     callback picked(string);
     // The list's last line, which opens the search over the window; its list closes for it and drops again,
     // with what the search added, once `searching` ends.
+    // The words name a piece The Lens DB gives: its disc stands before them in the field, as in the list.
+    in property <bool> served;
     in property <string> search-line;
     in property <bool> searching;
     callback search();
@@ -78,6 +80,7 @@ export component KnownField inherits HorizontalLayout {
             padding-left: FieldStyle.across;
             padding-right: FieldStyle.across;
             spacing: Space.xs;
+            if root.served: VerticalLayout { alignment: center; TldbDisc { } }
             entry := Entry {
                 name: root.name;
                 placeholder: root.placeholder;

@@ -11,6 +11,10 @@ export global Gear {
     in property <[GearCard]> lens-cards;
     in property <[string]> bodies;
     in property <[string]> lenses;
+    // Whether a name stands for a piece of the Kit, 1 a body, 2 a lens; `revision` moves at each Kit
+    // published, so a field asks again.
+    in property <int> revision;
+    pure callback served(int, string, int) -> bool;
 }
 
 // Where a piece stands: `kept` in the Kit on the service, `added` picked in the search for Done to send,

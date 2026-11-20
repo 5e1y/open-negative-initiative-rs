@@ -72,8 +72,19 @@ impl Ctl {
     }
 
     /// A removal erases what the person noted of the piece on The Lens DB: asked first, then sent at once.
+    /// A pick, listed after the service's pieces, goes at once: nothing of it was sent.
     pub(super) fn kit_remove(&self, kind: GearKind, at: usize) {
         let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
+        let held = self.state.borrow().org.kit.kept.of(kind).count();
+        if at >= held {
+            {
+                let mut s = self.state.borrow_mut();
+                let picks = &mut s.org.kit.picks;
+                let Some(i) = picks.iter().enumerate().filter(|(_, p)| p.kind == kind).nth(at - held).map(|(i, _)| i) else { return };
+                picks.remove(i);
+            }
+            return self.publish_kit();
+        }
         let Some(key) = self.state.borrow().org.kit.kept.of(kind).nth(at).map(Piece::key) else { return };
         let message = tr("The piece leaves your Kit on The Lens DB, with the condition, price, serial number and notes kept there for it.");
         self.ask(tr("Remove From Your Kit?"), message, tr("Remove"), true, Pending::Run(Box::new(move |c: &Rc<Ctl>| c.kit_change(Vec::new(), vec![key], false))));
