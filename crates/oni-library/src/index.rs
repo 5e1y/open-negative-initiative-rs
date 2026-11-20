@@ -6,7 +6,7 @@ use oni_settings::{ConversionMode, Date, Film, Id, Medal};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 use std::path::{Path, PathBuf};
 
-pub const SCHEMA_VERSION: i32 = 13;
+pub const SCHEMA_VERSION: i32 = 14;
 /// How long a write waits for another process's on the same file to end; theirs last milliseconds.
 pub const BUSY: std::time::Duration = std::time::Duration::from_secs(5);
 
@@ -32,8 +32,9 @@ pub struct Entry {
     /// The camera and the lens its sidecar's EXIF line keeps, cached for the Kit's counts.
     pub kept_camera: Option<String>,
     pub kept_lens: Option<String>,
-    /// While its folder's marker makes the folder a roll, that roll's body, empty when it names none.
+    /// While its folder's marker makes the folder a roll, that roll's body and lens, empty when it names none.
     pub marker_body: Option<String>,
+    pub marker_lens: Option<String>,
     /// The format its sidecar was read at, none without one: a row read off an earlier one is read
     /// again at each folder read until the file is brought, as bringing keeps the sidecar's date.
     pub sidecar_format: Option<i64>,
@@ -57,8 +58,24 @@ impl Entry {
             kept_camera: None,
             kept_lens: None,
             marker_body: None,
+            marker_lens: None,
             sidecar_format: None,
         }
+    }
+
+    /// The body the photo was shot with: the camera its EXIF line keeps, else its folder's roll's, else its
+    /// sidecar's roll's; a folder's roll naming none names none, over its sidecar's.
+    pub fn body(&self) -> Option<&str> {
+        let kept = self.kept_camera.as_deref().filter(|k| !k.trim().is_empty());
+        let named = kept.or(self.marker_body.as_deref()).or(self.film.as_ref().and_then(|f| f.camera_body.as_deref()));
+        named.filter(|n| !n.trim().is_empty())
+    }
+
+    /// The lens, read as the body is.
+    pub fn lens(&self) -> Option<&str> {
+        let kept = self.kept_lens.as_deref().filter(|k| !k.trim().is_empty());
+        let named = kept.or(self.marker_lens.as_deref()).or(self.film.as_ref().and_then(|f| f.lens.as_deref()));
+        named.filter(|n| !n.trim().is_empty())
     }
 }
 
@@ -86,7 +103,7 @@ pub struct LibraryIndex {
 
 const COLUMNS: &str = "path, imported_at, captured_at, fingerprint, label, film_id, film_name, \
     film_order, film_stock, film_shot_date, film_camera_body, manual_order, mode, pass_of, \
-    leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body, sidecar_format";
+    leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body, sidecar_format, film_lens, marker_lens";
 
 impl LibraryIndex {
     /// Lives in the caches folder, which the system may purge, named by its schema: 1.5.6 and the Swift
@@ -147,7 +164,9 @@ impl LibraryIndex {
                 kept_camera TEXT,
                 kept_lens TEXT,
                 marker_body TEXT,
-                sidecar_format INTEGER
+                sidecar_format INTEGER,
+                film_lens TEXT,
+                marker_lens TEXT
             );
             CREATE INDEX IF NOT EXISTS photos_imported_at ON photos(imported_at);
             CREATE INDEX IF NOT EXISTS photos_captured_at ON photos(captured_at);
@@ -182,7 +201,7 @@ impl LibraryIndex {
         self.connection
             .prepare_cached(&format!(
                 "INSERT INTO photos ({COLUMNS})
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     imported_at = excluded.imported_at,
                     captured_at = excluded.captured_at,
@@ -203,7 +222,9 @@ impl LibraryIndex {
                     kept_camera = excluded.kept_camera,
                     kept_lens = excluded.kept_lens,
                     marker_body = excluded.marker_body,
-                    sidecar_format = excluded.sidecar_format"
+                    sidecar_format = excluded.sidecar_format,
+                    film_lens = excluded.film_lens,
+                    marker_lens = excluded.marker_lens"
             ))?
             .execute(params![
                 normal(&entry.path),
@@ -227,6 +248,8 @@ impl LibraryIndex {
                 entry.kept_lens,
                 entry.marker_body,
                 entry.sidecar_format,
+                film.and_then(|f| f.lens.clone()),
+                entry.marker_lens,
             ])?;
         Ok(())
     }
@@ -329,6 +352,7 @@ fn entry(row: &Row<'_>) -> rusqlite::Result<Entry> {
             stock: row.get(8)?,
             shot_date: date(9)?,
             camera_body: row.get(10)?,
+            lens: row.get(21)?,
         }),
         None => None,
     };
@@ -348,6 +372,7 @@ fn entry(row: &Row<'_>) -> rusqlite::Result<Entry> {
         kept_camera: row.get(17)?,
         kept_lens: row.get(18)?,
         marker_body: row.get(19)?,
+        marker_lens: row.get(22)?,
         sidecar_format: row.get(20)?,
     })
 }
@@ -356,7 +381,8 @@ mod columns;
 mod forget;
 mod frames;
 mod gear;
-pub use gear::GearCounts;
+pub use columns::{MarkerGear, marker_gear};
+pub use gear::{GearCounts, key as gear_key};
 pub mod listed;
 pub use frames::{shown, trashed};
 pub mod prune;

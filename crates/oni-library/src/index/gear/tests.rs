@@ -147,3 +147,31 @@ fn a_marker_reaches_its_folder_s_own_rows() {
     assert_eq!(body("/negs/Roll/a.NEF").as_deref(), Some("Nikon FM2"));
     assert_eq!((body("/negs/Roll/Inner/b.NEF"), body("/negs/Rolled/c.NEF")), (None, None), "twin: a subfolder and a namesake are other folders");
 }
+
+/// A roll's lens counts for its photos as its body does: the EXIF line's over the folder's roll's over the
+/// sidecar's roll's, a folder's roll naming none naming none; each photo answers the same from its row.
+#[test]
+fn a_roll_s_lens_counts_and_names_its_photos_as_its_body_does() {
+    let index = LibraryIndex::open(std::path::Path::new(":memory:")).unwrap();
+    let lensed = |lens: Option<&str>| Film { lens: lens.map(str::to_owned), ..roll(Some("Nikon FM2")) };
+    let rows = [
+        ("/negs/A/a.NEF", Some("Nikkor 50"), None, None),
+        ("/negs/A/b.NEF", Some("Nikkor 50"), Some(""), Some("Summicron 35")),
+        ("/negs/B/c.NEF", Some("Nikkor 50"), Some("Takumar 55"), None),
+        ("/negs/B/d.NEF", Some("Nikkor 50"), Some(""), None),
+    ];
+    for (path, film, marker, kept) in rows {
+        let entry = Entry { film: Some(lensed(film)), marker_lens: marker.map(str::to_owned), kept_lens: kept.map(str::to_owned), ..Entry::new(path, day(), path) };
+        index.upsert(&entry).unwrap();
+    }
+    let counts = index.gear_counts().unwrap();
+    assert_eq!((counts.lens("nikkor  50"), counts.lens("Summicron 35"), counts.lens("Takumar 55")), (1, 1, 1), "{counts:?}");
+    let lens = |p: &str| index.row(p).unwrap().lens().map(str::to_owned);
+    assert_eq!(
+        [lens("/negs/A/a.NEF"), lens("/negs/A/b.NEF"), lens("/negs/B/c.NEF"), lens("/negs/B/d.NEF")],
+        [Some("Nikkor 50".into()), Some("Summicron 35".into()), Some("Takumar 55".into()), None],
+        "twin: a folder's roll naming no lens hides its sidecar's"
+    );
+    index.set_marker("/negs/B", Some(&lensed(Some("Jupiter 8")))).unwrap();
+    assert_eq!((lens("/negs/B/c.NEF"), lens("/negs/B/d.NEF")), (Some("Jupiter 8".into()), Some("Jupiter 8".into())), "the marker's lens reaches its rows");
+}

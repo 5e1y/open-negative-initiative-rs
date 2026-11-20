@@ -25,11 +25,14 @@ pub struct Line {
     default_lens: Option<String>,
 }
 
-/// The scan's own facts, its roll's camera body over the scan's camera and its roll's stock as the film.
+/// The scan's own facts, its roll's camera body and lens over the scan's and its roll's stock as the film.
 fn facts(path: &Path, roll: Option<&Film>) -> ExifMetadata {
     let mut scan = oni_export::scan_metadata(path);
     if let Some(body) = roll.and_then(|f| f.camera_body.as_deref()).filter(|b| !b.is_empty()) {
         scan.camera = body.to_owned();
+    }
+    if let Some(lens) = roll.and_then(|f| f.lens.as_deref()).filter(|l| !l.is_empty()) {
+        scan.lens = lens.to_owned();
     }
     scan.film = film_stock(roll.and_then(|f| f.stock.as_deref())).map(|k| k.display_name.to_owned()).unwrap_or_default();
     scan
@@ -71,7 +74,8 @@ pub fn opening_line(path: &Path, roll: Option<&Film>, artist: &str, copyright: &
     let opened = derived(&facts, artist, copyright);
     let rolled = roll.as_ref().and_then(|f| f.camera_body.as_deref()).is_some_and(|b| !b.is_empty());
     let default_body = defaults.body.clone().filter(|_| !rolled && kept.camera.is_none());
-    let default_lens = defaults.lens.clone().filter(|_| kept.lens.is_none());
+    let lensed = roll.as_ref().and_then(|f| f.lens.as_deref()).is_some_and(|l| !l.is_empty());
+    let default_lens = defaults.lens.clone().filter(|_| !lensed && kept.lens.is_none());
     let mut shown = opened.clone();
     if let Some(body) = &default_body {
         shown.camera = body.clone();
@@ -170,6 +174,24 @@ mod tests {
         for p in [&path, &rolled, &fresh] {
             cleared(p);
         }
+    }
+
+    /// A roll's lens names its frames' lens over the scan's and the Kit's default, follows the roll while no hand
+    /// set it, and a lens a hand set stays.
+    #[test]
+    fn a_roll_s_lens_names_its_frames_and_follows_it() {
+        let lensed = |lens: &str| Film { lens: Some(lens.into()), ..roll(1, "Nikon FM2") };
+        let fm2 = defaults("Nikon FM2", "Nikkor 50");
+        let path = frame("roll-lens");
+        assert_eq!(gear(&path, Some(&lensed("Nikkor 35")), &fm2).1, "Nikkor 35", "the roll's lens over the default");
+        written(&path, Some(&lensed("Nikkor 35")), &fm2);
+        assert_eq!(gear(&path, Some(&lensed("Nikkor 85")), &fm2).1, "Nikkor 85", "a frame written follows its roll's lens");
+        assert_eq!(gear(&path, Some(&roll(1, "Nikon FM2")), &fm2).1, "Nikkor 50", "twin: a roll naming none leaves the default");
+        let mut line = opening_line(&path, Some(&lensed("Nikkor 35")), "", "", &fm2);
+        line.row.metadata.lens = "Elmarit 28".into();
+        keep_line(&path, &line.typed("", "", true));
+        assert_eq!(gear(&path, Some(&lensed("Nikkor 85")), &fm2).1, "Elmarit 28", "the lens a hand set stays");
+        cleared(&path);
     }
 
     /// The line an export keeps reaches the Kit's counts once the landed frame's row is read again.

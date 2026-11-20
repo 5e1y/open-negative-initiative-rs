@@ -25,7 +25,7 @@ impl Ctl {
                 return;
             }
             s.org.reads += 1;
-            (s.reads.next(), s.nav.computer.clone(), s.filter)
+            (s.reads.next(), s.nav.computer.clone(), s.filter.clone())
         };
         std::thread::Builder::new()
             .name("library".into())
@@ -40,7 +40,7 @@ impl Ctl {
                     // The tree, the copies and the tile keys are cut here, so a landing costs the interface no cut.
                     let copies = index.copies();
                     let fingerprints = rows.iter().map(|e| (e.path.clone(), thumbnails::key(&e.fingerprint, &e.path, &copies))).collect();
-                    let landed = Landed { staged: Archive::from_rows(&folder, &rows, survey, filter), copies, fingerprints };
+                    let landed = Landed { staged: Archive::from_rows(&folder, &rows, survey, filter.clone()), copies, fingerprints };
                     let survey = survey.clone();
                     let (asked, folder) = (asked.clone(), folder.clone());
                     with_shell(move |c| c.take_rows(asked, folder, rows, done, survey, landed));

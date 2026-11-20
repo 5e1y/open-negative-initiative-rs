@@ -1,5 +1,6 @@
 // The rating filter, the photos' one in the grid and the column alike: every photo, or the photos
-// wearing one medal, named in words on a select with the medal's figure struck as the tiles wear it.
+// wearing one medal, named in words on a select with the medal's figure struck as the tiles wear it;
+// `named` beside the camera and lens filters, it reads Medals while it keeps All, All its first line alone.
 import { Picker, PickerFace } from "ds/ds.slint";
 import { Library } from "library.slint";
 
@@ -7,9 +8,11 @@ export component RatingFilter inherits Picker {
     // Beside the layouts' select, whose longest words in French leave it little room: All, or the medal
     // kept alone, its lines still in words.
     in property <bool> compact;
-    property <[string]> kept: [@tr("All Photos"), @tr("Gold"), @tr("Silver"), @tr("Bronze")];
+    in property <bool> named;
+    property <[string]> kept: [root.named ? @tr("All") : @tr("All Photos"), @tr("Gold"), @tr("Silver"), @tr("Bronze")];
     face: PickerFace.pill;
-    value: root.compact && Library.filter-medal == 0 ? @tr("All") : root.kept[Library.filter-medal];
+    value: root.named && Library.filter-medal == 0 ? @tr("Medals")
+        : root.compact && Library.filter-medal == 0 ? @tr("All") : root.kept[Library.filter-medal];
     medal: Library.filter-medal;
     bare: root.compact;
     lines: [
@@ -19,4 +22,19 @@ export component RatingFilter inherits Picker {
         { text: root.kept[3], enabled: true, medal: 3 },
     ];
     chosen(i) => { Library.filter-picked(i); }
+}
+
+// The camera or the lens filter: every photo, or those shot on one body or with one lens of the open folder;
+// while it keeps All it reads its own name, All its first line alone.
+export component GearFilter inherits Picker {
+    in property <bool> lens;
+    in property <string> title;
+    property <[string]> names: root.lens ? Library.filter-lenses : Library.filter-bodies;
+    property <int> at: root.lens ? Library.filter-lens-at : Library.filter-body-at;
+    face: PickerFace.pill;
+    value: root.at == 0 ? root.title : root.names[root.at];
+    entries: root.names;
+    current: root.at;
+    help: root.lens ? @tr("Photos taken with one lens") : @tr("Photos taken with one camera");
+    chosen(i) => { Library.filter-gear-picked(root.lens, i == 0 ? "" : root.names[i]); }
 }

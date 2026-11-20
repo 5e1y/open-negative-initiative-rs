@@ -3,7 +3,7 @@ import { NavigatorSection } from "navigator.slint";
 import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
-import { RatingFilter } from "rating_filter.slint";
+import { RatingFilter, GearFilter } from "rating_filter.slint";
 
 // `librarySidebar`: in the gallery the navigator takes the archive's column; beside a photo the
 // navigator keeps its height over the opened folder's tree with its photos.
@@ -44,12 +44,16 @@ export component Tree inherits Surface {
                 picked(i) => { Library.surface = i; Library.surface-picked(i); }
             }
         }
-        // In the gallery the filter alone heads the archive's column, as it heads the projects'.
-        if Library.surface == 0 && !root.beside-photo: HorizontalLayout {
+        // In the gallery the filters alone head the archive's column, one under the other so each reads whole:
+        // the medal, the camera, the lens.
+        if Library.surface == 0 && !root.beside-photo: VerticalLayout {
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
             padding-bottom: Space.s;
-            RatingFilter { horizontal-stretch: 1; }
+            spacing: Space.xs;
+            RatingFilter { named: true; horizontal-stretch: 1; }
+            GearFilter { title: @tr("Camera"); horizontal-stretch: 1; }
+            GearFilter { lens: true; title: @tr("Lens"); horizontal-stretch: 1; }
         }
         if Library.surface == 0: NavigatorSection {
             vertical-stretch: root.beside-photo ? 0 : 1;

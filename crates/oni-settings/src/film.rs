@@ -23,11 +23,14 @@ pub struct Film {
     pub shot_date: Option<Date>,
     #[serde(rename = "cameraBody", skip_serializing_if = "Option::is_none", default)]
     pub camera_body: Option<String>,
+    /// The lens the whole roll was shot with, as its body: hand-entered, never read off a scan.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub lens: Option<String>,
 }
 
 impl Film {
     pub fn new(name: &str) -> Self {
-        Film { id: Id::new(), name: name.to_owned(), manual_order: None, stock: None, shot_date: None, camera_body: None }
+        Film { id: Id::new(), name: name.to_owned(), manual_order: None, stock: None, shot_date: None, camera_body: None, lens: None }
     }
 }
 
@@ -184,6 +187,8 @@ struct MarkerWire {
     shot_date: Option<Date>,
     #[serde(rename = "cameraBody", skip_serializing_if = "Option::is_none", default)]
     camera_body: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    lens: Option<String>,
 }
 
 /// A folder made a roll carries its roll in this hidden file, so the roll follows the folder.
@@ -204,6 +209,7 @@ pub mod roll_folder {
             stock: film.stock.clone(),
             shot_date: film.shot_date,
             camera_body: film.camera_body.clone(),
+            lens: film.lens.clone(),
         };
         serde_json::to_string(&wire).unwrap_or_default()
     }
@@ -217,6 +223,7 @@ pub mod roll_folder {
             stock: wire.stock,
             shot_date: wire.shot_date,
             camera_body: wire.camera_body,
+            lens: wire.lens,
         })
     }
 

@@ -371,6 +371,8 @@ impl Ctl {
         let p = me.clone();
         lib.on_filter_picked(move |m| p.filter_picked(m));
         let p = me.clone();
+        lib.on_filter_gear_picked(move |lens, name| p.filter_gear(lens, &name));
+        let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));
         let p = me.clone();
         lib.on_title_edited(move |t| p.title_edited(&t));
@@ -384,6 +386,8 @@ impl Ctl {
         lib.on_shot_date_cleared(move || p.shot_date_cleared());
         let p = me.clone();
         lib.on_camera_body_committed(move |t| p.camera_body_committed(&t));
+        let p = me.clone();
+        lib.on_roll_lens_committed(move |t| p.roll_lens_committed(&t));
         let p = me.clone();
         lib.on_description_committed(move |t| p.description_committed(&t));
     }

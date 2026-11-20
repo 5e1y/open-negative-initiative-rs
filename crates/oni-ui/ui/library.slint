@@ -137,6 +137,15 @@ export global Library {
     // The rating filter: 0 every photo, else the one medal the grid and the trees keep; a line of it picked.
     in property <int> filter-medal;
     callback filter-picked(int);
+    // The camera and lens filters: All, then the gear of the open folder's photos; the line picked, 0 for All.
+    in property <[string]> filter-bodies;
+    in property <[string]> filter-lenses;
+    in property <int> filter-body-at;
+    in property <int> filter-lens-at;
+    in property <string> filter-body;
+    in property <string> filter-lens;
+    // A body or a lens picked by its name, "" for every photo.
+    callback filter-gear-picked(bool, string);
     in property <InfoKind> info-kind;
     in property <string> info-empty;
     in property <string> info-title;
@@ -151,6 +160,8 @@ export global Library {
     in property <bool> shot-date-set;
     in property <bool> shot-date-default;
     in-out property <string> camera-body;
+    // The lens the whole roll was shot with, as its body.
+    in-out property <string> roll-lens;
     in-out property <string> description;
     in property <[StockCount]> stocks;
     in property <[image]> stack;
@@ -236,6 +247,7 @@ export global Library {
     callback shot-date-committed(string, string, string);
     callback shot-date-cleared();
     callback camera-body-committed(string);
+    callback roll-lens-committed(string);
     callback description-committed(string);
 }
 

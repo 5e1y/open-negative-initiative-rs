@@ -114,14 +114,14 @@ impl State {
         self.prepare.fulls.iter().map(|(p, _, _)| p.clone()).collect()
     }
 
-    pub fn filter(&self) -> Option<Medal> {
-        self.filter
+    pub fn filter(&self) -> &crate::library::Filter {
+        &self.filter
     }
 
     /// Under a rating filter, every photo it shows, in the gallery's order: the set it was turned on
     /// to find, which Select All picks whole; none in the ONI Trash, which no filter cuts.
     pub(super) fn filter_shows(&self) -> Option<Vec<String>> {
-        (self.filter.is_some() && !self.trash_shown()).then(|| self.order.clone())
+        (self.filter.cuts() && !self.trash_shown()).then(|| self.order.clone())
     }
 
     /// The thumbnails in memory dropped, as a long scroll drops them, so a check sees a tile read

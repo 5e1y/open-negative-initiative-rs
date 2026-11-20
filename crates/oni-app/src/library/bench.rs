@@ -130,8 +130,8 @@ fn tree_bench() {
     timed("tree (folders::tree)", runs, || folders::tree(&root_of, &rows, &survey.rolls, &survey.folders, &survey.made));
     timed("groups (folders::groups)", runs, || folders::groups(&root_of, &rows, &survey.rolls, &survey.made));
     timed("presence per row (Survey::presence)", runs, || rows.iter().map(|e| survey.presence(&e.path)).filter(|p| p.is_present()).count());
-    let mut archive = timed("archive (Archive::from_rows)", runs, || Archive::from_rows(&folder, &rows, &survey, None));
-    timed("archive, one medal filtered", runs, || Archive::from_rows(&folder, &rows, &survey, Some(Medal::Gold)));
+    let mut archive = timed("archive (Archive::from_rows)", runs, || Archive::from_rows(&folder, &rows, &survey, Filter::default()));
+    timed("archive, one medal filtered", runs, || Archive::from_rows(&folder, &rows, &survey, Filter::of_medal(Medal::Gold)));
     let all = timed("row list (Archive::rows), all unfolded", runs, || archive.rows());
     timed("folded (Archive::folded)", runs, || archive.folded());
     let mut names: Vec<String> = rows.iter().map(|e| oni_library::paths::name(&e.path)).collect();
@@ -157,7 +157,7 @@ fn tree_bench() {
     };
     timed("launch or open a folder: read, archive, rows", runs, || {
         let (rows, survey) = landed(&lib);
-        let a = Archive::from_rows(&folder, &rows, &survey, None);
+        let a = Archive::from_rows(&folder, &rows, &survey, Filter::default());
         a.rows().len()
     });
     timed("open a photo: unfold, rows", runs, || open(&mut archive, &lib.medalled));
@@ -177,7 +177,7 @@ fn tree_bench() {
     let mut medals = Vec::new();
     for i in 0..runs {
         let (rows, start) = medal([Medal::Gold, Medal::None][i % 2]);
-        Archive::from_rows(&folder, &rows, &survey, None).rows();
+        Archive::from_rows(&folder, &rows, &survey, Filter::default()).rows();
         medals.push(start.elapsed().as_secs_f64() * 1e3);
     }
     medals.sort_by(f64::total_cmp);
@@ -186,20 +186,20 @@ fn tree_bench() {
     println!("-- events, the interface thread's share as `lay_archive` lays them");
     let mut landings = Vec::new();
     for _ in 0..runs {
-        let staged = Archive::from_rows(&folder, &rows, &survey, None);
+        let staged = Archive::from_rows(&folder, &rows, &survey, Filter::default());
         let start = Instant::now();
-        let (a, how) = Archive::relaid(None, Some(staged), &folder, &rows, &survey, None);
+        let (a, how) = Archive::relaid(None, Some(staged), &folder, &rows, &survey, Filter::default());
         a.rows();
         landings.push(start.elapsed().as_secs_f64() * 1e3);
         assert_eq!(how, Relaid::Cut);
     }
     landings.sort_by(f64::total_cmp);
     println!("{:<44} best {:>9.2} ms   median {:>9.2} ms", "a read landing, its tree cut off the thread", landings[0], landings[runs / 2]);
-    let mut held = Some(Archive::from_rows(&folder, &rows, &survey, None));
+    let mut held = Some(Archive::from_rows(&folder, &rows, &survey, Filter::default()));
     let mut relay = |name: &str, rows: &[Entry], survey: &Arc<Survey>, staged: Option<Archive>, then: &dyn Fn(&mut Archive)| {
         let mut staged = Some(staged);
         timed(name, runs, || {
-            let (mut a, how) = Archive::relaid(held.take(), staged.take().flatten(), &folder, rows, survey, None);
+            let (mut a, how) = Archive::relaid(held.take(), staged.take().flatten(), &folder, rows, survey, Filter::default());
             then(&mut a);
             let n = a.rows().len();
             held = Some(a);
@@ -219,7 +219,7 @@ fn tree_bench() {
     let mut medals = Vec::new();
     for i in 0..runs {
         let (rows, start) = medal([Medal::Silver, Medal::None][i % 2]);
-        let (a, how) = Archive::relaid(held.take(), None, &folder, &rows, &survey, None);
+        let (a, how) = Archive::relaid(held.take(), None, &folder, &rows, &survey, Filter::default());
         a.rows();
         held = Some(a);
         medals.push(start.elapsed().as_secs_f64() * 1e3);

@@ -1093,7 +1093,7 @@ msgstr "Remplacer"
 msgid "Rename"
 msgstr "Renommer"
 
-#: crates/oni-ui/ui/export_fields.slint
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/library_tree.slint
 msgid "Camera"
 msgstr "Appareil"
 
@@ -1117,7 +1117,7 @@ msgstr "Aucun boîtier pour l'instant"
 msgid "A body typed here joins your kit"
 msgstr "Un boîtier saisi ici rejoint votre kit"
 
-#: crates/oni-app/src/app/organising/kit/words.rs crates/oni-ui/ui/export_fields.slint
+#: crates/oni-app/src/app/organising/kit/words.rs crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/library_tree.slint
 msgid "Lens"
 msgstr "Objectif"
 
@@ -1125,11 +1125,11 @@ msgstr "Objectif"
 msgid "e.g. Summicron 50 mm"
 msgstr "p. ex. Summicron 50 mm"
 
-#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/kit.slint
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/kit.slint
 msgid "No lens yet"
 msgstr "Aucun objectif pour l'instant"
 
-#: crates/oni-ui/ui/export_fields.slint
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "A lens typed here joins your kit"
 msgstr "Un objectif saisi ici rejoint votre kit"
 
@@ -1560,6 +1560,14 @@ msgstr "Boîtier"
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "The body this roll was shot on, hand-entered — never read off a scan's own EXIF."
 msgstr "Le boîtier avec lequel cette pellicule a été prise, saisi à la main : jamais lu dans les EXIF d’un scan."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "The lens this whole roll was shot with, hand-entered: every export's EXIF names it unless a frame names its own."
+msgstr "L’objectif avec lequel tout ce rouleau a été pris, saisi à la main : les EXIF de chaque export le nomment, sauf si une image nomme le sien."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "e.g. Summicron 35mm f/2"
+msgstr "ex. Summicron 35mm f/2"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Film Stocks"
@@ -2947,13 +2955,25 @@ msgstr "Copier le code du préréglage"
 msgid "Copies the preset as one line of text, to paste in a message."
 msgstr "Copie le préréglage sous forme d’une ligne de texte, à coller dans un message."
 
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-ui/ui/rating_filter.slint
+msgid "All"
+msgstr "Toutes"
+
 #: crates/oni-ui/ui/rating_filter.slint
 msgid "All Photos"
 msgstr "Toutes les photos"
 
 #: crates/oni-ui/ui/rating_filter.slint
-msgid "All"
-msgstr "Toutes"
+msgid "Medals"
+msgstr "Médailles"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "Photos taken with one lens"
+msgstr "Photos prises avec un objectif"
+
+#: crates/oni-ui/ui/rating_filter.slint
+msgid "Photos taken with one camera"
+msgstr "Photos prises avec un boîtier"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"
@@ -4292,6 +4312,14 @@ msgid "Choose All Photos in the rating filter to show every photo."
 msgstr "Choisissez Toutes les photos dans le filtre des médailles pour afficher chaque photo."
 
 #: crates/oni-app/src/app/organising/grid.rs
+msgid "No Photos Match"
+msgstr "Aucune photo ne correspond"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "Set Medals, Camera and Lens back to All to show every photo."
+msgstr "Remettez Médailles, Appareil et Objectif sur Toutes pour voir toutes les photos."
+
+#: crates/oni-app/src/app/organising/grid.rs
 msgid "No Photos in a Project"
 msgstr "Aucune photo dans un projet"
 
@@ -4346,6 +4374,10 @@ msgstr "Renommer la pellicule"
 #: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/kit/defaults.rs
 msgid "Set Camera Body"
 msgstr "Définir le boîtier"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Lens"
+msgstr "Définir l’objectif"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Set Shot Date"

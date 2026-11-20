@@ -20,7 +20,7 @@ fn a_filter_lays_its_medals_photos_alone_and_each_folder_counts_them() {
     let roll = |name: &str| NodeId::Folder(format!("{folder}/{name}"));
     rows[4].label = Medal::Gold;
     rows[1].label = Medal::Silver;
-    let gold = Archive::from_rows(folder, &rows, &survey, Some(Medal::Gold));
+    let gold = Archive::from_rows(folder, &rows, &survey, Filter::of_medal(Medal::Gold));
     assert_eq!(photos(&gold), ["b2.NEF"]);
     assert_eq!(counted(&gold, "Roll A"), Some(("0".into(), false)), "a roll with no gold counts none");
     assert_eq!(counted(&gold, "Roll B"), Some(("1".into(), true)));
@@ -28,7 +28,7 @@ fn a_filter_lays_its_medals_photos_alone_and_each_folder_counts_them() {
     assert_eq!(gold.first_shown(&roll("Roll B")), Some(format!("{folder}/Roll B/b2.NEF")));
     assert_eq!(gold.first_shown(&roll("Roll A")), None);
     // Twin: every photo shown lays all six, Roll B counting three and opening on b1.
-    let all = Archive::from_rows(folder, &rows, &survey, None);
+    let all = Archive::from_rows(folder, &rows, &survey, Filter::default());
     assert_eq!(photos(&all).len(), 6);
     assert_eq!(counted(&all, "Roll B"), Some(("3".into(), true)));
     assert_eq!(all.first_shown(&roll("Roll B")), Some(format!("{folder}/Roll B/b1.NEF")));
@@ -36,9 +36,9 @@ fn a_filter_lays_its_medals_photos_alone_and_each_folder_counts_them() {
     // A medal laid under the filter brings its row, and another filter lays its own medal's.
     let mut laid = rows.clone();
     laid[0].label = Medal::Gold;
-    let (more, how) = Archive::relaid(Some(gold), None, folder, &laid, &survey, Some(Medal::Gold));
+    let (more, how) = Archive::relaid(Some(gold), None, folder, &laid, &survey, Filter::of_medal(Medal::Gold));
     assert_eq!((how, photos(&more)), (Relaid::Regrouped, vec!["b2.NEF".to_string(), "a1.NEF".to_string()]));
-    let (silver, how) = Archive::relaid(Some(more), None, folder, &laid, &survey, Some(Medal::Silver));
+    let (silver, how) = Archive::relaid(Some(more), None, folder, &laid, &survey, Filter::of_medal(Medal::Silver));
     assert_eq!((how, photos(&silver)), (Relaid::Regrouped, vec!["a2.NEF".to_string()]));
     // Twin: the rows kept from Gold's lay would still read its two.
     assert_ne!(photos(&silver), ["b2.NEF", "a1.NEF"]);

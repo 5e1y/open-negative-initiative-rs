@@ -36,7 +36,7 @@ impl Ctl {
             let preparing = s.prepare.shown;
             // The bar's ⌘A: the gallery's photos, or those beside the one open.
             let select_all = !sheet && exporting.is_none() && !preparing && if gallery { !s.order.is_empty() } else { open };
-            let (opened, read_done, filter, muted, columns) = (s.opened().is_some(), s.read_done(), s.filter, s.muted, s.columns);
+            let (opened, read_done, filter, muted, columns) = (s.opened().is_some(), s.read_done(), s.filter.clone(), s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split().is_some(), s.screen_gamut, s.negative().is_some());
             // The crop and De-dust are each frame's own, out of reach while frames show together.
             let single = s.together.is_none();
@@ -86,7 +86,7 @@ impl Ctl {
                 panel: if panel_hidden { tr("Show the Panel") } else { tr("Hide the Panel") }.into(),
                 correcting: if dedust { tr("Done Correcting") } else { tr("Remove Dust & Scratches") }.into(),
                 mirror: if settings.geometry.mirrored { tr("Unmirror") } else { tr("Mirror Horizontally") }.into(),
-                filter: filter.map_or(tr("Filter: All Photos").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
+                filter: filter.medal.map_or(tr("Filter: All Photos").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
                 roll: if count > 1 { tr!("Move {count} Photos into a New Roll…", count = count) } else { tr("Move into a New Roll…").into() }.into(),
                 ungroup: if members > 1 { tr!("Ungroup {count} Photos", count = members) } else { tr("Ungroup").into() }.into(),
                 project: crate::organise::new_project(count).into(),
@@ -181,7 +181,10 @@ impl Ctl {
         self.publish_presets();
         self.publish_rolls();
         self.publish_roll_tab();
-        w.global::<Library>().set_filter_medal(filter.map_or(0, library::medal_index));
+        let lib = w.global::<Library>();
+        lib.set_filter_medal(filter.medal.map_or(0, library::medal_index));
+        lib.set_filter_body(filter.body.clone().unwrap_or_default().into());
+        lib.set_filter_lens(filter.lens.clone().unwrap_or_default().into());
     }
 }
 

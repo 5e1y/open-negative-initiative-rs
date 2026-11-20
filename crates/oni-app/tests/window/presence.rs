@@ -109,7 +109,7 @@ pub(crate) fn lay_grid_touches_no_disk() {
         ctl.act(oni_app::Act::CycleFilter);
         rig.pump();
     }
-    assert!(ctl.state.borrow().filter().is_none(), "the filter came round");
+    assert!(!ctl.state.borrow().filter().cuts(), "the filter came round");
     assert!(!missing(&shell, "B"), "a lay reads the state last published, never the file");
     assert!(ctl.state.borrow().presence(&b).is_present());
 

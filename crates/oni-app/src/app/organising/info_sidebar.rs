@@ -92,13 +92,14 @@ impl Ctl {
         let default = default_date(&roll);
         lib.set_shot_date_set(film.shot_date.is_some());
         lib.set_shot_date_default(default.is_some());
-        let key = format!("{} {:?} {:?} {:?}", roll.key(), film.shot_date, film.camera_body, default);
+        let key = format!("{} {:?} {:?} {:?} {:?}", roll.key(), film.shot_date, film.camera_body, film.lens, default);
         if s.org.info_loaded.as_deref() != Some(key.as_str()) {
             let [m, d, y] = date_fields(&roll);
             lib.set_month(m.into());
             lib.set_day(d.into());
             lib.set_year(y.into());
             lib.set_camera_body(film.camera_body.clone().unwrap_or_default().into());
+            lib.set_roll_lens(film.lens.clone().unwrap_or_default().into());
             s.org.info_loaded = Some(key);
         }
         let frames_key = format!("{} {}", roll.key(), roll.paths.join("\n"));
@@ -186,6 +187,10 @@ impl Ctl {
         if body != film.camera_body.clone().unwrap_or_default() {
             film.camera_body = (!body.is_empty()).then_some(body);
         }
+        let lens = lib.get_roll_lens().trim().to_string();
+        if lens != film.lens.clone().unwrap_or_default() {
+            film.lens = (!lens.is_empty()).then_some(lens);
+        }
         let typed = [lib.get_month(), lib.get_day(), lib.get_year()];
         let typed = typed.each_ref().map(|t| t.as_str());
         if !as_shown(&roll, typed)
@@ -200,6 +205,8 @@ impl Ctl {
             tr("Rename Roll")
         } else if film.camera_body != roll.film.camera_body {
             tr("Set Camera Body")
+        } else if film.lens != roll.film.lens {
+            tr("Set Lens")
         } else {
             tr("Set Shot Date")
         };
@@ -256,6 +263,17 @@ impl Ctl {
             return;
         }
         self.update_roll(tr("Set Camera Body"), |f| f.camera_body = (!wanted.is_empty()).then_some(wanted));
+    }
+
+    /// The roll's lens, written as its body is.
+    pub(in crate::app) fn roll_lens_committed(self: &Rc<Self>, draft: &str) {
+        let wanted = draft.trim().to_string();
+        self.note_gear(oni_library::collection::Gear::Lens, &wanted);
+        let Some(roll) = self.state.borrow().roll() else { return };
+        if wanted == roll.film.lens.clone().unwrap_or_default() {
+            return;
+        }
+        self.update_roll(tr("Set Lens"), |f| f.lens = (!wanted.is_empty()).then_some(wanted));
     }
 
     pub(in crate::app) fn description_committed(self: &Rc<Self>, text: &str) {

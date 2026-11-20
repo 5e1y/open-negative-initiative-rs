@@ -107,6 +107,7 @@ fn full_row() -> Entry {
     film.stock = Some("fujifilm-fujicolor".into());
     film.shot_date = Some(Date::since_reference_date(700_000_001.0));
     film.camera_body = Some("Nikon F3".into());
+    film.lens = Some("Nikkor 50mm f/1.8".into());
     Entry {
         path: "/negs/DSC_6432.NEF".into(),
         imported_at: Date::since_reference_date(812_000_002.0),
@@ -123,6 +124,7 @@ fn full_row() -> Entry {
         kept_camera: Some("Leica M6".into()),
         kept_lens: Some("Summicron 35".into()),
         marker_body: Some("Pentax MX".into()),
+        marker_lens: Some("Takumar 50mm".into()),
         sidecar_format: Some(22),
     }
 }

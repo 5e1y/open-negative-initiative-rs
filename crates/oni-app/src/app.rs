@@ -218,7 +218,7 @@ pub struct State {
     folder_turns: crate::ticket::Ticket,
     /// A file to open in the editor once its folder is read, as a dropped file is.
     opening: Option<String>,
-    filter: Option<Medal>,
+    filter: crate::library::Filter,
     painter: Painter,
     disk: mpsc::Sender<String>,
     /// Thumbnails asked of the folder and not landed yet.

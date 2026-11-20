@@ -197,7 +197,47 @@ impl Ctl {
 
     /// A key of the rating filter: every photo, or those wearing that one medal, never a tier above.
     pub(super) fn filter_picked(self: &Rc<Self>, medal: i32) {
-        self.state.borrow_mut().filter = Some(library::medal_of(medal)).filter(|m| *m != Medal::None);
+        self.state.borrow_mut().filter.medal = Some(library::medal_of(medal)).filter(|m| *m != Medal::None);
+        self.lay_archive();
+        self.publish_bar();
+    }
+
+    /// The camera and lens filters' lists: All, then the gear of the open folder's photos, the one picked kept
+    /// in its list while no photo names it any more, so the filter stays seen and undone in one pick.
+    pub(super) fn publish_gear_filters(&self) {
+        let Some(w) = self.window() else { return };
+        let lib = w.global::<crate::Library>();
+        let s = self.state.borrow();
+        let rows = s.folder.as_ref().map(|f| f.rows.as_slice()).unwrap_or_default();
+        for lens in [false, true] {
+            let picked = if lens { s.filter.lens.as_deref() } else { s.filter.body.as_deref() };
+            let mut names = library::gear_names(rows, lens);
+            let key = picked.map(oni_library::index::gear_key);
+            if let Some(p) = picked
+                && !names.iter().any(|n| Some(oni_library::index::gear_key(n)) == key)
+            {
+                names.push(p.to_owned());
+            }
+            let at = picked.map_or(0, |_| 1 + names.iter().position(|n| Some(oni_library::index::gear_key(n)) == key).unwrap_or(0));
+            let lines: Vec<SharedString> = std::iter::once(tr("All").into()).chain(names.into_iter().map(SharedString::from)).collect();
+            let model = ModelRc::new(VecModel::from(lines));
+            if lens {
+                lib.set_filter_lenses(model);
+                lib.set_filter_lens_at(at as i32);
+            } else {
+                lib.set_filter_bodies(model);
+                lib.set_filter_body_at(at as i32);
+            }
+        }
+    }
+
+    /// The camera or lens filter: one body or lens, its name as the list shows it, or every photo on "".
+    pub(super) fn filter_gear(self: &Rc<Self>, lens: bool, name: &str) {
+        let name = Some(name.trim().to_owned()).filter(|n| !n.is_empty());
+        {
+            let mut s = self.state.borrow_mut();
+            if lens { s.filter.lens = name } else { s.filter.body = name }
+        }
         self.lay_archive();
         self.publish_bar();
     }

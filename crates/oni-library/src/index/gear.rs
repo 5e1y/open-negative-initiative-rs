@@ -21,8 +21,8 @@ impl GearCounts {
     }
 }
 
-/// A name as the counts match it: trimmed, each run of spaces one, lower case.
-fn key(name: &str) -> String {
+/// A name as the counts and the gallery's filters match it: trimmed, each run of spaces one, lower case.
+pub fn key(name: &str) -> String {
     name.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase()
 }
 
@@ -53,16 +53,18 @@ impl LibraryIndex {
     /// is the camera its EXIF line keeps, else its folder's roll's, else its sidecar's roll's. Reads no disk.
     pub fn gear_counts(&self) -> rusqlite::Result<GearCounts> {
         let mut statement = self.connection.prepare(
-            "SELECT kept_camera, marker_body, film_camera_body, kept_lens FROM photos \
+            "SELECT kept_camera, marker_body, film_camera_body, kept_lens, marker_lens, film_lens FROM photos \
              WHERE trashed_at IS NULL AND pass_of IS NULL AND sheet = 0",
         )?;
         let mut rows = statement.query([])?;
         let mut counts = GearCounts::default();
         while let Some(row) = rows.next()? {
             let text = |i: usize| row.get::<_, Option<String>>(i);
-            let (kept, marker, sidecar, lens) = (text(0)?, text(1)?, text(2)?, text(3)?);
+            let (kept, marker, sidecar) = (text(0)?, text(1)?, text(2)?);
+            let (kept_lens, marker_lens, roll_lens) = (text(3)?, text(4)?, text(5)?);
             // A folder made a roll is the roll its band shows, over any roll its sidecars name.
             let body = kept.filter(|k| !k.trim().is_empty()).or(marker.or(sidecar));
+            let lens = kept_lens.filter(|k| !k.trim().is_empty()).or(marker_lens.or(roll_lens));
             counted(&mut counts.bodies, body.as_deref());
             counted(&mut counts.lenses, lens.as_deref());
         }

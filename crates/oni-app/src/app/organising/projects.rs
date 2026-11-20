@@ -165,7 +165,7 @@ impl Ctl {
             // The rating filter keeps its one medal in the tree as in the grid, a project with none still shown.
             for root in &mut roots {
                 if let Node::Project(g) = root {
-                    g.entries.retain(|e| s.filter.is_none_or(|m| e.label == m));
+                    g.entries.retain(|e| s.filter.admits(e));
                 }
             }
             let nodes = project_tree::flatten(&roots, &s.org.project_expanded, 0);
@@ -258,7 +258,7 @@ impl State {
         let mut bands = Vec::new();
         for g in self.project_groups() {
             for (folder, entries) in project_tree::by_roll(&g.entries) {
-                let entries: Vec<Entry> = entries.into_iter().filter(|e| self.filter.is_none_or(|m| e.label == m)).collect();
+                let entries: Vec<Entry> = entries.into_iter().filter(|e| self.filter.admits(e)).collect();
                 if entries.is_empty() {
                     continue;
                 }
@@ -280,7 +280,7 @@ impl State {
                 NodeId::Photo { path, .. } => vec![path.clone()],
                 NodeId::Roll { folder, project } => {
                     let entries = groups.iter().filter(|g| g.id == *project).flat_map(|g| &g.entries);
-                    let shown = entries.filter(|e| self.filter.is_none_or(|m| e.label == m));
+                    let shown = entries.filter(|e| self.filter.admits(e));
                     shown.filter(|e| oni_library::paths::parent(&e.path) == *folder).map(|e| e.path.clone()).collect()
                 }
                 NodeId::Project(_) => Vec::new(),

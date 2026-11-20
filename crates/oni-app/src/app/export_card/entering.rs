@@ -147,7 +147,7 @@ impl crate::app::State {
     /// rating filter keeps, the set it was turned on to find; else the open photo.
     pub(in crate::app) fn export_targets(&self, gallery: bool) -> Vec<String> {
         let picked = self.targets_in(gallery);
-        if picked.is_empty() && gallery && self.filter.is_some() && !self.trash_shown() {
+        if picked.is_empty() && gallery && self.filter.cuts() && !self.trash_shown() {
             return self.order.clone();
         }
         picked

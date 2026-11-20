@@ -8,7 +8,7 @@ pub(super) struct Basis {
     pub(super) folder: String,
     pub(super) rows: Vec<Entry>,
     pub(super) survey: Arc<Survey>,
-    pub(super) filter: Option<Medal>,
+    pub(super) filter: super::Filter,
 }
 
 impl Basis {
@@ -49,7 +49,7 @@ pub fn cuts() -> (usize, usize) {
 
 /// Two rows alike but for their medal; every field is named, so a field added is never left out.
 fn alike(a: &Entry, b: &Entry) -> bool {
-    let Entry { path, imported_at, captured_at, fingerprint, label: _, film, manual_order, mode, pass_of, leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body, sidecar_format: _ } = a;
+    let Entry { path, imported_at, captured_at, fingerprint, label: _, film, manual_order, mode, pass_of, leads_passes, trashed_at, sheet, kept_camera, kept_lens, marker_body, marker_lens, sidecar_format: _ } = a;
     *path == b.path
         && *imported_at == b.imported_at
         && *captured_at == b.captured_at
@@ -64,6 +64,7 @@ fn alike(a: &Entry, b: &Entry) -> bool {
         && *kept_camera == b.kept_camera
         && *kept_lens == b.kept_lens
         && *marker_body == b.marker_body
+        && *marker_lens == b.marker_lens
 }
 
 impl Archive {
@@ -75,14 +76,14 @@ impl Archive {
     /// The archive for `entries` and `survey` under `filter`, made from `old` where it can: kept when
     /// nothing it was cut from moved, its medals set when only they did, its groups cut again for a
     /// filter; else `staged`, one cut off this thread from these very rows; else cut here, whole.
-    pub fn relaid(old: Option<Archive>, staged: Option<Archive>, folder: &str, entries: &[Entry], survey: &Arc<Survey>, filter: Option<Medal>) -> (Archive, Relaid) {
+    pub fn relaid(old: Option<Archive>, staged: Option<Archive>, folder: &str, entries: &[Entry], survey: &Arc<Survey>, filter: super::Filter) -> (Archive, Relaid) {
         let old = old.filter(|a| {
             let b = &a.basis;
             b.folder == folder && b.rows.len() == entries.len() && b.same_survey(survey) && b.rows.iter().zip(entries).all(|(a, e)| alike(a, e))
         });
         let Some(mut archive) = old else {
             TREES.fetch_add(1, Ordering::Relaxed);
-            let mut archive = staged.filter(|a| a.cut_from(folder, entries, survey)).unwrap_or_else(|| Archive::from_rows(folder, entries, survey, filter));
+            let mut archive = staged.filter(|a| a.cut_from(folder, entries, survey)).unwrap_or_else(|| Archive::from_rows(folder, entries, survey, filter.clone()));
             archive.basis.survey = survey.clone();
             if archive.basis.filter != filter {
                 archive.regroup(filter);
@@ -92,7 +93,7 @@ impl Archive {
         let medals: HashMap<String, Medal> = archive.basis.rows.iter().zip(entries).filter(|(a, e)| a.label != e.label).map(|(_, e)| (e.path.clone(), e.label)).collect();
         archive.basis.survey = survey.clone();
         archive.set_labels(&medals);
-        let regroup = archive.basis.filter != filter || (filter.is_some() && !medals.is_empty());
+        let regroup = archive.basis.filter != filter || (filter.cuts() && !medals.is_empty());
         if regroup {
             archive.regroup(filter);
             return (archive, Relaid::Regrouped);
@@ -101,7 +102,7 @@ impl Archive {
     }
 
     /// The gallery's groups cut again under `filter`, the tree as it is, its rows laid again.
-    fn regroup(&mut self, filter: Option<Medal>) {
+    fn regroup(&mut self, filter: super::Filter) {
         self.basis.filter = filter;
         self.laid.take();
         let survey = &self.basis.survey;

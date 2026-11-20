@@ -71,7 +71,7 @@ impl Shell {
             reads: Default::default(),
             folder_turns: Default::default(),
             opening: None,
-            filter: None,
+            filter: Default::default(),
             painter,
             disk,
             asked: HashSet::new(),

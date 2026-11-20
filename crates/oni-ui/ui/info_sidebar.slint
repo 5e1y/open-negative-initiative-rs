@@ -109,6 +109,26 @@ export component Info inherits Surface {
                             }
                         }
                     }
+                    Section {
+                        title: @tr("Lens");
+                        help: @tr("The lens this whole roll was shot with, hand-entered: every export's EXIF names it unless a frame names its own.");
+                        KnownField {
+                            name: @tr("Lens");
+                            placeholder: @tr("e.g. Summicron 35mm f/2");
+                            text <=> Library.roll-lens;
+                            cards: Gear.lens-cards;
+                            known: Gear.lenses;
+                            known-help: @tr("Pick From Your Kit");
+                            none-known: @tr("No lens yet");
+                            none-known-note: @tr("A lens typed here joins your kit");
+                            accepted(t) => { Library.roll-lens-committed(t); }
+                            left(t) => { Library.roll-lens-committed(t); }
+                            picked(t) => {
+                                Library.roll-lens = t;
+                                Library.roll-lens-committed(t);
+                            }
+                        }
+                    }
                 }
                 if Library.info-kind == InfoKind.project: VerticalLayout {
                     CardStack { pictures: Library.stack; }

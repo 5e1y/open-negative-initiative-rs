@@ -131,7 +131,7 @@ pub(crate) fn a_photo_clicked_hands_the_grid_its_keys_and_a_ring_follows_the_key
     // the rows the arrows; the window's pointer hook or the photos' own press takes them back.
     rest(&rig);
     let before = selected(w);
-    click(&rig, w, (1280.0 - 100.0, 740.0), None, false);
+    click(&rig, w, (1280.0 - 100.0, 785.0), None, false);
     rig.key(&SharedString::from(Key::DownArrow));
     assert_eq!((picked(w).as_deref(), selected(w)), (Some("Roll 2"), before), "unhooked, the rows keep the arrows");
 

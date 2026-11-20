@@ -11470,5 +11470,12 @@
     "title": "The offer's logos stacked and centred, its tagline on bodies and lenses, wider and centred in the column; the sheet foot's mark on its words' middle; The Lens DB's disc beside its names in the gear lists",
     "status": "done",
     "detail": "TldbPair stacks the app's logo (40 px), a light × (22 px, weight 200) and the mark (28 px), each centred. The offer takes wider sides (KitStyle.offer-inset, 32 px), centres its tagline, now 'ONI partners with The Lens DB, the largest camera bodies and lenses database in the world.', and stands in the middle of the column's height. TldbMark centres its content in a row taller than the disc, as beside the sheet foot's key, where the disc and its name sat at the row's top while the words centred. GearCardBody takes served: The Lens DB's disc (TldbDisc, 12 px, accessible 'From The Lens DB') before a name the service gives; the gear fields' lists set it on the Kit's cards, the names typed by hand stay bare."
+  },
+  {
+    "id": 2318,
+    "type": "change",
+    "title": "A roll names its lens as its body; the gallery filters by medal, camera and lens",
+    "status": "done",
+    "detail": "Film gains lens (optional, omitted when none, in sidecars and folder markers alike), set in the roll's column by a second gear field under Camera Body (Library.roll-lens, 'Set Lens' step). Every export's line takes the roll's lens over the scan's and over the Kit's default lens, follows the roll while no hand set it, and keeps a lens a hand set. The index (schema 14, a new file rebuilt from the sidecars) caches film_lens and marker_lens; Entry::body and Entry::lens read a photo's gear as the Kit's counts do (the EXIF line's, else the folder roll's, else the sidecar roll's), and the lens counts follow. A marker the app writes now updates the shown folder's rows in memory too, which kept the roll's former gear until the next read. The archive's filter becomes library::Filter { medal, body, lens }, admitted together; the gallery's column heads with three selects stacked, Medals, Camera, Lens, each reading its own name while it keeps All (All its first line alone), Camera and Lens listing the open folder's bodies and lenses, the most photos first. Window check sidebar_filter::the_camera_and_lens_filters_keep_one_body_or_lens, seen failing before the rows followed the marker; unit checks on the index's lens columns and counts and on the export line."
   }
 ]

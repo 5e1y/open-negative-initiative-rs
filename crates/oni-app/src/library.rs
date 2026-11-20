@@ -98,14 +98,14 @@ impl Archive {
     pub fn load(folder: &Path) -> Archive {
         let index = LibraryIndex::open(Path::new(":memory:")).expect("an index in memory");
         let mut last = None;
-        read(folder, &index, None, &|| true, &mut |a, _, _| last = Some(a));
+        read(folder, &index, Filter::default(), &|| true, &mut |a, _, _| last = Some(a));
         last.expect("a read lands at least once")
     }
 
     /// The tree and groups of `folder`'s photos: `entries` are what the index shows, the survey the
     /// folders and rolls on the disk, so a folder made in the app shows before it holds a photo.
     /// `filter` keeps exactly one medal, never a tier above, in the gallery and the tree's rows alike.
-    pub fn from_rows(folder: &str, entries: &[Entry], survey: &Arc<Survey>, filter: Option<Medal>) -> Archive {
+    pub fn from_rows(folder: &str, entries: &[Entry], survey: &Arc<Survey>, filter: Filter) -> Archive {
         let root = Some(oni_library::paths::parent(folder)).filter(|p| p != folder).unwrap_or_else(|| folder.to_string());
         let (paired, companions) = folders::paired(entries, &survey.images, &survey.sidecars);
         let nodes = folders::tree(&root, &paired, &survey.rolls, &survey.folders, &survey.made);
@@ -121,12 +121,11 @@ impl Archive {
     /// of the photos wearing the medal alone.
     fn cut_groups(&self, paired: &[Entry]) -> Vec<Group> {
         let survey = &self.basis.survey;
-        let groups = match self.basis.filter {
-            None => folders::groups_of(&self.root, &self.nodes, &survey.rolls),
-            Some(m) => {
-                let filtered: Vec<Entry> = paired.iter().filter(|e| e.label == m).cloned().collect();
-                folders::groups(&self.root, &filtered, &survey.rolls, &survey.made)
-            }
+        let groups = if self.basis.filter.cuts() {
+            let filtered: Vec<Entry> = paired.iter().filter(|e| self.basis.filter.admits(e)).cloned().collect();
+            folders::groups(&self.root, &filtered, &survey.rolls, &survey.made)
+        } else {
+            folders::groups_of(&self.root, &self.nodes, &survey.rolls)
         };
         groups.into_iter().map(band).collect()
     }
@@ -242,9 +241,9 @@ impl Archive {
         self.laid().to_vec()
     }
 
-    /// Whether the filter shows `entry`: every photo, or those wearing its one medal.
+    /// Whether the filter shows `entry`.
     pub fn shows(&self, entry: &Entry) -> bool {
-        self.basis.filter.is_none_or(|m| entry.label == m)
+        self.basis.filter.admits(entry)
     }
 
     /// The first photo a node's row stands for under the filter: a photo itself, a folder's own
@@ -351,6 +350,50 @@ fn folder_ids(nodes: &[Node], out: &mut HashSet<NodeId>) {
             folder_ids(children, out);
         }
     }
+}
+
+/// What the gallery shows: every photo, or those wearing one medal, shot on one body, with one lens, or
+/// any of these at once; a body or a lens matched as the Kit's counts match it.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Filter {
+    pub medal: Option<Medal>,
+    pub body: Option<String>,
+    pub lens: Option<String>,
+}
+
+impl Filter {
+    /// The photos wearing `medal` alone, whatever their gear.
+    pub fn of_medal(medal: Medal) -> Filter {
+        Filter { medal: Some(medal), ..Filter::default() }
+    }
+
+    pub fn admits(&self, entry: &Entry) -> bool {
+        let named = |wanted: &Option<String>, has: Option<&str>| {
+            wanted.as_deref().is_none_or(|w| has.is_some_and(|h| oni_library::index::gear_key(h) == oni_library::index::gear_key(w)))
+        };
+        self.medal.is_none_or(|m| entry.label == m) && named(&self.body, entry.body()) && named(&self.lens, entry.lens())
+    }
+
+    /// Whether it leaves any photo out.
+    pub fn cuts(&self) -> bool {
+        *self != Filter::default()
+    }
+}
+
+/// The bodies, or the lenses, the photos among `rows` were shot with, the one on the most photos first, each
+/// in the spelling first met; the ONI Trash's, the passes and the contact sheets left out.
+pub fn gear_names(rows: &[Entry], lens: bool) -> Vec<String> {
+    let mut found: Vec<(String, String, usize)> = Vec::new();
+    for entry in rows.iter().filter(|e| e.trashed_at.is_none() && e.pass_of.is_none() && !e.sheet) {
+        let Some(name) = (if lens { entry.lens() } else { entry.body() }) else { continue };
+        let key = oni_library::index::gear_key(name);
+        match found.iter_mut().find(|(k, _, _)| *k == key) {
+            Some((_, _, n)) => *n += 1,
+            None => found.push((key, name.trim().to_owned(), 1)),
+        }
+    }
+    found.sort_by(|a, b| b.2.cmp(&a.2).then_with(|| a.1.cmp(&b.1)));
+    found.into_iter().map(|(_, name, _)| name).collect()
 }
 
 /// The medal as the tree's caption writes it.

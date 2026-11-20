@@ -25,6 +25,7 @@ settings: PipelineSettings {
             ),
             shot_date: None,
             camera_body: None,
+            lens: None,
         },
     ),
     manual_order: None,

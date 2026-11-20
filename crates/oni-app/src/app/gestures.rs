@@ -184,7 +184,7 @@ impl Ctl {
     pub(super) fn cycle_filter(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            s.filter = match s.filter {
+            s.filter.medal = match s.filter.medal {
                 None => Some(Medal::Bronze),
                 Some(Medal::Bronze) => Some(Medal::Silver),
                 Some(Medal::Silver) => Some(Medal::Gold),

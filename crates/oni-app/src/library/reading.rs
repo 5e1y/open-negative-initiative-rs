@@ -61,7 +61,7 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
     let stamps = index.stamps_under(&folder);
     let (mut again, mut adopted, mut remarked) = (VecDeque::new(), Vec::new(), Vec::new());
     // The roll each row's folder marker names now, so a marker written outside the app reaches the row.
-    let marker = |path: &str| survey.rolls.get(&paths::parent(path)).map(|f| f.camera_body.clone().unwrap_or_default());
+    let marker = |path: &str| oni_library::index::marker_gear(survey.rolls.get(&paths::parent(path)));
     // A row under a folder the disk refused is kept, offline or missing alike: a disk away loses no row.
     for row in index.under(&folder) {
         // Superseded, the survey may predate a move whose rows were just written under new names.
@@ -74,7 +74,7 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
             let _ = index.remove(&row.path);
             continue;
         }
-        if !unread && row.marker_body != marker(&row.path) {
+        if !unread && (row.marker_body.clone(), row.marker_lens.clone()) != marker(&row.path) {
             remarked.push((row.path.clone(), marker(&row.path)));
         }
         // A file still being written keeps its row as it was until it rests.
@@ -95,7 +95,7 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
         }
     }
     let _ = index.note_stamps(&adopted);
-    let _ = index.set_marker_bodies(&remarked);
+    let _ = index.set_marker_gear(&remarked);
     let mut unreadable: Vec<String> = Vec::new();
     let shown = |index: &LibraryIndex, waiting: &VecDeque<String>, unreadable: &[String]| -> Vec<Entry> {
         let mut entries = shown_under(index, &folder);
@@ -168,10 +168,10 @@ fn look_again(again: Again) -> Option<(String, Entry)> {
 }
 
 /// `read_rows` cut into archives, for a caller with no interface between the landings.
-pub fn read(folder: &Path, index: &LibraryIndex, filter: Option<Medal>, alive: &dyn Fn() -> bool, land: &mut dyn FnMut(Archive, bool, &Survey)) {
+pub fn read(folder: &Path, index: &LibraryIndex, filter: super::Filter, alive: &dyn Fn() -> bool, land: &mut dyn FnMut(Archive, bool, &Survey)) {
     let folder = paths::canonical(folder);
     let place = Place { computer: &Computer::none(), kept: None };
-    read_rows(&folder, index, &place, alive, &mut |rows, done, survey| land(Archive::from_rows(&folder, &rows, survey, filter), done, survey));
+    read_rows(&folder, index, &place, alive, &mut |rows, done, survey| land(Archive::from_rows(&folder, &rows, survey, filter.clone()), done, survey));
 }
 
 /// A row read again from its sidecar alone, its file's stamp kept: what a gesture on the sidecar

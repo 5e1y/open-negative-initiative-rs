@@ -61,6 +61,11 @@ impl Ctl {
             let _ = index.set_marker(folder, film.as_ref());
         }
         let Some(shown) = s.folder.as_mut() else { return };
+        // Its rows in memory too, so the gallery's filters see the body and lens it names before any read.
+        let (body, lens) = oni_library::index::marker_gear(film.as_ref());
+        for row in shown.rows.iter_mut().filter(|r| oni_library::paths::same(&oni_library::paths::parent(&r.path), folder)) {
+            (row.marker_body, row.marker_lens) = (body.clone(), lens.clone());
+        }
         let holding = shown.survey.images.iter().any(|i| oni_library::paths::same(&oni_library::paths::parent(i), folder));
         let rolls = &mut Arc::make_mut(&mut shown.survey).rolls;
         match film.filter(|_| holding) {
@@ -84,7 +89,7 @@ impl Ctl {
             let folder = s.folder.as_mut().expect("a folder shown");
             let (old, staged) = (s.archive.take(), folder.staged.take());
             let folded = old.as_ref().filter(|_| !fresh).map(Archive::folded);
-            let (mut archive, relaid) = Archive::relaid(old, staged, &folder.path, &folder.rows, &folder.survey, s.filter);
+            let (mut archive, relaid) = Archive::relaid(old, staged, &folder.path, &folder.rows, &folder.survey, s.filter.clone());
             match (relaid, folded) {
                 (library::Relaid::Cut, Some(folded)) => archive.keep_folded(&folded),
                 (library::Relaid::Cut, None) => {}
@@ -109,6 +114,7 @@ impl Ctl {
         self.read_library();
         self.lay_grid();
         self.publish_tree();
+        self.publish_gear_filters();
         self.publish_bar();
         if restocked {
             self.publish_navigator();

@@ -168,10 +168,10 @@ pub(crate) fn the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_expor
     let Some(roll) = Roll::new("sidebar-filter-gallery") else { return };
     let lib = roll.lib();
     assert!(roll.w().global::<App>().get_gallery());
-    let (head, folders) = (roll.filter("All Photos"), common::the(roll.w(), Role::Button, "Hide Computer"));
+    let (head, folders) = (roll.filter("Medals"), common::the(roll.w(), Role::Button, "Hide Computer"));
     assert!(head.y + head.height <= folders.y, "the filter heads the column, above the folders: {head:?} {folders:?}");
 
-    roll.pick("All Photos", "Gold", "sidebar-filter-gallery-menu");
+    roll.pick("Medals", "Gold", "sidebar-filter-gallery-menu");
     assert_eq!(roll.shown(), ["A.tif", "C.tif"]);
     println!("shot {}", roll.rig.shot("sidebar-filter-gallery-gold").display());
     assert_eq!(roll.exported(), ["A.tif", "C.tif"], "Select All picks every photo the filter shows, not C's roll alone");
@@ -188,4 +188,40 @@ pub(crate) fn the_column_s_filter_keeps_gold_in_the_gallery_and_select_all_expor
     lib.invoke_tile_clicked(roll.tile("C"), false, false);
     roll.rig.pump();
     assert_eq!(roll.exported(), ["C.tif", "D.tif"], "with no filter Select All completes C's roll alone");
+}
+
+/// Each roll given a body and a lens in its column, the camera and lens selects under the medals' list them,
+/// keep one body or one lens in the grid, both at once, and All gives every photo back; each reads its own
+/// name while it keeps All.
+pub(crate) fn the_camera_and_lens_filters_keep_one_body_or_lens() {
+    let Some(roll) = Roll::new("sidebar-filter-gear") else { return };
+    let (lib, ctl) = (roll.lib(), roll.ctl());
+    for (tile, body, lens) in [("A", "Nikon FM2", "Nikkor 50mm f/1.8"), ("C", "Leica M6", "Summicron 35")] {
+        lib.invoke_tile_clicked(roll.tile(tile), false, false);
+        roll.rig.settle();
+        lib.invoke_camera_body_committed(body.into());
+        roll.rig.landed(&ctl);
+        lib.invoke_roll_lens_committed(lens.into());
+        roll.rig.landed(&ctl);
+    }
+    roll.rig.settle();
+    let names = |m: slint::ModelRc<SharedString>| m.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+    let rows = (lib.get_info_kind(), lib.get_camera_body(), lib.get_roll_lens(), names(lib.get_filter_lenses()));
+    assert_eq!(names(lib.get_filter_bodies()), ["All", "Leica M6", "Nikon FM2"], "{rows:?}");
+    assert_eq!(names(lib.get_filter_lenses()), ["All", "Nikkor 50mm f/1.8", "Summicron 35"]);
+    let (medals, camera, lens) = (roll.filter("Medals"), roll.filter("Camera"), roll.filter("Lens"));
+    assert!(medals.y < camera.y && camera.y < lens.y, "the medals, the camera, the lens: {medals:?} {camera:?} {lens:?}");
+
+    roll.pick("Camera", "Nikon FM2", "sidebar-filter-camera-menu");
+    assert_eq!(roll.shown(), ["A.tif", "B.tif"], "Roll 1's body alone");
+    roll.filter("Nikon FM2");
+    roll.pick("Lens", "Summicron 35", "sidebar-filter-lens-menu");
+    assert!(roll.shown().is_empty(), "twin: no photo of the FM2 took the Summicron");
+    println!("shot {}", roll.rig.shot("sidebar-filter-gear-none").display());
+    roll.pick("Nikon FM2", "All", "sidebar-filter-camera-all");
+    assert_eq!(roll.shown(), ["C.tif", "D.tif"], "the Summicron alone");
+    roll.pick("Summicron 35", "All", "sidebar-filter-lens-all");
+    assert_eq!(roll.shown().len(), 4, "All gives every photo back");
+    roll.filter("Camera");
+    roll.filter("Lens");
 }
