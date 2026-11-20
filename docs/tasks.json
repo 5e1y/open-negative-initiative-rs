@@ -11435,5 +11435,12 @@
     "title": "The Kit search filters by kind alone, its select right of the search field",
     "status": "done",
     "detail": "The mount filter is withdrawn (owner): the v1 search takes no mount, and sifting fifty answers on ONI's side filtered too little to earn its place. The answers are the service's again, words::mounts and fits and their test gone. The kind select (Bodies & Lenses, Bodies, Lenses) sits on the search's row, right of its field. The collection check asserts the select's place, that both kinds answer before Lenses, and that Lenses asks the service with type=lens."
+  },
+  {
+    "id": 2313,
+    "type": "change",
+    "title": "The Kit column's head: My Kit, and \"provided by\" with a larger mark at its right",
+    "status": "done",
+    "detail": "The column's title shares its row with The Lens DB's credit, right-aligned: \"provided by\" then the mark, its disc 22 px and its name 15 px (KitStyle.mark-header, word-header), a step larger than the sheet's 18 px and 13 px. TldbMark takes the words before it (lead) and its name's size (word-size); its accessible label still reads the whole mention."
   }
 ]

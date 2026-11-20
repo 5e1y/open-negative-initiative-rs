@@ -143,8 +143,18 @@ export component KitView inherits VerticalLayout {
         property <int> held: -list.content-y > lenses.y ? 2 : -list.content-y > 0 ? 1 : 0;
         Section {
             separated: false;
-            Label { role: TextRole.title; text: @tr("My Kit"); }
-            TldbMark { credited: true; under: true; clicked => { Kit.open-site(); } }
+            HorizontalLayout {
+                spacing: Space.s;
+                Label { role: TextRole.title; text: @tr("My Kit"); horizontal-stretch: 1; vertical-alignment: center; }
+                TldbMark {
+                    horizontal-stretch: 0;
+                    size: KitStyle.mark-header;
+                    word-size: KitStyle.word-header;
+                    credited: true;
+                    lead: @tr("provided by");
+                    clicked => { Kit.open-site(); }
+                }
+            }
             Button { keycap: true; text: @tr("Search Gear"); icon: Icons.search; has-icon: true; clicked => { Kit.search-gear(); } }
         }
         if Kit.note != "": Section { separated: false; KitNote { } }

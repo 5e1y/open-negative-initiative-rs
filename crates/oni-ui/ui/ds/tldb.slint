@@ -8,6 +8,9 @@ import { KitStyle } from "theme_views.slint";
 export component TldbMark inherits Rectangle {
     in property <length> size: KitStyle.mark;
     in property <bool> large;
+    in property <length> word-size: root.large ? Type.title : Type.label;
+    // The words before the mark: the contract's mention, shorter where a title beside it names the Kit.
+    in property <string> lead: @tr("Catalogue provided by");
     // "Catalogue provided by" before the mark, which names the service so the words need not; beside it on
     // one line, or over it where a narrow column leaves no room.
     in property <bool> credited;
@@ -22,7 +25,7 @@ export component TldbMark inherits Rectangle {
         if root.credited && root.under: Label {
             role: TextRole.caption;
             tone: Tone.secondary;
-            text: @tr("Catalogue provided by");
+            text: root.lead;
         }
         HorizontalLayout {
             spacing: root.size / 3;
@@ -32,7 +35,7 @@ export component TldbMark inherits Rectangle {
                 role: TextRole.caption;
                 tone: Tone.secondary;
                 vertical-alignment: center;
-                text: @tr("Catalogue provided by");
+                text: root.lead;
             }
             Rectangle {
                 width: root.size;
@@ -48,7 +51,7 @@ export component TldbMark inherits Rectangle {
                 vertical-alignment: center;
                 font-family: Type.family;
                 font-weight: Type.bold;
-                font-size: root.large ? Type.title : Type.label;
+                font-size: root.word-size;
                 letter-spacing: KitStyle.tracking;
                 color: Colour.ink;
             }

@@ -428,16 +428,16 @@ msgid "Photo"
 msgstr "Foto"
 
 #: crates/oni-ui/ui/ds/tldb.slint
+msgid "Catalogue provided by"
+msgstr "Catálogo proporcionado por"
+
+#: crates/oni-ui/ui/ds/tldb.slint
 msgid "Catalogue provided by The Lens DB"
 msgstr "Catálogo proporcionado por The Lens DB"
 
 #: crates/oni-ui/ui/ds/tldb.slint crates/oni-ui/ui/settings.slint
 msgid "The Lens DB"
 msgstr "The Lens DB"
-
-#: crates/oni-ui/ui/ds/tldb.slint
-msgid "Catalogue provided by"
-msgstr "Catálogo proporcionado por"
 
 #: crates/oni-ui/ui/ds/tldb.slint
 msgid "THE LENS DB"
@@ -1632,6 +1632,10 @@ msgstr "Inicia sesión en The Lens DB y luego autoriza a ONI. Una cuenta nueva c
 #: crates/oni-ui/ui/kit.slint
 msgid "My Kit"
 msgstr "Mi Kit"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "provided by"
+msgstr "proporcionado por"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Search Gear"
