@@ -1,6 +1,6 @@
 //! The Kit against a simulated The Lens DB, driven by clicks and keys as a hand would: a click on the
 //! gallery's empty room offers the service; Connect opens its sign-in in the browser and the Kit shows once it
-//! returns; Search Gear searches in a sheet, filtered by kind and by a mount its answers hold, whose ↗ opens a
+//! returns; Search Gear searches in a sheet, filtered by kind, whose ↗ opens a
 //! piece's page and whose Add picks it, Done or Escape sending the picks in one call; a card's menu opens its
 //! page, makes it the default or removes it once confirmed; a default body and lens fill an export where
 //! nothing names one, its roll keeping the body; Disconnect revokes the token and drops the copy. Every call
@@ -90,15 +90,15 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert_eq!(fake.kit_keys().iter().filter(|k| k.kind == Kind::Camera).count(), 2, "the service holds it: {:?}", fake.kit_keys());
     assert_eq!(piece_names(kit.get_bodies()), ["Canon AE-1 Program", "Nikon FM2"]);
 
-    // Opened again, the sheet starts bare; "50" spans several mounts, which the mount select offers; one
-    // picked keeps the answers that take it, asking nothing, any mount gives them back. Escape sends its
-    // pick as Done does.
+    // Opened again, the sheet starts bare, the kind a select beside the search; Lenses asks again with
+    // it. Escape sends its pick as Done does.
     common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
     rig.settle();
     assert_eq!((kit.get_kind_filter(), kit.get_picked(), kit.get_found().row_count()), (0, 0, 0));
     assert!(common::placed(w, Role::Tab, "Bodies").is_empty(), "the kind is a select, no tabs");
-    assert!(kit.get_mounts().iter().any(|m| m == "Nikon F"), "before a search, the Kit's mounts are offered: {:?}", kit.get_mounts().iter().collect::<Vec<_>>());
-    common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
+    let (field, kind) = (common::the(w, Role::TextInput, "Search The Lens DB"), common::the(w, Role::Button, "Bodies & Lenses"));
+    assert!(kind.x > field.x + field.width && (kind.y + kind.height / 2.0 - field.y - field.height / 2.0).abs() < 2.0, "the select right of the search: {field:?} {kind:?}");
+    common::click(rig, w, field.middle());
     rig.key("50");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
     rig.settle();
@@ -108,30 +108,16 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.settle();
     assert_ne!(common::focused_label(w), "Search The Lens DB", "the field let go");
     assert!(kit.get_picking(), "twin: the sheet still open");
-    let all = kit.get_found().row_count();
-    assert!(kit.get_mounts().row_count() > 2, "twin: before a mount, several: {:?}", kit.get_mounts().iter().collect::<Vec<_>>());
     println!("shot {}", rig.shot("kit-search").display());
-    let searches = calls(&fake, "/search").len();
-    common::click(rig, w, common::the(w, Role::Button, "Any Mount").middle());
-    rig.settle();
-    common::click(rig, w, common::in_popup(w, Role::Button, "Nikon F").middle());
-    rig.settle();
-    assert!(kit.get_found().row_count() < all, "the mount keeps fewer");
-    assert!(kit.get_found().iter().all(|p| p.detail.contains("Nikon F")), "only what takes Nikon F");
-    assert_eq!(calls(&fake, "/search").len(), searches, "sifted by ONI, nothing asked");
-    common::click(rig, w, common::the(w, Role::Button, "Add").middle());
-    rig.settle();
-    common::click(rig, w, common::the(w, Role::Button, "Nikon F").middle());
-    rig.settle();
-    common::click(rig, w, common::in_popup(w, Role::Button, "Any Mount").middle());
-    rig.settle();
-    assert_eq!(kit.get_found().row_count(), all, "every mount again");
-    // The kind is the service's: Lenses asks again with it.
-    common::click(rig, w, common::the(w, Role::Button, "Bodies & Lenses").middle());
+    assert!(kit.get_found().iter().any(|p| p.detail.starts_with("Body")), "twin: both kinds before Lenses");
+    common::click(rig, w, kind.middle());
     rig.settle();
     common::click(rig, w, common::in_popup(w, Role::Button, "Lenses").middle());
     rig.until("the lenses answered", WAIT, || !kit.get_searching() && kit.get_kind_filter() == 2);
     assert_eq!(calls(&fake, "/search").last().and_then(|s| s.param("type").map(str::to_string)).as_deref(), Some("lens"));
+    let nikkor = kit.get_found().iter().position(|p| p.name == "Nikon Nikkor 50mm f/1.8 AI-S").expect("the Nikkor among the lenses");
+    kit.invoke_take(nikkor as i32);
+    rig.settle();
     rig.key(&slint::SharedString::from(slint::platform::Key::Escape));
     rig.until("Escape sent and closed", WAIT, || !kit.get_picking());
     assert_eq!(calls(&fake, "/kit/changes").len(), 2);

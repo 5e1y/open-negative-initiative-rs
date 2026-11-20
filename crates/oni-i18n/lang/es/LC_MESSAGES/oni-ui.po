@@ -1646,20 +1646,12 @@ msgid "Lenses"
 msgstr "Objetivos"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Bodies & Lenses"
-msgstr "Cuerpos y objetivos"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Bodies, lenses or both"
-msgstr "Cuerpos, objetivos o ambos"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "Only the pieces that take this mount"
-msgstr "Solo las piezas con esta montura"
-
-#: crates/oni-ui/ui/kit.slint
 msgid "Add to Your Kit"
 msgstr "Añadir a tu kit"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies & Lenses"
+msgstr "Cuerpos y objetivos"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Search The Lens DB"
@@ -1668,6 +1660,10 @@ msgstr "Buscar en The Lens DB"
 #: crates/oni-ui/ui/kit.slint
 msgid "A brand, a body, a lens: Nikon FM2, Summicron 35…"
 msgstr "Una marca, un cuerpo, un objetivo: Nikon FM2, Summicron 35…"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies, lenses or both"
+msgstr "Cuerpos, objetivos o ambos"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Type two letters or more: each word is looked for in the brand and the name, as Leica 35 or Nikon FM2."
@@ -4346,10 +4342,6 @@ msgstr "¿Quitar de tu kit?"
 #: crates/oni-app/src/app/organising/kit/changes.rs
 msgid "Remove"
 msgstr "Quitar"
-
-#: crates/oni-app/src/app/organising/kit/publish.rs
-msgid "Any Mount"
-msgstr "Cualquier montura"
 
 #: crates/oni-app/src/app/organising/kit/sign_in/landing.rs
 msgid "You’re connected"

@@ -175,29 +175,6 @@ export component KitView inherits VerticalLayout {
     }
 }
 
-// The search's filters side by side, two selects: the kind, and the mount among the answers' and the Kit's.
-component KitFilters inherits HorizontalLayout {
-    property <[string]> kinds: [@tr("Bodies & Lenses"), @tr("Bodies"), @tr("Lenses")];
-    padding-top: Space.s;
-    spacing: Space.m;
-    Picker {
-        width: (root.width - Space.m) / 2;
-        value: root.kinds[Kit.kind-filter];
-        entries: root.kinds;
-        current: Kit.kind-filter;
-        help: @tr("Bodies, lenses or both");
-        chosen(i) => { Kit.filter-kind(i); }
-    }
-    Picker {
-        width: (root.width - Space.m) / 2;
-        value: Kit.mounts[Kit.mount-at];
-        entries: Kit.mounts;
-        current: Kit.mount-at;
-        help: @tr("Only the pieces that take this mount");
-        chosen(i) => { Kit.filter-mount(i); }
-    }
-}
-
 // The catalogue searched as the hand rests, its answers as cards two to a row, over the window; Done, or
 // Escape, sends what was added and closes once The Lens DB holds it.
 export component KitSearchSheet inherits Sheet {
@@ -212,14 +189,27 @@ export component KitSearchSheet inherits Sheet {
         padding-left: Space.m;
         padding-right: Space.m;
         padding-top: Space.m;
-        TextField {
-            name: @tr("Search The Lens DB");
-            placeholder: @tr("A brand, a body, a lens: Nikon FM2, Summicron 35…");
-            edited(t) => { Kit.search(t); }
-            accepted(t) => { Kit.search(t); }
-            init => { self.take-focus(); }
+        // The words searched, the kind beside them, which the service sorts by.
+        HorizontalLayout {
+            property <[string]> kinds: [@tr("Bodies & Lenses"), @tr("Bodies"), @tr("Lenses")];
+            spacing: Space.s;
+            TextField {
+                horizontal-stretch: 1;
+                name: @tr("Search The Lens DB");
+                placeholder: @tr("A brand, a body, a lens: Nikon FM2, Summicron 35…");
+                edited(t) => { Kit.search(t); }
+                accepted(t) => { Kit.search(t); }
+                init => { self.take-focus(); }
+            }
+            Picker {
+                horizontal-stretch: 0;
+                value: parent.kinds[Kit.kind-filter];
+                entries: parent.kinds;
+                current: Kit.kind-filter;
+                help: @tr("Bodies, lenses or both");
+                chosen(i) => { Kit.filter-kind(i); }
+            }
         }
-        KitFilters { }
     }
     Scroller {
         vertical-stretch: 1;

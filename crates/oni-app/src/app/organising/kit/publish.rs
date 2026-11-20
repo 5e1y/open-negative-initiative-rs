@@ -41,9 +41,6 @@ impl Ctl {
             Some(Kind::Camera) => 1,
             Some(Kind::Lens) => 2,
         });
-        let any = SharedString::from(tr("Any Mount"));
-        k.set_mounts(model(std::iter::once(any).chain(kit.mounts.iter().map(|m| SharedString::from(m.as_str()))).collect()));
-        k.set_mount_at(kit.mounts.iter().position(|m| *m == kit.mount_filter).map_or(0, |i| i as i32 + 1));
         k.set_sending(kit.sending);
         k.set_note(kit.note.as_str().into());
     }

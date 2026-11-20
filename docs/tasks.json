@@ -11428,5 +11428,12 @@
     "title": "The Kit search's selects side by side, Mount always offered, the search field let go by a press beside it",
     "status": "done",
     "detail": "The Type and Mount labels are gone and All Gear reads Bodies & Lenses. The Mount select is never dimmed: its choices are the answers' mounts, then the Kit's, so the Kit's are offered before any search; the v1 search takes no mount (q, type, brand, limit), so ONI keeps sifting the answers itself. Under a sheet, a press beside a field gave the keyboard nowhere, so the field kept it: a field let go under a sheet now hands it to the latest sheet laid, as a sheet closing over another does; a control let go keeps the default key's hold, so Return still answers. The collection check presses the sheet's title and asserts the field let go, the sheet still open."
+  },
+  {
+    "id": 2312,
+    "type": "change",
+    "title": "The Kit search filters by kind alone, its select right of the search field",
+    "status": "done",
+    "detail": "The mount filter is withdrawn (owner): the v1 search takes no mount, and sifting fifty answers on ONI's side filtered too little to earn its place. The answers are the service's again, words::mounts and fits and their test gone. The kind select (Bodies & Lenses, Bodies, Lenses) sits on the search's row, right of its field. The collection check asserts the select's place, that both kinds answer before Lenses, and that Lenses asks the service with type=lens."
   }
 ]
