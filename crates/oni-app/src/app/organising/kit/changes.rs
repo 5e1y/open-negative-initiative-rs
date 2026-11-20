@@ -16,10 +16,12 @@ impl KitState {
 }
 
 impl Ctl {
-    pub(super) fn kit_open_search(&self) {
+    /// The gear sheet opened bare, on `kind` (0 both, 1 bodies, 2 lenses): a body's field opens it on the bodies.
+    pub(super) fn kit_open_search(&self, kind: i32) {
         {
             let mut s = self.state.borrow_mut();
             s.org.kit.clear_search();
+            s.org.kit.kind_filter = [None, Some(Kind::Camera), Some(Kind::Lens)][kind.clamp(0, 2) as usize];
             s.org.kit.picking = true;
         }
         self.publish_kit();

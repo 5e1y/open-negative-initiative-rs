@@ -53,6 +53,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("export_panel::the_export_panel_keeps_one_step_between_its_groups", export_panel::the_export_panel_keeps_one_step_between_its_groups),
     ("export_panel::a_preset_saved_before_web_keeps_its_name_and_its_file", export_panel::a_preset_saved_before_web_keeps_its_name_and_its_file),
     ("collection::the_kit_signs_in_searches_and_validates", collection::the_kit_signs_in_searches_and_validates),
+    ("collection::a_gear_field_searches_the_lens_db_signed_out_and_lists_what_was_added", collection::a_gear_field_searches_the_lens_db_signed_out_and_lists_what_was_added),
     ("kit_failures::a_run_naming_no_service_asks_none_and_connect_opens_nothing", kit_failures::a_run_naming_no_service_asks_none_and_connect_opens_nothing),
     ("kit_failures::a_429_holds_every_search_until_its_end_then_asks_the_latest_once", kit_failures::a_429_holds_every_search_until_its_end_then_asks_the_latest_once),
     ("kit_failures::done_unreached_keeps_its_picks_and_sends_them_again", kit_failures::done_unreached_keeps_its_picks_and_sends_them_again),

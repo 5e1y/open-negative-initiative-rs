@@ -3,47 +3,10 @@ import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
 import { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
 export { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
+import { Tile, Heading, StockCount, InfoKind } from "library_types.slint";
+export { Tile, Heading, StockCount, InfoKind } from "library_types.slint";
 import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu, Banner, Reach, KeyScope } from "ds/ds.slint";
 
-export struct Tile {
-    index: int,
-    x: length,
-    y: length,
-    width: length,
-    height: length,
-    picture: image,
-    caption: string,
-    selected: bool,
-    medal: int,
-    missing: bool,
-    // Why its original is out of reach, and where it was, said under the pointer.
-    away: Reach,
-    note: string,
-    rgb: bool,
-    // A triplet's pass gone, the seal's words.
-    gone-pass: string,
-    // A RAW+JPEG pair's mark, `+JPG`, its JPEG behind the RAW.
-    companion: string,
-    // The photo the keys act on, ringed while the grid holds the keyboard.
-    cursor: bool,
-}
-
-export struct Heading {
-    y: length,
-    title: string,
-    caption: string,
-    renaming: bool,
-}
-
-export struct StockCount {
-    name: string,
-    count: string,
-    artwork: image,
-    has-artwork: bool,
-}
-
-// What the Info column stands on: nothing, a roll, a project, the trash or the collection.
-export enum InfoKind { none, roll, project, trash, collection }
 
 export global Library {
     // `SidebarLayout`: 0 names only, 1 two thumbnails per row, 2 one, which the column's select picks.
@@ -142,8 +105,6 @@ export global Library {
     in property <[string]> filter-lenses;
     in property <int> filter-body-at;
     in property <int> filter-lens-at;
-    in property <string> filter-body;
-    in property <string> filter-lens;
     // A body or a lens picked by its name, "" for every photo.
     callback filter-gear-picked(bool, string);
     in property <InfoKind> info-kind;

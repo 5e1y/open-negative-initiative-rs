@@ -95,6 +95,15 @@ export component Tree inherits Surface {
             }
             RatingFilter { compact: true; horizontal-stretch: 0; }
         }
+        // Beside a photo, a camera or lens filter the gallery set stays seen under the header, and undone there.
+        if Library.surface == 0 && root.beside-photo && (Library.filter-body-at > 0 || Library.filter-lens-at > 0): VerticalLayout {
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
+            padding-bottom: Space.s;
+            spacing: Space.xs;
+            if Library.filter-body-at > 0: GearFilter { title: @tr("Camera"); }
+            if Library.filter-lens-at > 0: GearFilter { lens: true; title: @tr("Lens"); }
+        }
 
         if Library.surface == 0 && root.beside-photo: RowTree {
             vertical-stretch: 1;

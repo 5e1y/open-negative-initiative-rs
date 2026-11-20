@@ -71,13 +71,16 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
     rig.settle();
     assert!(kit.get_picking(), "the search's sheet is shown");
-    assert_eq!(common::placed(w, Role::Button, "Catalogue provided by The Lens DB").len(), 2, "the sheet credits it too");
+    assert_eq!(common::placed(w, Role::Button, "Catalogue provided by The Lens DB").len(), 3, "the sheet credits it too, at its foot and over its Kit");
+    let (field, column) = (common::the(w, Role::TextInput, "Search The Lens DB"), common::placed(w, Role::Text, "My Kit"));
+    assert!(column.len() == 2 && column.iter().any(|c| c.x > field.x + field.width), "the Kit's column at the sheet's right: {field:?} {column:?}");
+    assert!(common::placed(w, Role::Button, "Search Gear").len() == 1, "the sheet's column leaves its Search Gear out");
     common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
     rig.key("nikon fm2");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
     rig.settle();
     let pages = opened.borrow().len();
-    assert!(common::placed(w, Role::Button, "Add").len() >= 1 && common::placed(w, Role::Button, "More for Nikon FM2").is_empty(), "the search's card ends with its Add");
+    assert!(!common::placed(w, Role::Button, "Add").is_empty() && common::placed(w, Role::Button, "More for Nikon FM2").is_empty(), "the search's card ends with its Add");
     common::click(rig, w, common::the(w, Role::Button, "See Nikon FM2 on The Lens DB").middle());
     let page = opened.borrow().last().cloned().unwrap();
     assert!(page.starts_with(&format!("{}/cameras/nikon-fm2", fake.site)) && page.ends_with("utm_source=oni"), "{page}");
@@ -103,7 +106,8 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert!(kind.x > field.x + field.width && (kind.y + kind.height / 2.0 - field.y - field.height / 2.0).abs() < 2.0, "the select right of the search: {field:?} {kind:?}");
     let (title, done) = (common::the(w, Role::Text, "Add to Your Kit"), common::the(w, Role::Button, "Done"));
     let credit = common::placed(w, Role::Button, "Catalogue provided by The Lens DB").into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).unwrap();
-    assert!((credit.x - title.x).abs() < 1.0 && (kind.x + kind.width - done.x - done.width).abs() < 1.0, "the content on the header's margins: {title:?} {credit:?} {kind:?} {done:?}");
+    let kit_x = common::placed(w, Role::Text, "My Kit").into_iter().map(|c| c.x).fold(0.0, f32::max);
+    assert!((credit.x - title.x).abs() < 1.0 && kind.x + kind.width < kit_x && kit_x < done.x, "the search on the header's margins, the Kit at its right: {title:?} {credit:?} {kind:?} {done:?}");
     common::click(rig, w, field.middle());
     rig.key("50");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
@@ -255,4 +259,50 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
         assert_eq!(seen.bearer.is_some(), seen.path != "/api/oauth/token", "{seen:?}");
     }
     let _ = std::fs::remove_dir_all(root);
+}
+
+/// Signed out, a body field's last line opens the gear sheet on the bodies: its search waits on the sign-in in
+/// the sheet's own Kit column at its right; signed in there, Add then Done closes it and the field's list,
+/// closed for the sheet, drops again with the body added.
+pub(crate) fn a_gear_field_searches_the_lens_db_signed_out_and_lists_what_was_added() {
+    let fake = oni_tldb::fake::start();
+    let Some(stage) = kit::stage("kit-field-search", TldbSite::Simulated(fake.site.clone()), |_, _| {}) else { return };
+    let kit::Stage { rig, shell, opened, .. } = &stage;
+    let w = &shell.window;
+    let kit = w.global::<Kit>();
+    common::click(rig, w, common::the(w, Role::TextInput, "Camera Body").middle());
+    rig.settle();
+    println!("shot {}", rig.shot("kit-field-search-line").display());
+    common::click(rig, w, common::in_popup(w, Role::Button, "Search on The Lens DB").middle());
+    rig.settle();
+    assert!(kit.get_picking() && kit.get_kind_filter() == 1, "the sheet, on the bodies");
+    assert!(common::placed(w, Role::TextInput, "Search The Lens DB").is_empty(), "signed out, no search yet");
+    let connect = common::placed(w, Role::Button, "Connect The Lens DB");
+    let empty = common::the(w, Role::Text, "Search The Lens DB");
+    assert!(connect.len() == 1 && connect[0].x > empty.x + empty.width, "the offer in the sheet's column at its right: {empty:?} {connect:?}");
+    println!("shot {}", rig.shot("kit-sheet-signed-out").display());
+
+    let at = connect.iter().max_by(|a, b| a.x.total_cmp(&b.x)).unwrap();
+    common::click(rig, w, at.middle());
+    rig.settle();
+    let authorize = opened.borrow().last().cloned().expect("the browser opened");
+    let back = fake.approve(&authorize, false);
+    std::thread::spawn(move || kit::follow(&back));
+    rig.until("signed in within the sheet", WAIT, || kit.get_link() == KitLink::In && kit.get_bodies().row_count() > 0);
+    rig.settle();
+    assert!(kit.get_picking() && kit.get_kind_filter() == 1, "the sheet stays, on the bodies");
+    common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
+    rig.key("nikon fm2");
+    rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
+    rig.settle();
+    println!("shot {}", rig.shot("kit-sheet-signed-in").display());
+    common::click(rig, w, common::the(w, Role::Button, "Add").middle());
+    rig.settle();
+    common::click(rig, w, common::the(w, Role::Button, "Done").middle());
+    rig.until("Done sent and closed", WAIT, || !kit.get_picking());
+    rig.settle();
+    assert!(!common::placed(w, Role::Button, "Nikon FM2").is_empty(), "the field's list dropped again, the FM2 in it");
+    common::click(rig, w, common::in_popup(w, Role::Button, "Nikon FM2").middle());
+    rig.settle();
+    assert_eq!(w.global::<Library>().get_camera_body(), "Nikon FM2");
 }

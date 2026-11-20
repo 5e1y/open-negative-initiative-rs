@@ -1,5 +1,6 @@
 // A combobox: a field typed as any, whose list of the gear ONI knows drops under it once it is clicked into,
-// or from the chevron at its end: the Kit's pieces as their cards, then the names typed before.
+// or from the chevron at its end: the Kit's pieces as their cards, the names typed before, then a line that
+// opens The Lens DB's search.
 import { Space, FieldStyle } from "theme.slint";
 import { Icons } from "icons.slint";
 import { Divider, Icon, Tips } from "base.slint";
@@ -8,6 +9,8 @@ import { FormStyle } from "forms.slint";
 import { Outside } from "outside.slint";
 import { MenuEntry, PopupPanel, PopupKind } from "menu.slint";
 import { GearCard, GearCardBody, PickedGround } from "gear_card.slint";
+import { Label } from "base.slint";
+import { TldbDisc } from "tldb.slint";
 
 export component KnownField inherits HorizontalLayout {
     in property <string> name;
@@ -25,6 +28,18 @@ export component KnownField inherits HorizontalLayout {
     callback accepted(string);
     callback left(string);
     callback picked(string);
+    // The list's last line, which opens the search over the window; its list closes for it and drops again,
+    // with what the search added, once `searching` ends.
+    in property <string> search-line;
+    in property <bool> searching;
+    callback search();
+    property <bool> asked;
+    changed searching => {
+        if (!root.searching && root.asked) {
+            root.asked = false;
+            root.drop();
+        }
+    }
     init => { if (root.value != "") { entry.text = root.value; } }
     changed value => { entry.text = root.value; }
     // A Slint popup takes the keyboard as it opens (`WindowInner::show_popup`): the field takes it back, so
@@ -33,6 +48,12 @@ export component KnownField inherits HorizontalLayout {
         if (list.is-open) { return; }
         list.show();
         entry.take-focus();
+    }
+    // The search asked before the list closes: closing it ends the line's own handler.
+    function open-search() {
+        root.asked = true;
+        root.search();
+        list.close();
     }
     // A name picked, or typed and given by Return, ends the typing: the list closes, the keyboard goes back.
     function pick(name: string) {
@@ -115,6 +136,27 @@ export component KnownField inherits HorizontalLayout {
             if root.cards.length > 0 && root.known.length > 0: Divider { }
             for name in root.known: MenuEntry { text: name; checked: name == entry.text; activated => { root.pick(name); } }
             if root.cards.length == 0 && root.known.length == 0: MenuEntry { text: root.none-known; note: root.none-known-note; enabled: false; }
+            if root.search-line != "": Divider { }
+            if root.search-line != "": Rectangle {
+                height: line.preferred-height;
+                accessible-role: button;
+                accessible-label: root.search-line;
+                accessible-action-default => { root.open-search(); }
+                lit := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.open-search(); }
+                }
+                PickedGround { hovered: lit.has-hover; }
+                line := HorizontalLayout {
+                    padding-top: Space.xs;
+                    padding-bottom: Space.xs;
+                    padding-left: Space.s;
+                    padding-right: Space.s;
+                    spacing: Space.xs;
+                    VerticalLayout { alignment: center; TldbDisc { } }
+                    Label { text: root.search-line; horizontal-stretch: 1; }
+                }
+            }
         }
     }
 }

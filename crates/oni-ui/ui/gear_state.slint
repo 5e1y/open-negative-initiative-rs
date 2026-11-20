@@ -41,7 +41,8 @@ export global Kit {
     callback connect(bool);
     callback cancel();
     callback disconnect();
-    callback search-gear();
+    // The gear sheet opened bare on a kind, 0 both, 1 bodies, 2 lenses, signed in or not.
+    callback search-gear(int);
     callback search(string);
     // A search's answer picked for the Kit, or let go again.
     callback take(int);

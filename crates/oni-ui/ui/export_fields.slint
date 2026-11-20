@@ -2,7 +2,7 @@
 // its picture.
 import { Icons, Space, Label, Tone, Button, ButtonSize, TextField, Picker, Surface, FormStyle, Field, KnownField } from "ds/ds.slint";
 import { ExportLine, Exporting } from "export_state.slint";
-import { Gear } from "gear_state.slint";
+import { Gear, Kit } from "gear_state.slint";
 
 // `FrameFields`: the EXIF the file will carry, each label over its field, one narrow column beside the
 // picture on the panel's ground: on the canvas's, no field's face would show. A long word ends cut. Its
@@ -29,6 +29,9 @@ export component FrameFields inherits VerticalLayout {
             }
             KnownField {
                 name: @tr("Camera");
+                search-line: @tr("Search on The Lens DB");
+                searching: Kit.picking;
+                search => { Kit.search-gear(1); }
                 value: root.line.camera;
                 placeholder: @tr("e.g. Leica M6");
                 enabled: root.line.ready;
@@ -44,6 +47,9 @@ export component FrameFields inherits VerticalLayout {
                 label: @tr("Lens");
                 KnownField {
                     name: @tr("Lens");
+                    search-line: @tr("Search on The Lens DB");
+                    searching: Kit.picking;
+                    search => { Kit.search-gear(2); }
                     value: root.line.lens;
                     placeholder: @tr("e.g. Summicron 50 mm");
                     enabled: root.line.ready;

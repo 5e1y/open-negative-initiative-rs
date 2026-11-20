@@ -78,6 +78,7 @@ pub fn indexed(path: &str) -> Option<Entry> {
     } else {
         Some(sidecar::identity::blank())
     };
+    let marker = crate::index::marker_gear(crate::folders::roll(&crate::paths::parent(path)).as_ref());
     // A photo with no import date in its sidecar sorts by its file's own date, never by the read's.
     let dated = std::fs::metadata(original).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok());
     let dated = dated.map(|d| Date::from_unix_seconds(d.as_secs_f64()));
@@ -98,8 +99,8 @@ pub fn indexed(path: &str) -> Option<Entry> {
         sheet: loaded.as_ref().is_some_and(|l| l.sheet),
         kept_camera: loaded.as_ref().and_then(|l| l.exif.camera.clone()),
         kept_lens: loaded.as_ref().and_then(|l| l.exif.lens.clone()),
-        marker_body: crate::folders::roll(&crate::paths::parent(path)).map(|f| f.camera_body.unwrap_or_default()),
-        marker_lens: crate::folders::roll(&crate::paths::parent(path)).map(|f| f.lens.unwrap_or_default()),
+        marker_body: marker.0,
+        marker_lens: marker.1,
         sidecar_format: loaded.as_ref().and_then(|l| l.format),
     })
 }

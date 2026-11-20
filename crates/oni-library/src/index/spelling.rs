@@ -8,7 +8,7 @@ use rusqlite::{Connection, params};
 const NULLABLE: &[&str] = &["captured_at", "manual_order", "mode", "pass_of", "trashed_at"];
 
 /// The roll's columns, taken together from the twin when the row kept names no roll.
-const FILM: &[&str] = &["film_id", "film_name", "film_order", "film_stock", "film_shot_date", "film_camera_body"];
+const FILM: &[&str] = &["film_id", "film_name", "film_order", "film_stock", "film_shot_date", "film_camera_body", "film_lens"];
 
 /// Respells every row whose key is not in the archive's spelling; when both spellings hold a row,
 /// the one already respelt stays and takes what it lacks from the other. One transaction.

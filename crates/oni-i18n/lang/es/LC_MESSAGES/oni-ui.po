@@ -1102,6 +1102,10 @@ msgid "Hide the EXIF"
 msgstr "Ocultar los EXIF"
 
 #: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
+msgid "Search on The Lens DB"
+msgstr "Buscar en The Lens DB"
+
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "e.g. Leica M6"
 msgstr "p. ej. Leica M6"
 
@@ -1686,12 +1690,16 @@ msgid "Add to Your Kit"
 msgstr "Añadir a tu kit"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Bodies & Lenses"
-msgstr "Cuerpos y objetivos"
-
-#: crates/oni-ui/ui/kit.slint
 msgid "Search The Lens DB"
 msgstr "Buscar en The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Connect The Lens DB at the right to search its bodies and lenses and add them to your Kit."
+msgstr "Conecta The Lens DB a la derecha para buscar sus cuerpos y objetivos y añadirlos a tu Kit."
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies & Lenses"
+msgstr "Cuerpos y objetivos"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "A brand, a body, a lens: Nikon FM2, Summicron 35…"

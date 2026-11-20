@@ -183,8 +183,6 @@ impl Ctl {
         self.publish_roll_tab();
         let lib = w.global::<Library>();
         lib.set_filter_medal(filter.medal.map_or(0, library::medal_index));
-        lib.set_filter_body(filter.body.clone().unwrap_or_default().into());
-        lib.set_filter_lens(filter.lens.clone().unwrap_or_default().into());
     }
 }
 

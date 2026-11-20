@@ -48,6 +48,8 @@ pub const GRAIN_COLOUR_VERSION: i64 = 32;
 /// The version the grain's colour came to deepen the photo's own hue where the grain darkens it, in place of
 /// a hue drawn at random: its numbers carried, as no step keeps a random hue's look.
 pub const GRAIN_HUE_VERSION: i64 = 33;
+/// The version a roll came to name its lens, absent read as none: a build before it would drop the lens it rewrites.
+pub const ROLL_LENS_VERSION: i64 = 34;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

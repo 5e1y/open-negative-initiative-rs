@@ -1,7 +1,7 @@
 // Where nothing is picked in the archive: the person's Kit, their bodies and lenses kept on The Lens DB.
 // Signed out it offers the service; signed in it lists the Kit and searches the catalogue in a sheet over
 // the window, whose Done sends what was added in one call.
-import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, KitStyle, Divider, Picker, SheetStyle, Icon, Colour, TldbPair } from "ds/ds.slint";
+import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, KitStyle, Divider, Picker, SheetStyle, Icon, Colour, TldbPair, ShellStyle } from "ds/ds.slint";
 import { GearKind, Kit, KitLink, KitPiece, KitMark } from "gear_state.slint";
 
 // Two answers of the search side by side, `at` the left one's place among them.
@@ -156,6 +156,8 @@ component Waiting inherits Section {
 // The whole column: signed in, its head stays while the Kit scrolls under it, each kind's title held at the
 // top while its pieces pass.
 export component KitView inherits VerticalLayout {
+    // Beside the search in the gear sheet: its Search Gear key left out, the search being there.
+    in property <bool> in-sheet;
     // Signed out, the offer stands in the middle of the column's height.
     if Kit.link == KitLink.out: Rectangle { vertical-stretch: 1; }
     if Kit.link == KitLink.out: Offer { }
@@ -181,7 +183,7 @@ export component KitView inherits VerticalLayout {
                     clicked => { Kit.open-site(); }
                 }
             }
-            Button { keycap: true; text: @tr("Search Gear"); icon: Icons.search; has-icon: true; clicked => { Kit.search-gear(); } }
+            if !root.in-sheet: Button { keycap: true; text: @tr("Search Gear"); icon: Icons.search; has-icon: true; clicked => { Kit.search-gear(0); } }
         }
         if Kit.note != "": Section { separated: false; KitNote { } }
         Rectangle {
@@ -211,114 +213,133 @@ export component KitView inherits VerticalLayout {
     }
 }
 
-// The catalogue searched as the hand rests, its answers as cards two to a row, over the window; Done, or
-// Escape, sends what was added and closes once The Lens DB holds it.
+// The gear sheet, one wherever it opens: the catalogue searched as the hand rests, its answers as cards two to
+// a row, and at the right the Kit's column as the gallery shows it, its offer while signed out, when the search
+// waits on a sign-in. Done, or Escape, sends what was added and closes once The Lens DB holds it.
 export component KitSearchSheet inherits Sheet {
     title: @tr("Add to Your Kit");
     header: SheetHeader.bar;
-    card-width: KitStyle.sheet-width;
+    card-width: KitStyle.sheet-width + ShellStyle.panel-width;
     card-height: KitStyle.sheet-height;
     exit-enabled: !Kit.sending;
     dismissed => { Kit.done(); }
-    // The search, the answers and the foot on the header's margins, so every edge lines up under its title.
-    VerticalLayout {
-        vertical-stretch: 0;
-        padding-left: SheetStyle.padding;
-        padding-right: SheetStyle.padding;
-        padding-top: Space.m;
-        // The words searched, the kind beside them, which the service sorts by.
-        HorizontalLayout {
-            property <[string]> kinds: [@tr("Bodies & Lenses"), @tr("Bodies"), @tr("Lenses")];
-            spacing: Space.s;
-            TextField {
-                horizontal-stretch: 1;
-                name: @tr("Search The Lens DB");
-                placeholder: @tr("A brand, a body, a lens: Nikon FM2, Summicron 35…");
-                edited(t) => { Kit.search(t); }
-                accepted(t) => { Kit.search(t); }
-                init => { self.take-focus(); }
-            }
-            Picker {
-                horizontal-stretch: 0;
-                value: parent.kinds[Kit.kind-filter];
-                entries: parent.kinds;
-                current: Kit.kind-filter;
-                help: @tr("Bodies, lenses or both");
-                chosen(i) => { Kit.filter-kind(i); }
-            }
-        }
-    }
-    Scroller {
+    HorizontalLayout {
         vertical-stretch: 1;
-        content-height: answers.preferred-height;
-        answers := VerticalLayout {
-            padding-top: Space.m;
-            padding-bottom: Space.m;
+        // Signed out, the search waits on the column's sign-in.
+        if Kit.link != KitLink.in: VerticalLayout {
+            width: KitStyle.sheet-width;
+            alignment: center;
             padding-left: SheetStyle.padding;
             padding-right: SheetStyle.padding;
             spacing: Space.s;
-            alignment: start;
-            if Kit.note != "": KitNote { }
-            if Kit.searched == "" && !Kit.searching: Label {
-                role: TextRole.note;
-                wrap: word-wrap;
-                text: @tr("Type two letters or more: each word is looked for in the brand and the name, as Leica 35 or Nikon FM2.");
-            }
-            if Kit.searching && Kit.found.length == 0: Label { role: TextRole.note; text: @tr("Searching…"); }
-            if !Kit.searching && Kit.searched != "" && Kit.found.length == 0: VerticalLayout {
-                spacing: Space.s;
-                Label { role: TextRole.note; wrap: word-wrap; text: @tr("Nothing on The Lens DB matches “{}”.", Kit.searched); }
-                HorizontalLayout {
-                    alignment: start;
-                    Button { text: @tr("Suggest Missing Gear"); help: @tr("Proposes a piece to The Lens DB, reviewed before it shows"); clicked => { Kit.suggest(); } }
-                }
-            }
-            for pair in KitSearch.pairs: HorizontalLayout {
-                spacing: Space.s;
-                PieceCard {
-                    width: (KitStyle.sheet-width - 2 * SheetStyle.padding - Space.s) / KitStyle.columns;
-                    adding: true;
-                    piece: pair.left;
-                    taken => { Kit.take(pair.at); }
-                }
-                if pair.has-right: PieceCard {
-                    width: (KitStyle.sheet-width - 2 * SheetStyle.padding - Space.s) / KitStyle.columns;
-                    adding: true;
-                    piece: pair.right;
-                    taken => { Kit.take(pair.at + 1); }
-                }
-                if !pair.has-right: Rectangle { horizontal-stretch: 1; }
-            }
+            Label { role: TextRole.section; centred: true; wrap: word-wrap; text: @tr("Search The Lens DB"); }
+            Label { role: TextRole.note; centred: true; wrap: word-wrap; text: @tr("Connect The Lens DB at the right to search its bodies and lenses and add them to your Kit."); }
         }
-    }
-    VerticalLayout {
-        vertical-stretch: 0;
-        Divider { }
-        VerticalLayout {
-            padding-top: Space.m;
-            padding-bottom: Space.m;
-            padding-left: SheetStyle.padding;
-            padding-right: SheetStyle.padding;
-            spacing: Space.s;
-            if Kit.sending || Kit.picked > 0: Label {
-                role: TextRole.note;
-                wrap: word-wrap;
-                text: Kit.sending ? @tr("Saving to The Lens DB…")
-                    : @tr("{n} piece joins your Kit on The Lens DB at Done." | "{n} pieces join your Kit on The Lens DB at Done." % Kit.picked);
+        if Kit.link == KitLink.in: VerticalLayout {
+            width: KitStyle.sheet-width;
+            // The search, the answers and the foot on the header's margins, so every edge lines up under its title.
+            VerticalLayout {
+                vertical-stretch: 0;
+                padding-left: SheetStyle.padding;
+                padding-right: SheetStyle.padding;
+                padding-top: Space.m;
+                // The words searched, the kind beside them, which the service sorts by.
+                HorizontalLayout {
+                    property <[string]> kinds: [@tr("Bodies & Lenses"), @tr("Bodies"), @tr("Lenses")];
+                    spacing: Space.s;
+                    TextField {
+                        horizontal-stretch: 1;
+                        name: @tr("Search The Lens DB");
+                        placeholder: @tr("A brand, a body, a lens: Nikon FM2, Summicron 35…");
+                        edited(t) => { Kit.search(t); }
+                        accepted(t) => { Kit.search(t); }
+                        init => { self.take-focus(); }
+                    }
+                    Picker {
+                        horizontal-stretch: 0;
+                        value: parent.kinds[Kit.kind-filter];
+                        entries: parent.kinds;
+                        current: Kit.kind-filter;
+                        help: @tr("Bodies, lenses or both");
+                        chosen(i) => { Kit.filter-kind(i); }
+                    }
+                }
             }
-            HorizontalLayout {
-                spacing: Space.s;
-                TldbMark { horizontal-stretch: 1; credited: true; clicked => { Kit.open-site(); } }
+            Scroller {
+                vertical-stretch: 1;
+                content-height: answers.preferred-height;
+                answers := VerticalLayout {
+                    padding-top: Space.m;
+                    padding-bottom: Space.m;
+                    padding-left: SheetStyle.padding;
+                    padding-right: SheetStyle.padding;
+                    spacing: Space.s;
+                    alignment: start;
+                    if Kit.note != "": KitNote { }
+                    if Kit.searched == "" && !Kit.searching: Label {
+                        role: TextRole.note;
+                        wrap: word-wrap;
+                        text: @tr("Type two letters or more: each word is looked for in the brand and the name, as Leica 35 or Nikon FM2.");
+                    }
+                    if Kit.searching && Kit.found.length == 0: Label { role: TextRole.note; text: @tr("Searching…"); }
+                    if !Kit.searching && Kit.searched != "" && Kit.found.length == 0: VerticalLayout {
+                        spacing: Space.s;
+                        Label { role: TextRole.note; wrap: word-wrap; text: @tr("Nothing on The Lens DB matches “{}”.", Kit.searched); }
+                        HorizontalLayout {
+                            alignment: start;
+                            Button { text: @tr("Suggest Missing Gear"); help: @tr("Proposes a piece to The Lens DB, reviewed before it shows"); clicked => { Kit.suggest(); } }
+                        }
+                    }
+                    for pair in KitSearch.pairs: HorizontalLayout {
+                        spacing: Space.s;
+                        PieceCard {
+                            width: (KitStyle.sheet-width - 2 * SheetStyle.padding - Space.s) / KitStyle.columns;
+                            adding: true;
+                            piece: pair.left;
+                            taken => { Kit.take(pair.at); }
+                        }
+                        if pair.has-right: PieceCard {
+                            width: (KitStyle.sheet-width - 2 * SheetStyle.padding - Space.s) / KitStyle.columns;
+                            adding: true;
+                            piece: pair.right;
+                            taken => { Kit.take(pair.at + 1); }
+                        }
+                        if !pair.has-right: Rectangle { horizontal-stretch: 1; }
+                    }
+                }
+            }
+            VerticalLayout {
+                vertical-stretch: 0;
+                Divider { }
                 VerticalLayout {
-                    alignment: center;
-                    Button {
-                        size: ButtonSize.mini;
-                        text: @tr("Suggest Missing Gear");
-                        help: @tr("Proposes a piece to The Lens DB, reviewed before it shows");
-                        clicked => { Kit.suggest(); }
+                    padding-top: Space.m;
+                    padding-bottom: Space.m;
+                    padding-left: SheetStyle.padding;
+                    padding-right: SheetStyle.padding;
+                    spacing: Space.s;
+                    if Kit.sending || Kit.picked > 0: Label {
+                        role: TextRole.note;
+                        wrap: word-wrap;
+                        text: Kit.sending ? @tr("Saving to The Lens DB…")
+                            : @tr("{n} piece joins your Kit on The Lens DB at Done." | "{n} pieces join your Kit on The Lens DB at Done." % Kit.picked);
+                    }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        TldbMark { horizontal-stretch: 1; credited: true; clicked => { Kit.open-site(); } }
+                        VerticalLayout {
+                            alignment: center;
+                            Button {
+                                size: ButtonSize.mini;
+                                text: @tr("Suggest Missing Gear");
+                                help: @tr("Proposes a piece to The Lens DB, reviewed before it shows");
+                                clicked => { Kit.suggest(); }
+                            }
+                        }
                     }
                 }
             }
         }
+        Divider { vertical: true; }
+        KitView { width: ShellStyle.panel-width; in-sheet: true; }
     }
 }

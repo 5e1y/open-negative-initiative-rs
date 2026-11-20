@@ -94,6 +94,9 @@ export component Info inherits Surface {
                         help: @tr("The body this roll was shot on, hand-entered — never read off a scan's own EXIF.");
                         KnownField {
                             name: @tr("Camera Body");
+                            search-line: @tr("Search on The Lens DB");
+                            searching: Kit.picking;
+                            search => { Kit.search-gear(1); }
                             placeholder: @tr("e.g. Leica M6");
                             text <=> Library.camera-body;
                             cards: Gear.body-cards;
@@ -114,6 +117,9 @@ export component Info inherits Surface {
                         help: @tr("The lens this whole roll was shot with, hand-entered: every export's EXIF names it unless a frame names its own.");
                         KnownField {
                             name: @tr("Lens");
+                            search-line: @tr("Search on The Lens DB");
+                            searching: Kit.picking;
+                            search => { Kit.search-gear(2); }
                             placeholder: @tr("e.g. Summicron 35mm f/2");
                             text <=> Library.roll-lens;
                             cards: Gear.lens-cards;

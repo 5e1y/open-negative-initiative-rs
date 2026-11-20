@@ -260,6 +260,21 @@ pub mod roll_folder {
 mod tests {
     use super::*;
 
+    /// A roll's lens rides in its marker and its sidecar copy alike, and a roll naming none writes no key, so a
+    /// marker from before reads as it was.
+    #[test]
+    fn a_roll_s_lens_reads_back_and_none_writes_no_key() {
+        let mut film = Film::new("Roll");
+        film.lens = Some("Nikkor 50mm f/1.8".into());
+        assert_eq!(roll_folder::decode(roll_folder::encode(&film).as_bytes()), Some(film.clone()));
+        assert_eq!(serde_json::from_str::<Film>(&serde_json::to_string(&film).unwrap()).unwrap(), film);
+        let bare = Film::new("Roll");
+        assert!(!roll_folder::encode(&bare).contains("lens") && !serde_json::to_string(&bare).unwrap().contains("lens"));
+        let before = r#"{"id":"6A2D4F1C-9F2B-4C1E-9B11-7F0A0E3D2C11","name":"Roll","cameraBody":"Nikon FM2"}"#;
+        let read = roll_folder::decode(before.as_bytes()).expect("a marker from before reads");
+        assert_eq!((read.camera_body.as_deref(), read.lens), (Some("Nikon FM2"), None));
+    }
+
     #[test]
     fn the_catalogue_holds_unique_keys() {
         let mut ids: Vec<_> = FILM_STOCKS.iter().map(|k| k.id).collect();

@@ -125,7 +125,7 @@ impl Ctl {
         let p = me.clone();
         k.on_disconnect(move || p.kit_disconnect());
         let p = me.clone();
-        k.on_search_gear(move || p.kit_open_search());
+        k.on_search_gear(move |kind| p.kit_open_search(kind));
         let p = me.clone();
         k.on_search(move |t| p.kit_search(&t));
         let p = me.clone();
