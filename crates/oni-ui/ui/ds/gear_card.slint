@@ -1,23 +1,59 @@
 // A body or a lens as every list of gear shows it: its name with a Default badge when it is the one exports
 // name, what tells it from its kin, and how many photos name it.
 import { Space, Colour, Radius } from "theme.slint";
-import { Label, Tone, TextRole } from "base.slint";
+import { Label, Icon, Tone, TextRole, Tips } from "base.slint";
 import { Badge } from "badge.slint";
+import { Icons } from "icons.slint";
+import { KitStyle } from "theme_views.slint";
 
 export struct GearCard { name: string, detail: string, preferred: bool, photos: int }
 
+// A name that opens the piece's page on The Lens DB, its arrow kept beside it however short the name is cut.
+component GearLink inherits Rectangle {
+    in property <string> name;
+    callback opened();
+    property <color> ink: touch.has-hover ? Colour.accent : Colour.ink;
+    accessible-role: button;
+    accessible-label: @tr("See {} on The Lens DB", root.name);
+    accessible-action-default => { root.opened(); }
+    HorizontalLayout {
+        spacing: Space.xxs;
+        Label { text: root.name; overflow: elide; ink: root.ink; }
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                width: KitStyle.link-arrow;
+                height: KitStyle.link-arrow;
+                source: Icons.open-out;
+                ink: touch.has-hover ? root.ink : Colour.ink-tertiary;
+            }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.opened(); }
+        changed has-hover => {
+            Tips.hover(self.has-hover, @tr("See {} on The Lens DB", root.name), root.absolute-position.x, root.absolute-position.y + root.height);
+        }
+    }
+}
+
 export component GearCardBody inherits HorizontalLayout {
     in property <GearCard> card;
+    // Linked, the name opens the piece's page, the one way to it.
+    in property <bool> linked;
+    callback opened();
     spacing: Space.s;
     VerticalLayout {
         alignment: center;
         horizontal-stretch: 1;
         spacing: Space.xxs;
         HorizontalLayout {
+            alignment: start;
             spacing: Space.xs;
-            Label { text: root.card.name; overflow: elide; }
+            if root.linked: GearLink { name: root.card.name; opened => { root.opened(); } }
+            if !root.linked: Label { text: root.card.name; overflow: elide; }
             if root.card.preferred: VerticalLayout { alignment: center; Badge { text: @tr("Default"); } }
-            Rectangle { horizontal-stretch: 1; }
         }
         Label { text: root.card.detail; role: TextRole.caption; tone: Tone.tertiary; overflow: elide; }
     }

@@ -11,13 +11,12 @@ export global KitSearch {
     in property <[KitPair]> pairs;
 }
 
-// One piece of the catalogue, alike in the Kit and in the search: its name, a Default badge when it is one,
-// what tells it from its kin, then in the Kit how many photos name it and its menu; in the search its page
-// on The Lens DB, then its Add.
+// One piece of the catalogue, alike in the Kit and in the search: its name opening its page on The Lens DB,
+// a Default badge when it is one, what tells it from its kin; `adding` ends it with its Add, else its photos and menu.
 export component PieceCard inherits Surface {
     in property <KitPiece> piece;
     in property <GearKind> kind;
-    in property <bool> found;
+    in property <bool> adding;
     callback taken();
     callback removed();
     callback preferred();
@@ -28,24 +27,22 @@ export component PieceCard inherits Surface {
             padding-top: Space.s;
             padding-bottom: Space.s;
             padding-left: Space.m;
-            padding-right: root.found ? Space.s : Space.xs;
+            padding-right: root.adding ? Space.s : Space.xs;
             spacing: Space.s;
             GearCardBody {
                 horizontal-stretch: 1;
+                linked: true;
                 card: {
                     name: root.piece.name,
                     detail: root.piece.detail,
                     preferred: root.piece.by-default,
-                    photos: root.found ? -1 : root.piece.photos,
+                    photos: root.adding ? -1 : root.piece.photos,
                 };
+                opened => { Kit.open(root.piece.url); }
             }
-            if root.found: HorizontalLayout {
+            if root.adding: HorizontalLayout {
                 spacing: Space.xs;
                 alignment: end;
-                VerticalLayout {
-                    alignment: center;
-                    Button { square: true; icon: Icons.open-out; has-icon: true; help: @tr("See {} on The Lens DB", root.piece.name); clicked => { Kit.open(root.piece.url); } }
-                }
                 VerticalLayout {
                     alignment: center;
                     if root.piece.mark == KitMark.free: Button { text: @tr("Add"); icon: Icons.zoom-in; has-icon: true; clicked => { root.taken(); } }
@@ -60,7 +57,7 @@ export component PieceCard inherits Surface {
                     if root.piece.mark == KitMark.kept: Label { text: @tr("In your Kit"); role: TextRole.caption; tone: Tone.tertiary; }
                 }
             }
-            if !root.found: VerticalLayout {
+            if !root.adding: VerticalLayout {
                 alignment: center;
                 more := Button {
                     kind: ButtonKind.ghost;
@@ -78,15 +75,13 @@ export component PieceCard inherits Surface {
         x: root.width - self.span;
         y: root.height;
         lines: [
-            { text: @tr("See on The Lens DB"), enabled: true },
             { text: root.piece.by-default ? @tr("Remove Default") : @tr("Set as Default"), enabled: true },
             { text: @tr("Remove from My Kit"), enabled: true, rule: true },
         ];
         chosen(i) => {
             menu.close();
-            if (i == 0) { Kit.open(root.piece.url); }
-            if (i == 1) { root.preferred(); }
-            if (i == 2) { root.removed(); }
+            if (i == 0) { root.preferred(); }
+            if (i == 1) { root.removed(); }
         }
     }
 }
@@ -249,13 +244,13 @@ export component KitSearchSheet inherits Sheet {
                 spacing: Space.s;
                 PieceCard {
                     width: (KitStyle.sheet-width - 2 * Space.m - Space.s) / KitStyle.columns;
-                    found: true;
+                    adding: true;
                     piece: pair.left;
                     taken => { Kit.take(pair.at); }
                 }
                 if pair.has-right: PieceCard {
                     width: (KitStyle.sheet-width - 2 * Space.m - Space.s) / KitStyle.columns;
-                    found: true;
+                    adding: true;
                     piece: pair.right;
                     taken => { Kit.take(pair.at + 1); }
                 }

@@ -334,6 +334,10 @@ msgid "could not be rendered"
 msgstr "no se pudo mostrar"
 
 #: crates/oni-ui/ui/ds/gear_card.slint
+msgid "See {} on The Lens DB"
+msgstr "Ver {} en The Lens DB"
+
+#: crates/oni-ui/ui/ds/gear_card.slint
 msgid "Default"
 msgstr "Predeterminado"
 
@@ -1565,10 +1569,6 @@ msgstr "Aún no hay emulsión definida"
 msgid "Description"
 msgstr "Descripción"
 
-#: crates/oni-ui/ui/kit.slint
-msgid "See {} on The Lens DB"
-msgstr "Ver {} en The Lens DB"
-
 #: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/navigator.slint
 msgid "Add"
 msgstr "Añadir"
@@ -1588,10 +1588,6 @@ msgstr "En tu kit"
 #: crates/oni-ui/ui/kit.slint
 msgid "More for {}"
 msgstr "Más para {}"
-
-#: crates/oni-ui/ui/kit.slint
-msgid "See on The Lens DB"
-msgstr "Ver en The Lens DB"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Remove Default"

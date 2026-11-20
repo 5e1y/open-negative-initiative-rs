@@ -75,6 +75,7 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
     rig.settle();
     let pages = opened.borrow().len();
+    assert!(common::placed(w, Role::Button, "Add").len() >= 1 && common::placed(w, Role::Button, "More for Nikon FM2").is_empty(), "the search's card ends with its Add");
     common::click(rig, w, common::the(w, Role::Button, "See Nikon FM2 on The Lens DB").middle());
     let page = opened.borrow().last().cloned().unwrap();
     assert!(page.starts_with(&format!("{}/cameras/nikon-fm2", fake.site)) && page.ends_with("utm_source=oni"), "{page}");
@@ -209,13 +210,19 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.settle();
     assert_eq!(lib.get_camera_body(), "Nikon FM2");
 
-    // A card's menu opens its page on the service.
+    // The Kit's card is the search's without its Add: its name opens its page on the service, the menu no more.
     common::click(rig, w, EMPTY);
     rig.settle();
     let pages = opened.borrow().len();
-    menu("Nikon FM2", "See on The Lens DB");
+    common::click(rig, w, common::the(w, Role::Button, "See Nikon FM2 on The Lens DB").middle());
     assert_eq!(opened.borrow().len(), pages + 1, "the card's page opened");
-    assert!(opened.borrow().last().unwrap().ends_with("utm_source=oni"));
+    assert!(opened.borrow().last().unwrap().contains("/cameras/nikon-fm2") && opened.borrow().last().unwrap().ends_with("utm_source=oni"));
+    common::click(rig, w, common::the(w, Role::Button, "More for Nikon FM2").middle());
+    rig.settle();
+    assert!(!common::placed(w, Role::Button, "Remove from My Kit").is_empty(), "the menu open");
+    assert!(common::placed(w, Role::Button, "See on The Lens DB").is_empty(), "the menu no longer opens the page");
+    rig.key(&slint::SharedString::from(slint::platform::Key::Escape));
+    rig.settle();
 
     // Settings' Connected Apps disconnects: the token revoked, the copy dropped, the typed names still offered.
     ctl.act(oni_app::Act::Settings);

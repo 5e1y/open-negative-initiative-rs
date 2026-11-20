@@ -11449,5 +11449,12 @@
     "title": "A launch opens its folder on the Kit with nothing picked; the Kit's head a step above Search Gear",
     "status": "done",
     "detail": "The launch reopens the folder remembered, and a roll's folder showed its roll in the column, so the Kit took a click on the empty room each time. open_remembered now leaves nothing picked and turns the column to the Kit (gear_shown), as that click does; a folder a hand opens still shows its roll, and a photo picked shows it. Window check presence::a_launch_opens_its_folder_on_the_kit_with_nothing_picked, seen failing without the change. The Kit column's head (My Kit, provided by and the mark) takes Space.s more below it."
+  },
+  {
+    "id": 2315,
+    "type": "change",
+    "title": "Every gear card's name opens its page on The Lens DB, an arrow kept beside it; the Kit's card and the search's one shape",
+    "status": "done",
+    "detail": "GearCardBody takes linked: its name becomes a link (accent under the hand, its help and accessible label 'See {} on The Lens DB') followed by a small arrow (KitStyle.link-arrow, 11 px token) that stays beside the name however short it is cut. PieceCard uses it in the Kit and in the search alike, its one difference the adding boolean (Add, Added or In your Kit, else the photos and the menu); the search's square open-out key and the menu's See on The Lens DB line are gone, the name being the one way to the page. The gear fields' list keeps plain names, a click there picks the piece. Window check collection::the_kit_signs_in_searches_and_validates opens the page from the search's and the Kit's names and asserts the menu no longer holds the line."
   }
 ]
