@@ -1,7 +1,7 @@
 // Where nothing is picked in the archive: the person's Kit, their bodies and lenses kept on The Lens DB.
 // Signed out it offers the service; signed in it lists the Kit and searches the catalogue in a sheet over
 // the window, whose Done sends what was added in one call.
-import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, KitStyle, Divider, Picker } from "ds/ds.slint";
+import { Section, Label, TextRole, Tone, TextField, Button, ButtonKind, ButtonSize, Surface, Space, Icons, TldbMark, GearCardBody, Menu, Sheet, SheetHeader, Scroller, KitStyle, Divider, Picker, SheetStyle, Icon, Colour, TldbPair } from "ds/ds.slint";
 import { GearKind, Kit, KitLink, KitPiece, KitMark } from "gear_state.slint";
 
 // Two answers of the search side by side, `at` the left one's place among them.
@@ -107,12 +107,39 @@ component KitNote inherits Label {
     text: Kit.note;
 }
 
+// One thing the alliance gives or promises, after a check.
+component Promise inherits HorizontalLayout {
+    in property <string> text;
+    spacing: Space.s;
+    VerticalLayout {
+        alignment: start;
+        padding-top: Space.xxs;
+        Icon { width: KitStyle.bullet; height: KitStyle.bullet; source: Icons.done; ink: Colour.ink-secondary; }
+    }
+    Label { horizontal-stretch: 1; role: TextRole.note; wrap: word-wrap; text: root.text; }
+}
+
+// Signed out: the two projects side by side, what joining them gives, and what it costs, nothing, said
+// plainly so no one looks for a catch.
 component Offer inherits Section {
     separated: false;
-    TldbMark { size: KitStyle.mark-large; large: true; credited: true; under: true; clicked => { Kit.open-site(); } }
-    Label { role: TextRole.title; text: @tr("Your Kit, on The Lens DB"); wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: start;
+        padding-bottom: Space.s;
+        TldbPair { clicked => { Kit.open-site(); } }
+    }
+    Label { role: TextRole.section; wrap: word-wrap; text: @tr("ONI partners with The Lens DB, the largest photography database in the world."); }
+    VerticalLayout {
+        spacing: Space.xs;
+        padding-bottom: Space.s;
+        Promise { text: @tr("Import your Kit from The Lens DB"); }
+        Promise { text: @tr("Track your camera collection"); }
+        Promise { text: @tr("Fill your photos' EXIF with ease"); }
+        Promise { text: @tr("Free: two non-profit projects, no ads"); }
+        Promise { text: @tr("Your photos never leave your computer"); }
+        Promise { text: @tr("Disconnect at any time in Settings"); }
+    }
     if Kit.note != "": KitNote { }
-    Label { role: TextRole.note; wrap: word-wrap; text: @tr("Keep your bodies and lenses on The Lens DB: ONI offers them when an export's EXIF is filled, with their brand, focal lengths and apertures."); }
     Button { kind: ButtonKind.accent; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } }
     Button { text: @tr("Create an Account"); clicked => { Kit.connect(true); } }
 }
@@ -191,10 +218,11 @@ export component KitSearchSheet inherits Sheet {
     card-height: KitStyle.sheet-height;
     exit-enabled: !Kit.sending;
     dismissed => { Kit.done(); }
+    // The search, the answers and the foot on the header's margins, so every edge lines up under its title.
     VerticalLayout {
         vertical-stretch: 0;
-        padding-left: Space.m;
-        padding-right: Space.m;
+        padding-left: SheetStyle.padding;
+        padding-right: SheetStyle.padding;
         padding-top: Space.m;
         // The words searched, the kind beside them, which the service sorts by.
         HorizontalLayout {
@@ -222,7 +250,10 @@ export component KitSearchSheet inherits Sheet {
         vertical-stretch: 1;
         content-height: answers.preferred-height;
         answers := VerticalLayout {
-            padding: Space.m;
+            padding-top: Space.m;
+            padding-bottom: Space.m;
+            padding-left: SheetStyle.padding;
+            padding-right: SheetStyle.padding;
             spacing: Space.s;
             alignment: start;
             if Kit.note != "": KitNote { }
@@ -243,13 +274,13 @@ export component KitSearchSheet inherits Sheet {
             for pair in KitSearch.pairs: HorizontalLayout {
                 spacing: Space.s;
                 PieceCard {
-                    width: (KitStyle.sheet-width - 2 * Space.m - Space.s) / KitStyle.columns;
+                    width: (KitStyle.sheet-width - 2 * SheetStyle.padding - Space.s) / KitStyle.columns;
                     adding: true;
                     piece: pair.left;
                     taken => { Kit.take(pair.at); }
                 }
                 if pair.has-right: PieceCard {
-                    width: (KitStyle.sheet-width - 2 * Space.m - Space.s) / KitStyle.columns;
+                    width: (KitStyle.sheet-width - 2 * SheetStyle.padding - Space.s) / KitStyle.columns;
                     adding: true;
                     piece: pair.right;
                     taken => { Kit.take(pair.at + 1); }
@@ -262,7 +293,10 @@ export component KitSearchSheet inherits Sheet {
         vertical-stretch: 0;
         Divider { }
         VerticalLayout {
-            padding: Space.m;
+            padding-top: Space.m;
+            padding-bottom: Space.m;
+            padding-left: SheetStyle.padding;
+            padding-right: SheetStyle.padding;
             spacing: Space.s;
             if Kit.sending || Kit.picked > 0: Label {
                 role: TextRole.note;

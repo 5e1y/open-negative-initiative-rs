@@ -1,6 +1,6 @@
 // A body or a lens as every list of gear shows it: its name with a Default badge when it is the one exports
 // name, what tells it from its kin, and how many photos name it.
-import { Space, Colour, Radius } from "theme.slint";
+import { Space, Colour, Radius, Stroke } from "theme.slint";
 import { Label, Icon, Tone, TextRole, Tips } from "base.slint";
 import { Badge } from "badge.slint";
 import { Icons } from "icons.slint";
@@ -8,26 +8,33 @@ import { KitStyle } from "theme_views.slint";
 
 export struct GearCard { name: string, detail: string, preferred: bool, photos: int }
 
-// A name that opens the piece's page on The Lens DB, its arrow kept beside it however short the name is cut.
+// A name that opens the piece's page on The Lens DB, its arrow kept beside it however short the name is cut;
+// under the hand the name is underlined in its own ink, which reads on every ground.
 component GearLink inherits Rectangle {
     in property <string> name;
     callback opened();
-    property <color> ink: touch.has-hover ? Colour.accent : Colour.ink;
     accessible-role: button;
     accessible-label: @tr("See {} on The Lens DB", root.name);
     accessible-action-default => { root.opened(); }
     HorizontalLayout {
         spacing: Space.xxs;
-        Label { text: root.name; overflow: elide; ink: root.ink; }
+        title := Label { text: root.name; overflow: elide; }
         VerticalLayout {
             alignment: center;
             Icon {
                 width: KitStyle.link-arrow;
                 height: KitStyle.link-arrow;
                 source: Icons.open-out;
-                ink: touch.has-hover ? root.ink : Colour.ink-tertiary;
+                ink: touch.has-hover ? Colour.ink : Colour.ink-tertiary;
             }
         }
+    }
+    if touch.has-hover: Rectangle {
+        x: title.x;
+        y: title.y + (title.height + title.font-size) / 2;
+        width: min(title.width, title.preferred-width);
+        height: Stroke.line;
+        background: Colour.ink;
     }
     touch := TouchArea {
         mouse-cursor: pointer;

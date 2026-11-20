@@ -62,3 +62,18 @@ export component TldbMark inherits Rectangle {
         clicked => { root.clicked(); }
     }
 }
+
+// The app's logo beside the mark at one height, the two projects side by side; a click on the mark opens its site.
+export component TldbPair inherits HorizontalLayout {
+    callback clicked();
+    spacing: Space.s;
+    Image {
+        height: KitStyle.pair-height;
+        source: Icons.oni-logo;
+        colorize: Colour.ink;
+        accessible-role: image;
+        accessible-label: @tr("ONI");
+    }
+    Label { role: TextRole.section; tone: Tone.tertiary; text: "×"; }
+    TldbMark { size: KitStyle.pair-height; word-size: KitStyle.pair-word; clicked => { root.clicked(); } }
+}

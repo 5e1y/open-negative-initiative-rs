@@ -1601,13 +1601,37 @@ msgstr "Définir par défaut"
 msgid "Remove from My Kit"
 msgstr "Retirer de Mon Kit"
 
-#: crates/oni-ui/ui/kit.slint
-msgid "Your Kit, on The Lens DB"
-msgstr "Votre kit, sur The Lens DB"
+#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "ONI"
+msgstr "ONI"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Keep your bodies and lenses on The Lens DB: ONI offers them when an export's EXIF is filled, with their brand, focal lengths and apertures."
-msgstr "Gardez vos boîtiers et objectifs sur The Lens DB : ONI vous les propose quand vous remplissez les EXIF d’un export, avec leur marque, leurs focales et leurs ouvertures."
+msgid "ONI partners with The Lens DB, the largest photography database in the world."
+msgstr "ONI s’associe à The Lens DB, la plus grande base de données photographique au monde."
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Import your Kit from The Lens DB"
+msgstr "Importez votre Kit depuis The Lens DB"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Track your camera collection"
+msgstr "Suivez votre collection d’appareils"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Fill your photos' EXIF with ease"
+msgstr "Remplissez facilement les EXIF de vos photos"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Free: two non-profit projects, no ads"
+msgstr "Gratuit : deux projets à but non lucratif, sans publicité"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Your photos never leave your computer"
+msgstr "Vos photos ne quittent jamais votre ordinateur"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Disconnect at any time in Settings"
+msgstr "Déconnectez-vous à tout moment dans les Réglages"
 
 #: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/settings.slint
 msgid "Connect The Lens DB"
@@ -1938,10 +1962,6 @@ msgstr "La machine avec laquelle la face Scanner tire : ONI, la photo au blanc d
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
 msgstr "La machine avec laquelle la face Scanner tire : ONI, la conversion de la pellicule sous le look propre à ONI, ou le Frontier, la même conversion sous le look du minilab. Le clavier et les effets agissent sur l’une comme sur l’autre.\n\nL’onglet Pellicule agit sur les deux faces ; la Balance des blancs auto, la Lumière, la Couleur et les Effets de Pro restent propres à Pro."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "ONI"
-msgstr "ONI"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Frontier"

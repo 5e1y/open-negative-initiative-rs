@@ -43,7 +43,9 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.settle();
     assert_eq!(lib.get_info_kind(), InfoKind::Collection);
     assert_eq!(kit.get_link(), KitLink::Out);
-    assert_eq!(common::placed(w, Role::Button, "Catalogue provided by The Lens DB").len(), 1, "the offer credits the catalogue");
+    assert!(common::placed(w, Role::Button, "Catalogue provided by The Lens DB").is_empty(), "the offer names the two projects, no credit line");
+    assert_eq!(common::placed(w, Role::Button, "The Lens DB").len(), 1, "ONI × The Lens DB");
+    assert_eq!(common::placed(w, Role::Image, "ONI").len(), 1, "the app's logo beside the mark");
     println!("shot {}", rig.shot("kit-offer").display());
 
     // Connect opens the service's sign-in; the Kit shows once the browser comes back to ONI's port.
@@ -99,6 +101,9 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     assert!(common::placed(w, Role::Tab, "Bodies").is_empty(), "the kind is a select, no tabs");
     let (field, kind) = (common::the(w, Role::TextInput, "Search The Lens DB"), common::the(w, Role::Button, "Bodies & Lenses"));
     assert!(kind.x > field.x + field.width && (kind.y + kind.height / 2.0 - field.y - field.height / 2.0).abs() < 2.0, "the select right of the search: {field:?} {kind:?}");
+    let (title, done) = (common::the(w, Role::Text, "Add to Your Kit"), common::the(w, Role::Button, "Done"));
+    let credit = common::placed(w, Role::Button, "Catalogue provided by The Lens DB").into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).unwrap();
+    assert!((credit.x - title.x).abs() < 1.0 && (kind.x + kind.width - done.x - done.width).abs() < 1.0, "the content on the header's margins: {title:?} {credit:?} {kind:?} {done:?}");
     common::click(rig, w, field.middle());
     rig.key("50");
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
@@ -147,6 +152,10 @@ pub(crate) fn the_kit_signs_in_searches_and_validates() {
     rig.window.dispatch_event(slint::platform::WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x, y) });
     rig.settle();
     println!("shot {}", rig.shot("kit-hover").display());
+    let (x, y) = common::the(w, Role::Button, "See Nikon FM2 on The Lens DB").middle();
+    rig.window.dispatch_event(slint::platform::WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x, y) });
+    rig.settle();
+    println!("shot {}", rig.shot("kit-link-hover").display());
 
     // The FM2 and the FD 50 made the defaults: an export of the roll, which names no body, shows them.
     menu("Nikon FM2", "Set as Default");

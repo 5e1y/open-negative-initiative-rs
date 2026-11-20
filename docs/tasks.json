@@ -11456,5 +11456,12 @@
     "title": "Every gear card's name opens its page on The Lens DB, an arrow kept beside it; the Kit's card and the search's one shape",
     "status": "done",
     "detail": "GearCardBody takes linked: its name becomes a link (accent under the hand, its help and accessible label 'See {} on The Lens DB') followed by a small arrow (KitStyle.link-arrow, 11 px token) that stays beside the name however short it is cut. PieceCard uses it in the Kit and in the search alike, its one difference the adding boolean (Add, Added or In your Kit, else the photos and the menu); the search's square open-out key and the menu's See on The Lens DB line are gone, the name being the one way to the page. The gear fields' list keeps plain names, a click there picks the piece. Window check collection::the_kit_signs_in_searches_and_validates opens the page from the search's and the Kit's names and asserts the menu no longer holds the line."
+  },
+  {
+    "id": 2316,
+    "type": "change",
+    "title": "Gear names underlined under the hand; the Kit sheet on its header's margins; a smaller mark in the column; the signed-out offer as ONI × The Lens DB",
+    "status": "done",
+    "detail": "A gear card's name no longer turns accent under the hand, unreadable on the grey: it takes a plain underline in its own ink (Stroke.line, as wide as the name shown). The Kit column's mark steps down (19 px, its name 13 px). The search sheet's search row, answers and foot take the bar header's side margins (SheetStyle.padding) and Space.m above and below, so the title, the field, the cards, the credit and Done line up; the window check asserts the credit's left edge on the title's and the kind select's right edge on Done's. Signed out, the column drops its credit line and shows the app's logo × The Lens DB's mark at one height (KitStyle.pair-height), the line 'ONI partners with The Lens DB, the largest photography database in the world.' and six checked promises: import the Kit, track the collection, fill EXIF, free from two non-profit projects with no ads, photos never leave the computer, disconnect at any time in Settings; then Connect and Create an Account."
   }
 ]
